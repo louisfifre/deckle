@@ -5,7 +5,6 @@ using System.IO;
 using System.Threading.Tasks;
 using Deckle.Core;
 using Deckle.Autocorrect;
-using Deckle.Autocorrect.Mlm;
 using Deckle.Autocorrect.Onnx;
 using Deckle.Input;
 using Deckle.Notifications;
@@ -22,18 +21,12 @@ namespace Deckle.App;
 //
 // The closed-sentence stage resolves real-word ambiguities — la/là, a/à,
 // ou/où — only after terminal punctuation. It starts with deterministic French
-// rules and delegates to a model engine when one is present, by preference:
-// the ONNX GenAI sentence judge (models\sentence-judge\), else the CamemBERT
-// masked-LM (models\camembert-base\). Both live under the user data root,
-// staged by the maintainer, never shipped in the build.
+// rules and delegates only to the ONNX GenAI whole-sentence judge
+// (models\sentence-judge\). A slot-only masked-LM cannot satisfy the global
+// decision contract. The model lives under the user data root, staged by the
+// maintainer and never shipped in the build.
 public partial class App
 {
-    // Contextual reranker calibration — mirrors the offline EvaluateReranked
-    // operating point: act only on a clear top-vs-second logit gap, and prefer the
-    // common form. Starting points to ground by the eval, not measured optima.
-    private const double RerankerMargin = 2.0;
-    private const double RerankerFreqPrior = 1.0;
-
     // Sentence judge operating margin, maintainer-decided on the 2026-07 replay
     // calibration (979 slots, maintainer truth overlaid): 1.0 holds 92.2%
     // precision at 20.8% coverage, against 90.8%/41.0% at 0.5. Chosen on the
@@ -105,11 +98,11 @@ public partial class App
                 // the engine simply runs the chain without agreement correction.
                 var vb = File.Exists(verbsPath) ? VerbMorphology.LoadTsvGz(verbsPath) : null;
                 // The sentence-stage engine, by preference order: the ONNX GenAI
-                // sentence judge (Qwen3 DML int4, ~1.3 GB, resident on the GPU)
-                // when its model directory is present, else the CamemBERT
-                // masked-LM (~440 MB), else deterministic rules only. Both loads
-                // are optional TryLoads off the UI thread; the winner and its
-                // load cost go to RerankerStatus below.
+                // whole-sentence judge (Qwen3 DML int4, ~1.3 GB, resident on the
+                // GPU) when its model directory is present, else deterministic
+                // rules only. A slot-only model cannot enter the production
+                // contract. The optional load stays off the UI thread; its result
+                // and cost go to RerankerStatus below.
                 var rerankerStopwatch = Stopwatch.StartNew();
                 string judgeDir = Path.Combine(AppPaths.ModelsDirectory, "sentence-judge");
                 ISentenceReranker? rr = OnnxSlotReranker.TryLoad(
@@ -118,22 +111,14 @@ public partial class App
                     executionProvider: "dml",
                     out Exception? judgeLoadError);
                 string engine = DeckleAutocorrectSource.RerankerEngines.SentenceJudge;
-                if (rr is null)
+                if (rr is null && judgeLoadError is not null)
                 {
-                    if (judgeLoadError is not null)
-                    {
-                        DeckleAutocorrectSource.Log.RerankerLoadFailed(
-                            DeckleAutocorrectSource.RerankerEngines.SentenceJudge,
-                            judgeLoadError.ToString());
-                    }
-
-                    string modelDir = Path.Combine(AppPaths.ModelsDirectory, CamembertAssets.DirectoryName);
-                    rr = CamembertReranker.TryLoad(
-                        modelDir, margin: RerankerMargin, freqPrior: RerankerFreqPrior);
-                    engine = rr is null
-                        ? DeckleAutocorrectSource.RerankerEngines.None
-                        : DeckleAutocorrectSource.RerankerEngines.Camembert;
+                    DeckleAutocorrectSource.Log.RerankerLoadFailed(
+                        DeckleAutocorrectSource.RerankerEngines.SentenceJudge,
+                        judgeLoadError.ToString());
                 }
+                if (rr is null)
+                    engine = DeckleAutocorrectSource.RerankerEngines.None;
                 rerankerStopwatch.Stop();
                 return (fr, en, idx, ctx, rr, engine, rerankerStopwatch.ElapsedMilliseconds, vb);
             }).ConfigureAwait(false);
@@ -184,13 +169,15 @@ public partial class App
                 dictionary: dictionary,
                 french: french,
                 english: english,
-                // The post-sentence stage: deterministic French sentence rules,
-                // delegating to the loaded model engine (sentence judge, else
-                // CamemBERT) when one is present. The slot probe merges unresolved
-                // accent variants with bounded typo neighbours; both preserve the
-                // exact literal as an explicit KEEP candidate.
+                // The post-sentence stage: the literal sentence and every bounded
+                // one-edit variant enter one global decision, with at most one
+                // applied edit. The probe merges unresolved accents, typo
+                // neighbours and terminal-e agreement alternatives. CamemBERT
+                // remains a slot-only legacy engine and cannot reopen a production
+                // cascade when the whole-sentence judge is unavailable.
                 reranker: sentenceReranker,
                 probe: policies.AmbiguityProbe,
+                wholeSentenceProbe: policies.WholeSentenceProbe,
                 // Opt-in per-word decision telemetry, read live so a Settings flip
                 // takes effect without a rebuild. Off by default.
                 decisionTelemetry: () =>
@@ -199,7 +186,8 @@ public partial class App
                 // heaviest text capture, behind its own consent toggle.
                 textTelemetry: () =>
                     Deckle.Diagnostics.Telemetry.TelemetrySettingsService.Instance.Current.AutocorrectText,
-                mistouchFamilies: mistouchFamilies);
+                mistouchFamilies: mistouchFamilies,
+                caretTextReader: new UIAutomationCaretTextReader());
             sentenceReranker = null; // ownership moved into the engine's lane
 
             // Reactive enrollment: a would-be correction on an undecided app

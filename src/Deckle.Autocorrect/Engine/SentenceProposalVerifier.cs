@@ -88,6 +88,7 @@ public sealed class SentenceProposalVerifier
         && string.Equals(scores[1].Text, proposed, StringComparison.Ordinal)
         && double.IsFinite(scores[0].Score)
         && double.IsFinite(scores[1].Score);
+
 }
 
 public enum SentenceProposalVerdict

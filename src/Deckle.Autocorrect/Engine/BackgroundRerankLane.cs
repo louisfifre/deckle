@@ -17,12 +17,14 @@ namespace Deckle.Autocorrect;
 //
 // Teardown does not trust any pump join (the keyboard host is reference-counted
 // and may outlive this consumer): Dispose cancels the worker, completes the queue,
-// joins the worker (bounded), then disposes the reranker — so no inference can be
-// running when the model is released, and a late drain finds ResultSink detached.
+// waits for an in-flight native inference to return, then disposes the reranker.
+// The wait is deliberately not timed: releasing or replacing an ONNX GenAI model
+// while its worker still owns native state can terminate the whole process.
 public sealed class BackgroundRerankLane : IRerankLane
 {
     private readonly ISentenceReranker _reranker;
     private readonly IKeyboardInputHost _host;
+    private readonly ICaretTextReader? _caretTextReader;
     private readonly BlockingCollection<RerankRequest> _queue = new(boundedCapacity: 1);
     private readonly ConcurrentQueue<RerankResult> _completed = new();
     private readonly CancellationTokenSource _cts = new();
@@ -31,10 +33,14 @@ public sealed class BackgroundRerankLane : IRerankLane
 
     public Action<RerankResult>? ResultSink { get; set; }
 
-    public BackgroundRerankLane(ISentenceReranker reranker, IKeyboardInputHost host)
+    public BackgroundRerankLane(
+        ISentenceReranker reranker,
+        IKeyboardInputHost host,
+        ICaretTextReader? caretTextReader = null)
     {
         _reranker = reranker;
         _host = host;
+        _caretTextReader = caretTextReader;
         _host.DrainRequested += OnDrainRequested;
         _worker = new Thread(WorkerLoop)
         {
@@ -65,7 +71,19 @@ public sealed class BackgroundRerankLane : IRerankLane
                 RerankOutcome outcome;
                 try
                 {
-                    outcome = _reranker.Rerank(req.Sentence, req.SlotIndex, req.Candidates);
+                    outcome = req.SentenceCandidates is { Count: > 0 } sentenceCandidates
+                        ? _reranker is IWholeSentenceReranker wholeSentence
+                            ? wholeSentence.RerankSentence(req.Sentence, sentenceCandidates)
+                            : RerankOutcome.Abstained(
+                                RerankOutcome.AbstainReasons.WholeSentenceUnsupported)
+                        : _reranker.Rerank(req.Sentence, req.SlotIndex, req.Candidates);
+                    if (WouldRewrite(req, outcome)
+                        && req.VerifiedSentence is VerifiedCaretSentence verified
+                        && !VerifyRecoveredSentence(verified))
+                    {
+                        outcome = RerankOutcome.Abstained(
+                            RerankOutcome.AbstainReasons.StaleEvidence);
+                    }
                 }
                 catch
                 {
@@ -84,6 +102,30 @@ public sealed class BackgroundRerankLane : IRerankLane
         }
     }
 
+    private bool VerifyRecoveredSentence(VerifiedCaretSentence verified)
+    {
+        return _caretTextReader is not null
+            && _caretTextReader.TryReadStable(out Deckle.Core.FocusedCaretText current, out _)
+            && verified.Matches(current);
+    }
+
+    private static bool WouldRewrite(RerankRequest request, RerankOutcome outcome) =>
+        outcome.Chosen is not null
+        && (request.SentenceCandidates is { Count: > 0 }
+            ? outcome.ChosenSlotIndex is int chosenSlot
+                && chosenSlot >= 0
+                && chosenSlot < request.Sentence.Count
+                && !string.Equals(
+                    outcome.Chosen,
+                    request.Sentence[chosenSlot],
+                    StringComparison.Ordinal)
+            : request.SlotIndex >= 0
+                && request.SlotIndex < request.Sentence.Count
+                && !string.Equals(
+                    outcome.Chosen,
+                    request.Sentence[request.SlotIndex],
+                    StringComparison.Ordinal));
+
     // Input thread (raised by the host pump). Drain every queued verdict.
     private void OnDrainRequested()
     {
@@ -101,7 +143,7 @@ public sealed class BackgroundRerankLane : IRerankLane
         _host.DrainRequested -= OnDrainRequested;
         _cts.Cancel();
         _queue.CompleteAdding();
-        _worker.Join(TimeSpan.FromSeconds(2));
+        _worker.Join();
         _cts.Dispose();
         _queue.Dispose();
         (_reranker as IDisposable)?.Dispose();

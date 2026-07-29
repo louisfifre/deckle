@@ -49,7 +49,9 @@ internal sealed class AutocorrectEngineHarness : IDisposable
         Func<bool>? textTelemetry = null,
         IReadOnlyList<MistouchFamilyRecord>? mistouchFamilies = null,
         ISentenceReranker? reranker = null,
-        IAmbiguityProbe? probe = null)
+        IAmbiguityProbe? probe = null,
+        IAmbiguityProbe? wholeSentenceProbe = null,
+        ICaretTextReader? caretTextReader = null)
     {
         Policy = policy ?? NeverCorrects;
         Injector = new RecordingInjector(Surface);
@@ -70,8 +72,10 @@ internal sealed class AutocorrectEngineHarness : IDisposable
             Host, _decoder, Tracker, Prober, Policy, Injector,
             () => Settings, dictionary, french, english,
             reranker: reranker, probe: probe,
+            wholeSentenceProbe: wholeSentenceProbe,
             decisionTelemetry: decisionTelemetry, textTelemetry: textTelemetry,
-            mistouchFamilies: mistouchFamilies);
+            mistouchFamilies: mistouchFamilies,
+            caretTextReader: caretTextReader);
 
         Engine.SurfaceChanged += (s, e) => SurfaceChanges.Add((s, e));
         Engine.CorrectionApplied += d => Applied.Add(d);

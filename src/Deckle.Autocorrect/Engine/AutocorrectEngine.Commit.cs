@@ -119,7 +119,9 @@ public sealed partial class AutocorrectEngine
             // elision and grammar edits stay outside its rights.
             _coordinator?.OnWordCommitted(
                 commit.Word, decision?.Replacement ?? commit.Word, commit.Boundary,
-                sentenceMayEvaluate: SentenceStageMayEvaluate(decision), wordId,
+                sentenceMayEvaluate:
+                    !_sentenceContextDiscontinuous && SentenceStageMayEvaluate(decision),
+                wordId,
                 precedingSeparators: precedingSeparators);
         }
         else

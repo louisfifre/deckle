@@ -111,8 +111,15 @@ public sealed partial class RewriteOfferWindow : Window
     private void OnApplyClick(object sender, RoutedEventArgs e)
     {
         ParagraphRewriteOffer? offer = _offer;
+        if (offer is null) return;
+
+        // Keep the offer window alive and foreground until the host has restored
+        // the captured target and injected the replacement. Hiding first lets
+        // Windows publish the target's focus transition before ApplyRequested;
+        // the paragraph observer can then invalidate this exact offer between
+        // these two lines, making the click intermittently do nothing.
+        ApplyRequested?.Invoke(offer);
         Hide();
-        if (offer is not null) ApplyRequested?.Invoke(offer);
     }
 
     private void OnKeepOriginalClick(object sender, RoutedEventArgs e)

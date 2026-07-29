@@ -143,9 +143,11 @@ public sealed partial class AutocorrectEngine : IDisposable
         IFrequencyLexicon? english = null,
         ISentenceReranker? reranker = null,
         IAmbiguityProbe? probe = null,
+        IAmbiguityProbe? wholeSentenceProbe = null,
         Func<bool>? decisionTelemetry = null,
         Func<bool>? textTelemetry = null,
-        IReadOnlyList<MistouchFamilyRecord>? mistouchFamilies = null)
+        IReadOnlyList<MistouchFamilyRecord>? mistouchFamilies = null,
+        ICaretTextReader? caretTextReader = null)
     {
         _host = host;
         _decoder = decoder;
@@ -159,6 +161,7 @@ public sealed partial class AutocorrectEngine : IDisposable
         _english = english;
         _decisionTelemetry = decisionTelemetry;
         _textTelemetry = textTelemetry;
+        _caretTextReader = caretTextReader;
         _corpus = textTelemetry is null ? null : new SentenceCorpus { Completed = EmitText };
         _stream = textTelemetry is null ? null : new TypingStream { Completed = EmitStreamRun };
         _mistouch = mistouchFamilies is { Count: > 0 }
@@ -169,7 +172,7 @@ public sealed partial class AutocorrectEngine : IDisposable
         // marshals inference off this thread and the verdict back via the host pump.
         if (reranker is not null && probe is not null)
         {
-            _lane = new BackgroundRerankLane(reranker, host);
+            _lane = new BackgroundRerankLane(reranker, host, caretTextReader);
             _coordinator = new SentenceRerankCoordinator(
                 lane: _lane,
                 probe: probe,
@@ -177,7 +180,8 @@ public sealed partial class AutocorrectEngine : IDisposable
                 currentPartial: () => tracker.CurrentWord,
                 realignLastCommitted: tracker.ReplaceLastCommitted,
                 onApplied: OnCoordinatorApplied,
-                decisionTelemetry: decisionTelemetry);
+                decisionTelemetry: decisionTelemetry,
+                wholeSentenceProbe: wholeSentenceProbe);
         }
     }
 }

@@ -5,6 +5,20 @@ type: module-journal
 
 # JOURNAL — Deckle.Autocorrect
 
+## 2026-07-29 — One closed sentence decision replaces slot cascades
+
+Found why `Il y a une seul erreur.` survived both ordinary closure and verified-caret recovery: the typo probe deliberately refuses `seul` because it is a valid French word, so the sentence judge had no `seule` candidate to choose. Caret recovery was working; the missing right was candidate generation, not context extraction.
+
+Auditioned the prepared whole-sentence proposer before wiring it live. Ministral 14B returned the correct sentence, but its first request took 26.7 s, including 23.8 s of model load; the 5 s interactive deadline necessarily returned nothing. Ministral 3B loaded in 7.5 s and copied a prompt example instead of correcting the input. Chose not to make terminal-punctuation correction depend on Ollama, model warmth, or free regeneration.
+
+Auditioned a narrow inflection-variant probe which exposed lexicon-backed terminal `e`, `s`, and `x` forms. An isolated production-DML judgment over (`seul`, `seule`, `seuls`, `seules`) chose `seule` correctly, but live sentences disproved the slot-local premise: in `Il y a une seul erreur.`, the same mechanism could first choose `une` → `un`, making the locally coherent but globally wrong `un seul erreur` before it judged `seul`. A minimum-length guard only hid one manifestation; surface suffixes still carry no part-of-speech or agreement ownership, and independent left-to-right judgments cannot choose which of several disagreeing words is faulty.
+
+Replaced that premise rather than accumulate heuristics. At terminal punctuation, production now submits one indivisible closed choice: the literal whole sentence plus every admitted one-edit sentence, capped at twelve edits. One global verdict may KEEP, apply exactly one supplied edit, or abstain; the result of one correction can never become the input of another judgment. If the candidate set overflows or the judge lacks the whole-sentence capability, the sentence stays untouched — the old slot path remains only for explicit compatibility and offline callers. The deterministic `être + la` rule was lifted into the same one-edit contract, so short-context safety does not require reopening a cascade.
+
+Reintroduced only terminal-`e` pairs (`un/une`, `seul/seule`) as global candidate evidence, when both endpoints are primary-lexicon forms. The old `e/s/x` family stays rejected: a surface pair is not morphology, and no such candidate has an independent correction right. Verified-caret recovery receives the same production candidate transaction only after its exact rereads; it gains neither free generation nor a recovery-specific family.
+
+This changes judgment ownership and cuts multiple sequential submissions to one, but it does not make an already-running verdict survive an immediate Enter or Shift+Enter. Raw Input cannot retain the send gesture, and applying behind a moved caret needs a separately verified injection shape. That timing problem remains explicit rather than being confused with candidate judgment.
+
 ## 2026-07-28 — Packs and exclusions wired to the runtime; exclusion is subtraction, not demotion
 
 Shipped the runtime and UI side of the domain-pack model: the effective lexicon is merged at engine build (base + active packs, max wins, then the exclusion register subtracted), packs are inactive by default and activated per pack in settings, each pack shows its dilution figures, and the exclusion register is consultable and reversible there.
@@ -241,6 +255,14 @@ Engine: the internal ONNX runtime enters this chantier as its final phase — a 
 ## 2026-07-21 — UIA caret ranges cross editor boundaries
 
 Live probes in Codex and Anytype found a caret through TextPattern, but extending its degenerate range to the left returned at least 512 characters across the surrounding document rather than stopping at the composer or block boundary. Chose not to use that range to restore sentence context after pointer or navigation invalidation.
+
+## 2026-07-29 — Local boundaries make conservative caret recovery usable
+
+Revisited the 2026-07-21 rejection with a passive probe and a narrower claim. In Codex, two stable 1,024-character UIA reads still crossed the whole interface, but suffix extraction independently isolated `Il y a une seul erreur.` both after terminal punctuation plus whitespace and after a hard return. `document_start=False` confirmed that the read limit itself cannot be treated as a boundary. Decision: after a tracking discontinuity, terminal punctuation may trigger a verified caret-sentence recovery anchored only by document start, hard return, or terminal punctuation plus whitespace. The focused target and full read must match twice, and the exact recovered sentence is checked again after judgment before any bounded injection. Missing boundaries, selection, password uncertainty, target drift, or text drift abstain. Recovered text receives correction rights only; it does not become observed typing or learning evidence.
+
+## 2026-07-29 — Native sentence-judge teardown waits for inference ownership
+
+Adding a personal exclusion while a sentence verdict was in flight crashed the process in `OgaCreateModelFromConfig` with `0xc0000005`. The exclusion correctly changed the effective lexicon and rebuilt the autocorrect runtime; the fault was teardown: `BackgroundRerankLane.Dispose` stopped waiting after two seconds, then released the ONNX GenAI reranker even though its worker could still own a native inference call. A replacement DirectML session could consequently be created while the previous native model was still executing or being released. Decision: lane disposal waits unboundedly for its single worker to finish before disposing the reranker. Runtime rebuild already runs off the UI thread, and native inference is expected to terminate; preserving exclusive native-model ownership outranks an arbitrary shutdown timeout. A blocking-reranker regression test holds inference open and verifies that neither lane disposal nor reranker disposal can complete early.
 
 ## 2026-07-02 — Globish seed source chosen
 

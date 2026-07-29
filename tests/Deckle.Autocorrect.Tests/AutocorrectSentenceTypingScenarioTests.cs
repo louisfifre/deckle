@@ -349,7 +349,8 @@ public sealed class AutocorrectSentenceTypingScenarioTests
             french: french,
             english: english,
             reranker: reranker,
-            probe: policies.AmbiguityProbe);
+            probe: policies.AmbiguityProbe,
+            wholeSentenceProbe: policies.WholeSentenceProbe);
         harness.Settings.Apps["codex"] = true;
         harness.Prober.Surface = AutocorrectEngineHarness.Editable("codex");
         Assert.True(harness.Start());

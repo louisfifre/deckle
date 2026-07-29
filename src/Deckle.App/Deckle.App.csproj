@@ -97,11 +97,8 @@
     <ProjectReference Include="..\Deckle.Install\Deckle.Install.csproj" />
     <ProjectReference Include="..\Deckle.Input\Deckle.Input.csproj" />
     <ProjectReference Include="..\Deckle.Autocorrect\Deckle.Autocorrect.csproj" />
-    <!-- CamemBERT masked-LM reranker for the live contextual (la/là) stage; the
-         App composition root loads its ONNX model off-thread and wires it in. -->
-    <ProjectReference Include="..\Deckle.Autocorrect.Mlm\Deckle.Autocorrect.Mlm.csproj" />
-    <!-- ONNX Runtime GenAI sentence judge (Qwen3 on DirectML) — preferred over
-         CamemBERT for the sentence stage when its model directory is present. -->
+    <!-- ONNX Runtime GenAI sentence judge (Qwen3 on DirectML) — the only model
+         satisfying the production whole-sentence decision contract. -->
     <ProjectReference Include="..\Deckle.Autocorrect.Onnx\Deckle.Autocorrect.Onnx.csproj" />
     <ProjectReference Include="..\Deckle.Input.Trackpad\Deckle.Input.Trackpad.csproj" />
     <ProjectReference Include="..\Deckle.Lighting\Deckle.Lighting.csproj" />

@@ -7,6 +7,7 @@ internal enum ProbeMode
     Single,
     Benchmark,
     AutocorrectBenchmark,
+    CaretContext,
 }
 
 internal sealed class ProbeArguments
@@ -18,6 +19,8 @@ internal sealed class ProbeArguments
     public required IReadOnlyList<string> Candidates { get; init; }
     public bool ShowCases { get; private init; }
     public int Iterations { get; private init; }
+    public int DelaySeconds { get; private init; }
+    public int MaxCharacters { get; private init; }
 
     // The ONNX Runtime GenAI execution provider the judge loads onto: "dml" drives
     // the forced-decoding judge on the GPU (DirectML), "cpu" the built-in CPU EP.
@@ -35,7 +38,11 @@ internal sealed class ProbeArguments
         bool showCases = false;
         string provider = "dml";
         int iterations = 20;
+        int delaySeconds = 5;
+        int maxCharacters = 1024;
         bool iterationsSpecified = false;
+        bool delaySpecified = false;
+        bool maxCharactersSpecified = false;
         bool modeSelected = false;
 
         for (int i = 0; i < args.Length; i++)
@@ -62,6 +69,15 @@ internal sealed class ProbeArguments
                 continue;
             }
 
+            if (arg is "--caret-context")
+            {
+                if (modeSelected)
+                    return null;
+                mode = ProbeMode.CaretContext;
+                modeSelected = true;
+                continue;
+            }
+
             if (arg is "--iterations")
             {
                 if (++i >= args.Length
@@ -69,6 +85,26 @@ internal sealed class ProbeArguments
                     || iterations < 1)
                     return null;
                 iterationsSpecified = true;
+                continue;
+            }
+
+            if (arg is "--delay")
+            {
+                if (++i >= args.Length
+                    || !int.TryParse(args[i], out delaySeconds)
+                    || delaySeconds is < 1 or > 30)
+                    return null;
+                delaySpecified = true;
+                continue;
+            }
+
+            if (arg is "--max-chars")
+            {
+                if (++i >= args.Length
+                    || !int.TryParse(args[i], out maxCharacters)
+                    || maxCharacters is < 64 or > 4096)
+                    return null;
+                maxCharactersSpecified = true;
                 continue;
             }
 
@@ -129,6 +165,29 @@ internal sealed class ProbeArguments
 
         if (iterationsSpecified && mode != ProbeMode.AutocorrectBenchmark)
             return null;
+        if ((delaySpecified || maxCharactersSpecified) && mode != ProbeMode.CaretContext)
+            return null;
+
+        if (mode == ProbeMode.CaretContext)
+        {
+            if (models.Count > 0 || thresholds.Count > 0 || candidates.Count > 0
+                || showCases || margin != 0.0 || provider != "dml" || iterationsSpecified)
+                return null;
+
+            return new ProbeArguments
+            {
+                Mode = mode,
+                Models = Array.Empty<ModelSpec>(),
+                Margin = 0.0,
+                Thresholds = Array.Empty<double>(),
+                Candidates = Array.Empty<string>(),
+                ShowCases = false,
+                Provider = provider,
+                Iterations = iterations,
+                DelaySeconds = delaySeconds,
+                MaxCharacters = maxCharacters,
+            };
+        }
 
         if (mode == ProbeMode.AutocorrectBenchmark)
         {
@@ -146,6 +205,8 @@ internal sealed class ProbeArguments
                 ShowCases = false,
                 Provider = provider,
                 Iterations = iterations,
+                DelaySeconds = delaySeconds,
+                MaxCharacters = maxCharacters,
             };
         }
 
@@ -166,6 +227,8 @@ internal sealed class ProbeArguments
                 ShowCases = showCases,
                 Provider = provider,
                 Iterations = iterations,
+                DelaySeconds = delaySeconds,
+                MaxCharacters = maxCharacters,
             };
         }
 
@@ -184,6 +247,8 @@ internal sealed class ProbeArguments
             ShowCases = showCases,
             Provider = provider,
             Iterations = iterations,
+            DelaySeconds = delaySeconds,
+            MaxCharacters = maxCharacters,
         };
     }
 }
@@ -196,6 +261,7 @@ internal static class ProbeUsage
         Console.Error.WriteLine("  Deckle.Autocorrect.Probe --model <dir> [--margin <n>] [--provider <cpu|dml>] --candidate <text> --candidate <text> [...]");
         Console.Error.WriteLine("  Deckle.Autocorrect.Probe --benchmark [--model <label=dir>] [--threshold <n>] [--provider <cpu|dml>] [--show-cases]");
         Console.Error.WriteLine("  Deckle.Autocorrect.Probe --autocorrect-benchmark [--iterations <n>]");
+        Console.Error.WriteLine("  Deckle.Autocorrect.Probe --caret-context [--delay <seconds>] [--max-chars <64..4096>]");
         Console.Error.WriteLine();
         Console.Error.WriteLine(
             "--provider selects the ONNX Runtime GenAI execution provider (default dml = GPU/DirectML; cpu = built-in CPU EP).");

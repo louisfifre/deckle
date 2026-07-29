@@ -58,6 +58,59 @@ public sealed class OnnxSlotRerankerTests
     }
 
     [Fact]
+    public void WholeSentenceJudgmentChoosesOneEditAcrossDifferentSlots()
+    {
+        var sentence = new[] { "il", "y", "a", "une", "seul", "erreur" };
+        var edits = new[]
+        {
+            new SentenceEditCandidate(3, "un"),
+            new SentenceEditCandidate(4, "seule"),
+        };
+        var scorer = new FakeScorer(cands => new SentenceScoringOutcome(
+            Chosen: cands[2],
+            Scores: cands.Select((text, index) =>
+                new SentenceCandidateScore(text, -index, -index * 10, 8)).ToArray(),
+            Margin: 1.5,
+            Threshold: 1.0,
+            AbstainReason: null));
+        using var reranker = new OnnxSlotReranker(scorer, ownsScorer: false);
+
+        RerankOutcome outcome = reranker.RerankSentence(sentence, edits);
+
+        Assert.Equal(
+            new[]
+            {
+                "il y a une seul erreur",
+                "il y a un seul erreur",
+                "il y a une seule erreur",
+            },
+            scorer.Received);
+        Assert.Equal("seule", outcome.Chosen);
+        Assert.Equal(4, outcome.ChosenSlotIndex);
+    }
+
+    [Fact]
+    public void WholeSentenceLiteralWinnerProducesNoEdit()
+    {
+        var sentence = new[] { "il", "y", "a", "une", "seule", "erreur" };
+        var edits = new[] { new SentenceEditCandidate(4, "seul") };
+        var scorer = new FakeScorer(cands => new SentenceScoringOutcome(
+            Chosen: cands[0],
+            Scores: cands.Select(text =>
+                new SentenceCandidateScore(text, -1, -10, 8)).ToArray(),
+            Margin: 2.0,
+            Threshold: 1.0,
+            AbstainReason: null));
+        using var reranker = new OnnxSlotReranker(scorer, ownsScorer: false);
+
+        RerankOutcome outcome = reranker.RerankSentence(sentence, edits);
+
+        Assert.Null(outcome.Chosen);
+        Assert.Null(outcome.ChosenSlotIndex);
+        Assert.Null(outcome.AbstainReason);
+    }
+
+    [Fact]
     public void SurfacesTheJudgesAbstainReasonWhenItDeclines()
     {
         // Four word tokens clears the context floor so the judge is actually
