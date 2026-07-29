@@ -115,6 +115,10 @@ if ($Version -notmatch '^\d+\.\d+\.\d+$') {
     throw "Version '$Version' is not canonical MAJOR.MINOR.PATCH"
 }
 Step "Deckle v$Version"
+$tag       = "v$Version"
+$ZipName   = "Deckle-v$Version.zip"
+$ShaName   = "$ZipName.sha256"
+$SetupName = "Deckle-Setup-v$Version-win-x64.exe"
 
 # ── Resolve owner/repo from the git remote ───────────────────────────────────
 $OwnerRepo = '<owner>/deckle'
@@ -130,17 +134,19 @@ if ($LASTEXITCODE -eq 0 -and $remoteUrl) {
 if ($Publish) {
     $publishedTags = @(Get-PublishedReleaseTags -RepoRoot $RepoRoot)
     if (-not $publishedTags.Count) { throw 'release-history.json has no public release' }
-    if ($publishedTags -contains "v$Version") {
-        throw "v$Version is already recorded as a public release"
-    }
+    $releaseRecorded = $publishedTags -contains $tag
 
     Step 'Fetch and validate release source'
     & git -C $RepoRoot fetch origin main --tags --prune
     if ($LASTEXITCODE -ne 0) { throw "git fetch origin main --tags failed (code $LASTEXITCODE)" }
-    $source = Assert-DeckleReleaseSource `
-        -RepoRoot $RepoRoot `
-        -Version $Version `
-        -LatestPublishedTag $publishedTags[-1]
+    $source = if ($releaseRecorded) {
+        Assert-DeckleReleaseRepositorySource -RepoRoot $RepoRoot -AllowAhead
+    } else {
+        Assert-DeckleReleaseSource `
+            -RepoRoot $RepoRoot `
+            -Version $Version `
+            -LatestPublishedTag $publishedTags[-1]
+    }
     $OwnerRepo = $source.OwnerRepo
     Ok "clean main at $($source.HeadSha.Substring(0, 12)), synchronized with origin/main"
 
@@ -151,6 +157,83 @@ if ($Publish) {
         throw "GitHub repository preflight failed for $OwnerRepo"
     }
     Ok "GitHub access verified for $OwnerRepo"
+
+    # Reconcile before building. A previous run may have stopped after upload,
+    # tag publication, GitHub finalization, or local release recording. Remote
+    # artifacts are downloaded and verified so a retry never trusts metadata
+    # alone and never rebuilds or reuploads an existing release.
+    $remoteReleaseJson = (& gh release view $tag --repo $OwnerRepo --json isDraft,assets,tagName,targetCommitish 2>$null) -join "`n"
+    $remoteRelease = if ($LASTEXITCODE -eq 0) { $remoteReleaseJson | ConvertFrom-Json } else { $null }
+    $recoveryPlan = Get-DeckleReleaseRecoveryPlan -Recorded $releaseRecorded -Release $remoteRelease
+    if ($recoveryPlan -ceq 'Inconsistent') {
+        throw "$tag is recorded locally but no matching GitHub release exists"
+    }
+    if ($recoveryPlan -cne 'Build') {
+        Step "Reconcile existing GitHub release $tag"
+        $releaseHeadSha = (& git -C $RepoRoot rev-parse "$($remoteRelease.targetCommitish)^{commit}").Trim()
+        if ($LASTEXITCODE -ne 0) { throw "GitHub release target could not be resolved locally" }
+        & git -C $RepoRoot merge-base --is-ancestor $releaseHeadSha $source.HeadSha
+        if ($LASTEXITCODE -ne 0) {
+            throw "GitHub release target $releaseHeadSha is not an ancestor of current main $($source.HeadSha)"
+        }
+        Assert-DeckleReleaseAssets `
+            -Release $remoteRelease `
+            -Tag $tag `
+            -HeadSha $releaseHeadSha `
+            -ExpectedNames @($SetupName, $ZipName, $ShaName)
+
+        $recoveryDir = Join-Path ([IO.Path]::GetTempPath()) "deckle-release-recovery-$([guid]::NewGuid())"
+        try {
+            $null = New-Item -ItemType Directory -Path $recoveryDir
+            foreach ($assetName in @($SetupName, $ZipName, $ShaName)) {
+                & gh release download $tag --repo $OwnerRepo --dir $recoveryDir --pattern $assetName
+                if ($LASTEXITCODE -ne 0) { throw "GitHub asset download failed for $assetName" }
+            }
+            $recoveredZip = Join-Path $recoveryDir $ZipName
+            $recoveredSha = Join-Path $recoveryDir $ShaName
+            $recoveredSetup = Join-Path $recoveryDir $SetupName
+            Assert-DeckleReleaseArchive -ZipPath $recoveredZip
+            if (-not (Test-Path -LiteralPath $recoveredSetup -PathType Leaf) -or
+                (Get-Item -LiteralPath $recoveredSetup).Length -le 0) {
+                throw "Recovered installer is missing or empty: $SetupName"
+            }
+            $sidecar = (Get-Content -LiteralPath $recoveredSha -Raw).Trim()
+            $actualHash = (Get-FileHash -LiteralPath $recoveredZip -Algorithm SHA256).Hash.ToLowerInvariant()
+            if ($sidecar -cne "$actualHash *$ZipName") {
+                throw "Recovered payload checksum does not match $ShaName"
+            }
+            Ok 'Existing installer, payload archive, and checksum verified'
+        } finally {
+            if (Test-Path -LiteralPath $recoveryDir) {
+                Remove-Item -LiteralPath $recoveryDir -Recurse -Force
+            }
+        }
+
+        Publish-DeckleReleaseTag -RepoRoot $RepoRoot -Tag $tag -HeadSha $releaseHeadSha
+        if ($remoteRelease.isDraft) {
+            & gh release edit $tag --repo $OwnerRepo --draft=false
+            if ($LASTEXITCODE -ne 0) {
+                throw "GitHub draft finalization failed (code $LASTEXITCODE); the verified draft remains hidden"
+            }
+            Ok "GitHub release $tag made public"
+        }
+        & (Join-Path $ScriptDir 'record-release.ps1') -Target $RepoRoot -Version $Version -Push
+        if (-not $?) { throw 'record-release.ps1 failed after GitHub publication' }
+        Ok "$tag recorded locally and synchronized"
+        $Published = $true
+        Write-DeckleActionSummary `
+            -Workflow $Workflow `
+            -Result Success `
+            -Sentence "Deckle $tag was reconciled without rebuilding or reuploading artifacts." `
+            -Details ([ordered]@{
+                Worktree = $RepoRoot
+                Version = $tag
+                Published = 'Yes'
+                'Release URL' = "https://github.com/$OwnerRepo/releases/tag/$tag"
+            }) `
+            -Next @('No release repair remains.')
+        return
+    }
 
     # The app payload deliberately excludes whisper.cpp. Prove the separately
     # versioned bundle is publicly downloadable and byte-for-byte identical to
@@ -187,14 +270,11 @@ if (Test-Path $OutDir) {
 $null = New-Item -ItemType Directory -Path $OutDir
 
 $PublishDir = Join-Path $OutDir 'publish'
-$ZipName    = "Deckle-v$Version.zip"
 $ZipPath    = Join-Path $OutDir $ZipName
-$ShaName    = "$ZipName.sha256"
 $ShaPath    = Join-Path $OutDir $ShaName
 
 # Headline asset: the installer stub, named the OSS-classic way (version + arch)
 # so it reads as "the thing to download" among the release files.
-$SetupName       = "Deckle-Setup-v$Version-win-x64.exe"
 $SetupPath       = Join-Path $OutDir $SetupName
 $InstallerCsproj = Join-Path $RepoRoot 'src\Deckle.Installer\Deckle.Installer.csproj'
 $InstallerPubDir = Join-Path $OutDir 'installer'
@@ -374,10 +454,6 @@ if ($Publish) {
     Publish-DeckleReleaseTag -RepoRoot $RepoRoot -Tag $tag -HeadSha $headSha
     Ok "GitHub tag $tag published at release HEAD"
 
-    Step 'Freeze the public release into CHANGELOG.md'
-    & (Join-Path $ScriptDir 'record-release.ps1') -Target $RepoRoot -Version $Version -Push
-    if (-not $?) { throw 'record-release.ps1 failed' }
-
     Step 'Make the verified GitHub release public'
     $finalizeArgs = @('release', 'edit', $tag, '--repo', $OwnerRepo, '--draft=false')
     if ($Version -like '0.*') { $finalizeArgs += '--prerelease' }
@@ -385,6 +461,20 @@ if ($Publish) {
     if ($LASTEXITCODE -ne 0) {
         throw "GitHub draft finalization failed (code $LASTEXITCODE); the verified draft remains hidden"
     }
+    $publicReleaseJson = (& gh release view $tag --repo $OwnerRepo --json isDraft,assets,tagName,targetCommitish) -join "`n"
+    if ($LASTEXITCODE -ne 0) { throw "Published GitHub release $tag could not be read back" }
+    $publicRelease = $publicReleaseJson | ConvertFrom-Json
+    if ($publicRelease.isDraft) { throw "GitHub release $tag is still a draft after finalization" }
+    Assert-DeckleReleaseAssets `
+        -Release $publicRelease `
+        -Tag $tag `
+        -HeadSha $headSha `
+        -ExpectedNames @($SetupName, $ZipName, $ShaName) `
+        -ExpectedSizes $expectedAssets
+
+    Step 'Freeze the public release into CHANGELOG.md'
+    & (Join-Path $ScriptDir 'record-release.ps1') -Target $RepoRoot -Version $Version -Push
+    if (-not $?) { throw 'record-release.ps1 failed after GitHub publication' }
     $Published = $true
     Ok "Released as $tag"
 }

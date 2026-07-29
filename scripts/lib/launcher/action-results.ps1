@@ -8,7 +8,7 @@ function Get-DeckleActionLogLevel {
         -replace '(?i)\b0\s+warning(?:\(s\)|s)?\b', ''
     if ($meaningfulMessage -match '(?i)\b(error|failed|failure)\b') { return 'Error' }
     if ($meaningfulMessage -match '(?i)\bwarning\b') { return 'Warning' }
-    if ($Message -match '^\[(build|launch)\]') { return 'Step' }
+    if ($Message -match '^\[(build|launch|publish|release|setup|clean|stats)\]') { return 'Step' }
     if ($Message -match '^\[summary\]') { return 'Summary' }
     return 'Info'
 }
@@ -32,7 +32,7 @@ function ConvertTo-DeckleActionLogLines {
 function Get-DeckleActionResultTitle {
     param(
         [Parameter(Mandatory)][string]$Label,
-        [Parameter(Mandatory)][ValidateSet('Running', 'Succeeded', 'Failed')][string]$State,
+        [Parameter(Mandatory)][ValidateSet('Running', 'Succeeded', 'Failed', 'Partial', 'Skipped')][string]$State,
         [Parameter(Mandatory)][timespan]$Elapsed
     )
 
@@ -54,6 +54,7 @@ function Invoke-DeckleMenuAction {
     $refreshInterval = [timespan]::FromMilliseconds(100)
     $lastRefresh = [timespan]::Zero
     $succeeded = $true
+    $reportedResult = $null
 
     $view = New-GridStatusView `
         -Header $Header `
@@ -65,6 +66,12 @@ function Invoke-DeckleMenuAction {
 
     try {
         & $Action *>&1 | ForEach-Object {
+            $rawOutput = ([string]$_) -replace "$([char]27)\[[0-9;?]*[ -/]*[@-~]", ''
+            foreach ($rawLine in @($rawOutput -split "\r?\n")) {
+                if ($rawLine -match '^\s*Result\s*:\s*(Success|Failed|Partial|Skipped)\s*$') {
+                    $reportedResult = $Matches[1]
+                }
+            }
             foreach ($line in @(ConvertTo-DeckleActionLogLines -InputObject $_ -Source $Source)) {
                 $lines.Add($line)
             }
@@ -92,9 +99,11 @@ function Invoke-DeckleMenuAction {
         $lines.Add(('{0}  Info     {1,-8}  The action produced no console output.' -f (Get-Date).ToString('HH:mm:ss'), $Source))
     }
 
-    $state = if ($succeeded) { 'Succeeded' } else { 'Failed' }
+    $result = if (-not $succeeded) { 'Failed' } elseif ($reportedResult) { $reportedResult } else { 'Success' }
+    $state = if ($result -ceq 'Success') { 'Succeeded' } else { $result }
     return [pscustomobject]@{
-        Succeeded = $succeeded
+        Result    = $result
+        Succeeded = $result -ceq 'Success'
         Title     = Get-DeckleActionResultTitle -Label $Label -State $state -Elapsed $timer.Elapsed
         Lines     = @($lines)
     }

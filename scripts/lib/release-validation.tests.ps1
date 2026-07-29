@@ -66,8 +66,29 @@ try {
     }
     Assert-DeckleReleaseDraft -Release $draft -Tag 'v0.13.10' -HeadSha $secondHead -ExpectedAssets $expectedAssets
 
+    Assert-DeckleReleaseAssets `
+        -Release $draft `
+        -Tag 'v0.13.10' `
+        -HeadSha $secondHead `
+        -ExpectedNames @($expectedAssets.Keys)
+
     $publishedRelease = $draft.PSObject.Copy()
     $publishedRelease.isDraft = $false
+    $plans = @(
+        @{ Recorded = $false; Release = $null;             Expected = 'Build' }
+        @{ Recorded = $true;  Release = $null;             Expected = 'Inconsistent' }
+        @{ Recorded = $false; Release = $draft;            Expected = 'ResumeDraft' }
+        @{ Recorded = $true;  Release = $draft;            Expected = 'ResumeDraft' }
+        @{ Recorded = $false; Release = $publishedRelease; Expected = 'RecordPublic' }
+        @{ Recorded = $true;  Release = $publishedRelease; Expected = 'Complete' }
+    )
+    foreach ($plan in $plans) {
+        $actual = Get-DeckleReleaseRecoveryPlan -Recorded $plan.Recorded -Release $plan.Release
+        if ($actual -cne $plan.Expected) {
+            throw "Recovery plan was $actual instead of $($plan.Expected)"
+        }
+    }
+
     Assert-Throws {
         Assert-DeckleReleaseDraft -Release $publishedRelease -Tag 'v0.13.10' -HeadSha $secondHead -ExpectedAssets $expectedAssets
     } 'not a resumable draft'
@@ -80,7 +101,7 @@ try {
     $wrongAssets['Deckle-v0.13.10.zip'] = 201
     Assert-Throws {
         Assert-DeckleReleaseDraft -Release $draft -Tag 'v0.13.10' -HeadSha $secondHead -ExpectedAssets $wrongAssets
-    } 'missing or has the wrong size'
+    } 'has the wrong size'
 
     # The source validator intentionally requires a GitHub remote. Rewrite only
     # the configured URL after the local push; no network operation follows.

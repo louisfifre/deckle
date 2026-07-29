@@ -50,35 +50,8 @@ function Assert-DeckleReleaseSource {
         throw "Version v$Version must be newer than $LatestPublishedTag"
     }
 
-    $dirty = @(Invoke-ReleaseGit -RepoRoot $RepoRoot -Arguments @(
-        'status', '--porcelain=v1', '--untracked-files=all'))
-    if ($dirty.Count) {
-        throw "Release source is not clean; commit or remove every tracked and untracked change:`n$($dirty -join "`n")"
-    }
-
-    $branch = (@(Invoke-ReleaseGit -RepoRoot $RepoRoot -Arguments @('branch', '--show-current')))[0].Trim()
-    if ($branch -cne 'main') {
-        throw "App releases must be cut from main, not '$branch'"
-    }
-
-    $upstream = (@(Invoke-ReleaseGit -RepoRoot $RepoRoot -Arguments @(
-        'rev-parse', '--abbrev-ref', '--symbolic-full-name', '@{upstream}')))[0].Trim()
-    if ($upstream -cne 'origin/main') {
-        throw "main must track origin/main before release (found '$upstream')"
-    }
-
-    $headSha = (@(Invoke-ReleaseGit -RepoRoot $RepoRoot -Arguments @('rev-parse', 'HEAD')))[0].Trim()
-    $upstreamSha = (@(Invoke-ReleaseGit -RepoRoot $RepoRoot -Arguments @('rev-parse', '@{upstream}')))[0].Trim()
-    if ($headSha -cne $upstreamSha) {
-        throw "HEAD $headSha is not synchronized with origin/main $upstreamSha"
-    }
-
-    $remoteUrl = (@(Invoke-ReleaseGit -RepoRoot $RepoRoot -Arguments @(
-        'remote', 'get-url', 'origin')))[0].Trim()
-    if ($remoteUrl -notmatch 'github\.com[:/](?<repo>[^/]+/[^/.]+)(?:\.git)?$') {
-        throw "origin is not a GitHub repository: $remoteUrl"
-    }
-    $ownerRepo = $Matches.repo
+    $source = Assert-DeckleReleaseRepositorySource -RepoRoot $RepoRoot
+    $headSha = $source.HeadSha
 
     $tag = "v$Version"
     $tagSha = @(& git -C $RepoRoot rev-parse --verify --quiet "$tag^{commit}" 2>$null)
@@ -92,8 +65,105 @@ function Assert-DeckleReleaseSource {
 
     return [pscustomobject]@{
         HeadSha   = $headSha
-        OwnerRepo = $ownerRepo
+        OwnerRepo = $source.OwnerRepo
         Tag       = $tag
+    }
+}
+
+function Assert-DeckleReleaseRepositorySource {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory)][string]$RepoRoot,
+        [switch]$AllowAhead
+    )
+
+    $dirty = @(Invoke-ReleaseGit -RepoRoot $RepoRoot -Arguments @(
+        'status', '--porcelain=v1', '--untracked-files=all'))
+    if ($dirty.Count) {
+        throw "Release source is not clean; commit or remove every tracked and untracked change:`n$($dirty -join "`n")"
+    }
+
+    $branch = (@(Invoke-ReleaseGit -RepoRoot $RepoRoot -Arguments @('branch', '--show-current')))[0].Trim()
+    if ($branch -cne 'main') {
+        throw "Releases must be cut from main, not '$branch'"
+    }
+
+    $upstream = (@(Invoke-ReleaseGit -RepoRoot $RepoRoot -Arguments @(
+        'rev-parse', '--abbrev-ref', '--symbolic-full-name', '@{upstream}')))[0].Trim()
+    if ($upstream -cne 'origin/main') {
+        throw "main must track origin/main before release (found '$upstream')"
+    }
+
+    $headSha = (@(Invoke-ReleaseGit -RepoRoot $RepoRoot -Arguments @('rev-parse', 'HEAD')))[0].Trim()
+    $upstreamSha = (@(Invoke-ReleaseGit -RepoRoot $RepoRoot -Arguments @('rev-parse', '@{upstream}')))[0].Trim()
+    if ($headSha -cne $upstreamSha) {
+        if (-not $AllowAhead) {
+            throw "HEAD $headSha is not synchronized with origin/main $upstreamSha"
+        }
+        & git -C $RepoRoot merge-base --is-ancestor $upstreamSha $headSha
+        if ($LASTEXITCODE -ne 0) {
+            throw "HEAD $headSha has diverged from origin/main $upstreamSha"
+        }
+    }
+
+    $remoteUrl = (@(Invoke-ReleaseGit -RepoRoot $RepoRoot -Arguments @(
+        'remote', 'get-url', 'origin')))[0].Trim()
+    if ($remoteUrl -notmatch 'github\.com[:/](?<repo>[^/]+/[^/.]+)(?:\.git)?$') {
+        throw "origin is not a GitHub repository: $remoteUrl"
+    }
+    $ownerRepo = $Matches.repo
+
+    return [pscustomobject]@{
+        HeadSha   = $headSha
+        OwnerRepo = $ownerRepo
+    }
+}
+
+function Get-DeckleReleaseRecoveryPlan {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory)][bool]$Recorded,
+        [AllowNull()][psobject]$Release
+    )
+
+    if ($null -eq $Release) {
+        if ($Recorded) { return 'Inconsistent' }
+        return 'Build'
+    }
+    if ($Release.isDraft) { return 'ResumeDraft' }
+    if ($Recorded) { return 'Complete' }
+    return 'RecordPublic'
+}
+
+function Assert-DeckleReleaseAssets {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory)][psobject]$Release,
+        [Parameter(Mandatory)][string]$Tag,
+        [Parameter(Mandatory)][string]$HeadSha,
+        [Parameter(Mandatory)][string[]]$ExpectedNames,
+        [System.Collections.IDictionary]$ExpectedSizes,
+        [switch]$RequireDraft
+    )
+
+    if ($RequireDraft -and -not $Release.isDraft) {
+        throw "GitHub release $Tag already exists and is not a resumable draft"
+    }
+    if ($Release.tagName -cne $Tag -or $Release.targetCommitish -cne $HeadSha) {
+        throw "GitHub release $Tag does not target release HEAD $HeadSha"
+    }
+    if (@($Release.assets).Count -ne $ExpectedNames.Count) {
+        throw "GitHub release $Tag contains missing or unexpected assets"
+    }
+    foreach ($name in $ExpectedNames) {
+        $matches = @($Release.assets | Where-Object { $_.name -ceq $name })
+        if ($matches.Count -ne 1 -or [long]$matches[0].size -le 0) {
+            throw "GitHub release asset $name is missing or empty"
+        }
+        if ($ExpectedSizes -and $ExpectedSizes.Contains($name) -and
+            [long]$matches[0].size -ne [long]$ExpectedSizes[$name]) {
+            throw "GitHub release asset $name has the wrong size"
+        }
     }
 }
 
@@ -170,28 +240,19 @@ function Assert-DeckleReleaseDraft {
         [Parameter(Mandatory)][System.Collections.IDictionary]$ExpectedAssets
     )
 
-    if (-not $Release.isDraft) {
-        throw "GitHub release $Tag already exists and is not a resumable draft"
-    }
-    if ($Release.tagName -cne $Tag -or $Release.targetCommitish -cne $HeadSha) {
-        throw "GitHub draft $Tag does not target release HEAD $HeadSha"
-    }
-
-    foreach ($expected in $ExpectedAssets.GetEnumerator()) {
-        $matches = @($Release.assets | Where-Object { $_.name -ceq $expected.Key })
-        if ($matches.Count -ne 1 -or [long]$matches[0].size -ne [long]$expected.Value) {
-            throw "GitHub draft asset $($expected.Key) is missing or has the wrong size"
-        }
-    }
-    if (@($Release.assets).Count -ne $ExpectedAssets.Count) {
-        throw "GitHub draft $Tag contains unexpected assets"
-    }
+    Assert-DeckleReleaseAssets `
+        -Release $Release `
+        -Tag $Tag `
+        -HeadSha $HeadSha `
+        -ExpectedNames @($ExpectedAssets.Keys) `
+        -ExpectedSizes $ExpectedAssets `
+        -RequireDraft
 }
 
 function Assert-DeckleReleaseArchive {
     [CmdletBinding()]
     param(
-        [Parameter(Mandatory)][string]$PublishDir,
+        [string]$PublishDir,
         [Parameter(Mandatory)][string]$ZipPath
     )
 
@@ -222,13 +283,15 @@ function Assert-DeckleReleaseArchive {
             }
         }
 
-        $publishedFileCount = @(Get-ChildItem -LiteralPath $PublishDir -Recurse -File).Count
-        if ($fileCount -ne $publishedFileCount) {
-            throw "Release archive contains $fileCount files; publish folder contains $publishedFileCount"
+        if ($PublishDir) {
+            $publishedFileCount = @(Get-ChildItem -LiteralPath $PublishDir -Recurse -File).Count
+            if ($fileCount -ne $publishedFileCount) {
+                throw "Release archive contains $fileCount files; publish folder contains $publishedFileCount"
+            }
         }
     } finally {
         $archive.Dispose()
     }
 }
 
-Export-ModuleMember -Function Assert-DeckleReleaseSource, Assert-DeckleReleaseArchive, Assert-DeckleReleaseDraft, Publish-DeckleReleaseTag
+Export-ModuleMember -Function Assert-DeckleReleaseRepositorySource, Assert-DeckleReleaseSource, Get-DeckleReleaseRecoveryPlan, Assert-DeckleReleaseAssets, Assert-DeckleReleaseArchive, Assert-DeckleReleaseDraft, Publish-DeckleReleaseTag

@@ -56,10 +56,13 @@ function Read-YesNo {
 }
 
 function Read-Optional {
-    param([Parameter(Mandatory)][string]$Question)
-    $answer = Read-Host $Question
-    if ([string]::IsNullOrWhiteSpace($answer)) { return $null }
-    return $answer.Trim()
+    param(
+        [Parameter(Mandatory)][string]$Question,
+        [string]$Header = 'Deckle   -   Type a value   Enter confirm   Esc back',
+        [string]$Label = 'Value',
+        [string[]]$Lines = @()
+    )
+    return Read-MenuText -Header $Header -Title $Question -Label $Label -Lines $Lines -BannerStyle Compact
 }
 
 function Get-CsprojVersion {

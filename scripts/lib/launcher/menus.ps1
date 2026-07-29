@@ -9,16 +9,12 @@ function Show-Submenu {
         [ValidateSet('Full', 'Compact')]
         [string]$BannerStyle,
         [string]$ResultTitle,
-        [string[]]$ResultLines = @()
+        [string[]]$ResultLines = @(),
+        [switch]$PreparedRows
     )
 
     if (-not $BannerStyle) { $BannerStyle = Get-DeckleMenuBannerStyle }
-    $wrappedRows = @(ConvertTo-MenuRows -Sections $Rows -Columns 2)
-
-    $withBack = @(
-        @{ Cells = @( @{ Label = '< Back'; Value = '__back__'; Role = 'back' } ) }
-        @{ Blank = $true }
-    ) + @($wrappedRows)
+    $withBack = if ($PreparedRows) { @($Rows) } else { @(Get-DeckleSubmenuRows -Sections $Rows) }
 
     # Arrive on the first action: '< Back' keeps its top spot (one ↑ away) but
     # never holds the entry selection.
@@ -27,10 +23,18 @@ function Show-Submenu {
     return $v
 }
 
+function Get-DeckleSubmenuRows {
+    param([Parameter(Mandatory)][object[]]$Sections)
+    return @(
+        @{ Cells = @( @{ Label = '< Back'; Value = '__back__'; Role = 'back' } ) }
+        @{ Blank = $true }
+    ) + @(ConvertTo-MenuRows -Sections $Sections -Columns 2)
+}
+
 . (Join-Path $PSScriptRoot 'statistics-menus.ps1')
 
 function Show-ProjectMenu {
-    $v = Show-Submenu -Header 'Deckle > Project   -   ↑↓←→ move   Enter run   Ctrl+C quit' -Rows @(
+    $sections = @(
         @{ Prefix = 'Docs'; Items = @(
             @{ Label = 'Update README pulse'; Value = 'readme-stats' }
             @{ Label = 'Update changelog';    Value = 'changelog' }
@@ -39,31 +43,60 @@ function Show-ProjectMenu {
             @{ Label = 'Record version'; Value = 'record-version' }
         ) }
     )
-    switch ($v) {
-        'readme-stats'   { Invoke-WorktreeScript -Script 'update-readme-stats.ps1' }
-        'changelog'      { Invoke-WorktreeScript -Script 'changelog.ps1' }
-        'record-version' { Invoke-RecordVersion }
+    $menuRows = @(Get-DeckleSubmenuRows -Sections $sections)
+    $resultTitle = 'Results'
+    $resultLines = @('Select a project action.')
+    while ($true) {
+        $v = Show-Submenu -Header 'Deckle > Project   -   ↑↓←→ move   Enter run   Ctrl+C quit' -Rows $menuRows -PreparedRows -ResultTitle $resultTitle -ResultLines $resultLines
+        if ($null -eq $v) { return }
+        $result = switch ($v) {
+            'readme-stats'   { Invoke-WorktreeScript -Script 'update-readme-stats.ps1' -Label 'Update README pulse' -Source Project -MenuRows $menuRows }
+            'changelog'      { Invoke-WorktreeScript -Script 'changelog.ps1' -Label 'Update changelog' -Source Project -MenuRows $menuRows }
+            'record-version' { Invoke-RecordVersion -MenuRows $menuRows }
+        }
+        if ($null -ne $result) { $resultTitle = $result.Title; $resultLines = @($result.Lines) }
     }
 }
 
 function Show-ReleaseMenu {
-    $v = Show-Submenu -Header 'Deckle > Release   -   ↑↓←→ move   Enter run   Ctrl+C quit' -Rows @(
+    $sections = @(
         @{ Prefix = 'Publish'; Items = @(
-            @{ Label = 'Publish app release'; Value = 'publish' }
+            @{ Label = 'App release';    Value = 'publish-app' }
+            @{ Label = 'Native runtime'; Value = 'publish-native' }
         ) }
         @{ Prefix = 'Prepare'; Items = @(
-            @{ Label = 'Prepare app artifacts';  Value = 'artifacts' }
-            @{ Label = 'Prepare native runtime'; Value = 'native' }
+            @{ Label = 'App artifacts';  Value = 'prepare-app' }
+            @{ Label = 'Native runtime'; Value = 'prepare-native' }
         ) }
     )
-    switch ($v) {
-        'publish'   { Invoke-PublishRelease }
-        'artifacts' { Invoke-PrepareArtifacts }
-        'native'    { Invoke-NativeRuntime }
+    $menuRows = @(Get-DeckleSubmenuRows -Sections $sections)
+    $resultTitle = 'Results'
+    $resultLines = @('Publish and prepare are independent for app and native runtime.')
+    while ($true) {
+        $v = Show-Submenu -Header 'Deckle > Release   -   ↑↓←→ move   Enter run   Ctrl+C quit' -Rows $menuRows -PreparedRows -ResultTitle $resultTitle -ResultLines $resultLines
+        if ($null -eq $v) { return }
+        $result = switch ($v) {
+            'publish-app'    { Invoke-PublishRelease -MenuRows $menuRows }
+            'publish-native' { Invoke-NativeRuntime -MenuRows $menuRows -Publish }
+            'prepare-app'    { Invoke-PrepareArtifacts -MenuRows $menuRows }
+            'prepare-native' { Invoke-NativeRuntime -MenuRows $menuRows }
+        }
+        if ($null -ne $result) { $resultTitle = $result.Title; $resultLines = @($result.Lines) }
     }
 }
 
 function Show-MaintenanceMenu {
+    $sections = @(
+        @{ Prefix = 'Statistics'; Items = @(
+            @{ Label = 'Repository statistics'; Value = 'stats' }
+            @{ Label = 'Context statistics';    Value = 'context' }
+        ) }
+        @{ Prefix = 'Cleanup'; Items = @(
+            @{ Label = 'Clean build outputs';     Value = 'clean' }
+            @{ Label = 'Stop .NET build servers'; Value = 'build-servers' }
+        ) }
+    )
+    $menuRows = @(Get-DeckleSubmenuRows -Sections $sections)
     $resultTitle = 'Results'
     $resultLines = @('Select a statistics action to inspect this worktree.')
     while ($true) {
@@ -71,23 +104,20 @@ function Show-MaintenanceMenu {
             -Header 'Deckle > Maintenance   -   ↑↓←→ move   Enter run   Ctrl+C quit' `
             -Footer 'Arrows move   Enter runs   Wheel/PgUp/PgDn pages   Esc goes back' `
             -BannerStyle (Get-DeckleMenuBannerStyle) `
-            -Rows @(
-                @{ Prefix = 'Statistics'; Items = @(
-                    @{ Label = 'Repository statistics'; Value = 'stats' }
-                    @{ Label = 'Context statistics';    Value = 'context' }
-                ) }
-                @{ Prefix = 'Cleanup'; Items = @(
-                    @{ Label = 'Clean build outputs';     Value = 'clean' }
-                    @{ Label = 'Stop .NET build servers'; Value = 'build-servers' }
-                ) }
-            ) `
+            -Rows $menuRows -PreparedRows `
             -ResultTitle $resultTitle `
             -ResultLines $resultLines
 
         if ($null -eq $v) { return }
         switch ($v) {
-            'clean'         { Invoke-CleanBuildOutputs; return }
-            'build-servers' { Invoke-StopBuildServers; return }
+            'clean' {
+                $result = Invoke-CleanBuildOutputs -MenuRows $menuRows
+                if ($null -ne $result) { $resultTitle = $result.Title; $resultLines = @($result.Lines) }
+            }
+            'build-servers' {
+                $result = Invoke-StopBuildServers -MenuRows $menuRows
+                if ($null -ne $result) { $resultTitle = $result.Title; $resultLines = @($result.Lines) }
+            }
             'stats' {
                 $scan = Invoke-MaintenanceScanFlow -Kind Repository
                 if ($null -eq $scan) { continue }
@@ -105,7 +135,7 @@ function Show-MaintenanceMenu {
 }
 
 function Show-SetupMenu {
-    $v = Show-Submenu -Header 'Deckle > Setup   -   ↑↓←→ move   Enter run   Ctrl+C quit' -Rows @(
+    $sections = @(
         @{ Prefix = 'Machine'; Items = @(
             @{ Label = 'Bootstrap dev environment'; Value = 'bootstrap' }
             @{ Label = 'Set up runtime assets';     Value = 'assets'    }
@@ -114,9 +144,20 @@ function Show-SetupMenu {
             @{ Label = 'Install git hooks'; Value = 'hooks' }
         ) }
     )
-    switch ($v) {
-        'bootstrap' { Invoke-BootstrapDev }
-        'assets'    { Invoke-SetupAssets }
-        'hooks'     { Clear-DeckleMenuScreen; Begin-DeckleAction; & (Join-Path $LibDir 'install-hooks.ps1') }
+    $menuRows = @(Get-DeckleSubmenuRows -Sections $sections)
+    $resultTitle = 'Results'
+    $resultLines = @('Select a setup action.')
+    while ($true) {
+        $v = Show-Submenu -Header 'Deckle > Setup   -   ↑↓←→ move   Enter run   Ctrl+C quit' -Rows $menuRows -PreparedRows -ResultTitle $resultTitle -ResultLines $resultLines
+        if ($null -eq $v) { return }
+        $result = switch ($v) {
+            'bootstrap' { Invoke-BootstrapDev -MenuRows $menuRows }
+            'assets'    { Invoke-SetupAssets -MenuRows $menuRows }
+            'hooks' {
+                $scriptPath = Join-Path $LibDir 'install-hooks.ps1'
+                Invoke-DeckleMenuAction -Header 'Deckle > Setup > Git hooks' -Label 'Install git hooks' -Source Setup -MenuRows $menuRows -Action { & $scriptPath }
+            }
+        }
+        if ($null -ne $result) { $resultTitle = $result.Title; $resultLines = @($result.Lines) }
     }
 }
