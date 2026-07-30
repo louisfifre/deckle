@@ -16,6 +16,7 @@ return parsed.Mode switch
     ProbeMode.AnticipationLead => AnticipationLeadOracleCommand.Run(parsed),
     ProbeMode.SentenceProfile => SentenceProfileCommand.Run(parsed),
     ProbeMode.SentenceCalibration => SentenceCalibrationCommand.Run(parsed),
+    ProbeMode.SentenceCanonicalLatency => SentenceCanonicalLatencyCommand.Run(parsed),
     ProbeMode.CaretContext => CaretContextProbeCommand.Run(parsed),
     _ => 2,
 };
