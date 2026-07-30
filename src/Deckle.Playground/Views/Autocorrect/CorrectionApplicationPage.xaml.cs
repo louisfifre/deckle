@@ -274,7 +274,7 @@ public sealed partial class CorrectionApplicationPage : Page
     {
         var export = new
         {
-            schema = "deckle.acx0021.phase_a.evidence.v1",
+            schema = "deckle.acx0021.phase_a.evidence.v2",
             privacy = "Synthetic fixtures; content-free; timing and cadence coarsened; selection endpoints omitted.",
             claim_boundary = "Owned WinUI RichEditBox phase A only. No external application, UIA, production, end-to-end, field-quality, model, or GPU claim.",
             attempts = _attempts.Select(attempt => new
@@ -298,6 +298,9 @@ public sealed partial class CorrectionApplicationPage : Page
                 text_change_event_bucket = CorrectionEvidencePrivacy.CountBucket(
                     attempt.TextChangeEvents),
                 attempt.EditLengthDelta,
+                history_clean_after_load = attempt.HistoryCleanAfterLoad,
+                can_undo_before_write = attempt.CanUndoBeforeWrite,
+                can_redo_before_write = attempt.CanRedoBeforeWrite,
                 outcome = attempt.Outcome.ToString(),
                 reason = attempt.Reason.ToString(),
                 attempt.Gates,
@@ -308,6 +311,36 @@ public sealed partial class CorrectionApplicationPage : Page
                 attempt.ExactRedoText,
                 attempt.ExactRedoSelection,
                 attempt.FocusPostcondition,
+                applied_history = attempt.AppliedObservation is { } applied
+                    ? new
+                    {
+                        body_identity = applied.BodyIdentity.ToString(),
+                        selection_identity = applied.SelectionIdentity.ToString(),
+                        expected_options_difference = applied.ExpectedOptionsDifference,
+                        can_undo = applied.CanUndo,
+                        can_redo = applied.CanRedo,
+                    }
+                    : null,
+                undo_history = attempt.UndoObservation is { } undo
+                    ? new
+                    {
+                        body_identity = undo.BodyIdentity.ToString(),
+                        selection_identity = undo.SelectionIdentity.ToString(),
+                        expected_options_difference = undo.ExpectedOptionsDifference,
+                        can_undo = undo.CanUndo,
+                        can_redo = undo.CanRedo,
+                    }
+                    : null,
+                redo_history = attempt.RedoObservation is { } redo
+                    ? new
+                    {
+                        body_identity = redo.BodyIdentity.ToString(),
+                        selection_identity = redo.SelectionIdentity.ToString(),
+                        expected_options_difference = redo.ExpectedOptionsDifference,
+                        can_undo = redo.CanUndo,
+                        can_redo = redo.CanRedo,
+                    }
+                    : null,
             }),
         };
         string json = JsonSerializer.Serialize(
@@ -618,6 +651,7 @@ public sealed partial class CorrectionApplicationPage : Page
             AfterSelectionStart: _postSelection?.Start,
             AfterSelectionEnd: _postSelection?.End,
             EditLengthDelta: _fixture.Edit.LengthDelta,
+            HistoryCleanAfterLoad: _surface.LastResetHistoryWasClean,
             Outcome: outcome,
             Reason: reason,
             Gates: gates,
@@ -627,6 +661,11 @@ public sealed partial class CorrectionApplicationPage : Page
             ExactUndoSelection: _executionEvidence.ExactUndoSelection,
             ExactRedoText: _executionEvidence.ExactRedoText,
             ExactRedoSelection: _executionEvidence.ExactRedoSelection,
+            CanUndoBeforeWrite: _executionEvidence.CanUndoBeforeWrite,
+            CanRedoBeforeWrite: _executionEvidence.CanRedoBeforeWrite,
+            AppliedObservation: _executionEvidence.AppliedObservation,
+            UndoObservation: _executionEvidence.UndoObservation,
+            RedoObservation: _executionEvidence.RedoObservation,
             FocusPostcondition: outcome == CorrectionApplicationOutcome.Applied
                 ? true
                 : reason == CorrectionApplicationReason.FocusPostcondition
@@ -740,6 +779,7 @@ public sealed partial class CorrectionApplicationPage : Page
         int? AfterSelectionStart,
         int? AfterSelectionEnd,
         int EditLengthDelta,
+        bool HistoryCleanAfterLoad,
         CorrectionApplicationOutcome Outcome,
         CorrectionApplicationReason Reason,
         AttemptGateEvidence Gates,
@@ -749,6 +789,11 @@ public sealed partial class CorrectionApplicationPage : Page
         bool? ExactUndoSelection,
         bool? ExactRedoText,
         bool? ExactRedoSelection,
+        bool? CanUndoBeforeWrite,
+        bool? CanRedoBeforeWrite,
+        CorrectionApplicationHistoryObservation? AppliedObservation,
+        CorrectionApplicationHistoryObservation? UndoObservation,
+        CorrectionApplicationHistoryObservation? RedoObservation,
         bool? FocusPostcondition)
     {
         public override string ToString()
