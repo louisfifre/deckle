@@ -123,6 +123,54 @@ public sealed partial class OnnxSentenceScorer
             preparation.FailureReason);
     }
 
+    internal SentenceBatchTokenizationInspection InspectBatchTokenizationExperimental(
+        IReadOnlyList<string> candidates)
+    {
+        BatchInputPreparation preparation = PrepareBatchInput(candidates);
+        if (!preparation.TechnicallyValid)
+            return SentenceBatchTokenizationInspection.Failed(
+                preparation.FailureStage!,
+                preparation.FailureReason!);
+
+        int[] rawPromptTokens = Encode(preparation.Prompt!);
+        using Sequences batch = _tokenizer.EncodeBatch(
+            [preparation.Prompt!, preparation.Prompt!]);
+        if (batch.NumSequences != 2)
+            return SentenceBatchTokenizationInspection.Failed(
+                "tokenization",
+                "batch_sequence_count");
+
+        int[] first = batch[0].ToArray();
+        int[] second = batch[1].ToArray();
+        int[] preparedPromptTokens = preparation.PromptTokens;
+        int[] normalizedRaw = AddBosIfNeeded(rawPromptTokens);
+        int[]? prependedBatch = _bosTokenId is int bosTokenId
+            ? PrependToken(first, bosTokenId)
+            : null;
+
+        return new SentenceBatchTokenizationInspection(
+            true,
+            _bosTokenId,
+            rawPromptTokens.Length,
+            preparedPromptTokens.Length,
+            [first.Length, second.Length],
+            first.SequenceEqual(second),
+            first.SequenceEqual(rawPromptTokens)
+                && second.SequenceEqual(rawPromptTokens),
+            first.SequenceEqual(preparedPromptTokens)
+                && second.SequenceEqual(preparedPromptTokens),
+            normalizedRaw.SequenceEqual(preparedPromptTokens),
+            prependedBatch is not null
+                && prependedBatch.SequenceEqual(preparedPromptTokens),
+            FirstMismatch(first, rawPromptTokens),
+            FirstMismatch(first, preparedPromptTokens),
+            prependedBatch is null
+                ? null
+                : FirstMismatch(prependedBatch, preparedPromptTokens),
+            null,
+            null);
+    }
+
     private BatchInputPreparation PrepareBatchInput(
         IReadOnlyList<string> candidates)
     {
@@ -201,6 +249,29 @@ public sealed partial class OnnxSentenceScorer
         for (int index = 0; index < completionEndExclusive; index++)
             input[promptTokens.Count + index] = completionTokens[index];
         return input;
+    }
+
+    internal static int[] PrependToken(IReadOnlyList<int> tokens, int token)
+    {
+        var result = new int[tokens.Count + 1];
+        result[0] = token;
+        for (int index = 0; index < tokens.Count; index++)
+            result[index + 1] = tokens[index];
+        return result;
+    }
+
+    internal static int? FirstMismatch(
+        IReadOnlyList<int> left,
+        IReadOnlyList<int> right)
+    {
+        int shared = Math.Min(left.Count, right.Count);
+        for (int index = 0; index < shared; index++)
+        {
+            if (left[index] != right[index])
+                return index;
+        }
+
+        return left.Count == right.Count ? null : shared;
     }
 
     internal static int BatchLogitsPosition(
@@ -300,3 +371,40 @@ internal sealed record SentenceBatchInputGeometry(
     IReadOnlyList<int> ScoredTokenCounts,
     string? FailureStage,
     string? FailureReason);
+
+internal sealed record SentenceBatchTokenizationInspection(
+    bool TechnicallyValid,
+    int? BosTokenId,
+    int RawPromptTokenCount,
+    int PreparedPromptTokenCount,
+    IReadOnlyList<int> BatchPromptTokenCounts,
+    bool BatchEntriesIdentical,
+    bool BatchMatchesRaw,
+    bool BatchMatchesPrepared,
+    bool NormalizedRawMatchesPrepared,
+    bool PrependedBosBatchMatchesPrepared,
+    int? FirstBatchRawMismatch,
+    int? FirstBatchPreparedMismatch,
+    int? FirstPrependedPreparedMismatch,
+    string? FailureStage,
+    string? FailureReason)
+{
+    public static SentenceBatchTokenizationInspection Failed(
+        string stage,
+        string reason) => new(
+            false,
+            null,
+            0,
+            0,
+            Array.Empty<int>(),
+            false,
+            false,
+            false,
+            false,
+            false,
+            null,
+            null,
+            null,
+            stage,
+            reason);
+}

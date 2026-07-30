@@ -21,6 +21,18 @@ public sealed class SentenceBatchExperimentTests
     }
 
     [Fact]
+    public void ParsesTheBatchTokenizationDiagnosticMode()
+    {
+        ProbeArguments? parsed = ProbeArguments.Parse(
+            ["--sentence-batch-tokenization", "--provider", "dml"]);
+
+        Assert.NotNull(parsed);
+        Assert.Equal(ProbeMode.SentenceBatchTokenization, parsed.Mode);
+        Assert.Single(parsed.Models);
+        Assert.Equal("dml", parsed.Provider);
+    }
+
+    [Fact]
     public void RejectsUnrelatedBatchExperimentOptions()
     {
         Assert.Null(ProbeArguments.Parse(
@@ -90,6 +102,60 @@ public sealed class SentenceBatchExperimentTests
                 [10],
                 [20, 21],
                 completionEndExclusive: 3));
+    }
+
+    [Fact]
+    public void PrependsTheExactTokenWithoutMutatingTheSource()
+    {
+        int[] source = [20, 21];
+
+        Assert.Equal([10, 20, 21], OnnxSentenceScorer.PrependToken(source, 10));
+        Assert.Equal([20, 21], source);
+    }
+
+    [Theory]
+    [InlineData(new[] { 1, 2 }, new[] { 1, 2 }, null)]
+    [InlineData(new[] { 1, 3 }, new[] { 1, 2 }, 1)]
+    [InlineData(new[] { 1 }, new[] { 1, 2 }, 1)]
+    public void FindsTheFirstTokenOrLengthMismatch(
+        int[] left,
+        int[] right,
+        int? expected)
+    {
+        Assert.Equal(expected, OnnxSentenceScorer.FirstMismatch(left, right));
+    }
+
+    [Fact]
+    public void BatchTokenizationHypothesisRequiresEveryBosOnlyGateInBothOrders()
+    {
+        SentenceBatchTokenizationInspection passing = TokenizationInspection();
+        SentenceBatchTokenizationInspection[] failures =
+        [
+            passing with { TechnicallyValid = false },
+            passing with { BosTokenId = null },
+            passing with { BatchEntriesIdentical = false },
+            passing with { BatchMatchesRaw = false },
+            passing with { BatchMatchesPrepared = true },
+            passing with { NormalizedRawMatchesPrepared = false },
+            passing with { PrependedBosBatchMatchesPrepared = false },
+            passing with { FirstBatchRawMismatch = 0 },
+            passing with { FirstBatchPreparedMismatch = null },
+            passing with { FirstBatchPreparedMismatch = 1 },
+            passing with { FirstPrependedPreparedMismatch = 0 },
+        ];
+
+        Assert.True(SentenceBatchTokenizationCommand.HypothesisPasses(
+            passing,
+            passing));
+        foreach (SentenceBatchTokenizationInspection failure in failures)
+        {
+            Assert.False(SentenceBatchTokenizationCommand.HypothesisPasses(
+                failure,
+                passing));
+            Assert.False(SentenceBatchTokenizationCommand.HypothesisPasses(
+                passing,
+                failure));
+        }
     }
 
     [Theory]
@@ -330,6 +396,23 @@ public sealed class SentenceBatchExperimentTests
             ScoredTokenCounts: [5, 5],
             failureStage,
             failureReason);
+
+    private static SentenceBatchTokenizationInspection TokenizationInspection() => new(
+        TechnicallyValid: true,
+        BosTokenId: 10,
+        RawPromptTokenCount: 2,
+        PreparedPromptTokenCount: 3,
+        BatchPromptTokenCounts: [2, 2],
+        BatchEntriesIdentical: true,
+        BatchMatchesRaw: true,
+        BatchMatchesPrepared: false,
+        NormalizedRawMatchesPrepared: true,
+        PrependedBosBatchMatchesPrepared: true,
+        FirstBatchRawMismatch: null,
+        FirstBatchPreparedMismatch: 0,
+        FirstPrependedPreparedMismatch: null,
+        FailureStage: null,
+        FailureReason: null);
 
     private static SentenceBatchOutcomeSummary Outcome(
         IReadOnlyList<double> scores,
