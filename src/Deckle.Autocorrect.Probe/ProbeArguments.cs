@@ -18,6 +18,8 @@ internal enum ProbeMode
     SentenceBatchExperiment,
     SentenceDecisionInventory,
     SentenceUnanimityBundle,
+    QwenAdapterCompatibility,
+    QwenAdapterCrossModel,
     CaretContext,
 }
 
@@ -35,6 +37,7 @@ internal sealed class ProbeArguments
     public int MaxCharacters { get; private init; }
     public string StreamPath { get; private init; } = string.Empty;
     public long StreamBytes { get; private init; }
+    public string PlanPath { get; private init; } = string.Empty;
 
     // The ONNX Runtime GenAI execution provider the judge loads onto: "dml" drives
     // the forced-decoding judge on the GPU (DirectML), "cpu" the built-in CPU EP.
@@ -59,6 +62,7 @@ internal sealed class ProbeArguments
         bool delaySpecified = false;
         bool maxCharactersSpecified = false;
         string? streamPath = null;
+        string? planPath = null;
         long streamBytes = 0;
         bool streamBytesSpecified = false;
         bool modeSelected = false;
@@ -186,6 +190,24 @@ internal sealed class ProbeArguments
                 continue;
             }
 
+            if (arg is "--qwen-adapter-compatibility")
+            {
+                if (modeSelected)
+                    return null;
+                mode = ProbeMode.QwenAdapterCompatibility;
+                modeSelected = true;
+                continue;
+            }
+
+            if (arg is "--qwen-adapter-cross-model")
+            {
+                if (modeSelected)
+                    return null;
+                mode = ProbeMode.QwenAdapterCrossModel;
+                modeSelected = true;
+                continue;
+            }
+
             if (arg is "--caret-context")
             {
                 if (modeSelected)
@@ -240,6 +262,14 @@ internal sealed class ProbeArguments
                     || streamBytes < 1)
                     return null;
                 streamBytesSpecified = true;
+                continue;
+            }
+
+            if (arg is "--plan")
+            {
+                if (++i >= args.Length || string.IsNullOrWhiteSpace(args[i]))
+                    return null;
+                planPath = args[i];
                 continue;
             }
 
@@ -319,6 +349,36 @@ internal sealed class ProbeArguments
             && mode is not ProbeMode.AnticipationLead
                 and not ProbeMode.AnticipationTransactionJoin)
             return null;
+        if (planPath is not null
+            && mode is not ProbeMode.QwenAdapterCompatibility
+                and not ProbeMode.QwenAdapterCrossModel)
+            return null;
+
+        if (mode is ProbeMode.QwenAdapterCompatibility or ProbeMode.QwenAdapterCrossModel)
+        {
+            if (string.IsNullOrWhiteSpace(planPath)
+                || models.Count > 0 || thresholds.Count > 0 || candidates.Count > 0
+                || showCases || json || margin != 0.0 || provider != "dml"
+                || iterationsSpecified || delaySpecified || maxCharactersSpecified
+                || streamPath is not null || streamBytesSpecified)
+                return null;
+
+            return new ProbeArguments
+            {
+                Mode = mode,
+                Models = Array.Empty<ModelSpec>(),
+                Margin = 0.0,
+                Thresholds = Array.Empty<double>(),
+                Candidates = Array.Empty<string>(),
+                ShowCases = false,
+                Json = false,
+                Provider = provider,
+                Iterations = iterations,
+                DelaySeconds = delaySeconds,
+                MaxCharacters = maxCharacters,
+                PlanPath = planPath,
+            };
+        }
 
         if (mode is ProbeMode.AnticipationLead or ProbeMode.AnticipationTransactionJoin)
         {
@@ -608,6 +668,8 @@ internal static class ProbeUsage
         Console.Error.WriteLine("  Deckle.Autocorrect.Probe --sentence-batch-experiment [--model <dir>] [--provider <cpu|dml>]");
         Console.Error.WriteLine("  Deckle.Autocorrect.Probe --sentence-decision-inventory");
         Console.Error.WriteLine("  Deckle.Autocorrect.Probe --sentence-unanimity-bundle");
+        Console.Error.WriteLine("  Deckle.Autocorrect.Probe --qwen-adapter-compatibility --plan <ACX-0023-plan.json>");
+        Console.Error.WriteLine("  Deckle.Autocorrect.Probe --qwen-adapter-cross-model --plan <ACX-0023-plan.json>");
         Console.Error.WriteLine("  Deckle.Autocorrect.Probe --caret-context [--delay <seconds>] [--max-chars <64..4096>]");
         Console.Error.WriteLine();
         Console.Error.WriteLine(

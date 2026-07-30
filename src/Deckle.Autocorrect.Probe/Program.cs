@@ -23,6 +23,8 @@ return parsed.Mode switch
     ProbeMode.SentenceBatchExperiment => SentenceBatchExperimentCommand.Run(parsed),
     ProbeMode.SentenceDecisionInventory => SentenceDecisionInventoryCommand.Run(),
     ProbeMode.SentenceUnanimityBundle => SentenceUnanimityBundleCommand.Run(),
+    ProbeMode.QwenAdapterCompatibility => QwenAdapterCompatibilityCommand.Run(parsed),
+    ProbeMode.QwenAdapterCrossModel => QwenAdapterCrossModelCommand.Run(parsed),
     ProbeMode.CaretContext => CaretContextProbeCommand.Run(parsed),
     _ => 2,
 };
