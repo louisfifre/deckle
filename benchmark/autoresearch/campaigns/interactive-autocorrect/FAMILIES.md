@@ -47,7 +47,7 @@ become the high-trust profile even if UIA plus SendInput remains a broad fallbac
 | Terminal Qwen3-1.7B DML as-is | refuted as scoped | About 945 ms warm before integration is outside direct interaction. ACX-0005 separately gives a fixed 945 ms computation 13.86% readiness on a selected timing sample. Teacher, shadow, batching, and caching survive. |
 | Speculative Qwen on the production lane | refuted as scoped | ACX-0007 directly shows changing stale verdicts are rejected but obsolete single-flight work still blocks fresh work. It survives only with measured exact hits and separate ownership. |
 | Exact anticipation with a fast decider | active | ACX-0008 reproducibly shows a large fixed-duration 50–150 ms opportunity on the selected sample. Next: filter to exact candidate-eligible transactions and measure branch waste. |
-| Batched/reused Qwen scoring | active | Current scorer runs both orders and one generator/forward per candidate. Next: candidate-count and stage profile before a batch prototype. |
+| Batched/reused Qwen scoring | active, calibration pending | ACX-0009 preserved exact semantics and showed strong instrumented scaling, but its 3/2 pair imbalance confounded method with an immediate-repeat gain near 150 ms. Next: matched `P-O-O-P` / `O-P-P-O` calibration, then a separate ordinary-only schedule before any batch prototype. |
 | Deterministic unanimous global rules | candidate | Existing global `la/là` rule proves the contract shape, not residual coverage. Freeze a claim inventory on development data. |
 | Compact tabular discriminator | candidate | Best low-data baseline. Score KEEP plus every edit over grouped transaction splits. |
 | Compact neural global discriminator | candidate | Plausible 10–100 ms class, but trusted labels need audit. Start only if rules/tabular plateau. |
@@ -79,6 +79,12 @@ become the high-trust profile even if UIA plus SendInput remains a broad fallbac
 - **Risks:** thermal drift, DirectML contention, token-count confounding.
 - **Falsifier:** forward dominates or realistic 13-candidate p95 stays above 300 ms
   after amortizable work is removed.
+- **Current evidence:** ACX-0009 exact-equivalence and visible-quality results are
+  valid, but stage attribution is invalid because the observer gate failed and
+  the apparent delta is confounded with first/second call position. Matched
+  four-call crossover calibration with an uncertainty bound, followed by a
+  separate ordinary-only baseline, is the required next discriminator; an
+  identical rerun is not informative.
 
 ### FAM-02 — candidate-eligible anticipation oracle
 

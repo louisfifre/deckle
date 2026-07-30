@@ -75,13 +75,70 @@ ACX-0008 replays exactly the first 1,033,605 bytes under clean HEAD `27f3fcb0`. 
 
 This promotes the fixed-duration selected-sample oracle from conditional to reproducible. It does not broaden the claim: 69/498 is still an optimistic ceiling for a hypothetical fixed 945 ms duration, not candidate-eligible Qwen coverage.
 
+### ACX-0009 — Qwen semantics established, stage profile invalidated
+
+ACX-0009 ran the isolated Qwen3-1.7B DirectML profiler from clean HEAD
+`27e9c248`. The post-commit build completed with zero warnings and errors. The
+single fresh process completed in 337.164 seconds with no stderr or scoring
+error. Profiled and ordinary outcomes were exactly equal across all five
+overhead pairs, all four 2/4/8/13-candidate controls, and all 35 visible quality
+cases. This establishes that the collector preserved the scorer's semantic
+result in this run.
+
+The predefined observer gate failed. At two candidates, the profiled marginal
+median was 903.579 ms and the ordinary marginal median 794.012 ms: +109.567 ms
+and +13.799%, above both the 2 ms and 3% limits. This is not established observer
+cost. Every first call in a pair took about 902–932 ms and every immediately
+repeated second call 747–794 ms, regardless of method. Five alternating pairs
+left a 3/2 call-position imbalance that converted this roughly 150 ms repeat
+effect into an apparent marginal overhead. Therefore no generator, forward,
+readback, log-softmax, disposal, or reverse-order stage fraction is
+decision-valid, and no measured delta is subtracted from the totals.
+
+The instrumented hot measurements remain descriptive leads only:
+
+| Candidates | n | Profiled p50 | Profiled p95 | Maximum |
+|---:|---:|---:|---:|---:|
+| 2 | 20 | 905.508 ms | 943.737 ms | 951.015 ms |
+| 4 | 20 | 1,450.569 ms | 1,703.818 ms | 1,726.928 ms |
+| 8 | 20 | 3,266.370 ms | 3,581.509 ms | 3,617.623 ms |
+| 13 | 20 | 6,647.701 ms | 6,987.506 ms | 7,035.860 ms |
+
+Latency fit candidate count with R² 0.977964 and the submitted-token proxy with
+R² 0.995569. Because the profiler overhead is invalid and the two predictors are
+coupled in one fixture family, these are exploratory scaling signals rather than
+causal evidence for batching.
+
+On the visible development corpus at raw margin zero, the combined two-order
+decision was correct on 33/35 cases, versus 32/35 forward-only and 27/35
+reverse-only, with 9 order disagreements. It selected 15 correct nonliteral
+edits out of 16 applications. The two errors were `ou_question` (regrettable
+keep) and `literal_ratures` (false correction, margin 1.480). A 1.0 threshold
+still retained that false correction while reducing correct applied edits to
+10. These 35 visible cases establish neither field precision nor the 99.9%
+ambition; they do show that threshold monotonicity alone does not rank every
+harmful case below useful ones.
+
+Raw output SHA-256:
+`7514E731802F619FE2302515E86DD467B57AB2FEB2B174EF731EEC10FC1DFBC6`.
+Reconciliation SHA-256:
+`EE78358532EB251F55513BD2626AD14406EC8D85B0670414753F0F833188FED0`.
+The next discriminator starts with matched four-call crossover blocks,
+alternating `P-O-O-P` and `O-P-P-O` independently from stratum order and candidate
+rotation. Profile attribution must pass both practical limits with a predeclared
+uncertainty upper bound, not point-estimate cancellation. Ordinary latency then
+gets a separate schedule without immediate duplicate calls; profiled stage
+distributions run separately only if calibration passes. API-boundary wall time
+is the strongest permitted stage claim without an external GPU or ORT trace.
+
 ## Refuted or dominated families
 
 No complete end-to-end Pareto candidate is dominated yet. Two narrower architecture claims are refuted within their stated scopes: terminal Qwen3-1.7B DirectML as-is is not a direct-interaction path at the measured warm duration, and slow speculative work cannot share the current single-flight lane without blocking fresh useful work. Qwen as teacher/shadow/cache target and speculation with separate ownership remain active possibilities.
 
 ## Active uncertainties
 
-- Whether terminal Qwen latency is reducible enough to matter directly.
+- Whether a valid stage profile exposes enough removable Qwen work to justify a
+  shared-prefix or batching prototype.
 - Whether speculative work creates usable lead time under real typing cadence.
 - Whether a compact discriminator can meet the precision posture at useful coverage.
 - How much end-to-end latency is inference versus target verification and edit observation.
