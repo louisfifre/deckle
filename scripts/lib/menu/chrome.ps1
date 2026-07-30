@@ -2,8 +2,10 @@
 $script:MenuPreferredContentWidth = 74
 $script:MenuMinimumContentWidth = 40
 $script:MenuCategoryWidth = 14
+$script:MenuRowInset = 2
 $script:MenuGridGap = 3
 $script:MenuActionColumnCount = 2
+$script:MenuHeaderGap = 3
 
 function Get-MenuMetrics {
     try {
@@ -118,6 +120,26 @@ function Limit-MenuText {
     return $value.Substring(0, $Width - 1) + ([char]0x2026)
 }
 
+function Format-MenuHeaderLine {
+    param(
+        [AllowNull()][string]$Breadcrumb,
+        [AllowNull()][string]$Commands,
+        [int]$Width
+    )
+
+    if ($Width -le 0) { return '' }
+
+    $right = Limit-MenuText -Text $Commands -Width $Width
+    if (-not $right) { return Limit-MenuText -Text $Breadcrumb -Width $Width }
+
+    $leftWidth = $Width - $right.Length - $script:MenuHeaderGap
+    if ($leftWidth -le 0) { return $right.PadLeft($Width) }
+
+    $left = Limit-MenuText -Text $Breadcrumb -Width $leftWidth
+    $gap = ' ' * ($Width - $left.Length - $right.Length)
+    return $left + $gap + $right
+}
+
 function Write-MenuSegment {
     param(
         [string]$Text,
@@ -182,6 +204,7 @@ function Write-MenuChrome {
     param(
         [int]$BaseRow,
         [string]$Header,
+        [string]$HeaderCommands,
         [string]$Footer,
         [int]$BodyCount,
         [ValidateSet('Compact')]
@@ -200,17 +223,16 @@ function Write-MenuChrome {
     }
 
     $headerRow = $BaseRow + $banner.Count + $bannerGap
-    $header = Limit-MenuText -Text $Header -Width $metrics.ContentWidth
+    $header = Format-MenuHeaderLine -Breadcrumb $Header -Commands $HeaderCommands -Width $metrics.ContentWidth
     $footer = Limit-MenuText -Text $Footer -Width $metrics.ContentWidth
     Write-MenuPlainLine -Row $headerRow -Text $header -ForegroundColor DarkGray -BackgroundColor $null
     Write-MenuPlainLine -Row ($headerRow + 1) -Text (New-MenuRule -MaxWidth $metrics.ContentWidth) -ForegroundColor DarkGray -BackgroundColor $null
-    Write-MenuPlainLine -Row ($headerRow + 2) -Text '' -ForegroundColor $null -BackgroundColor $null
-    Write-MenuPlainLine -Row ($headerRow + 3 + $BodyCount) -Text '' -ForegroundColor $null -BackgroundColor $null
-    Write-MenuPlainLine -Row ($headerRow + 4 + $BodyCount) -Text $footer -ForegroundColor DarkGray -BackgroundColor $null
+    Write-MenuPlainLine -Row ($headerRow + 2 + $BodyCount) -Text '' -ForegroundColor $null -BackgroundColor $null
+    Write-MenuPlainLine -Row ($headerRow + 3 + $BodyCount) -Text $footer -ForegroundColor DarkGray -BackgroundColor $null
 
     [pscustomobject]@{
-        BodyTop    = $headerRow + 3
-        Bottom     = $headerRow + 5 + $BodyCount
+        BodyTop    = $headerRow + 2
+        Bottom     = $headerRow + 4 + $BodyCount
         InnerWidth = $metrics.InnerWidth
         ContentWidth = $metrics.ContentWidth
     }
@@ -233,7 +255,7 @@ function Get-MenuBodyCapacity {
 
     # Leave one physical row unused so reserving the viewport never scrolls
     # the alternate screen.
-    $chromeHeight = @(Get-MenuBanner -Style $BannerStyle).Count + (Get-MenuBannerGap -Style $BannerStyle) + 6
+    $chromeHeight = @(Get-MenuBanner -Style $BannerStyle).Count + (Get-MenuBannerGap -Style $BannerStyle) + 5
     return [Math]::Max(0, $WindowHeight - $chromeHeight)
 }
 
@@ -258,7 +280,7 @@ function Wait-MenuViewportSize {
 
     if ([Console]::IsInputRedirected -or [Console]::IsOutputRedirected) { return }
 
-    $requiredHeight = $BodyCount + @(Get-MenuBanner -Style $BannerStyle).Count + (Get-MenuBannerGap -Style $BannerStyle) + 6
+    $requiredHeight = $BodyCount + @(Get-MenuBanner -Style $BannerStyle).Count + (Get-MenuBannerGap -Style $BannerStyle) + 5
     while (-not (Test-MenuViewportFits -BodyCount $BodyCount -BannerStyle $BannerStyle)) {
         Clear-MenuScreen
         $metrics = Get-MenuMetrics
@@ -280,6 +302,7 @@ function Wait-MenuViewportSize {
 function New-MenuViewport {
     param(
         [string]$Header,
+        [string]$HeaderCommands,
         [string]$Footer,
         [int]$BodyCount,
         [switch]$ClearScreen,
@@ -291,12 +314,12 @@ function New-MenuViewport {
     if ($ClearScreen) { Clear-MenuScreen } else { Write-Host "" }
     $baseRow = [Console]::CursorTop
 
-    $reserveRows = $BodyCount + @(Get-MenuBanner -Style $BannerStyle).Count + (Get-MenuBannerGap -Style $BannerStyle) + 5
+    $reserveRows = $BodyCount + @(Get-MenuBanner -Style $BannerStyle).Count + (Get-MenuBannerGap -Style $BannerStyle) + 4
     for ($i = 0; $i -lt $reserveRows; $i++) {
         Write-Host ""
     }
 
-    return Write-MenuChrome -BaseRow $baseRow -Header $Header -Footer $Footer -BodyCount $BodyCount -BannerStyle $BannerStyle
+    return Write-MenuChrome -BaseRow $baseRow -Header $Header -HeaderCommands $HeaderCommands -Footer $Footer -BodyCount $BodyCount -BannerStyle $BannerStyle
 }
 
 function Write-MenuLinePrefix {
