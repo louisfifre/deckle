@@ -251,92 +251,99 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   ├── primary.svg
 │   └── secondary.png
 ├── scripts/
+│   ├── commands/
+│   │   ├── bootstrap-dev-env.ps1
+│   │   ├── build-run.ps1
+│   │   ├── changelog.ps1
+│   │   ├── clean.ps1
+│   │   ├── cut-version.ps1
+│   │   ├── fetch-autocorrect-data.ps1
+│   │   ├── inspect-context.ps1
+│   │   ├── install-hooks.ps1
+│   │   ├── launch-app.ps1
+│   │   ├── publish-app.ps1
+│   │   ├── publish-native-runtime.ps1
+│   │   ├── record-release.ps1
+│   │   ├── record-version.ps1
+│   │   ├── setup-assets.ps1
+│   │   ├── stats.ps1
+│   │   ├── stop-build-servers.ps1
+│   │   ├── update-readme-stats.ps1
+│   │   └── validate-resources.ps1
 │   ├── hooks/
 │   │   ├── pre-commit
 │   │   └── update-tree.ps1
 │   ├── lib/
 │   │   ├── launcher/
 │   │   │   ├── action-results.ps1
-│   │   │   ├── action-results.tests.ps1
 │   │   │   ├── actions.ps1
-│   │   │   ├── actions.tests.ps1
 │   │   │   ├── context.ps1
-│   │   │   ├── context.tests.ps1
 │   │   │   ├── maintenance-results.ps1
-│   │   │   ├── maintenance-results.tests.ps1
 │   │   │   ├── menu-layout.ps1
-│   │   │   ├── menu-layout.tests.ps1
 │   │   │   ├── menus.ps1
-│   │   │   ├── menus.tests.ps1
 │   │   │   ├── statistics-menus.ps1
-│   │   │   ├── statistics-menus.tests.ps1
-│   │   │   ├── statistics-plans.ps1
-│   │   │   └── statistics-plans.tests.ps1
+│   │   │   └── statistics-plans.ps1
 │   │   ├── menu/
 │   │   │   ├── action-console.ps1
-│   │   │   ├── action-console.tests.ps1
 │   │   │   ├── chrome.ps1
-│   │   │   ├── chrome.tests.ps1
 │   │   │   ├── grid-layout.ps1
 │   │   │   ├── grid-picker.ps1
-│   │   │   ├── grid-picker.tests.ps1
 │   │   │   ├── grid-status.ps1
-│   │   │   ├── grid-status.tests.ps1
 │   │   │   ├── input.ps1
-│   │   │   ├── input.tests.ps1
 │   │   │   ├── list-picker.ps1
-│   │   │   ├── list-picker.tests.ps1
 │   │   │   ├── session.ps1
 │   │   │   ├── status-view.ps1
-│   │   │   ├── status-view.tests.ps1
-│   │   │   ├── text-input.ps1
-│   │   │   └── text-input.tests.ps1
-│   │   ├── _menu.psm1
+│   │   │   └── text-input.ps1
 │   │   ├── action-summary.ps1
-│   │   ├── action-summary.tests.ps1
-│   │   ├── agent-skills-layout.tests.ps1
-│   │   ├── bootstrap-dev-env.ps1
-│   │   ├── build-run.ps1
 │   │   ├── build-server-cleanup.ps1
-│   │   ├── changelog.ps1
-│   │   ├── clean.ps1
 │   │   ├── context-inventory.psm1
-│   │   ├── context-inventory.tests.ps1
-│   │   ├── cut-version.ps1
 │   │   ├── deckle-process.ps1
-│   │   ├── fetch-autocorrect-data.ps1
-│   │   ├── inspect-context.ps1
-│   │   ├── install-hooks.ps1
-│   │   ├── install-hooks.tests.ps1
-│   │   ├── launch-app.ps1
+│   │   ├── menu.psm1
 │   │   ├── native-console.ps1
-│   │   ├── native-console.tests.ps1
 │   │   ├── native-runtime-release.psm1
-│   │   ├── native-runtime-release.tests.ps1
-│   │   ├── publish-app.ps1
-│   │   ├── publish-native-runtime.ps1
-│   │   ├── publish-native-runtime.tests.ps1
-│   │   ├── record-release.ps1
-│   │   ├── record-version.ps1
 │   │   ├── release-history.psm1
-│   │   ├── release-history.tests.ps1
 │   │   ├── release-validation.psm1
-│   │   ├── release-validation.tests.ps1
 │   │   ├── repository-inventory.psm1
-│   │   ├── repository-inventory.tests.ps1
 │   │   ├── resource-inventory.psm1
-│   │   ├── resource-inventory.tests.ps1
-│   │   ├── setup-assets.ps1
-│   │   ├── source-metrics.psm1
-│   │   ├── source-metrics.tests.ps1
-│   │   ├── stats.ps1
-│   │   ├── stop-build-servers.ps1
-│   │   ├── update-readme-stats.ps1
-│   │   ├── update-readme-stats.tests.ps1
-│   │   ├── validate-resources.ps1
-│   │   └── versioning-workflow.tests.ps1
+│   │   └── source-metrics.psm1
+│   ├── tests/
+│   │   ├── commands/
+│   │   │   ├── install-hooks.tests.ps1
+│   │   │   ├── publish-native-runtime.tests.ps1
+│   │   │   ├── update-readme-stats.tests.ps1
+│   │   │   └── versioning-workflow.tests.ps1
+│   │   ├── launcher/
+│   │   │   ├── action-results.tests.ps1
+│   │   │   ├── actions.tests.ps1
+│   │   │   ├── context.tests.ps1
+│   │   │   ├── maintenance-results.tests.ps1
+│   │   │   ├── menu-layout.tests.ps1
+│   │   │   ├── menus.tests.ps1
+│   │   │   ├── statistics-menus.tests.ps1
+│   │   │   └── statistics-plans.tests.ps1
+│   │   ├── lib/
+│   │   │   ├── action-summary.tests.ps1
+│   │   │   ├── agent-skills-layout.tests.ps1
+│   │   │   ├── context-inventory.tests.ps1
+│   │   │   ├── native-console.tests.ps1
+│   │   │   ├── native-runtime-release.tests.ps1
+│   │   │   ├── release-history.tests.ps1
+│   │   │   ├── release-validation.tests.ps1
+│   │   │   ├── repository-inventory.tests.ps1
+│   │   │   ├── resource-inventory.tests.ps1
+│   │   │   ├── script-layout.tests.ps1
+│   │   │   └── source-metrics.tests.ps1
+│   │   └── menu/
+│   │       ├── action-console.tests.ps1
+│   │       ├── chrome.tests.ps1
+│   │       ├── grid-picker.tests.ps1
+│   │       ├── grid-status.tests.ps1
+│   │       ├── input.tests.ps1
+│   │       ├── list-picker.tests.ps1
+│   │       ├── status-view.tests.ps1
+│   │       └── text-input.tests.ps1
 │   ├── deckle.ps1
-│   ├── README.md  — readme-scripts [module-readme] Dev workflows entry point for Deckle: the deckle.ps1 menu, the worker scripts u…
+│   ├── README.md  — readme-scripts [module-readme] Dev workflows entry point for Deckle: the deckle.ps1 menu, the commands under c…
 │   └── resource-validation.allowlist.json
 ├── src/
 │   ├── Deckle.Anytype/
