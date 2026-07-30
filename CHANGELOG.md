@@ -94,6 +94,7 @@ doctrine). This file is generated from the Conventional-Commit history by
 - **scripts:** Stabilize launcher action rendering
 - **scripts:** Infer native runtime versions
 - **scripts:** Align launcher workflow behavior
+- **scripts:** Preserve shared menu grid geometry
 
 ## [0.14.1](https://github.com/louisfifre/deckle/compare/v0.14.0...v0.14.1) — 2026-07-20
 
