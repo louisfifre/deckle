@@ -17,6 +17,7 @@ internal enum ProbeMode
     SentenceBatchTokenization,
     SentenceBatchExperiment,
     SentenceDecisionInventory,
+    SentenceUnanimityBundle,
     CaretContext,
 }
 
@@ -172,6 +173,15 @@ internal sealed class ProbeArguments
                 if (modeSelected)
                     return null;
                 mode = ProbeMode.SentenceDecisionInventory;
+                modeSelected = true;
+                continue;
+            }
+
+            if (arg is "--sentence-unanimity-bundle")
+            {
+                if (modeSelected)
+                    return null;
+                mode = ProbeMode.SentenceUnanimityBundle;
                 modeSelected = true;
                 continue;
             }
@@ -358,7 +368,8 @@ internal sealed class ProbeArguments
             };
         }
 
-        if (mode == ProbeMode.SentenceDecisionInventory)
+        if (mode is ProbeMode.SentenceDecisionInventory
+            or ProbeMode.SentenceUnanimityBundle)
         {
             if (models.Count > 0 || thresholds.Count > 0 || candidates.Count > 0
                 || showCases || json || margin != 0.0 || provider != "dml"
@@ -596,6 +607,7 @@ internal static class ProbeUsage
         Console.Error.WriteLine("  Deckle.Autocorrect.Probe --sentence-batch-tokenization [--model <dir>] [--provider <cpu|dml>]");
         Console.Error.WriteLine("  Deckle.Autocorrect.Probe --sentence-batch-experiment [--model <dir>] [--provider <cpu|dml>]");
         Console.Error.WriteLine("  Deckle.Autocorrect.Probe --sentence-decision-inventory");
+        Console.Error.WriteLine("  Deckle.Autocorrect.Probe --sentence-unanimity-bundle");
         Console.Error.WriteLine("  Deckle.Autocorrect.Probe --caret-context [--delay <seconds>] [--max-chars <64..4096>]");
         Console.Error.WriteLine();
         Console.Error.WriteLine(

@@ -22,6 +22,7 @@ return parsed.Mode switch
     ProbeMode.SentenceBatchTokenization => SentenceBatchTokenizationCommand.Run(parsed),
     ProbeMode.SentenceBatchExperiment => SentenceBatchExperimentCommand.Run(parsed),
     ProbeMode.SentenceDecisionInventory => SentenceDecisionInventoryCommand.Run(),
+    ProbeMode.SentenceUnanimityBundle => SentenceUnanimityBundleCommand.Run(),
     ProbeMode.CaretContext => CaretContextProbeCommand.Run(parsed),
     _ => 2,
 };
