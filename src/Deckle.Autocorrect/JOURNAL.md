@@ -5,6 +5,12 @@ type: module-journal
 
 # JOURNAL — Deckle.Autocorrect
 
+## 2026-07-30 — Resident Qwen is not an interactive sentence closer
+
+Measured the production Qwen3-1.7B DirectML whole-sentence verdict at about 945 ms on the local machine with the model already resident. The scorer still performs two order-normalized passes and creates a GenAI generator for every candidate in each pass; keeping the model loaded removes initialization, not this hot inference cost.
+
+Found that verified-caret recovery adds a configured 110 ms stable-read floor before judgment (35 ms settle plus a 75 ms verification gap), and repeats the stable read before applying a recovered edit. The earlier assumption that resident DirectML Qwen was directly usable in the terminal-punctuation interaction path is therefore falsified by local measurement. This finding does not choose its replacement; anticipatory computation, a strict fast-path deadline, compact discriminative judgment, and deterministic global rules remain separate options to benchmark.
+
 ## 2026-07-29 — One closed sentence decision replaces slot cascades
 
 Found why `Il y a une seul erreur.` survived both ordinary closure and verified-caret recovery: the typo probe deliberately refuses `seul` because it is a valid French word, so the sentence judge had no `seule` candidate to choose. Caret recovery was working; the missing right was candidate generation, not context extraction.
