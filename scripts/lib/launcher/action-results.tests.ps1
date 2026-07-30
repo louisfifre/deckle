@@ -1,5 +1,6 @@
 $ErrorActionPreference = 'Stop'
 . (Join-Path $PSScriptRoot '..\menu\chrome.ps1')
+. (Join-Path $PSScriptRoot '..\menu\grid-layout.ps1')
 . (Join-Path $PSScriptRoot '..\menu\grid-picker.ps1')
 . (Join-Path $PSScriptRoot 'action-results.ps1')
 

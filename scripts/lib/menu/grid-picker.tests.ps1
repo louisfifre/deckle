@@ -1,5 +1,6 @@
 $ErrorActionPreference = 'Stop'
 . (Join-Path $PSScriptRoot 'chrome.ps1')
+. (Join-Path $PSScriptRoot 'grid-layout.ps1')
 . (Join-Path $PSScriptRoot 'grid-picker.ps1')
 
 function Assert-Equal($Expected, $Actual, [string]$Case) {
@@ -31,10 +32,30 @@ $lastPage = Get-GridResultPage -Offset 10 -PageSize 5 -LineCount 12
 Assert-Equal 3 $lastPage.Number 'page indicator reports the current result page'
 Assert-Equal 3 $lastPage.Count 'page indicator reports the total result pages'
 
-Assert-Equal 1 (Get-GridColumnForRow -CurrentColumn 0 -ColumnOffset 1 -CellCount 1) 'down to offset row keeps its visual column'
-Assert-Equal 1 (Get-GridColumnForRow -CurrentColumn 1 -ColumnOffset 0 -CellCount 2) 'up from offset row returns to cell above'
-Assert-Equal 2 (Get-GridColumnForRow -CurrentColumn 2 -ColumnOffset 0 -CellCount 2 -HasTrailing $true -TrailingColumn 2) 'trailing action remains reachable on its row'
-Assert-Equal 1 (Get-GridColumnForRow -CurrentColumn 2 -ColumnOffset 0 -CellCount 2 -TrailingColumn 2) 'leaving trailing action returns to the nearest regular column'
+Assert-Equal 1 (Get-GridColumnForRow -PreferredColumn 0 -ColumnOffset 1 -CellCount 1) 'down to offset row keeps its visual column'
+Assert-Equal 1 (Get-GridColumnForRow -PreferredColumn 1 -ColumnOffset 0 -CellCount 2) 'up from offset row returns to cell above'
+Assert-Equal 2 (Get-GridColumnForRow -PreferredColumn 2 -ColumnOffset 0 -CellCount 2 -HasTrailing $true -TrailingColumn 2) 'trailing action remains reachable on its row'
+Assert-Equal 1 (Get-GridColumnForRow -PreferredColumn 2 -ColumnOffset 0 -CellCount 2 -TrailingColumn 2) 'leaving trailing action returns to the nearest regular column'
+
+$preferredColumn = 1
+$backColumn = Get-GridColumnForRow -PreferredColumn $preferredColumn -ColumnOffset 0 -CellCount 1
+$restoredColumn = Get-GridColumnForRow -PreferredColumn $preferredColumn -ColumnOffset 0 -CellCount 2
+Assert-Equal 0 $backColumn 'a sparse Back row clamps only the active cell'
+Assert-Equal 1 $restoredColumn 'leaving Back restores the preferred column'
+
+$stateRows = (New-GridPlan -Rows @(
+    @{ Cells = @( @{ Label = '< Back' } ) }
+    @{ Cells = @( @{ Label = 'Left' }, @{ Label = 'Right' } ) }
+)).SelectableRows
+$navigationState = @{}
+Set-GridSelectionState -State $navigationState -Index 1 -PreferredColumn 1
+$restoredPosition = Get-GridSelectionPosition -SelectableRows $stateRows -TrailingColumn 2 -State $navigationState
+Assert-Equal 1 $restoredPosition.Index 'selection state restores the selected action across redraws'
+Assert-Equal 1 $restoredPosition.ActiveColumn 'selection state restores the selected column across redraws'
+
+Assert-Equal 'Arrows move   Enter runs   Ctrl+C quits' (Get-GridNavigationFooter -EscapeAction Ignore) 'main navigation wording is centralized'
+Assert-Equal 'Arrows move   Enter runs   Esc returns   Wheel/Pg pages   Home/End edges' (Get-GridNavigationFooter -HasPages) 'submenu result navigation exposes paging consistently'
+Assert-Equal 'Left/Right move   Enter confirms   Esc cancels' (Get-GridNavigationFooter -Interaction Confirm) 'confirmation navigation exposes Escape consistently'
 
 $compactLayout = New-GridBodyLayout -CommandBody @(@{ Kind = 'row' }) -ResultTitle 'Results' -BannerStyle Compact
 Assert-Equal 15 $compactLayout.Body.Count 'result layout consumes available compact body'

@@ -216,12 +216,12 @@ function Select-Worktree {
 
     $rows = @(New-WorktreeGridRows -Entries $entries)
     $choice = Select-Grid `
-        -Header 'Deckle > Worktrees   -   ↑↓ move   Enter select   Esc back' `
-        -Footer '↑↓ move   Enter select   Esc back' `
+        -Header 'Deckle > Worktrees' `
         -Rows $rows `
         -StartSel 1 `
         -ClearScreen:$ClearScreen `
-        -BannerStyle $BannerStyle
+        -BannerStyle $BannerStyle `
+        -Interaction Select
     if ($null -eq $choice -or $choice -eq '__back__') {
         throw [System.OperationCanceledException]::new('Worktree selection was cancelled.')
     }
@@ -286,13 +286,36 @@ function Select-Action {
 
     $choice = Select-Grid `
         -Header $Header `
-        -Footer '↑↓ move   Enter select   Esc back' `
         -Rows $rows `
         -StartSel ($defaultSelection + 1) `
         -ClearScreen:$ClearScreen `
-        -BannerStyle $BannerStyle
+        -BannerStyle $BannerStyle `
+        -Interaction Select
     if ($null -eq $choice -or $choice -eq '__back__') { throw 'Cancelled' }
     return $choice
+}
+
+function New-YesNoGridRows {
+    param(
+        [Parameter(Mandatory)][string]$ConfirmLabel,
+        [Parameter(Mandatory)][string]$CancelLabel,
+        [string[]]$ContextLines = @(),
+        [switch]$Destructive
+    )
+
+    $rows = @()
+    if ($ContextLines.Count -gt 0) {
+        $rows += @{ Title = 'Before you continue' }
+        foreach ($line in $ContextLines) { $rows += @{ Text = $line } }
+        $rows += @{ Blank = $true }
+    }
+    $rows += @(
+        @{ Cells = @(
+            @{ Label = $ConfirmLabel; Value = $true; Role = $(if ($Destructive) { 'danger' } else { 'action' }) }
+            @{ Label = $CancelLabel;  Value = $false; Role = 'back' }
+        ) }
+    )
+    return $rows
 }
 
 function Select-YesNo {
@@ -302,6 +325,7 @@ function Select-YesNo {
         [bool]$Default = $false,
         [string]$ConfirmLabel = 'Yes',
         [string]$CancelLabel = 'No',
+        [string[]]$ContextLines = @(),
         [switch]$Destructive,
         [switch]$ClearScreen,
         [ValidateSet('Compact')]
@@ -309,28 +333,23 @@ function Select-YesNo {
     )
 
     if ([Console]::IsInputRedirected -or [Console]::IsOutputRedirected) {
+        foreach ($line in $ContextLines) { Write-Host $line }
         $hint = if ($Default) { '[Y/n]' } else { '[y/N]' }
         $answer = Read-Host "$Question $hint"
         if ([string]::IsNullOrWhiteSpace($answer)) { return $Default }
         return ($answer -match '^(y|yes|o|oui)$')
     }
 
-    $rows = @(
-        @{ Cells = @(
-            @{ Label = $ConfirmLabel; Value = $true; Role = $(if ($Destructive) { 'danger' } else { 'action' }) }
-            @{ Label = $CancelLabel;  Value = $false; Role = 'back' }
-        ) }
-    )
+    $rows = @(New-YesNoGridRows -ConfirmLabel $ConfirmLabel -CancelLabel $CancelLabel -ContextLines $ContextLines -Destructive:$Destructive)
 
     $choice = Select-Grid `
         -Header $Question `
-        -Footer 'Left/Right move   Enter confirm' `
         -Rows $rows `
         -StartSel 0 `
         -StartCol $(if ($Default) { 0 } else { 1 }) `
-        -EscapeAction Ignore `
         -ClearScreen:$ClearScreen `
-        -BannerStyle $BannerStyle
+        -BannerStyle $BannerStyle `
+        -Interaction Confirm
 
     return [bool]$choice
 }

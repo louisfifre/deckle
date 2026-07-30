@@ -77,7 +77,7 @@ function Invoke-StopBuildServers {
 function Select-VersionBump {
     param(
         [Parameter(Mandatory)][string]$Current,
-        [string]$Header = 'Deckle > Version   -   ↑↓ move   Enter select   Esc back'
+        [string]$Header = 'Deckle > Version'
     )
     $n = $Current.Split('.') | ForEach-Object { [int]$_ }
     $patch = "$($n[0]).$($n[1]).$($n[2] + 1)"
@@ -92,7 +92,8 @@ function Select-VersionBump {
     try {
         return Select-Action -Header $Header -Items $items -Default 0 -ClearScreen
     } catch {
-        return $null
+        if ($_.Exception.Message -eq 'Cancelled') { return $null }
+        throw
     }
 }
 
@@ -156,15 +157,19 @@ function Invoke-RecordVersion {
         return
     }
 
-    $choice = Select-VersionBump -Current $cur -Header 'Deckle > Project > Version   -   ↑↓ move   Enter select   Esc back'
+    $choice = Select-VersionBump -Current $cur -Header 'Deckle > Project > Version'
     if ($null -eq $choice) {
         Write-Host "Cancelled." -ForegroundColor DarkGray
         return
     }
 
-    Write-Host ""
-    Write-Host "This records v$($choice.Target), refreshes Unreleased, and pushes the branch. It creates no tag or GitHub Release." -ForegroundColor Yellow
-    if (-not (Read-YesNo -Question "Record Deckle v$($choice.Target) now?" -Default $true)) {
+    if (-not (Read-YesNo `
+        -Question "Record Deckle v$($choice.Target) now?" `
+        -Default $true `
+        -ContextLines @(
+            "Creates the internal v$($choice.Target) version record and refreshes Unreleased."
+            'Pushes the selected branch. No tag or GitHub Release is created.'
+        ))) {
         Write-Host "Cancelled." -ForegroundColor DarkGray
         return
     }
@@ -200,7 +205,7 @@ function Invoke-PublishRelease {
     $target = $cur
     if ($recordableSinceVersion -gt 0) {
         Write-Host "$recordableSinceVersion user-facing commit(s) exist after the v$cur version record." -ForegroundColor DarkGray
-        $choice = Select-VersionBump -Current $cur -Header 'Deckle > Release > Publish   -   ↑↓ move   Enter select   Esc back'
+        $choice = Select-VersionBump -Current $cur -Header 'Deckle > Release > Publish'
         if ($null -eq $choice) {
             Write-Host "Cancelled." -ForegroundColor DarkGray
             return
@@ -216,8 +221,17 @@ function Invoke-PublishRelease {
         Write-Host "$tag is recorded internally and ready to become a public release." -ForegroundColor DarkGray
     }
 
-    Write-Host "This pushes v$target, builds the artifacts, then publishes a PUBLIC GitHub Release. Its tag is created only after the builds succeed." -ForegroundColor Yellow
-    if (-not (Read-YesNo -Question "Publish Deckle v$target to GitHub now?" -Default $false -ConfirmLabel "Publish v$target" -CancelLabel 'Keep private' -Destructive)) {
+    if (-not (Read-YesNo `
+        -Question "Publish Deckle v$target to GitHub now?" `
+        -Default $false `
+        -ConfirmLabel "Publish v$target" `
+        -CancelLabel 'Keep private' `
+        -ContextLines @(
+            "Pushes v$target and builds the release artifacts."
+            'Publishes a public GitHub Release only after the builds succeed.'
+            'Creates the tag after a successful build.'
+        ) `
+        -Destructive)) {
         Write-Host "Cancelled." -ForegroundColor DarkGray
         return
     }
@@ -250,8 +264,10 @@ function Invoke-NativeRuntime {
     )
     $wt = Get-WorktreeOrReturn
     if ($null -eq $wt) { return }
-    $whisperRepo = Read-Optional -Question 'Path to whisper.cpp with an existing build/bin' -Header 'Deckle > Release > Native runtime' -Label 'Path' -Lines @('This action packages existing DLLs.', 'It does not invoke CMake or build Deckle.')
-    if (-not $whisperRepo) { Write-Host "Cancelled: whisper.cpp path is required." -ForegroundColor DarkGray; return }
+    $whisperInput = Read-Optional -Question 'Path to whisper.cpp with an existing build/bin' -Header 'Deckle > Release > Native runtime' -Label 'Path' -Lines @('This action packages existing DLLs.', 'It does not invoke CMake or build Deckle.')
+    if ($whisperInput.Status -eq 'Cancelled') { return }
+    $whisperRepo = [string]$whisperInput.Value
+    if ([string]::IsNullOrWhiteSpace($whisperRepo)) { Write-Host "Cancelled: whisper.cpp path is required." -ForegroundColor DarkGray; return }
 
     $versionHolder = [pscustomobject]@{ Plan = $null }
     $versionCheck = Invoke-DeckleMenuAction `
@@ -281,10 +297,20 @@ function Invoke-NativeRuntime {
     if (-not $versionCheck.Succeeded) { return $versionCheck }
 
     $version = $versionHolder.Plan.Version
-    $outDir = Read-Optional -Question 'Output directory (blank = temporary folder)' -Header 'Deckle > Release > Native runtime' -Label 'Folder'
+    $outDirInput = Read-Optional -Question 'Output directory (blank = temporary folder)' -Header 'Deckle > Release > Native runtime' -Label 'Folder'
+    if ($outDirInput.Status -eq 'Cancelled') { return }
+    $outDir = [string]$outDirInput.Value
     if ($Publish) {
-        Write-Host "native-v$version is next for whisper.cpp $($versionHolder.Plan.WhisperVersion). Existing DLLs will be packaged and published publicly; nothing is built." -ForegroundColor Yellow
-        if (-not (Read-YesNo -Question "Publish native-v$version now?" -Default $false -ConfirmLabel "Publish native-v$version" -CancelLabel 'Keep private' -Destructive)) {
+        if (-not (Read-YesNo `
+            -Question "Publish native-v$version now?" `
+            -Default $false `
+            -ConfirmLabel "Publish native-v$version" `
+            -CancelLabel 'Keep private' `
+            -ContextLines @(
+                "Packages existing DLLs for whisper.cpp $($versionHolder.Plan.WhisperVersion). Nothing is built."
+                "Publishes native-v$version as a public GitHub Release."
+            ) `
+            -Destructive)) {
             Write-Host "Cancelled." -ForegroundColor DarkGray
             return
         }
@@ -316,13 +342,14 @@ function Invoke-BootstrapDev {
 
 function Invoke-SetupAssets {
     param([Parameter(Mandatory)][object[]]$MenuRows)
-    Write-Host "This may download native runtime and Whisper model files." -ForegroundColor DarkGray
-    if (-not (Read-YesNo -Question 'Continue with runtime asset setup?' -Default $false)) {
+    if (-not (Read-YesNo -Question 'Continue with runtime asset setup?' -Default $false -ContextLines @('May download native runtime and Whisper model files.'))) {
         Write-Host "Cancelled." -ForegroundColor DarkGray
         return
     }
     $assetArgs = @{}
-    $fromRelease = Read-Optional -Question 'Native runtime release version X.Y.Z (blank = local/sibling source or skip)'
+    $releaseInput = Read-Optional -Question 'Native runtime release version X.Y.Z (blank = local/sibling source or skip)'
+    if ($releaseInput.Status -eq 'Cancelled') { return }
+    $fromRelease = [string]$releaseInput.Value
     if ($fromRelease) { $assetArgs.FromRelease = $fromRelease }
     if (Read-YesNo -Question 'Download ggml-large-v3.bin (~3 GB)?' -Default $false) { $assetArgs.WithLarge = $true }
     if (Read-YesNo -Question 'Force re-copy / re-download existing files?' -Default $false -ConfirmLabel 'Replace files' -CancelLabel 'Keep existing' -Destructive) { $assetArgs.Force = $true }

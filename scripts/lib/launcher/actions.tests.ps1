@@ -1,4 +1,5 @@
 $ErrorActionPreference = 'Stop'
+. (Join-Path $PSScriptRoot '..\menu\session.ps1')
 . (Join-Path $PSScriptRoot 'actions.ps1')
 
 function Assert-Equal($Expected, $Actual, [string]$Case) {
@@ -48,5 +49,17 @@ function Invoke-ReleaseSourcePreflight {
 $blocked = Invoke-PublishRelease -MenuRows @(@{ Cells = @(@{ Label = 'Publish' }) })
 Assert-Equal $false $blocked.Succeeded 'invalid release source stops publication'
 Assert-Equal 'Invalid source' $blocked.Title 'preflight failure returns to the release menu'
+
+function Select-Action { throw 'Cancelled' }
+Assert-Equal $null (Select-VersionBump -Current '0.28.7') 'ordinary version cancellation returns to the caller'
+
+function Select-Action { throw [System.OperationCanceledException]::new('global quit') }
+$quitReachedRoot = $false
+try {
+    Select-VersionBump -Current '0.28.7' | Out-Null
+} catch {
+    $quitReachedRoot = $_.Exception.GetType().Name -eq 'OperationCanceledException'
+}
+Assert-Equal $true $quitReachedRoot 'version selection propagates non-local cancellation such as Ctrl+C'
 
 Write-Host 'actions.tests.ps1: PASS' -ForegroundColor Green

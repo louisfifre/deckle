@@ -1,44 +1,4 @@
 # Non-interactive grid surface with a live or persistent result viewport.
-function New-GridStatusBody {
-    param([Parameter(Mandatory)][object[]]$Rows)
-
-    $body = @()
-    $prefixWidth = 0
-    $columnCount = 0
-    $trailingWidth = 0
-
-    foreach ($row in $Rows) {
-        if ($row.ContainsKey('Title')) {
-            $body += @{ Kind = 'title'; Text = [string]$row['Title'] }
-            continue
-        }
-        if (-not $row.ContainsKey('Cells')) {
-            $body += @{ Kind = 'blank' }
-            continue
-        }
-
-        $prefix = if ($row.ContainsKey('Prefix') -and $row['Prefix']) { [string]$row['Prefix'] } else { '' }
-        $prefixWidth = [Math]::Max($prefixWidth, $prefix.Length)
-        $cells = @($row['Cells'])
-        $columnOffset = if ($row.ContainsKey('ColumnOffset')) { [int]$row['ColumnOffset'] } else { 0 }
-        $columnCount = [Math]::Max($columnCount, $columnOffset + $cells.Count)
-        $trailingCell = if ($row.ContainsKey('TrailingCell')) { $row['TrailingCell'] } else { $null }
-        if ($trailingCell) {
-            $trailingWidth = [Math]::Max($trailingWidth, ([string]$trailingCell.Label).Length)
-        }
-        $body += @{
-            Kind = 'row'; Prefix = $prefix; Cells = $cells; ColumnOffset = $columnOffset; TrailingCell = $trailingCell
-        }
-    }
-
-    if ($prefixWidth -gt 0) { $prefixWidth = $script:MenuCategoryWidth + $script:MenuGridGap }
-    return [pscustomobject]@{
-        Body          = @($body)
-        PrefixWidth   = $prefixWidth
-        ColumnCount   = [Math]::Max(1, $columnCount)
-        TrailingWidth = $trailingWidth
-    }
-}
 
 function Write-GridStatusRows {
     param(
@@ -53,7 +13,7 @@ function Write-GridStatusRows {
         Write-GridLine -Top $View.Viewport.BodyTop -Index $index -Body $View.Body -ColW $View.ColumnWidths -PrefixW $View.Grid.PrefixWidth `
             -InnerWidth $View.Viewport.InnerWidth -ContentWidth $View.Viewport.ContentWidth `
             -ActiveBodyIndex -1 -ActiveCol -1 `
-            -TrailingWidth $View.Grid.TrailingWidth -TrailingGap $View.TrailingGap -TrailingColumn $View.Grid.ColumnCount `
+            -TrailingWidth $View.Grid.TrailingWidth -TrailingGap $View.Grid.TrailingGap -TrailingColumn $View.Grid.ColumnCount `
             -ResultLines $Lines -ResultOffset $ResultOffset -ResultPage $page.Number -ResultPageCount $page.Count
     }
 }
@@ -71,7 +31,7 @@ function New-GridStatusView {
         [string]$BannerStyle = 'Compact'
     )
 
-    $grid = New-GridStatusBody -Rows $Rows
+    $grid = New-GridPlan -Rows $Rows
     $layout = New-GridBodyLayout -CommandBody $grid.Body -ResultTitle $Title -BannerStyle $BannerStyle
     $viewport = New-MenuViewport -Header $Header -Footer $Footer -BodyCount $layout.Body.Count -ClearScreen -BannerStyle $BannerStyle
     $metrics = Get-MenuMetrics
@@ -86,7 +46,6 @@ function New-GridStatusView {
         ResultRowCount   = $layout.ResultRowCount
         Viewport         = $viewport
         ColumnWidths     = Get-GridColumnWidths -ContentWidth $viewport.ContentWidth -PrefixWidth $grid.PrefixWidth -ColumnCount $grid.ColumnCount
-        TrailingGap      = $(if ($grid.TrailingWidth -gt 0) { $script:MenuGridGap } else { 0 })
         TerminalWidth    = $metrics.TerminalWidth
         WindowHeight     = $metrics.WindowHeight
     }

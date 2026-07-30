@@ -1,4 +1,13 @@
 # Single-line text entry that stays inside Deckle's compact menu chrome.
+function New-MenuTextResult {
+    param(
+        [AllowEmptyString()][string]$Value = '',
+        [switch]$Cancelled
+    )
+
+    if ($Cancelled) { return [pscustomobject]@{ Status = 'Cancelled'; Value = $null } }
+    return [pscustomobject]@{ Status = 'Submitted'; Value = $Value.Trim() }
+}
 
 function Read-MenuText {
     [CmdletBinding()]
@@ -8,15 +17,14 @@ function Read-MenuText {
         [string[]]$Lines = @(),
         [string]$Label = 'Value',
         [AllowEmptyString()][string]$Default = '',
-        [string]$Footer = 'Type a value   Enter confirm   Esc back',
+        [string]$Footer = 'Type a value   Enter confirms   Esc returns',
         [ValidateSet('Compact')]
         [string]$BannerStyle = 'Compact'
     )
 
     if ([Console]::IsInputRedirected -or [Console]::IsOutputRedirected) {
         $answer = Read-Host $Title
-        if ([string]::IsNullOrWhiteSpace($answer)) { return $null }
-        return $answer.Trim()
+        return New-MenuTextResult -Value ([string]$answer)
     }
 
     $bodyCount = 5
@@ -61,10 +69,9 @@ function Read-MenuText {
             switch ($key.Key) {
                 'Enter' {
                     $value = $buffer.Trim()
-                    if ([string]::IsNullOrWhiteSpace($value)) { return $null }
-                    return $value
+                    return New-MenuTextResult -Value $value
                 }
-                'Escape'    { return $null }
+                'Escape'    { return New-MenuTextResult -Cancelled }
                 'LeftArrow' { if ($cursor -gt 0) { $cursor-- } }
                 'RightArrow' { if ($cursor -lt $buffer.Length) { $cursor++ } }
                 'Home' { $cursor = 0 }
@@ -79,6 +86,9 @@ function Read-MenuText {
                     if ($cursor -lt $buffer.Length) { $buffer = $buffer.Remove($cursor, 1) }
                 }
                 default {
+                    if ($key.Key -eq 'C' -and ($key.Modifiers -band [ConsoleModifiers]::Control)) {
+                        throw [DeckleMenuQuitException]::new()
+                    }
                     if ($buffer.Length -lt 1024 -and
                         -not [char]::IsControl($key.KeyChar) -and
                         ($key.Modifiers -band ([ConsoleModifiers]::Control -bor [ConsoleModifiers]::Alt)) -eq 0) {
