@@ -110,6 +110,11 @@ doctrine). This file is generated from the Conventional-Commit history by
 - **autocorrect:** Repair merged validation contracts
 - **launcher:** Adapt action logs to terminal width
 - **launcher:** Simplify captured action logs
+- **playground:** Restore neutral composition before arm
+- **playground:** Make correction history observable
+- **playground:** Preserve correction card readability
+- **playground:** Initialize terminal caret affinity
+- **launcher:** Preserve native output below fixed chrome
 
 ## [0.14.1](https://github.com/louisfifre/deckle/compare/v0.14.0...v0.14.1) — 2026-07-20
 

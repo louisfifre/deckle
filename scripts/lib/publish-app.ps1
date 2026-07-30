@@ -56,6 +56,7 @@ $ErrorActionPreference = 'Stop'
 $ScriptDir = $PSScriptRoot                                  # scripts/lib/
 . (Join-Path $ScriptDir 'action-summary.ps1')
 . (Join-Path $ScriptDir 'deckle-process.ps1')
+. (Join-Path $ScriptDir 'native-console.ps1')
 Import-Module (Join-Path $ScriptDir 'release-history.psm1') -Force
 Import-Module (Join-Path $ScriptDir 'release-validation.psm1') -Force
 Import-Module (Join-Path $ScriptDir 'native-runtime-release.psm1') -Force
@@ -307,15 +308,17 @@ Stop-DeckleProcess -WriteOk ${function:Ok} -WriteWarn ${function:Warn}
 # propagation. SelfContained is forced (a RID no longer implies it since
 # .NET 6); the app is x64-only (<Platforms>x64</Platforms>). Restore implicit.
 Step 'dotnet publish (Release, win-x64, self-contained folder)'
-& dotnet publish $Csproj `
-    '-c:Release' `
-    '-p:RuntimeIdentifierOverride=win-x64' `
-    '-p:SelfContained=true' `
-    '-p:Platform=x64' `
-    '-o' $PublishDir `
-    '-v:m' '-nologo' `
-    '/nr:false' '/p:UseSharedCompilation=false'
-if ($LASTEXITCODE -ne 0) { throw "dotnet publish failed (code $LASTEXITCODE)" }
+$publishExitCode = Invoke-DeckleConsoleProcess -FilePath 'dotnet' -ArgumentList @(
+    'publish', $Csproj,
+    '-c:Release',
+    '-p:RuntimeIdentifierOverride=win-x64',
+    '-p:SelfContained=true',
+    '-p:Platform=x64',
+    '-o', $PublishDir,
+    '-v:m', '-nologo',
+    '/nr:false', '/p:UseSharedCompilation=false'
+)
+if ($publishExitCode -ne 0) { throw "dotnet publish failed (code $publishExitCode)" }
 
 # ── Sanity: the two files a misconfigured publish silently drops ─────────────
 $exe = Join-Path $PublishDir 'Deckle.exe'
@@ -366,13 +369,15 @@ Ok "$ShaName written"
 # x64-only matches the app: the payload it fetches is x64-only too.
 Step 'dotnet publish installer (Release, win-x64, NativeAOT)'
 if (-not (Test-Path $InstallerCsproj)) { throw "Installer csproj not found at $InstallerCsproj" }
-& dotnet publish $InstallerCsproj `
-    '-c:Release' `
-    '-r' 'win-x64' `
-    '-o' $InstallerPubDir `
-    '-v:m' '-nologo' `
-    '/nr:false' '/p:UseSharedCompilation=false'
-if ($LASTEXITCODE -ne 0) { throw "dotnet publish (installer) failed (code $LASTEXITCODE)" }
+$installerExitCode = Invoke-DeckleConsoleProcess -FilePath 'dotnet' -ArgumentList @(
+    'publish', $InstallerCsproj,
+    '-c:Release',
+    '-r', 'win-x64',
+    '-o', $InstallerPubDir,
+    '-v:m', '-nologo',
+    '/nr:false', '/p:UseSharedCompilation=false'
+)
+if ($installerExitCode -ne 0) { throw "dotnet publish (installer) failed (code $installerExitCode)" }
 
 # AssemblyName is Deckle-Installer → the linker emits Deckle-Installer.exe. Copy
 # it up to the version- and arch-tagged release name. The exe reads its own path
