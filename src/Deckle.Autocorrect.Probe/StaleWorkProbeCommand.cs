@@ -219,6 +219,7 @@ internal static class StaleWorkProbeCommand
 
         public bool Start() => true;
         public void Stop() { }
+        public void SetWheelInterceptor(IWheelInterceptor? interceptor) { }
 
         public void RequestDrain()
         {

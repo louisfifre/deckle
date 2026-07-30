@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using Deckle.Autocorrect;
 using Xunit;
 
@@ -265,7 +266,9 @@ public class EffectiveLexiconTests
         Assert.Empty(DomainActivation.ActiveIn(settings, NoLanguages));
         Assert.Equal(
             DomainPack.Shipped,
-            DomainActivation.ActiveIn(settings, LanguagesOf(DomainPack.Shipped[0].Language)));
+            DomainActivation.ActiveIn(
+                settings,
+                LanguagesOf(DomainPack.Shipped.Select(pack => pack.Language).ToArray())));
     }
 
     [Fact]

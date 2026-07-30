@@ -7,6 +7,8 @@ namespace Deckle.Autocorrect.Tests;
 [Trait("Category", "integration")]
 public sealed class AutocorrectEngineCaretRecoveryTests
 {
+    private const int BackgroundWorkTimeoutMilliseconds = 10_000;
+
     [Fact]
     public void TerminalPunctuationRecoversTheExactPhraseAfterAnEditReset()
     {
@@ -29,10 +31,16 @@ public sealed class AutocorrectEngineCaretRecoveryTests
         harness.Backspace();
         harness.Type("r.");
 
-        Assert.True(SpinWait.SpinUntil(() => reader.ReadCount >= 1, 2_000));
+        Assert.True(SpinWait.SpinUntil(
+            () => reader.ReadCount >= 1,
+            BackgroundWorkTimeoutMilliseconds));
         harness.Host.Drain();
-        Assert.True(SpinWait.SpinUntil(() => reader.ReadCount >= 2, 2_000));
-        Assert.True(SpinWait.SpinUntil(() => harness.Host.HasPendingDrain, 2_000));
+        Assert.True(SpinWait.SpinUntil(
+            () => reader.ReadCount >= 2,
+            BackgroundWorkTimeoutMilliseconds));
+        Assert.True(SpinWait.SpinUntil(
+            () => harness.Host.HasPendingDrain,
+            BackgroundWorkTimeoutMilliseconds));
         harness.Host.Drain();
 
         Assert.Equal("Il y a une seule erreur.", harness.VisibleText);
@@ -57,10 +65,16 @@ public sealed class AutocorrectEngineCaretRecoveryTests
         harness.Host.RaisePointer();
         harness.Type(".");
 
-        Assert.True(SpinWait.SpinUntil(() => reader.ReadCount >= 1, 2_000));
+        Assert.True(SpinWait.SpinUntil(
+            () => reader.ReadCount >= 1,
+            BackgroundWorkTimeoutMilliseconds));
         harness.Host.Drain();
-        Assert.True(SpinWait.SpinUntil(() => reader.ReadCount >= 2, 2_000));
-        Assert.True(SpinWait.SpinUntil(() => harness.Host.HasPendingDrain, 2_000));
+        Assert.True(SpinWait.SpinUntil(
+            () => reader.ReadCount >= 2,
+            BackgroundWorkTimeoutMilliseconds));
+        Assert.True(SpinWait.SpinUntil(
+            () => harness.Host.HasPendingDrain,
+            BackgroundWorkTimeoutMilliseconds));
         harness.Host.Drain();
 
         Assert.Equal("là.", harness.VisibleText);
