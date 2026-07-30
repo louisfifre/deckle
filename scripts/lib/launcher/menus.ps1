@@ -50,7 +50,7 @@ function Show-ProjectMenu {
         $v = Show-Submenu -Header 'Deckle > Project   -   ↑↓←→ move   Enter run   Ctrl+C quit' -Rows $menuRows -PreparedRows -ResultTitle $resultTitle -ResultLines $resultLines
         if ($null -eq $v) { return }
         $result = switch ($v) {
-            'readme-stats'   { Invoke-WorktreeScript -Script 'update-readme-stats.ps1' -Label 'Update README pulse' -Source Project -MenuRows $menuRows }
+            'readme-stats'   { Invoke-WorktreeScript -Script 'update-readme-stats.ps1' -Label 'Update README pulse' -Source Project -MenuRows $menuRows -ScriptParameters @{ Commit = $true } }
             'changelog'      { Invoke-WorktreeScript -Script 'changelog.ps1' -Label 'Update changelog' -Source Project -MenuRows $menuRows }
             'record-version' { Invoke-RecordVersion -MenuRows $menuRows }
         }

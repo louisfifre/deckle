@@ -47,6 +47,7 @@ doctrine). This file is generated from the Conventional-Commit history by
 - **precision-scroll:** Derive motion from wheel cadence
 - **scripts:** Add targeted maintenance scans
 - **scripts:** Keep action logs in menu viewport
+- **scripts:** Commit README pulse updates
 
 ### Changed
 

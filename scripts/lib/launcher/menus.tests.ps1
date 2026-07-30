@@ -18,7 +18,9 @@ function Select-Grid {
     return $script:NextMenuSelection
 }
 function Invoke-WorktreeScript {
+    param($Script, $Label, $Source, $MenuRows, $ScriptParameters)
     $script:WorktreeActionCount++
+    $script:LastWorktreeScriptParameters = $ScriptParameters
     return [pscustomobject]@{ Title = 'Updated'; Lines = @('done') }
 }
 
@@ -33,6 +35,7 @@ $script:MenuSelections = @('readme-stats', '__back__')
 Show-ProjectMenu
 Assert-Equal 'Compact' (Get-DeckleMenuBannerStyle) 'running a command keeps the compact banner'
 Assert-Equal 1 $script:WorktreeActionCount 'project action runs once before the submenu resumes'
+Assert-Equal $true $script:LastWorktreeScriptParameters.Commit 'README update requests a local commit'
 
 $script:MenuSelections = @('__back__')
 Show-ReleaseMenu

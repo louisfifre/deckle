@@ -18,7 +18,7 @@ All scripts target PowerShell 7+. The single entry point lives at [`deckle.ps1`]
 | **Run** | Launch app (Release / Debug) | yes | `lib/launch-app.ps1 -Configuration Release\|Debug` |
 |  | Build and run app (Release / Debug) | yes | `lib/build-run.ps1 -Configuration Release\|Debug` |
 |  | Build app without running (Release / Debug) | yes | `lib/build-run.ps1 -Configuration Release\|Debug -NoRun` |
-| **Workspace > Project** | Update README pulse | yes | `lib/update-readme-stats.ps1` |
+| **Workspace > Project** | Update README pulse | yes | `lib/update-readme-stats.ps1 -Commit` |
 |  | Update changelog | yes | `lib/changelog.ps1` |
 |  | Record version | yes | `lib/record-version.ps1 -Push` |
 | **Workspace > Release > Publish** | App release | yes | records a pending version when needed, then `lib/publish-app.ps1 -Publish` (confirms first) |
@@ -66,7 +66,7 @@ Each worker is callable directly from a terminal or a `launch.json` profile — 
 | [`lib/record-release.ps1`](lib/record-release.ps1) | Finalize a successful public release: add its existing tag to `release-history.json`, freeze `[Unreleased]` into the version section, commit both generated records, and optionally push the branch. Called by `publish-app.ps1`. | `-Target <worktree>`, `-Pick`, `-Version X.Y.Z`, `-Push` |
 | [`lib/release-history.psm1`](lib/release-history.psm1) | Validate and update the ordered offline ledger of public GitHub release tags in `release-history.json`. Internal historical tags are not release boundaries. | internal module |
 | [`lib/install-hooks.ps1`](lib/install-hooks.ps1) | Install the local git hooks sourced from `scripts/hooks/` into `.git/hooks/` and register the local `merge.ours` driver used by `TREE.md`. | |
-| [`lib/update-readme-stats.ps1`](lib/update-readme-stats.ps1) | Regenerate the README `Development pulse` section from local Git history. Also used by the monthly GitHub Action. | `-Target <worktree>`, `-Pick`, `-ReadmePath <path>` |
+| [`lib/update-readme-stats.ps1`](lib/update-readme-stats.ps1) | Regenerate the README `Development pulse` section from local Git history. `-Commit` creates a local README-only commit and refuses unrelated tracked changes; it never pushes. Also used without `-Commit` by the monthly GitHub Action. | `-Target <worktree>`, `-Pick`, `-ReadmePath <path>`, `-Commit` |
 | [`lib/changelog.ps1`](lib/changelog.ps1) | Generate `CHANGELOG.md` and release notes from Conventional Commits and the public-release boundaries in `release-history.json`. Default preserves an `[Unreleased]` accumulator since the latest public release; `-NotesFor X.Y.Z` emits that full release range for GitHub. | `-Target <worktree>`, `-Pick`, `-NotesFor X.Y.Z`, `-OutFile <path>` |
 | [`lib/publish-native-runtime.ps1`](lib/publish-native-runtime.ps1) | **Maintainer-only.** Package the native runtime zip (the C# DLL catalog + `PROVENANCE.txt` + `SHA256SUMS`) from an already-built local whisper.cpp tree, pair it with the MinGW runtime beside the compiler recorded by CMake, then optionally publish only `native-vX.Y.Z`. The version is inferred from whisper.cpp and existing native tags; `-Version` is a recovery override. No CMake or Deckle build is invoked. | `-WhisperRepo <path>`, `-Target <Deckle repo>`, `-OutDir <path>`, `-Publish`, `-Version X.Y.Z`, `-Notes <path>` |
 | [`lib/action-summary.ps1`](lib/action-summary.ps1) | Internal shared writer for the final action summary used by worker scripts. | |
@@ -84,7 +84,7 @@ The hook delegates to [`hooks/update-tree.ps1`](hooks/update-tree.ps1), which re
 The root README carries a small generated `Development pulse` section bounded by invisible HTML comments. Regenerate it locally through the menu (`Update README pulse`) or directly:
 
 ```powershell
-pwsh scripts/lib/update-readme-stats.ps1
+pwsh scripts/lib/update-readme-stats.ps1 -Commit
 ```
 
 GitHub also runs `.github/workflows/update-readme-stats.yml` monthly and on manual dispatch. The workflow checks out full history (`fetch-depth: 0`), runs the same script, and commits `README.md` only when the generated section changed.

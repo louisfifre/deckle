@@ -35,13 +35,14 @@ function Invoke-WorktreeScript {
         [Parameter(Mandatory)][string]$Script,
         [Parameter(Mandatory)][string]$Label,
         [Parameter(Mandatory)][string]$Source,
-        [Parameter(Mandatory)][object[]]$MenuRows
+        [Parameter(Mandatory)][object[]]$MenuRows,
+        [hashtable]$ScriptParameters = @{}
     )
     $wt = Get-WorktreeOrReturn
     if ($null -eq $wt) { return }
     $scriptPath = Join-Path $LibDir $Script
     return Invoke-DeckleMenuAction -Header "Deckle > $Label" -Label $Label -Source $Source -MenuRows $MenuRows -Action {
-        & $scriptPath -Target $wt
+        & $scriptPath -Target $wt @ScriptParameters
     }
 }
 
