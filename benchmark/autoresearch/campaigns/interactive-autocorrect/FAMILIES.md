@@ -20,6 +20,9 @@ Status vocabulary: **baseline**, **active**, **candidate**, **dormant**, and
   whereas 150 ms reached 95.18% with an immediate trigger (ACX-0005).
 - Recovered UIA application carries at least 220 ms of configured stable-read
   sleeps for a changing verdict, before UIA call cost, injection, and rendering.
+- ACX-0019 exactly reconstructs 54 positional edits across the 35 public
+  development cases. The existing global locative rule makes one correct edit,
+  no wrong edit, and abstains on the other 34 cases at 0.0003 ms warm p95.
 
 ## Recommended shape (interpretation)
 
@@ -51,7 +54,7 @@ become the high-trust profile even if UIA plus SendInput remains a broad fallbac
 | Exact anticipation with a fast decider | reproducible replay baseline; integration active | ACX-0014 preserves 196 independently safe exact transactions after quarantining three boundary disagreements. Immediate 150 ms readiness is 186/196 (94.90%); a fixed dot branch hits 151/196 (77.04%), while four branches waste three jobs per hit. Next: measure real incremental preparation, scheduler ownership, lease safety, and observed visible latency. |
 | Batched/reused Qwen scoring | dormant for direct interaction | ACX-0018 established exact two-row DirectML batch construction and finite logits, but forward scores diverged by 0.0156224 against the frozen 0.001 tolerance. The semantic prerequisite failed, so latency is ineligible. Preserve batching only for separately preregistered diagnostics, shadow/teacher work, or a future numerical-kernel investigation; do not relax the contract after observation. |
 | In-process Stopwatch stage attribution | refuted as scoped | Two designs preserved semantics but could not separate collector cost from a 140 ms immediate-repeat/position effect; ACX-0010 upper bounds were 65.097 ms and 8.562%. External GPU/ORT tracing remains a separate family. |
-| Deterministic unanimous global rules | candidate | Existing global `la/là` rule proves the contract shape, not residual coverage. Freeze a claim inventory on development data. |
+| Deterministic unanimous global rules | active from reproducible one-rule baseline | ACX-0019 freezes the public inventory: 1 correct edit, 0 wrong edits, 19 useful and 15 regrettable abstentions, 0 KEEP; all 66 edit orders are identity-stable at 0.0003 ms warm p95. ACX-0020 tests a precedence-free unanimity bundle with at least two correct residual edits across two families. |
 | Compact tabular discriminator | candidate | Best low-data baseline. Score KEEP plus every edit over grouped transaction splits. |
 | Compact neural global discriminator | candidate | Plausible 10–100 ms class, but trusted labels need audit. Start only if rules/tabular plateau. |
 | Pointwise reranker | candidate baseline | Cheap reference; compare at identical features/capacity because it may mis-handle candidate competition. |
@@ -60,10 +63,12 @@ become the high-trust profile even if UIA plus SendInput remains a broad fallbac
 | Setwise candidate interaction | dormant | Run only if multi-edit transactions expose a measured listwise deficit. Higher overfit risk. |
 | Calibration/OOD/family thresholds | candidate | Global calibration first; conditional thresholds only if gains survive grouped validation. |
 | Fast rules/model plus Qwen shadow | candidate, recommended cascade | One interactive decision; Qwen owns no application token. Exact fingerprints and separate lanes are mandatory. |
+| One Qwen base plus task LoRA adapters | candidate | The pinned ORT GenAI 0.13.0 managed assembly exposes `Adapters.LoadAdapter` and `Generator.SetActiveAdapter`, and upstream documents Multi-LoRA. ACX-0022 must test one shared Qwen export with at least two task adapters, on-disk deduplication, switch latency, RAM/VRAM residency, exact output isolation, and DirectML compatibility before any shared-model claim. |
 | Qwen teacher distillation | dormant | Teacher logits may help training but never replace human truth or touch validation/holdout. |
 | Exact transaction cache | candidate | Full-record equality after hash hit plus separate application lease. Measure hit rate before implementation. |
 | Compact-model quantization | dormant | Quantize only a validated finalist; recalibrate and require target-machine gain. |
 | UIA pre-anchor + SendInput + postcondition | active integration baseline | Broad, but precheck is not atomic and postcheck detects damage after the fact. |
+| Delayed closed-sentence range-owned correction | candidate | Correcting sentence A while typing sentence B must never replay Backspace or replacement text at the current caret. ACX-0021 will compare range-owned Edit/RichEdit/TOM and TSF prototypes under concurrent continuation typing, exact reread/fingerprint gates, caret/selection/undo preservation, and exact postcondition verification. |
 | Win32 Edit/RichEdit or TOM range path | candidate | Narrow but potentially fast and range-directed. Compare exact delta, focus, undo, Unicode, read-only, and UIPI. |
 | TSF range-owned edit | dormant high-trust candidate | Strong potential edit-session/IME semantics; high COM/deployment cost and unknown coverage. |
 | Per-surface capability routing | candidate | Key by app/version/control signature/capability, not process name alone; fail closed on drift. |
@@ -122,6 +127,13 @@ become the high-trust profile even if UIA plus SendInput remains a broad fallbac
 - **Cost:** low to medium.
 - **Risks:** lexical memorization, rule growth, hidden priority order.
 - **Falsifier:** any sealed false application or less than 3% useful coverage.
+- **Current evidence:** ACX-0019 establishes the one-rule public-development
+  baseline, not the bundle hypothesis: 54 edits reconstruct exactly, all 66
+  edit orders preserve identity, and the locative rule selects the one correct
+  `la` → `là` edit with no wrong decision. It emits no affirmative KEEP and
+  leaves 15/16 correctable cases as regrettable abstentions. The 10,000-sample
+  warm p95 is 0.0003 ms. ACX-0020 is selected to test at least two residual
+  edits across two frozen families under rule-order unanimity.
 
 ### FAM-04 — compact global baseline
 
@@ -171,3 +183,43 @@ become the high-trust profile even if UIA plus SendInput remains a broad fallbac
 - **Cost:** 45–60 minutes of voluntary physical testing.
 - **Risks:** one informed participant, fatigue, salience and learning.
 - **Falsifier:** flat curve, threshold below 100 ms, or high catch false reports.
+
+### FAM-09 — delayed range-owned closed-sentence correction
+
+- **Hypothesis:** a completed sentence can be corrected after continuation typing
+  has begun without moving or using the current caret, changing any unrelated
+  UTF-16 unit, disturbing selection/IME state, or corrupting undo.
+- **Experiment:** in the Playground, close sentence A, begin sentence B, then
+  release a delayed positional edit into A through control-native range APIs and
+  a minimal TSF prototype. Exercise target drift, focus changes, read-only state,
+  emoji, combining sequences, IME composition, selection, and rapid typing.
+- **Cost:** medium to high integration work; no model required initially.
+- **Risks:** controls without stable range identity, undo fragmentation, race
+  between reread and commit, and surface-specific behavior.
+- **Falsifier:** any character lands at the live caret, any undeclared text unit
+  changes, caret/selection/IME/undo cannot be preserved, or stale target/range
+  state is accepted. UIA plus current-caret `SendInput` is ineligible by design.
+
+### FAM-10 — one shared Qwen base with task adapters
+
+- **Hypothesis:** one local Qwen base can serve multiple Deckle LLM tasks through
+  separately trained LoRA adapters while storing and loading the base only once,
+  with materially lower disk usage than one full model per task and acceptable
+  adapter-switch latency and memory residency.
+- **Experiment:** export two deliberately distinct adapters against the exact same
+  base and target-layer contract; load both through pinned ORT GenAI 0.13.0,
+  alternate them over seeded prompts, and retain base/adapter file sizes, cold and
+  warm load/switch samples, RAM/VRAM deltas, output fingerprints, and isolation
+  checks. Run CPU technical smoke before a serial DirectML probe.
+- **Cost:** medium export/runtime work plus later task-specific training data.
+- **Risks:** adapter export/provider incompatibility, identical-layer constraint,
+  GPU copies per adapter, quality interference, preview API churn, and base-model
+  capability limits that an adapter cannot repair.
+- **Falsifier:** adapters require duplicated base artifacts or model sessions,
+  cannot switch reliably on DirectML, leak state across tasks, or save too little
+  disk/memory relative to their latency and quality cost.
+- **Current evidence:** the local 0.13.0 managed assembly exposes
+  `Adapters.LoadAdapter`, `Adapters.UnloadAdapter`, and
+  `Generator.SetActiveAdapter`; ONNX Runtime GenAI documents Multi-LoRA and
+  `.onnx_adapter` files. No Deckle Qwen adapter has yet been exported, loaded,
+  timed, or quality-tested.

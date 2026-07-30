@@ -5,6 +5,37 @@ type: module-journal
 
 # JOURNAL — Deckle.Autocorrect
 
+## 2026-07-30 — Investigate delayed range edits and one shared Qwen base
+
+Delayed correction of a completed sentence while typing continues in the next
+sentence is a desired interaction, but current-caret `SendInput` is ineligible:
+the caret may have moved and replacement keystrokes can land inside unrelated
+text. The research path is a Playground-only range-owned edit through
+Edit/RichEdit/TOM or TSF, gated by stable target/range identity, an exact reread,
+caret/selection/IME/undo preservation, and an exact postcondition. Ambiguity must
+abstain. No production behavior changes before this is demonstrated.
+
+Deckle should also investigate one shared local Qwen base with a separate LoRA
+adapter per LLM use. The pinned ONNX Runtime GenAI 0.13.0 managed assembly already
+exposes adapter load/unload and generator activation APIs, and upstream documents
+Multi-LoRA. This establishes an available runtime surface, not Deckle feasibility:
+no adapter has been exported or run against the current DirectML Qwen model, and
+disk savings, load/switch latency, RAM/VRAM residency, isolation, and per-task
+quality remain unmeasured.
+
+## 2026-07-30 — Exact public rule baseline leaves fifteen correctable cases untouched
+
+ACX-0019 found 54 exact positional one-token edits across 35 public development
+cases and identity-stable verdicts across all 66 candidate orders. The existing
+global locative rule made one correct edit, no wrong edit, no affirmative KEEP,
+19 useful abstentions, and 15 regrettable abstentions at 0.0003 ms warm p95 over
+10,000 seeded evaluations.
+
+Chose ACX-0020 to test a frozen precedence-free unanimity bundle requiring at
+least two correct residual edits across two candidate families, zero wrong
+public-development decisions, exhaustive candidate/rule-order invariance, and
+warm p95 below 1 ms. Production behavior remains unchanged.
+
 ## 2026-07-30 — Exact DirectML batching is feasible but not score-equivalent
 
 ACX-0018 passed exact pre-logit row identity and returned finite float16 logits

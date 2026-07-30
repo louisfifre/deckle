@@ -7,7 +7,9 @@ module: benchmark/autoresearch/campaigns/interactive-autocorrect
 
 # Results
 
-The first campaign baseline is valid for deterministic regression and managed commit cost only. It is not an estimate of field precision or visible interaction latency.
+The deterministic baselines are valid for regression, exact public inventory,
+and in-process managed cost only. They are not estimates of field precision,
+applied-correction precision, or visible interaction latency.
 
 ## Baselines
 
@@ -44,6 +46,12 @@ The same trials reproduce head-of-line blocking: baseline judge entry was 0.0066
 Wave-1 audited validation: the final Debug x64 build completed with zero warnings/errors and `Deckle.Autocorrect.Tests` passed 751/751 executed tests. Nine explicit maintenance probes remain opt-in and were not counted as executed.
 
 ACX-0006 supersedes ACX-0002 as the reproducible deterministic baseline and is provisionally non-dominated inside its limited deterministic/simulated scope. Neither positional nor applied precision is measured, so it cannot yet be compared to interactive whole-sentence candidates on product quality.
+
+ACX-0019 adds a reproducible exact sentence-decision baseline on the separate
+35-case public development corpus. It establishes positional reconstruction and
+candidate-order invariance, but no grouped, applied, UIA, end-to-end, or field
+claim. Within that narrow scope its one-rule result is provisionally
+non-dominated and becomes the baseline for ACX-0020.
 
 ACX-0003 does not add a quality/latency candidate to the frontier; it establishes a constraint: speculative architectures that retain obsolete single-flight work are ineligible for a direct-interaction Pareto claim until blocked-useful-work and stale compute are measured.
 
@@ -342,6 +350,47 @@ remain possible. The tolerances are not changed after seeing this result.
 
 Raw output SHA-256:
 `6DDA0AC63C7BCC293416358956A7B921CE6B494D95A412E9127C434A098EE03D384`.
+
+### ACX-0019 — exact public inventory and locative-rule baseline
+
+ACX-0019 ran from clean repository HEAD `96afac03`, executing probe source
+commit `bcb32066`. The Debug x64 probe build completed with zero warnings and
+errors, the process exited zero with empty stderr, all eight validity gates
+passed, and an independent result audit found no discrepancy.
+
+The 35 public visible-development cases contain 16 correctable and 19 literal
+cases. Every nonliteral alternative reconstructed exactly as one UTF-16
+positional token edit, for 54 submitted edits. The frozen provenance contains
+18 `diacritic_only` and 17 `terminal_inflection` cases; parent, source-session,
+and punctuation-variant groups are absent and reported as missing for all 35.
+This absence makes grouped validation ineligible.
+
+All 66 exhaustive edit-list permutations produced identity-stable verdicts.
+The existing global locative rule made one correct edit (`la_location`), zero
+wrong edits, zero affirmative KEEP decisions, 19 useful abstentions, and 15
+regrettable abstentions. The separate always-abstain baseline has 19 useful and
+16 regrettable abstentions; its precision is not measured.
+
+After 1,000 warmups, 10,000 seeded mixed evaluations measured 0.0002 ms p50,
+0.0003 ms p95, 0.0023 ms p99, and 0.0069 ms maximum. The preregistered 1 ms p95
+reference passed. Managed allocation increased by 1,044,584 bytes, private
+memory by 475,136 bytes, and working set by 909,312 bytes across the measured
+window. The process CPU clock showed no increment at its effective resolution;
+the recorded zero-millisecond delta is not a claim of zero CPU consumption. No
+GPU work was measured or claimed.
+
+Raw output SHA-256:
+`75D24CD83C5022EF6FDE693E2E5D64C3D5FDCEBE63D980C660017660DDF26D1F`.
+
+**Established:** exact public inventory reconstruction, immutable family
+provenance, explicit missing grouping provenance, exhaustive candidate-order
+invariance, the one-rule internal decision counts, and warm in-process cost.
+**Not established:** grouped validation, field quality, applied correction,
+UIA, injection, observed target mutation, end-to-end or physical latency, GPU
+work, or a general precision estimate. ACX-0020 is selected for a frozen
+precedence-free unanimity bundle requiring at least two correct residual edits
+across two families, zero wrong public decisions, exhaustive rule/candidate
+order invariance, and warm p95 below 1 ms.
 
 ## Refuted or dominated families
 
