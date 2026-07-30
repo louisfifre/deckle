@@ -80,8 +80,8 @@ function Invoke-GridLoop {
         [switch]$ClearScreen,
         [ValidateSet('Compact')]
         [string]$BannerStyle = 'Compact',
-        [ValidateRange(-1, 40)]
-        [int]$CategoryWidth = -1,
+        [ValidateRange(0, 40)]
+        [int]$CategoryWidth = $script:MenuCategoryWidth,
         [string]$ResultTitle,
         [string[]]$ResultLines = @(),
         [switch]$ResultFollowTail
@@ -122,7 +122,6 @@ function Invoke-GridLoop {
         }
     }
     if ($sel.Count -eq 0) { return $null }
-    $CategoryWidth = Resolve-GridCategoryWidth -RequestedWidth $CategoryWidth -PrefixWidth $prefixW
     if ($CategoryWidth -gt 0) { $prefixW = $CategoryWidth }
     if ($prefixW -gt 0) { $prefixW += $GAP }
     $columnCount = (@($colW.Keys | Measure-Object -Maximum).Maximum + 1)
@@ -265,8 +264,8 @@ function Select-Grid {
         [switch]$ClearScreen,
         [ValidateSet('Compact')]
         [string]$BannerStyle = 'Compact',
-        [ValidateRange(-1, 40)]
-        [int]$CategoryWidth = -1,
+        [ValidateRange(0, 40)]
+        [int]$CategoryWidth = $script:MenuCategoryWidth,
         [string]$ResultTitle,
         [string[]]$ResultLines = @(),
         [switch]$ResultFollowTail
@@ -289,17 +288,6 @@ function Get-GridColumnWidths {
         $widths[$column] = $baseWidth + $(if ($column -lt $remainder) { 1 } else { 0 })
     }
     return $widths
-}
-
-function Resolve-GridCategoryWidth {
-    param(
-        [Parameter(Mandatory)][ValidateRange(-1, 40)][int]$RequestedWidth,
-        [Parameter(Mandatory)][ValidateRange(0, 40)][int]$PrefixWidth
-    )
-
-    if ($RequestedWidth -ge 0) { return $RequestedWidth }
-    if ($PrefixWidth -gt 0) { return $script:MenuCategoryWidth }
-    return 0
 }
 
 function Get-GridResultOffset {
