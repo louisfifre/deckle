@@ -52,6 +52,16 @@ try {
     Assert-NotContains $full '## [0.5.0]' 'An internal historical tag must not become a changelog section.'
     Assert-NotContains $full '## [0.9.0]' 'An internal current tag must not become a changelog section.'
 
+    & (Join-Path $PSScriptRoot 'changelog.ps1') -Target $root -Commit
+    if (-not $?) { throw 'Committed changelog generation failed.' }
+    $changelogCommit = (& git -C $root log -1 --format='%s').Trim()
+    Assert-Contains $changelogCommit 'docs(changelog): refresh unreleased changes' 'The menu mode should commit the generated changelog.'
+    $headBeforeNoOp = (& git -C $root rev-parse HEAD).Trim()
+    & (Join-Path $PSScriptRoot 'changelog.ps1') -Target $root -Commit
+    if (-not $?) { throw 'No-op changelog generation failed.' }
+    $headAfterNoOp = (& git -C $root rev-parse HEAD).Trim()
+    if ($headBeforeNoOp -ne $headAfterNoOp) { throw 'An unchanged changelog must not create an empty commit.' }
+
     $notes = Join-Path $root 'notes.md'
     & (Join-Path $PSScriptRoot 'changelog.ps1') -Target $root -NotesFor 0.13.0 -OutFile $notes
     if (-not $?) { throw 'Release-note generation failed.' }

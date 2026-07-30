@@ -57,7 +57,7 @@ function Show-ProjectMenu {
         if ($null -eq $v) { return }
         $result = switch ($v) {
             'readme-stats'   { Invoke-WorktreeScript -Script 'update-readme-stats.ps1' -Label 'Update README pulse' -Source Project -MenuRows $menuRows -ScriptParameters @{ Commit = $true } }
-            'changelog'      { Invoke-WorktreeScript -Script 'changelog.ps1' -Label 'Update changelog' -Source Project -MenuRows $menuRows }
+            'changelog'      { Invoke-WorktreeScript -Script 'changelog.ps1' -Label 'Update changelog' -Source Project -MenuRows $menuRows -ScriptParameters @{ Commit = $true } }
             'record-version' { Invoke-RecordVersion -MenuRows $menuRows }
         }
         if ($null -ne $result) { $resultTitle = $result.Title; $resultLines = @($result.Lines); $resultMode = 'Log' }
