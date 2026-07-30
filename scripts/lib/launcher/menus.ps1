@@ -9,7 +9,7 @@ function Show-Submenu {
         [ValidateSet('Compact')]
         [string]$BannerStyle = 'Compact',
         [string]$ResultTitle,
-        [string[]]$ResultLines = @(),
+        [object[]]$ResultLines = @(),
         [ValidateSet('Guidance', 'Log', 'Report')]
         [string]$ResultMode = 'Guidance',
         [ValidateSet('Run', 'Select')]

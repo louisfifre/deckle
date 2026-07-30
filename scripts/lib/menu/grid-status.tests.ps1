@@ -27,7 +27,7 @@ function Get-MenuMetrics {
     return [pscustomobject]@{ TerminalWidth = 79; WindowHeight = 24 }
 }
 function Write-GridStatusRows {
-    param($View, [int]$StartIndex, [string[]]$Lines, [int]$ResultOffset)
+    param($View, [int]$StartIndex, [object[]]$Lines, [int]$ResultOffset)
     $script:LastGridStatusStartIndex = $StartIndex
 }
 

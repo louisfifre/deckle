@@ -1,4 +1,15 @@
 # Two-dimensional grid picker.
+function Get-MenuResultLinePresentation {
+    param([AllowNull()]$Line)
+
+    $textProperty = if ($null -ne $Line) { $Line.PSObject.Properties['Text'] } else { $null }
+    $colorProperty = if ($null -ne $Line) { $Line.PSObject.Properties['ForegroundColor'] } else { $null }
+    return [pscustomobject]@{
+        Text = if ($null -ne $textProperty) { [string]$textProperty.Value } else { [string]$Line }
+        ForegroundColor = if ($null -ne $colorProperty) { [ConsoleColor]$colorProperty.Value } else { [ConsoleColor]::Gray }
+    }
+}
+
 function Set-GridSelectionState {
     param(
         [hashtable]$State,
@@ -38,7 +49,7 @@ function Write-GridLine {
         [int]$InnerWidth, [int]$ContentWidth,
         [int]$ActiveBodyIndex, [int]$ActiveCol,
         [int]$TrailingWidth = 0, [int]$TrailingGap = 0, [int]$TrailingColumn = -1,
-        [string[]]$ResultLines = @(), [int]$ResultOffset = 0,
+        [object[]]$ResultLines = @(), [int]$ResultOffset = 0,
         [int]$ResultPage = 1, [int]$ResultPageCount = 1
     )
     $entry = $Body[$Index]
@@ -60,8 +71,9 @@ function Write-GridLine {
         Write-MenuContentSegment -Text ('  ' + [string]$entry.Text) -Written ([ref]$written) -InnerWidth $ContentWidth -ForegroundColor DarkGray -BackgroundColor $null
     } elseif ($entry.Kind -eq 'result') {
         $resultIndex = $ResultOffset + [int]$entry.Slot
-        $text = if ($resultIndex -lt $ResultLines.Count) { [string]$ResultLines[$resultIndex] } else { '' }
-        Write-MenuContentSegment -Text ('  ' + $text) -Written ([ref]$written) -InnerWidth $ContentWidth -ForegroundColor Gray -BackgroundColor $null
+        $line = if ($resultIndex -lt $ResultLines.Count) { $ResultLines[$resultIndex] } else { '' }
+        $presentation = Get-MenuResultLinePresentation -Line $line
+        Write-MenuContentSegment -Text ('  ' + $presentation.Text) -Written ([ref]$written) -InnerWidth $ContentWidth -ForegroundColor $presentation.ForegroundColor -BackgroundColor $null
     } else {
         # 'row'
         Write-MenuContentSegment -Text (' ' * $script:MenuRowInset) -Written ([ref]$written) -InnerWidth $ContentWidth -ForegroundColor $null -BackgroundColor $null
@@ -118,7 +130,7 @@ function Invoke-GridLoop {
         [ValidateRange(0, 40)]
         [int]$CategoryWidth = $script:MenuCategoryWidth,
         [string]$ResultTitle,
-        [string[]]$ResultLines = @(),
+        [object[]]$ResultLines = @(),
         [switch]$ResultFollowTail,
         [ValidateSet('Run', 'Select', 'Confirm')]
         [string]$Interaction = 'Run',
@@ -290,7 +302,7 @@ function Select-Grid {
         [ValidateRange(0, 40)]
         [int]$CategoryWidth = $script:MenuCategoryWidth,
         [string]$ResultTitle,
-        [string[]]$ResultLines = @(),
+        [object[]]$ResultLines = @(),
         [switch]$ResultFollowTail,
         [ValidateSet('Run', 'Select', 'Confirm')]
         [string]$Interaction = 'Run',

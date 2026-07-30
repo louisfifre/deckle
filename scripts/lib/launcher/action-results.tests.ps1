@@ -21,16 +21,13 @@ Assert-Equal 'Warning' (Get-DeckleActionLogLevel -Message '2 Warning(s)  0 Error
 
 $formatted = @(ConvertTo-DeckleActionLogLines -InputObject "first`nsecond" -Source Build -Timestamp ([datetime]'2026-07-29T14:32:08'))
 Assert-Equal 2 $formatted.Count 'multiline output becomes separate log entries'
-Assert-Equal $true $formatted[0].StartsWith('14:32:08  Info     Build') 'log columns stay aligned'
-
-$medium = @(ConvertTo-DeckleActionLogLines -InputObject 'compile' -Source Build -Timestamp ([datetime]'2026-07-29T14:32:08') -ContentWidth 52)
-Assert-Equal $true $medium[0].StartsWith('Info     Build') 'medium logs omit time before truncating the message'
-$narrow = @(ConvertTo-DeckleActionLogLines -InputObject 'compile' -Source Build -Timestamp ([datetime]'2026-07-29T14:32:08') -ContentWidth 38)
-Assert-Equal 'Info     compile' $narrow[0] 'narrow logs preserve level and message before optional metadata'
+Assert-Equal 'first' $formatted[0] 'logs display only the emitted message'
+Assert-Equal 'second' $formatted[1] 'message-only logs need no responsive metadata columns'
 
 $hostWarning = @(& { Write-Host 'tool needs attention' -ForegroundColor Yellow } 6>&1)[0]
 $structured = @(ConvertTo-DeckleActionLogRecords -InputObject $hostWarning -Source Build)
 Assert-Equal 'Warning' $structured[0].Level 'host color provides a structured internal log level'
+Assert-Equal ([ConsoleColor]::Yellow) $structured[0].ForegroundColor 'host color is retained for menu rendering'
 
 $escape = [char]27
 $bell = [char]7
@@ -45,7 +42,7 @@ Assert-Equal 'Build Debug succeeded · 18.4 s' $title 'summary states action out
 
 function New-GridStatusView { return [pscustomobject]@{ Name = 'status-view' } }
 function Update-GridStatusView {
-    param($View, [string]$Title, [string[]]$Lines, [switch]$Follow)
+    param($View, [string]$Title, [object[]]$Lines, [switch]$Follow)
     $script:ActionViewUpdateCount++
     return $View
 }
@@ -55,10 +52,12 @@ $menuRows = @(@{ Cells = @( @{ Label = 'Build' } ) })
 $success = Invoke-DeckleMenuAction -Header Deckle -Label Build -Source Build -MenuRows $menuRows -Action {
     Write-Output 'restore completed'
     [Threading.Thread]::Sleep(120)
-    Write-Host 'build completed'
+    Write-Host 'build completed' -ForegroundColor Green
 }
 Assert-Equal $true $success.Succeeded 'captured action reports success'
 Assert-Equal 2 $success.Lines.Count 'output and host streams are both retained'
+Assert-Equal 'restore completed' $success.Lines[0].Text 'plain output remains raw'
+Assert-Equal ([ConsoleColor]::Green) $success.Lines[1].ForegroundColor 'PowerShell host color reaches the menu result'
 Assert-Equal $true ($script:ActionViewUpdateCount -gt 0) 'captured output updates the existing action view'
 
 $failure = Invoke-DeckleMenuAction -Header Deckle -Label Build -Source Build -MenuRows $menuRows -Action {
@@ -66,7 +65,7 @@ $failure = Invoke-DeckleMenuAction -Header Deckle -Label Build -Source Build -Me
     throw 'compiler stopped'
 }
 Assert-Equal $false $failure.Succeeded 'terminating action error reports failure'
-Assert-Equal $true (($failure.Lines -join "`n") -like '*compiler stopped*') 'failure reason stays in the log'
+Assert-Equal $true ((@($failure.Lines | ForEach-Object Text) -join "`n") -like '*compiler stopped*') 'failure reason stays in the log'
 
 $partial = Invoke-DeckleMenuAction -Header Deckle -Label Setup -Source Setup -MenuRows $menuRows -Action {
     Write-Host '  Result        : Partial'

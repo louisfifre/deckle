@@ -59,6 +59,13 @@ Assert-Equal '←→ move   Enter confirm   Esc cancel' (Get-GridNavigationComma
 Assert-Equal 'Wheel/PgUp/PgDn pages   Home/End first/latest' (Get-GridPagingFooter -HasPages) 'paged results keep their contextual controls in the footer'
 Assert-Equal '' (Get-GridPagingFooter) 'menus without pages do not duplicate header commands in the footer'
 
+$plainResult = Get-MenuResultLinePresentation -Line 'plain output'
+Assert-Equal 'plain output' $plainResult.Text 'plain result lines remain compatible'
+Assert-Equal ([ConsoleColor]::Gray) $plainResult.ForegroundColor 'plain result lines keep the neutral menu color'
+$coloredResult = Get-MenuResultLinePresentation -Line ([pscustomobject]@{ Text = 'completed'; ForegroundColor = [ConsoleColor]::Green })
+Assert-Equal 'completed' $coloredResult.Text 'structured result lines expose only their message'
+Assert-Equal ([ConsoleColor]::Green) $coloredResult.ForegroundColor 'structured result lines preserve their PowerShell color'
+
 $compactLayout = New-GridBodyLayout -CommandBody @(@{ Kind = 'row' }) -ResultTitle 'Results' -BannerStyle Compact
 Assert-Equal 15 $compactLayout.Body.Count 'result layout consumes available compact body'
 Assert-Equal 12 $compactLayout.ResultRowCount 'result layout reserves breathing room, title, and header spacing'
