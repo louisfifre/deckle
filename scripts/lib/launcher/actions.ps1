@@ -90,7 +90,7 @@ function Select-VersionBump {
         [pscustomobject]@{ Prefix = 'Major'; Label = "$Current → $major   an overhaul";          Value = [pscustomobject]@{ Seg = 'major'; Target = $major } }
     )
     try {
-        return Select-Action -Header $Header -Items $items -Default 0 -ClearScreen -BannerStyle (Get-DeckleMenuBannerStyle)
+        return Select-Action -Header $Header -Items $items -Default 0 -ClearScreen
     } catch {
         return $null
     }
@@ -120,6 +120,30 @@ function Get-RecordableCommitCountSinceVersion {
         if ($subject -cmatch '^(feat|fix|perf|refactor|revert)(?:\([^)]+\))?!?:\s+') { $count++ }
     }
     return $count
+}
+
+function Invoke-ReleaseSourcePreflight {
+    param(
+        [Parameter(Mandatory)][string]$Worktree,
+        [Parameter(Mandatory)][object[]]$MenuRows
+    )
+
+    return Invoke-DeckleMenuAction `
+        -Header 'Deckle > Release > Publish app' `
+        -Label 'Validate release source' `
+        -Source Release `
+        -MenuRows $MenuRows `
+        -Action {
+            Write-Host '[release] Sync release source'
+            $fetchOutput = @(& git -C $Worktree fetch origin main --tags --prune 2>&1)
+            if ($LASTEXITCODE -ne 0) {
+                throw "git fetch origin main --tags failed: $($fetchOutput -join ' ')"
+            }
+
+            Import-Module (Join-Path $LibDir 'release-validation.psm1') -Force
+            $source = Assert-DeckleReleaseRepositorySource -RepoRoot $Worktree -AllowAhead
+            Write-Host "[release] clean main at $($source.HeadSha.Substring(0, 12)); origin/main is an ancestor"
+        }
 }
 
 function Invoke-RecordVersion {
@@ -163,6 +187,9 @@ function Invoke-PublishRelease {
         Write-Host "No MAJOR.MINOR.PATCH <Version> found in that worktree." -ForegroundColor Red
         return
     }
+
+    $preflight = Invoke-ReleaseSourcePreflight -Worktree $wt -MenuRows $MenuRows
+    if (-not $preflight.Succeeded) { return $preflight }
 
     Import-Module (Join-Path $LibDir 'release-history.psm1') -Force
     $tag = "v$cur"

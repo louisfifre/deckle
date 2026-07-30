@@ -26,7 +26,7 @@ function Show-MenuStatus {
         [string[]]$Lines = @(),
         [string]$Footer = '',
         [switch]$Follow,
-        [ValidateSet('Full', 'Compact')]
+        [ValidateSet('Compact')]
         [string]$BannerStyle = 'Compact'
     )
 

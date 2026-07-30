@@ -8,8 +8,8 @@ function Get-DeckleActionLogLevel {
         -replace '(?i)\b0\s+warning(?:\(s\)|s)?\b', ''
     if ($meaningfulMessage -match '(?i)\b(error|failed|failure)\b') { return 'Error' }
     if ($meaningfulMessage -match '(?i)\bwarning\b') { return 'Warning' }
-    if ($Message -match '^\[(build|launch|publish|release|setup|clean|stats)\]') { return 'Step' }
     if ($Message -match '^\[summary\]') { return 'Summary' }
+    if ($Message -match '^\[[a-z][a-z-]*\]') { return 'Step' }
     return 'Info'
 }
 

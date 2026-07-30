@@ -6,14 +6,13 @@ function Show-Submenu {
         [Parameter(Mandatory)][string]$Header,
         [Parameter(Mandatory)][object[]]$Rows,
         [string]$Footer = 'Back returns to the main menu; Ctrl+C quits anytime',
-        [ValidateSet('Full', 'Compact')]
-        [string]$BannerStyle,
+        [ValidateSet('Compact')]
+        [string]$BannerStyle = 'Compact',
         [string]$ResultTitle,
         [string[]]$ResultLines = @(),
         [switch]$PreparedRows
     )
 
-    if (-not $BannerStyle) { $BannerStyle = Get-DeckleMenuBannerStyle }
     $withBack = if ($PreparedRows) { @($Rows) } else { @(Get-DeckleSubmenuRows -Sections $Rows) }
 
     # Arrive on the first action: '< Back' keeps its top spot (one ↑ away) but
@@ -103,7 +102,7 @@ function Show-MaintenanceMenu {
         $v = Show-Submenu `
             -Header 'Deckle > Maintenance   -   ↑↓←→ move   Enter run   Ctrl+C quit' `
             -Footer 'Arrows move   Enter runs   Wheel/PgUp/PgDn pages   Esc goes back' `
-            -BannerStyle (Get-DeckleMenuBannerStyle) `
+            -BannerStyle Compact `
             -Rows $menuRows -PreparedRows `
             -ResultTitle $resultTitle `
             -ResultLines $resultLines

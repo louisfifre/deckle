@@ -5,8 +5,6 @@ function Assert-Equal($Expected, $Actual, [string]$Case) {
     if ($Expected -ne $Actual) { throw "${Case}: expected $Expected, got $Actual" }
 }
 
-Assert-Equal 'Compact' (Get-DeckleMenuBannerStyle) 'the launcher always uses the compact banner'
-
 function Select-YesNo {
     param(
         [string]$Question,

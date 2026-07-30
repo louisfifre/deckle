@@ -1,8 +1,4 @@
 # Deckle launcher context, prompts, and session helpers.
-function Get-DeckleMenuBannerStyle {
-    return 'Compact'
-}
-
 function Start-DeckleMenuSession {
     Start-MenuSession -AlternateScreen
     $script:DeckleMenuSessionActive = $true
@@ -12,26 +8,6 @@ function Stop-DeckleMenuSession {
     if (-not $script:DeckleMenuSessionActive) { return }
     Stop-MenuSession
     $script:DeckleMenuSessionActive = $false
-}
-
-function Begin-DeckleAction {
-    $script:DeckleActionCompleted = $true
-    if ($script:DeckleMenuSessionActive) {
-        Suspend-MenuSession
-        $script:DeckleMenuSessionActive = $false
-        if (-not [Console]::IsOutputRedirected) {
-            Write-Host ''
-        }
-    }
-}
-
-function Clear-DeckleMenuScreen {
-    if ([Console]::IsOutputRedirected) { return }
-    try {
-        [Console]::Clear()
-    } catch {
-        Write-Host ""
-    }
 }
 
 function Get-WorktreeOrReturn {

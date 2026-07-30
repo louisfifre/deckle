@@ -33,7 +33,6 @@ Assert-Equal 'Compact' $script:LastSubmenuBannerStyle 'submenus always use the c
 $script:WorktreeActionCount = 0
 $script:MenuSelections = @('readme-stats', '__back__')
 Show-ProjectMenu
-Assert-Equal 'Compact' (Get-DeckleMenuBannerStyle) 'running a command keeps the compact banner'
 Assert-Equal 1 $script:WorktreeActionCount 'project action runs once before the submenu resumes'
 Assert-Equal $true $script:LastWorktreeScriptParameters.Commit 'README update requests a local commit'
 

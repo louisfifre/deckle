@@ -67,7 +67,7 @@ function New-GridStatusView {
         [string[]]$Lines = @(),
         [string]$Footer = '',
         [switch]$Follow,
-        [ValidateSet('Full', 'Compact')]
+        [ValidateSet('Compact')]
         [string]$BannerStyle = 'Compact'
     )
 
@@ -136,7 +136,7 @@ function Show-GridStatus {
         [string[]]$Lines = @(),
         [string]$Footer = '',
         [switch]$Follow,
-        [ValidateSet('Full', 'Compact')]
+        [ValidateSet('Compact')]
         [string]$BannerStyle = 'Compact'
     )
 
