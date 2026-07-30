@@ -6,6 +6,7 @@ function Assert-Equal($Expected, $Actual, [string]$Case) {
 }
 
 Assert-Equal 2 @(Get-MenuBanner -Style Compact).Count 'compact banner line count'
+Assert-Equal $false ([char]::IsWhiteSpace((Get-MenuBanner -Style Compact)[0][0])) 'menu chrome starts at the terminal edge'
 Assert-Equal $true ((Get-MenuBanner -Style Compact)[1].EndsWith('SCRIPTS')) 'compact banner places scripts at the lower right'
 Assert-Equal 1 (Get-MenuBannerGap -Style Compact) 'compact banner breathes before the menu header'
 Assert-Equal 12 (New-MenuRule -MaxWidth 12).Length 'rule uses requested width'
@@ -13,6 +14,7 @@ Assert-Equal 11 (New-MenuRule -MaxWidth 11 -Style Section).Length 'section rule 
 Assert-Equal 15 (Get-MenuBodyCapacity -BannerStyle Compact -WindowHeight 24) 'compact body capacity includes its banner gap'
 Assert-Equal 0 (Get-MenuBodyCapacity -BannerStyle Compact -WindowHeight 6) 'undersized terminal has no body capacity'
 Assert-Equal 14 $script:MenuCategoryWidth 'launcher category column is shared across menus'
+Assert-Equal 2 $script:MenuActionColumnCount 'interactive menus share two action columns'
 Assert-Equal 'Red' (Get-MenuRoleColor -Role danger).Foreground 'destructive confirmation is red'
 Assert-Equal 'DarkRed' (Get-MenuRoleColor -Role danger -Selected).Background 'selected destructive confirmation stays red'
 

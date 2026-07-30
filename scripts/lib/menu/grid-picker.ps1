@@ -29,7 +29,6 @@ function Write-GridLine {
         Write-MenuContentSegment -Text ('  ' + $text) -Written ([ref]$written) -InnerWidth $ContentWidth -ForegroundColor Gray -BackgroundColor $null
     } else {
         # 'row'
-        Write-MenuContentSegment -Text '  ' -Written ([ref]$written) -InnerWidth $ContentWidth -ForegroundColor $null -BackgroundColor $null
         if ($PrefixW -gt 0) {
             $prefixContentWidth = [Math]::Max(0, $PrefixW - $script:MenuGridGap)
             $p = (Limit-MenuText -Text ([string]$entry.Prefix) -Width $prefixContentWidth).PadRight($PrefixW)
@@ -124,7 +123,8 @@ function Invoke-GridLoop {
     if ($sel.Count -eq 0) { return $null }
     if ($CategoryWidth -gt 0) { $prefixW = $CategoryWidth }
     if ($prefixW -gt 0) { $prefixW += $GAP }
-    $columnCount = (@($colW.Keys | Measure-Object -Maximum).Maximum + 1)
+    $occupiedColumnCount = (@($colW.Keys | Measure-Object -Maximum).Maximum + 1)
+    $columnCount = Get-GridColumnCount -OccupiedColumnCount $occupiedColumnCount
     foreach ($selection in $sel) {
         if ($selection.HasTrailing -and ($selection.ColumnOffset + $selection.NCells) -ne $columnCount) {
             throw 'Invoke-GridLoop: TrailingCell requires regular cells through the final grid column.'
@@ -280,7 +280,7 @@ function Get-GridColumnWidths {
         [Parameter(Mandatory)][int]$ColumnCount
     )
 
-    $available = [Math]::Max($ColumnCount, $ContentWidth - 2 - $PrefixWidth)
+    $available = [Math]::Max($ColumnCount, $ContentWidth - $PrefixWidth)
     $baseWidth = [Math]::Max(1, [Math]::Floor($available / $ColumnCount))
     $remainder = $available - ($baseWidth * $ColumnCount)
     $widths = @{}
@@ -288,6 +288,15 @@ function Get-GridColumnWidths {
         $widths[$column] = $baseWidth + $(if ($column -lt $remainder) { 1 } else { 0 })
     }
     return $widths
+}
+
+function Get-GridColumnCount {
+    param(
+        [Parameter(Mandatory)][ValidateRange(1, 40)]
+        [int]$OccupiedColumnCount
+    )
+
+    return [Math]::Max($script:MenuActionColumnCount, $OccupiedColumnCount)
 }
 
 function Get-GridResultOffset {
