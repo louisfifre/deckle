@@ -43,10 +43,10 @@ become the high-trust profile even if UIA plus SendInput remains a broad fallbac
 
 | Family | Status | Evidence / next discriminator |
 |---|---|---|
-| Deterministic commit/candidate preparation | baseline | ACX-0001/0002: 37/37 internal original/replacement pairs match the visible synthetic gold, 92.5% recall, 2.3 us p50 / 86.6 us p99 managed commit cost. Positional precision, applied precision, and field quality are unmeasured. |
+| Deterministic commit/candidate preparation | reproducible baseline | ACX-0006 on clean HEAD: 37/37 internal original/replacement pairs match visible synthetic gold, 92.5% recall, 2.2 us p50 / 83.9 us p99 managed commit cost. Positional precision, applied precision, and field quality are unmeasured. |
 | Terminal Qwen3-1.7B DML as-is | refuted as scoped | About 945 ms warm before integration is outside direct interaction. ACX-0005 separately gives a fixed 945 ms computation 13.86% readiness on a selected timing sample. Teacher, shadow, batching, and caching survive. |
-| Speculative Qwen on the production lane | refuted as scoped | ACX-0003 shows obsolete single-flight work blocks fresh work. It survives only with measured exact hits and separate ownership. |
-| Exact anticipation with a fast decider | active | ACX-0005 shows a large 50–150 ms opportunity. Next: filter to exact candidate-eligible transactions and measure branch waste. |
+| Speculative Qwen on the production lane | refuted as scoped | ACX-0007 directly shows changing stale verdicts are rejected but obsolete single-flight work still blocks fresh work. It survives only with measured exact hits and separate ownership. |
+| Exact anticipation with a fast decider | active | ACX-0008 reproducibly shows a large fixed-duration 50–150 ms opportunity on the selected sample. Next: filter to exact candidate-eligible transactions and measure branch waste. |
 | Batched/reused Qwen scoring | active | Current scorer runs both orders and one generator/forward per candidate. Next: candidate-count and stage profile before a batch prototype. |
 | Deterministic unanimous global rules | candidate | Existing global `la/là` rule proves the contract shape, not residual coverage. Freeze a claim inventory on development data. |
 | Compact tabular discriminator | candidate | Best low-data baseline. Score KEEP plus every edit over grouped transaction splits. |

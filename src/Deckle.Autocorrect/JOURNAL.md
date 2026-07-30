@@ -5,6 +5,14 @@ type: module-journal
 
 # JOURNAL — Deckle.Autocorrect
 
+## 2026-07-30 — Clean replays separate safety, ownership, and anticipation evidence
+
+Closed the wave-one reproducibility gaps on committed laboratory HEAD `27f3fcb0`. The deterministic visible corpus reproduced 37/37 correct original/replacement pairs, zero wrong pairs, 37/40 recall and 20/23 exact scenarios; 16,700 managed commit samples measured 2.2 us p50 / 65.7 us p95 / 83.9 us p99. This remains pair-level internal agreement, not positional or observed-target precision.
+
+A controlled changing stale verdict was rejected before the throwing injector in 20/20 trials, while the same 250 ms hold delayed fresh judge entry to 253.4 ms p50 / 262.0 ms p95. The safety barrier and compute ownership are therefore separate: epoch rejection protects application, but a shared single-flight lane still harms useful latency.
+
+An exact 1,033,605-byte replay reproduced the selected temporal sample byte-for-byte and aggregate-for-aggregate without emitting typed text. A fixed 945 ms duration was ready before terminal punctuation for 69/498 usable gestures; the claim remains an oracle ceiling, not candidate-eligible Qwen coverage. The next useful anticipation experiment must join exact transaction eligibility and branch correctness to timing.
+
 ## 2026-07-30 — Interactive research exposes compute ownership and application-lease gaps
 
 Established three constraints in the isolated interactive-autocorrect campaign. First, invalidated work retains the coordinator's single-flight ownership: with the production coordinator/lane and a controlled abstaining judge held for 250 ms, a fresh eligible transaction entered at 251.6 ms p50 / 264.8 ms p95 versus 0.008 ms / 0.194 ms without stale work (ACX-0003). The run proves head-of-line blocking, not stale-write rejection; that invariant remains grounded in separate coordinator code/tests. Speculation on the existing lane can therefore increase terminal latency; native cancellation and process isolation remain untested.
