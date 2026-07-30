@@ -20,7 +20,7 @@ jobs:
 
       - name: Regenerate README stats
         shell: pwsh
-        run: pwsh scripts/lib/update-readme-stats.ps1
+        run: pwsh scripts/commands/update-readme-stats.ps1
 
       - name: Commit README update
         shell: pwsh

@@ -9,7 +9,7 @@ namespace Deckle.Autocorrect.Tests;
 // offline data tooling in lib modules exercised by the suite, never a standalone
 // CLI. This regenerates the versioned derived lexicons under
 // src/Deckle.Autocorrect/Data/ (French, legacy English, verbs, and the restricted
-// globish seed) from the raw sources fetched by scripts/lib/fetch-autocorrect-data.ps1,
+// globish seed) from the raw sources fetched by scripts/commands/fetch-autocorrect-data.ps1,
 // then self-certifies the globish seed.
 //
 // It is explicit and also skips unless the raw sources are present, so an ordinary
@@ -32,7 +32,7 @@ public sealed class BuildDataMaintenanceTests
             File.Exists(Path.Combine(rawDir, "Lexique383.tsv"))
                 && File.Exists(Path.Combine(rawDir, "count_1w.txt"))
                 && File.Exists(Path.Combine(rawDir, "FranceTerme.xml")),
-            $"Raw autocorrect sources absent under {rawDir} — run scripts/lib/fetch-autocorrect-data.ps1 first.");
+            $"Raw autocorrect sources absent under {rawDir} — run scripts/commands/fetch-autocorrect-data.ps1 first.");
 
         int code = LexiconBuilder.Run(rawDir, outDir);
         Assert.Equal(0, code);

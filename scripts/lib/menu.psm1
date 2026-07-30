@@ -1,0 +1,21 @@
+# menu.psm1 — Interactive arrow-key menu utilities.
+#
+# Module facade kept at the internal library path. Implementation lives under
+# scripts/lib/menu/ so the terminal session, shared chrome, list picker, and
+# grid picker can evolve independently without growing this file again.
+
+Set-StrictMode -Version Latest
+
+$ModuleDir = $PSScriptRoot
+. (Join-Path $ModuleDir 'menu\session.ps1')
+. (Join-Path $ModuleDir 'menu\input.ps1')
+. (Join-Path $ModuleDir 'menu\chrome.ps1')
+. (Join-Path $ModuleDir 'menu\action-console.ps1')
+. (Join-Path $ModuleDir 'menu\grid-layout.ps1')
+. (Join-Path $ModuleDir 'menu\list-picker.ps1')
+. (Join-Path $ModuleDir 'menu\grid-picker.ps1')
+. (Join-Path $ModuleDir 'menu\grid-status.ps1')
+. (Join-Path $ModuleDir 'menu\status-view.ps1')
+. (Join-Path $ModuleDir 'menu\text-input.ps1')
+
+Export-ModuleMember -Function Start-MenuSession, Stop-MenuSession, Start-MenuActionConsole, Stop-MenuActionConsole, Write-MenuActionOutput, Select-Worktree, Select-Action, Select-YesNo, Select-Grid, New-GridStatusView, Update-GridStatusView, Show-GridStatus, Show-MenuStatus, Read-MenuText
