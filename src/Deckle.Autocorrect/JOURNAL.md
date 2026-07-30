@@ -5,6 +5,25 @@ type: module-journal
 
 # JOURNAL — Deckle.Autocorrect
 
+## 2026-07-30 — One-order Qwen halves measured scorer cost but stays non-terminal
+
+A clean whole-call ablation reproduced the earlier 35-case decisions and scores
+exactly while comparing forward-only, reverse-only, and the unchanged combined
+scorer. On a fixed canonical two-candidate, continuous-hot, mixed-method schedule,
+forward-only measured 393.180 ms p50 / 537.587 ms p95 versus 868.386 / 986.967 ms
+combined. The predeclared relative-latency gate passed, but the 300 ms scorer
+reference did not. This boundary excludes candidate generation and integration
+and does not characterize realistic idle cadence or a dedicated forward stream.
+
+At threshold 1.0, forward produced 12 correct and one wrong nonliteral selection
+on the visible development corpus; combined produced 10 correct and one wrong.
+These are internal closed-set decisions, not applied or field precision. Both
+retained the harmful `literal_ratures` selection, so calibration by margin alone
+does not supply the required safety. Forward-only remains a research and shadow
+candidate. Anticipation is unrefuted but unestablished until eligibility,
+lead-time, branch hit, lease safety, integration latency, and observed target
+integrity are measured together. Production behavior remains unchanged.
+
 ## 2026-07-30 — Canonical Qwen latency preserves the non-interactive conclusion
 
 Measured the production literal-first candidate order independently after a

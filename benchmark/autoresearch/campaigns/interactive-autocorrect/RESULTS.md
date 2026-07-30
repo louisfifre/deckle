@@ -211,20 +211,74 @@ Raw output SHA-256:
 Reconciliation SHA-256:
 `64E136BC9538DC6E16002D90FD8CDA43F699B049E08A8162D1F44D503C32B93E`.
 
+### ACX-0012 — one-order Qwen ablation
+
+ACX-0012 compared forward-only, reverse-only, and the unchanged combined scorer
+from clean HEAD `c7f2045a`. The serial DirectML run compiled with zero warnings
+and errors, exited zero with empty stderr, completed six warmups, 159 quality
+calls, and 60 latency calls, and produced no technical outcome. It reproduced
+all 35 ACX-0009 base decisions and scores with maximum absolute difference
+exactly zero. All 27 repeated case/method groups were decision-stable at frozen
+thresholds 0.0, 0.5, and 1.0.
+
+The fixed canonical two-candidate, continuous-hot scorer measurements were:
+
+| Method | n | p50 | p95 | Maximum |
+|---|---:|---:|---:|---:|
+| Forward only | 20 | 393.180 ms | 537.587 ms | 549.247 ms |
+| Reverse only | 20 | 535.585 ms | 557.518 ms | 584.616 ms |
+| Combined | 20 | 868.386 ms | 986.967 ms | 1,011.514 ms |
+
+The predeclared relative-latency hypothesis passed: forward p95 was 54.469% of
+combined p95, the median matched-block ratio was 47.164%, and its one-sided 90%
+bootstrap upper bound was 49.605% (100,000 resamples, seed 20260730). The 300 ms
+reference failed. That failure applies only to forward-method calls in this
+mixed-method, position-balanced schedule after the long quality block. It does
+not characterize realistic idle cadence or a dedicated forward-only stream;
+it does refute this measured direct-terminal scorer condition before candidate
+generation or integration.
+
+At threshold 1.0 on the frozen visible development corpus, forward made 12
+correct and one wrong nonliteral selection, versus 10 correct and one wrong for
+combined. Their internal nonliteral-selection precisions were respectively
+12/13 and 10/11; no target was mutated or observed, so these are not applied or
+field precision. The predeclared forward selective gate passed with no new
+wrong selection relative to combined and at least eight retained correct
+changes. Both methods still chose the harmful `literal_ratures` edit, whose
+forward margin was 1.063. Threshold monotonicity alone therefore remains
+insufficient.
+
+Forward dominates reverse only on the measured latency and frozen visible
+internal-decision metrics. Combined is slower but linguistically better than
+reverse on this corpus, so no universal method-dominance claim follows. Forward
+is retained as a research candidate: shadow use is viable, while anticipation
+is unrefuted but unestablished until candidate eligibility, branch hit,
+lead-time, lease safety, integration latency, and observed-target integrity are
+joined in one experiment. Production remains unchanged.
+
+Raw output SHA-256:
+`6CA275010DC8AA3CD08A5CE50D1A5BA6969C8E5B5968643AA248D32D78D89533`.
+Reconciliation SHA-256:
+`85A4DB71D26E2B849E9DF40D3AF3FBAF298EFF898B47CDE04253FAB2BCC2655C`.
+Claim-audit SHA-256:
+`F72236564E08E65C13854C32E84914CBD602242AA268B7446E972AAD885BB052`.
+
 ## Refuted or dominated families
 
-No complete end-to-end Pareto candidate is dominated yet. Three narrower claims
+No complete end-to-end Pareto candidate is dominated yet. Four narrower claims
 are refuted within their scopes: terminal Qwen3-1.7B DirectML as-is is not a
 direct-interaction path at the measured ordinary two-candidate duration; slow
 speculative work cannot share the current single-flight lane without blocking
 fresh useful work; and the current in-process Stopwatch collector cannot support
-detailed stage attribution. Qwen as teacher/shadow/cache target, coarse ablation,
-external tracing, batching, and speculation with separate ownership survive.
+detailed stage attribution; forward-only Qwen also misses 300 ms in the measured
+continuous-hot mixed-method scorer condition. Qwen as teacher/shadow/cache target,
+dedicated-stream measurement, external tracing, batching, and speculation with
+separate ownership survive.
 
 ## Active uncertainties
 
-- Whether a whole-call forward-only ablation preserves enough selective quality
-  to justify deeper Qwen optimization before shared-prefix or batching work.
+- Whether a dedicated forward-only stream, shared-prefix reuse, or batching can
+  improve the now-established one-order scorer boundary without changing scores.
 - Whether the cross-session canonical-order association survives a paired
   order experiment, and how canonical latency depends on real idle time.
 - Whether speculative work creates usable lead time under real typing cadence.
