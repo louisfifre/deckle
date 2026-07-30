@@ -169,6 +169,23 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   └── README.md  — readme-benchmark-asr [module-readme] Human-facing entry point for benchmark/asr — ASR-specific harness pieces and fr…
 │   ├── autoresearch/
 │   │   ├── campaigns/
+│   │   │   ├── interactive-autocorrect/
+│   │   │   │   ├── probes/
+│   │   │   │   │   ├── ACX-0004-modifier-authorization-v2.patch
+│   │   │   │   │   ├── ACX-0004-modifier-authorization.patch
+│   │   │   │   │   ├── ACX-0022-generate.py
+│   │   │   │   │   ├── ACX-0022-verify.py
+│   │   │   │   │   ├── ACX-0023-negative-artifacts.py
+│   │   │   │   │   └── ACX-0023-verify-export.py
+│   │   │   │   ├── ACX-0021-DESIGN.md  — acx-0021-delayed-range-owned-correction [benchmark-plan] Frozen design and safety matrix for delayed correction of a closed sentence whi…
+│   │   │   │   ├── ACX-0022-DESIGN.md  — acx-0022-one-qwen-multi-adapter [benchmark-plan] Frozen compatibility design for one resident Qwen base with per-task LoRA adapt…
+│   │   │   │   ├── ACX-0023-DESIGN.md
+│   │   │   │   ├── compute-queue.jsonl
+│   │   │   │   ├── experiment-log.jsonl
+│   │   │   │   ├── FAMILIES.md
+│   │   │   │   ├── PROTOCOL.md  — interactive-autocorrect-protocol [benchmark-protocol] Metric, latency, integrity, and data contract for the interactive autocorrect c…
+│   │   │   │   ├── README.md  — interactive-autocorrect-research [benchmark-campaign] Reproducible campaign for safe, local, interactive whole-sentence autocorrectio…
+│   │   │   │   └── RESULTS.md  — interactive-autocorrect-results [benchmark-report] Evidence synthesis and provisional Pareto frontier for the interactive autocorr…
 │   │   │   └── README.md  — readme-autoresearch-campaigns [module-readme] How to store individual autoresearch campaign folders.
 │   │   ├── judges/
 │   │   │   └── README.md  — readme-autoresearch-judges [module-readme] Generic judge rubrics and wrappers for autoresearch loops.
@@ -239,22 +256,41 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   └── update-tree.ps1
 │   ├── lib/
 │   │   ├── launcher/
+│   │   │   ├── action-results.ps1
+│   │   │   ├── action-results.tests.ps1
 │   │   │   ├── actions.ps1
+│   │   │   ├── actions.tests.ps1
 │   │   │   ├── context.ps1
+│   │   │   ├── context.tests.ps1
 │   │   │   ├── maintenance-results.ps1
 │   │   │   ├── maintenance-results.tests.ps1
 │   │   │   ├── menu-layout.ps1
 │   │   │   ├── menu-layout.tests.ps1
-│   │   │   └── menus.ps1
+│   │   │   ├── menus.ps1
+│   │   │   ├── menus.tests.ps1
+│   │   │   ├── statistics-menus.ps1
+│   │   │   ├── statistics-menus.tests.ps1
+│   │   │   ├── statistics-plans.ps1
+│   │   │   └── statistics-plans.tests.ps1
 │   │   ├── menu/
+│   │   │   ├── action-console.ps1
+│   │   │   ├── action-console.tests.ps1
 │   │   │   ├── chrome.ps1
 │   │   │   ├── chrome.tests.ps1
+│   │   │   ├── grid-layout.ps1
 │   │   │   ├── grid-picker.ps1
 │   │   │   ├── grid-picker.tests.ps1
+│   │   │   ├── grid-status.ps1
+│   │   │   ├── grid-status.tests.ps1
+│   │   │   ├── input.ps1
+│   │   │   ├── input.tests.ps1
 │   │   │   ├── list-picker.ps1
 │   │   │   ├── list-picker.tests.ps1
 │   │   │   ├── session.ps1
-│   │   │   └── status-view.ps1
+│   │   │   ├── status-view.ps1
+│   │   │   ├── status-view.tests.ps1
+│   │   │   ├── text-input.ps1
+│   │   │   └── text-input.tests.ps1
 │   │   ├── _menu.psm1
 │   │   ├── action-summary.ps1
 │   │   ├── action-summary.tests.ps1
@@ -273,16 +309,21 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── install-hooks.ps1
 │   │   ├── install-hooks.tests.ps1
 │   │   ├── launch-app.ps1
+│   │   ├── native-console.ps1
+│   │   ├── native-console.tests.ps1
 │   │   ├── native-runtime-release.psm1
 │   │   ├── native-runtime-release.tests.ps1
 │   │   ├── publish-app.ps1
 │   │   ├── publish-native-runtime.ps1
+│   │   ├── publish-native-runtime.tests.ps1
 │   │   ├── record-release.ps1
 │   │   ├── record-version.ps1
 │   │   ├── release-history.psm1
 │   │   ├── release-history.tests.ps1
 │   │   ├── release-validation.psm1
 │   │   ├── release-validation.tests.ps1
+│   │   ├── repository-inventory.psm1
+│   │   ├── repository-inventory.tests.ps1
 │   │   ├── resource-inventory.psm1
 │   │   ├── resource-inventory.tests.ps1
 │   │   ├── setup-assets.ps1
@@ -291,6 +332,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── stats.ps1
 │   │   ├── stop-build-servers.ps1
 │   │   ├── update-readme-stats.ps1
+│   │   ├── update-readme-stats.tests.ps1
 │   │   ├── validate-resources.ps1
 │   │   └── versioning-workflow.tests.ps1
 │   ├── deckle.ps1
@@ -498,6 +540,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   ├── pair-bigrams-fr.tsv.gz
 │   │   │   └── verbs-fr.tsv.gz
 │   │   ├── Engine/
+│   │   │   ├── AutocorrectEngine.CaretRecovery.cs
 │   │   │   ├── AutocorrectEngine.Commit.cs
 │   │   │   ├── AutocorrectEngine.cs
 │   │   │   ├── AutocorrectEngine.Input.cs
@@ -508,6 +551,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   ├── BigramPairDisambiguator.cs
 │   │   │   ├── CandidateSearchObservation.cs
 │   │   │   ├── CasePattern.cs
+│   │   │   ├── ClosedSentenceJudgment.cs
 │   │   │   ├── CompositeAmbiguityProbe.cs
 │   │   │   ├── CompositeCorrectionPolicy.cs
 │   │   │   ├── ConservativeTypoCorrector.cs
@@ -518,6 +562,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   ├── DiacriticsRestorer.cs
 │   │   │   ├── ElisionCorrector.cs
 │   │   │   ├── FrenchSentenceReranker.cs
+│   │   │   ├── GenderVariantProbe.cs
 │   │   │   ├── GrammarCorrector.cs
 │   │   │   ├── IAmbiguityProbe.cs
 │   │   │   ├── IPairDisambiguator.cs
@@ -561,6 +606,10 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   ├── LexicalDomain.cs
 │   │   │   ├── SystemLanguages.cs
 │   │   │   └── VerbMorphology.cs
+│   │   ├── Recovery/
+│   │   │   ├── CaretParagraphContext.cs
+│   │   │   ├── CaretSentenceContext.cs
+│   │   │   └── CaretTextReader.cs
 │   │   ├── Strings/
 │   │   │   └── en-US/
 │   │   │       └── Resources.resw
@@ -646,17 +695,22 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   ├── Deckle.Autocorrect.Onnx/
 │   │   ├── CandidateCompletionPlan.cs
 │   │   ├── Deckle.Autocorrect.Onnx.csproj
+│   │   ├── OnnxSentenceScorer.BatchExperiment.cs
 │   │   ├── OnnxSentenceScorer.cs
 │   │   ├── OnnxSentenceScorer.Model.cs
 │   │   ├── OnnxSentenceScorer.Prompt.cs
 │   │   ├── OnnxSentenceScorer.Scoring.cs
+│   │   ├── OnnxSentenceScoringProfile.cs
 │   │   └── OnnxSlotReranker.cs
 │   ├── Deckle.Autocorrect.Probe/
+│   │   ├── AnticipationLeadOracleCommand.cs
+│   │   ├── AnticipationTransactionJoinCommand.cs
 │   │   ├── AutocorrectBenchmark.cs
 │   │   ├── AutocorrectBenchmarkCommand.cs
 │   │   ├── AutocorrectBenchmarkCorpus.cs
 │   │   ├── AutocorrectItPackCorpus.cs
 │   │   ├── BenchmarkKeyboardSession.cs
+│   │   ├── CaretContextProbeCommand.cs
 │   │   ├── CorrectionBenchmarkCase.cs
 │   │   ├── CorrectionBenchmarkCommand.cs
 │   │   ├── CorrectionBenchmarkCorpus.cs
@@ -666,7 +720,34 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── ModelPathResolver.cs
 │   │   ├── ProbeArguments.cs
 │   │   ├── Program.cs
-│   │   └── SingleProbeCommand.cs
+│   │   ├── QwenAdapterArtifactGate.cs
+│   │   ├── QwenAdapterCompatibilityCommand.cs
+│   │   ├── QwenAdapterCompatibilityPlan.cs
+│   │   ├── QwenAdapterCompatibilityProtocol.cs
+│   │   ├── QwenAdapterCompatibilityRuntime.cs
+│   │   ├── QwenAdapterCrossModelCommand.cs
+│   │   ├── QwenAdapterGraphContract.cs
+│   │   ├── QwenAdapterManifestGate.cs
+│   │   ├── QwenAdapterResourceSampler.cs
+│   │   ├── SentenceBatchExperimentCommand.cs
+│   │   ├── SentenceBatchExperimentFixture.cs
+│   │   ├── SentenceBatchTokenizationCommand.cs
+│   │   ├── SentenceCalibrationCommand.cs
+│   │   ├── SentenceCalibrationFixture.cs
+│   │   ├── SentenceCanonicalLatencyCommand.cs
+│   │   ├── SentenceDecisionInventory.cs
+│   │   ├── SentenceDecisionInventoryCommand.cs
+│   │   ├── SentenceDecisionInventoryEvaluation.cs
+│   │   ├── SentenceOrderAblationCommand.cs
+│   │   ├── SentenceOrderAblationFixture.cs
+│   │   ├── SentenceProfileCommand.cs
+│   │   ├── SentenceProfileFixture.cs
+│   │   ├── SentenceUnanimityBundle.cs
+│   │   ├── SentenceUnanimityBundleCommand.cs
+│   │   ├── SentenceUnanimityBundleEvaluation.cs
+│   │   ├── SentenceUnanimityMorphology.cs
+│   │   ├── SingleProbeCommand.cs
+│   │   └── StaleWorkProbeCommand.cs
 │   ├── Deckle.Catalog/
 │   │   ├── Composer/
 │   │   │   ├── IPathControl.cs
@@ -721,6 +802,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   ├── NativeMethods.Windowing.cs
 │   │   │   ├── Structs.cs
 │   │   │   ├── UIAutomation.cs
+│   │   │   ├── UIAutomation.Text.cs
 │   │   │   ├── Win32Clipboard.cs
 │   │   │   └── Win32Util.cs
 │   │   ├── Io/
@@ -1152,6 +1234,9 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   └── DeckleNotificationsSource.cs
 │   ├── Deckle.Playground/
 │   │   ├── Models/
+│   │   │   ├── CorrectionApplicationEvidence.cs
+│   │   │   ├── CorrectionApplicationFixture.cs
+│   │   │   ├── CorrectionApplicationTrial.cs
 │   │   │   └── TuningModel.cs
 │   │   ├── Strings/
 │   │   │   └── en-US/
@@ -1169,6 +1254,10 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   │   ├── AmbientPage.ScreenCapture.cs
 │   │   │   │   ├── AmbientPage.xaml
 │   │   │   │   └── AmbientPage.xaml.cs
+│   │   │   ├── Autocorrect/
+│   │   │   │   ├── CorrectionApplicationPage.xaml
+│   │   │   │   ├── CorrectionApplicationPage.xaml.cs
+│   │   │   │   └── RichEditCorrectionSurface.cs
 │   │   │   ├── Hud/
 │   │   │   │   ├── HudPage.Expanders.cs
 │   │   │   │   ├── HudPage.RowFactories.cs
@@ -1547,10 +1636,13 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   ├── Deckle.Autocorrect.Tests/
 │   │   ├── AccentFoldingTests.cs
 │   │   ├── AccentIndexTests.cs
+│   │   ├── AnticipationLeadOracleTests.cs
+│   │   ├── AnticipationTransactionJoinTests.cs
 │   │   ├── AssemblyInfo.cs
 │   │   ├── AutocorrectBenchmarkTests.cs
 │   │   ├── AutocorrectDecisionMapTests.cs
 │   │   ├── AutocorrectEngineBackspaceTests.cs
+│   │   ├── AutocorrectEngineCaretRecoveryTests.cs
 │   │   ├── AutocorrectEngineCorpusTests.cs
 │   │   ├── AutocorrectEngineCorrectionTests.cs
 │   │   ├── AutocorrectEngineGateTests.cs
@@ -1565,10 +1657,13 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── AutocorrectSettingsTests.cs
 │   │   ├── AutocorrectTypingScenarioTests.cs
 │   │   ├── AutocorrectTypingStreamReplayMaintenanceTests.cs
+│   │   ├── BackgroundRerankLaneTests.cs
 │   │   ├── BigramPairDisambiguatorTests.cs
 │   │   ├── BuildDataMaintenanceTests.cs
 │   │   ├── CamembertRerankerIntegrationTests.cs
 │   │   ├── CandidateCompletionPlanTests.cs
+│   │   ├── CaretParagraphContextTests.cs
+│   │   ├── CaretSentenceContextTests.cs
 │   │   ├── CasePatternTests.cs
 │   │   ├── CompositeAmbiguityProbeTests.cs
 │   │   ├── ConservativeTypoCorrectorTests.cs
@@ -1584,6 +1679,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── ElisionCorrectorTests.cs
 │   │   ├── FrenchSentenceRerankerTests.cs
 │   │   ├── FrequencyLexiconTests.cs
+│   │   ├── GenderVariantProbeTests.cs
 │   │   ├── GrammarCorrectorTests.cs
 │   │   ├── HarvestDataTests.cs
 │   │   ├── HarvestFilterTests.cs
@@ -1602,16 +1698,25 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── PairModelTrainerTests.cs
 │   │   ├── PersonalDictionaryTests.cs
 │   │   ├── PersonalWordAdmissionTests.cs
+│   │   ├── QwenAdapterCompatibilityProtocolTests.cs
+│   │   ├── QwenAdapterCompatibilityTests.cs
 │   │   ├── ReplayRunnerTests.cs
 │   │   ├── RestorationEvaluatorTests.cs
 │   │   ├── SentenceAlignmentTests.cs
+│   │   ├── SentenceBatchExperimentTests.cs
+│   │   ├── SentenceCalibrationTests.cs
+│   │   ├── SentenceCanonicalLatencyTests.cs
 │   │   ├── SentenceCorpusTests.cs
+│   │   ├── SentenceDecisionInventoryTests.cs
+│   │   ├── SentenceOrderAblationTests.cs
+│   │   ├── SentenceProfileTests.cs
 │   │   ├── SentenceProposalGateTests.cs
 │   │   ├── SentenceProposalReplayMaintenanceTests.cs
 │   │   ├── SentenceProposalVerifierTests.cs
 │   │   ├── SentenceReplayMaintenanceTests.cs
 │   │   ├── SentenceReplayTests.cs
 │   │   ├── SentenceRerankCoordinatorTests.cs
+│   │   ├── SentenceUnanimityBundleTests.cs
 │   │   ├── SimulatedTextSurface.cs
 │   │   ├── SurfaceProfileMaintenanceTests.cs
 │   │   ├── SurfaceProfilerTests.cs
@@ -1620,6 +1725,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── TypedWordTrackerTests.cs
 │   │   ├── TypingStreamTests.cs
 │   │   ├── VerbMorphologyTests.cs
+│   │   ├── VerifiedCaretSentenceTests.cs
 │   │   └── WordBoundariesTests.cs
 │   ├── Deckle.Catalog.Tests/
 │   │   ├── Deckle.Catalog.Tests.csproj
@@ -1725,6 +1831,10 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── FakeNotificationChannel.cs
 │   │   ├── NotificationCatalogTests.cs
 │   │   └── NotificationDispatcherTests.cs
+│   ├── Deckle.Playground.Tests/
+│   │   ├── CorrectionApplicationEvidenceTests.cs
+│   │   ├── CorrectionApplicationTrialTests.cs
+│   │   └── Deckle.Playground.Tests.csproj
 │   ├── Deckle.Security.Tests/
 │   │   ├── Deckle.Security.Tests.csproj
 │   │   └── SecretVaultTests.cs
