@@ -310,6 +310,39 @@ applied precision, or field quality.
 Raw output SHA-256:
 `27B6B95EECC64DDDBFD4F468A3D40A9E98327456DB38292D0E5ADC163792D32A`.
 
+### ACX-0015–0018 — exact Qwen batch feasibility, negative semantics
+
+ACX-0015 and ACX-0016 were technical diagnostics, not negative model results.
+The former exposed unequal sequence lengths in the original fixture; the latter
+selected the first equal-length public fixture and stopped before native
+execution because `EncodeBatch` omitted Deckle's prepared BOS token. ACX-0017
+then isolated that mismatch exactly: in both presentation orders, the batch
+encoding equalled raw encoding, and prepending BOS `151643` made it identical to
+the 96-token sequential prompt.
+
+ACX-0018 submitted the exact flat batch-major token sequences directly. The
+pre-logit identity gate reproduced both 100-token rows exactly, and every batch
+call returned finite float16 logits of shape `[2,100,151936]`. Native DirectML
+batch construction is therefore established for this fixture.
+
+The frozen forward semantic gate failed. Candidate zero's score differed by
+`0.0156224` against a `0.001` tolerance; its log-probability differed by
+`0.0312448` against `0.002`, and all five forward blocks were non-equivalent.
+The winner and decisions at thresholds 0, 0.5, and 1 remained stable on this one
+fixture, which does not rescue numerical equivalence or establish corpus-level
+decision stability. The reported Combined control is inconclusive because its
+fresh compared outputs were not serialized.
+
+Latency was preregistered as eligible only after semantic equivalence. It is
+therefore uninterpretable for an optimization claim: the five raw batch-to-
+sequential ratios remain diagnostic artifacts only, and no batch median or
+300 ms pass is reported. Direct interactive Qwen batching moves to dormant.
+Shadow/teacher use and a separately preregistered numerical-kernel diagnosis
+remain possible. The tolerances are not changed after seeing this result.
+
+Raw output SHA-256:
+`6DDA0AC63C7BCC293416358956A7B921CE6B494D95A412E9127C434A098EE03D384`.
+
 ## Refuted or dominated families
 
 No complete end-to-end Pareto candidate is dominated yet. Four narrower claims
@@ -318,14 +351,17 @@ direct-interaction path at the measured ordinary two-candidate duration; slow
 speculative work cannot share the current single-flight lane without blocking
 fresh useful work; and the current in-process Stopwatch collector cannot support
 detailed stage attribution; forward-only Qwen also misses 300 ms in the measured
-continuous-hot mixed-method scorer condition. Qwen as teacher/shadow/cache target,
-dedicated-stream measurement, external tracing, batching, and speculation with
-separate ownership survive.
+continuous-hot mixed-method scorer condition. Exact two-row DirectML batching is
+technically feasible but fails the frozen forward numerical-equivalence contract,
+making its latency ineligible. Qwen as teacher/shadow/cache target, dedicated-
+stream measurement, external tracing, and speculation with separate ownership
+survive; batch numerical diagnostics survive only as separately scoped work.
 
 ## Active uncertainties
 
-- Whether a dedicated forward-only stream, shared-prefix reuse, or batching can
-  improve the now-established one-order scorer boundary without changing scores.
+- Whether a dedicated forward-only stream or shared-prefix reuse can improve the
+  one-order scorer boundary without changing scores; direct batching is dormant
+  after ACX-0018's numerical-equivalence failure.
 - Whether the cross-session canonical-order association survives a paired
   order experiment, and how canonical latency depends on real idle time.
 - Whether speculative work creates usable lead time under real typing cadence.

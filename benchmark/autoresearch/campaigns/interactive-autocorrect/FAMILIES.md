@@ -49,7 +49,7 @@ become the high-trust profile even if UIA plus SendInput remains a broad fallbac
 | Reverse-only Qwen scoring | dominated by forward on measured evidence only | ACX-0012 reverse-only was slower than forward and worse on frozen visible internal-decision metrics. Combined was slower but linguistically better than reverse, so no universal dominance is claimed. |
 | Speculative Qwen on the production lane | refuted as scoped | ACX-0007 directly shows changing stale verdicts are rejected but obsolete single-flight work still blocks fresh work. It survives only with measured exact hits and separate ownership. |
 | Exact anticipation with a fast decider | reproducible replay baseline; integration active | ACX-0014 preserves 196 independently safe exact transactions after quarantining three boundary disagreements. Immediate 150 ms readiness is 186/196 (94.90%); a fixed dot branch hits 151/196 (77.04%), while four branches waste three jobs per hit. Next: measure real incremental preparation, scheduler ownership, lease safety, and observed visible latency. |
-| Batched/reused Qwen scoring | active feasibility research | ACX-0012 established the one-order boundary but forward p95 remained 537.587 ms in its measured condition. Next: verify shared-prefix/batch support and score equivalence before a prototype; no batching speedup is currently established. |
+| Batched/reused Qwen scoring | dormant for direct interaction | ACX-0018 established exact two-row DirectML batch construction and finite logits, but forward scores diverged by 0.0156224 against the frozen 0.001 tolerance. The semantic prerequisite failed, so latency is ineligible. Preserve batching only for separately preregistered diagnostics, shadow/teacher work, or a future numerical-kernel investigation; do not relax the contract after observation. |
 | In-process Stopwatch stage attribution | refuted as scoped | Two designs preserved semantics but could not separate collector cost from a 140 ms immediate-repeat/position effect; ACX-0010 upper bounds were 65.097 ms and 8.562%. External GPU/ORT tracing remains a separate family. |
 | Deterministic unanimous global rules | candidate | Existing global `la/là` rule proves the contract shape, not residual coverage. Freeze a claim inventory on development data. |
 | Compact tabular discriminator | candidate | Best low-data baseline. Score KEEP plus every edit over grouped transaction splits. |
@@ -88,8 +88,11 @@ become the high-trust profile even if UIA plus SendInput remains a broad fallbac
   rejected the calibrated in-process profiler, ACX-0011 established the
   production-canonical whole-call baseline, and ACX-0012 showed a valid roughly
   half-cost forward-only boundary that still missed 300 ms and retained a wrong
-  internal selection. Shared-prefix/batch feasibility and score-equivalence are
-  now the next discriminators; no interactive or applied-quality claim follows.
+  internal selection. ACX-0018 later established native exact-row batch
+  feasibility but refuted numerical equivalence under the frozen forward score
+  contract on its first eligible fixture. Because semantics gated timing, no
+  batching speedup is established. Direct interactive batching is dormant;
+  shadow, teacher, and separately preregistered numerical diagnostics survive.
 
 ### FAM-02 — candidate-eligible anticipation oracle
 

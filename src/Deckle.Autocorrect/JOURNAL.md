@@ -5,6 +5,25 @@ type: module-journal
 
 # JOURNAL — Deckle.Autocorrect
 
+## 2026-07-30 — Exact DirectML batching is feasible but not score-equivalent
+
+ACX-0018 passed exact pre-logit row identity and returned finite float16 logits
+of shape `[2,100,151936]` for the first deterministic equal-length public
+fixture. This closes the earlier geometry and missing-BOS technical failures:
+ORT GenAI 0.13 can execute Deckle's exact two-sequence batch on DirectML.
+
+The frozen semantic contract then failed. Forward candidate zero differed by
+0.0156224 in score against the preregistered 0.001 tolerance, and every measured
+forward block was non-equivalent. The winner happened to remain stable on this
+single fixture. The Combined control is inconclusive because its fresh compared
+outputs were not serialized. Since semantic equivalence gated latency, the raw
+timings cannot support a speed claim.
+
+Decision: direct interactive Qwen batching is dormant. Keep its raw artifacts
+and do not loosen tolerances after observing the result. Batching remains
+available only to separately preregistered numerical diagnostics and to
+shadow/teacher work with no write authority. Production behavior is unchanged.
+
 ## 2026-07-30 — Safe anticipation exists, but only with immediate preparation
 
 ACX-0014 replayed the frozen private typing prefix through the current global
