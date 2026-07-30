@@ -43,9 +43,9 @@ Deckle currently ships as one application bundle. Module selection controls what
 
 | First commit | Commits | Active days | Lines added | Lines touched | Current tracked lines |
 |---:|---:|---:|---:|---:|---:|
-| 2026-04-01 | 1,671 | 71 | 286,762 | 416,697 | 156,379 |
+| 2026-04-01 | 1,982 | 82 | 351,967 | 509,045 | 194,366 |
 
-<sub>Generated from Git history on 2026-07-16. Counts include tracked text files only for the current line total.</sub>
+<sub>Generated from Git history on 2026-07-30. Counts include tracked text files only for the current line total.</sub>
 <!-- deckle-stats:end -->
 
 ---
