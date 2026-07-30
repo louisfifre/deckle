@@ -17,7 +17,6 @@ param()
 $ErrorActionPreference = 'Stop'
 $ScriptDir = $PSScriptRoot
 $LibDir    = Join-Path $ScriptDir 'lib'
-$script:DeckleActionCompleted = $false
 $script:DeckleMenuSessionActive = $false
 
 Import-Module (Join-Path $LibDir '_menu.psm1') -Force
@@ -38,7 +37,7 @@ try {
         $v = Select-Grid `
             -Header 'Deckle   -   ↑↓←→ move   Enter run   Ctrl+C quit' `
             -Footer $(if ($mainResultTitle) { 'Arrows move   Enter runs   Wheel/PgUp/PgDn pages   Home/End first/latest' } else { 'worktrees are asked after you pick; action results stay in the menu' }) `
-            -Rows $mainRows -StartSel 0 -StartCol 0 -EscapeAction Ignore -ClearScreen -BannerStyle (Get-DeckleMenuBannerStyle) `
+            -Rows $mainRows -StartSel 0 -StartCol 0 -EscapeAction Ignore -ClearScreen -BannerStyle Compact `
             -ResultTitle $mainResultTitle -ResultLines $mainResultLines -ResultFollowTail
         if ($null -eq $v) { continue }
         if ($v -eq 'quit') { break }
@@ -57,8 +56,6 @@ try {
                 'setup-menu'       { Show-SetupMenu }
             }
         }
-
-        if ($script:DeckleActionCompleted) { break }
     }
 } catch [DeckleMenuQuitException] {
     # Ctrl+C is an intentional exit while pointer paging owns console input.

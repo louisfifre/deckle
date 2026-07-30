@@ -45,8 +45,8 @@ function Invoke-MenuLoop {
         [int]$Default = 0,
         [switch]$ClearScreen,
         [string]$Footer = 'Up/Down move   Enter confirm   Esc back',
-        [ValidateSet('Full', 'Compact')]
-        [string]$BannerStyle = 'Full'
+        [ValidateSet('Compact')]
+        [string]$BannerStyle = 'Compact'
     )
 
     if ($Items.Count -eq 0) { return -1 }
@@ -164,8 +164,8 @@ function Select-Worktree {
     param(
         [Parameter(Mandatory)][string]$ContextDir,
         [switch]$ClearScreen,
-        [ValidateSet('Full', 'Compact')]
-        [string]$BannerStyle = 'Full'
+        [ValidateSet('Compact')]
+        [string]$BannerStyle = 'Compact'
     )
 
     if ($ClearScreen) { Clear-MenuScreen }
@@ -221,8 +221,7 @@ function Select-Worktree {
         -Rows $rows `
         -StartSel 1 `
         -ClearScreen:$ClearScreen `
-        -BannerStyle $BannerStyle `
-        -CategoryWidth $script:MenuCategoryWidth
+        -BannerStyle $BannerStyle
     if ($null -eq $choice -or $choice -eq '__back__') {
         throw [System.OperationCanceledException]::new('Worktree selection was cancelled.')
     }
@@ -236,7 +235,7 @@ function Select-Action {
         [Parameter(Mandatory)][AllowEmptyCollection()] $Items,
         [int]$Default = 0,
         [switch]$ClearScreen,
-        [ValidateSet('Full', 'Compact')]
+        [ValidateSet('Compact')]
         [string]$BannerStyle = 'Compact'
     )
 
@@ -291,8 +290,7 @@ function Select-Action {
         -Rows $rows `
         -StartSel ($defaultSelection + 1) `
         -ClearScreen:$ClearScreen `
-        -BannerStyle $BannerStyle `
-        -CategoryWidth $script:MenuCategoryWidth
+        -BannerStyle $BannerStyle
     if ($null -eq $choice -or $choice -eq '__back__') { throw 'Cancelled' }
     return $choice
 }
@@ -306,8 +304,8 @@ function Select-YesNo {
         [string]$CancelLabel = 'No',
         [switch]$Destructive,
         [switch]$ClearScreen,
-        [ValidateSet('Full', 'Compact')]
-        [string]$BannerStyle = 'Full'
+        [ValidateSet('Compact')]
+        [string]$BannerStyle = 'Compact'
     )
 
     if ([Console]::IsInputRedirected -or [Console]::IsOutputRedirected) {
@@ -332,8 +330,7 @@ function Select-YesNo {
         -StartCol $(if ($Default) { 0 } else { 1 }) `
         -EscapeAction Ignore `
         -ClearScreen:$ClearScreen `
-        -BannerStyle $BannerStyle `
-        -CategoryWidth $script:MenuCategoryWidth
+        -BannerStyle $BannerStyle
 
     return [bool]$choice
 }

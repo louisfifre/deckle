@@ -13,6 +13,12 @@ Assert-Equal 28 $widths[0] 'first column receives remainder'
 Assert-Equal 27 $widths[1] 'second column width'
 Assert-Equal 55 ($widths[0] + $widths[1]) 'columns fill available content width'
 
+Assert-Equal 0 (Resolve-GridCategoryWidth -RequestedWidth -1 -PrefixWidth 0) 'categoryless grids use the full action width'
+Assert-Equal $script:MenuCategoryWidth (Resolve-GridCategoryWidth -RequestedWidth -1 -PrefixWidth 7) 'categorized grids keep the shared category track'
+Assert-Equal 8 (Resolve-GridCategoryWidth -RequestedWidth 8 -PrefixWidth 0) 'explicit category width remains authoritative'
+$worktreeWidth = Get-GridColumnWidths -ContentWidth 40 -PrefixWidth 0 -ColumnCount 1
+Assert-Equal 38 $worktreeWidth[0] 'worktree labels use the supported narrow viewport'
+
 Assert-Equal 0 (Get-GridResultOffset -Current 0 -PageSize 5 -LineCount 12 -Direction Previous) 'result stays at first page'
 Assert-Equal 5 (Get-GridResultOffset -Current 0 -PageSize 5 -LineCount 12 -Direction Next) 'result advances one page'
 Assert-Equal 10 (Get-GridResultOffset -Current 5 -PageSize 5 -LineCount 12 -Direction Next) 'result advances to a non-overlapping final page'

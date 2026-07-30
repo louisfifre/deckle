@@ -85,8 +85,8 @@ function New-MenuRule {
 
 function Get-MenuBanner {
     param(
-        [ValidateSet('Full', 'Compact')]
-        [string]$Style = 'Full'
+        [ValidateSet('Compact')]
+        [string]$Style = 'Compact'
     )
 
     return @(
@@ -97,8 +97,8 @@ function Get-MenuBanner {
 
 function Get-MenuBannerGap {
     param(
-        [ValidateSet('Full', 'Compact')]
-        [string]$Style = 'Full'
+        [ValidateSet('Compact')]
+        [string]$Style = 'Compact'
     )
 
     return 1
@@ -183,8 +183,8 @@ function Write-MenuChrome {
         [string]$Header,
         [string]$Footer,
         [int]$BodyCount,
-        [ValidateSet('Full', 'Compact')]
-        [string]$BannerStyle = 'Full'
+        [ValidateSet('Compact')]
+        [string]$BannerStyle = 'Compact'
     )
 
     $metrics = Get-MenuMetrics
@@ -217,8 +217,8 @@ function Write-MenuChrome {
 
 function Get-MenuBodyCapacity {
     param(
-        [ValidateSet('Full', 'Compact')]
-        [string]$BannerStyle = 'Full',
+        [ValidateSet('Compact')]
+        [string]$BannerStyle = 'Compact',
         [int]$WindowHeight
     )
 
@@ -239,8 +239,8 @@ function Get-MenuBodyCapacity {
 function Test-MenuViewportFits {
     param(
         [Parameter(Mandatory)][int]$BodyCount,
-        [ValidateSet('Full', 'Compact')]
-        [string]$BannerStyle = 'Full',
+        [ValidateSet('Compact')]
+        [string]$BannerStyle = 'Compact',
         $Metrics = (Get-MenuMetrics)
     )
 
@@ -251,8 +251,8 @@ function Test-MenuViewportFits {
 function Wait-MenuViewportSize {
     param(
         [Parameter(Mandatory)][int]$BodyCount,
-        [ValidateSet('Full', 'Compact')]
-        [string]$BannerStyle = 'Full'
+        [ValidateSet('Compact')]
+        [string]$BannerStyle = 'Compact'
     )
 
     if ([Console]::IsInputRedirected -or [Console]::IsOutputRedirected) { return }
@@ -282,8 +282,8 @@ function New-MenuViewport {
         [string]$Footer,
         [int]$BodyCount,
         [switch]$ClearScreen,
-        [ValidateSet('Full', 'Compact')]
-        [string]$BannerStyle = 'Full'
+        [ValidateSet('Compact')]
+        [string]$BannerStyle = 'Compact'
     )
 
     Wait-MenuViewportSize -BodyCount $BodyCount -BannerStyle $BannerStyle

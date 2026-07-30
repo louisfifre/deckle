@@ -9,7 +9,7 @@ function Read-MenuText {
         [string]$Label = 'Value',
         [AllowEmptyString()][string]$Default = '',
         [string]$Footer = 'Type a value   Enter confirm   Esc back',
-        [ValidateSet('Full', 'Compact')]
+        [ValidateSet('Compact')]
         [string]$BannerStyle = 'Compact'
     )
 

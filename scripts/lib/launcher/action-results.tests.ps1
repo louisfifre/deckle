@@ -10,6 +10,10 @@ function Assert-Equal($Expected, $Actual, [string]$Case) {
 Assert-Equal 'Error' (Get-DeckleActionLogLevel -Message 'Build FAILED.') 'failed build is classified as an error'
 Assert-Equal 'Warning' (Get-DeckleActionLogLevel -Message 'App.cs(1): warning CS0000') 'compiler warning is classified'
 Assert-Equal 'Step' (Get-DeckleActionLogLevel -Message '[build] dotnet build') 'workflow milestone is classified'
+foreach ($prefix in @('readme', 'changelog', 'record-version', 'hooks')) {
+    Assert-Equal 'Step' (Get-DeckleActionLogLevel -Message "[$prefix] Start") "$prefix milestone is classified"
+}
+Assert-Equal 'Summary' (Get-DeckleActionLogLevel -Message '[summary] Done') 'summary keeps its dedicated level'
 Assert-Equal 'Info' (Get-DeckleActionLogLevel -Message 'Restore completed') 'ordinary output stays informational'
 Assert-Equal 'Info' (Get-DeckleActionLogLevel -Message '0 Warning(s)  0 Error(s)') 'zero-count build summary stays informational'
 Assert-Equal 'Warning' (Get-DeckleActionLogLevel -Message '2 Warning(s)  0 Error(s)') 'nonzero warning summary stays actionable'
