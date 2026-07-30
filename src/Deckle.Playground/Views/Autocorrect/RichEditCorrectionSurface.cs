@@ -32,6 +32,10 @@ internal sealed class RichEditCorrectionSurface
             document.SetText(TextSetOptions.None, body);
             var selection = document.Selection;
             selection.SetRange(body.Length, body.Length);
+            // A terminal TOM position is ambiguous with the beginning of the
+            // following line. Match the native user-caret affinity explicitly
+            // so Undo is compared with a realistic, fully specified baseline.
+            selection.Options |= SelectionOptions.AtEndOfLine;
             bool contentIsExact = TryReadBody(out string observed, out bool mapping)
                 && mapping
                 && string.Equals(observed, body, StringComparison.Ordinal);
