@@ -17,6 +17,7 @@ return parsed.Mode switch
     ProbeMode.SentenceProfile => SentenceProfileCommand.Run(parsed),
     ProbeMode.SentenceCalibration => SentenceCalibrationCommand.Run(parsed),
     ProbeMode.SentenceCanonicalLatency => SentenceCanonicalLatencyCommand.Run(parsed),
+    ProbeMode.SentenceOrderAblation => SentenceOrderAblationCommand.Run(parsed),
     ProbeMode.CaretContext => CaretContextProbeCommand.Run(parsed),
     _ => 2,
 };

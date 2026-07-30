@@ -12,20 +12,33 @@ namespace Deckle.Autocorrect.Onnx;
 public sealed partial class OnnxSentenceScorer
 {
     public SentenceScoringOutcome Score(IReadOnlyList<string> candidates) =>
-        ScoreCore(candidates, profile: null);
+        ScoreCore(candidates, profile: null, OnnxSentenceScoringOrderMode.Combined);
+
+    internal SentenceScoringOutcome ScoreExperimental(
+        IReadOnlyList<string> candidates,
+        OnnxSentenceScoringOrderMode orderMode)
+    {
+        if (!Enum.IsDefined(orderMode))
+            throw new ArgumentOutOfRangeException(nameof(orderMode));
+        return ScoreCore(candidates, profile: null, orderMode);
+    }
 
     internal ProfiledSentenceScoringOutcome ScoreProfiled(IReadOnlyList<string> candidates)
     {
         var profile = new OnnxSentenceScoringProfileBuilder(candidates.Count);
         long started = Stopwatch.GetTimestamp();
-        SentenceScoringOutcome outcome = ScoreCore(candidates, profile);
+        SentenceScoringOutcome outcome = ScoreCore(
+            candidates,
+            profile,
+            OnnxSentenceScoringOrderMode.Combined);
         long totalTicks = Stopwatch.GetTimestamp() - started;
         return new ProfiledSentenceScoringOutcome(outcome, profile.Build(totalTicks));
     }
 
     private SentenceScoringOutcome ScoreCore(
         IReadOnlyList<string> candidates,
-        OnnxSentenceScoringProfileBuilder? profile)
+        OnnxSentenceScoringProfileBuilder? profile,
+        OnnxSentenceScoringOrderMode orderMode)
     {
         if (candidates.Count == 0)
             return SentenceScoringOutcome.Abstained(SentenceScoringOutcome.AbstainReasons.NoCandidates);
@@ -37,29 +50,45 @@ public sealed partial class OnnxSentenceScorer
         var scores = new SentenceCandidateScore[candidates.Count];
         try
         {
-            OnnxSentenceOrderProfileBuilder? forwardProfile = profile?.BeginOrder(
-                "forward",
-                Enumerable.Range(0, candidates.Count).ToArray());
-            CandidateScore[] forwardScores = ScoreCandidatesInOrder(candidates, forwardProfile);
-            CandidateScore[] combinedScores = forwardScores;
-            if (candidates.Count > 1)
+            CandidateScore[] combinedScores;
+            if (orderMode == OnnxSentenceScoringOrderMode.ReverseOnly)
             {
                 string[] reversedCandidates = candidates.Reverse().ToArray();
-                OnnxSentenceOrderProfileBuilder? reverseProfile = profile?.BeginOrder(
-                    "reverse",
-                    Enumerable.Range(0, candidates.Count).Reverse().ToArray());
                 CandidateScore[] reversedScores = ScoreCandidatesInOrder(
                     reversedCandidates,
-                    reverseProfile);
-                long combinationStarted = profile is null ? 0 : Stopwatch.GetTimestamp();
+                    profile: null);
                 combinedScores = new CandidateScore[candidates.Count];
-
                 for (int i = 0; i < candidates.Count; i++)
-                    combinedScores[i] = CandidateScore.Average(
-                        forwardScores[i],
-                        reversedScores[candidates.Count - 1 - i]);
-                if (profile is not null)
-                    profile.ScoreCombinationTicks = Stopwatch.GetTimestamp() - combinationStarted;
+                    combinedScores[i] = reversedScores[candidates.Count - 1 - i];
+            }
+            else
+            {
+                OnnxSentenceOrderProfileBuilder? forwardProfile = profile?.BeginOrder(
+                    "forward",
+                    Enumerable.Range(0, candidates.Count).ToArray());
+                CandidateScore[] forwardScores = ScoreCandidatesInOrder(
+                    candidates,
+                    forwardProfile);
+                combinedScores = forwardScores;
+                if (orderMode == OnnxSentenceScoringOrderMode.Combined)
+                {
+                    string[] reversedCandidates = candidates.Reverse().ToArray();
+                    OnnxSentenceOrderProfileBuilder? reverseProfile = profile?.BeginOrder(
+                        "reverse",
+                        Enumerable.Range(0, candidates.Count).Reverse().ToArray());
+                    CandidateScore[] reversedScores = ScoreCandidatesInOrder(
+                        reversedCandidates,
+                        reverseProfile);
+                    long combinationStarted = profile is null ? 0 : Stopwatch.GetTimestamp();
+                    combinedScores = new CandidateScore[candidates.Count];
+
+                    for (int i = 0; i < candidates.Count; i++)
+                        combinedScores[i] = CandidateScore.Average(
+                            forwardScores[i],
+                            reversedScores[candidates.Count - 1 - i]);
+                    if (profile is not null)
+                        profile.ScoreCombinationTicks = Stopwatch.GetTimestamp() - combinationStarted;
+                }
             }
 
             for (int i = 0; i < combinedScores.Length; i++)
@@ -418,4 +447,11 @@ public sealed partial class OnnxSentenceScorer
                 AbstainReason: null);
         }
     }
+}
+
+internal enum OnnxSentenceScoringOrderMode
+{
+    Combined,
+    ForwardOnly,
+    ReverseOnly,
 }
