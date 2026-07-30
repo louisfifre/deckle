@@ -60,8 +60,8 @@ Assert-Equal 'Wheel/PgUp/PgDn pages   Home/End first/latest' (Get-GridPagingFoot
 Assert-Equal '' (Get-GridPagingFooter) 'menus without pages do not duplicate header commands in the footer'
 
 $compactLayout = New-GridBodyLayout -CommandBody @(@{ Kind = 'row' }) -ResultTitle 'Results' -BannerStyle Compact
-Assert-Equal 16 $compactLayout.Body.Count 'result layout consumes available compact body'
-Assert-Equal 13 $compactLayout.ResultRowCount 'result layout reserves breathing room and title'
+Assert-Equal 15 $compactLayout.Body.Count 'result layout consumes available compact body'
+Assert-Equal 12 $compactLayout.ResultRowCount 'result layout reserves breathing room, title, and header spacing'
 Assert-Equal 'blank' $compactLayout.Body[1].Kind 'result layout separates commands from results'
 Assert-Equal 'result-title' $compactLayout.Body[2].Kind 'result heading can display page state'
 
