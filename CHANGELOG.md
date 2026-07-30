@@ -48,6 +48,9 @@ doctrine). This file is generated from the Conventional-Commit history by
 - **scripts:** Add targeted maintenance scans
 - **scripts:** Keep action logs in menu viewport
 - **scripts:** Commit README pulse updates
+- **playground:** Add delayed correction lab
+- **playground:** Export correction evidence
+- **autocorrect:** Add Qwen adapter compatibility probe
 
 ### Changed
 
@@ -84,6 +87,7 @@ doctrine). This file is generated from the Conventional-Commit history by
 - **precision-scroll:** Apply settings immediately
 - **input:** Close capture device registration race
 - **input:** Harden wheel observation correlation
+- **autocorrect:** Recover and judge closed sentences globally
 - **scripts:** Page maintenance results with mouse wheel
 - **scripts:** Keep command grid visible during actions
 - **scripts:** Update live action output in place
@@ -91,12 +95,14 @@ doctrine). This file is generated from the Conventional-Commit history by
 - **scripts:** Anchor cleared menus to the top row
 - **scripts:** Use the compact logo throughout menus
 - **scripts:** Top-align the worktree picker
+- **autocorrect:** Judge exact closed sentences globally
 - **scripts:** Stabilize launcher action rendering
 - **scripts:** Infer native runtime versions
 - **scripts:** Align launcher workflow behavior
 - **scripts:** Preserve shared menu grid geometry
 - **scripts:** Restore stable menu alignment
 - **scripts:** Stabilize menu interaction geometry
+- **scripts:** Restore menu visual hierarchy
 
 ## [0.14.1](https://github.com/louisfifre/deckle/compare/v0.14.0...v0.14.1) — 2026-07-20
 
