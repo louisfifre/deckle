@@ -14,7 +14,10 @@ param(
     [switch]$Pick,
 
     # Override the README path. Mostly useful for tests.
-    [string]$ReadmePath
+    [string]$ReadmePath,
+
+    # Commit the generated root README locally when it changes. Never pushes.
+    [switch]$Commit
 )
 
 $ErrorActionPreference = 'Stop'
@@ -27,7 +30,8 @@ function Warn($msg) { Write-Host "         $msg" -ForegroundColor Yellow }
 
 $Workflow = 'Update README pulse'
 $RepoRoot = $null
-$ReadmePath = $null
+$CommitCreated = $false
+$CommitSubject = 'docs(readme): refresh development pulse'
 
 trap {
     Write-DeckleActionSummary `
@@ -37,6 +41,7 @@ trap {
         -Details ([ordered]@{
             Worktree = $RepoRoot
             README   = $ReadmePath
+            Committed = $CommitCreated
             Error    = $_.Exception.Message
         })
     throw
@@ -65,6 +70,7 @@ if (-not (Test-Path -LiteralPath $ReadmePath -PathType Leaf)) {
 
 $StartMarker = '<!-- deckle-stats:start -->'
 $EndMarker   = '<!-- deckle-stats:end -->'
+$PulsePattern = "(?s)$([regex]::Escape($StartMarker)).*?$([regex]::Escape($EndMarker))"
 $Culture     = [System.Globalization.CultureInfo]::InvariantCulture
 
 function Format-Count {
@@ -79,6 +85,40 @@ function Invoke-Git {
         throw "git $($Args -join ' ') failed with exit code $LASTEXITCODE"
     }
     return $output
+}
+
+function Get-ReadmeWithoutPulse {
+    param([Parameter(Mandatory)][string]$Content)
+
+    $normalized = $Content -replace "\r?\n", "`n"
+    return ([regex]::Replace($normalized, $PulsePattern, '')).TrimEnd([char]10)
+}
+
+if ($Commit) {
+    $rootReadmePath = [IO.Path]::GetFullPath((Join-Path $RepoRoot 'README.md'))
+    $resolvedReadmePath = [IO.Path]::GetFullPath((Resolve-Path -LiteralPath $ReadmePath).Path)
+    if (-not $resolvedReadmePath.Equals($rootReadmePath, [StringComparison]::OrdinalIgnoreCase)) {
+        throw 'README commit is available only for the root README.md. Run without -Commit for another output path.'
+    }
+
+    $stagedPaths = @(Invoke-Git diff --cached --name-only)
+    if ($stagedPaths.Count -gt 0) {
+        throw 'README commit stopped because staged changes already exist. Commit or unstage them, then run again.'
+    }
+
+    $otherTrackedPaths = @(Invoke-Git diff --name-only | Where-Object { $_ -cne 'README.md' })
+    if ($otherTrackedPaths.Count -gt 0) {
+        throw "README commit stopped because tracked changes exist outside README.md: $($otherTrackedPaths -join ', '). Commit or revert them, then run again."
+    }
+
+    $readmeDirty = @(Invoke-Git diff --name-only -- README.md).Count -gt 0
+    if ($readmeDirty) {
+        $headReadme = @(Invoke-Git show 'HEAD:README.md') -join "`n"
+        $workingReadme = Get-Content -LiteralPath $ReadmePath -Raw
+        if ((Get-ReadmeWithoutPulse -Content $workingReadme) -cne (Get-ReadmeWithoutPulse -Content $headReadme)) {
+            throw 'README commit stopped because README.md has changes outside the generated development pulse. Commit or revert them, then run again.'
+        }
+    }
 }
 
 Step 'Collect Git history'
@@ -155,9 +195,8 @@ $EndMarker
 "@
 
 $readme = Get-Content -LiteralPath $ReadmePath -Raw
-$pattern = "(?s)$([regex]::Escape($StartMarker)).*?$([regex]::Escape($EndMarker))"
-if ([regex]::IsMatch($readme, $pattern)) {
-    $updated = [regex]::Replace($readme, $pattern, [System.Text.RegularExpressions.MatchEvaluator]{ param($m) $section })
+if ([regex]::IsMatch($readme, $PulsePattern)) {
+    $updated = [regex]::Replace($readme, $PulsePattern, [System.Text.RegularExpressions.MatchEvaluator]{ param($m) $section })
     Ok "Existing generated section found"
 } else {
     $dividerPattern = "(?m)^---\r?\n"
@@ -186,14 +225,30 @@ if ($normalizedUpdated -ne $normalizedReadme) {
     $readmeChanged = $false
 }
 
+if ($Commit) {
+    $readmePending = @(Invoke-Git diff --name-only -- README.md).Count -gt 0
+    if ($readmePending) {
+        Step 'Commit README development pulse'
+        Invoke-Git add -- README.md | Out-Null
+        Invoke-Git commit -m $CommitSubject | Out-Null
+        $CommitCreated = $true
+        Ok $CommitSubject
+    } else {
+        Step 'Commit README development pulse'
+        Ok 'No commit needed; README.md already matches HEAD'
+    }
+}
+
 Write-DeckleActionSummary `
     -Workflow $Workflow `
     -Result Success `
-    -Sentence $(if ($readmeChanged) { "README development pulse was regenerated and written." } else { "README development pulse was already up to date." }) `
+    -Sentence $(if ($CommitCreated) { "README development pulse was regenerated and committed." } elseif ($readmeChanged) { "README development pulse was regenerated and written." } else { "README development pulse was already up to date." }) `
     -Details ([ordered]@{
         Worktree              = $RepoRoot
         README                = $ReadmePath
         Changed               = $(if ($readmeChanged) { 'Yes' } else { 'No' })
+        Committed             = $(if ($Commit) { $(if ($CommitCreated) { 'Yes' } else { 'No change' }) } else { 'Not requested' })
+        Commit                = $(if ($CommitCreated) { $CommitSubject } else { $null })
         Commits               = (Format-Count $commitCount)
         'Active days'         = (Format-Count $activeDays)
         'Tracked text files'  = (Format-Count $trackedTextFiles)
