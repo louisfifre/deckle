@@ -1,5 +1,27 @@
 # Interactive goal, custom specification, worktree, and review flow for statistics.
 
+function Get-MaintenanceScanLabel {
+    param(
+        [Parameter(Mandatory)]
+        [ValidateSet('Repository', 'Context')]
+        [string]$Kind
+    )
+
+    return "$Kind statistics"
+}
+
+function Get-MaintenanceScanHeader {
+    param(
+        [Parameter(Mandatory)]
+        [ValidateSet('Repository', 'Context')]
+        [string]$Kind,
+        [string[]]$Segments = @()
+    )
+
+    $parts = @('Deckle', 'Maintenance', (Get-MaintenanceScanLabel -Kind $Kind)) + @($Segments)
+    return $parts -join ' > '
+}
+
 function Select-MaintenanceOption {
     param(
         [Parameter(Mandatory)][string]$Header,
@@ -33,7 +55,7 @@ function Select-MaintenanceScanGoal {
         )
     }
     return Show-Submenu `
-        -Header "Deckle > Maintenance > $Kind" `
+        -Header (Get-MaintenanceScanHeader -Kind $Kind) `
         -Rows @(@{ Prefix = 'Goal'; Items = @(Get-MaintenanceScanGoals -Kind $Kind) }) `
         -BannerStyle Compact `
         -ResultTitle 'What this controls' `
@@ -45,7 +67,7 @@ function Set-CustomRepositoryFileSet {
     param([Parameter(Mandatory)]$Specification)
 
     $choice = Select-MaintenanceOption `
-        -Header 'Deckle > Maintenance > Custom > Files' `
+        -Header (Get-MaintenanceScanHeader -Kind Repository -Segments @('Custom', 'Files')) `
         -Items @(
             [pscustomobject]@{ Label = 'All tracked files';       Value = 'All' }
             [pscustomobject]@{ Label = 'Supported text files';   Value = 'Text' }
@@ -59,7 +81,7 @@ function Set-CustomContextDocuments {
     param([Parameter(Mandatory)]$Specification)
 
     $choice = Select-MaintenanceOption `
-        -Header 'Deckle > Maintenance > Custom > Documents' `
+        -Header (Get-MaintenanceScanHeader -Kind Context -Segments @('Custom', 'Documents')) `
         -Items @(
             [pscustomobject]@{ Label = 'All tracked Markdown';         Value = 'all' }
             [pscustomobject]@{ Label = 'Automatic instructions';      Value = 'automatic' }
@@ -86,7 +108,7 @@ function Set-CustomScanScope {
     param([Parameter(Mandatory)]$Specification)
 
     $choice = Select-MaintenanceOption `
-        -Header 'Deckle > Maintenance > Custom > Scope' `
+        -Header (Get-MaintenanceScanHeader -Kind $Specification.Kind -Segments @('Custom', 'Scope')) `
         -Items @(
             [pscustomobject]@{ Label = 'Whole tracked repository'; Value = '' }
             [pscustomobject]@{ Label = 'src/';                     Value = 'src' }
@@ -98,7 +120,7 @@ function Set-CustomScanScope {
     if ($null -eq $choice) { return }
     if ($choice -eq '__path__') {
         $pathInput = Read-MenuText `
-            -Header 'Deckle > Maintenance > Custom > Scope' `
+            -Header (Get-MaintenanceScanHeader -Kind $Specification.Kind -Segments @('Custom', 'Scope')) `
             -Title 'One relative path' `
             -Lines @('Relative to the worktree; files and folders are accepted.', 'Absolute paths, .., .git, links, and junctions are rejected.') `
             -Label 'Path' `
@@ -116,7 +138,7 @@ function Set-CustomScanMeasures {
 
     if ($Specification.Kind -eq 'Repository') {
         $choice = Select-MaintenanceOption `
-            -Header 'Deckle > Maintenance > Custom > Measures' `
+            -Header (Get-MaintenanceScanHeader -Kind Repository -Segments @('Custom', 'Measures')) `
             -Items @(
                 [pscustomobject]@{ Label = 'File count and size';       Value = 'totals' }
                 [pscustomobject]@{ Label = 'Text lines and size';       Value = 'lines' }
@@ -138,7 +160,7 @@ function Set-CustomScanMeasures {
     }
 
     $choice = Select-MaintenanceOption `
-        -Header 'Deckle > Maintenance > Custom > Measures' `
+        -Header (Get-MaintenanceScanHeader -Kind Context -Segments @('Custom', 'Measures')) `
         -Items @(
             [pscustomobject]@{ Label = 'Footprint';                  Value = 'footprint' }
             [pscustomobject]@{ Label = 'Recent Git activity';        Value = 'activity' }
@@ -181,7 +203,7 @@ function Set-CustomScanGrouping {
             [pscustomobject]@{ Label = 'No grouping';   Value = 'None' }
         )
     }
-    $choice = Select-MaintenanceOption -Header 'Deckle > Maintenance > Custom > Grouping' -Items $items
+    $choice = Select-MaintenanceOption -Header (Get-MaintenanceScanHeader -Kind $Specification.Kind -Segments @('Custom', 'Grouping')) -Items $items
     if ($null -ne $choice) { $Specification.GroupBy = $choice }
 }
 
@@ -193,7 +215,7 @@ function Set-CustomScanThresholds {
     $sensitive = Copy-MaintenanceScanSpecification -Specification $Specification
     $sensitive.ThresholdProfile = 'Sensitive'
     $choice = Select-MaintenanceOption `
-        -Header 'Deckle > Maintenance > Custom > Thresholds' `
+        -Header (Get-MaintenanceScanHeader -Kind $Specification.Kind -Segments @('Custom', 'Thresholds')) `
         -Items @(
             [pscustomobject]@{ Label = 'Off';              Value = 'Off' }
             [pscustomobject]@{ Label = Get-MaintenanceThresholdLabel -Specification $standard;  Value = 'Standard' }
@@ -213,7 +235,7 @@ function Set-CustomContextPeriod {
     param([Parameter(Mandatory)]$Specification)
 
     $choice = Select-MaintenanceOption `
-        -Header 'Deckle > Maintenance > Custom > Period' `
+        -Header (Get-MaintenanceScanHeader -Kind Context -Segments @('Custom', 'Period')) `
         -Items @(
             [pscustomobject]@{ Label = 'Last 7 days';  Value = 7 }
             [pscustomobject]@{ Label = 'Last 30 days'; Value = 30 }
@@ -257,7 +279,7 @@ function Show-CustomScanEditor {
         ) }
 
         $choice = Show-Submenu `
-            -Header "Deckle > Maintenance > $($Specification.Kind) > Custom" `
+            -Header (Get-MaintenanceScanHeader -Kind $Specification.Kind -Segments 'Custom') `
             -Rows $rows `
             -BannerStyle Compact `
             -ResultTitle 'Scan definition' `
@@ -288,7 +310,7 @@ function Show-MaintenanceScanReview {
     )
 
     return Show-Submenu `
-        -Header "Deckle > Maintenance > $($Specification.Kind) > Review" `
+        -Header (Get-MaintenanceScanHeader -Kind $Specification.Kind -Segments 'Review') `
         -Rows @(@{ Prefix = 'Scan'; Items = @(
             @{ Label = 'Edit scan…'; Value = 'edit'; Role = 'folder' }
             @{ Label = 'Run scan';   Value = 'run' }
@@ -299,6 +321,26 @@ function Show-MaintenanceScanReview {
         -Interaction Select
 }
 
+function Show-MaintenanceScanResult {
+    param(
+        [Parameter(Mandatory)]$Specification,
+        [Parameter(Mandatory)]$Result
+    )
+
+    return Show-Submenu `
+        -Header (Get-MaintenanceScanHeader -Kind $Specification.Kind -Segments $Specification.GoalLabel) `
+        -Rows @(
+            @{ Cells = @( @{ Label = '< Back'; Value = '__back__'; Role = 'back' } ) }
+            @{ Blank = $true }
+        ) `
+        -PreparedRows `
+        -BannerStyle Compact `
+        -ResultTitle $Result.Title `
+        -ResultLines @($Result.Lines) `
+        -ResultMode Report `
+        -Interaction Select
+}
+
 function Invoke-MaintenanceScanFlow {
     param(
         [Parameter(Mandatory)]
@@ -306,55 +348,62 @@ function Invoke-MaintenanceScanFlow {
         [string]$Kind
     )
 
-    $goal = Select-MaintenanceScanGoal -Kind $Kind
-    if ($null -eq $goal) { return $null }
-    $specification = New-MaintenanceScanSpecification -Kind $Kind -Goal $goal
-    if ($goal -eq 'custom') {
-        $specification = Show-CustomScanEditor -Specification $specification
-        if ($null -eq $specification) { return $null }
-    }
-
-    try {
-        $worktree = Get-WorktreeOrReturn
-    } catch {
-        return [pscustomobject]@{
-            Succeeded = $false
-            Title = "$Kind scan failed"
-            Lines = @(Get-MaintenanceFailureLines -ErrorRecord $_)
-        }
-    }
-    if ($null -eq $worktree) { return $null }
-
     while ($true) {
+        $goal = Select-MaintenanceScanGoal -Kind $Kind
+        if ($null -eq $goal) { return }
+        $specification = New-MaintenanceScanSpecification -Kind $Kind -Goal $goal
+        if ($goal -eq 'custom') {
+            $specification = Show-CustomScanEditor -Specification $specification
+            if ($null -eq $specification) { continue }
+        }
+
         try {
-            $specification = Resolve-MaintenanceScanSpecification -Specification $specification -Worktree $worktree
+            $worktree = Get-WorktreeOrReturn
         } catch {
-            $message = $_.Exception.Message
-            $editable = Copy-MaintenanceScanSpecification -Specification $specification
-            $specification = Show-CustomScanEditor -Specification $editable -ResultLines @(
-                'The selected scope cannot be used.'
-                $message
-            )
-            if ($null -eq $specification) { return $null }
+            $failure = [pscustomobject]@{
+                Succeeded = $false
+                Title = "$Kind scan failed"
+                Lines = @(Get-MaintenanceFailureLines -ErrorRecord $_)
+            }
+            Show-MaintenanceScanResult -Specification $specification -Result $failure | Out-Null
             continue
         }
+        if ($null -eq $worktree) { continue }
 
-        $review = Show-MaintenanceScanReview -Specification $specification -Worktree $worktree
-        if ($null -eq $review) { return $null }
-        if ($review -eq 'edit') {
-            $editable = Copy-MaintenanceScanSpecification -Specification $specification
-            $specification = Show-CustomScanEditor -Specification $editable
-            if ($null -eq $specification) { return $null }
-            continue
+        while ($true) {
+            try {
+                $specification = Resolve-MaintenanceScanSpecification -Specification $specification -Worktree $worktree
+            } catch {
+                $message = $_.Exception.Message
+                $editable = Copy-MaintenanceScanSpecification -Specification $specification
+                $resolved = Show-CustomScanEditor -Specification $editable -ResultLines @(
+                    'The selected scope cannot be used.'
+                    $message
+                )
+                if ($null -eq $resolved) { break }
+                $specification = $resolved
+                continue
+            }
+
+            $review = Show-MaintenanceScanReview -Specification $specification -Worktree $worktree
+            if ($null -eq $review) { break }
+            if ($review -eq 'edit') {
+                $editable = Copy-MaintenanceScanSpecification -Specification $specification
+                $edited = Show-CustomScanEditor -Specification $editable
+                if ($null -ne $edited) { $specification = $edited }
+                continue
+            }
+
+            Show-MenuStatus `
+                -Header (Get-MaintenanceScanHeader -Kind $Kind -Segments $specification.GoalLabel) `
+                -Title $specification.GoalLabel `
+                -Lines @(
+                    "Scanning $(Get-MaintenanceScopeLabel -ScopePath $specification.ScopePath)…"
+                    'Tracked files only; links and junctions are not traversed.'
+                )
+            $result = Invoke-MaintenanceTargetedScan -Specification $specification -Worktree $worktree -LibDir $LibDir
+            Show-MaintenanceScanResult -Specification $specification -Result $result | Out-Null
+            break
         }
-
-        Show-MenuStatus `
-            -Header "Deckle > Maintenance > $Kind" `
-            -Title $specification.GoalLabel `
-            -Lines @(
-                "Scanning $(Get-MaintenanceScopeLabel -ScopePath $specification.ScopePath)…"
-                'Tracked files only; links and junctions are not traversed.'
-            )
-        return Invoke-MaintenanceTargetedScan -Specification $specification -Worktree $worktree -LibDir $LibDir
     }
 }

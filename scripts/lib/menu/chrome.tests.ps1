@@ -12,7 +12,7 @@ Assert-Equal 1 (Get-MenuBannerGap -Style Compact) 'compact banner breathes befor
 Assert-Equal 2 $script:MenuRowInset 'action rows keep their hierarchy without shifting the chrome'
 Assert-Equal 12 (New-MenuRule -MaxWidth 12).Length 'rule uses requested width'
 Assert-Equal 11 (New-MenuRule -MaxWidth 11 -Style Section).Length 'section rule uses requested width'
-Assert-Equal 16 (Get-MenuBodyCapacity -BannerStyle Compact -WindowHeight 24) 'compact body starts directly below the header rule'
+Assert-Equal 15 (Get-MenuBodyCapacity -BannerStyle Compact -WindowHeight 24) 'compact body keeps one row between the header rule and first section'
 Assert-Equal 0 (Get-MenuBodyCapacity -BannerStyle Compact -WindowHeight 6) 'undersized terminal has no body capacity'
 Assert-Equal 14 $script:MenuCategoryWidth 'launcher category column is shared across menus'
 Assert-Equal 2 $script:MenuActionColumnCount 'interactive menus share two action columns'
@@ -22,6 +22,10 @@ Assert-Equal 'DarkRed' (Get-MenuRoleColor -Role danger -Selected).Background 'se
 $fullHeader = Format-MenuHeaderLine -Breadcrumb 'Deckle > Worktrees' -Commands '↑↓←→ move   Enter select   Esc back' -Width 74
 Assert-Equal 74 $fullHeader.Length 'header commands align to the shared content edge'
 Assert-Equal $true $fullHeader.EndsWith('↑↓←→ move   Enter select   Esc back') 'header keeps navigation commands visible'
+$middleCompressed = Compress-MenuBreadcrumb -Breadcrumb 'Deckle > Maintenance > Repository statistics > Overview' -Width 47
+Assert-Equal 'Deckle > … > Repository statistics > Overview' $middleCompressed 'breadcrumb removes its oldest middle level first'
+$moreCompressed = Compress-MenuBreadcrumb -Breadcrumb 'Deckle > Maintenance > Repository statistics > Overview' -Width 39
+Assert-Equal 'Deckle > … > Overview' $moreCompressed 'breadcrumb removes more middle levels before touching either end'
 $compactHeader = Format-MenuHeaderLine -Breadcrumb 'Deckle > Maintenance > Custom > Measures' -Commands '↑↓←→ move   Enter run   Esc back' -Width 40
 Assert-Equal $true $compactHeader.StartsWith('Deck…') 'long breadcrumbs truncate before navigation commands'
 Assert-Equal $true $compactHeader.EndsWith('↑↓←→ move   Enter run   Esc back') 'compact header preserves navigation commands'
