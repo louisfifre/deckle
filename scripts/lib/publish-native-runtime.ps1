@@ -19,10 +19,8 @@
 
 [CmdletBinding()]
 param(
-    # Bundle version, format X.Y.Z. Independent from the app version —
-    # X.Y tracks whisper.cpp upstream minor, Z is a local rebuild counter.
-    # See the recipe doc for the versioning scheme.
-    [Parameter(Mandatory)]
+    # Optional override for recovery. Normally inferred from whisper.cpp:
+    # X.Y tracks its upstream minor, Z is the next local rebuild counter.
     [ValidatePattern('^\d+\.\d+\.\d+$')]
     [string]$Version,
 
@@ -121,6 +119,18 @@ if ($Publish) {
     } else {
         $OwnerRepo = '<owner>/deckle'
     }
+}
+
+if (-not $Version) {
+    $publishedTags = @(& git -C $RepoRoot tag --list 'native-v*')
+    if ($LASTEXITCODE -ne 0) { throw "git tag --list native-v* failed (code $LASTEXITCODE)" }
+    $versionPlan = Get-DeckleNativeRuntimeVersionPlan `
+        -SourcePath $NativeRuntimeSource `
+        -WhisperRepo $WhisperRepo `
+        -PublishedTags $publishedTags
+    $Version = $versionPlan.Version
+    Step "Resolved native-v$Version"
+    Ok "whisper.cpp $($versionPlan.WhisperVersion); previous bundle native-v$($versionPlan.PreviousVersion)"
 }
 
 # ── Resolve sources ──────────────────────────────────────────────────────────

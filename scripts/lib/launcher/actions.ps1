@@ -222,13 +222,40 @@ function Invoke-NativeRuntime {
     )
     $wt = Get-WorktreeOrReturn
     if ($null -eq $wt) { return }
-    $version = Read-Optional -Question 'Native bundle version (X.Y.Z)' -Header 'Deckle > Release > Native runtime' -Label 'Version'
-    if (-not $version) { Write-Host "Cancelled: version is required." -ForegroundColor DarkGray; return }
     $whisperRepo = Read-Optional -Question 'Path to whisper.cpp with an existing build/bin' -Header 'Deckle > Release > Native runtime' -Label 'Path' -Lines @('This action packages existing DLLs.', 'It does not invoke CMake or build Deckle.')
     if (-not $whisperRepo) { Write-Host "Cancelled: whisper.cpp path is required." -ForegroundColor DarkGray; return }
+
+    $versionHolder = [pscustomobject]@{ Plan = $null }
+    $versionCheck = Invoke-DeckleMenuAction `
+        -Header 'Deckle > Release > Native runtime' `
+        -Label 'Resolve native version' `
+        -Source Release `
+        -MenuRows $MenuRows `
+        -Action {
+            if ($Publish) {
+                Write-Host '[release] Sync published native versions'
+                $fetchOutput = @(& git -C $wt fetch origin main --tags --prune 2>&1)
+                if ($LASTEXITCODE -ne 0) {
+                    throw "git fetch origin main --tags failed: $($fetchOutput -join ' ')"
+                }
+            }
+            Import-Module (Join-Path $LibDir 'native-runtime-release.psm1') -Force
+            $publishedTags = @(& git -C $wt tag --list 'native-v*')
+            if ($LASTEXITCODE -ne 0) { throw "git tag --list native-v* failed (code $LASTEXITCODE)" }
+            $sourcePath = Join-Path $wt 'src\Deckle.Transcription.Whisper\Setup\NativeRuntime.cs'
+            $versionHolder.Plan = Get-DeckleNativeRuntimeVersionPlan `
+                -SourcePath $sourcePath `
+                -WhisperRepo $whisperRepo `
+                -PublishedTags $publishedTags
+            Write-Host ("[release] native-v{0} follows native-v{1} for whisper.cpp {2}" -f `
+                $versionHolder.Plan.Version, $versionHolder.Plan.PreviousVersion, $versionHolder.Plan.WhisperVersion)
+        }
+    if (-not $versionCheck.Succeeded) { return $versionCheck }
+
+    $version = $versionHolder.Plan.Version
     $outDir = Read-Optional -Question 'Output directory (blank = temporary folder)' -Header 'Deckle > Release > Native runtime' -Label 'Folder'
     if ($Publish) {
-        Write-Host "This packages existing DLLs and publishes PUBLIC release native-v$version. It does not run any build." -ForegroundColor Yellow
+        Write-Host "native-v$version is next for whisper.cpp $($versionHolder.Plan.WhisperVersion). Existing DLLs will be packaged and published publicly; nothing is built." -ForegroundColor Yellow
         if (-not (Read-YesNo -Question "Publish native-v$version now?" -Default $false -ConfirmLabel "Publish native-v$version" -CancelLabel 'Keep private' -Destructive)) {
             Write-Host "Cancelled." -ForegroundColor DarkGray
             return

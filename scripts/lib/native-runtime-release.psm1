@@ -94,6 +94,67 @@ function Get-DeckleNativeRuntimeBundle {
     }
 }
 
+function Get-DeckleNativeRuntimeVersionPlan {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory)][string]$SourcePath,
+        [Parameter(Mandatory)][string]$WhisperRepo,
+        [string[]]$PublishedTags = @()
+    )
+
+    $cmakeLists = Join-Path $WhisperRepo 'CMakeLists.txt'
+    if (-not (Test-Path -LiteralPath $cmakeLists -PathType Leaf)) {
+        throw "whisper.cpp CMakeLists.txt not found: $cmakeLists"
+    }
+
+    $cmakeSource = Get-Content -LiteralPath $cmakeLists -Raw
+    $upstreamMatch = [regex]::Match(
+        $cmakeSource,
+        'project\s*\(\s*whisper\b[^)]*\bVERSION\s+(?<value>\d+\.\d+\.\d+)',
+        [System.Text.RegularExpressions.RegexOptions]::IgnoreCase)
+    if (-not $upstreamMatch.Success) {
+        throw "whisper.cpp project version not found in $cmakeLists"
+    }
+
+    $whisperVersionText = $upstreamMatch.Groups['value'].Value
+    $whisperVersion = [version]$whisperVersionText
+    $bundle = Get-DeckleNativeRuntimeBundle -SourcePath $SourcePath
+    if ([string]$bundle.Version -notmatch '^\d+\.\d+\.\d+$') {
+        throw "Current native runtime version '$($bundle.Version)' is not canonical X.Y.Z"
+    }
+
+    $knownVersions = [System.Collections.Generic.List[version]]::new()
+    $knownVersions.Add([version]$bundle.Version)
+    foreach ($tag in @($PublishedTags)) {
+        if ([string]$tag -match '^native-v(?<value>\d+\.\d+\.\d+)$') {
+            $knownVersions.Add([version]$Matches.value)
+        }
+    }
+
+    $highestKnown = @($knownVersions | Sort-Object -Descending | Select-Object -First 1)[0]
+    $upstreamSeries = [version]::new($whisperVersion.Major, $whisperVersion.Minor)
+    $highestKnownSeries = [version]::new($highestKnown.Major, $highestKnown.Minor)
+    if ($upstreamSeries -lt $highestKnownSeries) {
+        throw "whisper.cpp $whisperVersionText is older than the latest native runtime series $($highestKnown.Major).$($highestKnown.Minor).x"
+    }
+
+    $sameSeries = @($knownVersions | Where-Object {
+        $_.Major -eq $whisperVersion.Major -and $_.Minor -eq $whisperVersion.Minor
+    })
+    $nextCounter = if ($sameSeries.Count -eq 0) {
+        0
+    } else {
+        [int](@($sameSeries | Measure-Object -Property Build -Maximum)[0].Maximum) + 1
+    }
+
+    return [pscustomobject]@{
+        Version         = "$($whisperVersion.Major).$($whisperVersion.Minor).$nextCounter"
+        WhisperVersion  = $whisperVersionText
+        PreviousVersion = $highestKnown.ToString(3)
+        SeriesChanged   = $upstreamSeries -gt $highestKnownSeries
+    }
+}
+
 function Assert-DeckleNativeRuntimeArtifact {
     [CmdletBinding()]
     param(
@@ -170,4 +231,4 @@ function Assert-DeckleNativeRuntimeArchive {
     }
 }
 
-Export-ModuleMember -Function Get-DeckleNativeRuntimeCatalog, Get-DeckleNativeRuntimeBundle, Assert-DeckleNativeRuntimeArtifact, Assert-DeckleNativeRuntimeArchive
+Export-ModuleMember -Function Get-DeckleNativeRuntimeCatalog, Get-DeckleNativeRuntimeBundle, Get-DeckleNativeRuntimeVersionPlan, Assert-DeckleNativeRuntimeArtifact, Assert-DeckleNativeRuntimeArchive
