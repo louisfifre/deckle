@@ -131,14 +131,65 @@ gets a separate schedule without immediate duplicate calls; profiled stage
 distributions run separately only if calibration passes. API-boundary wall time
 is the strongest permitted stage claim without an external GPU or ORT trace.
 
+### ACX-0010 — ordinary Qwen scaling established, in-process profiler rejected
+
+ACX-0010 separated 80 ordinary scores from a later two-candidate crossover. It
+ran from clean HEAD `bb8194f7`, exited zero after 316.263 seconds, emitted no
+stderr, and preserved exact semantics in all 16 crossover blocks (64 calls).
+
+The ordinary continuous-hot order-robustness baseline is:
+
+| Candidates | n | Ordinary p50 | Ordinary p95 | Maximum |
+|---:|---:|---:|---:|---:|
+| 2 | 20 | 902.063 ms | 929.496 ms | 944.301 ms |
+| 4 | 20 | 1,437.394 ms | 1,697.914 ms | 1,699.754 ms |
+| 8 | 20 | 3,269.765 ms | 3,562.371 ms | 3,598.512 ms |
+| 13 | 20 | 6,694.148 ms | 6,933.750 ms | 7,038.484 ms |
+
+Ordinary duration fit candidate count with R² 0.978931 and a descriptive slope
+of 525.457 ms per candidate. This is valid for the fixed fixture, continuous hot
+throughput, and randomized cyclic presentation order. It is not yet the
+production literal-first distribution or a model of real between-sentence idle
+time.
+
+Presentation order itself is material. At four candidates, the same closed set
+had 1,668.716/1,692.095 ms medians when KEEP appeared at index 0/1 and
+1,398.490/1,409.758 ms at index 2/3 (five observations per index). Production
+constructs KEEP first, so one aggregate randomized median would understate the
+canonical path. This requires a separate canonical-order baseline, not a
+post-hoc subset claim.
+
+The predeclared profiler calibration failed. Median block delta was −6.942 ms,
+but the one-sided 90% bootstrap upper bound was 65.097 ms; relative median was
+−0.667% with an 8.562% upper bound. `P-O-O-P` blocks had +69.370 ms median while
+`O-P-P-O` had −69.283 ms. Call-position p50 fell from 901.601 ms first to about
+761–765 ms for immediate repeats. The nonlinear repeat effect is far larger than
+the 2 ms attribution target and reverses with sequence. The in-process
+Stopwatch collector is therefore refuted as a decision-valid stage instrument
+for this path. No post-hoc estimator rescues its detailed stages; external
+tracing or coarse semantic ablations remain available.
+
+Raw output SHA-256:
+`0947DF2C9EB1F7318C9CCBDA922D719D7DD9E5F8552C481BA7E00835476CAA19`.
+Reconciliation SHA-256:
+`E6DB6198013B047EC3A8A4DE3D181B876D5E56B81DB55A26315FA8538CA3B62B`.
+
 ## Refuted or dominated families
 
-No complete end-to-end Pareto candidate is dominated yet. Two narrower architecture claims are refuted within their stated scopes: terminal Qwen3-1.7B DirectML as-is is not a direct-interaction path at the measured warm duration, and slow speculative work cannot share the current single-flight lane without blocking fresh useful work. Qwen as teacher/shadow/cache target and speculation with separate ownership remain active possibilities.
+No complete end-to-end Pareto candidate is dominated yet. Three narrower claims
+are refuted within their scopes: terminal Qwen3-1.7B DirectML as-is is not a
+direct-interaction path at the measured ordinary two-candidate duration; slow
+speculative work cannot share the current single-flight lane without blocking
+fresh useful work; and the current in-process Stopwatch collector cannot support
+detailed stage attribution. Qwen as teacher/shadow/cache target, coarse ablation,
+external tracing, batching, and speculation with separate ownership survive.
 
 ## Active uncertainties
 
 - Whether a valid stage profile exposes enough removable Qwen work to justify a
   shared-prefix or batching prototype.
+- The canonical literal-first latency distribution and its dependence on real
+  between-sentence idle time.
 - Whether speculative work creates usable lead time under real typing cadence.
 - Whether a compact discriminator can meet the precision posture at useful coverage.
 - How much end-to-end latency is inference versus target verification and edit observation.
