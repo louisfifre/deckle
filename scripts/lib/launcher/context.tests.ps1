@@ -5,6 +5,17 @@ function Assert-Equal($Expected, $Actual, [string]$Case) {
     if ($Expected -ne $Actual) { throw "${Case}: expected $Expected, got $Actual" }
 }
 
+function Start-MenuSession {
+    param([switch]$AlternateScreen)
+    $script:StartedAlternateScreen = [bool]$AlternateScreen
+}
+function Stop-MenuSession { $script:StoppedMenuSession = $true }
+
+Start-DeckleMenuSession
+Stop-DeckleMenuSession
+Assert-Equal $true $script:StartedAlternateScreen 'launcher starts the authoritative menu session'
+Assert-Equal $true $script:StoppedMenuSession 'launcher stops the authoritative menu session'
+
 function Select-YesNo {
     param(
         [string]$Question,

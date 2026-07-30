@@ -17,7 +17,6 @@ param()
 $ErrorActionPreference = 'Stop'
 $ScriptDir = $PSScriptRoot
 $LibDir    = Join-Path $ScriptDir 'lib'
-$script:DeckleMenuSessionActive = $false
 
 Import-Module (Join-Path $LibDir '_menu.psm1') -Force
 . (Join-Path $LibDir 'launcher\context.ps1')

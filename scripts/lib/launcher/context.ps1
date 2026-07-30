@@ -1,13 +1,10 @@
 # Deckle launcher context, prompts, and session helpers.
 function Start-DeckleMenuSession {
     Start-MenuSession -AlternateScreen
-    $script:DeckleMenuSessionActive = $true
 }
 
 function Stop-DeckleMenuSession {
-    if (-not $script:DeckleMenuSessionActive) { return }
     Stop-MenuSession
-    $script:DeckleMenuSessionActive = $false
 }
 
 function Get-WorktreeOrReturn {

@@ -5,48 +5,11 @@ function Test-MenuHeader {
     return ($null -ne $prop) -and [bool]$prop.Value
 }
 
-function Write-MenuLine {
-    param(
-        [int]$Row,
-        [string]$Label,
-        [string]$Role,
-        [bool]$Selected,
-        [bool]$IsHeader,
-        [int]$ContentWidth,
-        [int]$InnerWidth
-    )
-
-    Write-MenuLinePrefix -Row $Row
-    $written = 0
-    if ($IsHeader) {
-        $title = ' ' + ([string]$Label).ToUpperInvariant() + ' '
-        Write-MenuContentSegment -Text $title -Written ([ref]$written) -InnerWidth $ContentWidth -ForegroundColor Magenta -BackgroundColor $null
-        $rule = New-MenuRule -MaxWidth ($ContentWidth - $written) -Style Section
-        Write-MenuContentSegment -Text $rule -Written ([ref]$written) -InnerWidth $ContentWidth -ForegroundColor Gray -BackgroundColor $null
-    } else {
-        $itemRole = Get-MenuCellRole -Cell ([pscustomobject]@{ Label = $Label; Role = $Role })
-        $colors = Get-MenuRoleColor -Role $itemRole -Selected:$Selected
-        if ($Selected) {
-            $line = ('    ' + $Label)
-            if ($line.Length -lt $ContentWidth) { $line += ' ' * ($ContentWidth - $line.Length) }
-            Write-MenuContentSegment -Text $line -Written ([ref]$written) -InnerWidth $ContentWidth -ForegroundColor $colors.Foreground -BackgroundColor $colors.Background
-        } else {
-            Write-MenuContentSegment -Text '    ' -Written ([ref]$written) -InnerWidth $ContentWidth -ForegroundColor DarkGray -BackgroundColor $null
-            Write-MenuContentSegment -Text $Label -Written ([ref]$written) -InnerWidth $ContentWidth -ForegroundColor $colors.Foreground -BackgroundColor $colors.Background
-        }
-    }
-    Write-MenuLineRemainder -InnerWidth $InnerWidth -Written $written
-}
-
-function Invoke-MenuLoop {
+function Read-NumberedMenuSelection {
     param(
         [string]$Header,
         [object[]]$Items,
-        [int]$Default = 0,
-        [switch]$ClearScreen,
-        [string]$Footer = 'Up/Down move   Enter confirm   Esc back',
-        [ValidateSet('Compact')]
-        [string]$BannerStyle = 'Compact'
+        [int]$Default = 0
     )
 
     if ($Items.Count -eq 0) { return -1 }
@@ -61,69 +24,18 @@ function Invoke-MenuLoop {
     # Clamp Default to a valid selectable index.
     $selected = if ($selectableIdx -contains $Default) { $Default } else { $selectableIdx[0] }
 
-    if ([Console]::IsInputRedirected -or [Console]::IsOutputRedirected) {
-        Write-Host $Header
-        for ($i = 0; $i -lt $selectableIdx.Count; $i++) {
-            $idx = $selectableIdx[$i]
-            Write-Host ('  {0}) {1}' -f ($i + 1), $Items[$idx].Label)
-        }
-        $answer = Read-Host 'Pick a number (Enter = default)'
-        if ([string]::IsNullOrWhiteSpace($answer)) { return $selected }
-        $choice = 0
-        if ([int]::TryParse($answer, [ref]$choice) -and $choice -ge 1 -and $choice -le $selectableIdx.Count) {
-            return $selectableIdx[$choice - 1]
-        }
-        return -1
+    Write-Host $Header
+    for ($i = 0; $i -lt $selectableIdx.Count; $i++) {
+        $idx = $selectableIdx[$i]
+        Write-Host ('  {0}) {1}' -f ($i + 1), $Items[$idx].Label)
     }
-
-    $viewport = New-MenuViewport -Header $Header -Footer $Footer -BodyCount $Items.Count -ClearScreen:$ClearScreen -BannerStyle $BannerStyle
-    $metrics = Get-MenuMetrics
-
-    for ($i = 0; $i -lt $Items.Count; $i++) {
-        $it = $Items[$i]
-        Write-MenuLine -Row ($viewport.BodyTop + $i) -Label $it.Label -Role $it.Role -Selected ($i -eq $selected) -IsHeader $it.IsHeader -ContentWidth $viewport.ContentWidth -InnerWidth $viewport.InnerWidth
+    $answer = Read-Host 'Pick a number (Enter = default)'
+    if ([string]::IsNullOrWhiteSpace($answer)) { return $selected }
+    $choice = 0
+    if ([int]::TryParse($answer, [ref]$choice) -and $choice -ge 1 -and $choice -le $selectableIdx.Count) {
+        return $selectableIdx[$choice - 1]
     }
-
-    [Console]::CursorVisible = $false
-    try {
-        while ($true) {
-            $key  = [Console]::ReadKey($true)
-            $currentMetrics = Get-MenuMetrics
-            if ($currentMetrics.TerminalWidth -ne $metrics.TerminalWidth -or $currentMetrics.WindowHeight -ne $metrics.WindowHeight) {
-                $viewport = New-MenuViewport -Header $Header -Footer $Footer -BodyCount $Items.Count -ClearScreen -BannerStyle $BannerStyle
-                $metrics = Get-MenuMetrics
-                for ($i = 0; $i -lt $Items.Count; $i++) {
-                    $it = $Items[$i]
-                    Write-MenuLine -Row ($viewport.BodyTop + $i) -Label $it.Label -Role $it.Role -Selected ($i -eq $selected) -IsHeader $it.IsHeader -ContentWidth $viewport.ContentWidth -InnerWidth $viewport.InnerWidth
-                }
-            }
-            $prev = $selected
-            switch ($key.Key) {
-                'UpArrow' {
-                    # Step up through selectables only.
-                    $pos = $selectableIdx.IndexOf($selected)
-                    if ($pos -gt 0) { $selected = $selectableIdx[$pos - 1] }
-                }
-                'DownArrow' {
-                    $pos = $selectableIdx.IndexOf($selected)
-                    if ($pos -lt $selectableIdx.Count - 1) { $selected = $selectableIdx[$pos + 1] }
-                }
-                'Enter'  {
-                    Set-MenuCursorPosition -Left 0 -Top $viewport.Bottom
-                    return $selected
-                }
-                'Escape' {
-                    Set-MenuCursorPosition -Left 0 -Top $viewport.Bottom
-                    return -1
-                }
-            }
-            if ($selected -eq $prev) { continue }
-            Write-MenuLine -Row ($viewport.BodyTop + $prev)     -Label $Items[$prev].Label     -Role $Items[$prev].Role     -Selected $false -IsHeader $Items[$prev].IsHeader -ContentWidth $viewport.ContentWidth -InnerWidth $viewport.InnerWidth
-            Write-MenuLine -Row ($viewport.BodyTop + $selected) -Label $Items[$selected].Label -Role $Items[$selected].Role -Selected $true  -IsHeader $Items[$selected].IsHeader -ContentWidth $viewport.ContentWidth -InnerWidth $viewport.InnerWidth
-        }
-    } finally {
-        [Console]::CursorVisible = $true
-    }
+    return -1
 }
 
 function Get-WorktreeMenuLabel {
@@ -209,7 +121,7 @@ function Select-Worktree {
                 Role = $null
             }
         }
-        $idx = Invoke-MenuLoop -Header 'Pick a worktree:' -Items $items
+        $idx = Read-NumberedMenuSelection -Header 'Pick a worktree:' -Items $items
         if ($idx -lt 0) { throw [System.OperationCanceledException]::new('Worktree selection was cancelled.') }
         return $entries[$idx].Path
     }
@@ -257,7 +169,7 @@ function Select-Action {
     }
 
     if ([Console]::IsInputRedirected -or [Console]::IsOutputRedirected) {
-        $idx = Invoke-MenuLoop -Header $Header -Items $normalised -Default $Default -ClearScreen:$ClearScreen -BannerStyle $BannerStyle
+        $idx = Read-NumberedMenuSelection -Header $Header -Items $normalised -Default $Default
         if ($idx -lt 0) { throw 'Cancelled' }
         return $normalised[$idx].Value
     }

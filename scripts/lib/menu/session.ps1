@@ -80,12 +80,3 @@ function Stop-MenuPointerInput {
         [Console]::TreatControlCAsInput = $script:MenuPreviousTreatControlCAsInput
     }
 }
-
-function Suspend-MenuSession {
-    [CmdletBinding()]
-    param()
-
-    while ($script:MenuSessionDepth -gt 0) {
-        Stop-MenuSession
-    }
-}
