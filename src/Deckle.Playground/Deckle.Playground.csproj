@@ -2,7 +2,7 @@
   <PropertyGroup>
     <RootNamespace>Deckle.Playground</RootNamespace>
     <!-- WinUI XAML compilation : the Playground ships PlaygroundWindow,
-         HomePage, HudPage, AmbientPage, and the PreviewGrid control.
+         HomePage, experiment pages, and the PreviewGrid control.
          Aligned on Deckle.Lighting.Ambient pattern. -->
     <UseWinUI>true</UseWinUI>
     <DefaultLanguage>en-US</DefaultLanguage>
@@ -44,5 +44,9 @@
          the Segmentation tuning page. -->
     <ProjectReference Include="..\Deckle.Transcription\Deckle.Transcription.csproj" />
     <ProjectReference Include="..\Deckle.Vision\Deckle.Vision.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="Deckle.Playground.Tests" />
   </ItemGroup>
 </Project>
