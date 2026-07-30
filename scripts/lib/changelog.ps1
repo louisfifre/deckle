@@ -47,7 +47,11 @@ param(
 
     # Write the output here instead of the default (CHANGELOG.md in full mode,
     # stdout in notes mode). Used by publish-app.ps1 to capture the notes file.
-    [string]$OutFile
+    [string]$OutFile,
+
+    # Commit the regenerated repository CHANGELOG.md when it changed. This is
+    # intentionally unavailable for release-note and custom-output modes.
+    [switch]$Commit
 )
 
 $ErrorActionPreference = 'Stop'
@@ -63,6 +67,11 @@ $Workflow = if ($NotesFor) { 'Generate release notes' } else { 'Update changelog
 $RepoRoot = $null
 $range = $null
 $dest = $null
+$commitHash = $null
+
+if ($Commit -and ($NotesFor -or $OutFile)) {
+    throw '-Commit is only available when regenerating the repository CHANGELOG.md.'
+}
 
 trap {
     Write-DeckleActionSummary `
@@ -320,6 +329,24 @@ $dest = if ($OutFile) { $OutFile } else { Join-Path $RepoRoot 'CHANGELOG.md' }
 Step "Done"
 Ok "Wrote $dest"
 
+if ($Commit) {
+    & git -C $RepoRoot add -- CHANGELOG.md
+    if ($LASTEXITCODE -ne 0) { throw 'Could not stage CHANGELOG.md.' }
+
+    & git -C $RepoRoot diff --cached --quiet -- CHANGELOG.md
+    $diffExitCode = $LASTEXITCODE
+    if ($diffExitCode -eq 1) {
+        & git -C $RepoRoot commit -m 'docs(changelog): refresh unreleased changes' -- CHANGELOG.md
+        if ($LASTEXITCODE -ne 0) { throw 'Could not commit CHANGELOG.md.' }
+        $commitHash = (& git -C $RepoRoot rev-parse --short HEAD).Trim()
+        Ok "Committed CHANGELOG.md ($commitHash)"
+    } elseif ($diffExitCode -eq 0) {
+        Ok 'CHANGELOG.md is already current; no commit was needed.'
+    } else {
+        throw 'Could not inspect the staged CHANGELOG.md change.'
+    }
+}
+
 Write-DeckleActionSummary `
     -Workflow $Workflow `
     -Result Success `
@@ -330,4 +357,5 @@ Write-DeckleActionSummary `
         'Floor tag'  = $FloorTag
         'Latest public release' = $tags[-1]
         Sections     = $sections.Count
+        Commit       = $commitHash
     })

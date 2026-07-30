@@ -23,6 +23,15 @@ $formatted = @(ConvertTo-DeckleActionLogLines -InputObject "first`nsecond" -Sour
 Assert-Equal 2 $formatted.Count 'multiline output becomes separate log entries'
 Assert-Equal $true $formatted[0].StartsWith('14:32:08  Info     Build') 'log columns stay aligned'
 
+$medium = @(ConvertTo-DeckleActionLogLines -InputObject 'compile' -Source Build -Timestamp ([datetime]'2026-07-29T14:32:08') -ContentWidth 52)
+Assert-Equal $true $medium[0].StartsWith('Info     Build') 'medium logs omit time before truncating the message'
+$narrow = @(ConvertTo-DeckleActionLogLines -InputObject 'compile' -Source Build -Timestamp ([datetime]'2026-07-29T14:32:08') -ContentWidth 38)
+Assert-Equal 'Info     compile' $narrow[0] 'narrow logs preserve level and message before optional metadata'
+
+$hostWarning = @(& { Write-Host 'tool needs attention' -ForegroundColor Yellow } 6>&1)[0]
+$structured = @(ConvertTo-DeckleActionLogRecords -InputObject $hostWarning -Source Build)
+Assert-Equal 'Warning' $structured[0].Level 'host color provides a structured internal log level'
+
 $escape = [char]27
 $bell = [char]7
 $terminalOutput = "${escape}[31mfirst${escape}[0m`rsecond${escape}]9;4;1;50${bell}`b"

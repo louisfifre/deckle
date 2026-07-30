@@ -47,6 +47,12 @@ Assert-Equal $true $script:SubmenuFollowTailCalls[1] 'project action logs resume
 Assert-Equal $true ([object]::ReferenceEquals($script:SubmenuSelectionStates[0], $script:SubmenuSelectionStates[1])) 'project menu keeps one selection state across action redraws'
 Assert-Equal 'Deckle > Project' $script:LastSubmenuHeader 'submenu header contains only the breadcrumb'
 
+$script:WorktreeActionCount = 0
+$script:MenuSelections = @('changelog', '__back__')
+Show-ProjectMenu
+Assert-Equal 1 $script:WorktreeActionCount 'changelog action runs once before the submenu resumes'
+Assert-Equal $true $script:LastWorktreeScriptParameters.Commit 'changelog update requests a local commit'
+
 $script:MenuSelections = @('__back__')
 Show-ReleaseMenu
 $releaseRows = @($script:LastSubmenuRows | Where-Object { $_.ContainsKey('Prefix') })
