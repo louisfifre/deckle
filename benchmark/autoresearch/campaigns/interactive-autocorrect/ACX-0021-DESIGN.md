@@ -69,6 +69,14 @@ At arm time the lab captures, without persistence:
 - composition-neutral and writable state;
 - monotonic arm timestamp and configured delay.
 
+The synthetic fixture places its degenerate terminal selection with
+`SelectionOptions.AtEndOfLine` before clearing native history. TOM assigns two
+visual affinities to an ambiguous line-boundary position; explicitly selecting
+the end-of-line affinity makes the programmatic fixture match a user caret at
+the visible end of the preceding line. Apply, Undo, and Redo still require the
+complete option set to round-trip exactly. The affinity bit is not masked or
+ignored by the postcondition.
+
 The lease is a monotonic state machine:
 
 - `armed_safe`: only an exact append-at-end transition is admitted;
