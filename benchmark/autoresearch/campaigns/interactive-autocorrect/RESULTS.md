@@ -174,6 +174,43 @@ Raw output SHA-256:
 Reconciliation SHA-256:
 `E6DB6198013B047EC3A8A4DE3D181B876D5E56B81DB55A26315FA8538CA3B62B`.
 
+### ACX-0011 — canonical production-order Qwen latency
+
+ACX-0011 fixed the exact literal at index zero followed by transaction edits,
+matching the production candidate construction. It ran from clean HEAD
+`0e97f23e`, compiled with zero warnings and errors, emitted no stderr, and
+passed every predeclared run-validity gate: 80/80 ordinary trials, 20 per candidate count,
+five at each Latin schedule position, no bad permutation and no scoring error.
+
+The continuous-hot scorer-boundary baseline is:
+
+| Candidates | n | Canonical p50 | Canonical p95 | Maximum |
+|---:|---:|---:|---:|---:|
+| 2 | 20 | 907.496 ms | 935.752 ms | 984.507 ms |
+| 4 | 20 | 1,667.503 ms | 1,715.886 ms | 1,728.272 ms |
+| 8 | 20 | 3,474.536 ms | 3,627.678 ms | 3,638.760 ms |
+| 13 | 20 | 6,524.257 ms | 6,675.452 ms | 6,713.567 ms |
+
+The predeclared four-candidate hypothesis passed. Canonical p50 was 16.009%
+above ACX-0010's randomized aggregate and only 1.213 ms from its prior
+literal-index-zero subgroup median, while the competing plus-or-minus 5%
+hypothesis failed. The predeclared four-candidate cross-session association
+reproduced, but this is not a causal estimate: separate processes leave
+session, chronology and device-state confounding. The other cross-run deltas
+were +0.602% at two candidates, +6.263% at eight, and -2.538% at thirteen, so
+no constant order penalty is inferred.
+
+The fixture chose the literal in all 80 trials. That is an execution-integrity
+check only, not quality evidence. Model load was 1,719.142 ms, the first
+two-candidate score 1,035.045 ms, and private memory after trials about 2.64 GB.
+These measurements exclude candidate generation, application integration,
+real inter-sentence cadence and punctuation-key-down-to-visible-change latency.
+
+Raw output SHA-256:
+`3EF22FF908EA9A353B3968289AB0BEFF28BC488C29008CF31702B751326CEA95`.
+Reconciliation SHA-256:
+`64E136BC9538DC6E16002D90FD8CDA43F699B049E08A8162D1F44D503C32B93E`.
+
 ## Refuted or dominated families
 
 No complete end-to-end Pareto candidate is dominated yet. Three narrower claims
@@ -186,10 +223,10 @@ external tracing, batching, and speculation with separate ownership survive.
 
 ## Active uncertainties
 
-- Whether a valid stage profile exposes enough removable Qwen work to justify a
-  shared-prefix or batching prototype.
-- The canonical literal-first latency distribution and its dependence on real
-  between-sentence idle time.
+- Whether a whole-call forward-only ablation preserves enough selective quality
+  to justify deeper Qwen optimization before shared-prefix or batching work.
+- Whether the cross-session canonical-order association survives a paired
+  order experiment, and how canonical latency depends on real idle time.
 - Whether speculative work creates usable lead time under real typing cadence.
 - Whether a compact discriminator can meet the precision posture at useful coverage.
 - How much end-to-end latency is inference versus target verification and edit observation.

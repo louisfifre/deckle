@@ -5,6 +5,25 @@ type: module-journal
 
 # JOURNAL — Deckle.Autocorrect
 
+## 2026-07-30 — Canonical Qwen latency preserves the non-interactive conclusion
+
+Measured the production literal-first candidate order independently after a
+randomized order-robustness run. On one fixed visible transaction under
+continuous-hot DirectML scoring, canonical p50/p95 was 907.496/935.752 ms for
+two candidates, 1,667.503/1,715.886 ms for four, 3,474.536/3,627.678 ms for
+eight, and 6,524.257/6,675.452 ms for thirteen. The 80-trial run had no scoring
+error and preserved the canonical permutation exactly.
+
+At four candidates the predeclared cross-run signal reproduced: canonical p50
+was 16.009% above the earlier randomized aggregate and 1.213 ms from its small
+literal-index-zero subgroup median. Separate processes prevent causal
+attribution to presentation order, and the nonuniform deltas at other counts
+rule out a constant penalty. The durable product conclusion is narrower and
+stronger: even the measured two-candidate canonical fixture remains around
+0.9 seconds before integration, so current Qwen stays outside the direct terminal path.
+Whole-call one-order ablation, anticipation, shadow use, caching and distillation
+remain research families; none inherit write authority from this result.
+
 ## 2026-07-30 — Clean replays separate safety, ownership, and anticipation evidence
 
 Closed the wave-one reproducibility gaps on committed laboratory HEAD `27f3fcb0`. The deterministic visible corpus reproduced 37/37 correct original/replacement pairs, zero wrong pairs, 37/40 recall and 20/23 exact scenarios; 16,700 managed commit samples measured 2.2 us p50 / 65.7 us p95 / 83.9 us p99. This remains pair-level internal agreement, not positional or observed-target precision.

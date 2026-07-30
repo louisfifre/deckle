@@ -44,10 +44,10 @@ become the high-trust profile even if UIA plus SendInput remains a broad fallbac
 | Family | Status | Evidence / next discriminator |
 |---|---|---|
 | Deterministic commit/candidate preparation | reproducible baseline | ACX-0006 on clean HEAD: 37/37 internal original/replacement pairs match visible synthetic gold, 92.5% recall, 2.2 us p50 / 83.9 us p99 managed commit cost. Positional precision, applied precision, and field quality are unmeasured. |
-| Terminal Qwen3-1.7B DML as-is | refuted as scoped | ACX-0010 ordinary two-candidate p50/p95 is 902.063/929.496 ms before integration. ACX-0005 separately gives a fixed 945 ms computation 13.86% readiness on a selected timing sample. Teacher, shadow, coarse ablation, batching, and caching survive. |
+| Terminal Qwen3-1.7B DML as-is | refuted as scoped | ACX-0011 canonical two-candidate p50/p95 is 907.496/935.752 ms before integration. ACX-0005 separately gives a fixed 945 ms computation 13.86% readiness on a selected timing sample. Teacher, shadow, coarse ablation, batching, and caching survive. |
 | Speculative Qwen on the production lane | refuted as scoped | ACX-0007 directly shows changing stale verdicts are rejected but obsolete single-flight work still blocks fresh work. It survives only with measured exact hits and separate ownership. |
 | Exact anticipation with a fast decider | active | ACX-0008 reproducibly shows a large fixed-duration 50–150 ms opportunity on the selected sample. Next: filter to exact candidate-eligible transactions and measure branch waste. |
-| Batched/reused Qwen scoring | active, coarse ablation next | ACX-0010 ordinary latency scales from 902.063 ms at 2 candidates to 6,694.148 ms at 13 (R² 0.978931), but the in-process stage profiler failed its uncertainty gates. Next: canonical order and forward-only coarse ablations before a batch prototype. |
+| Batched/reused Qwen scoring | active, forward-only gate next | ACX-0011 establishes fixed-fixture canonical p50 from 907.496 ms at 2 candidates to 6,524.257 ms at 13. The in-process stage profiler failed its uncertainty gates. A whole-call forward-only ablation must test latency and selective-quality loss before a batch prototype. |
 | In-process Stopwatch stage attribution | refuted as scoped | Two designs preserved semantics but could not separate collector cost from a 140 ms immediate-repeat/position effect; ACX-0010 upper bounds were 65.097 ms and 8.562%. External GPU/ORT tracing remains a separate family. |
 | Deterministic unanimous global rules | candidate | Existing global `la/là` rule proves the contract shape, not residual coverage. Freeze a claim inventory on development data. |
 | Compact tabular discriminator | candidate | Best low-data baseline. Score KEEP plus every edit over grouped transaction splits. |
@@ -82,10 +82,11 @@ become the high-trust profile even if UIA plus SendInput remains a broad fallbac
   after amortizable work is removed.
 - **Current evidence:** ACX-0009 exact-equivalence and visible-quality results are
   valid, but stage attribution is invalid because the observer gate failed and
-  the apparent delta is confounded with first/second call position. Matched
-  four-call crossover calibration with an uncertainty bound, followed by a
-  separate ordinary-only baseline, is the required next discriminator; an
-  identical rerun is not informative.
+  the apparent delta is confounded with first/second call position. ACX-0010
+  rejected the calibrated in-process profiler, and ACX-0011 established the
+  production-canonical whole-call baseline. The next discriminator is an
+  ordinary whole-call forward-only versus combined ablation; batching remains
+  conditional on that result.
 
 ### FAM-02 — candidate-eligible anticipation oracle
 
