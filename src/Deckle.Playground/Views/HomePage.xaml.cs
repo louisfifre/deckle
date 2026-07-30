@@ -7,7 +7,7 @@ using Microsoft.UI.Xaml.Navigation;
 namespace Deckle.Playground;
 
 // Landing page of the Playground. Holds no state, no settings, no
-// timers — just three routing handlers and lightweight diagnostic probes.
+// timers — just routing handlers and lightweight diagnostic probes.
 // Lives in NavigationCacheMode.Required
 // for consistency with the other pages (cheap to keep around, avoids
 // re-instantiation on every back-nav).
@@ -36,6 +36,11 @@ public sealed partial class HomePage : Page
     private void OnSegmentationCardClick(object sender, RoutedEventArgs e)
     {
         PlaygroundShell.NavigateTo?.Invoke("segmentation");
+    }
+
+    private void OnCorrectionCardClick(object sender, RoutedEventArgs e)
+    {
+        PlaygroundShell.NavigateTo?.Invoke("correction");
     }
 
     // Manual probe for the notification toast channel. Fires the Playground

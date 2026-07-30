@@ -2,12 +2,11 @@ using Deckle.Autocorrect;
 
 namespace Deckle.Autocorrect.Onnx;
 
-// Adapts a closed-sentence ISentenceScorer (the ONNX judge) to the slot-level
-// ISentenceReranker the sentence stage speaks. For one ambiguous slot it splices
-// each candidate surface form into the sentence, scores the resulting full
-// sentences, and remaps the winner back to the slot's chosen form. It stays a
-// CORRECTION, not a rewrite: the verdict is always one of the caller's candidate
-// forms or an abstention, never invented text.
+// Adapts a closed-sentence ISentenceScorer (the ONNX judge) to the production
+// whole-sentence transaction and to the retained slot-level replay contract. In
+// production, the literal sentence and every bounded one-edit variant compete in
+// one global decision. It stays a CORRECTION, not a rewrite: the verdict is one
+// supplied edit, KEEP, or abstention — never invented text.
 //
 // The judge is a full-sentence forced-decoding scorer whose speed follows the
 // execution provider it loads onto: seconds per slot on CPU int4 (offline-only),
@@ -15,7 +14,7 @@ namespace Deckle.Autocorrect.Onnx;
 // rerank lane, which keeps inference off the input thread, holds one request in
 // flight and drops stale verdicts by epoch. The offline replay drives the same
 // class, so live and replay inherit one behavior.
-public sealed class OnnxSlotReranker : ISentenceReranker, IDisposable
+public sealed class OnnxSlotReranker : ISentenceReranker, IWholeSentenceReranker, IDisposable
 {
     // Context floor: the judge is unreliable on short sentences. Replayed over the
     // maintainer's corpus its changes-only precision was 33% on 1–3-word sentences
@@ -66,17 +65,7 @@ public sealed class OnnxSlotReranker : ISentenceReranker, IDisposable
         // before scoring. Word tokens are the entries that carry a letter — the
         // sentence is a list of output word-forms, punctuation living on the
         // boundary rather than as its own token.
-        int wordTokens = 0;
-        foreach (string token in sentence)
-        {
-            foreach (char c in token)
-                if (char.IsLetter(c))
-                {
-                    wordTokens++;
-                    break;
-                }
-        }
-        if (wordTokens < MinSentenceWordTokens)
+        if (!HasMinimumContext(sentence))
             return RerankOutcome.Abstained(RerankOutcome.AbstainReasons.ShortContext);
 
         // One full-sentence candidate per surface form, in candidate order: the
@@ -121,6 +110,100 @@ public sealed class OnnxSlotReranker : ISentenceReranker, IDisposable
             chosenForm is not null
                 ? null
                 : outcome.AbstainReason ?? RerankOutcome.AbstainReasons.NoRule);
+    }
+
+    public RerankOutcome RerankSentence(ClosedSentenceTransaction transaction)
+    {
+        if (transaction.Edits.Count == 0)
+            return RerankOutcome.Abstained(RerankOutcome.AbstainReasons.NoRule);
+        if (!HasMinimumContext(transaction.Words))
+            return RerankOutcome.Abstained(RerankOutcome.AbstainReasons.ShortContext);
+
+        var variants = new List<string>(transaction.Edits.Count + 1)
+        {
+            transaction.Literal,
+        };
+        var mapped = new List<SentenceEditCandidate>(transaction.Edits.Count);
+        var seen = new HashSet<string>(StringComparer.Ordinal)
+        {
+            variants[0],
+        };
+
+        foreach (SentenceEditCandidate candidate in transaction.Edits)
+        {
+            if (candidate.SlotIndex < 0
+                || candidate.SlotIndex >= transaction.Words.Count
+                || candidate.Start < 0
+                || candidate.Length < 0
+                || candidate.Start > transaction.Literal.Length - candidate.Length
+                || string.IsNullOrWhiteSpace(candidate.Replacement)
+                || !transaction.Literal.AsSpan(candidate.Start, candidate.Length)
+                    .SequenceEqual(transaction.Words[candidate.SlotIndex].AsSpan()))
+                return RerankOutcome.Abstained(RerankOutcome.AbstainReasons.Error);
+
+            string variant = transaction.Literal[..candidate.Start]
+                + candidate.Replacement
+                + transaction.Literal[(candidate.Start + candidate.Length)..];
+            if (!seen.Add(variant))
+                continue;
+            variants.Add(variant);
+            mapped.Add(candidate);
+        }
+
+        if (mapped.Count == 0)
+            return RerankOutcome.Abstained(RerankOutcome.AbstainReasons.NoRule);
+
+        SentenceScoringOutcome outcome = _scorer.Score(variants);
+        int scored = Math.Min(variants.Count, outcome.Scores.Count);
+        var scores = new RerankCandidateScore[scored];
+        for (int i = 0; i < scored; i++)
+        {
+            string label = i == 0
+                ? "keep"
+                : $"{mapped[i - 1].SlotIndex}@{mapped[i - 1].Start}:{mapped[i - 1].Replacement}";
+            scores[i] = new RerankCandidateScore(label, outcome.Scores[i].Score);
+        }
+
+        if (outcome.Chosen is null)
+            return new RerankOutcome(
+                null, scores, outcome.Margin, outcome.Threshold, outcome.AbstainReason);
+
+        int chosenIndex = variants.IndexOf(outcome.Chosen);
+        if (chosenIndex == 0)
+        {
+            // The literal sentence won globally. This is an affirmative KEEP,
+            // distinct from a confidence abstention.
+            return new RerankOutcome(
+                null, scores, outcome.Margin, outcome.Threshold, null);
+        }
+        if (chosenIndex < 1 || chosenIndex > mapped.Count)
+            return RerankOutcome.Abstained(RerankOutcome.AbstainReasons.Error);
+
+        SentenceEditCandidate chosen = mapped[chosenIndex - 1];
+        return new RerankOutcome(
+            chosen.Replacement,
+            scores,
+            outcome.Margin,
+            outcome.Threshold,
+            null)
+        {
+            ChosenSlotIndex = chosen.SlotIndex,
+        };
+    }
+
+    private static bool HasMinimumContext(IReadOnlyList<string> sentence)
+    {
+        int wordTokens = 0;
+        foreach (string token in sentence)
+        {
+            foreach (char c in token)
+            {
+                if (!char.IsLetter(c)) continue;
+                wordTokens++;
+                break;
+            }
+        }
+        return wordTokens >= MinSentenceWordTokens;
     }
 
     public void Dispose()

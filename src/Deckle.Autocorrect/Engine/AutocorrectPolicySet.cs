@@ -5,7 +5,8 @@ namespace Deckle.Autocorrect;
 // silently running different policy orders or optional knowledge sources.
 public sealed record AutocorrectPolicySet(
     ICorrectionPolicy Policy,
-    IAmbiguityProbe AmbiguityProbe)
+    IAmbiguityProbe AmbiguityProbe,
+    IAmbiguityProbe WholeSentenceProbe)
 {
     public static AutocorrectPolicySet Create(
         IFrequencyLexicon french,
@@ -52,7 +53,7 @@ public sealed record AutocorrectPolicySet(
                 french, english, personal, options: null,
                 accentIndex: accentIndex, verbs: verbs,
                 candidateSearchObserver: candidateSearchObserver);
-
+        var gender = new GenderVariantProbe(french, english, personal);
         var policies = new List<ICorrectionPolicy>
         {
             // Apostrophe repair precedes spell-fix so cest cannot collapse to est.
@@ -66,8 +67,10 @@ public sealed record AutocorrectPolicySet(
         if (verbs is not null)
             policies.Add(new GrammarCorrector(verbs, personal));
 
+        var slotProbe = new CompositeAmbiguityProbe(diacritics, typo);
         return new AutocorrectPolicySet(
             new CompositeCorrectionPolicy(policies.ToArray()),
-            new CompositeAmbiguityProbe(diacritics, typo));
+            slotProbe,
+            new CompositeAmbiguityProbe(diacritics, typo, gender));
     }
 }

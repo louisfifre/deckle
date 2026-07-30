@@ -75,6 +75,9 @@
   <data name="PlaygroundNavSegmentation.Content" xml:space="preserve">
     <value>Utterance segmentation</value>
   </data>
+  <data name="PlaygroundNavCorrection.Content" xml:space="preserve">
+    <value>Delayed correction</value>
+  </data>
 
   <data name="PlaygroundHomeHeader.Text" xml:space="preserve">
     <value>Deckle Playground</value>
@@ -99,6 +102,78 @@
   </data>
   <data name="PlaygroundHomeSegmentationCard.Description" xml:space="preserve">
     <value>Shape the dynamic-hangover curve that decides where the streaming transcriber cuts one utterance from the next. Live plot + Save / Revert / Reset.</value>
+  </data>
+  <data name="PlaygroundHomeCorrectionCard.Header" xml:space="preserve">
+    <value>Delayed correction</value>
+  </data>
+  <data name="PlaygroundHomeCorrectionCard.Description" xml:space="preserve">
+    <value>Measure whether an earlier sentence can be corrected while typing continues, without moving the active caret.</value>
+  </data>
+
+  <!-- ACX-0021 phase-A physical-typing lab. Synthetic text only; results stay
+       in memory and cannot establish external-editor or production safety. -->
+  <data name="PlaygroundCorrectionHeader.Text" xml:space="preserve">
+    <value>Delayed correction</value>
+  </data>
+  <data name="PlaygroundCorrectionSubheader.Text" xml:space="preserve">
+    <value>Type a new sentence while the lab corrects a fixed token in the previous one through an owned document range.</value>
+  </data>
+  <data name="PlaygroundCorrectionBoundary.Title" xml:space="preserve">
+    <value>Research boundary</value>
+  </data>
+  <data name="PlaygroundCorrectionBoundary.Message" xml:space="preserve">
+    <value>This synthetic WinUI test does not exercise production autocorrect, another app, UI Automation, simulated input, or end-to-end application.</value>
+  </data>
+  <data name="PlaygroundCorrectionScenarioCard.Header" xml:space="preserve">
+    <value>Owned editor scenario</value>
+  </data>
+  <data name="PlaygroundCorrectionScenarioCard.Description" xml:space="preserve">
+    <value>The fixed edit is “la” → “là” in the first sentence. Continue typing only at the end after arming.</value>
+  </data>
+  <data name="PlaygroundCorrectionEditor.AutomationProperties.Name" xml:space="preserve">
+    <value>Synthetic delayed-correction editor</value>
+  </data>
+  <data name="PlaygroundCorrectionEditor.PlaceholderText" xml:space="preserve">
+    <value>Load the synthetic scenario to begin</value>
+  </data>
+  <data name="PlaygroundCorrectionDelayLabel.Text" xml:space="preserve">
+    <value>Release delay</value>
+  </data>
+  <data name="PlaygroundCorrectionFixtureLabel.Text" xml:space="preserve">
+    <value>Calibration fixture</value>
+  </data>
+  <data name="PlaygroundCorrectionFixture.PlaceholderText" xml:space="preserve">
+    <value>Choose a fixture</value>
+  </data>
+  <data name="PlaygroundCorrectionDelay.PlaceholderText" xml:space="preserve">
+    <value>Choose a delay</value>
+  </data>
+  <data name="PlaygroundCorrectionFaultLabel.Text" xml:space="preserve">
+    <value>Controlled fault</value>
+  </data>
+  <data name="PlaygroundCorrectionFault.PlaceholderText" xml:space="preserve">
+    <value>Choose a fault</value>
+  </data>
+  <data name="PlaygroundCorrectionLoadScenario.Content" xml:space="preserve">
+    <value>Load scenario</value>
+  </data>
+  <data name="PlaygroundCorrectionArm.Content" xml:space="preserve">
+    <value>Arm delayed edit</value>
+  </data>
+  <data name="PlaygroundCorrectionCancel.Content" xml:space="preserve">
+    <value>Cancel trial</value>
+  </data>
+  <data name="PlaygroundCorrectionCopyEvidence.Content" xml:space="preserve">
+    <value>Copy evidence</value>
+  </data>
+  <data name="PlaygroundCorrectionStatusReady.Text" xml:space="preserve">
+    <value>Load the scenario, choose a delay, then arm the edit.</value>
+  </data>
+  <data name="PlaygroundCorrectionAttemptsHeader.Text" xml:space="preserve">
+    <value>In-memory attempts</value>
+  </data>
+  <data name="PlaygroundCorrectionAttemptsDescription.Text" xml:space="preserve">
+    <value>Only outcome, reason, timing, UTF-16 count, and event count are retained. Typed text is never copied into the record.</value>
   </data>
 
   <data name="PlaygroundHudTunablesHeader.Text" xml:space="preserve">

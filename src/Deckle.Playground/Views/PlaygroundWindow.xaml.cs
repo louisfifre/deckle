@@ -17,7 +17,8 @@ namespace Deckle.Playground;
 // ─── Playground window shell ─────────────────────────────────────────────────
 //
 // Native TitleBar + Mica backdrop + compact NavigationView + Frame. Hosts
-// four pages : HomePage, HudPage, AmbientPage, SegmentationPage — each owning
+// five pages : HomePage, HudPage, AmbientPage, SegmentationPage, and
+// CorrectionApplicationPage — each owning
 // its tuning surface, ViewModel, and runtime resources. The window itself only
 // routes navigation and forwards the lifecycle calls the App makes
 // (SetRecordingState, ShowAndActivate, Closed→DisposeResources).
@@ -49,6 +50,8 @@ public sealed partial class PlaygroundWindow : Window
     private HudPage? _hudPage;
     private AmbientPage? _ambientPage;
     private SegmentationPage? _segmentationPage;
+    private CorrectionApplicationPage? _correctionApplicationPage;
+    private PlaygroundWindowActivation _windowActivation;
 
     // Collapses the per-frame Win2D recompute the Segmentation curve pays during an
     // interactive edge drag into a single crisp repaint on settle. See ResizeCoalescer.
@@ -81,6 +84,8 @@ public sealed partial class PlaygroundWindow : Window
         // selected state without holding a back-reference to this
         // Window.
         PlaygroundShell.NavigateTo = NavigateTo;
+        PlaygroundShell.ReadWindowActivation = () => _windowActivation;
+        Activated += OnWindowActivated;
 
         Title = "Deckle Playground";
         // Default 1800×1440 DIPs — comfortable two-column footprint (preview
@@ -265,6 +270,7 @@ public sealed partial class PlaygroundWindow : Window
         // alive behind the tray.
         try { _hudPage?.DisposeResources(); } catch { /* best effort */ }
         try { _ambientPage?.DisposeResources(); } catch { /* best effort */ }
+        try { _correctionApplicationPage?.DisposeResources(); } catch { /* best effort */ }
 
         // Remove the HWND subclass before the window is gone.
         _resizeCoalescer?.Dispose();
@@ -279,6 +285,8 @@ public sealed partial class PlaygroundWindow : Window
         {
             PlaygroundShell.NavigateTo = null;
         }
+        PlaygroundShell.ReadWindowActivation = null;
+        Activated -= OnWindowActivated;
     }
 
     // ── Navigation routing ──────────────────────────────────────────────────
@@ -338,6 +346,9 @@ public sealed partial class PlaygroundWindow : Window
                 case SegmentationPage seg:
                     _segmentationPage = seg;
                     break;
+                case CorrectionApplicationPage correction:
+                    _correctionApplicationPage = correction;
+                    break;
             }
         }
         catch (Exception ex)
@@ -353,7 +364,7 @@ public sealed partial class PlaygroundWindow : Window
     }
 
     // PlaygroundShell.NavigateTo callback target. Pages invoke this with
-    // a short tag ("home" / "hud" / "ambient") and the shell maps it to
+    // a short tag and the shell maps it to
     // the matching NavigationViewItem.Tag prefix.
     private void NavigateTo(string shortTag)
     {
@@ -363,6 +374,7 @@ public sealed partial class PlaygroundWindow : Window
             "hud"          => "Deckle.Playground.HudPage",
             "ambient"      => "Deckle.Playground.AmbientPage",
             "segmentation" => "Deckle.Playground.SegmentationPage",
+            "correction"   => "Deckle.Playground.CorrectionApplicationPage",
             _              => "",
         };
         if (string.IsNullOrEmpty(fullTag)) return;
@@ -377,6 +389,15 @@ public sealed partial class PlaygroundWindow : Window
                 return;
             }
         }
+    }
+
+    private void OnWindowActivated(object sender, WindowActivatedEventArgs args)
+    {
+        _windowActivation = new PlaygroundWindowActivation(
+            IsKnown: true,
+            IsActive: args.WindowActivationState != WindowActivationState.Deactivated,
+            Generation: checked(_windowActivation.Generation + 1));
+        PlaygroundShell.PublishWindowActivation(_windowActivation);
     }
 
     // ── NavigationView tooltip i18n override ────────────────────────────────

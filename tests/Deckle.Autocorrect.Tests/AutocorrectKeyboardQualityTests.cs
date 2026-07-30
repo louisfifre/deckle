@@ -11,14 +11,14 @@ namespace Deckle.Autocorrect.Tests;
 public sealed class AutocorrectKeyboardQualityTests(ITestOutputHelper output)
 {
     [Fact]
-    public void ProductionKeyboardCorpusMeetsPrecisionFirstQualityGate()
+    public void ProductionKeyboardCorpusMeetsInternalEditQualityGate()
     {
         // The lexicons ride beside the binary under Data\, never flat.
         string dataDir = Path.Combine(AppContext.BaseDirectory, "Data");
         KeyboardQualitySummary summary =
             AutocorrectBenchmark.MeasureKeyboardQuality(dataDir);
         string score =
-            $"quality: precision={summary.Precision:P1} "
+            $"quality: internal_edit_pair_precision={summary.InternalEditPairPrecision:P1} "
             + $"({summary.TrueChanges}/{summary.TrueChanges + summary.WrongChanges}), "
             + $"recall={summary.Recall:P1} "
             + $"({summary.TrueChanges}/{summary.GoldChanges}), "

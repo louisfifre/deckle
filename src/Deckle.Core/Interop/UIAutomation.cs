@@ -14,7 +14,7 @@ namespace Deckle.Core;
 // slots actually needed are declared; earlier slots are placeholders with
 // opaque IntPtr types to preserve ordering.
 
-public static class UIAutomation
+public static partial class UIAutomation
 {
     // https://learn.microsoft.com/windows/win32/winauto/uiauto-automation-element-propids
     private const int UIA_ControlTypePropertyId = 30003;
@@ -222,13 +222,28 @@ public static class UIAutomation
     private interface IUIAutomationElement
     {
         [PreserveSig] int SetFocus();
-        [PreserveSig] int GetRuntimeId(out IntPtr runtimeId);
+        [PreserveSig] int GetRuntimeId(
+            [MarshalAs(UnmanagedType.SafeArray, SafeArraySubType = VarEnum.VT_I4)]
+            out int[] runtimeId);
         [PreserveSig] int FindFirst(int scope, IntPtr condition, out IUIAutomationElement? found);
         [PreserveSig] int FindAll(int scope, IntPtr condition, out IntPtr found);
         [PreserveSig] int FindFirstBuildCache(int scope, IntPtr condition, IntPtr cacheRequest, out IUIAutomationElement? found);
         [PreserveSig] int FindAllBuildCache(int scope, IntPtr condition, IntPtr cacheRequest, out IntPtr found);
         [PreserveSig] int BuildUpdatedCache(IntPtr cacheRequest, out IUIAutomationElement? updated);
         [PreserveSig] int GetCurrentPropertyValue(int propertyId, [MarshalAs(UnmanagedType.Struct)] out object value);
+        [PreserveSig] int GetCurrentPropertyValueEx(
+            int propertyId,
+            [MarshalAs(UnmanagedType.Bool)] bool ignoreDefaultValue,
+            [MarshalAs(UnmanagedType.Struct)] out object value);
+        [PreserveSig] int GetCachedPropertyValue(int propertyId, [MarshalAs(UnmanagedType.Struct)] out object value);
+        [PreserveSig] int GetCachedPropertyValueEx(
+            int propertyId,
+            [MarshalAs(UnmanagedType.Bool)] bool ignoreDefaultValue,
+            [MarshalAs(UnmanagedType.Struct)] out object value);
+        [PreserveSig] int GetCurrentPatternAs(
+            int patternId,
+            [In] ref Guid riid,
+            out IntPtr patternObject);
     }
 
     [StructLayout(LayoutKind.Sequential)]

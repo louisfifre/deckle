@@ -52,6 +52,17 @@ public sealed class DeckleAutocorrectSource : DeckleEventSource
     public const int EvtPersonalDictionarySanitized = 28;
     public const int EvtExternalMutationBurst = 29;
     public const int EvtDomainPackMerged      = 30;
+    public const int EvtCaretSentenceRecovery = 31;
+
+    [Event(EvtCaretSentenceRecovery,
+           Level = EventLevel.Verbose,
+           Keywords = (EventKeywords)Keywords.Pipeline,
+           Message = "caret sentence recovery | outcome={0} | boundary={1} | text_len={2}")]
+    public void CaretSentenceRecovery(string outcome, string boundary, int text_len)
+    {
+        if (IsActivityDetailEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Pipeline))
+            WriteEvent(EvtCaretSentenceRecovery, outcome, boundary, text_len);
+    }
 
     // ── Engine lifecycle ─────────────────────────────────────────────────
 
@@ -255,13 +266,13 @@ public sealed class DeckleAutocorrectSource : DeckleEventSource
         WriteEvent(EvtRerankSlotPending, candidates, word_len);
     }
 
-    // A terminal sentence ender closed the slot's context and handed it to the
-    // background reranker. slot is its index within the submitted window;
-    // context_words the immutable closed-sentence window size around it.
+    // A terminal sentence ender handed a closed decision to the background
+    // reranker. slot is -1 for the production whole-sentence transaction; a
+    // non-negative value identifies an explicit legacy slot-mode request.
     [Event(EvtRerankSubmitted,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Pipeline,
-           Message = "rerank submitted | slot={0} | context_words={1}")]
+           Message = "rerank submitted | slot={0} (-1=whole_sentence) | context_words={1}")]
     public void RerankSubmitted(int slot, int context_words)
     {
         if (!IsActivityDetailEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Pipeline)) return;
@@ -273,15 +284,16 @@ public sealed class DeckleAutocorrectSource : DeckleEventSource
     // confident — left as typed), stale (the sentence was reset under the
     // in-flight request), resolved (slot already decided), expired (the exact
     // visible tail outgrew the bounded rewrite budget), blocked (the in-place
-    // rewrite was refused by the target surface).
+    // rewrite was refused by the target surface). reason carries the closed
+    // abstention/error reason when one exists; it is empty for ordinary outcomes.
     [Event(EvtRerankVerdict,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Pipeline,
-           Message = "rerank verdict | outcome={0}")]
-    public void RerankVerdict(string outcome)
+           Message = "rerank verdict | outcome={0} | reason={1}")]
+    public void RerankVerdict(string outcome, string reason)
     {
         if (!IsActivityDetailEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Pipeline)) return;
-        WriteEvent(EvtRerankVerdict, outcome);
+        WriteEvent(EvtRerankVerdict, outcome, reason);
     }
 
     // A reset made the current sentence-stage work unsafe before it completed.

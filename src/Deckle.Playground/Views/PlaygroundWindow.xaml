@@ -72,6 +72,12 @@
                         <FontIcon Glyph="{StaticResource Icon.Speech}" />
                     </NavigationViewItem.Icon>
                 </NavigationViewItem>
+                <NavigationViewItem x:Uid="PlaygroundNavCorrection"
+                                    Tag="Deckle.Playground.CorrectionApplicationPage">
+                    <NavigationViewItem.Icon>
+                        <FontIcon Glyph="{StaticResource Icon.Autocorrect}" />
+                    </NavigationViewItem.Icon>
+                </NavigationViewItem>
             </NavigationView.MenuItems>
 
             <Frame x:Name="PageFrame" />

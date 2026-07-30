@@ -3,7 +3,7 @@ namespace Deckle.Autocorrect;
 // Deterministic French sentence rules in front of the optional MLM reranker.
 // The rules only choose from the closed candidate set the probe already built;
 // when none applies, the optional inner reranker gets the slot unchanged.
-public sealed class FrenchSentenceReranker : ISentenceReranker, IDisposable
+public sealed class FrenchSentenceReranker : ISentenceReranker, IWholeSentenceReranker, IDisposable
 {
     private readonly ISentenceReranker? _inner;
 
@@ -44,6 +44,38 @@ public sealed class FrenchSentenceReranker : ISentenceReranker, IDisposable
     }
 
     public void Dispose() => (_inner as IDisposable)?.Dispose();
+
+    public RerankOutcome RerankSentence(ClosedSentenceTransaction transaction)
+    {
+        IReadOnlyList<string> sentence = transaction.Words;
+        // Preserve the short-context locative rule without reopening independent
+        // slot judgments: when its exact one-edit sentence is in the global set,
+        // it returns one global verdict.
+        foreach (SentenceEditCandidate candidate in transaction.Edits)
+        {
+            if (!string.Equals(candidate.Replacement, "là", StringComparison.Ordinal)
+                || candidate.SlotIndex <= 0
+                || candidate.SlotIndex >= sentence.Count
+                || !string.Equals(sentence[candidate.SlotIndex], "la", StringComparison.Ordinal))
+                continue;
+
+            AccentVariant[] pair =
+            [
+                new("la", 0.0),
+                new("là", 0.0),
+            ];
+            RerankOutcome? rule = TryLocativeLa(sentence, candidate.SlotIndex, pair);
+            if (rule is not RerankOutcome chosen)
+                continue;
+
+            return chosen with { ChosenSlotIndex = candidate.SlotIndex };
+        }
+
+        return _inner is IWholeSentenceReranker wholeSentence
+            ? wholeSentence.RerankSentence(transaction)
+            : RerankOutcome.Abstained(
+                RerankOutcome.AbstainReasons.WholeSentenceUnsupported);
+    }
 
     private static RerankOutcome? TryLocativeLa(
         IReadOnlyList<string> sentence,

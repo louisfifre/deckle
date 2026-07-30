@@ -143,9 +143,12 @@ public sealed partial class AutocorrectEngine : IDisposable
         IFrequencyLexicon? english = null,
         ISentenceReranker? reranker = null,
         IAmbiguityProbe? probe = null,
+        IAmbiguityProbe? wholeSentenceProbe = null,
         Func<bool>? decisionTelemetry = null,
         Func<bool>? textTelemetry = null,
-        IReadOnlyList<MistouchFamilyRecord>? mistouchFamilies = null)
+        IReadOnlyList<MistouchFamilyRecord>? mistouchFamilies = null,
+        ICaretTextReader? caretTextReader = null,
+        IRerankLane? rerankLaneOverride = null)
     {
         _host = host;
         _decoder = decoder;
@@ -159,17 +162,28 @@ public sealed partial class AutocorrectEngine : IDisposable
         _english = english;
         _decisionTelemetry = decisionTelemetry;
         _textTelemetry = textTelemetry;
+        _caretTextReader = caretTextReader;
         _corpus = textTelemetry is null ? null : new SentenceCorpus { Completed = EmitText };
         _stream = textTelemetry is null ? null : new TypingStream { Completed = EmitStreamRun };
         _mistouch = mistouchFamilies is { Count: > 0 }
             ? new MistouchFamilyCorrector(mistouchFamilies, IsProtectedWord)
             : null;
 
+        if (reranker is not null && rerankLaneOverride is not null)
+            throw new ArgumentException(
+                "A reranker lane override cannot be combined with a reranker.",
+                nameof(rerankLaneOverride));
+
         // The contextual stage exists only with both a model and a probe. The lane
         // marshals inference off this thread and the verdict back via the host pump.
-        if (reranker is not null && probe is not null)
+        if (probe is not null && (reranker is not null || rerankLaneOverride is not null))
         {
-            _lane = new BackgroundRerankLane(reranker, host);
+            // Production never supplies an override and retains the background
+            // lane. The internal benchmark seam can inject a synchronous lane to
+            // prove request absence without converting a scheduling timeout into
+            // a generator-coverage result.
+            _lane = rerankLaneOverride
+                ?? new BackgroundRerankLane(reranker!, host, caretTextReader);
             _coordinator = new SentenceRerankCoordinator(
                 lane: _lane,
                 probe: probe,
@@ -177,7 +191,8 @@ public sealed partial class AutocorrectEngine : IDisposable
                 currentPartial: () => tracker.CurrentWord,
                 realignLastCommitted: tracker.ReplaceLastCommitted,
                 onApplied: OnCoordinatorApplied,
-                decisionTelemetry: decisionTelemetry);
+                decisionTelemetry: decisionTelemetry,
+                wholeSentenceProbe: wholeSentenceProbe);
         }
     }
 }

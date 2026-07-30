@@ -68,6 +68,21 @@ public sealed class FrenchSentenceRerankerTests
         Assert.Equal(1, inner.Calls);
     }
 
+    [Fact]
+    public void WholeSentenceContractKeepsTheShortLocativeRuleGlobal()
+    {
+        var reranker = new FrenchSentenceReranker();
+
+        RerankOutcome outcome = reranker.RerankSentence(
+            new ClosedSentenceTransaction(
+                "je suis la.",
+                new[] { "je", "suis", "la" },
+                [new SentenceEditCandidate(2, 8, 2, "là")]));
+
+        Assert.Equal("là", outcome.Chosen);
+        Assert.Equal(2, outcome.ChosenSlotIndex);
+    }
+
     private sealed class FixedReranker : ISentenceReranker
     {
         private readonly string _chosen;

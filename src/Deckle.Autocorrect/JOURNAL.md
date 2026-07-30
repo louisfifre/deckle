@@ -44,6 +44,171 @@ Grill session over what remains of the pack model. Decided direction, none of it
 
 Pending maintainer validation before any engraving: the CONTEXT.md § Lexicon composition rewrite (domain-first selection, Windows-language defaults), the § Word exclusion clarification (state the two-directionality plainly), the settings-doctrine sub-page level, and the interface wording change.
 
+## 2026-07-30 — Frozen unanimity adds four residual public edits
+
+ACX-0020 preserved the exact ACX-0019 locative baseline and added four correct
+residual internal edits across both frozen candidate families. The five-rule
+bundle made five correct edits total, no wrong edit, no affirmative KEEP, 19
+useful abstentions, and 11 regrettable abstentions on the 35 public development
+cases. All 120 rule orders crossed with all 66 candidate orders produced 7,920
+identity-stable verdicts. Warm p95 was 0.0047 ms over 10,000 seeded evaluations;
+one retained maximum outlier measured 4.9685 ms.
+
+The rules remain probe-only. The corpus has no grouped provenance and measures
+neither applied corrections nor field quality, so further rule growth waits for
+stronger data. Chose ACX-0021 next: test delayed correction of sentence A while
+typing sentence B through range-owned Playground paths, never current-caret
+`SendInput`, with exact stale/range/postcondition gates. Production is unchanged.
+
+## 2026-07-30 — Investigate delayed range edits and one shared Qwen base
+
+Delayed correction of a completed sentence while typing continues in the next
+sentence is a desired interaction, but current-caret `SendInput` is ineligible:
+the caret may have moved and replacement keystrokes can land inside unrelated
+text. The research path is a Playground-only range-owned edit through
+Edit/RichEdit/TOM or TSF, gated by stable target/range identity, an exact reread,
+caret/selection/IME/undo preservation, and an exact postcondition. Ambiguity must
+abstain. No production behavior changes before this is demonstrated.
+
+Deckle should also investigate one shared local Qwen base with a separate LoRA
+adapter per LLM use. The pinned ONNX Runtime GenAI 0.13.0 managed assembly already
+exposes adapter load/unload and generator activation APIs, and upstream documents
+Multi-LoRA. This establishes an available runtime surface, not Deckle feasibility:
+no adapter has been exported or run against the current DirectML Qwen model, and
+disk savings, load/switch latency, RAM/VRAM residency, isolation, and per-task
+quality remain unmeasured.
+
+## 2026-07-30 — Exact public rule baseline leaves fifteen correctable cases untouched
+
+ACX-0019 found 54 exact positional one-token edits across 35 public development
+cases and identity-stable verdicts across all 66 candidate orders. The existing
+global locative rule made one correct edit, no wrong edit, no affirmative KEEP,
+19 useful abstentions, and 15 regrettable abstentions at 0.0003 ms warm p95 over
+10,000 seeded evaluations.
+
+Chose ACX-0020 to test a frozen precedence-free unanimity bundle requiring at
+least two correct residual edits across two candidate families, zero wrong
+public-development decisions, exhaustive candidate/rule-order invariance, and
+warm p95 below 1 ms. Production behavior remains unchanged.
+
+## 2026-07-30 — Exact DirectML batching is feasible but not score-equivalent
+
+ACX-0018 passed exact pre-logit row identity and returned finite float16 logits
+of shape `[2,100,151936]` for the first deterministic equal-length public
+fixture. This closes the earlier geometry and missing-BOS technical failures:
+ORT GenAI 0.13 can execute Deckle's exact two-sequence batch on DirectML.
+
+The frozen semantic contract then failed. Forward candidate zero differed by
+0.0156224 in score against the preregistered 0.001 tolerance, and every measured
+forward block was non-equivalent. The winner happened to remain stable on this
+single fixture. The Combined control is inconclusive because its fresh compared
+outputs were not serialized. Since semantic equivalence gated latency, the raw
+timings cannot support a speed claim.
+
+Decision: direct interactive Qwen batching is dormant. Keep its raw artifacts
+and do not loosen tolerances after observing the result. Batching remains
+available only to separately preregistered numerical diagnostics and to
+shadow/teacher work with no write authority. Production behavior is unchanged.
+
+## 2026-07-30 — Safe anticipation exists, but only with immediate preparation
+
+ACX-0014 replayed the frozen private typing prefix through the current global
+transaction builder without inference or target mutation. It conserved all 199
+closed submissions exactly. Independent raw-stream boundary evidence disagreed
+with the production coordinator for three transactions after the last observed
+terminal was erased; those transactions are now reason-coded and quarantined.
+The remaining 196 exact transactions form the only safe metric population.
+
+An optimistic terminal oracle with no trigger delay was ready before punctuation
+for 186/196 transactions at a fixed 150 ms decision budget (94.90%). A 50 ms
+trigger delay reduced this to 164/196 (83.67%), and a 100 ms delay to 141/196
+(71.94%). A fixed dot branch exactly matched 151/196 terminals (77.04%); four
+terminal branches guaranteed the match but spent four jobs per hit. Simulating
+the ACX-0012 forward-only Qwen p50 and p95 as fixed durations yielded only
+92/196 (46.94%) and 61/196 (31.12%) readiness with an immediate trigger.
+
+Decision: anticipation remains an active architecture, but the useful shape is
+early incremental preparation plus a fast final decision, not current Qwen
+started at punctuation. These are replay-level lead-time and branch results, not
+generator coverage, scheduler, UIA, visible latency, applied precision, or field
+quality. Production behavior remains unchanged.
+
+## 2026-07-30 — One-order Qwen halves measured scorer cost but stays non-terminal
+
+A clean whole-call ablation reproduced the earlier 35-case decisions and scores
+exactly while comparing forward-only, reverse-only, and the unchanged combined
+scorer. On a fixed canonical two-candidate, continuous-hot, mixed-method schedule,
+forward-only measured 393.180 ms p50 / 537.587 ms p95 versus 868.386 / 986.967 ms
+combined. The predeclared relative-latency gate passed, but the 300 ms scorer
+reference did not. This boundary excludes candidate generation and integration
+and does not characterize realistic idle cadence or a dedicated forward stream.
+
+At threshold 1.0, forward produced 12 correct and one wrong nonliteral selection
+on the visible development corpus; combined produced 10 correct and one wrong.
+These are internal closed-set decisions, not applied or field precision. Both
+retained the harmful `literal_ratures` selection, so calibration by margin alone
+does not supply the required safety. Forward-only remains a research and shadow
+candidate. Anticipation is unrefuted but unestablished until eligibility,
+lead-time, branch hit, lease safety, integration latency, and observed target
+integrity are measured together. Production behavior remains unchanged.
+
+## 2026-07-30 — Canonical Qwen latency preserves the non-interactive conclusion
+
+Measured the production literal-first candidate order independently after a
+randomized order-robustness run. On one fixed visible transaction under
+continuous-hot DirectML scoring, canonical p50/p95 was 907.496/935.752 ms for
+two candidates, 1,667.503/1,715.886 ms for four, 3,474.536/3,627.678 ms for
+eight, and 6,524.257/6,675.452 ms for thirteen. The 80-trial run had no scoring
+error and preserved the canonical permutation exactly.
+
+At four candidates the predeclared cross-run signal reproduced: canonical p50
+was 16.009% above the earlier randomized aggregate and 1.213 ms from its small
+literal-index-zero subgroup median. Separate processes prevent causal
+attribution to presentation order, and the nonuniform deltas at other counts
+rule out a constant penalty. The durable product conclusion is narrower and
+stronger: even the measured two-candidate canonical fixture remains around
+0.9 seconds before integration, so current Qwen stays outside the direct terminal path.
+Whole-call one-order ablation, anticipation, shadow use, caching and distillation
+remain research families; none inherit write authority from this result.
+
+## 2026-07-30 — Clean replays separate safety, ownership, and anticipation evidence
+
+Closed the wave-one reproducibility gaps on committed laboratory HEAD `27f3fcb0`. The deterministic visible corpus reproduced 37/37 correct original/replacement pairs, zero wrong pairs, 37/40 recall and 20/23 exact scenarios; 16,700 managed commit samples measured 2.2 us p50 / 65.7 us p95 / 83.9 us p99. This remains pair-level internal agreement, not positional or observed-target precision.
+
+A controlled changing stale verdict was rejected before the throwing injector in 20/20 trials, while the same 250 ms hold delayed fresh judge entry to 253.4 ms p50 / 262.0 ms p95. The safety barrier and compute ownership are therefore separate: epoch rejection protects application, but a shared single-flight lane still harms useful latency.
+
+An exact 1,033,605-byte replay reproduced the selected temporal sample byte-for-byte and aggregate-for-aggregate without emitting typed text. A fixed 945 ms duration was ready before terminal punctuation for 69/498 usable gestures; the claim remains an oracle ceiling, not candidate-eligible Qwen coverage. The next useful anticipation experiment must join exact transaction eligibility and branch correctness to timing.
+
+## 2026-07-30 — Interactive research exposes compute ownership and application-lease gaps
+
+Established three constraints in the isolated interactive-autocorrect campaign. First, invalidated work retains the coordinator's single-flight ownership: with the production coordinator/lane and a controlled abstaining judge held for 250 ms, a fresh eligible transaction entered at 251.6 ms p50 / 264.8 ms p95 versus 0.008 ms / 0.194 ms without stale work (ACX-0003). The run proves head-of-line blocking, not stale-write rejection; that invariant remains grounded in separate coordinator code/tests. Speculation on the existing lane can therefore increase terminal latency; native cancellation and process isolation remain untested.
+
+Second, a modifier-only physical transition is not currently an application invalidator. A controlled late whole-sentence verdict released while generic Shift remained down produced one applied event and one simulated injector call (ACX-0004). This proves the engine authorization path, not real application corruption. Any future fast or anticipated decider needs a separate punctuation-time application lease requiring neutral modifier/composition state; real Shift/Ctrl/Alt/AltGr/Win, IME, accessibility and deletion-unit behavior stays an explicit Playground experiment.
+
+Third, the selected timing sample sharply limits a fixed-duration anticipation claim. Over the local consented typing stream, 498 terminal gestures had a known preceding literal and usable per-character timing; the pre-terminal gap was 353 ms p50 / 1,695 ms p95. Even granting exact punctuation, free preparation and immediate start, a fixed 945 ms computation was ready before punctuation for 69/498 gestures (13.86%); 150 ms reached 474/498 (95.18%), falling to 73.09% after a 100 ms trigger delay (ACX-0005). This is not the current Qwen latency distribution and not a candidate-eligible quality or coverage estimate.
+
+Kept architecture boundaries separate as a result: exact semantic transaction; inert scorer/cache with no write rights; freshly validated application lease; surface-specific edit integration with an observed exact postcondition. Qwen remains viable as teacher, shadow, batching target or isolated exact-cache producer, but not as the as-is synchronous fallback of a fast cascade.
+
+## 2026-07-30 — Resident Qwen is not an interactive sentence closer
+
+Measured the production Qwen3-1.7B DirectML whole-sentence verdict at about 945 ms on the local machine with the model already resident. The scorer still performs two order-normalized passes and creates a GenAI generator for every candidate in each pass; keeping the model loaded removes initialization, not this hot inference cost.
+
+Found that verified-caret recovery adds a configured 110 ms stable-read floor before judgment (35 ms settle plus a 75 ms verification gap), and repeats the stable read before applying a recovered edit. The earlier assumption that resident DirectML Qwen was directly usable in the terminal-punctuation interaction path is therefore falsified by local measurement. This finding does not choose its replacement; anticipatory computation, a strict fast-path deadline, compact discriminative judgment, and deterministic global rules remain separate options to benchmark.
+
+## 2026-07-29 — One closed sentence decision replaces slot cascades
+
+Found why `Il y a une seul erreur.` survived both ordinary closure and verified-caret recovery: the typo probe deliberately refuses `seul` because it is a valid French word, so the sentence judge had no `seule` candidate to choose. Caret recovery was working; the missing right was candidate generation, not context extraction.
+
+Auditioned the prepared whole-sentence proposer before wiring it live. Ministral 14B returned the correct sentence, but its first request took 26.7 s, including 23.8 s of model load; the 5 s interactive deadline necessarily returned nothing. Ministral 3B loaded in 7.5 s and copied a prompt example instead of correcting the input. Chose not to make terminal-punctuation correction depend on Ollama, model warmth, or free regeneration.
+
+Auditioned a narrow inflection-variant probe which exposed lexicon-backed terminal `e`, `s`, and `x` forms. An isolated production-DML judgment over (`seul`, `seule`, `seuls`, `seules`) chose `seule` correctly, but live sentences disproved the slot-local premise: in `Il y a une seul erreur.`, the same mechanism could first choose `une` → `un`, making the locally coherent but globally wrong `un seul erreur` before it judged `seul`. A minimum-length guard only hid one manifestation; surface suffixes still carry no part-of-speech or agreement ownership, and independent left-to-right judgments cannot choose which of several disagreeing words is faulty.
+
+Replaced that premise rather than accumulate heuristics. At terminal punctuation, production now submits one indivisible closed choice: the literal whole sentence plus every admitted one-edit sentence, capped at twelve edits. One global verdict may KEEP, apply exactly one supplied edit, or abstain; the result of one correction can never become the input of another judgment. If the candidate set overflows or the judge lacks the whole-sentence capability, the sentence stays untouched — the old slot path remains only for explicit compatibility and offline callers. The deterministic `être + la` rule was lifted into the same one-edit contract, so short-context safety does not require reopening a cascade.
+
+Reintroduced only terminal-`e` pairs (`un/une`, `seul/seule`) as global candidate evidence, when both endpoints are primary-lexicon forms. The old `e/s/x` family stays rejected: a surface pair is not morphology, and no such candidate has an independent correction right. Verified-caret recovery receives the same production candidate transaction only after its exact rereads; it gains neither free generation nor a recovery-specific family.
+
+This changes judgment ownership and cuts multiple sequential submissions to one, but it does not make an already-running verdict survive an immediate Enter or Shift+Enter. Raw Input cannot retain the send gesture, and applying behind a moved caret needs a separately verified injection shape. That timing problem remains explicit rather than being confused with candidate judgment.
+
 ## 2026-07-28 — Packs and exclusions wired to the runtime; exclusion is subtraction, not demotion
 
 Shipped the runtime and UI side of the domain-pack model: the effective lexicon is merged at engine build (base + active packs, max wins, then the exclusion register subtracted), packs are inactive by default and activated per pack in settings, each pack shows its dilution figures, and the exclusion register is consultable and reversible there.
@@ -280,6 +445,14 @@ Engine: the internal ONNX runtime enters this chantier as its final phase — a 
 ## 2026-07-21 — UIA caret ranges cross editor boundaries
 
 Live probes in Codex and Anytype found a caret through TextPattern, but extending its degenerate range to the left returned at least 512 characters across the surrounding document rather than stopping at the composer or block boundary. Chose not to use that range to restore sentence context after pointer or navigation invalidation.
+
+## 2026-07-29 — Local boundaries make conservative caret recovery usable
+
+Revisited the 2026-07-21 rejection with a passive probe and a narrower claim. In Codex, two stable 1,024-character UIA reads still crossed the whole interface, but suffix extraction independently isolated `Il y a une seul erreur.` both after terminal punctuation plus whitespace and after a hard return. `document_start=False` confirmed that the read limit itself cannot be treated as a boundary. Decision: after a tracking discontinuity, terminal punctuation may trigger a verified caret-sentence recovery anchored only by document start, hard return, or terminal punctuation plus whitespace. The focused target and full read must match twice, and the exact recovered sentence is checked again after judgment before any bounded injection. Missing boundaries, selection, password uncertainty, target drift, or text drift abstain. Recovered text receives correction rights only; it does not become observed typing or learning evidence.
+
+## 2026-07-29 — Native sentence-judge teardown waits for inference ownership
+
+Adding a personal exclusion while a sentence verdict was in flight crashed the process in `OgaCreateModelFromConfig` with `0xc0000005`. The exclusion correctly changed the effective lexicon and rebuilt the autocorrect runtime; the fault was teardown: `BackgroundRerankLane.Dispose` stopped waiting after two seconds, then released the ONNX GenAI reranker even though its worker could still own a native inference call. A replacement DirectML session could consequently be created while the previous native model was still executing or being released. Decision: lane disposal waits unboundedly for its single worker to finish before disposing the reranker. Runtime rebuild already runs off the UI thread, and native inference is expected to terminate; preserving exclusive native-model ownership outranks an arbitrary shutdown timeout. A blocking-reranker regression test holds inference open and verifies that neither lane disposal nor reranker disposal can complete early.
 
 ## 2026-07-02 — Globish seed source chosen
 

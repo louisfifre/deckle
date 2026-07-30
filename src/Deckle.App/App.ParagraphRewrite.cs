@@ -2,6 +2,7 @@ using Deckle.Autocorrect;
 using Deckle.Core;
 using Deckle.Input;
 using Deckle.Llm.Rewrite;
+using System.Collections.Concurrent;
 
 namespace Deckle.App;
 
@@ -18,7 +19,10 @@ public partial class App
     private SurfaceProber? _paragraphSurfaceProber;
     private FocusedSurface _paragraphSurface = FocusedSurface.Unknown;
     private TextInjector? _paragraphInjector;
+    private ICaretTextReader? _paragraphCaretTextReader;
+    private readonly ConcurrentQueue<ParagraphCaretRecovery> _paragraphCaretRecoveries = new();
     private IntPtr _paragraphTargetHwnd;
+    private int _paragraphRecoveryRevision;
     private volatile bool _paragraphOfferVisible;
     private bool _paragraphRewriteStarted;
 
@@ -30,6 +34,7 @@ public partial class App
         _paragraphKeyDecoder = new KeyDecoder();
         _paragraphSurfaceProber = new SurfaceProber();
         _paragraphInjector = new TextInjector();
+        _paragraphCaretTextReader = new UIAutomationCaretTextReader();
         _paragraphRewriteCoordinator = new ParagraphRewriteCoordinator(
             new RewriteService(),
             () => LlmSettingsService.Instance.Current.OllamaEndpoint);
@@ -43,6 +48,7 @@ public partial class App
         _keyboardMouseHost.KeyReceived += OnParagraphKey;
         _keyboardMouseHost.PointerInteraction += OnParagraphPointerInteraction;
         _keyboardMouseHost.FocusChanged += OnParagraphFocusChanged;
+        _keyboardMouseHost.DrainRequested += OnParagraphDrainRequested;
         if (!_keyboardMouseHost.Start())
         {
             ShutdownParagraphRewrite();
@@ -69,6 +75,8 @@ public partial class App
             && _paragraphRewriteWindow is not null
             && NativeMethods.GetForegroundWindow() == _paragraphRewriteWindow.Hwnd)
             return;
+
+        int revision = Interlocked.Increment(ref _paragraphRecoveryRevision);
 
         if (!LlmSettingsService.Instance.Current.Enabled
             || !_paragraphSurface.IsTextEditable
@@ -99,6 +107,10 @@ public partial class App
                     _paragraphTargetHwnd = NativeMethods.GetForegroundWindow();
                     _paragraphRewriteCoordinator.Request(paragraph);
                 }
+                else
+                {
+                    RequestRecoveredParagraph(revision);
+                }
                 break;
 
             case KeystrokeKind.Enter:
@@ -123,6 +135,7 @@ public partial class App
         if (_paragraphOfferVisible && _paragraphRewriteWindow?.ContainsPointer() == true)
             return;
 
+        Interlocked.Increment(ref _paragraphRecoveryRevision);
         _paragraphDraft?.Invalidate();
         _paragraphRewriteCoordinator?.Invalidate();
     }
@@ -133,6 +146,7 @@ public partial class App
             && NativeMethods.GetForegroundWindow() == _paragraphRewriteWindow.Hwnd)
             return;
 
+        Interlocked.Increment(ref _paragraphRecoveryRevision);
         _paragraphDraft?.Invalidate();
         _paragraphRewriteCoordinator?.Invalidate();
         if (_paragraphSurfaceProber is not null)
@@ -175,8 +189,16 @@ public partial class App
 
         if (target == IntPtr.Zero || _paragraphInjector is null) return;
 
-        if (NativeMethods.SetForegroundWindow(target))
-            _paragraphInjector.ReplaceClosedParagraph(offer.Original, offer.Rewritten);
+        // The offer window still owns the foreground here. That makes this a
+        // user-authorized activation transfer and, critically, keeps the focus
+        // event caused by hiding the offer from invalidating the revision before
+        // the replacement has been attempted.
+        if (!NativeMethods.SetForegroundWindow(target)
+            || NativeMethods.GetForegroundWindow() != target)
+            return;
+
+        if (!_paragraphInjector.ReplaceClosedParagraph(offer.Original, offer.Rewritten))
+            return;
 
         _paragraphDraft?.Reset();
         _paragraphRewriteCoordinator?.Invalidate();
@@ -198,7 +220,48 @@ public partial class App
     }
 
     private void OnParagraphCorrectionApplied(CorrectionDecision decision)
-        => _paragraphDraft?.ApplyCorrection(decision.Original, decision.Replacement);
+    {
+        Interlocked.Increment(ref _paragraphRecoveryRevision);
+        _paragraphDraft?.ApplyCorrection(decision.Original, decision.Replacement);
+        _paragraphRewriteCoordinator?.Invalidate();
+    }
+
+    private void RequestRecoveredParagraph(int revision)
+    {
+        ICaretTextReader? reader = _paragraphCaretTextReader;
+        IKeyboardInputHost? host = _keyboardMouseHost;
+        if (reader is null || host is null) return;
+
+        _ = Task.Run(() =>
+        {
+            bool succeeded = reader.TryReadStable(out FocusedCaretText text, out _);
+            _paragraphCaretRecoveries.Enqueue(new ParagraphCaretRecovery(revision, succeeded, text));
+            host.RequestDrain();
+        });
+    }
+
+    private void OnParagraphDrainRequested()
+    {
+        while (_paragraphCaretRecoveries.TryDequeue(out ParagraphCaretRecovery recovery))
+        {
+            if (!recovery.Succeeded
+                || recovery.Revision != Volatile.Read(ref _paragraphRecoveryRevision)
+                || _paragraphRewriteCoordinator is null
+                || !LlmSettingsService.Instance.Current.Enabled
+                || !_paragraphSurface.IsTextEditable
+                || _paragraphSurface.IsPassword)
+                continue;
+
+            CaretParagraphContextResult context = CaretParagraphContext.ExtractClosed(
+                recovery.Text.TextBeforeCaret,
+                recovery.Text.ReachedDocumentStart);
+            if (!context.Available || recovery.Text.ForegroundWindow == 0)
+                continue;
+
+            _paragraphTargetHwnd = new IntPtr(recovery.Text.ForegroundWindow);
+            _paragraphRewriteCoordinator.Request(context.Text);
+        }
+    }
 
     private void ShutdownParagraphRewrite()
     {
@@ -207,6 +270,7 @@ public partial class App
             _keyboardMouseHost.KeyReceived -= OnParagraphKey;
             _keyboardMouseHost.PointerInteraction -= OnParagraphPointerInteraction;
             _keyboardMouseHost.FocusChanged -= OnParagraphFocusChanged;
+            _keyboardMouseHost.DrainRequested -= OnParagraphDrainRequested;
             if (_paragraphRewriteStarted)
                 _keyboardMouseHost.Stop();
         }
@@ -215,6 +279,13 @@ public partial class App
         _paragraphRewriteWindow?.Hide();
         _paragraphRewriteCoordinator = null;
         _paragraphRewriteWindow = null;
+        _paragraphCaretTextReader = null;
+        Interlocked.Increment(ref _paragraphRecoveryRevision);
         _paragraphRewriteStarted = false;
     }
+
+    private readonly record struct ParagraphCaretRecovery(
+        int Revision,
+        bool Succeeded,
+        FocusedCaretText Text);
 }

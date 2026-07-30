@@ -17,12 +17,14 @@ namespace Deckle.Autocorrect;
 //
 // Teardown does not trust any pump join (the keyboard host is reference-counted
 // and may outlive this consumer): Dispose cancels the worker, completes the queue,
-// joins the worker (bounded), then disposes the reranker — so no inference can be
-// running when the model is released, and a late drain finds ResultSink detached.
+// waits for an in-flight native inference to return, then disposes the reranker.
+// The wait is deliberately not timed: releasing or replacing an ONNX GenAI model
+// while its worker still owns native state can terminate the whole process.
 public sealed class BackgroundRerankLane : IRerankLane
 {
     private readonly ISentenceReranker _reranker;
     private readonly IKeyboardInputHost _host;
+    private readonly ICaretTextReader? _caretTextReader;
     private readonly BlockingCollection<RerankRequest> _queue = new(boundedCapacity: 1);
     private readonly ConcurrentQueue<RerankResult> _completed = new();
     private readonly CancellationTokenSource _cts = new();
@@ -31,10 +33,14 @@ public sealed class BackgroundRerankLane : IRerankLane
 
     public Action<RerankResult>? ResultSink { get; set; }
 
-    public BackgroundRerankLane(ISentenceReranker reranker, IKeyboardInputHost host)
+    public BackgroundRerankLane(
+        ISentenceReranker reranker,
+        IKeyboardInputHost host,
+        ICaretTextReader? caretTextReader = null)
     {
         _reranker = reranker;
         _host = host;
+        _caretTextReader = caretTextReader;
         _host.DrainRequested += OnDrainRequested;
         _worker = new Thread(WorkerLoop)
         {
@@ -65,7 +71,26 @@ public sealed class BackgroundRerankLane : IRerankLane
                 RerankOutcome outcome;
                 try
                 {
-                    outcome = _reranker.Rerank(req.Sentence, req.SlotIndex, req.Candidates);
+                    outcome = req switch
+                    {
+                        ClosedSentenceRerankRequest closed =>
+                            _reranker is IWholeSentenceReranker wholeSentence
+                                ? wholeSentence.RerankSentence(closed.Transaction)
+                                : RerankOutcome.Abstained(
+                                    RerankOutcome.AbstainReasons.WholeSentenceUnsupported),
+                        HistoricalSlotRerankRequest historical => _reranker.Rerank(
+                            historical.Sentence,
+                            historical.SlotIndex,
+                            historical.Candidates),
+                        _ => RerankOutcome.Abstained(RerankOutcome.AbstainReasons.Error),
+                    };
+                    if (WouldRewrite(req, outcome)
+                        && req.VerifiedSentence is VerifiedCaretSentence verified
+                        && !VerifyRecoveredSentence(verified))
+                    {
+                        outcome = RerankOutcome.Abstained(
+                            RerankOutcome.AbstainReasons.StaleEvidence);
+                    }
                 }
                 catch
                 {
@@ -73,7 +98,10 @@ public sealed class BackgroundRerankLane : IRerankLane
                     outcome = RerankOutcome.Abstained(RerankOutcome.AbstainReasons.Error);
                 }
 
-                _completed.Enqueue(new RerankResult(req.SlotIndex, req.Epoch, outcome));
+                int slotIndex = req is HistoricalSlotRerankRequest slotRequest
+                    ? slotRequest.SlotIndex
+                    : -1;
+                _completed.Enqueue(new RerankResult(slotIndex, req.Epoch, outcome));
                 if (!_disposed)
                     _host.RequestDrain();
             }
@@ -83,6 +111,35 @@ public sealed class BackgroundRerankLane : IRerankLane
             // Cancelled on Dispose — fall through and exit.
         }
     }
+
+    private bool VerifyRecoveredSentence(VerifiedCaretSentence verified)
+    {
+        return _caretTextReader is not null
+            && _caretTextReader.TryReadStable(out Deckle.Core.FocusedCaretText current, out _)
+            && verified.Matches(current);
+    }
+
+    private static bool WouldRewrite(RerankRequest request, RerankOutcome outcome) =>
+        outcome.Chosen is not null
+        && (request switch
+        {
+            ClosedSentenceRerankRequest closed =>
+                outcome.ChosenSlotIndex is int chosenSlot
+                && chosenSlot >= 0
+                && chosenSlot < closed.Transaction.Words.Count
+                && !string.Equals(
+                    outcome.Chosen,
+                    closed.Transaction.Words[chosenSlot],
+                    StringComparison.Ordinal),
+            HistoricalSlotRerankRequest historical =>
+                historical.SlotIndex >= 0
+                && historical.SlotIndex < historical.Sentence.Count
+                && !string.Equals(
+                    outcome.Chosen,
+                    historical.Sentence[historical.SlotIndex],
+                    StringComparison.Ordinal),
+            _ => false,
+        });
 
     // Input thread (raised by the host pump). Drain every queued verdict.
     private void OnDrainRequested()
@@ -101,7 +158,7 @@ public sealed class BackgroundRerankLane : IRerankLane
         _host.DrainRequested -= OnDrainRequested;
         _cts.Cancel();
         _queue.CompleteAdding();
-        _worker.Join(TimeSpan.FromSeconds(2));
+        _worker.Join();
         _cts.Dispose();
         _queue.Dispose();
         (_reranker as IDisposable)?.Dispose();

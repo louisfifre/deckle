@@ -2,12 +2,24 @@ using System.Text;
 
 namespace Deckle.Autocorrect;
 
-// One unit of work handed to the background reranker: the sentence as ordered
-// word-forms (a bounded window around the slot), the slot to resolve within that
-// window, its closed candidate set, and the buffer epoch the request was built
-// under — so a result arriving after a reset is recognised as stale and dropped.
-public readonly record struct RerankRequest(
-    IReadOnlyList<string> Sentence, int SlotIndex, IReadOnlyList<AccentVariant> Candidates, int Epoch);
+// The two request protocols stay explicit at the background boundary. Production
+// submits one exact closed-sentence transaction; historical/offline callers may
+// still submit one token slot without making that shape a nullable global mode.
+public abstract record RerankRequest(int Epoch, VerifiedCaretSentence? VerifiedSentence);
+
+public sealed record ClosedSentenceRerankRequest(
+    ClosedSentenceTransaction Transaction,
+    int Epoch,
+    VerifiedCaretSentence? VerifiedSentence = null)
+    : RerankRequest(Epoch, VerifiedSentence);
+
+public sealed record HistoricalSlotRerankRequest(
+    IReadOnlyList<string> Sentence,
+    int SlotIndex,
+    IReadOnlyList<AccentVariant> Candidates,
+    int Epoch,
+    VerifiedCaretSentence? VerifiedSentence = null)
+    : RerankRequest(Epoch, VerifiedSentence);
 
 // The reranker's verdict for one slot: the full outcome (chosen form plus the
 // per-candidate scores and margin for the decision telemetry), tagged with the
@@ -34,12 +46,13 @@ public interface IRerankLane : IDisposable
 // engine itself; the only cross-thread hop is the lane.
 //
 // On each committed word it records the post-gate surface form and asks the probe
-// whether the slot is a real-word ambiguity the gate left alone (la/là, a/à,
-// ou/où). It submits ONE rerank at a time only after a terminal sentence ender.
-// When the verdict returns it rewrites the slot in place from its own closed
-// buffer. Ordinary forward typing may continue: the exact suffix grows in the
-// model and rides unchanged through the minimal rewrite. Any gesture that can
-// move the caret or mutate unknown text still invalidates the whole request.
+// whether each slot has bounded alternatives the gate left unresolved. At a
+// terminal sentence ender it submits the literal sentence and all bounded
+// one-edit variants as ONE transaction. The judge may keep the literal or choose
+// at most one edit; it never creates text and the coordinator never cascades
+// several slot verdicts. Ordinary forward typing may continue: the exact suffix
+// grows in the model and rides unchanged through the minimal rewrite. Any gesture
+// that can move the caret or mutate unknown text still invalidates the request.
 //
 // Staleness is the danger and the guards are deliberately strict: an epoch bumped
 // on every reset drops any verdict that outlived its exact screen state; each
@@ -64,12 +77,19 @@ public sealed class SentenceRerankCoordinator : IDisposable
     // replaying an arbitrarily long visible suffix.
     private const int MaxRewriteTailChars = 256;
 
+    // Literal plus at most this many one-edit sentences enter one global judge
+    // transaction. A wider candidate surface is ambiguity, not permission to
+    // fall back to a cascade of local writes.
+    private const int MaxSentenceEditCandidates = 12;
+
     // Only terminal punctuation closes a sentence. A colon or semicolon does not
     // grant the model permission to rewrite text that the user is still composing.
     private static readonly HashSet<char> SentenceEnders = new() { '.', '!', '?', '…' };
 
     private readonly IRerankLane _lane;
     private readonly IAmbiguityProbe _probe;
+    private readonly IAmbiguityProbe _wholeSentenceProbe;
+    private readonly bool _wholeSentenceEnabled;
     private readonly ITextInjector _injector;
     private readonly Func<string> _currentPartial;
     private readonly Action<string>? _realignLastCommitted;
@@ -87,8 +107,13 @@ public sealed class SentenceRerankCoordinator : IDisposable
     // carries a window-relative index (for the model), so the verdict cannot be
     // trusted to identify the slot — single-flight lets us remember it here.
     private int _inFlightSlot = -1;
+    private bool _inFlightWholeSentence;
+    private int _inFlightContextStart = -1;
+    private int _inFlightContextEnd = -1;
+    private bool _wholeSentenceAttempted;
     private bool _sentenceClosed;
     private int _sentenceStartIndex;
+    private VerifiedCaretSentence? _verifiedSentence;
     private bool _disposed;
 
     public SentenceRerankCoordinator(
@@ -98,10 +123,13 @@ public sealed class SentenceRerankCoordinator : IDisposable
         Func<string> currentPartial,
         Action<string>? realignLastCommitted = null,
         Action<CorrectionDecision, InjectionPlan>? onApplied = null,
-        Func<bool>? decisionTelemetry = null)
+        Func<bool>? decisionTelemetry = null,
+        IAmbiguityProbe? wholeSentenceProbe = null)
     {
         _lane = lane;
         _probe = probe;
+        _wholeSentenceProbe = wholeSentenceProbe ?? probe;
+        _wholeSentenceEnabled = wholeSentenceProbe is not null;
         _injector = injector;
         _currentPartial = currentPartial;
         _realignLastCommitted = realignLastCommitted;
@@ -153,14 +181,22 @@ public sealed class SentenceRerankCoordinator : IDisposable
 
         if (sentenceMayEvaluate)
         {
-            var candidates = string.Equals(typedForm, finalForm, StringComparison.Ordinal)
+            bool literalUntouched = string.Equals(
+                typedForm, finalForm, StringComparison.Ordinal);
+            IReadOnlyList<AccentVariant> candidates = literalUntouched
                 ? _probe.AmbiguousCandidates(finalForm)
                 : _probe.CorrectionCandidates(typedForm);
-            if (candidates.Count >= 2)
+            IReadOnlyList<AccentVariant> wholeSentenceCandidates = literalUntouched
+                ? _wholeSentenceProbe.AmbiguousCandidates(finalForm)
+                : candidates;
+            if (candidates.Count >= 2 || wholeSentenceCandidates.Count >= 2)
             {
                 entry.IsAmbiguous = true;
                 entry.Candidates = candidates;
-                DeckleAutocorrectSource.Log.RerankSlotPending(candidates.Count, finalForm.Length);
+                entry.WholeSentenceCandidates = wholeSentenceCandidates;
+                DeckleAutocorrectSource.Log.RerankSlotPending(
+                    Math.Max(candidates.Count, wholeSentenceCandidates.Count),
+                    finalForm.Length);
             }
         }
 
@@ -203,6 +239,7 @@ public sealed class SentenceRerankCoordinator : IDisposable
                 {
                     _sentenceClosed = false;
                     _sentenceStartIndex = _buffer.Count;
+                    _wholeSentenceAttempted = false;
                     return;
                 }
                 foreach (char c in k.Text)
@@ -285,6 +322,24 @@ public sealed class SentenceRerankCoordinator : IDisposable
         }
     }
 
+    // Replaces the append-only model after a discontinuity with a sentence read
+    // twice from the active caret. This grants no learning provenance: it only
+    // reconstructs closed candidate slots for the ordinary sentence judge.
+    public bool RecoverVerifiedSentence(VerifiedCaretSentence verified)
+    {
+        if (_disposed || !TryTokenizeVerifiedSentence(verified.Text, out List<SlotEntry> slots))
+            return false;
+
+        Invalidate(ResetReason.Navigation);
+        _buffer.AddRange(slots);
+        _sentenceStartIndex = 0;
+        _sentenceClosed = true;
+        _verifiedSentence = verified;
+        MarkCurrentSentenceReady();
+        TrySubmitNext();
+        return true;
+    }
+
     // Drop the sentence model: the caret left the span we model (or a backspace is
     // editing it). A verdict still in flight will be recognised as stale by epoch.
     public void Invalidate(ResetReason reason)
@@ -304,6 +359,8 @@ public sealed class SentenceRerankCoordinator : IDisposable
         _buffer.Clear();
         _sentenceClosed = false;
         _sentenceStartIndex = 0;
+        _verifiedSentence = null;
+        _wholeSentenceAttempted = false;
     }
 
     // ── Submit / apply (input thread) ────────────────────────────────────────
@@ -311,15 +368,53 @@ public sealed class SentenceRerankCoordinator : IDisposable
     private void TrySubmitNext()
     {
         if (_inFlight || _disposed) return;
+
+        if (_wholeSentenceEnabled && !_wholeSentenceAttempted)
+        {
+            _wholeSentenceAttempted = true;
+            ClosedSentenceRerankRequest? wholeSentence =
+                BuildWholeSentenceRequest(out bool overflow);
+            if (overflow)
+            {
+                ResolveReadySlots();
+                DeckleAutocorrectSource.Log.RerankVerdict(
+                    Outcome.Abstain,
+                    RerankOutcome.AbstainReasons.CandidateOverflow);
+                return;
+            }
+            if (wholeSentence is ClosedSentenceRerankRequest request)
+            {
+                _inFlight = true;
+                _inFlightWholeSentence = true;
+                _inFlightSlot = -1;
+                _inFlightEpoch = _epoch;
+                DeckleAutocorrectSource.Log.RerankSubmitted(
+                    -1, request.Transaction.Words.Count);
+                _lane.Submit(request);
+                return;
+            }
+
+            // Global mode is one transaction or no transaction. An empty closed
+            // set cannot silently reopen the former per-slot cascade.
+            ResolveReadySlots();
+            return;
+        }
+
+        if (_wholeSentenceEnabled)
+            return;
+
+        // Explicit compatibility mode for callers constructed without a global
+        // probe. Production supplies one and can never enter this cascade.
         for (int i = 0; i < _buffer.Count; i++)
         {
             SlotEntry s = _buffer[i];
-            if (s.IsAmbiguous && !s.Resolved && s.Ready)
+            if (s.IsAmbiguous && !s.Resolved && s.Ready && s.Candidates.Count >= 2)
             {
                 _inFlight = true;
+                _inFlightWholeSentence = false;
                 _inFlightSlot = i;
                 _inFlightEpoch = _epoch;
-                RerankRequest request = BuildRequest(i);
+                HistoricalSlotRerankRequest request = BuildRequest(i);
                 DeckleAutocorrectSource.Log.RerankSubmitted(i, request.Sentence.Count);
                 _lane.Submit(request);
                 return;
@@ -327,7 +422,70 @@ public sealed class SentenceRerankCoordinator : IDisposable
         }
     }
 
-    private RerankRequest BuildRequest(int slotIndex)
+    private ClosedSentenceRerankRequest? BuildWholeSentenceRequest(out bool overflow)
+    {
+        overflow = false;
+        int start = -1;
+        int end = -1;
+        foreach (SlotEntry slot in _buffer)
+        {
+            if (!slot.IsAmbiguous || slot.Resolved || !slot.Ready)
+                continue;
+            start = start < 0 ? slot.ContextStart : Math.Min(start, slot.ContextStart);
+            end = Math.Max(end, slot.ContextEnd);
+        }
+        if (start < 0 || end < start || end >= _buffer.Count)
+            return null;
+
+        var edits = new List<SentenceEditCandidate>();
+        var sentence = new List<string>(end - start + 1);
+        var literal = new StringBuilder();
+        for (int index = start; index <= end; index++)
+        {
+            SlotEntry slot = _buffer[index];
+            int wordStart = literal.Length;
+            sentence.Add(slot.Form);
+            literal.Append(slot.Form).Append(slot.Separator);
+
+            if (slot.IsAmbiguous && !slot.Resolved && slot.Ready)
+            {
+                foreach (AccentVariant candidate in slot.WholeSentenceCandidates)
+                {
+                    string target = CasePattern.Apply(slot.Form, candidate.Form);
+                    if (string.Equals(target, slot.Form, StringComparison.Ordinal))
+                        continue;
+                    if (edits.Count == MaxSentenceEditCandidates)
+                    {
+                        overflow = true;
+                        return null;
+                    }
+                    edits.Add(new SentenceEditCandidate(
+                        index - start,
+                        wordStart,
+                        slot.Form.Length,
+                        target));
+                }
+            }
+        }
+        if (edits.Count == 0)
+            return null;
+
+        _inFlightContextStart = start;
+        _inFlightContextEnd = end;
+        return new ClosedSentenceRerankRequest(
+            new ClosedSentenceTransaction(literal.ToString(), sentence, edits),
+            Epoch: _epoch,
+            VerifiedSentence: _verifiedSentence);
+    }
+
+    private void ResolveReadySlots()
+    {
+        foreach (SlotEntry slot in _buffer)
+            if (slot.IsAmbiguous && slot.Ready)
+                slot.Resolved = true;
+    }
+
+    private HistoricalSlotRerankRequest BuildRequest(int slotIndex)
     {
         SlotEntry slot = _buffer[slotIndex];
         int lo = Math.Max(slot.ContextStart, slotIndex - ContextWindow);
@@ -335,7 +493,12 @@ public sealed class SentenceRerankCoordinator : IDisposable
         var sentence = new List<string>(hi - lo);
         for (int i = lo; i < hi; i++)
             sentence.Add(_buffer[i].Form);
-        return new RerankRequest(sentence, slotIndex - lo, _buffer[slotIndex].Candidates, _epoch);
+        return new HistoricalSlotRerankRequest(
+            sentence,
+            slotIndex - lo,
+            _buffer[slotIndex].Candidates,
+            _epoch,
+            _verifiedSentence);
     }
 
     // The lane delivers verdicts here, on the input thread.
@@ -344,10 +507,18 @@ public sealed class SentenceRerankCoordinator : IDisposable
         if (_disposed) return;
         _inFlight = false;
         _inFlightEpoch = -1;
+        bool wholeSentence = _inFlightWholeSentence;
+        _inFlightWholeSentence = false;
         int slotIndex = _inFlightSlot;   // the absolute index we submitted
         _inFlightSlot = -1;
 
         RerankOutcome outcome = result.Outcome;
+
+        if (wholeSentence)
+        {
+            ApplyWholeSentenceResult(result.Epoch, outcome);
+            return;
+        }
 
         // Stale: the sentence was reset (epoch bumped) under the in-flight request,
         // so the buffer no longer holds the slot we submitted. result.Epoch is the
@@ -356,7 +527,7 @@ public sealed class SentenceRerankCoordinator : IDisposable
         if (result.Epoch != _epoch
             || slotIndex < 0 || slotIndex >= _buffer.Count)
         {
-            DeckleAutocorrectSource.Log.RerankVerdict(Outcome.Stale);
+            DeckleAutocorrectSource.Log.RerankVerdict(Outcome.Stale, string.Empty);
             TrySubmitNext();
             return;
         }
@@ -364,7 +535,7 @@ public sealed class SentenceRerankCoordinator : IDisposable
         SlotEntry slot = _buffer[slotIndex];
         if (!slot.IsAmbiguous || slot.Resolved)
         {
-            DeckleAutocorrectSource.Log.RerankVerdict(Outcome.Resolved);
+            DeckleAutocorrectSource.Log.RerankVerdict(Outcome.Resolved, string.Empty);
             TrySubmitNext();
             return;
         }
@@ -414,10 +585,87 @@ public sealed class SentenceRerankCoordinator : IDisposable
             };
         }
 
-        DeckleAutocorrectSource.Log.RerankVerdict(verdict);
+        DeckleAutocorrectSource.Log.RerankVerdict(
+            verdict, outcome.AbstainReason ?? string.Empty);
         EmitRerankDecision(slot.WordId, word, verdict, outcome);
 
         TrySubmitNext();
+    }
+
+    private void ApplyWholeSentenceResult(int resultEpoch, RerankOutcome outcome)
+    {
+        int contextStart = _inFlightContextStart;
+        int contextEnd = _inFlightContextEnd;
+        _inFlightContextStart = -1;
+        _inFlightContextEnd = -1;
+
+        if (resultEpoch != _epoch
+            || contextStart < 0
+            || contextEnd < contextStart
+            || contextEnd >= _buffer.Count)
+        {
+            DeckleAutocorrectSource.Log.RerankVerdict(Outcome.Stale, string.Empty);
+            TrySubmitNext();
+            return;
+        }
+
+        for (int index = contextStart; index <= contextEnd; index++)
+            if (_buffer[index].IsAmbiguous && _buffer[index].Ready)
+                _buffer[index].Resolved = true;
+
+        int? relativeSlot = outcome.ChosenSlotIndex;
+        if (outcome.Chosen is null || relativeSlot is null)
+        {
+            string verdict = outcome.AbstainReason switch
+            {
+                null => Outcome.Equal,
+                RerankOutcome.AbstainReasons.StaleEvidence => Outcome.Stale,
+                _ => Outcome.Abstain,
+            };
+            DeckleAutocorrectSource.Log.RerankVerdict(
+                verdict, outcome.AbstainReason ?? string.Empty);
+            return;
+        }
+
+        int chosenSlot = contextStart + relativeSlot.Value;
+        if (chosenSlot < contextStart || chosenSlot > contextEnd)
+        {
+            DeckleAutocorrectSource.Log.RerankVerdict(
+                Outcome.Abstain, RerankOutcome.AbstainReasons.Error);
+            return;
+        }
+
+        SlotEntry slot = _buffer[chosenSlot];
+        bool valid = slot.WholeSentenceCandidates.Any(candidate =>
+                string.Equals(
+                    CasePattern.Apply(slot.Form, candidate.Form),
+                    outcome.Chosen,
+                    StringComparison.Ordinal))
+            && double.IsFinite(outcome.Margin)
+            && double.IsFinite(outcome.Threshold)
+            && outcome.Threshold >= 0.0
+            && outcome.Margin >= outcome.Threshold;
+        if (!valid)
+        {
+            DeckleAutocorrectSource.Log.RerankVerdict(
+                Outcome.Abstain, RerankOutcome.AbstainReasons.Error);
+            return;
+        }
+
+        string word = slot.Form;
+        string target = outcome.Chosen;
+        SlotRewriteResult rewrite = ApplySlotRewrite(
+            chosenSlot, target, CorrectionReason.SentenceReranker);
+        string appliedVerdict = rewrite switch
+        {
+            SlotRewriteResult.Applied => Outcome.Applied,
+            SlotRewriteResult.Expired => Outcome.Expired,
+            SlotRewriteResult.NoOp => Outcome.Equal,
+            _ => Outcome.Blocked,
+        };
+        DeckleAutocorrectSource.Log.RerankVerdict(
+            appliedVerdict, outcome.AbstainReason ?? string.Empty);
+        EmitRerankDecision(slot.WordId, word, appliedVerdict, outcome);
     }
 
     // The rerank line of the decision telemetry: the reranker's verdict for this
@@ -496,6 +744,8 @@ public sealed class SentenceRerankCoordinator : IDisposable
         if (_injector.Replace(current, target))
         {
             slot.Form = newForm;
+            if (_verifiedSentence is VerifiedCaretSentence verified)
+                _verifiedSentence = verified with { Text = RenderBuffer() };
             // Realign the tracker only when the rewritten slot is the last committed
             // word (its edit window may still be open); for a word further back the
             // tracker models a later, unchanged word and is already consistent.
@@ -509,6 +759,81 @@ public sealed class SentenceRerankCoordinator : IDisposable
         // Trust nothing further; drop the model rather than rewrite a half-edit.
         Invalidate(ResetReason.Navigation);
         return SlotRewriteResult.Blocked;
+    }
+
+    private bool TryTokenizeVerifiedSentence(string sentence, out List<SlotEntry> slots)
+    {
+        slots = new List<SlotEntry>();
+        if (string.IsNullOrWhiteSpace(sentence)
+            || !CaretSentenceContext.IsTerminalPunctuation(sentence[^1]))
+            return false;
+
+        var word = new StringBuilder();
+        foreach (char current in sentence)
+        {
+            if (WordBoundaries.IsWordChar(current))
+            {
+                word.Append(current);
+                continue;
+            }
+
+            if (WordBoundaries.IsApostrophe(current) && word.Length > 0)
+            {
+                word.Append(current);
+                if (WordBoundaries.IsElisionPrefix(word.ToString(0, word.Length - 1)))
+                    CommitRecoveredWord(word, slots);
+                continue;
+            }
+
+            if (word.Length > 0)
+                CommitRecoveredWord(word, slots);
+
+            if (slots.Count == 0 || slots[^1].Separator.Length >= SeparatorRunCap)
+                return false;
+            slots[^1].Separator += current;
+        }
+
+        if (word.Length > 0)
+            CommitRecoveredWord(word, slots);
+
+        if (slots.Count is 0 or > BufferCap)
+            return false;
+
+        foreach (SlotEntry slot in slots)
+        {
+            // Curly apostrophes are screen-exact but the candidate lexicons are
+            // normalized to ASCII. Leave such tokens untouched in the first
+            // recovery version instead of silently changing typography.
+            if (slot.Form.Contains('’')) continue;
+            IReadOnlyList<AccentVariant> candidates =
+                _probe.SentenceCandidates(slot.Form, includeTypedLiteral: true);
+            IReadOnlyList<AccentVariant> wholeSentenceCandidates =
+                _wholeSentenceProbe.SentenceCandidates(
+                    slot.Form, includeTypedLiteral: true);
+            if (candidates.Count < 2 && wholeSentenceCandidates.Count < 2) continue;
+            slot.IsAmbiguous = true;
+            slot.Candidates = candidates;
+            slot.WholeSentenceCandidates = wholeSentenceCandidates;
+            DeckleAutocorrectSource.Log.RerankSlotPending(
+                Math.Max(candidates.Count, wholeSentenceCandidates.Count),
+                slot.Form.Length);
+        }
+
+        return true;
+    }
+
+    private static void CommitRecoveredWord(StringBuilder word, List<SlotEntry> slots)
+    {
+        slots.Add(new SlotEntry { Form = word.ToString() });
+        word.Clear();
+    }
+
+    private string RenderBuffer()
+    {
+        var text = new StringBuilder();
+        foreach (SlotEntry slot in _buffer)
+            text.Append(slot.Form).Append(slot.Separator);
+        return text.ToString();
     }
 
     public void Dispose()
@@ -539,6 +864,8 @@ public sealed class SentenceRerankCoordinator : IDisposable
         public string Form = string.Empty;
         public string Separator = string.Empty;
         public IReadOnlyList<AccentVariant> Candidates = Array.Empty<AccentVariant>();
+        public IReadOnlyList<AccentVariant> WholeSentenceCandidates =
+            Array.Empty<AccentVariant>();
         public bool IsAmbiguous;
         public bool Resolved;
         public bool Ready;

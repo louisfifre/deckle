@@ -21,6 +21,8 @@ public sealed partial class AutocorrectEngine
 
     private void OnDrainRequested()
     {
+        DrainCaretSentenceRecoveries();
+
         if (Interlocked.Exchange(ref _discardCorpusRequested, 0) != 0)
         {
             _corpus?.Discard();
@@ -35,6 +37,7 @@ public sealed partial class AutocorrectEngine
             uint deckleTag = unchecked((uint)SendInputInterop.InjectionTag.ToInt64());
             if (e.ExtraInfo == deckleTag)
                 return;
+            if (e.IsKeyDown) AdvanceCaretRecoveryRevision();
             ObserveForeignMutation(e);
             return;
         }
@@ -44,7 +47,11 @@ public sealed partial class AutocorrectEngine
 
         var stroke = _decoder.Decode(e);
         if (stroke is null) return;
+        AdvanceCaretRecoveryRevision();
         var k = stroke.Value;
+        bool terminalSentenceGesture = IsTerminalSentenceGesture(k);
+        bool recoverClosedSentence =
+            _sentenceContextDiscontinuous && terminalSentenceGesture;
 
         // The coordinator sees the live word as it stood BEFORE the tracker
         // consumes this stroke — so a Backspace into committed text invalidates its
@@ -58,7 +65,22 @@ public sealed partial class AutocorrectEngine
             _stream?.OnKeystroke(k);
 
         _tracker.OnKeystroke(k);
+
+        // Sentence closure is a keyboard gesture, not necessarily a word commit:
+        // after caret navigation the final word may already exist on screen and
+        // only the punctuation is new. Recovery must still get its one chance.
+        if (terminalSentenceGesture)
+        {
+            if (recoverClosedSentence)
+                RequestCaretSentenceRecovery();
+            _sentenceContextDiscontinuous = false;
+        }
     }
+
+    private static bool IsTerminalSentenceGesture(Keystroke key) =>
+        key.Kind == KeystrokeKind.Text
+        && key.Text.Length == 1
+        && CaretSentenceContext.IsTerminalPunctuation(key.Text[0]);
 
     private void ObserveForeignMutation(KeyboardKeyEvent e)
     {
@@ -146,6 +168,7 @@ public sealed partial class AutocorrectEngine
 
     private void OnPointerInteraction()
     {
+        AdvanceCaretRecoveryRevision();
         ClearForeignMutation();
         _tracker.NotifyPointerInteraction();
         // Ungated: a span must close on every caret move, or a stale run would
@@ -178,6 +201,7 @@ public sealed partial class AutocorrectEngine
         if (droppedPartialWord)
             _corpus?.MarkNextWordSuspect();
         _coordinator?.Invalidate(reason);
+        _sentenceContextDiscontinuous = reason != ResetReason.Enter;
     }
 
     // A correction the contextual stage applied inside the closed sentence. It
@@ -194,6 +218,7 @@ public sealed partial class AutocorrectEngine
 
     private void OnFocusChanged()
     {
+        AdvanceCaretRecoveryRevision();
         ClearForeignMutation();
         var surface = _prober.Probe();
         // The reset synchronously closes the corpus run and the typing-stream
