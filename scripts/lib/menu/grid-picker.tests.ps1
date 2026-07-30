@@ -7,14 +7,17 @@ function Assert-Equal($Expected, $Actual, [string]$Case) {
 }
 
 $fixedPrefixWidth = $script:MenuCategoryWidth + $script:MenuGridGap
-$widths = Get-GridColumnWidths -ContentWidth 74 -PrefixWidth $fixedPrefixWidth -ColumnCount 2
+$sharedColumnCount = Get-GridColumnCount -OccupiedColumnCount 1
+$widths = Get-GridColumnWidths -ContentWidth 74 -PrefixWidth $fixedPrefixWidth -ColumnCount $sharedColumnCount
 Assert-Equal 17 $fixedPrefixWidth 'fixed category track preserves the main menu geometry'
-Assert-Equal 28 $widths[0] 'first column receives remainder'
-Assert-Equal 27 $widths[1] 'second column width'
-Assert-Equal 55 ($widths[0] + $widths[1]) 'columns fill available content width'
+Assert-Equal 2 $sharedColumnCount 'a single-cell picker preserves the shared two-column grid'
+Assert-Equal 29 $widths[0] 'first column receives remainder'
+Assert-Equal 28 $widths[1] 'second column width'
+Assert-Equal 57 ($widths[0] + $widths[1]) 'columns fill available content width without an outer inset'
 
-$worktreeWidth = Get-GridColumnWidths -ContentWidth 40 -PrefixWidth $fixedPrefixWidth -ColumnCount 1
-Assert-Equal 21 $worktreeWidth[0] 'worktree picker preserves the shared grid geometry without category labels'
+$worktreeWidths = Get-GridColumnWidths -ContentWidth 40 -PrefixWidth $fixedPrefixWidth -ColumnCount $sharedColumnCount
+Assert-Equal 12 $worktreeWidths[0] 'worktree back occupies only the first action column at minimum width'
+Assert-Equal 11 $worktreeWidths[1] 'worktree picker reserves the second action column at minimum width'
 
 Assert-Equal 0 (Get-GridResultOffset -Current 0 -PageSize 5 -LineCount 12 -Direction Previous) 'result stays at first page'
 Assert-Equal 5 (Get-GridResultOffset -Current 0 -PageSize 5 -LineCount 12 -Direction Next) 'result advances one page'

@@ -3,6 +3,7 @@ $script:MenuPreferredContentWidth = 74
 $script:MenuMinimumContentWidth = 40
 $script:MenuCategoryWidth = 14
 $script:MenuGridGap = 3
+$script:MenuActionColumnCount = 2
 
 function Get-MenuMetrics {
     try {
@@ -90,8 +91,8 @@ function Get-MenuBanner {
     )
 
     return @(
-        '  █▀▄ █▀▀ █▀▀ █▄▀ █   █▀▀'
-        '  █▄▀ █▄▄ █▄▄ █ █ █▄▄ █▄▄  SCRIPTS'
+        '█▀▄ █▀▀ █▀▀ █▄▀ █   █▀▀'
+        '█▄▀ █▄▄ █▄▄ █ █ █▄▄ █▄▄  SCRIPTS'
     )
 }
 
@@ -199,10 +200,10 @@ function Write-MenuChrome {
     }
 
     $headerRow = $BaseRow + $banner.Count + $bannerGap
-    $header = Limit-MenuText -Text ('  ' + $Header) -Width $metrics.ContentWidth
-    $footer = Limit-MenuText -Text ('  ' + $Footer) -Width $metrics.ContentWidth
+    $header = Limit-MenuText -Text $Header -Width $metrics.ContentWidth
+    $footer = Limit-MenuText -Text $Footer -Width $metrics.ContentWidth
     Write-MenuPlainLine -Row $headerRow -Text $header -ForegroundColor DarkGray -BackgroundColor $null
-    Write-MenuPlainLine -Row ($headerRow + 1) -Text ('  ' + (New-MenuRule -MaxWidth ($metrics.ContentWidth - 2))) -ForegroundColor DarkGray -BackgroundColor $null
+    Write-MenuPlainLine -Row ($headerRow + 1) -Text (New-MenuRule -MaxWidth $metrics.ContentWidth) -ForegroundColor DarkGray -BackgroundColor $null
     Write-MenuPlainLine -Row ($headerRow + 2) -Text '' -ForegroundColor $null -BackgroundColor $null
     Write-MenuPlainLine -Row ($headerRow + 3 + $BodyCount) -Text '' -ForegroundColor $null -BackgroundColor $null
     Write-MenuPlainLine -Row ($headerRow + 4 + $BodyCount) -Text $footer -ForegroundColor DarkGray -BackgroundColor $null
@@ -264,9 +265,9 @@ function Wait-MenuViewportSize {
         $banner = @(Get-MenuBanner -Style $BannerStyle)
         $lines = @($banner) + @(
             ''
-            "  Resize the terminal to at least $($script:MenuMinimumContentWidth + 5) x $requiredHeight."
-            "  Current size: $([Console]::WindowWidth) x $($metrics.WindowHeight)."
-            '  Press any key after resizing.'
+            "Resize the terminal to at least $($script:MenuMinimumContentWidth + 5) x $requiredHeight."
+            "Current size: $([Console]::WindowWidth) x $($metrics.WindowHeight)."
+            'Press any key after resizing.'
         )
         $visibleCount = [Math]::Min($lines.Count, $metrics.WindowHeight)
         for ($index = 0; $index -lt $visibleCount; $index++) {
@@ -301,7 +302,6 @@ function New-MenuViewport {
 function Write-MenuLinePrefix {
     param([int]$Row)
     Set-MenuCursorPosition -Left 0 -Top $Row
-    Write-MenuSegment -Text '  ' -ForegroundColor $null -BackgroundColor $null
 }
 
 function Write-MenuLineRemainder {

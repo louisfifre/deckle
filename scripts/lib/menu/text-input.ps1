@@ -28,16 +28,16 @@ function Read-MenuText {
     $render = {
         $viewport = New-MenuViewport -Header $Header -Footer $Footer -BodyCount $bodyCount -ClearScreen -BannerStyle $BannerStyle
         $metrics = Get-MenuMetrics
-        Write-MenuPlainLine -Row $viewport.BodyTop -Text ('  ' + $Title.ToUpperInvariant()) -ForegroundColor Magenta -BackgroundColor $null
+        Write-MenuPlainLine -Row $viewport.BodyTop -Text $Title.ToUpperInvariant() -ForegroundColor Magenta -BackgroundColor $null
         for ($index = 0; $index -lt 2; $index++) {
-            $text = if ($index -lt $Lines.Count) { '  ' + $Lines[$index] } else { '' }
+            $text = if ($index -lt $Lines.Count) { $Lines[$index] } else { '' }
             Write-MenuPlainLine -Row ($viewport.BodyTop + 1 + $index) -Text $text -ForegroundColor DarkGray -BackgroundColor $null
         }
         Write-MenuPlainLine -Row ($viewport.BodyTop + 3) -Text '' -ForegroundColor $null -BackgroundColor $null
     }
 
     $renderInput = {
-        $prefix = "  $Label  "
+        $prefix = "$Label  "
         $available = [Math]::Max(1, $metrics.ContentWidth - $prefix.Length)
         $start = [Math]::Max(0, $cursor - $available + 1)
         if ($start -gt $buffer.Length) { $start = $buffer.Length }
