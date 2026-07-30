@@ -96,6 +96,7 @@ doctrine). This file is generated from the Conventional-Commit history by
 - **scripts:** Align launcher workflow behavior
 - **scripts:** Preserve shared menu grid geometry
 - **scripts:** Restore stable menu alignment
+- **scripts:** Stabilize menu interaction geometry
 
 ## [0.14.1](https://github.com/louisfifre/deckle/compare/v0.14.0...v0.14.1) — 2026-07-20
 

@@ -33,12 +33,12 @@ function Select-MaintenanceScanGoal {
         )
     }
     return Show-Submenu `
-        -Header "Deckle > Maintenance > $Kind   -   ↑↓←→ move   Enter select   Esc back" `
+        -Header "Deckle > Maintenance > $Kind" `
         -Rows @(@{ Prefix = 'Goal'; Items = @(Get-MaintenanceScanGoals -Kind $Kind) }) `
         -BannerStyle Compact `
-        -Footer 'Choose the purpose before the worktree; no scan starts here' `
         -ResultTitle 'What this controls' `
-        -ResultLines $descriptions
+        -ResultLines $descriptions `
+        -Interaction Select
 }
 
 function Set-CustomRepositoryFileSet {
@@ -97,13 +97,15 @@ function Set-CustomScanScope {
         )
     if ($null -eq $choice) { return }
     if ($choice -eq '__path__') {
-        $path = Read-MenuText `
+        $pathInput = Read-MenuText `
             -Header 'Deckle > Maintenance > Custom > Scope' `
             -Title 'One relative path' `
             -Lines @('Relative to the worktree; files and folders are accepted.', 'Absolute paths, .., .git, links, and junctions are rejected.') `
             -Label 'Path' `
             -Default $Specification.ScopePath
-        if ($null -ne $path) { $Specification.ScopePath = $path }
+        if ($pathInput.Status -eq 'Submitted' -and -not [string]::IsNullOrWhiteSpace($pathInput.Value)) {
+            $Specification.ScopePath = [string]$pathInput.Value
+        }
         return
     }
     $Specification.ScopePath = $choice
@@ -223,9 +225,10 @@ function Set-CustomContextPeriod {
 function Show-CustomScanEditor {
     param(
         [Parameter(Mandatory)]$Specification,
-        [string[]]$ResultLines = @('Choose only what the result needs; the scan has not started.')
+        [string[]]$ResultLines = @('Choose only what the result needs; the scan has not started.', 'Esc returns and discards this configuration.')
     )
 
+    $selection = @{ Index = 1; PreferredColumn = 0 }
     while ($true) {
         $rows = @(
             @{ Prefix = 'Scope'; Items = @(
@@ -257,9 +260,10 @@ function Show-CustomScanEditor {
             -Header "Deckle > Maintenance > $($Specification.Kind) > Custom" `
             -Rows $rows `
             -BannerStyle Compact `
-            -Footer 'Edit one field at a time; Back discards this configuration' `
             -ResultTitle 'Scan definition' `
-            -ResultLines $ResultLines
+            -ResultLines $ResultLines `
+            -Interaction Select `
+            -SelectionState $selection
         if ($null -eq $choice) { return $null }
         switch ($choice) {
             'scope'      { Set-CustomScanScope -Specification $Specification }
@@ -273,7 +277,7 @@ function Show-CustomScanEditor {
             'period'     { Set-CustomContextPeriod -Specification $Specification }
             'continue'   { return $Specification }
         }
-        $ResultLines = @('Choose only what the result needs; the scan has not started.')
+        $ResultLines = @('Choose only what the result needs; the scan has not started.', 'Esc returns and discards this configuration.')
     }
 }
 
@@ -290,9 +294,9 @@ function Show-MaintenanceScanReview {
             @{ Label = 'Run scan';   Value = 'run' }
         ) }) `
         -BannerStyle Compact `
-        -Footer 'Review first; Run scan is read-only; Esc goes back' `
         -ResultTitle 'Review scan' `
-        -ResultLines @(Get-MaintenanceScanReviewLines -Specification $Specification -Worktree $Worktree)
+        -ResultLines @(Get-MaintenanceScanReviewLines -Specification $Specification -Worktree $Worktree) `
+        -Interaction Select
 }
 
 function Invoke-MaintenanceScanFlow {

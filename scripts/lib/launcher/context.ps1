@@ -26,15 +26,16 @@ function Read-YesNo {
         [bool]$Default = $false,
         [string]$ConfirmLabel = 'Yes',
         [string]$CancelLabel = 'No',
+        [string[]]$ContextLines = @(),
         [switch]$Destructive
     )
-    return (Select-YesNo -Question $Question -Default $Default -ConfirmLabel $ConfirmLabel -CancelLabel $CancelLabel -Destructive:$Destructive -ClearScreen -BannerStyle Compact)
+    return (Select-YesNo -Question $Question -Default $Default -ConfirmLabel $ConfirmLabel -CancelLabel $CancelLabel -ContextLines $ContextLines -Destructive:$Destructive -ClearScreen -BannerStyle Compact)
 }
 
 function Read-Optional {
     param(
         [Parameter(Mandatory)][string]$Question,
-        [string]$Header = 'Deckle   -   Type a value   Enter confirm   Esc back',
+        [string]$Header = 'Deckle',
         [string]$Label = 'Value',
         [string[]]$Lines = @()
     )

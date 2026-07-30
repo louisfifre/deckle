@@ -30,14 +30,15 @@ Import-Module (Join-Path $LibDir '_menu.psm1') -Force
 $mainRows = @(Get-DeckleMainMenuRows)
 $mainResultTitle = $null
 $mainResultLines = @()
+$mainSelection = @{ Index = 0; PreferredColumn = 0 }
 
 Start-DeckleMenuSession
 try {
     while ($true) {
         $v = Select-Grid `
-            -Header 'Deckle   -   ↑↓←→ move   Enter run   Ctrl+C quit' `
-            -Footer $(if ($mainResultTitle) { 'Arrows move   Enter runs   Wheel/PgUp/PgDn pages   Home/End first/latest' } else { 'worktrees are asked after you pick; action results stay in the menu' }) `
+            -Header 'Deckle' `
             -Rows $mainRows -StartSel 0 -StartCol 0 -EscapeAction Ignore -ClearScreen -BannerStyle Compact `
+            -SelectionState $mainSelection `
             -ResultTitle $mainResultTitle -ResultLines $mainResultLines -ResultFollowTail
         if ($null -eq $v) { continue }
         if ($v -eq 'quit') { break }

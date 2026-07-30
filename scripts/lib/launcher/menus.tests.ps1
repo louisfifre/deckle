@@ -7,9 +7,12 @@ function Assert-Equal($Expected, $Actual, [string]$Case) {
 }
 
 function Select-Grid {
-    param($Header, $Rows, $Footer, $StartSel, [switch]$ClearScreen, $BannerStyle, $ResultTitle, $ResultLines)
+    param($Header, $Rows, $Footer, $StartSel, [switch]$ClearScreen, $BannerStyle, $ResultTitle, $ResultLines, [switch]$ResultFollowTail, $Interaction, $SelectionState)
     $script:LastSubmenuBannerStyle = $BannerStyle
     $script:LastSubmenuRows = @($Rows)
+    $script:LastSubmenuHeader = $Header
+    $script:SubmenuFollowTailCalls += [bool]$ResultFollowTail
+    $script:SubmenuSelectionStates += $SelectionState
     if ($script:MenuSelections.Count -gt 0) {
         $next = $script:MenuSelections[0]
         $script:MenuSelections = @($script:MenuSelections | Select-Object -Skip 1)
@@ -27,14 +30,22 @@ function Invoke-WorktreeScript {
 $rows = @(@{ Prefix = 'Section'; Items = @( @{ Label = 'Action'; Value = 'action' } ) })
 $script:NextMenuSelection = '__back__'
 $script:MenuSelections = @()
+$script:SubmenuFollowTailCalls = @()
+$script:SubmenuSelectionStates = @()
 Show-Submenu -Header 'Deckle > Test' -Rows $rows | Out-Null
 Assert-Equal 'Compact' $script:LastSubmenuBannerStyle 'submenus always use the compact banner'
 
 $script:WorktreeActionCount = 0
 $script:MenuSelections = @('readme-stats', '__back__')
+$script:SubmenuFollowTailCalls = @()
+$script:SubmenuSelectionStates = @()
 Show-ProjectMenu
 Assert-Equal 1 $script:WorktreeActionCount 'project action runs once before the submenu resumes'
 Assert-Equal $true $script:LastWorktreeScriptParameters.Commit 'README update requests a local commit'
+Assert-Equal $false $script:SubmenuFollowTailCalls[0] 'project guidance starts on its first page'
+Assert-Equal $true $script:SubmenuFollowTailCalls[1] 'project action logs resume on their latest page'
+Assert-Equal $true ([object]::ReferenceEquals($script:SubmenuSelectionStates[0], $script:SubmenuSelectionStates[1])) 'project menu keeps one selection state across action redraws'
+Assert-Equal 'Deckle > Project' $script:LastSubmenuHeader 'submenu header contains only the breadcrumb'
 
 $script:MenuSelections = @('__back__')
 Show-ReleaseMenu
