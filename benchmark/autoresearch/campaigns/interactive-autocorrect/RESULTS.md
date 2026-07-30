@@ -448,6 +448,62 @@ physical latency, production safety, general precision, or GPU work. Further
 rule growth waits for stronger grouped data; ACX-0021 moves to the delayed
 range-owned application question in the isolated Playground.
 
+### ACX-0022 — adapter serialization and builder-toolchain negative
+
+ACX-0022 remained pre-registration work: no model export, model load, inference,
+or DirectML execution occurred. Its independently audited design first exposed
+and corrected the builder/converter/.NET runtime version boundary, LoRA int4
+exclusions, semantic sidecar gate, graph-capture proof, lifecycle negatives,
+and numerical claim limits.
+
+The exact Qwen3-0.6B source revision was retained as 10 hashed files totaling
+1,519,209,243 bytes. The frozen generator then produced a positive-zero control
+and a seeded non-zero sentinel, each with 112 ordered float16 tensors. ONNX
+Runtime 1.23.0 converted both NPZ files and read them back with exact names,
+shapes, dtypes, values, and version fields. Each resulting `.onnx_adapter` file
+measured 2,305,600 bytes. This establishes adapter serialization for the 0.6B
+tensor contract, not loading or disk sharing with a model.
+
+The hash-locked builder environment passed dependency resolution and top-level
+package imports, but the full GenAI builder import failed before argument
+parsing: GenAI 0.13 imports `Qwen3VLForConditionalGeneration`, absent from the
+frozen `transformers==4.51.0`. The earlier coarse imports-passed queue event is
+explicitly corrected by a later append-only NO-GO event. ACX-0022 does not alter
+that version after observation and closes as a valid toolchain negative.
+
+**Established:** exact source identity, deterministic 112-tensor synthetic
+artifacts, ONNX Runtime 1.23 adapter serialization round-trip, and the frozen
+builder import incompatibility. **Not established:** adapter-ready export,
+model/adapter load, one-model sharing, CPU or DirectML inference, memory or
+latency savings, task quality, or production readiness. ACX-0023 is selected as
+a separately frozen successor toolchain experiment.
+
+### ACX-0023 — successor builder import gate
+
+ACX-0023 changed only the frozen Transformers direct pin from 4.51.0 to 4.57.1.
+Its 35-wheel environment installed offline with required hashes, passed
+`pip check`, imported the GenAI and Qwen builders, imported the frozen Qwen3,
+Qwen2.5-VL, and Qwen3-VL Transformers classes, constructed the frozen PEFT
+configuration, and produced non-empty installed-builder help with exit code
+zero. Raw gate outputs, the complete freeze, executable and builder-source
+hashes, and exit codes are retained in the 3,336-byte environment record,
+SHA-256
+`4294CF3DCD30DACA2379D953770C949D9EF5D4FFF786B0AEEED939DC6F98BFD3`.
+
+The isolated export/runtime tooling also passed its final independent static
+audit after fail-closed graph, artifact, tokenizer, lifecycle, report, and
+bounded-memory revisions. All 27 focused Qwen-adapter tests and all 875 ordinary
+autocorrect tests pass; the global Debug x64 build has zero warnings and errors.
+This validates preparation tooling only. It does not convert a planned command
+into an executed experiment.
+
+**Established:** the separately frozen ACX-0023 builder environment resolves
+and passes its full import gate without patching or version chasing; its runtime
+probe tooling is independently audited and fail-closed under synthetic/unit
+evidence. **Not established:** adapter-ready model export, model or adapter load,
+one-model sharing, CPU or DirectML inference, memory or disk savings at runtime,
+switching latency, task quality, or production readiness.
+
 ## Refuted or dominated families
 
 No complete end-to-end Pareto candidate is dominated yet. Four narrower claims

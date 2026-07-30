@@ -9,10 +9,9 @@ module: benchmark/autoresearch/campaigns/interactive-autocorrect
 
 ## Preregistration status
 
-Static design validated after an independent NO-GO, revision, and final GO. No
-model run or experiment is preregistered by this document. Preregistration
-remains forbidden until both exact tool environments below resolve and import,
-and their wheels, manifests, executables, and consumed scripts are hashed.
+Static design validated after an independent NO-GO, revision, and final GO.
+Closed as a valid pre-registration toolchain negative: the frozen builder
+environment did not import. No model run or experiment was preregistered.
 
 ## Product question
 
@@ -438,3 +437,26 @@ wiring remain unchanged.
 - https://onnxruntime.ai/docs/genai/reference/adapter.html
 - https://onnxruntime.ai/docs/genai/api/csharp.html
 - https://github.com/microsoft/onnxruntime-genai/releases/tag/v0.13.0
+
+## Observed pre-registration outcome
+
+The converter environment resolved, imported, converted both frozen 112-tensor
+NPZ files with ONNX Runtime 1.23.0, and read both `.onnx_adapter` files back with
+exact names, shapes, dtypes, values, and versions. Each Qwen3-0.6B synthetic
+adapter file measured 2,305,600 bytes. This establishes adapter serialization
+only.
+
+The builder environment passed dependency resolution and top-level package
+imports, but importing `onnxruntime_genai.models.builder` failed before argument
+parsing. GenAI 0.13's Qwen builder imports
+`Qwen3VLForConditionalGeneration`, which the frozen `transformers==4.51.0` does
+not export. The raw stderr is retained at
+`benchmark/runs/interactive-autocorrect/ACX-0022/builder-help-attempt-1.stderr.txt`
+with SHA-256
+`A5E7DD496A8B22AABE38B39163903C32536002ECCF84E176FA915B5D053231E3`.
+
+Per the frozen failure rule, ACX-0022 does not change Transformers after this
+observation. It makes no adapter-ready model, inference, DirectML, shared-memory,
+latency, task-quality, or production claim. A successor experiment must freeze
+and audit a new toolchain before reusing the retained source and synthetic
+artifacts.

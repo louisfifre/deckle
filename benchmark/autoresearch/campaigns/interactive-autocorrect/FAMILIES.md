@@ -225,5 +225,13 @@ become the high-trust profile even if UIA plus SendInput remains a broad fallbac
 - **Current evidence:** the local 0.13.0 managed assembly exposes
   `Adapters.LoadAdapter`, `Adapters.UnloadAdapter`, and
   `Generator.SetActiveAdapter`; ONNX Runtime GenAI documents Multi-LoRA and
-  `.onnx_adapter` files. No Deckle Qwen adapter has yet been exported, loaded,
-  timed, or quality-tested.
+  `.onnx_adapter` files. ACX-0022 converted and exactly read back two synthetic
+  Qwen3-0.6B 112-tensor adapters under ONNX Runtime 1.23.0, each 2,305,600
+  bytes. Its adapter-ready base export did not start because the frozen GenAI
+  builder could not import against Transformers 4.51.0. No Deckle Qwen adapter
+  has yet been loaded with a model, inferred, timed, memory-profiled, or
+  quality-tested. ACX-0023's separately frozen successor changed only
+  Transformers to 4.57.1 and passed the full builder/Qwen/PEFT import gate plus
+  installed-builder help. Its fail-closed export/runtime probe tooling passed
+  independent static audit plus 27 focused and 875 full autocorrect tests, but
+  has not exported or loaded a model. Export and runtime claims remain pending.
