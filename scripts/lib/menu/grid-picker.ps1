@@ -50,7 +50,7 @@ function Write-GridLine {
         if ($entry.Kind -eq 'result-title' -and $ResultPageCount -gt 1) {
             $titleText += "  ·  Page $ResultPage/$ResultPageCount"
         }
-        $label = ' ' + $titleText.ToUpperInvariant() + ' '
+        $label = $titleText.ToUpperInvariant() + ' '
         Write-MenuContentSegment -Text $label -Written ([ref]$written) -InnerWidth $ContentWidth -ForegroundColor Magenta -BackgroundColor $null
         $rule = New-MenuRule -MaxWidth ($ContentWidth - $written) -Style Section
         Write-MenuContentSegment -Text $rule -Written ([ref]$written) -InnerWidth $ContentWidth -ForegroundColor Gray -BackgroundColor $null
@@ -64,6 +64,7 @@ function Write-GridLine {
         Write-MenuContentSegment -Text ('  ' + $text) -Written ([ref]$written) -InnerWidth $ContentWidth -ForegroundColor Gray -BackgroundColor $null
     } else {
         # 'row'
+        Write-MenuContentSegment -Text (' ' * $script:MenuRowInset) -Written ([ref]$written) -InnerWidth $ContentWidth -ForegroundColor $null -BackgroundColor $null
         if ($PrefixW -gt 0) {
             $prefixContentWidth = [Math]::Max(0, $PrefixW - $script:MenuGridGap)
             $p = (Limit-MenuText -Text ([string]$entry.Prefix) -Width $prefixContentWidth).PadRight($PrefixW)
@@ -154,11 +155,11 @@ function Invoke-GridLoop {
     $preferredColIdx = $selection.PreferredColumn
     $colIdx = $selection.ActiveColumn
     Set-GridSelectionState -State $SelectionState -Index $selIdx -PreferredColumn $preferredColIdx
-    if (-not $Footer) {
-        $Footer = Get-GridNavigationFooter -Interaction $Interaction -EscapeAction $EscapeAction -HasPages:($resultLinesArray.Count -gt $resultRowCount)
-    }
+    $hasPages = $resultLinesArray.Count -gt $resultRowCount
+    $headerCommands = Get-GridNavigationCommands -Interaction $Interaction -EscapeAction $EscapeAction
+    if (-not $Footer) { $Footer = Get-GridPagingFooter -HasPages:$hasPages }
 
-    $viewport = New-MenuViewport -Header $Header -Footer $Footer -BodyCount $body.Count -ClearScreen:$ClearScreen -BannerStyle $BannerStyle
+    $viewport = New-MenuViewport -Header $Header -HeaderCommands $headerCommands -Footer $Footer -BodyCount $body.Count -ClearScreen:$ClearScreen -BannerStyle $BannerStyle
     $metrics = Get-MenuMetrics
     $colW = Get-GridColumnWidths -ContentWidth $metrics.ContentWidth -PrefixWidth $prefixW -ColumnCount $columnCount
     $top = $viewport.BodyTop
@@ -190,7 +191,7 @@ function Invoke-GridLoop {
                 $resultOffset = Get-GridResultOffset -Current $resultOffset -PageSize $resultRowCount -LineCount $resultLinesArray.Count -Direction Current
                 $metrics = Get-MenuMetrics
                 $colW = Get-GridColumnWidths -ContentWidth $metrics.ContentWidth -PrefixWidth $prefixW -ColumnCount $columnCount
-                $viewport = New-MenuViewport -Header $Header -Footer $Footer -BodyCount $body.Count -ClearScreen -BannerStyle $BannerStyle
+                $viewport = New-MenuViewport -Header $Header -HeaderCommands $headerCommands -Footer $Footer -BodyCount $body.Count -ClearScreen -BannerStyle $BannerStyle
                 $metrics = Get-MenuMetrics
                 $colW = Get-GridColumnWidths -ContentWidth $metrics.ContentWidth -PrefixWidth $prefixW -ColumnCount $columnCount
                 $top = $viewport.BodyTop

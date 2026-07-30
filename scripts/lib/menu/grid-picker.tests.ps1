@@ -12,13 +12,13 @@ $sharedColumnCount = Get-GridColumnCount -OccupiedColumnCount 1
 $widths = Get-GridColumnWidths -ContentWidth 74 -PrefixWidth $fixedPrefixWidth -ColumnCount $sharedColumnCount
 Assert-Equal 17 $fixedPrefixWidth 'fixed category track preserves the main menu geometry'
 Assert-Equal 2 $sharedColumnCount 'a single-cell picker preserves the shared two-column grid'
-Assert-Equal 29 $widths[0] 'first column receives remainder'
-Assert-Equal 28 $widths[1] 'second column width'
-Assert-Equal 57 ($widths[0] + $widths[1]) 'columns fill available content width without an outer inset'
+Assert-Equal 28 $widths[0] 'first column receives remainder after the action-row inset'
+Assert-Equal 27 $widths[1] 'second column width'
+Assert-Equal 55 ($widths[0] + $widths[1]) 'columns fill the action track after its internal inset'
 
 $worktreeWidths = Get-GridColumnWidths -ContentWidth 40 -PrefixWidth $fixedPrefixWidth -ColumnCount $sharedColumnCount
-Assert-Equal 12 $worktreeWidths[0] 'worktree back occupies only the first action column at minimum width'
-Assert-Equal 11 $worktreeWidths[1] 'worktree picker reserves the second action column at minimum width'
+Assert-Equal 11 $worktreeWidths[0] 'worktree back occupies only the first action column at minimum width'
+Assert-Equal 10 $worktreeWidths[1] 'worktree picker reserves the second action column at minimum width'
 
 Assert-Equal 0 (Get-GridResultOffset -Current 0 -PageSize 5 -LineCount 12 -Direction Previous) 'result stays at first page'
 Assert-Equal 5 (Get-GridResultOffset -Current 0 -PageSize 5 -LineCount 12 -Direction Next) 'result advances one page'
@@ -53,13 +53,15 @@ $restoredPosition = Get-GridSelectionPosition -SelectableRows $stateRows -Traili
 Assert-Equal 1 $restoredPosition.Index 'selection state restores the selected action across redraws'
 Assert-Equal 1 $restoredPosition.ActiveColumn 'selection state restores the selected column across redraws'
 
-Assert-Equal 'Arrows move   Enter runs   Ctrl+C quits' (Get-GridNavigationFooter -EscapeAction Ignore) 'main navigation wording is centralized'
-Assert-Equal 'Arrows move   Enter runs   Esc returns   Wheel/Pg pages   Home/End edges' (Get-GridNavigationFooter -HasPages) 'submenu result navigation exposes paging consistently'
-Assert-Equal 'Left/Right move   Enter confirms   Esc cancels' (Get-GridNavigationFooter -Interaction Confirm) 'confirmation navigation exposes Escape consistently'
+Assert-Equal '↑↓←→ move   Enter run   Ctrl+C quit' (Get-GridNavigationCommands -EscapeAction Ignore) 'main navigation wording is centralized'
+Assert-Equal '↑↓←→ move   Enter select   Esc back' (Get-GridNavigationCommands -Interaction Select) 'selection navigation uses visible arrow keys'
+Assert-Equal '←→ move   Enter confirm   Esc cancel' (Get-GridNavigationCommands -Interaction Confirm) 'confirmation navigation exposes Escape consistently'
+Assert-Equal 'Wheel/PgUp/PgDn pages   Home/End first/latest' (Get-GridPagingFooter -HasPages) 'paged results keep their contextual controls in the footer'
+Assert-Equal '' (Get-GridPagingFooter) 'menus without pages do not duplicate header commands in the footer'
 
 $compactLayout = New-GridBodyLayout -CommandBody @(@{ Kind = 'row' }) -ResultTitle 'Results' -BannerStyle Compact
-Assert-Equal 15 $compactLayout.Body.Count 'result layout consumes available compact body'
-Assert-Equal 12 $compactLayout.ResultRowCount 'result layout reserves breathing room, title, and commands'
+Assert-Equal 16 $compactLayout.Body.Count 'result layout consumes available compact body'
+Assert-Equal 13 $compactLayout.ResultRowCount 'result layout reserves breathing room and title'
 Assert-Equal 'blank' $compactLayout.Body[1].Kind 'result layout separates commands from results'
 Assert-Equal 'result-title' $compactLayout.Body[2].Kind 'result heading can display page state'
 

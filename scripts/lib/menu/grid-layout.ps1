@@ -84,7 +84,7 @@ function Get-GridColumnWidths {
         [Parameter(Mandatory)][int]$ColumnCount
     )
 
-    $available = [Math]::Max($ColumnCount, $ContentWidth - $PrefixWidth)
+    $available = [Math]::Max($ColumnCount, $ContentWidth - $script:MenuRowInset - $PrefixWidth)
     $baseWidth = [Math]::Max(1, [Math]::Floor($available / $ColumnCount))
     $remainder = $available - ($baseWidth * $ColumnCount)
     $widths = @{}
@@ -179,27 +179,30 @@ function New-GridBodyLayout {
     return [pscustomobject]@{ Body = @($body); ResultRowCount = $resultRowCount }
 }
 
-function Get-GridNavigationFooter {
+function Get-GridNavigationCommands {
     param(
         [ValidateSet('Run', 'Select', 'Confirm')]
         [string]$Interaction = 'Run',
         [ValidateSet('Cancel', 'Ignore')]
-        [string]$EscapeAction = 'Cancel',
-        [switch]$HasPages
+        [string]$EscapeAction = 'Cancel'
     )
 
     $parts = switch ($Interaction) {
-        'Confirm' { @('Left/Right move', 'Enter confirms') }
-        'Select'  { @('Arrows move', 'Enter selects') }
-        default   { @('Arrows move', 'Enter runs') }
+        'Confirm' { @('←→ move', 'Enter confirm') }
+        'Select'  { @('↑↓←→ move', 'Enter select') }
+        default   { @('↑↓←→ move', 'Enter run') }
     }
     if ($EscapeAction -eq 'Cancel') {
-        $parts += $(if ($Interaction -eq 'Confirm') { 'Esc cancels' } else { 'Esc returns' })
-    } elseif (-not $HasPages) {
-        $parts += 'Ctrl+C quits'
-    }
-    if ($HasPages) {
-        $parts += @('Wheel/Pg pages', 'Home/End edges')
+        $parts += $(if ($Interaction -eq 'Confirm') { 'Esc cancel' } else { 'Esc back' })
+    } else {
+        $parts += 'Ctrl+C quit'
     }
     return $parts -join '   '
+}
+
+function Get-GridPagingFooter {
+    param([switch]$HasPages)
+
+    if (-not $HasPages) { return '' }
+    return 'Wheel/PgUp/PgDn pages   Home/End first/latest'
 }
