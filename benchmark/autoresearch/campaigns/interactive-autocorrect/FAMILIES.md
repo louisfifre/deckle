@@ -48,7 +48,7 @@ become the high-trust profile even if UIA plus SendInput remains a broad fallbac
 | Forward-only Qwen scoring | research candidate; measured direct condition refuted | ACX-0012 fixed canonical two-candidate continuous-hot mixed-method p50/p95 is 393.180/537.587 ms. The relative-latency gate passed, but the 300 ms reference failed and `literal_ratures` remained a wrong internal selection. Shadow use is viable; anticipation is unrefuted but unestablished pending a joined eligibility, lead-time, lease, integration, and observed-target experiment. |
 | Reverse-only Qwen scoring | dominated by forward on measured evidence only | ACX-0012 reverse-only was slower than forward and worse on frozen visible internal-decision metrics. Combined was slower but linguistically better than reverse, so no universal dominance is claimed. |
 | Speculative Qwen on the production lane | refuted as scoped | ACX-0007 directly shows changing stale verdicts are rejected but obsolete single-flight work still blocks fresh work. It survives only with measured exact hits and separate ownership. |
-| Exact anticipation with a fast decider | active | ACX-0008 reproducibly shows a large fixed-duration 50–150 ms opportunity on the selected sample. Next: filter to exact candidate-eligible transactions and measure branch waste. |
+| Exact anticipation with a fast decider | reproducible replay baseline; integration active | ACX-0014 preserves 196 independently safe exact transactions after quarantining three boundary disagreements. Immediate 150 ms readiness is 186/196 (94.90%); a fixed dot branch hits 151/196 (77.04%), while four branches waste three jobs per hit. Next: measure real incremental preparation, scheduler ownership, lease safety, and observed visible latency. |
 | Batched/reused Qwen scoring | active feasibility research | ACX-0012 established the one-order boundary but forward p95 remained 537.587 ms in its measured condition. Next: verify shared-prefix/batch support and score equivalence before a prototype; no batching speedup is currently established. |
 | In-process Stopwatch stage attribution | refuted as scoped | Two designs preserved semantics but could not separate collector cost from a 140 ms immediate-repeat/position effect; ACX-0010 upper bounds were 65.097 ms and 8.562%. External GPU/ORT tracing remains a separate family. |
 | Deterministic unanimous global rules | candidate | Existing global `la/là` rule proves the contract shape, not residual coverage. Freeze a claim inventory on development data. |
@@ -101,6 +101,14 @@ become the high-trust profile even if UIA plus SendInput remains a broad fallbac
 - **Risks:** replay/surface drift, repair ambiguity, accidental text output.
 - **Falsifier:** eligible readiness below 50%, exact-branch hit below 25%, or more
   than three speculative runs per useful hit.
+- **Current evidence:** ACX-0014 passed the predeclared replay gates on 196 safe
+  exact transactions: immediate 150 ms readiness 94.90%, fixed-dot hit 77.04%,
+  and four-terminal structural waste exactly three jobs per hit. Three additional
+  captures were quarantined because production state and independent raw-stream
+  boundary evidence disagreed after the last observed terminal was erased. The
+  remaining unknowns are real pre-terminal preparation, scheduler contention,
+  application lease and observed visible mutation; no generator-coverage claim
+  follows from the replay.
 
 ### FAM-03 — deterministic unanimous global rules
 

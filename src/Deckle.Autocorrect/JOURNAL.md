@@ -5,6 +5,29 @@ type: module-journal
 
 # JOURNAL — Deckle.Autocorrect
 
+## 2026-07-30 — Safe anticipation exists, but only with immediate preparation
+
+ACX-0014 replayed the frozen private typing prefix through the current global
+transaction builder without inference or target mutation. It conserved all 199
+closed submissions exactly. Independent raw-stream boundary evidence disagreed
+with the production coordinator for three transactions after the last observed
+terminal was erased; those transactions are now reason-coded and quarantined.
+The remaining 196 exact transactions form the only safe metric population.
+
+An optimistic terminal oracle with no trigger delay was ready before punctuation
+for 186/196 transactions at a fixed 150 ms decision budget (94.90%). A 50 ms
+trigger delay reduced this to 164/196 (83.67%), and a 100 ms delay to 141/196
+(71.94%). A fixed dot branch exactly matched 151/196 terminals (77.04%); four
+terminal branches guaranteed the match but spent four jobs per hit. Simulating
+the ACX-0012 forward-only Qwen p50 and p95 as fixed durations yielded only
+92/196 (46.94%) and 61/196 (31.12%) readiness with an immediate trigger.
+
+Decision: anticipation remains an active architecture, but the useful shape is
+early incremental preparation plus a fast final decision, not current Qwen
+started at punctuation. These are replay-level lead-time and branch results, not
+generator coverage, scheduler, UIA, visible latency, applied precision, or field
+quality. Production behavior remains unchanged.
+
 ## 2026-07-30 — One-order Qwen halves measured scorer cost but stays non-terminal
 
 A clean whole-call ablation reproduced the earlier 35-case decisions and scores

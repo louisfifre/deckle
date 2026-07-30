@@ -263,6 +263,53 @@ Reconciliation SHA-256:
 Claim-audit SHA-256:
 `F72236564E08E65C13854C32E84914CBD602242AA268B7446E972AAD885BB052`.
 
+### ACX-0014 — provenance-safe candidate anticipation join
+
+ACX-0014 reran the frozen 1,033,605-byte private prefix through the current
+packaged-base global transaction builder from source commit `f29e7386`, with a
+committed pre-execution plan at repository HEAD `3beb8c23`. The Debug x64 probe
+build completed with zero warnings and errors. The replay exited zero in 5.88 s,
+emitted empty stderr, reproduced all ACX-0008 aggregate counts and source hashes,
+and produced zero suffix, transaction, protocol, historical-request,
+invalid-closed-request, nonterminal, or non-first-terminal counters.
+
+All 199 closed lane submissions reconcile. Three were captured after the last
+independently observed terminal had been erased. They reproduced ACX-0013's
+boundary disagreement exactly, are reason-coded `erased_last_observed_terminal`,
+and are quarantined before the candidate histogram, branch metrics, and
+readiness. The safe population is therefore 196 exact joined transactions.
+
+| Fixed decision duration | Trigger delay | Ready / safe | Ready rate |
+|---:|---:|---:|---:|
+| 150 ms | 0 ms | 186 / 196 | 94.90% |
+| 150 ms | 50 ms | 164 / 196 | 83.67% |
+| 150 ms | 100 ms | 141 / 196 | 71.94% |
+| 393.180 ms | 0 ms | 92 / 196 | 46.94% |
+| 537.587 ms | 0 ms | 61 / 196 | 31.12% |
+
+The 150 ms immediate hypothesis passed its predeclared 80% gate. The two longer
+durations are ACX-0012 forward-only Qwen p50/p95 values used as fixed simulated
+references; no inference ran here. Their lower readiness does not estimate a
+real anticipatory Qwen scheduler.
+
+The terminal oracle used 196 jobs for 196 exact hits. The fixed dot branch hit
+151/196 (77.04%), passing the 25% gate with 45 misses. Four fixed punctuation
+branches guaranteed 196 hits but used 784 jobs, exactly three wasted jobs per
+hit. This establishes a large cheap-branch opportunity and the cost of naive
+branch multiplication, not the value of a specific scorer.
+
+**Established:** exact aggregate replay integrity, explicit provenance
+quarantine, safe-subset branch arithmetic, and simulated decision-ready lead.
+**Interpretation:** a 50–150 ms decider deserves immediate or incremental
+preparation; current forward Qwen remains better suited to shadow, teacher, or
+separately owned speculative work. **Not established:** generator coverage,
+real pre-terminal candidate preparation, scheduler contention, Qwen execution,
+UIA or lease safety, injection, observed mutation, end-to-end visible latency,
+applied precision, or field quality.
+
+Raw output SHA-256:
+`27B6B95EECC64DDDBFD4F468A3D40A9E98327456DB38292D0E5ADC163792D32A`.
+
 ## Refuted or dominated families
 
 No complete end-to-end Pareto candidate is dominated yet. Four narrower claims
