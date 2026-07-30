@@ -51,6 +51,7 @@ doctrine). This file is generated from the Conventional-Commit history by
 - **playground:** Add delayed correction lab
 - **playground:** Export correction evidence
 - **autocorrect:** Add Qwen adapter compatibility probe
+- **changelog:** Commit menu refreshes
 
 ### Changed
 
@@ -58,6 +59,7 @@ doctrine). This file is generated from the Conventional-Commit history by
 - **autocorrect:** Collapse duplicate lexical pass
 - **autocorrect:** Bound sentence candidate search
 - **release:** Separate and harden publication flows
+- **scripts:** Remove obsolete menu paths
 
 ### Fixed
 
@@ -105,6 +107,8 @@ doctrine). This file is generated from the Conventional-Commit history by
 - **scripts:** Restore menu visual hierarchy
 - **scripts:** Preserve menu breadcrumb context
 - **scripts:** Restore statistics navigation depth
+- **autocorrect:** Repair merged validation contracts
+- **launcher:** Adapt action logs to terminal width
 
 ## [0.14.1](https://github.com/louisfifre/deckle/compare/v0.14.0...v0.14.1) — 2026-07-20
 
