@@ -8,7 +8,7 @@
 # breadcrumb stay fixed while native output scrolls below them with the colors
 # chosen by the emitting tool. Back/cancel returns to the previous menu.
 #
-# Every concrete action delegates to a single-purpose script in scripts/lib/;
+# Every concrete action delegates to a single-purpose script in scripts/commands/;
 # those scripts remain usable on their own CLI for automation.
 
 [CmdletBinding()]
@@ -16,9 +16,10 @@ param()
 
 $ErrorActionPreference = 'Stop'
 $ScriptDir = $PSScriptRoot
-$LibDir    = Join-Path $ScriptDir 'lib'
+$CommandDir = Join-Path $ScriptDir 'commands'
+$LibDir     = Join-Path $ScriptDir 'lib'
 
-Import-Module (Join-Path $LibDir '_menu.psm1') -Force
+Import-Module (Join-Path $LibDir 'menu.psm1') -Force
 . (Join-Path $LibDir 'launcher\context.ps1')
 . (Join-Path $LibDir 'launcher\action-results.ps1')
 . (Join-Path $LibDir 'launcher\actions.ps1')

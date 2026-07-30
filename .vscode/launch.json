@@ -6,7 +6,7 @@
     //   - pick action (Launch, Build, Clean, Stats, Bootstrap)
     //   - per-worktree actions then prompt for a worktree.
     // VSCodium reste ouvert sur main, on choisit la branche et l'action
-    // sans switcher. Voir scripts/deckle.ps1 et scripts/lib/_menu.psm1.
+    // sans switcher. Voir scripts/deckle.ps1 et scripts/lib/menu.psm1.
     //
     // Le profil "Quick build" garde le raccourci direct sur build-run.ps1
     // pour build & run Release sur le worktree choisi.
@@ -23,7 +23,7 @@
             "name": "Quick build: pick worktree (Release)",
             "type": "PowerShell",
             "request": "launch",
-            "script": "${workspaceFolder}/scripts/lib/build-run.ps1",
+            "script": "${workspaceFolder}/scripts/commands/build-run.ps1",
             "args": [ "-Pick" ],
             "cwd": "${workspaceFolder}"
         }

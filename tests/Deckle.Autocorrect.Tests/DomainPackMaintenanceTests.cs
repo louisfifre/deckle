@@ -8,7 +8,7 @@ namespace Deckle.Autocorrect.Tests;
 
 // The maintainer's domain-pack gestures, expressed as tests like build-data.
 // BuildFrItPack / BuildEnItPack fabricate the computing packs from the kaikki
-// fr- and en-wiktionary dumps (fetched by scripts/lib/fetch-autocorrect-data.ps1
+// fr- and en-wiktionary dumps (fetched by scripts/commands/fetch-autocorrect-data.ps1
 // -IncludeKaikki) and write their artifacts under src/Deckle.Autocorrect/Data/
 // plus their fabrication report and judge worksheet under
 // src/Deckle.Autocorrect.Lab/PackReports/. The matching keyboard-quality
@@ -36,7 +36,7 @@ public sealed class DomainPackMaintenanceTests(ITestOutputHelper output)
 
         Assert.SkipUnless(
             File.Exists(dumpPath),
-            $"Kaikki dump absent at {dumpPath} — run scripts/lib/fetch-autocorrect-data.ps1 -IncludeKaikki first.");
+            $"Kaikki dump absent at {dumpPath} — run scripts/commands/fetch-autocorrect-data.ps1 -IncludeKaikki first.");
         Assert.SkipUnless(
             File.Exists(frenchPath),
             $"Base French lexicon absent at {frenchPath} — run the build-data gesture first.");
@@ -82,7 +82,7 @@ public sealed class DomainPackMaintenanceTests(ITestOutputHelper output)
 
         Assert.SkipUnless(
             File.Exists(dumpPath),
-            $"Kaikki dump absent at {dumpPath} — run scripts/lib/fetch-autocorrect-data.ps1 -IncludeKaikki first.");
+            $"Kaikki dump absent at {dumpPath} — run scripts/commands/fetch-autocorrect-data.ps1 -IncludeKaikki first.");
         Assert.SkipUnless(
             File.Exists(frenchPath),
             $"Base French lexicon absent at {frenchPath} — run the build-data gesture first.");

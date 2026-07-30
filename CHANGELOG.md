@@ -7,7 +7,7 @@ the project adheres to [Semantic Versioning](https://semver.org/). Deckle has no
 public API: the version is read at the **user/behaviour** level, and during the
 `0.x` phase any release may change behaviour (see the `deckle-versioning`
 doctrine). This file is generated from the Conventional-Commit history by
-`scripts/lib/changelog.ps1` — do not edit it by hand.
+`scripts/commands/changelog.ps1` — do not edit it by hand.
 
 ## [Unreleased]
 
@@ -60,6 +60,11 @@ doctrine). This file is generated from the Conventional-Commit history by
 - **autocorrect:** Bound sentence candidate search
 - **release:** Separate and harden publication flows
 - **scripts:** Remove obsolete menu paths
+- **scripts:** Separate commands from infrastructure
+
+### Removed
+
+- **playground:** Remove unsupported caret assumption
 
 ### Fixed
 
