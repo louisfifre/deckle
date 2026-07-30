@@ -8,46 +8,18 @@ public sealed partial class OnnxSentenceScorer
     internal SentenceBatchExperimentOutcome ScoreBatchExperimental(
         IReadOnlyList<string> candidates)
     {
-        if (candidates.Count != 2)
-            return SentenceBatchExperimentOutcome.Failed("input", "candidate_count");
-        if (candidates.Any(static candidate => string.IsNullOrWhiteSpace(candidate)))
-            return SentenceBatchExperimentOutcome.Failed("input", "empty_candidate");
-        if (_vocabSize <= 0)
-            return SentenceBatchExperimentOutcome.Failed("input", "vocab_size_missing");
+        BatchInputPreparation preparation = PrepareBatchInput(candidates);
+        if (!preparation.TechnicallyValid)
+            return SentenceBatchExperimentOutcome.Failed(
+                preparation.FailureStage!,
+                preparation.FailureReason!);
 
-        string prompt = BuildScoringPrompt(candidates);
-        int[] promptTokens = AddBosIfNeeded(Encode(prompt));
-        if (promptTokens.Length == 0)
-            return SentenceBatchExperimentOutcome.Failed("tokenization", "empty_prompt");
-
-        int[][] completionTokens = candidates
-            .Select(candidate => StripBos(Encode(candidate + "\n")))
-            .ToArray();
-        CandidateCompletionPlan[] plans = CandidateCompletionPlan.Create(completionTokens);
-        if (plans.Length != 2)
-            return SentenceBatchExperimentOutcome.Failed("planning", "plan_count");
-
-        int[][] expectedInputs = new int[2][];
-        for (int batchIndex = 0; batchIndex < 2; batchIndex++)
-        {
-            CandidateCompletionPlan plan = plans[batchIndex];
-            if (completionTokens[batchIndex].Length == 0
-                || plan.Count <= 0
-                || plan.Start < 0
-                || plan.EndExclusive > completionTokens[batchIndex].Length)
-            {
-                return SentenceBatchExperimentOutcome.Failed("planning", "invalid_completion_plan");
-            }
-
-            expectedInputs[batchIndex] = ComposeBatchInput(
-                promptTokens,
-                completionTokens[batchIndex],
-                plan.EndExclusive);
-        }
-
+        string prompt = preparation.Prompt!;
+        int[] promptTokens = preparation.PromptTokens;
+        int[][] completionTokens = preparation.CompletionTokens;
+        CandidateCompletionPlan[] plans = preparation.Plans;
+        int[][] expectedInputs = preparation.ExpectedInputs;
         int sequenceLength = expectedInputs[0].Length;
-        if (sequenceLength != expectedInputs[1].Length)
-            return SentenceBatchExperimentOutcome.Failed("input_geometry", "unequal_sequence_lengths");
 
         using Sequences sequences = _tokenizer.EncodeBatch([prompt, prompt]);
         if (sequences.NumSequences != 2)
@@ -138,6 +110,83 @@ public sealed partial class OnnxSentenceScorer
             null);
     }
 
+    internal SentenceBatchInputGeometry InspectBatchInputExperimental(
+        IReadOnlyList<string> candidates)
+    {
+        BatchInputPreparation preparation = PrepareBatchInput(candidates);
+        return new SentenceBatchInputGeometry(
+            preparation.TechnicallyValid,
+            preparation.PromptTokens.Length,
+            preparation.ExpectedInputs.Select(static input => input.Length).ToArray(),
+            preparation.Plans.Select(static plan => plan.Count).ToArray(),
+            preparation.FailureStage,
+            preparation.FailureReason);
+    }
+
+    private BatchInputPreparation PrepareBatchInput(
+        IReadOnlyList<string> candidates)
+    {
+        if (candidates.Count != 2)
+            return BatchInputPreparation.Failed("input", "candidate_count");
+        if (candidates.Any(static candidate => string.IsNullOrWhiteSpace(candidate)))
+            return BatchInputPreparation.Failed("input", "empty_candidate");
+        if (_vocabSize <= 0)
+            return BatchInputPreparation.Failed("input", "vocab_size_missing");
+
+        string prompt = BuildScoringPrompt(candidates);
+        int[] promptTokens = AddBosIfNeeded(Encode(prompt));
+        if (promptTokens.Length == 0)
+            return BatchInputPreparation.Failed("tokenization", "empty_prompt");
+
+        int[][] completionTokens = candidates
+            .Select(candidate => StripBos(Encode(candidate + "\n")))
+            .ToArray();
+        CandidateCompletionPlan[] plans = CandidateCompletionPlan.Create(completionTokens);
+        if (plans.Length != 2)
+            return BatchInputPreparation.Failed("planning", "plan_count");
+
+        int[][] expectedInputs = new int[2][];
+        for (int batchIndex = 0; batchIndex < 2; batchIndex++)
+        {
+            CandidateCompletionPlan plan = plans[batchIndex];
+            if (completionTokens[batchIndex].Length == 0
+                || plan.Count <= 0
+                || plan.Start < 0
+                || plan.EndExclusive > completionTokens[batchIndex].Length)
+            {
+                return BatchInputPreparation.Failed(
+                    "planning",
+                    "invalid_completion_plan");
+            }
+
+            expectedInputs[batchIndex] = ComposeBatchInput(
+                promptTokens,
+                completionTokens[batchIndex],
+                plan.EndExclusive);
+        }
+
+        if (expectedInputs[0].Length != expectedInputs[1].Length)
+        {
+            return new BatchInputPreparation(
+                prompt,
+                promptTokens,
+                completionTokens,
+                plans,
+                expectedInputs,
+                "input_geometry",
+                "unequal_sequence_lengths");
+        }
+
+        return new BatchInputPreparation(
+            prompt,
+            promptTokens,
+            completionTokens,
+            plans,
+            expectedInputs,
+            null,
+            null);
+    }
+
     internal static int[] ComposeBatchInput(
         IReadOnlyList<int> promptTokens,
         IReadOnlyList<int> completionTokens,
@@ -204,6 +253,27 @@ public sealed partial class OnnxSentenceScorer
             _margin,
             cleared ? null : SentenceScoringOutcome.AbstainReasons.BelowMargin);
     }
+
+    private sealed record BatchInputPreparation(
+        string? Prompt,
+        int[] PromptTokens,
+        int[][] CompletionTokens,
+        CandidateCompletionPlan[] Plans,
+        int[][] ExpectedInputs,
+        string? FailureStage,
+        string? FailureReason)
+    {
+        public bool TechnicallyValid => FailureStage is null && FailureReason is null;
+
+        public static BatchInputPreparation Failed(string stage, string reason) => new(
+            null,
+            Array.Empty<int>(),
+            Array.Empty<int[]>(),
+            Array.Empty<CandidateCompletionPlan>(),
+            Array.Empty<int[]>(),
+            stage,
+            reason);
+    }
 }
 
 internal sealed record SentenceBatchExperimentOutcome(
@@ -222,3 +292,11 @@ internal sealed record SentenceBatchExperimentOutcome(
     public static SentenceBatchExperimentOutcome Failed(string stage, string reason) =>
         new(null, 0, 0, Array.Empty<long>(), null, stage, reason);
 }
+
+internal sealed record SentenceBatchInputGeometry(
+    bool TechnicallyValid,
+    int PromptTokens,
+    IReadOnlyList<int> SequenceLengths,
+    IReadOnlyList<int> ScoredTokenCounts,
+    string? FailureStage,
+    string? FailureReason);

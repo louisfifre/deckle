@@ -250,6 +250,87 @@ public sealed class SentenceBatchExperimentTests
             fasterBlocks: 5));
     }
 
+    [Fact]
+    public void FixtureSelectionChoosesTheFirstEligiblePairWithoutExtraInspection()
+    {
+        CorrectionBenchmarkCase[] corpus =
+        [
+            Case("three", ["one", "two", "three"]),
+            Case("unequal", ["one", "two"]),
+            Case("first-valid", ["one", "two"]),
+            Case("later-valid", ["one", "two"]),
+        ];
+        var inspected = new List<string>();
+
+        SentenceBatchFixtureSelection selected =
+            SentenceBatchExperimentCommand.SelectFixture(corpus, candidates =>
+            {
+                string id = corpus.Single(item =>
+                    ReferenceEquals(item.Candidates, candidates)).Id;
+                inspected.Add(id);
+                return id == "unequal"
+                    ? Geometry(
+                        technicallyValid: false,
+                        failureStage: "input_geometry",
+                        failureReason: "unequal_sequence_lengths")
+                    : Geometry(technicallyValid: true);
+            });
+
+        Assert.Equal(2, selected.CorpusIndex);
+        Assert.Equal("first-valid", selected.Case.Id);
+        Assert.Equal(["unequal", "first-valid"], inspected);
+    }
+
+    [Theory]
+    [InlineData("tokenization", "unequal_sequence_lengths")]
+    [InlineData("input_geometry", "unexpected_length")]
+    [InlineData(null, null)]
+    public void FixtureSelectionAbortsOnEveryOtherPreparationFailure(
+        string? failureStage,
+        string? failureReason)
+    {
+        CorrectionBenchmarkCase[] corpus =
+        [
+            Case("invalid", ["one", "two"]),
+            Case("would-be-valid", ["one", "two"]),
+        ];
+        int inspectionCount = 0;
+
+        InvalidOperationException error = Assert.Throws<InvalidOperationException>(
+            () => SentenceBatchExperimentCommand.SelectFixture(corpus, _ =>
+            {
+                inspectionCount++;
+                return Geometry(
+                    technicallyValid: false,
+                    failureStage,
+                    failureReason);
+            }));
+
+        Assert.Equal(1, inspectionCount);
+        Assert.Contains(failureStage ?? string.Empty, error.Message);
+        Assert.Contains(failureReason ?? string.Empty, error.Message);
+    }
+
+    private static CorrectionBenchmarkCase Case(
+        string id,
+        string[] candidates) => new(
+            id,
+            Category: "synthetic",
+            LiteralIndex: 0,
+            GoldIndex: candidates.Length - 1,
+            candidates);
+
+    private static SentenceBatchInputGeometry Geometry(
+        bool technicallyValid,
+        string? failureStage = null,
+        string? failureReason = null) => new(
+            technicallyValid,
+            PromptTokens: 10,
+            SequenceLengths: [20, 20],
+            ScoredTokenCounts: [5, 5],
+            failureStage,
+            failureReason);
+
     private static SentenceBatchOutcomeSummary Outcome(
         IReadOnlyList<double> scores,
         IReadOnlyList<double> logProbabilities,

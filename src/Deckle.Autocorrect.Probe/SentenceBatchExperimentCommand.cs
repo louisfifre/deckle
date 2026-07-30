@@ -48,17 +48,16 @@ internal static class SentenceBatchExperimentCommand
         long loadTicks = Stopwatch.GetTimestamp() - loadStarted;
         ProcessSnapshot afterLoad = Snapshot(process);
 
-        ProfileCandidateSet canonical = SentenceProfileFixture.Candidates(
-            candidateCount: 2,
-            rotation: 0);
+        SentenceBatchFixtureSelection fixture = SelectFixture(scorer);
+        IReadOnlyList<string> canonicalCandidates = fixture.Case.Candidates;
         var warmups = new List<SentenceBatchExperimentCall>();
         var warmupEquivalence = new List<bool>();
         for (int pair = 0; pair < SentenceBatchExperimentFixture.WarmupPairs; pair++)
         {
             IReadOnlyList<string> presentation =
                 SentenceBatchExperimentFixture.WarmupUsesReversedPresentation(pair)
-                    ? canonical.Texts.Reverse().ToArray()
-                    : canonical.Texts;
+                    ? canonicalCandidates.Reverse().ToArray()
+                    : canonicalCandidates;
             IReadOnlyList<SentenceBatchExperimentMethod> methods =
                 SentenceBatchExperimentFixture.WarmupMethods(pair);
             var pairCalls = new List<SentenceBatchExperimentCall>(methods.Count);
@@ -91,7 +90,7 @@ internal static class SentenceBatchExperimentCommand
             {
                 SentenceBatchExperimentCall call = RunCall(
                     scorer,
-                    canonical.Texts,
+                    canonicalCandidates,
                     phase: "latency",
                     block,
                     position,
@@ -106,7 +105,7 @@ internal static class SentenceBatchExperimentCommand
         ProcessSnapshot afterLatency = Snapshot(process);
         SentenceBatchCombinedControl combinedControl = RunCombinedControl(
             scorer,
-            canonical.Texts);
+            canonicalCandidates);
         ProcessSnapshot afterControl = Snapshot(process);
 
         bool callsTechnicallyValid = warmups.Concat(latencyCalls)
@@ -155,6 +154,12 @@ internal static class SentenceBatchExperimentCommand
             model.Label,
             model.Directory,
             parsed.Provider,
+            fixture.CorpusIndex,
+            fixture.Case.Id,
+            fixture.Case.Category,
+            fixture.Case.LiteralIndex,
+            fixture.Case.GoldIndex,
+            fixture.Geometry,
             Stopwatch.Frequency,
             loadTicks,
             beforeLoad,
@@ -181,6 +186,47 @@ internal static class SentenceBatchExperimentCommand
             warmups,
             latencyCalls,
             blockReports);
+    }
+
+    private static SentenceBatchFixtureSelection SelectFixture(
+        OnnxSentenceScorer scorer)
+        => SelectFixture(
+            CorrectionBenchmarkCorpus.All,
+            scorer.InspectBatchInputExperimental);
+
+    internal static SentenceBatchFixtureSelection SelectFixture(
+        IReadOnlyList<CorrectionBenchmarkCase> corpus,
+        Func<string[], SentenceBatchInputGeometry> inspect)
+    {
+        ArgumentNullException.ThrowIfNull(corpus);
+        ArgumentNullException.ThrowIfNull(inspect);
+
+        for (int index = 0; index < corpus.Count; index++)
+        {
+            CorrectionBenchmarkCase candidate = corpus[index];
+            if (candidate.Candidates.Length != 2)
+                continue;
+
+            SentenceBatchInputGeometry geometry = inspect(candidate.Candidates);
+            if (geometry.TechnicallyValid)
+                return new SentenceBatchFixtureSelection(index, candidate, geometry);
+            if (string.Equals(
+                    geometry.FailureStage,
+                    "input_geometry",
+                    StringComparison.Ordinal)
+                && string.Equals(
+                    geometry.FailureReason,
+                    "unequal_sequence_lengths",
+                    StringComparison.Ordinal))
+                continue;
+
+            throw new InvalidOperationException(
+                $"Batch fixture selection failed at {geometry.FailureStage}: "
+                + geometry.FailureReason);
+        }
+
+        throw new InvalidOperationException(
+            "No two-candidate visible benchmark case has equal exact token lengths.");
     }
 
     private static SentenceBatchExperimentCall RunCall(
@@ -517,6 +563,12 @@ internal sealed record SentenceBatchExperimentReport(
     string ModelLabel,
     string ModelDirectory,
     string Provider,
+    int FixtureCorpusIndex,
+    string FixtureId,
+    string FixtureCategory,
+    int FixtureLiteralIndex,
+    int FixtureGoldIndex,
+    SentenceBatchInputGeometry FixtureGeometry,
     long StopwatchFrequency,
     long ModelLoadTicks,
     ProcessSnapshot BeforeLoad,
@@ -582,3 +634,8 @@ internal sealed record SentenceBatchCombinedControl(
     bool Equivalent,
     string? FailureStage,
     string? FailureReason);
+
+internal sealed record SentenceBatchFixtureSelection(
+    int CorpusIndex,
+    CorrectionBenchmarkCase Case,
+    SentenceBatchInputGeometry Geometry);
