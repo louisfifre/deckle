@@ -21,13 +21,16 @@ internal sealed class BenchmarkKeyboardSession : IDisposable
     private readonly AutocorrectEngine _engine;
     private readonly Action<CommitCostSample>? _costSink;
     private readonly CandidateCommitCollector? _candidateCollector;
+    private double _timestampMs;
 
     public BenchmarkKeyboardSession(
         ICorrectionPolicy policy,
         IFrequencyLexicon french,
         IFrequencyLexicon english,
         IAmbiguityProbe? probe = null,
+        IAmbiguityProbe? wholeSentenceProbe = null,
         ISentenceReranker? reranker = null,
+        IRerankLane? rerankLaneOverride = null,
         bool recordCorrections = false,
         Action<CommitCostSample>? costSink = null,
         CandidateCommitCollector? candidateCollector = null)
@@ -60,10 +63,13 @@ internal sealed class BenchmarkKeyboardSession : IDisposable
             french: french,
             english: english,
             reranker: reranker,
-            probe: probe);
+            probe: probe,
+            wholeSentenceProbe: wholeSentenceProbe,
+            rerankLaneOverride: rerankLaneOverride);
 
         if (recordCorrections)
             _engine.CorrectionApplied += Applied.Add;
+        _engine.InjectionFailed += (_, _) => InjectionFailureCount++;
 
         if (!_engine.Start())
             throw new InvalidOperationException("The benchmark keyboard engine did not start.");
@@ -71,18 +77,30 @@ internal sealed class BenchmarkKeyboardSession : IDisposable
 
     public List<CorrectionDecision> Applied { get; } = new();
 
+    public int InjectionFailureCount { get; private set; }
+
     public string VisibleText => _surface.Text;
 
-    public void BeginScenario()
+    public void BeginScenario(bool startsAfterObservedEnter = false)
     {
         _surface.Clear();
         Applied.Clear();
+        _timestampMs = 0.0;
         _host.RaiseFocusChanged();
+        if (startsAfterObservedEnter)
+        {
+            _host.RaiseKey(new KeyboardKeyEvent(
+                VirtualKey: 0x0D,
+                ScanCode: 0,
+                IsKeyDown: true,
+                IsExtended: false,
+                IsInjected: false,
+                TimestampMs: _timestampMs));
+        }
     }
 
     public void Type(string text, int interKeyMs = 35)
     {
-        double timestampMs = 0.0;
         foreach (char value in text)
         {
             string currentWord = _tracker.CurrentWord;
@@ -96,8 +114,8 @@ internal sealed class BenchmarkKeyboardSession : IDisposable
                 _host.RaiseKey(new KeyboardKeyEvent(
                     virtualKey, ScanCode: 0, IsKeyDown: true,
                     IsExtended: false, IsInjected: false,
-                    TimestampMs: timestampMs));
-                timestampMs += interKeyMs;
+                    TimestampMs: _timestampMs));
+                _timestampMs += interKeyMs;
                 continue;
             }
 
@@ -110,7 +128,7 @@ internal sealed class BenchmarkKeyboardSession : IDisposable
             _host.RaiseKey(new KeyboardKeyEvent(
                 virtualKey, ScanCode: 0, IsKeyDown: true,
                 IsExtended: false, IsInjected: false,
-                TimestampMs: timestampMs));
+                TimestampMs: _timestampMs));
 
             if (_costSink is not null)
             {
@@ -119,8 +137,20 @@ internal sealed class BenchmarkKeyboardSession : IDisposable
                 _costSink(new CommitCostSample(currentWord, elapsed, allocated));
             }
             _candidateCollector?.End();
-            timestampMs += interKeyMs;
+            _timestampMs += interKeyMs;
         }
+    }
+
+    public void Backspace()
+    {
+        _surface.Backspace();
+        _host.RaiseKey(new KeyboardKeyEvent(
+            VirtualKey: 0x08,
+            ScanCode: 0,
+            IsKeyDown: true,
+            IsExtended: false,
+            IsInjected: false,
+            TimestampMs: _timestampMs));
     }
 
     public void Dispose() => _engine.Dispose();
@@ -244,9 +274,6 @@ internal sealed class BenchmarkKeyboardHost : IKeyboardInputHost
     public bool Start() => true;
     public void Stop() { }
 
-    // The benchmark measures the synchronous commit path. Sentence inference is
-    // intentionally not drained onto this thread; its independently calibrated
-    // model latency belongs to the existing scorer benchmark.
     public void RequestDrain() { }
 
     public void RaiseKey(KeyboardKeyEvent value) => KeyReceived?.Invoke(value);
@@ -274,6 +301,12 @@ internal sealed class BenchmarkTextSurface
     public void Clear() => _text.Clear();
 
     public void Type(char value) => _text.Append(value);
+
+    public void Backspace()
+    {
+        if (_text.Length > 0)
+            _text.Length--;
+    }
 
     public bool ReplaceSuffix(string current, string target)
     {

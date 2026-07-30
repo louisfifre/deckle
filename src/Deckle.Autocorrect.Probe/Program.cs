@@ -14,6 +14,7 @@ return parsed.Mode switch
     ProbeMode.AutocorrectBenchmark => AutocorrectBenchmarkCommand.Run(parsed),
     ProbeMode.StaleWork => StaleWorkProbeCommand.Run(parsed),
     ProbeMode.AnticipationLead => AnticipationLeadOracleCommand.Run(parsed),
+    ProbeMode.AnticipationTransactionJoin => AnticipationTransactionJoinCommand.Run(parsed),
     ProbeMode.SentenceProfile => SentenceProfileCommand.Run(parsed),
     ProbeMode.SentenceCalibration => SentenceCalibrationCommand.Run(parsed),
     ProbeMode.SentenceCanonicalLatency => SentenceCanonicalLatencyCommand.Run(parsed),

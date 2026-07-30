@@ -9,6 +9,7 @@ internal enum ProbeMode
     AutocorrectBenchmark,
     StaleWork,
     AnticipationLead,
+    AnticipationTransactionJoin,
     SentenceProfile,
     SentenceCalibration,
     SentenceCanonicalLatency,
@@ -96,6 +97,15 @@ internal sealed class ProbeArguments
                 if (modeSelected)
                     return null;
                 mode = ProbeMode.AnticipationLead;
+                modeSelected = true;
+                continue;
+            }
+
+            if (arg is "--anticipation-transaction-join")
+            {
+                if (modeSelected)
+                    return null;
+                mode = ProbeMode.AnticipationTransactionJoin;
                 modeSelected = true;
                 continue;
             }
@@ -261,12 +271,16 @@ internal sealed class ProbeArguments
             return null;
         if ((delaySpecified || maxCharactersSpecified) && mode != ProbeMode.CaretContext)
             return null;
-        if (streamPath is not null && mode != ProbeMode.AnticipationLead)
+        if (streamPath is not null
+            && mode is not ProbeMode.AnticipationLead
+                and not ProbeMode.AnticipationTransactionJoin)
             return null;
-        if (streamBytesSpecified && mode != ProbeMode.AnticipationLead)
+        if (streamBytesSpecified
+            && mode is not ProbeMode.AnticipationLead
+                and not ProbeMode.AnticipationTransactionJoin)
             return null;
 
-        if (mode == ProbeMode.AnticipationLead)
+        if (mode is ProbeMode.AnticipationLead or ProbeMode.AnticipationTransactionJoin)
         {
             if (string.IsNullOrWhiteSpace(streamPath)
                 || models.Count > 0 || thresholds.Count > 0 || candidates.Count > 0
@@ -518,6 +532,7 @@ internal static class ProbeUsage
         Console.Error.WriteLine("  Deckle.Autocorrect.Probe --autocorrect-benchmark [--iterations <n>] [--json]");
         Console.Error.WriteLine("  Deckle.Autocorrect.Probe --stale-work-probe [--iterations <n>]");
         Console.Error.WriteLine("  Deckle.Autocorrect.Probe --anticipation-lead-oracle --stream <autocorrect.stream.jsonl> [--stream-bytes <n>]");
+        Console.Error.WriteLine("  Deckle.Autocorrect.Probe --anticipation-transaction-join --stream <autocorrect.stream.jsonl> [--stream-bytes <n>]");
         Console.Error.WriteLine("  Deckle.Autocorrect.Probe --sentence-profile [--model <dir>] [--provider <cpu|dml>] [--iterations <rounds>]");
         Console.Error.WriteLine("  Deckle.Autocorrect.Probe --sentence-calibration [--model <dir>] [--provider <cpu|dml>]");
         Console.Error.WriteLine("  Deckle.Autocorrect.Probe --sentence-canonical-latency [--model <dir>] [--provider <cpu|dml>]");

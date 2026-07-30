@@ -133,7 +133,7 @@ internal static class AutocorrectBenchmarkCommand
     private static string Format(double value, string format) =>
         value.ToString(format, CultureInfo.InvariantCulture);
 
-    private static string? ResolveDataDirectory()
+    internal static string? ResolveDataDirectory()
     {
         string direct = Path.Combine(AppContext.BaseDirectory, "Data");
         if (HasFrenchLexicon(direct))
