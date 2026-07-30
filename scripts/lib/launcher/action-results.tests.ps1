@@ -29,6 +29,12 @@ $structured = @(ConvertTo-DeckleActionLogRecords -InputObject $hostWarning -Sour
 Assert-Equal 'Warning' $structured[0].Level 'host color provides a structured internal log level'
 Assert-Equal ([ConsoleColor]::Yellow) $structured[0].ForegroundColor 'host color is retained for menu rendering'
 
+$msbuildSuccess = @(ConvertTo-DeckleActionLogRecords -InputObject '  Deckle.App -> D:\projects\ai\deckle\artifacts\bin\Deckle.App.dll' -Source Build)
+Assert-Equal '  Deckle.App -> D:\projects\ai\deckle\artifacts\bin\Deckle.App.dll' $msbuildSuccess[0].Message 'MSBuild success output remains raw'
+Assert-Equal ([ConsoleColor]::Green) $msbuildSuccess[0].ForegroundColor 'compiled Deckle module is shown as successful'
+$nonDeckleBuild = @(ConvertTo-DeckleActionLogRecords -InputObject '  Microsoft.WindowsAppSDK -> D:\packages\Microsoft.WindowsAppSDK.dll' -Source Build)
+Assert-Equal ([ConsoleColor]::Gray) $nonDeckleBuild[0].ForegroundColor 'unrelated native output keeps the neutral fallback'
+
 $escape = [char]27
 $bell = [char]7
 $terminalOutput = "${escape}[31mfirst${escape}[0m`rsecond${escape}]9;4;1;50${bell}`b"
@@ -46,7 +52,12 @@ function Update-GridStatusView {
     $script:ActionViewUpdateCount++
     return $View
 }
+function Set-DeckleActionCursorVisible {
+    param([bool]$Visible)
+    $script:ActionCursorVisibility.Add($Visible)
+}
 $script:ActionViewUpdateCount = 0
+$script:ActionCursorVisibility = [System.Collections.Generic.List[bool]]::new()
 $menuRows = @(@{ Cells = @( @{ Label = 'Build' } ) })
 
 $success = Invoke-DeckleMenuAction -Header Deckle -Label Build -Source Build -MenuRows $menuRows -Action {
@@ -59,13 +70,17 @@ Assert-Equal 2 $success.Lines.Count 'output and host streams are both retained'
 Assert-Equal 'restore completed' $success.Lines[0].Text 'plain output remains raw'
 Assert-Equal ([ConsoleColor]::Green) $success.Lines[1].ForegroundColor 'PowerShell host color reaches the menu result'
 Assert-Equal $true ($script:ActionViewUpdateCount -gt 0) 'captured output updates the existing action view'
+Assert-Equal $false $script:ActionCursorVisibility[0] 'live rendering hides the moving cursor'
+Assert-Equal $true $script:ActionCursorVisibility[1] 'completed rendering restores the cursor'
 
+$script:ActionCursorVisibility.Clear()
 $failure = Invoke-DeckleMenuAction -Header Deckle -Label Build -Source Build -MenuRows $menuRows -Action {
     Write-Output 'restore completed'
     throw 'compiler stopped'
 }
 Assert-Equal $false $failure.Succeeded 'terminating action error reports failure'
 Assert-Equal $true ((@($failure.Lines | ForEach-Object Text) -join "`n") -like '*compiler stopped*') 'failure reason stays in the log'
+Assert-Equal $true $script:ActionCursorVisibility[1] 'failed rendering also restores the cursor'
 
 $partial = Invoke-DeckleMenuAction -Header Deckle -Label Setup -Source Setup -MenuRows $menuRows -Action {
     Write-Host '  Result        : Partial'

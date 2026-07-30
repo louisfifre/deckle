@@ -45,12 +45,17 @@ function ConvertFrom-DeckleTerminalOutput {
 function Get-DeckleActionLogColor {
     param(
         [Parameter(Mandatory)][string]$Level,
+        [Parameter(Mandatory)][string]$Message,
         [AllowNull()]$InputObject
     )
 
     if ($InputObject -is [System.Management.Automation.InformationRecord] -and
         $InputObject.MessageData -is [System.Management.Automation.HostInformationMessage]) {
         return [ConsoleColor]$InputObject.MessageData.ForegroundColor
+    }
+
+    if ($Message -match '^\s*Deckle\.\S+\s+->\s+\S.*$') {
+        return [ConsoleColor]::Green
     }
 
     $color = switch ($Level) {
@@ -78,8 +83,19 @@ function ConvertTo-DeckleActionLogRecords {
             Level     = $level
             Source    = $Source
             Message   = $message.TrimEnd()
-            ForegroundColor = Get-DeckleActionLogColor -Level $level -InputObject $InputObject
+            ForegroundColor = Get-DeckleActionLogColor -Level $level -Message $message -InputObject $InputObject
         }
+    }
+}
+
+function Set-DeckleActionCursorVisible {
+    param([Parameter(Mandatory)][bool]$Visible)
+
+    if ([Console]::IsOutputRedirected) { return }
+    try {
+        [Console]::CursorVisible = $Visible
+    } catch {
+        # Non-interactive hosts can reject cursor visibility changes.
     }
 }
 
@@ -135,43 +151,47 @@ function Invoke-DeckleMenuAction {
     $succeeded = $true
     $reportedResult = $null
 
-    $view = New-GridStatusView `
-        -Header $Header `
-        -Rows $MenuRows `
-        -Title (Get-DeckleActionResultTitle -Label $Label -State Running -Elapsed $timer.Elapsed) `
-        -Lines @('Waiting for output…') `
-        -Footer 'Live output follows the latest line; controls return when the action completes' `
-        -Follow
-
+    Set-DeckleActionCursorVisible -Visible $false
     try {
-        & $Action *>&1 | ForEach-Object {
-            $rawOutput = ConvertFrom-DeckleTerminalOutput -InputObject $_
-            foreach ($rawLine in @($rawOutput -split "\n")) {
-                if ($rawLine -match '^\s*Result\s*:\s*(Success|Failed|Partial|Skipped)\s*$') {
-                    $reportedResult = $Matches[1]
+        $view = New-GridStatusView `
+            -Header $Header `
+            -Rows $MenuRows `
+            -Title (Get-DeckleActionResultTitle -Label $Label -State Running -Elapsed $timer.Elapsed) `
+            -Lines @('Waiting for output…') `
+            -Footer 'Live output follows the latest line; controls return when the action completes' `
+            -Follow
+
+        try {
+            & $Action *>&1 | ForEach-Object {
+                $rawOutput = ConvertFrom-DeckleTerminalOutput -InputObject $_
+                foreach ($rawLine in @($rawOutput -split "\n")) {
+                    if ($rawLine -match '^\s*Result\s*:\s*(Success|Failed|Partial|Skipped)\s*$') {
+                        $reportedResult = $Matches[1]
+                    }
+                }
+                foreach ($record in @(ConvertTo-DeckleActionLogRecords -InputObject $_ -Source $Source)) {
+                    $records.Add($record)
+                }
+                if (($timer.Elapsed - $lastRefresh) -ge $refreshInterval) {
+                    $view = Update-GridStatusView `
+                        -View $view `
+                        -Title (Get-DeckleActionResultTitle -Label $Label -State Running -Elapsed $timer.Elapsed) `
+                        -Lines @(ConvertTo-DeckleActionLogDisplayLines -Records @($records)) `
+                        -Follow
+                    $lastRefresh = $timer.Elapsed
                 }
             }
+        } catch {
+            $succeeded = $false
             foreach ($record in @(ConvertTo-DeckleActionLogRecords -InputObject $_ -Source $Source)) {
-                $records.Add($record)
-            }
-            if (($timer.Elapsed - $lastRefresh) -ge $refreshInterval) {
-                $view = Update-GridStatusView `
-                    -View $view `
-                    -Title (Get-DeckleActionResultTitle -Label $Label -State Running -Elapsed $timer.Elapsed) `
-                    -Lines @(ConvertTo-DeckleActionLogDisplayLines -Records @($records)) `
-                    -Follow
-                $lastRefresh = $timer.Elapsed
-            }
-        }
-    } catch {
-        $succeeded = $false
-        foreach ($record in @(ConvertTo-DeckleActionLogRecords -InputObject $_ -Source $Source)) {
-            if ($records.Count -eq 0 -or $records[$records.Count - 1].Message -ne $record.Message) {
-                $records.Add($record)
+                if ($records.Count -eq 0 -or $records[$records.Count - 1].Message -ne $record.Message) {
+                    $records.Add($record)
+                }
             }
         }
     } finally {
         $timer.Stop()
+        Set-DeckleActionCursorVisible -Visible $true
     }
 
     if ($records.Count -eq 0) {
