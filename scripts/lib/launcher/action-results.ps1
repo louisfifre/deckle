@@ -1,14 +1,31 @@
 # Captured launcher action output and persistent menu result formatting.
 
+$script:DeckleLogTimeMinimumWidth = 60
+$script:DeckleLogSourceMinimumWidth = 44
+
 function Get-DeckleActionLogLevel {
-    param([Parameter(Mandatory)][string]$Message)
+    param(
+        [Parameter(Mandatory)][string]$Message,
+        [AllowNull()]$InputObject
+    )
+
+    if ($Message -match '^\[summary\]') { return 'Summary' }
+
+    if ($InputObject -is [System.Management.Automation.InformationRecord] -and
+        $InputObject.MessageData -is [System.Management.Automation.HostInformationMessage]) {
+        switch ([string]$InputObject.MessageData.ForegroundColor) {
+            'Red'     { return 'Error' }
+            'Yellow'  { return 'Warning' }
+            'Cyan'    { return 'Step' }
+            'DarkCyan'{ return 'Step' }
+        }
+    }
 
     $meaningfulMessage = $Message `
         -replace '(?i)\b0\s+error(?:\(s\)|s)?\b', '' `
         -replace '(?i)\b0\s+warning(?:\(s\)|s)?\b', ''
     if ($meaningfulMessage -match '(?i)\b(error|failed|failure)\b') { return 'Error' }
     if ($meaningfulMessage -match '(?i)\bwarning\b') { return 'Warning' }
-    if ($Message -match '^\[summary\]') { return 'Summary' }
     if ($Message -match '^\[[a-z][a-z-]*\]') { return 'Step' }
     return 'Info'
 }
@@ -28,7 +45,7 @@ function ConvertFrom-DeckleTerminalOutput {
         -replace '[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]', '')
 }
 
-function ConvertTo-DeckleActionLogLines {
+function ConvertTo-DeckleActionLogRecords {
     param(
         [Parameter(Mandatory)]$InputObject,
         [Parameter(Mandatory)][string]$Source,
@@ -38,8 +55,51 @@ function ConvertTo-DeckleActionLogLines {
     $terminalText = ConvertFrom-DeckleTerminalOutput -InputObject $InputObject
     foreach ($message in @($terminalText -split "\n")) {
         if ([string]::IsNullOrWhiteSpace($message)) { continue }
-        $level = Get-DeckleActionLogLevel -Message $message
-        '{0}  {1,-7}  {2,-8}  {3}' -f $Timestamp.ToString('HH:mm:ss'), $level, $Source, $message.TrimEnd()
+        [pscustomobject]@{
+            Timestamp = $Timestamp
+            Level     = Get-DeckleActionLogLevel -Message $message -InputObject $InputObject
+            Source    = $Source
+            Message   = $message.TrimEnd()
+        }
+    }
+}
+
+function Format-DeckleActionLogRecord {
+    param(
+        [Parameter(Mandatory)]$Record,
+        [Parameter(Mandatory)][int]$ContentWidth
+    )
+
+    if ($ContentWidth -ge $script:DeckleLogTimeMinimumWidth) {
+        return '{0}  {1,-7}  {2,-8}  {3}' -f $Record.Timestamp.ToString('HH:mm:ss'), $Record.Level, $Record.Source, $Record.Message
+    }
+    if ($ContentWidth -ge $script:DeckleLogSourceMinimumWidth) {
+        return '{0,-7}  {1,-8}  {2}' -f $Record.Level, $Record.Source, $Record.Message
+    }
+    return '{0,-7}  {1}' -f $Record.Level, $Record.Message
+}
+
+function ConvertTo-DeckleActionLogLines {
+    param(
+        [Parameter(Mandatory)]$InputObject,
+        [Parameter(Mandatory)][string]$Source,
+        [datetime]$Timestamp = (Get-Date),
+        [int]$ContentWidth = 72
+    )
+
+    foreach ($record in @(ConvertTo-DeckleActionLogRecords -InputObject $InputObject -Source $Source -Timestamp $Timestamp)) {
+        Format-DeckleActionLogRecord -Record $record -ContentWidth $ContentWidth
+    }
+}
+
+function ConvertTo-DeckleActionLogDisplayLines {
+    param(
+        [Parameter(Mandatory)][AllowEmptyCollection()][object[]]$Records,
+        [int]$ContentWidth = 72
+    )
+
+    foreach ($record in $Records) {
+        Format-DeckleActionLogRecord -Record $record -ContentWidth $ContentWidth
     }
 }
 
@@ -63,7 +123,7 @@ function Invoke-DeckleMenuAction {
         [Parameter(Mandatory)][scriptblock]$Action
     )
 
-    $lines = [System.Collections.Generic.List[string]]::new()
+    $records = [System.Collections.Generic.List[object]]::new()
     $timer = [System.Diagnostics.Stopwatch]::StartNew()
     $refreshInterval = [timespan]::FromMilliseconds(100)
     $lastRefresh = [timespan]::Zero
@@ -86,39 +146,47 @@ function Invoke-DeckleMenuAction {
                     $reportedResult = $Matches[1]
                 }
             }
-            foreach ($line in @(ConvertTo-DeckleActionLogLines -InputObject $_ -Source $Source)) {
-                $lines.Add($line)
+            foreach ($record in @(ConvertTo-DeckleActionLogRecords -InputObject $_ -Source $Source)) {
+                $records.Add($record)
             }
             if (($timer.Elapsed - $lastRefresh) -ge $refreshInterval) {
+                $contentWidth = [Math]::Max(0, (Get-MenuMetrics).ContentWidth - 2)
                 $view = Update-GridStatusView `
                     -View $view `
                     -Title (Get-DeckleActionResultTitle -Label $Label -State Running -Elapsed $timer.Elapsed) `
-                    -Lines @($lines) `
+                    -Lines @(ConvertTo-DeckleActionLogDisplayLines -Records @($records) -ContentWidth $contentWidth) `
                     -Follow
                 $lastRefresh = $timer.Elapsed
             }
         }
     } catch {
         $succeeded = $false
-        foreach ($line in @(ConvertTo-DeckleActionLogLines -InputObject $_ -Source $Source)) {
-            if ($lines.Count -eq 0 -or $lines[$lines.Count - 1] -ne $line) {
-                $lines.Add($line)
+        foreach ($record in @(ConvertTo-DeckleActionLogRecords -InputObject $_ -Source $Source)) {
+            if ($records.Count -eq 0 -or $records[$records.Count - 1].Message -ne $record.Message) {
+                $records.Add($record)
             }
         }
     } finally {
         $timer.Stop()
     }
 
-    if ($lines.Count -eq 0) {
-        $lines.Add(('{0}  Info     {1,-8}  The action produced no console output.' -f (Get-Date).ToString('HH:mm:ss'), $Source))
+    if ($records.Count -eq 0) {
+        $records.Add([pscustomobject]@{
+            Timestamp = Get-Date
+            Level     = 'Info'
+            Source    = $Source
+            Message   = 'The action produced no console output.'
+        })
     }
 
     $result = if (-not $succeeded) { 'Failed' } elseif ($reportedResult) { $reportedResult } else { 'Success' }
     $state = if ($result -ceq 'Success') { 'Succeeded' } else { $result }
+    $contentWidth = [Math]::Max(0, (Get-MenuMetrics).ContentWidth - 2)
     return [pscustomobject]@{
         Result    = $result
         Succeeded = $result -ceq 'Success'
         Title     = Get-DeckleActionResultTitle -Label $Label -State $state -Elapsed $timer.Elapsed
-        Lines     = @($lines)
+        Lines     = @(ConvertTo-DeckleActionLogDisplayLines -Records @($records) -ContentWidth $contentWidth)
+        LogRecords = @($records)
     }
 }
