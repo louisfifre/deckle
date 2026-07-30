@@ -8,6 +8,12 @@ type: agent-instructions
 
 System-wide glossary. This file holds only the language that classifies *across* modules — a term owned by one module lives in that module's `CONTEXT.md`, indexed in [CONTEXT-MAP.md](CONTEXT-MAP.md).
 
+## Settings — the exposable
+
+**Exposable** :
+A code value someone could act on — a persisted setting, a hardcoded tuning constant, a default, a Playground memory-only parameter — regardless of whether any UI exposes it today. The settings inventory sweeps exposables across every module; arbitration then decides which become Settings (through the composer), which stay frozen in code, and which belong to the Playground. A *setting* is the narrower, delivered state: an exposable that is persisted and surfaced.
+_Avoid_ : setting (only the persisted, surfaced subset), parameter (too generic — any function argument).
+
 ## Text operations — correction vs rewrite
 
 Two families of automated text change, told apart by the nature of the change — not by the surface it acts on (voice dictation or typed keyboard, which are orthogonal) nor by the engine behind it. The family decides the risk, and therefore whether the change is allowed to act silently. The perimeter of the *applied edit* is what classifies: a generative model may act as judge among bounded candidates and the change remains a Correction; the moment the applied output is free regeneration, it is a Rewrite — silence is never allowed, whatever computed it.
