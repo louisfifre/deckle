@@ -103,6 +103,8 @@
                                         Click="OnArmClick" />
                                 <Button x:Uid="PlaygroundCorrectionCancel"
                                         Click="OnCancelClick" />
+                                <Button x:Uid="PlaygroundCorrectionCopyEvidence"
+                                        Click="OnCopyEvidenceClick" />
                             </StackPanel>
                         </Grid>
 

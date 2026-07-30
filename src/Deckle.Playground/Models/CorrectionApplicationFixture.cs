@@ -129,3 +129,22 @@ internal static class CorrectionApplicationCompletion
                 CorrectionApplicationReason.FocusPostcondition);
     }
 }
+
+internal static class CorrectionEvidencePrivacy
+{
+    public static long? CoarsenMilliseconds(long? value, int bucketSize)
+        => value is long measured
+            ? checked((long)Math.Round(
+                measured / (double)bucketSize,
+                MidpointRounding.AwayFromZero) * bucketSize)
+            : null;
+
+    public static string CountBucket(int value)
+        => value switch
+        {
+            0 => "0",
+            <= 4 => "1-4",
+            <= 16 => "5-16",
+            _ => "17+",
+        };
+}

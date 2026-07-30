@@ -163,6 +163,9 @@
   <data name="PlaygroundCorrectionCancel.Content" xml:space="preserve">
     <value>Cancel trial</value>
   </data>
+  <data name="PlaygroundCorrectionCopyEvidence.Content" xml:space="preserve">
+    <value>Copy evidence</value>
+  </data>
   <data name="PlaygroundCorrectionStatusReady.Text" xml:space="preserve">
     <value>Load the scenario, choose a delay, then arm the edit.</value>
   </data>

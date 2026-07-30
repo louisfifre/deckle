@@ -1,4 +1,6 @@
 using System.Diagnostics;
+using System.Text.Json;
+using Deckle.Core;
 using Microsoft.UI.Dispatching;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
@@ -16,10 +18,12 @@ public sealed partial class CorrectionApplicationPage : Page
     private readonly DispatcherQueueTimer _timer;
     private readonly Stopwatch _delayClock = new();
     private readonly Stopwatch _releaseClock = new();
+    private readonly List<CorrectionApplicationAttempt> _attempts = [];
     private CorrectionApplicationTrial? _trial;
     private CorrectionApplicationReason? _releaseAuthorityFailure;
     private CorrectionApplicationFixture _fixture = CorrectionApplicationFixtures.All[0];
     private CorrectionSurfaceExecution _executionEvidence;
+    private CorrectionSurfaceFault _fault;
     private CorrectionSurfaceSnapshot? _releaseSnapshot;
     private CorrectionApplicationSelection? _postSelection;
     private AttemptGateEvidence _gateEvidence;
@@ -144,6 +148,7 @@ public sealed partial class CorrectionApplicationPage : Page
     private void OnArmClick(object sender, RoutedEventArgs e)
     {
         CancelActive(CorrectionApplicationReason.Superseded);
+        _fault = ReadFault();
 
         // The button owns focus on Click. Return it before a lease exists, so
         // the focus transition cannot poison the lease we are about to create.
@@ -258,6 +263,55 @@ public sealed partial class CorrectionApplicationPage : Page
     private void OnCancelClick(object sender, RoutedEventArgs e)
         => CancelActive(CorrectionApplicationReason.UserCancelled);
 
+    private void OnCopyEvidenceClick(object sender, RoutedEventArgs e)
+    {
+        var export = new
+        {
+            schema = "deckle.acx0021.phase_a.evidence.v1",
+            privacy = "Synthetic fixtures; content-free; timing and cadence coarsened; selection endpoints omitted.",
+            claim_boundary = "Owned WinUI RichEditBox phase A only. No external application, UIA, production, end-to-end, field-quality, model, or GPU claim.",
+            attempts = _attempts.Select(attempt => new
+            {
+                attempt.Index,
+                fixture = attempt.FixtureName,
+                fault = attempt.Fault.ToString(),
+                attempt.RequestedDelayMs,
+                actual_delay_bucket_ms = CorrectionEvidencePrivacy.CoarsenMilliseconds(
+                    attempt.ActualDelayMs,
+                    10),
+                overshoot_bucket_ms = CorrectionEvidencePrivacy.CoarsenMilliseconds(
+                    attempt.OvershootMs,
+                    10),
+                release_duration_bucket_ms = Math.Round(
+                    attempt.ReleaseDurationMs,
+                    1,
+                    MidpointRounding.AwayFromZero),
+                appended_utf16_bucket = CorrectionEvidencePrivacy.CountBucket(
+                    attempt.AppendedUtf16Units),
+                text_change_event_bucket = CorrectionEvidencePrivacy.CountBucket(
+                    attempt.TextChangeEvents),
+                attempt.EditLengthDelta,
+                outcome = attempt.Outcome.ToString(),
+                reason = attempt.Reason.ToString(),
+                attempt.Gates,
+                attempt.ExactAppliedText,
+                attempt.ExactAppliedSelection,
+                attempt.ExactUndoText,
+                attempt.ExactUndoSelection,
+                attempt.ExactRedoText,
+                attempt.ExactRedoSelection,
+                attempt.FocusPostcondition,
+            }),
+        };
+        string json = JsonSerializer.Serialize(
+            export,
+            new JsonSerializerOptions { WriteIndented = true });
+        ClipboardWriteResult result = Win32Clipboard.TryCopyText(json);
+        StatusText.Text = result.Landed
+            ? $"Copied {_attempts.Count} content-free attempts."
+            : $"Evidence copy failed: {result.Status}.";
+    }
+
     private void OnReleaseTimerTick(DispatcherQueueTimer sender, object args)
     {
         sender.Stop();
@@ -328,7 +382,7 @@ public sealed partial class CorrectionApplicationPage : Page
         CorrectionApplicationReason executionReason;
         try
         {
-            execution = _surface.Execute(preparation.Plan!, ReadFault());
+            execution = _surface.Execute(preparation.Plan!, _fault);
             _executionEvidence = execution;
             if (_surface.TryObserve(out _, out var postSelection, out _))
             {
@@ -544,6 +598,8 @@ public sealed partial class CorrectionApplicationPage : Page
             _trial?.GateFailures ?? CorrectionApplicationGateFailure.None);
         var attempt = new CorrectionApplicationAttempt(
             Index: checked(++_attemptIndex),
+            FixtureName: _fixture.Name,
+            Fault: _fault,
             RequestedDelayMs: _requestedDelayMs,
             ActualDelayMs: elapsedMs,
             OvershootMs: overshootMs,
@@ -569,6 +625,7 @@ public sealed partial class CorrectionApplicationPage : Page
                 : reason == CorrectionApplicationReason.FocusPostcondition
                     ? false
                     : null);
+        _attempts.Add(attempt);
         AttemptList.Items.Insert(0, attempt);
         StatusText.Text = attempt.ToString();
     }
@@ -663,6 +720,8 @@ public sealed partial class CorrectionApplicationPage : Page
 
     private sealed record CorrectionApplicationAttempt(
         long Index,
+        string FixtureName,
+        CorrectionSurfaceFault Fault,
         int RequestedDelayMs,
         long? ActualDelayMs,
         long? OvershootMs,

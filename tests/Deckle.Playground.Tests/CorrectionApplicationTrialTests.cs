@@ -306,6 +306,34 @@ public sealed class CorrectionApplicationTrialTests
     }
 
     [Theory]
+    [InlineData(null, null)]
+    [InlineData(0L, 0L)]
+    [InlineData(4L, 0L)]
+    [InlineData(5L, 10L)]
+    [InlineData(14L, 10L)]
+    [InlineData(15L, 20L)]
+    public void EvidenceTimingIsCoarsenedToTenMilliseconds(
+        long? measured,
+        long? expected)
+    {
+        Assert.Equal(
+            expected,
+            CorrectionEvidencePrivacy.CoarsenMilliseconds(measured, 10));
+    }
+
+    [Theory]
+    [InlineData(0, "0")]
+    [InlineData(1, "1-4")]
+    [InlineData(4, "1-4")]
+    [InlineData(5, "5-16")]
+    [InlineData(16, "5-16")]
+    [InlineData(17, "17+")]
+    public void EvidenceCadenceUsesClosedBuckets(int measured, string expected)
+    {
+        Assert.Equal(expected, CorrectionEvidencePrivacy.CountBucket(measured));
+    }
+
+    [Theory]
     [MemberData(nameof(UnicodePrefixCases))]
     public void UnicodeSequencesOutsideEditRemainExact(string prefix)
     {
