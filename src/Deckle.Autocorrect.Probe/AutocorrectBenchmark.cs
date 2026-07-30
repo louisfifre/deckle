@@ -204,9 +204,11 @@ internal sealed record KeyboardQualitySummary(
     int ExactScenarios,
     IReadOnlyList<string> Failures)
 {
-    public double Precision => TrueChanges + WrongChanges == 0
-        ? 1.0
+    public double? InternalEditPairPrecision => TrueChanges + WrongChanges == 0
+        ? null
         : (double)TrueChanges / (TrueChanges + WrongChanges);
+
+    public double? AppliedCorrectionPrecision => null;
 
     public double Recall => GoldChanges == 0
         ? 1.0
@@ -231,7 +233,9 @@ internal sealed record AutocorrectBenchmarkReport(
     MetricDistribution MatchedCandidates,
     long CommitCandidateGenerations,
     long SentenceCandidateGenerations,
-    IReadOnlyList<CandidateCommitSample> LargestCandidateSearches)
+    IReadOnlyList<CandidateCommitSample> LargestCandidateSearches,
+    IReadOnlyList<CommitCostSample> CommitSamples,
+    IReadOnlyList<CandidateCommitSample> CandidateSamples)
 {
     public long TotalCandidateGenerations =>
         CommitCandidateGenerations + SentenceCandidateGenerations;
@@ -266,7 +270,9 @@ internal sealed record AutocorrectBenchmarkReport(
                 .OrderByDescending(sample => sample.Generated)
                 .ThenBy(sample => sample.Word, StringComparer.Ordinal)
                 .Take(5)
-                .ToArray());
+                .ToArray(),
+            costs.ToArray(),
+            candidates.ToArray());
     }
 
     private static IReadOnlyList<CommitCostSample> SlowestByWord(
@@ -293,9 +299,11 @@ internal sealed record AutocorrectBenchmarkReport(
 }
 
 internal readonly record struct MetricDistribution(
-    double P50,
-    double P95,
-    double Maximum)
+    int Count,
+    double? P50,
+    double? P95,
+    double? P99,
+    double? Maximum)
 {
     // Nearest-rank percentiles: the smallest observed value whose cumulative
     // sample share reaches the requested percentile. No interpolation invents
@@ -306,8 +314,10 @@ internal readonly record struct MetricDistribution(
         if (values.Length == 0)
             return default;
         return new MetricDistribution(
+            values.Length,
             Percentile(values, 0.50),
             Percentile(values, 0.95),
+            Percentile(values, 0.99),
             values[^1]);
     }
 

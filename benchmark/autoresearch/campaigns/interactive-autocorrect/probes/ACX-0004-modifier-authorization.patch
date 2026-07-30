@@ -1,0 +1,34 @@
+diff --git a/tests/Deckle.Autocorrect.Tests/AutocorrectSentenceTypingScenarioTests.cs b/tests/Deckle.Autocorrect.Tests/AutocorrectSentenceTypingScenarioTests.cs
+--- a/tests/Deckle.Autocorrect.Tests/AutocorrectSentenceTypingScenarioTests.cs
++++ b/tests/Deckle.Autocorrect.Tests/AutocorrectSentenceTypingScenarioTests.cs
+@@
+     public void ImmediateShiftEnterExpiresTheExactPhraseVerdict()
+     {
+         // Existing test body.
+     }
++
++    [Fact]
++    public void Probe_HeldShiftMustExpireTheExactPhraseVerdict()
++    {
++        var reranker = new BlockingSentenceReranker("seule");
++        using var h = PackagedHarness(reranker);
++
++        h.Type("Il y a une seul erreur.");
++        Assert.True(reranker.Started.Wait(
++            TimeSpan.FromSeconds(2), TestContext.Current.CancellationToken));
++
++        h.Host.RaiseKey(new Deckle.Input.KeyboardKeyEvent(
++            VirtualKey: 0x10,
++            ScanCode: 0,
++            IsKeyDown: true,
++            IsExtended: false,
++            IsInjected: false,
++            TimestampMs: h.TimeMs));
++        reranker.Release.Set();
++        Assert.True(h.PumpDrain(TimeSpan.FromSeconds(2)));
++
++        Assert.True(
++            h.Applied.Count == 0 && h.Injector.Calls.Count == 0,
++            $"Unsafe authorization: applied={h.Applied.Count}; "
++            + $"injector_calls={h.Injector.Calls.Count}; visible_text={h.VisibleText}");
++    }

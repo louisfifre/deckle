@@ -81,9 +81,9 @@ public sealed class DomainPackMaintenanceTests(ITestOutputHelper output)
         KeyboardQualitySummary effective = AutocorrectBenchmark.MeasureKeyboardQuality(effectiveDir);
 
         string score =
-            $"baseline:  precision={baseline.Precision:P1} recall={baseline.Recall:P1} "
+            $"baseline:  internal_edit_pair_precision={baseline.InternalEditPairPrecision:P1} recall={baseline.Recall:P1} "
             + $"exact={baseline.ExactRate:P1} wrong={baseline.WrongChanges}\n"
-            + $"effective: precision={effective.Precision:P1} recall={effective.Recall:P1} "
+            + $"effective: internal_edit_pair_precision={effective.InternalEditPairPrecision:P1} recall={effective.Recall:P1} "
             + $"exact={effective.ExactRate:P1} wrong={effective.WrongChanges}";
         output.WriteLine(score);
         foreach (string failure in effective.Failures)
@@ -160,7 +160,7 @@ public sealed class DomainPackMaintenanceTests(ITestOutputHelper output)
     private void Report(string label, KeyboardQualitySummary summary)
     {
         output.WriteLine(
-            $"{label}: precision={summary.Precision:P1} recall={summary.Recall:P1} "
+            $"{label}: internal_edit_pair_precision={summary.InternalEditPairPrecision:P1} recall={summary.Recall:P1} "
             + $"({summary.TrueChanges}/{summary.GoldChanges}) exact={summary.ExactRate:P1} "
             + $"wrong={summary.WrongChanges}");
         foreach (string failure in summary.Failures)

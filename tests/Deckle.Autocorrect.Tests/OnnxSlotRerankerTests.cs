@@ -113,6 +113,91 @@ public sealed class OnnxSlotRerankerTests
         Assert.Null(outcome.AbstainReason);
     }
 
+    public static TheoryData<ClosedSentenceTransaction, string[]> ExactTransactions => new()
+    {
+        {
+            new ClosedSentenceTransaction(
+                "la la la reste ici.",
+                new[] { "la", "la", "la", "reste", "ici" },
+                [new SentenceEditCandidate(1, 3, 2, "là")]),
+            new[] { "la la la reste ici.", "la là la reste ici." }
+        },
+        {
+            new ClosedSentenceTransaction(
+                "Il\ty a  une seul erreur?!",
+                new[] { "Il", "y", "a", "une", "seul", "erreur" },
+                [
+                    new SentenceEditCandidate(3, 8, 3, "un"),
+                    new SentenceEditCandidate(4, 12, 4, "seule"),
+                ]),
+            new[]
+            {
+                "Il\ty a  une seul erreur?!",
+                "Il\ty a  un seul erreur?!",
+                "Il\ty a  une seule erreur?!",
+            }
+        },
+        {
+            new ClosedSentenceTransaction(
+                "Un cafe\u0301 ☕ reste tres bon.",
+                new[] { "Un", "cafe\u0301", "reste", "tres", "bon" },
+                [new SentenceEditCandidate(1, 3, 5, "café")]),
+            new[] { "Un cafe\u0301 ☕ reste tres bon.", "Un café ☕ reste tres bon." }
+        },
+    };
+
+    [Theory]
+    [MemberData(nameof(ExactTransactions))]
+    public void WholeSentenceVariantsPreserveEveryUnitOutsideTheDeclaredEdit(
+        ClosedSentenceTransaction transaction,
+        string[] expected)
+    {
+        var scorer = new FakeScorer(candidates => new SentenceScoringOutcome(
+            Chosen: candidates[0],
+            Scores: candidates.Select(text =>
+                new SentenceCandidateScore(text, -1, -10, 8)).ToArray(),
+            Margin: 2.0,
+            Threshold: 1.0,
+            AbstainReason: null));
+        using var reranker = new OnnxSlotReranker(scorer, ownsScorer: false);
+
+        RerankOutcome outcome = reranker.RerankSentence(transaction);
+
+        Assert.Equal(expected, scorer.Received);
+        Assert.Null(outcome.Chosen);
+        Assert.Null(outcome.AbstainReason);
+    }
+
+    public static TheoryData<SentenceEditCandidate> MalformedEdits => new()
+    {
+        new SentenceEditCandidate(-1, 11, 4, "seule"),
+        new SentenceEditCandidate(9, 11, 4, "seule"),
+        new SentenceEditCandidate(4, -1, 4, "seule"),
+        new SentenceEditCandidate(4, 11, -1, "seule"),
+        new SentenceEditCandidate(4, 99, 4, "seule"),
+        new SentenceEditCandidate(4, 11, 5, "seule"),
+        new SentenceEditCandidate(4, 11, 4, " "),
+    };
+
+    [Theory]
+    [MemberData(nameof(MalformedEdits))]
+    public void WholeSentenceJudgmentRejectsMalformedPositionalEdits(
+        SentenceEditCandidate edit)
+    {
+        var scorer = new FakeScorer(_ =>
+            throw new InvalidOperationException("Malformed edits must not reach the judge."));
+        using var reranker = new OnnxSlotReranker(scorer, ownsScorer: false);
+        var transaction = new ClosedSentenceTransaction(
+            "Il y a une seul erreur.",
+            new[] { "Il", "y", "a", "une", "seul", "erreur" },
+            [edit]);
+
+        RerankOutcome outcome = reranker.RerankSentence(transaction);
+
+        Assert.Equal(RerankOutcome.AbstainReasons.Error, outcome.AbstainReason);
+        Assert.Null(scorer.Received);
+    }
+
     [Fact]
     public void SurfacesTheJudgesAbstainReasonWhenItDeclines()
     {

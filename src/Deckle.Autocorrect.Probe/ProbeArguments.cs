@@ -7,6 +7,8 @@ internal enum ProbeMode
     Single,
     Benchmark,
     AutocorrectBenchmark,
+    StaleWork,
+    AnticipationLead,
     CaretContext,
 }
 
@@ -18,9 +20,12 @@ internal sealed class ProbeArguments
     public required IReadOnlyList<double> Thresholds { get; init; }
     public required IReadOnlyList<string> Candidates { get; init; }
     public bool ShowCases { get; private init; }
+    public bool Json { get; private init; }
     public int Iterations { get; private init; }
     public int DelaySeconds { get; private init; }
     public int MaxCharacters { get; private init; }
+    public string StreamPath { get; private init; } = string.Empty;
+    public long StreamBytes { get; private init; }
 
     // The ONNX Runtime GenAI execution provider the judge loads onto: "dml" drives
     // the forced-decoding judge on the GPU (DirectML), "cpu" the built-in CPU EP.
@@ -36,6 +41,7 @@ internal sealed class ProbeArguments
         var thresholds = new List<double>();
         var candidates = new List<string>();
         bool showCases = false;
+        bool json = false;
         string provider = "dml";
         int iterations = 20;
         int delaySeconds = 5;
@@ -43,6 +49,9 @@ internal sealed class ProbeArguments
         bool iterationsSpecified = false;
         bool delaySpecified = false;
         bool maxCharactersSpecified = false;
+        string? streamPath = null;
+        long streamBytes = 0;
+        bool streamBytesSpecified = false;
         bool modeSelected = false;
 
         for (int i = 0; i < args.Length; i++)
@@ -65,6 +74,24 @@ internal sealed class ProbeArguments
                 if (modeSelected)
                     return null;
                 mode = ProbeMode.AutocorrectBenchmark;
+                modeSelected = true;
+                continue;
+            }
+
+            if (arg is "--stale-work-probe")
+            {
+                if (modeSelected)
+                    return null;
+                mode = ProbeMode.StaleWork;
+                modeSelected = true;
+                continue;
+            }
+
+            if (arg is "--anticipation-lead-oracle")
+            {
+                if (modeSelected)
+                    return null;
+                mode = ProbeMode.AnticipationLead;
                 modeSelected = true;
                 continue;
             }
@@ -108,9 +135,33 @@ internal sealed class ProbeArguments
                 continue;
             }
 
+            if (arg is "--stream")
+            {
+                if (++i >= args.Length || string.IsNullOrWhiteSpace(args[i]))
+                    return null;
+                streamPath = args[i];
+                continue;
+            }
+
+            if (arg is "--stream-bytes")
+            {
+                if (++i >= args.Length
+                    || !long.TryParse(args[i], out streamBytes)
+                    || streamBytes < 1)
+                    return null;
+                streamBytesSpecified = true;
+                continue;
+            }
+
             if (arg is "--show-cases")
             {
                 showCases = true;
+                continue;
+            }
+
+            if (arg is "--json")
+            {
+                json = true;
                 continue;
             }
 
@@ -163,15 +214,22 @@ internal sealed class ProbeArguments
             return null;
         }
 
-        if (iterationsSpecified && mode != ProbeMode.AutocorrectBenchmark)
+        if (iterationsSpecified
+            && mode is not ProbeMode.AutocorrectBenchmark and not ProbeMode.StaleWork)
             return null;
         if ((delaySpecified || maxCharactersSpecified) && mode != ProbeMode.CaretContext)
             return null;
+        if (streamPath is not null && mode != ProbeMode.AnticipationLead)
+            return null;
+        if (streamBytesSpecified && mode != ProbeMode.AnticipationLead)
+            return null;
 
-        if (mode == ProbeMode.CaretContext)
+        if (mode == ProbeMode.AnticipationLead)
         {
-            if (models.Count > 0 || thresholds.Count > 0 || candidates.Count > 0
-                || showCases || margin != 0.0 || provider != "dml" || iterationsSpecified)
+            if (string.IsNullOrWhiteSpace(streamPath)
+                || models.Count > 0 || thresholds.Count > 0 || candidates.Count > 0
+                || showCases || json || margin != 0.0 || provider != "dml"
+                || iterationsSpecified || delaySpecified || maxCharactersSpecified)
                 return null;
 
             return new ProbeArguments
@@ -182,6 +240,31 @@ internal sealed class ProbeArguments
                 Thresholds = Array.Empty<double>(),
                 Candidates = Array.Empty<string>(),
                 ShowCases = false,
+                Json = false,
+                Provider = provider,
+                Iterations = iterations,
+                DelaySeconds = delaySeconds,
+                MaxCharacters = maxCharacters,
+                StreamPath = streamPath,
+                StreamBytes = streamBytes,
+            };
+        }
+
+        if (mode == ProbeMode.CaretContext)
+        {
+            if (models.Count > 0 || thresholds.Count > 0 || candidates.Count > 0
+                || showCases || json || margin != 0.0 || provider != "dml" || iterationsSpecified)
+                return null;
+
+            return new ProbeArguments
+            {
+                Mode = mode,
+                Models = Array.Empty<ModelSpec>(),
+                Margin = 0.0,
+                Thresholds = Array.Empty<double>(),
+                Candidates = Array.Empty<string>(),
+                ShowCases = false,
+                Json = false,
                 Provider = provider,
                 Iterations = iterations,
                 DelaySeconds = delaySeconds,
@@ -203,6 +286,30 @@ internal sealed class ProbeArguments
                 Thresholds = Array.Empty<double>(),
                 Candidates = Array.Empty<string>(),
                 ShowCases = false,
+                Json = json,
+                Provider = provider,
+                Iterations = iterations,
+                DelaySeconds = delaySeconds,
+                MaxCharacters = maxCharacters,
+            };
+        }
+
+        if (mode == ProbeMode.StaleWork)
+        {
+            if (models.Count > 0 || thresholds.Count > 0 || candidates.Count > 0
+                || showCases || json || margin != 0.0 || provider != "dml"
+                || delaySpecified || maxCharactersSpecified)
+                return null;
+
+            return new ProbeArguments
+            {
+                Mode = mode,
+                Models = Array.Empty<ModelSpec>(),
+                Margin = 0.0,
+                Thresholds = Array.Empty<double>(),
+                Candidates = Array.Empty<string>(),
+                ShowCases = false,
+                Json = false,
                 Provider = provider,
                 Iterations = iterations,
                 DelaySeconds = delaySeconds,
@@ -212,7 +319,7 @@ internal sealed class ProbeArguments
 
         if (mode == ProbeMode.Single)
         {
-            if (candidates.Count < 2)
+            if (candidates.Count < 2 || json)
                 return null;
 
             return new ProbeArguments
@@ -225,6 +332,7 @@ internal sealed class ProbeArguments
                 Thresholds = Array.Empty<double>(),
                 Candidates = candidates,
                 ShowCases = showCases,
+                Json = false,
                 Provider = provider,
                 Iterations = iterations,
                 DelaySeconds = delaySeconds,
@@ -232,7 +340,7 @@ internal sealed class ProbeArguments
             };
         }
 
-        if (candidates.Count > 0)
+        if (candidates.Count > 0 || json)
             return null;
 
         return new ProbeArguments
@@ -245,6 +353,7 @@ internal sealed class ProbeArguments
                 : new[] { 0.0, 0.10, 0.25, 0.50, 0.75 },
             Candidates = Array.Empty<string>(),
             ShowCases = showCases,
+            Json = false,
             Provider = provider,
             Iterations = iterations,
             DelaySeconds = delaySeconds,
@@ -260,7 +369,9 @@ internal static class ProbeUsage
         Console.Error.WriteLine("Usage:");
         Console.Error.WriteLine("  Deckle.Autocorrect.Probe --model <dir> [--margin <n>] [--provider <cpu|dml>] --candidate <text> --candidate <text> [...]");
         Console.Error.WriteLine("  Deckle.Autocorrect.Probe --benchmark [--model <label=dir>] [--threshold <n>] [--provider <cpu|dml>] [--show-cases]");
-        Console.Error.WriteLine("  Deckle.Autocorrect.Probe --autocorrect-benchmark [--iterations <n>]");
+        Console.Error.WriteLine("  Deckle.Autocorrect.Probe --autocorrect-benchmark [--iterations <n>] [--json]");
+        Console.Error.WriteLine("  Deckle.Autocorrect.Probe --stale-work-probe [--iterations <n>]");
+        Console.Error.WriteLine("  Deckle.Autocorrect.Probe --anticipation-lead-oracle --stream <autocorrect.stream.jsonl> [--stream-bytes <n>]");
         Console.Error.WriteLine("  Deckle.Autocorrect.Probe --caret-context [--delay <seconds>] [--max-chars <64..4096>]");
         Console.Error.WriteLine();
         Console.Error.WriteLine(

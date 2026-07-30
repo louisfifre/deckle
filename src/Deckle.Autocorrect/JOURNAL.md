@@ -5,6 +5,16 @@ type: module-journal
 
 # JOURNAL — Deckle.Autocorrect
 
+## 2026-07-30 — Interactive research exposes compute ownership and application-lease gaps
+
+Established three constraints in the isolated interactive-autocorrect campaign. First, invalidated work retains the coordinator's single-flight ownership: with the production coordinator/lane and a controlled abstaining judge held for 250 ms, a fresh eligible transaction entered at 251.6 ms p50 / 264.8 ms p95 versus 0.008 ms / 0.194 ms without stale work (ACX-0003). The run proves head-of-line blocking, not stale-write rejection; that invariant remains grounded in separate coordinator code/tests. Speculation on the existing lane can therefore increase terminal latency; native cancellation and process isolation remain untested.
+
+Second, a modifier-only physical transition is not currently an application invalidator. A controlled late whole-sentence verdict released while generic Shift remained down produced one applied event and one simulated injector call (ACX-0004). This proves the engine authorization path, not real application corruption. Any future fast or anticipated decider needs a separate punctuation-time application lease requiring neutral modifier/composition state; real Shift/Ctrl/Alt/AltGr/Win, IME, accessibility and deletion-unit behavior stays an explicit Playground experiment.
+
+Third, the selected timing sample sharply limits a fixed-duration anticipation claim. Over the local consented typing stream, 498 terminal gestures had a known preceding literal and usable per-character timing; the pre-terminal gap was 353 ms p50 / 1,695 ms p95. Even granting exact punctuation, free preparation and immediate start, a fixed 945 ms computation was ready before punctuation for 69/498 gestures (13.86%); 150 ms reached 474/498 (95.18%), falling to 73.09% after a 100 ms trigger delay (ACX-0005). This is not the current Qwen latency distribution and not a candidate-eligible quality or coverage estimate.
+
+Kept architecture boundaries separate as a result: exact semantic transaction; inert scorer/cache with no write rights; freshly validated application lease; surface-specific edit integration with an observed exact postcondition. Qwen remains viable as teacher, shadow, batching target or isolated exact-cache producer, but not as the as-is synchronous fallback of a fast cascade.
+
 ## 2026-07-30 — Resident Qwen is not an interactive sentence closer
 
 Measured the production Qwen3-1.7B DirectML whole-sentence verdict at about 945 ms on the local machine with the model already resident. The scorer still performs two order-normalized passes and creates a GenAI generator for every candidate in each pass; keeping the model loaded removes initialization, not this hot inference cost.

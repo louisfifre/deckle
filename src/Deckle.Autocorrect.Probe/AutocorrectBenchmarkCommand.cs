@@ -1,4 +1,5 @@
 using System.Globalization;
+using System.Text.Json;
 
 namespace Deckle.Autocorrect.Probe;
 
@@ -25,7 +26,17 @@ internal static class AutocorrectBenchmarkCommand
             return 1;
         }
 
-        Print(report);
+        if (parsed.Json)
+        {
+            Console.WriteLine(JsonSerializer.Serialize(report, new JsonSerializerOptions
+            {
+                PropertyNamingPolicy = JsonNamingPolicy.SnakeCaseLower,
+            }));
+        }
+        else
+        {
+            Print(report);
+        }
         return report.Quality.WrongChanges == 0 ? 0 : 3;
     }
 
@@ -38,8 +49,11 @@ internal static class AutocorrectBenchmarkCommand
         Console.WriteLine();
         Console.WriteLine("Keyboard quality (deterministic commit stage)");
         Console.WriteLine(
-            $"  precision : {Percent(quality.Precision),6}  "
+            $"  internal edit-pair precision     : {Percent(quality.InternalEditPairPrecision),6}  "
             + $"({quality.TrueChanges}/{quality.TrueChanges + quality.WrongChanges})");
+        Console.WriteLine(
+            "  applied correction precision     :    N/A  "
+            + "(no observed target postcondition)");
         Console.WriteLine(
             $"  recall    : {Percent(quality.Recall),6}  "
             + $"({quality.TrueChanges}/{quality.GoldChanges})");
@@ -103,13 +117,18 @@ internal static class AutocorrectBenchmarkCommand
         string format)
     {
         Console.WriteLine(
-            $"  {name,-11} p50={distribution.P50.ToString(format, CultureInfo.InvariantCulture),10} "
-            + $"p95={distribution.P95.ToString(format, CultureInfo.InvariantCulture),10} "
-            + $"max={distribution.Maximum.ToString(format, CultureInfo.InvariantCulture),10}");
+            $"  {name,-11} n={distribution.Count,8} "
+            + $"p50={FormatMetric(distribution.P50, format),10} "
+            + $"p95={FormatMetric(distribution.P95, format),10} "
+            + $"p99={FormatMetric(distribution.P99, format),10} "
+            + $"max={FormatMetric(distribution.Maximum, format),10}");
     }
 
-    private static string Percent(double value) =>
-        value.ToString("P1", CultureInfo.InvariantCulture);
+    private static string FormatMetric(double? value, string format) =>
+        value?.ToString(format, CultureInfo.InvariantCulture) ?? "N/A";
+
+    private static string Percent(double? value) =>
+        value?.ToString("P1", CultureInfo.InvariantCulture) ?? "N/A";
 
     private static string Format(double value, string format) =>
         value.ToString(format, CultureInfo.InvariantCulture);
