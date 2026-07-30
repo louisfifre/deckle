@@ -23,6 +23,9 @@ Status vocabulary: **baseline**, **active**, **candidate**, **dormant**, and
 - ACX-0019 exactly reconstructs 54 positional edits across the 35 public
   development cases. The existing global locative rule makes one correct edit,
   no wrong edit, and abstains on the other 34 cases at 0.0003 ms warm p95.
+- ACX-0020 freezes five precedence-free rules over the same inventory. It makes
+  five correct internal edits, no wrong edit, and four residual edits across
+  both candidate families at 0.0047 ms warm p95. This remains development-only.
 
 ## Recommended shape (interpretation)
 
@@ -54,7 +57,7 @@ become the high-trust profile even if UIA plus SendInput remains a broad fallbac
 | Exact anticipation with a fast decider | reproducible replay baseline; integration active | ACX-0014 preserves 196 independently safe exact transactions after quarantining three boundary disagreements. Immediate 150 ms readiness is 186/196 (94.90%); a fixed dot branch hits 151/196 (77.04%), while four branches waste three jobs per hit. Next: measure real incremental preparation, scheduler ownership, lease safety, and observed visible latency. |
 | Batched/reused Qwen scoring | dormant for direct interaction | ACX-0018 established exact two-row DirectML batch construction and finite logits, but forward scores diverged by 0.0156224 against the frozen 0.001 tolerance. The semantic prerequisite failed, so latency is ineligible. Preserve batching only for separately preregistered diagnostics, shadow/teacher work, or a future numerical-kernel investigation; do not relax the contract after observation. |
 | In-process Stopwatch stage attribution | refuted as scoped | Two designs preserved semantics but could not separate collector cost from a 140 ms immediate-repeat/position effect; ACX-0010 upper bounds were 65.097 ms and 8.562%. External GPU/ORT tracing remains a separate family. |
-| Deterministic unanimous global rules | active from reproducible one-rule baseline | ACX-0019 freezes the public inventory: 1 correct edit, 0 wrong edits, 19 useful and 15 regrettable abstentions, 0 KEEP; all 66 edit orders are identity-stable at 0.0003 ms warm p95. ACX-0020 tests a precedence-free unanimity bundle with at least two correct residual edits across two families. |
+| Deterministic unanimous global rules | reproducible public-development bundle baseline | ACX-0020 preserves the ACX-0019 locative baseline and adds 4 correct residual edits across both frozen families: 5 correct total, 0 wrong, 0 KEEP, 19 useful and 11 regrettable abstentions. All 120 rule orders × 66 candidate orders are identity-stable at 0.0047 ms warm p95. Grouped, field, and applied safety remain unmeasured. |
 | Compact tabular discriminator | candidate | Best low-data baseline. Score KEEP plus every edit over grouped transaction splits. |
 | Compact neural global discriminator | candidate | Plausible 10–100 ms class, but trusted labels need audit. Start only if rules/tabular plateau. |
 | Pointwise reranker | candidate baseline | Cheap reference; compare at identical features/capacity because it may mis-handle candidate competition. |
@@ -127,13 +130,14 @@ become the high-trust profile even if UIA plus SendInput remains a broad fallbac
 - **Cost:** low to medium.
 - **Risks:** lexical memorization, rule growth, hidden priority order.
 - **Falsifier:** any sealed false application or less than 3% useful coverage.
-- **Current evidence:** ACX-0019 establishes the one-rule public-development
-  baseline, not the bundle hypothesis: 54 edits reconstruct exactly, all 66
-  edit orders preserve identity, and the locative rule selects the one correct
-  `la` → `là` edit with no wrong decision. It emits no affirmative KEEP and
-  leaves 15/16 correctable cases as regrettable abstentions. The 10,000-sample
-  warm p95 is 0.0003 ms. ACX-0020 is selected to test at least two residual
-  edits across two frozen families under rule-order unanimity.
+- **Current evidence:** ACX-0020 passes the frozen public-development bundle
+  hypothesis. The exact locative baseline remains separate and unchanged. Four
+  residual edits (`dû`, `mangé`, `tester`, and `qu'à`) span both candidate
+  families, yielding five correct edits total, zero wrong edits, zero affirmative
+  KEEP, 19 useful abstentions, and 11 regrettable abstentions. All 7,920 joint
+  rule/candidate-order evaluations preserve the complete verdict. Warm p95 is
+  0.0047 ms over 10,000 seeded samples, with one retained 4.9685 ms maximum
+  outlier. This establishes no grouped, field, applied, or production safety.
 
 ### FAM-04 — compact global baseline
 

@@ -53,6 +53,12 @@ candidate-order invariance, but no grouped, applied, UIA, end-to-end, or field
 claim. Within that narrow scope its one-rule result is provisionally
 non-dominated and becomes the baseline for ACX-0020.
 
+ACX-0020 adds the reproducible five-rule coverage point on that same public
+development corpus. It raises correct internal edits from one to five with no
+observed wrong edit, while warm p95 rises from 0.0003 to 0.0047 ms. Both points
+remain on the provisional narrow frontier because ACX-0019 is faster and
+ACX-0020 covers more; neither supports applied or field-quality comparison.
+
 ACX-0003 does not add a quality/latency candidate to the frontier; it establishes a constraint: speculative architectures that retain obsolete single-flight work are ineligible for a direct-interaction Pareto claim until blocked-useful-work and stale compute are measured.
 
 ### ACX-0004 — held modifier crosses the authorization boundary
@@ -391,6 +397,56 @@ work, or a general precision estimate. ACX-0020 is selected for a frozen
 precedence-free unanimity bundle requiring at least two correct residual edits
 across two families, zero wrong public decisions, exhaustive rule/candidate
 order invariance, and warm p95 below 1 ms.
+
+### ACX-0020 — frozen precedence-free unanimity bundle
+
+ACX-0020 ran from clean repository HEAD `41c1cae7`, executing probe source
+commit `386697f9`. The Debug x64 probe build completed with zero warnings and
+errors in 42.64 seconds, the process exited zero with empty stderr, all ten
+validity gates and all five preregistered hypothesis gates passed, and an
+independent raw-result audit found no discrepancy.
+
+The five immutable rules received only the exact sentence, submitted positional
+edits, and the tracked French morphology artifact. They never received truth,
+provenance, case identifiers, or candidate-family labels. The artifact matched
+the preregistered SHA-256 and size, contained 64,870 forms, and skipped no line.
+
+The separate ACX-0019 locative baseline remained exactly one correct edit, zero
+wrong edits, zero affirmative KEEP, 19 useful abstentions, and 15 regrettable
+abstentions. The unanimity bundle made five correct internal edits, zero wrong
+edits, zero affirmative KEEP, 19 useful abstentions, and 11 regrettable
+abstentions. Its four residual edits span both frozen families:
+
+- `du_participle`: `1@5:2=dû`;
+- `participle_after_avoir`: `1@5:6=mangé`;
+- `infinitive_after_pouvez`: `2@12:6=tester`;
+- `qu_a_preposition`: `3@9:4=qu'à`.
+
+All 120 distinct rule orders crossed with all 66 candidate orders produced
+7,920 exhaustive identity-stable complete verdicts. An edit required unanimous
+non-null candidate identity; no claim and disagreement remained explicit
+abstentions. Every edit identified exactly one submitted positional candidate.
+
+After 1,000 warmups, 10,000 seeded mixed evaluations measured 0.0027 ms p50,
+0.0047 ms p95, 0.0053 ms p99, and 4.9685 ms maximum. Independent nearest-rank
+recalculation matched exactly. One sample exceeded 1 ms; it remains visible as
+the maximum but does not refute the frozen p95-below-1-ms gate. The measured
+window allocated 22,746,592 managed bytes and recorded +46.875 ms process CPU,
++425,984 private-memory bytes, and +139,264 working-set bytes. These are coarse
+warm-process window deltas, not per-edit, energy, or production measurements.
+No GPU work was measured or claimed.
+
+Raw output SHA-256:
+`DCC37FF3898CF6AC635DD0D2E17C862BBE77FB411ACB53EA07634D13A5F2E530`.
+
+**Established:** the exact five internal public-development edits above, frozen
+rule behavior, exact submitted-candidate selection, exhaustive candidate/rule
+order invariance, the retained warm timing distribution, and coarse process
+resource deltas. **Not established:** grouped validation, field quality,
+applied correction, UIA, injection, observed target mutation, end-to-end or
+physical latency, production safety, general precision, or GPU work. Further
+rule growth waits for stronger grouped data; ACX-0021 moves to the delayed
+range-owned application question in the isolated Playground.
 
 ## Refuted or dominated families
 

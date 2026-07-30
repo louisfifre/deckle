@@ -5,6 +5,22 @@ type: module-journal
 
 # JOURNAL — Deckle.Autocorrect
 
+## 2026-07-30 — Frozen unanimity adds four residual public edits
+
+ACX-0020 preserved the exact ACX-0019 locative baseline and added four correct
+residual internal edits across both frozen candidate families. The five-rule
+bundle made five correct edits total, no wrong edit, no affirmative KEEP, 19
+useful abstentions, and 11 regrettable abstentions on the 35 public development
+cases. All 120 rule orders crossed with all 66 candidate orders produced 7,920
+identity-stable verdicts. Warm p95 was 0.0047 ms over 10,000 seeded evaluations;
+one retained maximum outlier measured 4.9685 ms.
+
+The rules remain probe-only. The corpus has no grouped provenance and measures
+neither applied corrections nor field quality, so further rule growth waits for
+stronger data. Chose ACX-0021 next: test delayed correction of sentence A while
+typing sentence B through range-owned Playground paths, never current-caret
+`SendInput`, with exact stale/range/postcondition gates. Production is unchanged.
+
 ## 2026-07-30 — Investigate delayed range edits and one shared Qwen base
 
 Delayed correction of a completed sentence while typing continues in the next
