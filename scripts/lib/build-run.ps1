@@ -25,6 +25,7 @@ $ErrorActionPreference = 'Stop'
 $ScriptDir  = $PSScriptRoot                                  # scripts/lib/
 . (Join-Path $ScriptDir 'action-summary.ps1')
 . (Join-Path $ScriptDir 'deckle-process.ps1')
+. (Join-Path $ScriptDir 'native-console.ps1')
 
 function Step($msg) { Write-Host "`n[build] $msg" -ForegroundColor Cyan }
 function Ok($msg)   { Write-Host "        $msg" -ForegroundColor Green }
@@ -104,8 +105,11 @@ Stop-DeckleProcess -WriteOk ${function:Ok} -WriteWarn ${function:Warn}
 # VBCSCompiler processes behind for faster follow-up builds, which is hostile
 # to parallel worktrees and WinUI responsiveness diagnostics.
 Step "dotnet build ($Configuration x64)"
-& dotnet build $Csproj "-c:$Configuration" '-p:Platform=x64' '-v:m' '-nologo' '/nr:false' '/p:UseSharedCompilation=false'
-if ($LASTEXITCODE -ne 0) { throw "dotnet build failed (code $LASTEXITCODE)" }
+$buildExitCode = Invoke-DeckleConsoleProcess -FilePath 'dotnet' -ArgumentList @(
+    'build', $Csproj, "-c:$Configuration", '-p:Platform=x64', '-v:m', '-nologo',
+    '/nr:false', '/p:UseSharedCompilation=false'
+)
+if ($buildExitCode -ne 0) { throw "dotnet build failed (code $buildExitCode)" }
 Ok 'Build succeeded'
 
 # 3. Run

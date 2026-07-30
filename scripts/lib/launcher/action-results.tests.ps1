@@ -40,13 +40,22 @@ Assert-Equal $true $sanitized[1].EndsWith('second') 'OSC progress controls and c
 $title = Get-DeckleActionResultTitle -Label 'Build Debug' -State Succeeded -Elapsed ([timespan]::FromSeconds(18.4))
 Assert-Equal 'Build Debug succeeded · 18.4 s' $title 'summary states action outcome and duration'
 
-function New-GridStatusView { return [pscustomobject]@{ Name = 'status-view' } }
-function Update-GridStatusView {
-    param($View, [string]$Title, [object[]]$Lines, [switch]$Follow)
-    $script:ActionViewUpdateCount++
-    return $View
+function Start-MenuActionConsole {
+    param([string]$Header)
+    $script:StartedActionHeader = $Header
+    return [pscustomobject]@{ Name = 'action-console' }
 }
-$script:ActionViewUpdateCount = 0
+function Write-MenuActionOutput {
+    param($InputObject)
+    $script:ForwardedActionOutput.Add([string]$InputObject)
+}
+function Stop-MenuActionConsole {
+    param($Console)
+    $script:StoppedActionConsole = $Console.Name
+}
+$script:StartedActionHeader = $null
+$script:StoppedActionConsole = $null
+$script:ForwardedActionOutput = [System.Collections.Generic.List[string]]::new()
 $menuRows = @(@{ Cells = @( @{ Label = 'Build' } ) })
 
 $success = Invoke-DeckleMenuAction -Header Deckle -Label Build -Source Build -MenuRows $menuRows -Action {
@@ -58,14 +67,18 @@ Assert-Equal $true $success.Succeeded 'captured action reports success'
 Assert-Equal 2 $success.Lines.Count 'output and host streams are both retained'
 Assert-Equal 'restore completed' $success.Lines[0].Text 'plain output remains raw'
 Assert-Equal ([ConsoleColor]::Green) $success.Lines[1].ForegroundColor 'PowerShell host color reaches the menu result'
-Assert-Equal $true ($script:ActionViewUpdateCount -gt 0) 'captured output updates the existing action view'
+Assert-Equal 'Deckle · Running…' $script:StartedActionHeader 'running state is appended to the breadcrumb'
+Assert-Equal 'restore completed' $script:ForwardedActionOutput[0] 'captured output is forwarded immediately'
+Assert-Equal 'action-console' $script:StoppedActionConsole 'completed action restores the terminal surface'
 
+$script:StoppedActionConsole = $null
 $failure = Invoke-DeckleMenuAction -Header Deckle -Label Build -Source Build -MenuRows $menuRows -Action {
     Write-Output 'restore completed'
     throw 'compiler stopped'
 }
 Assert-Equal $false $failure.Succeeded 'terminating action error reports failure'
 Assert-Equal $true ((@($failure.Lines | ForEach-Object Text) -join "`n") -like '*compiler stopped*') 'failure reason stays in the log'
+Assert-Equal 'action-console' $script:StoppedActionConsole 'failed action also restores the terminal surface'
 
 $partial = Invoke-DeckleMenuAction -Header Deckle -Label Setup -Source Setup -MenuRows $menuRows -Action {
     Write-Host '  Result        : Partial'

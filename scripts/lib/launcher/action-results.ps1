@@ -1,4 +1,4 @@
-# Captured launcher action output and persistent menu result formatting.
+# Launcher action output forwarding and persistent result formatting.
 
 function Get-DeckleActionLogLevel {
     param(
@@ -130,20 +130,12 @@ function Invoke-DeckleMenuAction {
 
     $records = [System.Collections.Generic.List[object]]::new()
     $timer = [System.Diagnostics.Stopwatch]::StartNew()
-    $refreshInterval = [timespan]::FromMilliseconds(100)
-    $lastRefresh = [timespan]::Zero
     $succeeded = $true
     $reportedResult = $null
-
-    $view = New-GridStatusView `
-        -Header $Header `
-        -Rows $MenuRows `
-        -Title (Get-DeckleActionResultTitle -Label $Label -State Running -Elapsed $timer.Elapsed) `
-        -Lines @('Waiting for output…') `
-        -Footer 'Live output follows the latest line; controls return when the action completes' `
-        -Follow
+    $console = $null
 
     try {
+        $console = Start-MenuActionConsole -Header "$Header · Running…"
         & $Action *>&1 | ForEach-Object {
             $rawOutput = ConvertFrom-DeckleTerminalOutput -InputObject $_
             foreach ($rawLine in @($rawOutput -split "\n")) {
@@ -154,14 +146,7 @@ function Invoke-DeckleMenuAction {
             foreach ($record in @(ConvertTo-DeckleActionLogRecords -InputObject $_ -Source $Source)) {
                 $records.Add($record)
             }
-            if (($timer.Elapsed - $lastRefresh) -ge $refreshInterval) {
-                $view = Update-GridStatusView `
-                    -View $view `
-                    -Title (Get-DeckleActionResultTitle -Label $Label -State Running -Elapsed $timer.Elapsed) `
-                    -Lines @(ConvertTo-DeckleActionLogDisplayLines -Records @($records)) `
-                    -Follow
-                $lastRefresh = $timer.Elapsed
-            }
+            Write-MenuActionOutput -InputObject $_
         }
     } catch {
         $succeeded = $false
@@ -170,8 +155,10 @@ function Invoke-DeckleMenuAction {
                 $records.Add($record)
             }
         }
+        Write-MenuActionOutput -InputObject $_
     } finally {
         $timer.Stop()
+        Stop-MenuActionConsole -Console $console
     }
 
     if ($records.Count -eq 0) {
