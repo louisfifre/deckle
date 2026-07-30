@@ -109,6 +109,7 @@ doctrine). This file is generated from the Conventional-Commit history by
 - **scripts:** Restore statistics navigation depth
 - **autocorrect:** Repair merged validation contracts
 - **launcher:** Adapt action logs to terminal width
+- **launcher:** Simplify captured action logs
 
 ## [0.14.1](https://github.com/louisfifre/deckle/compare/v0.14.0...v0.14.1) — 2026-07-20
 
