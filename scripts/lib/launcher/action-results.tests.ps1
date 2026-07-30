@@ -18,6 +18,14 @@ $formatted = @(ConvertTo-DeckleActionLogLines -InputObject "first`nsecond" -Sour
 Assert-Equal 2 $formatted.Count 'multiline output becomes separate log entries'
 Assert-Equal $true $formatted[0].StartsWith('14:32:08  Info     Build') 'log columns stay aligned'
 
+$escape = [char]27
+$bell = [char]7
+$terminalOutput = "${escape}[31mfirst${escape}[0m`rsecond${escape}]9;4;1;50${bell}`b"
+$sanitized = @(ConvertTo-DeckleActionLogLines -InputObject $terminalOutput -Source Clean -Timestamp ([datetime]'2026-07-29T14:32:08'))
+Assert-Equal 2 $sanitized.Count 'terminal repaint output becomes stable log lines'
+Assert-Equal $true $sanitized[0].EndsWith('first') 'CSI color controls are removed'
+Assert-Equal $true $sanitized[1].EndsWith('second') 'OSC progress controls and carriage returns are removed'
+
 $title = Get-DeckleActionResultTitle -Label 'Build Debug' -State Succeeded -Elapsed ([timespan]::FromSeconds(18.4))
 Assert-Equal 'Build Debug succeeded · 18.4 s' $title 'summary states action outcome and duration'
 

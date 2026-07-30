@@ -52,7 +52,7 @@ function Read-YesNo {
         [string]$CancelLabel = 'No',
         [switch]$Destructive
     )
-    return (Select-YesNo -Question $Question -Default $Default -ConfirmLabel $ConfirmLabel -CancelLabel $CancelLabel -Destructive:$Destructive -BannerStyle Compact)
+    return (Select-YesNo -Question $Question -Default $Default -ConfirmLabel $ConfirmLabel -CancelLabel $CancelLabel -Destructive:$Destructive -ClearScreen -BannerStyle Compact)
 }
 
 function Read-Optional {

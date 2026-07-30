@@ -90,6 +90,8 @@ doctrine). This file is generated from the Conventional-Commit history by
 - **scripts:** Anchor cleared menus to the top row
 - **scripts:** Use the compact logo throughout menus
 - **scripts:** Top-align the worktree picker
+- **scripts:** Stabilize launcher action rendering
+- **scripts:** Infer native runtime versions
 
 ## [0.14.1](https://github.com/louisfifre/deckle/compare/v0.14.0...v0.14.1) — 2026-07-20
 

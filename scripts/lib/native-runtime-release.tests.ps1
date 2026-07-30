@@ -33,6 +33,28 @@ public static NativeRuntimeBundle CurrentBundle { get; } = new(
     $verified = Assert-DeckleNativeRuntimeArtifact -Bundle $bundle -ArtifactPath $artifact
     if ($verified.Sha256 -cne $sha256) { throw 'Native runtime hash was not returned' }
 
+    $whisperRepo = Join-Path $root 'whisper.cpp'
+    $null = New-Item -ItemType Directory -Path $whisperRepo
+    Set-Content -LiteralPath (Join-Path $whisperRepo 'CMakeLists.txt') -Value 'project(whisper VERSION 1.9.4)'
+    $sameSeriesPlan = Get-DeckleNativeRuntimeVersionPlan `
+        -SourcePath $source `
+        -WhisperRepo $whisperRepo `
+        -PublishedTags @('native-v1.0.0', 'native-v1.9.2')
+    if ($sameSeriesPlan.Version -cne '1.9.3' -or $sameSeriesPlan.WhisperVersion -cne '1.9.4') {
+        throw 'The next native runtime should increment the latest local rebuild counter'
+    }
+
+    Set-Content -LiteralPath (Join-Path $whisperRepo 'CMakeLists.txt') -Value 'project(whisper VERSION 1.10.0)'
+    $newSeriesPlan = Get-DeckleNativeRuntimeVersionPlan -SourcePath $source -WhisperRepo $whisperRepo
+    if ($newSeriesPlan.Version -cne '1.10.0' -or -not $newSeriesPlan.SeriesChanged) {
+        throw 'A new whisper.cpp minor series should start at rebuild counter zero'
+    }
+
+    Set-Content -LiteralPath (Join-Path $whisperRepo 'CMakeLists.txt') -Value 'project(whisper VERSION 1.8.9)'
+    Assert-Throws {
+        Get-DeckleNativeRuntimeVersionPlan -SourcePath $source -WhisperRepo $whisperRepo
+    } 'older than the latest native runtime series'
+
     $wrongSize = $bundle.PSObject.Copy()
     $wrongSize.SizeBytes = 5
     Assert-Throws { Assert-DeckleNativeRuntimeArtifact -Bundle $wrongSize -ArtifactPath $artifact } 'size mismatch'
