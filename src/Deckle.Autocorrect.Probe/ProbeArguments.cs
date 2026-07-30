@@ -9,6 +9,7 @@ internal enum ProbeMode
     AutocorrectBenchmark,
     StaleWork,
     AnticipationLead,
+    SentenceProfile,
     CaretContext,
 }
 
@@ -92,6 +93,15 @@ internal sealed class ProbeArguments
                 if (modeSelected)
                     return null;
                 mode = ProbeMode.AnticipationLead;
+                modeSelected = true;
+                continue;
+            }
+
+            if (arg is "--sentence-profile")
+            {
+                if (modeSelected)
+                    return null;
+                mode = ProbeMode.SentenceProfile;
                 modeSelected = true;
                 continue;
             }
@@ -215,7 +225,9 @@ internal sealed class ProbeArguments
         }
 
         if (iterationsSpecified
-            && mode is not ProbeMode.AutocorrectBenchmark and not ProbeMode.StaleWork)
+            && mode is not ProbeMode.AutocorrectBenchmark
+                and not ProbeMode.StaleWork
+                and not ProbeMode.SentenceProfile)
             return null;
         if ((delaySpecified || maxCharactersSpecified) && mode != ProbeMode.CaretContext)
             return null;
@@ -317,6 +329,32 @@ internal sealed class ProbeArguments
             };
         }
 
+        if (mode == ProbeMode.SentenceProfile)
+        {
+            if (models.Count > 1 || thresholds.Count > 0 || candidates.Count > 0
+                || showCases || json || margin != 0.0
+                || delaySpecified || maxCharactersSpecified
+                || streamPath is not null || streamBytesSpecified)
+                return null;
+
+            return new ProbeArguments
+            {
+                Mode = mode,
+                Models = models.Count == 1
+                    ? new[] { models[0] }
+                    : new[] { ModelPathResolver.DefaultSingleModel() },
+                Margin = 0.0,
+                Thresholds = Array.Empty<double>(),
+                Candidates = Array.Empty<string>(),
+                ShowCases = false,
+                Json = false,
+                Provider = provider,
+                Iterations = iterations,
+                DelaySeconds = delaySeconds,
+                MaxCharacters = maxCharacters,
+            };
+        }
+
         if (mode == ProbeMode.Single)
         {
             if (candidates.Count < 2 || json)
@@ -372,6 +410,7 @@ internal static class ProbeUsage
         Console.Error.WriteLine("  Deckle.Autocorrect.Probe --autocorrect-benchmark [--iterations <n>] [--json]");
         Console.Error.WriteLine("  Deckle.Autocorrect.Probe --stale-work-probe [--iterations <n>]");
         Console.Error.WriteLine("  Deckle.Autocorrect.Probe --anticipation-lead-oracle --stream <autocorrect.stream.jsonl> [--stream-bytes <n>]");
+        Console.Error.WriteLine("  Deckle.Autocorrect.Probe --sentence-profile [--model <dir>] [--provider <cpu|dml>] [--iterations <rounds>]");
         Console.Error.WriteLine("  Deckle.Autocorrect.Probe --caret-context [--delay <seconds>] [--max-chars <64..4096>]");
         Console.Error.WriteLine();
         Console.Error.WriteLine(

@@ -6,6 +6,8 @@
   <ItemGroup>
     <!-- Pure scoring geometry is internal; tests reach it through this seam. -->
     <InternalsVisibleTo Include="Deckle.Autocorrect.Tests" />
+    <!-- The isolated probe profiles the exact scorer without widening its public API. -->
+    <InternalsVisibleTo Include="Deckle.Autocorrect.Probe" />
   </ItemGroup>
 
   <ItemGroup>

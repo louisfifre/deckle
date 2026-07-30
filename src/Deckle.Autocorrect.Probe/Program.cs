@@ -14,6 +14,7 @@ return parsed.Mode switch
     ProbeMode.AutocorrectBenchmark => AutocorrectBenchmarkCommand.Run(parsed),
     ProbeMode.StaleWork => StaleWorkProbeCommand.Run(parsed),
     ProbeMode.AnticipationLead => AnticipationLeadOracleCommand.Run(parsed),
+    ProbeMode.SentenceProfile => SentenceProfileCommand.Run(parsed),
     ProbeMode.CaretContext => CaretContextProbeCommand.Run(parsed),
     _ => 2,
 };

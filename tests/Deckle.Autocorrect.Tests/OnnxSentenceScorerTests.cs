@@ -98,6 +98,33 @@ public sealed class OnnxSentenceScorerTests
         }
     }
 
+    [Fact]
+    [Trait("Category", "system")]
+    public void ProfiledScoringPreservesTheOrdinaryOutcomeWhenModelIsStaged()
+    {
+        if (!RunIntegrationTests())
+            return;
+
+        string dir = ResolveModelDir();
+        if (!IsGenaiModelStaged(dir))
+            return;
+
+        using var scorer = new OnnxSentenceScorer(dir, margin: 0.0);
+        string[] candidates = ["je suis la", "je suis là"];
+
+        SentenceScoringOutcome ordinary = scorer.Score(candidates);
+        ProfiledSentenceScoringOutcome profiled = scorer.ScoreProfiled(candidates);
+
+        Assert.Equal(ordinary.Chosen, profiled.Outcome.Chosen);
+        Assert.Equal(ordinary.AbstainReason, profiled.Outcome.AbstainReason);
+        Assert.Equal(
+            ordinary.Scores.Select(static score => score.Score),
+            profiled.Outcome.Scores.Select(static score => score.Score));
+        Assert.Equal(2, profiled.Profile.Orders.Count);
+        Assert.All(profiled.Profile.Orders, order =>
+            Assert.Equal(candidates.Length, order.Candidates.Count));
+    }
+
     private static string ResolveModelDir()
     {
         string? overrideDir = Environment.GetEnvironmentVariable("DECKLE_ONNX_JUDGE_MODEL_DIR");
