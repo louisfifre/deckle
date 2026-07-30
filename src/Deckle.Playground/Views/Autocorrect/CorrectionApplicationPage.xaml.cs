@@ -152,7 +152,14 @@ public sealed partial class CorrectionApplicationPage : Page
 
         // The button owns focus on Click. Return it before a lease exists, so
         // the focus transition cannot poison the lease we are about to create.
-        Editor.Focus(FocusState.Programmatic);
+        // GotFocus can be delivered after this Click handler continues. A
+        // completed focus transfer is already a neutral composition boundary:
+        // the UI thread cannot interleave new text input before the lease is
+        // created, and later composition events still poison that lease.
+        if (Editor.Focus(FocusState.Programmatic) && HasEditorFocus())
+        {
+            _composition = CompositionAuthority.Neutral;
+        }
 
         if (!_surface.ArmDiagnosticSentence(
                 _fixture.SentenceStart,
