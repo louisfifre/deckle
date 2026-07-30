@@ -14,6 +14,7 @@ internal enum ProbeMode
     SentenceCalibration,
     SentenceCanonicalLatency,
     SentenceOrderAblation,
+    SentenceBatchExperiment,
     CaretContext,
 }
 
@@ -142,6 +143,15 @@ internal sealed class ProbeArguments
                 if (modeSelected)
                     return null;
                 mode = ProbeMode.SentenceOrderAblation;
+                modeSelected = true;
+                continue;
+            }
+
+            if (arg is "--sentence-batch-experiment")
+            {
+                if (modeSelected)
+                    return null;
+                mode = ProbeMode.SentenceBatchExperiment;
                 modeSelected = true;
                 continue;
             }
@@ -451,7 +461,8 @@ internal sealed class ProbeArguments
             };
         }
 
-        if (mode == ProbeMode.SentenceOrderAblation)
+        if (mode is ProbeMode.SentenceOrderAblation
+            or ProbeMode.SentenceBatchExperiment)
         {
             if (models.Count > 1 || thresholds.Count > 0 || candidates.Count > 0
                 || showCases || json || margin != 0.0 || iterationsSpecified
@@ -537,6 +548,7 @@ internal static class ProbeUsage
         Console.Error.WriteLine("  Deckle.Autocorrect.Probe --sentence-calibration [--model <dir>] [--provider <cpu|dml>]");
         Console.Error.WriteLine("  Deckle.Autocorrect.Probe --sentence-canonical-latency [--model <dir>] [--provider <cpu|dml>]");
         Console.Error.WriteLine("  Deckle.Autocorrect.Probe --sentence-order-ablation [--model <dir>] [--provider <cpu|dml>]");
+        Console.Error.WriteLine("  Deckle.Autocorrect.Probe --sentence-batch-experiment [--model <dir>] [--provider <cpu|dml>]");
         Console.Error.WriteLine("  Deckle.Autocorrect.Probe --caret-context [--delay <seconds>] [--max-chars <64..4096>]");
         Console.Error.WriteLine();
         Console.Error.WriteLine(

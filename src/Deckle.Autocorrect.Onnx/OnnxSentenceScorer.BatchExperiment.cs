@@ -1,0 +1,224 @@
+using Deckle.Autocorrect;
+using Microsoft.ML.OnnxRuntimeGenAI;
+
+namespace Deckle.Autocorrect.Onnx;
+
+public sealed partial class OnnxSentenceScorer
+{
+    internal SentenceBatchExperimentOutcome ScoreBatchExperimental(
+        IReadOnlyList<string> candidates)
+    {
+        if (candidates.Count != 2)
+            return SentenceBatchExperimentOutcome.Failed("input", "candidate_count");
+        if (candidates.Any(static candidate => string.IsNullOrWhiteSpace(candidate)))
+            return SentenceBatchExperimentOutcome.Failed("input", "empty_candidate");
+        if (_vocabSize <= 0)
+            return SentenceBatchExperimentOutcome.Failed("input", "vocab_size_missing");
+
+        string prompt = BuildScoringPrompt(candidates);
+        int[] promptTokens = AddBosIfNeeded(Encode(prompt));
+        if (promptTokens.Length == 0)
+            return SentenceBatchExperimentOutcome.Failed("tokenization", "empty_prompt");
+
+        int[][] completionTokens = candidates
+            .Select(candidate => StripBos(Encode(candidate + "\n")))
+            .ToArray();
+        CandidateCompletionPlan[] plans = CandidateCompletionPlan.Create(completionTokens);
+        if (plans.Length != 2)
+            return SentenceBatchExperimentOutcome.Failed("planning", "plan_count");
+
+        int[][] expectedInputs = new int[2][];
+        for (int batchIndex = 0; batchIndex < 2; batchIndex++)
+        {
+            CandidateCompletionPlan plan = plans[batchIndex];
+            if (completionTokens[batchIndex].Length == 0
+                || plan.Count <= 0
+                || plan.Start < 0
+                || plan.EndExclusive > completionTokens[batchIndex].Length)
+            {
+                return SentenceBatchExperimentOutcome.Failed("planning", "invalid_completion_plan");
+            }
+
+            expectedInputs[batchIndex] = ComposeBatchInput(
+                promptTokens,
+                completionTokens[batchIndex],
+                plan.EndExclusive);
+        }
+
+        int sequenceLength = expectedInputs[0].Length;
+        if (sequenceLength != expectedInputs[1].Length)
+            return SentenceBatchExperimentOutcome.Failed("input_geometry", "unequal_sequence_lengths");
+
+        using Sequences sequences = _tokenizer.EncodeBatch([prompt, prompt]);
+        if (sequences.NumSequences != 2)
+            return SentenceBatchExperimentOutcome.Failed("tokenization", "batch_sequence_count");
+
+        for (int batchIndex = 0; batchIndex < 2; batchIndex++)
+        {
+            ulong sequenceIndex = (ulong)batchIndex;
+            if (!sequences[sequenceIndex].SequenceEqual(promptTokens))
+                return SentenceBatchExperimentOutcome.Failed("tokenization", "prompt_token_mismatch");
+
+            CandidateCompletionPlan plan = plans[batchIndex];
+            for (int tokenIndex = 0; tokenIndex < plan.EndExclusive; tokenIndex++)
+                sequences.Append(completionTokens[batchIndex][tokenIndex], sequenceIndex);
+
+            if (!sequences[sequenceIndex].SequenceEqual(expectedInputs[batchIndex]))
+                return SentenceBatchExperimentOutcome.Failed("tokenization", "composed_sequence_mismatch");
+        }
+
+        using var generatorParams = new GeneratorParams(_model);
+        generatorParams.SetSearchOption("batch_size", 2);
+        generatorParams.SetSearchOption("max_length", sequenceLength + 1);
+        using var generator = new Generator(_model, generatorParams);
+        generator.AppendTokenSequences(sequences);
+        using Tensor logits = generator.GetOutput(LogitsOutputName);
+
+        long[] shape = logits.Shape();
+        string? geometryFailure = ValidateBatchTensorGeometry(
+            logits.Type(),
+            shape,
+            logits.NumElements(),
+            sequenceLength,
+            _vocabSize);
+        if (geometryFailure is not null)
+            return SentenceBatchExperimentOutcome.Failed("tensor_geometry", geometryFailure);
+
+        var scores = new SentenceCandidateScore[2];
+        for (int batchIndex = 0; batchIndex < 2; batchIndex++)
+        {
+            CandidateCompletionPlan plan = plans[batchIndex];
+            double logProbability = 0.0;
+            int scored = 0;
+            for (int next = plan.Start; next < plan.EndExclusive; next++)
+            {
+                int tokenId = completionTokens[batchIndex][next];
+                if (tokenId < 0 || tokenId >= _vocabSize)
+                    return SentenceBatchExperimentOutcome.Failed("scoring", "token_out_of_vocab");
+
+                int predictPosition = promptTokens.Length + next - 1;
+                if (predictPosition < 0 || predictPosition >= sequenceLength)
+                    return SentenceBatchExperimentOutcome.Failed("scoring", "prediction_position");
+
+                int flatPosition = BatchLogitsPosition(
+                    batchIndex,
+                    sequenceLength,
+                    predictPosition);
+                float[] row = LogitsRow(logits, flatPosition);
+                if (row.Length != _vocabSize)
+                    return SentenceBatchExperimentOutcome.Failed("scoring", "logits_row");
+
+                double tokenLogProbability = LogProbability(row, tokenId);
+                if (!double.IsFinite(tokenLogProbability))
+                    return SentenceBatchExperimentOutcome.Failed("scoring", "non_finite_score");
+                logProbability += tokenLogProbability;
+                scored++;
+            }
+
+            if (scored == 0)
+                return SentenceBatchExperimentOutcome.Failed("scoring", "zero_scored_tokens");
+            double score = logProbability / scored;
+            if (!double.IsFinite(score) || !double.IsFinite(logProbability))
+                return SentenceBatchExperimentOutcome.Failed("scoring", "non_finite_score");
+            scores[batchIndex] = new SentenceCandidateScore(
+                candidates[batchIndex],
+                score,
+                logProbability,
+                scored);
+        }
+
+        SentenceScoringOutcome outcome = DecideExperimental(scores);
+        return new SentenceBatchExperimentOutcome(
+            outcome,
+            promptTokens.Length,
+            sequenceLength,
+            shape,
+            logits.Type().ToString(),
+            null,
+            null);
+    }
+
+    internal static int[] ComposeBatchInput(
+        IReadOnlyList<int> promptTokens,
+        IReadOnlyList<int> completionTokens,
+        int completionEndExclusive)
+    {
+        if (completionEndExclusive < 0 || completionEndExclusive > completionTokens.Count)
+            throw new ArgumentOutOfRangeException(nameof(completionEndExclusive));
+
+        var input = new int[promptTokens.Count + completionEndExclusive];
+        for (int index = 0; index < promptTokens.Count; index++)
+            input[index] = promptTokens[index];
+        for (int index = 0; index < completionEndExclusive; index++)
+            input[promptTokens.Count + index] = completionTokens[index];
+        return input;
+    }
+
+    internal static int BatchLogitsPosition(
+        int batchIndex,
+        int sequenceLength,
+        int predictPosition)
+    {
+        if (batchIndex < 0)
+            throw new ArgumentOutOfRangeException(nameof(batchIndex));
+        if (sequenceLength <= 0)
+            throw new ArgumentOutOfRangeException(nameof(sequenceLength));
+        if (predictPosition < 0 || predictPosition >= sequenceLength)
+            throw new ArgumentOutOfRangeException(nameof(predictPosition));
+        return checked((batchIndex * sequenceLength) + predictPosition);
+    }
+
+    internal static string? ValidateBatchTensorGeometry(
+        ElementType elementType,
+        IReadOnlyList<long> shape,
+        long numElements,
+        int sequenceLength,
+        int vocabSize)
+    {
+        if (elementType is not ElementType.float16 and not ElementType.float32)
+            return "tensor_type";
+        if (shape.Count != 3)
+            return "tensor_rank";
+        if (shape[0] != 2)
+            return "tensor_batch";
+        if (shape[1] != sequenceLength)
+            return "tensor_sequence";
+        if (shape[2] != vocabSize)
+            return "tensor_vocab";
+
+        long expected = checked(2L * sequenceLength * vocabSize);
+        return numElements == expected ? null : "tensor_elements";
+    }
+
+    private SentenceScoringOutcome DecideExperimental(
+        IReadOnlyList<SentenceCandidateScore> scores)
+    {
+        int best = scores[1].Score > scores[0].Score ? 1 : 0;
+        int second = 1 - best;
+        double margin = scores[best].Score - scores[second].Score;
+        bool cleared = double.IsFinite(margin) && margin > 0.0 && margin >= _margin;
+        return new SentenceScoringOutcome(
+            cleared ? scores[best].Text : null,
+            scores,
+            margin,
+            _margin,
+            cleared ? null : SentenceScoringOutcome.AbstainReasons.BelowMargin);
+    }
+}
+
+internal sealed record SentenceBatchExperimentOutcome(
+    SentenceScoringOutcome? Outcome,
+    int PromptTokens,
+    int SequenceLength,
+    IReadOnlyList<long> TensorShape,
+    string? TensorType,
+    string? FailureStage,
+    string? FailureReason)
+{
+    public bool TechnicallyValid => Outcome is not null
+        && FailureStage is null
+        && FailureReason is null;
+
+    public static SentenceBatchExperimentOutcome Failed(string stage, string reason) =>
+        new(null, 0, 0, Array.Empty<long>(), null, stage, reason);
+}
