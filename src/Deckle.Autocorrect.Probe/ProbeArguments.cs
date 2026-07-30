@@ -16,6 +16,7 @@ internal enum ProbeMode
     SentenceOrderAblation,
     SentenceBatchTokenization,
     SentenceBatchExperiment,
+    SentenceDecisionInventory,
     CaretContext,
 }
 
@@ -162,6 +163,15 @@ internal sealed class ProbeArguments
                 if (modeSelected)
                     return null;
                 mode = ProbeMode.SentenceBatchTokenization;
+                modeSelected = true;
+                continue;
+            }
+
+            if (arg is "--sentence-decision-inventory")
+            {
+                if (modeSelected)
+                    return null;
+                mode = ProbeMode.SentenceDecisionInventory;
                 modeSelected = true;
                 continue;
             }
@@ -330,6 +340,30 @@ internal sealed class ProbeArguments
         {
             if (models.Count > 0 || thresholds.Count > 0 || candidates.Count > 0
                 || showCases || json || margin != 0.0 || provider != "dml" || iterationsSpecified)
+                return null;
+
+            return new ProbeArguments
+            {
+                Mode = mode,
+                Models = Array.Empty<ModelSpec>(),
+                Margin = 0.0,
+                Thresholds = Array.Empty<double>(),
+                Candidates = Array.Empty<string>(),
+                ShowCases = false,
+                Json = false,
+                Provider = provider,
+                Iterations = iterations,
+                DelaySeconds = delaySeconds,
+                MaxCharacters = maxCharacters,
+            };
+        }
+
+        if (mode == ProbeMode.SentenceDecisionInventory)
+        {
+            if (models.Count > 0 || thresholds.Count > 0 || candidates.Count > 0
+                || showCases || json || margin != 0.0 || provider != "dml"
+                || iterationsSpecified || delaySpecified || maxCharactersSpecified
+                || streamPath is not null || streamBytesSpecified)
                 return null;
 
             return new ProbeArguments
@@ -561,6 +595,7 @@ internal static class ProbeUsage
         Console.Error.WriteLine("  Deckle.Autocorrect.Probe --sentence-order-ablation [--model <dir>] [--provider <cpu|dml>]");
         Console.Error.WriteLine("  Deckle.Autocorrect.Probe --sentence-batch-tokenization [--model <dir>] [--provider <cpu|dml>]");
         Console.Error.WriteLine("  Deckle.Autocorrect.Probe --sentence-batch-experiment [--model <dir>] [--provider <cpu|dml>]");
+        Console.Error.WriteLine("  Deckle.Autocorrect.Probe --sentence-decision-inventory");
         Console.Error.WriteLine("  Deckle.Autocorrect.Probe --caret-context [--delay <seconds>] [--max-chars <64..4096>]");
         Console.Error.WriteLine();
         Console.Error.WriteLine(

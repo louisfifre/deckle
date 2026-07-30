@@ -21,6 +21,7 @@ return parsed.Mode switch
     ProbeMode.SentenceOrderAblation => SentenceOrderAblationCommand.Run(parsed),
     ProbeMode.SentenceBatchTokenization => SentenceBatchTokenizationCommand.Run(parsed),
     ProbeMode.SentenceBatchExperiment => SentenceBatchExperimentCommand.Run(parsed),
+    ProbeMode.SentenceDecisionInventory => SentenceDecisionInventoryCommand.Run(),
     ProbeMode.CaretContext => CaretContextProbeCommand.Run(parsed),
     _ => 2,
 };
