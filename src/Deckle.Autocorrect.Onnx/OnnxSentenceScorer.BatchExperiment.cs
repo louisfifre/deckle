@@ -14,36 +14,29 @@ public sealed partial class OnnxSentenceScorer
                 preparation.FailureStage!,
                 preparation.FailureReason!);
 
-        string prompt = preparation.Prompt!;
         int[] promptTokens = preparation.PromptTokens;
         int[][] completionTokens = preparation.CompletionTokens;
         CandidateCompletionPlan[] plans = preparation.Plans;
         int[][] expectedInputs = preparation.ExpectedInputs;
         int sequenceLength = expectedInputs[0].Length;
-
-        using Sequences sequences = _tokenizer.EncodeBatch([prompt, prompt]);
-        if (sequences.NumSequences != 2)
-            return SentenceBatchExperimentOutcome.Failed("tokenization", "batch_sequence_count");
-
-        for (int batchIndex = 0; batchIndex < 2; batchIndex++)
-        {
-            ulong sequenceIndex = (ulong)batchIndex;
-            if (!sequences[sequenceIndex].SequenceEqual(promptTokens))
-                return SentenceBatchExperimentOutcome.Failed("tokenization", "prompt_token_mismatch");
-
-            CandidateCompletionPlan plan = plans[batchIndex];
-            for (int tokenIndex = 0; tokenIndex < plan.EndExclusive; tokenIndex++)
-                sequences.Append(completionTokens[batchIndex][tokenIndex], sequenceIndex);
-
-            if (!sequences[sequenceIndex].SequenceEqual(expectedInputs[batchIndex]))
-                return SentenceBatchExperimentOutcome.Failed("tokenization", "composed_sequence_mismatch");
-        }
+        int[] flattenedInputs = FlattenBatchInputs(expectedInputs);
 
         using var generatorParams = new GeneratorParams(_model);
         generatorParams.SetSearchOption("batch_size", 2);
         generatorParams.SetSearchOption("max_length", sequenceLength + 1);
         using var generator = new Generator(_model, generatorParams);
-        generator.AppendTokenSequences(sequences);
+        generator.AppendTokens(flattenedInputs);
+        int[][] observedInputs =
+        [
+            generator.GetSequence(0).ToArray(),
+            generator.GetSequence(1).ToArray(),
+        ];
+        if (!ExactBatchSequencesMatch(expectedInputs, observedInputs))
+        {
+            return SentenceBatchExperimentOutcome.Failed(
+                "sequence_construction",
+                "flat_sequence_mismatch");
+        }
         using Tensor logits = generator.GetOutput(LogitsOutputName);
 
         long[] shape = logits.Shape();
@@ -258,6 +251,30 @@ public sealed partial class OnnxSentenceScorer
         for (int index = 0; index < tokens.Count; index++)
             result[index + 1] = tokens[index];
         return result;
+    }
+
+    internal static int[] FlattenBatchInputs(IReadOnlyList<int[]> inputs)
+    {
+        if (inputs.Count != 2)
+            throw new ArgumentException("Exactly two batch inputs are required.", nameof(inputs));
+        int sequenceLength = inputs[0].Length;
+        if (sequenceLength <= 0 || inputs[1].Length != sequenceLength)
+            throw new ArgumentException("Batch inputs must have equal nonzero lengths.", nameof(inputs));
+
+        var flattened = new int[checked(2 * sequenceLength)];
+        Array.Copy(inputs[0], 0, flattened, 0, sequenceLength);
+        Array.Copy(inputs[1], 0, flattened, sequenceLength, sequenceLength);
+        return flattened;
+    }
+
+    internal static bool ExactBatchSequencesMatch(
+        IReadOnlyList<int[]> expected,
+        IReadOnlyList<int[]> observed)
+    {
+        if (expected.Count != 2 || observed.Count != 2)
+            return false;
+        return expected[0].AsSpan().SequenceEqual(observed[0])
+            && expected[1].AsSpan().SequenceEqual(observed[1]);
     }
 
     internal static int? FirstMismatch(

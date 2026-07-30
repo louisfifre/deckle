@@ -113,6 +113,49 @@ public sealed class SentenceBatchExperimentTests
         Assert.Equal([20, 21], source);
     }
 
+    [Fact]
+    public void FlattensExactBatchInputsInBatchMajorOrder()
+    {
+        int[] first = [10, 11, 12];
+        int[] second = [20, 21, 22];
+
+        Assert.Equal(
+            [10, 11, 12, 20, 21, 22],
+            OnnxSentenceScorer.FlattenBatchInputs([first, second]));
+        Assert.Equal([10, 11, 12], first);
+        Assert.Equal([20, 21, 22], second);
+    }
+
+    [Fact]
+    public void RejectsNonRectangularOrEmptyFlatBatchInputs()
+    {
+        Assert.Throws<ArgumentException>(() =>
+            OnnxSentenceScorer.FlattenBatchInputs([[1], [2], [3]]));
+        Assert.Throws<ArgumentException>(() =>
+            OnnxSentenceScorer.FlattenBatchInputs([Array.Empty<int>(), Array.Empty<int>()]));
+        Assert.Throws<ArgumentException>(() =>
+            OnnxSentenceScorer.FlattenBatchInputs([[1], [2, 3]]));
+    }
+
+    [Fact]
+    public void ExactBatchSequenceGateRejectsSwapsTruncationAndWrongCardinality()
+    {
+        int[][] expected = [[10, 11], [20, 21]];
+
+        Assert.True(OnnxSentenceScorer.ExactBatchSequencesMatch(
+            expected,
+            [[10, 11], [20, 21]]));
+        Assert.False(OnnxSentenceScorer.ExactBatchSequencesMatch(
+            expected,
+            [[20, 21], [10, 11]]));
+        Assert.False(OnnxSentenceScorer.ExactBatchSequencesMatch(
+            expected,
+            [[10], [20, 21]]));
+        Assert.False(OnnxSentenceScorer.ExactBatchSequencesMatch(
+            expected,
+            [[10, 11]]));
+    }
+
     [Theory]
     [InlineData(new[] { 1, 2 }, new[] { 1, 2 }, null)]
     [InlineData(new[] { 1, 3 }, new[] { 1, 2 }, 1)]
