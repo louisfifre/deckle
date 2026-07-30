@@ -96,8 +96,8 @@ function Show-ReleaseMenu {
 function Show-MaintenanceMenu {
     $sections = @(
         @{ Prefix = 'Statistics'; Items = @(
-            @{ Label = 'Repository statistics'; Value = 'stats' }
-            @{ Label = 'Context statistics';    Value = 'context' }
+            @{ Label = Get-MaintenanceScanLabel -Kind Repository; Value = 'stats' }
+            @{ Label = Get-MaintenanceScanLabel -Kind Context;    Value = 'context' }
         ) }
         @{ Prefix = 'Cleanup'; Items = @(
             @{ Label = 'Clean build outputs';     Value = 'clean' }
@@ -130,18 +130,10 @@ function Show-MaintenanceMenu {
                 if ($null -ne $result) { $resultTitle = $result.Title; $resultLines = @($result.Lines); $resultMode = 'Log' }
             }
             'stats' {
-                $scan = Invoke-MaintenanceScanFlow -Kind Repository
-                if ($null -eq $scan) { continue }
-                $resultTitle = $scan.Title
-                $resultLines = @($scan.Lines)
-                $resultMode = 'Report'
+                Invoke-MaintenanceScanFlow -Kind Repository
             }
             'context' {
-                $scan = Invoke-MaintenanceScanFlow -Kind Context
-                if ($null -eq $scan) { continue }
-                $resultTitle = $scan.Title
-                $resultLines = @($scan.Lines)
-                $resultMode = 'Report'
+                Invoke-MaintenanceScanFlow -Kind Context
             }
         }
     }
