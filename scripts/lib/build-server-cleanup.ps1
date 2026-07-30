@@ -74,7 +74,7 @@ function Stop-DotnetBuildServers {
     $beforeById = @{}
     foreach ($process in $before) { $beforeById[$process.Id] = $process }
 
-    & dotnet build-server shutdown
+    $commandOutput = @(& dotnet build-server shutdown 2>&1)
     $exitCode = $LASTEXITCODE
     Start-Sleep -Milliseconds 500
 
@@ -102,5 +102,6 @@ function Stop-DotnetBuildServers {
         RemainingSummary = Format-DotnetBuildServerCount -Count $after.Count -WorkingSet ([int64](($after | Measure-Object WorkingSet -Sum).Sum ?? 0))
         StoppedList      = Format-DotnetBuildServerList -Processes $stopped
         RemainingList    = Format-DotnetBuildServerList -Processes $after
+        CommandOutput    = @($commandOutput | ForEach-Object { [string]$_ })
     }
 }

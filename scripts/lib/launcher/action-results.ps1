@@ -13,6 +13,21 @@ function Get-DeckleActionLogLevel {
     return 'Info'
 }
 
+function ConvertFrom-DeckleTerminalOutput {
+    param([AllowNull()]$InputObject)
+
+    $text = [string]$InputObject
+    $escape = [string][char]27
+    $text = $text `
+        -replace "$escape\][^$([char]7)]*(?:$([char]7)|$escape\\)", '' `
+        -replace "$escape\[[0-9;?]*[ -/]*[@-~]", ''
+    return ($text `
+        -replace "\r\n", "`n" `
+        -replace "\r", "`n" `
+        -replace "`t", '    ' `
+        -replace '[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]', '')
+}
+
 function ConvertTo-DeckleActionLogLines {
     param(
         [Parameter(Mandatory)]$InputObject,
@@ -20,9 +35,8 @@ function ConvertTo-DeckleActionLogLines {
         [datetime]$Timestamp = (Get-Date)
     )
 
-    $raw = [string]$InputObject
-    $withoutAnsi = $raw -replace "$([char]27)\[[0-9;?]*[ -/]*[@-~]", ''
-    foreach ($message in @($withoutAnsi -split "\r?\n")) {
+    $terminalText = ConvertFrom-DeckleTerminalOutput -InputObject $InputObject
+    foreach ($message in @($terminalText -split "\n")) {
         if ([string]::IsNullOrWhiteSpace($message)) { continue }
         $level = Get-DeckleActionLogLevel -Message $message
         '{0}  {1,-7}  {2,-8}  {3}' -f $Timestamp.ToString('HH:mm:ss'), $level, $Source, $message.TrimEnd()
@@ -66,8 +80,8 @@ function Invoke-DeckleMenuAction {
 
     try {
         & $Action *>&1 | ForEach-Object {
-            $rawOutput = ([string]$_) -replace "$([char]27)\[[0-9;?]*[ -/]*[@-~]", ''
-            foreach ($rawLine in @($rawOutput -split "\r?\n")) {
+            $rawOutput = ConvertFrom-DeckleTerminalOutput -InputObject $_
+            foreach ($rawLine in @($rawOutput -split "\n")) {
                 if ($rawLine -match '^\s*Result\s*:\s*(Success|Failed|Partial|Skipped)\s*$') {
                     $reportedResult = $Matches[1]
                 }
