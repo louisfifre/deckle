@@ -143,11 +143,15 @@ public sealed class AnticipationTransactionJoinTests
             Assert.Equal(1, report.Replay.FirstTerminalGestures);
             Assert.Equal(1, report.Replay.SubmittedTransactions);
             Assert.Equal(1, report.Replay.JoinedEligibleTransactions);
+            Assert.Equal(0, report.Replay.QuarantinedBoundaryDisagreementTransactions);
+            Assert.Equal(1, report.Replay.LaneSubmitCalls);
+            Assert.Equal(1, report.Replay.LaneClosedRequestCalls);
+            Assert.Equal(0, report.Replay.LaneHistoricalRequestCalls);
             Assert.Equal(0, report.Replay.SuffixMismatches);
             Assert.Equal(0, report.Replay.TransactionMismatches);
             Assert.Equal("eligible_observations_present", report.Replay.EligibilityOutcome);
             KeyValuePair<int, int> candidateCount = Assert.Single(
-                report.Replay.CandidateCountHistogram);
+                report.Replay.JoinedCandidateCountHistogram);
             Assert.True(candidateCount.Key >= 2);
             Assert.Equal(1, candidateCount.Value);
 
@@ -285,6 +289,69 @@ public sealed class AnticipationTransactionJoinTests
         Assert.Equal(0, report.Replay.KnownBoundaryTerminalGestures);
         Assert.Equal(1, report.Replay.UnknownBoundaryTerminalGestures);
         Assert.Equal(0, report.Replay.SubmittedTransactions);
+    }
+
+    [Fact]
+    public void CaptureAfterErasingTheOnlyBoundaryIsQuarantined()
+    {
+        string firstClosure = Run("private-process", "seul.", 0, "repair");
+        string secondClosure = Run("private-process", ".", 1, "enter");
+
+        AnticipationTransactionJoinFileReport report = AnalyzeTemporary(
+            firstClosure + secondClosure);
+
+        Assert.True(report.TechnicallyValid);
+        Assert.Equal(2, report.Replay.FirstTerminalGestures);
+        Assert.Equal(1, report.Replay.SubmittedTransactions);
+        Assert.Equal(0, report.Replay.JoinedEligibleTransactions);
+        Assert.Equal(1, report.Replay.QuarantinedBoundaryDisagreementTransactions);
+        Assert.Equal(1, report.Replay.BoundaryDisagreementReasons[
+            "erased_last_observed_terminal"]);
+        Assert.Empty(report.Replay.JoinedCandidateCountHistogram);
+        Assert.All(report.Replay.Readiness, item =>
+        {
+            Assert.Equal(0, item.EligibleHits);
+            Assert.Equal(0, item.ReadyBeforeTerminal);
+        });
+        Assert.Equal(0, report.Replay.ProtocolViolations);
+        Assert.Equal("valid_zero_eligible_observations", report.Replay.EligibilityOutcome);
+    }
+
+    [Fact]
+    public void CaptureLaneCountsOneClosedRequestAsOneSubmission()
+    {
+        var lane = new AggregateTransactionCaptureLane();
+        var transaction = new ClosedSentenceTransaction(
+            "seul.",
+            ["seul"],
+            [new SentenceEditCandidate(0, 0, 4, "seule")]);
+
+        lane.Submit(new ClosedSentenceRerankRequest(transaction, Epoch: 7));
+
+        Assert.Equal(1, lane.SubmitCalls);
+        Assert.Equal(1, lane.ClosedRequestCalls);
+        Assert.Equal(0, lane.HistoricalRequestCalls);
+        Assert.Equal(0, lane.InvalidClosedRequestCalls);
+        Assert.Equal(1, lane.Count);
+        Assert.Equal(2, lane[0].CandidateCount);
+        Assert.True(lane[0].SemanticallyValid);
+    }
+
+    [Fact]
+    public void CaptureLaneRejectsAClosedRequestWithoutAnEdit()
+    {
+        var lane = new AggregateTransactionCaptureLane();
+        var transaction = new ClosedSentenceTransaction(
+            "seul.",
+            ["seul"],
+            []);
+
+        lane.Submit(new ClosedSentenceRerankRequest(transaction, Epoch: 7));
+
+        Assert.Equal(1, lane.SubmitCalls);
+        Assert.Equal(1, lane.ClosedRequestCalls);
+        Assert.Equal(1, lane.InvalidClosedRequestCalls);
+        Assert.False(lane[0].SemanticallyValid);
     }
 
     [Fact]

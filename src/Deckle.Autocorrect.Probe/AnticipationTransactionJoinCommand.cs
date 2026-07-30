@@ -116,6 +116,7 @@ internal static class AnticipationTransactionJoinCommand
         int unusableTimingGestures = 0;
         int submittedTransactions = 0;
         int joinedEligibleTransactions = 0;
+        int quarantinedBoundaryDisagreementTransactions = 0;
         int noTransactionSubmitted = 0;
         int knownBoundaryTerminalGestures = 0;
         int unknownBoundaryTerminalGestures = 0;
@@ -124,12 +125,16 @@ internal static class AnticipationTransactionJoinCommand
         int suffixMismatches = 0;
         int transactionMismatches = 0;
         int protocolViolations = 0;
+        int nonTerminalSubmissions = 0;
+        int nonFirstTerminalSubmissions = 0;
         bool sentenceContinuityKnown = false;
         bool spanStartsAfterObservedEnter = false;
+        string boundaryEvidence = "initial_unknown";
         string activeProcess = string.Empty;
         var span = new StringBuilder();
         var eligible = new List<EligibleTerminal>();
         var candidateCounts = new Dictionary<int, int>();
+        var boundaryDisagreementReasons = new Dictionary<string, int>();
         var capture = new AggregateTransactionCaptureLane();
         using var session = new BenchmarkKeyboardSession(
             policies.Policy,
@@ -150,6 +155,7 @@ internal static class AnticipationTransactionJoinCommand
                 ResetSpan(session, span, startsAfterObservedEnter: false);
                 sentenceContinuityKnown = false;
                 spanStartsAfterObservedEnter = false;
+                boundaryEvidence = "malformed_run";
                 activeProcess = string.Empty;
                 spans++;
                 continue;
@@ -163,18 +169,21 @@ internal static class AnticipationTransactionJoinCommand
                 ResetSpan(session, span, startsAfterObservedEnter: false);
                 sentenceContinuityKnown = false;
                 spanStartsAfterObservedEnter = false;
+                boundaryEvidence = "process_change";
                 spans++;
             }
             activeProcess = run.Process;
 
             for (int index = 0; index < run.Erased; index++)
                 session.Backspace();
+            bool boundaryWasKnownBeforeErasure = sentenceContinuityKnown;
             bool erasedBeyondObservedSpan = run.Erased > span.Length;
             if (erasedBeyondObservedSpan)
             {
                 ResetSpan(session, span, startsAfterObservedEnter: false);
                 sentenceContinuityKnown = false;
                 spanStartsAfterObservedEnter = false;
+                boundaryEvidence = "erased_beyond_observed_span";
                 spans++;
             }
             else if (run.Erased == span.Length)
@@ -182,77 +191,115 @@ internal static class AnticipationTransactionJoinCommand
             else if (run.Erased > 0)
                 span.Length -= run.Erased;
             if (!erasedBeyondObservedSpan)
+            {
                 sentenceContinuityKnown = spanStartsAfterObservedEnter
                     || ContainsTerminal(span);
+                if (sentenceContinuityKnown)
+                    boundaryEvidence = spanStartsAfterObservedEnter
+                        ? "observed_enter"
+                        : "observed_terminal";
+                else if (boundaryWasKnownBeforeErasure && run.Erased > 0)
+                    boundaryEvidence = "erased_last_observed_terminal";
+            }
 
             int[]? gaps = ParseTiming(run.Timing, run.Text.Length);
             for (int index = 0; index < run.Text.Length; index++)
             {
                 char current = run.Text[index];
+                bool terminalStimulus = IsTerminal(current);
                 bool firstTerminal = IsTerminal(current)
                     && (span.Length == 0 || !IsTerminal(span[^1]));
-                int captureCountBefore = capture.Count;
+                int submitCallsBefore = capture.SubmitCalls;
+                int summariesBefore = capture.Count;
                 session.Type(current.ToString(), interKeyMs: 0);
+                int submitDelta = capture.SubmitCalls - submitCallsBefore;
+                int summaryDelta = capture.Count - summariesBefore;
+                bool noCapture = submitDelta == 0 && summaryDelta == 0;
+                bool oneClosedCapture = submitDelta == 1 && summaryDelta == 1;
 
-                if (firstTerminal)
+                if (!firstTerminal)
                 {
-                    bool hadKnownSentenceBoundary = sentenceContinuityKnown;
-                    sentenceContinuityKnown = true;
-                    terminalGestures++;
-                    if (hadKnownSentenceBoundary)
-                        knownBoundaryTerminalGestures++;
-                    else
-                        unknownBoundaryTerminalGestures++;
-                    bool knownPreceding = span.Length > 0;
-                    bool usableTiming = gaps is not null;
-                    if (!knownPreceding)
-                        noKnownPrecedingText++;
-                    else if (!usableTiming)
-                        unusableTimingGestures++;
-                    else
-                        usableTimingGestures++;
-
-                    int captureDelta = capture.Count - captureCountBefore;
-                    if (captureDelta == 1)
+                    if (!noCapture)
                     {
-                        if (!hadKnownSentenceBoundary)
-                        {
-                            protocolViolations++;
-                            span.Append(current);
-                            continue;
-                        }
-                        submittedTransactions++;
-                        AggregateTransactionSummary summary = capture[captureCountBefore];
-                        if (!MatchesVisibleTransaction(
-                                session.VisibleText,
-                                summary.Literal,
-                                current))
-                        {
-                            transactionMismatches++;
-                            span.Append(current);
-                            continue;
-                        }
-                        candidateCounts[summary.CandidateCount] =
-                            candidateCounts.TryGetValue(summary.CandidateCount, out int count)
-                                ? count + 1
-                                : 1;
-                        if (knownPreceding && usableTiming)
-                        {
-                            joinedEligibleTransactions++;
-                            eligible.Add(new EligibleTerminal(current, gaps![index]));
-                        }
-                    }
-                    else if (captureDelta == 0)
-                    {
-                        noTransactionSubmitted++;
-                        if (hadKnownSentenceBoundary)
-                            knownBoundaryNoTransactionSubmitted++;
-                        else
-                            unknownBoundaryNoTransactionSubmitted++;
-                    }
-                    else
                         protocolViolations++;
+                        if (oneClosedCapture && terminalStimulus)
+                            nonFirstTerminalSubmissions++;
+                        else if (oneClosedCapture)
+                            nonTerminalSubmissions++;
+                    }
+                    span.Append(current);
+                    continue;
                 }
+
+                string boundaryEvidenceBeforeTerminal = boundaryEvidence;
+                bool hadKnownSentenceBoundary = sentenceContinuityKnown;
+                sentenceContinuityKnown = true;
+                boundaryEvidence = "observed_terminal";
+                terminalGestures++;
+                if (hadKnownSentenceBoundary)
+                    knownBoundaryTerminalGestures++;
+                else
+                    unknownBoundaryTerminalGestures++;
+                bool knownPreceding = span.Length > 0;
+                bool usableTiming = gaps is not null;
+                if (!knownPreceding)
+                    noKnownPrecedingText++;
+                else if (!usableTiming)
+                    unusableTimingGestures++;
+                else
+                    usableTimingGestures++;
+
+                if (oneClosedCapture)
+                {
+                    submittedTransactions++;
+                    AggregateTransactionSummary summary = capture[summariesBefore];
+                    if (!summary.SemanticallyValid)
+                    {
+                        protocolViolations++;
+                        span.Append(current);
+                        continue;
+                    }
+                    if (!MatchesVisibleTransaction(
+                            session.VisibleText,
+                            summary.Literal,
+                            current))
+                    {
+                        transactionMismatches++;
+                        span.Append(current);
+                        continue;
+                    }
+                    if (!hadKnownSentenceBoundary)
+                    {
+                        quarantinedBoundaryDisagreementTransactions++;
+                        boundaryDisagreementReasons[boundaryEvidenceBeforeTerminal] =
+                            boundaryDisagreementReasons.TryGetValue(
+                                boundaryEvidenceBeforeTerminal,
+                                out int boundaryCount)
+                                ? boundaryCount + 1
+                                : 1;
+                        span.Append(current);
+                        continue;
+                    }
+                    candidateCounts[summary.CandidateCount] =
+                        candidateCounts.TryGetValue(summary.CandidateCount, out int count)
+                            ? count + 1
+                            : 1;
+                    if (knownPreceding && usableTiming)
+                    {
+                        joinedEligibleTransactions++;
+                        eligible.Add(new EligibleTerminal(current, gaps![index]));
+                    }
+                }
+                else if (noCapture)
+                {
+                    noTransactionSubmitted++;
+                    if (hadKnownSentenceBoundary)
+                        knownBoundaryNoTransactionSubmitted++;
+                    else
+                        unknownBoundaryNoTransactionSubmitted++;
+                }
+                else
+                    protocolViolations++;
 
                 span.Append(current);
             }
@@ -263,8 +310,23 @@ internal static class AnticipationTransactionJoinCommand
                 ResetSpan(session, span, startsAfterObservedEnter);
                 sentenceContinuityKnown = startsAfterObservedEnter;
                 spanStartsAfterObservedEnter = startsAfterObservedEnter;
+                boundaryEvidence = startsAfterObservedEnter
+                    ? "observed_enter"
+                    : "span_reset";
                 spans++;
             }
+        }
+
+        int attributedSubmitCalls = submittedTransactions
+            + nonTerminalSubmissions
+            + nonFirstTerminalSubmissions
+            + capture.HistoricalRequestCalls;
+        if (capture.SubmitCalls != capture.ClosedRequestCalls + capture.HistoricalRequestCalls
+            || capture.ClosedRequestCalls != capture.Count
+            || capture.SubmitCalls != attributedSubmitCalls
+            || capture.HistoricalRequestCalls != 0)
+        {
+            protocolViolations++;
         }
 
         suffixMismatches = session.InjectionFailureCount;
@@ -283,6 +345,7 @@ internal static class AnticipationTransactionJoinCommand
             unusableTimingGestures,
             submittedTransactions,
             joinedEligibleTransactions,
+            quarantinedBoundaryDisagreementTransactions,
             noTransactionSubmitted,
             knownBoundaryTerminalGestures,
             unknownBoundaryTerminalGestures,
@@ -291,11 +354,20 @@ internal static class AnticipationTransactionJoinCommand
             suffixMismatches,
             transactionMismatches,
             protocolViolations,
+            nonTerminalSubmissions,
+            nonFirstTerminalSubmissions,
+            capture.SubmitCalls,
+            capture.ClosedRequestCalls,
+            capture.HistoricalRequestCalls,
+            capture.InvalidClosedRequestCalls,
             "pending_prefix_validation",
             candidateCounts.OrderBy(static pair => pair.Key).ToDictionary())
         {
             Branches = branches,
             Readiness = readiness,
+            BoundaryDisagreementReasons = boundaryDisagreementReasons
+                .OrderBy(static pair => pair.Key)
+                .ToDictionary(),
         };
     }
 
@@ -463,6 +535,8 @@ internal static class AnticipationTransactionJoinCommand
     }
 
     private static bool IsTerminal(char value) => value is '.' or '!' or '?' or '…';
+    internal static bool IsClosedTerminal(char value) => IsTerminal(value);
+
     private static bool ContainsTerminal(StringBuilder text)
     {
         for (int index = text.Length - 1; index >= 0; index--)
@@ -489,19 +563,37 @@ internal sealed class AggregateTransactionCaptureLane : IRerankLane
 
     public int Count => _captured.Count;
 
+    public int SubmitCalls { get; private set; }
+
+    public int ClosedRequestCalls { get; private set; }
+
+    public int HistoricalRequestCalls { get; private set; }
+
+    public int InvalidClosedRequestCalls { get; private set; }
+
     public AggregateTransactionSummary this[int index] => _captured[index];
 
     public Action<RerankResult>? ResultSink { get; set; }
 
     public void Submit(RerankRequest request)
     {
+        SubmitCalls++;
         if (request is ClosedSentenceRerankRequest closed)
         {
+            ClosedRequestCalls++;
             ClosedSentenceTransaction transaction = closed.Transaction;
+            bool semanticallyValid = IsSemanticallyValid(transaction);
+            if (!semanticallyValid)
+                InvalidClosedRequestCalls++;
             _captured.Add(new AggregateTransactionSummary(
                 transaction.Literal,
                 transaction.Words.Count,
-                1 + transaction.Edits.Count));
+                1 + transaction.Edits.Count,
+                semanticallyValid));
+        }
+        else
+        {
+            HistoricalRequestCalls++;
         }
         ResultSink?.Invoke(new RerankResult(
             SlotIndex: -1,
@@ -510,12 +602,38 @@ internal sealed class AggregateTransactionCaptureLane : IRerankLane
     }
 
     public void Dispose() { }
+
+    private static bool IsSemanticallyValid(ClosedSentenceTransaction transaction)
+    {
+        if (transaction.Literal.Length == 0
+            || !AnticipationTransactionJoinCommand.IsClosedTerminal(transaction.Literal[^1])
+            || transaction.Words.Count == 0
+            || transaction.Edits.Count == 0)
+        {
+            return false;
+        }
+
+        foreach (SentenceEditCandidate edit in transaction.Edits)
+        {
+            if (edit.SlotIndex < 0
+                || edit.SlotIndex >= transaction.Words.Count
+                || edit.Start < 0
+                || edit.Length <= 0
+                || edit.Start > transaction.Literal.Length - edit.Length
+                || edit.Replacement.Length == 0)
+            {
+                return false;
+            }
+        }
+        return true;
+    }
 }
 
 internal readonly record struct AggregateTransactionSummary(
     string Literal,
     int WordCount,
-    int CandidateCount);
+    int CandidateCount,
+    bool SemanticallyValid);
 
 internal readonly record struct TypingStreamPrefixIdentity(
     string AnalyzedSha256,
@@ -551,6 +669,7 @@ internal sealed record AnticipationTransactionJoinAnalysis(
     int UnusableTimingGestures,
     int SubmittedTransactions,
     int JoinedEligibleTransactions,
+    int QuarantinedBoundaryDisagreementTransactions,
     int NoTransactionSubmitted,
     int KnownBoundaryTerminalGestures,
     int UnknownBoundaryTerminalGestures,
@@ -559,11 +678,19 @@ internal sealed record AnticipationTransactionJoinAnalysis(
     int SuffixMismatches,
     int TransactionMismatches,
     int ProtocolViolations,
+    int NonTerminalSubmissions,
+    int NonFirstTerminalSubmissions,
+    int LaneSubmitCalls,
+    int LaneClosedRequestCalls,
+    int LaneHistoricalRequestCalls,
+    int LaneInvalidClosedRequestCalls,
     string EligibilityOutcome,
-    IReadOnlyDictionary<int, int> CandidateCountHistogram)
+    IReadOnlyDictionary<int, int> JoinedCandidateCountHistogram)
 {
     public IReadOnlyList<BranchPolicyReport> Branches { get; init; } = [];
     public IReadOnlyList<ReadinessReport> Readiness { get; init; } = [];
+    public IReadOnlyDictionary<string, int> BoundaryDisagreementReasons { get; init; } =
+        new Dictionary<string, int>();
 }
 
 internal sealed record BranchPolicyReport(
