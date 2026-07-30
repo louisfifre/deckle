@@ -62,6 +62,10 @@ doctrine). This file is generated from the Conventional-Commit history by
 - **scripts:** Remove obsolete menu paths
 - **scripts:** Separate commands from infrastructure
 
+### Removed
+
+- **playground:** Remove unsupported caret assumption
+
 ### Fixed
 
 - **setup:** Make native runtime installation releasable
