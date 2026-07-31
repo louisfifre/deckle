@@ -82,4 +82,51 @@ public sealed partial class DeckleAmbientSource
         if (IsEnabled()) WriteEvent(EvtBridgeForgotten);
     }
 
+    [Event(EvtBridgeEndpointRecovered,
+           Level = EventLevel.Informational,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Message = "Bridge endpoint recovered")]
+    public void BridgeEndpointRecovered()
+    {
+        if (IsEnabled()) WriteEvent(EvtBridgeEndpointRecovered);
+    }
+
+    [Event(EvtBridgeEndpointRecoveredDetail,
+           Level = EventLevel.Verbose,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Message = "bridge endpoint recovered | bridge_id={0} | old_ip={1} | new_ip={2} | identity_migrated={3}")]
+    public void BridgeEndpointRecoveredDetail(
+        string bridge_id,
+        string old_ip,
+        string new_ip,
+        bool identity_migrated)
+    {
+        if (!IsAmbientDetailEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Lifecycle)) return;
+        WriteEvent(EvtBridgeEndpointRecoveredDetail, bridge_id, old_ip, new_ip, identity_migrated);
+    }
+
+    [Event(EvtBridgeEndpointRecoveryFailed,
+           Level = EventLevel.Warning,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Message = "Bridge endpoint recovery failed")]
+    public void BridgeEndpointRecoveryFailed()
+    {
+        if (IsEnabled()) WriteEvent(EvtBridgeEndpointRecoveryFailed);
+    }
+
+    [Event(EvtBridgeEndpointRecoveryFailedDetail,
+           Level = EventLevel.Verbose,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Message = "bridge endpoint recovery failed | bridge_id={0} | bridge_ip={1} | candidates={2} | valid={3} | cause={4}")]
+    public void BridgeEndpointRecoveryFailedDetail(
+        string bridge_id,
+        string bridge_ip,
+        int candidates,
+        int valid,
+        string cause)
+    {
+        if (!IsAmbientDetailEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Lifecycle)) return;
+        WriteEvent(EvtBridgeEndpointRecoveryFailedDetail, bridge_id, bridge_ip, candidates, valid, cause);
+    }
+
 }

@@ -104,9 +104,13 @@ public sealed partial class AmbientEngine
             // Settings AmbientPage so re-pairing from one surface
             // takes effect everywhere without an engine restart). The
             // engine borrows the reference, never disposes it.
-            _bridgeClient = HuePairingService.Instance.Bridge
-                ?? throw new InvalidOperationException(
-                    "HuePairingService restored no bridge from settings — paired state in settings.json is inconsistent.");
+            // Verify the cached LAN endpoint before allocating capture
+            // resources. A DHCP move is repaired through one local
+            // discovery pass while the healthy fast path stays one cheap
+            // bridge-identity request.
+            _bridgeClient = await HuePairingService.Instance
+                .GetAvailableBridgeAsync(ct)
+                .ConfigureAwait(false);
 
             // Build the preferred Hue output now, but do not connect yet.
             // For Entertainment v2, ConnectAsync sends CLIP v2

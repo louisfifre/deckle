@@ -4,6 +4,11 @@ namespace Deckle.Lighting;
 
 public sealed partial class HueBridgeClient
 {
+    private sealed class HueConfigDto
+    {
+        [JsonPropertyName("bridgeid")] public string? BridgeId { get; set; }
+    }
+
     private sealed class HuePairRequest
     {
         [JsonPropertyName("devicetype")]        public string DeviceType { get; set; } = "";
