@@ -21,6 +21,7 @@ doctrine). This file is generated from the Conventional-Commit history by
 - **scripts:** Widen worktree choices
 - **scripts:** Place exposables sweep with commands
 - **scripts:** Preserve worktree section track
+- **transcription:** Serialize reliable file transcription
 
 ## [0.30.2](https://github.com/louisfifre/deckle/compare/v0.14.1...v0.30.2) — 2026-07-31
 
