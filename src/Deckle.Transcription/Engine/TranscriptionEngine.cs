@@ -81,6 +81,11 @@ public sealed partial class TranscriptionEngine : IDisposable
     // Background thread → subscriber responsible for marshaling.
     public event Action<TranscriptionOutcome>? TranscriptionFinished;
 
+    // Fired when the single file-queue consumer actually starts an item, not
+    // when its producer merely enqueues it. Background thread after the first
+    // item → subscribers marshal to UI.
+    public event Action? FileTranscriptionStarted;
+
     // Synchronous rendezvous just before PasteFromClipboard. The caller
     // (App.xaml.cs) hooks HudWindow.HideSync() to ensure no activation
     // mutation from Deckle occurs while SendInput is in flight to the target.
@@ -203,6 +208,11 @@ public sealed partial class TranscriptionEngine : IDisposable
     // the Thread.Start that spawns the worker is the memory barrier, same as
     // _manualProfileName.
     private string?         _fileTranscriptionPath = null;
+
+    // Tray selections are producers; the engine is the only consumer. Items
+    // leave this FIFO one at a time, only after the previous worker returned to
+    // Idle, so Whisper never receives concurrent file calls.
+    private readonly FileTranscriptionQueue _fileTranscriptionQueue = new();
 
     // Stable identifier for the current pipeline invocation. Regenerated once
     // per recording in WorkerRun (before the strategy runs); stamped on every
@@ -431,6 +441,7 @@ public sealed partial class TranscriptionEngine : IDisposable
     {
         if (_disposed) return;
         _disposed = true;
+        _fileTranscriptionQueue.Complete();
 
         // Capture before transitioning so the Verbose line below records
         // what the engine was actually doing when Dispose arrived.

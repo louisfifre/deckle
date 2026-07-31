@@ -62,11 +62,13 @@ public static class WhisperParamsMapper
         string? promptOverride = null)
     {
         // ── Transcription ─────────────────────────────────────────────────
+        string prompt = promptOverride ?? whisp.Engine.InitialPrompt;
         IntPtr langPtr = Marshal.StringToCoTaskMemUTF8(whisp.Engine.Language);
-        IntPtr promptPtr = Marshal.StringToCoTaskMemUTF8(promptOverride ?? whisp.Engine.InitialPrompt);
+        IntPtr promptPtr = Marshal.StringToCoTaskMemUTF8(prompt);
         wparams.language = langPtr;
         wparams.initial_prompt = promptPtr;
-        wparams.carry_initial_prompt = (byte)(whisp.Engine.CarryInitialPrompt ? 1 : 0);
+        wparams.carry_initial_prompt =
+            (byte)(whisp.Engine.CarryInitialPrompt && prompt.Length > 0 ? 1 : 0);
 
         // ── Confidence Thresholds ─────────────────────────────────────────
         wparams.entropy_thold = (float)whisp.Confidence.EntropyThreshold;

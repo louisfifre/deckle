@@ -109,25 +109,20 @@ public sealed partial class TranscriptionEngine
 
     // ── File-transcription delivery ─────────────────────────────────────────────
     //
-    // Writes the transcript to a .txt named after the source audio file, under the
-    // user's configured output folder (empty = Desktop, resolved here). Called only
+    // Writes the transcript to a .txt named after the source audio file, beside
+    // that source. Called only
     // on a file run — normally after a successful clipboard copy (a write failure
     // then degrades to ClipboardOnly rather than losing the result), and best-effort
     // when the copy itself failed, so the disk keeps the text either way. The catch
-    // covers the filesystem exceptions plus the invalid-path family — an empty
-    // resolved directory (a profile whose Desktop is not materialized) surfaces as
-    // ArgumentException from Directory.CreateDirectory and must degrade gracefully,
-    // not masquerade as a pipeline crash. Anything else is a genuine bug and
-    // propagates to the worker's crash handler.
+    // covers the filesystem exceptions plus the invalid-path family. Anything
+    // else is a genuine bug and propagates to the worker's crash handler.
     private TranscriptionOutcome WriteFileTranscript(string fullText)
     {
-        string dir = TranscriptionSettingsService.ResolveFileTranscriptionOutputDirectory(
-            _host.Transcription.FileTranscriptionOutputDirectory);
         string audioPath = _fileTranscriptionPath ?? "";
 
         try
         {
-            string written = TranscriptFileWriter.Write(fullText, audioPath, dir);
+            string written = TranscriptFileWriter.Write(fullText, audioPath);
             DeckleWhispSource.Log.FileTranscriptionSaved();
             DeckleWhispSource.Log.FileTranscriptionSavedDetail(written, fullText.Length);
             return TranscriptionOutcome.SavedToFile;

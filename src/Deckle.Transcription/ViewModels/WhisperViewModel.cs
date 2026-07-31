@@ -30,7 +30,6 @@ public partial class WhisperViewModel : ObservableObject
         _isSyncing = true;
 
         ModelsDirectory = "";
-        FileTranscriptionOutputDirectory = "";
         Model = "ggml-base.bin";
         UseGpu = true;
         Language = "fr";
@@ -91,7 +90,6 @@ public partial class WhisperViewModel : ObservableObject
         {
             var s = TranscriptionSettingsService.Instance.Current;
             ModelsDirectory = s.ModelsDirectory;
-            FileTranscriptionOutputDirectory = s.FileTranscriptionOutputDirectory;
             Model = s.Engine.Model;
             UseGpu = s.Engine.UseGpu;
             Language = s.Engine.Language;
@@ -149,7 +147,6 @@ public partial class WhisperViewModel : ObservableObject
         var s = TranscriptionSettingsService.Instance.Current;
 
         s.ModelsDirectory = ModelsDirectory;
-        s.FileTranscriptionOutputDirectory = FileTranscriptionOutputDirectory;
         s.Engine.Model = Model;
         s.Engine.UseGpu = UseGpu;
         s.Engine.Language = Language;

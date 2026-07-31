@@ -15,12 +15,6 @@ public sealed class TranscriptionSettings
     // AppPaths.ModelsDirectory (= <UserDataRoot>/models/).
     public string ModelsDirectory { get; set; } = "";
 
-    // Destination folder for file-transcription output (.txt named after the
-    // source audio file). Empty is a sentinel meaning "the user's Desktop",
-    // resolved at use time by ResolveFileTranscriptionOutputDirectory — never a
-    // stored resolved path, so a reset rewrites the sentinel, not a literal.
-    public string FileTranscriptionOutputDirectory { get; set; } = "";
-
     public EngineSettings          Engine          { get; set; } = new();
     public ConfidenceSettings      Confidence      { get; set; } = new();
     public OutputFilterSettings    OutputFilters   { get; set; } = new();

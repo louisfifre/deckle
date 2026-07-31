@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Threading.Tasks;
 using Deckle.App;
 using Deckle.Transcription;
 using Microsoft.UI.Xaml;
@@ -13,12 +12,9 @@ namespace Deckle.App;
 public partial class App
 {
     // File transcription entry — the tray "Transcribe audio files…" command.
-    // Opens the system file picker for one or more audio files, then hands each
-    // path in selection order to the existing monolithic engine. Each file is a
-    // complete independent run (decode → transcribe → .txt + clipboard), and the
-    // next one starts only after the worker has returned to Idle. This keeps the
-    // backend single-threaded and lets one failed file leave the rest of the batch
-    // untouched. Concurrency with live dictation remains guarded by the engine.
+    // Opens the system file picker for one or more audio files, then produces all
+    // selected paths into the engine-owned FIFO. The engine is the sole consumer:
+    // each path becomes an independent run and the next starts only after Idle.
     private async void TranscribeFilesFromTray()
     {
         // async void: the tray click arrives on the UI thread with no awaiter,
@@ -76,51 +72,16 @@ public partial class App
 
             if (files.Count == 0) return; // user cancelled — nothing to do
 
-            foreach (var file in files)
-            {
-                if (!await StartFileTranscriptionAndWaitForIdleAsync(file.Path))
-                    break;
-            }
+            var paths = new string[files.Count];
+            for (int i = 0; i < files.Count; i++)
+                paths[i] = files[i].Path;
+
+            _engine.EnqueueFileTranscriptions(paths);
         }
         catch (Exception ex)
         {
             DeckleAppSource.Log.HudWarning();
             DeckleAppSource.Log.HudWarningDetail($"File transcription entry failed: {ex.Message}");
-        }
-    }
-
-    private async Task<bool> StartFileTranscriptionAndWaitForIdleAsync(string path)
-    {
-        var engine = _engine;
-        if (engine is null) return false;
-
-        // Finished is raised before the worker's terminal teardown, so it is too
-        // early to start the next file. StatusChanged emits Ready only after the
-        // state has become Idle; IsBusy is the semantic check, independent of the
-        // localized status text.
-        var idle = new TaskCompletionSource<bool>(
-            TaskCreationOptions.RunContinuationsAsynchronously);
-
-        void OnStatusChanged(string _)
-        {
-            if (!engine.IsBusy)
-                idle.TrySetResult(true);
-        }
-
-        engine.StatusChanged += OnStatusChanged;
-        try
-        {
-            var result = engine.RequestFileTranscription(path);
-            if (result != ToggleResult.Started)
-                return false;
-
-            _hudWindow?.ShowPreparing();
-            await idle.Task;
-            return true;
-        }
-        finally
-        {
-            engine.StatusChanged -= OnStatusChanged;
         }
     }
 }

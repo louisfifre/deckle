@@ -89,7 +89,8 @@ public interface IAsrBackend : IDisposable
 //   • PrimingText — prior text to prime the decoder with. The Whisper backend
 //     maps it onto initial_prompt (overriding the configured stylistic prompt
 //     for that call); a future backend may treat it as conversation history or
-//     ignore it. Null/empty means no override.
+//     ignore it. Null keeps the configured prompt; empty explicitly suppresses
+//     priming for an independent file.
 //   • EmitPreamble — whether this call logs its one-time configuration preamble
 //     (the "Transcribing" milestone, the resolved params, the prompt). True for
 //     a standalone call (monolithic) and for the FIRST utterance of a streaming
