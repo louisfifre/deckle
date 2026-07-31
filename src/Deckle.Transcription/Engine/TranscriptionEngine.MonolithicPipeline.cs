@@ -130,8 +130,7 @@ public sealed partial class TranscriptionEngine
             EmitPreprocessedTelemetry(backendAudio);
         }
 
-        // Same monolithic consumer as file transcription. Only the producer
-        // differs: this PCM came from the microphone capture above.
+        // Monolithic consumer for the legacy whole-take dictation strategy.
         TranscriptionResult? consumed =
             await ConsumeMonolithicAudioAsync(backendAudio, producerCt).ConfigureAwait(false);
         if (consumed is null)

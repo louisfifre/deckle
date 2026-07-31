@@ -2,13 +2,13 @@ using System.Threading.Channels;
 
 namespace Deckle.Transcription;
 
-// FIFO boundary between tray selections (producers) and the transcription
-// engine (the single consumer). Starting is deliberately delegated back to the
-// engine so this type owns ordering only; the engine keeps sole authority over
-// its state machine and decides when the next item may leave the queue.
+// FIFO boundary between tray selections and the transcription engine. One
+// immutable selection leaves the queue as one engine lifecycle, so files from a
+// later picker action can never interleave the active batch.
 internal sealed class FileTranscriptionQueue
 {
-    private readonly Channel<string> _paths = Channel.CreateUnbounded<string>(
+    private readonly Channel<FileTranscriptionBatch> _batches =
+        Channel.CreateUnbounded<FileTranscriptionBatch>(
         new UnboundedChannelOptions
         {
             SingleReader = true,
@@ -16,53 +16,55 @@ internal sealed class FileTranscriptionQueue
             AllowSynchronousContinuations = false,
         });
     private readonly object _gate = new();
-    private int _count;
+    private int _fileCount;
 
     public int Count
     {
-        get { lock (_gate) return _count; }
+        get { lock (_gate) return _fileCount; }
     }
 
     public int Enqueue(IEnumerable<string> paths)
     {
         ArgumentNullException.ThrowIfNull(paths);
 
-        int added = 0;
+        string[] accepted = paths
+            .Where(static path => !string.IsNullOrWhiteSpace(path))
+            .ToArray();
+        if (accepted.Length == 0)
+            return 0;
+
         lock (_gate)
         {
-            foreach (string path in paths)
-            {
-                if (string.IsNullOrWhiteSpace(path))
-                    continue;
+            if (!_batches.Writer.TryWrite(new FileTranscriptionBatch(accepted)))
+                return 0;
 
-                if (!_paths.Writer.TryWrite(path))
-                    break;
-
-                _count++;
-                added++;
-            }
+            _fileCount += accepted.Length;
         }
-        return added;
+        return accepted.Length;
     }
 
     // Peeks first and removes only after the engine confirms Started. A busy
     // state therefore leaves the head untouched for the next Idle transition.
-    public bool TryStartNext(Func<string, ToggleResult> start)
+    public bool TryStartNext(Func<FileTranscriptionBatch, ToggleResult> start)
     {
         ArgumentNullException.ThrowIfNull(start);
 
         lock (_gate)
         {
-            if (!_paths.Reader.TryPeek(out string? path))
+            if (!_batches.Reader.TryPeek(out FileTranscriptionBatch? batch))
                 return false;
 
-            if (start(path) != ToggleResult.Started)
+            if (start(batch) != ToggleResult.Started)
                 return false;
 
-            if (!_paths.Reader.TryRead(out string? startedPath) || startedPath != path)
-                throw new InvalidOperationException("File transcription queue order changed while starting its head.");
+            if (!_batches.Reader.TryRead(out FileTranscriptionBatch? startedBatch)
+                || !ReferenceEquals(startedBatch, batch))
+            {
+                throw new InvalidOperationException(
+                    "File transcription queue order changed while starting its head.");
+            }
 
-            _count--;
+            _fileCount -= batch.AudioFilePaths.Count;
             return true;
         }
     }
@@ -71,7 +73,9 @@ internal sealed class FileTranscriptionQueue
     {
         lock (_gate)
         {
-            _paths.Writer.TryComplete();
+            _batches.Writer.TryComplete();
         }
     }
 }
+
+internal sealed record FileTranscriptionBatch(IReadOnlyList<string> AudioFilePaths);

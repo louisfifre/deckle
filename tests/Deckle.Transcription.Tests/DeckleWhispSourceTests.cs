@@ -71,4 +71,22 @@ public sealed class DeckleWhispSourceTests : IDisposable
             e => Assert.Equal(DeckleWhispSource.EvtModelUnavailableDetail, e.EventId),
             e => Assert.Equal(DeckleWhispSource.EvtModelRecovered, e.EventId));
     }
+
+    [Fact]
+    public void FileBatchMilestonesRemainWhenDetailsAreDisabled()
+    {
+        using var listener = new TestEventListener("Deckle-Whisp");
+
+        DeckleWhispSource.Log.FileTranscriptionBatchStarted();
+        DeckleWhispSource.Log.FileTranscriptionBatchStartedDetail(3, 1);
+        DeckleWhispSource.Log.FileTranscriptionBatchCompleted();
+        DeckleWhispSource.Log.FileTranscriptionBatchCompletedDetail(
+            3,
+            TranscriptionOutcome.SavedToFile.ToString());
+
+        Assert.Collection(
+            listener.Events,
+            e => Assert.Equal(DeckleWhispSource.EvtFileTranscriptionBatchStarted, e.EventId),
+            e => Assert.Equal(DeckleWhispSource.EvtFileTranscriptionBatchCompleted, e.EventId));
+    }
 }

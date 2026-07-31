@@ -7,11 +7,52 @@ public sealed partial class DeckleWhispSource
 {
     // ── File transcription ──────────────────────────────────────────────
     //
-    // The tray-driven "transcribe a file" path: decode → single backend call →
-    // .txt on disk. Milestones a human follows in the LogWindow, each paired with
-    // a Verbose mirror carrying the path / size / status. The Media-Foundation
-    // decode detail is logged by the Audio provider — these engine-side events
-    // reference only what the engine itself decides.
+    // The tray-driven path: one selection crosses the shared segmented consumer
+    // and writes one adjacent .txt per usable file. The Media-Foundation decode
+    // detail is logged by the Audio provider; these events carry only engine
+    // lifecycle, paths and content-free counts.
+
+    [Event(EvtFileTranscriptionBatchStarted,
+           Level = EventLevel.Informational,
+           Keywords = (EventKeywords)Keywords.Pipeline,
+           Message = "File transcription batch started")]
+    public void FileTranscriptionBatchStarted()
+    {
+        if (IsEnabled()) WriteEvent(EvtFileTranscriptionBatchStarted);
+    }
+
+    [Event(EvtFileTranscriptionBatchStartedDetail,
+           Level = EventLevel.Verbose,
+           Keywords = (EventKeywords)Keywords.Pipeline,
+           Message = "file transcription batch start | files={0} | prepared_capacity={1}")]
+    public void FileTranscriptionBatchStartedDetail(int files, int prepared_capacity)
+    {
+        if (!OperationalLogAdmission.IsDetailEnabled(
+                OperationalLogActivity.Transcription, this,
+                EventLevel.Verbose, (EventKeywords)Keywords.Pipeline)) return;
+        WriteEvent(EvtFileTranscriptionBatchStartedDetail, files, prepared_capacity);
+    }
+
+    [Event(EvtFileTranscriptionBatchCompleted,
+           Level = EventLevel.Informational,
+           Keywords = (EventKeywords)Keywords.Pipeline,
+           Message = "File transcription batch completed")]
+    public void FileTranscriptionBatchCompleted()
+    {
+        if (IsEnabled()) WriteEvent(EvtFileTranscriptionBatchCompleted);
+    }
+
+    [Event(EvtFileTranscriptionBatchCompletedDetail,
+           Level = EventLevel.Verbose,
+           Keywords = (EventKeywords)Keywords.Pipeline,
+           Message = "file transcription batch complete | files={0} | outcome={1}")]
+    public void FileTranscriptionBatchCompletedDetail(int files, string outcome)
+    {
+        if (!OperationalLogAdmission.IsDetailEnabled(
+                OperationalLogActivity.Transcription, this,
+                EventLevel.Verbose, (EventKeywords)Keywords.Pipeline)) return;
+        WriteEvent(EvtFileTranscriptionBatchCompletedDetail, files, outcome);
+    }
 
     [Event(EvtFileTranscriptionStarted,
            Level = EventLevel.Informational,

@@ -233,6 +233,10 @@ public sealed partial class DeckleWhispSource : DeckleEventSource
     public const int EvtModelUnavailable                 = 178;
     public const int EvtModelUnavailableDetail           = 179;
     public const int EvtModelRecovered                   = 180;
+    public const int EvtFileTranscriptionBatchStarted    = 181;
+    public const int EvtFileTranscriptionBatchStartedDetail = 182;
+    public const int EvtFileTranscriptionBatchCompleted  = 183;
+    public const int EvtFileTranscriptionBatchCompletedDetail = 184;
 
     // ── Per-provider keywords ───────────────────────────────────────────
     // The global vocabulary (Deckle.Diagnostics.Keywords) reserves bits

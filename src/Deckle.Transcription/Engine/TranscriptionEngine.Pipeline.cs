@@ -24,11 +24,8 @@ public sealed partial class TranscriptionEngine
     //   - TranscriptionEngine.Telemetry.cs — the post-recording calibration
     //     and telemetry envelope (TryAutoCalibrate, EmitPreprocessedTelemetry).
 
-    // Shared monolithic consumer. Dictation and file transcription have
-    // different producers (microphone capture vs. file decode), but both hand
-    // the resulting 16-kHz mono PCM to this exact backend boundary. Source-
-    // specific policy stays outside: dictation may keep an aborted partial
-    // result, while a durable file transcript rejects it before delivery.
+    // Monolithic dictation consumer. Segmented dictation and file transcription
+    // share the source-neutral session in StreamingPipeline instead.
     private async Task<TranscriptionResult?> ConsumeMonolithicAudioAsync(
         ReadOnlyMemory<float> audio,
         CancellationToken cancellationToken,

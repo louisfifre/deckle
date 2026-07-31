@@ -24,7 +24,7 @@ namespace Deckle.Audio;
 // All public events fire from the recording thread (the thread that
 // called Record()). Subscribers are responsible for marshaling to the
 // UI thread.
-public sealed class MicrophoneCapture : System.IDisposable
+public sealed class MicrophoneCapture : IMicrophoneCapture
 {
     // Constants (matches the legacy Record() body). 50 ms buffers (1600
     // bytes) so AudioLevel events fire at a steady ~20 Hz spread across

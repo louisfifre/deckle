@@ -43,59 +43,12 @@ public sealed partial class TranscriptionEngine
     private async Task<PipelineProduction?> ProduceStreamingAsync(
         CancellationToken producerCt, CancellationToken drainCt, Task<bool> primeTask)
     {
-        // Milestone + verbose snapshot pair: the LogWindow gets a human jalon
-        // (StreamingPipelineStarted), then the structured line that says under
-        // which segmenter parameters this take ran (so a reread of the log
-        // never has to wonder which threshold or hangover was active).
-        var segCfg = _host.Transcription.Streaming.Segmenter;
-        DeckleWhispSource.Log.StreamingPipelineStarted();
-        DeckleWhispSource.Log.SegmenterSettingsSnapshot(
-            segCfg.ThresholdDbfs,
-            segCfg.HangoverMaxMs, segCfg.HangoverMinMs,
-            segCfg.HangoverRampStartMs, segCfg.HangoverRampEndMs,
-            segCfg.HangoverCurveX1, segCfg.HangoverCurveY1,
-            segCfg.HangoverCurveX2, segCfg.HangoverCurveY2,
-            segCfg.MarginMs, segCfg.MinUtteranceMs);
-
-        // External Silero VAD pre-trim (default on). Resolved here on the worker
-        // thread, before the consumer launches, so the consumer captures a ready
-        // instance. Null when disabled or when the model isn't present yet (a
-        // missing model kicks off a one-time background download — this take runs
-        // untrimmed, a later one picks it up).
-        var trimCfg = _host.Transcription.Streaming.SpeechTrim;
-        SileroVad? vad = trimCfg.Enabled ? _vadService.EnsureReady() : null;
-        // Surface the transient "enabled but the model isn't ready yet" state, so a
-        // take that ran untrimmed for that reason is explicit rather than inferred
-        // from absent SpeechTrimmed lines.
-        if (trimCfg.Enabled && vad is null)
-            DeckleVadSource.Log.SpeechTrimNotReady();
-
-        // The user's detection parameters, mapped onto the options the trim runs with.
-        // Resolved once per take; the snapshot records them (only when the VAD will
-        // actually run) the way SegmenterSettingsSnapshot does for the producer.
-        var vadOptions = new SileroVadOptions
-        {
-            Threshold            = trimCfg.Threshold,
-            MinSpeechDurationMs  = trimCfg.MinSpeechDurationMs,
-            MinSilenceDurationMs = trimCfg.MinSilenceDurationMs,
-            SpeechPadMs          = trimCfg.SpeechPadMs,
-        };
-        if (vad is not null)
-            DeckleVadSource.Log.SpeechTrimSettingsSnapshot(
-                vadOptions.Threshold, vadOptions.MinSpeechDurationMs,
-                vadOptions.MinSilenceDurationMs, vadOptions.SpeechPadMs);
-
-        var channel = Channel.CreateUnbounded<Utterance>(new UnboundedChannelOptions
-        {
-            SingleReader = true,
-            SingleWriter = true,
-        });
-
-        // Backlog: channel depth (utterances queued, not yet transcribed). Held
-        // in a one-cell array so producer (Interlocked.Increment on enqueue) and
-        // consumer (Interlocked.Decrement after dequeue) share the same address
-        // through closures. The heartbeat reads it with Volatile.Read.
-        int[] backlogBox = new int[1];
+        var policy = new SegmentedTranscriptionPolicy(
+            FixedPrompt: _host.Transcription.Engine.InitialPrompt ?? "",
+            ApplyPreprocessing: true,
+            RejectIncompleteResults: false);
+        SegmentedTranscriptionSession<StreamingConsumeResult> session =
+            StartSegmentedTranscription(policy, drainCt, primeTask);
 
         // Frame-rate clock for the 1 Hz heartbeat (20 × 50 ms frames per tick)
         // and for the recording_sec field. Stopwatch starts now, OnFrame trips
@@ -106,17 +59,9 @@ public sealed partial class TranscriptionEngine
         // without spamming an event for every 50 ms frame.
         float lastRmsLinear = 0f;
 
-        var segmenter = new EnergySegmenter(
-            segCfg,
-            u =>
-            {
-                Interlocked.Increment(ref backlogBox[0]);
-                channel.Writer.TryWrite(u); // unbounded → never blocks the producer
-            });
-
         void OnFrame(CaptureFrame f)
         {
-            segmenter.Push(f);
+            session.Push(f);
 
             if (!OperationalLogAdmission.IsDetailEnabled(
                     OperationalLogActivity.Transcription,
@@ -132,7 +77,7 @@ public sealed partial class TranscriptionEngine
             if (++hbFrames >= 20)
             {
                 hbFrames = 0;
-                var snap = segmenter.Snapshot();
+                var snap = session.Snapshot();
                 double rmsDbfs = lastRmsLinear > 1e-6f
                     ? 20.0 * Math.Log10(lastRmsLinear)
                     : -120.0;
@@ -141,7 +86,7 @@ public sealed partial class TranscriptionEngine
                     rmsDbfs,
                     snap.CurrentUtteranceFrames * 50,
                     snap.RequiredHangoverFrames * 50,
-                    Volatile.Read(ref backlogBox[0]),
+                    session.Backlog,
                     snap.TotalUtterancesEmitted,
                     (int)(recordSw.ElapsedMilliseconds / 1000));
             }
@@ -151,10 +96,6 @@ public sealed partial class TranscriptionEngine
         // utterances they yield) arrive during Record. It crosses the prime gate
         // before its first backend call; utterances queue in the unbounded channel
         // meanwhile, so nothing is lost while the model warms.
-        Task<StreamingConsumeResult> consumer =
-            Task.Run(() => ConsumeUtterancesAsync(channel.Reader, drainCt,
-                onDequeue: () => Interlocked.Decrement(ref backlogBox[0]), vad, vadOptions, primeTask));
-
         _capture.Frame += OnFrame;
 
         CaptureResult capture;
@@ -171,8 +112,7 @@ public sealed partial class TranscriptionEngine
                 // ran inside it, on this same thread). Flush the open utterance, then
                 // seal the channel so the consumer's ReadAllAsync completes.
                 _capture.Frame -= OnFrame;
-                segmenter.Flush();
-                channel.Writer.Complete();
+                session.Complete();
             }
         }
         catch
@@ -181,7 +121,7 @@ public sealed partial class TranscriptionEngine
             // consumer drains and finishes on its own — observe it here so its
             // exception is never left unobserved, then let the original throw
             // propagate to WorkerRun's crash handler.
-            try { await consumer.ConfigureAwait(false); } catch { /* teardown */ }
+            try { await session.Completion.ConfigureAwait(false); } catch { /* teardown */ }
             throw;
         }
 
@@ -202,7 +142,7 @@ public sealed partial class TranscriptionEngine
         StreamingConsumeResult consumed;
         try
         {
-            consumed = await consumer.ConfigureAwait(false);
+            consumed = await session.Completion.ConfigureAwait(false);
         }
         catch (OperationCanceledException)
         {
@@ -290,6 +230,53 @@ public sealed partial class TranscriptionEngine
             NSegments:         consumed.NSegments);
     }
 
+    // Creates the source-neutral segmenter/channel/consumer core shared by live
+    // capture and decoded files. The caller owns only the audio producer and the
+    // engine lifecycle around this session.
+    private SegmentedTranscriptionSession<StreamingConsumeResult> StartSegmentedTranscription(
+        SegmentedTranscriptionPolicy policy,
+        CancellationToken drainCt,
+        Task<bool> primeTask)
+    {
+        var segCfg = _host.Transcription.Streaming.Segmenter;
+        DeckleWhispSource.Log.StreamingPipelineStarted();
+        DeckleWhispSource.Log.SegmenterSettingsSnapshot(
+            segCfg.ThresholdDbfs,
+            segCfg.HangoverMaxMs, segCfg.HangoverMinMs,
+            segCfg.HangoverRampStartMs, segCfg.HangoverRampEndMs,
+            segCfg.HangoverCurveX1, segCfg.HangoverCurveY1,
+            segCfg.HangoverCurveX2, segCfg.HangoverCurveY2,
+            segCfg.MarginMs, segCfg.MinUtteranceMs);
+
+        var trimCfg = _host.Transcription.Streaming.SpeechTrim;
+        SileroVad? vad = trimCfg.Enabled ? _vadService.EnsureReady() : null;
+        if (trimCfg.Enabled && vad is null)
+            DeckleVadSource.Log.SpeechTrimNotReady();
+
+        var vadOptions = new SileroVadOptions
+        {
+            Threshold            = trimCfg.Threshold,
+            MinSpeechDurationMs  = trimCfg.MinSpeechDurationMs,
+            MinSilenceDurationMs = trimCfg.MinSilenceDurationMs,
+            SpeechPadMs          = trimCfg.SpeechPadMs,
+        };
+        if (vad is not null)
+            DeckleVadSource.Log.SpeechTrimSettingsSnapshot(
+                vadOptions.Threshold, vadOptions.MinSpeechDurationMs,
+                vadOptions.MinSilenceDurationMs, vadOptions.SpeechPadMs);
+
+        return new SegmentedTranscriptionSession<StreamingConsumeResult>(
+            segCfg,
+            (reader, onDequeue) => Task.Run(() => ConsumeUtterancesAsync(
+                reader,
+                drainCt,
+                onDequeue,
+                vad,
+                vadOptions,
+                primeTask,
+                policy)));
+    }
+
     // Drains the utterance channel, transcribing each one as it arrives and
     // accumulating the text. Runs on its own task; the only backend caller at a
     // time. The drainCt check at the top of each iteration is what guarantees a
@@ -298,7 +285,8 @@ public sealed partial class TranscriptionEngine
     // cancellation, so we must check the token ourselves.
     private async Task<StreamingConsumeResult> ConsumeUtterancesAsync(
         ChannelReader<Utterance> reader, CancellationToken drainCt, Func<int> onDequeue,
-        SileroVad? vad, SileroVadOptions vadOptions, Task<bool> primeTask)
+        SileroVad? vad, SileroVadOptions vadOptions, Task<bool> primeTask,
+        SegmentedTranscriptionPolicy policy)
     {
         // Prime gate. No utterance is decoded until the prime's dummy inference
         // has returned (single whisper context). The producer keeps capturing and
@@ -319,7 +307,7 @@ public sealed partial class TranscriptionEngine
                 await foreach (var _ in reader.ReadAllAsync(drainCt).ConfigureAwait(false)) { }
             }
             catch (OperationCanceledException) { /* Dispose — abandon the discard loop */ }
-            return new StreamingConsumeResult("", 0, 0, 0, 0, null);
+            return new StreamingConsumeResult("", 0, 0, 0, 0, null, Incomplete: true);
         }
 
         var sb = new StringBuilder();
@@ -332,8 +320,9 @@ public sealed partial class TranscriptionEngine
         // dropped or empty utterance in between does not swallow the break.
         bool pendingParagraphBreak = false;
 
-        string fixedPrompt = _host.Transcription.Engine.InitialPrompt ?? "";
+        string fixedPrompt = policy.FixedPrompt;
         string? previousTail = null;
+        bool incomplete = false;
 
         // Transcription pre-processing DSP, opt-in. The monolithic path runs the
         // two-pass chain once over the whole take; here it runs per utterance, just
@@ -348,10 +337,11 @@ public sealed partial class TranscriptionEngine
         // chunks are accumulated so BackendAudio is exactly what the backend
         // received — the kept utterances, not the continuous take.
         var pp = _host.Audio.Preprocessing;
+        bool applyPreprocessing = policy.ApplyPreprocessing && pp.Enabled;
         // Capture the backend audio whenever a stage transforms it — the
         // DSP or the VAD trim — so BackendAudio mirrors exactly what the backend
         // received.
-        List<float[]>? backendChunks = (pp.Enabled || vad is not null) ? new List<float[]>() : null;
+        List<float[]>? backendChunks = (applyPreprocessing || vad is not null) ? new List<float[]>() : null;
 
         await foreach (Utterance u in reader.ReadAllAsync(drainCt).ConfigureAwait(false))
         {
@@ -383,7 +373,7 @@ public sealed partial class TranscriptionEngine
             // optional external VAD trim. Accumulate the final buffer so
             // BackendAudio mirrors exactly what was sent.
             float[] samples = u.Samples;
-            if (pp.Enabled)
+            if (applyPreprocessing)
             {
                 var processed = TranscriptionPreprocessor.Process(u.Samples, pp);
                 samples = processed.Pcm;
@@ -448,6 +438,8 @@ public sealed partial class TranscriptionEngine
                 // drop its context, keep going (resilience, the first goal).
                 DeckleWhispSource.Log.UtteranceSkipped();
                 DeckleWhispSource.Log.UtteranceSkippedDetail(u.Index, ex.GetType().Name, ex.Message);
+                if (policy.RejectIncompleteResults)
+                    incomplete = true;
                 previousTail = null;
                 continue;
             }
@@ -455,6 +447,16 @@ public sealed partial class TranscriptionEngine
             totalMs += result.TotalDurationMs;
             initMs  += result.InitDurationMs;
             nSeg    += result.Segments.Count;
+
+            if (policy.RejectIncompleteResults && !IsFileTranscriptionResultUsable(result))
+            {
+                incomplete = true;
+                previousTail = null;
+                DeckleWhispSource.Log.ConsumerUtterance(
+                    u.Index, result.TotalDurationMs, 0,
+                    result.Segments.Count, backlogAfter, result.Aborted);
+                continue;
+            }
 
             string text = result.FullText?.Trim() ?? "";
             if (text.Length > 0)
@@ -474,7 +476,8 @@ public sealed partial class TranscriptionEngine
         }
 
         float[]? backendAudio = backendChunks is null ? null : ConcatSamples(backendChunks);
-        return new StreamingConsumeResult(sb.ToString(), totalMs, initMs, nSeg, nUtt, backendAudio);
+        return new StreamingConsumeResult(
+            sb.ToString(), totalMs, initMs, nSeg, nUtt, backendAudio, incomplete);
     }
 
     // Flatten the per-utterance processed buffers into one contiguous take. A
@@ -526,5 +529,13 @@ public sealed partial class TranscriptionEngine
     // off, so the caller falls back to the raw take.
     private readonly record struct StreamingConsumeResult(
         string Text, long TotalMs, long InitMs, int NSegments, int NUtterances,
-        float[]? BackendAudio);
+        float[]? BackendAudio, bool Incomplete);
+
+    private readonly record struct SegmentedTranscriptionPolicy(
+        string FixedPrompt,
+        bool ApplyPreprocessing,
+        bool RejectIncompleteResults);
+
+    internal static bool IsFileTranscriptionResultUsable(TranscriptionResult result) =>
+        !result.Aborted && result.ResultCode == 0;
 }

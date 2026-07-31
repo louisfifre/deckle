@@ -97,8 +97,9 @@ public sealed partial class TranscriptionEngine
 
     // ── File-transcription entry point ──────────────────────────────────────
     //
-    // Enqueues one or more tray-picked audio files. The picker is the producer;
-    // the engine consumes this FIFO one item at a time whenever it is Idle.
+    // Enqueues one tray selection as an immutable batch. The engine starts one
+    // batch whenever it is Idle, then keeps the same lifecycle until every file
+    // in that selection has crossed the shared segmented consumer.
     // A live dictation temporarily holds the consumer without rejecting or
     // dropping queued files.
     public int EnqueueFileTranscriptions(IEnumerable<string> audioFilePaths)
@@ -121,11 +122,15 @@ public sealed partial class TranscriptionEngine
             TryStartFileTranscription);
     }
 
-    // Consumes one queued audio file. It shares the live monolithic consumer,
-    // prime, HUD states and finalization, but replaces microphone capture with a
-    // Media Foundation decode. Busy means "leave it at the FIFO head", never
-    // reject it or create a second orchestration path.
-    private ToggleResult TryStartFileTranscription(string audioFilePath)
+    // Starts one queued selection. Busy means "leave the whole batch at the FIFO
+    // head", never reject it or let a later selection interleave it.
+    private ToggleResult TryStartFileTranscription(FileTranscriptionBatch batch)
+    {
+        lock (_lifecycleLock)
+            return TryStartFileTranscriptionLocked(batch);
+    }
+
+    private ToggleResult TryStartFileTranscriptionLocked(FileTranscriptionBatch batch)
     {
         if (_disposed) return ToggleResult.IgnoredDisposed;
 
@@ -164,45 +169,34 @@ public sealed partial class TranscriptionEngine
             _recordDrainDuration = System.TimeSpan.Zero;
             _stopToPipelineSw    = null;
 
-            // A file run never pastes and never rewrites (V1). Force both off so
-            // the shared finalize takes the file-save tail whatever the dictation
-            // defaults are; stash the path the file tail and the decode both read.
-            _shouldPaste           = false;
-            _manualProfileName     = null;
-            _fileTranscriptionPath = audioFilePath;
+            // A file batch never pastes and never rewrites. Delivery is carried
+            // explicitly by each prepared item rather than hidden in engine-wide
+            // mutable state.
+            _shouldPaste       = false;
+            _manualProfileName = null;
 
             // Cancel any pending idle unload — a pipeline is starting.
             _idleTimer?.Change(Timeout.Infinite, Timeout.Infinite);
 
-            // Spawn the file worker while the state is still Starting: it owns the
-            // Starting → Transcribing → Idle edge from here (no Recording — there
-            // is no capture, so that phase is skipped entirely). Same
-            // background/priority flags as the mic worker; the distinct name marks
-            // it in the thread list and the logs.
-            _worker = new Thread(FileWorkerRun)
+            // Queue Charging before the worker can publish Transcribing. This
+            // fires once for the complete selection, so the chrono spans the batch
+            // instead of restarting between its files.
+            FileTranscriptionStarted?.Invoke();
+
+            // A subscriber may synchronously dispose the engine. Do not publish
+            // or start work after that re-entrant shutdown.
+            if (_disposed
+                || Volatile.Read(ref _state) != (int)PipelineState.Starting)
+                return ToggleResult.IgnoredDisposed;
+
+            InitializeRunCancellation();
+            _worker = new Thread(() => FileWorkerRun(batch))
             {
                 IsBackground = true,
                 Name = "TranscriptionEngine.FileWorker",
                 Priority = ThreadPriority.AboveNormal,
             };
-            // Queue the HUD's file-specific Charging state before the worker can
-            // publish Transcribing. Both callbacks marshal to the UI queue; this
-            // ordering prevents a very short decode from moving the HUD backwards
-            // from Transcribing to Charging and guarantees the chrono starts at
-            // the beginning of every consumed item.
-            FileTranscriptionStarted?.Invoke();
             _worker.Start();
-
-            DeckleWhispSource.Log.FileTranscriptionStarted();
-            if (OperationalLogAdmission.IsDetailEnabled(
-                    OperationalLogActivity.Transcription,
-                    DeckleWhispSource.Log,
-                    EventLevel.Verbose,
-                    (EventKeywords)Keywords.Pipeline))
-            {
-                DeckleWhispSource.Log.FileTranscriptionStartedDetail(
-                    audioFilePath, SafeFileLength(audioFilePath));
-            }
 
             committed = true;
             return ToggleResult.Started;
@@ -211,6 +205,7 @@ public sealed partial class TranscriptionEngine
         {
             if (!committed)
             {
+                DiscardUnstartedRunCancellation();
                 RollbackToIdle();
             }
         }
@@ -229,6 +224,12 @@ public sealed partial class TranscriptionEngine
     // Idle and signal _idleEvent, otherwise the engine permanently locks
     // out future hotkeys. The try/finally with `committed` ensures this.
     private ToggleResult TryStartFromIdle(string? manualProfileName, bool shouldPaste)
+    {
+        lock (_lifecycleLock)
+            return TryStartFromIdleLocked(manualProfileName, shouldPaste);
+    }
+
+    private ToggleResult TryStartFromIdleLocked(string? manualProfileName, bool shouldPaste)
     {
         if (Interlocked.CompareExchange(
                 ref _state,
@@ -275,12 +276,8 @@ public sealed partial class TranscriptionEngine
                 return ToggleResult.IgnoredBusy;
             }
 
-            _shouldPaste           = shouldPaste;
-            _manualProfileName     = manualProfileName;
-            // Clear any file path left by a prior file-transcription run so this
-            // dictation run takes the mic tail in FinalizeTranscription, not the
-            // file tail.
-            _fileTranscriptionPath = null;
+            _shouldPaste       = shouldPaste;
+            _manualProfileName = manualProfileName;
 
             // Cancel any pending idle unload — a new pipeline is starting.
             _idleTimer?.Change(Timeout.Infinite, Timeout.Infinite);
@@ -313,6 +310,7 @@ public sealed partial class TranscriptionEngine
             // driver has no free buffer and drops incoming audio. AboveNormal lets
             // the producer win its slot; the thread is near-idle so this starves
             // nothing. Highest is avoided — it would contend with the UI thread.
+            InitializeRunCancellation();
             _worker = new Thread(WorkerRun)
             {
                 IsBackground = true,
@@ -328,9 +326,24 @@ public sealed partial class TranscriptionEngine
         {
             if (!committed)
             {
+                DiscardUnstartedRunCancellation();
                 RollbackToIdle();
             }
         }
+    }
+
+    private void InitializeRunCancellation()
+    {
+        _recordCts = new CancellationTokenSource();
+        _drainCts = new CancellationTokenSource();
+    }
+
+    private void DiscardUnstartedRunCancellation()
+    {
+        _recordCts?.Dispose();
+        _recordCts = null;
+        _drainCts?.Dispose();
+        _drainCts = null;
     }
 
     // Resets the state machine to Idle from Starting (hotkey-thread early-
@@ -365,14 +378,10 @@ public sealed partial class TranscriptionEngine
     private void WorkerRun()
     {
         using var activity = TranscriptionActivityScope.Open();
-
-        // Cancellation channels for this run, recreated each run so a previous
-        // Cancel() doesn't leak into the next session. _recordCts stops the
-        // producer (capture) — Stop and Dispose both fire it. _drainCts aborts
-        // the streaming consumer's in-flight inference — Dispose only, so a Stop
-        // drains the queued utterances losslessly.
-        _recordCts = new CancellationTokenSource();
-        _drainCts  = new CancellationTokenSource();
+        CancellationTokenSource recordCts = _recordCts
+            ?? throw new InvalidOperationException("Recording cancellation was not published before worker start.");
+        CancellationTokenSource drainCts = _drainCts
+            ?? throw new InvalidOperationException("Drain cancellation was not published before worker start.");
 
         // Observed in the finally even on early-exit paths that bypass the gate
         // (e.g. a mic error before the first backend call), so default it to a
@@ -392,7 +401,7 @@ public sealed partial class TranscriptionEngine
             // Dispose aborts it. The first real backend call waits on this gate
             // (AwaitPrime, inside the strategy), so the prime's dummy whisper_full
             // and the real one never overlap.
-            primeTask = BeginPrime(_drainCts.Token);
+            primeTask = BeginPrime(drainCts.Token);
 
             // The recording-duration stopwatch and the "Recording" status fire from
             // OnCaptureStarted — the instant waveInStart confirms the mic is live —
@@ -421,13 +430,13 @@ public sealed partial class TranscriptionEngine
             bool streaming = _host.Transcription.Streaming.Strategy == PipelineStrategyKind.Streaming;
             PipelineProduction? produced =
                 (streaming
-                    ? ProduceStreamingAsync(_recordCts.Token, _drainCts.Token, primeTask)
-                    : ProduceMonolithicAsync(_recordCts.Token, primeTask))
+                    ? ProduceStreamingAsync(recordCts.Token, drainCts.Token, primeTask)
+                    : ProduceMonolithicAsync(recordCts.Token, primeTask))
                 .GetAwaiter().GetResult();
 
             if (produced is not null)
             {
-                FinalizeTranscription(produced.Value);
+                FinalizeTranscription(produced.Value, TranscriptionDelivery.Dictation);
             }
             // The idle-unload timer is (re)armed in the finally below, which
             // covers every exit that leaves the model resident — not only this
@@ -446,7 +455,7 @@ public sealed partial class TranscriptionEngine
         }
         finally
         {
-            SettleWorkerToIdle(primeTask);
+            SettleWorkerToIdle(primeTask, recordCts, drainCts);
         }
     }
 
@@ -457,7 +466,10 @@ public sealed partial class TranscriptionEngine
     // hazard. Settles the prime, runs the worker-owned *→Idle CAS, arms the idle
     // unload when the model is still resident, disposes the per-run cancellation
     // tokens, then emits "Ready" — in that order.
-    private void SettleWorkerToIdle(Task<bool> primeTask)
+    private void SettleWorkerToIdle(
+        Task<bool> primeTask,
+        CancellationTokenSource recordCts,
+        CancellationTokenSource drainCts)
     {
         // Settle the prime before any teardown. On the normal path the gate
         // (AwaitPrime) already awaited it; this also covers the early-exit
@@ -473,11 +485,10 @@ public sealed partial class TranscriptionEngine
         try { primeTask.GetAwaiter().GetResult(); }
         catch { /* prime failure already surfaced; nothing user-facing here */ }
 
-        // Terminal Idle transition — owned by the worker thread, in this
-        // exact order: state, worker reference, idle event, then status.
-        // The status fires last so any subscriber that reads _state from
-        // a StatusChanged handler (tray tooltip, HudWindow) sees Idle by
-        // the time "Ready" arrives.
+        // Terminal Idle transition — owned by the worker thread. The lifecycle
+        // lock keeps a new start out until the old worker reference and its exact
+        // cancellation channels are cleared. Status fires after that settlement,
+        // so a subscriber sees Idle when "Ready" arrives.
         //
         // ★ THIS IS THE ONLY SITE THAT EMITS "Ready" ON THE SUCCESS PATH.
         // UnloadModel mirrors it for the cold-load case but also gates
@@ -490,48 +501,45 @@ public sealed partial class TranscriptionEngine
         // Dispose would re-arm the tray on a half-shut-down engine.
         // The loop terminates in at most 2 iterations under contention
         // (only Dispose can compete with the worker for _state writes).
-        int prev;
-        while (true)
+        bool reachedIdle;
+        lock (_lifecycleLock)
         {
-            prev = Volatile.Read(ref _state);
-            if (prev == (int)PipelineState.Disposed) break;
-            if (Interlocked.CompareExchange(
-                    ref _state, (int)PipelineState.Idle, prev) == prev)
+            int prev;
+            while (true)
             {
-                break;
+                prev = Volatile.Read(ref _state);
+                if (prev == (int)PipelineState.Disposed) break;
+                if (Interlocked.CompareExchange(
+                        ref _state, (int)PipelineState.Idle, prev) == prev)
+                {
+                    break;
+                }
             }
+            reachedIdle = prev != (int)PipelineState.Disposed;
+            _worker = null;
+
+            // Dispose exactly the channels owned by this worker before another
+            // Idle start can publish replacements into the engine fields.
+            recordCts.Dispose();
+            if (ReferenceEquals(_recordCts, recordCts))
+                _recordCts = null;
+
+            drainCts.Dispose();
+            if (ReferenceEquals(_drainCts, drainCts))
+                _drainCts = null;
+
+            // Arm the idle-unload whenever the worker exits with the model
+            // resident and the engine is still live. A new start is excluded by
+            // the lifecycle lock until both the timer and old run are settled.
+            if (reachedIdle && _backend.IsModelLoaded)
+                ResetIdleTimer();
+
+            _idleEvent.Set();
+            if (reachedIdle)
+                RaiseStatus(Loc.Get("Status_Ready"));
         }
-        bool reachedIdle = prev != (int)PipelineState.Disposed;
-        _worker = null;
-
-        // Arm the idle-unload whenever the worker exits with the model
-        // resident and the engine is still live (reachedIdle). This is the
-        // single arming point now: it covers the success path AND every
-        // early return that primed the model then bailed (mic error after
-        // prime, lost Transcribe CAS…), so a loaded model is never left in
-        // VRAM with no scheduled unload. Skipped when Dispose won — the
-        // timer is torn down in Dispose anyway.
-        if (reachedIdle && _backend.IsModelLoaded)
-        {
-            ResetIdleTimer();
-        }
-
-        // Dispose and clear the per-run cancellation tokens. Done before
-        // _idleEvent.Set() so a Dispose Wait that races on the event
-        // doesn't see a still-live CTS field — fields read from there
-        // are observably consistent with the worker exit.
-        try { _recordCts?.Dispose(); }
-        catch (ObjectDisposedException) { /* worker raced our dispose */ }
-        _recordCts = null;
-
-        try { _drainCts?.Dispose(); }
-        catch (ObjectDisposedException) { /* worker raced our dispose */ }
-        _drainCts = null;
-
-        _idleEvent.Set();
         if (reachedIdle)
         {
-            RaiseStatus(Loc.Get("Status_Ready"));
             TryConsumeNextFileTranscription();
         }
     }

@@ -27,8 +27,6 @@ public sealed partial class TranscriptionEngine
         {
             if (delivery.Outcome == TranscriptionOutcome.SavedToFile)
                 DeckleWhispSource.Log.FileTranscriptionCompleted();
-            else
-                DeckleWhispSource.Log.FileTranscriptionCopied();
         }
         else if (delivery.Outcome == TranscriptionOutcome.Pasted)
         {

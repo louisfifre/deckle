@@ -8,7 +8,7 @@ namespace Deckle.Audio;
 
 // Decodes an arbitrary audio file to the fixed transcription format — 16 kHz
 // mono float PCM [-1, 1], the exact signal MicrophoneCapture already produces —
-// so a file and a live dictation feed the same monolithic pipeline downstream.
+// so file and microphone producers share the same downstream PCM contract.
 //
 // The route is Media Foundation's synchronous IMFSourceReader. We force a fully
 // specified output type (Float / 32-bit / 16 kHz / mono); since Windows 8 the

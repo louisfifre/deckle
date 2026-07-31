@@ -13,8 +13,9 @@ public partial class App
 {
     // File transcription entry — the tray "Transcribe audio files…" command.
     // Opens the system file picker for one or more audio files, then produces all
-    // selected paths into the engine-owned FIFO. The engine is the sole consumer:
-    // each path becomes an independent run and the next starts only after Idle.
+    // selected paths as one immutable engine batch. Its decoder prepares the next
+    // file while the shared live consumer transcribes the current one; the engine
+    // returns to Idle only after the complete selection drains.
     private async void TranscribeFilesFromTray()
     {
         // async void: the tray click arrives on the UI thread with no awaiter,

@@ -5,4 +5,10 @@
          xunit.v3 / MTP harness comes from tests\Directory.Build.props. -->
     <ProjectReference Include="..\..\src\Deckle.Transcription.Whisper\Deckle.Transcription.Whisper.csproj" />
   </ItemGroup>
+
+  <ItemGroup>
+    <Content Include="..\..\src\Deckle.App\Assets\Sounds\speech.wav"
+             Link="Assets\Sounds\speech.wav"
+             CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
 </Project>
