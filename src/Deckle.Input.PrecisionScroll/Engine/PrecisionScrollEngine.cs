@@ -137,7 +137,6 @@ public sealed class PrecisionScrollEngine : IWheelInterceptor, IDisposable
         && wheelEvent.Axis == WheelAxis.Vertical
         && !wheelEvent.IsInjected
         && wheelEvent.InputState == WheelInputState.None
-        && wheelEvent.HasEquivalentTarget
         && wheelEvent.Delta != 0
         && wheelEvent.Delta % 120 == 0;
 

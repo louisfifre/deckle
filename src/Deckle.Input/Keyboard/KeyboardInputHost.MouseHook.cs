@@ -62,8 +62,7 @@ public sealed partial class KeyboardInputHost
             Source: WheelEventSource.MessageHook,
             IsInjected: (hook.flags & (LowLevelMouseHookInterop.LLMHF_INJECTED
                 | LowLevelMouseHookInterop.LLMHF_LOWER_IL_INJECTED)) != 0,
-            InputState: LowLevelMouseHookInterop.GetWheelInputState(),
-            HasEquivalentTarget: LowLevelMouseHookInterop.HasEquivalentTarget(hook.pt));
+            InputState: LowLevelMouseHookInterop.GetWheelInputState());
         bool observationQueued = QueueHookWheelObservation(in wheelEvent);
         bool intercepted = observationQueued
             && (Volatile.Read(ref _wheelInterceptor)?.Intercept(in wheelEvent) ?? false);

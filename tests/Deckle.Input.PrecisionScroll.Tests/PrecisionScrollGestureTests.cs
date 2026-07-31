@@ -186,8 +186,7 @@ public sealed class PrecisionScrollGestureTests
             TimestampMs: 0,
             Device: IntPtr.Zero,
             source,
-            IsInjected: injected,
-            HasEquivalentTarget: true);
+            IsInjected: injected);
 
         Assert.Equal(expected, PrecisionScrollEngine.CanConvert(in wheelEvent));
     }
@@ -205,24 +204,22 @@ public sealed class PrecisionScrollGestureTests
             TimestampMs: 0,
             Device: IntPtr.Zero,
             WheelEventSource.MessageHook,
-            InputState: inputState,
-            HasEquivalentTarget: true);
+            InputState: inputState);
 
         Assert.False(PrecisionScrollEngine.CanConvert(in wheelEvent));
     }
 
     [Fact]
-    public void WheelInputWithADifferentPointerTargetRemainsNative()
+    public void ClassicPhysicalDetentIsAcceptedGlobally()
     {
         var wheelEvent = new MouseWheelEvent(
             WheelAxis.Vertical,
             Delta: 120,
             TimestampMs: 0,
             Device: IntPtr.Zero,
-            WheelEventSource.MessageHook,
-            HasEquivalentTarget: false);
+            WheelEventSource.MessageHook);
 
-        Assert.False(PrecisionScrollEngine.CanConvert(in wheelEvent));
+        Assert.True(PrecisionScrollEngine.CanConvert(in wheelEvent));
     }
 
     private static ReplayResult Replay(

@@ -30,7 +30,6 @@ public static class LowLevelMouseHookInterop
     private const int VK_SHIFT = 0x10;
     private const int VK_CONTROL = 0x11;
     private const int VK_MENU = 0x12;
-    private const uint GA_ROOTOWNER = 3;
 
     public static bool IsButtonDown(int message) => message is
         WM_LBUTTONDOWN or WM_RBUTTONDOWN or WM_MBUTTONDOWN or WM_XBUTTONDOWN;
@@ -64,20 +63,6 @@ public static class LowLevelMouseHookInterop
         return state;
     }
 
-    public static bool HasEquivalentTarget(POINT point)
-    {
-        IntPtr foreground = GetForegroundWindow();
-        IntPtr underPointer = WindowFromPoint(point);
-        if (foreground == IntPtr.Zero || underPointer == IntPtr.Zero)
-            return false;
-
-        IntPtr foregroundRoot = GetAncestor(foreground, GA_ROOTOWNER);
-        IntPtr pointerRoot = GetAncestor(underPointer, GA_ROOTOWNER);
-        return foregroundRoot != IntPtr.Zero
-            && pointerRoot != IntPtr.Zero
-            && foregroundRoot == pointerRoot;
-    }
-
     private static bool IsDown(int virtualKey) =>
         (GetAsyncKeyState(virtualKey) & unchecked((short)0x8000)) != 0;
 
@@ -101,12 +86,4 @@ public static class LowLevelMouseHookInterop
     [DllImport("user32.dll")]
     private static extern short GetAsyncKeyState(int virtualKey);
 
-    [DllImport("user32.dll")]
-    private static extern IntPtr GetForegroundWindow();
-
-    [DllImport("user32.dll")]
-    private static extern IntPtr WindowFromPoint(POINT point);
-
-    [DllImport("user32.dll")]
-    private static extern IntPtr GetAncestor(IntPtr window, uint flags);
 }

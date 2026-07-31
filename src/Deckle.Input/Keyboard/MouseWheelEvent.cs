@@ -18,8 +18,7 @@ public readonly record struct MouseWheelEvent(
     IntPtr Device,
     WheelEventSource Source,
     bool IsInjected = false,
-    WheelInputState InputState = WheelInputState.None,
-    bool HasEquivalentTarget = false);
+    WheelInputState InputState = WheelInputState.None);
 
 [Flags]
 public enum WheelInputState
