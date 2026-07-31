@@ -1,7 +1,10 @@
 using System;
+using System.Collections.Generic;
+using System.Threading.Tasks;
 using Deckle.App;
 using Deckle.Transcription;
 using Microsoft.UI.Xaml;
+using Windows.Storage;
 using Windows.Storage.Pickers;
 using WinRT.Interop;
 
@@ -9,16 +12,14 @@ namespace Deckle.App;
 
 public partial class App
 {
-    // File transcription entry — the tray "Transcribe a file…" command. Opens
-    // the system file picker for one audio file, then hands its path to the
-    // existing monolithic engine, which decodes it (Media Foundation → 16 kHz
-    // mono) and runs it through the same pipeline as dictation. The transcript
-    // is written to a .txt on disk and copied to the clipboard; it is never
-    // pasted. Concurrency with a live dictation is refused by the engine's CAS
-    // guard, which emits its own "engine busy" feedback — the App does nothing
-    // on that result. Completion surfaces only as a HUD message (SavedToFile →
-    // ShowFileSaved, wired in App.xaml.cs); nothing opens.
-    private async void TranscribeFileFromTray()
+    // File transcription entry — the tray "Transcribe audio files…" command.
+    // Opens the system file picker for one or more audio files, then hands each
+    // path in selection order to the existing monolithic engine. Each file is a
+    // complete independent run (decode → transcribe → .txt + clipboard), and the
+    // next one starts only after the worker has returned to Idle. This keeps the
+    // backend single-threaded and lets one failed file leave the rest of the batch
+    // untouched. Concurrency with live dictation remains guarded by the engine.
+    private async void TranscribeFilesFromTray()
     {
         // async void: the tray click arrives on the UI thread with no awaiter,
         // so the whole body is guarded — an unobserved exception here (picker
@@ -47,6 +48,7 @@ public partial class App
             // nothing flashes on screen — and Close() it in the finally once the
             // picker has returned.
             var ownerWindow = new Window();
+            IReadOnlyList<StorageFile> files;
             try
             {
                 IntPtr hwnd = WindowNative.GetWindowHandle(ownerWindow);
@@ -65,27 +67,60 @@ public partial class App
                 picker.FileTypeFilter.Add(".opus");
                 InitializeWithWindow.Initialize(picker, hwnd);
 
-                var file = await picker.PickSingleFileAsync();
-                if (file is null) return; // user cancelled — nothing to do
-
-                // Hand off to the engine. On Started, the HUD goes to Charging
-                // (ShowPreparing renders that state — no status string produces
-                // it), and the engine drives every later transition (Transcribing,
-                // then the SavedToFile message). On IgnoredBusy / IgnoredDisposed
-                // the engine emits its own feedback, so the App does nothing.
-                var result = _engine.RequestFileTranscription(file.Path);
-                if (result == ToggleResult.Started)
-                    _hudWindow?.ShowPreparing();
+                files = await picker.PickMultipleFilesAsync();
             }
             finally
             {
                 ownerWindow.Close();
+            }
+
+            if (files.Count == 0) return; // user cancelled — nothing to do
+
+            foreach (var file in files)
+            {
+                if (!await StartFileTranscriptionAndWaitForIdleAsync(file.Path))
+                    break;
             }
         }
         catch (Exception ex)
         {
             DeckleAppSource.Log.HudWarning();
             DeckleAppSource.Log.HudWarningDetail($"File transcription entry failed: {ex.Message}");
+        }
+    }
+
+    private async Task<bool> StartFileTranscriptionAndWaitForIdleAsync(string path)
+    {
+        var engine = _engine;
+        if (engine is null) return false;
+
+        // Finished is raised before the worker's terminal teardown, so it is too
+        // early to start the next file. StatusChanged emits Ready only after the
+        // state has become Idle; IsBusy is the semantic check, independent of the
+        // localized status text.
+        var idle = new TaskCompletionSource<bool>(
+            TaskCreationOptions.RunContinuationsAsynchronously);
+
+        void OnStatusChanged(string _)
+        {
+            if (!engine.IsBusy)
+                idle.TrySetResult(true);
+        }
+
+        engine.StatusChanged += OnStatusChanged;
+        try
+        {
+            var result = engine.RequestFileTranscription(path);
+            if (result != ToggleResult.Started)
+                return false;
+
+            _hudWindow?.ShowPreparing();
+            await idle.Task;
+            return true;
+        }
+        finally
+        {
+            engine.StatusChanged -= OnStatusChanged;
         }
     }
 }

@@ -17,8 +17,12 @@ The hotkey-driven live path — mic capture, energy-segmented or monolithic deco
 _Avoid_ : recording (the capture phase, not the whole path).
 
 **File transcription** :
-The tray-initiated path over a pre-recorded audio file: picked through the system file dialog, decoded and resampled to the pipeline's native format, then run through the same monolithic pipeline and HUD states as dictation. Delivery differs by decision: the text is written to disk as a file named after the audio (in a user-configurable folder) and copied to the clipboard; paste and rewrite never run, and completion announces itself through the HUD message only — nothing opens.
-_Avoid_ : batch transcription (one file at a time), import (nothing enters a library).
+The tray-initiated path over one pre-recorded audio file: picked through the system file dialog, decoded and resampled to the pipeline's native format, then run through the same monolithic pipeline and HUD states as dictation. Delivery differs by decision: the text is written to disk as a file named after the audio (in a user-configurable folder) and copied to the clipboard; paste and rewrite never run, and completion announces itself through the HUD message only — nothing opens. One tray selection may contain several files, but each remains an independent file transcription.
+_Avoid_ : import (nothing enters a library).
+
+**File transcription batch** :
+A tray selection containing several audio files, expanded by the host into an ordered series of independent file transcriptions. It is an orchestration unit, not a separate transcription pipeline.
+_Avoid_ : file transcription (one file's run), import.
 
 ## Fidelity criteria
 

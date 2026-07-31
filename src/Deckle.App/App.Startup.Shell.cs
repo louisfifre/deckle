@@ -221,11 +221,11 @@ public partial class App
         // simply never appears (see TrayContextMenuHost.PrimeFlyout).
         if (context.TranscriptionPresent)
         {
-            // File transcription — opens the system file picker and runs the
+            // File transcription — opens the system file picker and runs each
             // chosen audio file through the same pipeline as dictation (see
             // App.FileTranscription.cs). Delivered on the UI thread the tray
             // click arrives on.
-            _trayMenu.OnTranscribeFile = () => TranscribeFileFromTray();
+            _trayMenu.OnTranscribeFiles = () => TranscribeFilesFromTray();
         }
         if (context.AmbientPresent)
         {
