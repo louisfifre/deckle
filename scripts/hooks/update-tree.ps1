@@ -9,18 +9,18 @@
 $ErrorActionPreference = 'Stop'
 $repoRoot   = (git rev-parse --show-toplevel).Trim()
 $outputFile = Join-Path $repoRoot 'TREE.md'
+. (Join-Path $repoRoot 'scripts\lib\script-output.ps1')
 
-function Step($msg) { Write-Host "`n[tree] $msg" -ForegroundColor Cyan }
-function Ok($msg)   { Write-Host "       $msg" -ForegroundColor Green }
+$WorkflowOutput = New-DeckleWorkflowOutput -Category 'tree'
 
-Write-Host "Repo: $repoRoot" -ForegroundColor DarkGray
-Write-Host "TREE: $outputFile" -ForegroundColor DarkGray
+Write-DeckleOutputText -Text "Repo: $repoRoot" -Role Muted
+Write-DeckleOutputText -Text "TREE: $outputFile" -Role Muted
 
 # ── Collecte ──────────────────────────────────────────────────────────────
 
-Step 'Collect tracked files'
+Write-DeckleWorkflowStep -Output $WorkflowOutput -Message 'Collect tracked files'
 $files = git -C $repoRoot ls-files | Where-Object { $_ -ne '' }
-Ok "$($files.Count) tracked file(s)"
+Write-DeckleWorkflowMessage -Output $WorkflowOutput -Message "$($files.Count) tracked file(s)"
 
 # ── Frontmatter ───────────────────────────────────────────────────────────
 
@@ -199,7 +199,7 @@ Render-Node $root '' ''
 
 # ── Écriture ──────────────────────────────────────────────────────────────
 
-Step 'Write TREE.md'
+Write-DeckleWorkflowStep -Output $WorkflowOutput -Message 'Write TREE.md'
 $body = $lines -join "`n"
 
 # No wall-clock timestamp on purpose: it made every regeneration differ even
@@ -217,4 +217,4 @@ $body
 "@
 
 [System.IO.File]::WriteAllText($outputFile, $content, [System.Text.Encoding]::UTF8)
-Ok "TREE.md updated"
+Write-DeckleWorkflowMessage -Output $WorkflowOutput -Message "TREE.md updated"

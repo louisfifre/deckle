@@ -1,5 +1,7 @@
 # Fixed launcher chrome with a native scrolling output region.
 
+. (Join-Path (Split-Path -Parent $PSScriptRoot) 'script-output.ps1')
+
 function Start-MenuActionConsole {
     [CmdletBinding()]
     param(
@@ -70,11 +72,11 @@ function Write-MenuActionOutput {
     }
 
     if ($InputObject -is [System.Management.Automation.ErrorRecord]) {
-        Write-Host ([string]$InputObject) -ForegroundColor Red
+        Write-Host ([string]$InputObject) -ForegroundColor (Get-DeckleOutputColor -Role Error)
         return
     }
     if ($InputObject -is [System.Management.Automation.WarningRecord]) {
-        Write-Host ([string]$InputObject) -ForegroundColor Yellow
+        Write-Host ([string]$InputObject) -ForegroundColor (Get-DeckleOutputColor -Role Warning)
         return
     }
 

@@ -63,10 +63,20 @@ Assert-Equal '' (Get-GridPagingFooter) 'menus without pages do not duplicate hea
 
 $plainResult = Get-MenuResultLinePresentation -Line 'plain output'
 Assert-Equal 'plain output' $plainResult.Text 'plain result lines remain compatible'
-Assert-Equal ([ConsoleColor]::Gray) $plainResult.ForegroundColor 'plain result lines keep the neutral menu color'
+Assert-Equal $null $plainResult.ForegroundColor 'plain result lines inherit the terminal body color'
 $coloredResult = Get-MenuResultLinePresentation -Line ([pscustomobject]@{ Text = 'completed'; ForegroundColor = [ConsoleColor]::Green })
 Assert-Equal 'completed' $coloredResult.Text 'structured result lines expose only their message'
 Assert-Equal ([ConsoleColor]::Green) $coloredResult.ForegroundColor 'structured result lines preserve their PowerShell color'
+$segmentedResult = Get-MenuResultLinePresentation -Line ([pscustomobject]@{
+    Text = '[build] compile'
+    Segments = @(
+        [pscustomobject]@{ Text = '[build] '; ForegroundColor = [ConsoleColor]::Cyan }
+        [pscustomobject]@{ Text = 'compile'; ForegroundColor = $null }
+    )
+})
+Assert-Equal 2 $segmentedResult.Segments.Count 'result lines preserve semantic presentation segments'
+Assert-Equal ([ConsoleColor]::Cyan) $segmentedResult.Segments[0].ForegroundColor 'category segment keeps its color'
+Assert-Equal $null $segmentedResult.Segments[1].ForegroundColor 'body segment remains uncolored'
 
 $compactLayout = New-GridBodyLayout -CommandBody @(@{ Kind = 'row' }) -ResultTitle 'Results' -BannerStyle Compact
 Assert-Equal 15 $compactLayout.Body.Count 'result layout consumes available compact body'

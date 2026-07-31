@@ -70,9 +70,7 @@ $NativeRuntimeCatalog = Get-DeckleNativeRuntimeCatalog -SourcePath $NativeRuntim
 $WhisperDlls = @($NativeRuntimeCatalog.WhisperDlls)
 $MingwDlls = @($NativeRuntimeCatalog.MingwDlls)
 
-function Step($msg) { Write-Host "`n[publish] $msg" -ForegroundColor Cyan }
-function Ok($msg)   { Write-Host "           $msg" -ForegroundColor Green }
-function Warn($msg) { Write-Host "           $msg" -ForegroundColor Yellow }
+$WorkflowOutput = New-DeckleWorkflowOutput -Category 'publish'
 
 $Workflow = if ($Publish) { 'Publish native runtime release' } else { 'Prepare native runtime release' }
 $ZipPath = $null
@@ -106,7 +104,7 @@ trap {
 # touches the package directory. It does not invoke dotnet, CMake, Ninja, or any
 # build command; build/bin is an explicit input produced beforehand.
 if ($Publish) {
-    Step 'Validate native release destination'
+    Write-DeckleWorkflowStep -Output $WorkflowOutput -Message 'Validate native release destination'
     & git -C $RepoRoot fetch origin main --tags --prune
     if ($LASTEXITCODE -ne 0) { throw "git fetch origin main --tags failed (code $LASTEXITCODE)" }
     $source = Assert-DeckleReleaseRepositorySource -RepoRoot $RepoRoot
@@ -118,7 +116,7 @@ if ($Publish) {
     if ($LASTEXITCODE -ne 0 -or $resolvedRepo -cne $OwnerRepo) {
         throw "GitHub repository preflight failed for $OwnerRepo"
     }
-    Ok "GitHub access verified for $OwnerRepo at $($HeadSha.Substring(0, 12))"
+    Write-DeckleWorkflowMessage -Output $WorkflowOutput -Message "GitHub access verified for $OwnerRepo at $($HeadSha.Substring(0, 12))"
 } else {
     $remoteUrl = & git -C $RepoRoot remote get-url origin 2>$null
     if ($LASTEXITCODE -eq 0 -and $remoteUrl -match 'github\.com[:/](?<repo>[^/]+/[^/.]+)(?:\.git)?$') {
@@ -156,7 +154,7 @@ if ($ArtifactPath) {
         throw "Native runtime artifact must be named $ZipName"
     }
 
-    Step "Validate existing $ZipName"
+    Write-DeckleWorkflowStep -Output $WorkflowOutput -Message "Validate existing $ZipName"
     $verifiedArtifact = Assert-DeckleNativeRuntimeArtifact `
         -Bundle $PinnedBundle `
         -ArtifactPath $ZipPath
@@ -168,7 +166,7 @@ if ($ArtifactPath) {
     $ZipSize = [math]::Round($ZipBytes / 1MB, 2)
     if (-not $OutDir) { $OutDir = Split-Path -Parent $ZipPath }
     $SourceKind = 'Existing artifact'
-    Ok "$ZipName ($ZipSize MB) matches CurrentBundle and the native catalog"
+    Write-DeckleWorkflowMessage -Output $WorkflowOutput -Message "$ZipName ($ZipSize MB) matches CurrentBundle and the native catalog"
 } else {
     if (-not $Version) {
         $publishedTags = @(& git -C $RepoRoot tag --list 'native-v*')
@@ -178,8 +176,8 @@ if ($ArtifactPath) {
             -WhisperRepo $WhisperRepo `
             -PublishedTags $publishedTags
         $Version = $versionPlan.Version
-        Step "Resolved native-v$Version"
-        Ok "whisper.cpp $($versionPlan.WhisperVersion); previous bundle native-v$($versionPlan.PreviousVersion)"
+        Write-DeckleWorkflowStep -Output $WorkflowOutput -Message "Resolved native-v$Version"
+        Write-DeckleWorkflowMessage -Output $WorkflowOutput -Message "whisper.cpp $($versionPlan.WhisperVersion); previous bundle native-v$($versionPlan.PreviousVersion)"
     }
 
     # ── Resolve sources ──────────────────────────────────────────────────────
@@ -214,7 +212,7 @@ if (-not $OutDir) {
     $OutDir = Join-Path ([System.IO.Path]::GetTempPath()) "deckle-native-$Version"
 }
 if (Test-Path $OutDir) {
-    Warn "OutDir exists, cleaning: $OutDir"
+    Write-DeckleWorkflowMessage -Output $WorkflowOutput -Message "OutDir exists, cleaning: $OutDir" -Role Warning
     Remove-Item $OutDir -Recurse -Force
 }
 $null = New-Item -ItemType Directory -Path $OutDir
@@ -226,7 +224,7 @@ $null = New-Item -ItemType Directory -Path $StagingDir
 
 # ── Stage DLLs + compute per-file SHA256 ─────────────────────────────────────
 
-Step "Stage DLLs to $StagingDir"
+Write-DeckleWorkflowStep -Output $WorkflowOutput -Message "Stage DLLs to $StagingDir"
 
 $Sha256ByName = [ordered]@{}
 function Stage-Dll($srcDir, $name) {
@@ -237,7 +235,7 @@ function Stage-Dll($srcDir, $name) {
     $hash = (Get-FileHash $dst -Algorithm SHA256).Hash.ToLower()
     $Sha256ByName[$name] = $hash
     $size = [math]::Round((Get-Item $dst).Length / 1MB, 2)
-    Ok ("{0,-22} {1,8} MB  sha256={2}" -f $name, $size, $hash)
+    Write-DeckleWorkflowMessage -Output $WorkflowOutput -Message ("{0,-22} {1,8} MB  sha256={2}" -f $name, $size, $hash)
 }
 
 foreach ($n in $WhisperDlls) { Stage-Dll $WhisperBin  $n }
@@ -245,7 +243,7 @@ foreach ($n in $MingwDlls)   { Stage-Dll $MingwBin $n }
 
 # ── Gather provenance metadata ───────────────────────────────────────────────
 
-Step 'Gather provenance'
+Write-DeckleWorkflowStep -Output $WorkflowOutput -Message 'Gather provenance'
 
 # whisper.cpp upstream version — read from CMakeLists.txt `project(... VERSION X.Y.Z)`.
 $cmakeLists = Join-Path $WhisperRepo 'CMakeLists.txt'
@@ -355,7 +353,7 @@ whisper.cpp build and MinGW runtime directories recorded above.
 "@
 
 Set-Content -Path (Join-Path $StagingDir 'PROVENANCE.txt') -Value $prov -Encoding UTF8
-Ok 'PROVENANCE.txt written'
+Write-DeckleWorkflowMessage -Output $WorkflowOutput -Message 'PROVENANCE.txt written'
 
 # ── SHA256SUMS (sha256sum -c compatible) ─────────────────────────────────────
 
@@ -363,11 +361,11 @@ $sumsLines = foreach ($n in ($WhisperDlls + $MingwDlls)) {
     '{0} *{1}' -f $Sha256ByName[$n], $n
 }
 Set-Content -Path (Join-Path $StagingDir 'SHA256SUMS') -Value $sumsLines -Encoding UTF8
-Ok 'SHA256SUMS written'
+Write-DeckleWorkflowMessage -Output $WorkflowOutput -Message 'SHA256SUMS written'
 
 # ── Zip flat + zip-level SHA256 ──────────────────────────────────────────────
 
-Step "Compress to $ZipName"
+Write-DeckleWorkflowStep -Output $WorkflowOutput -Message "Compress to $ZipName"
 Compress-Archive -Path (Join-Path $StagingDir '*') -DestinationPath $ZipPath -Force
 Assert-DeckleNativeRuntimeArchive `
     -ArchivePath $ZipPath `
@@ -375,7 +373,7 @@ Assert-DeckleNativeRuntimeArchive `
 $ZipSha256 = (Get-FileHash $ZipPath -Algorithm SHA256).Hash.ToLower()
 $ZipBytes  = (Get-Item $ZipPath).Length
 $ZipSize   = [math]::Round($ZipBytes / 1MB, 2)
-Ok "$ZipName ($ZipSize MB) sha256=$ZipSha256"
+Write-DeckleWorkflowMessage -Output $WorkflowOutput -Message "$ZipName ($ZipSize MB) sha256=$ZipSha256"
 
     Remove-Item $StagingDir -Recurse -Force
     $SourceKind = 'whisper.cpp build'
@@ -383,7 +381,7 @@ Ok "$ZipName ($ZipSize MB) sha256=$ZipSha256"
 
 # ── Summary — paste-ready block for NativeRuntime.CurrentBundle ──────────────
 
-Step 'Done'
+Write-DeckleWorkflowStep -Output $WorkflowOutput -Message 'Done'
 Write-Host @"
 
   Zip    : $ZipPath
@@ -424,7 +422,7 @@ if ($Publish) {
         throw "Release notes file not found: $Notes"
     }
 
-    Step "Publish GitHub Release $tag"
+    Write-DeckleWorkflowStep -Output $WorkflowOutput -Message "Publish GitHub Release $tag"
     $releaseJson = (& gh release view $tag --repo $OwnerRepo --json isDraft,assets,tagName,targetCommitish 2>$null) -join "`n"
     $releaseExists = $LASTEXITCODE -eq 0
     if (-not $releaseExists) {
@@ -435,11 +433,11 @@ if ($Publish) {
             --notes-file $Notes `
             --draft
         if ($LASTEXITCODE -ne 0) { throw "gh release create failed (code $LASTEXITCODE)" }
-        Ok "Draft release $tag uploaded"
+        Write-DeckleWorkflowMessage -Output $WorkflowOutput -Message "Draft release $tag uploaded"
         $releaseJson = (& gh release view $tag --repo $OwnerRepo --json isDraft,assets,tagName,targetCommitish) -join "`n"
         if ($LASTEXITCODE -ne 0) { throw "GitHub draft $tag could not be read after upload" }
     } else {
-        Ok "Existing release $tag found; validating it for resume"
+        Write-DeckleWorkflowMessage -Output $WorkflowOutput -Message "Existing release $tag found; validating it for resume"
     }
 
     $remoteRelease = $releaseJson | ConvertFrom-Json
@@ -449,7 +447,7 @@ if ($Publish) {
         -HeadSha $HeadSha `
         -ExpectedNames @($ZipName) `
         -ExpectedSizes @{ $ZipName = $ZipBytes }
-    Ok 'GitHub asset verified by name and byte size'
+    Write-DeckleWorkflowMessage -Output $WorkflowOutput -Message 'GitHub asset verified by name and byte size'
 
     $downloadDir = Join-Path ([IO.Path]::GetTempPath()) "deckle-native-remote-$([guid]::NewGuid())"
     try {
@@ -471,7 +469,7 @@ if ($Publish) {
         Assert-DeckleNativeRuntimeArchive `
             -ArchivePath $downloadedArtifact `
             -DllNames $NativeRuntimeCatalog.Names
-        Ok 'GitHub asset downloaded and verified byte-for-byte'
+        Write-DeckleWorkflowMessage -Output $WorkflowOutput -Message 'GitHub asset downloaded and verified byte-for-byte'
     } finally {
         if (Test-Path -LiteralPath $downloadDir) {
             Remove-Item -LiteralPath $downloadDir -Recurse -Force
@@ -479,7 +477,7 @@ if ($Publish) {
     }
 
     Publish-DeckleReleaseTag -RepoRoot $RepoRoot -Tag $tag -HeadSha $HeadSha
-    Ok "GitHub tag $tag published at release HEAD"
+    Write-DeckleWorkflowMessage -Output $WorkflowOutput -Message "GitHub tag $tag published at release HEAD"
 
     if ($remoteRelease.isDraft) {
         & gh release edit $tag --repo $OwnerRepo --draft=false
@@ -493,7 +491,7 @@ if ($Publish) {
     if ($publishedRelease.isDraft) { throw "GitHub release $tag is still a draft after finalization" }
     Assert-DeckleReleaseAssets -Release $publishedRelease -Tag $tag -HeadSha $HeadSha -ExpectedNames @($ZipName) -ExpectedSizes @{ $ZipName = $ZipBytes }
     $Published = $true
-    Ok "Released as $tag"
+    Write-DeckleWorkflowMessage -Output $WorkflowOutput -Message "Released as $tag"
 }
 
 $nativeTag = "native-v$Version"

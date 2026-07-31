@@ -19,9 +19,7 @@ if ($LASTEXITCODE -ne 0 -or [string]::IsNullOrWhiteSpace($gitCommonDir)) {
 $hooksDir  = Join-Path $gitCommonDir 'hooks'
 $sourceDir = Join-Path $repoRoot 'scripts' 'hooks'
 
-function Step($msg) { Write-Host "`n[hooks] $msg" -ForegroundColor Cyan }
-function Ok($msg)   { Write-Host "        $msg" -ForegroundColor Green }
-function Warn($msg) { Write-Host "        $msg" -ForegroundColor Yellow }
+$WorkflowOutput = New-DeckleWorkflowOutput -Category 'hooks'
 
 $Workflow = 'Install git hooks'
 $InstalledHooks = New-Object System.Collections.Generic.List[string]
@@ -40,10 +38,10 @@ trap {
     throw
 }
 
-Write-Host "Repo: $repoRoot" -ForegroundColor DarkGray
-Write-Host "Hooks: $hooksDir" -ForegroundColor DarkGray
+Write-DeckleOutputText -Text "Repo: $repoRoot" -Role Muted
+Write-DeckleOutputText -Text "Hooks: $hooksDir" -Role Muted
 
-Step 'Install git hooks'
+Write-DeckleWorkflowStep -Output $WorkflowOutput -Message 'Install git hooks'
 $hookFiles = @('pre-commit')
 foreach ($hookFile in $hookFiles) {
     $src = Join-Path $sourceDir $hookFile
@@ -53,11 +51,11 @@ foreach ($hookFile in $hookFiles) {
 
     $dst = Join-Path $hooksDir $hookFile
     if (Test-Path $dst) {
-        Warn "Existing hook '$hookFile' backed up as '$hookFile.bak'"
+        Write-DeckleWorkflowMessage -Output $WorkflowOutput -Message "Existing hook '$hookFile' backed up as '$hookFile.bak'" -Role Warning
         Copy-Item $dst "$dst.bak" -Force
     }
     Copy-Item $src $dst -Force
-    Ok "Installed $hookFile"
+    Write-DeckleWorkflowMessage -Output $WorkflowOutput -Message "Installed $hookFile"
     $InstalledHooks.Add($hookFile) | Out-Null
 }
 
@@ -65,9 +63,9 @@ foreach ($hookFile in $hookFiles) {
 # so two branches never collide on the generated tree listing; the next commit
 # that changes the file set regenerates it via the pre-commit hook. The driver
 # definition lives in .git/config (not shared by clone), so it is set here.
-Step "Register TREE.md merge driver"
+Write-DeckleWorkflowStep -Output $WorkflowOutput -Message "Register TREE.md merge driver"
 git config merge.ours.driver true
-Ok "Registered merge.ours driver"
+Write-DeckleWorkflowMessage -Output $WorkflowOutput -Message "Registered merge.ours driver"
 
 Write-DeckleActionSummary `
     -Workflow $Workflow `

@@ -26,7 +26,7 @@
 # early research/bench cycles) and renders as noise, so it is summarised in one
 # line rather than itemised. Move the floor by editing $FloorTag.
 #
-# Pendant to publish-app.ps1 — same Step/Ok/Warn idiom, same -Target/-Pick shape.
+# Pendant to publish-app.ps1 — same shared workflow presentation and -Target/-Pick shape.
 
 [CmdletBinding()]
 param(
@@ -60,9 +60,7 @@ $LibDir = Join-Path (Split-Path -Parent $ScriptDir) 'lib'
 . (Join-Path $LibDir 'action-summary.ps1')
 Import-Module (Join-Path $LibDir 'release-history.psm1') -Force
 
-function Step($msg) { Write-Host "`n[changelog] $msg" -ForegroundColor Cyan }
-function Ok($msg)   { Write-Host "           $msg" -ForegroundColor Green }
-function Warn($msg) { Write-Host "           $msg" -ForegroundColor Yellow }
+$WorkflowOutput = New-DeckleWorkflowOutput -Category 'changelog'
 
 $Workflow = if ($NotesFor) { 'Generate release notes' } else { 'Update changelog' }
 $RepoRoot = $null
@@ -100,7 +98,7 @@ if ($Pick) {
     $RepoRoot = Split-Path -Parent (Split-Path $ScriptDir)  # commands/ -> scripts/ -> repo root
 }
 
-Write-Host "Repo: $RepoRoot" -ForegroundColor DarkGray
+Write-DeckleOutputText -Text "Repo: $RepoRoot" -Role Muted
 
 # ── Generation constants ─────────────────────────────────────────────────────
 # Earliest version regenerated in full. Everything below it predates strict
@@ -258,14 +256,16 @@ if ($NotesFor) {
         $date    = (Get-Date -Format 'yyyy-MM-dd')
     }
 
-    Step "Release notes for v$version (range: $range)"
+    Write-DeckleWorkflowStep -Output $WorkflowOutput -Message "Release notes for v$version (range: $range)"
     $subjects = Get-RangeCommits $range
     $section  = Format-Section $version $prevTag $thisTag $date $subjects
-    if ($section -notmatch '### ') { Warn "No user-facing commits in $range — notes are just a heading." }
+    if ($section -notmatch '### ') {
+        Write-DeckleWorkflowMessage -Output $WorkflowOutput -Message "No user-facing commits in $range — notes are just a heading." -Role Warning
+    }
 
     if ($OutFile) {
         [System.IO.File]::WriteAllText($OutFile, $section + "`n", [System.Text.UTF8Encoding]::new($false))
-        Ok "Notes written to $OutFile"
+        Write-DeckleWorkflowMessage -Output $WorkflowOutput -Message "Notes written to $OutFile"
         $dest = $OutFile
     } else {
         Write-Output $section
@@ -292,7 +292,7 @@ if (-not $tags.Count) { throw "No published release tags found in $RepoRoot" }
 $floorIdx = [array]::IndexOf($tags, $FloorTag)
 if ($floorIdx -lt 0) { throw "Floor tag $FloorTag not found in release-history.json" }
 
-Step "Regenerating changelog from $FloorTag (latest public release: $($tags[-1]))"
+Write-DeckleWorkflowStep -Output $WorkflowOutput -Message "Regenerating changelog from $FloorTag (latest public release: $($tags[-1]))"
 
 # Rendered tags: floor .. latest, emitted newest-first.
 $rendered = $tags[$floorIdx..($tags.Count - 1)]
@@ -306,7 +306,7 @@ if ($unreleased.Count) {
     foreach ($s in $unreleased) { if (ConvertTo-Entry $s) { $hasEntry = $true; break } }
     if ($hasEntry) {
         $sections.Add((Format-Section '' $null $null '' $unreleased))
-        Ok "Unreleased — $($unreleased.Count) commits since public release $($tags[-1])"
+        Write-DeckleWorkflowMessage -Output $WorkflowOutput -Message "Unreleased — $($unreleased.Count) commits since public release $($tags[-1])"
     }
 }
 
@@ -320,15 +320,15 @@ for ($i = $rendered.Count - 1; $i -ge 0; $i--) {
     $date      = Get-TagDate $thisTag
     $subjects  = Get-RangeCommits $range
     $sections.Add((Format-Section $version $prevTag $thisTag $date $subjects))
-    Ok "v$version — $($subjects.Count) commits in range"
+    Write-DeckleWorkflowMessage -Output $WorkflowOutput -Message "v$version — $($subjects.Count) commits in range"
 }
 
 $doc = $Header.TrimEnd() + "`n`n" + (($sections -join "`n`n")) + "`n`n" + $GenesisNote.TrimEnd() + "`n"
 
 $dest = if ($OutFile) { $OutFile } else { Join-Path $RepoRoot 'CHANGELOG.md' }
 [System.IO.File]::WriteAllText($dest, $doc, [System.Text.UTF8Encoding]::new($false))
-Step "Done"
-Ok "Wrote $dest"
+Write-DeckleWorkflowStep -Output $WorkflowOutput -Message "Done"
+Write-DeckleWorkflowMessage -Output $WorkflowOutput -Message "Wrote $dest"
 
 if ($Commit) {
     & git -C $RepoRoot add -- CHANGELOG.md
@@ -340,9 +340,9 @@ if ($Commit) {
         & git -C $RepoRoot commit -m 'docs(changelog): refresh unreleased changes' -- CHANGELOG.md
         if ($LASTEXITCODE -ne 0) { throw 'Could not commit CHANGELOG.md.' }
         $commitHash = (& git -C $RepoRoot rev-parse --short HEAD).Trim()
-        Ok "Committed CHANGELOG.md ($commitHash)"
+        Write-DeckleWorkflowMessage -Output $WorkflowOutput -Message "Committed CHANGELOG.md ($commitHash)"
     } elseif ($diffExitCode -eq 0) {
-        Ok 'CHANGELOG.md is already current; no commit was needed.'
+        Write-DeckleWorkflowMessage -Output $WorkflowOutput -Message 'CHANGELOG.md is already current; no commit was needed.'
     } else {
         throw 'Could not inspect the staged CHANGELOG.md change.'
     }

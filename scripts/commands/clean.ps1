@@ -151,9 +151,7 @@ function Remove-OutputDir {
 # 0. Stop the running Deckle instance — it locks Deckle.exe + DLLs under
 #    artifacts\bin\Deckle.App\, which would make the delete throw and abort.
 # =============================================================================
-Stop-DeckleProcess `
-    -WriteOk { param([string]$Message) Write-Host $Message -ForegroundColor Green } `
-    -WriteWarn { param([string]$Message) Write-Host $Message -ForegroundColor Yellow }
+Stop-DeckleProcess
 
 # Stop .NET build servers left by manual, menu, or agent builds. This is
 # intentionally machine-wide: MSBuild/Roslyn servers are developer cache

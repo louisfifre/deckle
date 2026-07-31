@@ -4,9 +4,18 @@ function Get-MenuResultLinePresentation {
 
     $textProperty = if ($null -ne $Line) { $Line.PSObject.Properties['Text'] } else { $null }
     $colorProperty = if ($null -ne $Line) { $Line.PSObject.Properties['ForegroundColor'] } else { $null }
+    $segmentsProperty = if ($null -ne $Line) { $Line.PSObject.Properties['Segments'] } else { $null }
+    $text = if ($null -ne $textProperty) { [string]$textProperty.Value } else { [string]$Line }
+    $color = if ($null -ne $colorProperty) { $colorProperty.Value } else { $null }
+    $segments = if ($null -ne $segmentsProperty -and @($segmentsProperty.Value).Count -gt 0) {
+        @($segmentsProperty.Value)
+    } else {
+        @([pscustomobject]@{ Text = $text; ForegroundColor = $color })
+    }
     return [pscustomobject]@{
-        Text = if ($null -ne $textProperty) { [string]$textProperty.Value } else { [string]$Line }
-        ForegroundColor = if ($null -ne $colorProperty) { [ConsoleColor]$colorProperty.Value } else { [ConsoleColor]::Gray }
+        Text            = $text
+        ForegroundColor = $color
+        Segments        = $segments
     }
 }
 
@@ -73,7 +82,11 @@ function Write-GridLine {
         $resultIndex = $ResultOffset + [int]$entry.Slot
         $line = if ($resultIndex -lt $ResultLines.Count) { $ResultLines[$resultIndex] } else { '' }
         $presentation = Get-MenuResultLinePresentation -Line $line
-        Write-MenuContentSegment -Text ('  ' + $presentation.Text) -Written ([ref]$written) -InnerWidth $ContentWidth -ForegroundColor $presentation.ForegroundColor -BackgroundColor $null
+        for ($segmentIndex = 0; $segmentIndex -lt $presentation.Segments.Count; $segmentIndex++) {
+            $segment = $presentation.Segments[$segmentIndex]
+            $segmentText = if ($segmentIndex -eq 0) { '  ' + [string]$segment.Text } else { [string]$segment.Text }
+            Write-MenuContentSegment -Text $segmentText -Written ([ref]$written) -InnerWidth $ContentWidth -ForegroundColor $segment.ForegroundColor -BackgroundColor $null
+        }
     } else {
         # 'row'
         Write-MenuContentSegment -Text (' ' * $script:MenuRowInset) -Written ([ref]$written) -InnerWidth $ContentWidth -ForegroundColor $null -BackgroundColor $null

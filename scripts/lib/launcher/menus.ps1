@@ -22,7 +22,7 @@ function Show-Submenu {
 
     # Arrive on the first action: '< Back' keeps its top spot (one ↑ away) but
     # never holds the entry selection.
-    $v = Select-Grid -Header $Header -Rows $withBack -Footer $Footer -StartSel 1 -ClearScreen -BannerStyle $BannerStyle -ResultTitle $ResultTitle -ResultLines $ResultLines -ResultFollowTail:($ResultMode -eq 'Log') -Interaction $Interaction -SelectionState $SelectionState
+    $v = Select-Grid -Header $Header -Rows $withBack -Footer $Footer -StartSel 1 -ClearScreen -BannerStyle $BannerStyle -ResultTitle $ResultTitle -ResultLines $ResultLines -Interaction $Interaction -SelectionState $SelectionState
     if ($null -eq $v -or $v -eq '__back__') { return $null }
     return $v
 }

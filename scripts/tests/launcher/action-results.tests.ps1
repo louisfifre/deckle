@@ -7,6 +7,8 @@ $MenuDir = Join-Path $LibDir 'menu'
 . (Join-Path $MenuDir 'chrome.ps1')
 . (Join-Path $MenuDir 'grid-layout.ps1')
 . (Join-Path $MenuDir 'grid-picker.ps1')
+. (Join-Path $LibDir 'script-output.ps1')
+. (Join-Path $LibDir 'native-console.ps1')
 . (Join-Path $LauncherDir 'action-results.ps1')
 
 function Assert-Equal($Expected, $Actual, [string]$Case) {
@@ -36,9 +38,18 @@ Assert-Equal ([ConsoleColor]::Yellow) $structured[0].ForegroundColor 'host color
 
 $msbuildSuccess = @(ConvertTo-DeckleActionLogRecords -InputObject '  Deckle.App -> D:\projects\ai\deckle\artifacts\bin\Deckle.App.dll' -Source Build)
 Assert-Equal '  Deckle.App -> D:\projects\ai\deckle\artifacts\bin\Deckle.App.dll' $msbuildSuccess[0].Message 'MSBuild success output remains raw'
-Assert-Equal ([ConsoleColor]::Green) $msbuildSuccess[0].ForegroundColor 'compiled Deckle module is shown as successful'
+Assert-Equal $null $msbuildSuccess[0].ForegroundColor 'ordinary successful compiler output stays in the terminal body color'
 $nonDeckleBuild = @(ConvertTo-DeckleActionLogRecords -InputObject '  Microsoft.WindowsAppSDK -> D:\packages\Microsoft.WindowsAppSDK.dll' -Source Build)
-Assert-Equal ([ConsoleColor]::Gray) $nonDeckleBuild[0].ForegroundColor 'unrelated native output keeps the neutral fallback'
+Assert-Equal $null $nonDeckleBuild[0].ForegroundColor 'unrelated native output also inherits the terminal body color'
+
+$workflowOutput = New-DeckleWorkflowOutput -Category 'build'
+$stepOutput = @(& { Write-DeckleWorkflowStep -Output $workflowOutput -Message 'dotnet build (Release x64)' } 6>&1)
+$stepRecord = @(ConvertTo-DeckleActionLogRecords -InputObject $stepOutput -Source Build)
+Assert-Equal 1 $stepRecord.Count 'colored host fragments remain one logical log line'
+Assert-Equal '[build] dotnet build (Release x64)' $stepRecord[0].Message 'workflow step text is reassembled without presentation artifacts'
+Assert-Equal 2 $stepRecord[0].Segments.Count 'workflow step preserves its category and body segments'
+Assert-Equal (Get-DeckleOutputColor -Role Category) $stepRecord[0].Segments[0].ForegroundColor 'workflow category keeps its semantic color'
+Assert-Equal (Get-DeckleOutputColor -Role Heading) $stepRecord[0].Segments[1].ForegroundColor 'workflow title keeps its semantic heading color'
 
 $escape = [char]27
 $bell = [char]7
@@ -82,6 +93,16 @@ Assert-Equal 'Deckle · Running…' $script:StartedActionHeader 'running state i
 Assert-Equal 'restore completed' $script:ForwardedActionOutput[0] 'captured output is forwarded immediately'
 Assert-Equal 'action-console' $script:StoppedActionConsole 'completed action restores the terminal surface'
 
+$native = Invoke-DeckleMenuAction -Header Deckle -Label Build -Source Build -MenuRows $menuRows -Action {
+    $nativeExitCode = Invoke-DeckleConsoleProcess -FilePath (Join-Path $PSHOME 'pwsh.exe') -ArgumentList @(
+        '-NoProfile', '-Command', "Write-Output 'native first'; Write-Output 'native second'; exit 0"
+    )
+    if ($nativeExitCode -ne 0) { throw "native process failed with code $nativeExitCode" }
+}
+Assert-Equal 2 $native.Lines.Count 'native process lines remain available in the persistent result'
+Assert-Equal 'native first' $native.Lines[0].Text 'persistent native history keeps its opening line'
+Assert-Equal 'native second' $native.Lines[1].Text 'persistent native history keeps its following line'
+
 $script:StoppedActionConsole = $null
 $failure = Invoke-DeckleMenuAction -Header Deckle -Label Build -Source Build -MenuRows $menuRows -Action {
     Write-Output 'restore completed'
@@ -92,10 +113,14 @@ Assert-Equal $true ((@($failure.Lines | ForEach-Object Text) -join "`n") -like '
 Assert-Equal 'action-console' $script:StoppedActionConsole 'failed action also restores the terminal surface'
 
 $partial = Invoke-DeckleMenuAction -Header Deckle -Label Setup -Source Setup -MenuRows $menuRows -Action {
-    Write-Host '  Result        : Partial'
+    Write-DeckleOutputLine -Segments @(
+        New-DeckleOutputSegment -Text '  Result        : ' -Role Body
+        New-DeckleOutputSegment -Text 'Partial' -Role Warning
+    )
 }
 Assert-Equal 'Partial' $partial.Result 'script summary result is preserved'
 Assert-Equal $false $partial.Succeeded 'partial is not presented as full success'
 Assert-Equal $true $partial.Title.StartsWith('Setup partial · ') 'partial state stays visible in the title'
+Assert-Equal 2 $partial.Lines[0].Segments.Count 'segmented summary state remains one persistent result line'
 
 Write-Host 'action-results.tests.ps1: PASS' -ForegroundColor Green
