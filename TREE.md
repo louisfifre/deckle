@@ -270,6 +270,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── setup-assets.ps1
 │   │   ├── stats.ps1
 │   │   ├── stop-build-servers.ps1
+│   │   ├── sweep-exposables.ps1
 │   │   ├── update-readme-stats.ps1
 │   │   └── validate-resources.ps1
 │   ├── hooks/
@@ -308,8 +309,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── repository-inventory.psm1
 │   │   ├── resource-inventory.psm1
 │   │   ├── script-output.ps1
-│   │   ├── source-metrics.psm1
-│   │   └── sweep-exposables.ps1
+│   │   └── source-metrics.psm1
 │   ├── tests/
 │   │   ├── commands/
 │   │   │   ├── install-hooks.tests.ps1
