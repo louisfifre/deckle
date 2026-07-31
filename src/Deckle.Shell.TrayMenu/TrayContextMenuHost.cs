@@ -69,7 +69,7 @@ public sealed partial class TrayContextMenuHost : IDisposable
     private MenuFlyoutItem? _autocorrectItem;
     private MenuFlyoutItem? _taskbarCoverItem;
     private MenuFlyoutItem? _precisionScrollItem;
-    private MenuFlyoutItem? _transcribeFileItem;
+    private MenuFlyoutItem? _transcribeFilesItem;
     private IntPtr _hwnd;
     private AppWindow? _appWindow;
 
@@ -100,7 +100,7 @@ public sealed partial class TrayContextMenuHost : IDisposable
     // cycle has run, or if the presenter could not be found.
     private Windows.Foundation.Size? _primedPresenterSize;
 
-    public Action? OnTranscribeFile  { get; set; }
+    public Action? OnTranscribeFiles { get; set; }
     public Action? OnShowLogs        { get; set; }
     public Action? OnShowSettings    { get; set; }
     public Action? OnShowPlayground  { get; set; }

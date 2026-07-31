@@ -46,8 +46,8 @@ public sealed partial class TrayContextMenuHost
             _ambientItem.Visibility = OnToggleAmbient is null ? Visibility.Collapsed : Visibility.Visible;
         if (_autocorrectItem is not null)
             _autocorrectItem.Visibility = OnToggleAutocorrect is null ? Visibility.Collapsed : Visibility.Visible;
-        if (_transcribeFileItem is not null)
-            _transcribeFileItem.Visibility = OnTranscribeFile is null ? Visibility.Collapsed : Visibility.Visible;
+        if (_transcribeFilesItem is not null)
+            _transcribeFilesItem.Visibility = OnTranscribeFiles is null ? Visibility.Collapsed : Visibility.Visible;
 
         bool traceWindowing = DeckleShellTrayMenuSource.IsDetailEnabled(
             EventLevel.Verbose, (EventKeywords)Keywords.Lifecycle);

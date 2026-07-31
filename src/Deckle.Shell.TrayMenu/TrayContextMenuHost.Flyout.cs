@@ -91,8 +91,8 @@ public sealed partial class TrayContextMenuHost
         _flyout.Items.Add(_precisionScrollItem);
 
         _flyout.Items.Add(new MenuFlyoutSeparator());
-        _transcribeFileItem = CreateItem(Loc.Get("TrayMenu_TranscribeFile"), () => OnTranscribeFile?.Invoke());
-        _flyout.Items.Add(_transcribeFileItem);
+        _transcribeFilesItem = CreateItem(Loc.Get("TrayMenu_TranscribeFile"), () => OnTranscribeFiles?.Invoke());
+        _flyout.Items.Add(_transcribeFilesItem);
         _flyout.Items.Add(new MenuFlyoutSeparator());
         _flyout.Items.Add(CreateItem(Loc.Get("TrayMenu_Logs"),       () => OnShowLogs?.Invoke()));
         _flyout.Items.Add(CreateItem(Loc.Get("TrayMenu_Settings"),   () => OnShowSettings?.Invoke()));

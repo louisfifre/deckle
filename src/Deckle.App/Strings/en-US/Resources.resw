@@ -399,7 +399,7 @@
     <value>Deckle — {0}</value>
   </data>
   <data name="TrayMenu_TranscribeFile" xml:space="preserve">
-    <value>Transcribe a file…</value>
+    <value>Transcribe audio files…</value>
   </data>
   <data name="TrayMenu_Logs" xml:space="preserve">
     <value>Logs</value>
