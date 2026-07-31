@@ -230,7 +230,7 @@ public sealed partial class AmbientEngine : IAsyncDisposable
     // the cumulative session counters above (which feed the stop
     // summary) so a heartbeat shows recent activity, not the whole
     // session-to-date.
-    private long _hbTimestamp;
+    private readonly AmbientHeartbeatWindow _heartbeatWindow = new();
     private int  _hbTicks;
     private int  _hbPushed;
     private int  _hbDropped;

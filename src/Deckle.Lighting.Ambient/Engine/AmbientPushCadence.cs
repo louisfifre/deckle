@@ -26,20 +26,28 @@ internal static class AmbientPushCadence
 
     public static long AdvanceDeadline(
         long previousDeadline,
-        long now,
+        long tickStartedAt,
+        long tickCompletedAt,
         long intervalTicks,
         out long skippedSlots)
     {
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(intervalTicks);
 
-        long nextDeadline = previousDeadline + intervalTicks;
-        if (now <= nextDeadline)
+        // A late continuation still delivers one latest-colour tick, but the
+        // next nominal slot must not follow it as a catch-up burst. Re-anchor
+        // the schedule on the tick that actually ran, then skip only complete
+        // intervals missed before or during that tick.
+        skippedSlots = Math.Max(0, (tickStartedAt - previousDeadline) / intervalTicks);
+
+        long nextDeadline = tickStartedAt + intervalTicks;
+        if (tickCompletedAt >= nextDeadline)
         {
-            skippedSlots = 0;
-            return nextDeadline;
+            long intervalsMissedDuringTick =
+                ((tickCompletedAt - nextDeadline) / intervalTicks) + 1;
+            skippedSlots += intervalsMissedDuringTick;
+            nextDeadline += intervalsMissedDuringTick * intervalTicks;
         }
 
-        skippedSlots = ((now - nextDeadline) / intervalTicks) + 1;
-        return nextDeadline + (skippedSlots * intervalTicks);
+        return nextDeadline;
     }
 }

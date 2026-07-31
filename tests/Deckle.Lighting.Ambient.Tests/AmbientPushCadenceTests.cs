@@ -32,11 +32,12 @@ public sealed class AmbientPushCadenceTests
     }
 
     [Fact]
-    public void OnTimeWorkKeepsTheNextScheduledDeadline()
+    public void OnTimeTickKeepsTheNextScheduledDeadline()
     {
         long next = AmbientPushCadence.AdvanceDeadline(
             previousDeadline: 1_000,
-            now: 1_010,
+            tickStartedAt: 1_000,
+            tickCompletedAt: 1_010,
             intervalTicks: 20,
             out long skippedSlots);
 
@@ -45,15 +46,44 @@ public sealed class AmbientPushCadenceTests
     }
 
     [Fact]
-    public void LateWorkSkipsExpiredSlotsInsteadOfReplayingThem()
+    public void LongTickSkipsExpiredSlotsInsteadOfReplayingThem()
     {
         long next = AmbientPushCadence.AdvanceDeadline(
             previousDeadline: 1_000,
-            now: 1_051,
+            tickStartedAt: 1_000,
+            tickCompletedAt: 1_051,
             intervalTicks: 20,
             out long skippedSlots);
 
         Assert.Equal(1_060, next);
+        Assert.Equal(2, skippedSlots);
+    }
+
+    [Fact]
+    public void LateWakeCoalescesTheNearCatchUpSlot()
+    {
+        long next = AmbientPushCadence.AdvanceDeadline(
+            previousDeadline: 1_000,
+            tickStartedAt: 1_019,
+            tickCompletedAt: 1_019,
+            intervalTicks: 20,
+            out long skippedSlots);
+
+        Assert.Equal(1_039, next);
+        Assert.Equal(0, skippedSlots);
+    }
+
+    [Fact]
+    public void WholeSlotsMissedBeforeTheTickAreCounted()
+    {
+        long next = AmbientPushCadence.AdvanceDeadline(
+            previousDeadline: 1_000,
+            tickStartedAt: 1_041,
+            tickCompletedAt: 1_041,
+            intervalTicks: 20,
+            out long skippedSlots);
+
+        Assert.Equal(1_061, next);
         Assert.Equal(2, skippedSlots);
     }
 }

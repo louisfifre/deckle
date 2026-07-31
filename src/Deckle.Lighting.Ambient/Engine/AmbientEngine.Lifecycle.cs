@@ -253,13 +253,11 @@ public sealed partial class AmbientEngine
 
             _cts = new CancellationTokenSource();
             _startTimestamp = Stopwatch.GetTimestamp();
-            _hbTimestamp    = _startTimestamp;
             _pushedCount = 0;
             _droppedCount = 0;
             ResetPushFailureEpisode();
-            _hbTicks = _hbPushed = _hbDropped = _hbUnmappedLights = 0;
-            _hbSkippedSlots = 0;
-            _hbPushDurationsMs?.Clear();
+            _heartbeatWindow.Stop();
+            ResetHeartbeatCounters();
             _lastR = _lastG = _lastB = -1;
             _smoothedR = _smoothedG = _smoothedB = -1f;
             _multiSmoothed.Clear();

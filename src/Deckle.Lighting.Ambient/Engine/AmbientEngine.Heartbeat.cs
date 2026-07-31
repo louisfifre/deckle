@@ -8,7 +8,7 @@ public sealed partial class AmbientEngine
     private void MaybeEmitHeartbeat()
     {
         long now = Stopwatch.GetTimestamp();
-        double elapsedMs = (now - _hbTimestamp) * 1000.0 / Stopwatch.Frequency;
+        double elapsedMs = _heartbeatWindow.ElapsedTicks(now) * 1000.0 / Stopwatch.Frequency;
         if (elapsedMs < HeartbeatIntervalMs) return;
 
         // Push stats over the elapsed window. Skipped from the line
@@ -50,12 +50,17 @@ public sealed partial class AmbientEngine
             _multiLightActive ? _hbUnmappedLights : 0,
             pushStats);
 
-        ResetHeartbeatWindow(now);
+        _heartbeatWindow.Restart(now);
+        ResetHeartbeatCounters();
     }
 
-    private void ResetHeartbeatWindow(long? timestamp = null)
+    private bool HasHeartbeatObservations()
+        => _hbTicks != 0 || _hbPushed != 0 || _hbDropped != 0
+        || _hbUnmappedLights != 0 || _hbSkippedSlots != 0
+        || _hbPushDurationsMs is { Count: > 0 };
+
+    private void ResetHeartbeatCounters()
     {
-        _hbTimestamp = timestamp ?? Stopwatch.GetTimestamp();
         _hbTicks = _hbPushed = _hbDropped = _hbUnmappedLights = 0;
         _hbSkippedSlots = 0;
         _hbPushDurationsMs?.Clear();

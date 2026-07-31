@@ -23,6 +23,8 @@ public sealed partial class AmbientEngine
 
             while (!ct.IsCancellationRequested)
             {
+                long tickStartedAt = Stopwatch.GetTimestamp();
+
                 // Refresh the tuning snapshot from the host. Cheap
                 // property reads on the singleton settings give UI
                 // edits a one-tick reaction window without a restart.
@@ -68,6 +70,18 @@ public sealed partial class AmbientEngine
                     EventLevel.Verbose,
                     (EventKeywords)Keywords.Heartbeat);
 
+                if (heartbeatDetailEnabled)
+                {
+                    if (_heartbeatWindow.StartIfNeeded(Stopwatch.GetTimestamp()))
+                        ResetHeartbeatCounters();
+                }
+                else
+                {
+                    _heartbeatWindow.Stop();
+                    if (HasHeartbeatObservations())
+                        ResetHeartbeatCounters();
+                }
+
                 if (_multiLightActive)
                 {
                     await MultiLightTickAsync(
@@ -86,12 +100,6 @@ public sealed partial class AmbientEngine
                     _hbTicks++;
                     MaybeEmitHeartbeat();
                 }
-                else if (_hbTicks != 0 || _hbPushed != 0 || _hbDropped != 0
-                      || _hbUnmappedLights != 0 || _hbSkippedSlots != 0
-                      || _hbPushDurationsMs is { Count: > 0 })
-                {
-                    ResetHeartbeatWindow();
-                }
 
                 int pushDelayMs = GetPushDelayMs();
                 if (pushDelayMs != _pushIntervalMs)
@@ -103,6 +111,7 @@ public sealed partial class AmbientEngine
 
                 nextDeadline = AmbientPushCadence.AdvanceDeadline(
                     nextDeadline,
+                    tickStartedAt,
                     Stopwatch.GetTimestamp(),
                     intervalTicks,
                     out long skippedSlots);
