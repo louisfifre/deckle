@@ -60,6 +60,7 @@ function New-WorktreeGridRows {
     )
     foreach ($entry in $Entries) {
         $rows += @{
+            FullWidth = $true
             Cells = @(
                 @{
                     Label = Get-WorktreeMenuLabel -Branch ([string]$entry.Branch) -Path ([string]$entry.Path)
@@ -133,6 +134,7 @@ function Select-Worktree {
         -StartSel 1 `
         -ClearScreen:$ClearScreen `
         -BannerStyle $BannerStyle `
+        -CategoryWidth 0 `
         -Interaction Select
     if ($null -eq $choice -or $choice -eq '__back__') {
         throw [System.OperationCanceledException]::new('Worktree selection was cancelled.')

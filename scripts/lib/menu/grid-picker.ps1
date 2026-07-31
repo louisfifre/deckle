@@ -105,7 +105,12 @@ function Write-GridLine {
             $selected = (($Index -eq $ActiveBodyIndex) -and ($column -eq $ActiveCol))
             $label = [string]$cell.Label
             $cellWidth = $ColW[$column]
-            if ($entry.TrailingCell -and $c -eq ($entry.Cells.Count - 1)) {
+            if ($entry.FullWidth) {
+                $cellWidth = 0
+                for ($spannedColumn = $column; $spannedColumn -lt $TrailingColumn; $spannedColumn++) {
+                    $cellWidth += $ColW[$spannedColumn]
+                }
+            } elseif ($entry.TrailingCell -and $c -eq ($entry.Cells.Count - 1)) {
                 $cellWidth = [Math]::Max(1, $cellWidth - $TrailingGap - $TrailingWidth)
             }
             $txt = Limit-MenuText -Text "  $label" -Width $cellWidth
