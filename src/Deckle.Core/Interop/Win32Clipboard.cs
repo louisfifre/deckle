@@ -50,6 +50,24 @@ public readonly record struct ClipboardWriteResult(
                                       or ClipboardWriteStatus.SetDataFailed);
 }
 
+// Clipboard delivery port. The engine consumes the capability rather than the
+// Win32 mechanism, so pipeline tests can verify delivered text without mutating
+// the interactive user's clipboard.
+public interface IClipboardWriter
+{
+    ClipboardWriteResult TryWriteText(string text);
+}
+
+public sealed class Win32ClipboardWriter : IClipboardWriter
+{
+    public static Win32ClipboardWriter Instance { get; } = new();
+
+    private Win32ClipboardWriter() { }
+
+    public ClipboardWriteResult TryWriteText(string text) =>
+        Win32Clipboard.TryCopyText(text);
+}
+
 public static class Win32Clipboard
 {
     private const uint GMEM_MOVEABLE  = 0x0002;

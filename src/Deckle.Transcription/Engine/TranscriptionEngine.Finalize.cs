@@ -32,21 +32,45 @@ public sealed partial class TranscriptionEngine
     // ── Shared finalize ──────────────────────────────────────────────────────
     //
     // Strategy-agnostic tail of a recording. From the assembled raw text plus
-    // the captured audio it writes the clipboard once, resolves and applies an
-    // optional LLM rewrite, optionally pastes, then emits the latency + corpus
-    // telemetry and raises Finished. Both pipelines — monolithic and streaming —
-    // converge here, so the user-facing behaviour is identical whatever produced
-    // the text. Synchronous: every step (clipboard, rewrite, paste) is blocking.
+    // the captured audio it executes an explicit delivery command, then emits
+    // telemetry and optionally raises Finished. Dictation writes the clipboard,
+    // may rewrite, and may paste; imported audio writes an adjacent text file.
+    // Both production pipelines converge here. Synchronous: every delivery step
+    // is blocking.
     //
     // The producing strategy owns capture, the backend call(s), and the state
     // transitions up to Transcribing; here we only consume the result it hands
     // back. _transcriptionId is generated once per recording by WorkerRun before
     // the strategy runs under the corpus join contract.
-    private void FinalizeTranscription(PipelineProduction production)
+    private TranscriptionOutcome FinalizeTranscription(
+        PipelineProduction production,
+        TranscriptionDelivery delivery,
+        bool announceCompletion = true)
     {
         string rawText = production.RawText;
-        bool isFileRun = _fileTranscriptionPath is not null;
+        bool isFileRun = delivery.IsFile;
         double recordingDurationSec = _recordingSw?.Elapsed.TotalSeconds ?? 0;
+
+        // Imported audio has a different delivery command, not a different
+        // transcription pipeline. Its primary and only required output is the
+        // adjacent text file; clipboard availability must not gate that write or
+        // replace the continuous batch HUD with a clipboard error.
+        if (isFileRun)
+        {
+            FinalizeRewrite fileRewrite = ApplyRewrite(rawText, isFileRun: true);
+            FinalizeDelivery fileDelivery = DeliverTranscript(fileRewrite.Text, delivery);
+            RecordPipelineMetrics(
+                production,
+                rawText,
+                fileRewrite,
+                fileDelivery,
+                clipboardMs: 0,
+                isFileRun: true,
+                recordingDurationSec);
+            if (announceCompletion)
+                RaiseFinished(fileDelivery.Outcome);
+            return fileDelivery.Outcome;
+        }
 
         // The raw copy is the safety net for every later stage. A failed rewrite
         // copy therefore leaves useful text behind, and paste never sees stale data.
@@ -55,30 +79,30 @@ public sealed partial class TranscriptionEngine
         clipboardStopwatch.Stop();
         if (!rawCopySucceeded)
         {
-            // The file remains the primary deliverable for imported audio, but
-            // the clipboard error must remain the user-facing outcome.
-            if (isFileRun)
-                WriteFileTranscript(rawText);
-            RaiseStatus(Loc.Get("Status_Ready"));
-            RaiseFinished(TranscriptionOutcome.None);
-            return;
+            if (announceCompletion)
+                RaiseStatus(Loc.Get("Status_Ready"));
+            if (announceCompletion)
+                RaiseFinished(TranscriptionOutcome.None);
+            return TranscriptionOutcome.None;
         }
 
         FinalizeRewrite rewrite = ApplyRewrite(rawText, isFileRun);
-        FinalizeDelivery delivery = DeliverTranscript(rewrite.Text, isFileRun);
+        FinalizeDelivery delivered = DeliverTranscript(rewrite.Text, delivery);
 
         RecordPipelineMetrics(
             production,
             rawText,
             rewrite,
-            delivery,
+            delivered,
             clipboardStopwatch.ElapsedMilliseconds,
             isFileRun,
             recordingDurationSec);
-        RaiseFinished(delivery.Outcome);
+        if (announceCompletion)
+            RaiseFinished(delivered.Outcome);
+        return delivered.Outcome;
     }
 
-    private FinalizeDelivery DeliverTranscript(string text, bool isFileRun)
+    private FinalizeDelivery DeliverTranscript(string text, TranscriptionDelivery delivery)
     {
         long pasteMs = 0;
         bool pasteVerified = false;
@@ -94,8 +118,8 @@ public sealed partial class TranscriptionEngine
             pasteMs = stopwatch.ElapsedMilliseconds;
         }
 
-        TranscriptionOutcome outcome = isFileRun
-            ? WriteFileTranscript(text)
+        TranscriptionOutcome outcome = delivery.IsFile
+            ? WriteFileTranscript(text, delivery.SourceAudioPath!)
             : _shouldPaste && pasteVerified
                 ? TranscriptionOutcome.Pasted
                 : TranscriptionOutcome.ClipboardOnly;
@@ -111,15 +135,12 @@ public sealed partial class TranscriptionEngine
     //
     // Writes the transcript to a .txt named after the source audio file, beside
     // that source. Called only
-    // on a file run — normally after a successful clipboard copy (a write failure
-    // then degrades to ClipboardOnly rather than losing the result), and best-effort
-    // when the copy itself failed, so the disk keeps the text either way. The catch
-    // covers the filesystem exceptions plus the invalid-path family. Anything
+    // on a file run as its primary delivery command. A write failure returns None:
+    // no fallback output was delivered. The catch covers filesystem exceptions
+    // plus the invalid-path family. Anything
     // else is a genuine bug and propagates to the worker's crash handler.
-    private TranscriptionOutcome WriteFileTranscript(string fullText)
+    private TranscriptionOutcome WriteFileTranscript(string fullText, string audioPath)
     {
-        string audioPath = _fileTranscriptionPath ?? "";
-
         try
         {
             string written = TranscriptFileWriter.Write(fullText, audioPath);
@@ -137,7 +158,7 @@ public sealed partial class TranscriptionEngine
                 Loc.Get("FileTranscription_WriteFailed_Title"),
                 Loc.Get("FileTranscription_WriteFailed_Body"),
                 FB_OVERLAY);
-            return TranscriptionOutcome.ClipboardOnly;
+            return TranscriptionOutcome.None;
         }
     }
 
@@ -155,7 +176,7 @@ public sealed partial class TranscriptionEngine
         // command. This method keeps the engine's observability surface: it
         // maps the structured result back onto the same EventSource events and
         // UserFeedback the inline implementation emitted, in the same order.
-        ClipboardWriteResult r = Win32Clipboard.TryCopyText(text);
+        ClipboardWriteResult r = _clipboard.TryWriteText(text);
 
         DeckleWhispSource.Log.ClipboardGlobalAlloc(r.ByteCount, r.Handle);
 

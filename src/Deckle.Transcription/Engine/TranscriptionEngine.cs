@@ -18,7 +18,7 @@ namespace Deckle.Transcription;
 //                     partial…); HUD shows the Ctrl+V reminder for a few
 //                     seconds. This is the safe default when in doubt.
 //   SavedToFile     — file-transcription run: the transcript was written to a
-//                     .txt on disk (and the clipboard) — the HUD shows the
+//                     .txt beside its source — the HUD shows the
 //                     saved-file confirmation. Never emitted by a dictation run.
 public enum TranscriptionOutcome { None, Pasted, ClipboardOnly, SavedToFile }
 
@@ -81,9 +81,9 @@ public sealed partial class TranscriptionEngine : IDisposable
     // Background thread → subscriber responsible for marshaling.
     public event Action<TranscriptionOutcome>? TranscriptionFinished;
 
-    // Fired when the single file-queue consumer actually starts an item, not
-    // when its producer merely enqueues it. Background thread after the first
-    // item → subscribers marshal to UI.
+    // Fired when the file-queue consumer starts one complete tray selection, not
+    // when its producer merely enqueues it. Exactly once per batch; subscribers
+    // marshal to UI.
     public event Action? FileTranscriptionStarted;
 
     // Synchronous rendezvous just before PasteFromClipboard. The caller
@@ -193,25 +193,20 @@ public sealed partial class TranscriptionEngine : IDisposable
     // null when Idle.
     private Thread? _worker;
 
+    // Serializes the start commit point with Dispose. State CAS operations
+    // reject competing starts, but they cannot by themselves make publishing
+    // the worker and its cancellation channels atomic with backend teardown.
+    private readonly object _lifecycleLock = new();
+
     // Name of the rewrite profile chosen by the explicit rewrite hotkey that
     // started this recording. null means plain transcription: keep the ASR
     // result unchanged. Captured in TryStartFromIdle and consumed in
     // FinalizeTranscription.
     private string?         _manualProfileName = null;
 
-    // Path of the audio file being transcribed on a file-transcription run, or
-    // null on a dictation run. Set by RequestFileTranscription before the file
-    // worker is spawned, cleared by TryStartFromIdle so a dictation run never
-    // inherits a stale path. Read in ProduceFileAsync (the source path) and in
-    // FinalizeTranscription, where non-null selects the file tail: no rewrite,
-    // no paste, no corpus — write the transcript to disk instead. Not volatile:
-    // the Thread.Start that spawns the worker is the memory barrier, same as
-    // _manualProfileName.
-    private string?         _fileTranscriptionPath = null;
-
-    // Tray selections are producers; the engine is the only consumer. Items
-    // leave this FIFO one at a time, only after the previous worker returned to
-    // Idle, so Whisper never receives concurrent file calls.
+    // Tray selections are immutable batches; the engine is their only consumer.
+    // A whole selection leaves this FIFO as one worker lifecycle, so the engine
+    // never returns to Idle between its files.
     private readonly FileTranscriptionQueue _fileTranscriptionQueue = new();
 
     // Stable identifier for the current pipeline invocation. Regenerated once
@@ -303,7 +298,7 @@ public sealed partial class TranscriptionEngine : IDisposable
     private System.TimeSpan _recordDrainDuration;
     private System.Diagnostics.Stopwatch? _stopToPipelineSw;
 
-    private bool _disposed;
+    private volatile bool _disposed;
 
     // ── Observable properties ──────────────────────────────────────────────────
 
@@ -337,7 +332,12 @@ public sealed partial class TranscriptionEngine : IDisposable
     // auto-calibration enveloppe) and consumes Capture as a black-box PCM
     // producer. Future modules (Ask-Ollama) will share the same instance
     // type without dragging Whisp's transcription dependencies along.
-    private readonly MicrophoneCapture _capture;
+    private readonly IMicrophoneCapture _capture;
+
+    // System clipboard delivery. The Win32 implementation is the production
+    // default; the capability boundary keeps live-pipeline integration tests
+    // deterministic and free of global clipboard side effects.
+    private readonly IClipboardWriter _clipboard;
 
     // Adapter that exposes ITranscriptionEngineHost as IAudioRecordingHost — keeps
     // ITranscriptionEngineHost free of an IAudioRecordingHost inheritance (Ask-Ollama
@@ -352,9 +352,31 @@ public sealed partial class TranscriptionEngine : IDisposable
         ITranscriptionEngineHost host,
         IAsrBackend backend,
         IRewriteService? rewrite = null)
+        : this(
+            host,
+            backend,
+            new MicrophoneCapture(),
+            Win32ClipboardWriter.Instance,
+            rewrite)
     {
+    }
+
+    internal TranscriptionEngine(
+        ITranscriptionEngineHost host,
+        IAsrBackend backend,
+        IMicrophoneCapture capture,
+        IClipboardWriter clipboard,
+        IRewriteService? rewrite = null)
+    {
+        ArgumentNullException.ThrowIfNull(host);
+        ArgumentNullException.ThrowIfNull(backend);
+        ArgumentNullException.ThrowIfNull(capture);
+        ArgumentNullException.ThrowIfNull(clipboard);
+
         _host = host;
         _backend = backend;
+        _capture = capture;
+        _clipboard = clipboard;
         _vadService = new VadService(_host.ResolveModelsDirectory);
 
         _rewrite = rewrite ?? new RewriteService();
@@ -362,7 +384,6 @@ public sealed partial class TranscriptionEngine : IDisposable
         // MicrophoneCapture emits through DeckleAudioSource (wave 2).
         // TranscriptionEngine emits through DeckleWhispSource (wave 5). No
         // dependency on LogService remains in the engine itself.
-        _capture = new MicrophoneCapture();
         _recordingHost = new RecordingHostAdapter(_host);
         // Forward the per-sub-window RMS to whoever subscribes to the engine
         // (HUD chrono today). Capture stays unaware of UI consumers.
@@ -439,34 +460,35 @@ public sealed partial class TranscriptionEngine : IDisposable
 
     public void Dispose()
     {
-        if (_disposed) return;
-        _disposed = true;
+        PipelineState prevState;
+        Thread? worker;
+        lock (_lifecycleLock)
+        {
+            if (_disposed) return;
+            _disposed = true;
+
+            // Capture before transitioning so the Verbose line below records
+            // what the engine was actually doing when Dispose arrived.
+            prevState = (PipelineState)Volatile.Read(ref _state);
+            Interlocked.Exchange(ref _state, (int)PipelineState.Disposed);
+
+            // Cancellation channels and the worker are published under this
+            // same lock before Thread.Start. Dispose therefore sees all three
+            // or none of them; it can never free the backend ahead of a late
+            // worker that escaped publication.
+            try { _recordCts?.Cancel(); }
+            catch (ObjectDisposedException) { }
+
+            try { _drainCts?.Cancel(); }
+            catch (ObjectDisposedException) { }
+
+            worker = _worker;
+        }
         _fileTranscriptionQueue.Complete();
-
-        // Capture before transitioning so the Verbose line below records
-        // what the engine was actually doing when Dispose arrived.
-        var prevState = (PipelineState)Volatile.Read(ref _state);
-        Interlocked.Exchange(ref _state, (int)PipelineState.Disposed);
-
-        // Tell the capture loop to stop, in case the worker is still in
-        // there. WorkerRun's Stopping → Transcribing CAS will lose to our
-        // Disposed write and skip Transcribe entirely, but it still needs
-        // to exit MicrophoneCapture.Record() cleanly to release the waveIn
-        // handles. CTS may already be disposed if WorkerRun raced ahead.
-        try { _recordCts?.Cancel(); }
-        catch (ObjectDisposedException) { }
-
-        // Abort the streaming consumer's in-flight inference too (the drain
-        // token). Without this, a Dispose mid-streaming would block the worker
-        // join on a long backlog and could let the backend free run while an
-        // inference is active. Fired only here — Stop never cancels it.
-        try { _drainCts?.Cancel(); }
-        catch (ObjectDisposedException) { }
 
         // Set when the join times out: the leaked worker may still be inside a
         // whisper_full, so freeing the native context below would race it.
         bool joinTimedOut = false;
-        var worker = _worker;
         if (worker is not null && worker.IsAlive)
         {
             DeckleWhispSource.Log.DisposeStart(prevState.ToString(), DISPOSE_WORKER_JOIN_TIMEOUT_MS);

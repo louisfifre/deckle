@@ -17,11 +17,11 @@ The hotkey-driven live path — mic capture, energy-segmented or monolithic deco
 _Avoid_ : recording (the capture phase, not the whole path).
 
 **File transcription** :
-The tray-initiated path over one pre-recorded audio file: picked through the system file dialog, decoded and resampled to the pipeline's native format, then run through the same monolithic pipeline and HUD states as dictation. It is decoded without the dictation prompt because a file is an independent acoustic domain. Delivery differs by decision: the text is written beside the audio as a file with the same base name and copied to the clipboard; paste and rewrite never run, and completion announces itself through the HUD message only — nothing opens. One tray selection may contain several files, but each remains an independent file transcription.
+The tray-initiated path over one pre-recorded audio file: picked through the system file dialog, decoded and resampled to the pipeline's native format, then emitted as capture frames into the same energy segmenter, utterance channel, and sole ASR consumer as live streaming dictation. It runs without the dictation prompt because a file is an independent acoustic domain. Delivery is an explicit command: the text is written beside the audio as a file with the same base name and copied to the clipboard; paste and rewrite never run. One tray selection may contain several files, but each keeps its own prompt context and adjacent output.
 _Avoid_ : import (nothing enters a library).
 
-**File transcription queue** :
-The engine-owned FIFO of audio files selected through the tray. The tray is a producer: it enqueues the complete selection and returns. The transcription engine is the sole consumer: it starts one file only while idle, runs it through the ordinary pipeline, then consumes the next item after settling back to idle. A busy engine delays the head without rejecting or reordering it. The queue is an orchestration boundary, not a separate transcription pipeline.
+**File transcription batch** :
+A tray selection treated as one indivisible orchestration unit: its file transcriptions retain selection order and share one engine lifecycle. A later selection is another batch, never an extension that may interleave the active one.
 _Avoid_ : file transcription (one file's run), import.
 
 ## Fidelity criteria

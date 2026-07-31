@@ -7,23 +7,21 @@ namespace Deckle.Transcription.Tests;
 public sealed class FileTranscriptionQueueTests
 {
     [Fact]
-    public void StartsFilesInSelectionOrder()
+    public void OneSelectionStartsAsOneImmutableBatch()
     {
         var queue = new FileTranscriptionQueue();
-        var started = new List<string>();
+        FileTranscriptionBatch? started = null;
 
         int added = queue.Enqueue(["first.m4a", "second.wav", "third.mp3"]);
-
-        while (queue.TryStartNext(path =>
+        bool didStart = queue.TryStartNext(batch =>
         {
-            started.Add(path);
+            started = batch;
             return ToggleResult.Started;
-        }))
-        {
-        }
+        });
 
         Assert.Equal(3, added);
-        Assert.Equal(["first.m4a", "second.wav", "third.mp3"], started);
+        Assert.True(didStart);
+        Assert.Equal(["first.m4a", "second.wav", "third.mp3"], started!.AudioFilePaths);
         Assert.Equal(0, queue.Count);
     }
 
@@ -32,26 +30,26 @@ public sealed class FileTranscriptionQueueTests
     {
         var queue = new FileTranscriptionQueue();
         queue.Enqueue(["first.m4a", "second.wav"]);
-        string? attemptedWhileBusy = null;
+        FileTranscriptionBatch? attemptedWhileBusy = null;
 
-        bool startedWhileBusy = queue.TryStartNext(path =>
+        bool startedWhileBusy = queue.TryStartNext(batch =>
         {
-            attemptedWhileBusy = path;
+            attemptedWhileBusy = batch;
             return ToggleResult.IgnoredBusy;
         });
 
-        var started = new List<string>();
-        bool startedAfterIdle = queue.TryStartNext(path =>
+        FileTranscriptionBatch? started = null;
+        bool startedAfterIdle = queue.TryStartNext(batch =>
         {
-            started.Add(path);
+            started = batch;
             return ToggleResult.Started;
         });
 
         Assert.False(startedWhileBusy);
-        Assert.Equal("first.m4a", attemptedWhileBusy);
+        Assert.Equal(["first.m4a", "second.wav"], attemptedWhileBusy!.AudioFilePaths);
         Assert.True(startedAfterIdle);
-        Assert.Equal(["first.m4a"], started);
-        Assert.Equal(1, queue.Count);
+        Assert.Same(attemptedWhileBusy, started);
+        Assert.Equal(0, queue.Count);
     }
 
     [Fact]
@@ -63,5 +61,29 @@ public sealed class FileTranscriptionQueueTests
 
         Assert.Equal(1, added);
         Assert.Equal(1, queue.Count);
+    }
+
+    [Fact]
+    public void LaterSelectionCannotInterleaveTheActiveBatch()
+    {
+        var queue = new FileTranscriptionQueue();
+        queue.Enqueue(["first.m4a", "second.wav"]);
+        queue.Enqueue(["later.mp3"]);
+        var started = new List<IReadOnlyList<string>>();
+
+        queue.TryStartNext(batch =>
+        {
+            started.Add(batch.AudioFilePaths);
+            return ToggleResult.Started;
+        });
+        queue.TryStartNext(batch =>
+        {
+            started.Add(batch.AudioFilePaths);
+            return ToggleResult.Started;
+        });
+
+        Assert.Equal(2, started.Count);
+        Assert.Equal(["first.m4a", "second.wav"], started[0]);
+        Assert.Equal(["later.mp3"], started[1]);
     }
 }

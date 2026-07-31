@@ -233,7 +233,7 @@
 
   <!-- ─── File transcription ─────────────────────────────────────────
        UserFeedback Title/Body pairs raised by the file-transcription path
-       (RequestFileTranscription, ProduceFileAsync, WriteFileTranscript).
+       (EnqueueFileTranscriptions, segmented file session, WriteFileTranscript).
        Busy is an Overlay warning (a run is already in flight); the decode
        and write failures replace / warn per their severity. The five
        DecodeFailed bodies map one-to-one to AudioFileDecodeStatus.
