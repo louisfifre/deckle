@@ -18,19 +18,26 @@ internal sealed class RichEditCorrectionSurface
 
     public int Generation { get; private set; }
 
+    public bool LastResetHistoryWasClean { get; private set; }
+
     public bool Reset(string body)
     {
         Generation = checked(Generation + 1);
         _diagnosticSentence = null;
+        LastResetHistoryWasClean = false;
 
         try
         {
-            _editor.TextDocument.SetText(TextSetOptions.None, body);
-            var selection = _editor.TextDocument.Selection;
+            var document = _editor.TextDocument;
+            document.SetText(TextSetOptions.None, body);
+            var selection = document.Selection;
             selection.SetRange(body.Length, body.Length);
-            return TryReadBody(out string observed, out bool mapping)
+            bool contentIsExact = TryReadBody(out string observed, out bool mapping)
                 && mapping
                 && string.Equals(observed, body, StringComparison.Ordinal);
+            document.ClearUndoRedoHistory();
+            LastResetHistoryWasClean = !document.CanUndo() && !document.CanRedo();
+            return contentIsExact && LastResetHistoryWasClean;
         }
         catch
         {
@@ -136,6 +143,11 @@ internal sealed class RichEditCorrectionSurface
         bool? exactUndoSelection = null;
         bool? exactRedoText = null;
         bool? exactRedoSelection = null;
+        bool? canUndoBeforeWrite = null;
+        bool? canRedoBeforeWrite = null;
+        CorrectionApplicationHistoryObservation? appliedObservation = null;
+        CorrectionApplicationHistoryObservation? undoObservation = null;
+        CorrectionApplicationHistoryObservation? redoObservation = null;
 
         CorrectionSurfaceExecution Finish(CorrectionApplicationReason reason)
             => new(
@@ -146,7 +158,25 @@ internal sealed class RichEditCorrectionSurface
                 exactUndoText,
                 exactUndoSelection,
                 exactRedoText,
-                exactRedoSelection);
+                exactRedoSelection,
+                canUndoBeforeWrite,
+                canRedoBeforeWrite,
+                appliedObservation,
+                undoObservation,
+                redoObservation);
+
+        CorrectionApplicationHistoryObservation Observe(
+            string body,
+            CorrectionApplicationSelection selection,
+            bool expectsApplied)
+            => new(
+                plan.ClassifyBody(body),
+                plan.ClassifySelection(selection),
+                expectsApplied
+                    ? plan.AppliedOptionsDifference(selection)
+                    : plan.UndoOptionsDifference(selection),
+                document.CanUndo(),
+                document.CanRedo());
 
         try
         {
@@ -164,6 +194,8 @@ internal sealed class RichEditCorrectionSurface
                 return Finish(CorrectionApplicationReason.TargetRangeChanged);
             }
 
+            canUndoBeforeWrite = document.CanUndo();
+            canRedoBeforeWrite = document.CanRedo();
             document.BeginUndoGroup();
             try
             {
@@ -180,17 +212,15 @@ internal sealed class RichEditCorrectionSurface
                 return Finish(CorrectionApplicationReason.ApiFailure);
             }
 
-            exactAppliedText = string.Equals(
-                    appliedBody,
-                    plan.ExpectedBody,
-                    StringComparison.Ordinal)
+            appliedObservation = Observe(appliedBody, appliedSelection, expectsApplied: true);
+            exactAppliedText = plan.MatchesAppliedBody(appliedBody)
                 && fault != CorrectionSurfaceFault.AppliedTextPostcondition;
             if (exactAppliedText != true)
             {
                 return Finish(CorrectionApplicationReason.TextPostcondition);
             }
 
-            exactAppliedSelection = appliedSelection == plan.ExpectedSelection
+            exactAppliedSelection = plan.MatchesAppliedSelection(appliedSelection)
                 && fault != CorrectionSurfaceFault.AppliedSelectionPostcondition;
             if (exactAppliedSelection != true)
             {
@@ -203,17 +233,15 @@ internal sealed class RichEditCorrectionSurface
                 return Finish(CorrectionApplicationReason.ApiFailure);
             }
 
-            exactUndoText = string.Equals(
-                    undoBody,
-                    plan.BeforeBody,
-                    StringComparison.Ordinal)
+            undoObservation = Observe(undoBody, undoSelection, expectsApplied: false);
+            exactUndoText = plan.MatchesUndoBody(undoBody)
                 && fault != CorrectionSurfaceFault.UndoTextPostcondition;
             if (exactUndoText != true)
             {
                 return Finish(CorrectionApplicationReason.UndoTextPostcondition);
             }
 
-            exactUndoSelection = undoSelection == plan.BeforeSelection
+            exactUndoSelection = plan.MatchesUndoSelection(undoSelection)
                 && fault != CorrectionSurfaceFault.UndoSelectionPostcondition;
             if (exactUndoSelection != true)
             {
@@ -226,17 +254,15 @@ internal sealed class RichEditCorrectionSurface
                 return Finish(CorrectionApplicationReason.ApiFailure);
             }
 
-            exactRedoText = string.Equals(
-                    redoBody,
-                    plan.ExpectedBody,
-                    StringComparison.Ordinal)
+            redoObservation = Observe(redoBody, redoSelection, expectsApplied: true);
+            exactRedoText = plan.MatchesAppliedBody(redoBody)
                 && fault != CorrectionSurfaceFault.RedoTextPostcondition;
             if (exactRedoText != true)
             {
                 return Finish(CorrectionApplicationReason.RedoTextPostcondition);
             }
 
-            exactRedoSelection = redoSelection == plan.ExpectedSelection
+            exactRedoSelection = plan.MatchesAppliedSelection(redoSelection)
                 && fault != CorrectionSurfaceFault.RedoSelectionPostcondition;
             return Finish(exactRedoSelection == true
                 ? CorrectionApplicationReason.None

@@ -169,13 +169,11 @@ public sealed partial class AmbientEngine
 
                 if (_multiLightActive)
                 {
-                    _pushIntervalMs = 1000 / MultiPushHz;
                     _multiLastPushed = new Dictionary<string, (int, int, int)>(_multiLights.Count);
                 }
                 else
                 {
                     DeckleAmbientSource.Log.MultiLightFallbackNoLights();
-                    _pushIntervalMs = 1000 / GroupPushHz;
                 }
             }
             else
@@ -186,8 +184,12 @@ public sealed partial class AmbientEngine
                     DeckleAmbientSource.Log.MultiLightDriverIncompatDetail(_output!.GetType().Name);
                 }
                 _multiLightActive = false;
-                _pushIntervalMs = 1000 / GroupPushHz;
             }
+
+            _pushRateHz = AmbientPushCadence.ResolveRateHz(
+                _output.PreferredColorUpdateRateHz,
+                _multiLightActive);
+            _pushIntervalMs = 1000 / _pushRateHz;
 
             if (_output.UsesStateEventAttribution)
             {
@@ -256,6 +258,7 @@ public sealed partial class AmbientEngine
             _droppedCount = 0;
             ResetPushFailureEpisode();
             _hbTicks = _hbPushed = _hbDropped = _hbUnmappedLights = 0;
+            _hbSkippedSlots = 0;
             _hbPushDurationsMs?.Clear();
             _lastR = _lastG = _lastB = -1;
             _smoothedR = _smoothedG = _smoothedB = -1f;
@@ -296,7 +299,7 @@ public sealed partial class AmbientEngine
                 _output!.GetType().Name,
                 _multiLightActive ? "multi" : "group",
                 _multiLights?.Count ?? 0,
-                _multiLightActive ? MultiPushHz : GroupPushHz,
+                _pushRateHz,
                 _sampler!.GridCols,
                 _sampler.GridRows,
                 _sampler.IsHdr ? "on" : "off");

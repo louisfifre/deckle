@@ -9,7 +9,7 @@ function Show-Submenu {
         [ValidateSet('Compact')]
         [string]$BannerStyle = 'Compact',
         [string]$ResultTitle,
-        [string[]]$ResultLines = @(),
+        [object[]]$ResultLines = @(),
         [ValidateSet('Guidance', 'Log', 'Report')]
         [string]$ResultMode = 'Guidance',
         [ValidateSet('Run', 'Select')]
@@ -161,7 +161,7 @@ function Show-SetupMenu {
             'bootstrap' { Invoke-BootstrapDev -MenuRows $menuRows }
             'assets'    { Invoke-SetupAssets -MenuRows $menuRows }
             'hooks' {
-                $scriptPath = Join-Path $LibDir 'install-hooks.ps1'
+                $scriptPath = Join-Path $CommandDir 'install-hooks.ps1'
                 Invoke-DeckleMenuAction -Header 'Deckle > Setup > Git hooks' -Label 'Install git hooks' -Source Setup -MenuRows $menuRows -Action { & $scriptPath }
             }
         }

@@ -16,10 +16,10 @@ function Invoke-LaunchOrBuild {
     $source = if ($Kind -eq 'launch') { 'Launch' } else { 'Build' }
     $actionParameters = @{ Target = $wt; Configuration = $Configuration }
     $scriptPath = if ($Kind -eq 'launch') {
-        Join-Path $LibDir 'launch-app.ps1'
+        Join-Path $CommandDir 'launch-app.ps1'
     } else {
         if ($Kind -eq 'norun') { $actionParameters.NoRun = $true }
-        Join-Path $LibDir 'build-run.ps1'
+        Join-Path $CommandDir 'build-run.ps1'
     }
 
     return Invoke-DeckleMenuAction `
@@ -40,7 +40,7 @@ function Invoke-WorktreeScript {
     )
     $wt = Get-WorktreeOrReturn
     if ($null -eq $wt) { return }
-    $scriptPath = Join-Path $LibDir $Script
+    $scriptPath = Join-Path $CommandDir $Script
     return Invoke-DeckleMenuAction -Header "Deckle > $Label" -Label $Label -Source $Source -MenuRows $MenuRows -Action {
         & $scriptPath -Target $wt @ScriptParameters
     }
@@ -58,7 +58,7 @@ function Invoke-CleanBuildOutputs {
         -CancelLabel 'Keep files' `
         -Destructive
     if (-not $confirmed) { return }
-    $scriptPath = Join-Path $LibDir 'clean.ps1'
+    $scriptPath = Join-Path $CommandDir 'clean.ps1'
     return Invoke-DeckleMenuAction -Header 'Deckle > Maintenance > Clean' -Label 'Clean build outputs' -Source Clean -MenuRows $MenuRows -Action {
         & $scriptPath -Target $wt
     }
@@ -66,7 +66,7 @@ function Invoke-CleanBuildOutputs {
 
 function Invoke-StopBuildServers {
     param([Parameter(Mandatory)][object[]]$MenuRows)
-    $scriptPath = Join-Path $LibDir 'stop-build-servers.ps1'
+    $scriptPath = Join-Path $CommandDir 'stop-build-servers.ps1'
     return Invoke-DeckleMenuAction -Header 'Deckle > Maintenance > Build servers' -Label 'Stop build servers' -Source Clean -MenuRows $MenuRows -Action {
         & $scriptPath
     }
@@ -174,7 +174,7 @@ function Invoke-RecordVersion {
         return
     }
 
-    $scriptPath = Join-Path $LibDir 'record-version.ps1'
+    $scriptPath = Join-Path $CommandDir 'record-version.ps1'
     return Invoke-DeckleMenuAction -Header 'Deckle > Project > Record version' -Label "Record v$($choice.Target)" -Source Release -MenuRows $MenuRows -Action {
         & $scriptPath -Target $wt -Bump $choice.Seg -Push
     }
@@ -236,8 +236,8 @@ function Invoke-PublishRelease {
         return
     }
 
-    $recordScript = Join-Path $LibDir 'record-version.ps1'
-    $publishScript = Join-Path $LibDir 'publish-app.ps1'
+    $recordScript = Join-Path $CommandDir 'record-version.ps1'
+    $publishScript = Join-Path $CommandDir 'publish-app.ps1'
     return Invoke-DeckleMenuAction -Header 'Deckle > Release > Publish app' -Label "Publish app v$target" -Source Release -MenuRows $MenuRows -Action {
         if ($recordVersion) {
             & $recordScript @recordArgs
@@ -251,7 +251,7 @@ function Invoke-PrepareArtifacts {
     param([Parameter(Mandatory)][object[]]$MenuRows)
     $wt = Get-WorktreeOrReturn
     if ($null -eq $wt) { return }
-    $scriptPath = Join-Path $LibDir 'publish-app.ps1'
+    $scriptPath = Join-Path $CommandDir 'publish-app.ps1'
     return Invoke-DeckleMenuAction -Header 'Deckle > Release > Prepare app' -Label 'Prepare app artifacts' -Source Release -MenuRows $MenuRows -Action {
         & $scriptPath -Target $wt
     }
@@ -318,7 +318,7 @@ function Invoke-NativeRuntime {
     $nativeArgs = @{ Version = $version; WhisperRepo = $whisperRepo; Target = $wt }
     if ($outDir)  { $nativeArgs.OutDir = $outDir }
     if ($Publish) { $nativeArgs.Publish = $true }
-    $scriptPath = Join-Path $LibDir 'publish-native-runtime.ps1'
+    $scriptPath = Join-Path $CommandDir 'publish-native-runtime.ps1'
     $label = if ($Publish) { "Publish native-v$version" } else { "Prepare native-v$version" }
     return Invoke-DeckleMenuAction -Header "Deckle > Release > $label" -Label $label -Source Release -MenuRows $MenuRows -Action {
         & $scriptPath @nativeArgs
@@ -334,7 +334,7 @@ function Invoke-BootstrapDev {
     if ($full)   { $bootstrapArgs.Full = $true }
     if (-not $dryRun -and -not (Read-YesNo -Question 'Apply the environment bootstrap now?' -Default $false -ConfirmLabel 'Apply setup' -CancelLabel 'Keep machine unchanged' -Destructive)) { return }
     if (-not $dryRun) { $bootstrapArgs.Yes = $true }
-    $scriptPath = Join-Path $LibDir 'bootstrap-dev-env.ps1'
+    $scriptPath = Join-Path $CommandDir 'bootstrap-dev-env.ps1'
     return Invoke-DeckleMenuAction -Header 'Deckle > Setup > Bootstrap' -Label 'Bootstrap dev environment' -Source Setup -MenuRows $MenuRows -Action {
         & $scriptPath @bootstrapArgs
     }
@@ -353,7 +353,7 @@ function Invoke-SetupAssets {
     if ($fromRelease) { $assetArgs.FromRelease = $fromRelease }
     if (Read-YesNo -Question 'Download ggml-large-v3.bin (~3 GB)?' -Default $false) { $assetArgs.WithLarge = $true }
     if (Read-YesNo -Question 'Force re-copy / re-download existing files?' -Default $false -ConfirmLabel 'Replace files' -CancelLabel 'Keep existing' -Destructive) { $assetArgs.Force = $true }
-    $scriptPath = Join-Path $LibDir 'setup-assets.ps1'
+    $scriptPath = Join-Path $CommandDir 'setup-assets.ps1'
     return Invoke-DeckleMenuAction -Header 'Deckle > Setup > Runtime assets' -Label 'Set up runtime assets' -Source Setup -MenuRows $MenuRows -Action {
         & $scriptPath @assetArgs
     }

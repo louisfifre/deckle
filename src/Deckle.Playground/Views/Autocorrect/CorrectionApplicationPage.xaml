@@ -25,7 +25,9 @@
                          IsClosable="False"
                          Severity="Informational" />
 
-                <controls:SettingsCard x:Uid="PlaygroundCorrectionScenarioCard">
+                <controls:SettingsCard x:Uid="PlaygroundCorrectionScenarioCard"
+                                       ContentAlignment="Vertical"
+                                       HorizontalContentAlignment="Stretch">
                     <StackPanel Spacing="16">
                         <RichEditBox x:Name="Editor"
                                      x:Uid="PlaygroundCorrectionEditor"

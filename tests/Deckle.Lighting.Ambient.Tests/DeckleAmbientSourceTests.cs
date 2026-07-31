@@ -67,16 +67,22 @@ public class DeckleAmbientSourceTests
         DeckleAmbientSource.Log.Heartbeat(
             mode: "multi",
             period_sec: 5.0,
+            target_hz: 50,
+            effective_hz: 49.8,
             ticks: 46,
             pushed: 12,
             dropped: 34,
+            skipped_slots: 1,
             unmapped_lights: 0,
             push_stats_suffix: " | push_avg_ms=0.1 | push_p95_ms=0.2 | push_max_ms=0.3");
 
         var ev = Assert.Single(listener.Events);
         Assert.Equal(DeckleAmbientSource.EvtHeartbeat, ev.EventId);
-        Assert.Equal("push_stats_suffix", ev.PayloadNames?[6]);
-        var suffix = Assert.IsType<string>(ev.Payload?[6]);
+        Assert.Equal(50, ev.Payload?[2]);
+        Assert.Equal(49.8, ev.Payload?[3]);
+        Assert.Equal(1L, ev.Payload?[7]);
+        Assert.Equal("push_stats_suffix", ev.PayloadNames?[9]);
+        var suffix = Assert.IsType<string>(ev.Payload?[9]);
         Assert.Contains("push_avg_ms", suffix);
         Assert.DoesNotContain("http_avg_ms", suffix);
     }
@@ -87,7 +93,7 @@ public class DeckleAmbientSourceTests
         OperationalLogAdmission.Configure(_ => false);
         using var listener = new TestEventListener("Deckle-Ambient");
 
-        DeckleAmbientSource.Log.Heartbeat("group", 5, 75, 2, 73, 0, "");
+        DeckleAmbientSource.Log.Heartbeat("group", 5, 15, 15, 75, 2, 73, 0, 0, "");
 
         Assert.Empty(listener.Events);
     }

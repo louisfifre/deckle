@@ -11,13 +11,16 @@ public sealed partial class AmbientEngine
 {
     private async Task PushLoopAsync(CancellationToken ct)
     {
-        // The loop runs on the thread-pool ; downstream SetColorAsync /
-        // SetLightColorsAsync go through HttpClient which is thread-safe.
-        // Any exception on a single tick's push is swallowed as a Warning
-        // so a transient bridge failure (Wi-Fi blip, group renamed mid-
-        // session) does not kill the loop — the next tick retries.
+        // The loop runs on the thread-pool and serialises downstream pushes.
+        // Its monotonic deadline skips expired slots instead of replaying
+        // stale colours in a catch-up burst. Any exception on a single tick's
+        // push is absorbed into the push-health episode so a transient bridge
+        // failure does not kill the loop — the next scheduled tick retries.
         try
         {
+            long intervalTicks = Math.Max(1, Stopwatch.Frequency / _pushRateHz);
+            long nextDeadline = Stopwatch.GetTimestamp();
+
             while (!ct.IsCancellationRequested)
             {
                 // Refresh the tuning snapshot from the host. Cheap
@@ -44,14 +47,21 @@ public sealed partial class AmbientEngine
                     // Sampler hasn't produced a frame yet (first ~66 ms
                     // after Start). Wait one cadence and retry.
                     await Task.Delay(_pushIntervalMs, ct).ConfigureAwait(false);
+                    nextDeadline = Stopwatch.GetTimestamp();
                     continue;
                 }
 
-                bool pushDetailEnabled = OperationalLogAdmission.IsDetailEnabled(
-                    OperationalLogActivity.Ambient,
-                    DeckleAmbientSource.Log,
-                    EventLevel.Verbose,
-                    (EventKeywords)Keywords.Push);
+                // A continuous stream pushes even when the target colour is
+                // unchanged. Per-push detail would therefore create 50 log
+                // lines/s on Entertainment and distort a soak test. The
+                // heartbeat below retains the useful aggregate measurements;
+                // persistent outputs keep their sparse change-level detail.
+                bool pushDetailEnabled = !_requiresContinuousColorUpdates
+                    && OperationalLogAdmission.IsDetailEnabled(
+                        OperationalLogActivity.Ambient,
+                        DeckleAmbientSource.Log,
+                        EventLevel.Verbose,
+                        (EventKeywords)Keywords.Push);
                 bool heartbeatDetailEnabled = OperationalLogAdmission.IsDetailEnabled(
                     OperationalLogActivity.Ambient,
                     DeckleAmbientSource.Log,
@@ -77,12 +87,35 @@ public sealed partial class AmbientEngine
                     MaybeEmitHeartbeat();
                 }
                 else if (_hbTicks != 0 || _hbPushed != 0 || _hbDropped != 0
-                      || _hbUnmappedLights != 0 || _hbPushDurationsMs is { Count: > 0 })
+                      || _hbUnmappedLights != 0 || _hbSkippedSlots != 0
+                      || _hbPushDurationsMs is { Count: > 0 })
                 {
                     ResetHeartbeatWindow();
                 }
 
-                await Task.Delay(GetPushDelayMs(), ct).ConfigureAwait(false);
+                int pushDelayMs = GetPushDelayMs();
+                if (pushDelayMs != _pushIntervalMs)
+                {
+                    await Task.Delay(pushDelayMs, ct).ConfigureAwait(false);
+                    nextDeadline = Stopwatch.GetTimestamp();
+                    continue;
+                }
+
+                nextDeadline = AmbientPushCadence.AdvanceDeadline(
+                    nextDeadline,
+                    Stopwatch.GetTimestamp(),
+                    intervalTicks,
+                    out long skippedSlots);
+                if (heartbeatDetailEnabled)
+                    _hbSkippedSlots += skippedSlots;
+
+                long remainingTicks = nextDeadline - Stopwatch.GetTimestamp();
+                if (remainingTicks > 0)
+                {
+                    await Task.Delay(
+                        TimeSpan.FromSeconds((double)remainingTicks / Stopwatch.Frequency),
+                        ct).ConfigureAwait(false);
+                }
             }
         }
         catch (OperationCanceledException)
@@ -139,7 +172,9 @@ public sealed partial class AmbientEngine
     // the filter passes through without fading from black.
     private (byte R, byte G, byte B) ApplyGroupSmoothing(byte r, byte g, byte b)
     {
-        float alpha = (float)_smoothingAlpha;
+        float alpha = (float)AmbientPushCadence.AdaptSmoothingAlpha(
+            _smoothingAlpha,
+            _pushRateHz);
         if (_smoothedR < 0f || alpha >= 1f)
         {
             _smoothedR = r;
@@ -164,7 +199,9 @@ public sealed partial class AmbientEngine
     // otherwise.
     private (byte R, byte G, byte B) ApplyMultiSmoothing(string lightId, byte r, byte g, byte b)
     {
-        float alpha = (float)_smoothingAlpha;
+        float alpha = (float)AmbientPushCadence.AdaptSmoothingAlpha(
+            _smoothingAlpha,
+            _pushRateHz);
         (float R, float G, float B) state;
         bool seeded = _multiSmoothed.TryGetValue(lightId, out state);
         if (!seeded || alpha >= 1f)

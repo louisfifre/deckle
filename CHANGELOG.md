@@ -7,7 +7,7 @@ the project adheres to [Semantic Versioning](https://semver.org/). Deckle has no
 public API: the version is read at the **user/behaviour** level, and during the
 `0.x` phase any release may change behaviour (see the `deckle-versioning`
 doctrine). This file is generated from the Conventional-Commit history by
-`scripts/lib/changelog.ps1` — do not edit it by hand.
+`scripts/commands/changelog.ps1` — do not edit it by hand.
 
 ## [Unreleased]
 
@@ -52,6 +52,7 @@ doctrine). This file is generated from the Conventional-Commit history by
 - **playground:** Export correction evidence
 - **autocorrect:** Add Qwen adapter compatibility probe
 - **changelog:** Commit menu refreshes
+- **ambient:** Stream Hue Entertainment at 50 Hz
 
 ### Changed
 
@@ -60,6 +61,11 @@ doctrine). This file is generated from the Conventional-Commit history by
 - **autocorrect:** Bound sentence candidate search
 - **release:** Separate and harden publication flows
 - **scripts:** Remove obsolete menu paths
+- **scripts:** Separate commands from infrastructure
+
+### Removed
+
+- **playground:** Remove unsupported caret assumption
 
 ### Fixed
 
@@ -109,6 +115,12 @@ doctrine). This file is generated from the Conventional-Commit history by
 - **scripts:** Restore statistics navigation depth
 - **autocorrect:** Repair merged validation contracts
 - **launcher:** Adapt action logs to terminal width
+- **launcher:** Simplify captured action logs
+- **playground:** Restore neutral composition before arm
+- **playground:** Make correction history observable
+- **playground:** Preserve correction card readability
+- **playground:** Initialize terminal caret affinity
+- **launcher:** Preserve native output below fixed chrome
 
 ## [0.14.1](https://github.com/louisfifre/deckle/compare/v0.14.0...v0.14.1) — 2026-07-20
 

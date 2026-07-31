@@ -50,7 +50,7 @@ function Stop-MenuSession {
         Stop-MenuPointerInput
     }
     [Console]::CursorVisible = $true
-    Write-Ansi "$([char]27)[0m"
+    Write-Ansi "$([char]27)[r$([char]27)[?25h$([char]27)[0m"
     if ($script:MenuSessionUsesAlternateScreen) {
         Write-Ansi "$([char]27)[?1049l"
     }

@@ -23,7 +23,7 @@ function Show-MenuStatus {
     param(
         [Parameter(Mandatory)][string]$Header,
         [Parameter(Mandatory)][string]$Title,
-        [string[]]$Lines = @(),
+        [object[]]$Lines = @(),
         [string]$Footer = '',
         [switch]$Follow,
         [ValidateSet('Compact')]

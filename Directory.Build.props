@@ -49,7 +49,7 @@
          on the classic per-project layout — intended, it is an autonomous box.
 
          Cohabits with the publish-staging artifacts/Deckle-v<X.Y.Z>/ produced by
-         scripts/lib/publish-app.ps1 (distinct names; the whole artifacts/ tree is
+         scripts/commands/publish-app.ps1 (distinct names; the whole artifacts/ tree is
          git-ignored). publish-app.ps1 passes an explicit -o, so its output path
          is unaffected by this property. -->
     <ArtifactsPath>$(MSBuildThisFileDirectory)artifacts</ArtifactsPath>

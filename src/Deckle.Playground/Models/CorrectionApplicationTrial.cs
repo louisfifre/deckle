@@ -129,17 +129,59 @@ internal sealed record CorrectionApplicationPlan(
     CorrectionApplicationSelection ExpectedSelection,
     CorrectionApplicationEdit Edit)
 {
+    public bool MatchesAppliedBody(string body)
+        => string.Equals(body, ExpectedBody, StringComparison.Ordinal);
+
+    public bool MatchesAppliedSelection(CorrectionApplicationSelection selection)
+        => selection == ExpectedSelection;
+
     public bool MatchesApplied(
         string body,
         CorrectionApplicationSelection selection)
-        => string.Equals(body, ExpectedBody, StringComparison.Ordinal)
-           && selection == ExpectedSelection;
+        => MatchesAppliedBody(body) && MatchesAppliedSelection(selection);
+
+    public bool MatchesUndoBody(string body)
+        => string.Equals(body, BeforeBody, StringComparison.Ordinal);
+
+    public bool MatchesUndoSelection(CorrectionApplicationSelection selection)
+        => selection == BeforeSelection;
 
     public bool MatchesUndo(
         string body,
         CorrectionApplicationSelection selection)
-        => string.Equals(body, BeforeBody, StringComparison.Ordinal)
-           && selection == BeforeSelection;
+        => MatchesUndoBody(body) && MatchesUndoSelection(selection);
+
+    public CorrectionApplicationBodyIdentity ClassifyBody(string body)
+        => MatchesUndoBody(body)
+            ? CorrectionApplicationBodyIdentity.Before
+            : MatchesAppliedBody(body)
+                ? CorrectionApplicationBodyIdentity.Applied
+                : CorrectionApplicationBodyIdentity.Other;
+
+    public CorrectionApplicationSelectionIdentity ClassifySelection(
+        CorrectionApplicationSelection selection)
+    {
+        bool matchesBefore = HasSameEndpoints(selection, BeforeSelection);
+        bool matchesApplied = HasSameEndpoints(selection, ExpectedSelection);
+        return (matchesBefore, matchesApplied) switch
+        {
+            (true, true) => CorrectionApplicationSelectionIdentity.Both,
+            (true, false) => CorrectionApplicationSelectionIdentity.Before,
+            (false, true) => CorrectionApplicationSelectionIdentity.Applied,
+            _ => CorrectionApplicationSelectionIdentity.Other,
+        };
+    }
+
+    public int AppliedOptionsDifference(CorrectionApplicationSelection selection)
+        => selection.Options ^ ExpectedSelection.Options;
+
+    public int UndoOptionsDifference(CorrectionApplicationSelection selection)
+        => selection.Options ^ BeforeSelection.Options;
+
+    private static bool HasSameEndpoints(
+        CorrectionApplicationSelection left,
+        CorrectionApplicationSelection right)
+        => left.Start == right.Start && left.End == right.End;
 }
 
 internal readonly record struct CorrectionApplicationPreparation(

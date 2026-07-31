@@ -95,7 +95,7 @@ public partial class App
             showTimer.Start();
         }
 
-        // If launched with --post-build (set by scripts/lib/build-run.ps1),
+        // If launched with --post-build (set by scripts/commands/build-run.ps1),
         // schedule a one-shot self-restart via ShellExecute. The first
         // launch right after MSBuild occasionally inherits a degraded
         // foreground state that makes Windows defer WS_EX_TOPMOST on the
