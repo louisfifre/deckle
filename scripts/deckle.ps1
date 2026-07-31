@@ -4,9 +4,9 @@
 # PowerShell 7+ terminal. The top level is a 2-D grid (↑↓←→ to move, Enter to
 # run): the verbs you reach for most sit up top, each with its Release/Debug
 # variant beside it, so one Enter picks both. The launcher owns a terminal
-# alternate-screen session while navigating. During an action, its banner and
-# breadcrumb stay fixed while output scrolls below them. Completed output is
-# retained in the paged result view. Back/cancel returns to the previous menu.
+# alternate-screen session while navigating. During an action, one retained
+# transcript feeds a fixed, tail-following result viewport. The same transcript
+# becomes the paged result view. Back/cancel returns to the previous menu.
 #
 # Every concrete action delegates to a single-purpose script in scripts/commands/;
 # those scripts remain usable on their own CLI for automation.

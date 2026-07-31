@@ -245,6 +245,8 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── research--globish-seed-sources--2026-07-02.md  — [research-report] Recherche vérifiée (deep-research, 2026-07-02) — d'où tirer le lexique globish…
 │   │   ├── research--onnx-judge-runtime--2026-07-02.md  — [research-report] Recherche vérifiée (deep-research, 2026-07-02) — faisabilité du juge ONNX de l'…
 │   │   └── research--system-autocorrect--2026-06-12.md
+│   ├── inventaire-exposables.csv
+│   ├── inventaire-exposables.md
 │   └── inventaire-settings.md
 ├── logo/
 │   ├── primary.png
@@ -275,6 +277,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   └── update-tree.ps1
 │   ├── lib/
 │   │   ├── launcher/
+│   │   │   ├── action-log.ps1
 │   │   │   ├── action-results.ps1
 │   │   │   ├── actions.ps1
 │   │   │   ├── context.ps1
@@ -284,7 +287,6 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   ├── statistics-menus.ps1
 │   │   │   └── statistics-plans.ps1
 │   │   ├── menu/
-│   │   │   ├── action-console.ps1
 │   │   │   ├── chrome.ps1
 │   │   │   ├── grid-layout.ps1
 │   │   │   ├── grid-picker.ps1
@@ -305,7 +307,9 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── release-validation.psm1
 │   │   ├── repository-inventory.psm1
 │   │   ├── resource-inventory.psm1
-│   │   └── source-metrics.psm1
+│   │   ├── script-output.ps1
+│   │   ├── source-metrics.psm1
+│   │   └── sweep-exposables.ps1
 │   ├── tests/
 │   │   ├── commands/
 │   │   │   ├── install-hooks.tests.ps1
@@ -313,6 +317,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   ├── update-readme-stats.tests.ps1
 │   │   │   └── versioning-workflow.tests.ps1
 │   │   ├── launcher/
+│   │   │   ├── action-log.tests.ps1
 │   │   │   ├── action-results.tests.ps1
 │   │   │   ├── actions.tests.ps1
 │   │   │   ├── context.tests.ps1
@@ -325,6 +330,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   ├── action-summary.tests.ps1
 │   │   │   ├── agent-skills-layout.tests.ps1
 │   │   │   ├── context-inventory.tests.ps1
+│   │   │   ├── deckle-process.tests.ps1
 │   │   │   ├── native-console.tests.ps1
 │   │   │   ├── native-runtime-release.tests.ps1
 │   │   │   ├── release-history.tests.ps1
@@ -332,9 +338,9 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   ├── repository-inventory.tests.ps1
 │   │   │   ├── resource-inventory.tests.ps1
 │   │   │   ├── script-layout.tests.ps1
+│   │   │   ├── script-output.tests.ps1
 │   │   │   └── source-metrics.tests.ps1
 │   │   └── menu/
-│   │       ├── action-console.tests.ps1
 │   │       ├── chrome.tests.ps1
 │   │       ├── grid-picker.tests.ps1
 │   │       ├── grid-status.tests.ps1
@@ -1122,8 +1128,10 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   ├── AmbientEngine.PushHealth.cs
 │   │   │   ├── AmbientEngine.PushLoop.cs
 │   │   │   ├── AmbientEngineState.cs
+│   │   │   ├── AmbientHeartbeatWindow.cs
 │   │   │   ├── AmbientHueChangeAttributor.cs
 │   │   │   ├── AmbientModePresets.cs
+│   │   │   ├── AmbientPushCadence.cs
 │   │   │   ├── AmbientPushGate.cs
 │   │   │   ├── AmbientZoneSampler.cs
 │   │   │   ├── HuePairingService.cs
@@ -1807,7 +1815,9 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   └── ReleaseResolverTests.cs
 │   ├── Deckle.Lighting.Ambient.Tests/
 │   │   ├── AmbientBrightnessCurveTests.cs
+│   │   ├── AmbientHeartbeatWindowTests.cs
 │   │   ├── AmbientHueChangeAttributorTests.cs
+│   │   ├── AmbientPushCadenceTests.cs
 │   │   ├── AmbientPushGateTests.cs
 │   │   ├── Deckle.Lighting.Ambient.Tests.csproj
 │   │   └── DeckleAmbientSourceTests.cs

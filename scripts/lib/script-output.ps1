@@ -35,6 +35,29 @@ function New-DeckleOutputSegment {
     }
 }
 
+function Write-DeckleOutputFragment {
+    param(
+        [Parameter(Mandatory)][AllowEmptyString()][string]$Text,
+        [Parameter(Mandatory)]
+        [ValidateSet('Body', 'Category', 'Heading', 'Action', 'Muted', 'Success', 'Warning', 'Error')]
+        [string]$Role,
+        [switch]$NoNewline,
+        [string[]]$Tags = @('Deckle.Output'),
+        [hashtable]$Metadata = @{}
+    )
+
+    $message = [System.Management.Automation.HostInformationMessage]::new()
+    $message.Message = $Text
+    $message.NoNewLine = [bool]$NoNewline
+    $color = Get-DeckleOutputColor -Role $Role
+    if ($null -ne $color) { $message.ForegroundColor = $color }
+    $message | Add-Member -NotePropertyName DeckleRole -NotePropertyValue $Role
+    foreach ($entry in $Metadata.GetEnumerator()) {
+        $message | Add-Member -NotePropertyName ([string]$entry.Key) -NotePropertyValue $entry.Value
+    }
+    Write-Information -MessageData $message -Tags $Tags -InformationAction Continue
+}
+
 function Write-DeckleOutputLine {
     param(
         [Parameter(Mandatory)]
@@ -43,21 +66,16 @@ function Write-DeckleOutputLine {
     )
 
     if ($Segments.Count -eq 0) {
-        Write-Host ''
+        Write-DeckleOutputFragment -Text '' -Role Body
         return
     }
 
     for ($index = 0; $index -lt $Segments.Count; $index++) {
         $segment = $Segments[$index]
-        $arguments = @{
-            Object    = [string]$segment.Text
-            NoNewline = $index -lt ($Segments.Count - 1)
-        }
-        $color = Get-DeckleOutputColor -Role ([string]$segment.Role)
-        if ($null -ne $color) {
-            $arguments.ForegroundColor = $color
-        }
-        Write-Host @arguments
+        Write-DeckleOutputFragment `
+            -Text ([string]$segment.Text) `
+            -Role ([string]$segment.Role) `
+            -NoNewline:($index -lt ($Segments.Count - 1))
     }
 }
 

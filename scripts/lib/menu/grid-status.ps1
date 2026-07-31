@@ -1,5 +1,24 @@
 # Non-interactive grid surface with a live or persistent result viewport.
 
+function Get-GridStatusCursorVisibility {
+    if ([Console]::IsOutputRedirected) { return $true }
+    try { return [Console]::CursorVisible } catch { return $true }
+}
+
+function Set-GridStatusCursorVisibility {
+    param([Parameter(Mandatory)][bool]$Visible)
+
+    if ([Console]::IsOutputRedirected) { return }
+    try { [Console]::CursorVisible = $Visible } catch { }
+}
+
+function Set-GridStatusCursorParking {
+    param([Parameter(Mandatory)]$View)
+
+    $parkingRow = $View.Viewport.BodyTop + [Math]::Max(0, $View.Body.Count - 1)
+    Set-MenuCursorPosition -Left 0 -Top $parkingRow
+}
+
 function Write-GridStatusRows {
     param(
         [Parameter(Mandatory)]$View,
@@ -25,19 +44,35 @@ function New-GridStatusView {
         [Parameter(Mandatory)][object[]]$Rows,
         [Parameter(Mandatory)][string]$Title,
         [object[]]$Lines = @(),
+        [string]$HeaderCommands = '',
         [string]$Footer = '',
         [switch]$Follow,
+        [AllowNull()][Nullable[bool]]$RestoreCursorVisible = $null,
         [ValidateSet('Compact')]
         [string]$BannerStyle = 'Compact'
     )
 
+    $cursorVisibleBeforeStart = if ($null -eq $RestoreCursorVisible) {
+        Get-GridStatusCursorVisibility
+    } else {
+        [bool]$RestoreCursorVisible
+    }
     $grid = New-GridPlan -Rows $Rows
     $layout = New-GridBodyLayout -CommandBody $grid.Body -ResultTitle $Title -BannerStyle $BannerStyle
-    $viewport = New-MenuViewport -Header $Header -Footer $Footer -BodyCount $layout.Body.Count -ClearScreen -BannerStyle $BannerStyle
+    Set-GridStatusCursorVisibility -Visible $false
+    try {
+        $viewport = New-MenuViewport `
+            -Header $Header -HeaderCommands $HeaderCommands -Footer $Footer `
+            -BodyCount $layout.Body.Count -ClearScreen -BannerStyle $BannerStyle
+    } catch {
+        Set-GridStatusCursorVisibility -Visible $cursorVisibleBeforeStart
+        throw
+    }
     $metrics = Get-MenuMetrics
     $view = [pscustomobject]@{
         Header           = $Header
         Rows             = @($Rows)
+        HeaderCommands   = $HeaderCommands
         Footer           = $Footer
         BannerStyle      = $BannerStyle
         Grid             = $grid
@@ -48,6 +83,7 @@ function New-GridStatusView {
         ColumnWidths     = Get-GridColumnWidths -ContentWidth $viewport.ContentWidth -PrefixWidth $grid.PrefixWidth -ColumnCount $grid.ColumnCount
         TerminalWidth    = $metrics.TerminalWidth
         WindowHeight     = $metrics.WindowHeight
+        RestoreCursorVisible = $cursorVisibleBeforeStart
     }
     $lineArray = @($Lines)
     $resultOffset = if ($Follow) {
@@ -56,6 +92,7 @@ function New-GridStatusView {
         0
     }
     Write-GridStatusRows -View $view -StartIndex 0 -Lines $lineArray -ResultOffset $resultOffset
+    Set-GridStatusCursorParking -View $view
     return $view
 }
 
@@ -72,7 +109,8 @@ function Update-GridStatusView {
     if ($metrics.TerminalWidth -ne $View.TerminalWidth -or $metrics.WindowHeight -ne $View.WindowHeight) {
         return New-GridStatusView `
             -Header $View.Header -Rows $View.Rows -Title $Title -Lines $Lines -Footer $View.Footer `
-            -BannerStyle $View.BannerStyle -Follow:$Follow
+            -HeaderCommands $View.HeaderCommands -BannerStyle $View.BannerStyle -Follow:$Follow `
+            -RestoreCursorVisible $View.RestoreCursorVisible
     }
 
     $View.Body[$View.ResultTitleIndex].Text = $Title
@@ -83,7 +121,16 @@ function Update-GridStatusView {
         0
     }
     Write-GridStatusRows -View $View -StartIndex $View.ResultTitleIndex -Lines $lineArray -ResultOffset $resultOffset
+    Set-GridStatusCursorParking -View $View
     return $View
+}
+
+function Close-GridStatusView {
+    [CmdletBinding()]
+    param([AllowNull()]$View)
+
+    if ($null -eq $View) { return }
+    Set-GridStatusCursorVisibility -Visible ([bool]$View.RestoreCursorVisible)
 }
 
 function Show-GridStatus {
@@ -99,5 +146,12 @@ function Show-GridStatus {
         [string]$BannerStyle = 'Compact'
     )
 
-    New-GridStatusView -Header $Header -Rows $Rows -Title $Title -Lines $Lines -Footer $Footer -Follow:$Follow -BannerStyle $BannerStyle | Out-Null
+    $view = $null
+    try {
+        $view = New-GridStatusView `
+            -Header $Header -Rows $Rows -Title $Title -Lines $Lines `
+            -Footer $Footer -Follow:$Follow -BannerStyle $BannerStyle
+    } finally {
+        Close-GridStatusView -View $view
+    }
 }
