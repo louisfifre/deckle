@@ -41,9 +41,12 @@ public sealed partial class AmbientEngine
         DeckleAmbientSource.Log.Heartbeat(
             _multiLightActive ? "multi" : "group",
             elapsedMs / 1000.0,
+            _pushRateHz,
+            _hbTicks * 1000.0 / elapsedMs,
             _hbTicks,
             _hbPushed,
             _hbDropped,
+            _hbSkippedSlots,
             _multiLightActive ? _hbUnmappedLights : 0,
             pushStats);
 
@@ -54,6 +57,7 @@ public sealed partial class AmbientEngine
     {
         _hbTimestamp = timestamp ?? Stopwatch.GetTimestamp();
         _hbTicks = _hbPushed = _hbDropped = _hbUnmappedLights = 0;
+        _hbSkippedSlots = 0;
         _hbPushDurationsMs?.Clear();
     }
 }

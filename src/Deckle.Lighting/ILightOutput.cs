@@ -50,6 +50,14 @@ public interface ILightOutput : IAsyncDisposable
     /// while keeping persistent-state outputs such as REST throttled.</summary>
     bool RequiresContinuousColorUpdates => false;
 
+    /// <summary>Driver-recommended colour update rate for a live output,
+    /// in updates per second. Null leaves cadence selection to the consumer.
+    /// This is a transport capability, not a user preference: persistent
+    /// state outputs such as REST normally leave it unspecified, while a
+    /// streaming transport can advertise the rate needed for smoothness and
+    /// packet-loss tolerance.</summary>
+    int? PreferredColorUpdateRateHz => null;
+
     /// <summary>Open the session with the configured sink. Throws if
     /// the sink is unreachable, the credentials are rejected, or any
     /// protocol-level handshake fails. Idempotent — calling twice on
