@@ -5,8 +5,8 @@
 # run): the verbs you reach for most sit up top, each with its Release/Debug
 # variant beside it, so one Enter picks both. The launcher owns a terminal
 # alternate-screen session while navigating. During an action, its banner and
-# breadcrumb stay fixed while native output scrolls below them with the colors
-# chosen by the emitting tool. Back/cancel returns to the previous menu.
+# breadcrumb stay fixed while output scrolls below them. Completed output is
+# retained in the paged result view. Back/cancel returns to the previous menu.
 #
 # Every concrete action delegates to a single-purpose script in scripts/commands/;
 # those scripts remain usable on their own CLI for automation.
@@ -39,7 +39,7 @@ try {
             -Header 'Deckle' `
             -Rows $mainRows -StartSel 0 -StartCol 0 -EscapeAction Ignore -ClearScreen -BannerStyle Compact `
             -SelectionState $mainSelection `
-            -ResultTitle $mainResultTitle -ResultLines $mainResultLines -ResultFollowTail
+            -ResultTitle $mainResultTitle -ResultLines $mainResultLines
         if ($null -eq $v) { continue }
         if ($v -eq 'quit') { break }
 

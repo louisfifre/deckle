@@ -25,9 +25,7 @@ $ScriptDir = $PSScriptRoot
 $LibDir = Join-Path (Split-Path -Parent $ScriptDir) 'lib'
 . (Join-Path $LibDir 'action-summary.ps1')
 
-function Step($msg) { Write-Host "`n[readme] $msg" -ForegroundColor Cyan }
-function Ok($msg)   { Write-Host "         $msg" -ForegroundColor Green }
-function Warn($msg) { Write-Host "         $msg" -ForegroundColor Yellow }
+$WorkflowOutput = New-DeckleWorkflowOutput -Category 'readme'
 
 $Workflow = 'Update README pulse'
 $RepoRoot = $null
@@ -58,12 +56,12 @@ if ($Pick) {
     $RepoRoot = (git rev-parse --show-toplevel).Trim()
 }
 
-Write-Host "Repo: $RepoRoot" -ForegroundColor DarkGray
+Write-DeckleOutputText -Text "Repo: $RepoRoot" -Role Muted
 
 if (-not $ReadmePath) {
     $ReadmePath = Join-Path $RepoRoot 'README.md'
 }
-Write-Host "README: $ReadmePath" -ForegroundColor DarkGray
+Write-DeckleOutputText -Text "README: $ReadmePath" -Role Muted
 
 if (-not (Test-Path -LiteralPath $ReadmePath -PathType Leaf)) {
     throw "README.md not found: $ReadmePath"
@@ -122,14 +120,14 @@ if ($Commit) {
     }
 }
 
-Step 'Collect Git history'
+Write-DeckleWorkflowStep -Output $WorkflowOutput -Message 'Collect Git history'
 $commitCount = [int64](Invoke-Git rev-list --count HEAD)
 $dates       = @(Invoke-Git log --date=short --format=%ad HEAD)
 $firstDate   = if ($dates.Count -gt 0) { $dates[-1] } else { 'n/a' }
 $activeDays  = [int64](@($dates | Sort-Object -Unique).Count)
-Ok ("{0} commits across {1} active day(s)" -f (Format-Count $commitCount), (Format-Count $activeDays))
+Write-DeckleWorkflowMessage -Output $WorkflowOutput -Message ("{0} commits across {1} active day(s)" -f (Format-Count $commitCount), (Format-Count $activeDays))
 
-Step 'Measure churn'
+Write-DeckleWorkflowStep -Output $WorkflowOutput -Message 'Measure churn'
 $additions = [int64]0
 $deletions = [int64]0
 foreach ($line in (Invoke-Git log --numstat --pretty=tformat: HEAD)) {
@@ -139,9 +137,9 @@ foreach ($line in (Invoke-Git log --numstat --pretty=tformat: HEAD)) {
     }
 }
 $touched = $additions + $deletions
-Ok ("{0} added / {1} touched lines" -f (Format-Count $additions), (Format-Count $touched))
+Write-DeckleWorkflowMessage -Output $WorkflowOutput -Message ("{0} added / {1} touched lines" -f (Format-Count $additions), (Format-Count $touched))
 
-Step 'Measure tracked text files'
+Write-DeckleWorkflowStep -Output $WorkflowOutput -Message 'Measure tracked text files'
 $trackedTextLines = [int64]0
 $trackedTextFiles = [int64]0
 foreach ($path in (Invoke-Git ls-files)) {
@@ -164,13 +162,13 @@ foreach ($path in (Invoke-Git ls-files)) {
     $trackedTextLines += $lines
     $trackedTextFiles++
 }
-Ok ("{0} tracked text files / {1} current lines" -f (Format-Count $trackedTextFiles), (Format-Count $trackedTextLines))
+Write-DeckleWorkflowMessage -Output $WorkflowOutput -Message ("{0} tracked text files / {1} current lines" -f (Format-Count $trackedTextFiles), (Format-Count $trackedTextLines))
 
 $generatedDate = (Get-Date).ToString('yyyy-MM-dd', $Culture)
 
 function Write-StatsSummary {
     Write-Host ""
-    Write-Host "Development pulse" -ForegroundColor Cyan
+    Write-DeckleOutputText -Text 'Development pulse' -Role Category
     Write-Host ("  First commit          : {0}" -f $firstDate)
     Write-Host ("  Commits               : {0}" -f (Format-Count $commitCount))
     Write-Host ("  Active days           : {0}" -f (Format-Count $activeDays))
@@ -182,7 +180,7 @@ function Write-StatsSummary {
     Write-Host ""
 }
 
-Step 'Render README development pulse'
+Write-DeckleWorkflowStep -Output $WorkflowOutput -Message 'Render README development pulse'
 $section = @"
 $StartMarker
 ## Development pulse
@@ -198,7 +196,7 @@ $EndMarker
 $readme = Get-Content -LiteralPath $ReadmePath -Raw
 if ([regex]::IsMatch($readme, $PulsePattern)) {
     $updated = [regex]::Replace($readme, $PulsePattern, [System.Text.RegularExpressions.MatchEvaluator]{ param($m) $section })
-    Ok "Existing generated section found"
+    Write-DeckleWorkflowMessage -Output $WorkflowOutput -Message "Existing generated section found"
 } else {
     $dividerPattern = "(?m)^---\r?\n"
     $dividerMatch = [regex]::Match($readme, $dividerPattern)
@@ -206,7 +204,7 @@ if ([regex]::IsMatch($readme, $PulsePattern)) {
         throw "Could not find README insertion point. Add $StartMarker / $EndMarker manually."
     }
     $updated = $readme.Insert($dividerMatch.Index, "$section`n`n")
-    Warn "Generated section was missing; inserted before the first README divider"
+    Write-DeckleWorkflowMessage -Output $WorkflowOutput -Message "Generated section was missing; inserted before the first README divider" -Role Warning
 }
 
 $normalizedReadme = $readme -replace "\r?\n", "`n"
@@ -216,27 +214,27 @@ if ($normalizedUpdated -ne $normalizedReadme) {
     $utf8NoBom = [System.Text.UTF8Encoding]::new($false)
     [System.IO.File]::WriteAllText((Resolve-Path -LiteralPath $ReadmePath).Path, $normalizedUpdated, $utf8NoBom)
     Write-StatsSummary
-    Step 'Done'
-    Ok "README.md development pulse updated"
+    Write-DeckleWorkflowStep -Output $WorkflowOutput -Message 'Done'
+    Write-DeckleWorkflowMessage -Output $WorkflowOutput -Message "README.md development pulse updated"
     $readmeChanged = $true
 } else {
     Write-StatsSummary
-    Step 'Done'
-    Ok "README.md development pulse already up to date"
+    Write-DeckleWorkflowStep -Output $WorkflowOutput -Message 'Done'
+    Write-DeckleWorkflowMessage -Output $WorkflowOutput -Message "README.md development pulse already up to date"
     $readmeChanged = $false
 }
 
 if ($Commit) {
     $readmePending = @(Invoke-Git diff --name-only -- README.md).Count -gt 0
     if ($readmePending) {
-        Step 'Commit README development pulse'
+        Write-DeckleWorkflowStep -Output $WorkflowOutput -Message 'Commit README development pulse'
         Invoke-Git add -- README.md | Out-Null
         Invoke-Git commit -m $CommitSubject | Out-Null
         $CommitCreated = $true
-        Ok $CommitSubject
+        Write-DeckleWorkflowMessage -Output $WorkflowOutput -Message $CommitSubject
     } else {
-        Step 'Commit README development pulse'
-        Ok 'No commit needed; README.md already matches HEAD'
+        Write-DeckleWorkflowStep -Output $WorkflowOutput -Message 'Commit README development pulse'
+        Write-DeckleWorkflowMessage -Output $WorkflowOutput -Message 'No commit needed; README.md already matches HEAD'
     }
 }
 

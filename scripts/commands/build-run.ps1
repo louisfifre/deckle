@@ -28,9 +28,7 @@ $LibDir = Join-Path (Split-Path -Parent $ScriptDir) 'lib'
 . (Join-Path $LibDir 'deckle-process.ps1')
 . (Join-Path $LibDir 'native-console.ps1')
 
-function Step($msg) { Write-Host "`n[build] $msg" -ForegroundColor Cyan }
-function Ok($msg)   { Write-Host "        $msg" -ForegroundColor Green }
-function Warn($msg) { Write-Host "        $msg" -ForegroundColor Yellow }
+$WorkflowOutput = New-DeckleWorkflowOutput -Category 'build'
 
 $Workflow = if ($NoRun) { 'Build' } else { 'Build & run' }
 $RepoRoot = $null
@@ -75,7 +73,7 @@ if ($Pick) {
     $RepoRoot = Split-Path -Parent (Split-Path $ScriptDir)
 }
 
-Write-Host "Repo: $RepoRoot" -ForegroundColor DarkGray
+Write-DeckleOutputText -Text "Repo: $RepoRoot" -Role Muted
 
 $ProjectDir = Join-Path $RepoRoot 'src\Deckle.App'
 $Csproj     = Join-Path $ProjectDir 'Deckle.App.csproj'
@@ -93,8 +91,11 @@ $AppArtifactsBin = Join-Path $RepoRoot 'artifacts\bin\Deckle.App'
 $PivotPrefix     = $Configuration.ToLowerInvariant()
 
 # 1. Kill running instance (otherwise the .exe is locked)
-Step 'Stop running Deckle instance'
-Stop-DeckleProcess -WriteOk ${function:Ok} -WriteWarn ${function:Warn}
+Write-DeckleWorkflowStep -Output $WorkflowOutput -Message 'Stop running Deckle instance'
+Stop-DeckleProcess -WriteEvent {
+    param([string]$Role, [string]$Message)
+    Write-DeckleWorkflowMessage -Output $WorkflowOutput -Message $Message -Role $Role
+}
 
 # 2. Build via `dotnet build`. Restore is implicit (separate evaluation
 # phase before Build), so the WindowsAppSDK targets (CompileXaml etc.)
@@ -105,18 +106,18 @@ Stop-DeckleProcess -WriteOk ${function:Ok} -WriteWarn ${function:Warn}
 # MSBuild node reuse and Roslyn shared compilation leave .NET Host /
 # VBCSCompiler processes behind for faster follow-up builds, which is hostile
 # to parallel worktrees and WinUI responsiveness diagnostics.
-Step "dotnet build ($Configuration x64)"
+Write-DeckleWorkflowStep -Output $WorkflowOutput -Message "dotnet build ($Configuration x64)"
 $buildExitCode = Invoke-DeckleConsoleProcess -FilePath 'dotnet' -ArgumentList @(
     'build', $Csproj, "-c:$Configuration", '-p:Platform=x64', '-v:m', '-nologo',
     '/nr:false', '/p:UseSharedCompilation=false'
 )
 if ($buildExitCode -ne 0) { throw "dotnet build failed (code $buildExitCode)" }
-Ok 'Build succeeded'
+Write-DeckleWorkflowResult -Output $WorkflowOutput -Message 'Build succeeded'
 
 # 3. Run
 if ($NoRun) {
-    Step 'Done'
-    Ok 'Launch skipped because -NoRun was set'
+    Write-DeckleWorkflowStep -Output $WorkflowOutput -Message 'Done'
+    Write-DeckleWorkflowMessage -Output $WorkflowOutput -Message 'Launch skipped because -NoRun was set'
     Write-DeckleActionSummary `
         -Workflow $Workflow `
         -Result Success `
@@ -134,13 +135,13 @@ if ($NoRun) {
 # Pivot prefix match (debug / debug_win-x64) rather than an exact folder so a
 # RID-suffixed pivot can't strand us on a stale exe. LastWriteTime sort picks
 # the freshest if several pivots coexist.
-Step 'Resolve built executable'
+Write-DeckleWorkflowStep -Output $WorkflowOutput -Message 'Resolve built executable'
 $ExeCandidates = Get-ChildItem -Path $AppArtifactsBin -Recurse -Filter 'Deckle.exe' -ErrorAction SilentlyContinue |
     Where-Object { $_.Directory.Name -like "$PivotPrefix*" } |
     Sort-Object LastWriteTime -Descending
 if (-not $ExeCandidates) { throw "Exe not found under $AppArtifactsBin (expected artifacts\bin\Deckle.App\$PivotPrefix\Deckle.exe)" }
 $ExePath = $ExeCandidates[0].FullName
-Ok $ExePath
+Write-DeckleWorkflowMessage -Output $WorkflowOutput -Message $ExePath
 
 function Start-DeckleViaShell {
     param(
@@ -175,13 +176,13 @@ if ($HudZOrderSelfTest) {
     $launchArgs = @('--post-build')
 }
 
-Step 'Launch Deckle'
+Write-DeckleWorkflowStep -Output $WorkflowOutput -Message 'Launch Deckle'
 Start-DeckleViaShell -FilePath $ExePath -DeckleArgs $launchArgs
 if ($launchArgs.Count) {
-    Ok ("Started with args: {0}" -f ($launchArgs -join ' '))
+    Write-DeckleWorkflowResult -Output $WorkflowOutput -Message ("Started with args: {0}" -f ($launchArgs -join ' '))
     $LaunchMode = "Started with args: $($launchArgs -join ' ')"
 } else {
-    Ok 'Started without post-build restart args'
+    Write-DeckleWorkflowResult -Output $WorkflowOutput -Message 'Started without post-build restart args'
     $LaunchMode = 'Started without post-build restart args'
 }
 
@@ -196,12 +197,12 @@ if ($Wait) {
         $proc = Get-Process -Name Deckle -ErrorAction SilentlyContinue | Select-Object -First 1
     } while (-not $proc -and (Get-Date) -lt $deadline)
     if ($proc) {
-        Step "Wait for Deckle PID $($proc.Id)"
+        Write-DeckleWorkflowStep -Output $WorkflowOutput -Message "Wait for Deckle PID $($proc.Id)"
         $proc.WaitForExit()
-        Ok "Deckle exited with code $($proc.ExitCode)"
+        Write-DeckleWorkflowMessage -Output $WorkflowOutput -Message "Deckle exited with code $($proc.ExitCode)"
         $WaitResult = "Deckle PID $($proc.Id) exited with code $($proc.ExitCode)"
     } else {
-        Warn 'Deckle process did not appear within 5 seconds'
+        Write-DeckleWorkflowMessage -Output $WorkflowOutput -Message 'Deckle process did not appear within 5 seconds' -Role Warning
         $WaitResult = 'Deckle process did not appear within 5 seconds'
     }
 }

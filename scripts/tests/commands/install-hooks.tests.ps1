@@ -19,6 +19,7 @@ try {
     $null = New-Item -ItemType Directory -Path (Join-Path $repository 'scripts\hooks') -Force
     Copy-Item -LiteralPath (Join-Path $CommandDir 'install-hooks.ps1') -Destination (Join-Path $repository 'scripts\commands\install-hooks.ps1')
     Copy-Item -LiteralPath (Join-Path $LibDir 'action-summary.ps1') -Destination (Join-Path $repository 'scripts\lib\action-summary.ps1')
+    Copy-Item -LiteralPath (Join-Path $LibDir 'script-output.ps1') -Destination (Join-Path $repository 'scripts\lib\script-output.ps1')
     Copy-Item -LiteralPath (Join-Path $ScriptsDir 'hooks\pre-commit') -Destination (Join-Path $repository 'scripts\hooks\pre-commit')
 
     Invoke-TestGit -Root $repository -Arguments @('init', '-q')

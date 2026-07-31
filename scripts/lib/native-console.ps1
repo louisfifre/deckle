@@ -1,4 +1,4 @@
-# Native process invocation that inherits the current console streams.
+# Native process invocation that preserves each output line for launcher history.
 
 function Invoke-DeckleConsoleProcess {
     [CmdletBinding()]
@@ -10,12 +10,49 @@ function Invoke-DeckleConsoleProcess {
     $startInfo = [System.Diagnostics.ProcessStartInfo]::new()
     $startInfo.FileName = $FilePath
     $startInfo.UseShellExecute = $false
+    $startInfo.RedirectStandardOutput = $true
+    $startInfo.RedirectStandardError = $true
     foreach ($argument in $ArgumentList) {
         $startInfo.ArgumentList.Add([string]$argument)
     }
 
     $process = [System.Diagnostics.Process]::Start($startInfo)
     try {
+        $stdoutDone = $false
+        $stderrDone = $false
+        $stdoutTask = $process.StandardOutput.ReadLineAsync()
+        $stderrTask = $process.StandardError.ReadLineAsync()
+
+        while (-not $stdoutDone -or -not $stderrDone) {
+            $madeProgress = $false
+
+            if (-not $stdoutDone -and $stdoutTask.IsCompleted) {
+                $line = $stdoutTask.GetAwaiter().GetResult()
+                if ($null -eq $line) {
+                    $stdoutDone = $true
+                } else {
+                    Write-Host $line
+                    $stdoutTask = $process.StandardOutput.ReadLineAsync()
+                }
+                $madeProgress = $true
+            }
+
+            if (-not $stderrDone -and $stderrTask.IsCompleted) {
+                $line = $stderrTask.GetAwaiter().GetResult()
+                if ($null -eq $line) {
+                    $stderrDone = $true
+                } else {
+                    Write-Host $line
+                    $stderrTask = $process.StandardError.ReadLineAsync()
+                }
+                $madeProgress = $true
+            }
+
+            if (-not $madeProgress) {
+                Start-Sleep -Milliseconds 10
+            }
+        }
+
         $process.WaitForExit()
         return $process.ExitCode
     } finally {

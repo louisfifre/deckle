@@ -48,7 +48,7 @@ Show-ProjectMenu
 Assert-Equal 1 $script:WorktreeActionCount 'project action runs once before the submenu resumes'
 Assert-Equal $true $script:LastWorktreeScriptParameters.Commit 'README update requests a local commit'
 Assert-Equal $false $script:SubmenuFollowTailCalls[0] 'project guidance starts on its first page'
-Assert-Equal $true $script:SubmenuFollowTailCalls[1] 'project action logs resume on their latest page'
+Assert-Equal $false $script:SubmenuFollowTailCalls[1] 'project action logs preserve their opening context on the first page'
 Assert-Equal $true ([object]::ReferenceEquals($script:SubmenuSelectionStates[0], $script:SubmenuSelectionStates[1])) 'project menu keeps one selection state across action redraws'
 Assert-Equal 'Deckle > Project' $script:LastSubmenuHeader 'submenu header contains only the breadcrumb'
 

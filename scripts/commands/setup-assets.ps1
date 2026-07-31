@@ -84,9 +84,7 @@ else                           { $TargetRoot = Join-Path $env:LOCALAPPDATA 'Deck
 $TargetNative = Join-Path $TargetRoot 'native'
 $TargetModels = Join-Path $TargetRoot 'models'
 
-function Step($msg) { Write-Host "`n[setup] $msg" -ForegroundColor Cyan }
-function Ok($msg)   { Write-Host "         $msg" -ForegroundColor Green }
-function Warn($msg) { Write-Host "         $msg" -ForegroundColor Yellow }
+$WorkflowOutput = New-DeckleWorkflowOutput -Category 'setup'
 
 $Workflow = 'Set up runtime assets'
 $NativeSource = $null
@@ -126,12 +124,12 @@ $DeckleRepoSlug = 'louisfifre/deckle'
 function CopyIdempotent($src, $dst) {
     $name = Split-Path $src -Leaf
     if (-not $Force -and (Test-Path $dst) -and ((Get-Item $dst).Length -eq (Get-Item $src).Length)) {
-        Ok "skip  $name (same size)"
+        Write-DeckleWorkflowMessage -Output $WorkflowOutput -Message "skip  $name (same size)"
         return
     }
     Copy-Item $src $dst -Force
     $size = [math]::Round((Get-Item $dst).Length / 1MB, 1)
-    Ok "copy  $name ($size MB)"
+    Write-DeckleWorkflowMessage -Output $WorkflowOutput -Message "copy  $name ($size MB)"
 }
 
 # Idempotent download via curl.exe (built into Win10/11, much faster than
@@ -140,7 +138,7 @@ function CopyIdempotent($src, $dst) {
 function Download($url, $dst, $expectedMinBytes) {
     $name = Split-Path $dst -Leaf
     if (-not $Force -and (Test-Path $dst) -and ((Get-Item $dst).Length -ge $expectedMinBytes)) {
-        Ok "already present $name ($([math]::Round((Get-Item $dst).Length/1MB,1)) MB)"
+        Write-DeckleWorkflowMessage -Output $WorkflowOutput -Message "already present $name ($([math]::Round((Get-Item $dst).Length/1MB,1)) MB)"
         return
     }
     Write-Host "         downloading $name ..."
@@ -148,24 +146,24 @@ function Download($url, $dst, $expectedMinBytes) {
     $curlExitCode = $LASTEXITCODE
     Write-Host ''
     if ($curlExitCode -ne 0) { throw "curl failed for $url" }
-    Ok "downloaded $name ($([math]::Round((Get-Item $dst).Length/1MB,1)) MB)"
+    Write-DeckleWorkflowMessage -Output $WorkflowOutput -Message "downloaded $name ($([math]::Round((Get-Item $dst).Length/1MB,1)) MB)"
 }
 
-Step "target root: $TargetRoot"
+Write-DeckleWorkflowStep -Output $WorkflowOutput -Message "target root: $TargetRoot"
 
 # 1. Create target folders.
-Step 'create folders'
+Write-DeckleWorkflowStep -Output $WorkflowOutput -Message 'create folders'
 foreach ($d in @($TargetNative, $TargetModels)) {
     if (-not (Test-Path $d)) {
         New-Item -ItemType Directory -Path $d -Force | Out-Null
-        Ok "created $d"
+        Write-DeckleWorkflowMessage -Output $WorkflowOutput -Message "created $d"
     } else {
-        Ok "exists  $d"
+        Write-DeckleWorkflowMessage -Output $WorkflowOutput -Message "exists  $d"
     }
 }
 
 # 2. Native runtime — three modes (release / local-rebuild / skip).
-Step 'native runtime'
+Write-DeckleWorkflowStep -Output $WorkflowOutput -Message 'native runtime'
 
 if ($FromRelease) {
     # Mode A — pull the published bundle from the Deckle GitHub Release.
@@ -177,12 +175,12 @@ if ($FromRelease) {
     $NativeSource = "GitHub Release native-v$FromRelease"
 
     if ($Force -and (Test-Path $tmpZip)) { Remove-Item $tmpZip -Force }
-    Ok "url $url"
+    Write-DeckleWorkflowMessage -Output $WorkflowOutput -Message "url $url"
     & curl.exe -L --fail --retry 3 --progress-bar -o $tmpZip $url
     $curlExitCode = $LASTEXITCODE
     Write-Host ''
     if ($curlExitCode -ne 0) { throw "curl failed for $url" }
-    Ok "downloaded $(Split-Path $tmpZip -Leaf) ($([math]::Round((Get-Item $tmpZip).Length/1MB,1)) MB)"
+    Write-DeckleWorkflowMessage -Output $WorkflowOutput -Message "downloaded $(Split-Path $tmpZip -Leaf) ($([math]::Round((Get-Item $tmpZip).Length/1MB,1)) MB)"
 
     # Extract only the catalog entries — same defense-in-depth filter the
     # C# side applies in NativeRuntime.InstallFromZipAsync.
@@ -193,13 +191,13 @@ if ($FromRelease) {
         foreach ($name in $catalog) {
             $entry = $archive.Entries | Where-Object { $_.Name -eq $name } | Select-Object -First 1
             if (-not $entry) {
-                Warn "MISSING $name in bundle"
+                Write-DeckleWorkflowMessage -Output $WorkflowOutput -Message "MISSING $name in bundle" -Role Warning
                 continue
             }
             $dst = Join-Path $TargetNative $name
             [System.IO.Compression.ZipFileExtensions]::ExtractToFile($entry, $dst, $true)
             $size = [math]::Round((Get-Item $dst).Length / 1MB, 1)
-            Ok "extract $name ($size MB)"
+            Write-DeckleWorkflowMessage -Output $WorkflowOutput -Message "extract $name ($size MB)"
         }
     } finally {
         $archive.Dispose()
@@ -219,11 +217,11 @@ else {
     $whisperBin = Join-Path $resolved 'build\bin'
     if (Test-Path $whisperBin) {
         $NativeSource = $whisperBin
-        Ok "whisper.cpp build : $whisperBin"
+        Write-DeckleWorkflowMessage -Output $WorkflowOutput -Message "whisper.cpp build : $whisperBin"
         foreach ($name in $WhisperDlls) {
             $src = Join-Path $whisperBin $name
             if (-not (Test-Path $src)) {
-                Warn "MISSING source $src — rebuild whisper.cpp needed"
+                Write-DeckleWorkflowMessage -Output $WorkflowOutput -Message "MISSING source $src — rebuild whisper.cpp needed" -Role Warning
                 continue
             }
             CopyIdempotent $src (Join-Path $TargetNative $name)
@@ -232,17 +230,17 @@ else {
         # MinGW runtime DLLs come from the Scoop install, paired with the
         # toolchain that produced ggml-vulkan.dll above.
         if (Test-Path $ScoopMingw) {
-            Ok "mingw runtime    : $ScoopMingw"
+            Write-DeckleWorkflowMessage -Output $WorkflowOutput -Message "mingw runtime    : $ScoopMingw"
             foreach ($name in $MingwDlls) {
                 $src = Join-Path $ScoopMingw $name
                 if (-not (Test-Path $src)) {
-                    Warn "MISSING source $src — install MinGW via Scoop"
+                    Write-DeckleWorkflowMessage -Output $WorkflowOutput -Message "MISSING source $src — install MinGW via Scoop" -Role Warning
                     continue
                 }
                 CopyIdempotent $src (Join-Path $TargetNative $name)
             }
         } else {
-            Warn "MinGW Scoop install not found at $ScoopMingw — runtime DLLs skipped"
+            Write-DeckleWorkflowMessage -Output $WorkflowOutput -Message "MinGW Scoop install not found at $ScoopMingw — runtime DLLs skipped" -Role Warning
             $NativeRuntimeStatus = 'Partial: whisper.cpp DLLs copied, MinGW runtime missing'
         }
         if ($NativeRuntimeStatus -eq 'Pending') {
@@ -251,17 +249,17 @@ else {
     } else {
         $NativeSource = $resolved
         $NativeRuntimeStatus = 'Skipped: no native source found'
-        Warn "no native source found"
-        Warn "  tried -WhisperRepo, DECKLE_WHISPER_REPO, $resolved"
-        Warn "  pass -FromRelease <X.Y.Z> to fetch the published bundle, or"
-        Warn "  point -WhisperRepo at your whisper.cpp build tree"
+        Write-DeckleWorkflowMessage -Output $WorkflowOutput -Message "no native source found" -Role Warning
+        Write-DeckleWorkflowMessage -Output $WorkflowOutput -Message "  tried -WhisperRepo, DECKLE_WHISPER_REPO, $resolved" -Role Warning
+        Write-DeckleWorkflowMessage -Output $WorkflowOutput -Message "  pass -FromRelease <X.Y.Z> to fetch the published bundle, or" -Role Warning
+        Write-DeckleWorkflowMessage -Output $WorkflowOutput -Message "  point -WhisperRepo at your whisper.cpp build tree" -Role Warning
     }
 }
 
 # 3. Whisper models — downloaded from HuggingFace into <TargetRoot>\models\.
 # ggml-base.bin is the fast default, ggml-large-v3.bin is gated behind
 # -WithLarge because it's 3 GB. Silero VAD is always fetched — it's tiny.
-Step 'download Whisper models'
+Write-DeckleWorkflowStep -Output $WorkflowOutput -Message 'download Whisper models'
 $baseDst = Join-Path $TargetModels 'ggml-base.bin'
 Download `
     'https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-base.bin' `
@@ -275,10 +273,10 @@ if ($WithLarge) {
         $largeDst `
         3000MB
 } else {
-    Ok 'skipped ggml-large-v3.bin (pass -WithLarge to fetch ~3 GB model)'
+    Write-DeckleWorkflowMessage -Output $WorkflowOutput -Message 'skipped ggml-large-v3.bin (pass -WithLarge to fetch ~3 GB model)'
 }
 
-Step 'download Silero VAD'
+Write-DeckleWorkflowStep -Output $WorkflowOutput -Message 'download Silero VAD'
 $vadDst = Join-Path $TargetModels 'silero_vad.onnx'
 Download `
     'https://raw.githubusercontent.com/snakers4/silero-vad/v6.2/src/silero_vad/data/silero_vad.onnx' `
@@ -294,7 +292,7 @@ $ModelStatus = if ($WithLarge) { 'Base, large, and Silero VAD present' } else { 
 # consume it yet, so it is staged on demand from one canonical location the
 # installer can reference, not pulled on every setup.
 if ($WithCamembert) {
-    Step 'download CamemBERT reranker model'
+    Write-DeckleWorkflowStep -Output $WorkflowOutput -Message 'download CamemBERT reranker model'
     $camDir = Join-Path $TargetModels 'camembert-base'
     if (-not (Test-Path $camDir)) { New-Item -ItemType Directory -Path $camDir -Force | Out-Null }
     $camBase = 'https://huggingface.co/Xenova/camembert-base/resolve/main'
@@ -304,19 +302,23 @@ if ($WithCamembert) {
     Download "$camBase/config.json"             (Join-Path $camDir 'config.json')             100
     Download "$camBase/tokenizer_config.json"   (Join-Path $camDir 'tokenizer_config.json')   100
     Download "$camBase/special_tokens_map.json" (Join-Path $camDir 'special_tokens_map.json') 100
-    Ok "camembert-base staged under $camDir"
+    Write-DeckleWorkflowMessage -Output $WorkflowOutput -Message "camembert-base staged under $camDir"
 } else {
-    Ok 'skipped camembert-base (pass -WithCamembert to fetch ~440 MB reranker model)'
+    Write-DeckleWorkflowMessage -Output $WorkflowOutput -Message 'skipped camembert-base (pass -WithCamembert to fetch ~440 MB reranker model)'
 }
 
 # Final summary.
 $nativeCount = (Get-ChildItem $TargetNative -File -ErrorAction SilentlyContinue | Measure-Object).Count
 $modelCount  = (Get-ChildItem $TargetModels -File -ErrorAction SilentlyContinue | Measure-Object).Count
 $nativeCatalogCount = @(($WhisperDlls + $MingwDlls) | Where-Object { Test-Path (Join-Path $TargetNative $_) }).Count
-Step 'done'
+Write-DeckleWorkflowStep -Output $WorkflowOutput -Message 'done'
 Write-Host "         $TargetNative : $nativeCount file(s)"
 Write-Host "         $TargetModels : $modelCount file(s)"
-Write-Host "`nNext: scripts\deckle.ps1 (Build & run)" -ForegroundColor Cyan
+Write-DeckleOutputLine -Segments @()
+Write-DeckleOutputLine -Segments @(
+    New-DeckleOutputSegment -Text 'Next: ' -Role Category
+    New-DeckleOutputSegment -Text 'scripts\deckle.ps1 (Build & run)' -Role Body
+)
 
 $summaryResult = if ($nativeCatalogCount -lt ($WhisperDlls.Count + $MingwDlls.Count)) { 'Partial' } else { 'Success' }
 $summarySentence = if ($summaryResult -eq 'Partial') {

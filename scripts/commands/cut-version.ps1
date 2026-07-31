@@ -32,9 +32,7 @@ $ScriptDir = $PSScriptRoot
 $LibDir = Join-Path (Split-Path -Parent $ScriptDir) 'lib'
 . (Join-Path $LibDir 'action-summary.ps1')
 
-function Step($msg) { Write-Host "`n[cut-version] $msg" -ForegroundColor Cyan }
-function Ok($msg)   { Write-Host "             $msg"   -ForegroundColor Green }
-function Warn($msg) { Write-Host "             $msg"   -ForegroundColor Yellow }
+$WorkflowOutput = New-DeckleWorkflowOutput -Category 'cut-version'
 
 $Workflow = 'Update version'
 $RepoRoot = $null
@@ -66,7 +64,7 @@ if ($Pick) {
 } else {
     $RepoRoot = Split-Path -Parent (Split-Path $ScriptDir)
 }
-Write-Host "Repo: $RepoRoot" -ForegroundColor DarkGray
+Write-DeckleOutputText -Text "Repo: $RepoRoot" -Role Muted
 
 $Csproj = Join-Path $RepoRoot 'src\Deckle.App\Deckle.App.csproj'
 if (-not (Test-Path $Csproj)) { throw "csproj not found at $Csproj — is '$RepoRoot' a Deckle worktree?" }
@@ -77,16 +75,16 @@ if (-not (Test-Path $Csproj)) { throw "csproj not found at $Csproj — is '$Repo
 # state. Untracked files (scratch benches, in-progress notes) have nothing to
 # do with a version bump, so they are deliberately ignored (-uno). The bump
 # runs on main just after a merge, where the tracked state is already clean.
-Step 'Check no tracked change is pending'
+Write-DeckleWorkflowStep -Output $WorkflowOutput -Message 'Check no tracked change is pending'
 $dirty = & git -C $RepoRoot status --porcelain --untracked-files=no
 if ($LASTEXITCODE -ne 0) { throw "git status failed (code $LASTEXITCODE)" }
 if ($dirty) {
     throw "Tracked changes are pending — commit or stash them first so the bump is the only change in its commit:`n$($dirty -join "`n")"
 }
-Ok 'Clean (no tracked change pending)'
+Write-DeckleWorkflowMessage -Output $WorkflowOutput -Message 'Clean (no tracked change pending)'
 
 # ── Read the current <Version> — the single source of truth ──────────────────
-Step 'Read current <Version>'
+Write-DeckleWorkflowStep -Output $WorkflowOutput -Message 'Read current <Version>'
 $content = Get-Content -Raw -LiteralPath $Csproj
 $verRe = [regex]'<Version>([^<]+)</Version>'
 $m = $verRe.Match($content)
@@ -95,7 +93,7 @@ $current = $m.Groups[1].Value.Trim()
 if ($current -notmatch '^\d+\.\d+\.\d+$') {
     throw "Current <Version> '$current' is not MAJOR.MINOR.PATCH — refuse to guess."
 }
-Ok "current: v$current"
+Write-DeckleWorkflowMessage -Output $WorkflowOutput -Message "current: v$current"
 
 # ── Compute the next version ─────────────────────────────────────────────────
 $p = $current.Split('.') | ForEach-Object { [int]$_ }
@@ -110,7 +108,7 @@ switch ($Bump) {
 }
 $next = $p -join '.'
 $tag  = "v$next"
-Step "Bump ($Bump): v$current -> $tag"
+Write-DeckleWorkflowStep -Output $WorkflowOutput -Message "Bump ($Bump): v$current -> $tag"
 
 # ── Guard: the next version must not already be a public tag ─────────────────
 $existing = & git -C $RepoRoot tag --list $tag
@@ -123,10 +121,10 @@ if ($existing) { throw "Tag $tag already exists — refuse to overwrite." }
 # no BOM, so we write UTF-8 without BOM to keep the diff to that single line.
 $newContent = $verRe.Replace($content, "<Version>$next</Version>", 1)
 [System.IO.File]::WriteAllText($Csproj, $newContent, [System.Text.UTF8Encoding]::new($false))
-Ok 'csproj written'
+Write-DeckleWorkflowMessage -Output $WorkflowOutput -Message 'csproj written'
 
 if ($NoCommit) {
-    Warn 'NoCommit: wrote the bump only. No commit, no tag.'
+    Write-DeckleWorkflowMessage -Output $WorkflowOutput -Message 'NoCommit: wrote the bump only. No commit, no tag.' -Role Warning
     Write-DeckleActionSummary `
         -Workflow $Workflow `
         -Result Success `
@@ -145,17 +143,17 @@ if ($NoCommit) {
 
 # ── Commit the bump ──────────────────────────────────────────────────────────
 # Stage ONLY the csproj so nothing else can ride along.
-Step 'Commit version record'
+Write-DeckleWorkflowStep -Output $WorkflowOutput -Message 'Commit version record'
 & git -C $RepoRoot add -- $Csproj
 if ($LASTEXITCODE -ne 0) { throw "git add failed (code $LASTEXITCODE)" }
 & git -C $RepoRoot commit -m "chore(version): $tag"
 if ($LASTEXITCODE -ne 0) { throw "git commit failed (code $LASTEXITCODE)" }
-Ok "committed chore(version): $tag"
+Write-DeckleWorkflowMessage -Output $WorkflowOutput -Message "committed chore(version): $tag"
 
 # ── Summary — push and publish stay deliberate, separate acts ────────────────
 Write-Host ''
-Write-Host "Cut v$current -> $tag on $RepoRoot" -ForegroundColor Green
-Write-Host 'Not pushed. No tag was created; the tag belongs to a successful public release.' -ForegroundColor DarkGray
+Write-DeckleOutputText -Text "Cut v$current -> $tag on $RepoRoot"
+Write-DeckleOutputText -Text 'Not pushed. No tag was created; the tag belongs to a successful public release.' -Role Muted
 
 Write-DeckleActionSummary `
     -Workflow $Workflow `

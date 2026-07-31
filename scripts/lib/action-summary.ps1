@@ -1,5 +1,7 @@
 # Shared end-of-action summaries for Deckle scripts.
 
+. (Join-Path $PSScriptRoot 'script-output.ps1')
+
 function Write-DeckleActionSummary {
     param(
         [Parameter(Mandatory)][string]$Workflow,
@@ -9,17 +11,19 @@ function Write-DeckleActionSummary {
         [string[]]$Next
     )
 
-    $color = switch ($Result) {
-        'Success' { [ConsoleColor]::Green }
-        'Failed'  { [ConsoleColor]::Red }
-        'Partial' { [ConsoleColor]::Yellow }
-        'Skipped' { [ConsoleColor]::DarkGray }
+    $resultRole = switch ($Result) {
+        'Success' { 'Success' }
+        'Failed'  { 'Error' }
+        'Partial' { 'Warning' }
+        'Skipped' { 'Muted' }
     }
 
-    Write-Host ''
-    Write-Host '[summary] ' -ForegroundColor $color -NoNewline
-    Write-Host $Sentence -ForegroundColor $color
-    Write-Host ''
+    Write-DeckleOutputLine -Segments @()
+    Write-DeckleOutputLine -Segments @(
+        New-DeckleOutputSegment -Text '[summary] ' -Role Category
+        New-DeckleOutputSegment -Text $Sentence -Role Body
+    )
+    Write-DeckleOutputLine -Segments @()
 
     $detailRows = @()
     if ($Details) {
@@ -37,16 +41,28 @@ function Write-DeckleActionSummary {
     $rowFormat = '  {0,-' + $labelWidth + '}: {1}'
     $continuationFormat = '  {0,-' + $labelWidth + '}  {1}'
 
-    Write-Host ($rowFormat -f 'Workflow', $Workflow)
-    Write-Host ($rowFormat -f 'Result', $Result) -ForegroundColor $color
+    Write-DeckleOutputLine -Segments @(
+        New-DeckleOutputSegment -Text ($rowFormat -f 'Workflow', $Workflow) -Role Body
+    )
+    $resultPrefix = $rowFormat -f 'Result', ''
+    Write-DeckleOutputLine -Segments @(
+        New-DeckleOutputSegment -Text $resultPrefix -Role Body
+        New-DeckleOutputSegment -Text $Result -Role $resultRole
+    )
     foreach ($row in $detailRows) {
-        Write-Host ($rowFormat -f $row.Label, $row.Value)
+        Write-DeckleOutputLine -Segments @(
+            New-DeckleOutputSegment -Text ($rowFormat -f $row.Label, $row.Value) -Role Body
+        )
     }
 
     if ($Next -and $Next.Count -gt 0) {
-        Write-Host ($rowFormat -f 'Next', $Next[0]) -ForegroundColor DarkGray
+        Write-DeckleOutputLine -Segments @(
+            New-DeckleOutputSegment -Text ($rowFormat -f 'Next', $Next[0]) -Role Muted
+        )
         for ($i = 1; $i -lt $Next.Count; $i++) {
-            Write-Host ($continuationFormat -f '', $Next[$i]) -ForegroundColor DarkGray
+            Write-DeckleOutputLine -Segments @(
+                New-DeckleOutputSegment -Text ($continuationFormat -f '', $Next[$i]) -Role Muted
+            )
         }
     }
 }
