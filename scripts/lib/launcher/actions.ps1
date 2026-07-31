@@ -264,50 +264,67 @@ function Invoke-NativeRuntime {
     )
     $wt = Get-WorktreeOrReturn
     if ($null -eq $wt) { return }
-    $whisperInput = Read-Optional -Question 'Path to whisper.cpp with an existing build/bin' -Header 'Deckle > Release > Native runtime' -Label 'Path' -Lines @('This action packages existing DLLs.', 'It does not invoke CMake or build Deckle.')
-    if ($whisperInput.Status -eq 'Cancelled') { return }
-    $whisperRepo = [string]$whisperInput.Value
-    if ([string]::IsNullOrWhiteSpace($whisperRepo)) { Write-Host "Cancelled: whisper.cpp path is required." -ForegroundColor DarkGray; return }
-
+    Import-Module (Join-Path $LibDir 'native-runtime-release.psm1') -Force
+    $sourcePath = Join-Path $wt 'src\Deckle.Transcription.Whisper\Setup\NativeRuntime.cs'
+    $pinnedBundle = Get-DeckleNativeRuntimeBundle -SourcePath $sourcePath
+    $artifactName = "deckle-native-$($pinnedBundle.Version).zip"
+    $artifactPath = Join-Path $wt "artifacts\deckle-native-$($pinnedBundle.Version)\$artifactName"
+    $useExistingArtifact = Test-Path -LiteralPath $artifactPath -PathType Leaf
+    $whisperRepo = $null
+    $outDir = $null
     $versionHolder = [pscustomobject]@{ Plan = $null }
-    $versionCheck = Invoke-DeckleMenuAction `
-        -Header 'Deckle > Release > Native runtime' `
-        -Label 'Resolve native version' `
-        -Source Release `
-        -MenuRows $MenuRows `
-        -Action {
-            if ($Publish) {
-                Write-Host '[release] Sync published native versions'
-                $fetchOutput = @(& git -C $wt fetch origin main --tags --prune 2>&1)
-                if ($LASTEXITCODE -ne 0) {
-                    throw "git fetch origin main --tags failed: $($fetchOutput -join ' ')"
-                }
-            }
-            Import-Module (Join-Path $LibDir 'native-runtime-release.psm1') -Force
-            $publishedTags = @(& git -C $wt tag --list 'native-v*')
-            if ($LASTEXITCODE -ne 0) { throw "git tag --list native-v* failed (code $LASTEXITCODE)" }
-            $sourcePath = Join-Path $wt 'src\Deckle.Transcription.Whisper\Setup\NativeRuntime.cs'
-            $versionHolder.Plan = Get-DeckleNativeRuntimeVersionPlan `
-                -SourcePath $sourcePath `
-                -WhisperRepo $whisperRepo `
-                -PublishedTags $publishedTags
-            Write-Host ("[release] native-v{0} follows native-v{1} for whisper.cpp {2}" -f `
-                $versionHolder.Plan.Version, $versionHolder.Plan.PreviousVersion, $versionHolder.Plan.WhisperVersion)
-        }
-    if (-not $versionCheck.Succeeded) { return $versionCheck }
 
-    $version = $versionHolder.Plan.Version
-    $outDirInput = Read-Optional -Question 'Output directory (blank = temporary folder)' -Header 'Deckle > Release > Native runtime' -Label 'Folder'
-    if ($outDirInput.Status -eq 'Cancelled') { return }
-    $outDir = [string]$outDirInput.Value
+    if ($useExistingArtifact) {
+        $version = [string]$pinnedBundle.Version
+    } else {
+        $whisperInput = Read-Optional -Question 'Path to whisper.cpp with an existing build/bin' -Header 'Deckle > Release > Native runtime' -Label 'Path' -Lines @('No bundle is available for the current version.', 'A new bundle requires an existing native build.')
+        if ($whisperInput.Status -eq 'Cancelled') { return }
+        $whisperRepo = [string]$whisperInput.Value
+        if ([string]::IsNullOrWhiteSpace($whisperRepo)) { Write-Host "Cancelled: whisper.cpp path is required." -ForegroundColor DarkGray; return }
+
+        $versionCheck = Invoke-DeckleMenuAction `
+            -Header 'Deckle > Release > Native runtime' `
+            -Label 'Resolve native version' `
+            -Source Release `
+            -MenuRows $MenuRows `
+            -Action {
+                if ($Publish) {
+                    Write-Host '[release] Sync published native versions'
+                    $fetchOutput = @(& git -C $wt fetch origin main --tags --prune 2>&1)
+                    if ($LASTEXITCODE -ne 0) {
+                        throw "git fetch origin main --tags failed: $($fetchOutput -join ' ')"
+                    }
+                }
+                $publishedTags = @(& git -C $wt tag --list 'native-v*')
+                if ($LASTEXITCODE -ne 0) { throw "git tag --list native-v* failed (code $LASTEXITCODE)" }
+                $versionHolder.Plan = Get-DeckleNativeRuntimeVersionPlan `
+                    -SourcePath $sourcePath `
+                    -WhisperRepo $whisperRepo `
+                    -PublishedTags $publishedTags
+                Write-Host ("[release] native-v{0} follows native-v{1} for whisper.cpp {2}" -f `
+                    $versionHolder.Plan.Version, $versionHolder.Plan.PreviousVersion, $versionHolder.Plan.WhisperVersion)
+            }
+        if (-not $versionCheck.Succeeded) { return $versionCheck }
+        $version = $versionHolder.Plan.Version
+
+        $outDirInput = Read-Optional -Question 'Output directory (blank = temporary folder)' -Header 'Deckle > Release > Native runtime' -Label 'Folder'
+        if ($outDirInput.Status -eq 'Cancelled') { return }
+        $outDir = [string]$outDirInput.Value
+    }
+
     if ($Publish) {
+        $sourceLine = if ($useExistingArtifact) {
+            "Verifies and publishes the existing $artifactName. Nothing is built."
+        } else {
+            "Packages existing DLLs for whisper.cpp $($versionHolder.Plan.WhisperVersion). Nothing is built."
+        }
         if (-not (Read-YesNo `
             -Question "Publish native-v$version now?" `
             -Default $false `
             -ConfirmLabel "Publish native-v$version" `
             -CancelLabel 'Keep private' `
             -ContextLines @(
-                "Packages existing DLLs for whisper.cpp $($versionHolder.Plan.WhisperVersion). Nothing is built."
+                $sourceLine
                 "Publishes native-v$version as a public GitHub Release."
             ) `
             -Destructive)) {
@@ -315,7 +332,9 @@ function Invoke-NativeRuntime {
             return
         }
     }
-    $nativeArgs = @{ Version = $version; WhisperRepo = $whisperRepo; Target = $wt }
+    $nativeArgs = @{ Version = $version; Target = $wt }
+    if ($useExistingArtifact) { $nativeArgs.ArtifactPath = $artifactPath }
+    else                      { $nativeArgs.WhisperRepo = $whisperRepo }
     if ($outDir)  { $nativeArgs.OutDir = $outDir }
     if ($Publish) { $nativeArgs.Publish = $true }
     $scriptPath = Join-Path $CommandDir 'publish-native-runtime.ps1'
