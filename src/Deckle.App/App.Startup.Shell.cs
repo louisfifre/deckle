@@ -1,8 +1,10 @@
+using Deckle.Autocorrect;
 using Deckle.Core;
 using Deckle.Diagnostics;
 using Deckle.Diagnostics.Logging;
 using Deckle.Diagnostics.Telemetry;
 using Deckle.Hud;
+using Deckle.Input.PrecisionScroll;
 using Deckle.Lighting.Ambient;
 using Deckle.Modules;
 using Deckle.Playground;
@@ -199,6 +201,13 @@ public partial class App
                 s.Enabled = !s.Enabled;
                 TaskbarCoverSettingsService.Instance.Save();
             },
+            IsPrecisionScrollOn = () => PrecisionScrollSettingsService.Instance.Current.Enabled,
+            OnTogglePrecisionScroll = () =>
+            {
+                var s = PrecisionScrollSettingsService.Instance.Current;
+                s.Enabled = !s.Enabled;
+                PrecisionScrollSettingsService.Instance.Save();
+            },
             OnRestart        = () => RestartAppFromTray(),
             OnQuit           = () => QuitApp(),
             // Tray icon screen rect — the menu host uses it as the
@@ -230,6 +239,15 @@ public partial class App
                 var s = AmbientSettingsService.Instance.Current;
                 s.Enabled = !s.Enabled;
                 AmbientSettingsService.Instance.Save();
+            };
+        }
+        if (context.AutocorrectPresent)
+        {
+            _trayMenu.IsAutocorrectOn = () => AutocorrectSettingsService.Instance.Current.Enabled;
+            _trayMenu.OnToggleAutocorrect = () =>
+            {
+                bool enabled = AutocorrectSettingsService.Instance.Current.Enabled;
+                AutocorrectSettingsService.Instance.SetEnabled(!enabled);
             };
         }
         _tray.RightClickRequested += () => _trayMenu.Show();

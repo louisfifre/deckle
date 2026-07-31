@@ -57,6 +57,17 @@ public sealed partial class TrayContextMenuHost
             });
         _flyout.Items.Add(_ambientItem);
 
+        _autocorrectItem = TraySwitchMenuItem.Create(
+            Loc.Get("TrayMenu_Autocorrect"),
+            () =>
+            {
+                DeckleShellTrayMenuSource.Log.ItemClicked();
+                DeckleShellTrayMenuSource.Log.ItemClickedDetail(_autocorrectItem!.Text);
+                Hide("item_click:Autocorrect");
+                OnToggleAutocorrect?.Invoke();
+            });
+        _flyout.Items.Add(_autocorrectItem);
+
         _taskbarCoverItem = TraySwitchMenuItem.Create(
             Loc.Get("TrayMenu_TaskbarCover"),
             () =>
@@ -68,9 +79,21 @@ public sealed partial class TrayContextMenuHost
             });
         _flyout.Items.Add(_taskbarCoverItem);
 
+        _precisionScrollItem = TraySwitchMenuItem.Create(
+            Loc.Get("TrayMenu_PrecisionScroll"),
+            () =>
+            {
+                DeckleShellTrayMenuSource.Log.ItemClicked();
+                DeckleShellTrayMenuSource.Log.ItemClickedDetail(_precisionScrollItem!.Text);
+                Hide("item_click:PrecisionScroll");
+                OnTogglePrecisionScroll?.Invoke();
+            });
+        _flyout.Items.Add(_precisionScrollItem);
+
         _flyout.Items.Add(new MenuFlyoutSeparator());
         _transcribeFileItem = CreateItem(Loc.Get("TrayMenu_TranscribeFile"), () => OnTranscribeFile?.Invoke());
         _flyout.Items.Add(_transcribeFileItem);
+        _flyout.Items.Add(new MenuFlyoutSeparator());
         _flyout.Items.Add(CreateItem(Loc.Get("TrayMenu_Logs"),       () => OnShowLogs?.Invoke()));
         _flyout.Items.Add(CreateItem(Loc.Get("TrayMenu_Settings"),   () => OnShowSettings?.Invoke()));
         _flyout.Items.Add(CreateItem(Loc.Get("TrayMenu_Playground"), () => OnShowPlayground?.Invoke()));

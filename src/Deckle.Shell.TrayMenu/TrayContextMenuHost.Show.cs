@@ -46,11 +46,21 @@ public sealed partial class TrayContextMenuHost
             if (traceWindowing) DeckleShellTrayMenuSource.Log.AmbientStateRead(ambientOn);
         }
 
+        if (_autocorrectItem is not null && IsAutocorrectOn is not null)
+        {
+            TraySwitchMenuItem.SetState(_autocorrectItem, IsAutocorrectOn());
+        }
+
         if (_taskbarCoverItem is not null && IsTaskbarCoverOn is not null)
         {
             bool coverOn = IsTaskbarCoverOn();
             TraySwitchMenuItem.SetState(_taskbarCoverItem, coverOn);
             if (traceWindowing) DeckleShellTrayMenuSource.Log.TaskbarCoverStateRead(coverOn);
+        }
+
+        if (_precisionScrollItem is not null && IsPrecisionScrollOn is not null)
+        {
+            TraySwitchMenuItem.SetState(_precisionScrollItem, IsPrecisionScrollOn());
         }
 
         // Anchor + exclude: prefer the real tray icon rect

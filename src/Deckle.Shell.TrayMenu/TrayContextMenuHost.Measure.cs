@@ -44,6 +44,8 @@ public sealed partial class TrayContextMenuHost
         // enough.
         if (_ambientItem is not null)
             _ambientItem.Visibility = OnToggleAmbient is null ? Visibility.Collapsed : Visibility.Visible;
+        if (_autocorrectItem is not null)
+            _autocorrectItem.Visibility = OnToggleAutocorrect is null ? Visibility.Collapsed : Visibility.Visible;
         if (_transcribeFileItem is not null)
             _transcribeFileItem.Visibility = OnTranscribeFile is null ? Visibility.Collapsed : Visibility.Visible;
 
