@@ -4,6 +4,8 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 ```
 ├── .agents/
 │   └── skills/
+│       ├── deckle-bug-note/
+│       │   └── SKILL.md  — deckle-bug-note [skill] Preserve what a confirmed bug teaches for future tests and reviews. Invoke auto…
 │       ├── deckle-commits/
 │       │   └── SKILL.md  — deckle-commits [skill] Commit grain and the few deviations from the universal convention. Invoke befor…
 │       ├── deckle-interface/
@@ -1082,6 +1084,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   ├── HueBridgeClient.cs
 │   │   │   ├── HueBridgeClient.Dtos.cs
 │   │   │   ├── HueBridgeClient.EventStream.cs
+│   │   │   ├── HueBridgeClient.Identity.cs
 │   │   │   ├── HueBridgeClient.Pairing.cs
 │   │   │   ├── HueBridgeClient.V2.cs
 │   │   │   ├── HueClientKeyStore.cs
@@ -1134,6 +1137,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   ├── AmbientPushCadence.cs
 │   │   │   ├── AmbientPushGate.cs
 │   │   │   ├── AmbientZoneSampler.cs
+│   │   │   ├── HueEndpointResolver.cs
 │   │   │   ├── HuePairingService.cs
 │   │   │   ├── LightZone.cs
 │   │   │   └── LightZoneSuggester.cs
@@ -1467,6 +1471,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── Curves/
 │   │   │   └── UnitBezier.cs
 │   │   ├── Engine/
+│   │   │   ├── FileTranscriptionQueue.cs
 │   │   │   ├── IAsrBackend.cs
 │   │   │   ├── PipelineProduction.cs
 │   │   │   ├── RewriteProfileSelection.cs
@@ -1820,15 +1825,20 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── AmbientPushCadenceTests.cs
 │   │   ├── AmbientPushGateTests.cs
 │   │   ├── Deckle.Lighting.Ambient.Tests.csproj
-│   │   └── DeckleAmbientSourceTests.cs
+│   │   ├── DeckleAmbientSourceTests.cs
+│   │   └── HueEndpointResolverTests.cs
 │   ├── Deckle.Lighting.Tests/
+│   │   ├── BugExamples/
+│   │   │   └── dns-sd-pending-status-lifetime.json
 │   │   ├── Deckle.Lighting.Tests.csproj
 │   │   ├── DeckleLightingSourceTests.cs
+│   │   ├── HueBridgeClientIdentityTests.cs
 │   │   ├── HueCredentialVaultTests.cs
 │   │   ├── HueEntertainmentFrameBuilderTests.cs
 │   │   ├── HueEntertainmentLightOutputTests.cs
 │   │   ├── HueEventStreamEpisodeTests.cs
 │   │   ├── HueLightOutputFactoryTests.cs
+│   │   ├── HueLocalDiscoveryRegressionTests.cs
 │   │   ├── HueLocalDiscoveryTests.cs
 │   │   └── LightingObservabilityCollection.cs
 │   ├── Deckle.Llm.Rewrite.Tests/
@@ -1884,6 +1894,8 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── DeckleLlmSourceTests.cs
 │   │   ├── DeckleWhispSourceTests.cs
 │   │   ├── EnergySegmenterTests.cs
+│   │   ├── FileTranscriptionQueueTests.cs
+│   │   ├── FileTranscriptionResultTests.cs
 │   │   ├── OperationalObservabilityCollection.cs
 │   │   ├── RewriteAvailabilityTests.cs
 │   │   ├── RewriteProfileSelectionTests.cs
@@ -1899,7 +1911,8 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── NativeRuntimeTests.cs
 │   │   ├── RepetitionDetectorTests.cs
 │   │   ├── SpeechModelFilesTests.cs
-│   │   └── SpeechModelResolverTests.cs
+│   │   ├── SpeechModelResolverTests.cs
+│   │   └── WhisperParamsMapperTests.cs
 │   ├── Deckle.Travel.Tests/
 │   │   ├── Deckle.Travel.Tests.csproj
 │   │   ├── FakeTravelSpace.cs
