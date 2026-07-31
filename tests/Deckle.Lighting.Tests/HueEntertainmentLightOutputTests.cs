@@ -60,6 +60,17 @@ public sealed class HueEntertainmentLightOutputTests
     }
 
     [Fact]
+    public void EntertainmentOutputRecommendsFiftyColorUpdatesPerSecond()
+    {
+        var output = new HueEntertainmentLightOutput(
+            new FakeEntertainmentClient(),
+            CreateArea(),
+            new FakeEntertainmentTransport());
+
+        Assert.Equal(50, ((ILightOutput)output).PreferredColorUpdateRateHz);
+    }
+
+    [Fact]
     public void RestOutputUsesStateEventAttribution()
     {
         var client = new HueBridgeClient(
@@ -79,6 +90,17 @@ public sealed class HueEntertainmentLightOutputTests
         var output = new HueRestLightOutput(client, "7");
 
         Assert.False(((ILightOutput)output).RequiresContinuousColorUpdates);
+    }
+
+    [Fact]
+    public void RestOutputLeavesUpdateRateToItsConsumer()
+    {
+        var client = new HueBridgeClient(
+            new HueBridge("bridge", "192.168.1.2", 443),
+            new HueCredentials("user", ""));
+        var output = new HueRestLightOutput(client, "7");
+
+        Assert.Null(((ILightOutput)output).PreferredColorUpdateRateHz);
     }
 
     [Fact]

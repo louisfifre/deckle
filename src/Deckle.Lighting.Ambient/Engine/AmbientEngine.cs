@@ -18,8 +18,8 @@ namespace Deckle.Lighting.Ambient;
 //
 //   - Group mode (default). One sRGB average over the whole frame, one
 //     push to the connected group via <see cref="ILightOutput.SetColorAsync"/>.
-//     Every driver supports this path. Cadence : 15 Hz, matched with
-//     the capture pump.
+//     Every driver supports this path. REST runs at 15 Hz; a streaming
+//     driver can advertise its preferred rate (Hue Entertainment: 50 Hz).
 //
 //   - Multi-light mode. One sRGB sample per screen-border zone (top /
 //     bottom / left / right), broadcast to every light assigned to
@@ -27,9 +27,10 @@ namespace Deckle.Lighting.Ambient;
 //     via <see cref="IMultiLightOutput.SetLightColorsAsync"/>. Only
 //     enabled when the driver implements <see cref="IMultiLightOutput"/>
 //     AND the caller passes a non-empty zone assignment dictionary AND
-//     `useMultiLight=true`. Cadence is throttled to 10 Hz to keep total
-//     per-second PUT count within the Hue REST CLIP v1 comfort zone
+//     `useMultiLight=true`. REST cadence is throttled to 10 Hz to keep
+//     total per-second PUT count within the Hue REST CLIP v1 comfort zone
 //     for a typical 3-5 light setup (3 lights × 10 Hz = 30 PUT/s).
+//     A batch streaming driver can override that transport constraint.
 //     The four zones are sampled once per tick from a band of
 //     <see cref="AmbientSettings.BorderDepth"/> on every edge — this
 //     mirrors HyperHDR's <c>horizontalDepth</c> / <c>verticalDepth</c>
@@ -80,21 +81,6 @@ namespace Deckle.Lighting.Ambient;
 //   - DisposeAsync : Stop + dispose CTS. Idempotent.
 public sealed partial class AmbientEngine : IAsyncDisposable
 {
-
-    // Push cadence — group mode. 15 Hz matches the screen capture
-    // cadence throttled inside ScreenCaptureService (ThrottleIntervalMs
-    // = 66 ms). One frame in, one push out (modulo the early-exit).
-    // 15 Hz is well within the REST CLIP v1 sweet spot (10-20 Hz) for
-    // the Hue bridge.
-    private const int GroupPushHz = 15;
-
-    // Push cadence — multi-light mode. Each tick fans out N parallel
-    // PUTs (one per light), so the effective per-second pressure on
-    // the bridge is N × Hz. 10 Hz × 3 lights = 30 PUT/s, still within
-    // the bridge's comfort zone (Philips guidance is "no faster than
-    // 10 Hz for lights, 1 Hz for groups" — we're at the lights ceiling
-    // and the consumer rate-limit knob lives here).
-    private const int MultiPushHz = 10;
 
     // Early-exit threshold — if |ΔR| + |ΔG| + |ΔB| < this, the push
     // is skipped. Now sourced from AmbientSettings.ChangeThreshold
@@ -227,7 +213,8 @@ public sealed partial class AmbientEngine : IAsyncDisposable
 
     // Active pipeline shape. Set in StartAsync, read by the loop.
     private bool _multiLightActive;
-    private int _pushIntervalMs = 1000 / GroupPushHz;
+    private int _pushRateHz = 15;
+    private int _pushIntervalMs = 1000 / 15;
     private bool _requiresContinuousColorUpdates;
 
     private long _pushedCount;
@@ -248,6 +235,7 @@ public sealed partial class AmbientEngine : IAsyncDisposable
     private int  _hbPushed;
     private int  _hbDropped;
     private int  _hbUnmappedLights;
+    private long _hbSkippedSlots;
 
     // Per-push duration buffer for the heartbeat. Reset every
     // HeartbeatIntervalMs. Captures the wall-clock cost of the
@@ -289,8 +277,11 @@ public sealed partial class AmbientEngine : IAsyncDisposable
     private BorderThicknessMode _borderMode   = BorderThicknessMode.Share;
     private double              _borderDepth  = 0.33;
     private int                 _borderCells  = 8;
-    // EMA factor snapshot. 1.0 = pass-through (no temporal smoothing).
-    // Refreshed at the top of each tick from _host.Ambient.SmoothingAlpha.
+    // EMA factor snapshot at the 15 Hz reference cadence. 1.0 = pass-through
+    // (no temporal smoothing). AmbientPushCadence adapts it to the actual
+    // output rate so 50 Hz streaming adds intermediate steps without making
+    // the preset converge faster in wall-clock time. Refreshed at the top of
+    // each tick from _host.Ambient.SmoothingAlpha.
     // The lamp jitter observed in dark scenes with small moving
     // reflections was attributed to the absence of temporal damping ;
     // this knob plus the per-tick state below close that gap.
