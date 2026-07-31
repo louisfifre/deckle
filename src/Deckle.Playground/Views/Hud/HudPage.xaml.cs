@@ -493,10 +493,8 @@ public sealed partial class HudPage : Page
         // (CloneCentre*Fraction field initialisers = 0.5, i.e. centred).
 
         // Audio mapping statics stay aligned with ResetAudioMapping.
-        AudioLevelMapper.EmaAlpha          = 0.25f;
-        AudioLevelMapper.MinDbfs           = -55f;
-        AudioLevelMapper.MaxDbfs           = -32f;
-        AudioLevelMapper.DbfsCurveExponent = 1.0f;
+        AudioLevelMapper.Apply(new LevelWindowSettings());
+        AudioLevelMapper.EmaAlpha = 0.25f;
 
         // HudComposition geometry mutables tuned via the HUD geometry
         // expander.

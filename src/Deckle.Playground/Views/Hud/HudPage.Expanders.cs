@@ -257,10 +257,11 @@ public sealed partial class HudPage
 
     private void ResetAudioMapping()
     {
-        AudioLevelMapper.EmaAlpha          = 0.25f;
-        AudioLevelMapper.MinDbfs           = -55f;
-        AudioLevelMapper.MaxDbfs           = -32f;
-        AudioLevelMapper.DbfsCurveExponent = 1.0f;
+        // The persisted POCO is the single source of the window defaults —
+        // a fresh instance carries them, so no literal is restated here.
+        // EmaAlpha is not a window field, hence its own literal.
+        AudioLevelMapper.Apply(new LevelWindowSettings());
+        AudioLevelMapper.EmaAlpha = 0.25f;
         RebuildTuningPanel();
     }
 

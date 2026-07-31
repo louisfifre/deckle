@@ -39,32 +39,8 @@ public static class AudioLevelMapper
     // response so the visual reacts softly in the lower half and
     // aggressively in the upper half of the window.
     //
-    // Reference table with MinDbfs = -40, MaxDbfs = -22 (18 dB window)
-    // and DbfsCurveExponent = 2.0 (quadratic):
-    //   rms ≤ 0.010 (-40 dBFS)  → t=0.00  → y=0.00   silence / gate
-    //   rms = 0.018 (-35 dBFS)  → t=0.28  → y=0.08   breath / ambient
-    //   rms = 0.032 (-30 dBFS)  → t=0.56  → y=0.31   soft onset
-    //   rms = 0.040 (-28 dBFS)  → t=0.67  → y=0.44   conversational
-    //   rms = 0.050 (-26 dBFS)  → t=0.78  → y=0.61   louder
-    //   rms = 0.063 (-24 dBFS)  → t=0.89  → y=0.79   assertive speech
-    //   rms = 0.079 (-22 dBFS)  → t=1.00  → y=1.00   emphatic ceiling
-    //
-    // Calibration — typical voice peaks around -18 dBFS but the 50 ms
-    // RMS average sits 6-10 dB below peak, landing in -28..-24 dBFS for
-    // normal speech and brushing -22 dBFS only on emphatic stress.
-    // Previous ceiling at -18 dBFS was unreachable in practice:
-    // conversational RMS reached y ≈ 0.30 and even loud speech stayed
-    // below y=0.55, so the stroke barely lit up during real recordings
-    // (the playground's sim pump masked this because its peak value
-    // saturated the upper range). The -22 dBFS ceiling puts
-    // conversational RMS at y=0.44-0.79 — clearly visible, with real
-    // dynamics — and the quadratic curve keeps the low-end soft so
-    // ambient noise still fades to zero.
-    //
-    // MinDbfs -40: matches the engine's noise-gate threshold, so the
-    // visual floor coincides with the audible floor. Default −55 here
-    // is the auto-calibration starting point; the engine retunes it
-    // session-by-session if AutoCalibrationEnabled is on.
+    // MinDbfs −55 is the auto-calibration starting point; the engine
+    // retunes it session-by-session if AutoCalibrationEnabled is on.
     //
     // DbfsCurveExponent 1.0 restores the old linear mapping; values
     // above 1 push the response to the upper end of the window; below
