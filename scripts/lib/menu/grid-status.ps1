@@ -23,7 +23,7 @@ function Write-GridStatusRows {
     param(
         [Parameter(Mandatory)]$View,
         [Parameter(Mandatory)][int]$StartIndex,
-        [Parameter(Mandatory)][object[]]$Lines,
+        [Parameter(Mandatory)][AllowEmptyCollection()][object[]]$Lines,
         [Parameter(Mandatory)][int]$ResultOffset
     )
 
@@ -43,7 +43,7 @@ function New-GridStatusView {
         [Parameter(Mandatory)][string]$Header,
         [Parameter(Mandatory)][object[]]$Rows,
         [Parameter(Mandatory)][string]$Title,
-        [object[]]$Lines = @(),
+        [AllowEmptyCollection()][object[]]$Lines = @(),
         [string]$HeaderCommands = '',
         [string]$Footer = '',
         [switch]$Follow,
@@ -101,7 +101,7 @@ function Update-GridStatusView {
     param(
         [Parameter(Mandatory)]$View,
         [Parameter(Mandatory)][string]$Title,
-        [object[]]$Lines = @(),
+        [AllowEmptyCollection()][object[]]$Lines = @(),
         [switch]$Follow
     )
 
@@ -139,7 +139,7 @@ function Show-GridStatus {
         [Parameter(Mandatory)][string]$Header,
         [Parameter(Mandatory)][object[]]$Rows,
         [Parameter(Mandatory)][string]$Title,
-        [object[]]$Lines = @(),
+        [AllowEmptyCollection()][object[]]$Lines = @(),
         [string]$Footer = '',
         [switch]$Follow,
         [ValidateSet('Compact')]

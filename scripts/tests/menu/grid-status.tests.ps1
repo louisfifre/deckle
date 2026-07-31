@@ -25,6 +25,10 @@ $singleCellGrid = New-GridPlan -Rows @(@{ Cells = @( @{ Label = '< Back' } ) })
 Assert-Equal ($script:MenuCategoryWidth + $script:MenuGridGap) $singleCellGrid.PrefixWidth 'status and picker share the fixed category track'
 Assert-Equal 2 $singleCellGrid.ColumnCount 'status and picker share the two-column minimum'
 
+$statusLinesParameter = (Get-Command New-GridStatusView).Parameters['Lines']
+$acceptsEmptyLines = @($statusLinesParameter.Attributes | Where-Object { $_ -is [System.Management.Automation.AllowEmptyCollectionAttribute] }).Count -eq 1
+Assert-Equal $true $acceptsEmptyLines 'a running status accepts an empty transcript before the first log line'
+
 function Get-MenuMetrics {
     return [pscustomobject]@{ TerminalWidth = 79; WindowHeight = 24 }
 }
