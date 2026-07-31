@@ -272,6 +272,9 @@ public sealed partial class HueBridgeClient
         string message = payload.Errors[0].Description ?? "Unknown CLIP v2 error.";
         DeckleLightingSource.Log.ClipV2GetFailed();
         DeckleLightingSource.Log.ClipV2GetFailedDetail(path, 200);
-        throw new HttpRequestException($"Hue CLIP v2 request failed: {message}");
+        throw new HttpRequestException(
+            $"Hue CLIP v2 request failed: {message}",
+            inner: null,
+            System.Net.HttpStatusCode.OK);
     }
 }

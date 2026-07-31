@@ -176,26 +176,6 @@
                             </StackPanel>
                         </controls:SettingsCard>
 
-                        <!-- Transient pair status (countdown / errors /
-                             paired confirmation). Plain TextBlock inside
-                             a borderless card slot — collapsed when
-                             empty so the row disappears entirely instead
-                             of leaving a hollow card behind. -->
-                        <TextBlock x:Name="HuePairStatusText"
-                                   Text=""
-                                   Visibility="Collapsed"
-                                   Style="{ThemeResource CaptionTextBlockStyle}"
-                                   Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                                   TextWrapping="Wrap"
-                                   Margin="16,4,16,8" />
-
-                        <HyperlinkButton x:Name="HueCloudDiscoverButton"
-                                         x:Uid="HueCloudDiscoverButton"
-                                         Visibility="Collapsed"
-                                         HorizontalAlignment="Left"
-                                         Margin="4,0,4,4"
-                                         Click="OnHueCloudDiscoverClick" />
-
                         <!-- Entertainment group / room. -->
                         <controls:SettingsCard x:Uid="HueBridgeGroupCard"
                                                Tag="HueBridgeGroupCard">
@@ -225,6 +205,28 @@
                                     Click="OnHueForgetClick" />
                         </controls:SettingsCard>
                     </controls:SettingsExpander.Items>
+                    <controls:SettingsExpander.ItemsFooter>
+                        <StackPanel>
+                            <!-- Transient pair status (countdown / errors /
+                                 paired confirmation). The footer accepts
+                                 free-form content while the Items collection
+                                 remains reserved for SettingsCard controls. -->
+                            <TextBlock x:Name="HuePairStatusText"
+                                       Text=""
+                                       Visibility="Collapsed"
+                                       Style="{ThemeResource CaptionTextBlockStyle}"
+                                       Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                       TextWrapping="Wrap"
+                                       Margin="16,4,16,8" />
+
+                            <HyperlinkButton x:Name="HueCloudDiscoverButton"
+                                             x:Uid="HueCloudDiscoverButton"
+                                             Visibility="Collapsed"
+                                             HorizontalAlignment="Left"
+                                             Margin="4,0,4,4"
+                                             Click="OnHueCloudDiscoverClick" />
+                        </StackPanel>
+                    </controls:SettingsExpander.ItemsFooter>
                 </controls:SettingsExpander>
 
                 <!-- Tuning lives in the Playground now. The Settings

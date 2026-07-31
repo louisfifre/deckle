@@ -1,0 +1,52 @@
+{
+  "schema": 1,
+  "id": "lighting-2026-07-31-dns-sd-pending-status-lifetime",
+  "status": "active",
+  "modules": [
+    "Deckle.Lighting",
+    "Deckle.Lighting.Ambient"
+  ],
+  "classes": [
+    "interop/async-callback-lifetime",
+    "wrong-constant-domain",
+    "premature-disposal",
+    "delayed-use-after-free",
+    "reverse-pinvoke-exception"
+  ],
+  "trigger": {
+    "operation": "discover-local-hue-bridge",
+    "nativeStartStatus": 9506,
+    "lateUnknownContext": 4242
+  },
+  "symptom": "A delayed DNS-SD callback terminates the process after discovery was reported as failed.",
+  "cause": "Deckle treated DNS_REQUEST_PENDING as failure, released a live callback context, and later received the native callback.",
+  "violatedInvariant": "Native request, cancellation state, and callback context remain valid until the terminal callback.",
+  "contract": {
+    "must": [
+      "Treat DNS_REQUEST_PENDING as a successfully started asynchronous operation.",
+      "Ignore a late callback whose context is no longer registered.",
+      "Keep reverse P/Invoke callbacks non-throwing."
+    ],
+    "mustNot": [
+      "Release an active DNS-SD callback context after a successful start."
+    ]
+  },
+  "automation": {
+    "tier": "regression",
+    "test": "Deckle.Lighting.Tests.HueLocalDiscoveryRegressionTests",
+    "covered": [
+      "DNS_REQUEST_PENDING status classification",
+      "late callback containment after context release"
+    ],
+    "residual": "Native cancellation and terminal-callback ordering remain a Windows system test.",
+    "reviewPaths": [
+      "src/Deckle.Lighting/Hue/HueLocalDiscovery.cs",
+      "src/Deckle.Lighting/Hue/HueLocalDiscovery.Interop.cs"
+    ]
+  },
+  "provenance": {
+    "observedAt": "2026-07-31",
+    "introducedBy": "489c3315",
+    "redaction": "synthetic"
+  }
+}

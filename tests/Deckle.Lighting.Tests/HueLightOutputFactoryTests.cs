@@ -45,6 +45,38 @@ public sealed class HueLightOutputFactoryTests
     }
 
     [Fact]
+    public async Task CreatePreferredAsyncDoesNotFallbackWhenBridgeIsUnreachable()
+    {
+        var bridge = FakeBridge.WithEntertainment(
+            new FakeOutput(),
+            new FakeOutput(),
+            catalogException: new HttpRequestException("connection refused"));
+
+        await Assert.ThrowsAsync<HttpRequestException>(
+            () => HueLightOutputFactory.CreatePreferredAsync(bridge, "7", CancellationToken.None));
+    }
+
+    [Fact]
+    public async Task CreatePreferredAsyncFallsBackWhenBridgeRejectsEntertainmentCatalog()
+    {
+        var rest = new FakeOutput();
+        var bridge = FakeBridge.WithEntertainment(
+            new FakeOutput(),
+            rest,
+            catalogException: new HttpRequestException(
+                "not supported",
+                inner: null,
+                System.Net.HttpStatusCode.NotFound));
+
+        var output = await HueLightOutputFactory.CreatePreferredAsync(
+            bridge,
+            "7",
+            CancellationToken.None);
+
+        Assert.Same(rest, output);
+    }
+
+    [Fact]
     public async Task CreateConnectedPreferredAsyncUsesConnectedEntertainmentWhenAvailable()
     {
         var entertainment = new FakeOutput();
@@ -144,19 +176,22 @@ public sealed class HueLightOutputFactoryTests
         private readonly FakeOutput _rest;
         private readonly IReadOnlyList<HueEntertainmentArea> _areas;
         private readonly IReadOnlyList<HueGroup> _groups;
+        private readonly Exception? _catalogException;
 
         private FakeBridge(
             FakeOutput entertainment,
             FakeOutput rest,
             string clientKey,
             IReadOnlyList<HueEntertainmentArea> areas,
-            IReadOnlyList<HueGroup> groups)
+            IReadOnlyList<HueGroup> groups,
+            Exception? catalogException)
         {
             _entertainment = entertainment;
             _rest = rest;
             Credentials = new HueCredentials("user", clientKey);
             _areas = areas;
             _groups = groups;
+            _catalogException = catalogException;
         }
 
         public HueCredentials? Credentials { get; }
@@ -165,7 +200,8 @@ public sealed class HueLightOutputFactoryTests
             FakeOutput entertainment,
             FakeOutput rest,
             string clientKey = "aabbcc",
-            IReadOnlyList<HueEntertainmentArea>? areas = null)
+            IReadOnlyList<HueEntertainmentArea>? areas = null,
+            Exception? catalogException = null)
             => new(
                 entertainment,
                 rest,
@@ -178,10 +214,13 @@ public sealed class HueLightOutputFactoryTests
                         [],
                         [new HueEntertainmentChannel(1, "42", "Hue", 0, 0, 0, [])]),
                 ],
-                [new HueGroup("7", "Living Room", "Room", 1)]);
+                [new HueGroup("7", "Living Room", "Room", 1)],
+                catalogException);
 
         public Task<IReadOnlyList<HueEntertainmentArea>> ListEntertainmentConfigurationsAsync(CancellationToken ct)
-            => Task.FromResult(_areas);
+            => _catalogException is null
+                ? Task.FromResult(_areas)
+                : Task.FromException<IReadOnlyList<HueEntertainmentArea>>(_catalogException);
 
         public Task<IReadOnlyList<HueGroup>> ListGroupsAsync(CancellationToken ct)
             => Task.FromResult(_groups);

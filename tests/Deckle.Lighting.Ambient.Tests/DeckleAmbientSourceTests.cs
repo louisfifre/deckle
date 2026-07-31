@@ -125,4 +125,44 @@ public class DeckleAmbientSourceTests
                 Assert.Equal(EventLevel.Error, fatal.Level);
             });
     }
+
+    [Fact]
+    public void BridgeEndpointRecoverySeparatesMilestonesFromTechnicalDetail()
+    {
+        using var listener = new TestEventListener("Deckle-Ambient");
+
+        DeckleAmbientSource.Log.BridgeEndpointRecovered();
+        DeckleAmbientSource.Log.BridgeEndpointRecoveredDetail(
+            "ECB5FAFFFE25B9B5", "192.168.1.14", "192.168.1.10", true);
+        DeckleAmbientSource.Log.BridgeEndpointRecoveryFailed();
+        DeckleAmbientSource.Log.BridgeEndpointRecoveryFailedDetail(
+            "ECB5FAFFFE25B9B5", "192.168.1.14", 1, 0, "connection refused");
+
+        Assert.Collection(
+            listener.Events,
+            recovered =>
+            {
+                Assert.Equal(DeckleAmbientSource.EvtBridgeEndpointRecovered, recovered.EventId);
+                Assert.Equal(EventLevel.Informational, recovered.Level);
+            },
+            recoveredDetail =>
+            {
+                Assert.Equal(DeckleAmbientSource.EvtBridgeEndpointRecoveredDetail, recoveredDetail.EventId);
+                Assert.Equal(EventLevel.Verbose, recoveredDetail.Level);
+                Assert.Equal("192.168.1.10", recoveredDetail.Payload?[2]);
+                Assert.Equal(true, recoveredDetail.Payload?[3]);
+            },
+            failed =>
+            {
+                Assert.Equal(DeckleAmbientSource.EvtBridgeEndpointRecoveryFailed, failed.EventId);
+                Assert.Equal(EventLevel.Warning, failed.Level);
+            },
+            failedDetail =>
+            {
+                Assert.Equal(DeckleAmbientSource.EvtBridgeEndpointRecoveryFailedDetail, failedDetail.EventId);
+                Assert.Equal(EventLevel.Verbose, failedDetail.Level);
+                Assert.Equal(1, failedDetail.Payload?[2]);
+                Assert.Equal(0, failedDetail.Payload?[3]);
+            });
+    }
 }

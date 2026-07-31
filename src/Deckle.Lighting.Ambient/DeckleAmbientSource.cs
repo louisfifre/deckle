@@ -92,5 +92,9 @@ public sealed partial class DeckleAmbientSource : DeckleEventSource
     public const int EvtFrameProcessingRecovered        = 57;
     public const int EvtFrameProcessingFailed           = 58;
     public const int EvtFrameProcessingEpisodeDetail    = 59;
+    public const int EvtBridgeEndpointRecovered         = 60;
+    public const int EvtBridgeEndpointRecoveredDetail   = 61;
+    public const int EvtBridgeEndpointRecoveryFailed    = 62;
+    public const int EvtBridgeEndpointRecoveryFailedDetail = 63;
 
 }

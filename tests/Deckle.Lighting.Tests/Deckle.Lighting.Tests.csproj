@@ -2,4 +2,7 @@
   <ItemGroup>
     <ProjectReference Include="..\..\src\Deckle.Lighting\Deckle.Lighting.csproj" />
   </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="BugExamples\*.json" />
+  </ItemGroup>
 </Project>

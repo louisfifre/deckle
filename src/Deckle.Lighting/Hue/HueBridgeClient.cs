@@ -44,23 +44,22 @@ public sealed partial class HueBridgeClient : IDisposable, IHueEntertainmentBrid
 
     public HueBridgeClient(HueBridge bridge)
     {
+        ValidateBridge(bridge);
+        _bridge = bridge;
+        _http = CreateBridgeHttpClient(bridge.InternalIpAddress, bridge.Port);
+    }
+
+    internal HueBridgeClient(HueBridge bridge, HttpClient http)
+    {
         // The bridge is a LAN-only device. Reject any address outside
         // the private ranges before we build the HttpClient (and before
         // the accept-all TLS callback can ever fire) so no caller —
         // manual entry, cloud discovery, a tampered settings.json — can
         // point this client at an attacker-controlled host on the
         // internet (SSRF / data exfil through the PUT-state payload).
-        if (!IsPrivateBridgeIp(bridge.InternalIpAddress))
-        {
-            throw new ArgumentException(
-                $"Hue bridge IP '{bridge.InternalIpAddress}' is not on a private LAN range " +
-                "(RFC1918 or 169.254/16) — the bridge is a local device and any other " +
-                "address is rejected to avoid SSRF.",
-                nameof(bridge));
-        }
-
+        ValidateBridge(bridge);
         _bridge = bridge;
-        _http = CreateBridgeHttpClient(bridge.InternalIpAddress, bridge.Port);
+        _http = http;
     }
 
     /// <summary>
@@ -79,6 +78,12 @@ public sealed partial class HueBridgeClient : IDisposable, IHueEntertainmentBrid
         _credentials = credentials;
     }
 
+    internal HueBridgeClient(HueBridge bridge, HueCredentials credentials, HttpClient http)
+        : this(bridge, http)
+    {
+        _credentials = credentials;
+    }
+
     /// <summary>The bridge this client targets.</summary>
     public HueBridge Bridge => _bridge;
 
@@ -89,6 +94,18 @@ public sealed partial class HueBridgeClient : IDisposable, IHueEntertainmentBrid
     /// <summary>True once pairing has succeeded and the bridge accepts
     /// authenticated calls.</summary>
     public bool IsPaired => _credentials is not null;
+
+    private static void ValidateBridge(HueBridge bridge)
+    {
+        if (!IsPrivateBridgeIp(bridge.InternalIpAddress))
+        {
+            throw new ArgumentException(
+                $"Hue bridge IP '{bridge.InternalIpAddress}' is not on a private LAN range " +
+                "(RFC1918 or 169.254/16) — the bridge is a local device and any other " +
+                "address is rejected to avoid SSRF.",
+                nameof(bridge));
+        }
+    }
 
     /// <summary>
     /// Fetches the list of groups (rooms, zones, entertainment areas)

@@ -13,6 +13,8 @@ Today's only shipped family is Philips Hue. The low-friction path is still CLIP 
 
 REST CLIP v1 is retained as the compatibility fallback. Hue Entertainment v2 is preferred when an entertainment area and the DTLS `clientkey` are available. The parent module owns both transports behind `ILightOutput` / `IMultiLightOutput`; consumers such as `Deckle.Lighting.Ambient` must not know which Hue transport is active.
 
+A bridge ID is stable identity; its IP address and port are mutable locators. Endpoint migration requires exactly one locally discovered candidate whose reported identity and stored credentials both validate.
+
 Entertainment v2 uses BouncyCastle's managed DTLS-PSK implementation. That third-party dependency is accepted only inside `Deckle.Lighting`'s Hue transport layer; it must not leak into Ambient or future lighting consumers.
 
 ## Security

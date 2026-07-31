@@ -11,7 +11,9 @@ namespace Deckle.Lighting;
 internal static partial class HueLocalDiscovery
 {
     private const string HueServiceType = "_hue._tcp.local";
-    private const uint DnsRequestPending = 997;
+    // DNS_REQUEST_PENDING from winerror.h. This DNS-specific status is not
+    // ERROR_IO_PENDING (997): confusing the two releases a live native query.
+    private const uint DnsRequestPending = 9506;
     private const uint ErrorSuccess = 0;
     private const uint ErrorInvalidParameter = 87;
     private const uint ErrorCancelled = 1223;
@@ -22,6 +24,10 @@ internal static partial class HueLocalDiscovery
 
     private static readonly DnsServiceBrowseCallback _browseCallback = OnBrowseResult;
     private static readonly DnsServiceResolveComplete _resolveCallback = OnResolveResult;
+    private static readonly ConcurrentDictionary<nint, object> _sessions = new();
+    private static long _nextSessionContext;
+
+    internal static bool IsRequestPending(uint status) => status == DnsRequestPending;
 
     public static async Task<IReadOnlyList<HueBridge>> DiscoverAsync(CancellationToken ct)
     {
@@ -144,17 +150,16 @@ internal static partial class HueLocalDiscovery
         return new HueBridge(bridgeId.Trim(), address, port == 0 ? 443 : port);
     }
 
-    private static void OnBrowseResult(uint status, nint context, nint recordPointer)
+    internal static void OnBrowseResult(uint status, nint context, nint recordPointer)
     {
-        var session = (BrowseSession?)GCHandle.FromIntPtr(context).Target;
-        if (session is null)
-        {
-            if (recordPointer != 0) DnsRecordListFree(recordPointer, DnsFreeRecordList);
-            return;
-        }
-
         try
         {
+            if (!_sessions.TryGetValue(context, out var target) ||
+                target is not BrowseSession session)
+            {
+                return;
+            }
+
             if (status == ErrorSuccess && recordPointer != 0)
             {
                 for (var current = recordPointer; current != 0;)
@@ -177,23 +182,31 @@ internal static partial class HueLocalDiscovery
                 session.Complete(status);
             }
         }
+        catch
+        {
+            // Exceptions must never escape a reverse P/Invoke callback. The
+            // owning discovery operation will time out or observe cancellation.
+        }
         finally
         {
-            if (recordPointer != 0) DnsRecordListFree(recordPointer, DnsFreeRecordList);
+            try
+            {
+                if (recordPointer != 0) DnsRecordListFree(recordPointer, DnsFreeRecordList);
+            }
+            catch { }
         }
     }
 
-    private static void OnResolveResult(uint status, nint context, nint instancePointer)
+    internal static void OnResolveResult(uint status, nint context, nint instancePointer)
     {
-        var session = (ResolveSession?)GCHandle.FromIntPtr(context).Target;
-        if (session is null)
-        {
-            if (instancePointer != 0) DnsServiceFreeInstance(instancePointer);
-            return;
-        }
-
         try
         {
+            if (!_sessions.TryGetValue(context, out var target) ||
+                target is not ResolveSession session)
+            {
+                return;
+            }
+
             HueBridge? bridge = null;
             if (status == ErrorSuccess && instancePointer != 0)
             {
@@ -203,12 +216,36 @@ internal static partial class HueLocalDiscovery
         }
         catch
         {
-            session.Complete(null);
+            if (_sessions.TryGetValue(context, out var target) &&
+                target is ResolveSession session)
+            {
+                session.Complete(null);
+            }
         }
         finally
         {
-            if (instancePointer != 0) DnsServiceFreeInstance(instancePointer);
+            try
+            {
+                if (instancePointer != 0) DnsServiceFreeInstance(instancePointer);
+            }
+            catch { }
         }
+    }
+
+    private static nint RegisterSession(object session)
+    {
+        while (true)
+        {
+            var context = (nint)Interlocked.Increment(ref _nextSessionContext);
+            if (context != 0 && _sessions.TryAdd(context, session)) return context;
+        }
+    }
+
+    private static void UnregisterSession(ref nint context)
+    {
+        if (context == 0) return;
+        _sessions.TryRemove(context, out _);
+        context = 0;
     }
 
     private sealed class BrowseSession : IDisposable
@@ -218,7 +255,7 @@ internal static partial class HueLocalDiscovery
         private readonly TaskCompletionSource<uint> _stopped =
             new(TaskCreationOptions.RunContinuationsAsynchronously);
 
-        private GCHandle _selfHandle;
+        private nint _context;
         private nint _queryName;
         private nint _request;
         private nint _cancel;
@@ -228,7 +265,7 @@ internal static partial class HueLocalDiscovery
 
         public void Start()
         {
-            _selfHandle = GCHandle.Alloc(this);
+            _context = RegisterSession(this);
             _queryName = Marshal.StringToHGlobalUni(HueServiceType);
             _request = Allocate(new DnsServiceBrowseRequest
             {
@@ -236,17 +273,28 @@ internal static partial class HueLocalDiscovery
                 InterfaceIndex = 0,
                 QueryName = _queryName,
                 BrowseCallback = Marshal.GetFunctionPointerForDelegate(_browseCallback),
-                QueryContext = GCHandle.ToIntPtr(_selfHandle),
+                QueryContext = _context,
             });
             _cancel = Allocate(default(DnsServiceCancel));
 
-            var status = DnsServiceBrowse(_request, _cancel);
-            if (status != DnsRequestPending)
-            {
-                Dispose();
-                throw new Win32Exception((int)status, "DNS-SD browse could not start.");
-            }
             _started = true;
+            uint status;
+            try
+            {
+                status = DnsServiceBrowse(_request, _cancel);
+            }
+            catch
+            {
+                _started = false;
+                throw;
+            }
+
+            if (IsRequestPending(status)) return;
+
+            _started = false;
+            throw new Win32Exception(
+                (int)status,
+                $"DNS-SD browse could not start (status={status}).");
         }
 
         public void Add(string serviceName) => _serviceNames.TryAdd(serviceName, 0);
@@ -273,7 +321,7 @@ internal static partial class HueLocalDiscovery
             Free(ref _request);
             Free(ref _cancel);
             Free(ref _queryName);
-            if (_selfHandle.IsAllocated) _selfHandle.Free();
+            UnregisterSession(ref _context);
         }
     }
 
@@ -282,7 +330,7 @@ internal static partial class HueLocalDiscovery
         private readonly TaskCompletionSource<HueBridge?> _completion =
             new(TaskCreationOptions.RunContinuationsAsynchronously);
 
-        private GCHandle _selfHandle;
+        private nint _context;
         private nint _queryName;
         private nint _request;
         private nint _cancel;
@@ -290,29 +338,52 @@ internal static partial class HueLocalDiscovery
 
         public ResolveSession(string serviceName)
         {
-            _selfHandle = GCHandle.Alloc(this);
-            _queryName = Marshal.StringToHGlobalUni(serviceName);
-            _request = Allocate(new DnsServiceResolveRequest
+            _context = RegisterSession(this);
+            try
             {
-                Version = 1,
-                InterfaceIndex = 0,
-                QueryName = _queryName,
-                ResolveCallback = Marshal.GetFunctionPointerForDelegate(_resolveCallback),
-                QueryContext = GCHandle.ToIntPtr(_selfHandle),
-            });
-            _cancel = Allocate(default(DnsServiceCancel));
+                _queryName = Marshal.StringToHGlobalUni(serviceName);
+                _request = Allocate(new DnsServiceResolveRequest
+                {
+                    Version = 1,
+                    InterfaceIndex = 0,
+                    QueryName = _queryName,
+                    ResolveCallback = Marshal.GetFunctionPointerForDelegate(_resolveCallback),
+                    QueryContext = _context,
+                });
+                _cancel = Allocate(default(DnsServiceCancel));
+            }
+            catch
+            {
+                Free(ref _request);
+                Free(ref _cancel);
+                Free(ref _queryName);
+                UnregisterSession(ref _context);
+                throw;
+            }
         }
 
         public Task<HueBridge?> Completion => _completion.Task;
 
         public void Start()
         {
-            var status = DnsServiceResolve(_request, _cancel);
-            if (status != DnsRequestPending)
-            {
-                throw new Win32Exception((int)status, "DNS-SD resolve could not start.");
-            }
             _pending = true;
+            uint status;
+            try
+            {
+                status = DnsServiceResolve(_request, _cancel);
+            }
+            catch
+            {
+                _pending = false;
+                throw;
+            }
+
+            if (IsRequestPending(status)) return;
+
+            _pending = false;
+            throw new Win32Exception(
+                (int)status,
+                $"DNS-SD resolve could not start (status={status}).");
         }
 
         public void Complete(HueBridge? bridge)
@@ -344,7 +415,7 @@ internal static partial class HueLocalDiscovery
             Free(ref _request);
             Free(ref _cancel);
             Free(ref _queryName);
-            if (_selfHandle.IsAllocated) _selfHandle.Free();
+            UnregisterSession(ref _context);
         }
     }
 
