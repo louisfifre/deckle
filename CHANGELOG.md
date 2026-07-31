@@ -52,6 +52,7 @@ doctrine). This file is generated from the Conventional-Commit history by
 - **playground:** Export correction evidence
 - **autocorrect:** Add Qwen adapter compatibility probe
 - **changelog:** Commit menu refreshes
+- **ambient:** Stream Hue Entertainment at 50 Hz
 
 ### Changed
 
