@@ -78,7 +78,7 @@
 | ModelsDirectory | setting | hand-authored | Paths.ModelsDirectory | TranscriptionSettings.ModelsDirectory = "" |  | WhisperPage.xaml:195–205, WhisperViewModel.cs:27, TranscriptionSettings.cs:16 |
 | Language | setting | hand-authored | Transcription.Language | EngineSettings.Language = "fr" |  | WhisperPage.xaml:104–130, WhisperViewModel.cs:45, TranscriptionSettings.cs:84 |
 | InitialPrompt | setting | hand-authored | Transcription.InitialPrompt | EngineSettings.InitialPrompt = "Bon. Je suis..." (hardcoded French prompt) |  | WhisperPage.xaml:132–152, WhisperViewModel.cs:48, TranscriptionSettings.cs:85–91 |
-| Model | setting | hand-authored | Transcription.Model | EngineSettings.Model = "ggml-large-v3.bin" |  | WhisperPage.xaml:175–207, WhisperViewModel.cs:39, TranscriptionSettings.cs:82, WhisperPage.xaml.cs:414–418 |
+| Model | setting | hand-authored | Transcription.Model | EngineSettings.Model = "ggml-base.bin" |  | WhisperPage.xaml:175–207, WhisperViewModel.cs:39, TranscriptionSettings.cs:82, WhisperPage.xaml.cs:414–418 |
 | UseGpu | setting | hand-authored | Transcription.UseGpu | EngineSettings.UseGpu = true |  | WhisperPage.xaml:154–166, WhisperViewModel.cs:42, TranscriptionSettings.cs:83 |
 | VadEnabled | setting | migrated | Streaming.SpeechTrim.Enabled | SpeechTrimSettings.Enabled = true |  | WhisperViewModel.Settings.cs:43, WhisperViewModel.cs:85, TranscriptionSettings.cs:58, EnergySegmenterSettings.cs:56 |
 | VadThreshold | setting | migrated | Streaming.SpeechTrim.Threshold | SpeechTrimSettings.Threshold = 0.5f | • | WhisperViewModel.Settings.cs:47–51, WhisperViewModel.cs:88, TranscriptionSettings.cs:63 |
@@ -185,7 +185,7 @@
 | Noise Gate Enabled | setting | hand-authored | PreprocessingSettings.GateEnabled | PreprocessingSettings.GateEnabled initializer (false) | • |  |
 | Compressor & Makeup Gain Settings | setting | hand-authored | PreprocessingSettings.CompressorEnabled, CompThresholdDbfs, CompRatio, CompKneeDb, CompAttackMs, CompReleaseMs, TargetRmsDbfs, MaxMakeupGainDb | PreprocessingSettings initializers (see .cs) | • |  |
 | Limiter Enabled | setting | hand-authored | PreprocessingSettings.LimiterEnabled | PreprocessingSettings.LimiterEnabled initializer (true) | • |  |
-| Whisper Model | setting | hand-authored | EngineSettings.Model | EngineSettings.Model initializer ("ggml-large-v3.bin") |  |  |
+| Whisper Model | setting | hand-authored | EngineSettings.Model | EngineSettings.Model initializer ("ggml-base.bin") |  |  |
 | Use GPU | setting | hand-authored | EngineSettings.UseGpu | EngineSettings.UseGpu initializer (true) |  |  |
 | Language | setting | hand-authored | EngineSettings.Language | EngineSettings.Language initializer ("fr") |  |  |
 | Initial Prompt | setting | hand-authored | EngineSettings.InitialPrompt | EngineSettings.InitialPrompt initializer (long French text) | • |  |
@@ -277,7 +277,7 @@
 | TranscriptionPipelineStrategy | setting | hand-authored | Choice (Monolithic/Streaming) | StreamingSettings initializer: Monolithic |  | Playground or WhisperPage |
 | EnergySegmenterThresholdDbfs | setting | hand-authored | Slider | EnergySegmenterSettings initializer: -45.0 | • | WhisperPage (Segmentation tuning) |
 | SpeechTrimEnabled | setting | hand-authored | Toggle | SpeechTrimSettings initializer: true |  | Settings > Whisper (Voice activity detection) |
-| WhisperModel | setting | hand-authored | Choice (model file selection) | EngineSettings initializer: ggml-large-v3.bin |  | Playground > Segmentation or WhisperPage |
+| WhisperModel | setting | hand-authored | Choice (model file selection) | EngineSettings initializer: ggml-base.bin |  | Playground > Segmentation or WhisperPage |
 | TranscriptionModelsDirectory | setting | hand-authored | Path | TranscriptionSettings initializer: empty (uses AppPaths.ModelsDirectory) |  | Not directly exposed |
 | LogAmbientCaptureActivity | setting | migrated | Toggle | LoggingSettings initializer: false |  | Settings > Diagnostics > Logging |
 | LogStreamingTranscriptionActivity | setting | migrated | Toggle | LoggingSettings initializer: false |  | Settings > Diagnostics > Logging |

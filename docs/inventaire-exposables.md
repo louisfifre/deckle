@@ -864,7 +864,7 @@ Total : **693 entrées** réparties sur **41 modules**.
 
 | Nom | Type | Valeur actuelle | Fichier:ligne | Juin | Doute |
 |---|---|---|---|---|---|
-| DefaultModelFileName | tuning-constant | `"ggml-base.bin"` | src/Deckle.Transcription.Whisper/Setup/SpeechModels.cs:29 | non | June records the Whisper model default as EngineSettings.Model = ggml-large-v3.bin (Deckle.Transcription). Two defaults coexist: this one is the no-override install target, base on purpose so the first-run path is not a 3 GB download. |
+| DefaultModelFileName | tuning-constant | `"ggml-base.bin"` | src/Deckle.Transcription.Whisper/Setup/SpeechModels.cs:29 | non | Two defaults coexist and agree: this one is the no-override install target, EngineSettings.Model = ggml-base.bin (Deckle.Transcription) is the persisted setting. Base on purpose so the first-run path is not a 3 GB download. |
 
 ## Deckle.Travel
 
