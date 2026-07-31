@@ -21,6 +21,14 @@ Every completed workstream advances the version. Before closing it, the agent pr
 
 The commit ships under the maintainer's sole identity — no `Co-Authored-By: Claude` trailer, no `🤖 Generated with Claude Code` line.
 
+## Bug notes and regression tests
+
+Once a confirmed bug's cause is established, invoke `deckle-bug-note` before closing the workstream. Keep the note beside the test project that owns the behavior and follow its local naming and format. Record established facts: trigger, observed symptom, cause, violated invariant, and recurrence cue. Remove secrets and personal data; mark uncertainty explicitly.
+
+When the workstream fixes the bug, add a `[Trait("Category", "regression")]` test if the failure can be reproduced automatically through a natural seam. Recreate the failing conditions and assert the public behavioral contract, not implementation details. Name the test for the behavior that must remain true. The encoded condition must distinguish the fixed contract from the known faulty behavior.
+
+Keep the test in the owning `*.Tests` project. If the note contains replayable input, store it as a test resource and make the regression test consume it; otherwise identify the regression test in the note. Declare the resource in the test project when the SDK does not include it in the required form. Validate by compiling the owning test project under the repository's x64 and no-build-server rules.
+
 ## Name the hat
 
 Before any non-trivial code, name the posture(s) framing the answer — engineer (architecture, patterns, threading, perf, tests), WinUI 3 expert (XAML, controls, backdrop, theme resources, DWM), designer (layout, hierarchy, rendering), product manager (the what, the order, for whom). A request may need several at once.
