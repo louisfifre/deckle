@@ -123,6 +123,7 @@ doctrine). This file is generated from the Conventional-Commit history by
 - **playground:** Preserve correction card readability
 - **playground:** Initialize terminal caret affinity
 - **launcher:** Preserve native output below fixed chrome
+- **launcher:** Stabilize live action feedback
 - **rewrite:** Correct Ollama endpoint hint
 - **ambient:** Seed the default mode preset
 - **ambient:** Stabilize cadence telemetry
