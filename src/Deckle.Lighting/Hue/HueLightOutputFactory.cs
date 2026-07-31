@@ -1,3 +1,5 @@
+using System.Text.Json;
+
 namespace Deckle.Lighting;
 
 public static class HueLightOutputFactory
@@ -129,12 +131,15 @@ public static class HueLightOutputFactory
         {
             throw;
         }
-        catch (Exception ex)
+        catch (Exception ex) when (
+            ex is JsonException or
+            HttpRequestException { StatusCode: not null })
         {
             LogEntertainmentFallback("catalog_failed", ex);
-            // Catalog resolution is best-effort while Entertainment is
-            // being proven across bridge firmware versions. REST remains
-            // the compatibility path when v2 catalog calls fail.
+            // A bridge-side rejection or an unsupported catalog shape means
+            // Entertainment is unavailable while REST can still work. A
+            // transport failure has no viable REST fallback because both
+            // paths share the same endpoint, so it must remain fatal.
             return null;
         }
     }
