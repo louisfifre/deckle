@@ -45,12 +45,17 @@ function ConvertFrom-DeckleTerminalOutput {
 function Get-DeckleActionLogColor {
     param(
         [Parameter(Mandatory)][string]$Level,
+        [Parameter(Mandatory)][string]$Message,
         [AllowNull()]$InputObject
     )
 
     if ($InputObject -is [System.Management.Automation.InformationRecord] -and
         $InputObject.MessageData -is [System.Management.Automation.HostInformationMessage]) {
         return [ConsoleColor]$InputObject.MessageData.ForegroundColor
+    }
+
+    if ($Message -match '^\s*Deckle\.\S+\s+->\s+\S.*$') {
+        return [ConsoleColor]::Green
     }
 
     $color = switch ($Level) {
@@ -78,7 +83,7 @@ function ConvertTo-DeckleActionLogRecords {
             Level     = $level
             Source    = $Source
             Message   = $message.TrimEnd()
-            ForegroundColor = Get-DeckleActionLogColor -Level $level -InputObject $InputObject
+            ForegroundColor = Get-DeckleActionLogColor -Level $level -Message $message -InputObject $InputObject
         }
     }
 }

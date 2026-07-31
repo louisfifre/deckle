@@ -34,6 +34,12 @@ $structured = @(ConvertTo-DeckleActionLogRecords -InputObject $hostWarning -Sour
 Assert-Equal 'Warning' $structured[0].Level 'host color provides a structured internal log level'
 Assert-Equal ([ConsoleColor]::Yellow) $structured[0].ForegroundColor 'host color is retained for menu rendering'
 
+$msbuildSuccess = @(ConvertTo-DeckleActionLogRecords -InputObject '  Deckle.App -> D:\projects\ai\deckle\artifacts\bin\Deckle.App.dll' -Source Build)
+Assert-Equal '  Deckle.App -> D:\projects\ai\deckle\artifacts\bin\Deckle.App.dll' $msbuildSuccess[0].Message 'MSBuild success output remains raw'
+Assert-Equal ([ConsoleColor]::Green) $msbuildSuccess[0].ForegroundColor 'compiled Deckle module is shown as successful'
+$nonDeckleBuild = @(ConvertTo-DeckleActionLogRecords -InputObject '  Microsoft.WindowsAppSDK -> D:\packages\Microsoft.WindowsAppSDK.dll' -Source Build)
+Assert-Equal ([ConsoleColor]::Gray) $nonDeckleBuild[0].ForegroundColor 'unrelated native output keeps the neutral fallback'
+
 $escape = [char]27
 $bell = [char]7
 $terminalOutput = "${escape}[31mfirst${escape}[0m`rsecond${escape}]9;4;1;50${bell}`b"
