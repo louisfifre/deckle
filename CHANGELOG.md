@@ -127,6 +127,7 @@ doctrine). This file is generated from the Conventional-Commit history by
 - **rewrite:** Correct Ollama endpoint hint
 - **ambient:** Seed the default mode preset
 - **ambient:** Stabilize cadence telemetry
+- **precision-scroll:** Convert wheel input globally
 
 ## [0.14.1](https://github.com/louisfifre/deckle/compare/v0.14.0...v0.14.1) — 2026-07-20
 
