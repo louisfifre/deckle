@@ -23,10 +23,10 @@ Assert-Equal 'main  ·  deckle' $rows[3].Cells[0].Label 'main worktree keeps bra
 Assert-Equal 'fix/a-branch-name-that-needs-truncation  ·  menu-polish' $rows[4].Cells[0].Label 'branch label reaches layout intact before column truncation'
 Assert-Equal $true $rows[4].FullWidth 'worktree entries request both grid columns'
 
-$worktreeGrid = New-GridPlan -Rows $rows -CategoryWidth 0
+$worktreeGrid = New-GridPlan -Rows $rows
 Assert-Equal 1 $worktreeGrid.SelectableRows[0].CellCount 'Back occupies one grid cell'
 Assert-Equal 2 $worktreeGrid.ColumnCount 'worktrees preserve the shared second column without making it navigable'
-Assert-Equal 0 $worktreeGrid.PrefixWidth 'worktrees do not reserve the unrelated category track'
+Assert-Equal ($script:MenuCategoryWidth + $script:MenuGridGap) $worktreeGrid.PrefixWidth 'worktrees preserve the section track'
 Assert-Equal $true $worktreeGrid.Body[3].FullWidth 'the grid preserves the full-width worktree row contract'
 
 $script:RenderedSegments = [System.Collections.Generic.List[string]]::new()
@@ -44,11 +44,12 @@ function Write-MenuContentSegment {
     $Written.Value += $segment.Length
 }
 function Write-MenuLineRemainder { param([int]$InnerWidth, [int]$Written) }
-$columnWidths = Get-GridColumnWidths -ContentWidth 40 -PrefixWidth 0 -ColumnCount $worktreeGrid.ColumnCount
+$columnWidths = Get-GridColumnWidths -ContentWidth 40 -PrefixWidth $worktreeGrid.PrefixWidth -ColumnCount $worktreeGrid.ColumnCount
 Write-GridLine `
-    -Top 0 -Index 3 -Body $worktreeGrid.Body -ColW $columnWidths -PrefixW 0 `
+    -Top 0 -Index 3 -Body $worktreeGrid.Body -ColW $columnWidths -PrefixW $worktreeGrid.PrefixWidth `
     -InnerWidth 40 -ContentWidth 40 -ActiveBodyIndex 3 -ActiveCol 0 -TrailingColumn 2
-Assert-Equal 38 $script:RenderedSegments[1].Length 'a worktree label receives the width of both columns after the row inset'
+Assert-Equal $worktreeGrid.PrefixWidth $script:RenderedSegments[1].Length 'the section track remains reserved before worktree labels'
+Assert-Equal ($columnWidths[0] + $columnWidths[1]) $script:RenderedSegments[2].Length 'a worktree label receives both action columns'
 
 $confirmationRows = @(New-YesNoGridRows -ConfirmLabel 'Delete outputs' -CancelLabel 'Keep files' -ContextLines @('Deletes generated files.') -Destructive)
 Assert-Equal 'Before you continue' $confirmationRows[0].Title 'confirmation keeps its consequence in the same surface'

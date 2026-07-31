@@ -134,7 +134,6 @@ function Select-Worktree {
         -StartSel 1 `
         -ClearScreen:$ClearScreen `
         -BannerStyle $BannerStyle `
-        -CategoryWidth 0 `
         -Interaction Select
     if ($null -eq $choice -or $choice -eq '__back__') {
         throw [System.OperationCanceledException]::new('Worktree selection was cancelled.')
