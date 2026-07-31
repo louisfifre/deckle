@@ -15,6 +15,11 @@ doctrine). This file is generated from the Conventional-Commit history by
 
 - **app:** Transcribe selected audio files in sequence
 
+### Fixed
+
+- **scripts:** Unify launcher action output
+- **scripts:** Widen worktree choices
+
 ## [0.30.2](https://github.com/louisfifre/deckle/compare/v0.14.1...v0.30.2) — 2026-07-31
 
 ### Added
