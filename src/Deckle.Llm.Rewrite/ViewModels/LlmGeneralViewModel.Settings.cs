@@ -40,7 +40,7 @@ public partial class LlmGeneralViewModel
         Setting.Text("LlmEndpointExpander",
             () => OllamaEndpoint,
             value => OllamaEndpoint = value,
-            new TextArgs(Placeholder: "http://localhost:11434/api/chat"),
+            new TextArgs(Placeholder: "http://localhost:11434/api/generate"),
             glyph: Glyphs.Endpoint,
             // Mask-not-grey: the endpoint hides with the rest of the page when
             // rewriting is off (Louis's decision), rather than greying.
