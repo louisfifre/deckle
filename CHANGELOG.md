@@ -23,6 +23,10 @@ doctrine). This file is generated from the Conventional-Commit history by
 - **scripts:** Preserve worktree section track
 - **transcription:** Serialize reliable file transcription
 - **scripts:** Allow empty running transcripts
+- **lighting:** Contain late DNS-SD callbacks
+- **lighting:** Keep transport failures fatal
+- **ambient:** Recover moved Hue bridge endpoints
+- **ambient:** Keep pairing status in expander footer
 
 ## [0.30.2](https://github.com/louisfifre/deckle/compare/v0.14.1...v0.30.2) — 2026-07-31
 
