@@ -64,20 +64,18 @@ public sealed class AmbientSettings
 
     // ── Mode selection (J6 scaffolding) ────────────────────────────
     //
-    // J3 step 2 ships only the Game / Ambilight behaviour — full
-    // saturation, direct mapping of the analysed average. J6 adds
-    // Realistic (low saturation, diegetic-light heuristic). The enum
-    // and the property are pre-wired so J6 lands as a behavioural
-    // patch with no settings migration ; Game stays the default until
-    // Louis tunes Realistic.
+    // The enum and the property are pre-wired so a new behaviour lands
+    // as a patch with no settings migration. Ambient is the default —
+    // the smooth, low-saturation restitution of the scene's light, the
+    // one that reads as room lighting rather than as an effect.
 
-    /// <summary>Active mode preset. Defaults to <see cref="AmbientMode.Game"/>.
+    /// <summary>Active mode preset. Defaults to <see cref="AmbientMode.Ambient"/>.
     /// Switching the mode (via the Playground or the Settings page)
     /// invokes <see cref="AmbientSettingsService.ApplyPreset(AmbientMode)"/>
     /// which copies the preset's tuning snapshot onto the other knobs.
     /// Touching any tuning slider in the Playground silently switches
     /// the mode to <see cref="AmbientMode.Custom"/>.</summary>
-    public AmbientMode Mode { get; set; } = AmbientMode.Game;
+    public AmbientMode Mode { get; set; } = AmbientMode.Ambient;
 
     // ── Multi-light zones (J4) ─────────────────────────────────────
     //

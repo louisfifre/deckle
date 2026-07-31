@@ -42,12 +42,20 @@ public sealed class AmbientSettingsService
             AppPaths.UserDataRoot, "modules", "ambient", "settings.json");
         Directory.CreateDirectory(System.IO.Path.GetDirectoryName(path)!);
 
+        // Presets are otherwise applied only on a user gesture, so a fresh
+        // install would display the default mode's label while living on the
+        // POCO initialisers. Seeded once here so AmbientModePresets stays the
+        // single source of the per-mode values.
+        bool freshStore = !File.Exists(path);
+
         _store = new JsonSettingsStore<AmbientSettings>(
             path:        path,
             mutexName:   $"{AppPaths.AppFolderName}-Settings-Ambient-Save",
             jsonOptions: _jsonOptions,
             logWarning:  msg => DeckleAmbientSource.Log.SettingsLoadWarning($"[ambient] {msg}"),
             logError:    msg => DeckleAmbientSource.Log.SettingsLoadError($"[ambient] {msg}"));
+
+        if (freshStore) ApplyPreset(Current.Mode);
     }
 
     public void Save()                       => _store.Save();
