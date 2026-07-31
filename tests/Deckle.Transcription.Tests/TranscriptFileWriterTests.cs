@@ -52,31 +52,4 @@ public class TranscriptFileWriterTests
         Assert.Equal(InDir("meeting (2).txt"), target);
     }
 
-    [Fact]
-    public void FreshSettingsCarryTheDesktopSentinel()
-    {
-        // The empty string is the load-bearing sentinel: the card's reset rewrites
-        // it (never a resolved Desktop literal) and the resolver below expands it
-        // at use time. A changed default would silently repoint every fresh install.
-        Assert.Equal(string.Empty, new TranscriptionSettings().FileTranscriptionOutputDirectory);
-    }
-
-    [Fact]
-    public void BlankOutputDirectoryResolvesToDesktop()
-    {
-        string desktop = Environment.GetFolderPath(Environment.SpecialFolder.DesktopDirectory);
-
-        Assert.Equal(desktop, TranscriptionSettingsService.ResolveFileTranscriptionOutputDirectory(""));
-        Assert.Equal(desktop, TranscriptionSettingsService.ResolveFileTranscriptionOutputDirectory("   "));
-    }
-
-    [Fact]
-    public void ConfiguredOutputDirectoryIsReturnedVerbatim()
-    {
-        string configured = @"D:\Transcripts";
-
-        string resolved = TranscriptionSettingsService.ResolveFileTranscriptionOutputDirectory(configured);
-
-        Assert.Equal(configured, resolved);
-    }
 }

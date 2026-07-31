@@ -59,13 +59,6 @@ public static class SettingsSearch
             Keywords = ["clipboard", "insert"],
         },
 
-        // "File transcription" — where a transcribed file's .txt lands (composed Path).
-        new SettingSearchEntry
-        {
-            LabelKey = "WhisperFileTranscriptionDirCard",
-            Keywords = ["output", "directory", "save"],
-        },
-
         // Language selector (bespoke — editable ComboBox, Tag'd in the XAML).
         new SettingSearchEntry
         {

@@ -15,15 +15,6 @@ public partial class WhisperViewModel
         PushToSettings();
     }
 
-    [ObservableProperty]
-    public partial string FileTranscriptionOutputDirectory { get; set; }
-
-    partial void OnFileTranscriptionOutputDirectoryChanged(string value)
-    {
-        if (_isSyncing) return;
-        PushToSettings();
-    }
-
     // ── Transcription ────────────────────────────────────────────────────────
 
     [ObservableProperty]

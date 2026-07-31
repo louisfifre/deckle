@@ -17,7 +17,18 @@ public sealed partial class HudWindow : Window
 {
     // ── Public API (thread-safe) ──────────────────────────────────────────────
 
-    public void ShowPreparing()        => EnqueueUI(() => SetState(HudState.Charging,    reason: "show_preparing"));
+    private bool _fileTranscriptionClockActive;
+
+    public void ShowPreparing() => EnqueueUI(() =>
+    {
+        _fileTranscriptionClockActive = false;
+        SetState(HudState.Charging, reason: "show_preparing");
+    });
+    public void ShowFilePreparing() => EnqueueUI(() =>
+    {
+        _fileTranscriptionClockActive = true;
+        SetState(HudState.Charging, reason: "show_file_preparing");
+    });
     public void ShowRecording()        => EnqueueUI(() => SetState(HudState.Recording,   reason: "show_recording"));
     public void SwitchToTranscribing() => EnqueueUI(() => SetState(HudState.Transcribing, reason: "switch_transcribing"));
     public void SwitchToRewriting()    => EnqueueUI(() => SetState(HudState.Rewriting,    reason: "switch_rewriting"));
@@ -197,9 +208,23 @@ public sealed partial class HudWindow : Window
         // disabled overlay never arms the vsync tick on a hidden control.
         switch (next)
         {
-            case HudState.Charging:     Chrono.ResetClock(); break;
-            case HudState.Recording:    Chrono.StartClock(); break;
-            case HudState.Transcribing: Chrono.StopClock();  break;
+            case HudState.Charging:
+                if (_fileTranscriptionClockActive) Chrono.StartClock();
+                else Chrono.ResetClock();
+                break;
+            case HudState.Recording:
+                _fileTranscriptionClockActive = false;
+                Chrono.StartClock();
+                break;
+            case HudState.Transcribing:
+                if (!_fileTranscriptionClockActive) Chrono.StopClock();
+                break;
+            case HudState.Rewriting:
+            case HudState.Message:
+            case HudState.Hidden:
+                Chrono.StopClock();
+                _fileTranscriptionClockActive = false;
+                break;
         }
 
         switch (next)

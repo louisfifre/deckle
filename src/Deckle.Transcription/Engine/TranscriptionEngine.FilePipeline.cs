@@ -9,19 +9,26 @@ namespace Deckle.Transcription;
 
 public sealed partial class TranscriptionEngine
 {
+    // File audio is independent of the user's dictation domain. An empty
+    // PrimingText explicitly suppresses the configured stylistic prompt for
+    // this call; otherwise unrelated prompt vocabulary can become the output
+    // on quiet or out-of-domain recordings.
+    private static readonly TranscriptionContext UnprimedFileContext =
+        new(PrimingText: string.Empty);
+
     // ── FilePipeline partial — the file-transcription capture-less path ─────────
     //
     // Sibling of WorkerRun / ProduceMonolithicAsync (StateMachine + Monolithic
     // partials), for the tray-driven "transcribe a file" feature. It reuses every
     // downstream piece dictation uses — the prime, the backend, the shared
     // FinalizeTranscription — but replaces the microphone producer with a
-    // Media-Foundation decode of the chosen file. There is no capture, no chrono,
+    // Media-Foundation decode of the chosen file. There is no capture,
     // and (V1) the run is always MONOLITHIC regardless of the user's streaming
     // strategy: a file is transcribed in one backend call, not segmented live.
     //
-    // Entry is RequestFileTranscription (StateMachine partial), which CAS'd Idle →
-    // Starting and spawned FileWorkerRun. The worker owns the Starting →
-    // Transcribing → Idle edge from here.
+    // Entry is the engine-owned file queue (StateMachine partial). Its sole
+    // consumer CAS'd Idle → Starting and spawned FileWorkerRun. The worker owns
+    // the Starting → Transcribing → Idle edge from here.
 
     // Worker thread body for a file run. Mirrors WorkerRun's shape — create the
     // per-run cancellation tokens, kick the prime off concurrently, run the
@@ -116,7 +123,7 @@ public sealed partial class TranscriptionEngine
         ReadOnlyMemory<float> audio = decoded.Pcm;
 
         // CAS Starting → Transcribing DIRECTLY — a file run has no Recording or
-        // Stopping phase (no capture, no chrono). Losing this CAS means Dispose
+        // Stopping phase (no capture). Losing this CAS means Dispose
         // won; skip the backend call, same as the monolithic path's lost-CAS
         // branch.
         if (Interlocked.CompareExchange(
@@ -164,40 +171,23 @@ public sealed partial class TranscriptionEngine
         // the captured mic signal — it auto-adjusts gain against the user's own
         // recording envelope. A decoded file has no such envelope, so it goes to
         // the backend untouched; RawAudio and BackendAudio are the same buffer.
-        TranscriptionResult result;
-        try
-        {
-            result = await _backend.TranscribeAsync(
-                audio,
-                seg => NewSegment?.Invoke(seg),
-                producerCt).ConfigureAwait(false);
-        }
-        catch (Exception ex)
-        {
-            // An OCE here means the pipeline token (Dispose) fired during
-            // whisper_full(). Trace the cancellation before the legacy behaviour
-            // reclassifies it as TranscribeFailed — mirrors the monolithic path.
-            if (ex is OperationCanceledException)
-            {
-                DeckleCancellationSource.Log.OperationCancelled(
-                    "whisp-transcribe", "upstream", -1);
-            }
-            DeckleWhispSource.Log.TranscribeFailed();
-            DeckleWhispSource.Log.TranscribeFailedDetail(-1);
-            EmitUserFeedback(FB_ERROR,
-                Loc.Get("Engine_TranscriptionFailed_Title"),
-                Loc.Get("Engine_TranscriptionFailed_Body"),
-                FB_REPLACEMENT);
-            RaiseStatus(Loc.Get("Status_TranscriptionFailed"));
-            RaiseFinished(TranscriptionOutcome.None);
+        TranscriptionResult? consumed = await ConsumeMonolithicAudioAsync(
+            audio,
+            producerCt,
+            UnprimedFileContext).ConfigureAwait(false);
+        if (consumed is null)
             return null;
-        }
 
-        // A non-zero result paired with an abort means the backend bailed on our
-        // signal — segments produced before the abort are still usable. A non-zero
-        // result without an abort is a real failure.
-        if (result.ResultCode != 0 && !result.Aborted)
+        TranscriptionResult result = consumed;
+
+        // A file transcript is a durable artefact, so partial output is never
+        // delivered. In particular, Whisper's repetition guard marks Aborted
+        // after detecting a runaway loop; saving those segments produced the
+        // identical prompt-derived files observed on 2026-07-31.
+        if (!IsFileTranscriptionResultUsable(result))
         {
+            DeckleWhispSource.Log.TranscribeFailed();
+            DeckleWhispSource.Log.TranscribeFailedDetail(result.ResultCode);
             EmitUserFeedback(FB_ERROR,
                 Loc.Get("Engine_TranscriptionFailed_Title"),
                 Loc.Get("Engine_TranscriptionFailed_Body"),
@@ -231,6 +221,9 @@ public sealed partial class TranscriptionEngine
             InitMs:            result.InitDurationMs,
             NSegments:         nSeg);
     }
+
+    internal static bool IsFileTranscriptionResultUsable(TranscriptionResult result) =>
+        !result.Aborted && result.ResultCode == 0;
 
     // AudioFileDecodeStatus → (title, body) for the decode-failure feedback. Every
     // non-Decoded status maps to the same title and its own body; ReadError is the

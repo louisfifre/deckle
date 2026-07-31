@@ -23,4 +23,61 @@ public sealed partial class TranscriptionEngine
     //     and the LocalizeMicError localizer.
     //   - TranscriptionEngine.Telemetry.cs — the post-recording calibration
     //     and telemetry envelope (TryAutoCalibrate, EmitPreprocessedTelemetry).
+
+    // Shared monolithic consumer. Dictation and file transcription have
+    // different producers (microphone capture vs. file decode), but both hand
+    // the resulting 16-kHz mono PCM to this exact backend boundary. Source-
+    // specific policy stays outside: dictation may keep an aborted partial
+    // result, while a durable file transcript rejects it before delivery.
+    private async Task<TranscriptionResult?> ConsumeMonolithicAudioAsync(
+        ReadOnlyMemory<float> audio,
+        CancellationToken cancellationToken,
+        TranscriptionContext? context = null)
+    {
+        TranscriptionResult result;
+        try
+        {
+            result = await _backend.TranscribeAsync(
+                audio,
+                segment => NewSegment?.Invoke(segment),
+                cancellationToken,
+                context).ConfigureAwait(false);
+        }
+        catch (Exception ex)
+        {
+            if (ex is OperationCanceledException)
+            {
+                DeckleCancellationSource.Log.OperationCancelled(
+                    "whisp-transcribe", "upstream", -1);
+            }
+
+            DeckleWhispSource.Log.TranscribeFailed();
+            DeckleWhispSource.Log.TranscribeFailedDetail(-1);
+            EmitUserFeedback(FB_ERROR,
+                Loc.Get("Engine_TranscriptionFailed_Title"),
+                Loc.Get("Engine_TranscriptionFailed_Body"),
+                FB_REPLACEMENT);
+            RaiseStatus(Loc.Get("Status_TranscriptionFailed"));
+            RaiseFinished(TranscriptionOutcome.None);
+            return null;
+        }
+
+        // Preserve the live pipeline's established partial-result policy. An
+        // aborted result can still contain usable segments; the file producer
+        // applies its stricter durable-output gate after this shared consumer.
+        if (result.ResultCode != 0 && !result.Aborted)
+        {
+            DeckleWhispSource.Log.TranscribeFailed();
+            DeckleWhispSource.Log.TranscribeFailedDetail(result.ResultCode);
+            EmitUserFeedback(FB_ERROR,
+                Loc.Get("Engine_TranscriptionFailed_Title"),
+                Loc.Get("Engine_TranscriptionFailed_Body"),
+                FB_REPLACEMENT);
+            RaiseStatus(Loc.Get("Status_TranscriptionFailed"));
+            RaiseFinished(TranscriptionOutcome.None);
+            return null;
+        }
+
+        return result;
+    }
 }

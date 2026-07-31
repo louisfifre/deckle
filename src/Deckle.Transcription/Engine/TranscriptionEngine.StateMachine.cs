@@ -97,19 +97,35 @@ public sealed partial class TranscriptionEngine
 
     // ── File-transcription entry point ──────────────────────────────────────
     //
-    // A tray-driven request to transcribe one audio file. Shares the whole
-    // downstream machinery with dictation — the same CAS guard, the same prime,
-    // the same backend, the same HUD states, the same shared finalize — but
-    // enters WITHOUT a microphone: no probe, no capture, no chrono. The decode
-    // (Media Foundation → 16 kHz mono float) and the single backend call both run
-    // on the file worker; the shared finalize takes the file tail (no rewrite, no
-    // paste, no corpus — write the transcript to disk + clipboard).
-    //
-    // Returns Started when the file worker was spawned, IgnoredBusy when a
-    // dictation or another file run holds the engine (the busy feedback is emitted
-    // HERE — the contract has the App do nothing on this result), IgnoredDisposed
-    // during shutdown. Never Stopped: a file run is a one-shot, never a toggle.
-    public ToggleResult RequestFileTranscription(string audioFilePath)
+    // Enqueues one or more tray-picked audio files. The picker is the producer;
+    // the engine consumes this FIFO one item at a time whenever it is Idle.
+    // A live dictation temporarily holds the consumer without rejecting or
+    // dropping queued files.
+    public int EnqueueFileTranscriptions(IEnumerable<string> audioFilePaths)
+    {
+        if (_disposed) return 0;
+
+        int added = _fileTranscriptionQueue.Enqueue(audioFilePaths);
+        if (added > 0)
+            TryConsumeNextFileTranscription();
+
+        return added;
+    }
+
+    private void TryConsumeNextFileTranscription()
+    {
+        if (_disposed || IsBusy)
+            return;
+
+        _fileTranscriptionQueue.TryStartNext(
+            TryStartFileTranscription);
+    }
+
+    // Consumes one queued audio file. It shares the live monolithic consumer,
+    // prime, HUD states and finalization, but replaces microphone capture with a
+    // Media Foundation decode. Busy means "leave it at the FIFO head", never
+    // reject it or create a second orchestration path.
+    private ToggleResult TryStartFileTranscription(string audioFilePath)
     {
         if (_disposed) return ToggleResult.IgnoredDisposed;
 
@@ -126,15 +142,6 @@ public sealed partial class TranscriptionEngine
             var current = (PipelineState)Volatile.Read(ref _state);
             if (current == PipelineState.Disposed) return ToggleResult.IgnoredDisposed;
 
-            // Engine busy. Unlike the dictation path (silent, telemetry-only —
-            // the user is mid-recording and knows it), the file entry is a direct
-            // tray action with no HUD showing, so the refusal must be visible: the
-            // engine owns the busy feedback here (Overlay, non-blocking).
-            DeckleWhispSource.Log.FileTranscriptionIgnored(current.ToString());
-            EmitUserFeedback(FB_WARN,
-                Loc.Get("FileTranscription_Busy_Title"),
-                Loc.Get("FileTranscription_Busy_Body"),
-                FB_OVERLAY);
             return ToggleResult.IgnoredBusy;
         }
 
@@ -169,7 +176,7 @@ public sealed partial class TranscriptionEngine
 
             // Spawn the file worker while the state is still Starting: it owns the
             // Starting → Transcribing → Idle edge from here (no Recording — there
-            // is no capture and no chrono, so that phase is skipped entirely). Same
+            // is no capture, so that phase is skipped entirely). Same
             // background/priority flags as the mic worker; the distinct name marks
             // it in the thread list and the logs.
             _worker = new Thread(FileWorkerRun)
@@ -178,6 +185,12 @@ public sealed partial class TranscriptionEngine
                 Name = "TranscriptionEngine.FileWorker",
                 Priority = ThreadPriority.AboveNormal,
             };
+            // Queue the HUD's file-specific Charging state before the worker can
+            // publish Transcribing. Both callbacks marshal to the UI queue; this
+            // ordering prevents a very short decode from moving the HUD backwards
+            // from Transcribing to Charging and guarantees the chrono starts at
+            // the beginning of every consumed item.
+            FileTranscriptionStarted?.Invoke();
             _worker.Start();
 
             DeckleWhispSource.Log.FileTranscriptionStarted();
@@ -519,6 +532,7 @@ public sealed partial class TranscriptionEngine
         if (reachedIdle)
         {
             RaiseStatus(Loc.Get("Status_Ready"));
+            TryConsumeNextFileTranscription();
         }
     }
 

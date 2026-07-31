@@ -107,16 +107,4 @@ public sealed class TranscriptionSettingsService
         return AppPaths.ModelsDirectory;
     }
 
-    // Resolves the destination folder for file-transcription output. The
-    // configured value wins; empty/whitespace is the sentinel for the user's
-    // Desktop, resolved here at use time. Static and pure — the counterpart to
-    // the instance ResolveModelsDirectory above, shaped this way so the engine
-    // can resolve a host-provided value without reaching for the singleton.
-    public static string ResolveFileTranscriptionOutputDirectory(string configured)
-    {
-        if (!string.IsNullOrWhiteSpace(configured))
-            return configured;
-
-        return Environment.GetFolderPath(Environment.SpecialFolder.DesktopDirectory);
-    }
 }

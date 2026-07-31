@@ -86,6 +86,7 @@ public partial class App
         // the engine was never composed, so there is nothing to wire.
         if (_engine is not null)
         {
+            _engine.FileTranscriptionStarted += () => _hudWindow.ShowFilePreparing();
             _engine.StatusChanged += status =>
             {
                 // Beacon app icon in LogWindow + PlaygroundWindow: red =

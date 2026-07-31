@@ -130,50 +130,14 @@ public sealed partial class TranscriptionEngine
             EmitPreprocessedTelemetry(backendAudio);
         }
 
-        // Single backend call. Segments stream through the sink to NewSegment so
-        // external subscribers (HUD, LogWindow) keep their contract.
-        TranscriptionResult result;
-        try
-        {
-            result = await _backend.TranscribeAsync(
-                backendAudio,
-                seg => NewSegment?.Invoke(seg),
-                producerCt).ConfigureAwait(false);
-        }
-        catch (Exception ex)
-        {
-            // An OCE here means the pipeline token (Stop, hotkey, shutdown) fired
-            // during whisper_full(). Trace the cancellation before the legacy
-            // behaviour reclassifies it as TranscribeFailed.
-            if (ex is OperationCanceledException)
-            {
-                DeckleCancellationSource.Log.OperationCancelled(
-                    "whisp-transcribe", "upstream", -1);
-            }
-            DeckleWhispSource.Log.TranscribeFailed();
-            DeckleWhispSource.Log.TranscribeFailedDetail(-1);
-            EmitUserFeedback(FB_ERROR,
-                Loc.Get("Engine_TranscriptionFailed_Title"),
-                Loc.Get("Engine_TranscriptionFailed_Body"),
-                FB_REPLACEMENT);
-            RaiseStatus(Loc.Get("Status_TranscriptionFailed"));
-            RaiseFinished(TranscriptionOutcome.None);
+        // Same monolithic consumer as file transcription. Only the producer
+        // differs: this PCM came from the microphone capture above.
+        TranscriptionResult? consumed =
+            await ConsumeMonolithicAudioAsync(backendAudio, producerCt).ConfigureAwait(false);
+        if (consumed is null)
             return null;
-        }
 
-        // A non-zero result code paired with an abort means the backend bailed on
-        // our signal — segments produced before the abort are still usable, so
-        // fall through. A non-zero result without an abort is a real failure.
-        if (result.ResultCode != 0 && !result.Aborted)
-        {
-            EmitUserFeedback(FB_ERROR,
-                Loc.Get("Engine_TranscriptionFailed_Title"),
-                Loc.Get("Engine_TranscriptionFailed_Body"),
-                FB_REPLACEMENT);
-            RaiseStatus(Loc.Get("Status_TranscriptionFailed"));
-            RaiseFinished(TranscriptionOutcome.None);
-            return null;
-        }
+        TranscriptionResult result = consumed;
 
         string fullText = result.FullText;
         int nSeg = result.Segments.Count;
