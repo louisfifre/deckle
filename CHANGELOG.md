@@ -54,6 +54,7 @@ doctrine). This file is generated from the Conventional-Commit history by
 - **changelog:** Commit menu refreshes
 - **scripts:** Add homegrown exposables sweep script
 - **ambient:** Stream Hue Entertainment at 50 Hz
+- **tray-menu:** Add quick feature toggles
 
 ### Changed
 

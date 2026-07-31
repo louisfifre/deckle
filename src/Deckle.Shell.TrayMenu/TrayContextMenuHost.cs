@@ -66,7 +66,9 @@ public sealed partial class TrayContextMenuHost : IDisposable
     private Frame? _frame;
     private MenuFlyout? _flyout;
     private MenuFlyoutItem? _ambientItem;
+    private MenuFlyoutItem? _autocorrectItem;
     private MenuFlyoutItem? _taskbarCoverItem;
+    private MenuFlyoutItem? _precisionScrollItem;
     private MenuFlyoutItem? _transcribeFileItem;
     private IntPtr _hwnd;
     private AppWindow? _appWindow;
@@ -103,11 +105,15 @@ public sealed partial class TrayContextMenuHost : IDisposable
     public Action? OnShowSettings    { get; set; }
     public Action? OnShowPlayground  { get; set; }
     public Action? OnToggleAmbient   { get; set; }
+    public Action? OnToggleAutocorrect { get; set; }
     public Action? OnToggleTaskbarCover { get; set; }
+    public Action? OnTogglePrecisionScroll { get; set; }
     public Action? OnRestart         { get; set; }
     public Action? OnQuit            { get; set; }
     public Func<bool>? IsAmbientOn   { get; set; }
+    public Func<bool>? IsAutocorrectOn { get; set; }
     public Func<bool>? IsTaskbarCoverOn { get; set; }
+    public Func<bool>? IsPrecisionScrollOn { get; set; }
 
     /// <summary>
     /// Optional accessor for the tray icon's screen rect. When provided, the
