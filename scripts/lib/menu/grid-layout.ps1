@@ -30,6 +30,10 @@ function New-GridPlan {
         $prefixWidth = [Math]::Max($prefixWidth, $prefix.Length)
         $cells = @($row['Cells'])
         if ($cells.Count -eq 0) { throw 'New-GridPlan: a row has empty Cells; use a Blank row for separators.' }
+        $fullWidth = $row.ContainsKey('FullWidth') -and [bool]$row['FullWidth']
+        if ($fullWidth -and $cells.Count -ne 1) {
+            throw 'New-GridPlan: FullWidth rows require exactly one cell.'
+        }
 
         $columnOffset = if ($row.ContainsKey('ColumnOffset')) { [int]$row['ColumnOffset'] } else { 0 }
         for ($cellIndex = 0; $cellIndex -lt $cells.Count; $cellIndex++) {
@@ -46,7 +50,8 @@ function New-GridPlan {
         }
 
         $body += @{
-            Kind = 'row'; Prefix = $prefix; Cells = $cells; ColumnOffset = $columnOffset; TrailingCell = $trailingCell
+            Kind = 'row'; Prefix = $prefix; Cells = $cells; ColumnOffset = $columnOffset
+            TrailingCell = $trailingCell; FullWidth = $fullWidth
         }
         $selectableRows += @{
             BodyIndex = $body.Count - 1; CellCount = $cells.Count; ColumnOffset = $columnOffset; HasTrailing = [bool]$trailingCell

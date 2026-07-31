@@ -1,5 +1,20 @@
 # Native process invocation that preserves each output line for launcher history.
 
+. (Join-Path $PSScriptRoot 'script-output.ps1')
+
+function Write-DeckleNativeConsoleLine {
+    param(
+        [Parameter(Mandatory)][AllowEmptyString()][string]$Text,
+        [Parameter(Mandatory)][ValidateSet('StdOut', 'StdErr')][string]$Stream
+    )
+
+    Write-DeckleOutputFragment `
+        -Text $Text `
+        -Role Body `
+        -Tags @('Deckle.Output', 'Deckle.Native') `
+        -Metadata @{ DeckleStream = $Stream }
+}
+
 function Invoke-DeckleConsoleProcess {
     [CmdletBinding()]
     param(
@@ -31,7 +46,7 @@ function Invoke-DeckleConsoleProcess {
                 if ($null -eq $line) {
                     $stdoutDone = $true
                 } else {
-                    Write-Host $line
+                    Write-DeckleNativeConsoleLine -Text $line -Stream StdOut
                     $stdoutTask = $process.StandardOutput.ReadLineAsync()
                 }
                 $madeProgress = $true
@@ -42,7 +57,7 @@ function Invoke-DeckleConsoleProcess {
                 if ($null -eq $line) {
                     $stderrDone = $true
                 } else {
-                    Write-Host $line
+                    Write-DeckleNativeConsoleLine -Text $line -Stream StdErr
                     $stderrTask = $process.StandardError.ReadLineAsync()
                 }
                 $madeProgress = $true

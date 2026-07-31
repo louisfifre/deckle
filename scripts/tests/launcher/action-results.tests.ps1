@@ -62,22 +62,32 @@ Assert-Equal $true $sanitized[1].EndsWith('second') 'OSC progress controls and c
 $title = Get-DeckleActionResultTitle -Label 'Build Debug' -State Succeeded -Elapsed ([timespan]::FromSeconds(18.4))
 Assert-Equal 'Build Debug succeeded · 18.4 s' $title 'summary states action outcome and duration'
 
-function Start-MenuActionConsole {
-    param([string]$Header)
+function New-GridStatusView {
+    param(
+        [string]$Header,
+        [string]$HeaderCommands,
+        [object[]]$Rows,
+        [string]$Title,
+        [object[]]$Lines,
+        [switch]$Follow
+    )
     $script:StartedActionHeader = $Header
-    return [pscustomobject]@{ Name = 'action-console' }
+    $script:StartedActionCommands = $HeaderCommands
+    return [pscustomobject]@{ Name = 'grid-status' }
 }
-function Write-MenuActionOutput {
-    param($InputObject)
-    $script:ForwardedActionOutput.Add([string]$InputObject)
+function Update-GridStatusView {
+    param($View, [string]$Title, [object[]]$Lines, [switch]$Follow)
+    $script:RenderedActionSnapshots.Add(@($Lines))
+    return $View
 }
-function Stop-MenuActionConsole {
-    param($Console)
-    $script:StoppedActionConsole = $Console.Name
+function Close-GridStatusView {
+    param($View)
+    $script:ClosedActionView = $View.Name
 }
 $script:StartedActionHeader = $null
-$script:StoppedActionConsole = $null
-$script:ForwardedActionOutput = [System.Collections.Generic.List[string]]::new()
+$script:StartedActionCommands = $null
+$script:ClosedActionView = $null
+$script:RenderedActionSnapshots = [System.Collections.Generic.List[object]]::new()
 $menuRows = @(@{ Cells = @( @{ Label = 'Build' } ) })
 
 $success = Invoke-DeckleMenuAction -Header Deckle -Label Build -Source Build -MenuRows $menuRows -Action {
@@ -90,8 +100,9 @@ Assert-Equal 2 $success.Lines.Count 'output and host streams are both retained'
 Assert-Equal 'restore completed' $success.Lines[0].Text 'plain output remains raw'
 Assert-Equal ([ConsoleColor]::Green) $success.Lines[1].ForegroundColor 'PowerShell host color reaches the menu result'
 Assert-Equal 'Deckle · Running…' $script:StartedActionHeader 'running state is appended to the breadcrumb'
-Assert-Equal 'restore completed' $script:ForwardedActionOutput[0] 'captured output is forwarded immediately'
-Assert-Equal 'action-console' $script:StoppedActionConsole 'completed action restores the terminal surface'
+Assert-Equal 'Ctrl+C quit' $script:StartedActionCommands 'running surface keeps its exit command visible'
+Assert-Equal $true ($script:RenderedActionSnapshots.Count -ge 2) 'completed lines refresh the retained live transcript'
+Assert-Equal 'grid-status' $script:ClosedActionView 'completed action restores the cursor lifecycle'
 
 $native = Invoke-DeckleMenuAction -Header Deckle -Label Build -Source Build -MenuRows $menuRows -Action {
     $nativeExitCode = Invoke-DeckleConsoleProcess -FilePath (Join-Path $PSHOME 'pwsh.exe') -ArgumentList @(
@@ -103,14 +114,14 @@ Assert-Equal 2 $native.Lines.Count 'native process lines remain available in the
 Assert-Equal 'native first' $native.Lines[0].Text 'persistent native history keeps its opening line'
 Assert-Equal 'native second' $native.Lines[1].Text 'persistent native history keeps its following line'
 
-$script:StoppedActionConsole = $null
+$script:ClosedActionView = $null
 $failure = Invoke-DeckleMenuAction -Header Deckle -Label Build -Source Build -MenuRows $menuRows -Action {
     Write-Output 'restore completed'
     throw 'compiler stopped'
 }
 Assert-Equal $false $failure.Succeeded 'terminating action error reports failure'
 Assert-Equal $true ((@($failure.Lines | ForEach-Object Text) -join "`n") -like '*compiler stopped*') 'failure reason stays in the log'
-Assert-Equal 'action-console' $script:StoppedActionConsole 'failed action also restores the terminal surface'
+Assert-Equal 'grid-status' $script:ClosedActionView 'failed action also restores the cursor lifecycle'
 
 $partial = Invoke-DeckleMenuAction -Header Deckle -Label Setup -Source Setup -MenuRows $menuRows -Action {
     Write-DeckleOutputLine -Segments @(
@@ -122,5 +133,20 @@ Assert-Equal 'Partial' $partial.Result 'script summary result is preserved'
 Assert-Equal $false $partial.Succeeded 'partial is not presented as full success'
 Assert-Equal $true $partial.Title.StartsWith('Setup partial · ') 'partial state stays visible in the title'
 Assert-Equal 2 $partial.Lines[0].Segments.Count 'segmented summary state remains one persistent result line'
+
+$repeated = Invoke-DeckleMenuAction -Header Deckle -Label Build -Source Build -MenuRows $menuRows -Action {
+    Write-Output 'same line'
+    Write-Output 'same line'
+}
+Assert-Equal 2 $repeated.Lines.Count 'intentional repeated output is retained without deduplication'
+
+$script:RenderedActionSnapshots.Clear()
+$burst = Invoke-DeckleMenuAction -Header Deckle -Label Build -Source Build -MenuRows $menuRows -Action {
+    1..100 | ForEach-Object { Write-Output "line $_" }
+}
+Assert-Equal 100 $burst.Lines.Count 'a burst larger than the viewport retains its complete transcript'
+Assert-Equal $true ($script:RenderedActionSnapshots.Count -lt 10) 'a fast burst is coalesced instead of moving the cursor for every line'
+$lastSnapshot = $script:RenderedActionSnapshots[$script:RenderedActionSnapshots.Count - 1]
+Assert-Equal $burst.Lines[-1].Text $lastSnapshot[-1].Text 'the forced final frame and retained result end on the same line'
 
 Write-Host 'action-results.tests.ps1: PASS' -ForegroundColor Green

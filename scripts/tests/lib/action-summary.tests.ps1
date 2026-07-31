@@ -27,7 +27,8 @@ Assert-Equal 23 $colonColumns[0] 'longest label determines separator column'
 $summaryCategory = @($captured | Where-Object { [string]$_.MessageData.Message -eq '[summary] ' })[0]
 $summaryBody = @($captured | Where-Object { [string]$_.MessageData.Message -eq 'Inventory complete.' })[0]
 Assert-Equal (Get-DeckleOutputColor -Role Category) $summaryCategory.MessageData.ForegroundColor 'summary category uses the shared category role'
-Assert-Equal ([Console]::ForegroundColor) $summaryBody.MessageData.ForegroundColor 'summary sentence remains normal body text'
+Assert-Equal $null $summaryBody.MessageData.ForegroundColor 'summary sentence inherits the normal terminal body color'
+Assert-Equal 'Body' $summaryBody.MessageData.DeckleRole 'summary sentence keeps the body role explicitly'
 $resultValue = @($captured | Where-Object { [string]$_.MessageData.Message -eq 'Success' })[0]
 Assert-Equal (Get-DeckleOutputColor -Role Success) $resultValue.MessageData.ForegroundColor 'only the summary result receives the success color'
 

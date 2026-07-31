@@ -32,6 +32,10 @@ function Write-GridStatusRows {
     param($View, [int]$StartIndex, [object[]]$Lines, [int]$ResultOffset)
     $script:LastGridStatusStartIndex = $StartIndex
 }
+function Set-GridStatusCursorParking {
+    param($View)
+    $script:ParkedGridStatusCursor = $true
+}
 
 $view = [pscustomobject]@{
     TerminalWidth = 79
@@ -39,16 +43,32 @@ $view = [pscustomobject]@{
     Body = @(@{ Kind = 'row' }, @{ Kind = 'result-title'; Text = 'Old' }, @{ Kind = 'result' })
     ResultTitleIndex = 1
     ResultRowCount = 1
+    Header = 'Deckle'
+    Rows = @()
+    Footer = ''
+    HeaderCommands = 'Ctrl+C quit'
+    BannerStyle = 'Compact'
+    RestoreCursorVisible = $true
 }
 $updated = Update-GridStatusView -View $view -Title 'Build running' -Lines @('latest') -Follow
 Assert-Equal 'Build running' $updated.Body[1].Text 'refresh updates the summary in place'
 Assert-Equal 1 $script:LastGridStatusStartIndex 'refresh redraws only dynamic rows'
+Assert-Equal $true $script:ParkedGridStatusCursor 'refresh parks the hidden cursor inside the status viewport'
 
 function New-GridStatusView {
-    return [pscustomobject]@{ Recreated = $true }
+    param([Nullable[bool]]$RestoreCursorVisible)
+    return [pscustomobject]@{ Recreated = $true; RestoreCursorVisible = $RestoreCursorVisible }
 }
 $view.TerminalWidth = 78
 $resized = Update-GridStatusView -View $view -Title 'Build running' -Lines @('latest') -Follow
 Assert-Equal $true $resized.Recreated 'terminal resize recreates the viewport deliberately'
+Assert-Equal $true $resized.RestoreCursorVisible 'terminal resize preserves the original cursor state'
+
+function Set-GridStatusCursorVisibility {
+    param([bool]$Visible)
+    $script:ClosedCursorVisibility = $Visible
+}
+Close-GridStatusView -View $view
+Assert-Equal $true $script:ClosedCursorVisibility 'closing the status view restores the previous cursor state'
 
 Write-Host 'grid-status.tests.ps1: PASS' -ForegroundColor Green
