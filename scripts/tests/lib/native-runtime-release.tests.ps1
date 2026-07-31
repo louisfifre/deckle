@@ -92,6 +92,17 @@ public static IReadOnlyList<string> RequiredDllNames { get; } = new[]
     Set-Content -LiteralPath (Join-Path $staging 'PROVENANCE.txt') -Value 'fixture provenance'
     $sumLines = foreach ($name in $catalog.Names) { "$('0' * 64) *$name" }
     Set-Content -LiteralPath (Join-Path $staging 'SHA256SUMS') -Value $sumLines
+    $invalidArchive = Join-Path $root 'native-invalid.zip'
+    Compress-Archive -Path (Join-Path $staging '*') -DestinationPath $invalidArchive
+    Assert-Throws {
+        Assert-DeckleNativeRuntimeArchive -ArchivePath $invalidArchive -DllNames $catalog.Names
+    } 'SHA256SUMS mismatch'
+
+    $sumLines = foreach ($name in $catalog.Names) {
+        $dllPath = Join-Path $staging $name
+        "$((Get-FileHash -LiteralPath $dllPath -Algorithm SHA256).Hash.ToLowerInvariant()) *$name"
+    }
+    Set-Content -LiteralPath (Join-Path $staging 'SHA256SUMS') -Value $sumLines
     $archive = Join-Path $root 'native.zip'
     Compress-Archive -Path (Join-Path $staging '*') -DestinationPath $archive
     Assert-DeckleNativeRuntimeArchive -ArchivePath $archive -DllNames $catalog.Names

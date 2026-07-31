@@ -11,9 +11,10 @@
 #   PROVENANCE.txt   — human-readable build metadata
 #   SHA256SUMS       — `sha256sum -c` compatible
 #
-# Sources:
-#   - whisper DLLs : <WhisperRepo>\build\bin\ (cmake -DGGML_VULKAN=ON)
-#   - MinGW DLLs   : beside the C++ compiler recorded in CMakeCache.txt
+# Sources, in priority order:
+#   - current bundle: the artifact pinned by NativeRuntime.CurrentBundle
+#   - new bundle    : whisper DLLs from <WhisperRepo>\build\bin\ and MinGW DLLs
+#                     beside the compiler recorded in CMakeCache.txt
 #
 # Keep this script aligned with the native runtime bundle metadata in code.
 
@@ -24,11 +25,14 @@ param(
     [ValidatePattern('^\d+\.\d+\.\d+$')]
     [string]$Version,
 
-    # Path to a local whisper.cpp clone with build/bin/ already populated
-    # by `cmake --build`. Required — there is no in-repo whisper.cpp clone
-    # anymore (deleted as part of this same chantier).
-    [Parameter(Mandatory)]
+    # Path to a local whisper.cpp clone with build/bin/ already populated by
+    # `cmake --build`. Used only when packaging a new runtime bundle.
     [string]$WhisperRepo,
+
+    # Publish or inspect an already-packaged bundle instead of rebuilding it.
+    # When neither source is supplied, the bundle pinned by CurrentBundle is
+    # discovered under <RepoRoot>\artifacts\deckle-native-X.Y.Z\ automatically.
+    [string]$ArtifactPath,
 
     # Deckle repository that owns the native-vX.Y.Z GitHub Release. This is
     # source metadata only: publishing the native runtime never builds Deckle.
@@ -78,6 +82,7 @@ $ZipSize = $null
 $Published = $false
 $OwnerRepo = $null
 $HeadSha = $null
+$SourceKind = $null
 
 trap {
     Write-DeckleActionSummary `
@@ -88,6 +93,7 @@ trap {
             Version     = "native-v$Version"
             DeckleRepo  = $RepoRoot
             WhisperRepo = $WhisperRepo
+            Artifact    = $ArtifactPath
             OutDir      = $OutDir
             Zip         = $ZipPath
             Published   = $Published
@@ -122,24 +128,66 @@ if ($Publish) {
     }
 }
 
-if (-not $Version) {
-    $publishedTags = @(& git -C $RepoRoot tag --list 'native-v*')
-    if ($LASTEXITCODE -ne 0) { throw "git tag --list native-v* failed (code $LASTEXITCODE)" }
-    $versionPlan = Get-DeckleNativeRuntimeVersionPlan `
-        -SourcePath $NativeRuntimeSource `
-        -WhisperRepo $WhisperRepo `
-        -PublishedTags $publishedTags
-    $Version = $versionPlan.Version
-    Step "Resolved native-v$Version"
-    Ok "whisper.cpp $($versionPlan.WhisperVersion); previous bundle native-v$($versionPlan.PreviousVersion)"
+if ($ArtifactPath -and $WhisperRepo) {
+    throw 'ArtifactPath and WhisperRepo are mutually exclusive; choose an existing bundle or a whisper.cpp build'
 }
 
-# ── Resolve sources ──────────────────────────────────────────────────────────
-
-$WhisperBin = Join-Path $WhisperRepo 'build\bin'
-if (-not (Test-Path $WhisperBin)) {
-    throw "whisper.cpp build output not found: $WhisperBin (cmake --build build needed first)"
+$PinnedBundle = Get-DeckleNativeRuntimeBundle -SourcePath $NativeRuntimeSource
+if (-not $ArtifactPath -and -not $WhisperRepo) {
+    $candidateName = "deckle-native-$($PinnedBundle.Version).zip"
+    $candidatePath = Join-Path $RepoRoot "artifacts\deckle-native-$($PinnedBundle.Version)\$candidateName"
+    if (Test-Path -LiteralPath $candidatePath -PathType Leaf) {
+        $ArtifactPath = $candidatePath
+    } else {
+        throw "No current native bundle found at $candidatePath; pass -ArtifactPath or -WhisperRepo"
+    }
 }
+
+if ($ArtifactPath) {
+    if ($Version -and $Version -cne [string]$PinnedBundle.Version) {
+        throw "Artifact version $Version does not match CurrentBundle version $($PinnedBundle.Version)"
+    }
+    $Version = [string]$PinnedBundle.Version
+    $ZipName = "deckle-native-$Version.zip"
+    $resolvedArtifact = Resolve-Path -LiteralPath $ArtifactPath -ErrorAction Stop
+    $ZipPath = $resolvedArtifact.Path
+    $ArtifactPath = $ZipPath
+    if ((Split-Path -Leaf $ZipPath) -cne $ZipName) {
+        throw "Native runtime artifact must be named $ZipName"
+    }
+
+    Step "Validate existing $ZipName"
+    $verifiedArtifact = Assert-DeckleNativeRuntimeArtifact `
+        -Bundle $PinnedBundle `
+        -ArtifactPath $ZipPath
+    Assert-DeckleNativeRuntimeArchive `
+        -ArchivePath $ZipPath `
+        -DllNames $NativeRuntimeCatalog.Names
+    $ZipSha256 = $verifiedArtifact.Sha256
+    $ZipBytes = $verifiedArtifact.SizeBytes
+    $ZipSize = [math]::Round($ZipBytes / 1MB, 2)
+    if (-not $OutDir) { $OutDir = Split-Path -Parent $ZipPath }
+    $SourceKind = 'Existing artifact'
+    Ok "$ZipName ($ZipSize MB) matches CurrentBundle and the native catalog"
+} else {
+    if (-not $Version) {
+        $publishedTags = @(& git -C $RepoRoot tag --list 'native-v*')
+        if ($LASTEXITCODE -ne 0) { throw "git tag --list native-v* failed (code $LASTEXITCODE)" }
+        $versionPlan = Get-DeckleNativeRuntimeVersionPlan `
+            -SourcePath $NativeRuntimeSource `
+            -WhisperRepo $WhisperRepo `
+            -PublishedTags $publishedTags
+        $Version = $versionPlan.Version
+        Step "Resolved native-v$Version"
+        Ok "whisper.cpp $($versionPlan.WhisperVersion); previous bundle native-v$($versionPlan.PreviousVersion)"
+    }
+
+    # ── Resolve sources ──────────────────────────────────────────────────────
+
+    $WhisperBin = Join-Path $WhisperRepo 'build\bin'
+    if (-not (Test-Path $WhisperBin)) {
+        throw "whisper.cpp build output not found: $WhisperBin (cmake --build build needed first)"
+    }
 
 $CMakeCache = Join-Path $WhisperRepo 'build\CMakeCache.txt'
 if (-not (Test-Path $CMakeCache)) {
@@ -329,7 +377,9 @@ $ZipBytes  = (Get-Item $ZipPath).Length
 $ZipSize   = [math]::Round($ZipBytes / 1MB, 2)
 Ok "$ZipName ($ZipSize MB) sha256=$ZipSha256"
 
-Remove-Item $StagingDir -Recurse -Force
+    Remove-Item $StagingDir -Recurse -Force
+    $SourceKind = 'whisper.cpp build'
+}
 
 # ── Summary — paste-ready block for NativeRuntime.CurrentBundle ──────────────
 
@@ -339,7 +389,10 @@ Write-Host @"
   Zip    : $ZipPath
   Size   : $ZipBytes bytes ($ZipSize MB)
   SHA256 : $ZipSha256
+"@ -ForegroundColor Green
 
+if (-not $ArtifactPath) {
+    Write-Host @"
   Paste into src/Deckle.Transcription.Whisper/Setup/NativeRuntime.cs CurrentBundle
   (URL resolved from the selected Deckle repository):
 
@@ -351,6 +404,7 @@ Write-Host @"
         DisplayName: "Whisper.cpp + Vulkan runtime");
 
 "@ -ForegroundColor Green
+}
 
 # ── Optional: explicit draft → verify → tag → publish ────────────────────────
 
@@ -397,6 +451,33 @@ if ($Publish) {
         -ExpectedSizes @{ $ZipName = $ZipBytes }
     Ok 'GitHub asset verified by name and byte size'
 
+    $downloadDir = Join-Path ([IO.Path]::GetTempPath()) "deckle-native-remote-$([guid]::NewGuid())"
+    try {
+        $null = New-Item -ItemType Directory -Path $downloadDir
+        & gh release download $tag `
+            --repo $OwnerRepo `
+            --pattern $ZipName `
+            --dir $downloadDir
+        if ($LASTEXITCODE -ne 0) { throw "GitHub asset download failed (code $LASTEXITCODE)" }
+        $downloadedArtifact = Join-Path $downloadDir $ZipName
+        $releaseArtifact = [pscustomobject]@{
+            Version   = $Version
+            SizeBytes = $ZipBytes
+            Sha256    = $ZipSha256
+        }
+        Assert-DeckleNativeRuntimeArtifact `
+            -Bundle $releaseArtifact `
+            -ArtifactPath $downloadedArtifact | Out-Null
+        Assert-DeckleNativeRuntimeArchive `
+            -ArchivePath $downloadedArtifact `
+            -DllNames $NativeRuntimeCatalog.Names
+        Ok 'GitHub asset downloaded and verified byte-for-byte'
+    } finally {
+        if (Test-Path -LiteralPath $downloadDir) {
+            Remove-Item -LiteralPath $downloadDir -Recurse -Force
+        }
+    }
+
     Publish-DeckleReleaseTag -RepoRoot $RepoRoot -Tag $tag -HeadSha $HeadSha
     Ok "GitHub tag $tag published at release HEAD"
 
@@ -417,7 +498,9 @@ if ($Publish) {
 
 $nativeTag = "native-v$Version"
 $sentence = if ($Published) {
-    "Native runtime $nativeTag was packaged and published as a GitHub Release."
+    "Native runtime $nativeTag was validated and published as a GitHub Release."
+} elseif ($ArtifactPath) {
+    "Native runtime $nativeTag was validated locally and is ready to publish."
 } else {
     "Native runtime $nativeTag was packaged locally for inspection."
 }
@@ -429,7 +512,9 @@ Write-DeckleActionSummary `
     -Details ([ordered]@{
         Version     = $nativeTag
         DeckleRepo  = $RepoRoot
+        Source      = $SourceKind
         WhisperRepo = $WhisperRepo
+        Artifact    = $ArtifactPath
         OutDir      = $OutDir
         Zip         = $ZipPath
         Size        = $(if ($ZipBytes) { "$ZipBytes bytes ($ZipSize MB)" } else { $null })

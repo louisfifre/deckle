@@ -223,8 +223,21 @@ function Assert-DeckleNativeRuntimeArchive {
             throw 'Native runtime SHA256SUMS does not cover every DLL'
         }
         foreach ($name in $DllNames) {
-            $line = @($sumLines | Where-Object { $_ -match "^[0-9a-fA-F]{64} \*$([regex]::Escape($name))$" })
+            $line = @($sumLines | Where-Object { $_ -match "^(?<hash>[0-9a-fA-F]{64}) \*$([regex]::Escape($name))$" })
             if ($line.Count -ne 1) { throw "Native runtime SHA256SUMS is missing $name" }
+            $expectedHash = [regex]::Match($line[0], '^(?<hash>[0-9a-fA-F]{64})').Groups['hash'].Value.ToLowerInvariant()
+            $dllEntry = $entries | Where-Object FullName -CEQ $name | Select-Object -First 1
+            $stream = $dllEntry.Open()
+            $sha256 = [Security.Cryptography.SHA256]::Create()
+            try {
+                $actualHash = [Convert]::ToHexString($sha256.ComputeHash($stream)).ToLowerInvariant()
+            } finally {
+                $sha256.Dispose()
+                $stream.Dispose()
+            }
+            if ($actualHash -cne $expectedHash) {
+                throw "Native runtime SHA256SUMS mismatch for $name"
+            }
         }
     } finally {
         $archive.Dispose()

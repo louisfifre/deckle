@@ -22,9 +22,9 @@ All scripts target PowerShell 7+. The single entry point lives at [`deckle.ps1`]
 |  | Update changelog | yes | `commands/changelog.ps1` |
 |  | Record version | yes | `commands/record-version.ps1 -Push` |
 | **Workspace > Release > Publish** | App release | yes | records a pending version when needed, then `commands/publish-app.ps1 -Publish` (confirms first) |
-|  | Native runtime | yes | derives the next `native-vX.Y.Z` from whisper.cpp and published bundles, packages an existing `build/bin`, and publishes it; it runs no build (confirms first) |
+|  | Native runtime | yes | validates and publishes the bundle pinned by the app when it already exists under `artifacts/`; otherwise derives and packages the next runtime from an existing whisper.cpp `build/bin`; it runs no build (confirms first) |
 | **Workspace > Release > Prepare** | App artifacts | yes | `commands/publish-app.ps1` |
-|  | Native runtime | yes | derives the next `native-vX.Y.Z` and packages an existing whisper.cpp `build/bin` locally; it runs no build |
+|  | Native runtime | yes | validates the bundle pinned by the app when available, or derives and packages the next runtime from an existing whisper.cpp `build/bin`; it runs no build |
 | **Workspace > Maintenance** | Repository statistics | yes | targeted specifications over `lib/repository-inventory.psm1`, rendered in the maintenance viewport |
 |  | Context statistics | yes | targeted specifications over `lib/context-inventory.psm1`, rendered in the maintenance viewport |
 |  | Clean build outputs | yes | `commands/clean.ps1` |
@@ -66,7 +66,7 @@ Each command is callable directly from a terminal or a `launch.json` profile —
 | [`commands/install-hooks.ps1`](commands/install-hooks.ps1) | Install the local git hooks sourced from `scripts/hooks/` into `.git/hooks/` and register the local `merge.ours` driver used by `TREE.md`. | |
 | [`commands/update-readme-stats.ps1`](commands/update-readme-stats.ps1) | Regenerate the README `Development pulse` section from local Git history. `-Commit` creates a local README-only commit and refuses unrelated tracked changes; it never pushes. Also used without `-Commit` by the monthly GitHub Action. | `-Target <worktree>`, `-Pick`, `-ReadmePath <path>`, `-Commit` |
 | [`commands/changelog.ps1`](commands/changelog.ps1) | Generate `CHANGELOG.md` and release notes from Conventional Commits and the public-release boundaries in `release-history.json`. Default preserves an `[Unreleased]` accumulator since the latest public release; `-NotesFor X.Y.Z` emits that full release range for GitHub. | `-Target <worktree>`, `-Pick`, `-NotesFor X.Y.Z`, `-OutFile <path>` |
-| [`commands/publish-native-runtime.ps1`](commands/publish-native-runtime.ps1) | **Maintainer-only.** Package the native runtime zip (the C# DLL catalog + `PROVENANCE.txt` + `SHA256SUMS`) from an already-built local whisper.cpp tree, pair it with the MinGW runtime beside the compiler recorded by CMake, then optionally publish only `native-vX.Y.Z`. The version is inferred from whisper.cpp and existing native tags; `-Version` is a recovery override. No CMake or Deckle build is invoked. | `-WhisperRepo <path>`, `-Target <Deckle repo>`, `-OutDir <path>`, `-Publish`, `-Version X.Y.Z`, `-Notes <path>` |
+| [`commands/publish-native-runtime.ps1`](commands/publish-native-runtime.ps1) | **Maintainer-only.** Validate and optionally publish the bundle pinned by `NativeRuntime.CurrentBundle`, auto-discovered under `artifacts/` or supplied with `-ArtifactPath`. When no current bundle exists, package a new one from an already-built local whisper.cpp tree and the paired MinGW runtime. Local and downloaded release assets are verified by size, archive contract, and SHA-256. No CMake or Deckle build is invoked. | `-ArtifactPath <zip>` or `-WhisperRepo <path>`; `-Target <Deckle repo>`, `-OutDir <path>`, `-Publish`, `-Version X.Y.Z`, `-Notes <path>` |
 
 ## Library — `lib/`
 
@@ -116,6 +116,8 @@ The app's first launch opens the in-app setup wizard when native DLLs or models 
 2. **`-WhisperRepo <path>` (for whisper.cpp rebuilders).** Copies DLLs from a local whisper.cpp build tree (`<path>\build\bin\` plus the MinGW runtime from Scoop). Use when iterating on whisper.cpp source — recompile, point the script at your tree, the bundle on `<UserDataRoot>` refreshes without going through GitHub. Falls back to `$env:DECKLE_WHISPER_REPO` and then to a sibling `<repo>\..\whisper.cpp` clone.
 
 3. **Skip.** When neither path resolves to a valid build tree, the native step is skipped with a warning. Useful when only models need refreshing on a machine without a build tree.
+
+Native release publication is separate from runtime setup. Its ordinary path reuses the exact bundle already pinned by the app at `artifacts/deckle-native-<version>/deckle-native-<version>.zip`; the launcher does not ask for a whisper.cpp path when that file exists. The source-tree path is only the exceptional path for fabricating a new runtime version. Publication re-downloads the GitHub asset and verifies its full SHA-256 and internal DLL checksums before making the release public.
 
 The Whisper models are pulled from HuggingFace; the Silero VAD model is pulled from GitHub (snakers4/silero-vad, pinned to the v6.2 tag). Both happen regardless of native runtime sourcing mode.
 
