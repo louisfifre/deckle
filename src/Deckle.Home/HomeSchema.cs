@@ -20,6 +20,11 @@ public static class HomeSchema
         public const string Relay = "relais";
         public const string Panel = "panneau";
         public const string Node = "noeud";
+        public const string Idea = "idee";
+        public const string Errand = "course";
+        public const string Tool = "outil";
+        public const string Worksite = "chantier";
+        public const string Task = "tache";
     }
 
     public static class Properties
@@ -32,6 +37,22 @@ public static class HomeSchema
         public const string Circuit = "circuit";
         public const string ObservedOn = "date_releve";
         public const string Notes = "notes";
+        public const string Documents = "documents";
+        public const string Horizon = "horizon";
+        public const string Aisle = "rayon";
+        public const string Quantity = "quantite";
+        public const string Concerns = "concerne";
+        public const string ModelReference = "reference_modele";
+        public const string ToolCategory = "categorie_outil";
+        public const string Supplier = "fournisseur";
+        public const string Invoice = "facture";
+        public const string StoredIn = "range_dans";
+        public const string Status = "statut";
+        public const string TargetDate = "date_cible";
+        public const string Worksite = "chantier";
+        // App-managed (Étage objects are created in the app, the type is not
+        // part of the required contract), but the relation is written via MCP.
+        public const string Floor = "etage";
     }
 
     public static class Existence
@@ -39,6 +60,16 @@ public static class HomeSchema
         public const string Existing = "existant";
         public const string Planned = "prevu";
         public const string Removed = "depose";
+    }
+
+    public static class Status
+    {
+        public const string Open = "ouvert";
+        public const string InProgress = "en_cours";
+        public const string Waiting = "en_attente";
+        public const string Dormant = "dormant";
+        public const string Done = "termine";
+        public const string Abandoned = "abandonne";
     }
 
     public static class Condition
@@ -55,8 +86,20 @@ public static class HomeSchema
         Types.Network, Types.Sensor, Types.Relay, Types.Panel, Types.Node,
     ];
 
+    // House-life types: no nomenclature code, a free title (or a body-derived one
+    // for ideas), and none of the element invariants. They share the space and
+    // its guarded vocabularies, not the code grammar.
+    public static readonly IReadOnlyList<string> LifeTypes =
+    [Types.Idea, Types.Errand, Types.Tool];
+
+    // Work types: the house's own pilotage — free-titled like life types, but
+    // deliberately not the dev-space PM model: no journal (done tasks are the
+    // record), no required properties at creation, orphan tasks allowed.
+    public static readonly IReadOnlyList<string> WorkTypes =
+    [Types.Worksite, Types.Task];
+
     public static readonly IReadOnlyList<string> CreatableTypes =
-    [Types.Room, Types.Circuit, Types.DistributionBoard, .. ElementTypes];
+    [Types.Room, Types.Circuit, Types.DistributionBoard, .. ElementTypes, .. LifeTypes, .. WorkTypes];
 
     internal static readonly IReadOnlyDictionary<string, string> RequiredProperties =
         new Dictionary<string, string>(StringComparer.Ordinal)
@@ -69,6 +112,30 @@ public static class HomeSchema
             [Properties.Circuit] = "objects",
             [Properties.ObservedOn] = "date",
             [Properties.Notes] = "text",
+            [Properties.Documents] = "files",
+            [Properties.Horizon] = "select",
+            [Properties.Aisle] = "select",
+            [Properties.Quantity] = "text",
+            [Properties.Concerns] = "objects",
+            [Properties.ModelReference] = "text",
+            [Properties.ToolCategory] = "select",
+            [Properties.Supplier] = "select",
+            [Properties.Invoice] = "files",
+            [Properties.StoredIn] = "objects",
+            [Properties.Status] = "select",
+            [Properties.TargetDate] = "date",
+            [Properties.Worksite] = "objects",
+        };
+
+    // Objects properties whose target must carry a specific type; unlisted
+    // properties (concerne, range_dans) accept any Home object.
+    internal static readonly IReadOnlyDictionary<string, IReadOnlyList<string>> ObjectPropertyTargets =
+        new Dictionary<string, IReadOnlyList<string>>(StringComparer.Ordinal)
+        {
+            [Properties.Room] = [Types.Room],
+            [Properties.Circuit] = [Types.Circuit],
+            [Properties.Worksite] = [Types.Worksite],
+            [Properties.Floor] = ["etage"],
         };
 
     internal static readonly IReadOnlyDictionary<string, IReadOnlyList<string>> RequiredByType =
@@ -99,6 +166,50 @@ public static class HomeSchema
                 [Condition.Worn] = "Vétuste",
                 [Condition.Damaged] = "Endommagé",
                 [Condition.OutOfService] = "Hors service",
+            },
+            [Properties.Horizon] = new Dictionary<string, string>(StringComparer.Ordinal)
+            {
+                ["maintenant"] = "Maintenant",
+                ["bientot"] = "Bientôt",
+                ["un_jour"] = "Un jour",
+                ["peut_etre"] = "Peut-être",
+            },
+            [Properties.Aisle] = new Dictionary<string, string>(StringComparer.Ordinal)
+            {
+                ["alimentaire"] = "Alimentaire",
+                ["bricolage"] = "Bricolage",
+                ["maison"] = "Maison",
+                ["jardin"] = "Jardin",
+                ["autre"] = "Autre",
+            },
+            [Properties.ToolCategory] = new Dictionary<string, string>(StringComparer.Ordinal)
+            {
+                ["electroportatif"] = "Électroportatif",
+                ["outil_a_main"] = "Outil à main",
+                ["mesure"] = "Mesure",
+                ["peinture"] = "Peinture",
+                ["electronique"] = "Électronique",
+                ["impression_3d"] = "Impression 3D",
+                ["jardin"] = "Jardin",
+                ["autre"] = "Autre",
+            },
+            [Properties.Status] = new Dictionary<string, string>(StringComparer.Ordinal)
+            {
+                [Status.Open] = "Ouvert",
+                [Status.InProgress] = "En cours",
+                [Status.Waiting] = "En attente",
+                [Status.Dormant] = "Dormant",
+                [Status.Done] = "Terminé",
+                [Status.Abandoned] = "Abandonné",
+            },
+            [Properties.Supplier] = new Dictionary<string, string>(StringComparer.Ordinal)
+            {
+                ["leroy_merlin"] = "Leroy Merlin",
+                ["brico_depot"] = "Brico Dépôt",
+                ["amazon"] = "Amazon",
+                ["manomano"] = "ManoMano",
+                ["occasion"] = "Occasion",
+                ["autre"] = "Autre",
             },
         };
 
@@ -133,7 +244,7 @@ public static class HomeSchema
                 ["key"] = type,
                 ["name"] = TypeName(type),
                 ["plural_name"] = TypePluralName(type),
-                ["layout"] = "basic",
+                ["layout"] = TypeLayout(type),
                 ["properties"] = attached,
             });
         }
@@ -206,6 +317,25 @@ public static class HomeSchema
             Properties.ObservedOn, Properties.Notes,
         ];
         foreach (string type in ElementTypes) result[type] = elementProperties;
+
+        result[Types.Worksite] =
+        [
+            Properties.Status, Properties.Concerns, Properties.TargetDate,
+            Properties.Notes, Properties.Documents,
+        ];
+        result[Types.Task] =
+        [
+            Properties.Status, Properties.Concerns, Properties.Worksite,
+            Properties.TargetDate, Properties.Notes,
+        ];
+        result[Types.Idea] = [Properties.Horizon];
+        result[Types.Errand] =
+        [Properties.Aisle, Properties.Quantity, Properties.Concerns, Properties.Notes];
+        result[Types.Tool] =
+        [
+            Properties.ModelReference, Properties.ToolCategory, Properties.Supplier,
+            Properties.Invoice, Properties.StoredIn, Properties.Documents, Properties.Notes,
+        ];
         return result;
     }
 
@@ -223,6 +353,19 @@ public static class HomeSchema
         Properties.Circuit => "Circuit",
         Properties.ObservedOn => "Date de relevé",
         Properties.Notes => "Notes",
+        Properties.Documents => "Documents",
+        Properties.Horizon => "Horizon",
+        Properties.Aisle => "Rayon",
+        Properties.Quantity => "Quantité",
+        Properties.Concerns => "Concerne",
+        Properties.ModelReference => "Référence modèle",
+        Properties.ToolCategory => "Catégorie d'outil",
+        Properties.Supplier => "Fournisseur",
+        Properties.Invoice => "Facture",
+        Properties.StoredIn => "Rangé dans",
+        Properties.Status => "Statut",
+        Properties.TargetDate => "Date cible",
+        Properties.Worksite => "Chantier",
         _ => key,
     };
 
@@ -232,16 +375,29 @@ public static class HomeSchema
         Types.Outlet => "Prise", Types.Lighting => "Éclairage", Types.Control => "Commande",
         Types.Opening => "Ouvrant", Types.Appliance => "Appareil", Types.Network => "Réseau",
         Types.Sensor => "Capteur", Types.Relay => "Relais", Types.Panel => "Panneau",
-        Types.Node => "Nœud", _ => key,
+        Types.Node => "Nœud", Types.Idea => "Idée", Types.Errand => "Course",
+        Types.Tool => "Outil", Types.Worksite => "Chantier", Types.Task => "Tâche",
+        _ => key,
     };
 
+    // "Matériel" is the deliberate plural label of Outil: the fleet, not "Outils".
     private static string TypePluralName(string key) => key switch
     {
         Types.Room => "Pièces", Types.Circuit => "Circuits", Types.DistributionBoard => "Tableaux",
         Types.Outlet => "Prises", Types.Lighting => "Éclairages", Types.Control => "Commandes",
         Types.Opening => "Ouvrants", Types.Appliance => "Appareils", Types.Network => "Réseaux",
         Types.Sensor => "Capteurs", Types.Relay => "Relais", Types.Panel => "Panneaux",
-        Types.Node => "Nœuds", _ => key,
+        Types.Node => "Nœuds", Types.Idea => "Idées", Types.Errand => "Courses",
+        Types.Tool => "Matériel", Types.Worksite => "Chantiers", Types.Task => "Tâches",
+        _ => key,
+    };
+
+    private static string TypeLayout(string key) => key switch
+    {
+        Types.Idea => "note",
+        Types.Errand => "action",
+        Types.Task => "action",
+        _ => "basic",
     };
 }
 

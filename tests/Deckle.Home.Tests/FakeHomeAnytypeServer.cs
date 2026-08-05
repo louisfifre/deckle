@@ -63,6 +63,28 @@ internal sealed class FakeHomeAnytypeServer : IDisposable
     public static JsonObject Circuit(string id, string code) => Object(
         id, HomeSchema.Types.Circuit, code);
 
+    public static JsonObject Idea(string id, string name) => Object(
+        id, HomeSchema.Types.Idea, name);
+
+    public static JsonObject Errand(string id, string name, bool done) => Object(
+        id, HomeSchema.Types.Errand, name,
+        CheckboxProperty("done", "Done", done));
+
+    public static JsonObject Worksite(string id, string name, params string[] backlinkIds) => Object(
+        id, HomeSchema.Types.Worksite, name,
+        SelectProperty(HomeSchema.Properties.Status, "Statut", "en_cours", "En cours"),
+        ObjectsProperty("backlinks", "Backlinks", backlinkIds));
+
+    public static JsonObject WorkTask(string id, string name, string? worksiteId, bool done) =>
+        worksiteId is null
+            ? Object(
+                id, HomeSchema.Types.Task, name,
+                CheckboxProperty("done", "Done", done))
+            : Object(
+                id, HomeSchema.Types.Task, name,
+                CheckboxProperty("done", "Done", done),
+                ObjectsProperty(HomeSchema.Properties.Worksite, "Chantier", worksiteId));
+
     public static JsonObject Collection(string id, string name) => new()
     {
         ["id"] = id,
@@ -84,6 +106,11 @@ internal sealed class FakeHomeAnytypeServer : IDisposable
     private static JsonObject TextProperty(string key, string name, string value) => new()
     {
         ["key"] = key, ["name"] = name, ["format"] = "text", ["text"] = value,
+    };
+
+    private static JsonObject CheckboxProperty(string key, string name, bool value) => new()
+    {
+        ["key"] = key, ["name"] = name, ["format"] = "checkbox", ["checkbox"] = value,
     };
 
     private static JsonObject ObjectsProperty(string key, string name, params string[] ids) => new()

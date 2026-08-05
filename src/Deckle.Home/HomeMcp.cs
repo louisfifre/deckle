@@ -17,13 +17,16 @@ public static class HomeMcp
     private static readonly McpServer.Descriptor Descriptor = new(
         "deckle-home",
         "Deckle Home",
-        "Guarded home inventory stored in the configured Anytype Home space. "
-        + "Element codes follow PIÈCE-CAT[SUB]NN and never change; their room "
-        + "prefix must exist in the live room registry. Element titles are the "
-        + "codes, human labels live in Libellé, and ordinary bodies stay empty. "
-        + "Properties and relations carry structured facts. Unknown rooms, "
-        + "duplicate codes, unknown closed-vocabulary values, and element "
-        + "deletion are refused with corrective guidance. Content is French.");
+        "Guarded home inventory and house life stored in the configured "
+        + "Anytype Home space. Element codes follow PIÈCE-CAT[SUB]NN and never "
+        + "change; their room prefix must exist in the live room registry. "
+        + "Element titles are the codes, human labels live in Libellé, and "
+        + "ordinary bodies stay empty. Life and work types (idee, course, "
+        + "outil, chantier, tache) are free-titled; chantiers and tâches use "
+        + "the dedicated verbs, done tasks are the record. Properties and "
+        + "relations carry structured facts. Unknown rooms, duplicate codes, "
+        + "unknown closed-vocabulary values, and element deletion are refused "
+        + "with corrective guidance. Content is French.");
 
     private static McpSurfaceSession OpenSession(AnytypeApiClient api)
     {
