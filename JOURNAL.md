@@ -7,6 +7,24 @@ type: project-journal
 
 Project-level dated notes: a finding, a milestone, a usage observation — worth recording with a date, but not heavy enough for an ADR nor timeless enough for a CLAUDE.md. Most recent on top.
 
+## 2026-08-05 — Context-authoring doctrine delivered as a skill
+
+Delivered the context-artifact authoring doctrine as the personal skill `context-authoring` (`C:\Users\Louis\.claude\skills\context-authoring\`), which is now its single home: a six-paragraph conceptual core plus one `testing.md` annex. This entry supersedes the 2026-08-03 entry below; the principles recorded there were reworked during the final grill.
+
+Chose the founding principle: a context element earns its place by changing what the model notices and weighs, not by walking it through the work. The earlier "design around what it should make possible" wording survives as the core's closing clause, no longer as the principle itself.
+
+Chose the reception criterion: an element is ready when a cold reader lands on the intended meaning needing nothing private. Testing stays static for now: fresh readers receive the element verbatim and nothing else, light models in numbers for reception, few session-level models for quality judgment; live scenario probing was considered and dropped as too heavy.
+
+Chose to keep prohibition of enumeration in the core: name a category by its criterion, not its members, because a list evicts what it leaves out.
+
+## 2026-08-03 — Context-artifact authoring doctrine
+
+Chose to make the planned authoring doctrine apply to reusable context artifacts generally, with skills as its first use case. The core stays short, conceptual, durable, and model-neutral; format rules, templates, and artifact-specific guidance belong only in optional references when they prove necessary.
+
+Chose the first principle: “Design a context element around what it should make possible. Let that purpose shape its form.” Rejected turning the core into an interview process, invocation contract, or general restriction on execution detail.
+
+Chose plain but exact English for the doctrine: complex ideas may take several simple words, while precision comes from naming the ideas that future work should notice and value rather than from adding procedural detail.
+
 ## 2026-07-22 — Frontière entre utilités Anytype et MCP personnalisés
 
 Chose to separate reusable, precise Anytype utilities from custom MCP surfaces. Deckle.Anytype owns cross-domain capabilities for creating, inspecting and acting on Anytype structures; each custom MCP owns only its bounded domain gestures and composes the reusable utilities it needs.
