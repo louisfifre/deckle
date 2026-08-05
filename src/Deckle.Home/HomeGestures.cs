@@ -44,11 +44,22 @@ public sealed class HomeGestures
         var propertyWriter = new HomePropertyWriter(_api, _spaceId, schema, index);
         var collectionWriter = new HomeCollectionWriter(_api, _spaceId, index);
 
-        var prepared = new List<(string Code, JsonObject Payload, IReadOnlyList<string> Collections)>();
+        var prepared = new List<(string Display, JsonObject Payload, IReadOnlyList<string> Collections)>();
         var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         foreach (HomeCreateItem item in items)
         {
-            string code = ValidateCode(type, item.Code);
+            if (IsLife(type))
+            {
+                JsonArray lifeProperties = await propertyWriter.BuildAsync(
+                    type, item.Properties, [], ct).ConfigureAwait(false);
+                prepared.Add(PrepareLifeItem(type, item, lifeProperties, collectionWriter));
+                continue;
+            }
+
+            if (item.Text is not null)
+                throw new InvalidOperationException(
+                    "Le corps est réservé aux idées et aux outils ; un objet d'inventaire est fait de propriétés.");
+            string code = ValidateCode(type, RequireCode(type, item.Code));
             if (!seen.Add(code) || index.ContainsCode(code))
             {
                 string suggestion = NextCodeSuggestion(type, code, index.Objects, seen);
@@ -144,7 +155,7 @@ public sealed class HomeGestures
         await collectionWriter.AddAsync(memberships, ct).ConfigureAwait(false);
 
         DeckleHomeSource.Log.GestureCompleted("create", Elapsed(started));
-        return "Créé :\n" + string.Join("\n", prepared.Select(item => $"- {type} · {item.Code}"));
+        return "Créé :\n" + string.Join("\n", prepared.Select(item => $"- {type} · {item.Display}"));
     }
 
     public async Task<string> UpdateAsync(
@@ -179,6 +190,9 @@ public sealed class HomeGestures
             if (element && item.Name is not null)
                 throw new InvalidOperationException(
                     $"Le titre de {HomeObjectIndex.Display(target)} est son code immuable ; modifie « Libellé ».");
+            if (type == HomeSchema.Types.Idea && item.Name is not null)
+                throw new InvalidOperationException(
+                    "Le titre d'une idée est la première ligne de son corps ; édite le texte dans l'app.");
             if (item.Name is not null && string.IsNullOrWhiteSpace(item.Name))
                 throw new ArgumentException("Le nom ne peut pas être vide.", nameof(items));
 
@@ -204,7 +218,9 @@ public sealed class HomeGestures
 
             var payload = new JsonObject();
             if (item.Name is not null)
-                payload["name"] = HumanTitle(HomeObjectJson.Code(target), item.Name);
+                payload["name"] = IsLife(type)
+                    ? item.Name.Trim()
+                    : HumanTitle(HomeObjectJson.Code(target), item.Name);
             if (properties.Count > 0) payload["properties"] = properties;
             prepared.Add((
                 id,
@@ -272,6 +288,8 @@ public sealed class HomeGestures
             query = query.Where(value => SelectMatches(value, HomeSchema.Properties.Existence, existence));
         if (condition is not null)
             query = query.Where(value => SelectMatches(value, HomeSchema.Properties.Condition, condition));
+        if (filter.Done is bool done)
+            query = query.Where(value => CheckboxValue(value, "done") == done);
         if (!string.IsNullOrWhiteSpace(filter.Text))
         {
             string text = filter.Text.Trim();
@@ -362,6 +380,67 @@ public sealed class HomeGestures
 
     private static bool IsElement(string type) => HomeSchema.ElementTypes.Contains(type);
 
+    private static bool IsLife(string type) => HomeSchema.LifeTypes.Contains(type);
+
+    private static string RequireCode(string type, string? code) =>
+        code ?? throw new ArgumentException(
+            $"Le type {type} exige un code normatif.", nameof(code));
+
+    // A life object carries no code: a course or outil is titled by its free
+    // name, an idée by the first line of its text (the dev-space capture shape:
+    // short text becomes the whole title, long text keeps its head as title and
+    // the full text as body).
+    private static (string Display, JsonObject Payload, IReadOnlyList<string> Collections) PrepareLifeItem(
+        string type, HomeCreateItem item, JsonArray properties, HomeCollectionWriter collectionWriter)
+    {
+        if (item.Code is not null)
+            throw new InvalidOperationException(
+                $"Le type {type} ne porte pas de code : son titre est libre.");
+
+        string? name = item.Name?.Trim();
+        string? text = item.Text?.Trim();
+        var payload = new JsonObject { ["type_key"] = type };
+
+        if (type == HomeSchema.Types.Idea)
+        {
+            if (string.IsNullOrEmpty(text))
+                throw new ArgumentException("Une idée est son texte : fournis « text ».", nameof(item));
+            if (name is not null)
+                throw new InvalidOperationException(
+                    "Une idée n'a pas de titre : sa première ligne en tient lieu.");
+            bool isShort = text.Length <= 80 && !text.Contains('\n');
+            payload["name"] = isShort ? text : FirstWords(text, 80);
+            if (!isShort) payload["body"] = text;
+        }
+        else
+        {
+            if (string.IsNullOrEmpty(name))
+                throw new ArgumentException($"Un objet {type} exige un nom.", nameof(item));
+            if (text is not null && type == HomeSchema.Types.Errand)
+                throw new InvalidOperationException(
+                    "Une course n'a pas de corps : utilise la propriété « Notes ».");
+            payload["name"] = name;
+            if (!string.IsNullOrEmpty(text)) payload["body"] = text;
+        }
+
+        if (properties.Count > 0) payload["properties"] = properties;
+        return (payload["name"]!.GetValue<string>(), payload, collectionWriter.Resolve(item.Collections));
+    }
+
+    private static string FirstWords(string content, int maxLength)
+    {
+        string firstLine = content.Split('\n', 2)[0].Trim();
+        if (firstLine.Length <= maxLength) return firstLine;
+        int cut = firstLine.LastIndexOf(' ', maxLength);
+        return (cut > 0 ? firstLine[..cut] : firstLine[..maxLength]).TrimEnd() + "…";
+    }
+
+    private static bool CheckboxValue(JsonObject value, string propertyKey)
+    {
+        JsonNode? checkbox = HomeObjectJson.Property(value, propertyKey)?["checkbox"];
+        return checkbox is JsonValue scalar && scalar.TryGetValue<bool>(out bool state) && state;
+    }
+
     private static string HumanTitle(string code, string? name)
     {
         string? label = name?.Trim();
@@ -380,7 +459,7 @@ public sealed class HomeGestures
     {
         if (IsElement(HomeObjectJson.TypeKey(value)))
             throw new InvalidOperationException(
-                $"Un élément ne se supprime pas. Passe {HomeObjectIndex.Display(value)} à existence = Déposé avec update.");
+                $"Un élément ne se supprime pas. Passe {HomeObjectIndex.Display(value)} à Existence = Déposé avec update.");
     }
 
     private static string NextCodeSuggestion(

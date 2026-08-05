@@ -56,6 +56,8 @@ internal sealed class HomePropertyWriter(
                 ["key"] = property.Key,
                 ["objects"] = ResolveObjects(value, property.Name),
             },
+            "files" => throw new InvalidOperationException(
+                $"La propriété « {property.Name} » porte des fichiers : dépose-les dans l'app Anytype, le MCP ne les écrit pas."),
             _ => new JsonObject { ["key"] = property.Key, ["text"] = value is null ? "" : Text(value, property.Name) },
         };
     }

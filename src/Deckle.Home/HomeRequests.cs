@@ -3,10 +3,11 @@ using System.Text.Json.Nodes;
 namespace Deckle.Home;
 
 public sealed record HomeCreateItem(
-    string Code,
+    string? Code,
     string? Name,
     JsonObject? Properties,
-    IReadOnlyList<string>? Collections = null);
+    IReadOnlyList<string>? Collections = null,
+    string? Text = null);
 
 public sealed record HomeUpdateItem(
     string Object,
@@ -22,4 +23,5 @@ public sealed record HomeSearchFilter(
     string? Circuit,
     string? Category,
     string? Existence,
-    string? Condition);
+    string? Condition,
+    bool? Done = null);

@@ -13,14 +13,14 @@ public static class HomeToolCatalog
         [
             new ToolDescriptor(
                 "create",
-                "Create one or more Home inventory objects of one type. Codes are stored in immutable object titles; element titles are exactly their codes. Room prefixes are checked against the live Pièce objects, never a compiled registry. Optional collections are Anytype memberships, not relation properties.",
+                "Create one or more Home objects of one type. Inventory types require an immutable code stored in the object title (element titles are exactly their codes; room prefixes are checked against the live Pièce objects, never a compiled registry). Life types take no code: a course or outil takes a free name, an idee takes text whose first line becomes its title. Optional collections are Anytype memberships, not relation properties.",
                 CreateSchema(),
                 (args, ct) => gestures().CreateAsync(
                     RequiredString(args, "type"), CreateItems(args), ct)),
 
             new ToolDescriptor(
                 "update",
-                "Update one or more Home objects. Codes are immutable; for elements, Pièce and Catégorie are derived from the code and cannot be changed directly. Relations accept object codes, names, or ids. Collection membership uses add_to_collections/remove_from_collections and is distinct from relations. Set Existence to Déposé instead of deleting an element.",
+                "Update one or more Home objects. Codes are immutable; for elements, Pièce and Catégorie are derived from the code and cannot be changed directly. An idee cannot be renamed: its title is the first line of its body. Relations accept object codes, names, or ids. Collection membership uses add_to_collections/remove_from_collections and is distinct from relations. Set Existence to Déposé instead of deleting an element.",
                 UpdateSchema(),
                 (args, ct) => gestures().UpdateAsync(UpdateItems(args), ct)),
 
@@ -43,6 +43,7 @@ public static class HomeToolCatalog
                     ("category", EnumSchema("Element category code.", HomeCategories.All)),
                     ("existence", StringSchema("Existence key or label: existant, prévu, déposé.")),
                     ("condition", StringSchema("Condition key or label: bon, vétuste, endommagé, hors service.")),
+                    ("done", BooleanSchema("Filter on the native done checkbox (courses): true for checked, false for unchecked.")),
                 ]),
                 (args, ct) => gestures().SearchAsync(new HomeSearchFilter(
                     OptionalString(args, "text"),
@@ -51,7 +52,8 @@ public static class HomeToolCatalog
                     OptionalString(args, "circuit"),
                     OptionalString(args, "category"),
                     OptionalString(args, "existence"),
-                    OptionalString(args, "condition")), ct)),
+                    OptionalString(args, "condition"),
+                    OptionalBoolean(args, "done")), ct)),
 
             new ToolDescriptor(
                 "delete",
@@ -75,10 +77,11 @@ public static class HomeToolCatalog
                 ["maxItems"] = 100,
                 ["description"] = "Objects to create after validating the whole batch.",
                 ["items"] = ObjectSchema(
-                    required: [("code", StringSchema("Normative immutable code."))],
                     optional:
                     [
-                        ("name", StringSchema("Human title suffix for rooms, circuits, and distribution boards; forbidden for elements.")),
+                        ("code", StringSchema("Normative immutable code — required for inventory types, forbidden for idee, course, and outil.")),
+                        ("name", StringSchema("Human title: suffix for rooms, circuits, and distribution boards; the whole title for course and outil; forbidden for elements and idee.")),
+                        ("text", StringSchema("Body text: required for an idee (first line becomes the title), optional initial body for an outil, forbidden elsewhere.")),
                         ("properties", PropertyMapSchema()),
                         ("collections", StringArraySchema("Collections to add the created object to, by name, code, or id.")),
                     ]),
@@ -171,12 +174,13 @@ public static class HomeToolCatalog
         foreach (JsonNode? node in array)
         {
             JsonObject item = RequiredObject(node, "items[]");
-            RequireOnly(item, ["code", "name", "properties", "collections"], "items[]");
+            RequireOnly(item, ["code", "name", "text", "properties", "collections"], "items[]");
             result.Add(new HomeCreateItem(
-                RequiredString(item, "code"),
+                OptionalString(item, "code"),
                 OptionalString(item, "name"),
                 OptionalObject(item, "properties"),
-                OptionalStringArray(item, "collections")));
+                OptionalStringArray(item, "collections"),
+                OptionalString(item, "text")));
         }
         return result;
     }

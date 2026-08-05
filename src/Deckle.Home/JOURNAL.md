@@ -5,6 +5,12 @@ type: journal
 
 # Deckle.Home — Journal
 
+## 2026-08-05
+
+- **Life types join the surface without the code grammar.** `idee`, `course`, and `outil` are creatable through the same five gestures: no code, a free title for course/outil, a body-derived title for idee (the dev-space capture shape — single-line text of ≤80 chars becomes the whole title, longer text keeps its head as title and the full text as body). The PIÈCE-CAT grammar and element invariants stay strictly inventory-side.
+- **Files properties refuse MCP writes.** `facture` and `documents` belong to the validated contract, but their values are deposited in the app; the property writer fails them with guidance instead of silently writing text.
+- **The `etage` relation write fails on a key collision, not on its target.** Live discriminating test: PATCHing the `etage` objects-property fails with Anytype's "The node already has a parent" for both collection and basic targets, while identical `circuit` relation writes succeed — the property key colliding with the `etage` type key is the prime suspect. Clearing the relation to null works. A fix needs id-addressed property entries tried against the real backend; parked with the chantier/tâche lot.
+
 ## 2026-07-21
 
 - **Room registry is live data.** Room codes are read from `Pièce` objects in the configured Home space; no room list belongs in source or local configuration.

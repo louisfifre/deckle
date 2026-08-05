@@ -41,3 +41,8 @@ An absent or incompatible required shape fails closed before a write.
 Inventory codes live in object titles. Element titles are exactly their code;
 other inventory titles may use `CODE — label`. Do not introduce a parallel
 `code` property: it creates two truths and does not match the applied schema.
+
+Life types (`idee`, `course`, `outil`) carry no code at all: a course or outil
+is titled by its free name, an idee by the first line of its body — an idee is
+therefore never renamed directly. Files properties are validated in the schema
+but written only in the app.
