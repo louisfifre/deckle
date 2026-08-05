@@ -70,9 +70,10 @@ internal sealed class FakeHomeAnytypeServer : IDisposable
         id, HomeSchema.Types.Errand, name,
         CheckboxProperty("done", "Done", done));
 
-    public static JsonObject Worksite(string id, string name) => Object(
+    public static JsonObject Worksite(string id, string name, params string[] backlinkIds) => Object(
         id, HomeSchema.Types.Worksite, name,
-        SelectProperty(HomeSchema.Properties.Status, "Statut", "en_cours", "En cours"));
+        SelectProperty(HomeSchema.Properties.Status, "Statut", "en_cours", "En cours"),
+        ObjectsProperty("backlinks", "Backlinks", backlinkIds));
 
     public static JsonObject WorkTask(string id, string name, string? worksiteId, bool done) =>
         worksiteId is null

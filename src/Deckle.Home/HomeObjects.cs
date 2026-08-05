@@ -41,6 +41,14 @@ internal static class HomeObjectJson
         return separator < 0 ? name : name[..separator].Trim();
     }
 
+    // Anytype's own objects-format properties: the link graph and the audit
+    // trail. They are not domain relations — a reference scan that counts
+    // them makes a tâche and its chantier hold each other undeletable
+    // through links/backlinks.
+    private static readonly IReadOnlyCollection<string> SystemObjectProperties =
+        new HashSet<string>(StringComparer.Ordinal)
+        { "links", "backlinks", "creator", "last_modified_by" };
+
     public static IReadOnlyList<string> ObjectReferences(JsonObject value, string? propertyKey = null)
     {
         var result = new List<string>();
@@ -48,6 +56,8 @@ internal static class HomeObjectJson
         foreach (JsonNode? node in properties)
         {
             if (node is not JsonObject property) continue;
+            if (propertyKey is null && SystemObjectProperties.Contains(String(property, "key")))
+                continue;
             if (propertyKey is not null
                 && !string.Equals(String(property, "key"), propertyKey, StringComparison.Ordinal))
                 continue;

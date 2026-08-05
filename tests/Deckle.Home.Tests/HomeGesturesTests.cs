@@ -499,6 +499,22 @@ public class HomeGesturesTests
     }
 
     [Fact]
+    public async Task DeleteIgnoresAnytypeLinkGraphButKeepsDomainReferences()
+    {
+        using var server = new FakeHomeAnytypeServer();
+        server.SetObjects(
+            FakeHomeAnytypeServer.Worksite("site-1", "Salle de bain fictive", "task-1"),
+            FakeHomeAnytypeServer.WorkTask("task-1", "Déposer le lavabo fictif", "site-1", done: true));
+
+        InvalidOperationException error = await Assert.ThrowsAsync<InvalidOperationException>(() =>
+            Gestures(server).DeleteAsync("site-1", confirm: true, Ct));
+        Assert.Contains("encore référencé", error.Message);
+
+        string digest = await Gestures(server).DeleteAsync("task-1", confirm: true, Ct);
+        Assert.Contains("corbeille", digest);
+    }
+
+    [Fact]
     public void ManagedSchemaCarriesTheWorkTypesWithTheirLayouts()
     {
         JsonArray types = (JsonArray)HomeSchema.CreateRequiredSchemaManifest()["types"]!;
