@@ -46,3 +46,11 @@ Life types (`idee`, `course`, `outil`) carry no code at all: a course or outil
 is titled by its free name, an idee by the first line of its body — an idee is
 therefore never renamed directly. Files properties are validated in the schema
 but written only in the app.
+
+Work types (`chantier`, `tache`) are free-titled like life types and carry the
+house's pilotage without the dev-space PM discipline: creation is loose (a
+name suffices), tasks may live orphan, and there is no intervention journal —
+done tasks are the record. Prefer the dedicated verbs (`chantier_create`,
+`tache_create`, `complete`, `chantier_overview`) over the generic gestures;
+completion is the native `done` checkbox on action layouts and
+`statut = Terminé` on a chantier.

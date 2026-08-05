@@ -48,7 +48,7 @@ public sealed class HomeGestures
         var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         foreach (HomeCreateItem item in items)
         {
-            if (IsLife(type))
+            if (IsFreeTitled(type))
             {
                 JsonArray lifeProperties = await propertyWriter.BuildAsync(
                     type, item.Properties, [], ct).ConfigureAwait(false);
@@ -218,7 +218,7 @@ public sealed class HomeGestures
 
             var payload = new JsonObject();
             if (item.Name is not null)
-                payload["name"] = IsLife(type)
+                payload["name"] = IsFreeTitled(type)
                     ? item.Name.Trim()
                     : HumanTitle(HomeObjectJson.Code(target), item.Name);
             if (properties.Count > 0) payload["properties"] = properties;
@@ -269,6 +269,10 @@ public sealed class HomeGestures
         if (category is not null) HomeCategories.TypeFor(category);
         string? existence = NormalizeVocabulary(HomeSchema.Properties.Existence, filter.Existence);
         string? condition = NormalizeVocabulary(HomeSchema.Properties.Condition, filter.Condition);
+        string? status = NormalizeVocabulary(HomeSchema.Properties.Status, filter.Status);
+        string? worksiteId = filter.Worksite is null
+            ? null
+            : HomeObjectJson.Id(index.Resolve(filter.Worksite, [HomeSchema.Types.Worksite]));
         string? roomId = filter.Room is null
             ? null
             : HomeObjectJson.Id(index.Resolve(filter.Room, [HomeSchema.Types.Room]));
@@ -288,6 +292,10 @@ public sealed class HomeGestures
             query = query.Where(value => SelectMatches(value, HomeSchema.Properties.Existence, existence));
         if (condition is not null)
             query = query.Where(value => SelectMatches(value, HomeSchema.Properties.Condition, condition));
+        if (status is not null)
+            query = query.Where(value => SelectMatches(value, HomeSchema.Properties.Status, status));
+        if (worksiteId is not null)
+            query = query.Where(value => HomeObjectJson.ObjectReferences(value, HomeSchema.Properties.Worksite).Contains(worksiteId));
         if (filter.Done is bool done)
             query = query.Where(value => CheckboxValue(value, "done") == done);
         if (!string.IsNullOrWhiteSpace(filter.Text))
@@ -343,6 +351,142 @@ public sealed class HomeGestures
         return $"Mis à la corbeille : {HomeObjectIndex.Display(target)}.";
     }
 
+    // Typed pilotage verbs. Creation stays deliberately loose (a name
+    // suffices, properties land when known) and a task may live without a
+    // chantier: the chantier is for real works, not every chore.
+    public Task<string> CreateWorksiteAsync(
+        string name,
+        JsonObject? properties,
+        IReadOnlyList<string>? collections,
+        CancellationToken ct = default) =>
+        CreateAsync(
+            HomeSchema.Types.Worksite,
+            [new HomeCreateItem(null, name, properties, collections)],
+            ct);
+
+    public Task<string> CreateTaskAsync(
+        string name,
+        string? worksite,
+        JsonObject? properties,
+        CancellationToken ct = default)
+    {
+        if (worksite is not null)
+        {
+            properties = properties is null ? [] : (JsonObject)properties.DeepClone();
+            if (properties.Any(pair =>
+                    string.Equals(pair.Key, HomeSchema.Properties.Worksite, StringComparison.OrdinalIgnoreCase)
+                    || string.Equals(pair.Key, "Chantier", StringComparison.OrdinalIgnoreCase)))
+                throw new ArgumentException(
+                    "Le chantier est déjà fourni en propriété ; ne le passe qu'une fois.", nameof(worksite));
+            properties[HomeSchema.Properties.Worksite] = worksite;
+        }
+        return CreateAsync(
+            HomeSchema.Types.Task,
+            [new HomeCreateItem(null, name, properties, null)],
+            ct);
+    }
+
+    // Completion is the record: done tasks ARE the history of a chantier, so
+    // there is no separate intervention journal. done is Anytype's native
+    // action-layout checkbox, outside the Home property contract — its entry
+    // is built directly rather than through the writer.
+    public async Task<string> CompleteAsync(string selector, CancellationToken ct = default)
+    {
+        DateTime started = DateTime.UtcNow;
+        HomeSchemaRuntime schema = await _runtime.GetAsync(ct).ConfigureAwait(false);
+
+        using var writeScope = await _api.AcquireWriteScopeAsync("home_complete", "object", ct).ConfigureAwait(false);
+        HomeObjectIndex index = await HomeObjectIndex.LoadAsync(_api, _spaceId, ct).ConfigureAwait(false);
+        JsonObject target = index.Resolve(selector);
+        string type = HomeObjectJson.TypeKey(target);
+        string id = HomeObjectJson.Id(target);
+
+        if (type is HomeSchema.Types.Task or HomeSchema.Types.Errand)
+        {
+            var payload = new JsonObject
+            {
+                ["properties"] = new JsonArray(
+                    new JsonObject { ["key"] = "done", ["checkbox"] = true }),
+            };
+            await _api.UpdateObjectAsync(_spaceId, id, payload, ct).ConfigureAwait(false);
+            DeckleHomeSource.Log.GestureCompleted("complete", Elapsed(started));
+            return $"Terminé : {HomeObjectIndex.Display(target)}.";
+        }
+
+        if (type == HomeSchema.Types.Worksite)
+        {
+            var writer = new HomePropertyWriter(_api, _spaceId, schema, index);
+            JsonObject entry = await writer.BuildEntryAsync(
+                schema.Property(HomeSchema.Properties.Status),
+                JsonValue.Create(HomeSchema.Status.Done),
+                ct).ConfigureAwait(false);
+            await _api.UpdateObjectAsync(
+                _spaceId, id, new JsonObject { ["properties"] = new JsonArray(entry) }, ct).ConfigureAwait(false);
+            int open = TasksOf(index, id).Count(task => !CheckboxValue(task, "done"));
+            DeckleHomeSource.Log.GestureCompleted("complete", Elapsed(started));
+            return $"Chantier terminé : {HomeObjectIndex.Display(target)}."
+                + (open > 0 ? $" Attention : {open} tâche(s) encore ouverte(s)." : "");
+        }
+
+        throw new InvalidOperationException(
+            $"« {HomeObjectIndex.Display(target)} » ({type}) ne se termine pas : "
+            + "complete s'applique aux tâches, aux courses et aux chantiers.");
+    }
+
+    public async Task<string> WorksiteOverviewAsync(string selector, CancellationToken ct = default)
+    {
+        DateTime started = DateTime.UtcNow;
+        await _runtime.GetAsync(ct).ConfigureAwait(false);
+        HomeObjectIndex index = await HomeObjectIndex.LoadAsync(_api, _spaceId, ct).ConfigureAwait(false);
+        JsonObject worksite = index.Resolve(selector, [HomeSchema.Types.Worksite]);
+        string id = HomeObjectJson.Id(worksite);
+
+        JsonObject[] tasks = TasksOf(index, id).ToArray();
+        JsonObject[] open = tasks.Where(task => !CheckboxValue(task, "done")).ToArray();
+        JsonObject[] done = tasks.Where(task => CheckboxValue(task, "done")).ToArray();
+
+        var builder = new StringBuilder(index.Render(worksite));
+        if (tasks.Length == 0)
+        {
+            builder.Append("\n\nAucune tâche.");
+        }
+        else
+        {
+            builder.Append($"\n\nTâches ouvertes ({open.Length}) :");
+            if (open.Length == 0) builder.Append(" aucune.");
+            foreach (JsonObject task in open) builder.Append('\n').Append(TaskLine(task, index));
+            builder.Append($"\n\nTâches terminées ({done.Length}) :");
+            if (done.Length == 0) builder.Append(" aucune.");
+            foreach (JsonObject task in done) builder.Append('\n').Append(TaskLine(task, index));
+        }
+
+        DeckleHomeSource.Log.GestureCompleted("chantier_overview", Elapsed(started));
+        return builder.ToString();
+    }
+
+    private static IEnumerable<JsonObject> TasksOf(HomeObjectIndex index, string worksiteId) =>
+        index.Objects.Where(value =>
+            HomeObjectJson.TypeKey(value) == HomeSchema.Types.Task
+            && HomeObjectJson.ObjectReferences(value, HomeSchema.Properties.Worksite).Contains(worksiteId));
+
+    private static string TaskLine(JsonObject task, HomeObjectIndex index)
+    {
+        var parts = new List<string> { HomeObjectIndex.Display(task) };
+        JsonObject? status = HomeObjectJson.Property(task, HomeSchema.Properties.Status);
+        if (status is not null)
+        {
+            string rendered = HomeObjectJson.Render(status, index.DisplayForId);
+            if (rendered.Length > 0) parts.Add(rendered);
+        }
+        JsonObject? due = HomeObjectJson.Property(task, HomeSchema.Properties.TargetDate);
+        if (due is not null)
+        {
+            string rendered = HomeObjectJson.Render(due, index.DisplayForId);
+            if (rendered.Length > 0) parts.Add("cible " + rendered);
+        }
+        return "- " + string.Join(" · ", parts);
+    }
+
     private static string NormalizeType(string value)
     {
         if (string.IsNullOrWhiteSpace(value))
@@ -380,7 +524,10 @@ public sealed class HomeGestures
 
     private static bool IsElement(string type) => HomeSchema.ElementTypes.Contains(type);
 
-    private static bool IsLife(string type) => HomeSchema.LifeTypes.Contains(type);
+    // Life and work types share the same free-titled shape: no code, a plain
+    // name (or a body-derived one for ideas), none of the element invariants.
+    private static bool IsFreeTitled(string type) =>
+        HomeSchema.LifeTypes.Contains(type) || HomeSchema.WorkTypes.Contains(type);
 
     private static string RequireCode(string type, string? code) =>
         code ?? throw new ArgumentException(
@@ -416,9 +563,9 @@ public sealed class HomeGestures
         {
             if (string.IsNullOrEmpty(name))
                 throw new ArgumentException($"Un objet {type} exige un nom.", nameof(item));
-            if (text is not null && type == HomeSchema.Types.Errand)
+            if (text is not null && type != HomeSchema.Types.Tool)
                 throw new InvalidOperationException(
-                    "Une course n'a pas de corps : utilise la propriété « Notes ».");
+                    $"Un objet {type} n'a pas de corps : utilise la propriété « Notes ».");
             payload["name"] = name;
             if (!string.IsNullOrEmpty(text)) payload["body"] = text;
         }

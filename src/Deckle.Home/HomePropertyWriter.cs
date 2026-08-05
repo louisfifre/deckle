@@ -54,7 +54,7 @@ internal sealed class HomePropertyWriter(
             "objects" => new JsonObject
             {
                 ["key"] = property.Key,
-                ["objects"] = ResolveObjects(value, property.Name),
+                ["objects"] = ResolveObjects(property, value),
             },
             "files" => throw new InvalidOperationException(
                 $"La propriété « {property.Name} » porte des fichiers : dépose-les dans l'app Anytype, le MCP ne les écrit pas."),
@@ -101,24 +101,29 @@ internal sealed class HomePropertyWriter(
     {
         var result = new JsonArray();
         if (value is null) return result;
-        IEnumerable<JsonNode?> values = value is JsonArray array ? array : [value];
-        foreach (JsonNode? item in values)
+        foreach (JsonNode? item in Enumerate(value))
             result.Add(await ResolveTagAsync(property, Text(item, property.Name), ct).ConfigureAwait(false));
         return result;
     }
 
-    private JsonArray ResolveObjects(JsonNode? value, string propertyName)
+    private JsonArray ResolveObjects(SchemaPropertyInfo property, JsonNode? value)
     {
+        HomeSchema.ObjectPropertyTargets.TryGetValue(property.Key, out IReadOnlyList<string>? allowedTypes);
         var result = new JsonArray();
         if (value is null) return result;
-        IEnumerable<JsonNode?> values = value is JsonArray array ? array : [value];
-        foreach (JsonNode? item in values)
+        foreach (JsonNode? item in Enumerate(value))
         {
-            string selector = Text(item, propertyName);
-            result.Add(HomeObjectJson.Id(objects.Resolve(selector)));
+            string selector = Text(item, property.Name);
+            result.Add(HomeObjectJson.Id(objects.Resolve(selector, allowedTypes)));
         }
         return result;
     }
+
+    // A scalar must be wrapped in a plain array, never a JsonArray: building a
+    // JsonArray around a node that already belongs to the caller's properties
+    // object re-parents it and throws "The node already has a parent".
+    private static IEnumerable<JsonNode?> Enumerate(JsonNode value) =>
+        value is JsonArray array ? array : new JsonNode?[] { value };
 
     private async Task<IReadOnlyList<SchemaTagInfo>> ReadTagsAsync(
         SchemaPropertyInfo property, CancellationToken ct)

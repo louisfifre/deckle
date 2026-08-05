@@ -13,7 +13,7 @@ public static class HomeToolCatalog
         [
             new ToolDescriptor(
                 "create",
-                "Create one or more Home objects of one type. Inventory types require an immutable code stored in the object title (element titles are exactly their codes; room prefixes are checked against the live Pièce objects, never a compiled registry). Life types take no code: a course or outil takes a free name, an idee takes text whose first line becomes its title. Optional collections are Anytype memberships, not relation properties.",
+                "Create one or more Home objects of one type. Inventory types require an immutable code stored in the object title (element titles are exactly their codes; room prefixes are checked against the live Pièce objects, never a compiled registry). Life and work types take no code: a course, outil, chantier, or tache takes a free name, an idee takes text whose first line becomes its title. Optional collections are Anytype memberships, not relation properties. For chantier and tache, prefer the dedicated verbs chantier_create and tache_create.",
                 CreateSchema(),
                 (args, ct) => gestures().CreateAsync(
                     RequiredString(args, "type"), CreateItems(args), ct)),
@@ -33,7 +33,7 @@ public static class HomeToolCatalog
 
             new ToolDescriptor(
                 "search",
-                "List Home objects with optional text, type, room, circuit, category, existence, and condition filters. All filters combine; omit every filter to list the inventory.",
+                "List Home objects with optional text, type, room, circuit, category, existence, condition, chantier, statut, and done filters. All filters combine; omit every filter to list the inventory.",
                 ObjectSchema(optional:
                 [
                     ("text", StringSchema("Text matched against names, codes, and property values.")),
@@ -43,7 +43,9 @@ public static class HomeToolCatalog
                     ("category", EnumSchema("Element category code.", HomeCategories.All)),
                     ("existence", StringSchema("Existence key or label: existant, prévu, déposé.")),
                     ("condition", StringSchema("Condition key or label: bon, vétuste, endommagé, hors service.")),
-                    ("done", BooleanSchema("Filter on the native done checkbox (courses): true for checked, false for unchecked.")),
+                    ("done", BooleanSchema("Filter on the native done checkbox (courses, tâches): true for checked, false for unchecked.")),
+                    ("chantier", StringSchema("Chantier name or id: keep objects whose Chantier relation targets it.")),
+                    ("statut", StringSchema("Statut key or label: ouvert, en cours, en attente, dormant, terminé, abandonné.")),
                 ]),
                 (args, ct) => gestures().SearchAsync(new HomeSearchFilter(
                     OptionalString(args, "text"),
@@ -53,7 +55,9 @@ public static class HomeToolCatalog
                     OptionalString(args, "category"),
                     OptionalString(args, "existence"),
                     OptionalString(args, "condition"),
-                    OptionalBoolean(args, "done")), ct)),
+                    OptionalBoolean(args, "done"),
+                    OptionalString(args, "chantier"),
+                    OptionalString(args, "statut")), ct)),
 
             new ToolDescriptor(
                 "delete",
@@ -63,6 +67,50 @@ public static class HomeToolCatalog
                     optional: [("confirm", BooleanSchema("Confirm the previewed deletion; default false."))]),
                 (args, ct) => gestures().DeleteAsync(
                     RequiredString(args, "object"), OptionalBoolean(args, "confirm") ?? false, ct)),
+
+            new ToolDescriptor(
+                "chantier_create",
+                "Open a chantier — one finite piece of house work. Creation is deliberately loose: a name suffices; statut, concerne, date cible, and notes are added when known, to prioritize and list. Close it later with complete (statut = Terminé).",
+                ObjectSchema(
+                    required: [("name", StringSchema("Free chantier title."))],
+                    optional:
+                    [
+                        ("properties", PropertyMapSchema()),
+                        ("collections", StringArraySchema("Collections to add the chantier to, by name or id.")),
+                    ]),
+                (args, ct) => gestures().CreateWorksiteAsync(
+                    RequiredString(args, "name"),
+                    OptionalObject(args, "properties"),
+                    OptionalStringArray(args, "collections"), ct)),
+
+            new ToolDescriptor(
+                "tache_create",
+                "Create a house task. Orphan by default — small chores live alone; pass chantier to attach it to real works, or attach later with update. A name suffices; the native done checkbox (complete) is the completion signal, and done tasks are the chantier's history.",
+                ObjectSchema(
+                    required: [("name", StringSchema("Free task title."))],
+                    optional:
+                    [
+                        ("chantier", StringSchema("Chantier to attach the task to, by name or id.")),
+                        ("properties", PropertyMapSchema()),
+                    ]),
+                (args, ct) => gestures().CreateTaskAsync(
+                    RequiredString(args, "name"),
+                    OptionalString(args, "chantier"),
+                    OptionalObject(args, "properties"), ct)),
+
+            new ToolDescriptor(
+                "complete",
+                "Mark work done: checks the native done box of a tache or course, or sets statut = Terminé on a chantier (reporting its still-open tasks). Done tasks are the record — there is no separate intervention journal.",
+                ObjectSchema(
+                    required: [("object", StringSchema("Tâche, course, or chantier name or id."))]),
+                (args, ct) => gestures().CompleteAsync(RequiredString(args, "object"), ct)),
+
+            new ToolDescriptor(
+                "chantier_overview",
+                "One-call state of a chantier: its properties, then its tasks split open / done with statut and date cible.",
+                ObjectSchema(
+                    required: [("chantier", StringSchema("Chantier name or id."))]),
+                (args, ct) => gestures().WorksiteOverviewAsync(RequiredString(args, "chantier"), ct)),
         ];
     }
 
@@ -215,16 +263,16 @@ public static class HomeToolCatalog
     private static JsonObject RequiredObject(JsonNode? node, string name) =>
         node as JsonObject ?? throw new ArgumentException($"Argument '{name}' must be an object.", name);
 
-    private static JsonObject? OptionalObject(JsonObject args, string name)
+    private static JsonObject? OptionalObject(JsonObject? args, string name)
     {
-        if (!args.TryGetPropertyValue(name, out JsonNode? node) || node is null) return null;
+        if (args is null || !args.TryGetPropertyValue(name, out JsonNode? node) || node is null) return null;
         return node as JsonObject
             ?? throw new ArgumentException($"Argument '{name}' must be an object.", name);
     }
 
-    private static IReadOnlyList<string>? OptionalStringArray(JsonObject args, string name)
+    private static IReadOnlyList<string>? OptionalStringArray(JsonObject? args, string name)
     {
-        if (!args.TryGetPropertyValue(name, out JsonNode? node) || node is null) return null;
+        if (args is null || !args.TryGetPropertyValue(name, out JsonNode? node) || node is null) return null;
         if (node is not JsonArray array)
             throw new ArgumentException($"Argument '{name}' must be an array.", name);
 

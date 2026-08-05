@@ -24,4 +24,6 @@ public sealed record HomeSearchFilter(
     string? Category,
     string? Existence,
     string? Condition,
-    bool? Done = null);
+    bool? Done = null,
+    string? Worksite = null,
+    string? Status = null);

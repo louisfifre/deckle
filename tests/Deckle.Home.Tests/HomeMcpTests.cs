@@ -26,7 +26,11 @@ public class HomeMcpTests
         McpSurfaceSession session = HomeMcp.Client.Surface.OpenSession(api);
 
         Assert.Equal(
-            new[] { "create", "delete", "get", "search", "update" },
+            new[]
+            {
+                "chantier_create", "chantier_overview", "complete", "create",
+                "delete", "get", "search", "tache_create", "update",
+            },
             session.Tools.Select(tool => tool.Name).OrderBy(name => name));
         Assert.Contains("home inventory", session.Descriptor.Instructions);
     }

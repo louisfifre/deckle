@@ -368,6 +368,148 @@ public class HomeGesturesTests
         Assert.Equal("basic", TypeSpec(HomeSchema.Types.Room)["layout"]!.GetValue<string>());
     }
 
+    [Fact]
+    public async Task WorksiteCreateTakesANameAloneAndTaskCreateAttachesToIt()
+    {
+        using var server = new FakeHomeAnytypeServer();
+
+        await Gestures(server).CreateWorksiteAsync("Salle de bain fictive", null, null, Ct);
+
+        JsonObject worksite = (JsonObject)JsonNode.Parse(server.Requests.Single(r => r.Method == "POST").Body)!;
+        Assert.Equal(HomeSchema.Types.Worksite, worksite["type_key"]!.GetValue<string>());
+        Assert.Equal("Salle de bain fictive", worksite["name"]!.GetValue<string>());
+        Assert.DoesNotContain("properties", worksite.Select(pair => pair.Key));
+
+        await Gestures(server).CreateTaskAsync("Déposer le lavabo fictif", "Salle de bain fictive", null, Ct);
+
+        JsonObject task = (JsonObject)JsonNode.Parse(server.Requests.Last(r => r.Method == "POST").Body)!;
+        Assert.Equal(HomeSchema.Types.Task, task["type_key"]!.GetValue<string>());
+        JsonArray reference = Assert.IsType<JsonArray>(
+            Entry(Assert.IsType<JsonArray>(task["properties"]), HomeSchema.Properties.Worksite)["objects"]);
+        Assert.Equal("created-1", Assert.Single(reference)!.GetValue<string>());
+    }
+
+    [Fact]
+    public async Task TaskCreateAllowsAnOrphanAndWorkTypesRefuseCodeAndBody()
+    {
+        using var server = new FakeHomeAnytypeServer();
+
+        await Gestures(server).CreateTaskAsync("Purger le radiateur fictif", null, null, Ct);
+
+        JsonObject task = (JsonObject)JsonNode.Parse(server.Requests.Single(r => r.Method == "POST").Body)!;
+        Assert.Equal(HomeSchema.Types.Task, task["type_key"]!.GetValue<string>());
+        Assert.DoesNotContain("properties", task.Select(pair => pair.Key));
+
+        InvalidOperationException codeError = await Assert.ThrowsAsync<InvalidOperationException>(() =>
+            Gestures(server).CreateAsync(
+                HomeSchema.Types.Worksite,
+                [new HomeCreateItem("ZZ-P01", "Chantier fictif", null)], Ct));
+        Assert.Contains("ne porte pas de code", codeError.Message);
+
+        InvalidOperationException bodyError = await Assert.ThrowsAsync<InvalidOperationException>(() =>
+            Gestures(server).CreateAsync(
+                HomeSchema.Types.Task,
+                [new HomeCreateItem(null, "Tâche fictive", null, Text: "un corps")], Ct));
+        Assert.Contains("Notes", bodyError.Message);
+    }
+
+    [Fact]
+    public async Task CompleteChecksTheNativeDoneBoxOfATask()
+    {
+        using var server = new FakeHomeAnytypeServer();
+        server.SetObjects(FakeHomeAnytypeServer.WorkTask("task-1", "Purger le radiateur fictif", null, done: false));
+
+        string digest = await Gestures(server).CompleteAsync("Purger le radiateur fictif", Ct);
+
+        Assert.Contains("Terminé", digest);
+        JsonObject patch = (JsonObject)JsonNode.Parse(server.Requests.Single(r => r.Method == "PATCH").Body)!;
+        JsonObject entry = Entry(Assert.IsType<JsonArray>(patch["properties"]), "done");
+        Assert.True(entry["checkbox"]!.GetValue<bool>());
+    }
+
+    [Fact]
+    public async Task CompleteClosesAWorksiteWithStatutTermineAndCountsOpenTasks()
+    {
+        using var server = new FakeHomeAnytypeServer();
+        server.SetObjects(
+            FakeHomeAnytypeServer.Worksite("site-1", "Salle de bain fictive"),
+            FakeHomeAnytypeServer.WorkTask("task-1", "Déposer le lavabo fictif", "site-1", done: false),
+            FakeHomeAnytypeServer.WorkTask("task-2", "Choisir le carrelage fictif", "site-1", done: true));
+
+        string digest = await Gestures(server).CompleteAsync("Salle de bain fictive", Ct);
+
+        Assert.Contains("Chantier terminé", digest);
+        Assert.Contains("1 tâche", digest);
+        JsonObject patch = (JsonObject)JsonNode.Parse(server.Requests.Single(r => r.Method == "PATCH").Body)!;
+        Assert.Equal(
+            "tag-statut-termine",
+            Entry(Assert.IsType<JsonArray>(patch["properties"]), HomeSchema.Properties.Status)["select"]!.GetValue<string>());
+    }
+
+    [Fact]
+    public async Task CompleteRefusesAnObjectThatDoesNotFinish()
+    {
+        using var server = new FakeHomeAnytypeServer();
+        server.SetObjects(FakeHomeAnytypeServer.Room("room-zz", "ZZ", "Pièce fictive"));
+
+        InvalidOperationException error = await Assert.ThrowsAsync<InvalidOperationException>(() =>
+            Gestures(server).CompleteAsync("ZZ", Ct));
+
+        Assert.Contains("ne se termine pas", error.Message);
+        Assert.DoesNotContain(server.Requests, request => request.Method == "PATCH");
+    }
+
+    [Fact]
+    public async Task WorksiteOverviewGroupsItsTasksByDoneState()
+    {
+        using var server = new FakeHomeAnytypeServer();
+        server.SetObjects(
+            FakeHomeAnytypeServer.Worksite("site-1", "Salle de bain fictive"),
+            FakeHomeAnytypeServer.WorkTask("task-1", "Déposer le lavabo fictif", "site-1", done: false),
+            FakeHomeAnytypeServer.WorkTask("task-2", "Choisir le carrelage fictif", "site-1", done: true),
+            FakeHomeAnytypeServer.WorkTask("task-3", "Corvée orpheline fictive", null, done: false));
+
+        string overview = await Gestures(server).WorksiteOverviewAsync("Salle de bain fictive", Ct);
+
+        Assert.Contains("Tâches ouvertes (1)", overview);
+        Assert.Contains("Déposer le lavabo fictif", overview);
+        Assert.Contains("Tâches terminées (1)", overview);
+        Assert.Contains("Choisir le carrelage fictif", overview);
+        Assert.DoesNotContain("Corvée orpheline fictive", overview);
+    }
+
+    [Fact]
+    public async Task SearchFiltersByWorksiteAndStatut()
+    {
+        using var server = new FakeHomeAnytypeServer();
+        server.SetObjects(
+            FakeHomeAnytypeServer.Worksite("site-1", "Salle de bain fictive"),
+            FakeHomeAnytypeServer.Worksite("site-2", "Terrasse fictive"),
+            FakeHomeAnytypeServer.WorkTask("task-1", "Déposer le lavabo fictif", "site-1", done: false),
+            FakeHomeAnytypeServer.WorkTask("task-2", "Corvée orpheline fictive", null, done: false));
+
+        string byWorksite = await Gestures(server).SearchAsync(
+            new HomeSearchFilter(null, null, null, null, null, null, null, Worksite: "Salle de bain fictive"), Ct);
+        Assert.Contains("Déposer le lavabo fictif", byWorksite);
+        Assert.DoesNotContain("Corvée orpheline fictive", byWorksite);
+
+        string byStatut = await Gestures(server).SearchAsync(
+            new HomeSearchFilter(null, HomeSchema.Types.Worksite, null, null, null, null, null, Status: "En cours"), Ct);
+        Assert.Contains("Salle de bain fictive", byStatut);
+    }
+
+    [Fact]
+    public void ManagedSchemaCarriesTheWorkTypesWithTheirLayouts()
+    {
+        JsonArray types = (JsonArray)HomeSchema.CreateRequiredSchemaManifest()["types"]!;
+        JsonObject TypeSpec(string key) =>
+            types.OfType<JsonObject>().Single(value => value["key"]!.GetValue<string>() == key);
+
+        Assert.Equal("basic", TypeSpec(HomeSchema.Types.Worksite)["layout"]!.GetValue<string>());
+        Assert.Equal("action", TypeSpec(HomeSchema.Types.Task)["layout"]!.GetValue<string>());
+        Assert.Equal("Chantiers", TypeSpec(HomeSchema.Types.Worksite)["plural_name"]!.GetValue<string>());
+    }
+
     private static JsonObject Entry(JsonArray properties, string key) =>
         properties.OfType<JsonObject>().Single(value => value["key"]!.GetValue<string>() == key);
 }

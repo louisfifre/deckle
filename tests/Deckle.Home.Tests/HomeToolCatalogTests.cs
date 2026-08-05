@@ -8,10 +8,14 @@ namespace Deckle.Home.Tests;
 [Trait("Category", "unit")]
 public class HomeToolCatalogTests
 {
-    private static readonly string[] ExpectedNames = ["create", "update", "get", "search", "delete"];
+    private static readonly string[] ExpectedNames =
+    [
+        "create", "update", "get", "search", "delete",
+        "chantier_create", "tache_create", "complete", "chantier_overview",
+    ];
 
     [Fact]
-    public void BuildExposesExactlyTheFiveSpecifiedToolsWithoutResolvingHome()
+    public void BuildExposesExactlyTheSpecifiedToolsWithoutResolvingHome()
     {
         int resolutions = 0;
 
