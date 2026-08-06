@@ -11,7 +11,7 @@ function Assert-Equal($Expected, $Actual, [string]$Case) {
 }
 
 $entries = @(
-    [pscustomobject]@{ Branch = 'main'; Path = 'D:\projects\ai\deckle' }
+    [pscustomobject]@{ Branch = 'main'; Path = 'X:\repo\deckle' }
     [pscustomobject]@{ Branch = 'fix/a-branch-name-that-needs-truncation'; Path = 'D:\worktrees\deckle\menu-polish' }
 )
 $rows = @(New-WorktreeGridRows -Entries $entries)

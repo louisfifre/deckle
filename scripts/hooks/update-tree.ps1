@@ -7,7 +7,7 @@
 #>
 
 $ErrorActionPreference = 'Stop'
-$repoRoot   = (git rev-parse --show-toplevel).Trim()
+$repoRoot   = Split-Path -Parent (Split-Path -Parent $PSScriptRoot)
 $outputFile = Join-Path $repoRoot 'TREE.md'
 . (Join-Path $repoRoot 'scripts\lib\script-output.ps1')
 

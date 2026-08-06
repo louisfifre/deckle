@@ -1,5 +1,6 @@
 $ErrorActionPreference = 'Stop'
 $ScriptsDir = Split-Path -Parent (Split-Path -Parent $PSScriptRoot)
+$RepoRoot = Split-Path -Parent $ScriptsDir
 $CommandDir = Join-Path $ScriptsDir 'commands'
 $LibDir = Join-Path $ScriptsDir 'lib'
 $TestDir = Join-Path $ScriptsDir 'tests'
@@ -24,6 +25,12 @@ foreach ($file in Get-ChildItem -LiteralPath $LibDir -Recurse -File -Include '*.
 }
 if ($libraryEntryPoints.Count -gt 0) {
     throw "Library files must be imported, not invoked as commands: $($libraryEntryPoints -join ', ')"
+}
+
+$workspace = Get-Content -Raw -LiteralPath (Join-Path $RepoRoot 'deckle.code-workspace') | ConvertFrom-Json
+$externalFolders = @($workspace.folders | Where-Object { $_.path -ne '.' })
+if ($externalFolders.Count -gt 0) {
+    throw "The shared workspace must only open the cloned repository: $($externalFolders.path -join ', ')"
 }
 
 Write-Host 'script-layout.tests.ps1: PASS' -ForegroundColor Green

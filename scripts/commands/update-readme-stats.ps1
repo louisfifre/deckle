@@ -53,7 +53,7 @@ if ($Pick) {
     if (-not (Test-Path $Target)) { throw "Target not found: $Target" }
     $RepoRoot = (Resolve-Path -LiteralPath $Target).Path
 } else {
-    $RepoRoot = (git rev-parse --show-toplevel).Trim()
+    $RepoRoot = Split-Path -Parent (Split-Path -Parent $ScriptDir)
 }
 
 Write-DeckleOutputText -Text "Repo: $RepoRoot" -Role Muted

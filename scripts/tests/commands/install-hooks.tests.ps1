@@ -21,6 +21,7 @@ try {
     Copy-Item -LiteralPath (Join-Path $LibDir 'action-summary.ps1') -Destination (Join-Path $repository 'scripts\lib\action-summary.ps1')
     Copy-Item -LiteralPath (Join-Path $LibDir 'script-output.ps1') -Destination (Join-Path $repository 'scripts\lib\script-output.ps1')
     Copy-Item -LiteralPath (Join-Path $ScriptsDir 'hooks\pre-commit') -Destination (Join-Path $repository 'scripts\hooks\pre-commit')
+    Copy-Item -LiteralPath (Join-Path $ScriptsDir 'hooks\update-tree.ps1') -Destination (Join-Path $repository 'scripts\hooks\update-tree.ps1')
 
     Invoke-TestGit -Root $repository -Arguments @('init', '-q')
     Invoke-TestGit -Root $repository -Arguments @('config', 'user.name', 'Deckle Tests')
@@ -29,7 +30,7 @@ try {
     Invoke-TestGit -Root $repository -Arguments @('commit', '-m', 'test: seed hook fixture')
     Invoke-TestGit -Root $repository -Arguments @('worktree', 'add', '-q', '-b', 'test-worktree', $worktree)
 
-    Push-Location $worktree
+    Push-Location $testRoot
     try {
         & (Join-Path $worktree 'scripts\commands\install-hooks.ps1') *> $null
     } finally {
@@ -40,6 +41,18 @@ try {
     if (-not (Test-Path -LiteralPath $commonHook)) { throw 'The hook was not installed in the shared Git directory.' }
     $worktreeHookDir = Join-Path $repository '.git\worktrees\worktree\hooks'
     if (Test-Path -LiteralPath $worktreeHookDir) { throw 'A worktree-local hooks directory must not be created.' }
+    $mergeDriver = (& git -C $repository config --get merge.ours.driver).Trim()
+    if ($mergeDriver -cne 'true') { throw 'The TREE.md merge driver was not registered in the repository.' }
+
+    Push-Location $testRoot
+    try {
+        & (Join-Path $repository 'scripts\hooks\update-tree.ps1') *> $null
+    } finally {
+        Pop-Location
+    }
+    if (-not (Test-Path -LiteralPath (Join-Path $repository 'TREE.md'))) {
+        throw 'TREE.md generation must resolve its repository outside the current directory.'
+    }
 
     Write-Host 'install-hooks.tests.ps1: PASS' -ForegroundColor Green
 } finally {
