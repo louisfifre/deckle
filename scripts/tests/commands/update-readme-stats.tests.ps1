@@ -3,8 +3,8 @@ $ScriptsDir = Split-Path -Parent (Split-Path -Parent $PSScriptRoot)
 $CommandDir = Join-Path $ScriptsDir 'commands'
 $LibDir = Join-Path $ScriptsDir 'lib'
 
-$scriptPath = Join-Path $CommandDir 'update-readme-stats.ps1'
 $root = Join-Path ([IO.Path]::GetTempPath()) "deckle-readme-stats-$([guid]::NewGuid())"
+$scriptPath = Join-Path $root 'scripts\commands\update-readme-stats.ps1'
 
 function Invoke-TestGit {
     param([Parameter(ValueFromRemainingArguments)][string[]]$Arguments)
@@ -15,6 +15,11 @@ function Invoke-TestGit {
 
 try {
     $null = New-Item -ItemType Directory -Path $root
+    $null = New-Item -ItemType Directory -Path (Join-Path $root 'scripts\commands')
+    $null = New-Item -ItemType Directory -Path (Join-Path $root 'scripts\lib')
+    Copy-Item -LiteralPath (Join-Path $CommandDir 'update-readme-stats.ps1') -Destination $scriptPath
+    Copy-Item -LiteralPath (Join-Path $LibDir 'action-summary.ps1') -Destination (Join-Path $root 'scripts\lib\action-summary.ps1')
+    Copy-Item -LiteralPath (Join-Path $LibDir 'script-output.ps1') -Destination (Join-Path $root 'scripts\lib\script-output.ps1')
     Invoke-TestGit init --initial-branch=main | Out-Null
     Invoke-TestGit config user.name 'Deckle Tests' | Out-Null
     Invoke-TestGit config user.email 'deckle-tests@example.invalid' | Out-Null
@@ -32,10 +37,15 @@ old pulse
 Stable content.
 '@ | Set-Content -LiteralPath (Join-Path $root 'README.md') -Encoding utf8NoBOM
     Set-Content -LiteralPath (Join-Path $root 'tracked.txt') -Value 'tracked' -Encoding utf8NoBOM
-    Invoke-TestGit add README.md tracked.txt | Out-Null
+    Invoke-TestGit add README.md tracked.txt scripts | Out-Null
     Invoke-TestGit commit -m 'test: seed repository' | Out-Null
 
-    & $scriptPath -Target $root
+    Push-Location (Split-Path -Parent $root)
+    try {
+        & $scriptPath
+    } finally {
+        Pop-Location
+    }
     if (-not @(Invoke-TestGit diff --name-only -- README.md).Count) {
         throw 'README update should leave a pending generated change without -Commit'
     }

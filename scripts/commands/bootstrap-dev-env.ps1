@@ -537,7 +537,9 @@ Write-Host "       scripts\deckle.ps1" -ForegroundColor DarkGray
 if ($Full) {
     Write-Host ""
     Write-Host "  4. (-Full only) Clone whisper.cpp for native rebuilds:" -ForegroundColor White
-    Write-Host "       git clone https://github.com/ggerganov/whisper.cpp D:\workspace\whisper.cpp" -ForegroundColor DarkGray
+    $repoRoot = Split-Path -Parent (Split-Path -Parent $ScriptDir)
+    $whisperRepo = [IO.Path]::GetFullPath((Join-Path $repoRoot '..\whisper.cpp'))
+    Write-Host "       git clone https://github.com/ggerganov/whisper.cpp `"$whisperRepo`"" -ForegroundColor DarkGray
     Write-Host "     Then build whisper.cpp with Vulkan before publishing a native bundle." -ForegroundColor DarkGray
     Write-Host ""
     Write-Host "  5. (-Full only) Pull an Ollama model for the rewrite feature:" -ForegroundColor White

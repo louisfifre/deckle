@@ -12,7 +12,8 @@ whisper.cpp/
 # Vendored upstream Rust source for the voxtral-burn POC — clone of
 # TrevorS/voxtral-mini-realtime-rs landed inside the worktree for
 # convenience, build artifacts and target/ stay local. Model weights
-# live under D:\models\llm\voxtral\, never in the repo.
+# live under the external directory configured by DECKLE_MODELS_DIR,
+# never in the repo.
 benchmark/rs/voxtral-mini-realtime-rs/
 
 # Legacy doc revisions kept locally for reference — superseded versions
@@ -34,7 +35,7 @@ benchmark/**/obj/
 # Deployment output — rebuildable via dotnet publish.
 publish/
 # Release staging from scripts/commands/publish-app.ps1 (publish folder +
-# versioned ZIP + .sha256). Lives on the repo volume, off C:; never committed.
+# versioned ZIP + .sha256). Lives under the repository; never committed.
 artifacts/
 
 # Misc build logs.

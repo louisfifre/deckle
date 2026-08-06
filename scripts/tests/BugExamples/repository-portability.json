@@ -1,0 +1,39 @@
+{
+  "schema": 1,
+  "id": "developer-tooling-2026-08-06-repository-portability",
+  "status": "active",
+  "modules": ["DeveloperTooling"],
+  "classes": ["current-directory-dependency", "machine-local-workspace-path"],
+  "trigger": {
+    "operation": "clone-or-run-from-an-unrelated-directory"
+  },
+  "symptom": "The shared workspace opens missing machine-local folders, and repository commands can resolve or configure the wrong Git checkout.",
+  "cause": "Tracked workspace folders named one developer's environment, while three commands derived the repository from the caller's current directory instead of their own script location.",
+  "violatedInvariant": "Tracked developer workflows anchor to the checkout that contains them and require no maintainer-specific filesystem layout.",
+  "contract": {
+    "must": [
+      "Keep the shared workspace inside the cloned repository.",
+      "Resolve default repository roots from PSScriptRoot.",
+      "Run Git mutations with an explicit repository directory."
+    ]
+  },
+  "automation": {
+    "tier": "regression",
+    "tests": [
+      "scripts/tests/lib/script-layout.tests.ps1",
+      "scripts/tests/commands/install-hooks.tests.ps1",
+      "scripts/tests/commands/update-readme-stats.tests.ps1"
+    ],
+    "residual": "Optional research studies retain explicit external model and tool inputs; they are not part of the application build or daily repository workflows.",
+    "reviewPaths": [
+      "deckle.code-workspace",
+      "scripts/commands/install-hooks.ps1",
+      "scripts/commands/update-readme-stats.ps1",
+      "scripts/hooks/update-tree.ps1"
+    ]
+  },
+  "provenance": {
+    "observedAt": "2026-08-06",
+    "redaction": "synthetic"
+  }
+}

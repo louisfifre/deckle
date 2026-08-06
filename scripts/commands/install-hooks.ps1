@@ -11,7 +11,7 @@ $scriptDir = $PSScriptRoot
 $libDir = Join-Path (Split-Path -Parent $scriptDir) 'lib'
 . (Join-Path $libDir 'action-summary.ps1')
 
-$repoRoot  = (git rev-parse --show-toplevel).Trim()
+$repoRoot = Split-Path -Parent (Split-Path -Parent $scriptDir)
 $gitCommonDir = (git -C $repoRoot rev-parse --path-format=absolute --git-common-dir).Trim()
 if ($LASTEXITCODE -ne 0 -or [string]::IsNullOrWhiteSpace($gitCommonDir)) {
     throw 'Could not resolve the shared Git directory.'
@@ -64,7 +64,8 @@ foreach ($hookFile in $hookFiles) {
 # that changes the file set regenerates it via the pre-commit hook. The driver
 # definition lives in .git/config (not shared by clone), so it is set here.
 Write-DeckleWorkflowStep -Output $WorkflowOutput -Message "Register TREE.md merge driver"
-git config merge.ours.driver true
+git -C $repoRoot config merge.ours.driver true
+if ($LASTEXITCODE -ne 0) { throw "Could not register the TREE.md merge driver." }
 Write-DeckleWorkflowMessage -Output $WorkflowOutput -Message "Registered merge.ours driver"
 
 Write-DeckleActionSummary `

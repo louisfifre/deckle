@@ -7,7 +7,7 @@ module: scripts
 
 # `scripts/` — Deckle dev workflows
 
-All scripts target PowerShell 7+. The single entry point lives at [`deckle.ps1`](deckle.ps1); the commands it dispatches to live under [`commands/`](commands/) and stay usable on their own CLI for automation.
+All scripts target PowerShell 7+. The single entry point lives at [`deckle.ps1`](deckle.ps1); the commands it dispatches to live under [`commands/`](commands/) and stay usable on their own CLI for automation. Tracked workflows resolve the repository from their own location, so the checkout drive and the terminal's current directory are not part of their contract.
 
 ## Entry point — `deckle.ps1`
 

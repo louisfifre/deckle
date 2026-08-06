@@ -118,11 +118,11 @@ Deckle is an early public release, and its capabilities differ in maturity. Dict
 Bootstrap a fresh Windows 11 machine, then build and run:
 
 ```powershell
-scripts/commands/bootstrap-dev-env.ps1              # .NET 10, VS 2026, tooling
-scripts/commands/build-run.ps1 -Configuration Release
+pwsh scripts/commands/bootstrap-dev-env.ps1              # .NET 10, VS 2026, tooling
+pwsh scripts/commands/build-run.ps1 -Configuration Release
 ```
 
-The interactive menu at `scripts/deckle.ps1` wraps the development workflows. Worker scripts, switches, and native-runtime sourcing are documented in [`scripts/README.md`](scripts/README.md).
+Run `pwsh scripts/deckle.ps1` for the interactive menu. Worker scripts, switches, and native-runtime sourcing are documented in [`scripts/README.md`](scripts/README.md).
 
 ## Contributing
 

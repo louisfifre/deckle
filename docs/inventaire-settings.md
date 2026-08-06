@@ -6,33 +6,33 @@
 
 | Réglage | Cat. | État | Mappé sur | Défaut | Av. | Emplacement |
 |---|---|---|---|---|---|---|
-| Theme | setting | migrated | Choice<string> (System/Light/Dark) | new AppearanceSettings().Theme → "System" |  | D:\projects\ai\deckle\src\Deckle.Settings\Persistence\AppSettings.cs:46 |
-| Overlay Enabled | setting | migrated | Group (master toggle with children) | new OverlaySettings().Enabled → true |  | D:\projects\ai\deckle\src\Deckle.Settings\Persistence\AppSettings.cs:53 |
-| Overlay Fade on Proximity | setting | migrated | Toggle (child of Overlay group) | new OverlaySettings().FadeOnProximity → true |  | D:\projects\ai\deckle\src\Deckle.Settings\Persistence\AppSettings.cs:54 |
-| Overlay Animations | setting | migrated | Toggle (child of Overlay group) | new OverlaySettings().Animations → true | • | D:\projects\ai\deckle\src\Deckle.Settings\Persistence\AppSettings.cs:63 |
-| Overlay Position | setting | migrated | Choice<string> (TopCenter/BottomCenter; child of Overlay group) | new OverlaySettings().Position → "BottomCenter" |  | D:\projects\ai\deckle\src\Deckle.Settings\Persistence\AppSettings.cs:55 |
-| Auto-Paste Enabled | setting | migrated | Toggle | new PasteSettings().AutoPasteEnabled → false |  | D:\projects\ai\deckle\src\Deckle.Settings\Persistence\AppSettings.cs:40 |
-| Start with Windows | setting | migrated | Toggle | AutostartService.DefaultEnabled → false (registry-backed) |  | D:\projects\ai\deckle\src\Deckle.Settings\ViewModels\GeneralViewModel.cs:106 |
-| Backup Directory | setting | hand-authored | Path (FolderPickerCard, hand-authored in XAML) | new PathsSettings().BackupDirectory → "" (empty = AppPaths) |  | D:\projects\ai\deckle\src\Deckle.Settings\Persistence\AppSettings.cs:79 |
-| Audio Input Device | setting | hand-authored | Choice<int> (waveIn enumeration, ComboBox in code-behind) | new CaptureSettings().AudioInputDeviceId → -1 |  | D:\projects\ai\deckle\src\Deckle.Audio\CaptureSettings.cs:15 |
-| Preprocessing Enabled | setting | migrated | Toggle | new PreprocessingSettings().Enabled → false |  | D:\projects\ai\deckle\src\Deckle.Audio\Preprocessing\PreprocessingSettings.cs:27 |
-| Voice Level Min dBFS | setting | migrated | Slider (double, -90 to -10, step 1, unit dBFS; child of group) | new LevelWindowSettings().MinDbfs → -55f |  | D:\projects\ai\deckle\src\Deckle.Audio\CaptureSettings.cs:58 |
-| Voice Level Max dBFS | setting | migrated | Slider (double, -60 to -10, step 1, unit dBFS; child of group) | new LevelWindowSettings().MaxDbfs → -32f |  | D:\projects\ai\deckle\src\Deckle.Audio\CaptureSettings.cs:59 |
-| Voice Level Curve Exponent | setting | migrated | Slider (double, 0.3 to 3.0, step 0.05; child of group) | new LevelWindowSettings().DbfsCurveExponent → 1.0f | • | D:\projects\ai\deckle\src\Deckle.Audio\CaptureSettings.cs:60 |
-| Voice Level Auto-Calibration | setting | migrated | Group (master, inverted semantics) | new LevelWindowSettings().AutoCalibrationEnabled → false |  | D:\projects\ai\deckle\src\Deckle.Audio\CaptureSettings.cs:61 |
-| Log Ambient Capture Activity | setting | migrated | Toggle | LoggingSettings default → false |  | D:\projects\ai\deckle\src\Deckle.Diagnostics.Logging\LoggingSettings.cs |
-| Log Streaming Transcription Activity | setting | migrated | Toggle | LoggingSettings default → false |  | D:\projects\ai\deckle\src\Deckle.Diagnostics.Logging\LoggingSettings.cs |
-| Log Autocorrect Activity | setting | migrated | Toggle | LoggingSettings default → false |  | D:\projects\ai\deckle\src\Deckle.Diagnostics.Logging\LoggingSettings.cs |
-| Log Windowing Activity | setting | migrated | Toggle | LoggingSettings default → false |  | D:\projects\ai\deckle\src\Deckle.Diagnostics.Logging\LoggingSettings.cs |
-| Application Log to Disk | setting | migrated | Toggle (with confirmOnEnable gate) | new TelemetrySettings().ApplicationLogToDisk → false |  | D:\projects\ai\deckle\src\Deckle.Diagnostics.Telemetry\TelemetrySettings.cs:30 |
-| Microphone Telemetry | setting | migrated | Toggle (with confirmOnEnable gate) | new TelemetrySettings().MicrophoneTelemetry → false |  | D:\projects\ai\deckle\src\Deckle.Diagnostics.Telemetry\TelemetrySettings.cs:14 |
-| Latency Telemetry | setting | migrated | Toggle | new TelemetrySettings().LatencyEnabled → false | • | D:\projects\ai\deckle\src\Deckle.Diagnostics.Telemetry\TelemetrySettings.cs:13 |
-| Corpus Enabled | setting | hand-authored | Toggle (with consent gate in code-behind) | new TelemetrySettings().CorpusEnabled → false |  | D:\projects\ai\deckle\src\Deckle.Diagnostics.Telemetry\TelemetrySettings.cs:15 |
-| Record Audio Corpus | setting | hand-authored | Toggle (nested, with consent gate) | new TelemetrySettings().RecordAudioCorpus → false |  | D:\projects\ai\deckle\src\Deckle.Diagnostics.Telemetry\TelemetrySettings.cs:16 |
-| Audio Corpus Content | setting | hand-authored | Radio (RadioButtons, 2 options) | new TelemetrySettings().AudioCorpusContent → AudioCorpusContent.MatchTranscription |  | D:\projects\ai\deckle\src\Deckle.Diagnostics.Telemetry\TelemetrySettings.cs:25 |
-| Autocorrect Decisions | setting | hand-authored | Toggle (with consent gate in code-behind) | new TelemetrySettings().AutocorrectDecisions → false |  | D:\projects\ai\deckle\src\Deckle.Diagnostics.Telemetry\TelemetrySettings.cs:38 |
-| Autocorrect Text | setting | hand-authored | Toggle (nested, with consent gate) | new TelemetrySettings().AutocorrectText → false |  | D:\projects\ai\deckle\src\Deckle.Diagnostics.Telemetry\TelemetrySettings.cs:46 |
-| Telemetry Storage Directory | setting | hand-authored | Path (FolderPickerCard, hand-authored in XAML) | new TelemetrySettings().StorageDirectory → "" (empty = AppPaths.TelemetryDirectory) | • | D:\projects\ai\deckle\src\Deckle.Diagnostics.Telemetry\TelemetrySettings.cs:31 |
+| Theme | setting | migrated | Choice<string> (System/Light/Dark) | new AppearanceSettings().Theme → "System" |  | src\Deckle.Settings\Persistence\AppSettings.cs:46 |
+| Overlay Enabled | setting | migrated | Group (master toggle with children) | new OverlaySettings().Enabled → true |  | src\Deckle.Settings\Persistence\AppSettings.cs:53 |
+| Overlay Fade on Proximity | setting | migrated | Toggle (child of Overlay group) | new OverlaySettings().FadeOnProximity → true |  | src\Deckle.Settings\Persistence\AppSettings.cs:54 |
+| Overlay Animations | setting | migrated | Toggle (child of Overlay group) | new OverlaySettings().Animations → true | • | src\Deckle.Settings\Persistence\AppSettings.cs:63 |
+| Overlay Position | setting | migrated | Choice<string> (TopCenter/BottomCenter; child of Overlay group) | new OverlaySettings().Position → "BottomCenter" |  | src\Deckle.Settings\Persistence\AppSettings.cs:55 |
+| Auto-Paste Enabled | setting | migrated | Toggle | new PasteSettings().AutoPasteEnabled → false |  | src\Deckle.Settings\Persistence\AppSettings.cs:40 |
+| Start with Windows | setting | migrated | Toggle | AutostartService.DefaultEnabled → false (registry-backed) |  | src\Deckle.Settings\ViewModels\GeneralViewModel.cs:106 |
+| Backup Directory | setting | hand-authored | Path (FolderPickerCard, hand-authored in XAML) | new PathsSettings().BackupDirectory → "" (empty = AppPaths) |  | src\Deckle.Settings\Persistence\AppSettings.cs:79 |
+| Audio Input Device | setting | hand-authored | Choice<int> (waveIn enumeration, ComboBox in code-behind) | new CaptureSettings().AudioInputDeviceId → -1 |  | src\Deckle.Audio\CaptureSettings.cs:15 |
+| Preprocessing Enabled | setting | migrated | Toggle | new PreprocessingSettings().Enabled → false |  | src\Deckle.Audio\Preprocessing\PreprocessingSettings.cs:27 |
+| Voice Level Min dBFS | setting | migrated | Slider (double, -90 to -10, step 1, unit dBFS; child of group) | new LevelWindowSettings().MinDbfs → -55f |  | src\Deckle.Audio\CaptureSettings.cs:58 |
+| Voice Level Max dBFS | setting | migrated | Slider (double, -60 to -10, step 1, unit dBFS; child of group) | new LevelWindowSettings().MaxDbfs → -32f |  | src\Deckle.Audio\CaptureSettings.cs:59 |
+| Voice Level Curve Exponent | setting | migrated | Slider (double, 0.3 to 3.0, step 0.05; child of group) | new LevelWindowSettings().DbfsCurveExponent → 1.0f | • | src\Deckle.Audio\CaptureSettings.cs:60 |
+| Voice Level Auto-Calibration | setting | migrated | Group (master, inverted semantics) | new LevelWindowSettings().AutoCalibrationEnabled → false |  | src\Deckle.Audio\CaptureSettings.cs:61 |
+| Log Ambient Capture Activity | setting | migrated | Toggle | LoggingSettings default → false |  | src\Deckle.Diagnostics.Logging\LoggingSettings.cs |
+| Log Streaming Transcription Activity | setting | migrated | Toggle | LoggingSettings default → false |  | src\Deckle.Diagnostics.Logging\LoggingSettings.cs |
+| Log Autocorrect Activity | setting | migrated | Toggle | LoggingSettings default → false |  | src\Deckle.Diagnostics.Logging\LoggingSettings.cs |
+| Log Windowing Activity | setting | migrated | Toggle | LoggingSettings default → false |  | src\Deckle.Diagnostics.Logging\LoggingSettings.cs |
+| Application Log to Disk | setting | migrated | Toggle (with confirmOnEnable gate) | new TelemetrySettings().ApplicationLogToDisk → false |  | src\Deckle.Diagnostics.Telemetry\TelemetrySettings.cs:30 |
+| Microphone Telemetry | setting | migrated | Toggle (with confirmOnEnable gate) | new TelemetrySettings().MicrophoneTelemetry → false |  | src\Deckle.Diagnostics.Telemetry\TelemetrySettings.cs:14 |
+| Latency Telemetry | setting | migrated | Toggle | new TelemetrySettings().LatencyEnabled → false | • | src\Deckle.Diagnostics.Telemetry\TelemetrySettings.cs:13 |
+| Corpus Enabled | setting | hand-authored | Toggle (with consent gate in code-behind) | new TelemetrySettings().CorpusEnabled → false |  | src\Deckle.Diagnostics.Telemetry\TelemetrySettings.cs:15 |
+| Record Audio Corpus | setting | hand-authored | Toggle (nested, with consent gate) | new TelemetrySettings().RecordAudioCorpus → false |  | src\Deckle.Diagnostics.Telemetry\TelemetrySettings.cs:16 |
+| Audio Corpus Content | setting | hand-authored | Radio (RadioButtons, 2 options) | new TelemetrySettings().AudioCorpusContent → AudioCorpusContent.MatchTranscription |  | src\Deckle.Diagnostics.Telemetry\TelemetrySettings.cs:25 |
+| Autocorrect Decisions | setting | hand-authored | Toggle (with consent gate in code-behind) | new TelemetrySettings().AutocorrectDecisions → false |  | src\Deckle.Diagnostics.Telemetry\TelemetrySettings.cs:38 |
+| Autocorrect Text | setting | hand-authored | Toggle (nested, with consent gate) | new TelemetrySettings().AutocorrectText → false |  | src\Deckle.Diagnostics.Telemetry\TelemetrySettings.cs:46 |
+| Telemetry Storage Directory | setting | hand-authored | Path (FolderPickerCard, hand-authored in XAML) | new TelemetrySettings().StorageDirectory → "" (empty = AppPaths.TelemetryDirectory) | • | src\Deckle.Diagnostics.Telemetry\TelemetrySettings.cs:31 |
 
 **Gestes destructifs :** Reset Appearance Settings _(adhoc-dialog)_ · Reset Behaviour Settings _(adhoc-dialog)_ · Reset Startup Settings _(adhoc-dialog)_ · Restore Backup _(service)_ · Reset Recording Settings _(adhoc-dialog)_
 
@@ -113,21 +113,21 @@
 
 | Réglage | Cat. | État | Mappé sur | Défaut | Av. | Emplacement |
 |---|---|---|---|---|---|---|
-| Enabled | setting | hand-authored | LlmSettings.Enabled (bool) | LlmSettings ctor: true |  | D:\projects\ai\deckle\src\Deckle.Llm.Rewrite\LlmSettings.cs:57 |
-| Ollama endpoint | setting | hand-authored | LlmSettings.OllamaEndpoint (string) | LlmSettings ctor: 'http://localhost:11434/api/generate' |  | D:\projects\ai\deckle\src\Deckle.Llm.Rewrite\LlmSettings.cs:58 |
-| Primary rewrite profile | setting | hand-authored | LlmSettings.PrimaryRewriteProfileName (string?) + PrimaryRewriteProfileId (string?) | LlmSettings ctor: null (not set by default) |  | D:\projects\ai\deckle\src\Deckle.Llm.Rewrite\LlmSettings.cs:65,74 |
-| Secondary rewrite profile | setting | hand-authored | LlmSettings.SecondaryRewriteProfileName (string?) + SecondaryRewriteProfileId (string?) | LlmSettings ctor: null (not set by default) |  | D:\projects\ai\deckle\src\Deckle.Llm.Rewrite\LlmSettings.cs:69,75 |
-| Legacy auto-rewrite rule metric | legacy setting | retained for deserialization | LlmSettings.RuleMetric (string) | No runtime or UI consumer |  | D:\projects\ai\deckle\src\Deckle.Llm.Rewrite\LlmSettings.cs |
-| Legacy auto-rewrite rules by duration | legacy setting | retained for deserialization | LlmSettings.AutoRewriteRules (List<AutoRewriteRule>) | No runtime or UI consumer |  | D:\projects\ai\deckle\src\Deckle.Llm.Rewrite\LlmSettings.cs |
-| Legacy auto-rewrite rules by word count | legacy setting | retained for deserialization | LlmSettings.AutoRewriteRulesByWords (List<AutoRewriteRuleByWords>) | No runtime or UI consumer |  | D:\projects\ai\deckle\src\Deckle.Llm.Rewrite\LlmSettings.cs |
-| Rewrite profile: Name | setting | hand-authored | RewriteProfile.Name (string) | LlmSettings ctor: 'Lissage', 'Affinage', 'Arrangement' (three defaults) |  | D:\projects\ai\deckle\src\Deckle.Llm.Rewrite\LlmSettings.cs:19,88-242 |
-| Rewrite profile: Model | setting | hand-authored | RewriteProfile.Model (string) | LlmSettings ctor: '' (empty, user must choose) |  | D:\projects\ai\deckle\src\Deckle.Llm.Rewrite\LlmSettings.cs:20,88-242 |
-| Rewrite profile: System prompt | setting | hand-authored | RewriteProfile.SystemPrompt (string) | LlmSettings ctor: Three shipped prompts for Lissage/Affinage/Arrangement (tuned via autoresearch on Ministral 14B Q4) |  | D:\projects\ai\deckle\src\Deckle.Llm.Rewrite\LlmSettings.cs:21,100-240 |
-| Rewrite profile: Temperature | setting | hand-authored | RewriteProfile.Temperature (double?) | LlmSettings ctor: 0.30 for all three defaults (Lissage/Affinage/Arrangement) |  | D:\projects\ai\deckle\src\Deckle.Llm.Rewrite\LlmSettings.cs:24,94,141,195 |
-| Rewrite profile: Context size (NumCtxK) | setting | hand-authored | RewriteProfile.NumCtxK (int?), mapped to ProfileViewModel.CtxIndex (0..8 index into CtxKSteps array [1,2,4,8,16,32,64,128,256]) | LlmSettings ctor: Lissage 8K, Affinage 16K, Arrangement 16K |  | D:\projects\ai\deckle\src\Deckle.Llm.Rewrite\LlmSettings.cs:25,95,142,196; ProfileViewModel.cs:100,119 |
-| Rewrite profile: Top P (advanced) | setting | hand-authored | RewriteProfile.TopP (double?) | LlmSettings ctor: null (not sent to Ollama, uses Modelfile default) | • | D:\projects\ai\deckle\src\Deckle.Llm.Rewrite\LlmSettings.cs:26 |
-| Rewrite profile: Repeat penalty (advanced) | setting | hand-authored | RewriteProfile.RepeatPenalty (double?) | LlmSettings ctor: null (not sent to Ollama, uses Modelfile default) | • | D:\projects\ai\deckle\src\Deckle.Llm.Rewrite\LlmSettings.cs:27 |
-| Rewrite profile: Stable ID | diagnostic | n/a | RewriteProfile.Id (string, 12-char Guid suffix N format) | Generated on new profile or legacy load via LlmSettingsMigrations.RepairProfileReferences |  | D:\projects\ai\deckle\src\Deckle.Llm.Rewrite\LlmSettings.cs:17; LlmSettingsMigrations.cs:48-52 |
+| Enabled | setting | hand-authored | LlmSettings.Enabled (bool) | LlmSettings ctor: true |  | src\Deckle.Llm.Rewrite\LlmSettings.cs:57 |
+| Ollama endpoint | setting | hand-authored | LlmSettings.OllamaEndpoint (string) | LlmSettings ctor: 'http://localhost:11434/api/generate' |  | src\Deckle.Llm.Rewrite\LlmSettings.cs:58 |
+| Primary rewrite profile | setting | hand-authored | LlmSettings.PrimaryRewriteProfileName (string?) + PrimaryRewriteProfileId (string?) | LlmSettings ctor: null (not set by default) |  | src\Deckle.Llm.Rewrite\LlmSettings.cs:65,74 |
+| Secondary rewrite profile | setting | hand-authored | LlmSettings.SecondaryRewriteProfileName (string?) + SecondaryRewriteProfileId (string?) | LlmSettings ctor: null (not set by default) |  | src\Deckle.Llm.Rewrite\LlmSettings.cs:69,75 |
+| Legacy auto-rewrite rule metric | legacy setting | retained for deserialization | LlmSettings.RuleMetric (string) | No runtime or UI consumer |  | src\Deckle.Llm.Rewrite\LlmSettings.cs |
+| Legacy auto-rewrite rules by duration | legacy setting | retained for deserialization | LlmSettings.AutoRewriteRules (List<AutoRewriteRule>) | No runtime or UI consumer |  | src\Deckle.Llm.Rewrite\LlmSettings.cs |
+| Legacy auto-rewrite rules by word count | legacy setting | retained for deserialization | LlmSettings.AutoRewriteRulesByWords (List<AutoRewriteRuleByWords>) | No runtime or UI consumer |  | src\Deckle.Llm.Rewrite\LlmSettings.cs |
+| Rewrite profile: Name | setting | hand-authored | RewriteProfile.Name (string) | LlmSettings ctor: 'Lissage', 'Affinage', 'Arrangement' (three defaults) |  | src\Deckle.Llm.Rewrite\LlmSettings.cs:19,88-242 |
+| Rewrite profile: Model | setting | hand-authored | RewriteProfile.Model (string) | LlmSettings ctor: '' (empty, user must choose) |  | src\Deckle.Llm.Rewrite\LlmSettings.cs:20,88-242 |
+| Rewrite profile: System prompt | setting | hand-authored | RewriteProfile.SystemPrompt (string) | LlmSettings ctor: Three shipped prompts for Lissage/Affinage/Arrangement (tuned via autoresearch on Ministral 14B Q4) |  | src\Deckle.Llm.Rewrite\LlmSettings.cs:21,100-240 |
+| Rewrite profile: Temperature | setting | hand-authored | RewriteProfile.Temperature (double?) | LlmSettings ctor: 0.30 for all three defaults (Lissage/Affinage/Arrangement) |  | src\Deckle.Llm.Rewrite\LlmSettings.cs:24,94,141,195 |
+| Rewrite profile: Context size (NumCtxK) | setting | hand-authored | RewriteProfile.NumCtxK (int?), mapped to ProfileViewModel.CtxIndex (0..8 index into CtxKSteps array [1,2,4,8,16,32,64,128,256]) | LlmSettings ctor: Lissage 8K, Affinage 16K, Arrangement 16K |  | src\Deckle.Llm.Rewrite\LlmSettings.cs:25,95,142,196; ProfileViewModel.cs:100,119 |
+| Rewrite profile: Top P (advanced) | setting | hand-authored | RewriteProfile.TopP (double?) | LlmSettings ctor: null (not sent to Ollama, uses Modelfile default) | • | src\Deckle.Llm.Rewrite\LlmSettings.cs:26 |
+| Rewrite profile: Repeat penalty (advanced) | setting | hand-authored | RewriteProfile.RepeatPenalty (double?) | LlmSettings ctor: null (not sent to Ollama, uses Modelfile default) | • | src\Deckle.Llm.Rewrite\LlmSettings.cs:27 |
+| Rewrite profile: Stable ID | diagnostic | n/a | RewriteProfile.Id (string, 12-char Guid suffix N format) | Generated on new profile or legacy load via LlmSettingsMigrations.RepairProfileReferences |  | src\Deckle.Llm.Rewrite\LlmSettings.cs:17; LlmSettingsMigrations.cs:48-52 |
 
 **Gestes destructifs :** Reset General section _(adhoc-dialog)_ · Reset Shortcuts section _(adhoc-dialog)_ · Reset Profiles section _(adhoc-dialog)_ · Reset all LLM settings _(adhoc-dialog)_ · Delete profile _(adhoc-dialog)_ · Delete model from Ollama _(adhoc-dialog)_
 

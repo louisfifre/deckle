@@ -45,4 +45,6 @@ Everything specialized is discoverable, not pre-chewed here — orient, never re
 
 ## For Codex
 
-Use `D:\worktrees\deckle` as the worktree container when a dedicated worktree is needed.
+Use a sibling `worktrees/deckle` container beside the directory that holds the
+primary checkout. For example, `D:\projects\deckle` resolves to
+`D:\worktrees\deckle`; derive it from the checkout instead of assuming a drive.

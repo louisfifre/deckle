@@ -36,8 +36,8 @@ $structured = @(ConvertTo-DeckleActionLogRecords -InputObject $hostWarning -Sour
 Assert-Equal 'Warning' $structured[0].Level 'host color provides a structured internal log level'
 Assert-Equal ([ConsoleColor]::Yellow) $structured[0].ForegroundColor 'host color is retained for menu rendering'
 
-$msbuildSuccess = @(ConvertTo-DeckleActionLogRecords -InputObject '  Deckle.App -> D:\projects\ai\deckle\artifacts\bin\Deckle.App.dll' -Source Build)
-Assert-Equal '  Deckle.App -> D:\projects\ai\deckle\artifacts\bin\Deckle.App.dll' $msbuildSuccess[0].Message 'MSBuild success output remains raw'
+$msbuildSuccess = @(ConvertTo-DeckleActionLogRecords -InputObject '  Deckle.App -> X:\repo\deckle\artifacts\bin\Deckle.App.dll' -Source Build)
+Assert-Equal '  Deckle.App -> X:\repo\deckle\artifacts\bin\Deckle.App.dll' $msbuildSuccess[0].Message 'MSBuild success output remains raw'
 Assert-Equal $null $msbuildSuccess[0].ForegroundColor 'ordinary successful compiler output stays in the terminal body color'
 $nonDeckleBuild = @(ConvertTo-DeckleActionLogRecords -InputObject '  Microsoft.WindowsAppSDK -> D:\packages\Microsoft.WindowsAppSDK.dll' -Source Build)
 Assert-Equal $null $nonDeckleBuild[0].ForegroundColor 'unrelated native output also inherits the terminal body color'

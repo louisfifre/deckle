@@ -2,22 +2,9 @@
 	"folders": [
 		{
 			"path": "."
-		},
-		{
-			"path": "../../../worktrees/deckle"
-		},
-		{
-			"path": "C:/Users/Louis/.claude/projects/D--projects-ai-deckle/memory"
-		},
-		{
-			"path": "C:/Users/Louis/AppData/Local/Deckle"
-		},
-		{
-			"path": "../../../skills"
 		}
 	],
 	"settings": {
-		"powershell.cwd": "deckle",
 		"liveServer.settings.multiRootWorkspaceName": "deckle"
 	}
 }
