@@ -2,9 +2,13 @@
 	"folders": [
 		{
 			"path": "."
+		},
+		{
+			"path": "../../skills"
 		}
 	],
 	"settings": {
-		"liveServer.settings.multiRootWorkspaceName": "deckle"
+		"liveServer.settings.multiRootWorkspaceName": "deckle",
+		"powershell.cwd": "deckle"
 	}
 }

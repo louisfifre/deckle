@@ -3,16 +3,17 @@
   "id": "developer-tooling-2026-08-06-repository-portability",
   "status": "active",
   "modules": ["DeveloperTooling"],
-  "classes": ["current-directory-dependency", "machine-local-workspace-path"],
+  "classes": ["current-directory-dependency", "workspace-navigation-coupling"],
   "trigger": {
-    "operation": "clone-or-run-from-an-unrelated-directory"
+    "operation": "clone-run-from-an-unrelated-directory-or-add-workspace-folders"
   },
-  "symptom": "The shared workspace opens missing machine-local folders, and repository commands can resolve or configure the wrong Git checkout.",
-  "cause": "Tracked workspace folders named one developer's environment, while three commands derived the repository from the caller's current directory instead of their own script location.",
-  "violatedInvariant": "Tracked developer workflows anchor to the checkout that contains them and require no maintainer-specific filesystem layout.",
+  "symptom": "Repository commands can resolve the wrong checkout, while an over-correction can prevent useful navigation folders from being added to the workspace.",
+  "cause": "Three commands derived the repository from the caller's current directory, and the first portability guard incorrectly coupled workspace portability to a single-root Explorer layout.",
+  "violatedInvariant": "Developer workflows anchor to the checkout that contains them independently of which folders the workspace exposes for navigation.",
   "contract": {
     "must": [
-      "Keep the shared workspace inside the cloned repository.",
+      "Keep the cloned repository represented by the workspace's dot-relative root.",
+      "Allow additional workspace folders without treating them as implicit command roots.",
       "Resolve default repository roots from PSScriptRoot.",
       "Run Git mutations with an explicit repository directory."
     ]
@@ -24,7 +25,7 @@
       "scripts/tests/commands/install-hooks.tests.ps1",
       "scripts/tests/commands/update-readme-stats.tests.ps1"
     ],
-    "residual": "Optional research studies retain explicit external model and tool inputs; they are not part of the application build or daily repository workflows.",
+    "residual": "The PowerShell extension asks for a session folder in multi-root workspaces and then separately asks whether to persist that choice; this upstream interaction is not launcher path resolution.",
     "reviewPaths": [
       "deckle.code-workspace",
       "scripts/commands/install-hooks.ps1",

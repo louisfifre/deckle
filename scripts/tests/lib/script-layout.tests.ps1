@@ -28,9 +28,9 @@ if ($libraryEntryPoints.Count -gt 0) {
 }
 
 $workspace = Get-Content -Raw -LiteralPath (Join-Path $RepoRoot 'deckle.code-workspace') | ConvertFrom-Json
-$externalFolders = @($workspace.folders | Where-Object { $_.path -ne '.' })
-if ($externalFolders.Count -gt 0) {
-    throw "The shared workspace must only open the cloned repository: $($externalFolders.path -join ', ')"
+$repositoryFolders = @($workspace.folders | Where-Object { $_.path -eq '.' })
+if ($repositoryFolders.Count -ne 1) {
+    throw 'The shared workspace must open the cloned repository exactly once.'
 }
 
 Write-Host 'script-layout.tests.ps1: PASS' -ForegroundColor Green
