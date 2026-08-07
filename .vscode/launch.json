@@ -1,30 +1,13 @@
 {
     // Deckle launch profiles. Select from the Run and Debug panel (Ctrl+Shift+D),
     // then F5. Uses the PowerShell extension (ms-vscode.powershell).
-    //
-    // Le profil par défaut "Deckle" ouvre le menu unique :
-    //   - pick action (Launch, Build, Clean, Stats, Bootstrap)
-    //   - per-worktree actions then prompt for a worktree.
-    // VSCodium reste ouvert sur main, on choisit la branche et l'action
-    // sans switcher. Voir scripts/deckle.ps1 et scripts/lib/menu.psm1.
-    //
-    // Le profil "Quick build" garde le raccourci direct sur build-run.ps1
-    // pour build & run Release sur le worktree choisi.
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "Deckle: pick action -> pick worktree",
+            "name": "Deckle scripts",
             "type": "PowerShell",
             "request": "launch",
             "script": "${workspaceFolder}/scripts/deckle.ps1",
-            "cwd": "${workspaceFolder}"
-        },
-        {
-            "name": "Quick build: pick worktree (Release)",
-            "type": "PowerShell",
-            "request": "launch",
-            "script": "${workspaceFolder}/scripts/commands/build-run.ps1",
-            "args": [ "-Pick" ],
             "cwd": "${workspaceFolder}"
         }
     ]
