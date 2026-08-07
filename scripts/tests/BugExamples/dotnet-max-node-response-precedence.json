@@ -1,0 +1,36 @@
+{
+  "schema": 1,
+  "id": "developer-tooling-2026-08-07-dotnet-max-node-response-precedence",
+  "status": "active",
+  "modules": ["DeveloperTooling"],
+  "classes": ["build-parallelism", "response-file-precedence", "process-fan-out"],
+  "trigger": {
+    "operation": "dotnet-build-with-maxcpucount-one-in-directory-build-response"
+  },
+  "symptom": "A Deckle build started sixteen MSBuild worker nodes and could fail with MSB4166 even though Directory.Build.rsp requested one node.",
+  "cause": "The dotnet CLI appended its default maxCpuCount switch after Directory.Build.rsp was evaluated, so the later command-line value replaced the response-file limit.",
+  "violatedInvariant": "Every Deckle command-line build uses one low-priority MSBuild node and leaves no reusable MSBuild or Roslyn server.",
+  "contract": {
+    "must": [
+      "Pass /m:1 explicitly to every dotnet build or publish invocation.",
+      "Keep low priority, disabled node reuse, and disabled Roslyn shared compilation in Directory.Build.rsp."
+    ],
+    "mustNot": [
+      "Rely on Directory.Build.rsp to override the dotnet CLI maximum node count."
+    ]
+  },
+  "automation": {
+    "tier": "manual-regression",
+    "residual": "Reliable verification requires observing the live process tree during a real SDK build; static MSBuild property evaluation incorrectly reported one node in the failing configuration.",
+    "reviewPaths": [
+      "Directory.Build.rsp",
+      "AGENTS.md",
+      "scripts/commands/build-run.ps1",
+      "scripts/commands/publish-app.ps1"
+    ]
+  },
+  "provenance": {
+    "observedAt": "2026-08-07",
+    "redaction": "synthetic"
+  }
+}

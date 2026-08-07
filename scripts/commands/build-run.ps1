@@ -109,7 +109,7 @@ Stop-DeckleProcess -WriteEvent {
 Write-DeckleWorkflowStep -Output $WorkflowOutput -Message "dotnet build ($Configuration x64)"
 $buildExitCode = Invoke-DeckleConsoleProcess -FilePath 'dotnet' -ArgumentList @(
     'build', $Csproj, "-c:$Configuration", '-p:Platform=x64', '-v:m', '-nologo',
-    '/nr:false', '/p:UseSharedCompilation=false'
+    '/m:1'
 )
 if ($buildExitCode -ne 0) { throw "dotnet build failed (code $buildExitCode)" }
 Write-DeckleWorkflowResult -Output $WorkflowOutput -Message 'Build succeeded'

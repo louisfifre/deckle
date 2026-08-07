@@ -1,0 +1,3 @@
+-nodeReuse:false
+-property:UseSharedCompilation=false
+-lowPriority:true
