@@ -11,89 +11,88 @@ Vocabulary of the system-autocorrect workstream (machine-wide bounded correction
 ## Where correction may act
 
 **Correctable surface** :
-A text-input context where the system autocorrect is allowed to act. Two gates, both required. First, the *surface class* must be correctable: password fields are outside the system entirely — never corrected, keystrokes never observed or buffered (hard rule, not a setting) — and non-prose contexts (terminals, code editors, full-screen games) are excluded by default. Classes are judged per surface (the focused control), not per application: an embedded terminal inside an otherwise prose app is still excluded, to the extent the surface can be identified. The exact class inventory follows the background research. Second, the *application* must be enrolled.
+A focused text-input control where correction may act because both gates are open: its surface class is eligible and its application is enrolled. Eligibility belongs to the focused control, not the application as a whole; password controls are outside the system entirely, and non-prose controls are ineligible by default.
 _Avoid_ : blocklist-only framing (exclusion classes are the safety net, enrollment is the activation gate — they are different gates).
 
 **Enrolled app** :
-An application where autocorrect is active because the user accepted the enrollment prompt there. Enrollment is asked once per app and remembered; an app never asked, or never answered, stays non-enrolled and untouched.
+An application where autocorrect is active because the user accepted enrollment. It is the user-consent gate, independent of whether the focused surface class is correctable; an app with no accepted answer stays untouched.
 
 **Enrollment prompt** :
-The notification raised the first time the system *could* correct something in a non-enrolled app — never on mere app launch, so apps where no prose is ever typed never see it. It does not block, steal focus, or rewrite anything; corrections stay withheld until the user opts in, and ignoring the prompt is a valid answer. Candidate refinement, noted not committed: applying the withheld corrections retroactively when consent arrives late.
+A passive notification asking whether to enroll an application, raised only when a correction would otherwise be possible there. It requests the consent gate; it neither grants enrollment by appearing nor applies a correction itself.
 _Avoid_ : popup, dialog (it is a passive notification, not a modal).
 
 ## Taking a correction back
 
 **Correction undo** :
-The explicit act that takes a correction back, carried by the correction inlay — never by the keyboard. Backspace is always a plain Backspace: backing into a corrected word means editing it, not disputing the correction. Replaces the retired implicit-Backspace revert, whose misfires (a deleted comma read as an undo) broke the trust the corrector exists to earn. An undo is also the negative learning signal — it writes the suppression that keeps a correction from coming back on its own; the exact learning semantics are open.
+The explicit act that takes a correction back through the correction inlay and records a negative learning signal. It is distinct from editing the corrected text: Backspace remains a plain Backspace and never means correction undo.
 _Avoid_ : revert (the retired implicit-Backspace model), Ctrl+Z (never intercepted — it belongs to the apps).
 
 **Correction inlay** :
-The small non-focusable surface that sits above the active text field and reveals on pointer proximity (the Hue-window reveal pattern), carrying the last applied correction and its undo/redo. The only place a correction is taken back, and the only visibility corrections get — the typing flow itself stays free of visual effects by decision. Contents and depth (one correction or a short history) are open.
+The non-focusable companion surface that exposes an applied correction and its undo/redo without interrupting typing. It is both the visibility channel for silent corrections and the only surface that carries correction undo.
 _Avoid_ : popup, toast, notification (it never steals focus or announces itself).
 
 ## The two stages
 
 **Commit stage** :
-The instantaneous correction layer, acting at word commit with left context only — conservative, bounded, imperceptible. What it cannot decide it leaves alone, and it never touches anything behind the last committed word. A word the user has reopened and retyped is exempt from this stage for that occurrence — the deliberate keystroke asserts intent; only the sentence stage, deciding from full context, may still revise it.
+The immediate correction layer that acts on the last committed word from the literal and its left context. It makes only bounded decisions and leaves ambiguity untouched; full-sentence evidence belongs to the sentence stage.
 _Avoid_ : first pass (scope is the point, not order).
 
 **Protected literal** :
-A form the commit stage must never touch because it is valid in a recognized lexicon. Three tiers protect, one architecture: the *primary language* (swappable by design; French today, the large inflected lexicon), the permanent *global-English layer* (the same whatever the primary language), and the *personal vocabulary*. The English layer is deliberately *restricted* — a fixed seed of technical globish and brand names, plus what the user's own usage adopts (dictation transcriptions are a prime source) — never a full English dictionary, which would shield too many mangled French words. Protection is one-way: a valid English form is never corrected, but nothing is corrected *toward* English and English spelling is not repaired. Whether an English-shaped token was in fact a mangled French word is the sentence stage's call, made from the whole sentence.
+A form the commit stage must leave untouched because it belongs to the primary-language lexicon, the restricted global-English layer, or the personal vocabulary. Protection is one-way: it preserves a recognized literal but does not make the protected English layer a correction target.
 _Avoid_ : whitelist (protection gates correction, not observation), English lexicon as spelling authority.
 
 **Candidate ownership** :
-The provenance relationship between a sentence-stage candidate set and the commit policy that earned it. An untouched literal has no candidate owner, so bounded alternatives from several policies may coexist. An applied correction has one owner, and its takeback set remains that policy's set. The exact typed literal belongs to the set as the explicit keep choice.
+The provenance relationship between a candidate set and the correction policy that earned the right to propose it. Ownership keeps alternatives within the policy that justified them instead of treating every bounded form as interchangeable; the typed literal remains the explicit keep choice.
 _Avoid_ : global candidate pool (candidate provenance determines correction rights, not only ranking).
 
 **Sentence stage** :
-The deferred correction layer that runs once at sentence close (the terminal punctuation commits) and revises committed words inside that sentence only. One close produces one *whole-sentence candidate transaction*: the typed sentence and every admitted one-edit sentence compete in one global verdict, which keeps the literal, applies at most one edit, or abstains. It never walks ambiguous words left to right and never chains the result of one judgment into the input of another. Its ordinary context is a *continuously observed sentence*: forward typing owned from an observed sentence boundary. After pointer interaction, navigation, opaque deletion, or focus change, it may instead use a *verified caret sentence*: the exact sentence-shaped suffix read twice unchanged from the active caret, anchored only by document start, a hard return, or terminal punctuation followed by whitespace. That recovered sentence is read again immediately before a bounded correction; any target or text drift abstains, and it earns no typing or learning provenance. A truncated range without a visible boundary, a selection, unknown password metadata, foreign mutation, failed injection, or an overlong tail still expires the verdict. Owns the decisions only context can make: code-switching, ambiguous pairs, escalation of the hardest faults. Its revisions surface in the correction inlay like any correction.
+The deferred correction layer that uses a complete sentence to arbitrate bounded alternatives the commit stage could not settle. It evaluates one whole-sentence candidate transaction and may keep the literal, select at most one supplied edit, or abstain; free regeneration belongs to Rewrite, not this stage.
 _Avoid_ : reranker (one possible engine of this layer, not the layer), second pass.
 
 **Whole-sentence candidate transaction** :
-The sentence stage's indivisible decision unit: the exact literal sentence plus a bounded set of sentences that each differ at one owned slot by one lexicon-backed candidate. The judge compares that closed set together and returns KEEP, one supplied edit, or abstention; no free text enters the set. Candidate overflow, an unavailable global judge, insufficient context, low margin, stale evidence, or an invalid returned edit all leave the sentence untouched. A slot-only judge may remain an offline or compatibility tool, but production never falls back from this transaction to a sequence of per-word writes.
+The sentence stage's indivisible decision unit: the literal sentence plus a closed set of sentences that each differ by one owned, bounded edit. The alternatives are compared together; no generated text or cascade of per-word decisions enters the transaction.
 _Avoid_ : sentence rewrite (no text is generated), candidate cascade (one edit never changes what is judged next).
 
 **Terminal-e agreement variant** :
-A lexicon-backed candidate pair formed only by adding or removing a final `e` when both surface forms exist in the primary-language lexicon (`un` / `une`, `seul` / `seule`). It is evidence, not a morphology claim: it earns no direct correction right and exists only inside the whole-sentence candidate transaction, where competing slots are arbitrated globally. Broader suffix guessing (`s`, `x`, combinations) remains unsupported.
+A lexicon-backed candidate pair whose forms differ only by a final `e`, used as evidence inside a whole-sentence candidate transaction. The surface pair does not itself prove gender or earn an independent correction right.
 _Avoid_ : gender rule (the surface pair does not prove grammatical category), inflection corrector (it proposes no edit on its own).
 
 **Verified caret sentence** :
-A sentence recovered after the append-only keyboard model lost continuity, never a general read of the surrounding document. Trust requires two identical UIA caret reads of the same focused target and a locally proven left boundary; correction requires the same target and exact sentence to pass a fresh read after judging. It restores the same bounded whole-sentence candidate rights production already grants to an observed sentence — including terminal-e agreement variants — but no observation history, authorship, corpus attribution, recovery-specific candidate family, or permission to regenerate text.
+A sentence recovered from the focused surface after the observed typing stream lost continuity, accepted only when repeated reads and a local left boundary establish the same exact text. It may supply correction evidence but never observation history, authorship, or learning provenance.
 _Avoid_ : observed sentence (its provenance is weaker), document context (the surrounding UIA range may cross editor and interface boundaries).
 
 ## Lexicon composition
 
 **Domain pack** :
-An activatable set of surface forms belonging to one language — scientific terms, computing terms — that fully extends that language's lexicon: its forms become valid forms *and* correction targets, exactly like the base lexicon's. Packs sit under the language in the hierarchy; a pack whose forms are foreign to the primary language protects de facto, since one-way protection already forbids correcting toward a form outside it. Packs are few by principle — stacking dilutes correction coverage.
+An activatable set of surface forms for one lexical domain and one language. It extends that language's base lexicon, so its forms become both valid literals and correction targets; it is not merely a protection list.
 _Avoid_ : dictionary (overloaded — the personal dictionary is something else), protected list (a pack corrects, not only protects).
 
 **Effective lexicon** :
-The single merged table the correctors consult at runtime. All active sources — base lexicon, domain packs — fuse at load; on a duplicated form the highest frequency wins (commutative, idempotent, activation order irrelevant). The correction engine never sees a stack of dictionaries.
+A language's single runtime lexicon after its base forms, active domain packs, and word exclusions are composed. The correction engine consumes this result, never an ordered stack of dictionaries.
 _Avoid_ : merged dictionaries (plural framing — the point is that there is one).
 
 **Pack sanitization** :
-The build-time filtering that keeps a domain pack from masking corrections: forms whose masking cost (frequency mass of the base lexicon within edit distance 1) exceeds threshold are excluded at fabrication, borderline pairs arbitrated by an external LLM judge whose verdicts are journaled in the pack's report. The shipped pack is already clean; the runtime keeps its existing mechanics. The dilution indicator shown per pack — what it brings, what was refused — is computed here.
-_Avoid_ : runtime conflict resolution (the current direction keeps the hot path free of per-pack logic; untested, revisit after the pilot pack).
+A build-time filter that removes domain-pack forms whose masking cost would unacceptably weaken correction. It produces a pack already safe to compose, keeping pack conflicts out of the runtime decision path.
+_Avoid_ : runtime conflict resolution (sanitization happens before a pack ships, not while correcting).
 
 **Word exclusion** :
-The user's removal of one word from correction's reach without deactivating anything — precedence exclusions > packs > base lexicon. Born contextually in the correction inlay at the moment of annoyance; mirrored in a consultable, reversible settings register.
+The user's reversible removal of one shipped form from correction's reach without disabling its domain pack or language. It subtracts from the effective lexicon and takes precedence over pack and base forms.
 _Avoid_ : blocklist entry (that names the personal dictionary's suppression mechanism; exclusion targets shipped lexicon content).
 
 ## Datasets and mining
 
 **Typing stream** :
-The everything-capture dataset: the verbatim flow of what is typed on enrolled correctable surfaces, recorded as runs — a run accumulates while typing flows forward and closes the moment a backward repair begins, the next run resuming from the repair point. Reading the runs in order restores everything: faulty forms as they stood on screen, what was erased, what was retyped, and clean sentences whole. Serves two corpora at once — the error corpus and the natural-language corpus (the user's own way of writing). Same consent envelope and JSONL family as the other autocorrect datasets, one `kind` among them; password surfaces stay outside the system entirely, as everywhere.
+The consented dataset that preserves the verbatim typing flow on enrolled correctable surfaces as word-shaped runs, including backward repairs. It feeds both the error corpus and the natural-language corpus while remaining distinct from raw key capture.
 _Avoid_ : keylogger (it records word-shaped runs on consented surfaces, not keys), raw stream (says how it is stored, not what it is).
 
 **Mistouch family** :
-A recurrent mechanical keyboard-error class mined from the typed-sentence corpus — a wrong key hit near the intended one (`;` for the apostrophe → `qu;il`), a dropped space after a comma — as opposed to a spelling fault. A family is discovered offline by mining, then expressed as a deterministic detector-generator that proposes bounded repair candidates. Routing follows ambiguity: a family with a single possible reading repairs instantly at the commit stage; a family with several readings generates candidates for the sentence stage, where the judge decides. Commit-stage eligibility takes three cumulative conditions — the trigger is a non-word impossible in every lexicon tier, the repair is unique, and left context suffices. The generative model never proposes repairs itself — it only scores mined, bounded candidates.
-Families follow the personal dictionary's adoption discipline: a family activates on its own past an evidence threshold calibrated on the corpus, stays inspectable and removable, and an undo through the correction inlay writes the explicit suppression that keeps it from coming back. One exception, one-time: the very first mined batch is reviewed by the maintainer before the door turns automatic for good.
+A recurrent mechanical keyboard-error class mined from the typing corpus and expressed as a deterministic generator of bounded repair candidates. It describes how input went wrong, not a spelling fault; any contextual judge may only rank its supplied candidates, never invent a repair.
 _Avoid_ : typo (the broader spelling-fault class), fat-finger (informal).
 
 **Surface profile** :
-The per-application portrait of how typing behaves there, computed from the corpus closure and timing statistics: how sentences end (sentence boundary, Enter, interruption), at what rhythm, with what pauses. A measured offline artifact used to understand where terminal-punctuation correction can act and where Enter-heavy composition leaves the sentence stage deliberately silent; never a user-exposed setting.
-_Avoid_ : app profile (a surface is the focused control's context, not the whole app), configuration (nothing here is set by hand).
+A measured portrait of how typing behaves in a correction environment, derived from observed closure and timing patterns. It is evidence used to characterize that environment, not a policy chosen by the user.
+_Avoid_ : configuration (a profile records observed behavior; it does not prescribe it).
 
 **Personal dictionary** :
-The user-visible surface of everything autocorrect has learned — adopted words and suppressed corrections. Adoption is earned, never granted on sight: recurrence across distinct days plus a cleanliness gate (typed verbatim by the user, never reopened-and-retyped, surface-clean). An entry carries one of three categories, which exist only because they change protection: anglicism (case-insensitive), proper noun (case-sensitive — the capital is part of what is protected), other. Inspectable and editable by principle: a consultable list, per-word removal, full purge. Suppression is an explicit entry (a blocklist), never the mere erasure of a counter — a removed word must not come back on its own. Candidate bridge to the ASR personal lexicon (shared learning, not yet committed).
+The user-visible collection of learned vocabulary and correction suppressions. An adopted word becomes a protected literal; a suppression prevents one correction from recurring. Entries remain inspectable and removable, unlike the internal evidence that earned them.
 _Avoid_ : learning store (the internal mechanism; this term names the visible surface).
