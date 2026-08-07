@@ -7,6 +7,14 @@ type: project-journal
 
 Project-level dated notes: a finding, a milestone, a usage observation — worth recording with a date, but not heavy enough for an ADR nor timeless enough for a CLAUDE.md. Most recent on top.
 
+## 2026-08-03 — Context-document review paused at the skill-creation method
+
+Started a cross-project review of Deckle's agent context. The repository currently has fourteen module/root `CONTEXT.md` files plus `CONTEXT-MAP.md`; the Travel context was absent from the map, the root summary omitted exposables, and the test summary counted two out-of-scope categories while naming three. Those safe corrections are present but uncommitted in the `docs/context-review` worktree, together with a first removal of implementation detail from the Autocorrect vocabulary.
+
+Established the target boundary: `CONTEXT.md` carries resolved project terminology and enough prose to know what the terms denote, not precise implementation behavior. A behavioral specification is a distinct normative artifact that code and tests must satisfy; its exact convention and lifecycle remain to be designed and validated before technical material is migrated. Anytype already exposes generic document creation and editing, but a repository-document workflow still needs stable source identity and idempotent one-way publication if Anytype is to index these files without becoming a competing source of truth.
+
+The next session starts with the highest-priority question: define a reusable method for deciding when a repeated need deserves a new skill, an extension of an existing skill, or another home. The method must cover evidence of recurrence, boundaries against context/reference/template/automation, minimum structure, trigger design, validation, and lifecycle; the proposed specification skill is its first test case. The related context-management work stays in the same priority band: define a skill's role, audit global and Deckle skills, audit context documents, review every skill description and trigger (not only `session-*`), then judge a main Deckle routing skill. Anytype project `Revue du système de travail de Deckle` records this order.
+
 ## 2026-07-22 — Frontière entre utilités Anytype et MCP personnalisés
 
 Chose to separate reusable, precise Anytype utilities from custom MCP surfaces. Deckle.Anytype owns cross-domain capabilities for creating, inspecting and acting on Anytype structures; each custom MCP owns only its bounded domain gestures and composes the reusable utilities it needs.

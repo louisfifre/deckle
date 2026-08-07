@@ -10,8 +10,8 @@ The nearest `CONTEXT.md` up the tree governs the code you're touching. This map 
 
 ## Contexts
 
-- [System-wide](CONTEXT.md) — language that classifies across modules; today the Correction / Rewrite boundary
-- [Tests](tests/CONTEXT.md) — the test taxonomy: four automatic categories, two manual ones
+- [System-wide](CONTEXT.md) — language that classifies across modules: exposables and the Correction / Rewrite boundary
+- [Tests](tests/CONTEXT.md) — the test taxonomy: four automatic categories, three outside the automatic scope
 - [Diagnostics](src/Deckle.Diagnostics/CONTEXT.md) — observability: admission vs view, the five quieting controls (covers `.Logging` and `.Telemetry`)
 - [Security](src/Deckle.Security/CONTEXT.md) — trusted-session boundary, captured content, and custody of persisted copies
 - [Transcription](src/Deckle.Transcription/CONTEXT.md) — entry points, T1 fidelity criteria, segmentation units
@@ -23,6 +23,7 @@ The nearest `CONTEXT.md` up the tree governs the code you're touching. This map 
 - [Anytype](src/Deckle.Anytype/CONTEXT.md) — backend / host / surfaces, bot vs token, Home types (covers `.Mcp`)
 - [Home](src/Deckle.Home/CONTEXT.md) — public home-inventory norm vs personal room registry and inventory
 - [Hud Chrono](src/Deckle.Hud/Chrono/CONTEXT.md) — the chrono face elements and their states
+- [Travel](src/Deckle.Travel/CONTEXT.md) — trip-preparation types and their French Anytype vocabulary
 
 ## Relationships
 
