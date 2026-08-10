@@ -4,11 +4,12 @@ namespace Deckle.Anytype;
 
 internal sealed record SchemaManifest(
     IReadOnlyList<TypeSpec> Types,
-    IReadOnlyList<PropertySpec> Properties)
+    IReadOnlyList<PropertySpec> Properties,
+    IReadOnlyList<SectionSpec> Sections)
 {
     public static SchemaManifest Parse(JsonObject root)
     {
-        JsonShape.RequireOnly(root, ["types", "properties"], "manifest");
+        JsonShape.RequireOnly(root, ["types", "properties", "sections"], "manifest");
 
         var types = new List<TypeSpec>();
         if (root.TryGetPropertyValue("types", out JsonNode? typesNode) && typesNode is not null)
@@ -38,13 +39,84 @@ internal sealed record SchemaManifest(
             }
         }
 
-        if (types.Count == 0 && properties.Count == 0)
-            throw new ArgumentException("Le manifeste doit contenir au moins un type ou une propriété.");
+        var sections = new List<SectionSpec>();
+        if (root.TryGetPropertyValue("sections", out JsonNode? sectionsNode) && sectionsNode is not null)
+        {
+            if (sectionsNode is not JsonArray sectionArray)
+                throw new ArgumentException("Le champ « sections » doit être un tableau.");
+
+            foreach (JsonNode? node in sectionArray)
+            {
+                if (node is not JsonObject obj)
+                    throw new ArgumentException("Chaque entrée de « sections » doit être un objet.");
+                sections.Add(SectionSpec.Parse(obj));
+            }
+        }
+
+        if (types.Count == 0 && properties.Count == 0 && sections.Count == 0)
+            throw new ArgumentException(
+                "Le manifeste doit contenir au moins un type, une propriété ou une section.");
 
         JsonShape.RequireUnique(types.Select(t => t.Key), "types.key");
         JsonShape.RequireUnique(properties.Select(p => p.Key), "properties.key");
+        JsonShape.RequireUnique(sections.Select(s => s.Name), "sections.name");
 
-        return new SchemaManifest(types, properties);
+        return new SchemaManifest(types, properties, sections);
+    }
+}
+
+// A section is a pinned sidebar folder: one collection object (built-in Anytype
+// type key "collection") whose members are the section's TYPE objects. The
+// manifest names the collection and lists the member type keys; actual sidebar
+// pinning has no API endpoint and stays an in-app gesture. Section icons are
+// emoji-only: the API refuses named icons on OBJECT creation (400 "icon name
+// and color are not supported for object", verified live 2026-08-10) — the
+// named-icon grammar belongs to types.
+internal sealed record SectionSpec(
+    string Name,
+    TypeIconSpec? Icon,
+    IReadOnlyList<string> Types)
+{
+    public static SectionSpec Parse(JsonObject obj)
+    {
+        JsonShape.RequireOnly(obj, ["name", "icon", "types"], "section");
+
+        string name = SchemaManifestFields.RequiredString(obj, "name", rejectNonString: true);
+
+        TypeIconSpec? icon = null;
+        if (obj.TryGetPropertyValue("icon", out JsonNode? iconNode))
+        {
+            if (iconNode is not JsonObject iconObject)
+                throw new ArgumentException($"Le champ « icon » de la section « {name} » doit être un objet.");
+            icon = TypeIconSpec.Parse(iconObject, $"section {name}", $"la section « {name} »");
+            if (icon.Format == "icon")
+                throw new ArgumentException(
+                    $"La section « {name} » ne peut pas porter d'icône nommée : l'API Anytype "
+                    + "n'accepte que des emoji sur un objet. Utilise le format emoji.");
+        }
+
+        var types = new List<string>();
+        if (obj.TryGetPropertyValue("types", out JsonNode? typesNode) && typesNode is not null)
+        {
+            if (typesNode is not JsonArray arr)
+                throw new ArgumentException($"Le champ « types » de la section « {name} » doit être un tableau.");
+
+            foreach (JsonNode? node in arr)
+            {
+                if (node is not JsonValue value ||
+                    !value.TryGetValue<string>(out string? typeKey) ||
+                    typeKey is null)
+                    throw new ArgumentException(
+                        $"Chaque type de la section « {name} » doit être une clé string.");
+                types.Add(KeyRules.Validate(typeKey, "types"));
+            }
+        }
+        if (types.Count == 0)
+            throw new ArgumentException(
+                $"La section « {name} » doit lister au moins une clé de type dans « types ».");
+        JsonShape.RequireUnique(types, $"section {name}.types");
+
+        return new SectionSpec(name, icon, types);
     }
 }
 

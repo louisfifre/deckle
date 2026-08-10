@@ -13,14 +13,14 @@ public static class HomeToolCatalog
         [
             new ToolDescriptor(
                 "create",
-                "Create one or more Home objects of one type. Inventory types require an immutable code stored in the object title (element titles are exactly their codes; room prefixes are checked against the live Pièce objects, never a compiled registry). Life and work types take no code: a course, outil, chantier, or tache takes a free name, an idee takes text whose first line becomes its title. Optional collections are Anytype memberships, not relation properties. For chantier and tache, prefer the dedicated verbs chantier_create and tache_create.",
+                "Create one or more Home objects of one type. Titles are human names; coded types (room, point, circuit, panel) also require an immutable code in the item's code field, stored in the Code property — a point code follows PIÈCE-CAT[SUB]NN and its room prefix is checked against the live Pièce objects, never a compiled registry; a point's room and category derive from its code. A circuit may omit its name and start titled by its code. Free-titled types take no code; an idea takes text whose first line becomes its title. A component requires 'Fait partie de' (an existing Système) — prefer component_create. Optional collections are Anytype memberships, not relation properties.",
                 CreateSchema(),
                 (args, ct) => gestures().CreateAsync(
                     RequiredString(args, "type"), CreateItems(args), ct)),
 
             new ToolDescriptor(
                 "update",
-                "Update one or more Home objects. Codes are immutable; for elements, Pièce and Catégorie are derived from the code and cannot be changed directly. An idee cannot be renamed: its title is the first line of its body. Relations accept object codes, names, or ids. Collection membership uses add_to_collections/remove_from_collections and is distinct from relations. Set Existence to Déposé instead of deleting an element.",
+                "Update one or more Home objects. Codes are immutable; a point's room and category are derived from its code and cannot be changed directly. Titles are renamable human names, except an idea whose title is the first line of its body. A component cannot clear 'Fait partie de' — retype it in the app instead. Relations accept object codes, names, or ids. Collection membership uses add_to_collections/remove_from_collections and is distinct from relations. Set Existence to Déposé instead of deleting a point.",
                 UpdateSchema(),
                 (args, ct) => gestures().UpdateAsync(UpdateItems(args), ct)),
 
@@ -33,19 +33,20 @@ public static class HomeToolCatalog
 
             new ToolDescriptor(
                 "search",
-                "List Home objects with optional text, type, room, circuit, category, existence, condition, chantier, statut, and done filters. All filters combine; omit every filter to list the inventory.",
+                "List Home objects with optional text, type, room, circuit, category, existence, condition, done, worksite, state, and system filters. All filters combine; omit every filter to list the space.",
                 ObjectSchema(optional:
                 [
                     ("text", StringSchema("Text matched against names, codes, and property values.")),
                     ("type", EnumSchema("Home type key.", HomeSchema.CreatableTypes)),
-                    ("room", StringSchema("Room code, name, or id.")),
+                    ("room", StringSchema("Room code, name, or id — matches Installé dans and Rangé dans.")),
                     ("circuit", StringSchema("Circuit code, name, or id.")),
-                    ("category", EnumSchema("Element category code.", HomeCategories.All)),
+                    ("category", EnumSchema("Point category code.", HomeCategories.All)),
                     ("existence", StringSchema("Existence key or label: existant, prévu, déposé.")),
                     ("condition", StringSchema("Condition key or label: bon, vétuste, endommagé, hors service.")),
-                    ("done", BooleanSchema("Filter on the native done checkbox (courses, tâches): true for checked, false for unchecked.")),
-                    ("chantier", StringSchema("Chantier name or id: keep objects whose Chantier relation targets it.")),
-                    ("statut", StringSchema("Statut key or label: ouvert, en cours, en attente, dormant, terminé, abandonné.")),
+                    ("done", BooleanSchema("Filter on the native done checkbox (errands, todos): true for checked, false for unchecked.")),
+                    ("worksite", StringSchema("Chantier name or id: keep objects whose Chantier relation targets it.")),
+                    ("state", StringSchema("Statut key or label: ouvert, en cours, en attente, dormant, terminé, abandonné.")),
+                    ("system", StringSchema("Système name or id: keep objects whose Fait partie de targets it.")),
                 ]),
                 (args, ct) => gestures().SearchAsync(new HomeSearchFilter(
                     OptionalString(args, "text"),
@@ -56,12 +57,13 @@ public static class HomeToolCatalog
                     OptionalString(args, "existence"),
                     OptionalString(args, "condition"),
                     OptionalBoolean(args, "done"),
-                    OptionalString(args, "chantier"),
-                    OptionalString(args, "statut")), ct)),
+                    OptionalString(args, "worksite"),
+                    OptionalString(args, "state"),
+                    OptionalString(args, "system")), ct)),
 
             new ToolDescriptor(
                 "delete",
-                "Move a non-element Home object to Anytype's recoverable bin. First call without confirm to preview and obtain the pinned id, then repeat with that exact id and confirm:true. Elements cannot be deleted; update their Existence to Déposé.",
+                "Move a non-point Home object to Anytype's recoverable bin. First call without confirm to preview and obtain the pinned id, then repeat with that exact id and confirm:true. Points cannot be deleted; update their Existence to Déposé.",
                 ObjectSchema(
                     required: [("object", StringSchema("Object code, name, or pinned id."))],
                     optional: [("confirm", BooleanSchema("Confirm the previewed deletion; default false."))]),
@@ -69,7 +71,47 @@ public static class HomeToolCatalog
                     RequiredString(args, "object"), OptionalBoolean(args, "confirm") ?? false, ct)),
 
             new ToolDescriptor(
-                "chantier_create",
+                "component_create",
+                "Create a Composant inside its Système — the system argument is mandatory because a composant is defined by its 'Fait partie de' relation, not its nature. If the system has no name, it is not a composant: create an Appareil instead (retyping is cheap).",
+                ObjectSchema(
+                    required:
+                    [
+                        ("name", StringSchema("Human component name.")),
+                        ("system", StringSchema("Existing Système, by name or id.")),
+                    ],
+                    optional: [("properties", PropertyMapSchema())]),
+                (args, ct) => gestures().CreateComponentAsync(
+                    RequiredString(args, "name"),
+                    RequiredString(args, "system"),
+                    OptionalObject(args, "properties"), ct)),
+
+            new ToolDescriptor(
+                "plant_create",
+                "Create a plant: a free name, optionally the room it lives in, and its botanical properties when known. Select vocabularies (famille, genre, exposition, substrat) grow from the app — options are applied, never invented here.",
+                ObjectSchema(
+                    required: [("name", StringSchema("Plant name as the household calls it."))],
+                    optional:
+                    [
+                        ("room", StringSchema("Room the plant lives in, by code, name, or id.")),
+                        ("properties", PropertyMapSchema()),
+                    ]),
+                (args, ct) => gestures().CreatePlantAsync(
+                    RequiredString(args, "name"),
+                    OptionalString(args, "room"),
+                    OptionalObject(args, "properties"), ct)),
+
+            new ToolDescriptor(
+                "plant_water",
+                "Stamp a plant's Dernier arrosage: today by default, or the given date. One date, overwritten each time — there is no watering log by design.",
+                ObjectSchema(
+                    required: [("plant", StringSchema("Plant name or id."))],
+                    optional: [("date", StringSchema("Watering date YYYY-MM-DD; omit for today."))]),
+                (args, ct) => gestures().WaterPlantAsync(
+                    RequiredString(args, "plant"),
+                    OptionalString(args, "date"), ct)),
+
+            new ToolDescriptor(
+                "worksite_create",
                 "Open a chantier — one finite piece of house work. Creation is deliberately loose: a name suffices; statut, concerne, date cible, and notes are added when known, to prioritize and list. Close it later with complete (statut = Terminé).",
                 ObjectSchema(
                     required: [("name", StringSchema("Free chantier title."))],
@@ -84,33 +126,33 @@ public static class HomeToolCatalog
                     OptionalStringArray(args, "collections"), ct)),
 
             new ToolDescriptor(
-                "tache_create",
-                "Create a house task. Orphan by default — small chores live alone; pass chantier to attach it to real works, or attach later with update. A name suffices; the native done checkbox (complete) is the completion signal, and done tasks are the chantier's history.",
+                "todo_create",
+                "Create a house task. Orphan by default — small chores live alone; pass worksite to attach it to real works, or attach later with update. A name suffices; the native done checkbox (complete) is the completion signal, and done tasks are the chantier's history.",
                 ObjectSchema(
                     required: [("name", StringSchema("Free task title."))],
                     optional:
                     [
-                        ("chantier", StringSchema("Chantier to attach the task to, by name or id.")),
+                        ("worksite", StringSchema("Chantier to attach the task to, by name or id.")),
                         ("properties", PropertyMapSchema()),
                     ]),
-                (args, ct) => gestures().CreateTaskAsync(
+                (args, ct) => gestures().CreateTodoAsync(
                     RequiredString(args, "name"),
-                    OptionalString(args, "chantier"),
+                    OptionalString(args, "worksite"),
                     OptionalObject(args, "properties"), ct)),
 
             new ToolDescriptor(
                 "complete",
-                "Mark work done: checks the native done box of a tache or course, or sets statut = Terminé on a chantier (reporting its still-open tasks). Done tasks are the record — there is no separate intervention journal.",
+                "Mark work done: checks the native done box of a todo or errand, or sets statut = Terminé on a chantier (reporting its still-open tasks). Done tasks are the record — there is no separate intervention journal.",
                 ObjectSchema(
                     required: [("object", StringSchema("Tâche, course, or chantier name or id."))]),
                 (args, ct) => gestures().CompleteAsync(RequiredString(args, "object"), ct)),
 
             new ToolDescriptor(
-                "chantier_overview",
+                "worksite_overview",
                 "One-call state of a chantier: its properties, then its tasks split open / done with statut and date cible.",
                 ObjectSchema(
-                    required: [("chantier", StringSchema("Chantier name or id."))]),
-                (args, ct) => gestures().WorksiteOverviewAsync(RequiredString(args, "chantier"), ct)),
+                    required: [("worksite", StringSchema("Chantier name or id."))]),
+                (args, ct) => gestures().WorksiteOverviewAsync(RequiredString(args, "worksite"), ct)),
         ];
     }
 
@@ -127,9 +169,9 @@ public static class HomeToolCatalog
                 ["items"] = ObjectSchema(
                     optional:
                     [
-                        ("code", StringSchema("Normative immutable code — required for inventory types, forbidden for idee, course, and outil.")),
-                        ("name", StringSchema("Human title: suffix for rooms, circuits, and distribution boards; the whole title for course and outil; forbidden for elements and idee.")),
-                        ("text", StringSchema("Body text: required for an idee (first line becomes the title), optional initial body for an outil, forbidden elsewhere.")),
+                        ("code", StringSchema("Normative immutable code, stored in the Code property — required for room, point, circuit, and panel; forbidden for free-titled types.")),
+                        ("name", StringSchema("Human title — required everywhere except an idea (title derives from text) and a circuit (falls back to its code).")),
+                        ("text", StringSchema("Body text: required for an idea (first line becomes the title), optional initial body for a device, forbidden elsewhere.")),
                         ("properties", PropertyMapSchema()),
                         ("collections", StringArraySchema("Collections to add the created object to, by name, code, or id.")),
                     ]),
@@ -149,7 +191,7 @@ public static class HomeToolCatalog
                     required: [("object", StringSchema("Object code, name, or id."))],
                     optional:
                     [
-                        ("name", StringSchema("New human title suffix for a non-element object; its code prefix is preserved.")),
+                        ("name", StringSchema("New human title; the Code property is untouched. Refused for an idea.")),
                         ("properties", PropertyMapSchema()),
                         ("add_to_collections", StringArraySchema("Collections to add the object to, by name, code, or id.")),
                         ("remove_from_collections", StringArraySchema("Collections to remove the object from, by name, code, or id.")),

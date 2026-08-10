@@ -11,7 +11,8 @@ public class HomeToolCatalogTests
     private static readonly string[] ExpectedNames =
     [
         "create", "update", "get", "search", "delete",
-        "chantier_create", "tache_create", "complete", "chantier_overview",
+        "component_create", "plant_create", "plant_water",
+        "worksite_create", "todo_create", "complete", "worksite_overview",
     ];
 
     [Fact]

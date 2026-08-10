@@ -51,17 +51,43 @@ internal sealed class FakeHomeAnytypeServer : IDisposable
         if (target is not null) properties.Remove(target);
     }
 
-    public static JsonObject Room(string id, string code, string name) => Object(
-        id, HomeSchema.Types.Room, $"{code} — {name}");
+    public void AddSchemaType(string key, string name, string pluralName, string layout)
+    {
+        JsonArray types = (JsonArray)_schemaManifest["types"]!;
+        types.Add(new JsonObject
+        {
+            ["key"] = key,
+            ["name"] = name,
+            ["plural_name"] = pluralName,
+            ["layout"] = layout,
+            ["properties"] = new JsonArray(),
+        });
+    }
 
-    public static JsonObject Element(string id, string code, string roomId) => Object(
-        id, HomeSchema.Types.Outlet, code,
-        ObjectsProperty(HomeSchema.Properties.Room, "Pièce", roomId),
-        SelectProperty(HomeSchema.Properties.Category, "Catégorie", "p", "Prise 230 V"),
+    public static JsonObject Room(string id, string code, string name) => Object(
+        id, HomeSchema.Types.Room, name,
+        TextProperty(HomeSchema.Properties.Code, "Code", code));
+
+    public static JsonObject Point(string id, string code, string name, string roomId) => Object(
+        id, HomeSchema.Types.Point, name,
+        TextProperty(HomeSchema.Properties.Code, "Code", code),
+        ObjectsProperty(HomeSchema.Properties.InstalledIn, "Installé dans", roomId),
+        SelectProperty(HomeSchema.Properties.Category, "Catégorie", "p", "P — prise 230 V"),
         SelectProperty(HomeSchema.Properties.Existence, "Existence", "existant", "Existant"));
 
     public static JsonObject Circuit(string id, string code) => Object(
-        id, HomeSchema.Types.Circuit, code);
+        id, HomeSchema.Types.Circuit, code,
+        TextProperty(HomeSchema.Properties.Code, "Code", code));
+
+    public static JsonObject EquipmentSystem(string id, string name) => Object(
+        id, HomeSchema.Types.System, name);
+
+    public static JsonObject Component(string id, string name, string systemId) => Object(
+        id, HomeSchema.Types.Component, name,
+        ObjectsProperty(HomeSchema.Properties.PartOf, "Fait partie de", systemId));
+
+    public static JsonObject Plant(string id, string name) => Object(
+        id, HomeSchema.Types.Plant, name);
 
     public static JsonObject Idea(string id, string name) => Object(
         id, HomeSchema.Types.Idea, name);
@@ -72,25 +98,25 @@ internal sealed class FakeHomeAnytypeServer : IDisposable
 
     public static JsonObject Worksite(string id, string name, params string[] backlinkIds) => Object(
         id, HomeSchema.Types.Worksite, name,
-        SelectProperty(HomeSchema.Properties.Status, "Statut", "en_cours", "En cours"),
+        SelectProperty(HomeSchema.Properties.State, "Statut", "en_cours", "En cours"),
         ObjectsProperty("backlinks", "Backlinks", backlinkIds));
 
-    public static JsonObject WorkTask(string id, string name, string? worksiteId, bool done) =>
+    public static JsonObject Todo(string id, string name, string? worksiteId, bool done) =>
         worksiteId is null
             ? Object(
-                id, HomeSchema.Types.Task, name,
+                id, HomeSchema.Types.Todo, name,
                 CheckboxProperty("done", "Done", done))
             : Object(
-                id, HomeSchema.Types.Task, name,
+                id, HomeSchema.Types.Todo, name,
                 CheckboxProperty("done", "Done", done),
                 ObjectsProperty(HomeSchema.Properties.Worksite, "Chantier", worksiteId));
 
-    public static JsonObject Collection(string id, string name) => new()
+    public static JsonObject Collection(string id, string name, string typeKey = "collection") => new()
     {
         ["id"] = id,
         ["name"] = name,
         ["layout"] = "collection",
-        ["type"] = new JsonObject { ["key"] = "etage", ["layout"] = "collection" },
+        ["type"] = new JsonObject { ["key"] = typeKey, ["layout"] = "collection" },
         ["properties"] = new JsonArray(),
     };
 

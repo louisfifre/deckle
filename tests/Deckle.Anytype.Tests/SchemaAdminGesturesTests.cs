@@ -655,6 +655,250 @@ public class SchemaAdminGesturesTests
         Assert.DoesNotContain(server.Requests, request => request.Method == "PATCH");
     }
 
+    // ── Sections ──────────────────────────────────────────────────────────────
+
+    const string SectionCollectionId = "col-structure";
+
+    // A section is one collection object (built-in type key "collection") whose
+    // members are TYPE objects; the fixture declares the member type alongside.
+    static JsonObject SectionManifest(bool declareType = true)
+    {
+        var manifest = new JsonObject
+        {
+            ["sections"] = new JsonArray
+            {
+                new JsonObject
+                {
+                    ["name"] = "Structure",
+                    ["icon"] = new JsonObject
+                    {
+                        ["format"] = "emoji",
+                        ["emoji"] = "🧱",
+                    },
+                    ["types"] = new JsonArray { "floor" },
+                },
+            },
+        };
+        if (declareType)
+            manifest["types"] = new JsonArray
+            {
+                new JsonObject { ["key"] = "floor", ["name"] = "Espace" },
+            };
+        return manifest;
+    }
+
+    static JsonObject ExistingFloorType() => new()
+    {
+        ["id"] = "type-floor",
+        ["key"] = "floor",
+        ["name"] = "Espace",
+        ["plural_name"] = "Espaces",
+        ["layout"] = "basic",
+        ["properties"] = new JsonArray(),
+    };
+
+    // Search hit for the section collection. The search filter asks for the
+    // built-in "collection" type; the hit carries type.key like the live API.
+    static JsonObject CollectionHit(string name = "Structure") => new()
+    {
+        ["id"] = SectionCollectionId,
+        ["name"] = name,
+        ["type"] = new JsonObject { ["key"] = "collection" },
+    };
+
+    // Preview reads issue one POST /search for sections; only that POST is a read.
+    static bool IsWrite(FakeAnytypeServer.Received request) =>
+        request.Method == "PATCH"
+        || (request.Method == "POST" && !request.Path.EndsWith("/search", StringComparison.Ordinal));
+
+    [Fact]
+    public async Task PreviewReportsSectionCreationWithoutWriting()
+    {
+        using var server = new FakeAnytypeServer();
+        server.OnListTypes(EmptyList());
+        server.OnListProperties(EmptyList());
+        server.OnSearch(EmptyList());
+
+        string digest = await NewGestures(server).PreviewAsync("home", SectionManifest(), Ct);
+
+        Assert.Contains("Sections :", digest);
+        Assert.Contains("Structure · création", digest);
+        Assert.Contains("create_section · Structure", digest);
+        Assert.Contains("add_to_section · Structure:floor", digest);
+        Assert.DoesNotContain(server.Requests, IsWrite);
+    }
+
+    [Fact]
+    public async Task PreviewReportsSectionReuseWhenACollectionBearsTheExactName()
+    {
+        using var server = new FakeAnytypeServer();
+        server.OnListTypes(Page(new JsonArray { ExistingFloorType() }));
+        server.OnListProperties(EmptyList());
+        server.OnSearch(Page(new JsonArray { CollectionHit() }));
+
+        string digest = await NewGestures(server).PreviewAsync(
+            "home", SectionManifest(declareType: false), Ct);
+
+        Assert.Contains("Structure · réutilisation de la collection existante", digest);
+        Assert.DoesNotContain("create_section", digest);
+        Assert.Contains("add_to_section · Structure:floor", digest);
+        Assert.DoesNotContain(server.Requests, IsWrite);
+    }
+
+    [Fact]
+    public async Task PreviewRejectsSectionTypeUnknownInManifestAndSpace()
+    {
+        using var server = new FakeAnytypeServer();
+        server.OnListTypes(EmptyList());
+        server.OnListProperties(EmptyList());
+        server.OnSearch(EmptyList());
+
+        string digest = await NewGestures(server).PreviewAsync(
+            "home", SectionManifest(declareType: false), Ct);
+
+        Assert.Contains("Conflits :", digest);
+        Assert.Contains("section Structure : type demandé inconnu floor", digest);
+        Assert.DoesNotContain(server.Requests, IsWrite);
+    }
+
+    [Fact]
+    public async Task PreviewWithoutSectionsDoesNotSearchCollections()
+    {
+        using var server = new FakeAnytypeServer();
+        server.OnListTypes(EmptyList());
+        server.OnListProperties(EmptyList());
+
+        await NewGestures(server).PreviewAsync("home", Manifest(), Ct);
+
+        Assert.DoesNotContain(
+            server.Requests,
+            request => request.Path.EndsWith("/search", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public async Task PreviewRejectsSectionWithoutTypeKeysBeforeReadingAnytype()
+    {
+        using var server = new FakeAnytypeServer();
+        JsonObject manifest = new()
+        {
+            ["sections"] = new JsonArray
+            {
+                new JsonObject { ["name"] = "Structure", ["types"] = new JsonArray() },
+            },
+        };
+
+        ArgumentException ex = await Assert.ThrowsAsync<ArgumentException>(
+            () => NewGestures(server).PreviewAsync("home", manifest, Ct));
+
+        Assert.Contains("au moins une clé de type", ex.Message);
+        Assert.Empty(server.Requests);
+    }
+
+    [Fact]
+    public async Task PreviewRejectsNamedIconOnSectionBeforeReadingAnytype()
+    {
+        using var server = new FakeAnytypeServer();
+        JsonObject manifest = new()
+        {
+            ["sections"] = new JsonArray
+            {
+                new JsonObject
+                {
+                    ["name"] = "Structure",
+                    ["icon"] = new JsonObject
+                    {
+                        ["format"] = "icon",
+                        ["name"] = "cube",
+                        ["color"] = "grey",
+                    },
+                    ["types"] = new JsonArray { "floor" },
+                },
+            },
+        };
+
+        ArgumentException ex = await Assert.ThrowsAsync<ArgumentException>(
+            () => NewGestures(server).PreviewAsync("home", manifest, Ct));
+
+        Assert.Contains("icône nommée", ex.Message);
+        Assert.Contains("emoji", ex.Message);
+        Assert.Empty(server.Requests);
+    }
+
+    [Fact]
+    public async Task ApplyCreatesSectionCollectionWithIconAndAddsMemberTypes()
+    {
+        using var server = new FakeAnytypeServer();
+        server.OnListTypes(EmptyList());
+        server.OnListProperties(EmptyList());
+        server.OnSearch(EmptyList());
+        server.OnPostType(ExistingFloorType());
+        server.OnPostObject(new JsonObject
+        {
+            ["object"] = new JsonObject { ["id"] = SectionCollectionId, ["name"] = "Structure" },
+        });
+        server.OnPostListObjects(SectionCollectionId, "\"Objects added successfully\"");
+
+        var gestures = NewGestures(server);
+        string preview = await gestures.PreviewAsync("home", SectionManifest(), Ct);
+        string previewId = preview.Split(' ', StringSplitOptions.RemoveEmptyEntries)[1];
+
+        string digest = await gestures.ApplyAsync("home", previewId, confirm: true, Ct);
+
+        Assert.Contains("type créé floor", digest);
+        Assert.Contains("section créée Structure", digest);
+        Assert.Contains("icône définie Structure · emoji:🧱", digest);
+        Assert.Contains("types ajoutés à Structure · floor", digest);
+
+        JsonObject create = server.Requests
+            .Where(r => r.Method == "POST" && r.Path.EndsWith("/objects", StringComparison.Ordinal)
+                && !r.Path.Contains("/lists/", StringComparison.Ordinal))
+            .Select(r => (JsonObject)JsonNode.Parse(r.Body)!)
+            .Single();
+        Assert.Equal("collection", create["type_key"]!.GetValue<string>());
+        Assert.Equal("Structure", create["name"]!.GetValue<string>());
+        JsonObject icon = Assert.IsType<JsonObject>(create["icon"]);
+        Assert.Equal("emoji", icon["format"]!.GetValue<string>());
+        Assert.Equal("🧱", icon["emoji"]!.GetValue<string>());
+
+        FakeAnytypeServer.Received memberAdd = Assert.Single(
+            server.Requests,
+            r => r.Method == "POST"
+                && r.Path.EndsWith($"/lists/{SectionCollectionId}/objects", StringComparison.Ordinal));
+        JsonObject memberBody = Assert.IsType<JsonObject>(JsonNode.Parse(memberAdd.Body));
+        JsonArray members = Assert.IsType<JsonArray>(memberBody["objects"]);
+        Assert.Equal(["type-floor"], members.Select(node => node!.GetValue<string>()));
+    }
+
+    [Fact]
+    public async Task SecondApplyReusesTheSectionAndOnlyReassertsMembers()
+    {
+        using var server = new FakeAnytypeServer();
+        server.OnListTypes(Page(new JsonArray { ExistingFloorType() }));
+        server.OnListProperties(EmptyList());
+        server.OnSearch(Page(new JsonArray { CollectionHit() }));
+        server.OnPostListObjects(SectionCollectionId, "\"Objects added successfully\"");
+
+        var gestures = NewGestures(server);
+        string preview = await gestures.PreviewAsync("home", SectionManifest(), Ct);
+        string previewId = preview.Split(' ', StringSplitOptions.RemoveEmptyEntries)[1];
+
+        string digest = await gestures.ApplyAsync("home", previewId, confirm: true, Ct);
+
+        Assert.DoesNotContain("section créée", digest);
+        Assert.Contains("types ajoutés à Structure · floor", digest);
+        Assert.DoesNotContain(
+            server.Requests,
+            r => r.Method == "POST" && r.Path.EndsWith("/objects", StringComparison.Ordinal)
+                && !r.Path.Contains("/lists/", StringComparison.Ordinal));
+        Assert.DoesNotContain(
+            server.Requests,
+            r => r.Method == "POST" && r.Path.EndsWith("/types", StringComparison.Ordinal));
+        Assert.Single(
+            server.Requests,
+            r => r.Method == "POST"
+                && r.Path.EndsWith($"/lists/{SectionCollectionId}/objects", StringComparison.Ordinal));
+    }
+
     [Fact]
     public async Task ApplyRefusesWhenLiveStateNeedsActionsThatWereNotPreviewed()
     {

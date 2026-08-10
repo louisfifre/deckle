@@ -6,7 +6,15 @@ internal sealed class HomeSchemaRuntime
 {
     private readonly SchemaSnapshot _snapshot;
 
-    public HomeSchemaRuntime(SchemaSnapshot snapshot) => _snapshot = snapshot;
+    public HomeSchemaRuntime(SchemaSnapshot snapshot, string? floorTypeKey = null)
+    {
+        _snapshot = snapshot;
+        FloorTypeKey = floorTypeKey;
+    }
+
+    // Key of the app-created collection-layout Zone type, discovered from
+    // the live snapshot; null while Louis has not created it yet.
+    public string? FloorTypeKey { get; }
 
     public SchemaPropertyInfo Property(string key) =>
         _snapshot.Properties.TryGetValue(key, out SchemaPropertyInfo? property)

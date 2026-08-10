@@ -79,4 +79,28 @@ public class SchemaAdminToolCatalogTests
         JsonArray iconVariants = Assert.IsType<JsonArray>(icon["oneOf"]);
         Assert.Equal(2, iconVariants.Count);
     }
+
+    [Fact]
+    public void PreviewManifestSectionsSchemaIsClosedAndRequiresNameAndTypes()
+    {
+        ToolDescriptor preview = BuildCatalog().Single(t => t.Name == "schema_preview");
+
+        JsonObject manifest = Assert.IsType<JsonObject>(
+            Assert.IsType<JsonObject>(preview.InputSchema["properties"])["manifest"]);
+        JsonObject properties = Assert.IsType<JsonObject>(manifest["properties"]);
+        Assert.Contains("sections", properties.Select(p => p.Key));
+
+        JsonObject sectionArray = Assert.IsType<JsonObject>(properties["sections"]);
+        JsonObject sectionSchema = Assert.IsType<JsonObject>(sectionArray["items"]);
+        Assert.False(sectionSchema["additionalProperties"]!.GetValue<bool>());
+
+        JsonObject sectionProperties = Assert.IsType<JsonObject>(sectionSchema["properties"]);
+        Assert.Contains("icon", sectionProperties.Select(p => p.Key));
+        JsonObject types = Assert.IsType<JsonObject>(sectionProperties["types"]);
+        Assert.Equal(1, types["minItems"]!.GetValue<int>());
+
+        JsonArray required = Assert.IsType<JsonArray>(sectionSchema["required"]);
+        Assert.Contains(required, node => node?.GetValue<string>() == "name");
+        Assert.Contains(required, node => node?.GetValue<string>() == "types");
+    }
 }

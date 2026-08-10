@@ -28,10 +28,11 @@ public class HomeMcpTests
         Assert.Equal(
             new[]
             {
-                "chantier_create", "chantier_overview", "complete", "create",
-                "delete", "get", "search", "tache_create", "update",
+                "complete", "component_create", "create", "delete", "get",
+                "plant_create", "plant_water", "search", "todo_create", "update",
+                "worksite_create", "worksite_overview",
             },
             session.Tools.Select(tool => tool.Name).OrderBy(name => name));
-        Assert.Contains("home inventory", session.Descriptor.Instructions);
+        Assert.Contains("shared-house space", session.Descriptor.Instructions);
     }
 }
