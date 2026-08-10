@@ -30,10 +30,10 @@ public class HomeCodeTests
     }
 
     [Fact]
-    public void CategorySelectsTheElementFamilyWithoutKnowingAnyRoom()
+    public void CategoryValidatesAgainstTheFrozenFourteenAndLowercasesTheOptionKey()
     {
-        Assert.Equal(HomeSchema.Types.Outlet, HomeCategories.TypeFor("PS"));
-        Assert.Equal(HomeSchema.Types.Network, HomeCategories.TypeFor("RJ"));
-        Assert.Equal(HomeSchema.Types.Relay, HomeCategories.TypeFor("DR"));
+        Assert.Equal("PS", HomeCategories.Validate("ps"));
+        Assert.Equal("rj", HomeCategories.OptionKey("RJ"));
+        Assert.Throws<ArgumentException>(() => HomeCategories.Validate("Q"));
     }
 }

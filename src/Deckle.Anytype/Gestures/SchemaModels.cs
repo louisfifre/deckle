@@ -8,7 +8,8 @@ internal sealed record SchemaPreview(
     SchemaSnapshot Snapshot,
     IReadOnlyList<SchemaAction> Actions,
     IReadOnlyList<string> Conflicts,
-    IReadOnlyList<string> SkippedConflicts);
+    IReadOnlyList<string> SkippedConflicts,
+    IReadOnlyDictionary<string, string> SectionCollections);
 
 internal sealed record SchemaAction(string Kind, string Key, string Name);
 
@@ -24,6 +25,11 @@ public sealed record SchemaPreviewResult(
     string Digest);
 
 public sealed record SchemaPreviewAction(string Kind, string Key, string Name);
+
+// One live collection object (built-in type key "collection") as read for
+// section planning. Kept off the public SchemaSnapshot: that record is a frozen
+// provider boundary consumed by domain modules.
+internal sealed record SchemaCollectionObjectInfo(string Id, string Name);
 
 public sealed record SchemaSnapshot(
     IReadOnlyDictionary<string, SchemaTypeInfo> Types,

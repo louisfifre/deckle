@@ -11,7 +11,8 @@ public class HomeToolCatalogTests
     private static readonly string[] ExpectedNames =
     [
         "create", "update", "get", "search", "delete",
-        "chantier_create", "tache_create", "complete", "chantier_overview",
+        "component_create", "plant_create", "plant_water",
+        "worksite_create", "todo_create", "complete", "worksite_overview",
     ];
 
     [Fact]
@@ -78,10 +79,13 @@ public class HomeToolCatalogTests
             ["get"] = AmbiguousOutcomePolicy.SafeToRetry,
             ["search"] = AmbiguousOutcomePolicy.SafeToRetry,
             ["delete"] = AmbiguousOutcomePolicy.VerifyBeforeRetry,
-            ["chantier_create"] = AmbiguousOutcomePolicy.RequiresDeduplication,
-            ["tache_create"] = AmbiguousOutcomePolicy.RequiresDeduplication,
+            ["component_create"] = AmbiguousOutcomePolicy.RequiresDeduplication,
+            ["plant_create"] = AmbiguousOutcomePolicy.RequiresDeduplication,
+            ["plant_water"] = AmbiguousOutcomePolicy.SafeToRetry,
+            ["worksite_create"] = AmbiguousOutcomePolicy.RequiresDeduplication,
+            ["todo_create"] = AmbiguousOutcomePolicy.RequiresDeduplication,
             ["complete"] = AmbiguousOutcomePolicy.SafeToRetry,
-            ["chantier_overview"] = AmbiguousOutcomePolicy.SafeToRetry,
+            ["worksite_overview"] = AmbiguousOutcomePolicy.SafeToRetry,
         };
 
         Assert.Equal(expected, tools.ToDictionary(
@@ -96,10 +100,13 @@ public class HomeToolCatalogTests
             ["get"] = ToolChangeKind.None,
             ["search"] = ToolChangeKind.None,
             ["delete"] = ToolChangeKind.Destructive,
-            ["chantier_create"] = ToolChangeKind.Additive,
-            ["tache_create"] = ToolChangeKind.Additive,
+            ["component_create"] = ToolChangeKind.Additive,
+            ["plant_create"] = ToolChangeKind.Additive,
+            ["plant_water"] = ToolChangeKind.Overwriting,
+            ["worksite_create"] = ToolChangeKind.Additive,
+            ["todo_create"] = ToolChangeKind.Additive,
             ["complete"] = ToolChangeKind.Overwriting,
-            ["chantier_overview"] = ToolChangeKind.None,
+            ["worksite_overview"] = ToolChangeKind.None,
         };
         Assert.Equal(expectedChanges, tools.ToDictionary(
             tool => tool.Name,

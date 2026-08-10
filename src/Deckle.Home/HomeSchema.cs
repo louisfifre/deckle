@@ -3,56 +3,104 @@ using Deckle.Anytype;
 
 namespace Deckle.Home;
 
+// The Home contract of 2026-08-10: 13 types in five families, English keys,
+// human titles, the derived identity code in the `code` property. The applied
+// truth lives in the home project's mcp/schema-manifest.json; this class is
+// its compiled mirror for validation and payload building. French labels live
+// in Terms/terms.fr.json (HomeTerms), never in code.
 public static class HomeSchema
 {
     public static class Types
     {
-        public const string Room = "piece";
-        public const string Circuit = "circuit_elec";
-        public const string DistributionBoard = "tableau_elec";
-        public const string Outlet = "prise";
-        public const string Lighting = "eclairage";
-        public const string Control = "commande";
-        public const string Opening = "ouvrant";
-        public const string Appliance = "appareil";
-        public const string Network = "reseau";
-        public const string Sensor = "capteur";
-        public const string Relay = "relais";
-        public const string Panel = "panneau";
-        public const string Node = "noeud";
-        public const string Idea = "idee";
-        public const string Errand = "course";
-        public const string Tool = "outil";
-        public const string Worksite = "chantier";
-        public const string Task = "tache";
+        // App-managed: the collection layout cannot be created through the
+        // Anytype API, so the type is born in the app and its real key is
+        // discovered from the live snapshot (see FloorTypeKey).
+        public const string Floor = "floor";
+        public const string Room = "room";
+        public const string Point = "point";
+        public const string Circuit = "circuit";
+        public const string Panel = "panel";
+        public const string System = "system";
+        public const string Device = "device";
+        public const string Component = "component";
+        public const string Plant = "plant";
+        public const string Idea = "idea";
+        public const string Errand = "errand";
+        public const string Worksite = "worksite";
+        public const string Todo = "todo";
     }
 
     public static class Properties
     {
-        public const string Label = "libelle";
-        public const string Room = "piece";
-        public const string Category = "categorie";
-        public const string Existence = "existence";
-        public const string Condition = "etat";
-        public const string Circuit = "circuit";
-        public const string ObservedOn = "date_releve";
+        public const string Code = "code";
         public const string Notes = "notes";
         public const string Documents = "documents";
+        public const string SurveyDate = "survey_date";
+        public const string Location = "location";
+        public const string InstalledIn = "installed_in";
+        public const string StoredIn = "stored_in";
+        public const string Floor = "floor";
+        public const string Category = "category";
+        public const string Existence = "existence";
+        public const string Condition = "condition";
+        public const string Circuit = "circuit";
+        public const string Panel = "panel";
+        public const string OutletCount = "outlet_count";
+        public const string Earthed = "earthed";
+        public const string ExpectedRating = "expected_rating";
+        public const string LightNature = "light_nature";
+        public const string SwitchKind = "switch_kind";
+        public const string Controls = "controls";
+        public const string ControlledBy = "controlled_by";
+        public const string MotorType = "motor_type";
+        public const string PowerWatts = "power_watts";
+        public const string NetworkStandard = "network_standard";
+        public const string EndsAt = "ends_at";
+        public const string Poe = "poe";
+        public const string MeasuredQuantity = "measured_quantity";
+        public const string PowerSupply = "power_supply";
+        public const string Protocol = "protocol";
+        public const string PanelSize = "panel_size";
+        public const string Rating = "rating";
+        public const string OriginLabel = "origin_label";
+        public const string PanelPosition = "panel_position";
+        public const string DedicatedRcd = "dedicated_rcd";
+        public const string RcdHead = "rcd_head";
+        public const string RcdType = "rcd_type";
+        public const string FreeSlots = "free_slots";
+        public const string Conduits = "conduits";
+        public const string SubMeter = "sub_meter";
+        public const string Domain = "domain";
+        public const string EquipmentCategory = "equipment_category";
+        public const string Manufacturer = "manufacturer";
+        public const string Supplier = "supplier";
+        public const string ModelRef = "model_ref";
+        public const string SerialNumber = "serial_number";
+        public const string PurchasePrice = "purchase_price";
+        public const string PurchaseDate = "purchase_date";
+        public const string Receipt = "receipt";
+        public const string PartOf = "part_of";
+        public const string Quantity = "quantity";
+        public const string RestockThreshold = "restock_threshold";
+        public const string BatteryCapacity = "battery_capacity";
+        public const string StorageCapacity = "storage_capacity";
+        public const string PowerRms = "power_rms";
+        public const string Impedance = "impedance";
+        public const string Os = "os";
+        public const string Weight = "weight";
+        public const string PlantFamily = "plant_family";
+        public const string PlantGenus = "plant_genus";
+        public const string ScientificName = "scientific_name";
+        public const string Substrate = "substrate";
+        public const string PlantExposure = "plant_exposure";
+        public const string LastWatering = "last_watering";
+        public const string PlantPhoto = "plant_photo";
         public const string Horizon = "horizon";
-        public const string Aisle = "rayon";
-        public const string Quantity = "quantite";
-        public const string Concerns = "concerne";
-        public const string ModelReference = "reference_modele";
-        public const string ToolCategory = "categorie_outil";
-        public const string Supplier = "fournisseur";
-        public const string Invoice = "facture";
-        public const string StoredIn = "range_dans";
-        public const string Status = "statut";
-        public const string TargetDate = "date_cible";
-        public const string Worksite = "chantier";
-        // App-managed (Étage objects are created in the app, the type is not
-        // part of the required contract), but the relation is written via MCP.
-        public const string Floor = "etage";
+        public const string Aisle = "aisle";
+        public const string About = "about";
+        public const string State = "state";
+        public const string TargetDate = "target_date";
+        public const string Worksite = "worksite";
     }
 
     public static class Existence
@@ -62,7 +110,7 @@ public static class HomeSchema
         public const string Removed = "depose";
     }
 
-    public static class Status
+    public static class State
     {
         public const string Open = "ouvert";
         public const string InProgress = "en_cours";
@@ -72,163 +120,255 @@ public static class HomeSchema
         public const string Abandoned = "abandonne";
     }
 
-    public static class Condition
-    {
-        public const string Good = "bon";
-        public const string Worn = "vetuste";
-        public const string Damaged = "endommage";
-        public const string OutOfService = "hors_service";
-    }
+    // Inventory types whose identity is an immutable code in the `code`
+    // property. The point type absorbs the ten former wall-point types; its
+    // nature is the frozen `category` select, derived from the code.
+    public static readonly IReadOnlyList<string> CodedTypes =
+    [Types.Room, Types.Point, Types.Circuit, Types.Panel];
 
-    public static readonly IReadOnlyList<string> ElementTypes =
-    [
-        Types.Outlet, Types.Lighting, Types.Control, Types.Opening, Types.Appliance,
-        Types.Network, Types.Sensor, Types.Relay, Types.Panel, Types.Node,
-    ];
+    // Equipment triad: a Système aggregates, an Appareil stands alone, a
+    // Composant only exists through its mandatory part_of. The gate lives in
+    // the gestures, not here — schema cannot express it.
+    public static readonly IReadOnlyList<string> EquipmentTypes =
+    [Types.System, Types.Device, Types.Component];
 
-    // House-life types: no nomenclature code, a free title (or a body-derived one
-    // for ideas), and none of the element invariants. They share the space and
-    // its guarded vocabularies, not the code grammar.
     public static readonly IReadOnlyList<string> LifeTypes =
-    [Types.Idea, Types.Errand, Types.Tool];
+    [Types.Plant, Types.Idea, Types.Errand];
 
-    // Work types: the house's own pilotage — free-titled like life types, but
-    // deliberately not the dev-space PM model: no journal (done tasks are the
-    // record), no required properties at creation, orphan tasks allowed.
     public static readonly IReadOnlyList<string> WorkTypes =
-    [Types.Worksite, Types.Task];
+    [Types.Worksite, Types.Todo];
 
     public static readonly IReadOnlyList<string> CreatableTypes =
-    [Types.Room, Types.Circuit, Types.DistributionBoard, .. ElementTypes, .. LifeTypes, .. WorkTypes];
+    [.. CodedTypes, .. EquipmentTypes, .. LifeTypes, .. WorkTypes];
 
     internal static readonly IReadOnlyDictionary<string, string> RequiredProperties =
         new Dictionary<string, string>(StringComparer.Ordinal)
         {
-            [Properties.Label] = "text",
-            [Properties.Room] = "objects",
+            [Properties.Code] = "text",
+            [Properties.Notes] = "text",
+            [Properties.Documents] = "files",
+            [Properties.SurveyDate] = "date",
+            [Properties.Location] = "text",
+            [Properties.InstalledIn] = "objects",
+            [Properties.StoredIn] = "objects",
+            [Properties.Floor] = "objects",
             [Properties.Category] = "select",
             [Properties.Existence] = "select",
             [Properties.Condition] = "select",
             [Properties.Circuit] = "objects",
-            [Properties.ObservedOn] = "date",
-            [Properties.Notes] = "text",
-            [Properties.Documents] = "files",
+            [Properties.Panel] = "objects",
+            [Properties.OutletCount] = "number",
+            [Properties.Earthed] = "checkbox",
+            [Properties.ExpectedRating] = "text",
+            [Properties.LightNature] = "select",
+            [Properties.SwitchKind] = "select",
+            [Properties.Controls] = "objects",
+            [Properties.ControlledBy] = "objects",
+            [Properties.MotorType] = "select",
+            [Properties.PowerWatts] = "number",
+            [Properties.NetworkStandard] = "select",
+            [Properties.EndsAt] = "objects",
+            [Properties.Poe] = "select",
+            [Properties.MeasuredQuantity] = "text",
+            [Properties.PowerSupply] = "select",
+            [Properties.Protocol] = "text",
+            [Properties.PanelSize] = "select",
+            [Properties.Rating] = "text",
+            [Properties.OriginLabel] = "text",
+            [Properties.PanelPosition] = "text",
+            [Properties.DedicatedRcd] = "text",
+            [Properties.RcdHead] = "text",
+            [Properties.RcdType] = "select",
+            [Properties.FreeSlots] = "number",
+            [Properties.Conduits] = "text",
+            [Properties.SubMeter] = "text",
+            [Properties.Domain] = "select",
+            [Properties.EquipmentCategory] = "select",
+            [Properties.Manufacturer] = "select",
+            [Properties.Supplier] = "select",
+            [Properties.ModelRef] = "text",
+            [Properties.SerialNumber] = "text",
+            [Properties.PurchasePrice] = "number",
+            [Properties.PurchaseDate] = "date",
+            [Properties.Receipt] = "files",
+            [Properties.PartOf] = "objects",
+            [Properties.Quantity] = "number",
+            [Properties.RestockThreshold] = "number",
+            [Properties.BatteryCapacity] = "number",
+            [Properties.StorageCapacity] = "number",
+            [Properties.PowerRms] = "number",
+            [Properties.Impedance] = "number",
+            [Properties.Os] = "select",
+            [Properties.Weight] = "number",
+            [Properties.PlantFamily] = "select",
+            [Properties.PlantGenus] = "select",
+            [Properties.ScientificName] = "text",
+            [Properties.Substrate] = "multi_select",
+            [Properties.PlantExposure] = "select",
+            [Properties.LastWatering] = "date",
+            [Properties.PlantPhoto] = "files",
             [Properties.Horizon] = "select",
             [Properties.Aisle] = "select",
-            [Properties.Quantity] = "text",
-            [Properties.Concerns] = "objects",
-            [Properties.ModelReference] = "text",
-            [Properties.ToolCategory] = "select",
-            [Properties.Supplier] = "select",
-            [Properties.Invoice] = "files",
-            [Properties.StoredIn] = "objects",
-            [Properties.Status] = "select",
+            [Properties.About] = "objects",
+            [Properties.State] = "select",
             [Properties.TargetDate] = "date",
             [Properties.Worksite] = "objects",
         };
 
     // Objects properties whose target must carry a specific type; unlisted
-    // properties (concerne, range_dans) accept any Home object.
+    // properties (about, ends_at, stored_in for containers to come) accept any
+    // Home object. The floor property is special-cased in the writer: its
+    // targets are the app-created collection objects of the runtime floor type.
     internal static readonly IReadOnlyDictionary<string, IReadOnlyList<string>> ObjectPropertyTargets =
         new Dictionary<string, IReadOnlyList<string>>(StringComparer.Ordinal)
         {
-            [Properties.Room] = [Types.Room],
+            [Properties.InstalledIn] = [Types.Room],
+            [Properties.StoredIn] = [Types.Room],
             [Properties.Circuit] = [Types.Circuit],
+            [Properties.Panel] = [Types.Panel],
+            [Properties.PartOf] = [Types.System],
             [Properties.Worksite] = [Types.Worksite],
-            [Properties.Floor] = ["etage"],
+            [Properties.Controls] = [Types.Point],
+            [Properties.ControlledBy] = [Types.Point],
         };
 
     internal static readonly IReadOnlyDictionary<string, IReadOnlyList<string>> RequiredByType =
-        BuildRequiredByType();
-
-    internal static readonly IReadOnlyDictionary<string, IReadOnlyDictionary<string, string>> ClosedVocabularies =
-        new Dictionary<string, IReadOnlyDictionary<string, string>>(StringComparer.Ordinal)
+        new Dictionary<string, IReadOnlyList<string>>(StringComparer.Ordinal)
         {
-            [Properties.Category] = new Dictionary<string, string>(StringComparer.Ordinal)
-            {
-                ["p"] = "P — prise 230 V", ["ps"] = "PS — prise spécialisée",
-                ["l"] = "L — point lumineux", ["lr"] = "LR — ruban LED",
-                ["c"] = "C — commande murale", ["v"] = "V — volet / ouvrant",
-                ["a"] = "A — appareil fixe", ["rj"] = "RJ — prise réseau",
-                ["rb"] = "RB — baie / coffret réseau", ["rt"] = "RT — coax TV",
-                ["ds"] = "DS — capteur", ["dr"] = "DR — relais",
-                ["dx"] = "DX — panneau de contrôle", ["de"] = "DE — nœud ESP32",
-            },
-            [Properties.Existence] = new Dictionary<string, string>(StringComparer.Ordinal)
-            {
-                [Existence.Existing] = "Existant",
-                [Existence.Planned] = "Prévu",
-                [Existence.Removed] = "Déposé",
-            },
-            [Properties.Condition] = new Dictionary<string, string>(StringComparer.Ordinal)
-            {
-                [Condition.Good] = "Bon",
-                [Condition.Worn] = "Vétuste",
-                [Condition.Damaged] = "Endommagé",
-                [Condition.OutOfService] = "Hors service",
-            },
-            [Properties.Horizon] = new Dictionary<string, string>(StringComparer.Ordinal)
-            {
-                ["maintenant"] = "Maintenant",
-                ["bientot"] = "Bientôt",
-                ["un_jour"] = "Un jour",
-                ["peut_etre"] = "Peut-être",
-            },
-            [Properties.Aisle] = new Dictionary<string, string>(StringComparer.Ordinal)
-            {
-                ["alimentaire"] = "Alimentaire",
-                ["bricolage"] = "Bricolage",
-                ["maison"] = "Maison",
-                ["jardin"] = "Jardin",
-                ["autre"] = "Autre",
-            },
-            [Properties.ToolCategory] = new Dictionary<string, string>(StringComparer.Ordinal)
-            {
-                ["electroportatif"] = "Électroportatif",
-                ["outil_a_main"] = "Outil à main",
-                ["mesure"] = "Mesure",
-                ["peinture"] = "Peinture",
-                ["electronique"] = "Électronique",
-                ["impression_3d"] = "Impression 3D",
-                ["jardin"] = "Jardin",
-                ["autre"] = "Autre",
-            },
-            [Properties.Status] = new Dictionary<string, string>(StringComparer.Ordinal)
-            {
-                [Status.Open] = "Ouvert",
-                [Status.InProgress] = "En cours",
-                [Status.Waiting] = "En attente",
-                [Status.Dormant] = "Dormant",
-                [Status.Done] = "Terminé",
-                [Status.Abandoned] = "Abandonné",
-            },
-            [Properties.Supplier] = new Dictionary<string, string>(StringComparer.Ordinal)
-            {
-                ["leroy_merlin"] = "Leroy Merlin",
-                ["brico_depot"] = "Brico Dépôt",
-                ["amazon"] = "Amazon",
-                ["manomano"] = "ManoMano",
-                ["occasion"] = "Occasion",
-                ["autre"] = "Autre",
-            },
+            [Types.Room] =
+            [Properties.Code, Properties.Floor, Properties.Notes, Properties.Documents],
+            [Types.Point] =
+            [
+                Properties.Code, Properties.Category, Properties.InstalledIn,
+                Properties.Location, Properties.Existence, Properties.Condition,
+                Properties.Circuit, Properties.Panel, Properties.SurveyDate, Properties.Notes,
+                Properties.OutletCount, Properties.Earthed, Properties.ExpectedRating,
+                Properties.LightNature, Properties.SwitchKind, Properties.Controls,
+                Properties.ControlledBy, Properties.MotorType, Properties.PowerWatts,
+                Properties.NetworkStandard, Properties.EndsAt, Properties.Poe,
+                Properties.MeasuredQuantity, Properties.PowerSupply, Properties.Protocol,
+                Properties.PanelSize,
+            ],
+            [Types.Circuit] =
+            [
+                Properties.Code, Properties.Panel, Properties.Rating, Properties.OriginLabel,
+                Properties.PanelPosition, Properties.DedicatedRcd, Properties.SurveyDate,
+                Properties.Notes,
+            ],
+            [Types.Panel] =
+            [
+                Properties.Code, Properties.InstalledIn, Properties.RcdHead, Properties.RcdType,
+                Properties.FreeSlots, Properties.Conduits, Properties.SubMeter,
+                Properties.SurveyDate, Properties.Notes, Properties.Documents,
+            ],
+            [Types.System] =
+            [
+                Properties.Domain, Properties.EquipmentCategory, Properties.Manufacturer,
+                Properties.InstalledIn, Properties.StoredIn, Properties.Notes,
+                Properties.Documents,
+            ],
+            [Types.Device] =
+            [
+                Properties.Domain, Properties.EquipmentCategory, Properties.Manufacturer,
+                Properties.Supplier, Properties.ModelRef, Properties.SerialNumber,
+                Properties.PurchasePrice, Properties.PurchaseDate, Properties.Receipt,
+                Properties.PartOf, Properties.StoredIn, Properties.InstalledIn,
+                Properties.Quantity, Properties.RestockThreshold, Properties.BatteryCapacity,
+                Properties.StorageCapacity, Properties.PowerRms, Properties.Impedance,
+                Properties.Os, Properties.Weight, Properties.Documents, Properties.Notes,
+            ],
+            [Types.Component] =
+            [
+                Properties.Domain, Properties.EquipmentCategory, Properties.Manufacturer,
+                Properties.Supplier, Properties.ModelRef, Properties.SerialNumber,
+                Properties.PurchasePrice, Properties.PurchaseDate, Properties.Receipt,
+                Properties.PartOf, Properties.StoredIn, Properties.Quantity,
+                Properties.RestockThreshold, Properties.BatteryCapacity,
+                Properties.StorageCapacity, Properties.PowerRms, Properties.Impedance,
+                Properties.Weight, Properties.Documents, Properties.Notes,
+            ],
+            [Types.Plant] =
+            [
+                Properties.PlantFamily, Properties.PlantGenus, Properties.ScientificName,
+                Properties.Substrate, Properties.PlantExposure, Properties.LastWatering,
+                Properties.PlantPhoto, Properties.InstalledIn, Properties.Notes,
+            ],
+            [Types.Idea] = [Properties.Horizon],
+            [Types.Errand] =
+            [Properties.Aisle, Properties.Quantity, Properties.About, Properties.Notes],
+            [Types.Worksite] =
+            [
+                Properties.State, Properties.About, Properties.TargetDate,
+                Properties.Notes, Properties.Documents,
+            ],
+            [Types.Todo] =
+            [
+                Properties.State, Properties.About, Properties.Worksite,
+                Properties.TargetDate, Properties.Notes,
+            ],
         };
+
+    // Closed vocabularies: options are applied, never invented. Open selects
+    // (equipment_category, manufacturer, os, plant_*, substrate) are absent
+    // here on purpose — their options grow from Louis in the app and resolve
+    // against the live space only.
+    internal static readonly IReadOnlyDictionary<string, IReadOnlyList<string>> ClosedVocabularies =
+        new Dictionary<string, IReadOnlyList<string>>(StringComparer.Ordinal)
+        {
+            [Properties.Category] =
+            ["p", "ps", "l", "lr", "c", "v", "a", "rj", "rb", "rt", "ds", "dr", "dx", "de"],
+            [Properties.Existence] = [Existence.Existing, Existence.Planned, Existence.Removed],
+            [Properties.Condition] = ["bon", "vetuste", "endommage", "hors_service"],
+            [Properties.LightNature] = ["plafonnier", "applique", "spot", "ruban", "dcl"],
+            [Properties.SwitchKind] = ["interrupteur_simple", "va_et_vient", "poussoir"],
+            [Properties.MotorType] = ["filaire", "radio"],
+            [Properties.NetworkStandard] = ["cat_5e", "cat_6", "cat_6a", "coax"],
+            [Properties.Poe] = ["oui", "non", "prevu"],
+            [Properties.PowerSupply] = ["poe", "pile", "cinq_volts", "secteur"],
+            [Properties.PanelSize] = ["s", "m", "l"],
+            [Properties.RcdType] = ["type_a", "type_ac", "inconnu"],
+            [Properties.Domain] =
+            ["audio", "informatique", "outillage", "cuisine", "electromenager", "jardin"],
+            [Properties.Supplier] =
+            ["leroy_merlin", "brico_depot", "amazon", "manomano", "occasion", "autre"],
+            [Properties.Horizon] = ["maintenant", "bientot", "un_jour", "peut_etre"],
+            [Properties.Aisle] = ["alimentaire", "bricolage", "maison", "jardin", "autre"],
+            [Properties.State] =
+            [
+                State.Open, State.InProgress, State.Waiting,
+                State.Dormant, State.Done, State.Abandoned,
+            ],
+        };
+
+    internal static string OptionLabel(string propertyKey, string optionKey) =>
+        HomeTerms.Current.OptionName(propertyKey, optionKey);
+
+    internal static IReadOnlyList<string> OptionLabels(string propertyKey) =>
+        ClosedVocabularies.TryGetValue(propertyKey, out IReadOnlyList<string>? keys)
+            ? keys.Select(key => OptionLabel(propertyKey, key)).ToArray()
+            : [];
 
     internal static JsonObject CreateRequiredSchemaManifest()
     {
+        HomeTerms terms = HomeTerms.Current;
         var properties = new JsonArray();
         foreach ((string key, string format) in RequiredProperties)
         {
             var property = new JsonObject
             {
                 ["key"] = key,
-                ["name"] = PropertyName(key),
+                ["name"] = terms.PropertyName(key),
                 ["format"] = format,
             };
-            if (ClosedVocabularies.TryGetValue(key, out var vocabulary))
+            if (ClosedVocabularies.TryGetValue(key, out IReadOnlyList<string>? optionKeys))
             {
                 var tags = new JsonArray();
-                foreach ((string tagKey, string name) in vocabulary)
-                    tags.Add(new JsonObject { ["key"] = tagKey, ["name"] = name });
+                foreach (string optionKey in optionKeys)
+                    tags.Add(new JsonObject
+                    {
+                        ["key"] = optionKey,
+                        ["name"] = terms.OptionName(key, optionKey),
+                    });
                 property["tags"] = tags;
             }
             properties.Add(property);
@@ -242,8 +382,8 @@ public static class HomeSchema
             types.Add(new JsonObject
             {
                 ["key"] = type,
-                ["name"] = TypeName(type),
-                ["plural_name"] = TypePluralName(type),
+                ["name"] = terms.TypeName(type),
+                ["plural_name"] = terms.TypePluralName(type),
                 ["layout"] = TypeLayout(type),
                 ["properties"] = attached,
             });
@@ -280,17 +420,20 @@ public static class HomeSchema
                 }
         }
 
-        foreach ((string propertyKey, IReadOnlyDictionary<string, string> vocabulary) in ClosedVocabularies)
+        foreach ((string propertyKey, IReadOnlyList<string> optionKeys) in ClosedVocabularies)
         {
             snapshot.TagsByProperty.TryGetValue(propertyKey, out var tags);
             tags ??= new Dictionary<string, SchemaTagInfo>(StringComparer.Ordinal);
-            foreach ((string key, string name) in vocabulary)
+            foreach (string key in optionKeys)
+            {
+                string name = OptionLabel(propertyKey, key);
                 if (!tags.Values.Distinct().Any(tag =>
                         string.Equals(tag.Key, key, StringComparison.OrdinalIgnoreCase)
                         || string.Equals(tag.Name, name, StringComparison.OrdinalIgnoreCase)))
                 {
                     failures.Add($"vocabulaire {propertyKey} : option manquante {key}");
                 }
+            }
         }
 
         if (failures.Count > 0)
@@ -298,105 +441,32 @@ public static class HomeSchema
                 "Le schéma Home n’est pas conforme : " + string.Join(" ; ", failures)
                 + ". Applique le manifeste Home avec schema-admin puis réessaie.");
 
-        return new HomeSchemaRuntime(snapshot);
+        return new HomeSchemaRuntime(snapshot, FloorTypeKey(snapshot));
     }
 
-    private static IReadOnlyDictionary<string, IReadOnlyList<string>> BuildRequiredByType()
+    // The floor type is created in the app (the API refuses collection
+    // layouts), so its key is a live discovery, not a compiled constant: the
+    // nominal key first, else the collection-layout type named Zone. Absent
+    // type = floor features refuse with guidance instead of failing the
+    // whole schema closed.
+    internal static string? FloorTypeKey(SchemaSnapshot snapshot)
     {
-        var result = new Dictionary<string, IReadOnlyList<string>>(StringComparer.Ordinal)
-        {
-            [Types.Room] = [Properties.Label, Properties.Notes],
-            [Types.Circuit] = [Properties.Label, Properties.Notes],
-            [Types.DistributionBoard] = [Properties.Label, Properties.Notes],
-        };
-
-        string[] elementProperties =
-        [
-            Properties.Label, Properties.Room, Properties.Category,
-            Properties.Existence, Properties.Condition, Properties.Circuit,
-            Properties.ObservedOn, Properties.Notes,
-        ];
-        foreach (string type in ElementTypes) result[type] = elementProperties;
-
-        result[Types.Worksite] =
-        [
-            Properties.Status, Properties.Concerns, Properties.TargetDate,
-            Properties.Notes, Properties.Documents,
-        ];
-        result[Types.Task] =
-        [
-            Properties.Status, Properties.Concerns, Properties.Worksite,
-            Properties.TargetDate, Properties.Notes,
-        ];
-        result[Types.Idea] = [Properties.Horizon];
-        result[Types.Errand] =
-        [Properties.Aisle, Properties.Quantity, Properties.Concerns, Properties.Notes];
-        result[Types.Tool] =
-        [
-            Properties.ModelReference, Properties.ToolCategory, Properties.Supplier,
-            Properties.Invoice, Properties.StoredIn, Properties.Documents, Properties.Notes,
-        ];
-        return result;
+        if (snapshot.Types.ContainsKey(Types.Floor)) return Types.Floor;
+        return snapshot.Types.Values.FirstOrDefault(type =>
+                string.Equals(type.Layout, "collection", StringComparison.Ordinal)
+                && type.Name is "Zone" or "Zones")
+            ?.Key;
     }
 
     private static bool LinkMatches(SchemaPropertyLinkInfo link, SchemaPropertyInfo property) =>
         (link.Key.Length > 0 && string.Equals(link.Key, property.Key, StringComparison.Ordinal))
         || (link.Id.Length > 0 && string.Equals(link.Id, property.Id, StringComparison.Ordinal));
 
-    private static string PropertyName(string key) => key switch
-    {
-        Properties.Label => "Libellé",
-        Properties.Room => "Pièce",
-        Properties.Category => "Catégorie",
-        Properties.Existence => "Existence",
-        Properties.Condition => "État",
-        Properties.Circuit => "Circuit",
-        Properties.ObservedOn => "Date de relevé",
-        Properties.Notes => "Notes",
-        Properties.Documents => "Documents",
-        Properties.Horizon => "Horizon",
-        Properties.Aisle => "Rayon",
-        Properties.Quantity => "Quantité",
-        Properties.Concerns => "Concerne",
-        Properties.ModelReference => "Référence modèle",
-        Properties.ToolCategory => "Catégorie d'outil",
-        Properties.Supplier => "Fournisseur",
-        Properties.Invoice => "Facture",
-        Properties.StoredIn => "Rangé dans",
-        Properties.Status => "Statut",
-        Properties.TargetDate => "Date cible",
-        Properties.Worksite => "Chantier",
-        _ => key,
-    };
-
-    private static string TypeName(string key) => key switch
-    {
-        Types.Room => "Pièce", Types.Circuit => "Circuit", Types.DistributionBoard => "Tableau",
-        Types.Outlet => "Prise", Types.Lighting => "Éclairage", Types.Control => "Commande",
-        Types.Opening => "Ouvrant", Types.Appliance => "Appareil", Types.Network => "Réseau",
-        Types.Sensor => "Capteur", Types.Relay => "Relais", Types.Panel => "Panneau",
-        Types.Node => "Nœud", Types.Idea => "Idée", Types.Errand => "Course",
-        Types.Tool => "Outil", Types.Worksite => "Chantier", Types.Task => "Tâche",
-        _ => key,
-    };
-
-    // "Matériel" is the deliberate plural label of Outil: the fleet, not "Outils".
-    private static string TypePluralName(string key) => key switch
-    {
-        Types.Room => "Pièces", Types.Circuit => "Circuits", Types.DistributionBoard => "Tableaux",
-        Types.Outlet => "Prises", Types.Lighting => "Éclairages", Types.Control => "Commandes",
-        Types.Opening => "Ouvrants", Types.Appliance => "Appareils", Types.Network => "Réseaux",
-        Types.Sensor => "Capteurs", Types.Relay => "Relais", Types.Panel => "Panneaux",
-        Types.Node => "Nœuds", Types.Idea => "Idées", Types.Errand => "Courses",
-        Types.Tool => "Matériel", Types.Worksite => "Chantiers", Types.Task => "Tâches",
-        _ => key,
-    };
-
     private static string TypeLayout(string key) => key switch
     {
         Types.Idea => "note",
         Types.Errand => "action",
-        Types.Task => "action",
+        Types.Todo => "action",
         _ => "basic",
     };
 }

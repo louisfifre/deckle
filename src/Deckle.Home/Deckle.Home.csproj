@@ -12,4 +12,8 @@
   <ItemGroup>
     <InternalsVisibleTo Include="Deckle.Home.Tests" />
   </ItemGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Include="Terms\*.json" WithCulture="false" />
+  </ItemGroup>
 </Project>

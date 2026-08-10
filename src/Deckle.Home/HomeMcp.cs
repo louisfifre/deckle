@@ -17,16 +17,22 @@ public static class HomeMcp
     private static readonly McpSurfaceDescriptor Descriptor = new(
         "deckle-home",
         "Deckle Home",
-        "Guarded home inventory and house life stored in the configured "
-        + "Anytype Home space. Element codes follow PIÈCE-CAT[SUB]NN and never "
-        + "change; their room prefix must exist in the live room registry. "
-        + "Element titles are the codes, human labels live in Libellé, and "
-        + "ordinary bodies stay empty. Life and work types (idee, course, "
-        + "outil, chantier, tache) are free-titled; chantiers and tâches use "
-        + "the dedicated verbs, done tasks are the record. Properties and "
-        + "relations carry structured facts. Unknown rooms, duplicate codes, "
-        + "unknown closed-vocabulary values, and element deletion are refused "
-        + "with corrective guidance. Content is French.");
+        "Guarded shared-house space stored in the configured Anytype Home "
+        + "space: fixed inventory (rooms, points, circuits, panels), owned "
+        + "equipment (systems, devices, components), house life (plants, "
+        + "ideas, errands) and pilotage (worksites, todos). Titles are human "
+        + "names written for the whole household — no bare acronyms; the "
+        + "immutable identity code of inventory objects lives in the Code "
+        + "property. Point codes follow PIÈCE-CAT[SUB]NN, their room prefix "
+        + "must exist in the live room registry, and a point's room and "
+        + "category derive from its code. Equipment doctrine: a Système "
+        + "aggregates, an Appareil stands alone and may join a Système via "
+        + "Fait partie de, a Composant only exists inside its Système — "
+        + "creation without one is refused; in doubt create an Appareil, "
+        + "retyping is cheap. Plants, worksites and todos have dedicated "
+        + "verbs; done todos are the record. Closed vocabularies are applied, "
+        + "never invented; files are deposited in the app; a point is never "
+        + "deleted — set Existence to Déposé. Content is French.");
 
     private static McpSurfaceBinding Open(AnytypeApiClient api)
     {

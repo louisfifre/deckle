@@ -139,4 +139,33 @@ public class SchemaAdminToolCatalogTests
             BuildCatalog().Where(tool => tool.Name != "schema_apply"),
             tool => Assert.Equal(ToolChangeKind.None, tool.Execution.Change));
     }
+
+    [Fact]
+    public void PreviewManifestSectionsSchemaIsClosedAndRequiresNameAndTypes()
+    {
+        ToolDescriptor preview = BuildCatalog().Single(t => t.Name == "schema_preview");
+
+        JsonObject manifest = Assert.IsType<JsonObject>(
+            Assert.IsType<JsonObject>(preview.InputSchema["properties"])["manifest"]);
+        JsonObject properties = Assert.IsType<JsonObject>(manifest["properties"]);
+        Assert.Contains("sections", properties.Select(p => p.Key));
+
+        JsonObject sectionArray = Assert.IsType<JsonObject>(properties["sections"]);
+        JsonObject sectionSchema = Assert.IsType<JsonObject>(sectionArray["items"]);
+        Assert.False(sectionSchema["additionalProperties"]!.GetValue<bool>());
+
+        JsonObject sectionProperties = Assert.IsType<JsonObject>(sectionSchema["properties"]);
+        Assert.Contains("icon", sectionProperties.Select(p => p.Key));
+        JsonObject icon = Assert.IsType<JsonObject>(sectionProperties["icon"]);
+        JsonObject iconProperties = Assert.IsType<JsonObject>(icon["properties"]);
+        JsonArray iconFormats = Assert.IsType<JsonArray>(
+            Assert.IsType<JsonObject>(iconProperties["format"])["enum"]);
+        Assert.Equal(["emoji"], iconFormats.Select(node => node!.GetValue<string>()));
+        JsonObject types = Assert.IsType<JsonObject>(sectionProperties["types"]);
+        Assert.Equal(1, types["minItems"]!.GetValue<int>());
+
+        JsonArray required = Assert.IsType<JsonArray>(sectionSchema["required"]);
+        Assert.Contains(required, node => node?.GetValue<string>() == "name");
+        Assert.Contains(required, node => node?.GetValue<string>() == "types");
+    }
 }

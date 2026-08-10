@@ -15,14 +15,14 @@ public readonly record struct HomeElementCode(
     public static HomeElementCode Parse(string value)
     {
         if (string.IsNullOrWhiteSpace(value))
-            throw new ArgumentException("Le code d’élément ne peut pas être vide.", nameof(value));
+            throw new ArgumentException("Le code de point ne peut pas être vide.", nameof(value));
 
         value = value.Trim().ToUpperInvariant();
         Match match = Pattern.Match(value);
         if (!match.Success || !int.TryParse(match.Groups["sequence"].Value, out int sequence) || sequence == 0)
         {
             throw new ArgumentException(
-                "Code d’élément invalide. Forme attendue : PIÈCE-CAT[SUB]NN, avec deux lettres de pièce et un numéro de 01 à 99.",
+                "Code de point invalide. Forme attendue : PIÈCE-CAT[SUB]NN, avec deux lettres de pièce et un numéro de 01 à 99.",
                 nameof(value));
         }
 
@@ -45,36 +45,26 @@ public readonly record struct HomeElementCode(
     }
 }
 
+// The 14 category codes of nomenclature v2, frozen. Since the point merge
+// (2026-08-10) every category maps to the single point type: the category is
+// the point's nature, carried by the `category` select — no longer a type
+// discriminator. The select option key is the category code lowercased.
 public static class HomeCategories
 {
-    private static readonly IReadOnlyDictionary<string, string> TypeByCategory =
-        new Dictionary<string, string>(StringComparer.Ordinal)
-        {
-            ["P"] = HomeSchema.Types.Outlet,
-            ["PS"] = HomeSchema.Types.Outlet,
-            ["L"] = HomeSchema.Types.Lighting,
-            ["LR"] = HomeSchema.Types.Lighting,
-            ["C"] = HomeSchema.Types.Control,
-            ["V"] = HomeSchema.Types.Opening,
-            ["A"] = HomeSchema.Types.Appliance,
-            ["RJ"] = HomeSchema.Types.Network,
-            ["RB"] = HomeSchema.Types.Network,
-            ["RT"] = HomeSchema.Types.Network,
-            ["DS"] = HomeSchema.Types.Sensor,
-            ["DR"] = HomeSchema.Types.Relay,
-            ["DX"] = HomeSchema.Types.Panel,
-            ["DE"] = HomeSchema.Types.Node,
-        };
+    private static readonly IReadOnlyList<string> Codes =
+    ["P", "PS", "L", "LR", "C", "V", "A", "RJ", "RB", "RT", "DS", "DR", "DX", "DE"];
 
-    public static IReadOnlyCollection<string> All => TypeByCategory.Keys.ToArray();
+    public static IReadOnlyCollection<string> All => Codes;
 
-    public static string TypeFor(string category)
+    public static string Validate(string category)
     {
-        if (TypeByCategory.TryGetValue(category.Trim().ToUpperInvariant(), out string? type))
-            return type;
+        string normalized = category.Trim().ToUpperInvariant();
+        if (Codes.Contains(normalized)) return normalized;
 
         throw new ArgumentException(
-            $"Catégorie inconnue « {category} ». Catégories admises : {string.Join(", ", All)}.",
+            $"Catégorie inconnue « {category} ». Catégories admises : {string.Join(", ", Codes)}.",
             nameof(category));
     }
+
+    public static string OptionKey(string category) => Validate(category).ToLowerInvariant();
 }

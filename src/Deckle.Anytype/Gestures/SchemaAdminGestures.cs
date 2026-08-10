@@ -45,7 +45,9 @@ public sealed partial class SchemaAdminGestures(AnytypeApiClient api, AnytypeSpa
         string spaceId = aliases.Resolve(space);
         SchemaManifest manifest = SchemaManifest.Parse(manifestNode);
         SchemaSnapshot snapshot = await _snapshotReader.BuildAsync(spaceId, manifest, ct);
-        SchemaPreview preview = SchemaPlanner.Build(space, spaceId, manifest, snapshot);
+        IReadOnlyList<SchemaCollectionObjectInfo> collections =
+            await ReadSectionCollectionsAsync(spaceId, manifest, ct);
+        SchemaPreview preview = SchemaPlanner.Build(space, spaceId, manifest, snapshot, collections);
 
         DeckleAnytypeSource.Log.GestureCompleted("schema_preview", Elapsed(started));
         return new SchemaPreviewResult(
@@ -80,7 +82,10 @@ public sealed partial class SchemaAdminGestures(AnytypeApiClient api, AnytypeSpa
         // change requires a fresh preview instead of applying an unseen plan.
         using var _ = await api.AcquireWriteScopeAsync("schema_apply", spaceId, ct);
         SchemaSnapshot snapshot = await _snapshotReader.BuildAsync(spaceId, manifest, ct);
-        SchemaPreview preview = SchemaPlanner.Build(space, spaceId, manifest, snapshot);
+        IReadOnlyList<SchemaCollectionObjectInfo> collections =
+            await ReadSectionCollectionsAsync(spaceId, manifest, ct);
+        SchemaPreview preview = SchemaPlanner.Build(
+            space, spaceId, manifest, snapshot, collections);
         if (!string.Equals(preview.Id, previewId, StringComparison.Ordinal))
             throw new InvalidOperationException(
                 "Le manifeste ou l'état Anytype a changé depuis le preview. Relance schema_preview.");
@@ -229,10 +234,83 @@ public sealed partial class SchemaAdminGestures(AnytypeApiClient api, AnytypeSpa
                 applied.Add($"icône définie {type.Key} · {type.Icon!.Display}");
         }
 
+        // Sections after types: a member id may belong to a type this very
+        // apply just created. The live plan decides reuse vs creation; the
+        // member add re-posts the full type list because membership cannot be
+        // read here — the list endpoint is additive set-union, the same
+        // contract anytype_collection_add ships on, so a re-add neither fails
+        // nor duplicates. Never a removal, never a rename.
+        var sectionIds = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        foreach ((string name, string id) in preview.SectionCollections)
+            sectionIds[name] = id;
+
+        foreach (SectionSpec section in preview.Manifest.Sections)
+        {
+            if (!sectionIds.TryGetValue(section.Name, out string? collectionId))
+            {
+                var payload = new JsonObject
+                {
+                    ["type_key"] = "collection",
+                    ["name"] = section.Name,
+                };
+                if (section.Icon is not null)
+                    payload["icon"] = section.Icon.ToPayload();
+
+                JsonObject created = await api.CreateObjectAsync(preview.SpaceId, payload, ct);
+                collectionId = SchemaApiJson.Id(created);
+                if (collectionId.Length == 0)
+                    throw new InvalidOperationException(
+                        $"Impossible de créer la section « {section.Name} » : id introuvable dans la réponse Anytype.");
+                sectionIds[section.Name] = collectionId;
+                applied.Add($"section créée {section.Name}");
+                if (section.Icon is not null)
+                    applied.Add($"icône définie {section.Name} · {section.Icon.Display}");
+            }
+
+            var memberIds = new List<string>(section.Types.Count);
+            foreach (string typeKey in section.Types)
+            {
+                if (!typesByKey.TryGetValue(typeKey, out SchemaTypeInfo? type) || type.Id.Length == 0)
+                    throw new InvalidOperationException(
+                        $"Impossible de remplir la section « {section.Name} » : id du type « {typeKey} » introuvable.");
+                memberIds.Add(type.Id);
+            }
+
+            await api.AddToCollectionAsync(preview.SpaceId, sectionIds[section.Name], memberIds, ct);
+            applied.Add($"types ajoutés à {section.Name} · {string.Join(", ", section.Types)}");
+        }
+
         DeckleAnytypeSource.Log.GestureCompleted("schema_apply", Elapsed(started));
         return applied.Count == 0
             ? $"Schéma inchangé : preview {previewId} ne contenait rien à appliquer."
             : "Schéma appliqué :\n" + string.Join("\n", applied.Select(a => "- " + a));
+    }
+
+    // Live built-in collection objects, read only when the manifest declares
+    // sections. One bounded empty-query search (the ProjectGestures listing
+    // idiom); the type filter keeps collection-LAYOUT domain types (floor…)
+    // out, and the type-key check below re-asserts it on each hit.
+    private async Task<IReadOnlyList<SchemaCollectionObjectInfo>> ReadSectionCollectionsAsync(
+        string spaceId, SchemaManifest manifest, CancellationToken ct)
+    {
+        if (manifest.Sections.Count == 0) return [];
+
+        JsonObject root = await api.SearchAsync(spaceId, string.Empty, ["collection"], limit: 200, ct);
+        var result = new List<SchemaCollectionObjectInfo>();
+        foreach (JsonObject obj in SchemaApiJson.Data(root))
+        {
+            if (!string.Equals(
+                    obj["type"]?["key"]?.GetValue<string>() ?? "",
+                    "collection",
+                    StringComparison.Ordinal))
+                continue;
+
+            string id = SchemaApiJson.Id(obj);
+            string name = SchemaApiJson.Str(obj, "name");
+            if (id.Length > 0 && name.Length > 0)
+                result.Add(new SchemaCollectionObjectInfo(id, name));
+        }
+        return result;
     }
 
     private static double Elapsed(DateTime startUtc) =>

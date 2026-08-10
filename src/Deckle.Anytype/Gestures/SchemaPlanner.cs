@@ -10,7 +10,8 @@ internal static class SchemaPlanner
         string spaceAlias,
         string spaceId,
         SchemaManifest manifest,
-        SchemaSnapshot snapshot)
+        SchemaSnapshot snapshot,
+        IReadOnlyList<SchemaCollectionObjectInfo> collectionObjects)
     {
         var actions = new List<SchemaAction>();
         var conflicts = new List<string>();
@@ -70,6 +71,38 @@ internal static class SchemaPlanner
             }
         }
 
+        // Sections: reuse an existing built-in collection object bearing the
+        // exact section name, create it otherwise. Membership is unreadable on
+        // this surface, so every listed type is planned as an additive add; the
+        // list endpoint unions members, a re-add neither fails nor duplicates.
+        var sectionCollections = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        foreach (SectionSpec section in manifest.Sections)
+        {
+            var matches = collectionObjects
+                .Where(c => string.Equals(c.Name, section.Name, StringComparison.OrdinalIgnoreCase))
+                .ToList();
+            if (matches.Count > 1)
+                conflicts.Add(
+                    $"section {section.Name} : plusieurs collections portent déjà ce nom — " +
+                    "renomme les doublons dans Anytype puis relance schema_preview.");
+            else if (matches.Count == 1)
+                sectionCollections[section.Name] = matches[0].Id;
+            else
+                actions.Add(new SchemaAction("create_section", section.Name, section.Name));
+
+            foreach (string typeKey in section.Types)
+            {
+                if (!manifest.Types.Any(t => t.Key == typeKey) && !snapshot.Types.ContainsKey(typeKey))
+                {
+                    conflicts.Add(
+                        $"section {section.Name} : type demandé inconnu {typeKey} — " +
+                        "déclare-le dans « types » ou crée-le dans l'espace avant de provisionner la section.");
+                    continue;
+                }
+                actions.Add(new SchemaAction("add_to_section", $"{section.Name}:{typeKey}", typeKey));
+            }
+        }
+
         var preview = new SchemaPreview(
             Id: string.Empty,
             SpaceAlias: spaceAlias,
@@ -78,7 +111,8 @@ internal static class SchemaPlanner
             Snapshot: snapshot,
             Actions: actions,
             Conflicts: conflicts,
-            SkippedConflicts: skippedConflicts);
+            SkippedConflicts: skippedConflicts,
+            SectionCollections: sectionCollections);
         return preview with { Id = PreviewId(preview) };
     }
 
@@ -101,6 +135,17 @@ internal static class SchemaPlanner
             sb.Append("Conflits ignorés (additif seulement) :\n");
             foreach (string conflict in preview.SkippedConflicts)
                 sb.Append("- ").Append(conflict).Append('\n');
+        }
+
+        if (preview.Manifest.Sections.Count > 0)
+        {
+            sb.Append("Sections :\n");
+            foreach (SectionSpec section in preview.Manifest.Sections)
+                sb.Append("- ").Append(section.Name).Append(" · ")
+                    .Append(preview.SectionCollections.ContainsKey(section.Name)
+                        ? "réutilisation de la collection existante"
+                        : "création")
+                    .Append('\n');
         }
 
         if (preview.Actions.Count == 0)
@@ -277,6 +322,21 @@ internal static class SchemaPlanner
             Append(contract, type.Icon?.Emoji ?? string.Empty);
             foreach (string property in type.Properties)
                 Append(contract, property);
+        }
+
+        foreach (SectionSpec section in preview.Manifest.Sections)
+        {
+            Append(contract, "section");
+            Append(contract, section.Name);
+            Append(contract, section.Icon?.Format ?? string.Empty);
+            Append(contract, section.Icon?.Name ?? string.Empty);
+            Append(contract, section.Icon?.Color ?? string.Empty);
+            Append(contract, section.Icon?.Emoji ?? string.Empty);
+            foreach (string type in section.Types)
+                Append(contract, type);
+            Append(contract, preview.SectionCollections.TryGetValue(section.Name, out string? id)
+                ? id
+                : string.Empty);
         }
 
         foreach (SchemaAction action in preview.Actions)

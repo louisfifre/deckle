@@ -11,7 +11,7 @@ public sealed class HomeGestures
     private static readonly Regex CircuitCodePattern = new(
         "^[A-Z][A-Z0-9]*(?:\\.[0-9]+)?$",
         RegexOptions.CultureInvariant | RegexOptions.Compiled);
-    private static readonly Regex GenericCodePattern = new(
+    private static readonly Regex PanelCodePattern = new(
         "^[A-Z0-9][A-Z0-9._-]{0,31}$",
         RegexOptions.CultureInvariant | RegexOptions.Compiled);
 
@@ -48,17 +48,20 @@ public sealed class HomeGestures
         var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         foreach (HomeCreateItem item in items)
         {
-            if (IsFreeTitled(type))
+            RefuseCodeProperty(item.Properties);
+
+            if (!IsCoded(type))
             {
-                JsonArray lifeProperties = await propertyWriter.BuildAsync(
+                JsonArray freeProperties = await propertyWriter.BuildAsync(
                     type, item.Properties, [], ct).ConfigureAwait(false);
-                prepared.Add(PrepareLifeItem(type, item, lifeProperties, collectionWriter));
+                RequireComponentSystem(type, freeProperties);
+                prepared.Add(PrepareFreeTitledItem(type, item, freeProperties, collectionWriter));
                 continue;
             }
 
             if (item.Text is not null)
                 throw new InvalidOperationException(
-                    "Le corps est réservé aux idées et aux outils ; un objet d'inventaire est fait de propriétés.");
+                    "Le corps est réservé aux idées et aux appareils ; un objet d'inventaire est fait de propriétés.");
             string code = ValidateCode(type, RequireCode(type, item.Code));
             if (!seen.Add(code) || index.ContainsCode(code))
             {
@@ -67,50 +70,54 @@ public sealed class HomeGestures
                     $"Le code « {code} » existe déjà. Prochain code libre proposé : {suggestion}.");
             }
 
-            HomeElementCode? elementCode = null;
-            if (IsElement(type))
+            HomeElementCode? pointCode = null;
+            if (type == HomeSchema.Types.Point)
             {
-                elementCode = HomeElementCode.Parse(code);
-                string expectedType = HomeCategories.TypeFor(elementCode.Value.Category);
-                if (!string.Equals(type, expectedType, StringComparison.Ordinal))
-                    throw new InvalidOperationException(
-                        $"Le code « {code} » appartient au type {expectedType}, pas {type}.");
-                if (!rooms.ContainsKey(elementCode.Value.Room))
+                pointCode = HomeElementCode.Parse(code);
+                if (!rooms.ContainsKey(pointCode.Value.Room))
                 {
                     string known = rooms.Count == 0
                         ? "aucune"
                         : string.Join(", ", rooms.Keys.OrderBy(value => value, StringComparer.Ordinal));
                     throw new InvalidOperationException(
-                        $"Code de pièce inconnu « {elementCode.Value.Room} » dans « {code} ». Pièces présentes : {known}.");
+                        $"Code de pièce inconnu « {pointCode.Value.Room} » dans « {code} ». Pièces présentes : {known}.");
                 }
-                if (item.Name is not null)
-                    throw new InvalidOperationException(
-                        "Le titre d’un élément est son code. Place le nom humain dans la propriété « Libellé ».");
-            }
-            else if (type == HomeSchema.Types.Room && string.IsNullOrWhiteSpace(item.Name))
-            {
-                throw new ArgumentException("Une pièce exige un nom en plus de son code.", nameof(items));
             }
 
-            RefuseCodeProperty(item.Properties);
-            IReadOnlyCollection<string> reserved = IsElement(type)
-                ? [HomeSchema.Properties.Room, HomeSchema.Properties.Category]
+            // Titles are human names; the circuit alone may fall back to its
+            // code while its real name is unknown (renamed as surveys tell
+            // what it feeds).
+            string? name = item.Name?.Trim();
+            if (string.IsNullOrEmpty(name) && type != HomeSchema.Types.Circuit)
+                throw new ArgumentException(
+                    $"Un objet {type} exige un nom humain en plus de son code — le titre n'est plus le code.",
+                    nameof(items));
+            string title = string.IsNullOrEmpty(name) ? code : name;
+
+            IReadOnlyCollection<string> reserved = type == HomeSchema.Types.Point
+                ? [HomeSchema.Properties.InstalledIn, HomeSchema.Properties.Category]
                 : [];
             JsonArray properties = await propertyWriter.BuildAsync(
                 type, item.Properties, reserved, ct).ConfigureAwait(false);
             IReadOnlyList<string> collections = collectionWriter.Resolve(item.Collections);
 
-            if (elementCode is not null)
+            properties.Add(new JsonObject
             {
-                string roomId = HomeObjectJson.Id(rooms[elementCode.Value.Room]);
+                ["key"] = HomeSchema.Properties.Code,
+                ["text"] = code,
+            });
+
+            if (pointCode is not null)
+            {
+                string roomId = HomeObjectJson.Id(rooms[pointCode.Value.Room]);
                 properties.Add(new JsonObject
                 {
-                    ["key"] = HomeSchema.Properties.Room,
+                    ["key"] = HomeSchema.Properties.InstalledIn,
                     ["objects"] = new JsonArray(roomId),
                 });
                 properties.Add(await propertyWriter.BuildEntryAsync(
                     schema.Property(HomeSchema.Properties.Category),
-                    JsonValue.Create(elementCode.Value.Category),
+                    JsonValue.Create(HomeCategories.OptionKey(pointCode.Value.Category)),
                     ct).ConfigureAwait(false));
 
                 if (!properties.OfType<JsonObject>().Any(value =>
@@ -123,9 +130,8 @@ public sealed class HomeGestures
                 }
             }
 
-            string title = IsElement(type) ? code : HumanTitle(code, item.Name);
             prepared.Add((
-                code,
+                string.Equals(title, code, StringComparison.Ordinal) ? code : $"{code} · {title}",
                 new JsonObject
                 {
                     ["type_key"] = type,
@@ -186,22 +192,19 @@ public sealed class HomeGestures
                 throw new InvalidOperationException($"Le lot cible deux fois « {HomeObjectIndex.Display(target)} ».");
 
             string type = HomeObjectJson.TypeKey(target);
-            bool element = IsElement(type);
-            if (element && item.Name is not null)
-                throw new InvalidOperationException(
-                    $"Le titre de {HomeObjectIndex.Display(target)} est son code immuable ; modifie « Libellé ».");
             if (type == HomeSchema.Types.Idea && item.Name is not null)
                 throw new InvalidOperationException(
                     "Le titre d'une idée est la première ligne de son corps ; édite le texte dans l'app.");
             if (item.Name is not null && string.IsNullOrWhiteSpace(item.Name))
                 throw new ArgumentException("Le nom ne peut pas être vide.", nameof(items));
 
-            RefuseCodeProperty(item.Properties);
-            IReadOnlyCollection<string> reserved = element
-                ? [HomeSchema.Properties.Room, HomeSchema.Properties.Category]
+            RefuseCodeProperty(item.Properties, updating: true);
+            IReadOnlyCollection<string> reserved = type == HomeSchema.Types.Point
+                ? [HomeSchema.Properties.InstalledIn, HomeSchema.Properties.Category]
                 : [];
             JsonArray properties = await writer.BuildAsync(type, item.Properties, reserved, ct)
                 .ConfigureAwait(false);
+            RefuseComponentOrphaning(type, properties);
             IReadOnlyList<string> addToCollections = collectionWriter.Resolve(item.AddToCollections);
             IReadOnlyList<string> removeFromCollections = collectionWriter.Resolve(item.RemoveFromCollections);
             string? conflictingCollection = addToCollections.Intersect(
@@ -217,10 +220,7 @@ public sealed class HomeGestures
                     + "ou un changement de collections.", nameof(items));
 
             var payload = new JsonObject();
-            if (item.Name is not null)
-                payload["name"] = IsFreeTitled(type)
-                    ? item.Name.Trim()
-                    : HumanTitle(HomeObjectJson.Code(target), item.Name);
+            if (item.Name is not null) payload["name"] = item.Name.Trim();
             if (properties.Count > 0) payload["properties"] = properties;
             prepared.Add((
                 id,
@@ -265,14 +265,16 @@ public sealed class HomeGestures
         HomeObjectIndex index = await HomeObjectIndex.LoadAsync(_api, _spaceId, ct).ConfigureAwait(false);
 
         string? type = filter.Type is null ? null : NormalizeType(filter.Type);
-        string? category = filter.Category?.Trim().ToUpperInvariant();
-        if (category is not null) HomeCategories.TypeFor(category);
+        string? category = filter.Category is null ? null : HomeCategories.OptionKey(filter.Category);
         string? existence = NormalizeVocabulary(HomeSchema.Properties.Existence, filter.Existence);
         string? condition = NormalizeVocabulary(HomeSchema.Properties.Condition, filter.Condition);
-        string? status = NormalizeVocabulary(HomeSchema.Properties.Status, filter.Status);
+        string? state = NormalizeVocabulary(HomeSchema.Properties.State, filter.State);
         string? worksiteId = filter.Worksite is null
             ? null
             : HomeObjectJson.Id(index.Resolve(filter.Worksite, [HomeSchema.Types.Worksite]));
+        string? systemId = filter.System is null
+            ? null
+            : HomeObjectJson.Id(index.Resolve(filter.System, [HomeSchema.Types.System]));
         string? roomId = filter.Room is null
             ? null
             : HomeObjectJson.Id(index.Resolve(filter.Room, [HomeSchema.Types.Room]));
@@ -283,7 +285,9 @@ public sealed class HomeGestures
         IEnumerable<JsonObject> query = index.Objects;
         if (type is not null) query = query.Where(value => HomeObjectJson.TypeKey(value) == type);
         if (roomId is not null)
-            query = query.Where(value => HomeObjectJson.ObjectReferences(value, HomeSchema.Properties.Room).Contains(roomId));
+            query = query.Where(value =>
+                HomeObjectJson.ObjectReferences(value, HomeSchema.Properties.InstalledIn).Contains(roomId)
+                || HomeObjectJson.ObjectReferences(value, HomeSchema.Properties.StoredIn).Contains(roomId));
         if (circuitId is not null)
             query = query.Where(value => HomeObjectJson.ObjectReferences(value, HomeSchema.Properties.Circuit).Contains(circuitId));
         if (category is not null)
@@ -292,10 +296,12 @@ public sealed class HomeGestures
             query = query.Where(value => SelectMatches(value, HomeSchema.Properties.Existence, existence));
         if (condition is not null)
             query = query.Where(value => SelectMatches(value, HomeSchema.Properties.Condition, condition));
-        if (status is not null)
-            query = query.Where(value => SelectMatches(value, HomeSchema.Properties.Status, status));
+        if (state is not null)
+            query = query.Where(value => SelectMatches(value, HomeSchema.Properties.State, state));
         if (worksiteId is not null)
             query = query.Where(value => HomeObjectJson.ObjectReferences(value, HomeSchema.Properties.Worksite).Contains(worksiteId));
+        if (systemId is not null)
+            query = query.Where(value => HomeObjectJson.ObjectReferences(value, HomeSchema.Properties.PartOf).Contains(systemId));
         if (filter.Done is bool done)
             query = query.Where(value => CheckboxValue(value, "done") == done);
         if (!string.IsNullOrWhiteSpace(filter.Text))
@@ -323,7 +329,7 @@ public sealed class HomeGestures
         {
             HomeObjectIndex previewIndex = await HomeObjectIndex.LoadAsync(_api, _spaceId, ct).ConfigureAwait(false);
             JsonObject preview = previewIndex.Resolve(selector);
-            RefuseElementDelete(preview);
+            RefusePointDelete(preview);
             DeckleHomeSource.Log.GestureCompleted("delete_preview", Elapsed(started));
             return $"Suppression à confirmer : {HomeObjectIndex.Display(preview)} ({HomeObjectJson.TypeKey(preview)}) · id {HomeObjectJson.Id(preview)}. Relance delete avec cet id exact et confirm:true.";
         }
@@ -331,7 +337,7 @@ public sealed class HomeGestures
         using var writeScope = await _api.AcquireWriteScopeAsync("home_delete", "object", ct).ConfigureAwait(false);
         HomeObjectIndex index = await HomeObjectIndex.LoadAsync(_api, _spaceId, ct).ConfigureAwait(false);
         JsonObject target = index.Resolve(selector);
-        RefuseElementDelete(target);
+        RefusePointDelete(target);
         string id = HomeObjectJson.Id(target);
         if (!string.Equals(selector.Trim(), id, StringComparison.Ordinal))
             throw new InvalidOperationException(
@@ -351,8 +357,71 @@ public sealed class HomeGestures
         return $"Mis à la corbeille : {HomeObjectIndex.Display(target)}.";
     }
 
+    // The component gate as a dedicated verb: the Système argument is the
+    // point — a composant without one is not a composant.
+    public Task<string> CreateComponentAsync(
+        string name,
+        string system,
+        JsonObject? properties,
+        CancellationToken ct = default)
+    {
+        properties = MergeObjectArgument(
+            properties, HomeSchema.Properties.PartOf, "Fait partie de", system,
+            "Le système est déjà fourni en propriété ; ne le passe qu'une fois.");
+        return CreateAsync(
+            HomeSchema.Types.Component,
+            [new HomeCreateItem(null, name, properties)],
+            ct);
+    }
+
+    public Task<string> CreatePlantAsync(
+        string name,
+        string? room,
+        JsonObject? properties,
+        CancellationToken ct = default)
+    {
+        if (room is not null)
+            properties = MergeObjectArgument(
+                properties, HomeSchema.Properties.InstalledIn, "Installé dans", room,
+                "La pièce est déjà fournie en propriété ; ne la passe qu'une fois.");
+        return CreateAsync(
+            HomeSchema.Types.Plant,
+            [new HomeCreateItem(null, name, properties)],
+            ct);
+    }
+
+    // Watering is a date, not an event log (decision 2026-08-10): one stamp,
+    // overwritten at each watering.
+    public async Task<string> WaterPlantAsync(
+        string selector, string? date, CancellationToken ct = default)
+    {
+        DateTime started = DateTime.UtcNow;
+        HomeSchemaRuntime schema = await _runtime.GetAsync(ct).ConfigureAwait(false);
+
+        using var writeScope = await _api.AcquireWriteScopeAsync("home_plant_water", "plant", ct).ConfigureAwait(false);
+        HomeObjectIndex index = await HomeObjectIndex.LoadAsync(_api, _spaceId, ct).ConfigureAwait(false);
+        JsonObject target = index.Resolve(selector, [HomeSchema.Types.Plant]);
+        string stamped = string.IsNullOrWhiteSpace(date)
+            ? DateTime.Now.ToString("yyyy-MM-dd")
+            : date.Trim();
+
+        var writer = new HomePropertyWriter(_api, _spaceId, schema, index);
+        JsonObject entry = await writer.BuildEntryAsync(
+            schema.Property(HomeSchema.Properties.LastWatering),
+            JsonValue.Create(stamped),
+            ct).ConfigureAwait(false);
+        await _api.UpdateObjectAsync(
+            _spaceId,
+            HomeObjectJson.Id(target),
+            new JsonObject { ["properties"] = new JsonArray(entry) },
+            ct).ConfigureAwait(false);
+
+        DeckleHomeSource.Log.GestureCompleted("plant_water", Elapsed(started));
+        return $"Arrosée le {stamped} : {HomeObjectIndex.Display(target)}.";
+    }
+
     // Typed pilotage verbs. Creation stays deliberately loose (a name
-    // suffices, properties land when known) and a task may live without a
+    // suffices, properties land when known) and a todo may live without a
     // chantier: the chantier is for real works, not every chore.
     public Task<string> CreateWorksiteAsync(
         string name,
@@ -364,29 +433,23 @@ public sealed class HomeGestures
             [new HomeCreateItem(null, name, properties, collections)],
             ct);
 
-    public Task<string> CreateTaskAsync(
+    public Task<string> CreateTodoAsync(
         string name,
         string? worksite,
         JsonObject? properties,
         CancellationToken ct = default)
     {
         if (worksite is not null)
-        {
-            properties = properties is null ? [] : (JsonObject)properties.DeepClone();
-            if (properties.Any(pair =>
-                    string.Equals(pair.Key, HomeSchema.Properties.Worksite, StringComparison.OrdinalIgnoreCase)
-                    || string.Equals(pair.Key, "Chantier", StringComparison.OrdinalIgnoreCase)))
-                throw new ArgumentException(
-                    "Le chantier est déjà fourni en propriété ; ne le passe qu'une fois.", nameof(worksite));
-            properties[HomeSchema.Properties.Worksite] = worksite;
-        }
+            properties = MergeObjectArgument(
+                properties, HomeSchema.Properties.Worksite, "Chantier", worksite,
+                "Le chantier est déjà fourni en propriété ; ne le passe qu'une fois.");
         return CreateAsync(
-            HomeSchema.Types.Task,
-            [new HomeCreateItem(null, name, properties, null)],
+            HomeSchema.Types.Todo,
+            [new HomeCreateItem(null, name, properties)],
             ct);
     }
 
-    // Completion is the record: done tasks ARE the history of a chantier, so
+    // Completion is the record: done todos ARE the history of a chantier, so
     // there is no separate intervention journal. done is Anytype's native
     // action-layout checkbox, outside the Home property contract — its entry
     // is built directly rather than through the writer.
@@ -401,7 +464,7 @@ public sealed class HomeGestures
         string type = HomeObjectJson.TypeKey(target);
         string id = HomeObjectJson.Id(target);
 
-        if (type is HomeSchema.Types.Task or HomeSchema.Types.Errand)
+        if (type is HomeSchema.Types.Todo or HomeSchema.Types.Errand)
         {
             var payload = new JsonObject
             {
@@ -417,12 +480,12 @@ public sealed class HomeGestures
         {
             var writer = new HomePropertyWriter(_api, _spaceId, schema, index);
             JsonObject entry = await writer.BuildEntryAsync(
-                schema.Property(HomeSchema.Properties.Status),
-                JsonValue.Create(HomeSchema.Status.Done),
+                schema.Property(HomeSchema.Properties.State),
+                JsonValue.Create(HomeSchema.State.Done),
                 ct).ConfigureAwait(false);
             await _api.UpdateObjectAsync(
                 _spaceId, id, new JsonObject { ["properties"] = new JsonArray(entry) }, ct).ConfigureAwait(false);
-            int open = TasksOf(index, id).Count(task => !CheckboxValue(task, "done"));
+            int open = TodosOf(index, id).Count(todo => !CheckboxValue(todo, "done"));
             DeckleHomeSource.Log.GestureCompleted("complete", Elapsed(started));
             return $"Chantier terminé : {HomeObjectIndex.Display(target)}."
                 + (open > 0 ? $" Attention : {open} tâche(s) encore ouverte(s)." : "");
@@ -441,12 +504,12 @@ public sealed class HomeGestures
         JsonObject worksite = index.Resolve(selector, [HomeSchema.Types.Worksite]);
         string id = HomeObjectJson.Id(worksite);
 
-        JsonObject[] tasks = TasksOf(index, id).ToArray();
-        JsonObject[] open = tasks.Where(task => !CheckboxValue(task, "done")).ToArray();
-        JsonObject[] done = tasks.Where(task => CheckboxValue(task, "done")).ToArray();
+        JsonObject[] todos = TodosOf(index, id).ToArray();
+        JsonObject[] open = todos.Where(todo => !CheckboxValue(todo, "done")).ToArray();
+        JsonObject[] done = todos.Where(todo => CheckboxValue(todo, "done")).ToArray();
 
         var builder = new StringBuilder(index.Render(worksite));
-        if (tasks.Length == 0)
+        if (todos.Length == 0)
         {
             builder.Append("\n\nAucune tâche.");
         }
@@ -454,31 +517,31 @@ public sealed class HomeGestures
         {
             builder.Append($"\n\nTâches ouvertes ({open.Length}) :");
             if (open.Length == 0) builder.Append(" aucune.");
-            foreach (JsonObject task in open) builder.Append('\n').Append(TaskLine(task, index));
+            foreach (JsonObject todo in open) builder.Append('\n').Append(TodoLine(todo, index));
             builder.Append($"\n\nTâches terminées ({done.Length}) :");
             if (done.Length == 0) builder.Append(" aucune.");
-            foreach (JsonObject task in done) builder.Append('\n').Append(TaskLine(task, index));
+            foreach (JsonObject todo in done) builder.Append('\n').Append(TodoLine(todo, index));
         }
 
         DeckleHomeSource.Log.GestureCompleted("chantier_overview", Elapsed(started));
         return builder.ToString();
     }
 
-    private static IEnumerable<JsonObject> TasksOf(HomeObjectIndex index, string worksiteId) =>
+    private static IEnumerable<JsonObject> TodosOf(HomeObjectIndex index, string worksiteId) =>
         index.Objects.Where(value =>
-            HomeObjectJson.TypeKey(value) == HomeSchema.Types.Task
+            HomeObjectJson.TypeKey(value) == HomeSchema.Types.Todo
             && HomeObjectJson.ObjectReferences(value, HomeSchema.Properties.Worksite).Contains(worksiteId));
 
-    private static string TaskLine(JsonObject task, HomeObjectIndex index)
+    private static string TodoLine(JsonObject todo, HomeObjectIndex index)
     {
-        var parts = new List<string> { HomeObjectIndex.Display(task) };
-        JsonObject? status = HomeObjectJson.Property(task, HomeSchema.Properties.Status);
-        if (status is not null)
+        var parts = new List<string> { HomeObjectIndex.Display(todo) };
+        JsonObject? state = HomeObjectJson.Property(todo, HomeSchema.Properties.State);
+        if (state is not null)
         {
-            string rendered = HomeObjectJson.Render(status, index.DisplayForId);
+            string rendered = HomeObjectJson.Render(state, index.DisplayForId);
             if (rendered.Length > 0) parts.Add(rendered);
         }
-        JsonObject? due = HomeObjectJson.Property(task, HomeSchema.Properties.TargetDate);
+        JsonObject? due = HomeObjectJson.Property(todo, HomeSchema.Properties.TargetDate);
         if (due is not null)
         {
             string rendered = HomeObjectJson.Render(due, index.DisplayForId);
@@ -510,34 +573,31 @@ public sealed class HomeGestures
 
     private static string ValidateCode(string type, string value)
     {
-        if (IsElement(type)) return HomeElementCode.Parse(value).Value;
+        if (type == HomeSchema.Types.Point) return HomeElementCode.Parse(value).Value;
         if (type == HomeSchema.Types.Room) return HomeElementCode.ValidateRoomCode(value);
 
         if (string.IsNullOrWhiteSpace(value))
             throw new ArgumentException("Le code ne peut pas être vide.", nameof(value));
         value = value.Trim().ToUpperInvariant();
-        Regex pattern = type == HomeSchema.Types.Circuit ? CircuitCodePattern : GenericCodePattern;
+        Regex pattern = type == HomeSchema.Types.Circuit ? CircuitCodePattern : PanelCodePattern;
         if (!pattern.IsMatch(value))
             throw new ArgumentException($"Code invalide « {value} » pour le type {type}.", nameof(value));
         return value;
     }
 
-    private static bool IsElement(string type) => HomeSchema.ElementTypes.Contains(type);
-
-    // Life and work types share the same free-titled shape: no code, a plain
-    // name (or a body-derived one for ideas), none of the element invariants.
-    private static bool IsFreeTitled(string type) =>
-        HomeSchema.LifeTypes.Contains(type) || HomeSchema.WorkTypes.Contains(type);
+    private static bool IsCoded(string type) => HomeSchema.CodedTypes.Contains(type);
 
     private static string RequireCode(string type, string? code) =>
         code ?? throw new ArgumentException(
             $"Le type {type} exige un code normatif.", nameof(code));
 
-    // A life object carries no code: a course or outil is titled by its free
-    // name, an idée by the first line of its text (the dev-space capture shape:
-    // short text becomes the whole title, long text keeps its head as title and
-    // the full text as body).
-    private static (string Display, JsonObject Payload, IReadOnlyList<string> Collections) PrepareLifeItem(
+    // A free-titled object carries no code: equipment, plants, errands,
+    // worksites and todos are titled by their free name, an idée by the first
+    // line of its text (the dev-space capture shape: short text becomes the
+    // whole title, long text keeps its head as title and the full text as
+    // body). Only an appareil keeps the free-form body allowance inherited
+    // from the former outil type.
+    private static (string Display, JsonObject Payload, IReadOnlyList<string> Collections) PrepareFreeTitledItem(
         string type, HomeCreateItem item, JsonArray properties, HomeCollectionWriter collectionWriter)
     {
         if (item.Code is not null)
@@ -563,7 +623,7 @@ public sealed class HomeGestures
         {
             if (string.IsNullOrEmpty(name))
                 throw new ArgumentException($"Un objet {type} exige un nom.", nameof(item));
-            if (text is not null && type != HomeSchema.Types.Tool)
+            if (text is not null && type != HomeSchema.Types.Device)
                 throw new InvalidOperationException(
                     $"Un objet {type} n'a pas de corps : utilise la propriété « Notes ».");
             payload["name"] = name;
@@ -588,25 +648,61 @@ public sealed class HomeGestures
         return checkbox is JsonValue scalar && scalar.TryGetValue<bool>(out bool state) && state;
     }
 
-    private static string HumanTitle(string code, string? name)
+    private static JsonObject MergeObjectArgument(
+        JsonObject? properties, string key, string label, string value, string duplicateMessage)
     {
-        string? label = name?.Trim();
-        return string.IsNullOrEmpty(label) ? code : $"{code} — {label}";
+        properties = properties is null ? [] : (JsonObject)properties.DeepClone();
+        if (properties.Any(pair =>
+                string.Equals(pair.Key, key, StringComparison.OrdinalIgnoreCase)
+                || string.Equals(pair.Key, label, StringComparison.OrdinalIgnoreCase)))
+            throw new ArgumentException(duplicateMessage, nameof(value));
+        properties[key] = value;
+        return properties;
     }
 
-    private static void RefuseCodeProperty(JsonObject? properties)
+    // The composant is defined by its relation, not its nature: no Système, no
+    // composant. Doubt goes to Appareil — retyping is cheap.
+    private static void RequireComponentSystem(string type, JsonArray properties)
+    {
+        if (type != HomeSchema.Types.Component) return;
+        bool hasSystem = properties.OfType<JsonObject>().Any(value =>
+            HomeObjectJson.String(value, "key") == HomeSchema.Properties.PartOf
+            && value["objects"] is JsonArray { Count: > 0 });
+        if (!hasSystem)
+            throw new InvalidOperationException(
+                "Un composant n'existe que dans son système : fournis « Fait partie de » "
+                + "(un Système existant). Si le système n'a pas de nom, ce n'est pas un "
+                + "composant — crée un appareil, le retypage est facile.");
+    }
+
+    private static void RefuseComponentOrphaning(string type, JsonArray properties)
+    {
+        if (type != HomeSchema.Types.Component) return;
+        bool clearsSystem = properties.OfType<JsonObject>().Any(value =>
+            HomeObjectJson.String(value, "key") == HomeSchema.Properties.PartOf
+            && value["objects"] is JsonArray { Count: 0 });
+        if (clearsSystem)
+            throw new InvalidOperationException(
+                "Un composant ne s'orpheline pas : sans système, ce n'est plus un composant. "
+                + "Retype-le en appareil dans l'app, ou vise un autre Système.");
+    }
+
+    private static void RefuseCodeProperty(JsonObject? properties, bool updating = false)
     {
         if (properties is null) return;
-        if (properties.Any(pair => string.Equals(pair.Key, "code", StringComparison.OrdinalIgnoreCase)))
-            throw new InvalidOperationException(
-                "Le code est porté par le titre et reste immuable ; il ne peut pas être fourni comme propriété.");
+        if (properties.Any(pair =>
+                string.Equals(pair.Key, "code", StringComparison.OrdinalIgnoreCase)
+                || string.Equals(pair.Key, "Code", StringComparison.Ordinal)))
+            throw new InvalidOperationException(updating
+                ? "Le code est immuable ; il ne se modifie jamais, ni en propriété ni autrement."
+                : "Le code se fournit par le champ « code » de l'item, pas dans les propriétés.");
     }
 
-    private static void RefuseElementDelete(JsonObject value)
+    private static void RefusePointDelete(JsonObject value)
     {
-        if (IsElement(HomeObjectJson.TypeKey(value)))
+        if (HomeObjectJson.TypeKey(value) == HomeSchema.Types.Point)
             throw new InvalidOperationException(
-                $"Un élément ne se supprime pas. Passe {HomeObjectIndex.Display(value)} à Existence = Déposé avec update.");
+                $"Un point ne se supprime pas. Passe {HomeObjectIndex.Display(value)} à Existence = Déposé avec update.");
     }
 
     private static string NextCodeSuggestion(
@@ -615,7 +711,7 @@ public sealed class HomeGestures
         IReadOnlyList<JsonObject> existing,
         IReadOnlyCollection<string> batch)
     {
-        if (!IsElement(type)) return "un autre code unique";
+        if (type != HomeSchema.Types.Point) return "un autre code unique";
         HomeElementCode parsed = HomeElementCode.Parse(code);
         var used = new HashSet<int>();
         foreach (string candidate in existing.Select(HomeObjectJson.Code).Concat(batch))
@@ -635,15 +731,18 @@ public sealed class HomeGestures
     private static string? NormalizeVocabulary(string propertyKey, string? value)
     {
         if (value is null) return null;
-        IReadOnlyDictionary<string, string> vocabulary = HomeSchema.ClosedVocabularies[propertyKey];
-        KeyValuePair<string, string>[] matches = vocabulary.Where(pair =>
-                string.Equals(pair.Key, value.Trim(), StringComparison.OrdinalIgnoreCase)
-                || string.Equals(pair.Value, value.Trim(), StringComparison.OrdinalIgnoreCase))
+        IReadOnlyList<string> optionKeys = HomeSchema.ClosedVocabularies[propertyKey];
+        string[] matches = optionKeys.Where(key =>
+                string.Equals(key, value.Trim(), StringComparison.OrdinalIgnoreCase)
+                || string.Equals(
+                    HomeSchema.OptionLabel(propertyKey, key), value.Trim(),
+                    StringComparison.OrdinalIgnoreCase))
             .ToArray();
         if (matches.Length != 1)
             throw new ArgumentException(
-                $"Valeur inconnue « {value} ». Valeurs admises : {string.Join(", ", vocabulary.Values)}.");
-        return matches[0].Key;
+                $"Valeur inconnue « {value} ». Valeurs admises : "
+                + string.Join(", ", HomeSchema.OptionLabels(propertyKey)) + ".");
+        return matches[0];
     }
 
     private static bool SelectMatches(JsonObject value, string propertyKey, string expected)
@@ -659,9 +758,11 @@ public sealed class HomeGestures
             _ => "",
         };
         if (string.Equals(actual, expected, StringComparison.OrdinalIgnoreCase)) return true;
-        if (HomeSchema.ClosedVocabularies.TryGetValue(propertyKey, out var vocabulary)
-            && vocabulary.TryGetValue(expected, out string? name))
-            return string.Equals(actual, name, StringComparison.OrdinalIgnoreCase);
+        if (HomeSchema.ClosedVocabularies.TryGetValue(propertyKey, out IReadOnlyList<string>? optionKeys)
+            && optionKeys.Contains(expected, StringComparer.OrdinalIgnoreCase))
+            return string.Equals(
+                actual, HomeSchema.OptionLabel(propertyKey, expected.ToLowerInvariant()),
+                StringComparison.OrdinalIgnoreCase);
         return false;
     }
 

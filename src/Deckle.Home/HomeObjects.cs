@@ -29,16 +29,16 @@ internal static class HomeObjectJson
         return null;
     }
 
-    // Codes live in the Anytype object title, not in a duplicate property. An
-    // element title is exactly its code; the other inventory types may append a
-    // human label after an em dash (for example a room title).
+    // Since 2026-08-10 the title is the human name and the immutable identity
+    // code lives in the `code` property — the inversion of the original
+    // doctrine. An object without a code property simply has no code.
     public static string Code(JsonObject value)
     {
-        string name = Name(value).Trim();
-        if (HomeSchema.ElementTypes.Contains(TypeKey(value))) return name;
-
-        int separator = name.IndexOf(" — ", StringComparison.Ordinal);
-        return separator < 0 ? name : name[..separator].Trim();
+        JsonObject? property = Property(value, HomeSchema.Properties.Code);
+        return property?["text"] is JsonValue text
+            && text.TryGetValue<string>(out string? code) && code is not null
+                ? code.Trim()
+                : "";
     }
 
     // Anytype's own objects-format properties: the link graph and the audit
@@ -149,7 +149,7 @@ internal sealed class HomeObjectIndex
             catch (ArgumentException)
             {
                 throw new InvalidOperationException(
-                    $"La pièce « {Display(room)} » ne porte pas un code valide à deux lettres.");
+                    $"La pièce « {Display(room)} » ne porte pas un code valide à deux lettres dans sa propriété Code.");
             }
 
             if (!rooms.TryAdd(code, room))
