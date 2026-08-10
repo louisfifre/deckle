@@ -74,8 +74,17 @@ public sealed class SessionGestures(AnytypeApiClient api, NameResolver resolver)
 
         // Body markdown PATCH is a full replacement at the API level — append
         // locally then write the whole document back.
+        //
+        // Anytype consumes the creation body's first line as the note's title:
+        // right after session_start the report's markdown reads back EMPTY (the
+        // « # Journal … » heading is not in it — measured live 2026-08-10). A
+        // first entry written alone would become the note's first line, hence
+        // its display name. Re-seed the heading so the title survives the
+        // first append and later entries stay sibling bullets under it.
         string entry = $"- {line.Trim()}";
-        string updated = current.Length == 0 ? entry : current + "\n" + entry;
+        string updated = current.Length == 0
+            ? $"# Journal {JournalDate(report)}\n{entry}"
+            : current + "\n" + entry;
 
         await _api.UpdateObjectAsync(reportId, MarkdownPayload(updated), ct);
 
@@ -281,6 +290,15 @@ public sealed class SessionGestures(AnytypeApiClient api, NameResolver resolver)
     };
 
     // ── misc ─────────────────────────────────────────────────────────────────
+
+    // The heading date for a re-seeded journal title: the report's own
+    // « Date du journal » (the API may return it with a time suffix), falling
+    // back to today only when the property is absent.
+    static string JournalDate(JsonObject report)
+    {
+        string? iso = ReadDate(report, DevSpace.Props.DateDuJournal);
+        return iso is { Length: >= 10 } ? iso[..10] : Today();
+    }
 
     static string Today() =>
         DateTime.Now.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);

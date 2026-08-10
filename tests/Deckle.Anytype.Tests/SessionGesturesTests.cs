@@ -156,6 +156,28 @@ public class SessionGesturesTests
 
     [Fact]
     [Trait("Category", "regression")]
+    public async Task LogOnAFreshReportKeepsTheJournalHeadingAsTheFirstLine()
+    {
+        using var server = new FakeAnytypeServer();
+        // A report fresh out of session_start: Anytype consumed the creation
+        // body's « # Journal … » heading as the note title, so its markdown
+        // reads back empty. The faulty behavior wrote the entry alone, which
+        // made the entry the note's first line — and therefore its title.
+        server.OnGetObject(NewReport, ReportObject(NewReport, "", TaskId));
+        server.OnPatchObject(NewReport, ReportObject(NewReport, "", TaskId));
+
+        await NewGestures(server).LogAsync("écrit les tests", NewReport, Ct);
+
+        // The PATCH re-seeds the heading from the report's own journal date
+        // (2026-06-11 in ReportObject) before the first entry.
+        JsonObject patch = server.LastBodyFor("PATCH");
+        Assert.Equal(
+            "# Journal 2026-06-11\n- écrit les tests",
+            patch["markdown"]!.GetValue<string>());
+    }
+
+    [Fact]
+    [Trait("Category", "regression")]
     public async Task LogRequiresTheReportIdBeforeReadingOrWriting()
     {
         using var server = new FakeAnytypeServer();
