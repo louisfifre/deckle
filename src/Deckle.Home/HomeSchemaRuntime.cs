@@ -12,8 +12,8 @@ internal sealed class HomeSchemaRuntime
         FloorTypeKey = floorTypeKey;
     }
 
-    // Key of the app-created collection-layout Étage type, discovered from the
-    // live snapshot; null while Louis has not created it yet.
+    // Key of the app-created collection-layout Espace type, discovered from
+    // the live snapshot; null while Louis has not created it yet.
     public string? FloorTypeKey { get; }
 
     public SchemaPropertyInfo Property(string key) =>
