@@ -33,4 +33,13 @@ if ($repositoryFolders.Count -ne 1) {
     throw 'The shared workspace must open the cloned repository exactly once.'
 }
 
+$projectContainer = Split-Path -Parent $RepoRoot
+$worktreeContainer = Join-Path (Split-Path -Parent $projectContainer) "worktrees\$(Split-Path -Leaf $RepoRoot)"
+$resolvedWorkspaceFolders = @($workspace.folders | ForEach-Object {
+    [System.IO.Path]::GetFullPath((Join-Path $RepoRoot $_.path))
+})
+if ($resolvedWorkspaceFolders -notcontains $worktreeContainer) {
+    throw "The shared workspace must expose the project worktree container: $worktreeContainer"
+}
+
 Write-Host 'script-layout.tests.ps1: PASS' -ForegroundColor Green

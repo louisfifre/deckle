@@ -5,6 +5,9 @@
 		},
 		{
 			"path": "../../skills"
+		},
+		{
+			"path": "../../worktrees/deckle"
 		}
 	],
 	"settings": {

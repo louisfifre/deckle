@@ -3,17 +3,18 @@
   "id": "developer-tooling-2026-08-06-repository-portability",
   "status": "active",
   "modules": ["DeveloperTooling"],
-  "classes": ["current-directory-dependency", "workspace-navigation-coupling"],
+  "classes": ["current-directory-dependency", "workspace-navigation-coupling", "worktree-discovery-depth"],
   "trigger": {
     "operation": "clone-run-from-an-unrelated-directory-or-add-workspace-folders"
   },
-  "symptom": "Repository commands can resolve the wrong checkout, while an over-correction can prevent useful navigation folders from being added to the workspace.",
-  "cause": "Three commands derived the repository from the caller's current directory, and the first portability guard incorrectly coupled workspace portability to a single-root Explorer layout.",
-  "violatedInvariant": "Developer workflows anchor to the checkout that contains them independently of which folders the workspace exposes for navigation.",
+  "symptom": "Repository commands can resolve the wrong checkout, while an over-correction can prevent useful navigation folders from being added or make Deckle worktrees disappear from VS Codium Source Control.",
+  "cause": "Three commands derived the repository from the caller's current directory, and the first portability guard incorrectly coupled workspace portability to a single-root Explorer layout. A later restoration targeted the generic worktree parent instead of Deckle's immediate worktree container, leaving its repositories beyond VS Codium's default scan depth.",
+  "violatedInvariant": "Developer workflows anchor to the checkout that contains them independently of which folders the workspace exposes for navigation, and project worktrees remain discoverable from the shared workspace.",
   "contract": {
     "must": [
       "Keep the cloned repository represented by the workspace's dot-relative root.",
       "Allow additional workspace folders without treating them as implicit command roots.",
+      "Resolve the worktree workspace folder to the project-specific sibling container.",
       "Resolve default repository roots from PSScriptRoot.",
       "Run Git mutations with an explicit repository directory."
     ]
@@ -25,7 +26,7 @@
       "scripts/tests/commands/install-hooks.tests.ps1",
       "scripts/tests/commands/update-readme-stats.tests.ps1"
     ],
-    "residual": "The PowerShell extension asks for a session folder in multi-root workspaces and then separately asks whether to persist that choice; this upstream interaction is not launcher path resolution.",
+    "residual": "VS Codium must reload the workspace before its Git extension rescans child repositories. The PowerShell extension also asks for a session folder in multi-root workspaces and then separately asks whether to persist that choice; these upstream interactions are not launcher path resolution.",
     "reviewPaths": [
       "deckle.code-workspace",
       "scripts/commands/install-hooks.ps1",
