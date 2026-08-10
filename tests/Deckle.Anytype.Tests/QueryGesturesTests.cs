@@ -398,6 +398,19 @@ public class QueryGesturesTests
         Assert.DoesNotContain(server.Requests, r => r.Method == "PATCH");
     }
 
+    [Fact]
+    [Trait("Category", "regression")]
+    public async Task UpdateRequiresAStableObjectIdBeforeReadingOrWriting()
+    {
+        using var server = new FakeAnytypeServer();
+
+        ArgumentException error = await Assert.ThrowsAsync<ArgumentException>(
+            () => NewGestures(server).UpdateAsync("Ancien titre", "Nouveau titre", null, Ct));
+
+        Assert.Contains("id Anytype stable", error.Message);
+        Assert.Empty(server.Requests);
+    }
+
     // rapport is body-titled (title = first line of its body), so a rename on it is
     // refused before any write, pointing the model at replace_section.
     [Fact]

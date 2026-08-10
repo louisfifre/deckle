@@ -81,6 +81,66 @@ public class SchemaAdminToolCatalogTests
     }
 
     [Fact]
+    public void PreviewAdvertisesAClosedStructuredOutput()
+    {
+        ToolDescriptor preview = BuildCatalog().Single(tool => tool.Name == "schema_preview");
+
+        JsonObject output = Assert.IsType<JsonObject>(preview.OutputSchema);
+        Assert.Equal("object", output["type"]!.GetValue<string>());
+        Assert.False(output["additionalProperties"]!.GetValue<bool>());
+
+        JsonObject properties = Assert.IsType<JsonObject>(output["properties"]);
+        Assert.Equal(
+            ["actions", "conflicts", "preview_id", "skipped_conflicts", "space"],
+            properties.Select(property => property.Key).OrderBy(key => key).ToArray());
+
+        JsonObject actions = Assert.IsType<JsonObject>(properties["actions"]);
+        JsonObject action = Assert.IsType<JsonObject>(actions["items"]);
+        Assert.False(action["additionalProperties"]!.GetValue<bool>());
+    }
+
+    [Fact]
+    public void RealPreviewProjectionMatchesItsAdvertisedOutputSchema()
+    {
+        var result = new SchemaPreviewResult(
+            new string('a', 64),
+            "dev",
+            [new SchemaPreviewAction("create_type", "project", "Project")],
+            ["conflict"],
+            ["skipped"],
+            "digest");
+
+        JsonObject content = SchemaAdminToolCatalog.PreviewContent(result);
+
+        Assert.True(new McpJsonSchemaContract(
+            SchemaAdminToolCatalog.PreviewOutputSchema()).Accepts(content));
+        Assert.Equal(result.PreviewId, content["preview_id"]!.GetValue<string>());
+        Assert.Equal(result.SpaceAlias, content["space"]!.GetValue<string>());
+        JsonObject action = Assert.IsType<JsonObject>(
+            Assert.IsType<JsonArray>(content["actions"])[0]);
+        Assert.Equal("create_type", action["kind"]!.GetValue<string>());
+        Assert.Equal("project", action["key"]!.GetValue<string>());
+    }
+
+    [Fact]
+    public void ApplyCarriesTheManifestAgainAndDeclaresVerification()
+    {
+        ToolDescriptor apply = BuildCatalog().Single(tool => tool.Name == "schema_apply");
+        JsonObject properties = Assert.IsType<JsonObject>(apply.InputSchema["properties"]);
+
+        Assert.Contains("manifest", properties.Select(property => property.Key));
+        Assert.Equal(AmbiguousOutcomePolicy.VerifyBeforeRetry, apply.Execution.AmbiguousOutcome);
+        Assert.True(apply.Execution.RequiresStableTarget);
+        Assert.All(
+            BuildCatalog().Where(tool => tool.Name != "schema_apply"),
+            tool => Assert.Equal(ToolEffect.ReadOnly, tool.Execution.Effect));
+        Assert.Equal(ToolChangeKind.Additive, apply.Execution.Change);
+        Assert.All(
+            BuildCatalog().Where(tool => tool.Name != "schema_apply"),
+            tool => Assert.Equal(ToolChangeKind.None, tool.Execution.Change));
+    }
+
+    [Fact]
     public void PreviewManifestSectionsSchemaIsClosedAndRequiresNameAndTypes()
     {
         ToolDescriptor preview = BuildCatalog().Single(t => t.Name == "schema_preview");
@@ -96,6 +156,11 @@ public class SchemaAdminToolCatalogTests
 
         JsonObject sectionProperties = Assert.IsType<JsonObject>(sectionSchema["properties"]);
         Assert.Contains("icon", sectionProperties.Select(p => p.Key));
+        JsonObject icon = Assert.IsType<JsonObject>(sectionProperties["icon"]);
+        JsonObject iconProperties = Assert.IsType<JsonObject>(icon["properties"]);
+        JsonArray iconFormats = Assert.IsType<JsonArray>(
+            Assert.IsType<JsonObject>(iconProperties["format"])["enum"]);
+        Assert.Equal(["emoji"], iconFormats.Select(node => node!.GetValue<string>()));
         JsonObject types = Assert.IsType<JsonObject>(sectionProperties["types"]);
         Assert.Equal(1, types["minItems"]!.GetValue<int>());
 

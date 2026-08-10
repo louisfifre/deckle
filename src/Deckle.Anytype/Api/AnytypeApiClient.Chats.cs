@@ -25,7 +25,8 @@ public sealed partial class AnytypeApiClient
         if (!string.IsNullOrWhiteSpace(afterOrderId))
             path += $"&after_order_id={Uri.EscapeDataString(afterOrderId)}";
 
-        return await SendAsync(HttpMethod.Get, path, null, ct).ConfigureAwait(false);
+        return await SendAsync(
+            HttpMethod.Get, path, null, ct, replaySafety: RequestReplaySafety.Safe).ConfigureAwait(false);
     }
 
     public async Task<JsonObject> AddChatMessageAsync(

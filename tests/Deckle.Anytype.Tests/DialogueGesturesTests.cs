@@ -66,6 +66,23 @@ public class DialogueGesturesTests
     }
 
     [Fact]
+    [Trait("Category", "regression")]
+    public async Task PostRequiresTheChatIdBeforeAppendingAMessage()
+    {
+        using var server = new FakeAnytypeServer();
+
+        ArgumentException error = await Assert.ThrowsAsync<ArgumentException>(
+            () => NewGestures(server).PostAsync(
+                "LLM - Challenge",
+                "codex",
+                "Je challenge.",
+                TestContext.Current.CancellationToken));
+
+        Assert.Contains("id Anytype stable", error.Message);
+        Assert.Empty(server.Requests);
+    }
+
+    [Fact]
     public async Task ReadReturnsMessagesAndTheLastOrderId()
     {
         using var server = new FakeAnytypeServer();

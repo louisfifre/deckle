@@ -11,19 +11,31 @@ Vocabulary of the Anytype/MCP integration, shared with `Deckle.Anytype.Mcp`. Thr
 ## Runtime, host, surfaces
 
 **Anytype backend** :
-The headless `anytype-cli` runtime (embedding `heart`) that holds the data and serves the local REST API on `127.0.0.1:31012`. Spawned and supervised by Deckle's resident core, then adopted on later boots by exact binary path; Deckle orchestrates its lifecycle and access but never owns or reimplements it.
+The live headless `anytype-cli` runtime (embedding `heart`) that holds the data and serves the local REST API on `127.0.0.1:31012`. Spawned and supervised by Deckle's resident core, then adopted only when the listener-owning PID belongs to a trusted provider image; Deckle orchestrates its lifecycle and access but never owns or reimplements it.
 _Avoid_ : Anytype Desktop (the GUI, no longer a runtime dependency), MCP server (a different layer).
 
+**Anytype provider** :
+The installed, versioned executable distribution from which Deckle may launch an Anytype backend. Versions are immutable and live outside Deckle's replaceable payload; one atomic activation selects the next version to launch without interrupting a healthy backend.
+_Avoid_ : backend (the live runtime), application payload (replaced during a Deckle update).
+
+**Backend reconciliation** :
+The single cross-process decision that inspects the Anytype endpoint, adopts a trusted warming or serving backend, or launches the activated provider. It succeeds only with positive listener-owner attribution and runs under the named reconciliation lease.
+_Avoid_ : health check (one observation inside reconciliation), supervision (the longer-lived watch and restart loop).
+
 **MCP host** :
-The single adapter that exposes the `Deckle.Anytype` gestures to external clients over HTTP, from Deckle's resident core. One instance, several capability endpoints.
+The single stateless adapter that exposes the `Deckle.Anytype` gestures to external clients over HTTP, from Deckle's resident core. Every request authenticates its client token and opens the corresponding capability surface; no transport session carries domain state.
 _Avoid_ : backend, Anytype server.
 
 **Deckle resident core** :
 The always-on Deckle process (global hotkeys, orchestration) that hosts the MCP host and the lib and starts at login — distinct from the visible windows (HUD, Settings) that come and go.
 
 **MCP surface** :
-A capability exposed as one endpoint of the host — PM, Dialogue, Home. The unit of separation is the *capability*, never the space (a space is a per-call `space_id` parameter).
+A capability graph opened by the host for one authenticated request — PM, Dialogue, Home. The unit of separation is the *capability*, never a transport session.
 _Avoid_ : profile (the earlier name), server (there is only one).
+
+**Operation recovery policy** :
+The tool-level contract for an ambiguous response: safe to retry, verify before retry, requires durable deduplication, or uncertain. It describes what a caller may conclude about the domain effect; a JSON-RPC request id is never an operation receipt.
+_Avoid_ : HTTP retry policy (the lower transport decision), idempotency hint alone (only one projection of the fuller contract).
 
 **Home surface** :
 The Anytype MCP surface dedicated to structured home knowledge: rooms, infrastructure, equipment, observations, links, and later home-management functions. It writes to a dedicated home Anytype space rather than the Dev project-management space; clients do not choose a space per call.

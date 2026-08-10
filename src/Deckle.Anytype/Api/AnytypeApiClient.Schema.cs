@@ -12,7 +12,8 @@ public sealed partial class AnytypeApiClient
         CancellationToken ct = default)
     {
         string path = $"{SpacePath(spaceId)}/types?offset={offset}&limit={limit}";
-        return await SendAsync(HttpMethod.Get, path, null, ct).ConfigureAwait(false);
+        return await SendAsync(
+            HttpMethod.Get, path, null, ct, replaySafety: RequestReplaySafety.Safe).ConfigureAwait(false);
     }
 
     public async Task<JsonObject> CreateTypeAsync(
@@ -39,7 +40,8 @@ public sealed partial class AnytypeApiClient
         ArgumentNullException.ThrowIfNull(payload);
 
         JsonObject root = await SendAsync(
-            HttpMethod.Patch, $"{SpacePath(spaceId)}/types/{typeId}", payload, ct).ConfigureAwait(false);
+            HttpMethod.Patch, $"{SpacePath(spaceId)}/types/{typeId}", payload, ct,
+            replaySafety: RequestReplaySafety.Safe).ConfigureAwait(false);
         return InnerOrRoot(root, "type");
     }
 
@@ -50,7 +52,8 @@ public sealed partial class AnytypeApiClient
         CancellationToken ct = default)
     {
         string path = $"{SpacePath(spaceId)}/properties?offset={offset}&limit={limit}";
-        return await SendAsync(HttpMethod.Get, path, null, ct).ConfigureAwait(false);
+        return await SendAsync(
+            HttpMethod.Get, path, null, ct, replaySafety: RequestReplaySafety.Safe).ConfigureAwait(false);
     }
 
     public async Task<JsonObject> CreatePropertyAsync(
@@ -77,7 +80,8 @@ public sealed partial class AnytypeApiClient
         ArgumentException.ThrowIfNullOrWhiteSpace(propertyId);
 
         string path = $"{SpacePath(spaceId)}/properties/{propertyId}/tags?offset={offset}&limit={limit}";
-        return await SendAsync(HttpMethod.Get, path, null, ct).ConfigureAwait(false);
+        return await SendAsync(
+            HttpMethod.Get, path, null, ct, replaySafety: RequestReplaySafety.Safe).ConfigureAwait(false);
     }
 
     public async Task<JsonObject> CreatePropertyTagAsync(

@@ -70,8 +70,8 @@ public class ToolCatalogTests
         Assert.True(((JsonObject)complete.InputSchema["properties"]!).ContainsKey("object"));
         Assert.Contains("surveillance", PropertyDescription(createTask, "type"));
         Assert.Contains("Existing projects", PropertyDescription(createProject, "epic"));
-        Assert.Contains("permanent Epic", McpServer.ProjectManagementDescriptor.Instructions);
-        Assert.Contains("Project (chantier)", McpServer.ProjectManagementDescriptor.Instructions);
+        Assert.Contains("permanent Epic", McpSurfaceDescriptor.ProjectManagement.Instructions);
+        Assert.Contains("Project (chantier)", McpSurfaceDescriptor.ProjectManagement.Instructions);
     }
 
     [Fact]
@@ -83,6 +83,17 @@ public class ToolCatalogTests
 
         Assert.DoesNotContain("delete", names);
         Assert.DoesNotContain("task_done", names);
+    }
+
+    [Fact]
+    public void StatelessMutationsRequireTheirExplicitRecoveryCoordinates()
+    {
+        IReadOnlyList<ToolDescriptor> tools = BuildCatalog();
+
+        AssertRequired(tools.Single(tool => tool.Name == "log"), "report");
+        AssertRequired(tools.Single(tool => tool.Name == "subtask"), "done");
+        Assert.Contains("report_id", tools.Single(tool => tool.Name == "session_start").Description);
+        Assert.True(tools.Single(tool => tool.Name == "log").Execution.RequiresStableTarget);
     }
 
     [Fact]
@@ -98,10 +109,85 @@ public class ToolCatalogTests
         }
     }
 
+    [Fact]
+    public void EveryToolDeclaresItsAmbiguousOutcomePolicy()
+    {
+        var expected = new Dictionary<string, AmbiguousOutcomePolicy>(StringComparer.Ordinal)
+        {
+            ["session_start"] = AmbiguousOutcomePolicy.RequiresDeduplication,
+            ["log"] = AmbiguousOutcomePolicy.RequiresDeduplication,
+            ["get"] = AmbiguousOutcomePolicy.SafeToRetry,
+            ["project_overview"] = AmbiguousOutcomePolicy.SafeToRetry,
+            ["create_task"] = AmbiguousOutcomePolicy.RequiresDeduplication,
+            ["complete"] = AmbiguousOutcomePolicy.SafeToRetry,
+            ["archive"] = AmbiguousOutcomePolicy.SafeToRetry,
+            ["link"] = AmbiguousOutcomePolicy.Uncertain,
+            ["list_projects"] = AmbiguousOutcomePolicy.SafeToRetry,
+            ["search"] = AmbiguousOutcomePolicy.SafeToRetry,
+            ["subtask"] = AmbiguousOutcomePolicy.SafeToRetry,
+            ["create_epic"] = AmbiguousOutcomePolicy.RequiresDeduplication,
+            ["create_project"] = AmbiguousOutcomePolicy.RequiresDeduplication,
+            ["create_idea"] = AmbiguousOutcomePolicy.RequiresDeduplication,
+            ["create_document"] = AmbiguousOutcomePolicy.RequiresDeduplication,
+            ["update"] = AmbiguousOutcomePolicy.SafeToRetry,
+            ["replace_section"] = AmbiguousOutcomePolicy.SafeToRetry,
+        };
+
+        Assert.Equal(expected, BuildCatalog().ToDictionary(
+            tool => tool.Name,
+            tool => tool.Execution.AmbiguousOutcome,
+            StringComparer.Ordinal));
+        Assert.True(BuildCatalog().Single(tool => tool.Name == "update").Execution.RequiresStableTarget);
+
+        var expectedChanges = new Dictionary<string, ToolChangeKind>(StringComparer.Ordinal)
+        {
+            ["session_start"] = ToolChangeKind.Additive,
+            ["log"] = ToolChangeKind.Additive,
+            ["get"] = ToolChangeKind.None,
+            ["project_overview"] = ToolChangeKind.None,
+            ["create_task"] = ToolChangeKind.Additive,
+            ["complete"] = ToolChangeKind.Overwriting,
+            ["archive"] = ToolChangeKind.Overwriting,
+            ["link"] = ToolChangeKind.Additive,
+            ["list_projects"] = ToolChangeKind.None,
+            ["search"] = ToolChangeKind.None,
+            ["subtask"] = ToolChangeKind.Overwriting,
+            ["create_epic"] = ToolChangeKind.Additive,
+            ["create_project"] = ToolChangeKind.Additive,
+            ["create_idea"] = ToolChangeKind.Additive,
+            ["create_document"] = ToolChangeKind.Additive,
+            ["update"] = ToolChangeKind.Overwriting,
+            ["replace_section"] = ToolChangeKind.Overwriting,
+        };
+        Assert.Equal(expectedChanges, BuildCatalog().ToDictionary(
+            tool => tool.Name,
+            tool => tool.Execution.Change,
+            StringComparer.Ordinal));
+    }
+
+    [Fact]
+    [Trait("Category", "regression")]
+    public async Task SubtaskWithoutDoneIsRejectedBeforeAnytypeIo()
+    {
+        ToolDescriptor subtask = BuildCatalog().Single(tool => tool.Name == "subtask");
+
+        ArgumentException error = await Assert.ThrowsAsync<ArgumentException>(() => subtask.Handler(
+            new JsonObject { ["task"] = "task-id", ["label"] = "check me" },
+            TestContext.Current.CancellationToken));
+
+        Assert.Contains("done", error.Message, StringComparison.Ordinal);
+    }
+
     static string PropertyDescription(ToolDescriptor tool, string property)
     {
         var properties = Assert.IsType<JsonObject>(tool.InputSchema["properties"]);
         var schema = Assert.IsType<JsonObject>(properties[property]);
         return schema["description"]!.GetValue<string>();
+    }
+
+    static void AssertRequired(ToolDescriptor tool, string property)
+    {
+        JsonArray required = Assert.IsType<JsonArray>(tool.InputSchema["required"]);
+        Assert.Contains(required, value => value?.GetValue<string>() == property);
     }
 }

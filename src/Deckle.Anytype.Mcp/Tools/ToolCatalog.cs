@@ -26,20 +26,25 @@ public static class ToolCatalog
         {
             new(
                 "session_start",
-                "Open a work session on a task: create its journal report and surface the task with its recent reports. Call it once before work that will modify the space; plain reads need no session. The report becomes the default target of log.",
+                "Open a work session on a task: create its journal report, return its stable report_id, and surface the task with its recent reports. Call it once before work that will modify the space; plain reads need no session. Pass the returned report_id to log.",
                 Schema(
                     required: [Prop("task", "string", "Anchor task, name or id.")]),
                 async (args, ct) =>
-                    await session.StartAsync(Str(args, "task"), ct)),
+                    await session.StartAsync(Str(args, "task"), ct),
+                ToolExecutionContract.AdditiveRequiresDeduplication),
 
             new(
                 "log",
-                "Append one journal line to the current session report (or a named one). Without a prior session_start, name the report explicitly.",
+                "Append one journal line to an explicit session report. Pass the report_id returned by session_start so the write survives transport and Deckle restarts.",
                 Schema(
-                    required: [Prop("line", "string", "Journal line to append (the why of what you just did).")],
-                    optional: [Prop("report", "string", "Target report, name or id; omit for the session's current report.")]),
+                    required:
+                    [
+                        Prop("line", "string", "Journal line to append (the why of what you just did)."),
+                        Prop("report", "string", "Stable report_id returned by session_start; report names are refused."),
+                    ]),
                 async (args, ct) =>
-                    await session.LogAsync(Str(args, "line"), StrOpt(args, "report"), ct)),
+                    await session.LogAsync(Str(args, "line"), Str(args, "report"), ct),
+                ToolExecutionContract.AdditiveRequiresDeduplicationWithStableTarget),
 
             new(
                 "get",
@@ -49,7 +54,8 @@ public static class ToolCatalog
                     optional: [Prop("type", "string", "Type key to disambiguate a name.",
                                     oneOf: ["epic", "project", "task", "rapport", "idee", "document"])]),
                 async (args, ct) =>
-                    await query.GetAsync(Str(args, "name_or_id"), StrOpt(args, "type"), ct)),
+                    await query.GetAsync(Str(args, "name_or_id"), StrOpt(args, "type"), ct),
+                ToolExecutionContract.ReadOnly),
 
             new(
                 "project_overview",
@@ -57,7 +63,8 @@ public static class ToolCatalog
                 Schema(
                     required: [Prop("project", "string", "Project, name or id.")]),
                 async (args, ct) =>
-                    await projects.OverviewAsync(Str(args, "project"), ct)),
+                    await projects.OverviewAsync(Str(args, "project"), ct),
+                ToolExecutionContract.ReadOnly),
 
             new(
                 "create_task",
@@ -77,7 +84,8 @@ public static class ToolCatalog
                 async (args, ct) =>
                     await tasks.CreateAsync(
                         Str(args, "project"), Str(args, "name"), Str(args, "type"),
-                        IntOpt(args, "priority"), StrOpt(args, "body"), ct)),
+                        IntOpt(args, "priority"), StrOpt(args, "body"), ct),
+                ToolExecutionContract.AdditiveRequiresDeduplication),
 
             new(
                 "complete",
@@ -86,7 +94,8 @@ public static class ToolCatalog
                     required: [Prop("object", "string", "Project or task, name or id.")],
                     optional: [Prop("done", "boolean", "Completion state; omit to mark done, pass false to reopen.")]),
                 async (args, ct) =>
-                    await query.CompleteAsync(Str(args, "object"), BoolOpt(args, "done") ?? true, ct)),
+                    await query.CompleteAsync(Str(args, "object"), BoolOpt(args, "done") ?? true, ct),
+                ToolExecutionContract.OverwritingIdempotent),
 
             new(
                 "archive",
@@ -95,7 +104,8 @@ public static class ToolCatalog
                     required: [Prop("object", "string", "Object, name or id.")],
                     optional: [Prop("archived", "boolean", "Archive state; omit to archive, pass false to restore.")]),
                 async (args, ct) =>
-                    await query.ArchiveAsync(Str(args, "object"), BoolOpt(args, "archived") ?? true, ct)),
+                    await query.ArchiveAsync(Str(args, "object"), BoolOpt(args, "archived") ?? true, ct),
+                ToolExecutionContract.OverwritingIdempotent),
 
             new(
                 "link",
@@ -107,7 +117,8 @@ public static class ToolCatalog
                         ArrayProp("targets", "Targets to link, each a name or id."),
                     ]),
                 async (args, ct) =>
-                    await query.LinkAsync(Str(args, "object"), StrArray(args, "targets"), ct)),
+                    await query.LinkAsync(Str(args, "object"), StrArray(args, "targets"), ct),
+                ToolExecutionContract.AdditiveUncertain),
 
             new(
                 "list_projects",
@@ -115,7 +126,8 @@ public static class ToolCatalog
                 Schema(
                     optional: [Prop("state", "string", "État to filter on, key or display name: termine, ouvert, en_cours, dormant, en_attente, abandonne. Omit for all non-archived.")]),
                 async (args, ct) =>
-                    await projects.ListAsync(StrOpt(args, "state"), ct)),
+                    await projects.ListAsync(StrOpt(args, "state"), ct),
+                ToolExecutionContract.ReadOnly),
 
             new(
                 "search",
@@ -131,21 +143,23 @@ public static class ToolCatalog
                 async (args, ct) =>
                     await query.SearchAsync(
                         Str(args, "text"), StrArrayOpt(args, "types"),
-                        BoolOpt(args, "context") ?? false, ct)),
+                        BoolOpt(args, "context") ?? false, ct),
+                ToolExecutionContract.ReadOnly),
 
             new(
                 "subtask",
-                "Add or toggle an inline '- [ ]' checklist item in a task body; the label matches case-insensitively, and a new item is appended when none matches.",
+                "Set an inline checklist item in a task body to the requested state; the label matches case-insensitively, and a new item is appended in that state when none matches.",
                 Schema(
                     required:
                     [
                         Prop("task", "string", "Task, name or id."),
-                        Prop("label", "string", "Checklist item label to add or toggle."),
-                    ],
-                    optional: [Prop("done", "boolean", "Set the item's checked state; omit to toggle.")]),
+                        Prop("label", "string", "Checklist item label to add or set."),
+                        Prop("done", "boolean", "Exact checked state to set."),
+                    ]),
                 async (args, ct) =>
                     await tasks.SubtaskAsync(
-                        Str(args, "task"), Str(args, "label"), BoolOpt(args, "done"), ct)),
+                        Str(args, "task"), Str(args, "label"), Bool(args, "done"), ct),
+                ToolExecutionContract.OverwritingIdempotent),
 
             new(
                 "create_epic",
@@ -155,7 +169,8 @@ public static class ToolCatalog
                     optional: [Prop("state", "string", "Starting état, key or display name: termine, ouvert, en_cours, dormant, en_attente, abandonne.")]),
                 async (args, ct) =>
                     await projects.CreateEpicAsync(
-                        Str(args, "name"), StrOpt(args, "state"), ct)),
+                        Str(args, "name"), StrOpt(args, "state"), ct),
+                ToolExecutionContract.AdditiveRequiresDeduplication),
 
             new(
                 "create_project",
@@ -169,7 +184,8 @@ public static class ToolCatalog
                     ]),
                 async (args, ct) =>
                     await projects.CreateAsync(
-                        Str(args, "name"), StrOpt(args, "epic"), StrOpt(args, "state"), ct)),
+                        Str(args, "name"), StrOpt(args, "epic"), StrOpt(args, "state"), ct),
+                ToolExecutionContract.AdditiveRequiresDeduplication),
 
             new(
                 "create_idea",
@@ -177,7 +193,8 @@ public static class ToolCatalog
                 Schema(
                     required: [Prop("content", "string", "Idea text.")]),
                 async (args, ct) =>
-                    await query.CreateIdeaAsync(Str(args, "content"), ct)),
+                    await query.CreateIdeaAsync(Str(args, "content"), ct),
+                ToolExecutionContract.AdditiveRequiresDeduplication),
 
             new(
                 "create_document",
@@ -198,7 +215,8 @@ public static class ToolCatalog
                     await documents.CreateAsync(
                         Str(args, "name"), Str(args, "type"),
                         StrOpt(args, "body"), StrOpt(args, "version"),
-                        BoolOpt(args, "system") ?? false, ct)),
+                        BoolOpt(args, "system") ?? false, ct),
+                ToolExecutionContract.AdditiveRequiresDeduplication),
 
             new(
                 "update",
@@ -206,7 +224,7 @@ public static class ToolCatalog
                 Schema(
                     required:
                     [
-                        Prop("object", "string", "Object to update, name or id."),
+                        Prop("object", "string", "Stable Anytype object id (bafy…); names are refused so a rename remains replayable."),
                     ],
                     optional:
                     [
@@ -214,7 +232,8 @@ public static class ToolCatalog
                         ObjectProp("properties", "Map of property key or display name to value."),
                     ]),
                 async (args, ct) =>
-                    await query.UpdateAsync(Str(args, "object"), StrOpt(args, "name"), ObjOpt(args, "properties"), ct)),
+                    await query.UpdateAsync(Str(args, "object"), StrOpt(args, "name"), ObjOpt(args, "properties"), ct),
+                ToolExecutionContract.OverwritingIdempotentWithStableTarget),
 
             new(
                 "replace_section",
@@ -228,7 +247,8 @@ public static class ToolCatalog
                     ]),
                 async (args, ct) =>
                     await query.ReplaceSectionAsync(
-                        Str(args, "object"), Str(args, "heading"), Str(args, "content"), ct)),
+                        Str(args, "object"), Str(args, "heading"), Str(args, "content"), ct),
+                ToolExecutionContract.OverwritingIdempotent),
         };
     }
 
@@ -342,6 +362,10 @@ public static class ToolCatalog
             throw new ArgumentException($"Argument '{name}' must be a boolean.", name);
         return b;
     }
+
+    static bool Bool(JsonObject? args, string name) =>
+        BoolOpt(args, name)
+        ?? throw new ArgumentException($"Missing required argument '{name}'.", name);
 
     static IReadOnlyList<string> StrArray(JsonObject? args, string name)
     {

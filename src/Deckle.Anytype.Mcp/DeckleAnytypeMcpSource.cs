@@ -5,12 +5,10 @@ namespace Deckle.Anytype.Mcp;
 
 // MCP host provider. Covers the resident streamable-HTTP host that serves the
 // Anytype toolset to Claude Code and Codex: the listener's lifecycle and the
-// sessions and requests it fields. Milestones (Info/Warning, no args) read as a
+// requests it fields. Milestones (Info/Warning, no args) read as a
 // narrative of the host's life; the Verbose mirrors carry the greppable detail.
 //
-// No event ever carries a bearer token or a full session id — the vault secret
-// stays out of the trace, and a session id is only ever emitted as a prefix, so
-// a leaked log line cannot be replayed against a live session.
+// No event ever carries a bearer token; the vault secret stays out of the trace.
 [EventSource(Name = "Deckle-AnytypeMcp")]
 public sealed class DeckleAnytypeMcpSource : DeckleEventSource
 {
@@ -19,8 +17,8 @@ public sealed class DeckleAnytypeMcpSource : DeckleEventSource
     private DeckleAnytypeMcpSource() { }
 
     // Module-local keyword bit (transverse bits 0..9 reserved in Keywords;
-    // 0x400+ belongs to the provider). The host's start/stop and the session
-    // and request activity it fields share the one Lifecycle family.
+    // 0x400+ belongs to the provider). The host's start/stop and request
+    // activity share the one Lifecycle family.
     private const EventKeywords Lifecycle = (EventKeywords)0x400;
 
     // ── EventIds ─────────────────────────────────────────────────────────
@@ -28,8 +26,8 @@ public sealed class DeckleAnytypeMcpSource : DeckleEventSource
     public const int EvtHostStartedDetail     = 2;
     public const int EvtHostStopped           = 3;
     public const int EvtHostNotProvisioned    = 4;
-    public const int EvtSessionOpened         = 5;
-    public const int EvtSessionOpenedDetail   = 6;
+    // Event ids 5 and 6 belonged to the removed stateful session transport and
+    // stay reserved so an old trace can never be misread as a new event.
     public const int EvtRequestRejected       = 7;
     public const int EvtRequestRejectedDetail = 8;
 
@@ -73,32 +71,10 @@ public sealed class DeckleAnytypeMcpSource : DeckleEventSource
         if (IsEnabled()) WriteEvent(EvtHostNotProvisioned);
     }
 
-    // ── Sessions ──────────────────────────────────────────────────────────
-
-    [Event(EvtSessionOpened,
-           Level = EventLevel.Informational,
-           Keywords = Lifecycle,
-           Message = "An MCP session opened")]
-    public void SessionOpened()
-    {
-        if (IsEnabled()) WriteEvent(EvtSessionOpened);
-    }
-
-    // The Verbose mirror carries the client and a session id prefix only —
-    // never the full id, which would let a leaked line be replayed.
-    [Event(EvtSessionOpenedDetail,
-           Level = EventLevel.Verbose,
-           Keywords = Lifecycle,
-           Message = "mcp session opened | client={0} | session={1}")]
-    public void SessionOpenedDetail(string client_id, string session_prefix)
-    {
-        if (IsEnabled()) WriteEvent(EvtSessionOpenedDetail, client_id, session_prefix);
-    }
-
     // ── Requests ──────────────────────────────────────────────────────────
 
-    // Warning: a request the host refused before dispatch (bad auth, unknown
-    // session, malformed body) — a degradation a human would want to notice.
+    // Warning: a request the host refused before dispatch (bad auth, Origin or
+    // method) — a degradation a human would want to notice.
     [Event(EvtRequestRejected,
            Level = EventLevel.Warning,
            Keywords = Lifecycle,

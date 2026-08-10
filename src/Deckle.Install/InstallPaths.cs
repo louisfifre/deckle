@@ -21,6 +21,20 @@ public static class InstallPaths
 {
     public static string DefaultInstallDir => Path.Combine(LocalAppData, "Programs", "Deckle");
 
+    // Long-lived provider executables sit beside the replaceable app payload.
+    // The root is fixed per user and deliberately independent of DECKLE_DATA_ROOT.
+    public static string DefaultProvidersDir => Path.Combine(LocalAppData, "Programs", "Deckle Providers");
+
+    // Releases through 0.31.10 placed the Anytype provider in the replaceable
+    // default payload even when Deckle itself used a custom install directory.
+    // Update adoption and uninstall both need that exact migration root.
+    public static string LegacyAnytypeProviderDir => Path.Combine(DefaultInstallDir, "anytype");
+
+    // Every executable root explicit uninstall owns, including transitional
+    // layouts that no new provider may launch from.
+    public static string[] ProviderDirectories =>
+        [DefaultProvidersDir, LegacyAnytypeProviderDir];
+
     public static string DefaultDataDir => Path.Combine(LocalAppData, "Deckle");
 
     private static string LocalAppData =>

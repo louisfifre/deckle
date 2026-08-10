@@ -29,7 +29,8 @@ public static class DialogueToolCatalog
                         Str(args, "mode"),
                         Str(args, "brief"),
                         StrOpt(args, "task"),
-                        ct)),
+                        ct),
+                ToolExecutionContract.AdditiveRequiresDeduplication),
 
             new(
                 "dialogue_post",
@@ -37,7 +38,7 @@ public static class DialogueToolCatalog
                 Schema(
                     required:
                     [
-                        Prop("chat", "string", "Dialogue chat name or id."),
+                        Prop("chat", "string", "Stable chat id returned by dialogue_create; names are refused for message recovery."),
                         Prop("speaker", "string", "Speaker label.", oneOf: ["system", "claude", "codex", "louis"]),
                         Prop("text", "string", "Message text."),
                     ]),
@@ -46,7 +47,8 @@ public static class DialogueToolCatalog
                         Str(args, "chat"),
                         Str(args, "speaker"),
                         Str(args, "text"),
-                        ct)),
+                        ct),
+                ToolExecutionContract.AdditiveRequiresDeduplicationWithStableTarget),
 
             new(
                 "dialogue_read",
@@ -64,7 +66,8 @@ public static class DialogueToolCatalog
                     await dialogues.ReadAsync(
                         Str(args, "chat"),
                         StrOpt(args, "after_order_id"),
-                        ct)),
+                        ct),
+                ToolExecutionContract.ReadOnly),
         };
     }
 

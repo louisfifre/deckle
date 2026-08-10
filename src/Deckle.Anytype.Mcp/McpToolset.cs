@@ -3,13 +3,12 @@ using Deckle.Anytype;
 namespace Deckle.Anytype.Mcp;
 
 // The composition seam Program.cs used to own: from an API client and a
-// per-client profile, it builds the tool set and the descriptor for one MCP
-// session. The gesture graph is rebuilt on every call because it is
-// session-scoped — SessionGestures holds the current-report default that log
-// targets — so two concurrent sessions must not share one instance.
+// per-client profile, it builds the tool set and descriptor for one stateless
+// request. The gesture graph is rebuilt on every call, so concurrent requests
+// never share mutable gesture state.
 public static class McpToolset
 {
-    public static McpSurfaceSession Build(
+    public static McpSurfaceBinding Build(
         AnytypeApiClient api,
         ToolProfile profile,
         bool management,
@@ -37,15 +36,15 @@ public static class McpToolset
 
         var descriptor = profile switch
         {
-            ToolProfile.ProjectManagement => McpServer.ProjectManagementDescriptor,
-            ToolProfile.Dialogues => McpServer.DialoguesDescriptor,
-            ToolProfile.SchemaAdmin => McpServer.SchemaAdminDescriptor,
-            ToolProfile.All => McpServer.AllDescriptor,
-            _ => McpServer.ProjectManagementDescriptor,
+            ToolProfile.ProjectManagement => McpSurfaceDescriptor.ProjectManagement,
+            ToolProfile.Dialogues => McpSurfaceDescriptor.Dialogues,
+            ToolProfile.SchemaAdmin => McpSurfaceDescriptor.SchemaAdmin,
+            ToolProfile.All => McpSurfaceDescriptor.All,
+            _ => McpSurfaceDescriptor.ProjectManagement,
         };
 
         // Mount the supervised management catalog on demand, additive to the
-        // object-management surfaces only. Dialogue and schema-admin sessions
+        // object-management surfaces only. Dialogue and schema-admin surfaces
         // have no object lifecycle to delete, so the flag is a no-op there.
         if (management && profile is ToolProfile.ProjectManagement or ToolProfile.All)
         {
@@ -56,7 +55,7 @@ public static class McpToolset
             };
         }
 
-        return new McpSurfaceSession(tools, descriptor);
+        return new McpSurfaceBinding(tools, descriptor);
     }
 
     private static IReadOnlyList<ToolDescriptor> BuildSchemaAdmin(

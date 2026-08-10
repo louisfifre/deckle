@@ -15,7 +15,12 @@ namespace Deckle.Anytype;
 // Separate from AnytypeApiClient on purpose — that client is bound to a space and
 // a bearer token and speaks /v1; this probe is unauthenticated and hits the root
 // docs endpoint, a different responsibility with no credentials.
-public sealed class BackendHealthProbe : IDisposable
+internal interface IBackendHealthProbe : IDisposable
+{
+    Task<bool> IsHealthyAsync(CancellationToken ct = default);
+}
+
+public sealed class BackendHealthProbe : IBackendHealthProbe
 {
     // The headless backend's fixed loopback address (frozen 2026-06-18). Desktop
     // Anytype uses 31007-31009; the headless REST default is 31012.

@@ -15,11 +15,12 @@ public static class SchemaAdminToolCatalog
                 Schema(
                     required: [Prop("space", "string", "Configured space alias, for example dev or home.")]),
                 async (args, ct) =>
-                    await schema.InspectAsync(Str(args, "space"), ct)),
+                    await schema.InspectAsync(Str(args, "space"), ct),
+                ToolExecutionContract.ReadOnly),
 
             new(
                 "schema_preview",
-                "Preview an additive schema manifest against a configured Anytype space. It reports reuse, creations and conflicts, and returns a preview id for schema_apply. No write happens here.",
+                "Preview an additive schema manifest against a configured Anytype space. It reports reuse, creations and conflicts, and returns a deterministic preview id for schema_apply. No write happens here and no server-side session is retained.",
                 Schema(
                     required:
                     [
@@ -27,24 +28,35 @@ public static class SchemaAdminToolCatalog
                         ManifestProp(),
                     ]),
                 async (args, ct) =>
-                    await schema.PreviewAsync(Str(args, "space"), Obj(args, "manifest"), ct)),
+                {
+                    SchemaPreviewResult result = await schema.PreviewResultAsync(
+                        Str(args, "space"), Obj(args, "manifest"), ct);
+                    return new ToolOutput(result.Digest, PreviewContent(result));
+                },
+                ToolExecutionContract.ReadOnly)
+            {
+                OutputSchema = PreviewOutputSchema(),
+            },
 
             new(
                 "schema_apply",
-                "Apply a previous schema_preview. Additive only: create missing types/properties/tags, set missing type icons, attach properties to types, and provision section collections with their member types. Requires confirm:true and the preview_id returned by schema_preview.",
+                "Apply a previous schema_preview. Repeat the exact manifest and its deterministic preview_id; the live plan must still match what was reviewed. Additive only: create missing types/properties/tags, set missing type icons, attach properties to types, and provision section collections with their member types. Requires confirm:true.",
                 Schema(
                     required:
                     [
                         Prop("space", "string", "Configured space alias used by the preview."),
                         Prop("preview_id", "string", "Preview id returned by schema_preview."),
+                        ManifestProp(),
                         Prop("confirm", "boolean", "Must be true; omit or false refuses the write."),
                     ]),
                 async (args, ct) =>
                     await schema.ApplyAsync(
                         Str(args, "space"),
                         Str(args, "preview_id"),
+                        Obj(args, "manifest"),
                         Bool(args, "confirm"),
-                        ct)),
+                        ct),
+                ToolExecutionContract.AdditiveVerifiableWithStableTarget),
         };
     }
 
@@ -119,7 +131,7 @@ public static class SchemaAdminToolCatalog
                 ["type"] = "string",
                 ["description"] = "Exact collection name; an existing built-in collection with this name is reused.",
             },
-            ["icon"] = IconSpecSchema(),
+            ["icon"] = SectionIconSpecSchema(),
             ["types"] = new JsonObject
             {
                 ["type"] = "array",
@@ -130,6 +142,22 @@ public static class SchemaAdminToolCatalog
             },
         },
         ["required"] = new JsonArray { "name", "types" },
+        ["additionalProperties"] = false,
+    };
+
+    static JsonObject SectionIconSpecSchema() => new()
+    {
+        ["type"] = "object",
+        ["properties"] = new JsonObject
+        {
+            ["format"] = new JsonObject
+            {
+                ["type"] = "string",
+                ["enum"] = new JsonArray { "emoji" },
+            },
+            ["emoji"] = new JsonObject { ["type"] = "string" },
+        },
+        ["required"] = new JsonArray { "format", "emoji" },
         ["additionalProperties"] = false,
     };
 
@@ -222,6 +250,75 @@ public static class SchemaAdminToolCatalog
         ["type"] = "array",
         ["items"] = itemSchema,
     };
+
+    internal static JsonObject PreviewOutputSchema() => new()
+    {
+        ["type"] = "object",
+        ["properties"] = new JsonObject
+        {
+            ["preview_id"] = new JsonObject
+            {
+                ["type"] = "string",
+                ["pattern"] = "^[0-9a-f]{64}$",
+            },
+            ["space"] = new JsonObject { ["type"] = "string", ["minLength"] = 1 },
+            ["actions"] = ArrayOf(new JsonObject
+            {
+                ["type"] = "object",
+                ["properties"] = new JsonObject
+                {
+                    ["kind"] = new JsonObject
+                    {
+                        ["type"] = "string",
+                        ["enum"] = new JsonArray
+                        {
+                            "create_property", "create_tag", "create_type",
+                            "set_icon", "attach_property", "create_section",
+                            "add_to_section",
+                        },
+                    },
+                    ["key"] = new JsonObject { ["type"] = "string", ["minLength"] = 1 },
+                    ["name"] = new JsonObject { ["type"] = "string", ["minLength"] = 1 },
+                },
+                ["required"] = new JsonArray { "kind", "key", "name" },
+                ["additionalProperties"] = false,
+            }),
+            ["conflicts"] = ArrayOf(new JsonObject { ["type"] = "string", ["minLength"] = 1 }),
+            ["skipped_conflicts"] = ArrayOf(new JsonObject { ["type"] = "string", ["minLength"] = 1 }),
+        },
+        ["required"] = new JsonArray
+        {
+            "preview_id", "space", "actions", "conflicts", "skipped_conflicts",
+        },
+        ["additionalProperties"] = false,
+    };
+
+    internal static JsonObject PreviewContent(SchemaPreviewResult result)
+    {
+        var actions = new JsonArray();
+        foreach (SchemaPreviewAction action in result.Actions)
+        {
+            actions.Add(new JsonObject
+            {
+                ["kind"] = action.Kind,
+                ["key"] = action.Key,
+                ["name"] = action.Name,
+            });
+        }
+
+        return new JsonObject
+        {
+            ["preview_id"] = result.PreviewId,
+            ["space"] = result.SpaceAlias,
+            ["actions"] = actions,
+            ["conflicts"] = new JsonArray(result.Conflicts
+                .Select(value => JsonValue.Create(value))
+                .ToArray()),
+            ["skipped_conflicts"] = new JsonArray(result.SkippedConflicts
+                .Select(value => JsonValue.Create(value))
+                .ToArray()),
+        };
+    }
 
     static string Str(JsonObject? args, string name)
     {

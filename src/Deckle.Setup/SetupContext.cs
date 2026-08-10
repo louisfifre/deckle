@@ -67,6 +67,10 @@ public sealed class SetupContext
     public bool UpdateMode { get; init; }
     public UpdateService.AvailableUpdate? PendingUpdate { get; init; }
 
+    // Exact process that handed an update to the new payload. Deploy waits on
+    // its native exit signal before scanning for any remaining blockers.
+    public int? PredecessorProcessId { get; init; }
+
     // ── Relocate mode (the wizard as data mover) ────────────────────────────
     //
     // True in the dedicated `--relocate-data` process, which runs RelocatePage

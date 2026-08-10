@@ -17,8 +17,9 @@ public sealed partial class AnytypeApiClient
     // The returned object_id is what a property of format "files" references;
     // the file itself lives in the space like any other object.
     //
-    // Content comes as a byte[] and not a Stream because the transport retries
-    // once on a transient, and a retry has to send the same bytes again.
+    // Content comes as a byte[] and not a Stream so each request owns a stable
+    // replayable payload. Upload itself is not replayed after a 5xx: the file may
+    // already exist even when its object id did not reach the caller.
     public async Task<JsonObject> UploadFileAsync(
         string spaceId,
         string fileName,

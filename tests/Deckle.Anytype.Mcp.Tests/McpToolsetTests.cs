@@ -100,9 +100,8 @@ public class McpToolsetTests
     [Fact]
     public void EachBuildYieldsFreshDescriptorInstances()
     {
-        // The gesture graph is session-scoped, so every Build must rebuild it: two
-        // calls must not share a descriptor instance, or two sessions would share the
-        // current-report default that log targets.
+        // The gesture graph is request-scoped, so every Build must rebuild it: two
+        // calls must not share descriptor instances or mutable gesture state.
         var client = DummyClient();
         var (first, _) = McpToolset.Build(client, ToolProfile.ProjectManagement, management: false);
         var (second, _) = McpToolset.Build(client, ToolProfile.ProjectManagement, management: false);

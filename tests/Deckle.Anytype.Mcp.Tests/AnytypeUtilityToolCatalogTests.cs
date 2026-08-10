@@ -45,5 +45,13 @@ public class AnytypeUtilityToolCatalogTests
         JsonObject objects = Assert.IsType<JsonObject>(properties["objects"]);
         Assert.Equal(1, objects["minItems"]!.GetValue<int>());
         Assert.True(objects["uniqueItems"]!.GetValue<bool>());
+        Assert.Equal(AmbiguousOutcomePolicy.Uncertain, collection.Execution.AmbiguousOutcome);
+        Assert.Equal(
+            AmbiguousOutcomePolicy.SafeToRetry,
+            BuildCatalog().Single(tool => tool.Name == "anytype_select_set").Execution.AmbiguousOutcome);
+        Assert.Equal(ToolChangeKind.Additive, collection.Execution.Change);
+        Assert.Equal(
+            ToolChangeKind.Overwriting,
+            BuildCatalog().Single(tool => tool.Name == "anytype_select_set").Execution.Change);
     }
 }

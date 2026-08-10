@@ -236,7 +236,9 @@ public sealed class QueryGestures(AnytypeApiClient api, NameResolver resolver)
             throw new ArgumentException(
                 "Rien à mettre à jour : fournissez un nom, des propriétés, ou les deux.", nameof(properties));
 
-        string id = await resolver.ResolveAsync(selector, typeKeys: null, ct);
+        // A replayable update must carry provider identity. In particular, a
+        // successful rename makes the original display name unusable on replay.
+        string id = AnytypeObjectId.Require(selector, "object");
 
         using var _ = await api.AcquireWriteScopeAsync("update", id, ct);
         JsonObject obj = await api.GetObjectAsync(id, ct);

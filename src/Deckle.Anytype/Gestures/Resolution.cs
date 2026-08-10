@@ -45,6 +45,31 @@ public sealed class NotFoundException : Exception
     }
 }
 
+// Stable provider identity used by replayable mutations. A display name is a
+// useful read selector, but it is not a recovery coordinate: the mutation may
+// rename it before its response reaches the caller.
+public static class AnytypeObjectId
+{
+    // Anytype object ids are CIDv1 (base32): they start with "bafy" and are
+    // substantially longer than schema keys or display names.
+    public static bool Is(string? value)
+    {
+        if (string.IsNullOrWhiteSpace(value)) return false;
+        string candidate = value.Trim();
+        return candidate.Length > 40
+            && candidate.StartsWith("bafy", StringComparison.Ordinal);
+    }
+
+    public static string Require(string? value, string parameterName)
+    {
+        if (!Is(value))
+            throw new ArgumentException(
+                $"L’argument « {parameterName} » doit être un id Anytype stable (bafy…).",
+                parameterName);
+        return value!.Trim();
+    }
+}
+
 public sealed class NameResolver(AnytypeApiClient api)
 {
     readonly AnytypeApiClient _api = api;
@@ -71,7 +96,7 @@ public sealed class NameResolver(AnytypeApiClient api)
             throw new NotFoundException(selector ?? "");
 
         selector = selector.Trim();
-        if (LooksLikeId(selector)) return selector;
+        if (AnytypeObjectId.Is(selector)) return selector;
 
         var candidates = await SearchCandidatesAsync(spaceId, selector, typeKeys, ct);
         if (candidates.Count == 0) throw new NotFoundException(selector);
@@ -85,12 +110,6 @@ public sealed class NameResolver(AnytypeApiClient api)
         if (candidates.Count == 1) return candidates[0].Id;
         throw new AmbiguousNameException(selector, candidates);
     }
-
-    // Anytype object ids are CIDv1 (base32): start with "bafy", ~58 chars. The
-    // space's property/type keys are short snake_case identifiers, so this test
-    // separates an id argument from a name with no other ambiguity.
-    static bool LooksLikeId(string s) =>
-        s.Length > 40 && s.StartsWith("bafy", StringComparison.Ordinal);
 
     async Task<List<Candidate>> SearchCandidatesAsync(
         string spaceId,

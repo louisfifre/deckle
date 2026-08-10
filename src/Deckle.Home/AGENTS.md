@@ -30,7 +30,7 @@ only when its room prefix exists in that live registry.
 All writes pass through the domain guards before reaching Anytype. The MCP
 catalog may validate argument shape, but it MUST NOT reimplement nomenclature,
 immutability, deletion, vocabulary, or relation rules. HTTP transport, bearer
-authentication and MCP sessions remain in `Deckle.Anytype.Mcp`.
+authentication and stateless MCP requests remain in `Deckle.Anytype.Mcp`.
 
 ## Schema
 

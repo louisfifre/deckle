@@ -60,4 +60,17 @@ public class ManagementGesturesTests
             r => r.Method == "DELETE" && r.Path.EndsWith($"/objects/{ObjId}"));
         Assert.Contains("corbeille", digest);
     }
+
+    [Fact]
+    [Trait("Category", "regression")]
+    public async Task ConfirmedCallRejectsANameInsteadOfThePreviewedIdWithoutDeleting()
+    {
+        using var server = new FakeAnytypeServer();
+
+        ArgumentException error = await Assert.ThrowsAsync<ArgumentException>(
+            () => NewGestures(server).DeleteAsync("Vieille tâche", confirm: true, ct: Ct));
+
+        Assert.Contains("id Anytype stable", error.Message);
+        Assert.Empty(server.Requests);
+    }
 }

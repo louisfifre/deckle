@@ -7,6 +7,28 @@ type: module-journal
 
 Module-level dated notes. Most recent on top.
 
+## 2026-08-10 — Structured schema preview precedes any MCP App
+
+Found that MCP Apps `2026-01-26` is a stable optional extension and that the
+official C# SDK publishes its typed `ModelContextProtocol.Extensions.Apps`
+package in version `2.1.0`. Deckle does not reference it because no MCP App
+resource or host UI is part of the accepted gateway scope.
+
+Chose `schema_preview` as the first structured tool result. It now advertises a
+closed output schema and returns the deterministic preview id, space alias,
+actions and conflicts as structured content while preserving the existing text
+digest. A visual schema-diff MCP App remains the strongest first UI candidate,
+but no App resource or client-specific promise is added until a target host and
+an actual product need are established.
+
+## 2026-08-10 — Backend identity and stateless recovery contracts frozen
+
+Chose a per-user versioned Anytype provider outside Deckle's replaceable payload: `%LOCALAPPDATA%\\Programs\\Deckle Providers\\Anytype`. Provider versions are immutable, a fully staged version is published before `active.json` is replaced atomically, and activation selects only the next launch. A healthy legacy or older provider remains adoptable until it exits. ADR-0004 records the trade-off.
+
+Chose one current-user, cross-session named mutex for backend reconciliation. The complete inspect, warm-up, spawn and readiness transaction stays on the mutex-owning worker thread. Readiness now requires a live trusted process, TCP-table ownership of `127.0.0.1:31012`, a healthy response, and the same listener owner on a second TCP-table read. An unknown or unreadable owner blocks spawning. The restart-race regression is `BackendReconcilerTests.Successor_adopts_warming_backend_without_spawning_duplicate`.
+
+Chose the official C# MCP SDK v2 stateless Streamable HTTP transport on the existing URL and bearer credentials. A fresh request after a gateway restart is the server contract; automatic client reconnection is not. The current report id is explicit, schema previews are deterministic and self-verifying, and every tool advertises its ambiguous-outcome policy. REST `5xx` retry is now opt-in for known replay-safe requests; creators, messages, uploads, collection mutations and deletes are not replayed blindly. ADR-0005 records the trade-off.
+
 ## 2026-08-10 — Restart race exposed missing lifecycle boundaries
 
 Measured across two Deckle process sessions: the outgoing process emitted `ShutdownRequested`, then its still-running fire-and-forget `EnsureRunningAsync` spawned `anytype.exe`. The successor probed the still-warming endpoint, spawned a duplicate, then attributed the original process's `200` response to that duplicate. The duplicate exited with code 1 and became the process watched and restarted, while the original process kept serving on `127.0.0.1:31012`. The confirmed trigger, cause, violated invariant and recurrence cue are preserved in `tests/Deckle.Anytype.Tests/BackendSupervisionBugNotes.md`; no regression test exists yet.

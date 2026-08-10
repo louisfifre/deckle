@@ -28,7 +28,7 @@ processing this domain admits.
 
 All writes pass through the domain guards before reaching Anytype. The MCP
 catalog may validate argument shape, but it MUST NOT reimplement vocabulary,
-stay-resolution, or relation rules. Transport, bearers, and MCP sessions stay
+stay-resolution, or relation rules. Transport, bearers, and stateless MCP requests stay
 in `Deckle.Anytype.Mcp`.
 
 Closed-vocabulary options are added by the user in Anytype, never by the

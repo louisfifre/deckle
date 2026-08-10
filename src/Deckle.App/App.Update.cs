@@ -124,6 +124,13 @@ public partial class App
 
         string? target  = ArgumentValue(args, "--target");
         string? cleanup = ArgumentValue(args, "--cleanup");
+        int? predecessor = int.TryParse(
+            ArgumentValue(args, "--wait-pid"),
+            System.Globalization.NumberStyles.None,
+            System.Globalization.CultureInfo.InvariantCulture,
+            out int parsedPredecessor)
+                ? parsedPredecessor
+                : null;
         DeckleAppSource.Log.InstallModeEntered();
         DeckleAppSource.Log.InstallModeEnteredDetail("update-apply", "", cleanup ?? "", "");
 
@@ -149,6 +156,7 @@ public partial class App
             DataDirectory    = UserEnvironment.GetDataRoot() ?? InstallPaths.DefaultDataDir,
             StubPath         = File.Exists(uninstaller) ? uninstaller : null,
             CleanupDirectory = cleanup,
+            PredecessorProcessId = predecessor,
             // Presence as recorded — an update never changes the module choice.
             // SelectedModel stays null: the continuation resolves the configured
             // model from settings, so nothing new is downloaded by default.

@@ -61,7 +61,9 @@ public sealed class DialogueGestures(AnytypeApiClient api, NameResolver resolver
     {
         long t0 = Stopwatch.GetTimestamp();
 
-        string chatId = await ResolveChatAsync(chat, ct);
+        // dialogue_create returns this handle. A non-idempotent append must not
+        // recover through a display name that can be ambiguous or renamed.
+        string chatId = AnytypeObjectId.Require(chat, "chat");
         JsonObject message = await _api.AddChatMessageAsync(
             chatId,
             MessagePayload(speaker, Required(text, nameof(text))),

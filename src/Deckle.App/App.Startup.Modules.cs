@@ -157,7 +157,7 @@ public partial class App
         // killing the warm backend; the milestone marks dispatch, not readiness.
         if (context.AnytypePresent)
         {
-            _ = InitializeAnytypeBackendAsync();
+            StartAnytypeRuntime();
             context.Milestone("anytype_backend");
         }
         else

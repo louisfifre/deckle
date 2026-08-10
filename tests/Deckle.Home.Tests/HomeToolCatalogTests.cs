@@ -67,6 +67,53 @@ public class HomeToolCatalogTests
         Assert.Contains("remove_from_collections", updateProperties.Select(pair => pair.Key));
     }
 
+    [Fact]
+    public void EveryToolDeclaresItsAmbiguousOutcomePolicy()
+    {
+        IReadOnlyList<ToolDescriptor> tools = HomeToolCatalog.Build(
+            () => throw new InvalidOperationException("handlers are not invoked"));
+        var expected = new Dictionary<string, AmbiguousOutcomePolicy>(StringComparer.Ordinal)
+        {
+            ["create"] = AmbiguousOutcomePolicy.RequiresDeduplication,
+            ["update"] = AmbiguousOutcomePolicy.Uncertain,
+            ["get"] = AmbiguousOutcomePolicy.SafeToRetry,
+            ["search"] = AmbiguousOutcomePolicy.SafeToRetry,
+            ["delete"] = AmbiguousOutcomePolicy.VerifyBeforeRetry,
+            ["component_create"] = AmbiguousOutcomePolicy.RequiresDeduplication,
+            ["plant_create"] = AmbiguousOutcomePolicy.RequiresDeduplication,
+            ["plant_water"] = AmbiguousOutcomePolicy.SafeToRetry,
+            ["worksite_create"] = AmbiguousOutcomePolicy.RequiresDeduplication,
+            ["todo_create"] = AmbiguousOutcomePolicy.RequiresDeduplication,
+            ["complete"] = AmbiguousOutcomePolicy.SafeToRetry,
+            ["worksite_overview"] = AmbiguousOutcomePolicy.SafeToRetry,
+        };
+
+        Assert.Equal(expected, tools.ToDictionary(
+            tool => tool.Name,
+            tool => tool.Execution.AmbiguousOutcome,
+            StringComparer.Ordinal));
+        Assert.Equal(ToolEffect.Destructive, tools.Single(tool => tool.Name == "delete").Execution.Effect);
+        var expectedChanges = new Dictionary<string, ToolChangeKind>(StringComparer.Ordinal)
+        {
+            ["create"] = ToolChangeKind.Additive,
+            ["update"] = ToolChangeKind.Overwriting,
+            ["get"] = ToolChangeKind.None,
+            ["search"] = ToolChangeKind.None,
+            ["delete"] = ToolChangeKind.Destructive,
+            ["component_create"] = ToolChangeKind.Additive,
+            ["plant_create"] = ToolChangeKind.Additive,
+            ["plant_water"] = ToolChangeKind.Overwriting,
+            ["worksite_create"] = ToolChangeKind.Additive,
+            ["todo_create"] = ToolChangeKind.Additive,
+            ["complete"] = ToolChangeKind.Overwriting,
+            ["worksite_overview"] = ToolChangeKind.None,
+        };
+        Assert.Equal(expectedChanges, tools.ToDictionary(
+            tool => tool.Name,
+            tool => tool.Execution.Change,
+            StringComparer.Ordinal));
+    }
+
     private static JsonObject BatchItemSchema(IReadOnlyList<ToolDescriptor> tools, string name)
     {
         JsonObject schema = tools.Single(tool => tool.Name == name).InputSchema;

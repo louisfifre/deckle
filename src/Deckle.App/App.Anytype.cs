@@ -6,120 +6,142 @@ using Deckle.Travel;
 
 namespace Deckle.App;
 
-// Anytype backend composition. Deckle spawns the headless backend windowless
-// and supervises it for as long as the app lives: watch the process handle,
-// restart on death with a capped backoff. The serve still outlives Deckle — a
-// child process is not tied to its parent's lifetime, and quitting only stops
-// the watching, never the serve — so app rebuilds keep their warm backend and
-// the next boot re-adopts it.
 public partial class App
 {
-    // The lifecycle owner of the serve process: spawn/adopt at boot, restart on
-    // death. Owned here so quitting stops the supervision (not the serve).
-    private Deckle.Anytype.BackendSupervisor? _backendSupervisor;
+    private CancellationTokenSource? _anytypeLifetimeCts;
+    private Task? _anytypeRuntimeTask;
 
-    // The REST client backing the MCP host and, through it, the tool calls that
-    // reach the local Anytype API. Owned here so shutdown disposes it after the
-    // host that uses it.
-    private Deckle.Anytype.AnytypeApiClient? _anytypeApi;
-
-    // The resident MCP HTTP host — the door external AI clients (Claude, Codex)
-    // knock on to reach the space. Composed once at boot, torn down at quit.
-    private Deckle.Anytype.Mcp.McpHttpHost? _mcpHost;
-
-    // Fire-and-forget from OnLaunched: REST binds in its own time (the
-    // supervisor's bounded readiness poll), and nothing at boot waits on the
-    // backend. Same posture as ApplyAmbientEnabledAsync.
-    private async Task InitializeAnytypeBackendAsync()
+    // Captures the whole Anytype runtime as one owned task. Shutdown cancels and
+    // drains this task before resident ownership is released, so no outgoing
+    // Deckle can acquire or spawn a backend after its successor starts.
+    private void StartAnytypeRuntime()
     {
-        // No binary on disk → the module stays dormant, the same posture as the
-        // speech provisioning gate: never a hard stop at boot. Downloading the
-        // pinned binary is the wizard's act (to come); until then it is a
-        // maintainer act.
-        if (!BackendInstallation.IsInstalled())
-        {
-            DeckleAnytypeSource.Log.BackendNotProvisioned();
-            return;
-        }
-
-        // Outcomes are observed, not acted on: the supervisor logs its own
-        // milestones (starting / ready / stopped / timed out), and the surfaces
-        // that will show last-known state (wizard, General page) read those.
-        // Mid-session recovery is the supervisor's own restart ladder, driven
-        // by the process-exit signal — no polling here.
-        // ConfigureAwait(false) is load-bearing here: OnLaunched dispatched this
-        // method on the UI thread, and everything past this await — DPAPI vault
-        // reads, the WM_SETTINGCHANGE broadcast in MaterializeEnvironmentVariables,
-        // the listener bind — is blocking work that touches no UI state. Without
-        // it the whole composition tail would resume on the DispatcherQueue.
-        _backendSupervisor = new BackendSupervisor(
-            BackendInstallation.ServeSpec(), new BackendHealthProbe());
-        await _backendSupervisor.EnsureRunningAsync().ConfigureAwait(false);
-
-        // The host comes up whatever the supervisor concluded: a backend that
-        // failed to start surfaces as isError tool results the client can read,
-        // never as a door that refuses to exist. The one thing that keeps the
-        // door shut is an unprovisioned machine — no credentials to bind a
-        // client to (or a credential store that cannot be read), the same gate
-        // the backend block above applies to a missing binary. Caught broadly on
-        // purpose: this Task is discarded by OnLaunched, so anything escaping
-        // here would die unobserved.
-        AnytypeCredentials credentials;
-        try
-        {
-            credentials = AnytypeCredentials.Load();
-            _anytypeApi = new AnytypeApiClient(credentials);
-        }
-        catch (Exception ex) when (ex is InvalidOperationException or SecretVaultException or UriFormatException)
-        {
-            DeckleAnytypeMcpSource.Log.HostNotProvisioned();
-            return;
-        }
-
-        // Minting and materializing the client tokens is idempotent, so folding
-        // it into boot means a provisioned machine needs no separate act to make
-        // the host reachable. Rewiring the AI clients themselves (claude/codex
-        // mcp add against these tokens) stays a wizard/maintainer gesture — the
-        // app hands out the credential, it does not reconfigure someone else's
-        // client. A vault that cannot be written is the same dormant-door state
-        // as one that cannot be read above.
-        // Core Anytype clients and optional domain surfaces meet only at the
-        // application composition root. Selecting the Anytype module installs
-        // this build's domain adapters (Home, Travel) and provisions their
-        // bearers alongside the reusable Anytype surfaces; later UI can choose
-        // a narrower list here.
-        IReadOnlyList<McpClientProfile> clients =
-            [.. McpClients.All, HomeMcp.Client, TravelMcp.Client];
-        var tokens = new McpClientTokens(SecretVault.CreateDefault(), clients);
-        try
-        {
-            tokens.EnsureMinted();
-            tokens.MaterializeEnvironmentVariables();
-        }
-        catch (SecretVaultException)
-        {
-            DeckleAnytypeMcpSource.Log.HostNotProvisioned();
-            return;
-        }
-
-        // A failed bind (port taken) already logged its Warning inside Start;
-        // dropping the reference keeps shutdown honest — there is nothing to
-        // tear down, and no field implying an open door that never opened.
-        _mcpHost = new McpHttpHost(_anytypeApi, tokens);
-        if (!_mcpHost.Start())
-            _mcpHost = null;
+        var cts = new CancellationTokenSource();
+        _anytypeLifetimeCts = cts;
+        _anytypeRuntimeTask = RunAnytypeRuntimeAsync(cts.Token);
     }
 
-    // Bound the host teardown the same way QuitApp bounds the ambient engine: a
-    // five-second cap on the async dispose so a wedged listener cannot hang the
-    // whole quit. The client is disposed after the host that borrows it, and
-    // the supervisor last — disposing it stops the watching, never the serve.
-    // Every step swallows so shutdown, which runs best-effort under QuitApp's
-    // try/catch-per-step, never throws from here.
+    private async Task RunAnytypeRuntimeAsync(CancellationToken ct)
+    {
+        BackendSupervisor? supervisor = null;
+        AnytypeApiClient? api = null;
+        McpHttpHost? host = null;
+        bool hostStarted = false;
+        bool hostDrained = true;
+
+        try
+        {
+            // A legacy provider is copied and atomically activated outside the
+            // application payload without disturbing the already-running image.
+            await BackendInstallation.PrepareAsync(ct).ConfigureAwait(false);
+
+            supervisor = new BackendSupervisor(new BackendHealthProbe());
+            BackendStartOutcome outcome = await supervisor
+                .EnsureRunningAsync(ct)
+                .ConfigureAwait(false);
+            if (outcome == BackendStartOutcome.EndpointConflict)
+                return;
+            ct.ThrowIfCancellationRequested();
+
+            AnytypeCredentials credentials;
+            try
+            {
+                credentials = AnytypeCredentials.Load();
+                api = AnytypeApiClient.CreateForResidentGateway(credentials);
+            }
+            catch (Exception ex) when (ex is InvalidOperationException or SecretVaultException or UriFormatException)
+            {
+                DeckleAnytypeMcpSource.Log.HostNotProvisioned();
+                return;
+            }
+
+            IReadOnlyList<McpClientProfile> clients =
+                [.. McpClients.All, HomeMcp.Client, TravelMcp.Client];
+            var tokens = new McpClientTokens(SecretVault.CreateDefault(), clients);
+            try
+            {
+                tokens.EnsureMinted();
+                tokens.MaterializeEnvironmentVariables();
+            }
+            catch (SecretVaultException)
+            {
+                DeckleAnytypeMcpSource.Log.HostNotProvisioned();
+                return;
+            }
+
+            ct.ThrowIfCancellationRequested();
+            host = new McpHttpHost(api, tokens);
+            hostStarted = host.Start();
+            if (!hostStarted) return;
+
+            await Task.Delay(Timeout.InfiniteTimeSpan, ct).ConfigureAwait(false);
+        }
+        catch (OperationCanceledException) when (ct.IsCancellationRequested)
+        {
+            // Normal Deckle shutdown. Cleanup below drains in dependency order.
+        }
+        catch (Exception ex)
+        {
+            // This task is resident and intentionally not awaited during boot.
+            // Observe unexpected composition failures here, when they happen,
+            // rather than leaving them latent until application shutdown.
+            DeckleAnytypeSource.Log.AnytypeRuntimeFailed();
+            DeckleAnytypeSource.Log.AnytypeRuntimeFailedDetail(
+                $"{ex.GetType().Name}: {ex.Message}");
+        }
+        finally
+        {
+            try
+            {
+                if (hostStarted && host is not null)
+                {
+                    using var drainCts = new CancellationTokenSource(TimeSpan.FromSeconds(5));
+                    try { hostDrained = await host.StopAsync(drainCts.Token).ConfigureAwait(false); }
+                    catch (Exception ex)
+                    {
+                        hostDrained = false;
+                        DeckleAnytypeSource.Log.AnytypeRuntimeFailed();
+                        DeckleAnytypeSource.Log.AnytypeRuntimeFailedDetail(
+                            $"MCP drain failed: {ex.GetType().Name}: {ex.Message}");
+                    }
+                }
+
+                // The API may be disposed only after every MCP request that borrows
+                // it is gone. On a failed drain both stay alive until process exit.
+                if (hostDrained)
+                {
+                    if (host is not null)
+                    {
+                        try { await host.DisposeAsync().ConfigureAwait(false); } catch { }
+                    }
+                    try { api?.Dispose(); } catch { }
+                }
+            }
+            finally
+            {
+                // Resident ownership may be released only after the supervisor
+                // has stopped every acquisition and watch path, even when the
+                // HTTP host itself failed to drain.
+                if (supervisor is not null)
+                {
+                    try { await supervisor.DisposeAsync().ConfigureAwait(false); } catch { }
+                }
+            }
+
+            GC.KeepAlive(host);
+            GC.KeepAlive(api);
+        }
+    }
+
     private void ShutdownAnytypeMcp()
     {
-        try { _mcpHost?.DisposeAsync().AsTask().Wait(TimeSpan.FromSeconds(5)); } catch { }
-        try { _anytypeApi?.Dispose(); } catch { }
-        try { _backendSupervisor?.Dispose(); } catch { }
+        CancellationTokenSource? cts = _anytypeLifetimeCts;
+        Task? runtime = _anytypeRuntimeTask;
+        _anytypeLifetimeCts = null;
+        _anytypeRuntimeTask = null;
+
+        try { cts?.Cancel(); } catch { }
+        try { runtime?.GetAwaiter().GetResult(); } catch (OperationCanceledException) { }
+        finally { cts?.Dispose(); }
     }
 }

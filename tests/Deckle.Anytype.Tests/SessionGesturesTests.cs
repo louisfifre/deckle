@@ -9,8 +9,8 @@ namespace Deckle.Anytype.Tests;
 // (defined in TaskGesturesTests.cs). These pin the anchoring contract under the
 // inverted link model: a session report carries the journal date + the anchor
 // task in « Tâche(s) liée(s) » (the link lives on the report side now, and the
-// report has no project property); session_touch appends a further task to that
-// property; a follow-up log is a read-modify-write of the report body.
+// report has no project property); session_touch appends a further task to an
+// explicit report; a follow-up log is a read-modify-write of that report body.
 [Trait("Category", "integration")]
 public class SessionGesturesTests
 {
@@ -88,7 +88,9 @@ public class SessionGesturesTests
         using var server = new FakeAnytypeServer();
         WireStartRoutes(server);
 
-        await NewGestures(server).StartAsync(TaskId, Ct);
+        string digest = await NewGestures(server).StartAsync(TaskId, Ct);
+
+        Assert.StartsWith($"report_id : {NewReport}\n", digest, StringComparison.Ordinal);
 
         // The created rapport's payload carries date_du_journal = today and the
         // anchor task in « Tâche(s) liée(s) ».
@@ -115,15 +117,14 @@ public class SessionGesturesTests
     {
         using var server = new FakeAnytypeServer();
         WireStartRoutes(server);
-        // session_touch reads the current report, then PATCHes it. The report was
-        // born linking the anchor task; touching another task unions it in.
+        // session_touch reads the explicitly addressed report, then PATCHes it.
+        // The report was born linking the anchor task; touching another task unions it in.
         server.OnGetObject(OtherTaskId, TaskObject(OtherTaskId, "Autre tâche"));
         server.OnGetObject(NewReport, ReportObject(NewReport, "# Journal", TaskId));
         server.OnPatchObject(NewReport, ReportObject(NewReport, "# Journal", TaskId, OtherTaskId));
 
         var gestures = NewGestures(server);
-        await gestures.StartAsync(TaskId, Ct);
-        await gestures.TouchTaskAsync(OtherTaskId, Ct);
+        await gestures.TouchTaskAsync(NewReport, OtherTaskId, Ct);
 
         // The report PATCH writes « Tâche(s) liée(s) » = anchor task + the touched
         // task, in order — the pre-existing link is preserved.
@@ -136,23 +137,34 @@ public class SessionGesturesTests
     }
 
     [Fact]
-    public async Task LogAfterStartAppendsOneLineToTheReportBody()
+    public async Task LogWithAnExplicitReportAppendsOneLineToItsBody()
     {
         using var server = new FakeAnytypeServer();
-        WireStartRoutes(server);
-        // The log reads then rewrites the NEW report (the one Start opened).
+        // The log reads then rewrites the explicitly addressed report.
         string existingBody = "# Journal " + Today();
         server.OnGetObject(NewReport, ReportObject(NewReport, existingBody, TaskId));
         server.OnPatchObject(NewReport, ReportObject(NewReport, existingBody, TaskId));
 
         var gestures = NewGestures(server);
-        await gestures.StartAsync(TaskId, Ct);
-        await gestures.LogAsync("écrit les tests", ct: Ct);
+        await gestures.LogAsync("écrit les tests", NewReport, Ct);
 
         // Read-modify-write: the report PATCH body is the previous body plus the
         // new "- line" entry appended.
         JsonObject patch = server.LastBodyFor("PATCH");
         Assert.Equal(existingBody + "\n- écrit les tests", patch["markdown"]!.GetValue<string>());
+    }
+
+    [Fact]
+    [Trait("Category", "regression")]
+    public async Task LogRequiresTheReportIdBeforeReadingOrWriting()
+    {
+        using var server = new FakeAnytypeServer();
+
+        ArgumentException error = await Assert.ThrowsAsync<ArgumentException>(
+            () => NewGestures(server).LogAsync("écrit les tests", "Journal du jour", Ct));
+
+        Assert.Contains("id Anytype stable", error.Message);
+        Assert.Empty(server.Requests);
     }
 
     // The create POST body (path .../objects) — session_start also POSTs a /search

@@ -45,4 +45,28 @@ public class DialogueToolCatalogTests
                 $"Tool '{tool.Name}' schema must forbid additional properties.");
         }
     }
+
+    [Fact]
+    public void ToolsDeclareTheirAmbiguousOutcomePolicies()
+    {
+        IReadOnlyDictionary<string, AmbiguousOutcomePolicy> policies = BuildCatalog()
+            .ToDictionary(tool => tool.Name, tool => tool.Execution.AmbiguousOutcome);
+
+        Assert.Equal(AmbiguousOutcomePolicy.RequiresDeduplication, policies["dialogue_create"]);
+        Assert.Equal(AmbiguousOutcomePolicy.RequiresDeduplication, policies["dialogue_post"]);
+        Assert.Equal(AmbiguousOutcomePolicy.SafeToRetry, policies["dialogue_read"]);
+        Assert.True(BuildCatalog().Single(tool => tool.Name == "dialogue_post")
+            .Execution.RequiresStableTarget);
+        Assert.Equal(
+            new Dictionary<string, ToolChangeKind>(StringComparer.Ordinal)
+            {
+                ["dialogue_create"] = ToolChangeKind.Additive,
+                ["dialogue_post"] = ToolChangeKind.Additive,
+                ["dialogue_read"] = ToolChangeKind.None,
+            },
+            BuildCatalog().ToDictionary(
+                tool => tool.Name,
+                tool => tool.Execution.Change,
+                StringComparer.Ordinal));
+    }
 }

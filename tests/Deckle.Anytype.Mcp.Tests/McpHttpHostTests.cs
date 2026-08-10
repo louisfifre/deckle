@@ -4,24 +4,24 @@ using System.Text;
 using System.Text.Json.Nodes;
 using Deckle.Anytype;
 using Deckle.Anytype.Mcp;
+using ModelContextProtocol;
+using ModelContextProtocol.Client;
+using ModelContextProtocol.Protocol;
 using Xunit;
 
 namespace Deckle.Anytype.Mcp.Tests;
 
-// End-to-end tests for McpHttpHost over a real loopback HttpListener driven by a
-// real HttpClient. Hermetic: a FakeSecretVault mints the bearers, the host binds a
-// per-test loopback port far from the production 33255, and the AnytypeApiClient
-// points at a dead port. initialize and tools/list never touch the API, so no
-// backend is needed — tests deliberately avoid tool CALLS, which would reach the
-// dead port.
-//
-// These pin the transport's own voice: the auth challenge, the DNS-rebinding
-// origin guard, session opening/routing/teardown, the method allow-list, and the
-// JSON-RPC vs HTTP channel split (a delivered-but-invalid body rides a 200 with a
-// JSON-RPC error object; a transport-level refusal is an HTTP status).
+// Public transport contracts over a real loopback Kestrel listener. Protocol
+// behavior is driven through the official SDK client; raw HTTP is reserved for
+// Deckle's own boundary (path, method, Origin, bearer and body limit).
 [Trait("Category", "unit")]
 public class McpHttpHostTests
 {
+    private const string ModernProtocol = "2026-07-28";
+    private const string DownLevelProtocol = "2025-11-25";
+    private const string LegacyJuneProtocol = "2025-06-18";
+    private const string LegacyMarchProtocol = "2025-03-26";
+
     private static readonly McpClientProfile CustomClient = new(
         "custom",
         new McpSurface(
@@ -30,334 +30,586 @@ public class McpHttpHostTests
         "mcp-token-custom",
         "DECKLE_MCP_TOKEN_CUSTOM");
 
-    // A running host with its bearers already read out of the fake vault, so a test
-    // can present the right token for each client. IAsyncDisposable so `await using`
-    // tears the listener down.
-    sealed class Harness : IAsyncDisposable
-    {
-        public McpHttpHost Host { get; }
-        public HttpClient Client { get; }
-        public string BaseUrl => Host.BaseUrl;
-        public string ClaudeBearer { get; }
-        public string CodexBearer { get; }
-        public string CustomBearer { get; }
+    private static readonly McpClientProfile StructuredClient = new(
+        "structured",
+        new McpSurface(
+            "structured",
+            _ => new McpSurfaceBinding(
+                [
+                    new ToolDescriptor(
+                        "inspect",
+                        "Returns a schema-backed inspection result.",
+                        new JsonObject
+                        {
+                            ["type"] = "object",
+                            ["properties"] = new JsonObject
+                            {
+                                ["mode"] = new JsonObject
+                                {
+                                    ["type"] = "string",
+                                    ["enum"] = new JsonArray { "safe" },
+                                },
+                                ["count"] = new JsonObject
+                                {
+                                    ["type"] = "integer",
+                                    ["minimum"] = 1,
+                                    ["maximum"] = 2,
+                                },
+                            },
+                            ["additionalProperties"] = false,
+                        },
+                        (_, _) => Task.FromResult(new ToolOutput(
+                            "Inspection complete.",
+                            new JsonObject { ["status"] = "complete", ["count"] = 2 })),
+                        ToolExecutionContract.ReadOnly)
+                    {
+                        OutputSchema = new JsonObject
+                        {
+                            ["type"] = "object",
+                            ["properties"] = new JsonObject
+                            {
+                                ["status"] = new JsonObject { ["type"] = "string" },
+                                ["count"] = new JsonObject { ["type"] = "integer" },
+                            },
+                            ["required"] = new JsonArray { "status", "count" },
+                            ["additionalProperties"] = false,
+                        },
+                    },
+                    new ToolDescriptor(
+                        "broken_output",
+                        "Returns structured content that violates its schema.",
+                        new JsonObject { ["type"] = "object", ["additionalProperties"] = false },
+                        (_, _) => Task.FromResult(new ToolOutput(
+                            "Broken output.",
+                            new JsonObject { ["status"] = 7 })),
+                        ToolExecutionContract.ReadOnly)
+                    {
+                        OutputSchema = new JsonObject
+                        {
+                            ["type"] = "object",
+                            ["properties"] = new JsonObject
+                            {
+                                ["status"] = new JsonObject { ["type"] = "string" },
+                            },
+                            ["required"] = new JsonArray { "status" },
+                            ["additionalProperties"] = false,
+                        },
+                    },
+                    new ToolDescriptor(
+                        "boom",
+                        "Always fails with a model-facing tool error.",
+                        new JsonObject { ["type"] = "object", ["additionalProperties"] = false },
+                        (_, _) => Task.FromException<string>(new McpException("tool exploded")),
+                        ToolExecutionContract.ReadOnly),
+                ],
+                new McpSurfaceDescriptor("structured", "Structured", "Test surface."))),
+        "mcp-token-structured",
+        "DECKLE_MCP_TOKEN_STRUCTURED");
 
-        private Harness(McpHttpHost host, string claude, string codex, string custom)
+    private sealed class Harness : IAsyncDisposable
+    {
+        private readonly AnytypeApiClient _api;
+        private readonly McpClientTokens _tokens;
+        private readonly McpRequestRateLimit _requestRateLimit;
+        private bool _disposed;
+
+        public McpHttpHost Host { get; private set; }
+        public HttpClient Http { get; } = new();
+        public int Port { get; }
+        public string BaseUrl => Host.BaseUrl;
+        public IReadOnlyDictionary<string, string> Bearers { get; }
+
+        private Harness(
+            McpHttpHost host,
+            AnytypeApiClient api,
+            McpClientTokens tokens,
+            int port,
+            IReadOnlyDictionary<string, string> bearers,
+            McpRequestRateLimit requestRateLimit)
         {
             Host = host;
-            Client = new HttpClient();
-            ClaudeBearer = claude;
-            CodexBearer = codex;
-            CustomBearer = custom;
+            _api = api;
+            _tokens = tokens;
+            _requestRateLimit = requestRateLimit;
+            Port = port;
+            Bearers = bearers;
         }
 
-        // Build the whole stack and bind a free loopback port, walking up from a base
-        // far from production on a taken port (Start returns false when the bind fails).
-        public static Harness Start()
+        public static Harness Start(
+            McpClientProfile? additionalClient = null,
+            McpRequestRateLimit? requestRateLimit = null)
         {
+            requestRateLimit ??= McpRequestRateLimit.Default;
+            McpClientProfile[] clients = additionalClient is null
+                ? [.. McpClients.All]
+                : [.. McpClients.All, additionalClient];
             var vault = new FakeSecretVault();
-            var tokens = new McpClientTokens(vault, [.. McpClients.All, CustomClient]);
+            var tokens = new McpClientTokens(vault, clients);
             tokens.EnsureMinted();
 
-            vault.TryGet(McpClients.Claude.TokenSecretName, out string? claude);
-            vault.TryGet(McpClients.Codex.TokenSecretName, out string? codex);
-            vault.TryGet(CustomClient.TokenSecretName, out string? custom);
+            var bearers = new Dictionary<string, string>(StringComparer.Ordinal);
+            foreach (McpClientProfile client in clients)
+            {
+                Assert.True(vault.TryGet(client.TokenSecretName, out string? bearer));
+                bearers.Add(client.Id, bearer!);
+            }
 
-            // The API client never sees a live backend: a dead port so a stray tool
-            // call would fail fast rather than hang. initialize/tools/list never dial it.
             var api = new AnytypeApiClient(new AnytypeCredentials(
                 "http://127.0.0.1:1", "2025-11-08", "dummy-key", "dummy-space"));
 
-            for (int port = 34611; port < 34611 + 40; port++)
+            for (int port = 34611; port < 34651; port++)
             {
-                var host = new McpHttpHost(api, tokens, port);
+                var host = new McpHttpHost(api, tokens, port, requestRateLimit);
                 if (host.Start())
-                    return new Harness(host, claude!, codex!, custom!);
-
-                // Bind failed (port taken): dispose and try the next.
+                    return new Harness(host, api, tokens, port, bearers, requestRateLimit);
                 host.DisposeAsync().AsTask().GetAwaiter().GetResult();
             }
 
-            throw new InvalidOperationException("No free loopback port found for the test host.");
+            api.Dispose();
+            throw new InvalidOperationException("No free loopback port found for the MCP test host.");
+        }
+
+        public async Task RestartAsync()
+        {
+            Assert.True(await Host.StopAsync(Ct));
+            await Host.DisposeAsync();
+
+            Host = new McpHttpHost(_api, _tokens, Port, _requestRateLimit);
+            Assert.True(Host.Start());
         }
 
         public async ValueTask DisposeAsync()
         {
-            Client.Dispose();
+            if (_disposed)
+                return;
+            _disposed = true;
+            Http.Dispose();
             await Host.DisposeAsync();
+            _api.Dispose();
         }
     }
 
-    // ── Request builders ──────────────────────────────────────────────────────
+    private static CancellationToken Ct => TestContext.Current.CancellationToken;
 
-    static HttpRequestMessage Post(string url, string? bearer, string? body,
-        string? sessionId = null, string? origin = null)
+    private static HttpRequestMessage Post(
+        string url,
+        string? bearer,
+        string body,
+        string? origin = null)
     {
-        var request = new HttpRequestMessage(HttpMethod.Post, url);
-        if (body is not null)
-            request.Content = new StringContent(body, Encoding.UTF8, "application/json");
+        var request = new HttpRequestMessage(HttpMethod.Post, url)
+        {
+            Content = new StringContent(body, Encoding.UTF8, "application/json"),
+        };
         if (bearer is not null)
             request.Headers.TryAddWithoutValidation("Authorization", $"Bearer {bearer}");
-        if (sessionId is not null)
-            request.Headers.TryAddWithoutValidation("Mcp-Session-Id", sessionId);
         if (origin is not null)
             request.Headers.TryAddWithoutValidation("Origin", origin);
         return request;
     }
 
-    static string InitializeBody(int id = 1, string version = "2025-11-25") =>
-        $$$"""{"jsonrpc":"2.0","id":{{{id}}},"method":"initialize","params":{"protocolVersion":"{{{version}}}"}}""";
-
-    const string ToolsListBody = """{"jsonrpc":"2.0","id":2,"method":"tools/list"}""";
-    static CancellationToken Ct => TestContext.Current.CancellationToken;
-
-    static async Task<JsonObject> BodyJson(HttpResponseMessage response) =>
-        (JsonObject)JsonNode.Parse(await response.Content.ReadAsStringAsync(Ct))!;
-
-    // Open a session for one bearer and return its id from the response header, so a
-    // follow-up can route on it. Used by every session-scoped test.
-    static async Task<string> OpenSession(Harness h, string bearer)
+    private static async Task<McpClient> ConnectAsync(
+        Harness harness,
+        string clientId,
+        string protocolVersion)
     {
-        using var response = await h.Client.SendAsync(Post(h.BaseUrl, bearer, InitializeBody()), Ct);
-        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-        return response.Headers.GetValues("Mcp-Session-Id").Single();
+        var transport = new HttpClientTransport(new HttpClientTransportOptions
+        {
+            Endpoint = new Uri(harness.BaseUrl),
+            TransportMode = HttpTransportMode.StreamableHttp,
+            EnableStandaloneGetStream = false,
+            AdditionalHeaders = new Dictionary<string, string>
+            {
+                ["Authorization"] = $"Bearer {harness.Bearers[clientId]}",
+            },
+        });
+        return await McpClient.CreateAsync(
+            transport,
+            new McpClientOptions { ProtocolVersion = protocolVersion },
+            cancellationToken: Ct);
     }
-
-    static string[] ToolNames(JsonObject toolsListResult)
-    {
-        var tools = (JsonArray)((JsonObject)toolsListResult["result"]!)["tools"]!;
-        return tools.Select(t => ((JsonObject)t!)["name"]!.GetValue<string>()).ToArray();
-    }
-
-    // ── auth ────────────────────────────────────────────────────────────────────
 
     [Fact]
     public async Task RequestWithoutBearerIsChallengedWith401()
     {
-        await using var h = Harness.Start();
+        await using var harness = Harness.Start();
 
-        using var response = await h.Client.SendAsync(Post(h.BaseUrl, bearer: null, InitializeBody()), Ct);
+        using HttpResponseMessage response = await harness.Http.SendAsync(
+            Post(harness.BaseUrl, bearer: null, "{}"), Ct);
 
         Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
-        Assert.Contains(response.Headers.WwwAuthenticate, v => v.Scheme == "Bearer");
+        Assert.Contains(response.Headers.WwwAuthenticate, value => value.Scheme == "Bearer");
     }
 
     [Fact]
     public async Task RequestWithUnknownBearerIs401()
     {
-        await using var h = Harness.Start();
+        await using var harness = Harness.Start();
 
-        using var response = await h.Client.SendAsync(Post(h.BaseUrl, "not-a-real-token", InitializeBody()), Ct);
+        using HttpResponseMessage response = await harness.Http.SendAsync(
+            Post(harness.BaseUrl, "not-a-real-token", "{}"), Ct);
 
         Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
     }
 
-    // ── origin guard ──────────────────────────────────────────────────────────
-
     [Fact]
-    public async Task ForeignOriginIsRefusedWith403WhileAbsentOriginPasses()
+    public async Task ForeignOriginIs403WhileAbsentOriginPassesTheSecurityBoundary()
     {
-        await using var h = Harness.Start();
+        await using var harness = Harness.Start();
+        string bearer = harness.Bearers[McpClients.Claude.Id];
 
-        // A present, cross-site Origin is the DNS-rebinding case the spec guards.
-        using var foreign = await h.Client.SendAsync(
-            Post(h.BaseUrl, h.ClaudeBearer, InitializeBody(), origin: "http://evil.example"), Ct);
+        using HttpResponseMessage foreign = await harness.Http.SendAsync(
+            Post(harness.BaseUrl, bearer, "{}", "http://evil.example"), Ct);
         Assert.Equal(HttpStatusCode.Forbidden, foreign.StatusCode);
 
-        // A non-browser client sends no Origin at all — that must pass through.
-        using var absent = await h.Client.SendAsync(
-            Post(h.BaseUrl, h.ClaudeBearer, InitializeBody()), Ct);
-        Assert.Equal(HttpStatusCode.OK, absent.StatusCode);
+        using HttpResponseMessage absent = await harness.Http.SendAsync(
+            Post(harness.BaseUrl, bearer, "{}"), Ct);
+        Assert.NotEqual(HttpStatusCode.Forbidden, absent.StatusCode);
+        Assert.NotEqual(HttpStatusCode.Unauthorized, absent.StatusCode);
     }
 
-    // ── initialize / session opening ────────────────────────────────────────────
-
-    [Fact]
-    public async Task InitializeReturns200WithSessionHeaderAndNegotiatedVersion()
+    [Theory]
+    [InlineData("GET")]
+    [InlineData("DELETE")]
+    public async Task GetAndDeleteMethodsAre405(string method)
     {
-        await using var h = Harness.Start();
+        await using var harness = Harness.Start();
+        using var request = new HttpRequestMessage(new HttpMethod(method), harness.BaseUrl);
 
-        using var response = await h.Client.SendAsync(
-            Post(h.BaseUrl, h.ClaudeBearer, InitializeBody(version: "2025-06-18")), Ct);
-
-        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-        Assert.True(response.Headers.Contains("Mcp-Session-Id"));
-
-        JsonObject body = await BodyJson(response);
-        JsonObject result = (JsonObject)body["result"]!;
-        Assert.Equal("2025-06-18", result["protocolVersion"]!.GetValue<string>());
-    }
-
-    // ── tools/list per client surface ───────────────────────────────────────────
-
-    [Fact]
-    public async Task ClaudeSessionListsAManagementTool()
-    {
-        await using var h = Harness.Start();
-        string session = await OpenSession(h, h.ClaudeBearer);
-
-        using var response = await h.Client.SendAsync(
-            Post(h.BaseUrl, h.ClaudeBearer, ToolsListBody, sessionId: session), Ct);
-
-        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-        // claude is the supervised profile: the destructive delete tool is mounted.
-        Assert.Contains("delete", ToolNames(await BodyJson(response)));
-    }
-
-    [Fact]
-    public async Task CodexSessionListsDialoguesAndNoManagementTool()
-    {
-        await using var h = Harness.Start();
-        string session = await OpenSession(h, h.CodexBearer);
-
-        using var response = await h.Client.SendAsync(
-            Post(h.BaseUrl, h.CodexBearer, ToolsListBody, sessionId: session), Ct);
-
-        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-        var names = ToolNames(await BodyJson(response));
-        // codex gets the All profile: dialogue tools present, delete withheld.
-        Assert.Contains("dialogue_create", names);
-        Assert.DoesNotContain("delete", names);
-    }
-
-    [Fact]
-    public async Task InjectedClientListsOnlyItsConfiguredSurface()
-    {
-        await using var h = Harness.Start();
-        string session = await OpenSession(h, h.CustomBearer);
-
-        using var response = await h.Client.SendAsync(
-            Post(h.BaseUrl, h.CustomBearer, ToolsListBody, sessionId: session), Ct);
-
-        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-        string[] names = ToolNames(await BodyJson(response));
-        Assert.Contains("dialogue_create", names);
-        Assert.DoesNotContain("create_task", names);
-    }
-
-    // ── session routing ─────────────────────────────────────────────────────────
-
-    [Fact]
-    public async Task NonInitializePostWithoutSessionHeaderIs400()
-    {
-        await using var h = Harness.Start();
-
-        using var response = await h.Client.SendAsync(Post(h.BaseUrl, h.ClaudeBearer, ToolsListBody), Ct);
-
-        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
-    }
-
-    [Fact]
-    public async Task NonInitializePostWithUnknownSessionIs404()
-    {
-        await using var h = Harness.Start();
-
-        using var response = await h.Client.SendAsync(
-            Post(h.BaseUrl, h.ClaudeBearer, ToolsListBody, sessionId: "deadbeef"), Ct);
-
-        Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
-    }
-
-    [Fact]
-    public async Task ForeignBearerOnAnotherClientsSessionIs403()
-    {
-        await using var h = Harness.Start();
-        // Session opened by claude; codex must not be able to drive it under its own bearer.
-        string claudeSession = await OpenSession(h, h.ClaudeBearer);
-
-        using var response = await h.Client.SendAsync(
-            Post(h.BaseUrl, h.CodexBearer, ToolsListBody, sessionId: claudeSession), Ct);
-
-        Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
-    }
-
-    // ── notifications and the JSON-RPC channel ──────────────────────────────────
-
-    [Fact]
-    public async Task NotificationDrawsA202WithEmptyBody()
-    {
-        await using var h = Harness.Start();
-        string session = await OpenSession(h, h.ClaudeBearer);
-
-        using var response = await h.Client.SendAsync(Post(
-            h.BaseUrl, h.ClaudeBearer,
-            """{"jsonrpc":"2.0","method":"notifications/initialized"}""",
-            sessionId: session), Ct);
-
-        Assert.Equal(HttpStatusCode.Accepted, response.StatusCode);
-        Assert.Equal(string.Empty, await response.Content.ReadAsStringAsync(Ct));
-    }
-
-    [Fact]
-    public async Task ArrayBodyIsA200CarryingInvalidRequest()
-    {
-        await using var h = Harness.Start();
-
-        // A batch (JSON array) is a JSON-RPC-level refusal: the request was delivered,
-        // so the transport answers 200 and the failure is in the payload (-32600).
-        using var response = await h.Client.SendAsync(
-            Post(h.BaseUrl, h.ClaudeBearer, """[{"jsonrpc":"2.0","id":1,"method":"ping"}]"""), Ct);
-
-        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-        JsonObject error = (JsonObject)(await BodyJson(response))["error"]!;
-        Assert.Equal(-32600, error["code"]!.GetValue<int>());
-    }
-
-    [Fact]
-    public async Task GarbageBodyIsA200CarryingParseError()
-    {
-        await using var h = Harness.Start();
-
-        using var response = await h.Client.SendAsync(
-            Post(h.BaseUrl, h.ClaudeBearer, "}{ not json"), Ct);
-
-        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-        JsonObject error = (JsonObject)(await BodyJson(response))["error"]!;
-        Assert.Equal(-32700, error["code"]!.GetValue<int>());
-    }
-
-    // ── method allow-list and path ──────────────────────────────────────────────
-
-    [Fact]
-    public async Task GetIs405()
-    {
-        await using var h = Harness.Start();
-
-        using var response = await h.Client.SendAsync(
-            new HttpRequestMessage(HttpMethod.Get, h.BaseUrl), Ct);
+        using HttpResponseMessage response = await harness.Http.SendAsync(request, Ct);
 
         Assert.Equal(HttpStatusCode.MethodNotAllowed, response.StatusCode);
+        Assert.Contains("POST", response.Content.Headers.Allow);
     }
 
     [Fact]
-    public async Task PostToAnotherPathIs404()
+    public async Task AnotherPathIs404BeforeAuthentication()
     {
-        await using var h = Harness.Start();
-        // A path that is not the MCP endpoint: the listener answers 404 before anything else.
-        string wrongPath = h.BaseUrl.Replace(McpHttpHost.EndpointPath, "/nope");
+        await using var harness = Harness.Start();
+        string wrongPath = harness.BaseUrl.Replace(McpHttpHost.EndpointPath, "/nope");
 
-        using var response = await h.Client.SendAsync(Post(wrongPath, h.ClaudeBearer, InitializeBody()), Ct);
+        using HttpResponseMessage response = await harness.Http.SendAsync(
+            Post(wrongPath, bearer: null, "{}"), Ct);
 
         Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
     }
 
-    // ── session teardown ────────────────────────────────────────────────────────
+    [Fact]
+    public async Task RequestBodyPastTheHostLimitIs413()
+    {
+        await using var harness = Harness.Start();
+        string body = new('x', checked((int)McpHttpHost.MaxRequestBodyBytes + 1));
+
+        using HttpResponseMessage response = await harness.Http.SendAsync(
+            Post(harness.BaseUrl, harness.Bearers[McpClients.Claude.Id], body), Ct);
+
+        Assert.Equal(HttpStatusCode.RequestEntityTooLarge, response.StatusCode);
+    }
+
+    [Theory]
+    [InlineData(ModernProtocol)]
+    [InlineData(DownLevelProtocol)]
+    [InlineData(LegacyJuneProtocol)]
+    [InlineData(LegacyMarchProtocol)]
+    public async Task OfficialClientListsToolsAtCurrentAndDownLevelProtocols(string protocolVersion)
+    {
+        await using var harness = Harness.Start();
+        await using McpClient client = await ConnectAsync(harness, McpClients.Claude.Id, protocolVersion);
+
+        IList<McpClientTool> tools = await client.ListToolsAsync(cancellationToken: Ct);
+
+        Assert.Equal(protocolVersion, client.NegotiatedProtocolVersion);
+        Assert.Contains(tools, tool => tool.Name == "create_task");
+    }
 
     [Fact]
-    public async Task DeleteTearsDownTheSessionSoAFollowUpIs404()
+    public async Task EachBearerGetsOnlyItsConfiguredSurface()
     {
-        await using var h = Harness.Start();
-        string session = await OpenSession(h, h.ClaudeBearer);
+        await using var harness = Harness.Start(CustomClient);
+        await using McpClient claude = await ConnectAsync(
+            harness, McpClients.Claude.Id, ModernProtocol);
+        await using McpClient codex = await ConnectAsync(
+            harness, McpClients.Codex.Id, ModernProtocol);
+        await using McpClient custom = await ConnectAsync(
+            harness, CustomClient.Id, ModernProtocol);
 
-        var delete = new HttpRequestMessage(HttpMethod.Delete, h.BaseUrl);
-        delete.Headers.TryAddWithoutValidation("Authorization", $"Bearer {h.ClaudeBearer}");
-        delete.Headers.TryAddWithoutValidation("Mcp-Session-Id", session);
-        using var deleteResponse = await h.Client.SendAsync(delete, Ct);
-        Assert.Equal(HttpStatusCode.NoContent, deleteResponse.StatusCode);
+        string[] claudeTools = (await claude.ListToolsAsync(cancellationToken: Ct))
+            .Select(tool => tool.Name).ToArray();
+        string[] codexTools = (await codex.ListToolsAsync(cancellationToken: Ct))
+            .Select(tool => tool.Name).ToArray();
+        string[] customTools = (await custom.ListToolsAsync(cancellationToken: Ct))
+            .Select(tool => tool.Name).ToArray();
 
-        // The id is now forgotten: a follow-up on it is a 404, the server having torn it down.
-        using var followUp = await h.Client.SendAsync(
-            Post(h.BaseUrl, h.ClaudeBearer, ToolsListBody, sessionId: session), Ct);
-        Assert.Equal(HttpStatusCode.NotFound, followUp.StatusCode);
+        Assert.Contains("delete", claudeTools);
+        Assert.DoesNotContain("dialogue_create", claudeTools);
+        Assert.Contains("dialogue_create", codexTools);
+        Assert.DoesNotContain("delete", codexTools);
+        Assert.Contains("dialogue_create", customTools);
+        Assert.DoesNotContain("create_task", customTools);
     }
+
+    [Fact]
+    public async Task ExecutionContractsAreProjectedIntoProtocolAnnotationsAndMetadata()
+    {
+        await using var harness = Harness.Start();
+        await using McpClient client = await ConnectAsync(
+            harness, McpClients.Claude.Id, ModernProtocol);
+        IList<McpClientTool> tools = await client.ListToolsAsync(cancellationToken: Ct);
+
+        Tool read = tools.Single(tool => tool.Name == "get").ProtocolTool;
+        Assert.True(read.Annotations!.ReadOnlyHint);
+        Assert.False(read.Annotations.DestructiveHint);
+        Assert.True(read.Annotations.IdempotentHint);
+        Assert.Equal("safeToRetry", read.Meta!["deckle/ambiguousOutcome"]!.GetValue<string>());
+
+        Tool create = tools.Single(tool => tool.Name == "create_task").ProtocolTool;
+        Assert.False(create.Annotations!.ReadOnlyHint);
+        Assert.False(create.Annotations.DestructiveHint);
+        Assert.False(create.Annotations.IdempotentHint);
+        Assert.Equal("requiresDeduplication",
+            create.Meta!["deckle/ambiguousOutcome"]!.GetValue<string>());
+
+        Tool overwrite = tools.Single(tool => tool.Name == "complete").ProtocolTool;
+        Assert.False(overwrite.Annotations!.ReadOnlyHint);
+        Assert.True(overwrite.Annotations.DestructiveHint);
+        Assert.True(overwrite.Annotations.IdempotentHint);
+
+        Tool delete = tools.Single(tool => tool.Name == "delete").ProtocolTool;
+        Assert.True(delete.Annotations!.DestructiveHint);
+        Assert.True(delete.Meta!["deckle/requiresStableTarget"]!.GetValue<bool>());
+    }
+
+    [Fact]
+    public async Task StructuredResultsKeepTheirTextFallbackAndAdvertisedSchema()
+    {
+        await using var harness = Harness.Start(StructuredClient);
+        await using McpClient client = await ConnectAsync(
+            harness, StructuredClient.Id, ModernProtocol);
+
+        Tool tool = (await client.ListToolsAsync(cancellationToken: Ct))
+            .Single(value => value.Name == "inspect").ProtocolTool;
+        Assert.NotNull(tool.OutputSchema);
+
+        CallToolResult result = await client.CallToolAsync(
+            "inspect", new Dictionary<string, object?>(), cancellationToken: Ct);
+
+        TextContentBlock text = Assert.IsType<TextContentBlock>(Assert.Single(result.Content));
+        Assert.Equal("Inspection complete.", text.Text);
+        Assert.NotEqual(true, result.IsError);
+        Assert.Equal("complete", result.StructuredContent!.Value
+            .GetProperty("status").GetString());
+        Assert.Equal(2, result.StructuredContent.Value.GetProperty("count").GetInt32());
+    }
+
+    [Fact]
+    public async Task ToolInputsAreValidatedAgainstTheirAdvertisedSchemaBeforeDispatch()
+    {
+        await using var harness = Harness.Start(StructuredClient);
+        await using McpClient client = await ConnectAsync(
+            harness, StructuredClient.Id, ModernProtocol);
+        Dictionary<string, object?>[] invalidInputs =
+        [
+            new() { ["unexpected"] = true },
+            new() { ["mode"] = "unsafe" },
+            new() { ["count"] = 3 },
+        ];
+
+        foreach (Dictionary<string, object?> input in invalidInputs)
+        {
+            CallToolResult result = await client.CallToolAsync(
+                "inspect", input, cancellationToken: Ct);
+
+            Assert.True(result.IsError);
+            TextContentBlock text = Assert.IsType<TextContentBlock>(Assert.Single(result.Content));
+            Assert.Contains("input", text.Text, StringComparison.OrdinalIgnoreCase);
+            Assert.Null(result.StructuredContent);
+        }
+    }
+
+    [Fact]
+    public async Task InvalidStructuredOutputIsRefusedBeforeItCrossesTheProtocolBoundary()
+    {
+        await using var harness = Harness.Start(StructuredClient);
+        await using McpClient client = await ConnectAsync(
+            harness, StructuredClient.Id, ModernProtocol);
+
+        CallToolResult result = await client.CallToolAsync(
+            "broken_output", new Dictionary<string, object?>(), cancellationToken: Ct);
+
+        Assert.True(result.IsError);
+        TextContentBlock text = Assert.IsType<TextContentBlock>(Assert.Single(result.Content));
+        Assert.Contains("output", text.Text, StringComparison.OrdinalIgnoreCase);
+        Assert.Null(result.StructuredContent);
+    }
+
+    [Fact]
+    public async Task HandlerFailureIsReturnedAsAModelFacingToolError()
+    {
+        await using var harness = Harness.Start(StructuredClient);
+        await using McpClient client = await ConnectAsync(
+            harness, StructuredClient.Id, ModernProtocol);
+
+        CallToolResult result = await client.CallToolAsync(
+            "boom", new Dictionary<string, object?>(), cancellationToken: Ct);
+
+        Assert.True(result.IsError);
+        TextContentBlock text = Assert.IsType<TextContentBlock>(Assert.Single(result.Content));
+        Assert.Equal("tool exploded", text.Text);
+    }
+
+    [Fact]
+    public async Task UnknownToolIsAnInvalidParamsProtocolError()
+    {
+        await using var harness = Harness.Start(StructuredClient);
+        await using McpClient client = await ConnectAsync(
+            harness, StructuredClient.Id, ModernProtocol);
+
+        McpProtocolException error = await Assert.ThrowsAsync<McpProtocolException>(() =>
+            client.CallToolAsync(
+                "missing", new Dictionary<string, object?>(), cancellationToken: Ct).AsTask());
+
+        Assert.Equal(McpErrorCode.InvalidParams, error.ErrorCode);
+    }
+
+    [Fact]
+    public async Task EachAuthenticatedBearerHasAnIndependentRequestLimit()
+    {
+        var requestLimit = new McpRequestRateLimit(permitLimit: 2, window: TimeSpan.FromHours(1));
+        await using var harness = Harness.Start(requestRateLimit: requestLimit);
+        string claudeBearer = harness.Bearers[McpClients.Claude.Id];
+
+        for (int request = 0; request < requestLimit.PermitLimit + 1; request++)
+        {
+            using HttpResponseMessage unauthenticated = await harness.Http.SendAsync(
+                Post(harness.BaseUrl, bearer: null, "{}"), Ct);
+            Assert.Equal(HttpStatusCode.Unauthorized, unauthenticated.StatusCode);
+        }
+
+        for (int request = 0; request < requestLimit.PermitLimit; request++)
+        {
+            using HttpResponseMessage accepted = await harness.Http.SendAsync(
+                Post(harness.BaseUrl, claudeBearer, "{}"), Ct);
+            Assert.NotEqual(HttpStatusCode.TooManyRequests, accepted.StatusCode);
+        }
+
+        using HttpResponseMessage rejected = await harness.Http.SendAsync(
+            Post(harness.BaseUrl, claudeBearer, "{}"), Ct);
+        Assert.Equal(HttpStatusCode.TooManyRequests, rejected.StatusCode);
+
+        using HttpResponseMessage independent = await harness.Http.SendAsync(
+            Post(harness.BaseUrl, harness.Bearers[McpClients.Codex.Id], "{}"), Ct);
+        Assert.NotEqual(HttpStatusCode.TooManyRequests, independent.StatusCode);
+    }
+
+    [Theory]
+    [InlineData(ModernProtocol)]
+    [InlineData(DownLevelProtocol)]
+    [InlineData(LegacyJuneProtocol)]
+    [InlineData(LegacyMarchProtocol)]
+    [Trait("Category", "regression")]
+    public async Task FreshRequestWorksAtTheSameUrlAndBearerAfterHostRestart(string protocolVersion)
+    {
+        await using var harness = Harness.Start();
+
+        await using (McpClient before = await ConnectAsync(
+            harness, McpClients.Claude.Id, protocolVersion))
+        {
+            Assert.Contains(await before.ListToolsAsync(cancellationToken: Ct),
+                tool => tool.Name == "create_task");
+        }
+
+        string url = harness.BaseUrl;
+        string bearer = harness.Bearers[McpClients.Claude.Id];
+        await harness.RestartAsync();
+
+        Assert.Equal(url, harness.BaseUrl);
+        Assert.Equal(bearer, harness.Bearers[McpClients.Claude.Id]);
+        await using McpClient after = await ConnectAsync(
+            harness, McpClients.Claude.Id, protocolVersion);
+        Assert.Contains(await after.ListToolsAsync(cancellationToken: Ct),
+            tool => tool.Name == "create_task");
+    }
+
+    [Fact]
+    public async Task StopReportsDrainedOnlyAfterTheActiveToolCallCompletes()
+    {
+        var entered = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var release = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        McpClientProfile blockingClient = BlockingClient(entered, release);
+
+        await using var harness = Harness.Start(blockingClient);
+        await using McpClient client = await ConnectAsync(
+            harness, blockingClient.Id, ModernProtocol);
+        Task<CallToolResult> call = client.CallToolAsync(
+            "block", new Dictionary<string, object?>(), cancellationToken: Ct).AsTask();
+
+        await entered.Task.WaitAsync(Ct);
+        Task<bool> stop = harness.Host.StopAsync(Ct);
+        try
+        {
+            Assert.False(stop.IsCompleted);
+        }
+        finally
+        {
+            release.TrySetResult();
+        }
+
+        CallToolResult result = await call;
+        Assert.True(await stop);
+        Assert.NotEqual(true, result.IsError);
+    }
+
+    [Fact]
+    public async Task StopReportsNotDrainedWhenTheShutdownBudgetIsCancelled()
+    {
+        var entered = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var release = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        McpClientProfile blockingClient = BlockingClient(entered, release);
+
+        await using var harness = Harness.Start(blockingClient);
+        await using McpClient client = await ConnectAsync(
+            harness, blockingClient.Id, ModernProtocol);
+        Task<CallToolResult> call = client.CallToolAsync(
+            "block", new Dictionary<string, object?>(), cancellationToken: Ct).AsTask();
+
+        await entered.Task.WaitAsync(Ct);
+        using var shutdown = new CancellationTokenSource();
+        Task<bool> stop = harness.Host.StopAsync(shutdown.Token);
+        try
+        {
+            Assert.False(stop.IsCompleted);
+            shutdown.Cancel();
+            Assert.False(await stop);
+        }
+        finally
+        {
+            release.TrySetResult();
+        }
+
+        try { await call; }
+        catch (McpException) { }
+        catch (HttpRequestException) { }
+        catch (OperationCanceledException) { }
+    }
+
+    private static McpClientProfile BlockingClient(
+        TaskCompletionSource entered,
+        TaskCompletionSource release) =>
+        new(
+            "blocking",
+            new McpSurface("blocking", _ => new McpSurfaceBinding(
+                [new ToolDescriptor(
+                    "block",
+                    "Waits until the test releases it.",
+                    new JsonObject { ["type"] = "object", ["additionalProperties"] = false },
+                    async (_, ct) =>
+                    {
+                        entered.TrySetResult();
+                        await release.Task.WaitAsync(ct);
+                        return "done";
+                    },
+                    ToolExecutionContract.ReadOnly)],
+                new McpSurfaceDescriptor("blocking", "Blocking", "Test surface."))),
+            "mcp-token-blocking",
+            "DECKLE_MCP_TOKEN_BLOCKING");
 }

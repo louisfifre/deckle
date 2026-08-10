@@ -23,7 +23,7 @@ public class HomeMcpTests
         using var api = new AnytypeApiClient(new AnytypeCredentials(
             "http://127.0.0.1:1", "2025-05-20", "dummy-key", "dummy-space"));
 
-        McpSurfaceSession session = HomeMcp.Client.Surface.OpenSession(api);
+        McpSurfaceBinding surface = HomeMcp.Client.Surface.Open(api);
 
         Assert.Equal(
             new[]
@@ -32,7 +32,7 @@ public class HomeMcpTests
                 "plant_create", "plant_water", "search", "todo_create", "update",
                 "worksite_create", "worksite_overview",
             },
-            session.Tools.Select(tool => tool.Name).OrderBy(name => name));
-        Assert.Contains("shared-house space", session.Descriptor.Instructions);
+            surface.Tools.Select(tool => tool.Name).OrderBy(name => name));
+        Assert.Contains("shared-house space", surface.Descriptor.Instructions);
     }
 }

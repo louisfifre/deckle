@@ -124,6 +124,9 @@ public sealed class TravelGestures
     {
         DateTime started = DateTime.UtcNow;
         ValidateBatch(items, "update");
+        string[] stableTargets = items
+            .Select(item => AnytypeObjectId.Require(item.Object, "items[].object"))
+            .ToArray();
         TravelSchemaRuntime schema = await _runtime.GetAsync(ct).ConfigureAwait(false);
 
         using var writeScope = await _api.AcquireWriteScopeAsync("travel_update", "batch", ct).ConfigureAwait(false);
@@ -132,9 +135,10 @@ public sealed class TravelGestures
         var prepared = new List<(string Id, string Display, JsonObject Payload)>();
         var targets = new HashSet<string>(StringComparer.Ordinal);
 
-        foreach (TravelUpdateItem item in items)
+        for (int itemIndex = 0; itemIndex < items.Count; itemIndex++)
         {
-            JsonObject target = index.Resolve(item.Object);
+            TravelUpdateItem item = items[itemIndex];
+            JsonObject target = index.Resolve(stableTargets[itemIndex]);
             string id = TravelObjectJson.Id(target);
             if (!targets.Add(id))
                 throw new InvalidOperationException(
