@@ -88,7 +88,7 @@ Each command is callable directly from a terminal or a `launch.json` profile —
 | [`commands/record-version.ps1`](commands/record-version.ps1) | Frequent internal versioning path: bump through `cut-version.ps1`, refresh the generated `[Unreleased]` accumulator, and optionally push the branch. It creates no tag and no GitHub Release. `-Current` refreshes without another bump. | `-Target <worktree>`, `-Pick`, `-Bump patch\|minor\|major`, `-Current`, `-Push` |
 | [`commands/cut-version.ps1`](commands/cut-version.ps1) | Low-level atomic bump: update `<Version>` in `Deckle.App.csproj` and commit only that one-line change as `chore(version): vX.Y.Z`. It does not tag, update the changelog, or push. | `-Target <worktree>`, `-Pick`, `-Bump patch\|minor\|major`, `-NoCommit` |
 | [`commands/record-release.ps1`](commands/record-release.ps1) | Finalize a successful public release: add its existing tag to `release-history.json`, freeze `[Unreleased]` into the version section, commit both generated records, and optionally push the branch. Called by `publish-app.ps1`. | `-Target <worktree>`, `-Pick`, `-Version X.Y.Z`, `-Push` |
-| [`commands/install-hooks.ps1`](commands/install-hooks.ps1) | Install the local git hooks sourced from `scripts/hooks/` into `.git/hooks/` and register the local `merge.ours` driver used by `TREE.md`. | |
+| [`commands/install-hooks.ps1`](commands/install-hooks.ps1) | Install Deckle's local `pre-commit` hook, register the `TREE.md` merge driver, and install the machine-wide commit-attribution guard through Git's configured hooks. Requires Git 2.54+. | `-GlobalHookDirectory <path>` for isolated tests or a custom per-user location |
 | [`commands/update-readme-stats.ps1`](commands/update-readme-stats.ps1) | Regenerate the README `Development pulse` section from local Git history. `-Commit` creates a local README-only commit and refuses unrelated tracked changes; it never pushes. Also used without `-Commit` by the monthly GitHub Action. | `-Target <worktree>`, `-Pick`, `-ReadmePath <path>`, `-Commit` |
 | [`commands/changelog.ps1`](commands/changelog.ps1) | Generate `CHANGELOG.md` and release notes from Conventional Commits and the public-release boundaries in `release-history.json`. Default preserves an `[Unreleased]` accumulator since the latest public release; `-NotesFor X.Y.Z` emits that full release range for GitHub. | `-Target <worktree>`, `-Pick`, `-NotesFor X.Y.Z`, `-OutFile <path>` |
 | [`commands/publish-native-runtime.ps1`](commands/publish-native-runtime.ps1) | **Maintainer-only.** Validate and optionally publish the bundle pinned by `NativeRuntime.CurrentBundle`, auto-discovered under `artifacts/` or supplied with `-ArtifactPath`. When no current bundle exists, package a new one from an already-built local whisper.cpp tree and the paired MinGW runtime. Local and downloaded release assets are verified by size, archive contract, and SHA-256. No CMake or Deckle build is invoked. | `-ArtifactPath <zip>` or `-WhisperRepo <path>`; `-Target <Deckle repo>`, `-OutDir <path>`, `-Publish`, `-Version X.Y.Z`, `-Notes <path>` |
@@ -110,11 +110,13 @@ Nothing under `lib/` is a user command. It contains the shared process, inventor
 
 PowerShell tests mirror the same boundaries under `tests/commands/`, `tests/lib/`, `tests/launcher/`, and `tests/menu/`.
 
-## Git hooks — TREE.md auto-update
+## Git hooks — TREE.md and commit identity
 
 A `pre-commit` hook regenerates [`TREE.md`](../TREE.md) at the repo root before every commit and stages it automatically, so the repo always carries an up-to-date view of its tracked tree. Source in [`hooks/pre-commit`](hooks/pre-commit), local install via [`commands/install-hooks.ps1`](commands/install-hooks.ps1) or the `deckle.ps1` Setup menu to run once after a clone — hooks live under `.git/hooks/` and are not versioned by git.
 
 The hook delegates to [`hooks/update-tree.ps1`](hooks/update-tree.ps1), which rebuilds `TREE.md` from `git ls-files` (flat view, zero gitignored file, no annotation). It can also run by hand to refresh outside a commit: `pwsh scripts/hooks/update-tree.ps1`.
+
+The same installer copies [`hooks/validate-commit-attribution.ps1`](hooks/validate-commit-attribution.ps1) to the user's Git configuration directory and registers it as a global configured `commit-msg` hook. Git 2.54+ runs configured hooks alongside repository hooks, so the global guard applies to every local repository without replacing their own `.git/hooks` directory. It rejects co-author, generated-by, AI-generated, and assisted-by markers before Git creates the commit.
 
 ## Generated docs automation
 
