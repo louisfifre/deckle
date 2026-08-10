@@ -43,6 +43,27 @@ Every scan is read-only and starts only after the review screen. Git defines the
 
 The first cycle intentionally does not claim semantic context drift, historical size growth, or comment counts. `Recent changes` reports Git modification activity, not whether prose is still true. `Footprint` reports the aggregate inventory and largest documents, not the exact instruction cost of every request: automatic instructions remain path-scoped.
 
+### Reset local AI sessions
+
+The reset-agent-state.ps1 command previews a current-account cleanup of local
+Codex and Claude Code sessions. It removes transcripts, automatic memory,
+remembered projects, session attachments, and conversation catalogs while
+preserving settings, authentication, authored instructions, plugins,
+repositories, branches, and worktrees.
+
+    pwsh scripts/commands/reset-agent-state.ps1
+    pwsh scripts/commands/reset-agent-state.ps1 -Scope Codex
+    pwsh scripts/commands/reset-agent-state.ps1 -Apply -Confirmation 'RESET LOCAL AI SESSIONS'
+
+Preview is the default. Apply mode refuses to run while Codex or Claude
+processes are active. Preview and apply require Python 3 when Codex mixed
+SQLite databases are present, so automations and remote-control state remain
+untouched.
+
+The command does not delete cloud conversations. Claude Desktop LevelDB is
+also left unchanged because it mixes folder references with preferences and
+account state; the preview reports that known limitation.
+
 ## Commands — `commands/`
 
 Each command is callable directly from a terminal or a `launch.json` profile — `deckle.ps1` is purely additive.
@@ -51,6 +72,7 @@ Each command is callable directly from a terminal or a `launch.json` profile —
 
 | File | Purpose | Common switches |
 |---|---|---|
+| [`commands/reset-agent-state.ps1`](commands/reset-agent-state.ps1) | Preview or reset current-account Codex and Claude Code sessions while keeping settings, account sign-in, authored context, plugins, repositories, and worktrees. | `-Scope Codex,Claude`; `-Apply -Confirmation 'RESET LOCAL AI SESSIONS'` |
 | [`commands/launch-app.ps1`](commands/launch-app.ps1) | Kill running `Deckle.exe` and launch the freshest already-built app executable. Does not build. | `-Configuration Debug\|Release`, `-Target <worktree>`, `-Pick`, `-Wait` |
 | [`commands/build-run.ps1`](commands/build-run.ps1) | Kill running `Deckle.exe`, build via `dotnet build` without persistent MSBuild/Roslyn build servers, and launch the freshly built exe through ShellExecute. | `-Configuration Debug\|Release`, `-NoRun`, `-Wait`, `-Target <worktree>`, `-Pick`, `-NoAutoRestart` |
 | [`commands/clean.ps1`](commands/clean.ps1) | Kill running `Deckle.exe` (it locks the output), stop .NET build servers left by manual/agent builds, then remove the consolidated `artifacts/{bin,obj,publish,package}/` plus any straggler `bin/`+`obj/` under `src/`, `tests/`, and benchmark study folders. Keeps `artifacts/Deckle-v*` release staging unless `-IncludeReleases`. Guards against symlinks / junctions. Reports total freed bytes. | `-Target <worktree>`, `-Pick`, `-IncludeReleases` |

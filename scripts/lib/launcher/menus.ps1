@@ -94,6 +94,7 @@ function Show-ReleaseMenu {
 }
 
 function Show-MaintenanceMenu {
+    $agentStateCopy = Import-PowerShellDataFile (Join-Path $LibDir 'agent-state-maintenance.strings.psd1')
     $sections = @(
         @{ Prefix = 'Statistics'; Items = @(
             @{ Label = Get-MaintenanceScanLabel -Kind Repository; Value = 'stats' }
@@ -103,10 +104,14 @@ function Show-MaintenanceMenu {
             @{ Label = 'Clean build outputs';     Value = 'clean' }
             @{ Label = 'Stop .NET build servers'; Value = 'build-servers' }
         ) }
+        @{ Prefix = 'AI sessions'; Items = @(
+            @{ Label = $agentStateCopy.MenuInspect; Value = 'agent-state-audit' }
+            @{ Label = $agentStateCopy.MenuReset;   Value = 'agent-state-reset'; Role = 'danger' }
+        ) }
     )
     $menuRows = @(Get-DeckleSubmenuRows -Sections $sections)
     $resultTitle = 'Results'
-    $resultLines = @('Select a statistics action to inspect this worktree.')
+    $resultLines = @($agentStateCopy.MaintenanceGuidance)
     $resultMode = 'Guidance'
     $selection = @{ Index = 1; PreferredColumn = 0 }
     while ($true) {
@@ -134,6 +139,14 @@ function Show-MaintenanceMenu {
             }
             'context' {
                 Invoke-MaintenanceScanFlow -Kind Context
+            }
+            'agent-state-audit' {
+                $result = Invoke-InspectAgentState -MenuRows $menuRows
+                if ($null -ne $result) { $resultTitle = $result.Title; $resultLines = @($result.Lines); $resultMode = 'Log' }
+            }
+            'agent-state-reset' {
+                $result = Invoke-ResetAgentState -MenuRows $menuRows
+                if ($null -ne $result) { $resultTitle = $result.Title; $resultLines = @($result.Lines); $resultMode = 'Log' }
             }
         }
     }

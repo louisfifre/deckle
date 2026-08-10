@@ -72,6 +72,34 @@ function Invoke-StopBuildServers {
     }
 }
 
+function Invoke-InspectAgentState {
+    param([Parameter(Mandatory)][object[]]$MenuRows)
+    $strings = Import-PowerShellDataFile (Join-Path $LibDir 'agent-state-maintenance.strings.psd1')
+    $scriptPath = Join-Path $CommandDir 'reset-agent-state.ps1'
+    return Invoke-DeckleMenuAction -Header $strings.MenuInspectHeader -Label $strings.MenuInspect -Source Maintenance -MenuRows $MenuRows -Action {
+        & $scriptPath
+    }
+}
+
+function Invoke-ResetAgentState {
+    param([Parameter(Mandatory)][object[]]$MenuRows)
+    Import-Module (Join-Path $LibDir 'agent-state-maintenance.psm1') -Force
+    $strings = Get-AgentStateStrings
+    $question = @{
+        Question = $strings.MenuQuestion
+        Default = $false
+        ConfirmLabel = $strings.MenuConfirm
+        CancelLabel = $strings.MenuCancel
+        ContextLines = $strings.MenuContext
+        Destructive = $true
+    }
+    if (-not (Read-YesNo @question)) { return }
+    $scriptPath = Join-Path $CommandDir 'reset-agent-state.ps1'
+    return Invoke-DeckleMenuAction -Header $strings.MenuResetHeader -Label $strings.MenuReset -Source Maintenance -MenuRows $MenuRows -Action {
+        & $scriptPath -Apply -Confirmation $strings.ConfirmationPhrase
+    }
+}
+
 # The patch/minor/major picker with next-version previews, shared by the
 # standalone bump and the publish flow. Returns @{ Seg; Target } or $null on Esc.
 function Select-VersionBump {
