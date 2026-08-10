@@ -73,6 +73,8 @@ Assert-Equal 'account-1' $claudeClean.oauthAccount.accountUuid 'Claude account i
 Assert-Equal 'http' $claudeClean.mcpServers.figma.type 'Claude global MCP is preserved'
 
 $desktopConfig = [ordered]@{
+    globalShortcut = 'Ctrl+Alt+Space'
+    mcpServers = [ordered]@{ figma = [ordered]@{ command = 'keep' } }
     preferences = [ordered]@{
         launchPreviewPersistedWorkspaces = @('D:\old-project')
         launchPreviewSessionScopedSessions = @('session-1')
@@ -104,6 +106,8 @@ Assert-Equal 0 @($desktopClean.preferences.'launchPreviewPersistedWorkspaces').C
 Assert-Equal 'D:\worktrees\deckle' $desktopClean.preferences.'chillingSlothLocation.customPath' 'Claude worktree location is preserved'
 Assert-Equal $true $desktopClean.preferences.epitaxyPrefs.'cc-landing-worktree-enabled' 'Claude worktree preference is preserved'
 Assert-Equal 'dark' $desktopClean.preferences.epitaxyPrefs.theme 'Claude unrelated UI preference is preserved'
+Assert-Equal 'Ctrl+Alt+Space' $desktopClean.globalShortcut 'Claude Desktop shortcut is preserved'
+Assert-Equal 'keep' $desktopClean.mcpServers.figma.command 'Claude Desktop MCP configuration is preserved'
 
 $toml = @'
 model = "gpt-test"
@@ -206,16 +210,20 @@ try {
         (Join-Path $claudeHome 'plugins\kept'),
         (Split-Path -Parent $historyBackupPath),
         (Join-Path $claudeDesktop 'claude-code-sessions'),
-        (Join-Path $claudeDesktop 'Cache')
+        (Join-Path $claudeDesktop 'Cache'),
+        (Join-Path $claudeDesktop 'Local Storage\leveldb')
     )) {
         $null = New-Item -ItemType Directory -Path $directory -Force
     }
     Set-Content -LiteralPath (Join-Path $claudeHome 'settings.json') -Value '{"theme":"keep"}' -Encoding utf8NoBOM
+    Set-Content -LiteralPath (Join-Path $claudeHome '.credentials.json') -Value '{"oauth":"keep"}' -Encoding utf8NoBOM
     Set-Content -LiteralPath (Join-Path $claudeHome '.last-cleanup') -Value 'marker' -Encoding utf8NoBOM
     Set-Content -LiteralPath (Join-Path $claudeHome 'plugins\kept\config.json') -Value '{"enabled":true}' -Encoding utf8NoBOM
     Set-Content -LiteralPath (Join-Path $claudeHome 'projects\old-project\memory\MEMORY.md') -Value 'remove memory' -Encoding utf8NoBOM
     Set-Content -LiteralPath (Join-Path $claudeDesktop 'claude-code-sessions\session.json') -Value 'remove session' -Encoding utf8NoBOM
     Set-Content -LiteralPath (Join-Path $claudeDesktop 'Cache\entry') -Value 'remove cache path' -Encoding utf8NoBOM
+    Set-Content -LiteralPath (Join-Path $claudeDesktop 'Local Storage\leveldb\000001.ldb') -Value 'selectedFolder=D:\old-project' -Encoding utf8NoBOM
+    Set-Content -LiteralPath (Join-Path $claudeDesktop 'config.json') -Value '{"locale":"fr-FR","oauth:tokenCache":"keep"}' -Encoding utf8NoBOM
     $profileJson = $claudeProfile | ConvertTo-Json -Depth 20
     foreach ($path in @($profilePath, $profileBackupPath, $historyBackupPath)) {
         Set-Content -LiteralPath $path -Value $profileJson -Encoding utf8NoBOM
@@ -234,9 +242,12 @@ try {
     Assert-Equal $false (Test-Path -LiteralPath (Join-Path $claudeHome 'projects')) 'Claude projects and automatic memory are removed'
     Assert-Equal $false (Test-Path -LiteralPath (Join-Path $claudeDesktop 'claude-code-sessions')) 'Claude Desktop sessions are removed'
     Assert-Equal $false (Test-Path -LiteralPath (Join-Path $claudeDesktop 'Cache')) 'Claude Desktop path cache is removed'
+    Assert-Equal $false (Test-Path -LiteralPath (Join-Path $claudeDesktop 'Local Storage\leveldb')) 'Claude Desktop local storage and folder references are removed'
     Assert-Equal '{"theme":"keep"}' (Get-Content -Raw -LiteralPath (Join-Path $claudeHome 'settings.json')).Trim() 'Claude settings are preserved'
+    Assert-Equal '{"oauth":"keep"}' (Get-Content -Raw -LiteralPath (Join-Path $claudeHome '.credentials.json')).Trim() 'Claude credentials are preserved'
     Assert-Equal 'marker' (Get-Content -Raw -LiteralPath (Join-Path $claudeHome '.last-cleanup')).Trim() 'Claude cleanup marker is preserved'
     Assert-Equal '{"enabled":true}' (Get-Content -Raw -LiteralPath (Join-Path $claudeHome 'plugins\kept\config.json')).Trim() 'Claude plugins are preserved'
+    Assert-Equal '{"locale":"fr-FR","oauth:tokenCache":"keep"}' (Get-Content -Raw -LiteralPath (Join-Path $claudeDesktop 'config.json')).Trim() 'Claude Desktop account and UI configuration are preserved'
     foreach ($path in @($profilePath, $profileBackupPath, $historyBackupPath)) {
         $cleanProfile = Get-Content -Raw -LiteralPath $path | ConvertFrom-Json -Depth 20
         Assert-Equal 0 @($cleanProfile.projects.PSObject.Properties).Count 'Claude project entries are cleared from live and backup profiles'

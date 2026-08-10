@@ -190,7 +190,10 @@ function Get-AgentStateFileTargets {
         foreach ($name in @('history.jsonl', 'stats-cache.json')) {
             Add-Target (Join-Path $Roots.Claude $name) $Roots.Claude "Claude $name"
         }
-        foreach ($name in @('claude-code-sessions', 'local-agent-mode-sessions', 'logs', 'Cache')) {
+        foreach ($name in @(
+            'claude-code-sessions', 'local-agent-mode-sessions', 'logs', 'Cache',
+            'Local Storage\leveldb'
+        )) {
             Add-Target (Join-Path $Roots.ClaudeDesktop $name) $Roots.ClaudeDesktop "Claude Desktop $name"
         }
     }
@@ -322,7 +325,7 @@ function Get-AgentStateCleanupPlan {
         Warnings = @(
             $script:Strings.CloudWarning
             if ($Scope -contains 'Claude' -and (Test-Path -LiteralPath (Join-Path $roots.ClaudeDesktop 'Local Storage\leveldb'))) {
-                $script:Strings.LevelDbWarning
+                $script:Strings.LevelDbResetWarning
             }
         )
     }

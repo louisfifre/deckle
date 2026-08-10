@@ -129,7 +129,8 @@ try {
     Assert-Equal $false (Test-Path -LiteralPath $agentMarker) 'cancelled AI session reset does not run the command'
     Assert-Equal $false $script:LastAgentStateQuestion.Default 'AI session reset keeps the safe choice as default'
     Assert-Equal $true $script:LastAgentStateQuestion.Destructive 'AI session reset uses the shared destructive confirmation'
-    Assert-Equal $true ($script:LastAgentStateQuestion.ContextLines -match 'mixed storage' -as [bool]) 'AI session reset discloses the known Claude limitation before consent'
+    Assert-Equal $true ($script:LastAgentStateQuestion.ContextLines -match 'local storage' -as [bool]) 'AI session reset discloses the Claude Desktop local-storage reset before consent'
+    Assert-Equal $true ($script:LastAgentStateQuestion.ContextLines -match 'sign-in' -as [bool]) 'AI session reset discloses possible Claude Desktop sign-in loss before consent'
 
     $script:AgentStateConsent = $true
     $resetResult = Invoke-ResetAgentState -MenuRows $rows
