@@ -34,12 +34,32 @@ function Assert-DeckleReleaseRepositorySource {
 
 function Invoke-DeckleMenuAction {
     param($Header, $Label, $Source, $MenuRows, [scriptblock]$Action)
+    $script:LastActionHeader = $Header
+    $script:LastActionLabel = $Label
+    $script:LastActionSource = $Source
     try {
         & $Action
         return [pscustomobject]@{ Succeeded = $true; Title = $Label; Lines = @() }
     } catch {
         return [pscustomobject]@{ Succeeded = $false; Title = $Label; Lines = @($_.Exception.Message) }
     }
+}
+
+function Get-AgentStateStrings {
+    return Import-PowerShellDataFile (Join-Path $script:LibDir 'agent-state-maintenance.strings.psd1')
+}
+
+function Read-YesNo {
+    param($Question, $Default, $ConfirmLabel, $CancelLabel, $ContextLines, [switch]$Destructive)
+    $script:LastAgentStateQuestion = [pscustomobject]@{
+        Question = $Question
+        Default = $Default
+        ConfirmLabel = $ConfirmLabel
+        CancelLabel = $CancelLabel
+        ContextLines = @($ContextLines)
+        Destructive = [bool]$Destructive
+    }
+    return $script:AgentStateConsent
 }
 
 $preflight = Invoke-ReleaseSourcePreflight -Worktree 'D:\repo' -MenuRows @(@{ Cells = @(@{ Label = 'Publish' }) })
@@ -89,5 +109,43 @@ try {
 } finally {
     $script:CommandDir = $previousCommandDir
     if (Test-Path -LiteralPath $dispatchRoot) { Remove-Item -LiteralPath $dispatchRoot -Recurse -Force }
+}
+
+$agentDispatchRoot = Join-Path ([IO.Path]::GetTempPath()) "deckle-agent-dispatch-$([guid]::NewGuid())"
+$null = New-Item -ItemType Directory -Path $agentDispatchRoot
+$previousCommandDir = $script:CommandDir
+$previousMarker = $env:DECKLE_AGENT_STATE_TEST_MARKER
+try {
+    $agentScript = Join-Path $agentDispatchRoot 'reset-agent-state.ps1'
+    $agentMarker = Join-Path $agentDispatchRoot 'agent-state.txt'
+    $env:DECKLE_AGENT_STATE_TEST_MARKER = $agentMarker
+    Set-Content -LiteralPath $agentScript -Encoding utf8NoBOM -Value 'param([switch]$Apply, [string]$Confirmation) Set-Content -LiteralPath $env:DECKLE_AGENT_STATE_TEST_MARKER -Value "$([bool]$Apply)|$Confirmation" -Encoding utf8NoBOM'
+    $script:CommandDir = $agentDispatchRoot
+    $rows = @([pscustomobject]@{ Cells = @() })
+
+    $script:AgentStateConsent = $false
+    $cancelled = Invoke-ResetAgentState -MenuRows $rows
+    Assert-Equal $null $cancelled 'cancelled AI session reset returns without dispatch'
+    Assert-Equal $false (Test-Path -LiteralPath $agentMarker) 'cancelled AI session reset does not run the command'
+    Assert-Equal $false $script:LastAgentStateQuestion.Default 'AI session reset keeps the safe choice as default'
+    Assert-Equal $true $script:LastAgentStateQuestion.Destructive 'AI session reset uses the shared destructive confirmation'
+    Assert-Equal $true ($script:LastAgentStateQuestion.ContextLines -match 'mixed storage' -as [bool]) 'AI session reset discloses the known Claude limitation before consent'
+
+    $script:AgentStateConsent = $true
+    $resetResult = Invoke-ResetAgentState -MenuRows $rows
+    $strings = Get-AgentStateStrings
+    Assert-Equal $true $resetResult.Succeeded 'confirmed AI session reset returns its launcher result'
+    Assert-Equal "True|$($strings.ConfirmationPhrase)" (Get-Content -Raw -LiteralPath $agentMarker).Trim() 'confirmed AI session reset passes apply and the exact guard phrase'
+    Assert-Equal $strings.MenuResetHeader $script:LastActionHeader 'reset action uses its own breadcrumb'
+    Assert-Equal 'Maintenance' $script:LastActionSource 'reset action uses the maintenance transcript source'
+
+    $inspectResult = Invoke-InspectAgentState -MenuRows $rows
+    Assert-Equal $true $inspectResult.Succeeded 'AI session inspection returns its launcher result'
+    Assert-Equal 'False|' (Get-Content -Raw -LiteralPath $agentMarker).Trim() 'AI session inspection keeps preview mode'
+    Assert-Equal $strings.MenuInspectHeader $script:LastActionHeader 'inspect action uses its own breadcrumb'
+} finally {
+    $script:CommandDir = $previousCommandDir
+    $env:DECKLE_AGENT_STATE_TEST_MARKER = $previousMarker
+    if (Test-Path -LiteralPath $agentDispatchRoot) { Remove-Item -LiteralPath $agentDispatchRoot -Recurse -Force }
 }
 Write-Host 'actions.tests.ps1: PASS' -ForegroundColor Green
