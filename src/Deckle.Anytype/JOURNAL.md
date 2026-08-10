@@ -7,6 +7,17 @@ type: module-journal
 
 Module-level dated notes. Most recent on top.
 
+## 2026-08-10 — Schema manifests learn `sections`: pinned sidebar folders as collection objects
+
+The schema-admin surface now accepts an optional `sections` array in the manifest: each section is `{name, icon?, types[]}` and materializes as one COLLECTION OBJECT (built-in Anytype type key `collection`) whose members are the listed TYPE objects — the space manifest carries its sidebar layout (decision Louis, 2026-08-10, first declared in the Home manifest).
+
+Facts verified live 2026-08-10 that shaped the implementation:
+- `POST /v1/spaces/{id}/objects` with `{"type_key":"collection"}` succeeds — collection *objects* are creatable through the API. Only TYPE creation with collection *layout* is refused (the known 400).
+- Adding a TYPE object as a collection member through `POST /lists/{id}/objects` works when addressed by the type's object id. Resolving type objects BY NAME fails ("Aucun objet trouvé"): object search does not return type objects — so apply resolves member ids from the schema snapshot (live types plus types created in the same apply), never through NameResolver.
+- There is no widgets endpoint (404): actual sidebar pinning stays an in-app gesture; this surface only creates and fills the folders.
+
+Shape: preview reports per section `création` vs `réutilisation` (reuse = an existing built-in collection object bearing the exact name, matched case-insensitively over one bounded empty-query search filtered on the `collection` type key; two same-named collections is a conflict); a section type key absent from both the manifest and the live space is a conflict, mirroring the attach_property rule. Apply creates missing collections (icon passed in the creation payload) and re-posts the full member list every time: membership is unreadable on this surface, and the list endpoint is additive set-union — a re-add neither fails nor duplicates, the contract `anytype_collection_add` already ships on. Additive doctrine holds: no member removal, no rename, reused collections keep their icon. `SchemaSnapshot` deliberately did not grow — it is a public provider boundary consumed by domain modules; the section-collection read lives in the internal preview plan.
+
 ## 2026-07-29 — Native Experience import proven as an integration fixture
 
 Measured with `anytype-cli` 0.3.6 (anytype-heart 0.50.10): private RPC `ObjectImportExperience` imported a cleaned native Desktop archive into one fresh existing space after bot membership was verified `Active`. The exact validated archive has SHA-256 `775ebd35ec185fde3fec0fa50723bab3d241deac02c85603dcb58401528019ae`. Its REST inventory moved from 14 types / 34 properties / 0 objects / 5 templates / 0 lists / 0 views to 22 / 64 / 6 / 15 / 5 / 5; Desktop then visually confirmed the types, per-type icons, linked properties, templates and views. The six retained objects are structural dashboards; Recent items is automatic and was deliberately absent from the archive.

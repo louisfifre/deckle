@@ -41,22 +41,28 @@ internal sealed record TypeIconSpec(
         && string.Equals(existing.Color, Color, StringComparison.Ordinal)
         && string.Equals(existing.Emoji, Emoji, StringComparison.Ordinal);
 
-    public static TypeIconSpec Parse(JsonObject obj, string typeKey)
+    public static TypeIconSpec Parse(JsonObject obj, string typeKey) =>
+        Parse(obj, $"type {typeKey}", $"le type « {typeKey} »");
+
+    // owner names the JSON location for shape errors ("type piece"), subject is
+    // the French phrase the corrective message points at ("le type « piece »").
+    // Sections reuse the same icon grammar with their own phrasing.
+    public static TypeIconSpec Parse(JsonObject obj, string owner, string subject)
     {
         string format = SchemaManifestFields.RequiredString(obj, "format", rejectNonString: true);
         if (format == "icon")
         {
-            JsonShape.RequireOnly(obj, ["format", "name", "color"], $"type {typeKey}.icon");
+            JsonShape.RequireOnly(obj, ["format", "name", "color"], $"{owner}.icon");
             string name = SchemaManifestFields.RequiredString(obj, "name", rejectNonString: true);
             if (!AnytypeTypeIconCatalog.Names.Contains(name))
                 throw new ArgumentException(
-                    $"Nom d’icône Anytype inconnu « {name} » pour le type « {typeKey} ». " +
+                    $"Nom d’icône Anytype inconnu « {name} » pour {subject}. " +
                     "Utilise un nom du catalogue built-in de l’API 2025-05-20.");
 
             string? color = SchemaManifestFields.OptionalString(obj, "color", rejectNonString: true);
             if (color is not null && !AnytypeTypeIconCatalog.Colors.Contains(color))
                 throw new ArgumentException(
-                    $"Couleur d’icône Anytype inconnue « {color} » pour le type « {typeKey} ». " +
+                    $"Couleur d’icône Anytype inconnue « {color} » pour {subject}. " +
                     $"Couleurs acceptées : {string.Join(", ", AnytypeTypeIconCatalog.Colors)}.");
 
             return new TypeIconSpec(format, name, color, null);
@@ -64,13 +70,13 @@ internal sealed record TypeIconSpec(
 
         if (format == "emoji")
         {
-            JsonShape.RequireOnly(obj, ["format", "emoji"], $"type {typeKey}.icon");
+            JsonShape.RequireOnly(obj, ["format", "emoji"], $"{owner}.icon");
             string emoji = SchemaManifestFields.RequiredString(obj, "emoji", rejectNonString: true);
             return new TypeIconSpec(format, null, null, emoji);
         }
 
         throw new ArgumentException(
-            $"Format d’icône inconnu « {format} » pour le type « {typeKey} ». " +
+            $"Format d’icône inconnu « {format} » pour {subject}. " +
             "Formats acceptés : icon, emoji.");
     }
 }

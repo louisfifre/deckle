@@ -31,7 +31,7 @@ public static class SchemaAdminToolCatalog
 
             new(
                 "schema_apply",
-                "Apply a previous schema_preview. Additive only: create missing types/properties/tags, set missing type icons, and attach properties to types. Requires confirm:true and the preview_id returned by schema_preview.",
+                "Apply a previous schema_preview. Additive only: create missing types/properties/tags, set missing type icons, attach properties to types, and provision section collections with their member types. Requires confirm:true and the preview_id returned by schema_preview.",
                 Schema(
                     required:
                     [
@@ -77,11 +77,12 @@ public static class SchemaAdminToolCatalog
         {
             ["type"] = "object",
             ["description"] =
-                "Additive manifest with optional arrays `types` and `properties`. Keys must be snake_case ASCII.",
+                "Additive manifest with optional arrays `types`, `properties` and `sections`. Keys must be snake_case ASCII.",
             ["properties"] = new JsonObject
             {
                 ["types"] = ArrayOf(TypeSpecSchema()),
                 ["properties"] = ArrayOf(PropertySpecSchema()),
+                ["sections"] = ArrayOf(SectionSpecSchema()),
             },
             ["additionalProperties"] = false,
         });
@@ -103,6 +104,32 @@ public static class SchemaAdminToolCatalog
             ["properties"] = ArrayOf(new JsonObject { ["type"] = "string" }),
         },
         ["required"] = new JsonArray { "key", "name" },
+        ["additionalProperties"] = false,
+    };
+
+    // A section is a pinned sidebar folder: one collection object (built-in
+    // type key "collection") whose members are the section's TYPE objects.
+    static JsonObject SectionSpecSchema() => new()
+    {
+        ["type"] = "object",
+        ["properties"] = new JsonObject
+        {
+            ["name"] = new JsonObject
+            {
+                ["type"] = "string",
+                ["description"] = "Exact collection name; an existing built-in collection with this name is reused.",
+            },
+            ["icon"] = IconSpecSchema(),
+            ["types"] = new JsonObject
+            {
+                ["type"] = "array",
+                ["description"] = "Type keys whose TYPE objects become collection members; each must exist in the manifest or in the live space.",
+                ["items"] = new JsonObject { ["type"] = "string" },
+                ["minItems"] = 1,
+                ["uniqueItems"] = true,
+            },
+        },
+        ["required"] = new JsonArray { "name", "types" },
         ["additionalProperties"] = false,
     };
 
