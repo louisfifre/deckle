@@ -446,7 +446,7 @@ public static class HomeSchema
 
     // The floor type is created in the app (the API refuses collection
     // layouts), so its key is a live discovery, not a compiled constant: the
-    // nominal key first, else the collection-layout type named Espace. Absent
+    // nominal key first, else the collection-layout type named Zone. Absent
     // type = floor features refuse with guidance instead of failing the
     // whole schema closed.
     internal static string? FloorTypeKey(SchemaSnapshot snapshot)
@@ -454,7 +454,7 @@ public static class HomeSchema
         if (snapshot.Types.ContainsKey(Types.Floor)) return Types.Floor;
         return snapshot.Types.Values.FirstOrDefault(type =>
                 string.Equals(type.Layout, "collection", StringComparison.Ordinal)
-                && type.Name is "Espace" or "Espaces")
+                && type.Name is "Zone" or "Zones")
             ?.Key;
     }
 

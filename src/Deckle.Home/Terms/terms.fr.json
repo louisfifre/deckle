@@ -1,7 +1,7 @@
 {
   "language": "fr",
   "types": {
-    "floor": { "name": "Espace", "plural": "Espaces" },
+    "floor": { "name": "Zone", "plural": "Zones" },
     "room": { "name": "Pièce", "plural": "Pièces" },
     "point": { "name": "Point", "plural": "Points" },
     "circuit": { "name": "Circuit", "plural": "Circuits" },
@@ -23,7 +23,7 @@
     "location": "Localisation",
     "installed_in": "Installé dans",
     "stored_in": "Rangé dans",
-    "floor": "Espace",
+    "floor": "Zone",
     "category": "Catégorie",
     "existence": "Existence",
     "condition": "État",

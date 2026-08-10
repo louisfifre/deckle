@@ -135,14 +135,14 @@ internal sealed class HomePropertyWriter(
     {
         if (schema.FloorTypeKey is null)
             throw new InvalidOperationException(
-                "Le type Espace n'existe pas encore dans l'espace Anytype : crée-le dans "
-                + "l'app (layout Collection) avant de poser une relation Espace.");
+                "Le type Zone n'existe pas encore dans l'espace Anytype : crée-le dans "
+                + "l'app (layout Collection) avant de poser une relation Zone.");
 
         JsonObject target = objects.ResolveCollection(selector);
         if (!string.Equals(HomeObjectJson.TypeKey(target), schema.FloorTypeKey, StringComparison.Ordinal))
             throw new InvalidOperationException(
-                $"« {HomeObjectIndex.Display(target)} » n'est pas un Espace : "
-                + "la relation Espace vise les collections du type Espace, pas une autre collection.");
+                $"« {HomeObjectIndex.Display(target)} » n'est pas une Zone : "
+                + "la relation Zone vise les collections du type Zone, pas une autre collection.");
         return target;
     }
 

@@ -75,7 +75,7 @@ in `Terms/terms.fr.json`, loaded by `HomeTerms` at runtime (the pattern
 shipped by `Deckle.Travel`). They are never hard-coded in C#: the schema names
 the structure with stable English keys, the terms file names the words.
 
-The `floor` type is labeled « Espace » in French: an assemblage of rooms —
+The `floor` type is labeled « Zone » in French: an assemblage of rooms —
 Rez-de-chaussée, Étage, Extérieur — not a storey; the English key predates
 the rename and stays as the technical coordinate.
 The `floor` type is app-created: the Anytype API refuses to create a type of

@@ -334,7 +334,7 @@ public class HomeGesturesTests
 
         InvalidOperationException error = await Assert.ThrowsAsync<InvalidOperationException>(() =>
             Gestures(server).UpdateAsync(
-                [new HomeUpdateItem("ZZ", null, new JsonObject { ["Espace"] = "Rez fictif" })], Ct));
+                [new HomeUpdateItem("ZZ", null, new JsonObject { ["Zone"] = "Rez fictif" })], Ct));
 
         Assert.Contains("layout Collection", error.Message);
         Assert.DoesNotContain(server.Requests, request => request.Method == "PATCH");
@@ -344,7 +344,7 @@ public class HomeGesturesTests
     public async Task FloorRelationResolvesTheFloorTypedCollectionOnceDiscovered()
     {
         using var server = new FakeHomeAnytypeServer();
-        server.AddSchemaType(HomeSchema.Types.Floor, "Espace", "Espaces", "collection");
+        server.AddSchemaType(HomeSchema.Types.Floor, "Zone", "Zones", "collection");
         server.SetObjects(
             FakeHomeAnytypeServer.Room("room-zz", "ZZ", "Pièce fictive"),
             FakeHomeAnytypeServer.Collection("floor-1", "Rez fictif", HomeSchema.Types.Floor),
@@ -352,11 +352,11 @@ public class HomeGesturesTests
 
         InvalidOperationException wrongCollection = await Assert.ThrowsAsync<InvalidOperationException>(() =>
             Gestures(server).UpdateAsync(
-                [new HomeUpdateItem("ZZ", null, new JsonObject { ["Espace"] = "Section fictive" })], Ct));
-        Assert.Contains("n'est pas un Espace", wrongCollection.Message);
+                [new HomeUpdateItem("ZZ", null, new JsonObject { ["Zone"] = "Section fictive" })], Ct));
+        Assert.Contains("n'est pas une Zone", wrongCollection.Message);
 
         await Gestures(server).UpdateAsync(
-            [new HomeUpdateItem("ZZ", null, new JsonObject { ["Espace"] = "Rez fictif" })], Ct);
+            [new HomeUpdateItem("ZZ", null, new JsonObject { ["Zone"] = "Rez fictif" })], Ct);
 
         JsonObject patch = (JsonObject)JsonNode.Parse(server.Requests.Single(r => r.Method == "PATCH").Body)!;
         JsonNode floor = Assert.Single(Assert.IsType<JsonArray>(

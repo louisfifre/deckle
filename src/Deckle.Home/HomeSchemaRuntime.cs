@@ -12,7 +12,7 @@ internal sealed class HomeSchemaRuntime
         FloorTypeKey = floorTypeKey;
     }
 
-    // Key of the app-created collection-layout Espace type, discovered from
+    // Key of the app-created collection-layout Zone type, discovered from
     // the live snapshot; null while Louis has not created it yet.
     public string? FloorTypeKey { get; }
 
