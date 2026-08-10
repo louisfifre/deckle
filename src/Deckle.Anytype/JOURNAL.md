@@ -7,6 +7,18 @@ type: module-journal
 
 Module-level dated notes. Most recent on top.
 
+## 2026-08-10 — Restart race exposed missing lifecycle boundaries
+
+Measured across two Deckle process sessions: the outgoing process emitted `ShutdownRequested`, then its still-running fire-and-forget `EnsureRunningAsync` spawned `anytype.exe`. The successor probed the still-warming endpoint, spawned a duplicate, then attributed the original process's `200` response to that duplicate. The duplicate exited with code 1 and became the process watched and restarted, while the original process kept serving on `127.0.0.1:31012`. The confirmed trigger, cause, violated invariant and recurrence cue are preserved in `tests/Deckle.Anytype.Tests/BackendSupervisionBugNotes.md`; no regression test exists yet.
+
+Code matches the trace: `BackendSupervisor.Dispose` cancels and joins only the watch task, not an in-flight `EnsureRunningAsync`; readiness proves only that the fixed endpoint answers, not which PID owns it; the watch begins after the readiness wait; and logged uptime starts when the watch begins rather than when the process was spawned. The application discards the initialization task from `OnLaunched`, so shutdown has no task handle to cancel or await.
+
+The provider runtime currently lives under the replaceable application payload at `%LOCALAPPDATA%\\Programs\\Deckle\\anytype`. The updater's running-process gate scans that payload recursively, while deployment deletes every nested entry except the uninstaller before copying the new payload. A running backend therefore blocks the update gate; a stopped backend is removed by deployment and must be provisioned again. This conflicts with the accepted requirement that the warm backend survive Deckle updates and restarts.
+
+The existing observations were sufficient to reconstruct the race: application JSONL stamps a process-session id; backend events expose health status and duration, attached PID and mode, exit code and watched uptime; MCP events expose host start/stop, client plus session prefix, and rejected-request reasons; Anytype REST events expose request start/end/retry/failure. They do not currently expose an initialization/reconciliation id, attempt and scheduled backoff, listener-owner PID, cancellation and drain outcome, MCP request start/end, tool outcome, or session close/eviction.
+
+The local HTTP host implements the sessionful MCP `2025-11-25` path (`initialize` plus `Mcp-Session-Id`) in handwritten transport code. The official `2026-07-28` revision removed both from the protocol core and made each request self-contained; the official C# SDK 2.0 supports that revision and down-level interoperability. Claude Code documents automatic HTTP reconnection with bounded exponential backoff. No equivalent Codex contract was found; an open Codex issue still requests automatic MCP reconnection. Server-side robustness must therefore not rely on a particular client retrying or recreating a transport session.
+
 ## 2026-07-29 — Native Experience import proven as an integration fixture
 
 Measured with `anytype-cli` 0.3.6 (anytype-heart 0.50.10): private RPC `ObjectImportExperience` imported a cleaned native Desktop archive into one fresh existing space after bot membership was verified `Active`. The exact validated archive has SHA-256 `775ebd35ec185fde3fec0fa50723bab3d241deac02c85603dcb58401528019ae`. Its REST inventory moved from 14 types / 34 properties / 0 objects / 5 templates / 0 lists / 0 views to 22 / 64 / 6 / 15 / 5 / 5; Desktop then visually confirmed the types, per-type icons, linked properties, templates and views. The six retained objects are structural dashboards; Recent items is automatic and was deliberately absent from the archive.
