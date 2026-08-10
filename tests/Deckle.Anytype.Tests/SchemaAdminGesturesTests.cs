@@ -672,9 +672,8 @@ public class SchemaAdminGesturesTests
                     ["name"] = "Structure",
                     ["icon"] = new JsonObject
                     {
-                        ["format"] = "icon",
-                        ["name"] = "cube",
-                        ["color"] = "grey",
+                        ["format"] = "emoji",
+                        ["emoji"] = "🧱",
                     },
                     ["types"] = new JsonArray { "floor" },
                 },
@@ -796,6 +795,36 @@ public class SchemaAdminGesturesTests
     }
 
     [Fact]
+    public async Task PreviewRejectsNamedIconOnSectionBeforeReadingAnytype()
+    {
+        using var server = new FakeAnytypeServer();
+        JsonObject manifest = new()
+        {
+            ["sections"] = new JsonArray
+            {
+                new JsonObject
+                {
+                    ["name"] = "Structure",
+                    ["icon"] = new JsonObject
+                    {
+                        ["format"] = "icon",
+                        ["name"] = "cube",
+                        ["color"] = "grey",
+                    },
+                    ["types"] = new JsonArray { "floor" },
+                },
+            },
+        };
+
+        ArgumentException ex = await Assert.ThrowsAsync<ArgumentException>(
+            () => NewGestures(server).PreviewAsync("home", manifest, Ct));
+
+        Assert.Contains("icône nommée", ex.Message);
+        Assert.Contains("emoji", ex.Message);
+        Assert.Empty(server.Requests);
+    }
+
+    [Fact]
     public async Task ApplyCreatesSectionCollectionWithIconAndAddsMemberTypes()
     {
         using var server = new FakeAnytypeServer();
@@ -817,7 +846,7 @@ public class SchemaAdminGesturesTests
 
         Assert.Contains("type créé floor", digest);
         Assert.Contains("section créée Structure", digest);
-        Assert.Contains("icône définie Structure · icon:cube:grey", digest);
+        Assert.Contains("icône définie Structure · emoji:🧱", digest);
         Assert.Contains("types ajoutés à Structure · floor", digest);
 
         JsonObject create = server.Requests
@@ -828,9 +857,8 @@ public class SchemaAdminGesturesTests
         Assert.Equal("collection", create["type_key"]!.GetValue<string>());
         Assert.Equal("Structure", create["name"]!.GetValue<string>());
         JsonObject icon = Assert.IsType<JsonObject>(create["icon"]);
-        Assert.Equal("icon", icon["format"]!.GetValue<string>());
-        Assert.Equal("cube", icon["name"]!.GetValue<string>());
-        Assert.Equal("grey", icon["color"]!.GetValue<string>());
+        Assert.Equal("emoji", icon["format"]!.GetValue<string>());
+        Assert.Equal("🧱", icon["emoji"]!.GetValue<string>());
 
         FakeAnytypeServer.Received memberAdd = Assert.Single(
             server.Requests,

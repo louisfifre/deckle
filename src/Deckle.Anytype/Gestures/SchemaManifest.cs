@@ -68,7 +68,10 @@ internal sealed record SchemaManifest(
 // A section is a pinned sidebar folder: one collection object (built-in Anytype
 // type key "collection") whose members are the section's TYPE objects. The
 // manifest names the collection and lists the member type keys; actual sidebar
-// pinning has no API endpoint and stays an in-app gesture.
+// pinning has no API endpoint and stays an in-app gesture. Section icons are
+// emoji-only: the API refuses named icons on OBJECT creation (400 "icon name
+// and color are not supported for object", verified live 2026-08-10) — the
+// named-icon grammar belongs to types.
 internal sealed record SectionSpec(
     string Name,
     TypeIconSpec? Icon,
@@ -86,6 +89,10 @@ internal sealed record SectionSpec(
             if (iconNode is not JsonObject iconObject)
                 throw new ArgumentException($"Le champ « icon » de la section « {name} » doit être un objet.");
             icon = TypeIconSpec.Parse(iconObject, $"section {name}", $"la section « {name} »");
+            if (icon.Format == "icon")
+                throw new ArgumentException(
+                    $"La section « {name} » ne peut pas porter d'icône nommée : l'API Anytype "
+                    + "n'accepte que des emoji sur un objet. Utilise le format emoji.");
         }
 
         var types = new List<string>();
