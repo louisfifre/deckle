@@ -6,6 +6,7 @@ using Microsoft.UI.Dispatching;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Navigation;
+using Deckle.Anytype;
 using Deckle.Catalog;
 using Deckle.Install;
 using Deckle.Modules;
@@ -85,20 +86,13 @@ public sealed partial class DeployPage : Page
             // location blocks the copy. Surfaced as a retryable state, not a
             // failure — the user closes the app and clicks Retry.
             SetStatus(Loc.Get("Setup_Deploy_Checking"));
-            string[] running = await Task.Run(() => FindRunning(context));
-            if (running.Length > 0 && context.UpdateMode)
+            if (context.UpdateMode)
             {
-                // Update chain: the old app spawned this process and is
-                // exiting right now — absorb its teardown latency instead of
-                // bouncing a one-click update into a manual Retry. A process
-                // still alive after the window is a genuine block and falls
-                // through to the usual retryable state.
-                for (int i = 0; i < 30 && running.Length > 0; i++)
-                {
-                    await Task.Delay(500);
-                    running = await Task.Run(() => FindRunning(context));
-                }
+                await UpdatePredecessor.WaitForExitAsync(
+                    context.PredecessorProcessId,
+                    Path.Combine(context.InstallDirectory, "Deckle.exe"));
             }
+            string[] running = await Task.Run(() => FindRunning(context));
             if (running.Length > 0)
             {
                 DeckleSetupSource.Log.DeployBlockedByRunningApp();
@@ -108,7 +102,8 @@ public sealed partial class DeployPage : Page
 
             step = "copy";
             SetStatus(Loc.Get("Setup_Deploy_Copying"));
-            long copiedBytes = await Task.Run(() => CopyPayload(context));
+            long copiedBytes = await Task.Run(() =>
+                CopyPayload(context, BackendInstallation.LegacyInstallDirectory));
 
             step = "integrate";
             SetStatus(Loc.Get("Setup_Deploy_Integrating"));
@@ -138,12 +133,14 @@ public sealed partial class DeployPage : Page
     private static string[] FindRunning(SetupContext context)
     {
         var names = new System.Collections.Generic.SortedSet<string>(StringComparer.OrdinalIgnoreCase);
-        foreach (string name in RunningProcesses.FromFolder(context.InstallDirectory))
+        foreach (string name in RunningProcesses.FromFolder(
+                     context.InstallDirectory, BackendInstallation.LegacyInstallDirectory))
             names.Add(name);
         if (UninstallEntry.Read() is { } existing
             && !PathsEqual(existing.InstallDir, context.InstallDirectory))
         {
-            foreach (string name in RunningProcesses.FromFolder(existing.InstallDir))
+            foreach (string name in RunningProcesses.FromFolder(
+                         existing.InstallDir, BackendInstallation.LegacyInstallDirectory))
                 names.Add(name);
         }
         return [.. names];
@@ -156,7 +153,7 @@ public sealed partial class DeployPage : Page
     // registered uninstaller is spared: on an update run the stub that
     // launched us IS that file (StubPath points at it), and Integrate copies
     // from StubPath — deleting it here would delete the copy's source.
-    private static long CopyPayload(SetupContext context)
+    internal static long CopyPayload(SetupContext context, string preservedDirectory)
     {
         string source = Path.GetFullPath(context.SourceDirectory);
         string target = Path.GetFullPath(context.InstallDirectory);
@@ -168,6 +165,7 @@ public sealed partial class DeployPage : Page
             {
                 if (string.Equals(Path.GetFileName(entry), "Deckle-Installer.exe",
                         StringComparison.OrdinalIgnoreCase)) continue;
+                if (PathsEqual(entry, preservedDirectory)) continue;
                 if (Directory.Exists(entry)) Directory.Delete(entry, recursive: true);
                 else File.Delete(entry);
             }
@@ -178,6 +176,7 @@ public sealed partial class DeployPage : Page
         {
             string relative = Path.GetRelativePath(source, file);
             string dest = Path.Combine(target, relative);
+            if (IsUnder(dest, preservedDirectory)) continue;
             Directory.CreateDirectory(Path.GetDirectoryName(dest)!);
             File.Copy(file, dest, overwrite: true);
             copied += new FileInfo(dest).Length;
@@ -266,6 +265,13 @@ public sealed partial class DeployPage : Page
     private static bool PathsEqual(string a, string b) =>
         string.Equals(Path.GetFullPath(a).TrimEnd('\\'), Path.GetFullPath(b).TrimEnd('\\'),
             StringComparison.OrdinalIgnoreCase);
+
+    private static bool IsUnder(string path, string folder)
+    {
+        string full = Path.GetFullPath(path);
+        string prefix = Path.GetFullPath(folder).TrimEnd('\\') + Path.DirectorySeparatorChar;
+        return full.StartsWith(prefix, StringComparison.OrdinalIgnoreCase);
+    }
 
     private void SetStatus(string text) =>
         _dispatcher?.TryEnqueue(() => StatusText.Text = text);

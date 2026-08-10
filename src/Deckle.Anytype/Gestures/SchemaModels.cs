@@ -12,6 +12,19 @@ internal sealed record SchemaPreview(
 
 internal sealed record SchemaAction(string Kind, string Key, string Name);
 
+// Public preview contract for non-domain adapters. It deliberately excludes the
+// full live Anytype snapshot and repeated manifest: consumers need the reviewed
+// plan and its deterministic handle, not the provider payload used to derive it.
+public sealed record SchemaPreviewResult(
+    string PreviewId,
+    string SpaceAlias,
+    IReadOnlyList<SchemaPreviewAction> Actions,
+    IReadOnlyList<string> Conflicts,
+    IReadOnlyList<string> SkippedConflicts,
+    string Digest);
+
+public sealed record SchemaPreviewAction(string Kind, string Key, string Name);
+
 public sealed record SchemaSnapshot(
     IReadOnlyDictionary<string, SchemaTypeInfo> Types,
     IReadOnlyDictionary<string, SchemaPropertyInfo> Properties,

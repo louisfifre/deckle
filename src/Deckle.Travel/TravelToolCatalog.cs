@@ -18,27 +18,31 @@ public static class TravelToolCatalog
                 "Create one or more Travel objects of one type. Objects identify by name and links — no code grammar. Creating a stay also creates its degenerate stage (same name and dates) in the same gesture. An expense requires amount, date and a closed-vocabulary category; its stay resolves from the date when exactly one stay covers it, otherwise pass the stay explicitly. An activity with no Date sits in the pool: the Date is the state.",
                 CreateSchema(),
                 (args, ct) => gestures().CreateAsync(
-                    RequiredString(args, "type"), CreateItems(args), ct)),
+                    RequiredString(args, "type"), CreateItems(args), ct),
+                ToolExecutionContract.AdditiveRequiresDeduplication),
 
             new ToolDescriptor(
                 "update",
                 "Update one or more Travel objects: rename, set properties, fix an activity by giving it a Date, bind an hour with RDV, link an expense. Closed-vocabulary values must match an existing option; options are added by the user in Anytype, never by this surface.",
                 UpdateSchema(),
-                (args, ct) => gestures().UpdateAsync(UpdateItems(args), ct)),
+                (args, ct) => gestures().UpdateAsync(UpdateItems(args), ct),
+                ToolExecutionContract.OverwritingIdempotentWithStableTarget),
 
             new ToolDescriptor(
                 "attach",
                 "Attach local files — tickets, confirmations, GPX traces — to an activity, a transfer, or a lodging. Paths are read from this machine and uploaded into the space; existing attachments are kept.",
                 AttachSchema(),
                 (args, ct) => gestures().AttachAsync(
-                    RequiredString(args, "object"), StringItems(args, "files"), ct)),
+                    RequiredString(args, "object"), StringItems(args, "files"), ct),
+                ToolExecutionContract.AdditiveRequiresDeduplication),
 
             new ToolDescriptor(
                 "get",
                 "Read one Travel object in full with relation targets resolved to readable names.",
                 ObjectSchema(
                     required: [("object", StringSchema("Object name or id."))]),
-                (args, ct) => gestures().GetAsync(RequiredString(args, "object"), ct)),
+                (args, ct) => gestures().GetAsync(RequiredString(args, "object"), ct),
+                ToolExecutionContract.ReadOnly),
 
             new ToolDescriptor(
                 "search",
@@ -56,7 +60,8 @@ public static class TravelToolCatalog
                     OptionalString(args, "type"),
                     OptionalString(args, "stay"),
                     OptionalString(args, "category"),
-                    OptionalString(args, "mode")), ct)),
+                    OptionalString(args, "mode")), ct),
+                ToolExecutionContract.ReadOnly),
         ];
     }
 
@@ -86,7 +91,7 @@ public static class TravelToolCatalog
                 ["maxItems"] = 100,
                 ["description"] = "Objects to update after validating the whole batch.",
                 ["items"] = ObjectSchema(
-                    required: [("object", StringSchema("Object name or id."))],
+                    required: [("object", StringSchema("Stable Anytype object id (bafy…); names are refused so a rename remains replayable."))],
                     optional:
                     [
                         ("name", StringSchema("New object title.")),

@@ -171,6 +171,8 @@ public sealed partial class UpdateDownloadPage : Page
         psi.ArgumentList.Add(installDir);
         psi.ArgumentList.Add("--cleanup");
         psi.ArgumentList.Add(tempDir);
+        psi.ArgumentList.Add("--wait-pid");
+        psi.ArgumentList.Add(Environment.ProcessId.ToString(System.Globalization.CultureInfo.InvariantCulture));
         Process.Start(psi);
     }
 

@@ -51,7 +51,8 @@ internal static class Uninstaller
         // A running Deckle keeps its image locked, so the scheduled folder delete would
         // leave binaries behind. Detection skips this very process; no retry loop — a
         // silent stub can't usefully wait, so it asks the user to close it and re-run.
-        string[] running = RunningProcesses.FromFolder(installDir);
+        string legacyProvidersDir = InstallPaths.LegacyAnytypeProviderDir;
+        string[] running = RunningProcesses.FromFolder(installDir, legacyProvidersDir);
         if (running.Length > 0)
         {
             MessageDialog.Error(nint.Zero,
@@ -60,25 +61,62 @@ internal static class Uninstaller
             return 1;
         }
 
+        string[] providerRoots = [.. InstallPaths.ProviderDirectories
+            .Distinct(StringComparer.OrdinalIgnoreCase)];
+        string[] providerFailures = [.. providerRoots.SelectMany(root =>
+            RunningProcesses.StopFromFolder(root).Select(failure => $"{root}: {failure}"))];
+        if (providerFailures.Length > 0)
+        {
+            MessageDialog.Error(nint.Zero,
+                "Deckle could not stop its provider processes:\n\n" +
+                string.Join("\n", providerFailures) +
+                "\n\nThe provider files were left in place.");
+            return 1;
+        }
+
         // ── Removal, under a marquee window ───────────────────────────────────────
         var window = new ProgressWindow("Uninstall Deckle");
+        string? providerResidual = null;
         Task worker = Task.Run(() =>
         {
             try
             {
-                window.ReportMarquee("Removing Deckle…");
-                Shortcut.RemoveStartMenu("Deckle");
-                UninstallEntry.Remove();
+                try { window.ReportMarquee("Removing Deckle…"); } catch { }
+
+                // Provider cleanup is independent from shell/registry cleanup. A
+                // preceding best-effort failure must never skip these owned roots.
+                foreach (string root in providerRoots) TryDeleteTree(root);
+                string[] residuals = providerRoots.Where(Directory.Exists).ToArray();
+                if (residuals.Length > 0)
+                {
+                    providerResidual = "Deckle's provider folders could not be removed:\n" +
+                        string.Join("\n", residuals);
+                    return;
+                }
+
+                try { Shortcut.RemoveStartMenu("Deckle"); } catch { }
+                try { UninstallEntry.Remove(); } catch { }
+
                 if (removeData) TryDeleteTree(dataDir);
-                if (dataRoot is not null) UserEnvironment.ClearDataRoot();
+                if (dataRoot is not null)
+                {
+                    try { UserEnvironment.ClearDataRoot(); } catch { }
+                }
             }
-            catch { /* best-effort removal — nothing to abort onto */ }
             finally { window.RequestClose(); }
         });
 
         window.Show();
         window.RunMessageLoop();
         worker.GetAwaiter().GetResult();
+
+        if (providerResidual is not null)
+        {
+            MessageDialog.Error(nint.Zero, providerResidual);
+            // Keep the installed uninstaller in place so this incomplete
+            // removal remains retryable after the residual is released.
+            return 1;
+        }
 
         // Last, with the window gone and this process about to exit: schedule the
         // delete of the install folder, this exe included.

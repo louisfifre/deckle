@@ -18,8 +18,9 @@ namespace Deckle.Anytype;
 //     sustained with a burst of 60; one in-flight request at a time keeps us
 //     well inside that envelope and makes ordering deterministic for the
 //     read-modify-write gestures (markdown PATCH is a full replacement).
-//   • Retry once on 429/5xx, honoring Retry-After when present. A transient
-//     5xx or a rate-limit nudge should not surface as a gesture failure.
+//   • Retry once on 429, and on 5xx only when the exact request is safe to
+//     replay, honoring Retry-After when present. A create may have committed
+//     before a 5xx and must surface that ambiguity instead of duplicating.
 //
 // Wire facts (verified against the live API 2026-06-12 and the vendor JS
 // reference): base http://localhost:31009; headers Anytype-Version +
@@ -29,19 +30,44 @@ namespace Deckle.Anytype;
 // held only in the Authorization header and never logged.
 public sealed partial class AnytypeApiClient : IDisposable
 {
+    private enum RequestReplaySafety { Unsafe, Safe }
+
     private readonly HttpClient _http;
     private readonly SemaphoreSlim _gate = new(1, 1);
     private readonly string _spacePath;
     private readonly SpaceWriteLock _writeLock;
+    private readonly IBackendEndpointTrust? _endpointTrust;
 
-    // One retry on a transient. Backoff falls back to this when the response
-    // omits Retry-After; small because the gate already paces traffic.
+    // One bounded retry when the endpoint's replay contract allows it. Backoff
+    // falls back to this when the response omits Retry-After; small because the
+    // gate already paces traffic.
     private const int MaxRetries = 1;
     private static readonly TimeSpan DefaultBackoff = TimeSpan.FromSeconds(1);
 
     public string SpaceId { get; }
 
     public AnytypeApiClient(AnytypeCredentials credentials)
+        : this(credentials, endpointTrust: null)
+    {
+    }
+
+    // The resident gateway re-proves ownership for the supervised headless
+    // listener before putting its bearer on the wire. The legacy Desktop
+    // pairing remains outside provider supervision until that compatibility
+    // path is retired; ordinary constructors also serve explicit test endpoints.
+    public static AnytypeApiClient CreateForResidentGateway(AnytypeCredentials credentials)
+    {
+        ArgumentNullException.ThrowIfNull(credentials);
+        var endpoint = new Uri(credentials.ApiUrl);
+        IBackendEndpointTrust? trust = endpoint.IsLoopback && endpoint.Port == 31012
+            ? BackendEndpointTrust.CreateDefault(endpoint)
+            : null;
+        return new(credentials, trust);
+    }
+
+    internal AnytypeApiClient(
+        AnytypeCredentials credentials,
+        IBackendEndpointTrust? endpointTrust)
     {
         ArgumentNullException.ThrowIfNull(credentials);
 
@@ -52,6 +78,7 @@ public sealed partial class AnytypeApiClient : IDisposable
         _http.DefaultRequestHeaders.Add("Anytype-Version", credentials.ApiVersion);
         _http.DefaultRequestHeaders.Authorization =
             new AuthenticationHeaderValue("Bearer", credentials.ApiKey);
+        _endpointTrust = endpointTrust;
 
         // The cross-process write lock lives beside the credentials, in the
         // anytype module directory (same id as AnytypeCredentials.ModuleId).
@@ -80,7 +107,8 @@ public sealed partial class AnytypeApiClient : IDisposable
         ArgumentException.ThrowIfNullOrWhiteSpace(id);
 
         JsonObject root = await SendAsync(
-                HttpMethod.Get, $"{SpacePath(spaceId)}/objects/{id}", null, ct)
+                HttpMethod.Get, $"{SpacePath(spaceId)}/objects/{id}", null, ct,
+                replaySafety: RequestReplaySafety.Safe)
             .ConfigureAwait(false);
         return Inner(root, "object");
     }
@@ -117,7 +145,8 @@ public sealed partial class AnytypeApiClient : IDisposable
         }
 
         return await SendAsync(
-                HttpMethod.Post, $"{SpacePath(spaceId)}/search", body, ct)
+                HttpMethod.Post, $"{SpacePath(spaceId)}/search", body, ct,
+                replaySafety: RequestReplaySafety.Safe)
             .ConfigureAwait(false);
     }
 
@@ -135,7 +164,8 @@ public sealed partial class AnytypeApiClient : IDisposable
         if (limit is < 1 or > 1000) throw new ArgumentOutOfRangeException(nameof(limit));
 
         string path = $"{SpacePath(spaceId)}/objects?offset={offset}&limit={limit}";
-        return await SendAsync(HttpMethod.Get, path, null, ct).ConfigureAwait(false);
+        return await SendAsync(
+            HttpMethod.Get, path, null, ct, replaySafety: RequestReplaySafety.Safe).ConfigureAwait(false);
     }
 
     // POST object → returns the inner "object" node. payload carries type_key
@@ -167,7 +197,8 @@ public sealed partial class AnytypeApiClient : IDisposable
         ArgumentException.ThrowIfNullOrWhiteSpace(id);
         ArgumentNullException.ThrowIfNull(payload);
         JsonObject root = await SendAsync(
-                HttpMethod.Patch, $"{SpacePath(spaceId)}/objects/{id}", payload, ct)
+                HttpMethod.Patch, $"{SpacePath(spaceId)}/objects/{id}", payload, ct,
+                replaySafety: RequestReplaySafety.Safe)
             .ConfigureAwait(false);
         return Inner(root, "object");
     }
@@ -198,7 +229,8 @@ public sealed partial class AnytypeApiClient : IDisposable
         int offset = 0, int limit = 100, CancellationToken ct = default)
     {
         string path = $"{_spacePath}/properties?offset={offset}&limit={limit}";
-        return await SendAsync(HttpMethod.Get, path, null, ct).ConfigureAwait(false);
+        return await SendAsync(
+            HttpMethod.Get, path, null, ct, replaySafety: RequestReplaySafety.Safe).ConfigureAwait(false);
     }
 
     // GET a property's existing tag options (one page) → returns the root node
@@ -210,7 +242,8 @@ public sealed partial class AnytypeApiClient : IDisposable
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(propertyId);
         string path = $"{_spacePath}/properties/{propertyId}/tags?offset={offset}&limit={limit}";
-        return await SendAsync(HttpMethod.Get, path, null, ct).ConfigureAwait(false);
+        return await SendAsync(
+            HttpMethod.Get, path, null, ct, replaySafety: RequestReplaySafety.Safe).ConfigureAwait(false);
     }
 
     // POST list members. A collection IS a list: members are added through
@@ -278,7 +311,8 @@ public sealed partial class AnytypeApiClient : IDisposable
         string path,
         JsonObject? body,
         CancellationToken ct,
-        bool parseBody = true) =>
+        bool parseBody = true,
+        RequestReplaySafety replaySafety = RequestReplaySafety.Unsafe) =>
         SendContentAsync(
             method,
             path,
@@ -286,7 +320,8 @@ public sealed partial class AnytypeApiClient : IDisposable
                 ? null
                 : () => new StringContent(body.ToJsonString(), Encoding.UTF8, "application/json"),
             ct,
-            parseBody);
+            parseBody,
+            replaySafety);
 
     // Serialized send with one transient retry. Returns the parsed root object
     // (empty JsonObject when the body is empty). parseBody:false skips parsing
@@ -302,13 +337,23 @@ public sealed partial class AnytypeApiClient : IDisposable
         string path,
         Func<HttpContent>? content,
         CancellationToken ct,
-        bool parseBody = true)
+        bool parseBody = true,
+        RequestReplaySafety replaySafety = RequestReplaySafety.Unsafe)
     {
         await _gate.WaitAsync(ct).ConfigureAwait(false);
         try
         {
             for (int attempt = 0; ; attempt++)
             {
+                if (_endpointTrust is not null && !_endpointTrust.IsTrusted())
+                {
+                    DeckleAnytypeSource.Log.ApiRequestFailed();
+                    DeckleAnytypeSource.Log.ApiRequestFailedDetail(
+                        method.Method, path, 0, "endpoint owner is not a trusted provider");
+                    throw new InvalidOperationException(
+                        "The Anytype endpoint is not owned by a trusted Deckle provider; the request was not sent.");
+                }
+
                 bool traceRequest = DeckleAnytypeSource.Log.IsEnabled(
                     EventLevel.Verbose,
                     (EventKeywords)Keywords.Network);
@@ -336,7 +381,7 @@ public sealed partial class AnytypeApiClient : IDisposable
                     return ParseRoot(json);
                 }
 
-                if (attempt < MaxRetries && IsTransient(response.StatusCode))
+                if (attempt < MaxRetries && IsRetryable(response.StatusCode, replaySafety))
                 {
                     TimeSpan backoff = RetryAfter(response) ?? DefaultBackoff;
                     if (traceRequest)
@@ -364,8 +409,12 @@ public sealed partial class AnytypeApiClient : IDisposable
         }
     }
 
-    private static bool IsTransient(HttpStatusCode code) =>
-        code == HttpStatusCode.TooManyRequests || (int)code >= 500;
+    // A 429 means the request was refused before execution and is replayable.
+    // A 5xx can arrive after the provider committed, so only callers whose
+    // exact wire effect is idempotent may opt into replaying it.
+    private static bool IsRetryable(HttpStatusCode code, RequestReplaySafety replaySafety) =>
+        code == HttpStatusCode.TooManyRequests
+        || (replaySafety == RequestReplaySafety.Safe && (int)code >= 500);
 
     // Retry-After is seconds (delta) or an HTTP-date. HttpClient parses both
     // into RetryConditionHeaderValue; Delta wins when present, otherwise the

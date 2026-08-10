@@ -3,64 +3,95 @@ using System.IO;
 
 namespace Deckle.Anytype;
 
-// ── BackendProcess ───────────────────────────────────────────────────────────
-//
-// Acquires the headless serve process: adopt one already running from our
-// installed binary, or start a fresh one — windowless.
-//
-// CreateNoWindow is the load-bearing flag. anytype.exe is a console-subsystem
-// binary, so a default launch allocates a visible console whose close button
-// kills the serve (STATUS_CONTROL_C_EXIT — the recurring 0xC000013A deaths).
-// CreateNoWindow gives the child a console with no window at all — stdout stays
-// valid for the Go runtime, but there is nothing a user can close. This is why
-// the scheduled-task hosting was retired (JOURNAL 2026-07-02): the task ran the
-// serve with a default, closable console.
-//
-// The child outlives Deckle by construction: a Windows child process is not
-// tied to its parent's lifetime, and no job object binds them. Survival across
-// app rebuilds — the property the scheduled task existed for — comes free.
-public static class BackendProcess
+internal interface IBackendProcess : IDisposable
 {
-    // Finds a live serve launched from this exact binary and returns a
-    // handle-backed Process for it, or null. Matching is by main-module path,
-    // not name alone: "anytype.exe" is also the Desktop app's binary name
-    // (JOURNAL 2026-06-19), so a name-only match could adopt the wrong process.
-    // Candidates whose main module cannot be read (exited mid-scan, access
-    // denied) are skipped — a miss means a fresh spawn, never a crash.
-    public static Process? TryFindRunning(string executablePath)
+    int Id { get; }
+    string ExecutablePath { get; }
+    DateTimeOffset StartedAt { get; }
+    bool HasExited { get; }
+    int ExitCode { get; }
+    Task WaitForExitAsync(CancellationToken ct);
+}
+
+internal interface IBackendProcessHost
+{
+    IReadOnlyList<IBackendProcess> FindRunning(IReadOnlyCollection<string> executablePaths);
+    IBackendProcess? Open(int processId);
+    IBackendProcess? Spawn(BackendProcessSpec spec);
+}
+
+// The process boundary is deliberately separate from reconciliation. The host
+// knows how to open, enumerate and spawn Windows processes; the reconciler owns
+// every adoption decision and never infers listener ownership from a name.
+internal sealed class BackendProcessHost : IBackendProcessHost
+{
+    public IReadOnlyList<IBackendProcess> FindRunning(IReadOnlyCollection<string> executablePaths)
     {
-        string name = Path.GetFileNameWithoutExtension(executablePath);
-        Process? found = null;
-        foreach (var candidate in Process.GetProcessesByName(name))
+        var expected = executablePaths
+            .Select(Path.GetFullPath)
+            .ToHashSet(StringComparer.OrdinalIgnoreCase);
+        var names = expected
+            .Select(path => Path.GetFileNameWithoutExtension(path)!)
+            .Distinct(StringComparer.OrdinalIgnoreCase);
+        var found = new List<IBackendProcess>();
+        var seen = new HashSet<int>();
+
+        foreach (string name in names)
         {
-            try
+            foreach (Process candidate in Process.GetProcessesByName(name))
             {
-                if (found is null &&
-                    string.Equals(candidate.MainModule?.FileName, executablePath,
-                                  StringComparison.OrdinalIgnoreCase))
+                if (!seen.Add(candidate.Id))
                 {
-                    found = candidate;
+                    candidate.Dispose();
                     continue;
                 }
+
+                try
+                {
+                    string? path = candidate.MainModule?.FileName;
+                    if (path is not null && expected.Contains(Path.GetFullPath(path)))
+                    {
+                        found.Add(new BackendProcess(candidate, path));
+                        continue;
+                    }
+                }
+                catch (Exception ex) when (ex is InvalidOperationException or System.ComponentModel.Win32Exception)
+                {
+                    // The candidate exited during inspection or is unreadable.
+                }
+
+                candidate.Dispose();
             }
-            catch (Exception ex) when (ex is InvalidOperationException or System.ComponentModel.Win32Exception)
-            {
-                // Exited between enumeration and inspection, or not ours to read.
-            }
-            candidate.Dispose();
         }
+
         return found;
     }
 
-    // Starts the serve with no console window. Returns null on failure, having
-    // logged it — the supervisor treats a null as a rejected start and retries
-    // on its backoff, so this never throws.
-    public static Process? Spawn(BackendProcessSpec spec)
+    public IBackendProcess? Open(int processId)
+    {
+        try
+        {
+            Process process = Process.GetProcessById(processId);
+            string? path = process.MainModule?.FileName;
+            if (path is null)
+            {
+                process.Dispose();
+                return null;
+            }
+            return new BackendProcess(process, path);
+        }
+        catch (Exception ex) when (ex is ArgumentException or InvalidOperationException or System.ComponentModel.Win32Exception)
+        {
+            return null;
+        }
+    }
+
+    public IBackendProcess? Spawn(BackendProcessSpec spec)
     {
         ArgumentNullException.ThrowIfNull(spec);
         try
         {
-            var process = Process.Start(new ProcessStartInfo
+            Process? process = Process.Start(new ProcessStartInfo
             {
                 FileName         = spec.ExecutablePath,
                 Arguments        = spec.Arguments,
@@ -72,8 +103,9 @@ public static class BackendProcess
             {
                 DeckleAnytypeSource.Log.BackendSpawnFailed();
                 DeckleAnytypeSource.Log.BackendSpawnFailedDetail("Process.Start returned null");
+                return null;
             }
-            return process;
+            return new BackendProcess(process, spec.ExecutablePath);
         }
         catch (Exception ex)
         {
@@ -82,4 +114,42 @@ public static class BackendProcess
             return null;
         }
     }
+}
+
+internal sealed class BackendProcess(Process process, string executablePath) : IBackendProcess
+{
+    private readonly Process _process = process;
+
+    public int Id => _process.Id;
+    public string ExecutablePath { get; } = Path.GetFullPath(executablePath);
+
+    public DateTimeOffset StartedAt
+    {
+        get
+        {
+            try { return _process.StartTime; }
+            catch { return DateTimeOffset.UtcNow; }
+        }
+    }
+
+    public bool HasExited
+    {
+        get
+        {
+            try { return _process.HasExited; }
+            catch { return true; }
+        }
+    }
+
+    public int ExitCode
+    {
+        get
+        {
+            try { return _process.ExitCode; }
+            catch { return -1; }
+        }
+    }
+
+    public Task WaitForExitAsync(CancellationToken ct) => _process.WaitForExitAsync(ct);
+    public void Dispose() => _process.Dispose();
 }

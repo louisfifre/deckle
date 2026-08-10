@@ -16,20 +16,23 @@ public static class HomeToolCatalog
                 "Create one or more Home objects of one type. Inventory types require an immutable code stored in the object title (element titles are exactly their codes; room prefixes are checked against the live Pièce objects, never a compiled registry). Life and work types take no code: a course, outil, chantier, or tache takes a free name, an idee takes text whose first line becomes its title. Optional collections are Anytype memberships, not relation properties. For chantier and tache, prefer the dedicated verbs chantier_create and tache_create.",
                 CreateSchema(),
                 (args, ct) => gestures().CreateAsync(
-                    RequiredString(args, "type"), CreateItems(args), ct)),
+                    RequiredString(args, "type"), CreateItems(args), ct),
+                ToolExecutionContract.AdditiveRequiresDeduplication),
 
             new ToolDescriptor(
                 "update",
                 "Update one or more Home objects. Codes are immutable; for elements, Pièce and Catégorie are derived from the code and cannot be changed directly. An idee cannot be renamed: its title is the first line of its body. Relations accept object codes, names, or ids. Collection membership uses add_to_collections/remove_from_collections and is distinct from relations. Set Existence to Déposé instead of deleting an element.",
                 UpdateSchema(),
-                (args, ct) => gestures().UpdateAsync(UpdateItems(args), ct)),
+                (args, ct) => gestures().UpdateAsync(UpdateItems(args), ct),
+                ToolExecutionContract.OverwritingUncertain),
 
             new ToolDescriptor(
                 "get",
                 "Read one Home object in full with relation targets resolved to readable names or codes.",
                 ObjectSchema(
                     required: [("object", StringSchema("Object code, name, or id."))]),
-                (args, ct) => gestures().GetAsync(RequiredString(args, "object"), ct)),
+                (args, ct) => gestures().GetAsync(RequiredString(args, "object"), ct),
+                ToolExecutionContract.ReadOnly),
 
             new ToolDescriptor(
                 "search",
@@ -57,7 +60,8 @@ public static class HomeToolCatalog
                     OptionalString(args, "condition"),
                     OptionalBoolean(args, "done"),
                     OptionalString(args, "chantier"),
-                    OptionalString(args, "statut")), ct)),
+                    OptionalString(args, "statut")), ct),
+                ToolExecutionContract.ReadOnly),
 
             new ToolDescriptor(
                 "delete",
@@ -66,7 +70,8 @@ public static class HomeToolCatalog
                     required: [("object", StringSchema("Object code, name, or pinned id."))],
                     optional: [("confirm", BooleanSchema("Confirm the previewed deletion; default false."))]),
                 (args, ct) => gestures().DeleteAsync(
-                    RequiredString(args, "object"), OptionalBoolean(args, "confirm") ?? false, ct)),
+                    RequiredString(args, "object"), OptionalBoolean(args, "confirm") ?? false, ct),
+                ToolExecutionContract.DestructiveVerifiable),
 
             new ToolDescriptor(
                 "chantier_create",
@@ -81,7 +86,8 @@ public static class HomeToolCatalog
                 (args, ct) => gestures().CreateWorksiteAsync(
                     RequiredString(args, "name"),
                     OptionalObject(args, "properties"),
-                    OptionalStringArray(args, "collections"), ct)),
+                    OptionalStringArray(args, "collections"), ct),
+                ToolExecutionContract.AdditiveRequiresDeduplication),
 
             new ToolDescriptor(
                 "tache_create",
@@ -96,21 +102,24 @@ public static class HomeToolCatalog
                 (args, ct) => gestures().CreateTaskAsync(
                     RequiredString(args, "name"),
                     OptionalString(args, "chantier"),
-                    OptionalObject(args, "properties"), ct)),
+                    OptionalObject(args, "properties"), ct),
+                ToolExecutionContract.AdditiveRequiresDeduplication),
 
             new ToolDescriptor(
                 "complete",
                 "Mark work done: checks the native done box of a tache or course, or sets statut = Terminé on a chantier (reporting its still-open tasks). Done tasks are the record — there is no separate intervention journal.",
                 ObjectSchema(
                     required: [("object", StringSchema("Tâche, course, or chantier name or id."))]),
-                (args, ct) => gestures().CompleteAsync(RequiredString(args, "object"), ct)),
+                (args, ct) => gestures().CompleteAsync(RequiredString(args, "object"), ct),
+                ToolExecutionContract.OverwritingIdempotent),
 
             new ToolDescriptor(
                 "chantier_overview",
                 "One-call state of a chantier: its properties, then its tasks split open / done with statut and date cible.",
                 ObjectSchema(
                     required: [("chantier", StringSchema("Chantier name or id."))]),
-                (args, ct) => gestures().WorksiteOverviewAsync(RequiredString(args, "chantier"), ct)),
+                (args, ct) => gestures().WorksiteOverviewAsync(RequiredString(args, "chantier"), ct),
+                ToolExecutionContract.ReadOnly),
         ];
     }
 

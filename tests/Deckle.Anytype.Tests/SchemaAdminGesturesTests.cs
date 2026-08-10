@@ -120,6 +120,44 @@ public class SchemaAdminGesturesTests
     }
 
     [Fact]
+    public async Task PreviewReturnsTheTypedPlanAndItsTextFallbackTogether()
+    {
+        using var server = new FakeAnytypeServer();
+        server.OnListTypes(EmptyList());
+        server.OnListProperties(EmptyList());
+
+        SchemaPreviewResult result = await NewGestures(server)
+            .PreviewResultAsync("home", Manifest(), Ct);
+
+        Assert.Equal("home", result.SpaceAlias);
+        Assert.Equal(64, result.PreviewId.Length);
+        Assert.Collection(
+            result.Actions,
+            action => Assert.Equal("create_property", action.Kind),
+            action => Assert.Equal("create_tag", action.Kind),
+            action => Assert.Equal("create_type", action.Kind),
+            action => Assert.Equal("attach_property", action.Kind));
+        Assert.Empty(result.Conflicts);
+        Assert.Empty(result.SkippedConflicts);
+        Assert.Contains($"Preview {result.PreviewId}", result.Digest);
+        Assert.Contains("create_property", result.Digest);
+        Assert.DoesNotContain(server.Requests, request => request.Method is "POST" or "PATCH");
+    }
+
+    [Fact]
+    public async Task PreviewIdIsDeterministicAcrossGestureInstances()
+    {
+        using var server = new FakeAnytypeServer();
+        server.OnListTypes(EmptyList());
+        server.OnListProperties(EmptyList());
+
+        string first = await NewGestures(server).PreviewAsync("home", Manifest(), Ct);
+        string second = await NewGestures(server).PreviewAsync("home", Manifest(), Ct);
+
+        Assert.Equal(PreviewId(first), PreviewId(second));
+    }
+
+    [Fact]
     public async Task PreviewDoesNotReattachExistingPropertyReferencedById()
     {
         using var server = new FakeAnytypeServer();
@@ -453,7 +491,8 @@ public class SchemaAdminGesturesTests
         using var server = new FakeAnytypeServer();
 
         InvalidOperationException ex = await Assert.ThrowsAsync<InvalidOperationException>(
-            () => NewGestures(server).ApplyAsync("home", "deadbeef", confirm: false, Ct));
+            () => NewGestures(server).ApplyAsync(
+                "home", "deadbeef", Manifest(), confirm: false, Ct));
 
         Assert.Contains("confirm:true", ex.Message);
         Assert.Empty(server.Requests);
@@ -490,9 +529,12 @@ public class SchemaAdminGesturesTests
 
         var gestures = NewGestures(server);
         string preview = await gestures.PreviewAsync("home", Manifest(), Ct);
-        string previewId = preview.Split(' ', StringSplitOptions.RemoveEmptyEntries)[1];
+        string previewId = PreviewId(preview);
 
-        string digest = await gestures.ApplyAsync("home", previewId, confirm: true, Ct);
+        // A fresh gesture instance proves that apply depends only on the
+        // manifest + deterministic preview contract, not process memory.
+        string digest = await NewGestures(server).ApplyAsync(
+            "home", previewId, Manifest(), confirm: true, Ct);
 
         Assert.Contains("propriété créée etat_identification", digest);
         Assert.Contains("tag créé etat_identification:Confirmé", digest);
@@ -544,9 +586,9 @@ public class SchemaAdminGesturesTests
 
         var gestures = NewGestures(server);
         string preview = await gestures.PreviewAsync("home", Manifest(), Ct);
-        string previewId = preview.Split(' ', StringSplitOptions.RemoveEmptyEntries)[1];
+        string previewId = PreviewId(preview);
 
-        await gestures.ApplyAsync("home", previewId, confirm: true, Ct);
+        await gestures.ApplyAsync("home", previewId, Manifest(), confirm: true, Ct);
 
         JsonObject typePatch = server.LastBodyFor("PATCH");
         Assert.Equal("Nom live", typePatch["name"]!.GetValue<string>());
@@ -575,9 +617,12 @@ public class SchemaAdminGesturesTests
             "home",
             TypeManifest(new JsonObject { ["format"] = "icon", ["name"] = "home" }),
             Ct);
-        string previewId = preview.Split(' ', StringSplitOptions.RemoveEmptyEntries)[1];
+        string previewId = PreviewId(preview);
 
-        string digest = await gestures.ApplyAsync("home", previewId, confirm: true, Ct);
+        string digest = await gestures.ApplyAsync(
+            "home", previewId,
+            TypeManifest(new JsonObject { ["format"] = "icon", ["name"] = "home" }),
+            confirm: true, Ct);
 
         Assert.Contains("set_icon · piece · icon:home", preview);
         Assert.Contains("icône définie piece · icon:home", digest);
@@ -611,9 +656,12 @@ public class SchemaAdminGesturesTests
             "home",
             TypeManifest(new JsonObject { ["format"] = "emoji", ["emoji"] = "🚪" }),
             Ct);
-        string previewId = preview.Split(' ', StringSplitOptions.RemoveEmptyEntries)[1];
+        string previewId = PreviewId(preview);
 
-        string digest = await gestures.ApplyAsync("home", previewId, confirm: true, Ct);
+        string digest = await gestures.ApplyAsync(
+            "home", previewId,
+            TypeManifest(new JsonObject { ["format"] = "emoji", ["emoji"] = "🚪" }),
+            confirm: true, Ct);
 
         Assert.Contains("set_icon · piece · emoji:🚪", preview);
         Assert.Contains("icône définie piece · emoji:🚪", digest);
@@ -625,7 +673,7 @@ public class SchemaAdminGesturesTests
     }
 
     [Fact]
-    public async Task ApplyDoesNotOverwriteIconSetAfterPreview()
+    public async Task ApplyRefusesWhenTheLivePlanChangedAfterPreview()
     {
         using var server = new FakeAnytypeServer();
         server.OnListTypes(Page(new JsonArray { ExistingType() }));
@@ -646,12 +694,16 @@ public class SchemaAdminGesturesTests
             "home",
             TypeManifest(new JsonObject { ["format"] = "icon", ["name"] = "bed" }),
             Ct);
-        string previewId = preview.Split(' ', StringSplitOptions.RemoveEmptyEntries)[1];
+        string previewId = PreviewId(preview);
 
-        string digest = await gestures.ApplyAsync("home", previewId, confirm: true, Ct);
+        InvalidOperationException error = await Assert.ThrowsAsync<InvalidOperationException>(
+            () => gestures.ApplyAsync(
+                "home", previewId,
+                TypeManifest(new JsonObject { ["format"] = "icon", ["name"] = "bed" }),
+                confirm: true, Ct));
 
         Assert.Contains("set_icon · piece · icon:bed", preview);
-        Assert.Contains("Schéma inchangé", digest);
+        Assert.Contains("Relance schema_preview", error.Message);
         Assert.DoesNotContain(server.Requests, request => request.Method == "PATCH");
     }
 
@@ -667,12 +719,15 @@ public class SchemaAdminGesturesTests
 
         var gestures = NewGestures(server);
         string preview = await gestures.PreviewAsync("home", Manifest(), Ct);
-        string previewId = preview.Split(' ', StringSplitOptions.RemoveEmptyEntries)[1];
+        string previewId = PreviewId(preview);
 
         InvalidOperationException ex = await Assert.ThrowsAsync<InvalidOperationException>(
-            () => gestures.ApplyAsync("home", previewId, confirm: true, Ct));
+            () => gestures.ApplyAsync("home", previewId, Manifest(), confirm: true, Ct));
 
         Assert.Contains("Relance schema_preview", ex.Message);
         Assert.DoesNotContain(server.Requests, r => r.Method is "POST" or "PATCH");
     }
+
+    private static string PreviewId(string digest) =>
+        digest.Split(' ', StringSplitOptions.RemoveEmptyEntries)[1];
 }

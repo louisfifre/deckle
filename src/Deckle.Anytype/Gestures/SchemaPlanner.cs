@@ -70,8 +70,8 @@ internal static class SchemaPlanner
             }
         }
 
-        return new SchemaPreview(
-            Id: PreviewId(),
+        var preview = new SchemaPreview(
+            Id: string.Empty,
             SpaceAlias: spaceAlias,
             SpaceId: spaceId,
             Manifest: manifest,
@@ -79,6 +79,7 @@ internal static class SchemaPlanner
             Actions: actions,
             Conflicts: conflicts,
             SkippedConflicts: skippedConflicts);
+        return preview with { Id = PreviewId(preview) };
     }
 
     internal static string Render(SchemaPreview preview)
@@ -242,24 +243,59 @@ internal static class SchemaPlanner
     internal static string OrDefault(string value, string fallback) =>
         value.Length > 0 ? value : fallback;
 
-    internal static void EnsureNoUnpreviewedActions(SchemaPreview preview, SchemaPreview livePlan)
+    private static string PreviewId(SchemaPreview preview)
     {
-        var previewed = preview.Actions
-            .Select(a => $"{a.Kind}:{a.Key}")
-            .ToHashSet(StringComparer.Ordinal);
+        var contract = new StringBuilder();
+        Append(contract, preview.SpaceAlias.ToLowerInvariant());
+        Append(contract, preview.SpaceId);
 
-        foreach (SchemaAction action in livePlan.Actions)
-            if (!previewed.Contains($"{action.Kind}:{action.Key}"))
-                throw new InvalidOperationException(
-                    "L'état Anytype a changé depuis le preview. Relance schema_preview avant schema_apply.");
+        foreach (PropertySpec property in preview.Manifest.Properties)
+        {
+            Append(contract, "property");
+            Append(contract, property.Key);
+            Append(contract, property.Name);
+            Append(contract, property.Format);
+            foreach (TagSpec tag in property.Tags)
+            {
+                Append(contract, tag.MatchKey);
+                Append(contract, tag.Name);
+                Append(contract, tag.Key ?? string.Empty);
+                Append(contract, tag.Color ?? string.Empty);
+            }
+        }
+
+        foreach (TypeSpec type in preview.Manifest.Types)
+        {
+            Append(contract, "type");
+            Append(contract, type.Key);
+            Append(contract, type.Name);
+            Append(contract, type.PluralName);
+            Append(contract, type.Layout);
+            Append(contract, type.Icon?.Format ?? string.Empty);
+            Append(contract, type.Icon?.Name ?? string.Empty);
+            Append(contract, type.Icon?.Color ?? string.Empty);
+            Append(contract, type.Icon?.Emoji ?? string.Empty);
+            foreach (string property in type.Properties)
+                Append(contract, property);
+        }
+
+        foreach (SchemaAction action in preview.Actions)
+        {
+            Append(contract, action.Kind);
+            Append(contract, action.Key);
+            Append(contract, action.Name);
+        }
+        foreach (string conflict in preview.Conflicts)
+            Append(contract, "conflict:" + conflict);
+        foreach (string conflict in preview.SkippedConflicts)
+            Append(contract, "skipped:" + conflict);
+
+        byte[] hash = SHA256.HashData(Encoding.UTF8.GetBytes(contract.ToString()));
+        return Convert.ToHexString(hash).ToLowerInvariant();
     }
 
-    private static string PreviewId()
-    {
-        Span<byte> bytes = stackalloc byte[6];
-        RandomNumberGenerator.Fill(bytes);
-        return Convert.ToHexString(bytes).ToLowerInvariant();
-    }
+    private static void Append(StringBuilder target, string value) =>
+        target.Append(value.Length).Append(':').Append(value);
 
 
 }

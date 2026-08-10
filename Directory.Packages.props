@@ -65,6 +65,13 @@
          Hue driver so the transport dependency does not leak into Ambient. -->
     <PackageVersion Include="BouncyCastle.Cryptography" Version="2.6.2" />
 
+    <!-- Official MCP C# SDK. The ASP.NET Core transport hosts the resident
+         stateless Streamable HTTP endpoint; tests use the protocol package's
+         client directly to pin current and down-level negotiation. -->
+    <PackageVersion Include="ModelContextProtocol" Version="2.1.0" />
+    <PackageVersion Include="ModelContextProtocol.AspNetCore" Version="2.1.0" />
+    <PackageVersion Include="JsonSchema.Net" Version="9.4.0" />
+
     <!-- Test stack (tests/Deckle.*.Tests): xUnit v3 on the Microsoft Testing Platform,
          VSTest bridge for the Test Explorer. -->
     <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="17.13.0" />

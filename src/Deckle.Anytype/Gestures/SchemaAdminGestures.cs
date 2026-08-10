@@ -7,7 +7,6 @@ namespace Deckle.Anytype;
 public sealed partial class SchemaAdminGestures(AnytypeApiClient api, AnytypeSpaceAliases aliases)
 {
     private readonly SchemaSnapshotReader _snapshotReader = new(api);
-    private readonly SchemaPreviewStore _previewStore = new();
 
     public async Task<string> InspectAsync(string space, CancellationToken ct = default)
     {
@@ -31,7 +30,16 @@ public sealed partial class SchemaAdminGestures(AnytypeApiClient api, AnytypeSpa
         return sb.ToString().TrimEnd();
     }
 
-    public async Task<string> PreviewAsync(string space, JsonObject manifestNode, CancellationToken ct = default)
+    public async Task<string> PreviewAsync(
+        string space,
+        JsonObject manifestNode,
+        CancellationToken ct = default) =>
+        (await PreviewResultAsync(space, manifestNode, ct).ConfigureAwait(false)).Digest;
+
+    public async Task<SchemaPreviewResult> PreviewResultAsync(
+        string space,
+        JsonObject manifestNode,
+        CancellationToken ct = default)
     {
         var started = DateTime.UtcNow;
         string spaceId = aliases.Resolve(space);
@@ -39,46 +47,52 @@ public sealed partial class SchemaAdminGestures(AnytypeApiClient api, AnytypeSpa
         SchemaSnapshot snapshot = await _snapshotReader.BuildAsync(spaceId, manifest, ct);
         SchemaPreview preview = SchemaPlanner.Build(space, spaceId, manifest, snapshot);
 
-        _previewStore.Store(preview);
-
         DeckleAnytypeSource.Log.GestureCompleted("schema_preview", Elapsed(started));
-        return SchemaPlanner.Render(preview);
+        return new SchemaPreviewResult(
+            preview.Id,
+            preview.SpaceAlias,
+            preview.Actions
+                .Select(action => new SchemaPreviewAction(action.Kind, action.Key, action.Name))
+                .ToArray(),
+            preview.Conflicts.ToArray(),
+            preview.SkippedConflicts.ToArray(),
+            SchemaPlanner.Render(preview));
     }
 
     public async Task<string> ApplyAsync(
-        string space, string previewId, bool confirm, CancellationToken ct = default)
+        string space,
+        string previewId,
+        JsonObject manifestNode,
+        bool confirm,
+        CancellationToken ct = default)
     {
         var started = DateTime.UtcNow;
         if (!confirm)
             throw new InvalidOperationException(
                 "schema_apply exige confirm:true avec un preview_id relu juste avant.");
 
-        if (!_previewStore.TryGet(previewId, out SchemaPreview preview))
-            throw new InvalidOperationException(
-                $"Preview inconnu « {previewId} ». Relance schema_preview.");
+        string spaceId = aliases.Resolve(space);
+        SchemaManifest manifest = SchemaManifest.Parse(manifestNode);
 
-        if (!string.Equals(preview.SpaceAlias, space, StringComparison.OrdinalIgnoreCase))
+        // The preview carries no server-side state. Rebuild the exact plan under
+        // the write lock and compare its deterministic fingerprint with the one
+        // the caller reviewed. A restart therefore loses nothing; a live schema
+        // change requires a fresh preview instead of applying an unseen plan.
+        using var _ = await api.AcquireWriteScopeAsync("schema_apply", spaceId, ct);
+        SchemaSnapshot snapshot = await _snapshotReader.BuildAsync(spaceId, manifest, ct);
+        SchemaPreview preview = SchemaPlanner.Build(space, spaceId, manifest, snapshot);
+        if (!string.Equals(preview.Id, previewId, StringComparison.Ordinal))
             throw new InvalidOperationException(
-                $"Le preview « {previewId} » cible l'espace {preview.SpaceAlias}, pas {space}.");
-
+                "Le manifeste ou l'état Anytype a changé depuis le preview. Relance schema_preview.");
         if (preview.Conflicts.Count > 0)
             throw new InvalidOperationException(
                 "Preview avec conflit : schema_apply refusé. Corrige le manifeste puis relance schema_preview.");
-
-        using var _ = await api.AcquireWriteScopeAsync("schema_apply", preview.SpaceId, ct);
-
-        SchemaSnapshot snapshot = await _snapshotReader.BuildAsync(preview.SpaceId, preview.Manifest, ct);
-        SchemaPreview livePlan = SchemaPlanner.Build(preview.SpaceAlias, preview.SpaceId, preview.Manifest, snapshot);
-        if (livePlan.Conflicts.Count > 0)
-            throw new InvalidOperationException(
-                "L'état Anytype a changé depuis le preview et produit maintenant un conflit. Relance schema_preview.");
-        SchemaPlanner.EnsureNoUnpreviewedActions(preview, livePlan);
 
         var propertiesByKey = snapshot.Properties.ToDictionary(
             p => p.Key, p => p.Value, StringComparer.Ordinal);
         var typesByKey = snapshot.Types.ToDictionary(
             t => t.Key, t => t.Value, StringComparer.Ordinal);
-        var setIconKeys = livePlan.Actions
+        var setIconKeys = preview.Actions
             .Where(action => action.Kind == "set_icon")
             .Select(action => action.Key)
             .ToHashSet(StringComparer.Ordinal);
@@ -214,8 +228,6 @@ public sealed partial class SchemaAdminGestures(AnytypeApiClient api, AnytypeSpa
             if (iconChanged)
                 applied.Add($"icône définie {type.Key} · {type.Icon!.Display}");
         }
-
-        _previewStore.Remove(previewId);
 
         DeckleAnytypeSource.Log.GestureCompleted("schema_apply", Elapsed(started));
         return applied.Count == 0

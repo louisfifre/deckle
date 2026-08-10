@@ -52,6 +52,16 @@ public sealed class DeckleAnytypeSource : DeckleEventSource
     public const int EvtBackendStoppedDetail          = 22;
     public const int EvtBackendSpawnFailed            = 23;
     public const int EvtBackendSpawnFailedDetail      = 24;
+    public const int EvtBackendReconciliationStarted  = 25;
+    public const int EvtBackendReconciliationLeaseAcquired = 26;
+    public const int EvtBackendListenerObserved       = 27;
+    public const int EvtBackendReconciliationCompleted = 28;
+    public const int EvtBackendReconciliationCancelled = 29;
+    public const int EvtBackendEndpointConflict       = 30;
+    public const int EvtBackendEndpointConflictDetail = 31;
+    public const int EvtBackendRestartScheduled       = 32;
+    public const int EvtAnytypeRuntimeFailed          = 33;
+    public const int EvtAnytypeRuntimeFailedDetail    = 34;
 
     // ── HTTP transport ──────────────────────────────────────────────────
 
@@ -265,6 +275,107 @@ public sealed class DeckleAnytypeSource : DeckleEventSource
     public void BackendSpawnFailedDetail(string error)
     {
         if (IsEnabled()) WriteEvent(EvtBackendSpawnFailedDetail, error);
+    }
+
+    [Event(EvtBackendReconciliationStarted,
+           Level = EventLevel.Verbose,
+           Keywords = Lifecycle,
+           Message = "backend reconciliation started | reconciliation_id={0} | trigger={1}")]
+    public void BackendReconciliationStarted(string reconciliation_id, string trigger)
+    {
+        if (IsEnabled()) WriteEvent(EvtBackendReconciliationStarted, reconciliation_id, trigger);
+    }
+
+    [Event(EvtBackendReconciliationLeaseAcquired,
+           Level = EventLevel.Verbose,
+           Keywords = Lifecycle,
+           Message = "backend reconciliation lease acquired | reconciliation_id={0} | waited_ms={1:F1} | abandoned={2}")]
+    public void BackendReconciliationLeaseAcquired(
+        string reconciliation_id, double waited_ms, bool abandoned)
+    {
+        if (IsEnabled()) WriteEvent(
+            EvtBackendReconciliationLeaseAcquired, reconciliation_id, waited_ms, abandoned);
+    }
+
+    [Event(EvtBackendListenerObserved,
+           Level = EventLevel.Verbose,
+           Keywords = Lifecycle,
+           Message = "backend listener observed | reconciliation_id={0} | expected_pid={1} | listener_pid={2} | healthy={3} | executable={4}")]
+    public void BackendListenerObserved(
+        string reconciliation_id, int expected_pid, int listener_pid,
+        bool healthy, string executable)
+    {
+        if (IsEnabled()) WriteEvent(
+            EvtBackendListenerObserved, reconciliation_id, expected_pid,
+            listener_pid, healthy, executable);
+    }
+
+    [Event(EvtBackendReconciliationCompleted,
+           Level = EventLevel.Verbose,
+           Keywords = Lifecycle,
+           Message = "backend reconciliation completed | reconciliation_id={0} | decision={1} | pid={2} | ms={3:F1}")]
+    public void BackendReconciliationCompleted(
+        string reconciliation_id, string decision, int pid, double duration_ms)
+    {
+        if (IsEnabled()) WriteEvent(
+            EvtBackendReconciliationCompleted, reconciliation_id, decision, pid, duration_ms);
+    }
+
+    [Event(EvtBackendReconciliationCancelled,
+           Level = EventLevel.Verbose,
+           Keywords = Lifecycle,
+           Message = "backend reconciliation cancelled | reconciliation_id={0} | ms={1:F1}")]
+    public void BackendReconciliationCancelled(string reconciliation_id, double duration_ms)
+    {
+        if (IsEnabled()) WriteEvent(
+            EvtBackendReconciliationCancelled, reconciliation_id, duration_ms);
+    }
+
+    [Event(EvtBackendEndpointConflict,
+           Level = EventLevel.Warning,
+           Keywords = Lifecycle,
+           Message = "Another process owns the Anytype endpoint")]
+    public void BackendEndpointConflict()
+    {
+        if (IsEnabled()) WriteEvent(EvtBackendEndpointConflict);
+    }
+
+    [Event(EvtBackendEndpointConflictDetail,
+           Level = EventLevel.Verbose,
+           Keywords = Lifecycle,
+           Message = "backend endpoint conflict | reconciliation_id={0} | listener_pid={1} | detail={2}")]
+    public void BackendEndpointConflictDetail(
+        string reconciliation_id, int listener_pid, string detail)
+    {
+        if (IsEnabled()) WriteEvent(
+            EvtBackendEndpointConflictDetail, reconciliation_id, listener_pid, detail);
+    }
+
+    [Event(EvtBackendRestartScheduled,
+           Level = EventLevel.Verbose,
+           Keywords = Lifecycle,
+           Message = "backend restart scheduled | attempt={0} | backoff_ms={1:F0}")]
+    public void BackendRestartScheduled(int attempt, double backoff_ms)
+    {
+        if (IsEnabled()) WriteEvent(EvtBackendRestartScheduled, attempt, backoff_ms);
+    }
+
+    [Event(EvtAnytypeRuntimeFailed,
+           Level = EventLevel.Error,
+           Keywords = Lifecycle,
+           Message = "The Anytype runtime could not start")]
+    public void AnytypeRuntimeFailed()
+    {
+        if (IsEnabled()) WriteEvent(EvtAnytypeRuntimeFailed);
+    }
+
+    [Event(EvtAnytypeRuntimeFailedDetail,
+           Level = EventLevel.Verbose,
+           Keywords = Lifecycle,
+           Message = "anytype runtime failed | error={0}")]
+    public void AnytypeRuntimeFailedDetail(string error)
+    {
+        if (IsEnabled()) WriteEvent(EvtAnytypeRuntimeFailedDetail, error);
     }
 
     // Which provisioning world the credentials resolved to: "headless" (the

@@ -40,5 +40,9 @@ public class ManagementToolCatalogTests
 
         var required = Assert.IsType<JsonArray>(schema["required"]);
         Assert.Contains(required, n => n!.GetValue<string>() == "target");
+        Assert.Equal(ToolEffect.Destructive, delete.Execution.Effect);
+        Assert.Equal(AmbiguousOutcomePolicy.VerifyBeforeRetry, delete.Execution.AmbiguousOutcome);
+        Assert.True(delete.Execution.RequiresStableTarget);
+        Assert.Equal(ToolChangeKind.Destructive, delete.Execution.Change);
     }
 }

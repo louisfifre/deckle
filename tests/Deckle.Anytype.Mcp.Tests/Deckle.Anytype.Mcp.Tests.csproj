@@ -1,5 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <ItemGroup>
+    <PackageReference Include="ModelContextProtocol" />
     <ProjectReference Include="..\..\src\Deckle.Anytype.Mcp\Deckle.Anytype.Mcp.csproj" />
   </ItemGroup>
 </Project>

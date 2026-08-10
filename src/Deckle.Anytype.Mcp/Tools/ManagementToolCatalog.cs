@@ -33,7 +33,8 @@ public static class ManagementToolCatalog
                     required: [Prop("target", "string", "Object to move to trash, name or id.")],
                     optional: [Prop("confirm", "boolean", "Pass true ONLY on the second call, with target set to the id the preview returned, to commit. Omit for the preview.")]),
                 async (args, ct) =>
-                    await management.DeleteAsync(Str(args, "target"), BoolOpt(args, "confirm") ?? false, ct)),
+                    await management.DeleteAsync(Str(args, "target"), BoolOpt(args, "confirm") ?? false, ct),
+                ToolExecutionContract.DestructiveVerifiable),
         };
     }
 

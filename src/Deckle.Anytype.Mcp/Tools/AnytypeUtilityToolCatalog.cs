@@ -23,7 +23,8 @@ public static class AnytypeUtilityToolCatalog
                 RequiredString(args, "space"),
                 RequiredString(args, "collection"),
                 RequiredStringArray(args, "objects"),
-                ct)),
+                ct),
+            ToolExecutionContract.AdditiveUncertain),
 
         new(
             "anytype_select_set",
@@ -38,7 +39,8 @@ public static class AnytypeUtilityToolCatalog
                 RequiredString(args, "object"),
                 RequiredString(args, "property_key"),
                 RequiredStringArray(args, "tag_keys"),
-                ct)),
+                ct),
+            ToolExecutionContract.OverwritingIdempotent),
     ];
 
     private static JsonObject Schema(params (string Name, JsonObject Shape)[] required)

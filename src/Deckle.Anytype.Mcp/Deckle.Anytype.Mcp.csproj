@@ -4,11 +4,19 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+    <PackageReference Include="JsonSchema.Net" />
+    <PackageReference Include="ModelContextProtocol.AspNetCore" />
+
     <!-- The host pulls in the whole Anytype stack (Api + Gestures + Schema)
          transitively through this one reference; Diagnostics rides along via
          Deckle.Anytype. -->
     <ProjectReference Include="..\Deckle.Anytype\Deckle.Anytype.csproj" />
-    <!-- The HTTP transport authenticates each session against the vault. -->
+    <!-- The HTTP transport authenticates each stateless request against the vault. -->
     <ProjectReference Include="..\Deckle.Security\Deckle.Security.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="Deckle.Anytype.Mcp.Tests" />
   </ItemGroup>
 </Project>

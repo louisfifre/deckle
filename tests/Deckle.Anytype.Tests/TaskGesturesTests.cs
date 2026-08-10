@@ -61,14 +61,14 @@ public class TaskGesturesTests
     // ── SubtaskAsync ──────────────────────────────────────────────────────────
 
     [Fact]
-    public async Task SubtaskWithNoMatchAppendsAnUncheckedItemAtTheEnd()
+    public async Task SubtaskSetFalseWithNoMatchAppendsAnUncheckedItemAtTheEnd()
     {
         using var server = new FakeAnytypeServer();
         string body = "# Notes\n\n- [ ] déjà là";
         server.OnGetObject(TaskId, TaskObject(body));
         server.OnPatchObject(TaskId, TaskObject(body)); // PATCH echoes an object
 
-        await NewGestures(server).SubtaskAsync(TaskId, "nouvelle étape", ct: Ct);
+        await NewGestures(server).SubtaskAsync(TaskId, "nouvelle étape", done: false, ct: Ct);
 
         // The PATCH rewrites the whole markdown: original body preserved verbatim,
         // a new "- [ ] label" line tacked on at the end.
@@ -87,7 +87,7 @@ public class TaskGesturesTests
 
         // Label "brief" matches "Rédiger le BRIEF" by case-insensitive contains
         // (the differing-case portion is ASCII, so the fold is unambiguous).
-        await NewGestures(server).SubtaskAsync(TaskId, "brief", ct: Ct);
+        await NewGestures(server).SubtaskAsync(TaskId, "brief", done: true, ct: Ct);
 
         JsonObject patched = server.LastBodyFor("PATCH");
         string next = patched["markdown"]!.GetValue<string>();
@@ -109,6 +109,52 @@ public class TaskGesturesTests
         string next = patched["markdown"]!.GetValue<string>();
         // Idempotent: the checked item stays checked, the rest is verbatim.
         Assert.Equal("- [x] terminé\n- [ ] reste", next);
+    }
+
+    [Fact]
+    public async Task SubtaskReplayKeepsOneItemInTheRequestedState()
+    {
+        using var server = new FakeAnytypeServer();
+        string before = "# Notes";
+        string after = "# Notes\n- [ ] relire";
+        server.OnGetObject(TaskId, TaskObject(before));
+        server.OnGetObject(TaskId, TaskObject(after));
+        server.OnPatchObject(TaskId, TaskObject(after));
+        server.OnPatchObject(TaskId, TaskObject(after));
+
+        TaskGestures gestures = NewGestures(server);
+        await gestures.SubtaskAsync(TaskId, "relire", done: false, ct: Ct);
+        await gestures.SubtaskAsync(TaskId, "relire", done: false, ct: Ct);
+
+        JsonObject patched = server.LastBodyFor("PATCH");
+        Assert.Equal(after, patched["markdown"]!.GetValue<string>());
+    }
+
+    [Fact]
+    [Trait("Category", "regression")]
+    public async Task SubtaskRejectsABlankLabelBeforeReadingOrWriting()
+    {
+        using var server = new FakeAnytypeServer();
+
+        ArgumentException error = await Assert.ThrowsAsync<ArgumentException>(
+            () => NewGestures(server).SubtaskAsync(TaskId, "   ", done: false, ct: Ct));
+
+        Assert.Contains("libellé", error.Message);
+        Assert.Empty(server.Requests);
+    }
+
+    [Fact]
+    [Trait("Category", "regression")]
+    public async Task SubtaskRefusesAnAmbiguousPartialLabelWithoutWriting()
+    {
+        using var server = new FakeAnytypeServer();
+        server.OnGetObject(TaskId, TaskObject("- [ ] Relire le brief\n- [ ] Relire le rapport"));
+
+        InvalidOperationException error = await Assert.ThrowsAsync<InvalidOperationException>(
+            () => NewGestures(server).SubtaskAsync(TaskId, "relire", done: true, ct: Ct));
+
+        Assert.Contains("ambiguë", error.Message);
+        Assert.DoesNotContain(server.Requests, request => request.Method == "PATCH");
     }
 
     [Fact]
@@ -176,11 +222,11 @@ internal sealed class FakeAnytypeServer : IDisposable
     public void OnGetObject(string id, JsonObject response) =>
         _routes.Add(new("GET", $"{SpacePath}/objects/{id}", 200, response.ToJsonString()));
 
-    public void OnPatchObject(string id, JsonObject response) =>
-        _routes.Add(new("PATCH", $"{SpacePath}/objects/{id}", 200, response.ToJsonString()));
+    public void OnPatchObject(string id, JsonObject response, int status = 200) =>
+        _routes.Add(new("PATCH", $"{SpacePath}/objects/{id}", status, response.ToJsonString()));
 
-    public void OnPostObject(JsonObject response) =>
-        _routes.Add(new("POST", $"{SpacePath}/objects", 200, response.ToJsonString()));
+    public void OnPostObject(JsonObject response, int status = 200) =>
+        _routes.Add(new("POST", $"{SpacePath}/objects", status, response.ToJsonString()));
 
     public void OnListTypes(JsonObject response) =>
         _routes.Add(new("GET", $"{SpacePath}/types", 200, response.ToJsonString()));

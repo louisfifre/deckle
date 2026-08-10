@@ -11,9 +11,6 @@ namespace Deckle.Anytype;
 // report side — the rapport carries journal date + the linked task(s) in its
 // « Tâche(s) liée(s) » property; its project is derived through those tasks.
 //
-// The "current report" is per-process state: session_log / session_touch with no
-// explicit report act on the report opened by session_start in this process.
-//
 // All schema keys go through Deckle.Anytype.DevSpace — the single source
 // of truth for the wire keys, including the trap keys (the malformed
 // « tache(s)_liee(s) », the opaque Priorité id).
@@ -21,10 +18,6 @@ public sealed class SessionGestures(AnytypeApiClient api, NameResolver resolver)
 {
     readonly AnytypeApiClient _api = api;
     readonly NameResolver _resolver = resolver;
-
-    // Per-process: the report opened by the last session_start. Holds across the
-    // life of the host process so session_log / session_touch need no id.
-    string? _currentReportId;
 
     // ── session_start ────────────────────────────────────────────────────────
 
@@ -56,30 +49,24 @@ public sealed class SessionGestures(AnytypeApiClient api, NameResolver resolver)
         string reportId = report["id"]?.GetValue<string>()
             ?? throw new InvalidOperationException("Le rapport créé n'a pas d'id.");
 
-        _currentReportId = reportId;
-
         DeckleAnytypeSource.Log.SessionStarted();
         DeckleAnytypeSource.Log.SessionReportCreated(reportId);
 
         string digest = await BuildStartDigestAsync(taskObj, ct);
         DeckleAnytypeSource.Log.GestureCompleted("session_start", Elapsed(t0));
-        return digest;
+        return $"report_id : {reportId}\n{digest}";
     }
 
     // ── session_log ──────────────────────────────────────────────────────────
 
     public async Task<string> LogAsync(
-        string line, string? reportSelector = null, CancellationToken ct = default)
+        string line, string reportSelector, CancellationToken ct = default)
     {
         long t0 = Stopwatch.GetTimestamp();
 
-        string reportId;
-        if (reportSelector is { Length: > 0 })
-            reportId = await _resolver.ResolveAsync(reportSelector, new[] { DevSpace.Types.Rapport }, ct);
-        else if (_currentReportId is { Length: > 0 })
-            reportId = _currentReportId;
-        else
-            return "Aucun rapport ouvert dans cette session. Appelle d'abord session_start.";
+        // session_start returns this provider handle. Accepting a report title
+        // here would reintroduce ambiguous recovery after a lost append result.
+        string reportId = AnytypeObjectId.Require(reportSelector, "report");
 
         using var _ = await _api.AcquireWriteScopeAsync("session_log", reportId, ct);
         JsonObject report = await _api.GetObjectAsync(reportId, ct);
@@ -98,17 +85,17 @@ public sealed class SessionGestures(AnytypeApiClient api, NameResolver resolver)
 
     // ── session_touch ────────────────────────────────────────────────────────
 
-    public async Task<string> TouchTaskAsync(string task, CancellationToken ct = default)
+    public async Task<string> TouchTaskAsync(
+        string report, string task, CancellationToken ct = default)
     {
         long t0 = Stopwatch.GetTimestamp();
 
-        if (_currentReportId is not { Length: > 0 })
-            return "Aucun rapport ouvert dans cette session. Appelle d'abord session_start.";
-
+        string reportId = await _resolver.ResolveAsync(
+            report, new[] { DevSpace.Types.Rapport }, ct);
         string taskId = await _resolver.ResolveAsync(task, new[] { DevSpace.Types.Task }, ct);
         JsonObject taskObj = await _api.GetObjectAsync(taskId, ct);
 
-        await AppendTaskToReportAsync(_currentReportId, taskId, ct);
+        await AppendTaskToReportAsync(reportId, taskId, ct);
 
         DeckleAnytypeSource.Log.GestureCompleted("session_touch", Elapsed(t0));
         return $"Tâche « {DisplayName(taskObj)} » liée au rapport courant.";

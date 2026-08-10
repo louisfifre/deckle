@@ -4,17 +4,17 @@ using Deckle.Anytype.Mcp;
 namespace Deckle.Home;
 
 // The complete plug-in unit for Home: client identity, bearer coordinates and
-// the session-scoped surface mounted by the resident host. Deckle.App chooses
+// the stateless surface mounted by the resident host. Deckle.App chooses
 // whether to compose this client; the generic host has no Home dependency.
 public static class HomeMcp
 {
     public static readonly McpClientProfile Client = new(
         "home",
-        new McpSurface("home", OpenSession),
+        new McpSurface("home", Open),
         "mcp-token-home",
         "DECKLE_MCP_TOKEN_HOME");
 
-    private static readonly McpServer.Descriptor Descriptor = new(
+    private static readonly McpSurfaceDescriptor Descriptor = new(
         "deckle-home",
         "Deckle Home",
         "Guarded home inventory and house life stored in the configured "
@@ -28,16 +28,16 @@ public static class HomeMcp
         + "unknown closed-vocabulary values, and element deletion are refused "
         + "with corrective guidance. Content is French.");
 
-    private static McpSurfaceSession OpenSession(AnytypeApiClient api)
+    private static McpSurfaceBinding Open(AnytypeApiClient api)
     {
         // Alias and schema are runtime configuration. Construction stays lazy
         // so initialize/tools/list work while Home still needs provisioning; a
-        // failed resolution is not cached and the session can retry later.
+        // failed resolution is not cached and a later request can retry.
         HomeGestures? gestures = null;
         HomeGestures ResolveGestures() => gestures ??= new HomeGestures(
             api,
             AnytypeSpaceAliases.Load(api.SpaceId).Resolve("home"));
 
-        return new McpSurfaceSession(HomeToolCatalog.Build(ResolveGestures), Descriptor);
+        return new McpSurfaceBinding(HomeToolCatalog.Build(ResolveGestures), Descriptor);
     }
 }

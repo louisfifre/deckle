@@ -75,15 +75,15 @@ public sealed class TaskGestures(AnytypeApiClient api, NameResolver resolver)
     }
 
     /// <summary>
-    /// Toggles a checklist item in the task body. A case-insensitive
-    /// contains-match on <paramref name="label"/> finds the line; no match
-    /// appends a new unchecked item. <paramref name="done"/> forces the target
-    /// state (default = mark complete).
+    /// Sets a checklist item in the task body. One case-insensitive
+    /// contains-match on <paramref name="label"/> finds the line; multiple
+    /// matches are refused, and no match appends an item in the requested state.
     /// </summary>
     public async Task<string> SubtaskAsync(
-        string task, string label, bool? done = null, CancellationToken ct = default)
+        string task, string label, bool done, CancellationToken ct = default)
     {
         var sw = Stopwatch.StartNew();
+        label = RequireChecklistLabel(label);
 
         string taskId = await resolver.ResolveAsync(task, new[] { DevSpace.Types.Task }, ct);
 
@@ -119,40 +119,54 @@ public sealed class TaskGestures(AnytypeApiClient api, NameResolver resolver)
 
     enum ChecklistOutcome { Added, Checked, Unchecked }
 
-    // Finds the first GFM checklist line whose label contains `label`
-    // (case-insensitive) and rewrites its checkbox. No match → append a new
-    // item. The two paths default differently when `done` is null: a matched
-    // item is being completed (→ checked), a new item is being planned
-    // (→ unchecked); an explicit `done` forces either path.
+    // Finds the unique GFM checklist line whose label contains `label`
+    // (case-insensitive) and rewrites its checkbox. Multiple matches are
+    // refused; no match appends an item in the requested state. The operation
+    // is a set, never a toggle, so replay cannot change the requested state.
     static (string Markdown, ChecklistOutcome Outcome) ApplyChecklist(
-        string markdown, string label, bool? done)
+        string markdown, string label, bool done)
     {
         string[] lines = markdown.Split('\n');
 
+        var matches = new List<(int Line, int Box)>();
         for (int i = 0; i < lines.Length; i++)
         {
             if (!TryParseChecklistLine(lines[i], out int boxIndex, out string itemLabel))
                 continue;
 
             if (itemLabel.Contains(label, StringComparison.OrdinalIgnoreCase))
-            {
-                bool target = done ?? true;
-
-                // boxIndex points at the char between the brackets.
-                var sb = new StringBuilder(lines[i]);
-                sb[boxIndex] = target ? 'x' : ' ';
-                lines[i] = sb.ToString();
-                return (string.Join('\n', lines),
-                        target ? ChecklistOutcome.Checked : ChecklistOutcome.Unchecked);
-            }
+                matches.Add((i, boxIndex));
         }
 
-        string box = done == true ? "x" : " ";
+        if (matches.Count > 1)
+            throw new InvalidOperationException(
+                $"Sous-tâche « {label} » ambiguë : {matches.Count} lignes correspondent. "
+                + "Utilise un libellé plus précis.");
+
+        if (matches.Count == 1)
+        {
+            (int line, int boxIndex) = matches[0];
+            // boxIndex points at the char between the brackets.
+            var sb = new StringBuilder(lines[line]);
+            sb[boxIndex] = done ? 'x' : ' ';
+            lines[line] = sb.ToString();
+            return (string.Join('\n', lines),
+                    done ? ChecklistOutcome.Checked : ChecklistOutcome.Unchecked);
+        }
+
+        string box = done ? "x" : " ";
         string newItem = $"- [{box}] {label}";
         string appended = markdown.Length == 0
             ? newItem
             : markdown.TrimEnd('\n') + "\n" + newItem;
         return (appended, ChecklistOutcome.Added);
+    }
+
+    static string RequireChecklistLabel(string label)
+    {
+        if (string.IsNullOrWhiteSpace(label))
+            throw new ArgumentException("Le libellé de sous-tâche ne peut pas être vide.", nameof(label));
+        return label.Trim();
     }
 
     // Recognizes "- [ ] text" / "- [x] text" (also '*'/'+' bullets, any leading

@@ -29,6 +29,9 @@ public sealed class ManagementGestures(AnytypeApiClient api, NameResolver resolv
     {
         var started = DateTime.UtcNow;
 
+        if (confirm)
+            selector = AnytypeObjectId.Require(selector, "target");
+
         string id = await resolver.ResolveAsync(selector, typeKeys: null, ct);
         JsonObject obj = await api.GetObjectAsync(id, ct);
         string name = DisplayName(obj);

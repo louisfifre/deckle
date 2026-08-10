@@ -1,6 +1,6 @@
 using System.IO;
-using System.IO.Compression;
 using Deckle.Core;
+using Deckle.Install;
 
 namespace Deckle.Anytype;
 
@@ -12,18 +12,26 @@ namespace Deckle.Anytype;
 // spawn, the wizard's predicates and install step — asks this class rather
 // than re-deriving paths or the pin.
 //
-// The location follows the frozen layout split (JOURNAL 2026-06-18):
-// executables under %LOCALAPPDATA%\Programs\Deckle, user data and credentials
-// under %LOCALAPPDATA%\Deckle. The installer's InstallPaths owns the same root
-// but is internal to Deckle.Installer; the anytype subfolder is this module's,
-// so the module resolves it itself.
+// The location follows the executable/data split but is intentionally not
+// nested in Deckle's replaceable payload: providers live under the shared
+// per-user Programs provider root, while data and credentials remain under
+// %LOCALAPPDATA%\Deckle (or its configured data root).
 public static class BackendInstallation
 {
-    public static string InstallDirectory { get; } = Path.Combine(
-        Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-        "Programs", "Deckle", "anytype");
+    // Provider executables deliberately live beside, not inside, the replaceable
+    // Deckle payload. They also stay outside DECKLE_DATA_ROOT: relocating user
+    // data must never move a running image.
+    public static string ProvidersDirectory { get; } = InstallPaths.DefaultProvidersDir;
 
-    public static string ExecutablePath { get; } = Path.Combine(InstallDirectory, "anytype.exe");
+    public static string InstallDirectory { get; } = Path.Combine(ProvidersDirectory, "Anytype");
+
+    // Transitional path used by releases up to 0.31.10. Updates preserve this
+    // directory only while its executable is still running; reconciliation may
+    // adopt that PID, while every new spawn resolves the activated external copy.
+    public static string LegacyInstallDirectory { get; } = InstallPaths.LegacyAnytypeProviderDir;
+
+    private static BackendProviderStore Store { get; } =
+        new(InstallDirectory, LegacyInstallDirectory);
 
     public sealed record BackendBundle(
         string Version,
@@ -46,48 +54,27 @@ public static class BackendInstallation
 
     // The provisioning predicate: has the pinned binary been downloaded? False
     // means the module stays dormant — never a boot failure.
-    public static bool IsInstalled() => File.Exists(ExecutablePath);
+    public static bool IsInstalled() => Store.IsInstalled();
 
     // Extracts a downloaded (and already checksum-verified) bundle zip into the
     // install folder. The asset's internal layout is not contractual, so when
     // the exe lands one folder down, its folder's contents are lifted to the
     // root — ExecutablePath is the contract, not the zip shape. Returns true
     // when the exe is in place at the end.
-    public static async Task<bool> InstallFromZipAsync(string zipPath, CancellationToken ct)
-    {
-        return await Task.Run(() =>
-        {
-            ct.ThrowIfCancellationRequested();
-            Directory.CreateDirectory(InstallDirectory);
-            ZipFile.ExtractToDirectory(zipPath, InstallDirectory, overwriteFiles: true);
+    public static Task<bool> InstallFromZipAsync(string zipPath, CancellationToken ct) =>
+        Store.InstallFromZipAsync(zipPath, CurrentBundle.Version, ct);
 
-            if (File.Exists(ExecutablePath)) return true;
-
-            // Nested layout — find the exe and lift its folder's contents up.
-            string? nested = Directory
-                .EnumerateFiles(InstallDirectory, "anytype.exe", SearchOption.AllDirectories)
-                .FirstOrDefault();
-            if (nested is null) return false;
-
-            string nestedDir = Path.GetDirectoryName(nested)!;
-            foreach (string entry in Directory.EnumerateFileSystemEntries(nestedDir))
-            {
-                string dest = Path.Combine(InstallDirectory, Path.GetFileName(entry));
-                if (Directory.Exists(entry)) Directory.Move(entry, dest);
-                else File.Move(entry, dest, overwrite: true);
-            }
-            Directory.Delete(nestedDir, recursive: true);
-
-            return File.Exists(ExecutablePath);
-        }, ct).ConfigureAwait(false);
-    }
+    // Copies the already verified legacy payload into an immutable version and
+    // activates that copy. The running legacy image is not moved or terminated.
+    public static Task<bool> PrepareAsync(CancellationToken ct = default) =>
+        Store.MigrateLegacyAsync(CurrentBundle.Version, ct);
 
     public static async Task<ProvisioningResult> ProvisionAsync(
         IProgress<Downloader.DownloadProgress> progress,
         CancellationToken ct)
     {
         Directory.CreateDirectory(InstallDirectory);
-        string zipPath = Path.Combine(InstallDirectory, "_bundle.zip");
+        string zipPath = Path.Combine(InstallDirectory, $"bundle-{Guid.NewGuid():N}.zip");
         try
         {
             Downloader.DownloadResult download = await Downloader.DownloadAsync(
@@ -111,6 +98,7 @@ public static class BackendInstallation
     // the version pin is Deckle's (known-good + signal newer, never
     // auto-update — JOURNAL 2026-06-18); the CLI must not self-nag or
     // self-move. No embedded paths, so no quoting concerns in the arguments.
-    public static BackendProcessSpec ServeSpec() =>
-        new(ExecutablePath, "serve --no-update-check");
+    public static BackendProcessSpec? ServeSpec() => Store.ResolveActiveSpec();
+
+    internal static IBackendProviderCatalog ProviderCatalog => Store;
 }
