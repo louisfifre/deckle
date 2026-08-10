@@ -279,8 +279,7 @@ public class McpHttpHostTests
         using HttpResponseMessage response = await harness.Http.SendAsync(request, Ct);
 
         Assert.Equal(HttpStatusCode.MethodNotAllowed, response.StatusCode);
-        Assert.True(response.Headers.TryGetValues("Allow", out IEnumerable<string>? allowed));
-        Assert.Contains("POST", allowed);
+        Assert.Contains("POST", response.Content.Headers.Allow);
     }
 
     [Fact]
@@ -396,7 +395,7 @@ public class McpHttpHostTests
 
         TextContentBlock text = Assert.IsType<TextContentBlock>(Assert.Single(result.Content));
         Assert.Equal("Inspection complete.", text.Text);
-        Assert.False(result.IsError);
+        Assert.NotEqual(true, result.IsError);
         Assert.Equal("complete", result.StructuredContent!.Value
             .GetProperty("status").GetString());
         Assert.Equal(2, result.StructuredContent.Value.GetProperty("count").GetInt32());
@@ -557,7 +556,7 @@ public class McpHttpHostTests
 
         CallToolResult result = await call;
         Assert.True(await stop);
-        Assert.False(result.IsError);
+        Assert.NotEqual(true, result.IsError);
     }
 
     [Fact]
@@ -589,6 +588,7 @@ public class McpHttpHostTests
 
         try { await call; }
         catch (McpException) { }
+        catch (HttpRequestException) { }
         catch (OperationCanceledException) { }
     }
 

@@ -183,6 +183,13 @@ public sealed class McpHttpHost : IAsyncDisposable
             return;
         }
 
+        if (context.Request.ContentLength is > MaxRequestBodyBytes)
+        {
+            Reject("body-too-large", StatusCodes.Status413PayloadTooLarge);
+            context.Response.StatusCode = StatusCodes.Status413PayloadTooLarge;
+            return;
+        }
+
         string origin = context.Request.Headers.Origin.ToString();
         if (origin.Length > 0 && !IsLocalOrigin(origin))
         {
@@ -257,7 +264,9 @@ public sealed class McpHttpHost : IAsyncDisposable
         try
         {
             await application.StopAsync(ct).ConfigureAwait(false);
-            return true;
+            // Kestrel may consume shutdown cancellation and complete normally;
+            // an expired caller budget still cannot certify a complete drain.
+            return !ct.IsCancellationRequested;
         }
         catch (OperationCanceledException) when (ct.IsCancellationRequested)
         {
