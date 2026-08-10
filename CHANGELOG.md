@@ -23,6 +23,7 @@ doctrine). This file is generated from the Conventional-Commit history by
 - **scripts:** Anchor workflows to their checkout
 - **scripts:** Decouple workspace roots from launcher
 - **scripts:** Constrain MSBuild worker fan-out
+- **scripts:** Reset Claude Desktop local storage
 
 ## [0.31.6](https://github.com/louisfifre/deckle/compare/v0.30.2...v0.31.6) — 2026-07-31
 
