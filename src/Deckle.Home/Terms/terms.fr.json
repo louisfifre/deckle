@@ -1,0 +1,198 @@
+{
+  "language": "fr",
+  "types": {
+    "floor": { "name": "Étage", "plural": "Étages" },
+    "room": { "name": "Pièce", "plural": "Pièces" },
+    "point": { "name": "Point", "plural": "Points" },
+    "circuit": { "name": "Circuit", "plural": "Circuits" },
+    "panel": { "name": "Tableau", "plural": "Tableaux" },
+    "system": { "name": "Système", "plural": "Systèmes" },
+    "device": { "name": "Appareil", "plural": "Appareils" },
+    "component": { "name": "Composant", "plural": "Composants" },
+    "plant": { "name": "Plante", "plural": "Plantes" },
+    "idea": { "name": "Idée", "plural": "Idées" },
+    "errand": { "name": "Course", "plural": "Courses" },
+    "worksite": { "name": "Chantier", "plural": "Chantiers" },
+    "todo": { "name": "Tâche", "plural": "Tâches" }
+  },
+  "properties": {
+    "code": "Code",
+    "notes": "Notes",
+    "documents": "Documents",
+    "survey_date": "Date de relevé",
+    "location": "Localisation",
+    "installed_in": "Installé dans",
+    "stored_in": "Rangé dans",
+    "floor": "Étage",
+    "category": "Catégorie",
+    "existence": "Existence",
+    "condition": "État",
+    "circuit": "Circuit",
+    "panel": "Tableau",
+    "outlet_count": "Postes",
+    "earthed": "Terre",
+    "expected_rating": "Calibre attendu",
+    "light_nature": "Nature lumineuse",
+    "switch_kind": "Sorte",
+    "controls": "Commande",
+    "controlled_by": "Commandé par",
+    "motor_type": "Type de moteur",
+    "power_watts": "Puissance (W)",
+    "network_standard": "Standard",
+    "ends_at": "Aboutit à",
+    "poe": "PoE",
+    "measured_quantity": "Grandeur mesurée",
+    "power_supply": "Alimentation",
+    "protocol": "Protocole",
+    "panel_size": "Taille",
+    "rating": "Calibre",
+    "origin_label": "Étiquette d'origine",
+    "panel_position": "Position",
+    "dedicated_rcd": "Différentiel dédié",
+    "rcd_head": "Tête différentielle",
+    "rcd_type": "Type de différentiel",
+    "free_slots": "Emplacements libres",
+    "conduits": "Gaines",
+    "sub_meter": "Sous-compteur",
+    "domain": "Domaine",
+    "equipment_category": "Catégorie d'équipement",
+    "manufacturer": "Fabricant",
+    "supplier": "Fournisseur",
+    "model_ref": "Référence modèle",
+    "serial_number": "Numéro de série",
+    "purchase_price": "Prix d'achat (€)",
+    "purchase_date": "Date d'achat",
+    "receipt": "Preuve d'achat",
+    "part_of": "Fait partie de",
+    "quantity": "Quantité",
+    "restock_threshold": "Seuil de rachat",
+    "battery_capacity": "Capacité batterie (mAh)",
+    "storage_capacity": "Capacité de stockage (Go)",
+    "power_rms": "Puissance (W RMS)",
+    "impedance": "Impédance (Ohms)",
+    "os": "OS",
+    "weight": "Poids (g)",
+    "plant_family": "Famille (botanique)",
+    "plant_genus": "Genre (botanique)",
+    "scientific_name": "Nom scientifique",
+    "substrate": "Substrat",
+    "plant_exposure": "Exposition",
+    "last_watering": "Dernier arrosage",
+    "plant_photo": "Photo",
+    "horizon": "Horizon",
+    "aisle": "Rayon",
+    "about": "Concerne",
+    "state": "Statut",
+    "target_date": "Date cible",
+    "worksite": "Chantier"
+  },
+  "options": {
+    "category": {
+      "p": "P — prise 230 V",
+      "ps": "PS — prise spécialisée",
+      "l": "L — point lumineux",
+      "lr": "LR — ruban LED",
+      "c": "C — commande murale",
+      "v": "V — volet / ouvrant",
+      "a": "A — installation fixe",
+      "rj": "RJ — prise réseau",
+      "rb": "RB — baie / coffret réseau",
+      "rt": "RT — coax TV",
+      "ds": "DS — capteur",
+      "dr": "DR — relais",
+      "dx": "DX — panneau de contrôle",
+      "de": "DE — nœud ESP32"
+    },
+    "existence": {
+      "existant": "Existant",
+      "prevu": "Prévu",
+      "depose": "Déposé"
+    },
+    "condition": {
+      "bon": "Bon",
+      "vetuste": "Vétuste",
+      "endommage": "Endommagé",
+      "hors_service": "Hors service"
+    },
+    "light_nature": {
+      "plafonnier": "Plafonnier",
+      "applique": "Applique",
+      "spot": "Spot",
+      "ruban": "Ruban",
+      "dcl": "Sortie DCL"
+    },
+    "switch_kind": {
+      "interrupteur_simple": "Interrupteur simple",
+      "va_et_vient": "Va-et-vient",
+      "poussoir": "Poussoir"
+    },
+    "motor_type": {
+      "filaire": "Filaire",
+      "radio": "Radio"
+    },
+    "network_standard": {
+      "cat_5e": "Cat 5e",
+      "cat_6": "Cat 6",
+      "cat_6a": "Cat 6a",
+      "coax": "Coax"
+    },
+    "poe": {
+      "oui": "Oui",
+      "non": "Non",
+      "prevu": "Prévu"
+    },
+    "power_supply": {
+      "poe": "PoE",
+      "pile": "Pile",
+      "cinq_volts": "5 V",
+      "secteur": "Secteur"
+    },
+    "panel_size": {
+      "s": "S",
+      "m": "M",
+      "l": "L"
+    },
+    "rcd_type": {
+      "type_a": "Type A",
+      "type_ac": "Type AC",
+      "inconnu": "Inconnu"
+    },
+    "domain": {
+      "audio": "Audio",
+      "informatique": "Informatique",
+      "outillage": "Outillage",
+      "cuisine": "Cuisine",
+      "electromenager": "Électroménager",
+      "jardin": "Jardin"
+    },
+    "supplier": {
+      "leroy_merlin": "Leroy Merlin",
+      "brico_depot": "Brico Dépôt",
+      "amazon": "Amazon",
+      "manomano": "ManoMano",
+      "occasion": "Occasion",
+      "autre": "Autre"
+    },
+    "horizon": {
+      "maintenant": "Maintenant",
+      "bientot": "Bientôt",
+      "un_jour": "Un jour",
+      "peut_etre": "Peut-être"
+    },
+    "aisle": {
+      "alimentaire": "Alimentaire",
+      "bricolage": "Bricolage",
+      "maison": "Maison",
+      "jardin": "Jardin",
+      "autre": "Autre"
+    },
+    "state": {
+      "ouvert": "Ouvert",
+      "en_cours": "En cours",
+      "en_attente": "En attente",
+      "dormant": "Dormant",
+      "termine": "Terminé",
+      "abandonne": "Abandonné"
+    }
+  }
+}

@@ -66,18 +66,20 @@ internal sealed class HomePropertyWriter(
         SchemaPropertyInfo property, string requested, CancellationToken ct)
     {
         string normalized = requested.Trim();
-        if (HomeSchema.ClosedVocabularies.TryGetValue(property.Key, out var vocabulary))
+        if (HomeSchema.ClosedVocabularies.TryGetValue(property.Key, out IReadOnlyList<string>? optionKeys))
         {
-            KeyValuePair<string, string>[] matches = vocabulary.Where(pair =>
-                    string.Equals(pair.Key, normalized, StringComparison.OrdinalIgnoreCase)
-                    || string.Equals(pair.Value, normalized, StringComparison.OrdinalIgnoreCase))
+            string[] matches = optionKeys.Where(key =>
+                    string.Equals(key, normalized, StringComparison.OrdinalIgnoreCase)
+                    || string.Equals(
+                        HomeSchema.OptionLabel(property.Key, key), normalized,
+                        StringComparison.OrdinalIgnoreCase))
                 .ToArray();
             if (matches.Length != 1)
                 throw new InvalidOperationException(
                     $"Valeur inconnue « {requested} » pour {property.Name}. Valeurs admises : "
-                    + string.Join(", ", vocabulary.Values));
-            normalized = matches[0].Key;
-            string expectedName = matches[0].Value;
+                    + string.Join(", ", HomeSchema.OptionLabels(property.Key)));
+            normalized = matches[0];
+            string expectedName = HomeSchema.OptionLabel(property.Key, normalized);
             SchemaTagInfo? live = schema.TagsFor(property.Key).Values.Distinct().FirstOrDefault(tag =>
                 string.Equals(tag.Key, normalized, StringComparison.OrdinalIgnoreCase)
                 || string.Equals(tag.Name, expectedName, StringComparison.OrdinalIgnoreCase));
@@ -108,15 +110,40 @@ internal sealed class HomePropertyWriter(
 
     private JsonArray ResolveObjects(SchemaPropertyInfo property, JsonNode? value)
     {
-        HomeSchema.ObjectPropertyTargets.TryGetValue(property.Key, out IReadOnlyList<string>? allowedTypes);
         var result = new JsonArray();
         if (value is null) return result;
+
+        // The floor targets are the app-created collection objects of the
+        // runtime floor type — a compiled type list cannot name them.
+        if (string.Equals(property.Key, HomeSchema.Properties.Floor, StringComparison.Ordinal))
+        {
+            foreach (JsonNode? item in Enumerate(value))
+                result.Add(HomeObjectJson.Id(ResolveFloor(Text(item, property.Name))));
+            return result;
+        }
+
+        HomeSchema.ObjectPropertyTargets.TryGetValue(property.Key, out IReadOnlyList<string>? allowedTypes);
         foreach (JsonNode? item in Enumerate(value))
         {
             string selector = Text(item, property.Name);
             result.Add(HomeObjectJson.Id(objects.Resolve(selector, allowedTypes)));
         }
         return result;
+    }
+
+    private JsonObject ResolveFloor(string selector)
+    {
+        if (schema.FloorTypeKey is null)
+            throw new InvalidOperationException(
+                "Le type Étage n'existe pas encore dans l'espace : crée-le dans l'app "
+                + "Anytype (layout Collection) avant de poser une relation Étage.");
+
+        JsonObject target = objects.ResolveCollection(selector);
+        if (!string.Equals(HomeObjectJson.TypeKey(target), schema.FloorTypeKey, StringComparison.Ordinal))
+            throw new InvalidOperationException(
+                $"« {HomeObjectIndex.Display(target)} » n'est pas un Étage : "
+                + "la relation Étage vise les collections du type Étage, pas une autre collection.");
+        return target;
     }
 
     // A scalar must be wrapped in a plain array, never a JsonArray: building a
@@ -161,11 +188,17 @@ internal sealed class HomePropertyWriter(
 
     private static double Number(JsonNode? value, string propertyName)
     {
-        if (value is JsonValue scalar && scalar.TryGetValue<double>(out double number)) return number;
-        if (value is JsonValue textValue
-            && textValue.TryGetValue<string>(out string? text)
-            && double.TryParse(text, NumberStyles.Float, CultureInfo.InvariantCulture, out number))
-            return number;
+        // Parsed JSON numbers read as double; in-memory nodes may be backed
+        // by the CLR integer they were built from.
+        if (value is JsonValue scalar)
+        {
+            if (scalar.TryGetValue<double>(out double number)) return number;
+            if (scalar.TryGetValue<long>(out long integer)) return integer;
+            if (scalar.TryGetValue<int>(out int smallInteger)) return smallInteger;
+            if (scalar.TryGetValue<string>(out string? text)
+                && double.TryParse(text, NumberStyles.Float, CultureInfo.InvariantCulture, out number))
+                return number;
+        }
         throw new ArgumentException($"La propriété « {propertyName} » attend un nombre.");
     }
 
