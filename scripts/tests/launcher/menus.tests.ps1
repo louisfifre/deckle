@@ -69,4 +69,13 @@ Assert-Equal 'Prepare' $releaseRows[1].Prefix 'prepare row comes second'
 Assert-Equal 'App artifacts' $releaseRows[1].Cells[0].Label 'app prepare stays in the left column'
 Assert-Equal 'Native runtime' $releaseRows[1].Cells[1].Label 'native prepare stays in the right column'
 
+$script:MenuSelections = @('__back__')
+Show-MaintenanceMenu
+$maintenanceRows = @($script:LastSubmenuRows | Where-Object { $_.ContainsKey('Prefix') })
+Assert-Equal 3 $maintenanceRows.Count 'maintenance includes statistics, cleanup, and AI session rows'
+Assert-Equal 'AI sessions' $maintenanceRows[2].Prefix 'AI session maintenance is machine-wide'
+Assert-Equal 'Inspect AI session state' $maintenanceRows[2].Cells[0].Label 'safe session preview comes first'
+Assert-Equal 'Reset AI session state' $maintenanceRows[2].Cells[1].Label 'destructive session reset is adjacent'
+Assert-Equal 'danger' $maintenanceRows[2].Cells[1].Role 'destructive session reset uses the shared danger color'
+
 Write-Host 'menus.tests.ps1: PASS' -ForegroundColor Green

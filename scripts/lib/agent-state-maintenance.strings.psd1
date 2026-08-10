@@ -1,0 +1,25 @@
+@{
+    Workflow = 'Reset local AI sessions'
+    AuditSentence = 'The selected local AI session state was inspected without changing it.'
+    ResetSentence = 'The selected local AI session state was reset.'
+    CloseApps = 'Close Codex, Claude, and their command-line processes, then run the reset again.'
+    CloudWarning = 'Online account conversations are outside this local reset.'
+    LevelDbResetWarning = 'Apply resets Claude Desktop local storage; local UI preferences may reset and sign-in may be required again.'
+    ConfirmationPhrase = 'RESET LOCAL AI SESSIONS'
+    MenuInspect = 'Inspect AI session state'
+    MenuReset = 'Reset AI session state'
+    MenuInspectHeader = 'Deckle > Maintenance > AI sessions > Inspect'
+    MenuResetHeader = 'Deckle > Maintenance > AI sessions > Reset'
+    MenuQuestion = 'Delete local AI session data and remembered project state?'
+    MenuConfirm = 'Reset sessions'
+    MenuCancel = 'Keep sessions'
+    MenuContext = @(
+        'Removes transcripts, automatic memory, session attachments, and local project history.'
+        'Keeps primary settings, credentials, authored instructions, repositories, and worktrees.'
+        'Resets Claude Desktop local storage so selected and recent folders are forgotten.'
+        'Local UI preferences may reset and Claude Desktop may require sign-in again.'
+        'Codex and Claude must be completely closed.'
+    )
+    MaintenanceGuidance = 'Choose a read-only scan, cleanup, or current-account AI session action.'
+    FailureSentence = 'Local AI session reset stopped before it could complete safely.'
+}
