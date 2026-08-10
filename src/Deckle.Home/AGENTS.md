@@ -75,14 +75,15 @@ in `Terms/terms.fr.json`, loaded by `HomeTerms` at runtime (the pattern
 shipped by `Deckle.Travel`). They are never hard-coded in C#: the schema names
 the structure with stable English keys, the terms file names the words.
 
-The `floor` type is labeled « Zone » in French: an assemblage of rooms —
-Rez-de-chaussée, Étage, Extérieur — not a storey; the English key predates
-the rename and stays as the technical coordinate.
-The `floor` type is app-created: the Anytype API refuses to create a type of
-collection layout, so `floor` is born in the app, not through this surface —
-whether collection objects of an existing such type can be API-created is
-still an open question tracked by the chantier's research task.
-Its real key is discovered at runtime from the live schema snapshot rather
-than compiled as a constant (see `HomeSchema.FloorTypeKey`). The `floor`
-relation (carried by `room`) may only target collection objects of that
-runtime-discovered type.
+The Zone type is labeled « Zone » in French: an assemblage of rooms, not a
+storey; the English relation key `floor` predates the rename and stays as
+the technical coordinate.
+The Zone type is app-created: the Anytype API refuses to create a type of
+collection layout in every direction — a deliberate REST whitelist in
+anytype-heart, and the app's own channel sits behind a session scope no
+external client can obtain. Objects OF such a type are ordinary API objects
+(verified live 2026-08-10: the zones themselves are API-created).
+The type's real key is app-derived (not `floor`) and is discovered at
+runtime from the live schema snapshot rather than compiled as a constant
+(see `HomeSchema.FloorTypeKey`). The `floor` relation (carried by `room`)
+may only target collection objects of that runtime-discovered type.
