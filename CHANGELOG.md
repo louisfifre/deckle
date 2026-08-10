@@ -15,6 +15,10 @@ doctrine). This file is generated from the Conventional-Commit history by
 
 - **home:** Open the surface to the house-life types
 - **home:** Give the house its pilotage verbs and unmask the etage bug
+- **home:** Rework the surface to the 2026-08-10 model
+- **home:** Rename the floor concept to Espace
+- **home:** Rename the floor labels to Zone
+- **anytype:** Teach schema-admin the sections block
 - **scripts:** Add local AI session reset
 
 ### Fixed
@@ -23,9 +27,12 @@ doctrine). This file is generated from the Conventional-Commit history by
 - **scripts:** Anchor workflows to their checkout
 - **scripts:** Decouple workspace roots from launcher
 - **scripts:** Constrain MSBuild worker fan-out
+- **anytype:** Section icons are emoji-only
 - **anytype:** Harden the resident MCP gateway
 - **scripts:** Reset Claude Desktop local storage
 - **anytype:** Align MCP host boundary contracts
+- **scripts:** Expose the project worktree container in the workspace
+- **anytype:** Keep the journal heading through the first report append
 
 ## [0.31.6](https://github.com/louisfifre/deckle/compare/v0.30.2...v0.31.6) — 2026-07-31
 
