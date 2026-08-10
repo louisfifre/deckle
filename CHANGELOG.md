@@ -15,6 +15,7 @@ doctrine). This file is generated from the Conventional-Commit history by
 
 - **home:** Open the surface to the house-life types
 - **home:** Give the house its pilotage verbs and unmask the etage bug
+- **scripts:** Add local AI session reset
 
 ### Fixed
 
