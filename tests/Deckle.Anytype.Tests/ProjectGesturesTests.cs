@@ -23,7 +23,8 @@ public class ProjectGesturesTests
     }
 
     [Fact]
-    public async Task CreateEpicUsesTheMeasuredEpicTypeWithoutAProjectTemplate()
+    [Trait("Category", "regression")]
+    public async Task CreateEpicPassesTheEpicTemplateIdSoTheEpicIsBornWithItsViews()
     {
         using var server = new FakeAnytypeServer();
         server.OnPostObject(new JsonObject
@@ -35,7 +36,7 @@ public class ProjectGesturesTests
 
         JsonObject created = server.LastBodyFor("POST");
         Assert.Equal(DevSpace.Types.Epic, created["type_key"]!.GetValue<string>());
-        Assert.False(created.ContainsKey("template_id"));
+        Assert.Equal(DevSpace.Templates.Epic, created["template_id"]!.GetValue<string>());
         JsonObject state = Assert.IsType<JsonObject>(
             Assert.Single((JsonArray)created["properties"]!));
         Assert.Equal(DevSpace.Props.Etat, state["key"]!.GetValue<string>());

@@ -93,8 +93,8 @@ public sealed class ProjectGestures(AnytypeApiClient api, NameResolver resolver)
     }
 
     // Creates the permanent epic container at the top of the planning model.
-    // Epic is a measured custom type in the Dev space; unlike projects and tasks,
-    // it carries no default template id.
+    // The REST API does not apply the type's default template implicitly, so the
+    // measured Epic template id must be sent to copy its properties and views.
     public async Task<string> CreateEpicAsync(
         string name, string? state = null, CancellationToken ct = default)
     {
@@ -109,6 +109,7 @@ public sealed class ProjectGestures(AnytypeApiClient api, NameResolver resolver)
         {
             ["type_key"] = DevSpace.Types.Epic,
             ["name"] = name,
+            ["template_id"] = DevSpace.Templates.Epic,
             ["properties"] = new JsonArray
             {
                 new JsonObject { ["key"] = DevSpace.Props.Etat, ["select"] = etatKey },

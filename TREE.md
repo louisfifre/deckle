@@ -1676,6 +1676,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── ManagementGesturesTests.cs
 │   │   ├── MarkdownBodyTests.cs
 │   │   ├── OperationRecoveryBugNotes.md
+│   │   ├── ProjectGesturesBugNotes.md
 │   │   ├── ProjectGesturesTests.cs
 │   │   ├── QueryGesturesTests.cs
 │   │   ├── SchemaAdminGesturesTests.cs

@@ -36,6 +36,7 @@ doctrine). This file is generated from the Conventional-Commit history by
 - **scripts:** Keep terminal menu rows aligned
 - **scripts:** Block forbidden commit attribution
 - **scripts:** Enforce exact commit identity
+- **anytype:** Apply template when creating epics
 
 ## [0.31.6](https://github.com/louisfifre/deckle/compare/v0.30.2...v0.31.6) — 2026-07-31
 
