@@ -237,6 +237,8 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── 0001-anytype-headless-service-single-http-mcp-host.md  — [adr] Anytype runs as a Deckle-orchestrated headless service behind one HTTP MCP host…
 │   │   ├── 0002-anytype-app-supervised-headless-backend.md  — [adr] Deckle supervises Anytype's headless backend from the resident app, in the inte…
 │   │   ├── 0003-anytype-specialized-spaces-versioned-plans.md  — [adr] Deckle provisions specialized Anytype spaces from versioned composed plans and…
+│   │   ├── 0004-reconcile-anytype-backend-by-listener-owner.md  — [adr] Deckle reconciles one externally versioned Anytype provider by proving which tr…
+│   │   ├── 0005-serve-anytype-mcp-stateless-with-explicit-recovery.md  — [adr] The resident Anytype gateway uses stateless MCP requests and advertises an expl…
 │   │   ├── AGENTS.md  — [agent-instructions] Why Deckle keeps ADRs and the questions that gate one. Read before writing or p…
 │   │   └── CLAUDE.md
 │   ├── research/
@@ -249,7 +251,8 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   └── research--system-autocorrect--2026-06-12.md
 │   ├── inventaire-exposables.csv
 │   ├── inventaire-exposables.md
-│   └── inventaire-settings.md
+│   ├── inventaire-settings.md
+│   └── transcription-live-verification.md  — [verification-protocol] Maintainer verification protocol for live microphone transcription.
 ├── logo/
 │   ├── primary.png
 │   ├── primary.svg
@@ -269,6 +272,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── publish-native-runtime.ps1
 │   │   ├── record-release.ps1
 │   │   ├── record-version.ps1
+│   │   ├── reset-agent-state.ps1
 │   │   ├── setup-assets.ps1
 │   │   ├── stats.ps1
 │   │   ├── stop-build-servers.ps1
@@ -279,6 +283,9 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── pre-commit
 │   │   └── update-tree.ps1
 │   ├── lib/
+│   │   ├── agent-state-maintenance/
+│   │   │   ├── sanitization.ps1
+│   │   │   └── sqlite-cleanup.ps1
 │   │   ├── launcher/
 │   │   │   ├── action-log.ps1
 │   │   │   ├── action-results.ps1
@@ -300,6 +307,8 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   ├── status-view.ps1
 │   │   │   └── text-input.ps1
 │   │   ├── action-summary.ps1
+│   │   ├── agent-state-maintenance.psm1
+│   │   ├── agent-state-maintenance.strings.psd1
 │   │   ├── build-server-cleanup.ps1
 │   │   ├── context-inventory.psm1
 │   │   ├── deckle-process.ps1
@@ -313,6 +322,10 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── script-output.ps1
 │   │   └── source-metrics.psm1
 │   ├── tests/
+│   │   ├── BugExamples/
+│   │   │   ├── dotnet-max-node-response-precedence.json
+│   │   │   ├── repository-portability.json
+│   │   │   └── terminal-cursor-positioning.json
 │   │   ├── commands/
 │   │   │   ├── install-hooks.tests.ps1
 │   │   │   ├── publish-native-runtime.tests.ps1
@@ -331,6 +344,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── lib/
 │   │   │   ├── action-summary.tests.ps1
 │   │   │   ├── agent-skills-layout.tests.ps1
+│   │   │   ├── agent-state-maintenance.tests.ps1
 │   │   │   ├── context-inventory.tests.ps1
 │   │   │   ├── deckle-process.tests.ps1
 │   │   │   ├── native-console.tests.ps1
@@ -363,11 +377,18 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   ├── AnytypeCredentials.cs
 │   │   │   └── SpaceWriteLock.cs
 │   │   ├── Backend/
+│   │   │   ├── BackendEndpointTrust.cs
 │   │   │   ├── BackendHealthProbe.cs
 │   │   │   ├── BackendInstallation.cs
+│   │   │   ├── BackendListenerOwner.cs
 │   │   │   ├── BackendProcess.cs
 │   │   │   ├── BackendProcessSpec.cs
-│   │   │   └── BackendSupervisor.cs
+│   │   │   ├── BackendProviderPublicationLease.cs
+│   │   │   ├── BackendProviderStore.cs
+│   │   │   ├── BackendReconciler.cs
+│   │   │   ├── BackendReconciliationLease.cs
+│   │   │   ├── BackendSupervisor.cs
+│   │   │   └── BackendTime.cs
 │   │   ├── Dialogues/
 │   │   │   └── DialogueGestures.cs
 │   │   ├── Gestures/
@@ -385,7 +406,6 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   ├── SchemaManifest.cs
 │   │   │   ├── SchemaModels.cs
 │   │   │   ├── SchemaPlanner.cs
-│   │   │   ├── SchemaPreviewStore.cs
 │   │   │   ├── SchemaSnapshotReader.cs
 │   │   │   ├── SelectValueGestures.cs
 │   │   │   ├── SessionGestures.cs
@@ -404,16 +424,17 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   ├── McpClients.cs
 │   │   │   ├── McpClientTokens.cs
 │   │   │   ├── McpHttpHost.cs
-│   │   │   └── McpSession.cs
-│   │   ├── JsonRpc/
-│   │   │   └── McpServer.cs
+│   │   │   ├── McpJsonSchemaContract.cs
+│   │   │   ├── McpRequestRateLimit.cs
+│   │   │   └── McpSurfaceProtocolAdapter.cs
 │   │   ├── Tools/
 │   │   │   ├── AnytypeUtilityToolCatalog.cs
 │   │   │   ├── DialogueToolCatalog.cs
 │   │   │   ├── ManagementToolCatalog.cs
 │   │   │   ├── SchemaAdminToolCatalog.cs
 │   │   │   ├── ToolCatalog.cs
-│   │   │   └── ToolDescriptor.cs
+│   │   │   ├── ToolDescriptor.cs
+│   │   │   └── ToolExecutionContract.cs
 │   │   ├── AGENTS.md  — [agent-instructions] Resident MCP host and reusable Anytype surfaces, extensible by domain MCP adapt…
 │   │   ├── CLAUDE.md
 │   │   ├── Deckle.Anytype.Mcp.csproj
@@ -533,6 +554,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── Deckle.Audio.csproj
 │   │   ├── DeckleAudioSource.cs
 │   │   ├── IAudioRecordingHost.cs
+│   │   ├── IMicrophoneCapture.cs
 │   │   ├── MicLevelTester.cs
 │   │   ├── MicrophoneCapture.cs
 │   │   ├── ProbeResult.cs
@@ -898,8 +920,10 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── TelemetrySettings.cs
 │   │   └── TelemetrySettingsService.cs
 │   ├── Deckle.Home/
+│   │   ├── Terms/
+│   │   │   └── terms.fr.json
 │   │   ├── AGENTS.md  — [agent-instructions] Home inventory domain — public nomenclature, live Anytype room registry, guarde…
-│   │   ├── CONTEXT.md  — [agent-instructions] Home inventory vocabulary — the public norm, personal room registry, element co…
+│   │   ├── CONTEXT.md  — [agent-instructions] Home inventory vocabulary — the public norm, personal room registry, point code…
 │   │   ├── Deckle.Home.csproj
 │   │   ├── DeckleHomeSource.cs
 │   │   ├── HomeCode.cs
@@ -912,6 +936,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── HomeRuntimeProvider.cs
 │   │   ├── HomeSchema.cs
 │   │   ├── HomeSchemaRuntime.cs
+│   │   ├── HomeTerms.cs
 │   │   ├── HomeToolCatalog.cs
 │   │   └── JOURNAL.md  — [journal] Durable findings and frozen decisions for the Home inventory domain.
 │   ├── Deckle.Hud/
@@ -1397,7 +1422,8 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── SummaryPage.xaml
 │   │   ├── SummaryPage.xaml.cs
 │   │   ├── UpdateDownloadPage.xaml
-│   │   └── UpdateDownloadPage.xaml.cs
+│   │   ├── UpdateDownloadPage.xaml.cs
+│   │   └── UpdatePredecessor.cs
 │   ├── Deckle.Shell/
 │   │   ├── AGENTS.md  — [agent-instructions] System shell module — the low-level OS primitives (hotkeys, tray, autostart, me…
 │   │   ├── AutostartService.cs
@@ -1474,9 +1500,11 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   ├── FileTranscriptionQueue.cs
 │   │   │   ├── IAsrBackend.cs
 │   │   │   ├── PipelineProduction.cs
+│   │   │   ├── PreparedFileProducer.cs
 │   │   │   ├── RewriteProfileSelection.cs
 │   │   │   ├── TextMetrics.cs
 │   │   │   ├── TranscriptFileWriter.cs
+│   │   │   ├── TranscriptionDelivery.cs
 │   │   │   ├── TranscriptionEngine.cs
 │   │   │   ├── TranscriptionEngine.FilePipeline.cs
 │   │   │   ├── TranscriptionEngine.Finalize.cs
@@ -1493,6 +1521,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── Streaming/
 │   │   │   ├── EnergySegmenter.cs
 │   │   │   ├── EnergySegmenterSettings.cs
+│   │   │   ├── SegmentedTranscriptionSession.cs
 │   │   │   └── Utterance.cs
 │   │   ├── Strings/
 │   │   │   └── en-US/
@@ -1616,7 +1645,6 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── ManagementToolCatalogTests.cs
 │   │   ├── McpClientTokensTests.cs
 │   │   ├── McpHttpHostTests.cs
-│   │   ├── McpServerTests.cs
 │   │   ├── McpToolsetTests.cs
 │   │   ├── SchemaAdminToolCatalogTests.cs
 │   │   └── ToolCatalogTests.cs
@@ -1625,10 +1653,19 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   └── Experiences/
 │   │   │       ├── deckle.en-US.experience.fixture.json
 │   │   │       └── deckle.en-US.experience.zip
+│   │   ├── AnytypeApiClientReplayTests.cs
 │   │   ├── AnytypeCredentialsTests.cs
 │   │   ├── AnytypeSpaceAliasesTests.cs
 │   │   ├── AnytypeUtilityGesturesTests.cs
+│   │   ├── BackendEndpointTrustTests.cs
+│   │   ├── BackendListenerOwnerTests.cs
+│   │   ├── BackendProviderStoreBugNotes.md
+│   │   ├── BackendProviderStoreTests.cs
+│   │   ├── BackendReconcilerTests.cs
+│   │   ├── BackendReconciliationLeaseTests.cs
+│   │   ├── BackendSupervisionBugNotes.md
 │   │   ├── BackendSupervisorTests.cs
+│   │   ├── BackendTestFakes.cs
 │   │   ├── Deckle.Anytype.Tests.csproj
 │   │   ├── DevSpaceTests.cs
 │   │   ├── DialogueGesturesTests.cs
@@ -1636,11 +1673,14 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── LiveTagResolverTests.cs
 │   │   ├── ManagementGesturesTests.cs
 │   │   ├── MarkdownBodyTests.cs
+│   │   ├── OperationRecoveryBugNotes.md
 │   │   ├── ProjectGesturesTests.cs
 │   │   ├── QueryGesturesTests.cs
 │   │   ├── SchemaAdminGesturesTests.cs
+│   │   ├── SessionGesturesBugNotes.md
 │   │   ├── SessionGesturesTests.cs
 │   │   ├── SpaceWriteLockTests.cs
+│   │   ├── TaskGesturesBugNotes.md
 │   │   └── TaskGesturesTests.cs
 │   ├── Deckle.Audio.Tests/
 │   │   ├── CaptureAnomalyEpisodeTests.cs
@@ -1817,7 +1857,9 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   └── ThreeFingerDragRecognizerTests.cs
 │   ├── Deckle.Install.Tests/
 │   │   ├── Deckle.Install.Tests.csproj
-│   │   └── ReleaseResolverTests.cs
+│   │   ├── InstallPathsTests.cs
+│   │   ├── ReleaseResolverTests.cs
+│   │   └── RunningProcessesBugNotes.md
 │   ├── Deckle.Lighting.Ambient.Tests/
 │   │   ├── AmbientBrightnessCurveTests.cs
 │   │   ├── AmbientHeartbeatWindowTests.cs
@@ -1868,7 +1910,10 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   ├── Deckle.Setup.Tests/
 │   │   ├── DataRootRelocatorTests.cs
 │   │   ├── DataRootTreeTests.cs
-│   │   └── Deckle.Setup.Tests.csproj
+│   │   ├── Deckle.Setup.Tests.csproj
+│   │   ├── PayloadDeploymentTests.cs
+│   │   ├── UpdateHandoffBugNotes.md
+│   │   └── UpdatePredecessorTests.cs
 │   ├── Deckle.Shell.TaskbarCover.Tests/
 │   │   ├── CoverGeometryTests.cs
 │   │   └── Deckle.Shell.TaskbarCover.Tests.csproj
@@ -1894,14 +1939,19 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── DeckleLlmSourceTests.cs
 │   │   ├── DeckleWhispSourceTests.cs
 │   │   ├── EnergySegmenterTests.cs
+│   │   ├── FileBatchLifecycleTests.cs
 │   │   ├── FileTranscriptionQueueTests.cs
 │   │   ├── FileTranscriptionResultTests.cs
+│   │   ├── LiveTranscriptionPipelineTests.cs
 │   │   ├── OperationalObservabilityCollection.cs
+│   │   ├── PreparedFileChannelTests.cs
 │   │   ├── RewriteAvailabilityTests.cs
 │   │   ├── RewriteProfileSelectionTests.cs
+│   │   ├── SegmentedTranscriptionSessionTests.cs
 │   │   ├── StreamingBackendAudioTests.cs
 │   │   ├── TranscriptFileWriterDiskTests.cs
 │   │   ├── TranscriptFileWriterTests.cs
+│   │   ├── TranscriptionDeliveryTests.cs
 │   │   ├── TranscriptionObservabilityContractTests.cs
 │   │   ├── TranscriptionSettingsMigrationTests.cs
 │   │   └── UnitBezierTests.cs
@@ -1912,12 +1962,16 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── RepetitionDetectorTests.cs
 │   │   ├── SpeechModelFilesTests.cs
 │   │   ├── SpeechModelResolverTests.cs
-│   │   └── WhisperParamsMapperTests.cs
+│   │   ├── WhisperParamsMapperTests.cs
+│   │   └── WhisperReferenceAudioSystemTests.cs
 │   ├── Deckle.Travel.Tests/
 │   │   ├── Deckle.Travel.Tests.csproj
 │   │   ├── FakeTravelSpace.cs
 │   │   ├── TravelAttachTests.cs
-│   │   └── TravelSchemaTests.cs
+│   │   ├── TravelGesturesBugNotes.md
+│   │   ├── TravelSchemaTests.cs
+│   │   ├── TravelToolCatalogTests.cs
+│   │   └── TravelUpdateTests.cs
 │   ├── Deckle.Vad.Tests/
 │   │   ├── Deckle.Vad.Tests.csproj
 │   │   └── SileroSpeechTimestampsTests.cs
@@ -1938,6 +1992,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 ├── deckle.code-workspace
 ├── Deckle.Tests.sln
 ├── Directory.Build.props
+├── Directory.Build.rsp
 ├── Directory.Build.targets
 ├── Directory.Packages.props
 ├── JOURNAL.md  — [project-journal] Dated project notes for Deckle — cross-cutting findings too dated for a CLAUDE.…

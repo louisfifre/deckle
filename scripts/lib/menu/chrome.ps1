@@ -204,6 +204,15 @@ function Write-MenuSegment {
     Write-Host @args
 }
 
+function Get-MenuCursorPositionSequence {
+    param(
+        [int]$Left,
+        [int]$Top
+    )
+
+    return "$([char]27)[$($Top + 1);$($Left + 1)H"
+}
+
 function Set-MenuCursorPosition {
     param(
         [int]$Left,
@@ -212,7 +221,7 @@ function Set-MenuCursorPosition {
 
     if ([Console]::IsOutputRedirected) { return }
     try {
-        [Console]::SetCursorPosition($Left, $Top)
+        Write-Host (Get-MenuCursorPositionSequence -Left $Left -Top $Top) -NoNewline
     } catch {
         # Non-interactive hosts can reject cursor movement; keep rendering testable.
     }

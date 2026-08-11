@@ -1,0 +1,35 @@
+{
+  "schema": 1,
+  "id": "developer-tooling-2026-08-11-terminal-cursor-positioning",
+  "status": "active",
+  "modules": ["DeveloperTooling"],
+  "classes": ["terminal-rendering", "cursor-positioning", "console-api-compatibility"],
+  "trigger": {
+    "operation": "render-the-interactive-launcher-in-a-terminal-host-that-rejects-dotnet-console-cursor-positioning"
+  },
+  "symptom": "Menu rows continue from the previous cursor position, overflow the viewport, and wrap into displaced fragments on the left and right edges.",
+  "cause": "The renderer used Console.SetCursorPosition and silently ignored host failures, so it kept writing after the preceding segment instead of starting each row at its declared coordinates.",
+  "violatedInvariant": "Every menu row starts at its declared terminal coordinate independently of support for the .NET console cursor API.",
+  "contract": {
+    "must": [
+      "Express cursor positions with the terminal-native ANSI cursor-position sequence.",
+      "Convert the layout's zero-based coordinates to ANSI's one-based row and column coordinates.",
+      "Leave redirected output free of cursor-control sequences."
+    ]
+  },
+  "automation": {
+    "tier": "regression",
+    "tests": [
+      "scripts/tests/menu/chrome.tests.ps1"
+    ],
+    "residual": "Interactive rendering still requires the VT-compatible terminal already required by Deckle's alternate-screen and pointer-input controls.",
+    "reviewPaths": [
+      "scripts/lib/menu/chrome.ps1",
+      "scripts/lib/menu/session.ps1"
+    ]
+  },
+  "provenance": {
+    "observedAt": "2026-08-11",
+    "redaction": "synthetic"
+  }
+}

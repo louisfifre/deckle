@@ -21,6 +21,10 @@ Assert-Equal 2 $script:MenuActionColumnCount 'interactive menus share two action
 Assert-Equal 'Red' (Get-MenuRoleColor -Role danger).Foreground 'destructive confirmation is red'
 Assert-Equal 'DarkRed' (Get-MenuRoleColor -Role danger -Selected).Background 'selected destructive confirmation stays red'
 
+$escape = [char]27
+Assert-Equal "${escape}[1;1H" (Get-MenuCursorPositionSequence -Left 0 -Top 0) 'cursor positioning uses terminal-native coordinates'
+Assert-Equal "${escape}[8;13H" (Get-MenuCursorPositionSequence -Left 12 -Top 7) 'cursor positioning converts zero-based layout coordinates'
+
 $fullHeader = Format-MenuHeaderLine -Breadcrumb 'Deckle > Worktrees' -Commands '↑↓←→ move   Enter select   Esc back' -Width 74
 Assert-Equal 74 $fullHeader.Length 'header commands align to the shared content edge'
 Assert-Equal $true $fullHeader.EndsWith('↑↓←→ move   Enter select   Esc back') 'header keeps navigation commands visible'
