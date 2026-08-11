@@ -7,7 +7,24 @@ type: module-journal
 
 Module-level dated notes. Most recent on top.
 
-## 2026-08-10 — Structured schema preview precedes any MCP App
+## 2026-08-11 — Body writes escalate markdown escapes and break subtask matching
+
+Observed live on the Deckle.Home v2 tasks: a checklist label written as
+`origin_label` read back as `origin\_label` after one write cycle and
+`origin\\\\_label` after another — each read-modify-write pass re-escapes the
+markdown export's backslashes instead of round-tripping them, so underscores
+accumulate `\` without bound. The `subtask` verb then becomes a trap: its
+label match is case-insensitive but literal, the drifted stored text no longer
+matches the label the caller copied from an earlier read, and per contract the
+verb silently APPENDS a new checked item — the caller believes it checked the
+original and the body now carries duplicates.
+
+Recovered with `replace_section`, whose contract writes content naturally and
+verified clean on re-read; it is the safe repair for any body that has started
+drifting. Recurrence cue: any `subtask` call whose label contains `_` (or any
+markdown-escapable character) against a body that has been written more than
+once. The fix belongs in the body import path — unescape what the export
+escaped before storing — not in wider matching.
 
 Found that MCP Apps `2026-01-26` is a stable optional extension and that the
 official C# SDK publishes its typed `ModelContextProtocol.Extensions.Apps`
