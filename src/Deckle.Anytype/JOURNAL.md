@@ -7,6 +7,15 @@ type: module-journal
 
 Module-level dated notes. Most recent on top.
 
+## 2026-08-11 — Epic creation applies its live default template
+
+Measured through `GET /types/:type_id/templates` on the Dev space: the Epic
+type now exposes `EPIC Par défaut`, id
+`bafyreiebxtbakbgodx2demmj4ukohifxxguowaiiofrn7uvibxy24tx76m`. Chose to
+freeze that id beside the measured Project and Task template ids and pass it as
+`template_id` from `create_epic`; Anytype REST otherwise creates a bare
+collection without the template's properties or views.
+
 ## 2026-08-11 — Body writes escalate markdown escapes and break subtask matching
 
 Observed live on the Deckle.Home v2 tasks: a checklist label written as

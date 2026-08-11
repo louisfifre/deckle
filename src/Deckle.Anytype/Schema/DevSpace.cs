@@ -52,11 +52,12 @@ public static class DevSpace
     //
     // The REST API does NOT apply a type's default template on creation: POST
     // /objects builds a bare object unless the body carries `template_id`, which
-    // copies the template's block/view structure. Measured live 2026-06-12 on the
-    // Dev space: only project and task carry a template (idee and rapport have
-    // none), so only their creations pass an id.
+    // copies the template's block/view structure. Measured live 2026-08-11 on the
+    // Dev space: epic, project and task carry a template (idee and rapport have
+    // none), so their creations pass the corresponding id.
     public static class Templates
     {
+        public const string Epic    = "bafyreiebxtbakbgodx2demmj4ukohifxxguowaiiofrn7uvibxy24tx76m";
         public const string Project = "bafyreib5ganxcahinie6cnbdfvchxfosclfvq6pggi57r7fwfylazemr5a";
         public const string Task    = "bafyreibhy53jvgxp6euzxrn3bmchbtty5eq555m5ybf2mw43wsrwcawzre";
     }
