@@ -281,7 +281,8 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   └── validate-resources.ps1
 │   ├── hooks/
 │   │   ├── pre-commit
-│   │   └── update-tree.ps1
+│   │   ├── update-tree.ps1
+│   │   └── validate-commit-attribution.ps1
 │   ├── lib/
 │   │   ├── agent-state-maintenance/
 │   │   │   ├── sanitization.ps1
@@ -327,6 +328,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   ├── repository-portability.json
 │   │   │   └── terminal-cursor-positioning.json
 │   │   ├── commands/
+│   │   │   ├── CommitAttributionBugNotes.md
 │   │   │   ├── install-hooks.tests.ps1
 │   │   │   ├── publish-native-runtime.tests.ps1
 │   │   │   ├── update-readme-stats.tests.ps1

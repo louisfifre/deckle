@@ -116,7 +116,7 @@ A `pre-commit` hook regenerates [`TREE.md`](../TREE.md) at the repo root before 
 
 The hook delegates to [`hooks/update-tree.ps1`](hooks/update-tree.ps1), which rebuilds `TREE.md` from `git ls-files` (flat view, zero gitignored file, no annotation). It can also run by hand to refresh outside a commit: `pwsh scripts/hooks/update-tree.ps1`.
 
-The same installer copies [`hooks/validate-commit-attribution.ps1`](hooks/validate-commit-attribution.ps1) to the user's Git configuration directory and registers it as a global configured `commit-msg` hook. Git 2.54+ runs configured hooks alongside repository hooks, so the global guard applies to every local repository without replacing their own `.git/hooks` directory. It rejects co-author, generated-by, AI-generated, and assisted-by markers before Git creates the commit.
+The same installer copies [`hooks/validate-commit-attribution.ps1`](hooks/validate-commit-attribution.ps1) to the user's Git configuration directory and registers it as a global configured `commit-msg` hook. Git 2.54+ runs configured hooks alongside repository hooks, so the global guard applies to every local repository without replacing their own `.git/hooks` directory. Before Git creates a commit, it requires both author and committer to be exactly `Louis <git@louisfifre.com>` and rejects co-author, generated-by, AI-generated, and assisted-by markers.
 
 ## Generated docs automation
 

@@ -35,8 +35,8 @@ try {
     Copy-Item -LiteralPath (Join-Path $ScriptsDir 'hooks\validate-commit-attribution.ps1') -Destination (Join-Path $repository 'scripts\hooks\validate-commit-attribution.ps1')
 
     Invoke-TestGit -Root $repository -Arguments @('init', '-q')
-    Invoke-TestGit -Root $repository -Arguments @('config', 'user.name', 'Deckle Tests')
-    Invoke-TestGit -Root $repository -Arguments @('config', 'user.email', 'deckle-tests@example.invalid')
+    Invoke-TestGit -Root $repository -Arguments @('config', 'user.name', 'Louis')
+    Invoke-TestGit -Root $repository -Arguments @('config', 'user.email', 'git@louisfifre.com')
     Invoke-TestGit -Root $repository -Arguments @('add', '.')
     Invoke-TestGit -Root $repository -Arguments @('commit', '-m', 'test: seed hook fixture')
     Invoke-TestGit -Root $repository -Arguments @('worktree', 'add', '-q', '-b', 'test-worktree', $worktree)
@@ -71,9 +71,25 @@ try {
 
     $null = New-Item -ItemType Directory -Path $otherRepository -Force
     Invoke-TestGit -Root $otherRepository -Arguments @('init', '-q')
-    Invoke-TestGit -Root $otherRepository -Arguments @('config', 'user.name', 'Deckle Tests')
-    Invoke-TestGit -Root $otherRepository -Arguments @('config', 'user.email', 'deckle-tests@example.invalid')
+    Invoke-TestGit -Root $otherRepository -Arguments @('config', 'user.name', 'Louis')
+    Invoke-TestGit -Root $otherRepository -Arguments @('config', 'user.email', 'git@louisfifre.com')
     Invoke-TestGit -Root $otherRepository -Arguments @('commit', '--allow-empty', '-m', 'test: accept maintainer-only commit')
+
+    Assert-TestGitRejected -Root $otherRepository -Arguments @(
+        '-c', 'user.name=PelopeeNoire',
+        'commit', '--allow-empty', '--author=Louis <git@louisfifre.com>', '-m', 'test: reject incorrect committer name'
+    ) -Because 'the committer name must match the sole maintainer identity.'
+    Assert-TestGitRejected -Root $otherRepository -Arguments @(
+        '-c', 'user.email=louis@local.dev',
+        'commit', '--allow-empty', '--author=Louis <git@louisfifre.com>', '-m', 'test: reject incorrect committer email'
+    ) -Because 'the committer email must match the sole maintainer identity.'
+    Assert-TestGitRejected -Root $otherRepository -Arguments @(
+        'commit', '--allow-empty', '--author=PelopeeNoire <git@louisfifre.com>', '-m', 'test: reject incorrect author name'
+    ) -Because 'the author name must match the sole maintainer identity.'
+    Assert-TestGitRejected -Root $otherRepository -Arguments @(
+        'commit', '--allow-empty', '--author=Louis <louis@local.dev>', '-m', 'test: reject incorrect author email'
+    ) -Because 'the author email must match the sole maintainer identity.'
+
     $forbiddenMessages = @(
         'Co-Authored-By: Example Agent <agent@example.invalid>',
         'Generated with Example Agent',
