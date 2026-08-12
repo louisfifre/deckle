@@ -20,6 +20,7 @@ doctrine). This file is generated from the Conventional-Commit history by
 - **home:** Rename the floor labels to Zone
 - **anytype:** Teach schema-admin the sections block
 - **scripts:** Add local AI session reset
+- **home:** Land the reboot grill rulings on the compiled surface
 
 ### Fixed
 

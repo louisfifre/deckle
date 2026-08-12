@@ -3,11 +3,14 @@ using Deckle.Anytype;
 
 namespace Deckle.Home;
 
-// The Home contract of 2026-08-10: 13 types in five families, English keys,
-// human titles, the derived identity code in the `code` property. The applied
-// truth lives in the home project's mcp/schema-manifest.json; this class is
-// its compiled mirror for validation and payload building. French labels live
-// in Terms/terms.fr.json (HomeTerms), never in code.
+// The Home contract of 2026-08-10, revised at the 2026-08-12 reboot: 14 types
+// in five families, English keys, human titles, the derived identity code in
+// the `code` property. The applied truth lives in the home project's
+// mcp/schema-manifest.json; this class is its compiled mirror for validation
+// and payload building — a required SUBSET: conformity tolerates surplus, so
+// manifest-only properties (needed, errand_category…) write through the live
+// schema without appearing here. French labels live in Terms/terms.fr.json
+// (HomeTerms), never in code.
 public static class HomeSchema
 {
     public static class Types
@@ -23,6 +26,7 @@ public static class HomeSchema
         public const string System = "system";
         public const string Device = "device";
         public const string Component = "component";
+        public const string Utensil = "utensil";
         public const string Plant = "plant";
         public const string Idea = "idea";
         public const string Errand = "errand";
@@ -126,11 +130,13 @@ public static class HomeSchema
     public static readonly IReadOnlyList<string> CodedTypes =
     [Types.Room, Types.Point, Types.Circuit, Types.Panel];
 
-    // Equipment triad: a Système aggregates, an Appareil stands alone, a
-    // Composant only exists through its mandatory part_of. The gate lives in
-    // the gestures, not here — schema cannot express it.
+    // Equipment family: a Système aggregates, an Appareil stands alone, a
+    // Composant only exists through its mandatory part_of, an Ustensile de
+    // cuisine (2026-08-12 grill) holds kitchen gear and may join a Système
+    // like an Appareil. The composant gate lives in the gestures, not here —
+    // schema cannot express it.
     public static readonly IReadOnlyList<string> EquipmentTypes =
-    [Types.System, Types.Device, Types.Component];
+    [Types.System, Types.Device, Types.Component, Types.Utensil];
 
     public static readonly IReadOnlyList<string> LifeTypes =
     [Types.Plant, Types.Idea, Types.Errand];
@@ -287,6 +293,13 @@ public static class HomeSchema
                 Properties.StorageCapacity, Properties.PowerRms, Properties.Impedance,
                 Properties.Weight, Properties.Documents, Properties.Notes,
             ],
+            [Types.Utensil] =
+            [
+                Properties.EquipmentCategory, Properties.Manufacturer, Properties.Supplier,
+                Properties.ModelRef, Properties.PurchasePrice, Properties.PurchaseDate,
+                Properties.Receipt, Properties.PartOf, Properties.StoredIn,
+                Properties.Quantity, Properties.Documents, Properties.Notes,
+            ],
             [Types.Plant] =
             [
                 Properties.PlantFamily, Properties.PlantGenus, Properties.ScientificName,
@@ -309,9 +322,11 @@ public static class HomeSchema
         };
 
     // Closed vocabularies: options are applied, never invented. Open selects
-    // (equipment_category, manufacturer, os, plant_*, substrate) are absent
-    // here on purpose — their options grow from Louis in the app and resolve
-    // against the live space only.
+    // (equipment_category, manufacturer, supplier, os, plant_*, substrate) are
+    // absent here on purpose — their options grow from Louis in the app and
+    // resolve against the live space only. Supplier left the closed set at the
+    // 2026-08-12 reboot: real purchases (Decathlon, LDLC, Rakuten…) outgrew
+    // the compiled six.
     internal static readonly IReadOnlyDictionary<string, IReadOnlyList<string>> ClosedVocabularies =
         new Dictionary<string, IReadOnlyList<string>>(StringComparer.Ordinal)
         {
@@ -328,9 +343,10 @@ public static class HomeSchema
             [Properties.PanelSize] = ["s", "m", "l"],
             [Properties.RcdType] = ["type_a", "type_ac", "inconnu"],
             [Properties.Domain] =
-            ["audio", "informatique", "outillage", "cuisine", "electromenager", "jardin"],
-            [Properties.Supplier] =
-            ["leroy_merlin", "brico_depot", "amazon", "manomano", "occasion", "autre"],
+            [
+                "audio", "informatique", "electronique", "outillage",
+                "cuisine", "electromenager", "jardin",
+            ],
             [Properties.Horizon] = ["maintenant", "bientot", "un_jour", "peut_etre"],
             [Properties.Aisle] = ["alimentaire", "bricolage", "maison", "jardin", "autre"],
             [Properties.State] =
@@ -466,6 +482,7 @@ public static class HomeSchema
     {
         Types.Idea => "note",
         Types.Errand => "action",
+        Types.Worksite => "action",
         Types.Todo => "action",
         _ => "basic",
     };

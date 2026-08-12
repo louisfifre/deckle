@@ -64,16 +64,34 @@ internal sealed class FakeHomeAnytypeServer : IDisposable
         });
     }
 
+    // Seeds a live option on an open select — the space-grown options the
+    // compiled manifest deliberately no longer carries (supplier & co).
+    public void AddSchemaTag(string propertyKey, string key, string name)
+    {
+        JsonObject property = ((JsonArray)_schemaManifest["properties"]!).OfType<JsonObject>()
+            .Single(value => value["key"]?.GetValue<string>() == propertyKey);
+        if (property["tags"] is not JsonArray tags) property["tags"] = tags = new JsonArray();
+        tags.Add(new JsonObject { ["key"] = key, ["name"] = name });
+    }
+
     public static JsonObject Room(string id, string code, string name) => Object(
         id, HomeSchema.Types.Room, name,
         TextProperty(HomeSchema.Properties.Code, "Code", code));
 
-    public static JsonObject Point(string id, string code, string name, string roomId) => Object(
-        id, HomeSchema.Types.Point, name,
-        TextProperty(HomeSchema.Properties.Code, "Code", code),
-        ObjectsProperty(HomeSchema.Properties.InstalledIn, "Installé dans", roomId),
-        SelectProperty(HomeSchema.Properties.Category, "Catégorie", "p", "P — prise 230 V"),
-        SelectProperty(HomeSchema.Properties.Existence, "Existence", "existant", "Existant"));
+    public static JsonObject Point(
+        string id, string code, string name, string roomId, string? surveyDate = null)
+    {
+        var properties = new List<JsonObject>
+        {
+            TextProperty(HomeSchema.Properties.Code, "Code", code),
+            ObjectsProperty(HomeSchema.Properties.InstalledIn, "Installé dans", roomId),
+            SelectProperty(HomeSchema.Properties.Category, "Catégorie", "p", "P — prise 230 V"),
+            SelectProperty(HomeSchema.Properties.Existence, "Existence", "existant", "Existant"),
+        };
+        if (surveyDate is not null)
+            properties.Add(DateProperty(HomeSchema.Properties.SurveyDate, "Date de relevé", surveyDate));
+        return Object(id, HomeSchema.Types.Point, name, [.. properties]);
+    }
 
     public static JsonObject Circuit(string id, string code) => Object(
         id, HomeSchema.Types.Circuit, code,
@@ -137,6 +155,11 @@ internal sealed class FakeHomeAnytypeServer : IDisposable
     private static JsonObject CheckboxProperty(string key, string name, bool value) => new()
     {
         ["key"] = key, ["name"] = name, ["format"] = "checkbox", ["checkbox"] = value,
+    };
+
+    private static JsonObject DateProperty(string key, string name, string value) => new()
+    {
+        ["key"] = key, ["name"] = name, ["format"] = "date", ["date"] = value,
     };
 
     private static JsonObject ObjectsProperty(string key, string name, params string[] ids) => new()

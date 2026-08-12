@@ -67,7 +67,7 @@ public static class HomeToolCatalog
 
             new ToolDescriptor(
                 "delete",
-                "Move a non-point Home object to Anytype's recoverable bin. First call without confirm to preview and obtain the pinned id, then repeat with that exact id and confirm:true. Points cannot be deleted; update their Existence to Déposé.",
+                "Move a Home object to Anytype's recoverable bin. First call without confirm to preview and obtain the pinned id, then repeat with that exact id and confirm:true. A point that describes reality never deletes — a surveyed or referenced point refuses with Existence = Déposé guidance; only an entry mistake (never surveyed, referenced by nothing) may be retracted.",
                 ObjectSchema(
                     required: [("object", StringSchema("Object code, name, or pinned id."))],
                     optional: [("confirm", BooleanSchema("Confirm the previewed deletion; default false."))]),

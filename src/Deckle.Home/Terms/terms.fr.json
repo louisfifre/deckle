@@ -9,6 +9,7 @@
     "system": { "name": "Système", "plural": "Systèmes" },
     "device": { "name": "Appareil", "plural": "Appareils" },
     "component": { "name": "Composant", "plural": "Composants" },
+    "utensil": { "name": "Ustensile de cuisine", "plural": "Ustensiles de cuisine" },
     "plant": { "name": "Plante", "plural": "Plantes" },
     "idea": { "name": "Idée", "plural": "Idées" },
     "errand": { "name": "Course", "plural": "Courses" },
@@ -160,18 +161,11 @@
     "domain": {
       "audio": "Audio",
       "informatique": "Informatique",
+      "electronique": "Électronique",
       "outillage": "Outillage",
       "cuisine": "Cuisine",
       "electromenager": "Électroménager",
       "jardin": "Jardin"
-    },
-    "supplier": {
-      "leroy_merlin": "Leroy Merlin",
-      "brico_depot": "Brico Dépôt",
-      "amazon": "Amazon",
-      "manomano": "ManoMano",
-      "occasion": "Occasion",
-      "autre": "Autre"
     },
     "horizon": {
       "maintenant": "Maintenant",
