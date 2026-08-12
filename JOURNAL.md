@@ -7,6 +7,16 @@ type: project-journal
 
 Project-level dated notes: a finding, a milestone, a usage observation — worth recording with a date, but not heavy enough for an ADR nor timeless enough for a CLAUDE.md. Most recent on top.
 
+## 2026-08-12 — Manifest internationalization deferred, target shape sketched
+
+During the Home space reboot (the clean-keys manifest rewrite, home repo), Louis named sharing Deckle's provisioning mechanism as a near-term goal: a user should provision their space in their own language, and translating should mean contributing one file.
+
+Chose to defer. Today the manifest keeps key and label side by side (`"key": "estimated_budget", "name": "Budget estimé (€)"`) — one artifact, one truth, one language served.
+
+Sketched the target for when sharing lands: the manifest keeps structure and canonical English keys only; every label (type names, property names, select options) moves to per-language token→label tables (`names.fr.json`, `names.en.json`, …); the provisioning language becomes a schema_apply-time parameter defaulting to the app locale. Two properties of the design worth keeping: extraction from the inline form is mechanical, since the keys already are the tokens — nothing written today is wasted; and because keys are immutable while labels rename freely, re-labelling an existing space into another language is a safe batch rename (a possible `schema_relabel` verb), never a migration.
+
+The tracking gesture — a dev-space task — belongs to a session with the dev guichet mounted; this entry records the reasoning until then.
+
 ## 2026-08-05 — Context-authoring doctrine delivered as a skill
 
 Delivered the context-artifact authoring doctrine as the personal skill `context-authoring` (`C:\Users\Louis\.claude\skills\context-authoring\`), which is now its single home: a six-paragraph conceptual core plus one `testing.md` annex. This entry supersedes the 2026-08-03 entry below; the principles recorded there were reworked during the final grill.
