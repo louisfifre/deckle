@@ -7,6 +7,10 @@ type: project-journal
 
 Project-level dated notes: a finding, a milestone, a usage observation — worth recording with a date, but not heavy enough for an ADR nor timeless enough for a CLAUDE.md. Most recent on top.
 
+## 2026-08-12 — Welcome page at provisioning, noted for the sharing theme
+
+Louis's idea, same reboot conversation: a provisioned space should open on a hand-authored welcome/guide page — what this space is, how it reads — with inline views. Authoring stays in-app (inline views are app-only, verified 2026-08-10) and the content would be exported once and reused at provisioning; the mechanism belongs with the sharing/i18n theme above. Deferred with it; the Home instance (the « mode d'emploi » page) becomes a task in the rebooted space itself.
+
 ## 2026-08-12 — Manifest internationalization deferred, target shape sketched
 
 During the Home space reboot (the clean-keys manifest rewrite, home repo), Louis named sharing Deckle's provisioning mechanism as a near-term goal: a user should provision their space in their own language, and translating should mean contributing one file.
