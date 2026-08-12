@@ -180,9 +180,20 @@ public class HomeGesturesTests
         Assert.Equal("circuit", HomeSchema.Types.Circuit);
         Assert.Equal("panel", HomeSchema.Types.Panel);
         Assert.Equal("point", HomeSchema.Types.Point);
+        JsonArray properties = (JsonArray)HomeSchema.CreateRequiredSchemaManifest()["properties"]!;
         Assert.Contains(
-            ((JsonArray)HomeSchema.CreateRequiredSchemaManifest()["properties"]!).OfType<JsonObject>(),
+            properties.OfType<JsonObject>(),
             property => property["key"]?.GetValue<string>() == "code");
+
+        JsonObject domain = properties.OfType<JsonObject>()
+            .Single(property => property["key"]?.GetValue<string>() == "domain");
+        Assert.Contains(
+            ((JsonArray)domain["tags"]!).OfType<JsonObject>(),
+            tag => tag["key"]?.GetValue<string>() == "electronique");
+
+        JsonObject supplier = properties.OfType<JsonObject>()
+            .Single(property => property["key"]?.GetValue<string>() == "supplier");
+        Assert.Null(supplier["tags"]);
     }
 
     [Fact]
@@ -219,18 +230,35 @@ public class HomeGesturesTests
     }
 
     [Fact]
-    public async Task DeleteRefusesPointsBeforeAnyDeleteRequest()
+    public async Task DeleteRefusesASurveyedPointBeforeAnyDeleteRequest()
     {
         using var server = new FakeHomeAnytypeServer();
         server.SetObjects(
             FakeHomeAnytypeServer.Room("room-zz", "ZZ", "Pièce fictive"),
-            FakeHomeAnytypeServer.Point("point-1", "ZZ-P01", "Prise fictive", "room-zz"));
+            FakeHomeAnytypeServer.Point(
+                "point-1", "ZZ-P01", "Prise fictive", "room-zz", surveyDate: "2026-08-01"));
 
         InvalidOperationException error = await Assert.ThrowsAsync<InvalidOperationException>(() =>
             Gestures(server).DeleteAsync("ZZ-P01", confirm: false, Ct));
 
         Assert.Contains("Existence", error.Message);
         Assert.DoesNotContain(server.Requests, request => request.Method == "DELETE");
+    }
+
+    [Fact]
+    public async Task DeleteRetractsAnUnsurveyedUnreferencedPointEntryMistake()
+    {
+        using var server = new FakeHomeAnytypeServer();
+        server.SetObjects(
+            FakeHomeAnytypeServer.Room("room-zz", "ZZ", "Pièce fictive"),
+            FakeHomeAnytypeServer.Point("point-1", "ZZ-P01", "Prise saisie par erreur", "room-zz"));
+
+        string preview = await Gestures(server).DeleteAsync("ZZ-P01", confirm: false, Ct);
+        Assert.Contains("point-1", preview);
+
+        string result = await Gestures(server).DeleteAsync("point-1", confirm: true, Ct);
+        Assert.Contains("corbeille", result);
+        Assert.Contains(server.Requests, request => request.Method == "DELETE");
     }
 
     [Fact]
@@ -440,9 +468,12 @@ public class HomeGesturesTests
     }
 
     [Fact]
-    public async Task CreateDeviceAcceptsAnInitialBodyAndTheSupplierVocabulary()
+    public async Task CreateDeviceAcceptsAnInitialBodyAndALiveSupplierOption()
     {
+        // Supplier is an open vocabulary since the 2026-08-12 reboot: its
+        // options live in the space, not in the compiled schema.
         using var server = new FakeHomeAnytypeServer();
+        server.AddSchemaTag(HomeSchema.Properties.Supplier, "occasion", "Occasion");
 
         await Gestures(server).CreateAsync(
             HomeSchema.Types.Device,
@@ -534,8 +565,13 @@ public class HomeGesturesTests
         Assert.Equal("note", TypeSpec(HomeSchema.Types.Idea)["layout"]!.GetValue<string>());
         Assert.Equal("action", TypeSpec(HomeSchema.Types.Errand)["layout"]!.GetValue<string>());
         Assert.Equal("action", TypeSpec(HomeSchema.Types.Todo)["layout"]!.GetValue<string>());
+        Assert.Equal("action", TypeSpec(HomeSchema.Types.Worksite)["layout"]!.GetValue<string>());
         Assert.Equal("basic", TypeSpec(HomeSchema.Types.Device)["layout"]!.GetValue<string>());
+        Assert.Equal("basic", TypeSpec(HomeSchema.Types.Utensil)["layout"]!.GetValue<string>());
         Assert.Equal("Appareils", TypeSpec(HomeSchema.Types.Device)["plural_name"]!.GetValue<string>());
+        Assert.Equal(
+            "Ustensiles de cuisine",
+            TypeSpec(HomeSchema.Types.Utensil)["plural_name"]!.GetValue<string>());
         Assert.Equal("Chantiers", TypeSpec(HomeSchema.Types.Worksite)["plural_name"]!.GetValue<string>());
         Assert.DoesNotContain(
             types.OfType<JsonObject>(),

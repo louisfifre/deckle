@@ -329,7 +329,7 @@ public sealed class HomeGestures
         {
             HomeObjectIndex previewIndex = await HomeObjectIndex.LoadAsync(_api, _spaceId, ct).ConfigureAwait(false);
             JsonObject preview = previewIndex.Resolve(selector);
-            RefusePointDelete(preview);
+            RefusePointDelete(preview, previewIndex);
             DeckleHomeSource.Log.GestureCompleted("delete_preview", Elapsed(started));
             return $"Suppression à confirmer : {HomeObjectIndex.Display(preview)} ({HomeObjectJson.TypeKey(preview)}) · id {HomeObjectJson.Id(preview)}. Relance delete avec cet id exact et confirm:true.";
         }
@@ -337,7 +337,7 @@ public sealed class HomeGestures
         using var writeScope = await _api.AcquireWriteScopeAsync("home_delete", "object", ct).ConfigureAwait(false);
         HomeObjectIndex index = await HomeObjectIndex.LoadAsync(_api, _spaceId, ct).ConfigureAwait(false);
         JsonObject target = index.Resolve(selector);
-        RefusePointDelete(target);
+        RefusePointDelete(target, index);
         string id = HomeObjectJson.Id(target);
         if (!string.Equals(selector.Trim(), id, StringComparison.Ordinal))
             throw new InvalidOperationException(
@@ -698,11 +698,27 @@ public sealed class HomeGestures
                 : "Le code se fournit par le champ « code » de l'item, pas dans les propriétés.");
     }
 
-    private static void RefusePointDelete(JsonObject value)
+    // SPEC revision of 2026-08-12: Existence = Déposé describes a real element
+    // taken off a wall; only an entry mistake — never surveyed, referenced by
+    // nothing — may be retracted through delete. Allocation never recycles a
+    // number either way.
+    private static void RefusePointDelete(JsonObject value, HomeObjectIndex index)
     {
-        if (HomeObjectJson.TypeKey(value) == HomeSchema.Types.Point)
+        if (HomeObjectJson.TypeKey(value) != HomeSchema.Types.Point) return;
+
+        bool surveyed = HomeObjectJson.Property(value, HomeSchema.Properties.SurveyDate)?["date"]
+            is JsonValue date && date.TryGetValue<string>(out string? stamp)
+            && !string.IsNullOrWhiteSpace(stamp);
+        string id = HomeObjectJson.Id(value);
+        bool referenced = index.Objects.Any(other =>
+            HomeObjectJson.Id(other) != id
+            && HomeObjectJson.ObjectReferences(other).Contains(id));
+
+        if (surveyed || referenced)
             throw new InvalidOperationException(
-                $"Un point ne se supprime pas. Passe {HomeObjectIndex.Display(value)} à Existence = Déposé avec update.");
+                $"{HomeObjectIndex.Display(value)} décrit du réel (relevé ou référencé) : il ne se "
+                + "supprime pas, passe-le à Existence = Déposé avec update. Seule une erreur de "
+                + "saisie jamais relevée et référencée par rien se rétracte.");
     }
 
     private static string NextCodeSuggestion(
