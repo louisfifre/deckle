@@ -11,6 +11,7 @@ The nearest `CONTEXT.md` up the tree governs the code you're touching. This map 
 ## Contexts
 
 - [System-wide](CONTEXT.md) — language that classifies across modules: exposables and the Correction / Rewrite boundary
+- [Scripts](scripts/CONTEXT.md) — terminal-launcher navigation, actions, executions, tracking, journals, and results
 - [Tests](tests/CONTEXT.md) — the test taxonomy: four automatic categories, three outside the automatic scope
 - [Diagnostics](src/Deckle.Diagnostics/CONTEXT.md) — observability: admission vs view, the five quieting controls (covers `.Logging` and `.Telemetry`)
 - [Security](src/Deckle.Security/CONTEXT.md) — trusted-session boundary, captured content, and custody of persisted copies

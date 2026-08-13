@@ -366,9 +366,12 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │       ├── list-picker.tests.ps1
 │   │       ├── status-view.tests.ps1
 │   │       └── text-input.tests.ps1
+│   ├── CONTEXT.md  — [agent-instructions] Deckle Scripts interaction vocabulary — launcher choices, action runs, detailed…
 │   ├── deckle.ps1
+│   ├── JOURNAL.md  — [module-journal] Dated findings about Deckle's repository-script interaction system.
 │   ├── README.md  — readme-scripts [module-readme] Dev workflows entry point for Deckle: the deckle.ps1 menu, the commands under c…
-│   └── resource-validation.allowlist.json
+│   ├── resource-validation.allowlist.json
+│   └── TERMINAL-INTERACTION-SPEC.md  — [module-specification] Normative contracts for Deckle's reusable terminal-interaction system: module b…
 ├── src/
 │   ├── Deckle.Anytype/
 │   │   ├── Api/
