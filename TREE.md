@@ -391,6 +391,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │       ├── navigation.tests.ps1
 │   │       ├── NavigationBugNotes.md
 │   │       ├── preparation.tests.ps1
+│   │       ├── RenderingBugNotes.md
 │   │       ├── SemanticBugNotes.md
 │   │       └── theme.tests.ps1
 │   ├── deckle-preview.ps1
