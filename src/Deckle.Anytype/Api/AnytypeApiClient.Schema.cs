@@ -45,6 +45,24 @@ public sealed partial class AnytypeApiClient
         return InnerOrRoot(root, "type");
     }
 
+    // A type's templates. POST /objects never applies a type's default
+    // template on its own: the caller resolves one here and sends its id as
+    // `template_id` in the create body.
+    public async Task<JsonObject> ListTemplatesAsync(
+        string spaceId,
+        string typeId,
+        int offset = 0,
+        int limit = 100,
+        CancellationToken ct = default)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(spaceId);
+        ArgumentException.ThrowIfNullOrWhiteSpace(typeId);
+
+        string path = $"{SpacePath(spaceId)}/types/{typeId}/templates?offset={offset}&limit={limit}";
+        return await SendAsync(
+            HttpMethod.Get, path, null, ct, replaySafety: RequestReplaySafety.Safe).ConfigureAwait(false);
+    }
+
     public async Task<JsonObject> ListPropertiesForSpaceAsync(
         string spaceId,
         int offset = 0,

@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Text;
 using System.Text.Json.Nodes;
 using System.Text.RegularExpressions;
@@ -44,18 +45,30 @@ public sealed class HomeGestures
         var propertyWriter = new HomePropertyWriter(_api, _spaceId, schema, index);
         var collectionWriter = new HomeCollectionWriter(_api, _spaceId, index);
 
+        // Templates are live-space coordinates: read once for the batch (one
+        // type per call), never cached across gestures, never compiled.
+        IReadOnlyList<(string Id, string Name)>? templates = null;
+        async Task<string?> ResolveTemplateAsync(string? requested)
+        {
+            if (string.IsNullOrWhiteSpace(requested)) return null;
+            templates ??= await ReadTemplatesAsync(schema.TypeId(type), ct).ConfigureAwait(false);
+            return MatchTemplate(type, requested.Trim(), templates);
+        }
+
         var prepared = new List<(string Display, JsonObject Payload, IReadOnlyList<string> Collections)>();
         var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         foreach (HomeCreateItem item in items)
         {
             RefuseCodeProperty(item.Properties);
+            string? templateId = await ResolveTemplateAsync(item.Template).ConfigureAwait(false);
 
             if (!IsCoded(type))
             {
                 JsonArray freeProperties = await propertyWriter.BuildAsync(
                     type, item.Properties, [], ct).ConfigureAwait(false);
                 RequireComponentSystem(type, freeProperties);
-                prepared.Add(PrepareFreeTitledItem(type, item, freeProperties, collectionWriter));
+                prepared.Add(PrepareFreeTitledItem(
+                    type, item, freeProperties, collectionWriter, templateId));
                 continue;
             }
 
@@ -130,14 +143,17 @@ public sealed class HomeGestures
                 }
             }
 
+            var codedPayload = new JsonObject
+            {
+                ["type_key"] = type,
+                ["name"] = title,
+                ["properties"] = properties,
+            };
+            if (templateId is not null) codedPayload["template_id"] = templateId;
+
             prepared.Add((
                 string.Equals(title, code, StringComparison.Ordinal) ? code : $"{code} · {title}",
-                new JsonObject
-                {
-                    ["type_key"] = type,
-                    ["name"] = title,
-                    ["properties"] = properties,
-                },
+                codedPayload,
                 collections));
         }
 
@@ -550,6 +566,61 @@ public sealed class HomeGestures
         return "- " + string.Join(" · ", parts);
     }
 
+    private async Task<IReadOnlyList<(string Id, string Name)>> ReadTemplatesAsync(
+        string typeId, CancellationToken ct)
+    {
+        const int PageLimit = 100;
+        var result = new List<(string Id, string Name)>();
+        int offset = 0;
+        while (true)
+        {
+            JsonObject root = await _api.ListTemplatesAsync(_spaceId, typeId, offset, PageLimit, ct)
+                .ConfigureAwait(false);
+            foreach (JsonObject value in (root["data"] as JsonArray ?? []).OfType<JsonObject>())
+            {
+                string id = HomeObjectJson.String(value, "id");
+                if (id.Length > 0) result.Add((id, HomeObjectJson.String(value, "name")));
+            }
+            if (root["pagination"]?["has_more"]?.GetValue<bool>() != true) break;
+            offset += PageLimit;
+        }
+        return result;
+    }
+
+    // A template is named, never identified: its id is a Home coordinate that
+    // must not enter the code. The exact name wins; a folded match catches the
+    // accent or the capital the caller dropped.
+    private static string MatchTemplate(
+        string type, string requested, IReadOnlyList<(string Id, string Name)> templates)
+    {
+        (string Id, string Name)[] matches = templates
+            .Where(candidate => string.Equals(candidate.Name, requested, StringComparison.Ordinal))
+            .ToArray();
+        if (matches.Length == 0)
+            matches = templates
+                .Where(candidate => FoldName(candidate.Name) == FoldName(requested))
+                .ToArray();
+        if (matches.Length == 1) return matches[0].Id;
+
+        string known = templates.Count == 0
+            ? "aucun"
+            : string.Join(", ", templates.Select(candidate => candidate.Name)
+                .OrderBy(name => name, StringComparer.Ordinal));
+        throw new InvalidOperationException(matches.Length == 0
+            ? $"Modèle inconnu « {requested} » pour {type}. Modèles présents : {known}."
+            : $"Modèle ambigu « {requested} » pour {type}. Modèles présents : {known}.");
+    }
+
+    private static string FoldName(string value)
+    {
+        string decomposed = value.Trim().Normalize(NormalizationForm.FormD);
+        var builder = new StringBuilder(decomposed.Length);
+        foreach (char character in decomposed)
+            if (CharUnicodeInfo.GetUnicodeCategory(character) != UnicodeCategory.NonSpacingMark)
+                builder.Append(char.ToLowerInvariant(character));
+        return builder.ToString().Normalize(NormalizationForm.FormC);
+    }
+
     private static string NormalizeType(string value)
     {
         if (string.IsNullOrWhiteSpace(value))
@@ -598,7 +669,11 @@ public sealed class HomeGestures
     // body). Only an appareil keeps the free-form body allowance inherited
     // from the former outil type.
     private static (string Display, JsonObject Payload, IReadOnlyList<string> Collections) PrepareFreeTitledItem(
-        string type, HomeCreateItem item, JsonArray properties, HomeCollectionWriter collectionWriter)
+        string type,
+        HomeCreateItem item,
+        JsonArray properties,
+        HomeCollectionWriter collectionWriter,
+        string? templateId)
     {
         if (item.Code is not null)
             throw new InvalidOperationException(
@@ -631,6 +706,7 @@ public sealed class HomeGestures
         }
 
         if (properties.Count > 0) payload["properties"] = properties;
+        if (templateId is not null) payload["template_id"] = templateId;
         return (payload["name"]!.GetValue<string>(), payload, collectionWriter.Resolve(item.Collections));
     }
 

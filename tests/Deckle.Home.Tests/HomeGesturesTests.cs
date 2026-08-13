@@ -724,6 +724,59 @@ public class HomeGesturesTests
         Assert.Contains("corbeille", digest);
     }
 
+    [Fact]
+    public async Task CreateResolvesTheTemplateByNameAndSendsItsIdWithTheBody()
+    {
+        using var server = new FakeHomeAnytypeServer();
+        server.AddTemplate(HomeSchema.Types.Device, "template-fictif", "Téléphone fictif");
+
+        await Gestures(server).CreateAsync(
+            HomeSchema.Types.Device,
+            [new HomeCreateItem(
+                null, "Appareil fictif", null, Text: "Corps fictif", Template: "telephone fictif")],
+            Ct);
+
+        JsonObject body = (JsonObject)JsonNode.Parse(server.Requests.Single(request =>
+            request.Method == "POST").Body)!;
+        Assert.Equal("template-fictif", body["template_id"]!.GetValue<string>());
+        Assert.Equal("Corps fictif", body["body"]!.GetValue<string>());
+    }
+
+    [Fact]
+    public async Task CreateRefusesAnUnknownTemplateAndNamesTheOnesTheTypeHas()
+    {
+        using var server = new FakeHomeAnytypeServer();
+        server.AddTemplate(HomeSchema.Types.Device, "template-fictif", "Téléphone fictif");
+
+        InvalidOperationException error = await Assert.ThrowsAsync<InvalidOperationException>(() =>
+            Gestures(server).CreateAsync(
+                HomeSchema.Types.Device,
+                [new HomeCreateItem(null, "Appareil fictif", null, Template: "Enceinte fictive")],
+                Ct));
+
+        Assert.Contains("Modèle inconnu", error.Message);
+        Assert.Contains("Téléphone fictif", error.Message);
+        Assert.DoesNotContain(server.Requests, request =>
+            request.Method == "POST" && request.Path.EndsWith("/objects", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public async Task CreateWithoutATemplateSendsNoTemplateIdAndAsksTheTypeForNone()
+    {
+        using var server = new FakeHomeAnytypeServer();
+
+        await Gestures(server).CreateAsync(
+            HomeSchema.Types.Device,
+            [new HomeCreateItem(null, "Appareil fictif", null)],
+            Ct);
+
+        JsonObject body = (JsonObject)JsonNode.Parse(server.Requests.Single(request =>
+            request.Method == "POST").Body)!;
+        Assert.DoesNotContain("template_id", body.Select(pair => pair.Key));
+        Assert.DoesNotContain(server.Requests, request =>
+            request.Path.EndsWith("/templates", StringComparison.Ordinal));
+    }
+
     private static JsonObject Entry(JsonArray properties, string key) =>
         properties.OfType<JsonObject>().Single(value => value["key"]!.GetValue<string>() == key);
 }

@@ -19,6 +19,7 @@ internal sealed class FakeHomeAnytypeServer : IDisposable
     private readonly Task _loop;
     private readonly ConcurrentQueue<Received> _requests = new();
     private readonly List<JsonObject> _objects = new();
+    private readonly Dictionary<string, List<(string Id, string Name)>> _templates = new(StringComparer.Ordinal);
     private JsonObject _schemaManifest = HomeSchema.CreateRequiredSchemaManifest();
     private int _nextId;
 
@@ -49,6 +50,15 @@ internal sealed class FakeHomeAnytypeServer : IDisposable
         JsonObject? target = properties.OfType<JsonObject>()
             .SingleOrDefault(value => value["key"]?.GetValue<string>() == key);
         if (target is not null) properties.Remove(target);
+    }
+
+    // Seeds a template on a type, addressed the way the live API addresses it:
+    // by the type's id, with the name the app shows.
+    public void AddTemplate(string typeKey, string templateId, string name)
+    {
+        if (!_templates.TryGetValue(typeKey, out List<(string, string)>? seeded))
+            _templates[typeKey] = seeded = [];
+        seeded.Add((templateId, name));
     }
 
     public void AddSchemaType(string key, string name, string pluralName, string layout)
@@ -204,6 +214,9 @@ internal sealed class FakeHomeAnytypeServer : IDisposable
     {
         string root = $"/v1/spaces/{HomeSpace}";
         if (method == "GET" && path == root + "/types") return (200, SchemaTypes().ToJsonString());
+        if (method == "GET" && path.StartsWith(root + "/types/", StringComparison.Ordinal)
+            && path.EndsWith("/templates", StringComparison.Ordinal))
+            return (200, Templates(path.Split('/')[^2]).ToJsonString());
         if (method == "GET" && path == root + "/properties") return (200, SchemaProperties().ToJsonString());
         if (method == "GET" && path.StartsWith(root + "/properties/", StringComparison.Ordinal)
             && path.EndsWith("/tags", StringComparison.Ordinal))
@@ -241,6 +254,16 @@ internal sealed class FakeHomeAnytypeServer : IDisposable
                 ["properties"] = properties,
             });
         }
+        return Page(data);
+    }
+
+    private JsonObject Templates(string typeId)
+    {
+        string typeKey = typeId["type-".Length..];
+        var data = new JsonArray();
+        if (_templates.TryGetValue(typeKey, out List<(string Id, string Name)>? seeded))
+            foreach ((string id, string name) in seeded)
+                data.Add(new JsonObject { ["id"] = id, ["name"] = name });
         return Page(data);
     }
 
