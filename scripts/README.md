@@ -7,7 +7,25 @@ module: scripts
 
 # `scripts/` — Deckle dev workflows
 
-All scripts target PowerShell 7+. The single entry point lives at [`deckle.ps1`](deckle.ps1); the commands it dispatches to live under [`commands/`](commands/) and stay usable on their own CLI for automation. Tracked workflows resolve the repository from their own location, so the checkout drive and the terminal's current directory are not part of their contract.
+The current daily launcher and workflow commands target PowerShell 7+. The parallel interaction preview targets Windows PowerShell 5.1 and PowerShell 7. The stable entry point lives at [`deckle.ps1`](deckle.ps1); the commands it dispatches to live under [`commands/`](commands/) and stay usable on their own CLI for automation. Tracked workflows resolve the repository from their own location, so the checkout drive and the terminal's current directory are not part of their contract.
+
+## Parallel interaction preview
+
+[`deckle-preview.ps1`](deckle-preview.ps1) is a safe second launcher for evaluating the replacement interaction framework while `deckle.ps1` remains the daily reference. It mirrors Deckle's Action Menu, Accesses, Back behavior, responsive columns, paging, and Execution layout, but every Action opens an in-memory sample Execution. It never invokes a repository command.
+
+Run it interactively with either supported engine:
+
+```powershell
+pwsh -NoProfile -File scripts/deckle-preview.ps1
+powershell -NoProfile -ExecutionPolicy Bypass -File scripts/deckle-preview.ps1
+```
+
+Render a deterministic frame without taking over the terminal when comparing layouts or writing tests:
+
+```powershell
+pwsh -NoProfile -File scripts/deckle-preview.ps1 -Snapshot Menu -Width 60 -Height 20
+pwsh -NoProfile -File scripts/deckle-preview.ps1 -Snapshot Execution -Width 120 -Height 24
+```
 
 ## Entry point — `deckle.ps1`
 

@@ -287,6 +287,9 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── agent-state-maintenance/
 │   │   │   ├── sanitization.ps1
 │   │   │   └── sqlite-cleanup.ps1
+│   │   ├── deckle-preview/
+│   │   │   ├── catalog.ps1
+│   │   │   └── flows.ps1
 │   │   ├── launcher/
 │   │   │   ├── action-log.ps1
 │   │   │   ├── action-results.ps1
@@ -307,6 +310,14 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   ├── session.ps1
 │   │   │   ├── status-view.ps1
 │   │   │   └── text-input.ps1
+│   │   ├── terminal-interaction/
+│   │   │   ├── contracts.ps1
+│   │   │   ├── host.ps1
+│   │   │   ├── interaction.ps1
+│   │   │   ├── layout.ps1
+│   │   │   ├── navigation.ps1
+│   │   │   ├── rendering.ps1
+│   │   │   └── theme.ps1
 │   │   ├── action-summary.ps1
 │   │   ├── agent-state-maintenance.psm1
 │   │   ├── agent-state-maintenance.strings.psd1
@@ -321,7 +332,8 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── repository-inventory.psm1
 │   │   ├── resource-inventory.psm1
 │   │   ├── script-output.ps1
-│   │   └── source-metrics.psm1
+│   │   ├── source-metrics.psm1
+│   │   └── terminal-interaction.psm1
 │   ├── tests/
 │   │   ├── BugExamples/
 │   │   │   ├── dotnet-max-node-response-precedence.json
@@ -358,14 +370,26 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   ├── script-layout.tests.ps1
 │   │   │   ├── script-output.tests.ps1
 │   │   │   └── source-metrics.tests.ps1
-│   │   └── menu/
-│   │       ├── chrome.tests.ps1
-│   │       ├── grid-picker.tests.ps1
-│   │       ├── grid-status.tests.ps1
-│   │       ├── input.tests.ps1
-│   │       ├── list-picker.tests.ps1
-│   │       ├── status-view.tests.ps1
-│   │       └── text-input.tests.ps1
+│   │   ├── menu/
+│   │   │   ├── chrome.tests.ps1
+│   │   │   ├── grid-picker.tests.ps1
+│   │   │   ├── grid-status.tests.ps1
+│   │   │   ├── input.tests.ps1
+│   │   │   ├── list-picker.tests.ps1
+│   │   │   ├── status-view.tests.ps1
+│   │   │   └── text-input.tests.ps1
+│   │   └── terminal-interaction/
+│   │       ├── contracts.tests.ps1
+│   │       ├── flows.tests.ps1
+│   │       ├── host.tests.ps1
+│   │       ├── HostBugNotes.md
+│   │       ├── layout.tests.ps1
+│   │       ├── LayoutBugNotes.md
+│   │       ├── navigation.tests.ps1
+│   │       ├── NavigationBugNotes.md
+│   │       ├── SemanticBugNotes.md
+│   │       └── theme.tests.ps1
+│   ├── deckle-preview.ps1
 │   ├── deckle.ps1
 │   ├── README.md  — readme-scripts [module-readme] Dev workflows entry point for Deckle: the deckle.ps1 menu, the commands under c…
 │   └── resource-validation.allowlist.json
