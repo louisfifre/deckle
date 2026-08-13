@@ -1,6 +1,7 @@
 $ErrorActionPreference = 'Stop'
 $ScriptsDir = Split-Path -Parent (Split-Path -Parent $PSScriptRoot)
 $LibDir = Join-Path $ScriptsDir 'lib'
+$RepositoryRoot = Split-Path -Parent $ScriptsDir
 Import-Module (Join-Path $LibDir 'terminal-interaction.psm1') -Force
 . (Join-Path $LibDir 'deckle-preview\catalog.ps1')
 . (Join-Path $LibDir 'deckle-preview\statistics-preparation.ps1')
@@ -49,7 +50,8 @@ $preparationDecision = Resolve-DecklePreviewIntent `
         Payload = $statisticsTarget.Payload
         SourceViewId = $maintenance.ViewId
     }) `
-    -SourceView $maintenance
+    -SourceView $maintenance `
+    -RepositoryRoot $RepositoryRoot
 Assert-Equal OpenView $preparationDecision.Kind 'statistics Action opens Preparation before Execution'
 Assert-Equal Preparation $preparationDecision.View.Kind 'material statistics inputs stay in one Preparation View'
 
@@ -65,8 +67,10 @@ $adjustmentDecision = Resolve-DecklePreviewIntent `
     -SourceView $preparationDecision.View
 Assert-Equal UpdateView $adjustmentDecision.Kind 'Selector editing updates the current View instead of navigating'
 Assert-Equal 2 $adjustmentDecision.View.Revision 'an accepted Selection creates a distinct revision'
-Assert-Equal src $adjustmentDecision.View.Selectors[0].SelectedValues[0] 'the next revision carries the accepted Selection'
+Assert-Equal $false ($adjustmentDecision.View.Selectors[0].SelectedValues -contains 'src') 'the next revision carries the toggled additive Selection'
 Assert-Equal 2 $adjustmentDecision.View.Review.Revision 'the Review is rebuilt from the accepted Selection revision'
+Assert-Equal $false $adjustmentDecision.View.ConfirmationTarget.Payload.Selections.Scope.IsWholeRepository 'partial scope is explicit in the Action request'
+Assert-Equal $false ($adjustmentDecision.View.ConfirmationTarget.Payload.Selections.Scope.Paths -contains 'src') 'the Action request carries every selected path rather than one ScopePath'
 
 $confirmation = $adjustmentDecision.View.ConfirmationTarget
 $confirmationDecision = Resolve-DecklePreviewIntent `

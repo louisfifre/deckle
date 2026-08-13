@@ -1,5 +1,49 @@
 # Preview controller for one compact Repository statistics Preparation.
 
+function Get-DecklePreviewRepositoryScopeOptions {
+    [CmdletBinding()]
+    param([Parameter(Mandatory)][ValidateNotNullOrEmpty()][string]$RepositoryRoot)
+
+    $root = (Resolve-Path -LiteralPath $RepositoryRoot).Path
+    $trackedPaths = @(& git -C $root ls-files)
+    if ($LASTEXITCODE -ne 0) {
+        throw "Could not discover tracked repository locations under '$root'."
+    }
+
+    $hasRootFiles = $false
+    $topLevelFolders = @{}
+    foreach ($trackedPathValue in $trackedPaths) {
+        $trackedPath = ([string]$trackedPathValue).Replace('\', '/').Trim('/')
+        if ([string]::IsNullOrWhiteSpace($trackedPath)) { continue }
+        $separatorIndex = $trackedPath.IndexOf('/')
+        if ($separatorIndex -lt 0) {
+            $hasRootFiles = $true
+            continue
+        }
+        $folder = $trackedPath.Substring(0, $separatorIndex)
+        $topLevelFolders[$folder] = $true
+    }
+
+    $options = [System.Collections.Generic.List[object]]::new()
+    if ($hasRootFiles) {
+        $options.Add((New-TerminalSelectionOption `
+            -OptionId root-files `
+            -Label 'Root files' `
+            -Value root-files))
+    }
+    foreach ($folder in @($topLevelFolders.Keys | Sort-Object)) {
+        $options.Add((New-TerminalSelectionOption `
+            -OptionId "folder:$folder" `
+            -Label "$folder/" `
+            -Value $folder))
+    }
+
+    if ($options.Count -eq 0) {
+        throw "Repository '$root' has no tracked locations to select."
+    }
+    return @($options)
+}
+
 function Get-DecklePreviewOptionLabel {
     param(
         [Parameter(Mandatory)][object[]]$Options,
@@ -26,28 +70,69 @@ function Get-DecklePreviewSelectedLabels {
     return $labels -join ', '
 }
 
+function Get-DecklePreviewScopeSnapshot {
+    param([Parameter(Mandatory)][object]$Selector)
+
+    $selectedValues = @($Selector.SelectedValues)
+    return [pscustomobject][ordered]@{
+        IsWholeRepository = $selectedValues.Count -eq $Selector.Options.Count
+        IncludeRootFiles = $selectedValues -contains 'root-files'
+        Paths = @($selectedValues | Where-Object { $_ -ne 'root-files' })
+    }
+}
+
+function Get-DecklePreviewScopeDescription {
+    param([Parameter(Mandatory)][object]$Selector)
+
+    $snapshot = Get-DecklePreviewScopeSnapshot -Selector $Selector
+    if ($snapshot.IsWholeRepository) { return 'Whole repository' }
+    if ($Selector.SelectedValues.Count -eq 0) { return 'Nothing selected' }
+    return '{0} of {1} tracked locations' -f $Selector.SelectedValues.Count, $Selector.Options.Count
+}
+
+function Get-DecklePreviewScopeDetailLines {
+    param([Parameter(Mandatory)][object]$Selector)
+
+    $snapshot = Get-DecklePreviewScopeSnapshot -Selector $Selector
+    if ($snapshot.IsWholeRepository) {
+        return @('Whole repository; tracked files only.')
+    }
+    if ($Selector.SelectedValues.Count -eq 0) {
+        return @('No repository location selected.')
+    }
+
+    $selectedOptions = @($Selector.Options | Where-Object { $Selector.SelectedValues -contains $_.Value })
+    $excludedOptions = @($Selector.Options | Where-Object { $Selector.SelectedValues -notcontains $_.Value })
+    if ($excludedOptions.Count -lt $selectedOptions.Count) {
+        return @('Excluded: {0}.' -f (($excludedOptions | ForEach-Object Label) -join ', '))
+    }
+    return @('Included: {0}.' -f (($selectedOptions | ForEach-Object Label) -join ', '))
+}
+
 function New-DecklePreviewStatisticsPreparation {
     param(
         [int]$Revision = 1,
         [System.Collections.IDictionary]$Selections,
+        [object[]]$ScopeOptions,
+        [string]$RepositoryRoot,
         [string]$OwnerActionMenuId = 'menu.maintenance'
     )
 
+    if ($null -eq $ScopeOptions -or $ScopeOptions.Count -eq 0) {
+        if ([string]::IsNullOrWhiteSpace($RepositoryRoot)) {
+            throw 'RepositoryRoot is required when ScopeOptions are not supplied.'
+        }
+        $ScopeOptions = @(Get-DecklePreviewRepositoryScopeOptions -RepositoryRoot $RepositoryRoot)
+    }
     if ($null -eq $Selections) {
         $Selections = [ordered]@{
-            scope = @('repository')
+            scope = @($ScopeOptions | ForEach-Object { $_.Value })
             files = @('text')
             measures = @('files', 'bytes', 'lines')
             grouping = @('extension')
         }
     }
 
-    $scopeOptions = @(
-        New-TerminalSelectionOption -OptionId repository -Label 'Whole repository' -Value repository
-        New-TerminalSelectionOption -OptionId src -Label 'src/' -Value src
-        New-TerminalSelectionOption -OptionId scripts -Label 'scripts/' -Value scripts
-        New-TerminalSelectionOption -OptionId docs -Label 'docs/' -Value docs
-    )
     $fileOptions = @(
         New-TerminalSelectionOption -OptionId all -Label 'All tracked files' -Value all
         New-TerminalSelectionOption -OptionId text -Label 'Supported text' -Value text
@@ -67,7 +152,7 @@ function New-DecklePreviewStatisticsPreparation {
     )
 
     $selectors = @(
-        New-TerminalSelector -SelectorId scope -FilterLabel Scope -SelectionMode Single -Options $scopeOptions -SelectedValues @($Selections['scope'])
+        New-TerminalSelector -SelectorId scope -FilterLabel Scope -SelectionMode Multiple -Options $ScopeOptions -SelectedValues @($Selections['scope'])
         New-TerminalSelector -SelectorId files -FilterLabel Files -SelectionMode Single -Options $fileOptions -SelectedValues @($Selections['files'])
         New-TerminalSelector -SelectorId measures -FilterLabel Measures -SelectionMode Multiple -Options $measureOptions -SelectedValues @($Selections['measures'])
         New-TerminalSelector -SelectorId grouping -FilterLabel Grouping -SelectionMode Single -Options $groupingOptions -SelectedValues @($Selections['grouping'])
@@ -77,7 +162,7 @@ function New-DecklePreviewStatisticsPreparation {
     $filesSelector = @($selectors | Where-Object { $_.SelectorId -eq 'files' })[0]
     $measuresSelector = @($selectors | Where-Object { $_.SelectorId -eq 'measures' })[0]
     $groupingSelector = @($selectors | Where-Object { $_.SelectorId -eq 'grouping' })[0]
-    $scopeLabel = Get-DecklePreviewSelectedLabels -Selector $scopeSelector
+    $scopeLabel = Get-DecklePreviewScopeDescription -Selector $scopeSelector
     $filesLabel = Get-DecklePreviewSelectedLabels -Selector $filesSelector
     $measuresLabel = Get-DecklePreviewSelectedLabels -Selector $measuresSelector
     $groupingLabel = Get-DecklePreviewSelectedLabels -Selector $groupingSelector
@@ -86,7 +171,7 @@ function New-DecklePreviewStatisticsPreparation {
         -Revision $Revision `
         -State Resolved `
         -Lines @(
-            $scopeLabel
+            @(Get-DecklePreviewScopeDetailLines -Selector $scopeSelector)
             "$filesLabel; tracked files only."
             'Links and junctions are excluded.'
         )
@@ -95,14 +180,19 @@ function New-DecklePreviewStatisticsPreparation {
         -Lines @(
             'Action: Repository statistics'
             "Scope: $scopeLabel"
+            $(if (-not (Get-DecklePreviewScopeSnapshot -Selector $scopeSelector).IsWholeRepository) {
+                Get-DecklePreviewScopeDetailLines -Selector $scopeSelector
+            })
             "Files: $filesLabel"
             "Measures: $measuresLabel"
             "Grouping: $groupingLabel"
         )
 
-    $canConfirm = $measuresSelector.SelectedValues.Count -gt 0
+    $hasScope = $scopeSelector.SelectedValues.Count -gt 0
+    $hasMeasures = $measuresSelector.SelectedValues.Count -gt 0
+    $canConfirm = $hasScope -and $hasMeasures
     $selectionSnapshot = [pscustomobject][ordered]@{
-        Scope = @($scopeSelector.SelectedValues)
+        Scope = (Get-DecklePreviewScopeSnapshot -Selector $scopeSelector)
         Files = @($filesSelector.SelectedValues)
         Measures = @($measuresSelector.SelectedValues)
         Grouping = @($groupingSelector.SelectedValues)
@@ -119,7 +209,13 @@ function New-DecklePreviewStatisticsPreparation {
             Selections = $selectionSnapshot
         }) `
         -Enabled $canConfirm `
-        -DisabledReason $(if ($canConfirm) { $null } else { 'Select at least one measure.' }) `
+        -DisabledReason $(if (-not $hasScope) {
+            'Select at least one repository location.'
+        } elseif (-not $hasMeasures) {
+            'Select at least one measure.'
+        } else {
+            $null
+        }) `
         -PresentationRole Action
 
     return New-TerminalPreparationView `
@@ -146,6 +242,7 @@ function Update-DecklePreviewStatisticsPreparation {
     foreach ($selector in $View.Selectors) {
         $selections[$selector.SelectorId] = @($selector.SelectedValues)
     }
+    $scopeSelector = @($View.Selectors | Where-Object { $_.SelectorId -eq 'scope' } | Select-Object -First 1)[0]
 
     $sourceSelector = @($View.Selectors | Where-Object { $_.SelectorId -eq $Adjustment.SelectorId } | Select-Object -First 1)
     if ($sourceSelector.Count -ne 1) {
@@ -172,5 +269,6 @@ function Update-DecklePreviewStatisticsPreparation {
     return New-DecklePreviewStatisticsPreparation `
         -Revision ($View.Revision + 1) `
         -Selections $selections `
+        -ScopeOptions $scopeSelector.Options `
         -OwnerActionMenuId $View.OwnerActionMenuId
 }

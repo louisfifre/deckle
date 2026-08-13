@@ -100,15 +100,54 @@ function Add-TerminalPreparationLines {
         [ValidateSet('Body', 'Supporting', 'Warning', 'Error')][string]$PresentationRole = 'Body'
     )
 
+    $contentWidth = [Math]::Max(1, $Frame.Width - 6)
     foreach ($text in $Lines) {
-        $line = Add-TerminalFrameLine -Frame $Frame
-        Add-TerminalFrameSegment `
-            -Frame $Frame `
-            -LineIndex $line `
-            -X 4 `
-            -Text (Limit-TerminalText -Text $text -Width ([Math]::Max(1, $Frame.Width - 6))) `
-            -PresentationRole $PresentationRole
+        foreach ($visualLine in @(Split-TerminalPreparationLine -Text $text -Width $contentWidth)) {
+            $line = Add-TerminalFrameLine -Frame $Frame
+            Add-TerminalFrameSegment `
+                -Frame $Frame `
+                -LineIndex $line `
+                -X 4 `
+                -Text $visualLine `
+                -PresentationRole $PresentationRole
+        }
     }
+}
+
+function Split-TerminalPreparationLine {
+    param(
+        [Parameter(Mandatory)][AllowEmptyString()][string]$Text,
+        [Parameter(Mandatory)][ValidateRange(1, 2147483647)][int]$Width
+    )
+
+    if ($Text.Length -le $Width) { return @($Text) }
+
+    $lines = [System.Collections.Generic.List[string]]::new()
+    $current = ''
+    foreach ($wordValue in @($Text -split '\s+')) {
+        $word = [string]$wordValue
+        if ([string]::IsNullOrEmpty($word)) { continue }
+        while ($word.Length -gt $Width) {
+            if ($current.Length -gt 0) {
+                $lines.Add($current)
+                $current = ''
+            }
+            $lines.Add($word.Substring(0, $Width))
+            $word = $word.Substring($Width)
+        }
+        if ($word.Length -eq 0) { continue }
+        if ($current.Length -eq 0) {
+            $current = $word
+        } elseif (($current.Length + 1 + $word.Length) -le $Width) {
+            $current += " $word"
+        } else {
+            $lines.Add($current)
+            $current = $word
+        }
+    }
+    if ($current.Length -gt 0) { $lines.Add($current) }
+    if ($lines.Count -eq 0) { $lines.Add('') }
+    return @($lines)
 }
 
 function Add-TerminalPreparationBody {

@@ -15,6 +15,7 @@ param(
 $ErrorActionPreference = 'Stop'
 $ScriptDir = $PSScriptRoot
 $LibDir = Join-Path $ScriptDir 'lib'
+$RepositoryRoot = Split-Path -Parent $ScriptDir
 
 Import-Module (Join-Path $LibDir 'terminal-interaction.psm1') -Force
 . (Join-Path $LibDir 'deckle-preview\catalog.ps1')
@@ -22,8 +23,12 @@ Import-Module (Join-Path $LibDir 'terminal-interaction.psm1') -Force
 . (Join-Path $LibDir 'deckle-preview\flows.ps1')
 
 if ($HostSmokeTest) {
-    $smokeView = if ($Snapshot) { Get-DecklePreviewSnapshotView -Name $Snapshot } else { Get-DecklePreviewRootView }
-    $smokeFocus = if ($Snapshot -eq 'Preparation') { 'selector.scope.repository' } else { 'action.launch.release' }
+    $smokeView = if ($Snapshot) {
+        Get-DecklePreviewSnapshotView -Name $Snapshot -RepositoryRoot $RepositoryRoot
+    } else {
+        Get-DecklePreviewRootView
+    }
+    $smokeFocus = if ($Snapshot -eq 'Preparation') { $smokeView.DefaultTargetId } else { 'action.launch.release' }
     $module = Get-Module terminal-interaction
     & $module {
         param($view, $focus)
@@ -52,11 +57,11 @@ if ($HostSmokeTest) {
 }
 
 if ($Snapshot) {
-    $view = Get-DecklePreviewSnapshotView -Name $Snapshot
+    $view = Get-DecklePreviewSnapshotView -Name $Snapshot -RepositoryRoot $RepositoryRoot
     $focus = switch ($Snapshot) {
         'Menu' { 'action.launch.release' }
         'Project' { 'navigation.back' }
-        'Preparation' { 'selector.scope.repository' }
+        'Preparation' { $view.DefaultTargetId }
         'Execution' { 'navigation.back' }
     }
     $frame = Get-TerminalInteractionFrame `
@@ -74,6 +79,9 @@ if ($Snapshot) {
 $rootView = Get-DecklePreviewRootView
 Start-TerminalInteraction -RootView $rootView -IntentHandler {
     param($request, $sourceView)
-    Resolve-DecklePreviewIntent -Request $request -SourceView $sourceView
+    Resolve-DecklePreviewIntent `
+        -Request $request `
+        -SourceView $sourceView `
+        -RepositoryRoot $RepositoryRoot
 }
 [Console]::WriteLine('Preview closed.')

@@ -42,7 +42,8 @@ function New-DecklePreviewExecution {
 function Resolve-DecklePreviewIntent {
     param(
         [Parameter(Mandatory)][object]$Request,
-        [Parameter(Mandatory)][object]$SourceView
+        [Parameter(Mandatory)][object]$SourceView,
+        [string]$RepositoryRoot
     )
 
     if ($Request.IntentKind -eq 'Command' -and $Request.TargetId -eq 'command.quit') {
@@ -65,7 +66,9 @@ function Resolve-DecklePreviewIntent {
         if ($SourceView.Kind -eq 'ActionMenu' -and $Request.Payload.ActionId -eq 'repository-stats') {
             return [pscustomobject]@{
                 Kind = 'OpenView'
-                View = New-DecklePreviewStatisticsPreparation -OwnerActionMenuId $owner
+                View = New-DecklePreviewStatisticsPreparation `
+                    -RepositoryRoot $RepositoryRoot `
+                    -OwnerActionMenuId $owner
             }
         }
         if ($SourceView.Kind -eq 'Preparation') {
@@ -86,12 +89,15 @@ function Resolve-DecklePreviewIntent {
 }
 
 function Get-DecklePreviewSnapshotView {
-    param([Parameter(Mandatory)][ValidateSet('Menu', 'Project', 'Preparation', 'Execution')][string]$Name)
+    param(
+        [Parameter(Mandatory)][ValidateSet('Menu', 'Project', 'Preparation', 'Execution')][string]$Name,
+        [string]$RepositoryRoot
+    )
 
     switch ($Name) {
         'Menu' { return Get-DecklePreviewRootView }
         'Project' { return Get-DecklePreviewProjectView }
-        'Preparation' { return New-DecklePreviewStatisticsPreparation }
+        'Preparation' { return New-DecklePreviewStatisticsPreparation -RepositoryRoot $RepositoryRoot }
         'Execution' {
             return New-DecklePreviewExecution `
                 -Action ([pscustomobject]@{ ActionId = 'build'; Variant = 'Release'; Label = 'Build' }) `
