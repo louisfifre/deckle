@@ -9,6 +9,10 @@ function Get-TerminalEnabledPlacements {
 function Get-TerminalInitialFocus {
     param([Parameter(Mandatory)][object]$Frame)
 
+    if ($Frame.DefaultTargetId) {
+        $declared = @(Get-TerminalEnabledPlacements -Frame $Frame | Where-Object { $_.TargetId -eq $Frame.DefaultTargetId } | Select-Object -First 1)
+        if ($declared.Count -gt 0) { return $declared[0].TargetId }
+    }
     $first = @(Get-TerminalEnabledPlacements -Frame $Frame | Sort-Object Y, X | Select-Object -First 1)
     if ($first.Count -eq 0) { return $null }
     return $first[0].TargetId

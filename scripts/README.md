@@ -24,6 +24,7 @@ Render a deterministic frame without taking over the terminal when comparing lay
 
 ```powershell
 pwsh -NoProfile -File scripts/deckle-preview.ps1 -Snapshot Menu -Width 60 -Height 20
+pwsh -NoProfile -File scripts/deckle-preview.ps1 -Snapshot Preparation -Width 100 -Height 30
 pwsh -NoProfile -File scripts/deckle-preview.ps1 -Snapshot Execution -Width 120 -Height 24
 ```
 

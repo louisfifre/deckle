@@ -3,6 +3,7 @@ $ScriptsDir = Split-Path -Parent (Split-Path -Parent $PSScriptRoot)
 $LibDir = Join-Path $ScriptsDir 'lib'
 Import-Module (Join-Path $LibDir 'terminal-interaction.psm1') -Force
 . (Join-Path $LibDir 'deckle-preview\catalog.ps1')
+. (Join-Path $LibDir 'deckle-preview\statistics-preparation.ps1')
 . (Join-Path $LibDir 'deckle-preview\flows.ps1')
 
 function Assert-Equal($Expected, $Actual, [string]$Case) {

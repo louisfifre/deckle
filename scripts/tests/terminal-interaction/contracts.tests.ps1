@@ -22,6 +22,11 @@ Assert-Throws `
     -Pattern 'requires a reason' `
     -Case 'disabled targets explain why activation is unavailable'
 
+Assert-Throws `
+    -Action { New-TerminalTarget -TargetId selected -Label Selected -IntentKind Adjust -Selected $true } `
+    -Pattern 'without a selection mode' `
+    -Case 'checked state belongs to a declared selection interaction'
+
 $access = New-TerminalTarget -TargetId access.sample -Label Sample -IntentKind Access
 Assert-Equal Access $access.PresentationRole 'an Access receives its semantic presentation role without renderer hints'
 Assert-Throws `
@@ -38,6 +43,17 @@ Assert-Equal Action $independentSection.Items[0].PresentationRole 'an Action car
 $danger = New-TerminalTarget -TargetId action.danger -Label Reset -IntentKind Action -PresentationRole Danger
 Assert-Equal Action $danger.IntentKind 'danger presentation does not replace Action intent'
 Assert-Equal Danger $danger.PresentationRole 'danger is an independent presentation responsibility'
+
+$firstOption = New-TerminalSelectionOption -OptionId first -Label First -Value first
+$secondOption = New-TerminalSelectionOption -OptionId second -Label Second -Value second
+Assert-Throws `
+    -Action { New-TerminalSelector -SelectorId invalid -FilterLabel Invalid -SelectionMode Single -Options @($firstOption, $secondOption) -SelectedValues @() } `
+    -Pattern 'exactly one Selection' `
+    -Case 'a single-value Selector always publishes one accepted Selection'
+Assert-Throws `
+    -Action { New-TerminalSelector -SelectorId invalid -FilterLabel Invalid -SelectionMode Multiple -Options @($firstOption, $secondOption) -SelectedValues @('unknown') } `
+    -Pattern 'unknown value' `
+    -Case 'a Selector cannot publish a Selection absent from its options'
 
 $duplicate = New-TerminalTarget -TargetId action.same -Label Same -IntentKind Action
 $duplicateSection = New-TerminalSection -Label Duplicate -Items @(

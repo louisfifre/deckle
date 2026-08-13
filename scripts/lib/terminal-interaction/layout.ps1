@@ -18,6 +18,7 @@ function New-TerminalFramePlan {
         BodyLineCount = 0
         JournalPageSize = 0
         JournalLineCount = 0
+        DefaultTargetId = if ($View.PSObject.Properties['DefaultTargetId']) { $View.DefaultTargetId } else { $null }
     }
 }
 
@@ -122,7 +123,11 @@ function Get-TerminalHeaderCommands {
     $commands = [System.Collections.Generic.List[object]]::new()
     if ($View.Kind -ne 'Execution' -or $View.State -ne 'Running') {
         $commands.Add([pscustomobject]@{ Key = $arrows; Label = 'Move' })
-        $commands.Add([pscustomobject]@{ Key = 'Enter'; Label = 'Open' })
+        $activationLabel = if ($View.Kind -eq 'Preparation') { 'Select' } else { 'Open' }
+        $commands.Add([pscustomobject]@{ Key = 'Enter'; Label = $activationLabel })
+        if ($View.Kind -eq 'Preparation' -and @($View.Selectors | Where-Object { $_.SelectionMode -eq 'Multiple' }).Count -gt 0) {
+            $commands.Add([pscustomobject]@{ Key = 'Space'; Label = 'Toggle' })
+        }
         if ($null -ne $View.BackTarget) {
             $commands.Add([pscustomobject]@{ Key = 'Backspace'; Label = 'Back' })
             $commands.Add([pscustomobject]@{ Key = 'Escape'; Label = 'Menu' })
@@ -246,21 +251,28 @@ function Add-TerminalTarget {
         [Parameter(Mandatory)][int]$X,
         [Parameter(Mandatory)][int]$Width,
         [string]$FocusedTargetId,
-        [switch]$AsActionVariant
+        [switch]$AsActionVariant,
+        [bool]$ShowDisabledReason = $true
     )
 
     if ($LineIndex -lt 0) { return }
     $focused = $Target.TargetId -eq $FocusedTargetId
-    $marker = if (-not $Target.Enabled) { 'x' } elseif ($focused) { '>' } else { ' ' }
-    $labelWidth = [Math]::Max(0, $Width - 2)
+    $focusMarker = if (-not $Target.Enabled) { 'x' } elseif ($focused) { '>' } else { ' ' }
+    $selectionMarker = switch ($Target.SelectionMode) {
+        'Single' { if ($Target.Selected) { '(*)' } else { '( )' } }
+        'Multiple' { if ($Target.Selected) { '[x]' } else { '[ ]' } }
+        default { '' }
+    }
+    $prefix = if ($selectionMarker) { "$focusMarker $selectionMarker " } else { "$focusMarker " }
+    $labelWidth = [Math]::Max(0, $Width - $prefix.Length)
     $label = Limit-TerminalText -Text $Target.Label -Width $labelWidth
-    $text = ("$marker $label").PadRight($Width)
+    $text = ("$prefix$label").PadRight($Width)
     $state = if (-not $Target.Enabled) { 'Disabled' } elseif ($focused) { 'Focused' } else { 'Normal' }
     $role = Get-TerminalTargetPresentationRole -Target $Target -AsActionVariant:$AsActionVariant
     Add-TerminalFrameSegment -Frame $Frame -LineIndex $LineIndex -X $X -Text $text -PresentationRole $role -State $state
     Add-TerminalTargetPlacement -Frame $Frame -Target $Target -X $X -Y $LineIndex -Width $Width
 
-    if (-not $Target.Enabled -and $Width -ge 24) {
+    if (-not $Target.Enabled -and $ShowDisabledReason -and $Width -ge 24) {
         $reasonStart = $X + 2 + $label.Length + 2
         $reasonWidth = $X + $Width - $reasonStart
         if ($reasonWidth -ge 8) {
@@ -268,6 +280,27 @@ function Add-TerminalTarget {
             Add-TerminalFrameSegment -Frame $Frame -LineIndex $LineIndex -X $reasonStart -Text $reason -PresentationRole Supporting -State Disabled
         }
     }
+}
+
+function Add-TerminalSectionHeading {
+    param(
+        [Parameter(Mandatory)][object]$Frame,
+        [Parameter(Mandatory)][ValidateNotNullOrEmpty()][string]$Label
+    )
+
+    $line = Add-TerminalFrameLine -Frame $Frame
+    if ($line -lt 0) { return }
+    $title = $Label.ToUpperInvariant() + ' '
+    Add-TerminalFrameSegment -Frame $Frame -LineIndex $line -X 2 -Text $title -PresentationRole Section
+    $ruleWidth = [Math]::Max(0, $Frame.Width - 4 - $title.Length)
+    if ($ruleWidth -le 0) { return }
+    $rule = ('- ' * [Math]::Ceiling($ruleWidth / 2.0)).Substring(0, $ruleWidth)
+    Add-TerminalFrameSegment `
+        -Frame $Frame `
+        -LineIndex $line `
+        -X (2 + $title.Length) `
+        -Text $rule `
+        -PresentationRole SectionSeparator
 }
 
 function ConvertTo-TerminalMenuLayoutSections {
@@ -478,19 +511,7 @@ function Add-TerminalActionMenuBody {
     for ($sectionIndex = 0; $sectionIndex -lt $layoutSections.Count; $sectionIndex++) {
         $section = $layoutSections[$sectionIndex]
         if ($sectionIndex -gt 0) { [void](Add-TerminalFrameLine -Frame $Frame) }
-        $titleLine = Add-TerminalFrameLine -Frame $Frame
-        $sectionTitle = $section.Label.ToUpperInvariant() + ' '
-        Add-TerminalFrameSegment -Frame $Frame -LineIndex $titleLine -X 2 -Text $sectionTitle -PresentationRole Section
-        $ruleWidth = [Math]::Max(0, $Frame.Width - 4 - $sectionTitle.Length)
-        if ($ruleWidth -gt 0) {
-            $rule = ('- ' * [Math]::Ceiling($ruleWidth / 2.0)).Substring(0, $ruleWidth)
-            Add-TerminalFrameSegment `
-                -Frame $Frame `
-                -LineIndex $titleLine `
-                -X (2 + $sectionTitle.Length) `
-                -Text $rule `
-                -PresentationRole SectionSeparator
-        }
+        Add-TerminalSectionHeading -Frame $Frame -Label $section.Label
         foreach ($row in $section.Rows) {
             Add-TerminalMenuRow -Frame $Frame -Row $row -Grid $grid -Wide $wide -FocusedTargetId $FocusedTargetId
         }
@@ -771,6 +792,11 @@ function Get-TerminalInteractionFrame {
         'Content' {
             $bodyFrame = New-TerminalFramePlan -View $View -Width $Width -Height 1000
             Add-TerminalContentBody -Frame $bodyFrame -View $View -FocusedTargetId $FocusedTargetId
+            Add-TerminalPagedBody -Frame $frame -BodyFrame $bodyFrame -BodyOffset $BodyOffset -FocusedTargetId $FocusedTargetId
+        }
+        'Preparation' {
+            $bodyFrame = New-TerminalFramePlan -View $View -Width $Width -Height 1000
+            Add-TerminalPreparationBody -Frame $bodyFrame -View $View -FocusedTargetId $FocusedTargetId
             Add-TerminalPagedBody -Frame $frame -BodyFrame $bodyFrame -BodyOffset $BodyOffset -FocusedTargetId $FocusedTargetId
         }
         'Execution' { Add-TerminalExecutionBody -Frame $frame -View $View -FocusedTargetId $FocusedTargetId -JournalOffset $JournalOffset }

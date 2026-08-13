@@ -289,7 +289,8 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   └── sqlite-cleanup.ps1
 │   │   ├── deckle-preview/
 │   │   │   ├── catalog.ps1
-│   │   │   └── flows.ps1
+│   │   │   ├── flows.ps1
+│   │   │   └── statistics-preparation.ps1
 │   │   ├── launcher/
 │   │   │   ├── action-log.ps1
 │   │   │   ├── action-results.ps1
@@ -316,6 +317,8 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   ├── interaction.ps1
 │   │   │   ├── layout.ps1
 │   │   │   ├── navigation.ps1
+│   │   │   ├── preparation-layout.ps1
+│   │   │   ├── preparation.ps1
 │   │   │   ├── rendering.ps1
 │   │   │   └── theme.ps1
 │   │   ├── action-summary.ps1
@@ -387,6 +390,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │       ├── LayoutBugNotes.md
 │   │       ├── navigation.tests.ps1
 │   │       ├── NavigationBugNotes.md
+│   │       ├── preparation.tests.ps1
 │   │       ├── SemanticBugNotes.md
 │   │       └── theme.tests.ps1
 │   ├── deckle-preview.ps1

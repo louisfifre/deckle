@@ -5,12 +5,14 @@ function New-TerminalTarget {
     param(
         [Parameter(Mandatory)][ValidateNotNullOrEmpty()][string]$TargetId,
         [Parameter(Mandatory)][ValidateNotNullOrEmpty()][string]$Label,
-        [Parameter(Mandatory)][ValidateSet('Action', 'Access', 'Navigation', 'Command')][string]$IntentKind,
+        [Parameter(Mandatory)][ValidateSet('Action', 'Access', 'Adjust', 'Navigation', 'Command')][string]$IntentKind,
         [object]$Payload,
         [bool]$Enabled = $true,
         [string]$DisabledReason,
         [ValidateSet('Action', 'Access', 'Adjust', 'Navigation', 'Exit', 'Danger')]
-        [string]$PresentationRole
+        [string]$PresentationRole,
+        [ValidateSet('None', 'Single', 'Multiple')][string]$SelectionMode = 'None',
+        [bool]$Selected = $false
     )
 
     if (-not $Enabled -and [string]::IsNullOrWhiteSpace($DisabledReason)) {
@@ -20,9 +22,14 @@ function New-TerminalTarget {
     if ([string]::IsNullOrWhiteSpace($PresentationRole)) {
         $PresentationRole = switch ($IntentKind) {
             'Access' { 'Access' }
+            'Adjust' { 'Adjust' }
             'Navigation' { 'Navigation' }
             default { 'Action' }
         }
+    }
+
+    if ($Selected -and $SelectionMode -eq 'None') {
+        throw "Target '$TargetId' cannot be selected without a selection mode."
     }
 
     return [pscustomobject][ordered]@{
@@ -34,6 +41,8 @@ function New-TerminalTarget {
         Enabled = $Enabled
         DisabledReason = $DisabledReason
         PresentationRole = $PresentationRole
+        SelectionMode = $SelectionMode
+        Selected = $Selected
     }
 }
 
@@ -101,6 +110,16 @@ function Get-TerminalDescriptorTargets {
     $targetsProperty = $Descriptor.PSObject.Properties['Targets']
     if ($null -ne $targetsProperty -and $null -ne $targetsProperty.Value) {
         foreach ($target in $Descriptor.Targets) { $targets.Add($target) }
+    }
+    $selectorsProperty = $Descriptor.PSObject.Properties['Selectors']
+    if ($null -ne $selectorsProperty -and $null -ne $selectorsProperty.Value) {
+        foreach ($selector in $Descriptor.Selectors) {
+            foreach ($target in $selector.Targets) { $targets.Add($target) }
+        }
+    }
+    $confirmationProperty = $Descriptor.PSObject.Properties['ConfirmationTarget']
+    if ($null -ne $confirmationProperty -and $null -ne $confirmationProperty.Value) {
+        $targets.Add($confirmationProperty.Value)
     }
     return @($targets)
 }

@@ -27,6 +27,10 @@ function Set-TerminalDecision {
             $ViewStack[$ViewStack.Count - 1] = New-TerminalViewState -View $Decision.View
             return $false
         }
+        'UpdateView' {
+            $ViewStack[$ViewStack.Count - 1].View = $Decision.View
+            return $false
+        }
         'Back' {
             if ($ViewStack.Count -gt 1) { $ViewStack.RemoveAt($ViewStack.Count - 1) }
             return $false
@@ -210,6 +214,20 @@ function Start-TerminalInteraction {
                         IntentKind = $target.IntentKind
                         Payload = $target.Payload
                         SourceViewId = $currentState.View.ViewId
+                        Activation = 'Enter'
+                    }
+                    $decision = & $IntentHandler $request $currentState.View
+                    $exitRequested = Set-TerminalDecision -ViewStack $viewStack -Decision $decision
+                }
+                'Spacebar' {
+                    $target = Get-TerminalFocusedTarget -Frame $frame -FocusedTargetId $currentState.FocusedTargetId
+                    if ($null -eq $target -or -not $target.Enabled -or $target.SelectionMode -ne 'Multiple') { continue }
+                    $request = [pscustomobject][ordered]@{
+                        TargetId = $target.TargetId
+                        IntentKind = $target.IntentKind
+                        Payload = $target.Payload
+                        SourceViewId = $currentState.View.ViewId
+                        Activation = 'Space'
                     }
                     $decision = & $IntentHandler $request $currentState.View
                     $exitRequested = Set-TerminalDecision -ViewStack $viewStack -Decision $decision

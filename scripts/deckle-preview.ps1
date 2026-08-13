@@ -6,7 +6,7 @@
 
 [CmdletBinding()]
 param(
-    [ValidateSet('Menu', 'Project', 'Execution')][string]$Snapshot,
+    [ValidateSet('Menu', 'Project', 'Preparation', 'Execution')][string]$Snapshot,
     [ValidateRange(20, 240)][int]$Width = 100,
     [ValidateRange(8, 100)][int]$Height = 30,
     [switch]$HostSmokeTest
@@ -18,13 +18,15 @@ $LibDir = Join-Path $ScriptDir 'lib'
 
 Import-Module (Join-Path $LibDir 'terminal-interaction.psm1') -Force
 . (Join-Path $LibDir 'deckle-preview\catalog.ps1')
+. (Join-Path $LibDir 'deckle-preview\statistics-preparation.ps1')
 . (Join-Path $LibDir 'deckle-preview\flows.ps1')
 
 if ($HostSmokeTest) {
-    $rootView = Get-DecklePreviewRootView
+    $smokeView = if ($Snapshot) { Get-DecklePreviewSnapshotView -Name $Snapshot } else { Get-DecklePreviewRootView }
+    $smokeFocus = if ($Snapshot -eq 'Preparation') { 'selector.scope.repository' } else { 'action.launch.release' }
     $module = Get-Module terminal-interaction
     & $module {
-        param($view)
+        param($view, $focus)
         $originalOutputCodePage = [Console]::OutputEncoding.CodePage
         $hostState = Start-TerminalHost
         try {
@@ -36,7 +38,7 @@ if ($HostSmokeTest) {
                 -View $view `
                 -Width $metrics.Width `
                 -Height $metrics.Height `
-                -FocusedTargetId action.launch.release
+                -FocusedTargetId $focus
             Write-TerminalInteractionFrame -Frame $frame -HostState $hostState
             Start-Sleep -Milliseconds 100
         } finally {
@@ -45,7 +47,7 @@ if ($HostSmokeTest) {
         if ([Console]::OutputEncoding.CodePage -ne $originalOutputCodePage) {
             throw 'The host smoke test did not restore the original console output encoding.'
         }
-    } $rootView
+    } $smokeView $smokeFocus
     return
 }
 
@@ -54,6 +56,7 @@ if ($Snapshot) {
     $focus = switch ($Snapshot) {
         'Menu' { 'action.launch.release' }
         'Project' { 'navigation.back' }
+        'Preparation' { 'selector.scope.repository' }
         'Execution' { 'navigation.back' }
     }
     $frame = Get-TerminalInteractionFrame `
