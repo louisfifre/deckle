@@ -85,7 +85,6 @@ public static class HomeSchema
         public const string Receipt = "receipt";
         public const string PartOf = "part_of";
         public const string Quantity = "quantity";
-        public const string RestockThreshold = "restock_threshold";
         public const string BatteryCapacity = "battery_capacity";
         public const string StorageCapacity = "storage_capacity";
         public const string PowerRms = "power_rms";
@@ -199,7 +198,6 @@ public static class HomeSchema
             [Properties.Receipt] = "files",
             [Properties.PartOf] = "objects",
             [Properties.Quantity] = "number",
-            [Properties.RestockThreshold] = "number",
             [Properties.BatteryCapacity] = "number",
             [Properties.StorageCapacity] = "number",
             [Properties.PowerRms] = "number",
@@ -279,7 +277,7 @@ public static class HomeSchema
                 Properties.Supplier, Properties.ModelRef, Properties.SerialNumber,
                 Properties.PurchasePrice, Properties.PurchaseDate, Properties.Receipt,
                 Properties.PartOf, Properties.StoredIn, Properties.InstalledIn,
-                Properties.Quantity, Properties.RestockThreshold, Properties.BatteryCapacity,
+                Properties.Quantity, Properties.BatteryCapacity,
                 Properties.StorageCapacity, Properties.PowerRms, Properties.Impedance,
                 Properties.Os, Properties.Weight, Properties.Documents, Properties.Notes,
             ],
@@ -289,7 +287,7 @@ public static class HomeSchema
                 Properties.Supplier, Properties.ModelRef, Properties.SerialNumber,
                 Properties.PurchasePrice, Properties.PurchaseDate, Properties.Receipt,
                 Properties.PartOf, Properties.StoredIn, Properties.Quantity,
-                Properties.RestockThreshold, Properties.BatteryCapacity,
+                Properties.BatteryCapacity,
                 Properties.StorageCapacity, Properties.PowerRms, Properties.Impedance,
                 Properties.Weight, Properties.Documents, Properties.Notes,
             ],

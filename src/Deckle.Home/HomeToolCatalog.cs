@@ -13,7 +13,7 @@ public static class HomeToolCatalog
         [
             new ToolDescriptor(
                 "create",
-                "Create one or more Home objects of one type. Titles are human names; coded types (room, point, circuit, panel) also require an immutable code in the item's code field, stored in the Code property — a point code follows PIÈCE-CAT[SUB]NN and its room prefix is checked against the live Pièce objects, never a compiled registry; a point's room and category derive from its code. A circuit may omit its name and start titled by its code. Free-titled types take no code; an idea takes text whose first line becomes its title. A component requires 'Fait partie de' (an existing Système) — prefer component_create. Optional collections are Anytype memberships, not relation properties.",
+                "Create one or more Home objects of one type. Titles are human names; coded types (room, point, circuit, panel) also require an immutable code in the item's code field, stored in the Code property — a point code follows PIÈCE-CAT[SUB]NN and its room prefix is checked against the live Pièce objects, never a compiled registry; a point's room and category derive from its code. A circuit may omit its name and start titled by its code. Free-titled types take no code; an idea takes text whose first line becomes its title. A component requires 'Fait partie de' (an existing Système) — prefer component_create. An optional template names one of the type's templates by its app label, so the object is born with that structure. Optional collections are Anytype memberships, not relation properties.",
                 CreateSchema(),
                 (args, ct) => gestures().CreateAsync(
                     RequiredString(args, "type"), CreateItems(args), ct),
@@ -186,6 +186,7 @@ public static class HomeToolCatalog
                         ("text", StringSchema("Body text: required for an idea (first line becomes the title), optional initial body for a device, forbidden elsewhere.")),
                         ("properties", PropertyMapSchema()),
                         ("collections", StringArraySchema("Collections to add the created object to, by name, code, or id.")),
+                        ("template", StringSchema("Name of one of the type's templates as shown in the app; the object is born with that template's structure. Resolved against the live type at call time and composes with text and properties.")),
                     ]),
             }),
         ]);
@@ -276,13 +277,17 @@ public static class HomeToolCatalog
         foreach (JsonNode? node in array)
         {
             JsonObject item = RequiredObject(node, "items[]");
-            RequireOnly(item, ["code", "name", "text", "properties", "collections"], "items[]");
+            RequireOnly(
+                item,
+                ["code", "name", "text", "properties", "collections", "template"],
+                "items[]");
             result.Add(new HomeCreateItem(
                 OptionalString(item, "code"),
                 OptionalString(item, "name"),
                 OptionalObject(item, "properties"),
                 OptionalStringArray(item, "collections"),
-                OptionalString(item, "text")));
+                OptionalString(item, "text"),
+                OptionalString(item, "template")));
         }
         return result;
     }

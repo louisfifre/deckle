@@ -21,6 +21,13 @@ internal sealed class HomeSchemaRuntime
             ? property
             : throw new HomeSchemaException($"Propriété Home absente : {key}.");
 
+    // Live Anytype id of a type, needed to address its templates. A runtime
+    // coordinate read from the space, never a compiled constant.
+    public string TypeId(string typeKey) =>
+        _snapshot.Types.TryGetValue(typeKey, out SchemaTypeInfo? type)
+            ? type.Id
+            : throw new HomeSchemaException($"Type Home absent : {typeKey}.");
+
     public IReadOnlyList<SchemaPropertyInfo> PropertiesFor(string typeKey)
     {
         if (!_snapshot.Types.TryGetValue(typeKey, out SchemaTypeInfo? type))

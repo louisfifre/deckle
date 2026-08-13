@@ -7,7 +7,8 @@ public sealed record HomeCreateItem(
     string? Name,
     JsonObject? Properties,
     IReadOnlyList<string>? Collections = null,
-    string? Text = null);
+    string? Text = null,
+    string? Template = null);
 
 public sealed record HomeUpdateItem(
     string Object,
