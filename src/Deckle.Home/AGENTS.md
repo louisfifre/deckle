@@ -67,7 +67,7 @@ house's pilotage without the dev-space PM discipline: creation is loose (a
 name suffices), tasks may live orphan, and there is no intervention journal —
 done tasks are the record. Prefer the dedicated verbs (`worksite_create`,
 `todo_create`, `complete`, `worksite_overview`, plus `component_create`,
-`plant_create`, `plant_water`) over the generic gestures; completion is the
+`plant_create`) over the generic gestures; completion is the
 native `done` checkbox on action layouts and `state = Terminé` on a worksite.
 
 French labels — type names, property names, closed-vocabulary options — live

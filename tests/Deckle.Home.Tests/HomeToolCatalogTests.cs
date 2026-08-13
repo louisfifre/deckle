@@ -11,7 +11,7 @@ public class HomeToolCatalogTests
     private static readonly string[] ExpectedNames =
     [
         "create", "update", "get", "search", "delete",
-        "component_create", "plant_create", "plant_water",
+        "component_create", "plant_create",
         "worksite_create", "todo_create", "complete", "worksite_overview",
     ];
 
@@ -81,7 +81,6 @@ public class HomeToolCatalogTests
             ["delete"] = AmbiguousOutcomePolicy.VerifyBeforeRetry,
             ["component_create"] = AmbiguousOutcomePolicy.RequiresDeduplication,
             ["plant_create"] = AmbiguousOutcomePolicy.RequiresDeduplication,
-            ["plant_water"] = AmbiguousOutcomePolicy.SafeToRetry,
             ["worksite_create"] = AmbiguousOutcomePolicy.RequiresDeduplication,
             ["todo_create"] = AmbiguousOutcomePolicy.RequiresDeduplication,
             ["complete"] = AmbiguousOutcomePolicy.SafeToRetry,
@@ -102,7 +101,6 @@ public class HomeToolCatalogTests
             ["delete"] = ToolChangeKind.Destructive,
             ["component_create"] = ToolChangeKind.Additive,
             ["plant_create"] = ToolChangeKind.Additive,
-            ["plant_water"] = ToolChangeKind.Overwriting,
             ["worksite_create"] = ToolChangeKind.Additive,
             ["todo_create"] = ToolChangeKind.Additive,
             ["complete"] = ToolChangeKind.Overwriting,
