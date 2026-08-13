@@ -331,7 +331,7 @@ public class HomeGesturesTests
     }
 
     [Fact]
-    public async Task PlantCreateAnchorsTheRoomAndPlantWaterStampsTheDate()
+    public async Task PlantCreateAnchorsTheRoom()
     {
         using var server = new FakeHomeAnytypeServer();
         server.SetObjects(FakeHomeAnytypeServer.Room("room-zz", "ZZ", "Pièce fictive"));
@@ -343,13 +343,6 @@ public class HomeGesturesTests
         JsonNode room = Assert.Single(Assert.IsType<JsonArray>(
             Entry(Assert.IsType<JsonArray>(create["properties"]), HomeSchema.Properties.InstalledIn)["objects"]))!;
         Assert.Equal("room-zz", room.GetValue<string>());
-
-        await Gestures(server).WaterPlantAsync("Ficus fictif", "2026-08-10", Ct);
-
-        JsonObject patch = (JsonObject)JsonNode.Parse(server.Requests.Single(r => r.Method == "PATCH").Body)!;
-        Assert.Equal(
-            "2026-08-10",
-            Entry(Assert.IsType<JsonArray>(patch["properties"]), HomeSchema.Properties.LastWatering)["date"]!.GetValue<string>());
     }
 
     [Fact]

@@ -29,7 +29,7 @@ public class HomeMcpTests
             new[]
             {
                 "complete", "component_create", "create", "delete", "get",
-                "plant_create", "plant_water", "search", "todo_create", "update",
+                "plant_create", "search", "todo_create", "update",
                 "worksite_create", "worksite_overview",
             },
             surface.Tools.Select(tool => tool.Name).OrderBy(name => name));

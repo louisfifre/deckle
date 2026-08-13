@@ -96,7 +96,6 @@ public static class HomeSchema
         public const string ScientificName = "scientific_name";
         public const string Substrate = "substrate";
         public const string PlantExposure = "plant_exposure";
-        public const string LastWatering = "last_watering";
         public const string PlantPhoto = "plant_photo";
         public const string Horizon = "horizon";
         public const string Aisle = "aisle";
@@ -209,7 +208,6 @@ public static class HomeSchema
             [Properties.ScientificName] = "text",
             [Properties.Substrate] = "multi_select",
             [Properties.PlantExposure] = "select",
-            [Properties.LastWatering] = "date",
             [Properties.PlantPhoto] = "files",
             [Properties.Horizon] = "select",
             [Properties.Aisle] = "select",
@@ -301,7 +299,7 @@ public static class HomeSchema
             [Types.Plant] =
             [
                 Properties.PlantFamily, Properties.PlantGenus, Properties.ScientificName,
-                Properties.Substrate, Properties.PlantExposure, Properties.LastWatering,
+                Properties.Substrate, Properties.PlantExposure,
                 Properties.PlantPhoto, Properties.InstalledIn, Properties.Notes,
             ],
             [Types.Idea] = [Properties.Horizon],

@@ -406,36 +406,6 @@ public sealed class HomeGestures
             ct);
     }
 
-    // Watering is a date, not an event log (decision 2026-08-10): one stamp,
-    // overwritten at each watering.
-    public async Task<string> WaterPlantAsync(
-        string selector, string? date, CancellationToken ct = default)
-    {
-        DateTime started = DateTime.UtcNow;
-        HomeSchemaRuntime schema = await _runtime.GetAsync(ct).ConfigureAwait(false);
-
-        using var writeScope = await _api.AcquireWriteScopeAsync("home_plant_water", "plant", ct).ConfigureAwait(false);
-        HomeObjectIndex index = await HomeObjectIndex.LoadAsync(_api, _spaceId, ct).ConfigureAwait(false);
-        JsonObject target = index.Resolve(selector, [HomeSchema.Types.Plant]);
-        string stamped = string.IsNullOrWhiteSpace(date)
-            ? DateTime.Now.ToString("yyyy-MM-dd")
-            : date.Trim();
-
-        var writer = new HomePropertyWriter(_api, _spaceId, schema, index);
-        JsonObject entry = await writer.BuildEntryAsync(
-            schema.Property(HomeSchema.Properties.LastWatering),
-            JsonValue.Create(stamped),
-            ct).ConfigureAwait(false);
-        await _api.UpdateObjectAsync(
-            _spaceId,
-            HomeObjectJson.Id(target),
-            new JsonObject { ["properties"] = new JsonArray(entry) },
-            ct).ConfigureAwait(false);
-
-        DeckleHomeSource.Log.GestureCompleted("plant_water", Elapsed(started));
-        return $"Arrosée le {stamped} : {HomeObjectIndex.Display(target)}.";
-    }
-
     // Typed pilotage verbs. Creation stays deliberately loose (a name
     // suffices, properties land when known) and a todo may live without a
     // chantier: the chantier is for real works, not every chore.

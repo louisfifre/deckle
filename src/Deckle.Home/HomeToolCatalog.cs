@@ -108,17 +108,6 @@ public static class HomeToolCatalog
                 ToolExecutionContract.AdditiveRequiresDeduplication),
 
             new ToolDescriptor(
-                "plant_water",
-                "Stamp a plant's Dernier arrosage: today by default, or the given date. One date, overwritten each time — there is no watering log by design.",
-                ObjectSchema(
-                    required: [("plant", StringSchema("Plant name or id."))],
-                    optional: [("date", StringSchema("Watering date YYYY-MM-DD; omit for today."))]),
-                (args, ct) => gestures().WaterPlantAsync(
-                    RequiredString(args, "plant"),
-                    OptionalString(args, "date"), ct),
-                ToolExecutionContract.OverwritingIdempotent),
-
-            new ToolDescriptor(
                 "worksite_create",
                 "Open a chantier — one finite piece of house work. Creation is deliberately loose: a name suffices; statut, concerne, date cible, and notes are added when known, to prioritize and list. Close it later with complete (statut = Terminé).",
                 ObjectSchema(
