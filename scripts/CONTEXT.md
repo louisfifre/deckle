@@ -88,6 +88,28 @@ _Avoid_: selection (the value or values it currently holds), access (opens anoth
 The value or values currently accepted by one Selector.
 _Avoid_: selector (the interaction that edits it), focus (the currently active interface target).
 
+**Option**:
+One available value presented by a Selector.
+_Avoid_: selection (the currently accepted Option or Options), target (the interactive surface that presents it).
+
+**Radio Group**:
+The single-selection form of a Selector, composed of mutually exclusive Radio Buttons.
+
+**Radio Button**:
+The selectable target that presents one Option inside a Radio Group.
+_Avoid_: checkbox (represents an independently includable Option).
+
+**Checkbox Group**:
+The multiple-selection form of a Selector, composed of independently includable Checkboxes.
+
+**Checkbox**:
+The selectable target that includes or excludes one Option from a Checkbox Group.
+_Avoid_: radio button (belongs to a mutually exclusive Selection).
+
+**Toggle Button**:
+A two-state Selector for one independent setting rather than membership in a group.
+_Avoid_: checkbox (represents one Option within a multiple Selection).
+
 **Effective Scope**:
 The resolved set an Action will actually inspect or change after its target and Filters are applied.
 _Avoid_: selection (one accepted input), review (the account presented before Execution).
