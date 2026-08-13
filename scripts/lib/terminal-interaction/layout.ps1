@@ -254,7 +254,7 @@ function Add-TerminalTarget {
     $marker = if (-not $Target.Enabled) { 'x' } elseif ($focused) { '>' } else { ' ' }
     $labelWidth = [Math]::Max(0, $Width - 2)
     $label = Limit-TerminalText -Text $Target.Label -Width $labelWidth
-    $text = "$marker $label"
+    $text = ("$marker $label").PadRight($Width)
     $state = if (-not $Target.Enabled) { 'Disabled' } elseif ($focused) { 'Focused' } else { 'Normal' }
     $role = Get-TerminalTargetPresentationRole -Target $Target -AsActionVariant:$AsActionVariant
     Add-TerminalFrameSegment -Frame $Frame -LineIndex $LineIndex -X $X -Text $text -PresentationRole $role -State $state

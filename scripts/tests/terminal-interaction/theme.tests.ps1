@@ -68,20 +68,22 @@ Assert-Equal Banner (Get-Segment -Frame $rootFrame -Predicate { param($s) $s.Tex
 Assert-Equal Section (Get-Segment -Frame $rootFrame -Predicate { param($s) $s.Text -eq 'RUN ' } -Case 'Run Section').PresentationRole 'Section titles are categories'
 Assert-Equal SectionSeparator (Get-Segment -Frame $rootFrame -Predicate { param($s) $s.PresentationRole -eq 'SectionSeparator' -and $s.Text.Length -gt 90 } -Case 'Run Section separator').PresentationRole 'Section hierarchy owns its dashed separator'
 Assert-Equal Action (Get-Segment -Frame $rootFrame -Predicate { param($s) $s.Text -eq 'Launch' } -Case 'Action subject').PresentationRole 'Action Row subjects are distinct from their variants'
-$focusedVariant = Get-Segment -Frame $rootFrame -Predicate { param($s) $s.Text -eq '> Release' } -Case 'focused Action Variant'
+$focusedVariant = Get-Segment -Frame $rootFrame -Predicate { param($s) $s.Text.TrimEnd() -eq '> Release' } -Case 'focused Action Variant'
 Assert-Equal ActionVariant $focusedVariant.PresentationRole 'Action Variants keep their own semantic role'
 Assert-Equal Focused $focusedVariant.State 'focus is an independent state overlay'
 Assert-Equal '>' $focusedVariant.Text.Substring(0, 1) 'focus remains structurally visible without color'
-Assert-Equal Access (Get-Segment -Frame $rootFrame -Predicate { param($s) $s.Text -eq '  Project' } -Case 'Project Access').PresentationRole 'Accesses retain their disclosure role'
-Assert-Equal Exit (Get-Segment -Frame $rootFrame -Predicate { param($s) $s.Text -eq '  Quit' } -Case 'Quit command').PresentationRole 'Quit retains its exceptional exit role'
+$focusedPlacement = @($rootFrame.Targets | Where-Object { $_.TargetId -eq 'action.launch.release' })[0]
+Assert-Equal $focusedPlacement.Width $focusedVariant.Text.Length 'focus paints the complete stable grid cell rather than only its label'
+Assert-Equal Access (Get-Segment -Frame $rootFrame -Predicate { param($s) $s.Text.TrimEnd() -eq '  Project' } -Case 'Project Access').PresentationRole 'Accesses retain their disclosure role'
+Assert-Equal Exit (Get-Segment -Frame $rootFrame -Predicate { param($s) $s.Text.TrimEnd() -eq '  Quit' } -Case 'Quit command').PresentationRole 'Quit retains its exceptional exit role'
 
 $projectFrame = Get-TerminalInteractionFrame -View (Get-DecklePreviewProjectView) -Width 100 -Height 24 -FocusedTargetId navigation.back
 Assert-Equal Context (Get-Segment -Frame $projectFrame -Predicate { param($s) $s.Text -eq ' / Project' } -Case 'View context').PresentationRole 'the View context is visually subordinate to the banner'
-Assert-Equal Navigation (Get-Segment -Frame $projectFrame -Predicate { param($s) $s.Text -eq '> Back' } -Case 'Back Navigation Control').PresentationRole 'Back is navigation rather than an Action'
-Assert-Equal Action (Get-Segment -Frame $projectFrame -Predicate { param($s) $s.Text -eq '  README pulse' } -Case 'standalone Action').PresentationRole 'standalone Actions retain the Action hierarchy'
+Assert-Equal Navigation (Get-Segment -Frame $projectFrame -Predicate { param($s) $s.Text.TrimEnd() -eq '> Back' } -Case 'Back Navigation Control').PresentationRole 'Back is navigation rather than an Action'
+Assert-Equal Action (Get-Segment -Frame $projectFrame -Predicate { param($s) $s.Text.TrimEnd() -eq '  README pulse' } -Case 'standalone Action').PresentationRole 'standalone Actions retain the Action hierarchy'
 
 $maintenanceFrame = Get-TerminalInteractionFrame -View (Get-DecklePreviewMaintenanceView) -Width 100 -Height 30 -FocusedTargetId navigation.back
-Assert-Equal Danger (Get-Segment -Frame $maintenanceFrame -Predicate { param($s) $s.Text -eq '  Reset' } -Case 'danger Action').PresentationRole 'destructive Actions retain danger independently from activation'
+Assert-Equal Danger (Get-Segment -Frame $maintenanceFrame -Predicate { param($s) $s.Text.TrimEnd() -eq '  Reset' } -Case 'danger Action').PresentationRole 'destructive Actions retain danger independently from activation'
 
 $executionFrame = Get-TerminalInteractionFrame -View (Get-DecklePreviewSnapshotView -Name Execution) -Width 120 -Height 24 -FocusedTargetId navigation.back -JournalOffset ([int]::MaxValue)
 Assert-Equal PanelTitle (Get-Segment -Frame $executionFrame -Predicate { param($s) $s.Text -eq 'Execution Journal' } -Case 'Journal Panel title').PresentationRole 'Panel titles share the category hierarchy'
