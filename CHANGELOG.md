@@ -21,6 +21,14 @@ doctrine). This file is generated from the Conventional-Commit history by
 - **anytype:** Teach schema-admin the sections block
 - **scripts:** Add local AI session reset
 - **home:** Land the reboot grill rulings on the compiled surface
+- **scripts:** Add terminal interaction preview
+- **home:** Create accepts a template, resolved by name against the live type
+- **scripts:** Add preparation interaction
+- **scripts:** Select tracked repository scopes
+
+### Changed
+
+- **home:** Watering retires from the surface — property and verb removed
 
 ### Fixed
 
@@ -38,6 +46,8 @@ doctrine). This file is generated from the Conventional-Commit history by
 - **scripts:** Block forbidden commit attribution
 - **scripts:** Enforce exact commit identity
 - **anytype:** Apply template when creating epics
+- **scripts:** Fill focused terminal cells
+- **home:** Drop restock_threshold from the required schema
 
 ## [0.31.6](https://github.com/louisfifre/deckle/compare/v0.30.2...v0.31.6) — 2026-07-31
 
