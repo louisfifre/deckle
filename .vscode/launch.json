@@ -9,6 +9,13 @@
             "request": "launch",
             "script": "${workspaceFolder}/scripts/deckle.ps1",
             "cwd": "${workspaceFolder}"
+        },
+        {
+            "name": "Deckle interaction preview",
+            "type": "PowerShell",
+            "request": "launch",
+            "script": "${workspaceFolder}/scripts/deckle-preview.ps1",
+            "cwd": "${workspaceFolder}"
         }
     ]
 }
