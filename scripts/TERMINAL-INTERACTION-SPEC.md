@@ -313,6 +313,33 @@ The framework MUST NOT invent a continuation that the workflow does not implemen
 
 Rendering is a deterministic projection of retained state, terminal metrics, theme, and host capabilities. A complete redraw is valid whenever geometry or capability state changes; continuous resize animation is not a goal.
 
+### Semantic presentation and theme
+
+Semantic descriptors state what an interface object is. The renderer derives a presentation role from that object and its composition, then the active theme maps the role plus interaction state to terminal attributes. Workflow callers MUST NOT supply `ConsoleColor`, ANSI codes, focus colors, or layout-dependent variants.
+
+Presentation and behavior remain independent. An Action Variant is still an Action intent even when it inherits the body color; an Access keeps its Access intent even if another theme gives it the same color as an Action. Focus, disabled, checked, danger, and completion are state overlays rather than replacements for the underlying semantic role.
+
+The default Deckle terminal theme preserves the existing script hierarchy:
+
+| Semantic presentation | Default Deckle treatment |
+|---|---|
+| Repository banner | Blue |
+| Current context | Dark grey |
+| Section, Panel, Review, and Effective Scope title | Magenta |
+| Section separator | Light grey dashed rule |
+| Action subject, Filter label, safe standalone Action, and safe Confirmation | Cyan |
+| Action Variant, Selection, Review body, Effective Scope body, and ordinary detail | Inherit the terminal foreground |
+| Access, Selector target, and current editable value | Dark yellow |
+| Navigation Control and supporting explanation | Dark grey |
+| Exit and destructive choice | Red |
+| Completed, running or partial, and failed Tracking state | Green, yellow, and red respectively |
+| Global or scrolling command key | Grey |
+| Global or scrolling command label | A nearby darker grey |
+
+Ordinary focus uses a high-contrast selection background while retaining a structural focus marker. Focused danger and Exit use a distinct danger-focused treatment. Disabled targets remain present, include a concise reason, and use a structural marker plus muted treatment. If color is unavailable, these markers, labels, grouping, and state text preserve the same meaning.
+
+Execution Journal presentation is not remapped through the launcher theme. Admitted native presentation segments retain their own allowed semantics inside the Journal Panel; launcher-owned Panel titles, Tracking states, and Execution Result use the Deckle theme.
+
 Resize MUST preserve:
 
 - current View and navigation stack;

@@ -28,6 +28,10 @@ _Avoid_: global command indications (remain in the Persistent Header).
 The variable region below the Persistent Header. It may compose an Action Menu, Preparation, and one or more Panels, separately or together.
 _Avoid_: view (also includes the Persistent Header).
 
+**Presentation Role**:
+The semantic visual responsibility projected from an interface object. The active theme maps it together with current state and host capabilities to terminal attributes; it does not determine interaction intent or layout.
+_Avoid_: color (one theme's terminal attribute), intent kind (the behavior activation requests).
+
 **Panel**:
 A semantic region within the View Body that presents a distinct content responsibility. Responsive layout may move a Panel without changing what it is; rows and columns describe only its placement.
 

@@ -7,6 +7,14 @@ type: module-journal
 
 Durable findings about the script launcher and its terminal interaction model. Most recent on top.
 
+## 2026-08-13 — Semantic terminal presentation
+
+Chose semantic descriptors as the source of presentation: interface objects project to presentation roles, and the terminal theme maps those roles plus interaction state to colors. Workflow catalogs do not declare raw colors or renderer rows.
+
+Chose the existing Deckle script palette as the default theme: blue banner, dark-grey context and navigation, magenta Section and Panel titles, cyan Action subjects, inherited Action Variants, dark-yellow Accesses and editable targets, red danger and Exit, and green/yellow/red outcome states. Focus and disabled states remain structurally identifiable without color.
+
+Found that the first preview catalog classified independent Actions as Action Variants when they shared a visual row. Sections now own semantic items and the renderer alone packs independent targets into responsive rows.
+
 ## 2026-08-12 — Parallel interaction preview
 
 Chose `scripts/deckle-preview.ps1` as a second, preview-only launcher while `scripts/deckle.ps1` remains the daily reference. The preview mirrors the Action Menu and Execution compositions but invokes no repository command; every Action opens an in-memory sample Execution.
