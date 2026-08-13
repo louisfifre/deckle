@@ -7,7 +7,7 @@ module: scripts
 
 # `scripts/` — Deckle dev workflows
 
-All scripts target PowerShell 7+. The single entry point lives at [`deckle.ps1`](deckle.ps1); the commands it dispatches to live under [`commands/`](commands/) and stay usable on their own CLI for automation. Tracked workflows resolve the repository from their own location, so the checkout drive and the terminal's current directory are not part of their contract.
+The current implementation requires PowerShell 7+. The reusable launcher design targets Windows PowerShell 5.1 and PowerShell 7, with narrower engine requirements declared per Action when necessary. The single entry point lives at [`deckle.ps1`](deckle.ps1); the commands it dispatches to live under [`commands/`](commands/) and stay usable on their own CLI for automation. Tracked workflows resolve the repository from their own location, so the checkout drive and the terminal's current directory are not part of their contract. The reusable launcher's vocabulary lives in [`CONTEXT.md`](CONTEXT.md), and its normative module, composition, state, and rendering contracts live in [`TERMINAL-INTERACTION-SPEC.md`](TERMINAL-INTERACTION-SPEC.md).
 
 ## Entry point — `deckle.ps1`
 
