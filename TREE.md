@@ -336,6 +336,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── launcher/
 │   │   │   ├── action-log.tests.ps1
 │   │   │   ├── action-results.tests.ps1
+│   │   │   ├── ActionResultBugNotes.md
 │   │   │   ├── actions.tests.ps1
 │   │   │   ├── context.tests.ps1
 │   │   │   ├── maintenance-results.tests.ps1
