@@ -313,6 +313,8 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   └── text-input.ps1
 │   │   ├── terminal-interaction/
 │   │   │   ├── contracts.ps1
+│   │   │   ├── execution-layout.ps1
+│   │   │   ├── header-layout.ps1
 │   │   │   ├── host.ps1
 │   │   │   ├── interaction.ps1
 │   │   │   ├── layout.ps1

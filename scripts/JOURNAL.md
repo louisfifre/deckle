@@ -7,6 +7,14 @@ type: module-journal
 
 Durable findings about the script launcher and its terminal interaction model. Most recent on top.
 
+## 2026-08-23 — Terminal visual hierarchy
+
+Chose two stable content rails for the Persistent Header: banner first, current context second. Global Command Indications use the remaining right-hand space and hide by priority instead of growing the Header or displacing the context.
+
+Chose distinct presentation roles for the primary Header separator and local Panel separators. Current context, Section titles, and Panel titles inherit the terminal foreground; Section and Panel separators stay dark grey.
+
+Chose neutral completed Tracking steps and semantic color for the final Execution Result. Tracking text wraps inside its Panel while Journal lines remain clipped without wrapping.
+
 ## 2026-08-23 — Escape navigation
 
 Chose Escape as the outward command outside a transient interaction: it returns by one View when a caller exists and exits from the root Action Menu. Backspace remains a one-View return and never exits the launcher.

@@ -8,7 +8,7 @@ function Get-TerminalPresentationStyle {
         [ValidateSet(
             'Banner', 'Context', 'Section', 'SectionSeparator',
             'Action', 'ActionVariant', 'Access', 'Adjust', 'Navigation', 'Exit', 'Danger',
-            'PanelTitle', 'Body', 'Supporting', 'Separator',
+            'PanelTitle', 'Body', 'Supporting', 'PrimarySeparator', 'PanelSeparator', 'Separator',
             'CommandKey', 'CommandLabel', 'Success', 'Warning', 'Error'
         )]
         [string]$Role,
@@ -44,9 +44,9 @@ function Get-TerminalPresentationStyle {
 
     $foreground = switch ($Role) {
         'Banner' { [ConsoleColor]::Blue }
-        'Context' { [ConsoleColor]::DarkGray }
-        'Section' { [ConsoleColor]::Magenta }
-        'SectionSeparator' { [ConsoleColor]::Gray }
+        'Context' { $null }
+        'Section' { $null }
+        'SectionSeparator' { [ConsoleColor]::DarkGray }
         'Action' { [ConsoleColor]::Cyan }
         'ActionVariant' { $null }
         'Access' { [ConsoleColor]::DarkYellow }
@@ -54,8 +54,10 @@ function Get-TerminalPresentationStyle {
         'Navigation' { [ConsoleColor]::DarkGray }
         'Exit' { [ConsoleColor]::Red }
         'Danger' { [ConsoleColor]::Red }
-        'PanelTitle' { [ConsoleColor]::Magenta }
+        'PanelTitle' { $null }
         'Supporting' { [ConsoleColor]::DarkGray }
+        'PrimarySeparator' { [ConsoleColor]::Gray }
+        'PanelSeparator' { [ConsoleColor]::DarkGray }
         'Separator' { [ConsoleColor]::DarkGray }
         'CommandKey' { [ConsoleColor]::Gray }
         'CommandLabel' { [ConsoleColor]::DarkGray }

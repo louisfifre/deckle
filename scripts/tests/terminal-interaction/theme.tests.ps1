@@ -30,16 +30,15 @@ function Get-Segment {
 
 $palette = @{
     Banner = [ConsoleColor]::Blue
-    Context = [ConsoleColor]::DarkGray
-    Section = [ConsoleColor]::Magenta
-    SectionSeparator = [ConsoleColor]::Gray
+    SectionSeparator = [ConsoleColor]::DarkGray
     Action = [ConsoleColor]::Cyan
     Access = [ConsoleColor]::DarkYellow
     Adjust = [ConsoleColor]::DarkYellow
     Navigation = [ConsoleColor]::DarkGray
     Exit = [ConsoleColor]::Red
     Danger = [ConsoleColor]::Red
-    PanelTitle = [ConsoleColor]::Magenta
+    PrimarySeparator = [ConsoleColor]::Gray
+    PanelSeparator = [ConsoleColor]::DarkGray
     CommandKey = [ConsoleColor]::Gray
     CommandLabel = [ConsoleColor]::DarkGray
     Success = [ConsoleColor]::Green
@@ -52,6 +51,9 @@ foreach ($entry in $palette.GetEnumerator()) {
 }
 Assert-Equal $null (Get-TerminalPresentationStyle -Role ActionVariant).Foreground 'Action Variants inherit the terminal body color'
 Assert-Equal $null (Get-TerminalPresentationStyle -Role Body).Foreground 'Body content preserves the host foreground'
+Assert-Equal $null (Get-TerminalPresentationStyle -Role Context).Foreground 'the current View context uses the host foreground'
+Assert-Equal $null (Get-TerminalPresentationStyle -Role Section).Foreground 'Section titles use neutral hierarchy'
+Assert-Equal $null (Get-TerminalPresentationStyle -Role PanelTitle).Foreground 'Panel titles use neutral hierarchy'
 
 $focus = Get-TerminalPresentationStyle -Role Access -State Focused
 Assert-Equal ([ConsoleColor]::Black) $focus.Foreground 'ordinary focus has strong foreground contrast'
@@ -79,7 +81,7 @@ Assert-Equal Access (Get-Segment -Frame $rootFrame -Predicate { param($s) $s.Tex
 Assert-Equal Exit (Get-Segment -Frame $rootFrame -Predicate { param($s) $s.Text.TrimEnd() -eq '  Quit' } -Case 'Quit command').PresentationRole 'Quit retains its exceptional exit role'
 
 $projectFrame = Get-TerminalInteractionFrame -View (Get-DecklePreviewProjectView) -Width 100 -Height 24 -FocusedTargetId navigation.back
-Assert-Equal Context (Get-Segment -Frame $projectFrame -Predicate { param($s) $s.Text -eq ' / Project' } -Case 'View context').PresentationRole 'the View context is visually subordinate to the banner'
+Assert-Equal Context (Get-Segment -Frame $projectFrame -Predicate { param($s) $s.Text -eq 'Project' } -Case 'View context').PresentationRole 'the View context owns its stable Header rail'
 Assert-Equal Navigation (Get-Segment -Frame $projectFrame -Predicate { param($s) $s.Text.TrimEnd() -eq '> Back' } -Case 'Back Navigation Control').PresentationRole 'Back is navigation rather than an Action'
 Assert-Equal Action (Get-Segment -Frame $projectFrame -Predicate { param($s) $s.Text.TrimEnd() -eq '  README pulse' } -Case 'standalone Action').PresentationRole 'standalone Actions retain the Action hierarchy'
 
@@ -89,5 +91,6 @@ Assert-Equal Danger (Get-Segment -Frame $maintenanceFrame -Predicate { param($s)
 $executionFrame = Get-TerminalInteractionFrame -View (Get-DecklePreviewSnapshotView -Name Execution) -Width 120 -Height 24 -FocusedTargetId navigation.back -JournalOffset ([int]::MaxValue)
 Assert-Equal PanelTitle (Get-Segment -Frame $executionFrame -Predicate { param($s) $s.Text -eq 'Execution Journal' } -Case 'Journal Panel title').PresentationRole 'Panel titles share the category hierarchy'
 Assert-Equal Success (Get-Segment -Frame $executionFrame -Predicate { param($s) $s.Text -match '^Result:' } -Case 'Execution Result').PresentationRole 'a completed Execution Result carries success semantics'
+Assert-Equal Supporting (Get-Segment -Frame $executionFrame -Predicate { param($s) $s.Text -eq '[ok] Accept intent' } -Case 'completed Tracking step').PresentationRole 'completed Tracking steps stay neutral beside the final Result'
 
 Write-Host 'theme.tests.ps1: PASS' -ForegroundColor Green
