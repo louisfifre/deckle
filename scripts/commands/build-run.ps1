@@ -1,5 +1,8 @@
 [CmdletBinding()]
 param(
+    # Build only. The running Deckle instance is never stopped; when it runs
+    # from this build's output directory the build is refused before compiling,
+    # because the assemblies it holds open cannot be replaced.
     [switch]$NoRun,
     [switch]$Wait,
     [ValidateSet('Release','Debug')]
@@ -90,11 +93,29 @@ if (-not (Test-Path $Csproj)) { throw "csproj not found at $Csproj — is '$Repo
 $AppArtifactsBin = Join-Path $RepoRoot 'artifacts\bin\Deckle.App'
 $PivotPrefix     = $Configuration.ToLowerInvariant()
 
-# 1. Kill running instance (otherwise the .exe is locked)
-Write-DeckleWorkflowStep -Output $WorkflowOutput -Message 'Stop running Deckle instance'
-Stop-DeckleProcess -WriteEvent {
-    param([string]$Role, [string]$Message)
-    Write-DeckleWorkflowMessage -Output $WorkflowOutput -Message $Message -Role $Role
+# 1. The running instance. Build & run replaces it: Deckle is single-instance
+# (a resident mutex rejects a second process), and an in-place build cannot
+# overwrite the assemblies the instance holds open. A -NoRun build never
+# touches it — the one case where that instance would block the build is when
+# it runs from this build's exact output directory (configuration pivot, no
+# RID), so refuse before compiling instead of stopping anything: the build
+# would otherwise fail on locked files after a full compile, leaving the
+# output directory half-copied.
+if ($NoRun) {
+    $OutputDir = Join-Path $AppArtifactsBin $PivotPrefix
+    Write-DeckleWorkflowStep -Output $WorkflowOutput -Message 'Check running Deckle instance'
+    $locking = Get-DeckleProcessInDirectory -Directory $OutputDir
+    if ($locking.Count -gt 0) {
+        $pids = ($locking | ForEach-Object { $_.Id }) -join ', '
+        throw "Deckle PID $pids is running from $OutputDir, the directory this $Configuration build writes to, and -NoRun never stops it. Build Debug (separate output directory), build from another worktree, or drop -NoRun to replace the running instance with the fresh build."
+    }
+    Write-DeckleWorkflowMessage -Output $WorkflowOutput -Message "No running Deckle.exe in $OutputDir; any running instance is left untouched" -Role Muted
+} else {
+    Write-DeckleWorkflowStep -Output $WorkflowOutput -Message 'Stop running Deckle instance'
+    Stop-DeckleProcess -WriteEvent {
+        param([string]$Role, [string]$Message)
+        Write-DeckleWorkflowMessage -Output $WorkflowOutput -Message $Message -Role $Role
+    }
 }
 
 # 2. Build via `dotnet build`. Restore is implicit (separate evaluation
@@ -121,12 +142,13 @@ if ($NoRun) {
     Write-DeckleActionSummary `
         -Workflow $Workflow `
         -Result Success `
-        -Sentence "Deckle was built in $Configuration x64; launch was skipped." `
+        -Sentence "Deckle was built in $Configuration x64; launch was skipped and the running instance was left untouched." `
         -Details ([ordered]@{
-            Worktree      = $RepoRoot
-            Configuration = "$Configuration x64"
-            Executable    = 'Not resolved (-NoRun)'
-            Launch        = $LaunchMode
+            Worktree           = $RepoRoot
+            Configuration      = "$Configuration x64"
+            Executable         = 'Not resolved (-NoRun)'
+            Launch             = $LaunchMode
+            'Running instance' = 'Left untouched'
         })
     return
 }
