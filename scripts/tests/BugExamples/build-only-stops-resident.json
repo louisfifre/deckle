@@ -1,0 +1,42 @@
+{
+  "schema": 1,
+  "id": "developer-tooling-2026-08-23-build-only-stops-resident",
+  "status": "active",
+  "modules": ["DeveloperTooling"],
+  "classes": ["flag-contract-drift", "process-lifecycle-side-effect", "locked-output-directory"],
+  "trigger": {
+    "operation": "build-run-with-norun-while-deckle-runs-from-another-output-directory"
+  },
+  "symptom": "A build-only invocation (build-run.ps1 -NoRun) killed the running Deckle before compiling, so voice dictation, the HUD and the MCP surfaces stayed down until a manual relaunch; the flag only skipped the relaunch, not the stop.",
+  "cause": "The stop step ran unconditionally ahead of the build, justified by output locks, although a running instance only locks the directory it was launched from (its exe and every loaded assembly). A Debug validation build or a build in another worktree writes elsewhere and never needed the stop.",
+  "violatedInvariant": "A command that only builds never changes the lifetime of the running Deckle instance; only commands that replace it (launch, build and run, clean) stop it, and they say so.",
+  "contract": {
+    "must": [
+      "Leave the running instance untouched when -NoRun is set, whatever configuration or worktree is built.",
+      "Refuse a -NoRun build before compiling when the running instance lives in that build's exact output directory, naming the process, the directory and the ways out.",
+      "Keep the stop on the build-and-run path: Deckle is single-instance, so the fresh exe cannot take over while the resident holds the mutex."
+    ],
+    "mustNot": [
+      "Let a build-only run fail on locked files after a full compile, which leaves the output directory half-copied.",
+      "Add a flag that stops the resident without relaunching it; that is exactly the state the incident produced."
+    ]
+  },
+  "automation": {
+    "tier": "regression",
+    "tests": [
+      "scripts/tests/lib/deckle-process.tests.ps1"
+    ],
+    "residual": "The test covers the seam (Get-DeckleProcessInDirectory: same directory, sibling pivot, RID-suffixed pivot, other worktree, unreadable path, no process). Which branch build-run.ps1 takes is not exercised automatically; it was verified by running -NoRun against a checkout whose Release instance is running (refused before compiling, process untouched) and with -Configuration Debug (built, process untouched).",
+    "reviewPaths": [
+      "scripts/commands/build-run.ps1",
+      "scripts/commands/launch-app.ps1",
+      "scripts/lib/deckle-process.ps1",
+      "scripts/README.md",
+      "AGENTS.md"
+    ]
+  },
+  "provenance": {
+    "observedAt": "2026-08-23",
+    "redaction": "synthetic"
+  }
+}

@@ -339,6 +339,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   └── terminal-interaction.psm1
 │   ├── tests/
 │   │   ├── BugExamples/
+│   │   │   ├── build-only-stops-resident.json
 │   │   │   ├── dotnet-max-node-response-precedence.json
 │   │   │   ├── repository-portability.json
 │   │   │   └── terminal-cursor-positioning.json
