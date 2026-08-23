@@ -1,3 +1,8 @@
+# launch-app.ps1 — Replace the running Deckle instance with the freshest
+# already-built executable of the chosen configuration. No build. The running
+# instance is stopped first: Deckle is single-instance, so the new process
+# could not take over while the old one holds the resident mutex.
+
 [CmdletBinding()]
 param(
     [ValidateSet('Release','Debug')]
