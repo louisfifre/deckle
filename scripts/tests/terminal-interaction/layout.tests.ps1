@@ -38,6 +38,7 @@ Assert-Equal $releaseAccess.X $setup.X 'Quit does not shift Setup out of the sec
 Assert-Equal 0 @($wide.Targets | Where-Object { $_.TargetId -like 'navigation.page.*' }).Count 'a fitting menu has no paging controls'
 Assert-True (($wideText -join "`n") -match 'Enter Open') 'global command indications are visible in the Header'
 Assert-True (($wideText -join "`n") -notmatch 'Backspace Back') 'the root menu does not advertise Back'
+Assert-True (($wideText -join "`n") -match 'Escape Quit') 'the root menu advertises Escape as launcher exit'
 $arrowLegend = -join @([char]0x2191, [char]0x2193, [char]0x2190, [char]0x2192)
 Assert-True (($wideText -join "`n").Contains($arrowLegend)) 'Unicode-capable output preserves the arrow command key'
 
@@ -72,7 +73,7 @@ $projectBack = Get-Placement -Frame $projectFrame -TargetId navigation.back
 $readmePulse = Get-Placement -Frame $projectFrame -TargetId action.readme-stats
 Assert-Equal $readmePulse.X $projectBack.X 'Back occupies the first option column instead of the label column'
 Assert-True ($projectText -match 'Backspace Back') 'a nested View advertises Backspace'
-Assert-True ($projectText -match 'Escape Menu') 'a nested View advertises Escape to its Action Menu'
+Assert-True ($projectText -match 'Escape Back') 'a nested View advertises Escape as one-View navigation'
 
 $execution = Get-DecklePreviewSnapshotView -Name Execution
 $executionWide = Get-TerminalInteractionFrame -View $execution -Width 120 -Height 24 -FocusedTargetId navigation.back -JournalOffset ([int]::MaxValue)

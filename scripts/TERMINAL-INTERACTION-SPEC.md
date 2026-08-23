@@ -120,7 +120,7 @@ Every interaction produces one explicit outcome:
 - **Stay** — update state within the current View;
 - **Open** — push and present another View;
 - **Back** — close the current View and restore its caller;
-- **Cancel flow** — discard unconfirmed flow state and return to the owning Action Menu;
+- **Cancel interaction** — discard unaccepted state owned by a transient interaction and return control to the current View;
 - **Request Intent** — emit the focused target's declared intent to the Deckle Launcher;
 - **Exit** — close the complete interaction session.
 
@@ -143,7 +143,7 @@ The Terminal Host normalizes physical key, character, wheel, and pointer events 
 | Space | Toggle selection | Change the focused option in a multi-selection interaction. |
 | Backspace | Back | Return by one View. |
 | Visible Back control | Back | Behave exactly like Backspace. |
-| Escape | Cancel flow | Leave the current interaction or flow for its owning Action Menu. |
+| Escape | Cancel interaction, Back, or Exit | Cancel a transient interaction first; otherwise return by one View, or exit from the root Action Menu. |
 | Ctrl+C | Exit | Restore the terminal and leave the launcher. |
 | Mouse wheel | Previous or next page | Move paginated content by one non-overlapping page. |
 | Home, End | First or last page | Reach the beginning or latest page. |
@@ -156,7 +156,7 @@ A focused text editor consumes characters, Space, Backspace, Delete, Home, End, 
 
 Every paged Panel is focusable and exposes visible Previous Page and Next Page targets whenever more than one page exists. These targets provide the complete keyboard path on a keyboard without Page Up or Page Down. A wheel event targets the Panel beneath its pointer coordinates when those coordinates are available; otherwise it targets the focused paged Panel. When several Panels overflow, Scrolling Command Indications describe the currently targeted Panel.
 
-If a transient chooser or Confirmation currently owns input, Escape cancels that local interaction first. At the root Action Menu, Cancel flow has no effect.
+If a transient chooser or Confirmation currently owns input, Escape cancels that local interaction first. Otherwise Escape behaves as Back while another View exists beneath the current one. At the root Action Menu, Escape exits the complete interaction session. Backspace never exits the launcher.
 
 Global Command Indications MUST be generated as structured key-or-gesture and command-label pairs from the active bindings and placed in the Persistent Header's upper-right track. They are non-interactive legends, not the visible Back control. When color is available, the key or gesture and its command label use two nearby grey levels; the pair remains understandable without color. Command pairs are grouped by spacing rather than a rule between every pair. On a narrow terminal, indications hide by priority before the context is clipped: currently necessary activation or editing commands remain, then cancellation or Back, while already familiar movement indications may collapse first.
 
@@ -262,7 +262,7 @@ The default flow uses `Action Menu → Preparation → Execution`. Choosing an A
 
 The Persistent Header and its primary separator remain. The Action Menu disappears. The View Body presents the visible Back control, followed directly by the Execution View.
 
-While Execution is `Running`, the visible Back control, Backspace, and Escape are unavailable because the first cycle neither backgrounds nor cancels a child process. The Header does not advertise them, and Tracking states that the run must finish before returning. After completion, the visible Back control and Backspace return to the owning Action Menu.
+While Execution is `Running`, the visible Back control, Backspace, and Escape are unavailable because the first cycle neither backgrounds nor cancels a child process. The Header does not advertise them, and Tracking states that the run must finish before returning. After completion, the visible Back control, Backspace, and Escape return to the owning Action Menu.
 
 Ctrl+C remains the emergency session exit during a run. The Execution Runtime MUST forward an interrupt through the selected engine or process adapter, wait for the child to exit or reach a declared forced-termination boundary, publish cancellation or failure, and only then allow terminal restoration. It MUST NOT abandon a redirected child process that can continue writing to disposed pipes.
 
@@ -403,7 +403,7 @@ The first implementation is conformant when all of these scenarios hold through 
 1. **Mixed menu** — one Action Menu presents Sections, an Action Row with variants, standalone Actions, and Accesses; activation follows declared intent rather than presentation.
 2. **Compact Preparation** — a statistics Action edits scope, files, measures, grouping, thresholds, and target in one Preparation; Review and Confirmation use the same resolved Effective Scope.
 3. **Execution separation** — a running build replaces the Action Menu, updates Journal and Tracking independently, preserves safe native presentation, and cannot draw across the Tracking Panel.
-4. **Navigation contract** — visible Back and Backspace produce the same one-View transition; Escape cancels the current flow to its owning Action Menu; Ctrl+C restores and exits the terminal session.
+4. **Navigation contract** — visible Back and Backspace produce the same one-View transition without exiting; Escape cancels a transient interaction first, otherwise returns by one View and exits at the root Action Menu; Ctrl+C restores and exits the terminal session.
 5. **Discoverable input** — arrow, Enter, Space, Backspace, Escape, and wheel commands are usable and shown in the correct indication region when active.
 6. **Retained state** — resizing and paging retain focus, Selections, Execution state, and complete Journal records in both narrow and wide layouts.
 7. **Content policy** — a completed Journal opens at its latest page while a Report opens at its beginning.

@@ -15,9 +15,15 @@ doctrine). This file is generated from the Conventional-Commit history by
 
 - **anytype:** Schema surface provisions type descriptions through the object face
 
+### Changed
+
+- **home:** Survey date retires from the schema — retraction guard keeps the reference half
+- **home:** Electricity grill — existence leaves, categories v3, the circuit gains a nature
+
 ### Fixed
 
 - **scripts:** Build-run -NoRun never stops the running Deckle
+- **scripts:** Make Escape move outward and quit at root
 
 ## [0.35.0](https://github.com/louisfifre/deckle/compare/v0.31.6...v0.35.0) — 2026-08-13
 

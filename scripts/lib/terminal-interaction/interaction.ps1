@@ -40,18 +40,22 @@ function Set-TerminalDecision {
     }
 }
 
-function Move-TerminalToOwningActionMenu {
-    param([Parameter(Mandatory)][System.Collections.Generic.List[object]]$ViewStack)
+function Get-TerminalEscapeDecision {
+    param(
+        [Parameter(Mandatory)][object]$View,
+        [Parameter(Mandatory)][ValidateRange(1, 2147483647)][int]$ViewDepth
+    )
 
-    $current = $ViewStack[$ViewStack.Count - 1].View
-    if ($current.Kind -eq 'ActionMenu') { return }
-    for ($index = $ViewStack.Count - 1; $index -ge 0; $index--) {
-        if ($ViewStack[$index].View.ViewId -eq $current.OwnerActionMenuId) {
-            while ($ViewStack.Count -gt $index + 1) { $ViewStack.RemoveAt($ViewStack.Count - 1) }
-            return
-        }
+    if ($View.Kind -eq 'Execution' -and $View.State -eq 'Running') {
+        return [pscustomobject]@{ Kind = 'Stay' }
     }
-    while ($ViewStack.Count -gt 1) { $ViewStack.RemoveAt($ViewStack.Count - 1) }
+    if ($ViewDepth -gt 1) {
+        return [pscustomobject]@{ Kind = 'Back' }
+    }
+    if ($View.Kind -eq 'ActionMenu' -and $null -eq $View.BackTarget) {
+        return [pscustomobject]@{ Kind = 'Exit' }
+    }
+    return [pscustomobject]@{ Kind = 'Stay' }
 }
 
 function Test-TerminalControlC {
@@ -180,9 +184,10 @@ function Start-TerminalInteraction {
                     }
                 }
                 'Escape' {
-                    if ($currentState.View.Kind -ne 'Execution' -or $currentState.View.State -ne 'Running') {
-                        Move-TerminalToOwningActionMenu -ViewStack $viewStack
-                    }
+                    $decision = Get-TerminalEscapeDecision `
+                        -View $currentState.View `
+                        -ViewDepth $viewStack.Count
+                    $exitRequested = Set-TerminalDecision -ViewStack $viewStack -Decision $decision
                 }
                 'Enter' {
                     $target = Get-TerminalFocusedTarget -Frame $frame -FocusedTargetId $currentState.FocusedTargetId

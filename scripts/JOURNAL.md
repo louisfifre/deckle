@@ -7,6 +7,12 @@ type: module-journal
 
 Durable findings about the script launcher and its terminal interaction model. Most recent on top.
 
+## 2026-08-23 — Escape navigation
+
+Chose Escape as the outward command outside a transient interaction: it returns by one View when a caller exists and exits from the root Action Menu. Backspace remains a one-View return and never exits the launcher.
+
+Chose the Global Command Indications to name Escape by its current outcome: Back in a nested View and Quit at the root. Escape remains unavailable while an Execution is running.
+
 ## 2026-08-13 — Semantic terminal presentation
 
 Chose semantic descriptors as the source of presentation: interface objects project to presentation roles, and the terminal theme maps those roles plus interaction state to colors. Workflow catalogs do not declare raw colors or renderer rows.
