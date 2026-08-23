@@ -132,15 +132,6 @@ public sealed class HomeGestures
                     schema.Property(HomeSchema.Properties.Category),
                     JsonValue.Create(HomeCategories.OptionKey(pointCode.Value.Category)),
                     ct).ConfigureAwait(false));
-
-                if (!properties.OfType<JsonObject>().Any(value =>
-                        HomeObjectJson.String(value, "key") == HomeSchema.Properties.Existence))
-                {
-                    properties.Add(await propertyWriter.BuildEntryAsync(
-                        schema.Property(HomeSchema.Properties.Existence),
-                        JsonValue.Create(HomeSchema.Existence.Existing),
-                        ct).ConfigureAwait(false));
-                }
             }
 
             var codedPayload = new JsonObject
@@ -282,7 +273,6 @@ public sealed class HomeGestures
 
         string? type = filter.Type is null ? null : NormalizeType(filter.Type);
         string? category = filter.Category is null ? null : HomeCategories.OptionKey(filter.Category);
-        string? existence = NormalizeVocabulary(HomeSchema.Properties.Existence, filter.Existence);
         string? condition = NormalizeVocabulary(HomeSchema.Properties.Condition, filter.Condition);
         string? state = NormalizeVocabulary(HomeSchema.Properties.State, filter.State);
         string? worksiteId = filter.Worksite is null
@@ -308,8 +298,6 @@ public sealed class HomeGestures
             query = query.Where(value => HomeObjectJson.ObjectReferences(value, HomeSchema.Properties.Circuit).Contains(circuitId));
         if (category is not null)
             query = query.Where(value => SelectMatches(value, HomeSchema.Properties.Category, category));
-        if (existence is not null)
-            query = query.Where(value => SelectMatches(value, HomeSchema.Properties.Existence, existence));
         if (condition is not null)
             query = query.Where(value => SelectMatches(value, HomeSchema.Properties.Condition, condition));
         if (state is not null)
@@ -744,12 +732,13 @@ public sealed class HomeGestures
                 : "Le code se fournit par le champ « code » de l'item, pas dans les propriétés.");
     }
 
-    // SPEC revision of 2026-08-12: Existence = Déposé describes a real element
-    // taken off a wall; only an entry mistake — referenced by nothing — may be
-    // retracted through delete. Allocation never recycles a number either way.
-    // The former "never surveyed" half left with the survey date on 2026-08-23
-    // (Louis: the date served nothing); a reference from any other object is
-    // the one signal that the point entered the house's graph.
+    // Electricity grill of 2026-08-23: Existence left the schema — if a point
+    // is in the inventory it exists, a point taken off a wall is deleted (the
+    // bin keeps the trace), and no code-reallocation rule exists (Louis). The
+    // one guard left is the reference: a point another object points at
+    // (Commande, Commandé par, Alimenté par…) entered the house's graph and
+    // refuses to leave until those references are cleared — otherwise the
+    // graph would dangle.
     private static void RefusePointDelete(JsonObject value, HomeObjectIndex index)
     {
         if (HomeObjectJson.TypeKey(value) != HomeSchema.Types.Point) return;
@@ -761,9 +750,9 @@ public sealed class HomeGestures
 
         if (referenced)
             throw new InvalidOperationException(
-                $"{HomeObjectIndex.Display(value)} décrit du réel (référencé par un autre objet) : il ne "
-                + "se supprime pas, passe-le à Existence = Déposé avec update. Seule une erreur de "
-                + "saisie référencée par rien se rétracte.");
+                $"{HomeObjectIndex.Display(value)} est référencé par un autre objet (Commande, Commandé par, "
+                + "Alimenté par…) : retire d'abord ces références avec update, puis supprime. "
+                + "Un point que rien ne référence se supprime directement.");
     }
 
     private static string NextCodeSuggestion(

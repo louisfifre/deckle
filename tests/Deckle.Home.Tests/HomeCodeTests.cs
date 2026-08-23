@@ -33,7 +33,8 @@ public class HomeCodeTests
     public void CategoryValidatesAgainstTheFrozenFourteenAndLowercasesTheOptionKey()
     {
         Assert.Equal("PS", HomeCategories.Validate("ps"));
-        Assert.Equal("rj", HomeCategories.OptionKey("RJ"));
+        Assert.Equal("pj", HomeCategories.OptionKey("PJ"));
+        Assert.Throws<ArgumentException>(() => HomeCategories.Validate("RJ"));
         Assert.Throws<ArgumentException>(() => HomeCategories.Validate("Q"));
     }
 }

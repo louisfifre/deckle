@@ -14,7 +14,7 @@ public class HomeGesturesTests
         new(new AnytypeApiClient(server.Credentials), FakeHomeAnytypeServer.HomeSpace);
 
     [Fact]
-    public async Task CreatePointDerivesRoomCategoryExistenceAndStoresTheCodeProperty()
+    public async Task CreatePointDerivesRoomAndCategoryAndStoresTheCodeProperty()
     {
         using var server = new FakeHomeAnytypeServer();
         server.SetObjects(FakeHomeAnytypeServer.Room("room-zz", "ZZ", "Pièce fictive"));
@@ -34,7 +34,8 @@ public class HomeGesturesTests
             Entry(properties, HomeSchema.Properties.InstalledIn)["objects"]))!;
         Assert.Equal("room-zz", roomReference.GetValue<string>());
         Assert.Equal("tag-category-p", Entry(properties, HomeSchema.Properties.Category)["select"]!.GetValue<string>());
-        Assert.Equal("tag-existence-existant", Entry(properties, HomeSchema.Properties.Existence)["select"]!.GetValue<string>());
+        Assert.DoesNotContain(properties.OfType<JsonObject>(), entry =>
+            entry["key"]?.GetValue<string>() == "existence");
     }
 
     [Fact]
@@ -241,7 +242,7 @@ public class HomeGesturesTests
         InvalidOperationException error = await Assert.ThrowsAsync<InvalidOperationException>(() =>
             Gestures(server).DeleteAsync("ZZ-L01", confirm: false, Ct));
 
-        Assert.Contains("Existence", error.Message);
+        Assert.Contains("référencé", error.Message);
         Assert.DoesNotContain(server.Requests, request => request.Method == "DELETE");
     }
 
@@ -526,7 +527,7 @@ public class HomeGesturesTests
             FakeHomeAnytypeServer.Errand("errand-2", "Sacs fictifs", done: true));
 
         string remaining = await Gestures(server).SearchAsync(
-            new HomeSearchFilter(null, HomeSchema.Types.Errand, null, null, null, null, null, Done: false), Ct);
+            new HomeSearchFilter(null, HomeSchema.Types.Errand, null, null, null, null, Done: false), Ct);
 
         Assert.Contains("Vis fictives", remaining);
         Assert.DoesNotContain("Sacs fictifs", remaining);
@@ -542,7 +543,7 @@ public class HomeGesturesTests
             FakeHomeAnytypeServer.Plant("plant-1", "Ficus fictif"));
 
         string members = await Gestures(server).SearchAsync(
-            new HomeSearchFilter(null, null, null, null, null, null, null, System: "PC fictif"), Ct);
+            new HomeSearchFilter(null, null, null, null, null, null, System: "PC fictif"), Ct);
 
         Assert.Contains("GPU fictif", members);
         Assert.DoesNotContain("Ficus fictif", members);
@@ -692,12 +693,12 @@ public class HomeGesturesTests
             FakeHomeAnytypeServer.Todo("todo-2", "Corvée orpheline fictive", null, done: false));
 
         string byWorksite = await Gestures(server).SearchAsync(
-            new HomeSearchFilter(null, null, null, null, null, null, null, Worksite: "Salle de bain fictive"), Ct);
+            new HomeSearchFilter(null, null, null, null, null, null, Worksite: "Salle de bain fictive"), Ct);
         Assert.Contains("Déposer le lavabo fictif", byWorksite);
         Assert.DoesNotContain("Corvée orpheline fictive", byWorksite);
 
         string byState = await Gestures(server).SearchAsync(
-            new HomeSearchFilter(null, HomeSchema.Types.Worksite, null, null, null, null, null, State: "En cours"), Ct);
+            new HomeSearchFilter(null, HomeSchema.Types.Worksite, null, null, null, null, State: "En cours"), Ct);
         Assert.Contains("Salle de bain fictive", byState);
     }
 

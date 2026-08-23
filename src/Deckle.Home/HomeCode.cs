@@ -9,7 +9,7 @@ public readonly record struct HomeElementCode(
     int Sequence)
 {
     private static readonly Regex Pattern = new(
-        "^(?<room>[A-Z]{2})-(?<category>PS|LR|RJ|RB|RT|DS|DR|DX|DE|P|L|C|V|A)(?<sequence>[0-9]{2})$",
+        "^(?<room>[A-Z]{2})-(?<category>PS|PJ|PF|LR|DS|DR|DX|DE|P|L|C|V|A)(?<sequence>[0-9]{2})$",
         RegexOptions.CultureInvariant | RegexOptions.Compiled);
 
     public static HomeElementCode Parse(string value)
@@ -45,14 +45,17 @@ public readonly record struct HomeElementCode(
     }
 }
 
-// The 14 category codes of nomenclature v2, frozen. Since the point merge
-// (2026-08-10) every category maps to the single point type: the category is
-// the point's nature, carried by the `category` select — no longer a type
-// discriminator. The select option key is the category code lowercased.
+// The 13 category codes of nomenclature v3 (2026-08-23: the R family
+// dissolved into P — a network socket is a socket, PJ RJ45 and PF fibre;
+// the bay is a panel; coax and TPL are not inventoried). Since the point
+// merge (2026-08-10) every category maps to the single point type: the
+// category is the point's nature, carried by the `category` select — no
+// longer a type discriminator. The select option key is the category code
+// lowercased.
 public static class HomeCategories
 {
     private static readonly IReadOnlyList<string> Codes =
-    ["P", "PS", "L", "LR", "C", "V", "A", "RJ", "RB", "RT", "DS", "DR", "DX", "DE"];
+    ["P", "PS", "PJ", "PF", "L", "LR", "C", "V", "A", "DS", "DR", "DX", "DE"];
 
     public static IReadOnlyCollection<string> All => Codes;
 
