@@ -19,7 +19,9 @@ refuse a type id. Chose to provision type descriptions through that object
 face in the schema surface — manifest types gain an optional `description`,
 planned additively as `set_description` only when the live text is empty; a
 differing live text (set in-app) is a skipped conflict, never overwritten.
-Live confirmation pending the first real apply.
+Confirmed live the same day on the home space: the first real apply patched
+ten type objects through that face, and a re-preview re-read every text back
+— the object-face write round-trips.
 
 ## 2026-08-11 — Epic creation applies its live default template
 
