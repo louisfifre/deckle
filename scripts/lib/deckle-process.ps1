@@ -1,5 +1,24 @@
-# Shared Deckle process control for scripts that need exclusive access to
-# artifacts\bin\Deckle.App.
+# Shared Deckle process control: find the running instance that lives in a
+# build output directory, and stop it for scripts that replace the locked
+# artifacts under artifacts\bin\Deckle.App.
+
+# A running Deckle.exe holds its executable and every loaded assembly open, so
+# a build writing into the directory it was launched from cannot replace the
+# outputs that changed. Returns the running Deckle processes whose executable
+# lives in -Directory or below it; an empty array means the build is free to
+# write there. A process whose path cannot be read is not reported.
+function Get-DeckleProcessInDirectory {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory = $true)][string]$Directory
+    )
+
+    $root = [System.IO.Path]::GetFullPath($Directory).TrimEnd('\', '/') + [System.IO.Path]::DirectorySeparatorChar
+    return @(Get-Process -Name Deckle -ErrorAction SilentlyContinue | Where-Object {
+        $path = try { $_.Path } catch { $null }
+        $path -and $path.StartsWith($root, [System.StringComparison]::OrdinalIgnoreCase)
+    })
+}
 
 function Stop-DeckleProcess {
     [CmdletBinding()]
