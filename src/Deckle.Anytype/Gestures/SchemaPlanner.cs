@@ -56,6 +56,17 @@ internal static class SchemaPlanner
                         $"demandée {type.Icon.Display}");
             }
 
+            if (type.Description is not null)
+            {
+                string liveDescription = exists ? existingType!.Description ?? "" : "";
+                if (liveDescription.Length == 0)
+                    actions.Add(new SchemaAction("set_description", type.Key, type.Description));
+                else if (!string.Equals(liveDescription, type.Description, StringComparison.Ordinal))
+                    skippedConflicts.Add(
+                        $"set_description · {type.Key} · description existante « {liveDescription} », " +
+                        $"demandée « {type.Description} »");
+            }
+
             foreach (string propKey in type.Properties)
             {
                 if (!manifest.Properties.Any(p => p.Key == propKey) && !snapshot.Properties.ContainsKey(propKey))
@@ -158,7 +169,7 @@ internal static class SchemaPlanner
         foreach (SchemaAction action in preview.Actions)
         {
             sb.Append("- ").Append(action.Kind).Append(" · ").Append(action.Key);
-            if (action.Kind == "set_icon")
+            if (action.Kind is "set_icon" or "set_description")
                 sb.Append(" · ").Append(action.Name);
             sb.Append('\n');
         }
@@ -316,6 +327,7 @@ internal static class SchemaPlanner
             Append(contract, type.Name);
             Append(contract, type.PluralName);
             Append(contract, type.Layout);
+            Append(contract, type.Description ?? string.Empty);
             Append(contract, type.Icon?.Format ?? string.Empty);
             Append(contract, type.Icon?.Name ?? string.Empty);
             Append(contract, type.Icon?.Color ?? string.Empty);

@@ -707,6 +707,156 @@ public class SchemaAdminGesturesTests
         Assert.DoesNotContain(server.Requests, request => request.Method == "PATCH");
     }
 
+    // ── Type descriptions ─────────────────────────────────────────────────────
+
+    // The GET /objects/{id} face of the type, as the snapshot reader consults
+    // it: a description only ever appears in the object's properties array —
+    // the types surface has no such field in either direction.
+    static JsonObject TypeObjectFace(string? description)
+    {
+        var properties = new JsonArray();
+        if (description is not null)
+            properties.Add(new JsonObject
+            {
+                ["key"] = "description",
+                ["format"] = "text",
+                ["name"] = "Description",
+                ["text"] = description,
+            });
+        return new JsonObject
+        {
+            ["object"] = new JsonObject
+            {
+                ["id"] = "type-piece",
+                ["properties"] = properties,
+            },
+        };
+    }
+
+    static JsonObject DescriptionManifest(string description) => new()
+    {
+        ["types"] = new JsonArray
+        {
+            new JsonObject
+            {
+                ["key"] = "piece",
+                ["name"] = "Pièce",
+                ["plural_name"] = "Pièces",
+                ["description"] = description,
+            },
+        },
+    };
+
+    [Fact]
+    public async Task PreviewPlansTheDescriptionWhenTheLiveTypeHasNone()
+    {
+        using var server = new FakeAnytypeServer();
+        server.OnListTypes(Page(new JsonArray { ExistingType() }));
+        server.OnListProperties(EmptyList());
+        server.OnGetObject("type-piece", TypeObjectFace(null));
+
+        string digest = await NewGestures(server).PreviewAsync(
+            "home", DescriptionManifest("Espace physique de la maison"), Ct);
+
+        Assert.Contains("set_description · piece · Espace physique de la maison", digest);
+        Assert.DoesNotContain(server.Requests, r => r.Method is "POST" or "PATCH");
+    }
+
+    [Fact]
+    public async Task PreviewSkipsADifferingLiveDescriptionAsConflict()
+    {
+        using var server = new FakeAnytypeServer();
+        server.OnListTypes(Page(new JsonArray { ExistingType() }));
+        server.OnListProperties(EmptyList());
+        server.OnGetObject("type-piece", TypeObjectFace("Autre texte, posé en app"));
+
+        string digest = await NewGestures(server).PreviewAsync(
+            "home", DescriptionManifest("Espace physique de la maison"), Ct);
+
+        Assert.Contains("Conflits ignorés", digest);
+        Assert.Contains(
+            "set_description · piece · description existante « Autre texte, posé en app », "
+            + "demandée « Espace physique de la maison »",
+            digest);
+        Assert.Contains("Aucune création additive nécessaire", digest);
+    }
+
+    [Fact]
+    public async Task PreviewPlansNothingWhenTheLiveDescriptionMatches()
+    {
+        using var server = new FakeAnytypeServer();
+        server.OnListTypes(Page(new JsonArray { ExistingType() }));
+        server.OnListProperties(EmptyList());
+        server.OnGetObject("type-piece", TypeObjectFace("Espace physique de la maison"));
+
+        string digest = await NewGestures(server).PreviewAsync(
+            "home", DescriptionManifest("Espace physique de la maison"), Ct);
+
+        Assert.Contains("Aucune création additive nécessaire", digest);
+        Assert.DoesNotContain("set_description", digest);
+    }
+
+    [Fact]
+    public async Task ApplyWritesTheDescriptionThroughTheObjectSurface()
+    {
+        using var server = new FakeAnytypeServer();
+        server.OnListTypes(Page(new JsonArray { ExistingType() }));
+        server.OnListTypes(Page(new JsonArray { ExistingType() }));
+        server.OnListProperties(EmptyList());
+        server.OnListProperties(EmptyList());
+        server.OnGetObject("type-piece", TypeObjectFace(null));
+        server.OnGetObject("type-piece", TypeObjectFace(null));
+        server.OnPatchObject("type-piece", TypeObjectFace("Espace physique de la maison"));
+
+        var gestures = NewGestures(server);
+        string preview = await gestures.PreviewAsync(
+            "home", DescriptionManifest("Espace physique de la maison"), Ct);
+        string previewId = PreviewId(preview);
+
+        string digest = await gestures.ApplyAsync(
+            "home", previewId, DescriptionManifest("Espace physique de la maison"),
+            confirm: true, Ct);
+
+        Assert.Contains("description définie piece", digest);
+        JsonObject patch = server.LastBodyFor("PATCH");
+        JsonArray properties = Assert.IsType<JsonArray>(patch["properties"]);
+        JsonObject property = Assert.IsType<JsonObject>(Assert.Single(properties));
+        Assert.Equal("description", property["key"]!.GetValue<string>());
+        Assert.Equal("Espace physique de la maison", property["text"]!.GetValue<string>());
+        Assert.Single(server.Requests, request => request.Method == "PATCH");
+        Assert.EndsWith("/objects/type-piece", server.Requests.Single(r => r.Method == "PATCH").Path);
+    }
+
+    [Fact]
+    public async Task ApplyWritesTheDescriptionOfAFreshlyCreatedType()
+    {
+        using var server = new FakeAnytypeServer();
+        server.OnListTypes(EmptyList());
+        server.OnListTypes(EmptyList());
+        server.OnListProperties(EmptyList());
+        server.OnListProperties(EmptyList());
+        server.OnPostType(ExistingType());
+        server.OnPatchObject("type-piece", TypeObjectFace("Espace physique de la maison"));
+
+        var gestures = NewGestures(server);
+        string preview = await gestures.PreviewAsync(
+            "home", DescriptionManifest("Espace physique de la maison"), Ct);
+
+        string digest = await gestures.ApplyAsync(
+            "home", PreviewId(preview), DescriptionManifest("Espace physique de la maison"),
+            confirm: true, Ct);
+
+        Assert.Contains("create_type · piece", preview);
+        Assert.Contains("set_description · piece · Espace physique de la maison", preview);
+        Assert.Contains("type créé piece", digest);
+        Assert.Contains("description définie piece", digest);
+        JsonObject patch = server.LastBodyFor("PATCH");
+        JsonObject property = Assert.IsType<JsonObject>(
+            Assert.Single(Assert.IsType<JsonArray>(patch["properties"])));
+        Assert.Equal("description", property["key"]!.GetValue<string>());
+        Assert.Equal("Espace physique de la maison", property["text"]!.GetValue<string>());
+    }
+
     // ── Sections ──────────────────────────────────────────────────────────────
 
     const string SectionCollectionId = "col-structure";

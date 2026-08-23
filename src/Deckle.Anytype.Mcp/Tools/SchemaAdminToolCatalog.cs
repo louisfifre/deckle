@@ -40,7 +40,7 @@ public static class SchemaAdminToolCatalog
 
             new(
                 "schema_apply",
-                "Apply a previous schema_preview. Repeat the exact manifest and its deterministic preview_id; the live plan must still match what was reviewed. Additive only: create missing types/properties/tags, set missing type icons, attach properties to types, and provision section collections with their member types. Requires confirm:true.",
+                "Apply a previous schema_preview. Repeat the exact manifest and its deterministic preview_id; the live plan must still match what was reviewed. Additive only: create missing types/properties/tags, set missing type icons and descriptions, attach properties to types, and provision section collections with their member types. Requires confirm:true.",
                 Schema(
                     required:
                     [
@@ -111,6 +111,14 @@ public static class SchemaAdminToolCatalog
             {
                 ["type"] = "string",
                 ["enum"] = new JsonArray { "basic", "profile", "action", "note", "collection" },
+            },
+            ["description"] = new JsonObject
+            {
+                ["type"] = "string",
+                ["description"] =
+                    "One-line description of the type, written on its object face. Additive: "
+                    + "set when the live description is empty; a differing live text is "
+                    + "reported as a skipped conflict, never overwritten.",
             },
             ["icon"] = IconSpecSchema(),
             ["properties"] = ArrayOf(new JsonObject { ["type"] = "string" }),
@@ -273,8 +281,8 @@ public static class SchemaAdminToolCatalog
                         ["enum"] = new JsonArray
                         {
                             "create_property", "create_tag", "create_type",
-                            "set_icon", "attach_property", "create_section",
-                            "add_to_section",
+                            "set_icon", "set_description", "attach_property",
+                            "create_section", "add_to_section",
                         },
                     },
                     ["key"] = new JsonObject { ["type"] = "string", ["minLength"] = 1 },
