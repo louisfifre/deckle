@@ -234,6 +234,37 @@ public sealed partial class SchemaAdminGestures(AnytypeApiClient api, AnytypeSpa
                 applied.Add($"icône définie {type.Key} · {type.Icon!.Display}");
         }
 
+        // Descriptions after types exist: the REST type surface has no
+        // description field, but a type IS an object, so the write goes through
+        // PATCH /objects/{typeId} — the same ObjectSetDetails path the app
+        // uses. Planned only when the live description is empty; an existing
+        // different text was set in-app and is never overwritten.
+        var setDescriptionKeys = preview.Actions
+            .Where(action => action.Kind == "set_description")
+            .Select(action => action.Key)
+            .ToHashSet(StringComparer.Ordinal);
+
+        foreach (TypeSpec type in preview.Manifest.Types)
+        {
+            if (type.Description is null || !setDescriptionKeys.Contains(type.Key)) continue;
+            if (!typesByKey.TryGetValue(type.Key, out SchemaTypeInfo? described) || described.Id.Length == 0)
+                throw new InvalidOperationException(
+                    $"Impossible d'écrire la description de « {type.Key} » : id de type introuvable.");
+
+            await api.UpdateObjectAsync(
+                preview.SpaceId,
+                described.Id,
+                new JsonObject
+                {
+                    ["properties"] = new JsonArray
+                    {
+                        new JsonObject { ["key"] = "description", ["text"] = type.Description },
+                    },
+                },
+                ct);
+            applied.Add($"description définie {type.Key}");
+        }
+
         // Sections after types: a member id may belong to a type this very
         // apply just created. The live plan decides reuse vs creation; the
         // member add re-posts the full type list because membership cannot be

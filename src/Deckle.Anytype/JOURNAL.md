@@ -7,6 +7,20 @@ type: module-journal
 
 Module-level dated notes. Most recent on top.
 
+## 2026-08-23 — A type's description writes through its object face
+
+Verified in anytype-heart source (core/api/model/type.go, service/object.go):
+the REST types surface carries no description in either direction —
+Create/UpdateTypeRequest stop at key/name/plural_name/icon/layout/properties,
+and the Type read model has none either. A type is still an object:
+PATCH /objects/{type_id} with the bundled `description` property reaches
+ObjectSetDetails, and GetObject/UpdateObject apply no layout guard that would
+refuse a type id. Chose to provision type descriptions through that object
+face in the schema surface — manifest types gain an optional `description`,
+planned additively as `set_description` only when the live text is empty; a
+differing live text (set in-app) is a skipped conflict, never overwritten.
+Live confirmation pending the first real apply.
+
 ## 2026-08-11 — Epic creation applies its live default template
 
 Measured through `GET /types/:type_id/templates` on the Dev space: the Epic

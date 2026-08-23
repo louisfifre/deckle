@@ -125,6 +125,7 @@ internal sealed record TypeSpec(
     string Name,
     string PluralName,
     string Layout,
+    string? Description,
     TypeIconSpec? Icon,
     IReadOnlyList<string> Properties)
 {
@@ -133,13 +134,15 @@ internal sealed record TypeSpec(
 
     public static TypeSpec Parse(JsonObject obj)
     {
-        JsonShape.RequireOnly(obj, ["key", "name", "plural_name", "layout", "icon", "properties"], "type");
+        JsonShape.RequireOnly(
+            obj, ["key", "name", "plural_name", "layout", "description", "icon", "properties"], "type");
 
         string key = SchemaManifestFields.RequiredKey(obj, "key", rejectNonString: true);
         string name = SchemaManifestFields.RequiredString(obj, "name", rejectNonString: true);
         string pluralName = SchemaManifestFields.OptionalString(obj, "plural_name", rejectNonString: true)
             ?? DefaultPluralName(name);
         string layout = SchemaManifestFields.OptionalString(obj, "layout", rejectNonString: true) ?? "basic";
+        string? description = SchemaManifestFields.OptionalString(obj, "description", rejectNonString: true);
         if (!AllowedLayouts.Contains(layout))
             throw new ArgumentException(
                 $"Layout inconnu « {layout} » pour le type « {key} ». " +
@@ -170,7 +173,7 @@ internal sealed record TypeSpec(
             }
         }
         JsonShape.RequireUnique(props, $"type {key}.properties");
-        return new TypeSpec(key, name, pluralName, layout, icon, props);
+        return new TypeSpec(key, name, pluralName, layout, description, icon, props);
     }
 
     private static string DefaultPluralName(string name) =>

@@ -36,6 +36,8 @@ public sealed record SchemaSnapshot(
     IReadOnlyDictionary<string, SchemaPropertyInfo> Properties,
     IReadOnlyDictionary<string, IReadOnlyDictionary<string, SchemaTagInfo>> TagsByProperty);
 
+// Description is null when the type's object face was not read (the types
+// surface never returns one), empty when read and unset.
 public sealed record SchemaTypeInfo(
     string Id,
     string Key,
@@ -43,7 +45,8 @@ public sealed record SchemaTypeInfo(
     string PluralName,
     string Layout,
     SchemaTypeIconInfo? Icon,
-    IReadOnlyList<SchemaPropertyLinkInfo> PropertyLinks);
+    IReadOnlyList<SchemaPropertyLinkInfo> PropertyLinks,
+    string? Description = null);
 
 public sealed record SchemaTypeIconInfo(
     string Format,

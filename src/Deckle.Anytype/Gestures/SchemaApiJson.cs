@@ -57,4 +57,16 @@ internal static class SchemaApiJson
         }
         return result;
     }
+
+    // A type's description lives on its OBJECT face — the REST type surface has
+    // no description field in either direction — as the entry keyed
+    // "description" in the object's properties array.
+    public static string ObjectDescription(JsonObject obj)
+    {
+        if (obj["properties"] is not JsonArray props) return "";
+        foreach (JsonNode? node in props)
+            if (node is JsonObject p && Str(p, "key") == "description")
+                return Str(p, "text");
+        return "";
+    }
 }

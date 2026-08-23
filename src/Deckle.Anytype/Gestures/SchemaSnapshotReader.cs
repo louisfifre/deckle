@@ -10,14 +10,41 @@ public sealed class SchemaSnapshotReader(AnytypeApiClient api)
     internal async Task<SchemaSnapshot> BuildAsync(
         string spaceId,
         SchemaManifest? manifest,
-        CancellationToken ct) =>
-        await ReadAsync(
+        CancellationToken ct)
+    {
+        SchemaSnapshot snapshot = await ReadAsync(
             spaceId,
             manifest?.Properties
                 .Where(p => SchemaPlanner.IsTagFormat(p.Format))
                 .Select(p => p.Key)
                 .ToArray(),
             ct).ConfigureAwait(false);
+        return manifest is null
+            ? snapshot
+            : await WithTypeDescriptionsAsync(spaceId, manifest, snapshot, ct).ConfigureAwait(false);
+    }
+
+    // The types surface never returns a description, so the live value comes
+    // from each type's OBJECT face — one bounded GetObject per manifest type
+    // that declares one.
+    private async Task<SchemaSnapshot> WithTypeDescriptionsAsync(
+        string spaceId, SchemaManifest manifest, SchemaSnapshot snapshot, CancellationToken ct)
+    {
+        Dictionary<string, SchemaTypeInfo>? types = null;
+        foreach (TypeSpec spec in manifest.Types)
+        {
+            if (spec.Description is null) continue;
+            if (!snapshot.Types.TryGetValue(spec.Key, out SchemaTypeInfo? type) || type.Id.Length == 0)
+                continue;
+
+            JsonObject obj = await _api.GetObjectAsync(spaceId, type.Id, ct).ConfigureAwait(false);
+            types ??= new Dictionary<string, SchemaTypeInfo>(snapshot.Types, StringComparer.Ordinal);
+            types[spec.Key] = type with { Description = SchemaApiJson.ObjectDescription(obj) };
+        }
+        return types is null
+            ? snapshot
+            : new SchemaSnapshot(types, snapshot.Properties, snapshot.TagsByProperty);
+    }
 
     // Public provider boundary for domains backed by Anytype. Reads the complete
     // type/property shape and, when requested, the live options of selected

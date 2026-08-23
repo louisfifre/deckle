@@ -51,8 +51,8 @@ public sealed record McpSurfaceDescriptor(string Name, string Title, string Inst
         "deckle-anytype-schema-admin",
         "Deckle Anytype Schema Admin",
         "Anytype schema administration surface. It inspects configured space "
-        + "aliases, previews additive type/property/tag changes, then applies a "
-        + "previous preview only when confirm:true is passed. It also exposes "
+        + "aliases, previews additive type/property/tag/description changes, then "
+        + "applies a previous preview only when confirm:true is passed. It also exposes "
         + "two bounded cross-space utilities: additive collection membership and "
         + "select writes addressed by existing tag keys. It never accepts a "
         + "raw space_id; use configured aliases such as dev or home. Schema "
