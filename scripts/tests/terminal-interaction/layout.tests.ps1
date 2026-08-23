@@ -20,9 +20,22 @@ function Get-Placement([object]$Frame, [string]$TargetId) {
     return $match[0]
 }
 
+function Get-RoleLineIndex([object]$Frame, [string]$PresentationRole) {
+    $matches = @(
+        for ($lineIndex = 0; $lineIndex -lt $Frame.Lines.Count; $lineIndex++) {
+            if (@($Frame.Lines[$lineIndex].Segments | Where-Object { $_.PresentationRole -eq $PresentationRole }).Count -gt 0) {
+                $lineIndex
+            }
+        }
+    )
+    if ($matches.Count -ne 1) { throw "role '$PresentationRole': expected one line, got $($matches.Count)" }
+    return $matches[0]
+}
+
 $root = Get-DecklePreviewRootView
 $wide = Get-TerminalInteractionFrame -View $root -Width 100 -Height 24 -FocusedTargetId action.launch.release
 $wideText = @(ConvertTo-TerminalFrameText -Frame $wide)
+Assert-Equal 2 (Get-RoleLineIndex -Frame $wide -PresentationRole PrimarySeparator) 'the root Header keeps two stable content rails'
 $launchRelease = Get-Placement -Frame $wide -TargetId action.launch.release
 $launchDebug = Get-Placement -Frame $wide -TargetId action.launch.debug
 Assert-Equal $launchRelease.Y $launchDebug.Y 'Action Variants share their Action Row in a wide terminal'
@@ -69,11 +82,36 @@ Assert-Equal 1 @($shortLast.Targets | Where-Object { $_.TargetId -eq 'command.qu
 $project = Get-DecklePreviewProjectView
 $projectFrame = Get-TerminalInteractionFrame -View $project -Width 100 -Height 24 -FocusedTargetId navigation.back
 $projectText = @(ConvertTo-TerminalFrameText -Frame $projectFrame) -join "`n"
+Assert-Equal 2 (Get-RoleLineIndex -Frame $projectFrame -PresentationRole PrimarySeparator) 'a nested Header keeps the same two content rails'
 $projectBack = Get-Placement -Frame $projectFrame -TargetId navigation.back
 $readmePulse = Get-Placement -Frame $projectFrame -TargetId action.readme-stats
 Assert-Equal $readmePulse.X $projectBack.X 'Back occupies the first option column instead of the label column'
 Assert-True ($projectText -match 'Backspace Back') 'a nested View advertises Backspace'
 Assert-True ($projectText -match 'Escape Back') 'a nested View advertises Escape as one-View navigation'
+
+$repositoryRoot = Split-Path -Parent $ScriptsDir
+$preparation = Get-DecklePreviewSnapshotView -Name Preparation -RepositoryRoot $repositoryRoot
+$preparationNarrow = Get-TerminalInteractionFrame -View $preparation -Width 60 -Height 24 -FocusedTargetId $preparation.DefaultTargetId
+$preparationNarrowText = @(ConvertTo-TerminalFrameText -Frame $preparationNarrow) -join "`n"
+Assert-Equal 2 (Get-RoleLineIndex -Frame $preparationNarrow -PresentationRole PrimarySeparator) 'a narrow Header never grows beyond its two content rails'
+Assert-True ($preparationNarrowText -match 'Maintenance / Repository statistics') 'commands preserve the complete narrow View context'
+Assert-True ($preparationNarrowText -match 'Enter Select') 'narrow command priority preserves activation'
+Assert-True ($preparationNarrowText -match 'Space Toggle') 'narrow command priority preserves selection editing'
+Assert-True ($preparationNarrowText -match 'Escape Back') 'narrow command priority preserves outward navigation'
+
+$runningExecution = New-TerminalExecutionView `
+    -ViewId execution.running `
+    -Banner Running `
+    -Context 'Build / Release' `
+    -State Running `
+    -JournalLines @('waiting') `
+    -TrackingSteps @([pscustomobject]@{ Label = 'Build'; State = 'Running' }) `
+    -BackTarget $project.BackTarget `
+    -OwnerActionMenuId menu.root
+$runningFrame = Get-TerminalInteractionFrame -View $runningExecution -Width 60 -Height 20 -FocusedTargetId navigation.back
+$runningText = @(ConvertTo-TerminalFrameText -Frame $runningFrame) -join "`n"
+Assert-True ($runningText -match 'Ctrl\+C Quit') 'a running Execution keeps emergency exit discoverable'
+Assert-True ($runningText -notmatch 'Enter Open|Backspace Back|Escape Back') 'a running Execution advertises no unavailable command'
 
 $execution = Get-DecklePreviewSnapshotView -Name Execution
 $executionWide = Get-TerminalInteractionFrame -View $execution -Width 120 -Height 24 -FocusedTargetId navigation.back -JournalOffset ([int]::MaxValue)
@@ -82,6 +120,22 @@ $panelTitleLine = @($executionWideText | Where-Object { $_ -match 'Execution Jou
 Assert-Equal 1 $panelTitleLine.Count 'wide Execution presents Journal and Tracking side by side'
 Assert-True ($panelTitleLine[0].IndexOf('Execution Tracking') -gt 90) 'wide Tracking occupies the compact right-hand region'
 Assert-Equal 1 @($executionWideText | Where-Object { $_ -match 'deliberately long line' }).Count 'a long Journal line is clipped without wrapping'
+$panelTitleFrameLine = @(
+    $executionWide.Lines | Where-Object {
+        @($_.Segments | Where-Object { $_.Text -eq 'Execution Journal' }).Count -eq 1 -and
+        @($_.Segments | Where-Object { $_.Text -eq 'Execution Tracking' }).Count -eq 1
+    }
+)
+Assert-Equal 1 $panelTitleFrameLine.Count 'wide Panel titles share one stable title rail'
+$wideResultText = @(
+    foreach ($line in $executionWide.Lines) {
+        foreach ($segment in $line.Segments) {
+            if ($segment.PresentationRole -eq 'Success') { $segment.Text }
+        }
+    }
+) -join ' '
+Assert-Equal 'Result: Preview only; no repository changes.' $wideResultText 'wide Tracking wraps the complete Result instead of clipping it'
+Assert-True (@($panelTitleFrameLine[0].Segments | Where-Object { $_.PresentationRole -eq 'PanelSeparator' }).Count -eq 1) 'wide Panel framing separates the title rail'
 
 $executionNarrow = Get-TerminalInteractionFrame -View $execution -Width 60 -Height 20 -FocusedTargetId navigation.back -JournalOffset ([int]::MaxValue)
 $executionNarrowText = @(ConvertTo-TerminalFrameText -Frame $executionNarrow)
@@ -89,6 +143,12 @@ $journalTitleIndex = [Array]::IndexOf($executionNarrowText, '  Execution Journal
 $trackingTitleIndex = [Array]::IndexOf($executionNarrowText, '  Execution Tracking')
 Assert-True ($journalTitleIndex -ge 0 -and $trackingTitleIndex -gt $journalTitleIndex) 'narrow Execution preserves Journal then Tracking order'
 Assert-True (($executionNarrowText -join "`n") -match 'Result: Preview only') 'narrow Execution keeps the final Result visible'
+Assert-Equal 2 (Get-RoleLineIndex -Frame $executionNarrow -PresentationRole PrimarySeparator) 'Execution keeps the stable Header height'
+Assert-True (@(
+    foreach ($line in $executionNarrow.Lines) {
+        $line.Segments | Where-Object { $_.PresentationRole -eq 'PanelSeparator' }
+    }
+).Count -eq 1) 'narrow Panel framing owns one separator between Journal and Tracking'
 foreach ($line in @(ConvertTo-TerminalFrameText -Frame $executionNarrow -PreserveWidth)) {
     Assert-Equal 60 $line.Length 'Execution clipping protects narrow width'
 }

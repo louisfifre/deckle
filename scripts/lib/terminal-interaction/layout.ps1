@@ -49,7 +49,7 @@ function Add-TerminalFrameSegment {
         [ValidateSet(
             'Banner', 'Context', 'Section', 'SectionSeparator',
             'Action', 'ActionVariant', 'Access', 'Adjust', 'Navigation', 'Exit', 'Danger',
-            'PanelTitle', 'Body', 'Supporting', 'Separator',
+            'PanelTitle', 'Body', 'Supporting', 'PrimarySeparator', 'PanelSeparator', 'Separator',
             'CommandKey', 'CommandLabel', 'Success', 'Warning', 'Error'
         )]
         [string]$PresentationRole = 'Body',
@@ -109,132 +109,40 @@ function Limit-TerminalText {
     return $Text.Substring(0, $Width - 1) + [char]0x2026
 }
 
-function Get-TerminalHeaderCommands {
+function Split-TerminalText {
     param(
-        [Parameter(Mandatory)][object]$View,
-        [bool]$SupportsUnicode = $true
+        [Parameter(Mandatory)][AllowEmptyString()][string]$Text,
+        [Parameter(Mandatory)][ValidateRange(1, 2147483647)][int]$Width
     )
 
-    $arrows = if ($SupportsUnicode) {
-        -join @([char]0x2191, [char]0x2193, [char]0x2190, [char]0x2192)
-    } else {
-        'Arrows'
-    }
-    $commands = [System.Collections.Generic.List[object]]::new()
-    $quitCommand = [pscustomobject]@{ Key = 'Ctrl+C'; Label = 'Quit' }
-    if ($View.Kind -ne 'Execution' -or $View.State -ne 'Running') {
-        $commands.Add([pscustomobject]@{ Key = $arrows; Label = 'Move' })
-        $activationLabel = if ($View.Kind -eq 'Preparation') { 'Select' } else { 'Open' }
-        $commands.Add([pscustomobject]@{ Key = 'Enter'; Label = $activationLabel })
-        if ($View.Kind -eq 'Preparation' -and @($View.Selectors | Where-Object { $_.SelectionMode -eq 'Multiple' }).Count -gt 0) {
-            $commands.Add([pscustomobject]@{ Key = 'Space'; Label = 'Toggle' })
+    if ($Text.Length -le $Width) { return @($Text) }
+
+    $lines = [System.Collections.Generic.List[string]]::new()
+    $current = ''
+    foreach ($wordValue in @($Text -split '\s+')) {
+        $word = [string]$wordValue
+        if ([string]::IsNullOrEmpty($word)) { continue }
+        while ($word.Length -gt $Width) {
+            if ($current.Length -gt 0) {
+                $lines.Add($current)
+                $current = ''
+            }
+            $lines.Add($word.Substring(0, $Width))
+            $word = $word.Substring($Width)
         }
-        if ($null -ne $View.BackTarget) {
-            $backCommand = [pscustomobject]@{ Key = 'Backspace'; Label = 'Back' }
-            $commands.Add($backCommand)
-            $commands.Add([pscustomobject]@{ Key = 'Escape'; Label = $backCommand.Label })
-        } elseif ($View.Kind -eq 'ActionMenu') {
-            $commands.Add([pscustomobject]@{ Key = 'Escape'; Label = $quitCommand.Label })
-        }
-    }
-    $commands.Add($quitCommand)
-    return @($commands)
-}
-
-function Split-TerminalCommandRows {
-    param(
-        [Parameter(Mandatory)][object[]]$Commands,
-        [Parameter(Mandatory)][int]$Width
-    )
-
-    $rows = [System.Collections.Generic.List[object]]::new()
-    $current = [System.Collections.Generic.List[object]]::new()
-    $currentLength = 0
-    foreach ($command in $Commands) {
-        $length = $command.Key.Length + 1 + $command.Label.Length
-        $nextLength = if ($current.Count -eq 0) { $length } else { $currentLength + 3 + $length }
-        if ($current.Count -gt 0 -and $nextLength -gt $Width) {
-            $rows.Add(@($current))
-            $current = [System.Collections.Generic.List[object]]::new()
-            $currentLength = 0
-            $nextLength = $length
-        }
-        $current.Add($command)
-        $currentLength = $nextLength
-    }
-    if ($current.Count -gt 0) { $rows.Add(@($current)) }
-    return @($rows)
-}
-
-function Get-TerminalCommandRowLength {
-    param([Parameter(Mandatory)][object[]]$Commands)
-
-    $length = 0
-    for ($i = 0; $i -lt $Commands.Count; $i++) {
-        if ($i -gt 0) { $length += 3 }
-        $length += $Commands[$i].Key.Length + 1 + $Commands[$i].Label.Length
-    }
-    return $length
-}
-
-function Add-TerminalCommandRow {
-    param(
-        [Parameter(Mandatory)][object]$Frame,
-        [Parameter(Mandatory)][int]$LineIndex,
-        [Parameter(Mandatory)][object[]]$Commands,
-        [Parameter(Mandatory)][int]$StartX
-    )
-
-    $x = $StartX
-    for ($i = 0; $i -lt $Commands.Count; $i++) {
-        if ($i -gt 0) { $x += 3 }
-        $command = $Commands[$i]
-        Add-TerminalFrameSegment -Frame $Frame -LineIndex $LineIndex -X $x -Text $command.Key -PresentationRole CommandKey
-        $x += $command.Key.Length + 1
-        Add-TerminalFrameSegment -Frame $Frame -LineIndex $LineIndex -X $x -Text $command.Label -PresentationRole CommandLabel
-        $x += $command.Label.Length
-    }
-}
-
-function Add-TerminalHeader {
-    param(
-        [Parameter(Mandatory)][object]$Frame,
-        [Parameter(Mandatory)][object]$View,
-        [bool]$SupportsUnicode = $true
-    )
-
-    $left = 2
-    $right = [Math]::Max($left, $Frame.Width - 2)
-    $banner = Limit-TerminalText -Text $View.Banner -Width ([Math]::Max(1, $right - $left))
-    $context = if ($View.Context) { ' / ' + [string]$View.Context } else { '' }
-    $identityLength = $banner.Length + $context.Length
-    $commands = @(Get-TerminalHeaderCommands -View $View -SupportsUnicode $SupportsUnicode)
-    $commandLength = Get-TerminalCommandRowLength -Commands $commands
-    $titleLine = Add-TerminalFrameLine -Frame $Frame
-    Add-TerminalFrameSegment -Frame $Frame -LineIndex $titleLine -X $left -Text $banner -PresentationRole Banner
-    if ($context) {
-        $contextWidth = [Math]::Max(0, $right - $left - $banner.Length)
-        Add-TerminalFrameSegment `
-            -Frame $Frame `
-            -LineIndex $titleLine `
-            -X ($left + $banner.Length) `
-            -Text (Limit-TerminalText -Text $context -Width $contextWidth) `
-            -PresentationRole Context
-    }
-
-    if ($left + $identityLength + 4 + $commandLength -le $right) {
-        Add-TerminalCommandRow -Frame $Frame -LineIndex $titleLine -Commands $commands -StartX ($right - $commandLength)
-    } else {
-        $commandRows = @(Split-TerminalCommandRows -Commands $commands -Width ([Math]::Max(12, $right - $left)))
-        foreach ($commandRow in $commandRows) {
-            $line = Add-TerminalFrameLine -Frame $Frame
-            $length = Get-TerminalCommandRowLength -Commands $commandRow
-            Add-TerminalCommandRow -Frame $Frame -LineIndex $line -Commands $commandRow -StartX ([Math]::Max($left, $right - $length))
+        if ($word.Length -eq 0) { continue }
+        if ($current.Length -eq 0) {
+            $current = $word
+        } elseif (($current.Length + 1 + $word.Length) -le $Width) {
+            $current += " $word"
+        } else {
+            $lines.Add($current)
+            $current = $word
         }
     }
-
-    $separatorLine = Add-TerminalFrameLine -Frame $Frame
-    Add-TerminalFrameSegment -Frame $Frame -LineIndex $separatorLine -X 0 -Text ([string]::new([char]0x2500, $Frame.Width)) -PresentationRole Separator
+    if ($current.Length -gt 0) { $lines.Add($current) }
+    if ($lines.Count -eq 0) { $lines.Add('') }
+    return @($lines)
 }
 
 function Get-TerminalTargetPresentationRole {
@@ -546,38 +454,6 @@ function Add-TerminalContentBody {
     }
 }
 
-function Get-TerminalTrackingLines {
-    param([Parameter(Mandatory)][object]$View)
-
-    $lines = [System.Collections.Generic.List[object]]::new()
-    foreach ($step in $View.TrackingSteps) {
-        $mark = switch ($step.State) {
-            'Completed' { '[ok]' }
-            'Running' { '[..]' }
-            'Failed' { '[x]' }
-            default { '[ ]' }
-        }
-        $role = switch ($step.State) {
-            'Completed' { 'Success' }
-            'Running' { 'Warning' }
-            'Failed' { 'Error' }
-            default { 'Supporting' }
-        }
-        $lines.Add([pscustomobject]@{
-            Text = "$mark $($step.Label)"
-            PresentationRole = $role
-        })
-    }
-    if ($View.Result) {
-        $resultRole = if ($View.State -eq 'Failed') { 'Error' } else { 'Success' }
-        $lines.Add([pscustomobject]@{
-            Text = "Result: $($View.Result)"
-            PresentationRole = $resultRole
-        })
-    }
-    return @($lines)
-}
-
 function Add-TerminalPagingFooter {
     param(
         [Parameter(Mandatory)][object]$Frame,
@@ -616,115 +492,6 @@ function Add-TerminalPagingFooter {
     if ($x -gt 6 + ($targetWidth * 2)) {
         Add-TerminalFrameSegment -Frame $Frame -LineIndex $line -X $x -Text $wheel -PresentationRole CommandKey
         Add-TerminalFrameSegment -Frame $Frame -LineIndex $line -X ($x + $wheel.Length + 1) -Text $label -PresentationRole CommandLabel
-    }
-}
-
-function Add-TerminalExecutionBody {
-    param(
-        [Parameter(Mandatory)][object]$Frame,
-        [Parameter(Mandatory)][object]$View,
-        [string]$FocusedTargetId,
-        [int]$JournalOffset
-    )
-
-    [void](Add-TerminalFrameLine -Frame $Frame)
-    if ($null -ne $View.BackTarget) {
-        $backLine = Add-TerminalFrameLine -Frame $Frame
-        Add-TerminalNavigationTarget -Frame $Frame -Target $View.BackTarget -LineIndex $backLine -FocusedTargetId $FocusedTargetId
-        [void](Add-TerminalFrameLine -Frame $Frame)
-    }
-
-    $trackingLines = @(Get-TerminalTrackingLines -View $View)
-    $remaining = $Frame.Height - $Frame.Lines.Count
-    $wide = $Frame.Width -ge 96 -and $remaining -ge 7
-    if ($wide) {
-        $contentWidth = $Frame.Width - 4
-        $gap = 3
-        $trackingWidth = [Math]::Max(18, [Math]::Floor($contentWidth / 6))
-        $journalWidth = $contentWidth - $trackingWidth - $gap
-        if ($journalWidth -lt 40) { $wide = $false }
-    }
-
-    if ($wide) {
-        $pageSize = [Math]::Max(1, $remaining - 2)
-        $hasPages = $View.JournalLines.Count -gt $pageSize
-        if ($hasPages) { $pageSize-- }
-        $maximumOffset = [Math]::Max(0, $View.JournalLines.Count - $pageSize)
-        $offset = [Math]::Max(0, [Math]::Min($JournalOffset, $maximumOffset))
-        $Frame.JournalPageSize = $pageSize
-        $Frame.JournalLineCount = $View.JournalLines.Count
-
-        $titleLine = Add-TerminalFrameLine -Frame $Frame
-        Add-TerminalFrameSegment -Frame $Frame -LineIndex $titleLine -X 2 -Text 'Execution Journal' -PresentationRole PanelTitle
-        $trackingX = 2 + $journalWidth + $gap
-        Add-TerminalFrameSegment -Frame $Frame -LineIndex $titleLine -X $trackingX -Text 'Execution Tracking' -PresentationRole PanelTitle
-        for ($row = 0; $row -lt $pageSize; $row++) {
-            $line = Add-TerminalFrameLine -Frame $Frame
-            $journalIndex = $offset + $row
-            if ($journalIndex -lt $View.JournalLines.Count) {
-                Add-TerminalFrameSegment -Frame $Frame -LineIndex $line -X 2 -Text (Limit-TerminalText -Text ([string]$View.JournalLines[$journalIndex]) -Width $journalWidth) -PresentationRole Body
-            }
-            Add-TerminalFrameSegment -Frame $Frame -LineIndex $line -X (2 + $journalWidth + 1) -Text ([string][char]0x2502) -PresentationRole Separator
-            if ($row -lt $trackingLines.Count) {
-                Add-TerminalFrameSegment `
-                    -Frame $Frame `
-                    -LineIndex $line `
-                    -X $trackingX `
-                    -Text (Limit-TerminalText -Text $trackingLines[$row].Text -Width $trackingWidth) `
-                    -PresentationRole $trackingLines[$row].PresentationRole
-            }
-        }
-        if ($hasPages) {
-            Add-TerminalPagingFooter `
-                -Frame $Frame `
-                -Offset $offset `
-                -PageSize $pageSize `
-                -LineCount $View.JournalLines.Count `
-                -FocusedTargetId $FocusedTargetId
-        }
-        return
-    }
-
-    $trackingBudget = [Math]::Min([Math]::Max(4, $trackingLines.Count), [Math]::Max(4, [Math]::Floor($remaining / 3)))
-    $journalBudget = [Math]::Max(1, $remaining - $trackingBudget - 3)
-    $hasNarrowPages = $View.JournalLines.Count -gt $journalBudget
-    if ($hasNarrowPages -and $journalBudget -gt 1) { $journalBudget-- }
-    $maximumNarrowOffset = [Math]::Max(0, $View.JournalLines.Count - $journalBudget)
-    $narrowOffset = [Math]::Max(0, [Math]::Min($JournalOffset, $maximumNarrowOffset))
-    $Frame.JournalPageSize = $journalBudget
-    $Frame.JournalLineCount = $View.JournalLines.Count
-
-    $journalTitle = Add-TerminalFrameLine -Frame $Frame
-    Add-TerminalFrameSegment -Frame $Frame -LineIndex $journalTitle -X 2 -Text 'Execution Journal' -PresentationRole PanelTitle
-    for ($row = 0; $row -lt $journalBudget; $row++) {
-        $line = Add-TerminalFrameLine -Frame $Frame
-        $journalIndex = $narrowOffset + $row
-        if ($journalIndex -lt $View.JournalLines.Count) {
-            Add-TerminalFrameSegment -Frame $Frame -LineIndex $line -X 2 -Text (Limit-TerminalText -Text ([string]$View.JournalLines[$journalIndex]) -Width ($Frame.Width - 4)) -PresentationRole Body
-        }
-    }
-    if ($hasNarrowPages) {
-        Add-TerminalPagingFooter `
-            -Frame $Frame `
-            -Offset $narrowOffset `
-            -PageSize $journalBudget `
-            -LineCount $View.JournalLines.Count `
-            -FocusedTargetId $FocusedTargetId
-    }
-    $separator = Add-TerminalFrameLine -Frame $Frame
-    Add-TerminalFrameSegment -Frame $Frame -LineIndex $separator -X 2 -Text ([string]::new('-', [Math]::Max(1, $Frame.Width - 4))) -PresentationRole Separator
-    $trackingTitle = Add-TerminalFrameLine -Frame $Frame
-    Add-TerminalFrameSegment -Frame $Frame -LineIndex $trackingTitle -X 2 -Text 'Execution Tracking' -PresentationRole PanelTitle
-    for ($row = 0; $row -lt $trackingBudget; $row++) {
-        $line = Add-TerminalFrameLine -Frame $Frame
-        if ($row -lt $trackingLines.Count) {
-            Add-TerminalFrameSegment `
-                -Frame $Frame `
-                -LineIndex $line `
-                -X 2 `
-                -Text (Limit-TerminalText -Text $trackingLines[$row].Text -Width ($Frame.Width - 4)) `
-                -PresentationRole $trackingLines[$row].PresentationRole
-        }
     }
 }
 

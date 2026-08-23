@@ -14,6 +14,7 @@ doctrine). This file is generated from the Conventional-Commit history by
 ### Added
 
 - **anytype:** Schema surface provisions type descriptions through the object face
+- **scripts:** Establish terminal visual hierarchy
 
 ### Changed
 

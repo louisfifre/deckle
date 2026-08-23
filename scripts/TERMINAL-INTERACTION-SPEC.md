@@ -193,7 +193,9 @@ The Persistent Header has four stable responsibilities:
 
 Its structure persists across Views. Its context and command indications derive from current state. Body compositions MUST NOT reproduce the header.
 
-One primary separator closes the Persistent Header. Sections MAY use lighter dashed separators, and whitespace separates groups. The interface MUST NOT draw a full-width rule for every Section or item.
+The Persistent Header reserves two content rails before its separator. The first presents the banner; the second presents the current context. Global Command Indications use the available right-hand space on either rail and hide by priority when they do not fit. They MUST NOT add a third rail or displace the complete current context.
+
+One primary separator closes the Persistent Header. It has a stronger presentation role than local Panel separators. Sections MAY use lighter dashed separators, and whitespace separates groups. The interface MUST NOT draw a full-width rule for every Section or item.
 
 ### View Body
 
@@ -275,7 +277,9 @@ The Execution View presents two independent Panels:
 - the Execution Journal Panel presents the detailed emitted evidence;
 - the Execution Tracking Panel presents Deckle's concise account of significant steps, current state, and final conclusion.
 
-On a wide terminal, the Journal occupies approximately five-sixths of the usable width and Tracking one-sixth. The renderer uses measured minimum viable widths for both Panels to choose the split; the ratio alone MUST NOT make Tracking unreadable. In a narrow IDE panel, a height-limited Journal appears above Tracking so both remain visible in their established order.
+On a wide terminal, the Journal occupies approximately five-sixths of the usable width and Tracking one-sixth. The renderer uses measured minimum viable widths for both Panels to choose the split; the ratio alone MUST NOT make Tracking unreadable. A local separator frames the boundary through the shared title rail and content. Tracking text wraps within its Panel while Journal lines remain clipped without wrapping.
+
+In a narrow IDE panel, a height-limited Journal appears above Tracking so both remain visible in their established order. One local horizontal separator preserves the same Panel boundary without imitating the Persistent Header's primary separator.
 
 The Execution composition MUST use the terminal's usable width. A global preferred-width cap intended for menus MUST NOT constrain it.
 
@@ -324,15 +328,18 @@ The default Deckle terminal theme preserves the existing script hierarchy:
 | Semantic presentation | Default Deckle treatment |
 |---|---|
 | Repository banner | Blue |
-| Current context | Dark grey |
-| Section, Panel, Review, and Effective Scope title | Magenta |
-| Section separator | Light grey dashed rule |
+| Current context | Inherit the terminal foreground |
+| Section, Panel, Review, and Effective Scope title | Inherit the terminal foreground |
+| Primary Header separator | Grey solid rule |
+| Section separator | Dark grey dashed rule |
+| Panel separator | Dark grey local rule |
 | Action subject, Filter label, safe standalone Action, and safe Confirmation | Cyan |
 | Action Variant, Selection, Review body, Effective Scope body, and ordinary detail | Inherit the terminal foreground |
 | Access, Selector target, and current editable value | Dark yellow |
 | Navigation Control and supporting explanation | Dark grey |
 | Exit and destructive choice | Red |
-| Completed, running or partial, and failed Tracking state | Green, yellow, and red respectively |
+| Completed Tracking step | Dark grey |
+| Successful, running or partial, and failed Execution Result | Green, yellow, and red respectively |
 | Global or scrolling command key | Grey |
 | Global or scrolling command label | A nearby darker grey |
 
