@@ -745,26 +745,25 @@ public sealed class HomeGestures
     }
 
     // SPEC revision of 2026-08-12: Existence = Déposé describes a real element
-    // taken off a wall; only an entry mistake — never surveyed, referenced by
-    // nothing — may be retracted through delete. Allocation never recycles a
-    // number either way.
+    // taken off a wall; only an entry mistake — referenced by nothing — may be
+    // retracted through delete. Allocation never recycles a number either way.
+    // The former "never surveyed" half left with the survey date on 2026-08-23
+    // (Louis: the date served nothing); a reference from any other object is
+    // the one signal that the point entered the house's graph.
     private static void RefusePointDelete(JsonObject value, HomeObjectIndex index)
     {
         if (HomeObjectJson.TypeKey(value) != HomeSchema.Types.Point) return;
 
-        bool surveyed = HomeObjectJson.Property(value, HomeSchema.Properties.SurveyDate)?["date"]
-            is JsonValue date && date.TryGetValue<string>(out string? stamp)
-            && !string.IsNullOrWhiteSpace(stamp);
         string id = HomeObjectJson.Id(value);
         bool referenced = index.Objects.Any(other =>
             HomeObjectJson.Id(other) != id
             && HomeObjectJson.ObjectReferences(other).Contains(id));
 
-        if (surveyed || referenced)
+        if (referenced)
             throw new InvalidOperationException(
-                $"{HomeObjectIndex.Display(value)} décrit du réel (relevé ou référencé) : il ne se "
-                + "supprime pas, passe-le à Existence = Déposé avec update. Seule une erreur de "
-                + "saisie jamais relevée et référencée par rien se rétracte.");
+                $"{HomeObjectIndex.Display(value)} décrit du réel (référencé par un autre objet) : il ne "
+                + "se supprime pas, passe-le à Existence = Déposé avec update. Seule une erreur de "
+                + "saisie référencée par rien se rétracte.");
     }
 
     private static string NextCodeSuggestion(

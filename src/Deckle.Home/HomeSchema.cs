@@ -39,7 +39,6 @@ public static class HomeSchema
         public const string Code = "code";
         public const string Notes = "notes";
         public const string Documents = "documents";
-        public const string SurveyDate = "survey_date";
         public const string Location = "location";
         public const string InstalledIn = "installed_in";
         public const string StoredIn = "stored_in";
@@ -151,7 +150,6 @@ public static class HomeSchema
             [Properties.Code] = "text",
             [Properties.Notes] = "text",
             [Properties.Documents] = "files",
-            [Properties.SurveyDate] = "date",
             [Properties.Location] = "text",
             [Properties.InstalledIn] = "objects",
             [Properties.StoredIn] = "objects",
@@ -243,7 +241,7 @@ public static class HomeSchema
             [
                 Properties.Code, Properties.Category, Properties.InstalledIn,
                 Properties.Location, Properties.Existence, Properties.Condition,
-                Properties.Circuit, Properties.Panel, Properties.SurveyDate, Properties.Notes,
+                Properties.Circuit, Properties.Panel, Properties.Notes,
                 Properties.OutletCount, Properties.Earthed, Properties.ExpectedRating,
                 Properties.LightNature, Properties.SwitchKind, Properties.Controls,
                 Properties.ControlledBy, Properties.MotorType, Properties.PowerWatts,
@@ -254,14 +252,13 @@ public static class HomeSchema
             [Types.Circuit] =
             [
                 Properties.Code, Properties.Panel, Properties.Rating, Properties.OriginLabel,
-                Properties.PanelPosition, Properties.DedicatedRcd, Properties.SurveyDate,
-                Properties.Notes,
+                Properties.PanelPosition, Properties.DedicatedRcd, Properties.Notes,
             ],
             [Types.Panel] =
             [
                 Properties.Code, Properties.InstalledIn, Properties.RcdHead, Properties.RcdType,
                 Properties.FreeSlots, Properties.Conduits, Properties.SubMeter,
-                Properties.SurveyDate, Properties.Notes, Properties.Documents,
+                Properties.Notes, Properties.Documents,
             ],
             [Types.System] =
             [
