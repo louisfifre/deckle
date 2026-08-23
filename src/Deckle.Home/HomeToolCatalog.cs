@@ -21,7 +21,7 @@ public static class HomeToolCatalog
 
             new ToolDescriptor(
                 "update",
-                "Update one or more Home objects. Codes are immutable; a point's room and category are derived from its code and cannot be changed directly. Titles are renamable human names, except an idea whose title is the first line of its body. A component cannot clear 'Fait partie de' — retype it in the app instead. Relations accept object codes, names, or ids. Collection membership uses add_to_collections/remove_from_collections and is distinct from relations. Set Existence to Déposé instead of deleting a point.",
+                "Update one or more Home objects. Codes are immutable; a point's room and category are derived from its code and cannot be changed directly. Titles are renamable human names, except an idea whose title is the first line of its body. A component cannot clear 'Fait partie de' — retype it in the app instead. Relations accept object codes, names, or ids. Collection membership uses add_to_collections/remove_from_collections and is distinct from relations.",
                 UpdateSchema(),
                 (args, ct) => gestures().UpdateAsync(UpdateItems(args), ct),
                 ToolExecutionContract.OverwritingUncertain),
@@ -36,7 +36,7 @@ public static class HomeToolCatalog
 
             new ToolDescriptor(
                 "search",
-                "List Home objects with optional text, type, room, circuit, category, existence, condition, done, worksite, state, and system filters. All filters combine; omit every filter to list the space.",
+                "List Home objects with optional text, type, room, circuit, category, condition, done, worksite, state, and system filters. All filters combine; omit every filter to list the space.",
                 ObjectSchema(optional:
                 [
                     ("text", StringSchema("Text matched against names, codes, and property values.")),
@@ -44,7 +44,6 @@ public static class HomeToolCatalog
                     ("room", StringSchema("Room code, name, or id — matches Installé dans and Rangé dans.")),
                     ("circuit", StringSchema("Circuit code, name, or id.")),
                     ("category", EnumSchema("Point category code.", HomeCategories.All)),
-                    ("existence", StringSchema("Existence key or label: existant, prévu, déposé.")),
                     ("condition", StringSchema("Condition key or label: bon, vétuste, endommagé, hors service.")),
                     ("done", BooleanSchema("Filter on the native done checkbox (errands, todos): true for checked, false for unchecked.")),
                     ("worksite", StringSchema("Chantier name or id: keep objects whose Chantier relation targets it.")),
@@ -57,7 +56,6 @@ public static class HomeToolCatalog
                     OptionalString(args, "room"),
                     OptionalString(args, "circuit"),
                     OptionalString(args, "category"),
-                    OptionalString(args, "existence"),
                     OptionalString(args, "condition"),
                     OptionalBoolean(args, "done"),
                     OptionalString(args, "worksite"),
@@ -67,7 +65,7 @@ public static class HomeToolCatalog
 
             new ToolDescriptor(
                 "delete",
-                "Move a Home object to Anytype's recoverable bin. First call without confirm to preview and obtain the pinned id, then repeat with that exact id and confirm:true. A point that describes reality never deletes — a referenced point refuses with Existence = Déposé guidance; only an entry mistake (referenced by nothing) may be retracted.",
+                "Move a Home object to Anytype's recoverable bin. First call without confirm to preview and obtain the pinned id, then repeat with that exact id and confirm:true. A point referenced by another object refuses — clear the references (Commande, Commandé par, Alimenté par…) with update first; an unreferenced point deletes directly.",
                 ObjectSchema(
                     required: [("object", StringSchema("Object code, name, or pinned id."))],
                     optional: [("confirm", BooleanSchema("Confirm the previewed deletion; default false."))]),

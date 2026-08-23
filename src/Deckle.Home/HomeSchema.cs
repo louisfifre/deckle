@@ -3,7 +3,8 @@ using Deckle.Anytype;
 
 namespace Deckle.Home;
 
-// The Home contract of 2026-08-10, revised at the 2026-08-12 reboot: 14 types
+// The Home contract of 2026-08-10, revised at the 2026-08-12 reboot and the
+// 2026-08-23 electricity grill (nomenclature v3): 14 types
 // in five families, English keys, human titles, the derived identity code in
 // the `code` property. The applied truth lives in the home project's
 // mcp/schema-manifest.json; this class is its compiled mirror for validation
@@ -44,27 +45,23 @@ public static class HomeSchema
         public const string StoredIn = "stored_in";
         public const string Floor = "floor";
         public const string Category = "category";
-        public const string Existence = "existence";
         public const string Condition = "condition";
         public const string Circuit = "circuit";
         public const string Panel = "panel";
         public const string OutletCount = "outlet_count";
         public const string Earthed = "earthed";
-        public const string ExpectedRating = "expected_rating";
         public const string LightNature = "light_nature";
         public const string SwitchKind = "switch_kind";
         public const string Controls = "controls";
         public const string ControlledBy = "controlled_by";
-        public const string MotorType = "motor_type";
+        public const string ControlLink = "control_link";
         public const string PowerWatts = "power_watts";
-        public const string NetworkStandard = "network_standard";
-        public const string EndsAt = "ends_at";
-        public const string Poe = "poe";
         public const string MeasuredQuantity = "measured_quantity";
         public const string PowerSupply = "power_supply";
-        public const string Protocol = "protocol";
-        public const string PanelSize = "panel_size";
+        public const string Nature = "nature";
+        public const string PoweredBy = "powered_by";
         public const string Rating = "rating";
+        public const string Cable = "cable";
         public const string OriginLabel = "origin_label";
         public const string PanelPosition = "panel_position";
         public const string DedicatedRcd = "dedicated_rcd";
@@ -102,13 +99,6 @@ public static class HomeSchema
         public const string State = "state";
         public const string TargetDate = "target_date";
         public const string Worksite = "worksite";
-    }
-
-    public static class Existence
-    {
-        public const string Existing = "existant";
-        public const string Planned = "prevu";
-        public const string Removed = "depose";
     }
 
     public static class State
@@ -155,27 +145,23 @@ public static class HomeSchema
             [Properties.StoredIn] = "objects",
             [Properties.Floor] = "objects",
             [Properties.Category] = "select",
-            [Properties.Existence] = "select",
             [Properties.Condition] = "select",
             [Properties.Circuit] = "objects",
             [Properties.Panel] = "objects",
             [Properties.OutletCount] = "number",
             [Properties.Earthed] = "checkbox",
-            [Properties.ExpectedRating] = "text",
             [Properties.LightNature] = "select",
             [Properties.SwitchKind] = "select",
             [Properties.Controls] = "objects",
             [Properties.ControlledBy] = "objects",
-            [Properties.MotorType] = "select",
+            [Properties.ControlLink] = "select",
             [Properties.PowerWatts] = "number",
-            [Properties.NetworkStandard] = "select",
-            [Properties.EndsAt] = "objects",
-            [Properties.Poe] = "select",
-            [Properties.MeasuredQuantity] = "text",
+            [Properties.MeasuredQuantity] = "multi_select",
             [Properties.PowerSupply] = "select",
-            [Properties.Protocol] = "text",
-            [Properties.PanelSize] = "select",
-            [Properties.Rating] = "text",
+            [Properties.Nature] = "select",
+            [Properties.PoweredBy] = "objects",
+            [Properties.Rating] = "select",
+            [Properties.Cable] = "select",
             [Properties.OriginLabel] = "text",
             [Properties.PanelPosition] = "text",
             [Properties.DedicatedRcd] = "text",
@@ -216,9 +202,11 @@ public static class HomeSchema
         };
 
     // Objects properties whose target must carry a specific type; unlisted
-    // properties (about, ends_at, stored_in for containers to come) accept any
-    // Home object. The floor property is special-cased in the writer: its
-    // targets are the app-created collection objects of the runtime floor type.
+    // properties (about, stored_in for containers to come) accept any Home
+    // object. The floor property is special-cased in the writer: its targets
+    // are the app-created collection objects of the runtime floor type.
+    // powered_by (2026-08-23): the departure of a circuit that has no panel —
+    // the driver point feeding a 24 V LED circuit.
     internal static readonly IReadOnlyDictionary<string, IReadOnlyList<string>> ObjectPropertyTargets =
         new Dictionary<string, IReadOnlyList<string>>(StringComparer.Ordinal)
         {
@@ -230,6 +218,7 @@ public static class HomeSchema
             [Properties.Worksite] = [Types.Worksite],
             [Properties.Controls] = [Types.Point],
             [Properties.ControlledBy] = [Types.Point],
+            [Properties.PoweredBy] = [Types.Point],
         };
 
     internal static readonly IReadOnlyDictionary<string, IReadOnlyList<string>> RequiredByType =
@@ -240,19 +229,17 @@ public static class HomeSchema
             [Types.Point] =
             [
                 Properties.Code, Properties.Category, Properties.InstalledIn,
-                Properties.Location, Properties.Existence, Properties.Condition,
-                Properties.Circuit, Properties.Panel, Properties.Notes,
-                Properties.OutletCount, Properties.Earthed, Properties.ExpectedRating,
-                Properties.LightNature, Properties.SwitchKind, Properties.Controls,
-                Properties.ControlledBy, Properties.MotorType, Properties.PowerWatts,
-                Properties.NetworkStandard, Properties.EndsAt, Properties.Poe,
-                Properties.MeasuredQuantity, Properties.PowerSupply, Properties.Protocol,
-                Properties.PanelSize,
+                Properties.Condition, Properties.Controls, Properties.ControlledBy,
+                Properties.Circuit, Properties.Panel, Properties.OutletCount,
+                Properties.Earthed, Properties.LightNature, Properties.PowerWatts,
+                Properties.SwitchKind, Properties.ControlLink, Properties.PowerSupply,
+                Properties.MeasuredQuantity, Properties.Location, Properties.Notes,
             ],
             [Types.Circuit] =
             [
-                Properties.Code, Properties.Panel, Properties.Rating, Properties.OriginLabel,
-                Properties.PanelPosition, Properties.DedicatedRcd, Properties.Notes,
+                Properties.Code, Properties.Nature, Properties.Panel, Properties.PoweredBy,
+                Properties.Rating, Properties.DedicatedRcd, Properties.PanelPosition,
+                Properties.OriginLabel, Properties.Cable, Properties.Notes,
             ],
             [Types.Panel] =
             [
@@ -319,21 +306,21 @@ public static class HomeSchema
     // absent here on purpose — their options grow from Louis in the app and
     // resolve against the live space only. Supplier left the closed set at the
     // 2026-08-12 reboot: real purchases (Decathlon, LDLC, Rakuten…) outgrew
-    // the compiled six.
+    // the compiled six. The electricity selects born on 2026-08-23 (nature,
+    // rating, cable, control_link, measured_quantity) are open too: the
+    // manifest seeds them, Louis extends them in the app (« on pré-remplit,
+    // mais on peut ajouter toujours »), and a compiled list would lock the
+    // guichet the day he renames or drops an option. Category stays closed:
+    // it is the code grammar.
     internal static readonly IReadOnlyDictionary<string, IReadOnlyList<string>> ClosedVocabularies =
         new Dictionary<string, IReadOnlyList<string>>(StringComparer.Ordinal)
         {
             [Properties.Category] =
-            ["p", "ps", "l", "lr", "c", "v", "a", "rj", "rb", "rt", "ds", "dr", "dx", "de"],
-            [Properties.Existence] = [Existence.Existing, Existence.Planned, Existence.Removed],
+            ["p", "ps", "pj", "pf", "l", "lr", "c", "v", "a", "ds", "dr", "dx", "de"],
             [Properties.Condition] = ["bon", "vetuste", "endommage", "hors_service"],
-            [Properties.LightNature] = ["plafonnier", "applique", "spot", "ruban", "dcl"],
+            [Properties.LightNature] = ["plafonnier", "applique", "spot", "dcl"],
             [Properties.SwitchKind] = ["interrupteur_simple", "va_et_vient", "poussoir"],
-            [Properties.MotorType] = ["filaire", "radio"],
-            [Properties.NetworkStandard] = ["cat_5e", "cat_6", "cat_6a", "coax"],
-            [Properties.Poe] = ["oui", "non", "prevu"],
-            [Properties.PowerSupply] = ["poe", "pile", "cinq_volts", "secteur"],
-            [Properties.PanelSize] = ["s", "m", "l"],
+            [Properties.PowerSupply] = ["poe", "pile", "cinq_volts", "vingt_quatre_volts", "secteur"],
             [Properties.RcdType] = ["type_a", "type_ac", "inconnu"],
             [Properties.Domain] =
             [

@@ -25,27 +25,23 @@
     "stored_in": "Rangé dans",
     "floor": "Zone",
     "category": "Catégorie",
-    "existence": "Existence",
     "condition": "État",
     "circuit": "Circuit",
     "panel": "Tableau",
     "outlet_count": "Postes",
     "earthed": "Terre",
-    "expected_rating": "Calibre attendu",
     "light_nature": "Nature lumineuse",
     "switch_kind": "Sorte",
     "controls": "Commande",
     "controlled_by": "Commandé par",
-    "motor_type": "Type de moteur",
+    "control_link": "Pilotage",
     "power_watts": "Puissance (W)",
-    "network_standard": "Standard",
-    "ends_at": "Aboutit à",
-    "poe": "PoE",
     "measured_quantity": "Grandeur mesurée",
     "power_supply": "Alimentation",
-    "protocol": "Protocole",
-    "panel_size": "Taille",
+    "nature": "Nature",
+    "powered_by": "Alimenté par",
     "rating": "Calibre",
+    "cable": "Câble",
     "origin_label": "Étiquette d'origine",
     "panel_position": "Position",
     "dedicated_rcd": "Différentiel dédié",
@@ -88,23 +84,17 @@
     "category": {
       "p": "P — prise 230 V",
       "ps": "PS — prise spécialisée",
+      "pj": "PJ — prise RJ45",
+      "pf": "PF — prise fibre",
       "l": "L — point lumineux",
       "lr": "LR — ruban LED",
       "c": "C — commande murale",
       "v": "V — volet / ouvrant",
       "a": "A — installation fixe",
-      "rj": "RJ — prise réseau",
-      "rb": "RB — baie / coffret réseau",
-      "rt": "RT — coax TV",
       "ds": "DS — capteur",
       "dr": "DR — relais",
       "dx": "DX — panneau de contrôle",
       "de": "DE — nœud ESP32"
-    },
-    "existence": {
-      "existant": "Existant",
-      "prevu": "Prévu",
-      "depose": "Déposé"
     },
     "condition": {
       "bon": "Bon",
@@ -116,7 +106,6 @@
       "plafonnier": "Plafonnier",
       "applique": "Applique",
       "spot": "Spot",
-      "ruban": "Ruban",
       "dcl": "Sortie DCL"
     },
     "switch_kind": {
@@ -124,31 +113,12 @@
       "va_et_vient": "Va-et-vient",
       "poussoir": "Poussoir"
     },
-    "motor_type": {
-      "filaire": "Filaire",
-      "radio": "Radio"
-    },
-    "network_standard": {
-      "cat_5e": "Cat 5e",
-      "cat_6": "Cat 6",
-      "cat_6a": "Cat 6a",
-      "coax": "Coax"
-    },
-    "poe": {
-      "oui": "Oui",
-      "non": "Non",
-      "prevu": "Prévu"
-    },
     "power_supply": {
       "poe": "PoE",
       "pile": "Pile",
       "cinq_volts": "5 V",
+      "vingt_quatre_volts": "24 V",
       "secteur": "Secteur"
-    },
-    "panel_size": {
-      "s": "S",
-      "m": "M",
-      "l": "L"
     },
     "rcd_type": {
       "type_a": "Type A",

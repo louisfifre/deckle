@@ -96,7 +96,6 @@ internal sealed class FakeHomeAnytypeServer : IDisposable
             TextProperty(HomeSchema.Properties.Code, "Code", code),
             ObjectsProperty(HomeSchema.Properties.InstalledIn, "Installé dans", roomId),
             SelectProperty(HomeSchema.Properties.Category, "Catégorie", "p", "P — prise 230 V"),
-            SelectProperty(HomeSchema.Properties.Existence, "Existence", "existant", "Existant"),
         };
         if (controls.Length > 0)
             properties.Add(ObjectsProperty(HomeSchema.Properties.Controls, "Commande", controls));

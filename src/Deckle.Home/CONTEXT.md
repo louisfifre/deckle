@@ -30,7 +30,7 @@ _Avoid_: Home norm (shareable mechanism), schema (storage contract)
 ## Codes and schema
 
 **Point code**:
-The immutable identifier of one physical or planned point, composed of a room
+The immutable identifier of one physical point, composed of a room
 prefix, a category code, and a two-digit sequence. Its room prefix is accepted
 only when the room registry contains it; a point's category is the same code
 carried by its frozen `category` select, and its room membership derives from

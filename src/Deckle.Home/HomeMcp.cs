@@ -33,9 +33,9 @@ public static class HomeMcp
         + "Appareil; in doubt create an Appareil, retyping is cheap. Plants, "
         + "worksites and todos have dedicated verbs; done todos are the "
         + "record. Closed vocabularies are applied, never invented; files "
-        + "are deposited in the app. A real removed point becomes Existence "
-        + "= Déposé; only an entry mistake — referenced by nothing — may be "
-        + "deleted, and a code is never reallocated. "
+        + "are deposited in the app. A point that leaves the wall is deleted "
+        + "to the bin; a point referenced by another object refuses until the "
+        + "references are cleared. "
         + "Content is French.");
 
     private static McpSurfaceBinding Open(AnytypeApiClient api)
