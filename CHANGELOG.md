@@ -15,6 +15,10 @@ doctrine). This file is generated from the Conventional-Commit history by
 
 - **anytype:** Schema surface provisions type descriptions through the object face
 
+### Fixed
+
+- **scripts:** Build-run -NoRun never stops the running Deckle
+
 ## [0.35.0](https://github.com/louisfifre/deckle/compare/v0.31.6...v0.35.0) — 2026-08-13
 
 ### Added
