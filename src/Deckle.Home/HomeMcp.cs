@@ -34,8 +34,8 @@ public static class HomeMcp
         + "worksites and todos have dedicated verbs; done todos are the "
         + "record. Closed vocabularies are applied, never invented; files "
         + "are deposited in the app. A real removed point becomes Existence "
-        + "= Déposé; only an entry mistake — never surveyed, referenced by "
-        + "nothing — may be deleted, and a code is never reallocated. "
+        + "= Déposé; only an entry mistake — referenced by nothing — may be "
+        + "deleted, and a code is never reallocated. "
         + "Content is French.");
 
     private static McpSurfaceBinding Open(AnytypeApiClient api)

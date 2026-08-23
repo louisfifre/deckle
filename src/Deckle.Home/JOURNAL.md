@@ -5,6 +5,11 @@ type: journal
 
 # Deckle.Home — Journal
 
+## 2026-08-23
+
+- **`survey_date` leaves the compiled schema — and the point-retraction guard narrows to "referenced by nothing".** Louis removed « Date de relevé » from the live space during his template pass (it served nothing: the relevé is the object's existence, not a stamp on it); the compiled `RequiredByType` of point, circuit and panel froze the guichet on the first conformity check (« type panel : propriété non attachée survey_date ») — the same lock as `restock_threshold` and `last_watering` on 2026-08-13. The property, its format and its French term are gone. The ruling had one consequence beyond the schema: the 2026-08-12 retraction invariant read "never surveyed *and* referenced by nothing", and "never surveyed" was exactly the absence of that date. Chose, with Louis, to keep the reference half alone: a point any other object points to (commande, commandé par, aboutit à, circuit…) refuses delete and is sent to Existence = Déposé; a point nothing references retracts through the two-step delete, preview then confirm — the two steps stay the belt. No replacement signal was invented: neither Existence (Existant is the birth value) nor État says "this point was surveyed" honestly.
+- **Recorded the same day, beside the schema.** The departure breaker *is* the circuit, and every circuit belongs to a panel — Louis's words on re-reading the model while placing relations on Tableau/Circuit/Point; the SPEC's « absorbe son module de départ » was already that rule, now stated plainly.
+
 ## 2026-08-13
 
 - **`create` accepts a template, named the way the app shows it.** An item may carry `template`, the human label of one of the type's templates; the gesture resolves it against the live type at call time and sends the resolved id as `template_id` in the create body, for coded and free-titled types alike. It composes with `text` and with `properties` — a template is a starting structure, not an alternative to the body. Resolution matches the exact name first, then a case- and diacritic-folded name so a dropped accent still lands; no match or an ambiguous one refuses in the surface's usual shape, naming every template the type has.

@@ -230,23 +230,23 @@ public class HomeGesturesTests
     }
 
     [Fact]
-    public async Task DeleteRefusesASurveyedPointBeforeAnyDeleteRequest()
+    public async Task DeleteRefusesAReferencedPointBeforeAnyDeleteRequest()
     {
         using var server = new FakeHomeAnytypeServer();
         server.SetObjects(
             FakeHomeAnytypeServer.Room("room-zz", "ZZ", "Pièce fictive"),
-            FakeHomeAnytypeServer.Point(
-                "point-1", "ZZ-P01", "Prise fictive", "room-zz", surveyDate: "2026-08-01"));
+            FakeHomeAnytypeServer.Point("point-1", "ZZ-L01", "Plafonnier fictif", "room-zz"),
+            FakeHomeAnytypeServer.Point("point-2", "ZZ-C01", "Interrupteur fictif", "room-zz", "point-1"));
 
         InvalidOperationException error = await Assert.ThrowsAsync<InvalidOperationException>(() =>
-            Gestures(server).DeleteAsync("ZZ-P01", confirm: false, Ct));
+            Gestures(server).DeleteAsync("ZZ-L01", confirm: false, Ct));
 
         Assert.Contains("Existence", error.Message);
         Assert.DoesNotContain(server.Requests, request => request.Method == "DELETE");
     }
 
     [Fact]
-    public async Task DeleteRetractsAnUnsurveyedUnreferencedPointEntryMistake()
+    public async Task DeleteRetractsAnUnreferencedPointEntryMistake()
     {
         using var server = new FakeHomeAnytypeServer();
         server.SetObjects(

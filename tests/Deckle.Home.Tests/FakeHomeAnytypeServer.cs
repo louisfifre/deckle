@@ -89,7 +89,7 @@ internal sealed class FakeHomeAnytypeServer : IDisposable
         TextProperty(HomeSchema.Properties.Code, "Code", code));
 
     public static JsonObject Point(
-        string id, string code, string name, string roomId, string? surveyDate = null)
+        string id, string code, string name, string roomId, params string[] controls)
     {
         var properties = new List<JsonObject>
         {
@@ -98,8 +98,8 @@ internal sealed class FakeHomeAnytypeServer : IDisposable
             SelectProperty(HomeSchema.Properties.Category, "Catégorie", "p", "P — prise 230 V"),
             SelectProperty(HomeSchema.Properties.Existence, "Existence", "existant", "Existant"),
         };
-        if (surveyDate is not null)
-            properties.Add(DateProperty(HomeSchema.Properties.SurveyDate, "Date de relevé", surveyDate));
+        if (controls.Length > 0)
+            properties.Add(ObjectsProperty(HomeSchema.Properties.Controls, "Commande", controls));
         return Object(id, HomeSchema.Types.Point, name, [.. properties]);
     }
 
@@ -165,11 +165,6 @@ internal sealed class FakeHomeAnytypeServer : IDisposable
     private static JsonObject CheckboxProperty(string key, string name, bool value) => new()
     {
         ["key"] = key, ["name"] = name, ["format"] = "checkbox", ["checkbox"] = value,
-    };
-
-    private static JsonObject DateProperty(string key, string name, string value) => new()
-    {
-        ["key"] = key, ["name"] = name, ["format"] = "date", ["date"] = value,
     };
 
     private static JsonObject ObjectsProperty(string key, string name, params string[] ids) => new()
