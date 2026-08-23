@@ -121,6 +121,7 @@ function Get-TerminalHeaderCommands {
         'Arrows'
     }
     $commands = [System.Collections.Generic.List[object]]::new()
+    $quitCommand = [pscustomobject]@{ Key = 'Ctrl+C'; Label = 'Quit' }
     if ($View.Kind -ne 'Execution' -or $View.State -ne 'Running') {
         $commands.Add([pscustomobject]@{ Key = $arrows; Label = 'Move' })
         $activationLabel = if ($View.Kind -eq 'Preparation') { 'Select' } else { 'Open' }
@@ -129,11 +130,14 @@ function Get-TerminalHeaderCommands {
             $commands.Add([pscustomobject]@{ Key = 'Space'; Label = 'Toggle' })
         }
         if ($null -ne $View.BackTarget) {
-            $commands.Add([pscustomobject]@{ Key = 'Backspace'; Label = 'Back' })
-            $commands.Add([pscustomobject]@{ Key = 'Escape'; Label = 'Menu' })
+            $backCommand = [pscustomobject]@{ Key = 'Backspace'; Label = 'Back' }
+            $commands.Add($backCommand)
+            $commands.Add([pscustomobject]@{ Key = 'Escape'; Label = $backCommand.Label })
+        } elseif ($View.Kind -eq 'ActionMenu') {
+            $commands.Add([pscustomobject]@{ Key = 'Escape'; Label = $quitCommand.Label })
         }
     }
-    $commands.Add([pscustomobject]@{ Key = 'Ctrl+C'; Label = 'Quit' })
+    $commands.Add($quitCommand)
     return @($commands)
 }
 
