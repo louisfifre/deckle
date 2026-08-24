@@ -64,6 +64,22 @@ function Test-TerminalControlC {
     return $KeyInfo.Key -eq [ConsoleKey]::C -and ($KeyInfo.Modifiers -band [ConsoleModifiers]::Control)
 }
 
+function Get-TerminalOwnerActionMenu {
+    param(
+        [Parameter(Mandatory)][System.Collections.Generic.List[object]]$ViewStack,
+        [Parameter(Mandatory)][object]$View
+    )
+
+    if ($View.Kind -eq 'ActionMenu') { return $View }
+    for ($index = $ViewStack.Count - 1; $index -ge 0; $index--) {
+        $candidate = $ViewStack[$index].View
+        if ($candidate.Kind -eq 'ActionMenu' -and $candidate.ViewId -eq $View.OwnerActionMenuId) {
+            return $candidate
+        }
+    }
+    throw "Owning Action Menu '$($View.OwnerActionMenuId)' for View '$($View.ViewId)' is absent from the interaction stack."
+}
+
 function Start-TerminalInteraction {
     [CmdletBinding()]
     param(
@@ -79,8 +95,10 @@ function Start-TerminalInteraction {
         while (-not $exitRequested) {
             $metrics = Get-TerminalHostMetrics
             $currentState = $viewStack[$viewStack.Count - 1]
+            $ownerActionMenu = Get-TerminalOwnerActionMenu -ViewStack $viewStack -View $currentState.View
             $frame = Get-TerminalInteractionFrame `
                 -View $currentState.View `
+                -OwnerActionMenu $ownerActionMenu `
                 -Width $metrics.Width `
                 -Height $metrics.Height `
                 -FocusedTargetId $currentState.FocusedTargetId `
@@ -97,6 +115,7 @@ function Start-TerminalInteraction {
                 $currentState.FocusedTargetId = $initialFocus
                 $frame = Get-TerminalInteractionFrame `
                     -View $currentState.View `
+                    -OwnerActionMenu $ownerActionMenu `
                     -Width $metrics.Width `
                     -Height $metrics.Height `
                     -FocusedTargetId $currentState.FocusedTargetId `
@@ -202,12 +221,18 @@ function Start-TerminalInteraction {
                         if ($currentState.View.Kind -eq 'Execution') {
                             $lastOffset = [Math]::Max(0, $frame.JournalLineCount - $frame.JournalPageSize)
                             $normalizedOffset = [Math]::Min($currentState.JournalOffset, $lastOffset)
-                            $currentState.JournalOffset = Move-TerminalJournalPage -Frame $frame -CurrentOffset $normalizedOffset -Direction $direction
+                            $nextOffset = Move-TerminalJournalPage -Frame $frame -CurrentOffset $normalizedOffset -Direction $direction
+                            $currentState.JournalOffset = $nextOffset
                         } else {
                             $lastOffset = [Math]::Max(0, $frame.BodyLineCount - $frame.BodyPageSize)
                             $normalizedOffset = [Math]::Min($currentState.BodyOffset, $lastOffset)
-                            $currentState.BodyOffset = Move-TerminalBodyPage -Frame $frame -CurrentOffset $normalizedOffset -Direction $direction
+                            $nextOffset = Move-TerminalBodyPage -Frame $frame -CurrentOffset $normalizedOffset -Direction $direction
+                            $currentState.BodyOffset = $nextOffset
                         }
+                        $currentState.FocusedTargetId = Get-TerminalPagingFocusTargetId `
+                            -Direction $direction `
+                            -Offset $nextOffset `
+                            -LastOffset $lastOffset
                         continue
                     }
                     if ($navigationCommand -eq 'Back') {

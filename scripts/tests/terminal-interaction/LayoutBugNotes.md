@@ -19,3 +19,23 @@ Regression coverage: `scripts/tests/terminal-interaction/layout.tests.ps1` prove
 - **Recurrence cue:** A composition positions Back independently from the option grid used by other selectable targets.
 
 Regression coverage: `scripts/tests/terminal-interaction/layout.tests.ps1` proves that Back and the first Project option share an exact horizontal coordinate.
+
+## Back lost the grid of its owning Action Menu
+
+- **Trigger:** Open a completed Execution from the root Release Action at a wide terminal width after viewing a nested Project Action Menu.
+- **Observed symptom:** Back aligns with README pulse in Project but moves two cells left in the root-owned Execution.
+- **Cause:** The child composition recalculated Back from a generic menu grid whose minimum label width was shorter than the owning root Action Menu's `Build (no run)` label track.
+- **Violated invariant:** A child View inherits the first option track and cell width of its owning Action Menu; its body composition does not invent another navigation grid.
+- **Recurrence cue:** Preparation, Content, or Execution renders without resolving its `OwnerActionMenuId` to the retained Action Menu descriptor.
+
+Regression coverage: `scripts/tests/terminal-interaction/layout.tests.ps1` proves that root-owned Execution and Maintenance-owned Preparation inherit the exact first option placement of their respective Action Menus; `flows.tests.ps1` proves the interaction core resolves the retained owner from the View stack.
+
+## Paging footer escaped its content region
+
+- **Trigger:** Render a completed wide Execution whose Journal has more than one page.
+- **Observed symptom:** Previous and Next appeared under the Journal while the Wheel indication appeared under Tracking, with no boundary above them; an unavailable direction also used the same `x` marker as an error.
+- **Cause:** The shared paging footer always consumed the complete frame width and delegated its unavailable presentation to the generic target marker.
+- **Violated invariant:** Paging controls and Scrolling Command Indications form one locally framed footer owned by the content they page; a natural page boundary is neutral rather than erroneous.
+- **Recurrence cue:** Footer geometry derives from the complete View instead of its paged region, or a page boundary renders through the generic disabled marker.
+
+Regression coverage: `scripts/tests/terminal-interaction/layout.tests.ps1` proves the paging separator, neutral boundary marker, and wide Journal footer bounds.

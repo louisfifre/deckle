@@ -7,6 +7,12 @@ type: module-journal
 
 Durable findings about the script launcher and its terminal interaction model. Most recent on top.
 
+## 2026-08-24 — Navigation and paging frame
+
+Chose Back to inherit the first option track of its owning Action Menu. The interaction core resolves that retained owner from the View stack, while deterministic rendering supplies it explicitly; child Preparation and Execution compositions never recalculate Back from their own body or a generic grid.
+
+Chose a locally separated paging footer scoped to the content it controls. Unavailable page directions use a neutral structural marker, and reaching a boundary transfers focus to the available paging control instead of returning to Back.
+
 ## 2026-08-23 — Terminal visual hierarchy
 
 Chose two stable content rails for the Persistent Header: banner first, current context second. Global Command Indications use the remaining right-hand space and hide by priority instead of growing the Header or displacing the context.

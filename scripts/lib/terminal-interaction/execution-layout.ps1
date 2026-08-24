@@ -53,6 +53,7 @@ function Add-TerminalExecutionBody {
     param(
         [Parameter(Mandatory)][object]$Frame,
         [Parameter(Mandatory)][object]$View,
+        [Parameter(Mandatory)][object]$NavigationGrid,
         [string]$FocusedTargetId,
         [int]$JournalOffset
     )
@@ -60,7 +61,7 @@ function Add-TerminalExecutionBody {
     [void](Add-TerminalFrameLine -Frame $Frame)
     if ($null -ne $View.BackTarget) {
         $backLine = Add-TerminalFrameLine -Frame $Frame
-        Add-TerminalNavigationTarget -Frame $Frame -Target $View.BackTarget -LineIndex $backLine -FocusedTargetId $FocusedTargetId
+        Add-TerminalNavigationTarget -Frame $Frame -Target $View.BackTarget -LineIndex $backLine -Grid $NavigationGrid -FocusedTargetId $FocusedTargetId
         [void](Add-TerminalFrameLine -Frame $Frame)
     }
 
@@ -76,9 +77,15 @@ function Add-TerminalExecutionBody {
 
     if ($wide) {
         $trackingLines = @(Get-TerminalTrackingVisualLines -View $View -Width $trackingWidth)
-        $pageSize = [Math]::Max(1, $remaining - 2)
+        $titleHeight = 1
+        $pageSize = [Math]::Max(1, $remaining - $titleHeight)
         $hasPages = $View.JournalLines.Count -gt $pageSize
-        if ($hasPages) { $pageSize-- }
+        if ($hasPages) {
+            $pageSize = [Math]::Max(
+                1,
+                $remaining - $titleHeight - (Get-TerminalPagingFooterHeight)
+            )
+        }
         $maximumOffset = [Math]::Max(0, $View.JournalLines.Count - $pageSize)
         $offset = [Math]::Max(0, [Math]::Min($JournalOffset, $maximumOffset))
         $Frame.JournalPageSize = $pageSize
@@ -122,7 +129,10 @@ function Add-TerminalExecutionBody {
                 -Offset $offset `
                 -PageSize $pageSize `
                 -LineCount $View.JournalLines.Count `
-                -FocusedTargetId $FocusedTargetId
+                -FocusedTargetId $FocusedTargetId `
+                -X 2 `
+                -Width $journalWidth `
+                -BoundaryX $separatorX
         }
         return
     }
@@ -132,7 +142,12 @@ function Add-TerminalExecutionBody {
     $trackingBudget = [Math]::Min([Math]::Max(4, $trackingLines.Count), [Math]::Max(4, [Math]::Floor($remaining / 3)))
     $journalBudget = [Math]::Max(1, $remaining - $trackingBudget - 3)
     $hasNarrowPages = $View.JournalLines.Count -gt $journalBudget
-    if ($hasNarrowPages -and $journalBudget -gt 1) { $journalBudget-- }
+    if ($hasNarrowPages) {
+        $journalBudget = [Math]::Max(
+            1,
+            $remaining - $trackingBudget - 3 - (Get-TerminalPagingFooterHeight)
+        )
+    }
     $maximumNarrowOffset = [Math]::Max(0, $View.JournalLines.Count - $journalBudget)
     $narrowOffset = [Math]::Max(0, [Math]::Min($JournalOffset, $maximumNarrowOffset))
     $Frame.JournalPageSize = $journalBudget

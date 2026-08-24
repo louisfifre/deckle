@@ -152,15 +152,17 @@ Page Up and Page Down MAY be equivalent alternate bindings, but neither the inte
 
 The visible Back control is a Navigation Control. It is not an Action and does not represent work.
 
+At the same terminal geometry, the visible Back control MUST inherit the first option track and cell width of its owning Action Menu. Preparation, Panel, Content, and Execution compositions MUST reuse that owner grid; they MUST NOT derive Back from their own body grid or from a generic fallback. Different Action Menus MAY define different option tracks, and responsive navigation layout MAY reflow the inherited track when the terminal geometry itself changes.
+
 A focused text editor consumes characters, Space, Backspace, Delete, Home, End, and horizontal arrows before View commands. Its Global Command Indications reflect editing commands and MUST NOT advertise `Backspace · Back` while Backspace edits text. Escape cancels the local edit without accepting its buffer; after the editor closes, the View bindings apply again.
 
-Every paged Panel is focusable and exposes visible Previous Page and Next Page targets whenever more than one page exists. These targets provide the complete keyboard path on a keyboard without Page Up or Page Down. A wheel event targets the Panel beneath its pointer coordinates when those coordinates are available; otherwise it targets the focused paged Panel. When several Panels overflow, Scrolling Command Indications describe the currently targeted Panel.
+Every paged Panel is focusable and exposes visible Previous Page and Next Page targets whenever more than one page exists. These targets provide the complete keyboard path on a keyboard without Page Up or Page Down. When an activated direction reaches a boundary and becomes unavailable, focus transfers to the available paging target in the same footer instead of returning to another View control. A wheel event targets the Panel beneath its pointer coordinates when those coordinates are available; otherwise it targets the focused paged Panel. When several Panels overflow, Scrolling Command Indications describe the currently targeted Panel.
 
 If a transient chooser or Confirmation currently owns input, Escape cancels that local interaction first. Otherwise Escape behaves as Back while another View exists beneath the current one. At the root Action Menu, Escape exits the complete interaction session. Backspace never exits the launcher.
 
 Global Command Indications MUST be generated as structured key-or-gesture and command-label pairs from the active bindings and placed in the Persistent Header's upper-right track. They are non-interactive legends, not the visible Back control. When color is available, the key or gesture and its command label use two nearby grey levels; the pair remains understandable without color. Command pairs are grouped by spacing rather than a rule between every pair. On a narrow terminal, indications hide by priority before the context is clipped: currently necessary activation or editing commands remain, then cancellation or Back, while already familiar movement indications may collapse first.
 
-Scrolling Command Indications are the only command legends normally placed at the bottom. They appear only when the current View or Panel can scroll or paginate, and they MUST include the mouse wheel whenever wheel paging is available.
+Scrolling Command Indications are the only command legends normally placed at the bottom. They appear only when the current View or Panel can scroll or paginate, and they MUST include the mouse wheel whenever wheel paging is available. A local paging separator frames the footer from its content. The footer remains within the horizontal bounds of the View or Panel it controls.
 
 A View MUST NOT advertise a command it cannot currently honor.
 
@@ -277,7 +279,7 @@ The Execution View presents two independent Panels:
 - the Execution Journal Panel presents the detailed emitted evidence;
 - the Execution Tracking Panel presents Deckle's concise account of significant steps, current state, and final conclusion.
 
-On a wide terminal, the Journal occupies approximately five-sixths of the usable width and Tracking one-sixth. The renderer uses measured minimum viable widths for both Panels to choose the split; the ratio alone MUST NOT make Tracking unreadable. A local separator frames the boundary through the shared title rail and content. Tracking text wraps within its Panel while Journal lines remain clipped without wrapping.
+On a wide terminal, the Journal occupies approximately five-sixths of the usable width and Tracking one-sixth. The renderer uses measured minimum viable widths for both Panels to choose the split; the ratio alone MUST NOT make Tracking unreadable. A local separator frames the boundary through the shared title rail, content, and Journal paging footer. Tracking text wraps within its Panel while Journal lines remain clipped without wrapping.
 
 In a narrow IDE panel, a height-limited Journal appears above Tracking so both remain visible in their established order. One local horizontal separator preserves the same Panel boundary without imitating the Persistent Header's primary separator.
 
@@ -333,6 +335,7 @@ The default Deckle terminal theme preserves the existing script hierarchy:
 | Primary Header separator | Grey solid rule |
 | Section separator | Dark grey dashed rule |
 | Panel separator | Dark grey local rule |
+| Paging separator | Dark grey local rule |
 | Action subject, Filter label, safe standalone Action, and safe Confirmation | Cyan |
 | Action Variant, Selection, Review body, Effective Scope body, and ordinary detail | Inherit the terminal foreground |
 | Access, Selector target, and current editable value | Dark yellow |
@@ -416,7 +419,7 @@ The first implementation is conformant when all of these scenarios hold through 
 7. **Content policy** — a completed Journal opens at its latest page while a Report opens at its beginning.
 8. **Engine boundary** — a 5.1-only, 7-only, and either-engine Action each presents and dispatches according to its declared requirement without changing the composition.
 9. **Text editing** — a focused free-text Selector consumes Space, Backspace, Delete, Home, End, and horizontal arrows without triggering View commands.
-10. **Multiple overflow regions** — wheel and keyboard paging target the deterministic active Panel, and every page remains reachable without pointer input or Page Up and Page Down keys.
+10. **Multiple overflow regions** — wheel and keyboard paging target the deterministic active Panel, every page remains reachable without pointer input or Page Up and Page Down keys, and boundary navigation retains focus inside the paging footer.
 11. **Running navigation** — Back, Backspace, and Escape remain unavailable while an Execution is running; emergency Ctrl+C quiesces the child before the terminal session closes.
 12. **ANSI containment** — fragmented and nested SGR is preserved semantically, hostile OSC and cursor controls are discarded, and presentation resets at every rendered line boundary.
 13. **Captured order and progress** — simultaneous stdout and stderr preserve per-stream order without claiming exact cross-stream emission order; carriage-return progress updates one provisional record.

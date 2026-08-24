@@ -118,6 +118,7 @@ function Add-TerminalPreparationBody {
     param(
         [Parameter(Mandatory)][object]$Frame,
         [Parameter(Mandatory)][object]$View,
+        [Parameter(Mandatory)][object]$NavigationGrid,
         [string]$FocusedTargetId
     )
 
@@ -129,7 +130,7 @@ function Add-TerminalPreparationBody {
             -Frame $Frame `
             -Target $View.BackTarget `
             -LineIndex $backLine `
-            -Grid $grid `
+            -Grid $NavigationGrid `
             -FocusedTargetId $FocusedTargetId
         [void](Add-TerminalFrameLine -Frame $Frame)
     }

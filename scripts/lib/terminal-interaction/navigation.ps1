@@ -93,6 +93,22 @@ function Get-TerminalFocusedTarget {
     return $match[0].Target
 }
 
+function Get-TerminalPagingFocusTargetId {
+    param(
+        [Parameter(Mandatory)][ValidateSet('Previous', 'Next')][string]$Direction,
+        [Parameter(Mandatory)][int]$Offset,
+        [Parameter(Mandatory)][int]$LastOffset
+    )
+
+    if ($Direction -eq 'Previous' -and $Offset -le 0) {
+        return 'navigation.page.next'
+    }
+    if ($Direction -eq 'Next' -and $Offset -ge $LastOffset) {
+        return 'navigation.page.previous'
+    }
+    return "navigation.page.$($Direction.ToLowerInvariant())"
+}
+
 function Move-TerminalJournalPage {
     param(
         [Parameter(Mandatory)][object]$Frame,

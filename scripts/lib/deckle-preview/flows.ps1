@@ -105,3 +105,17 @@ function Get-DecklePreviewSnapshotView {
         }
     }
 }
+
+function Get-DecklePreviewOwnerActionMenu {
+    param([Parameter(Mandatory)][object]$View)
+
+    if ($View.Kind -eq 'ActionMenu') { return $View }
+    switch ($View.OwnerActionMenuId) {
+        'menu.root' { return Get-DecklePreviewRootView }
+        'menu.project' { return Get-DecklePreviewProjectView }
+        'menu.release' { return Get-DecklePreviewReleaseView }
+        'menu.maintenance' { return Get-DecklePreviewMaintenanceView }
+        'menu.setup' { return Get-DecklePreviewSetupView }
+        default { throw "Unknown Deckle preview Action Menu '$($View.OwnerActionMenuId)'." }
+    }
+}

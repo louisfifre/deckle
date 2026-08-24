@@ -52,11 +52,24 @@ Assert-Equal `
     (Move-TerminalFocus -Frame $narrow -CurrentTargetId action.launch.release -Direction Left) `
     'Left stays put when narrow layout has no peer on the row'
 
-$short = Get-TerminalInteractionFrame -View $root -Width 60 -Height 14 -FocusedTargetId action.build.release
+$short = Get-TerminalInteractionFrame -View $root -Width 60 -Height 14 -FocusedTargetId action.build-run.debug
 Assert-Equal `
     navigation.page.next `
-    (Move-TerminalFocus -Frame $short -CurrentTargetId action.build.release -Direction Down) `
+    (Move-TerminalFocus -Frame $short -CurrentTargetId action.build-run.debug -Direction Down) `
     'keyboard focus can reach Next without Page Down keys'
 Assert-Equal 0 @($short.Targets | Where-Object { $_.TargetId -eq 'navigation.page.previous' -and $_.Target.Enabled }).Count 'disabled Previous is not activatable on the first page'
+
+$nextBoundaryFocus = & $module {
+    Get-TerminalPagingFocusTargetId -Direction Next -Offset 20 -LastOffset 20
+}
+Assert-Equal navigation.page.previous $nextBoundaryFocus 'Next hands focus to Previous when it reaches the latest page'
+$previousBoundaryFocus = & $module {
+    Get-TerminalPagingFocusTargetId -Direction Previous -Offset 0 -LastOffset 20
+}
+Assert-Equal navigation.page.next $previousBoundaryFocus 'Previous hands focus to Next when it reaches the first page'
+$middlePageFocus = & $module {
+    Get-TerminalPagingFocusTargetId -Direction Next -Offset 10 -LastOffset 20
+}
+Assert-Equal navigation.page.next $middlePageFocus 'paging retains the activated direction while another page remains'
 
 Write-Host 'navigation.tests.ps1: PASS' -ForegroundColor Green

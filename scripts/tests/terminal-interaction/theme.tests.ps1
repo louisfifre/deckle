@@ -39,6 +39,7 @@ $palette = @{
     Danger = [ConsoleColor]::Red
     PrimarySeparator = [ConsoleColor]::Gray
     PanelSeparator = [ConsoleColor]::DarkGray
+    PagingSeparator = [ConsoleColor]::DarkGray
     CommandKey = [ConsoleColor]::Gray
     CommandLabel = [ConsoleColor]::DarkGray
     Success = [ConsoleColor]::Green
@@ -88,7 +89,7 @@ Assert-Equal Action (Get-Segment -Frame $projectFrame -Predicate { param($s) $s.
 $maintenanceFrame = Get-TerminalInteractionFrame -View (Get-DecklePreviewMaintenanceView) -Width 100 -Height 30 -FocusedTargetId navigation.back
 Assert-Equal Danger (Get-Segment -Frame $maintenanceFrame -Predicate { param($s) $s.Text.TrimEnd() -eq '  Reset' } -Case 'danger Action').PresentationRole 'destructive Actions retain danger independently from activation'
 
-$executionFrame = Get-TerminalInteractionFrame -View (Get-DecklePreviewSnapshotView -Name Execution) -Width 120 -Height 24 -FocusedTargetId navigation.back -JournalOffset ([int]::MaxValue)
+$executionFrame = Get-TerminalInteractionFrame -View (Get-DecklePreviewSnapshotView -Name Execution) -OwnerActionMenu $root -Width 120 -Height 24 -FocusedTargetId navigation.back -JournalOffset ([int]::MaxValue)
 Assert-Equal PanelTitle (Get-Segment -Frame $executionFrame -Predicate { param($s) $s.Text -eq 'Execution Journal' } -Case 'Journal Panel title').PresentationRole 'Panel titles share the category hierarchy'
 Assert-Equal Success (Get-Segment -Frame $executionFrame -Predicate { param($s) $s.Text -match '^Result:' } -Case 'Execution Result').PresentationRole 'a completed Execution Result carries success semantics'
 Assert-Equal Supporting (Get-Segment -Frame $executionFrame -Predicate { param($s) $s.Text -eq '[ok] Accept intent' } -Case 'completed Tracking step').PresentationRole 'completed Tracking steps stay neutral beside the final Result'

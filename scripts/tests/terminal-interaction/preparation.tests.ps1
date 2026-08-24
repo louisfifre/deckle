@@ -48,6 +48,7 @@ try {
 }
 
 $view = New-DecklePreviewStatisticsPreparation -RepositoryRoot $RepositoryRoot
+$ownerActionMenu = Get-DecklePreviewMaintenanceView
 Assert-Equal Preparation $view.Kind 'statistics opens one Preparation composition'
 Assert-Equal 4 $view.Selectors.Count 'Preparation keeps material filters together'
 Assert-Equal $view.Revision $view.EffectiveScope.Revision 'Effective Scope uses the current Preparation revision'
@@ -59,7 +60,7 @@ Assert-Equal $view.Selectors[0].Options.Count $view.Selectors[0].SelectedValues.
 Assert-Equal $true $view.ConfirmationTarget.Payload.Selections.Scope.IsWholeRepository 'whole repository is derived from the exhaustive Selection'
 Assert-Equal 0 @($view.Selectors[0].Options | Where-Object { $_.Label -eq 'Whole repository' }).Count 'whole repository is not a redundant selectable option'
 
-$wide = Get-TerminalInteractionFrame -View $view -Width 100 -Height 48 -FocusedTargetId selector.scope.root-files
+$wide = Get-TerminalInteractionFrame -View $view -OwnerActionMenu $ownerActionMenu -Width 100 -Height 48 -FocusedTargetId selector.scope.root-files
 $wideText = @(ConvertTo-TerminalFrameText -Frame $wide) -join "`n"
 foreach ($heading in @('FILTERS', 'EFFECTIVE SCOPE', 'REVIEW', 'CONFIRMATION')) {
     Assert-True ($wideText -match $heading) "Preparation keeps $heading in the same View"
@@ -84,10 +85,10 @@ Assert-Equal '>' $focusedSegment.Text.Substring(0, 1) 'Selector focus remains vi
 $initialFocus = Move-TerminalFocus -Frame $wide -CurrentTargetId $null -Direction Down
 Assert-Equal selector.scope.root-files $initialFocus 'Preparation default focus bypasses the Back control'
 
-$narrowFirst = Get-TerminalInteractionFrame -View $view -Width 60 -Height 30 -FocusedTargetId selector.scope.root-files
+$narrowFirst = Get-TerminalInteractionFrame -View $view -OwnerActionMenu $ownerActionMenu -Width 60 -Height 30 -FocusedTargetId selector.scope.root-files
 $nextPage = Get-Placement -Frame $narrowFirst -TargetId navigation.page.next
 Assert-Equal $true $nextPage.Target.Enabled 'narrow Preparation paginates instead of creating technical Views'
-$narrowLast = Get-TerminalInteractionFrame -View $view -Width 60 -Height 30 -BodyOffset ([int]::MaxValue) -FocusedTargetId confirmation.repository-stats.run
+$narrowLast = Get-TerminalInteractionFrame -View $view -OwnerActionMenu $ownerActionMenu -Width 60 -Height 30 -BodyOffset ([int]::MaxValue) -FocusedTargetId confirmation.repository-stats.run
 $lastText = @(ConvertTo-TerminalFrameText -Frame $narrowLast) -join "`n"
 Assert-True ($lastText -match 'CONFIRMATION') 'the final narrow page reaches Confirmation'
 Assert-Equal 1 @($narrowLast.Targets | Where-Object { $_.TargetId -eq 'confirmation.repository-stats.run' }).Count 'Confirmation remains keyboard reachable after paging'
@@ -125,7 +126,7 @@ foreach ($value in @('files', 'bytes', 'lines')) {
 Assert-Equal 0 $withoutMeasures.Selectors[2].SelectedValues.Count 'multi-selection can represent an intentionally empty Selection'
 Assert-Equal $false $withoutMeasures.ConfirmationTarget.Enabled 'validation keeps Confirmation unavailable without a measure'
 Assert-Equal 'Select at least one measure.' $withoutMeasures.ConfirmationTarget.DisabledReason 'disabled Confirmation explains how to recover'
-$invalidFrame = Get-TerminalInteractionFrame -View $withoutMeasures -Width 100 -Height 32 -FocusedTargetId selector.measures.source
+$invalidFrame = Get-TerminalInteractionFrame -View $withoutMeasures -OwnerActionMenu $ownerActionMenu -Width 100 -Height 32 -FocusedTargetId selector.measures.source
 $invalidText = @(ConvertTo-TerminalFrameText -Frame $invalidFrame) -join "`n"
 Assert-True ($invalidText -match 'x Run scan' -and $invalidText -match 'Select at least one measure\.') 'invalid Preparation exposes a structural marker and recovery text'
 

@@ -8,7 +8,7 @@ function Get-TerminalPresentationStyle {
         [ValidateSet(
             'Banner', 'Context', 'Section', 'SectionSeparator',
             'Action', 'ActionVariant', 'Access', 'Adjust', 'Navigation', 'Exit', 'Danger',
-            'PanelTitle', 'Body', 'Supporting', 'PrimarySeparator', 'PanelSeparator', 'Separator',
+            'PanelTitle', 'Body', 'Supporting', 'PrimarySeparator', 'PanelSeparator', 'PagingSeparator', 'Separator',
             'CommandKey', 'CommandLabel', 'Success', 'Warning', 'Error'
         )]
         [string]$Role,
@@ -58,6 +58,7 @@ function Get-TerminalPresentationStyle {
         'Supporting' { [ConsoleColor]::DarkGray }
         'PrimarySeparator' { [ConsoleColor]::Gray }
         'PanelSeparator' { [ConsoleColor]::DarkGray }
+        'PagingSeparator' { [ConsoleColor]::DarkGray }
         'Separator' { [ConsoleColor]::DarkGray }
         'CommandKey' { [ConsoleColor]::Gray }
         'CommandLabel' { [ConsoleColor]::DarkGray }

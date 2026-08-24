@@ -86,11 +86,22 @@ Assert-Equal ReplaceView $confirmationDecision.Kind 'Confirmation replaces Prepa
 Assert-Equal Execution $confirmationDecision.View.Kind 'confirmed statistics enters Execution'
 Assert-True (@($confirmationDecision.View.JournalLines | Where-Object { $_ -match 'Frozen reviewed revision 2' }).Count -eq 1) 'Execution freezes the exact reviewed revision'
 
-$executionFrame = Get-TerminalInteractionFrame -View $actionDecision.View -Width 120 -Height 24 -FocusedTargetId navigation.back -JournalOffset ([int]::MaxValue)
+$executionFrame = Get-TerminalInteractionFrame -View $actionDecision.View -OwnerActionMenu $root -Width 120 -Height 24 -FocusedTargetId navigation.back -JournalOffset ([int]::MaxValue)
 $executionText = @(ConvertTo-TerminalFrameText -Frame $executionFrame) -join "`n"
 Assert-True ($executionText -notmatch '^\s*Run\s*$') 'Execution replaces the Action Menu body'
 Assert-True ($executionText -match 'Execution Journal') 'Execution installs its Journal Panel'
 Assert-True ($executionText -match 'Execution Tracking') 'Execution installs its Tracking Panel'
+
+$module = Get-Module terminal-interaction
+$resolvedOwner = & $module {
+    param($rootView, $executionView)
+
+    $viewStack = [System.Collections.Generic.List[object]]::new()
+    $viewStack.Add((New-TerminalViewState -View $rootView))
+    $viewStack.Add((New-TerminalViewState -View $executionView))
+    return Get-TerminalOwnerActionMenu -ViewStack $viewStack -View $executionView
+} $root $actionDecision.View
+Assert-Equal menu.root $resolvedOwner.ViewId 'the interaction core resolves a child View owner from the retained stack'
 
 $quitDecision = Resolve-DecklePreviewIntent `
     -Request ([pscustomobject]@{ TargetId = 'command.quit'; IntentKind = 'Command'; Payload = $null; SourceViewId = 'menu.root' }) `
