@@ -25,6 +25,8 @@ doctrine). This file is generated from the Conventional-Commit history by
 
 - **scripts:** Build-run -NoRun never stops the running Deckle
 - **scripts:** Make Escape move outward and quit at root
+- **scripts:** Stabilize terminal navigation framing
+- **scripts:** Preserve terminal presentation hierarchy
 
 ## [0.35.0](https://github.com/louisfifre/deckle/compare/v0.31.6...v0.35.0) — 2026-08-13
 
