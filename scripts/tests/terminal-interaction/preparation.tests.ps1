@@ -60,7 +60,7 @@ Assert-Equal $view.Selectors[0].Options.Count $view.Selectors[0].SelectedValues.
 Assert-Equal $true $view.ConfirmationTarget.Payload.Selections.Scope.IsWholeRepository 'whole repository is derived from the exhaustive Selection'
 Assert-Equal 0 @($view.Selectors[0].Options | Where-Object { $_.Label -eq 'Whole repository' }).Count 'whole repository is not a redundant selectable option'
 
-$wide = Get-TerminalInteractionFrame -View $view -OwnerActionMenu $ownerActionMenu -Width 100 -Height 48 -FocusedTargetId selector.scope.root-files
+$wide = Get-TerminalInteractionFrame -View $view -OwnerActionMenu $ownerActionMenu -Width 100 -Height 48 -FocusedTargetId selector.scope.root-files -ColorCapability Unsupported
 $wideText = @(ConvertTo-TerminalFrameText -Frame $wide) -join "`n"
 foreach ($heading in @('FILTERS', 'EFFECTIVE SCOPE', 'REVIEW', 'CONFIRMATION')) {
     Assert-True ($wideText -match $heading) "Preparation keeps $heading in the same View"

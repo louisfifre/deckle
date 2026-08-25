@@ -4,7 +4,8 @@ function New-TerminalFramePlan {
     param(
         [Parameter(Mandatory)][object]$View,
         [Parameter(Mandatory)][ValidateRange(20, 1000)][int]$Width,
-        [Parameter(Mandatory)][ValidateRange(8, 1000)][int]$Height
+        [Parameter(Mandatory)][ValidateRange(8, 1000)][int]$Height,
+        [ValidateSet('Supported', 'Unsupported', 'Unknown')][string]$ColorCapability = 'Supported'
     )
 
     return [pscustomobject][ordered]@{
@@ -18,6 +19,7 @@ function New-TerminalFramePlan {
         BodyLineCount = 0
         JournalPageSize = 0
         JournalLineCount = 0
+        ColorCapability = $ColorCapability
         DefaultTargetId = if ($View.PSObject.Properties['DefaultTargetId']) { $View.DefaultTargetId } else { $null }
     }
 }
@@ -170,7 +172,13 @@ function Add-TerminalTarget {
 
     if ($LineIndex -lt 0) { return }
     $focused = $Target.TargetId -eq $FocusedTargetId
-    $focusMarker = if (-not $Target.Enabled) { $DisabledMarker } elseif ($focused) { '>' } else { ' ' }
+    $focusMarker = if (-not $Target.Enabled) {
+        $DisabledMarker
+    } elseif ($focused -and $Frame.ColorCapability -ne 'Supported') {
+        '>'
+    } else {
+        ' '
+    }
     $selectionMarker = switch ($Target.SelectionMode) {
         'Single' { if ($Target.Selected) { '(*)' } else { '( )' } }
         'Multiple' { if ($Target.Selected) { '[x]' } else { '[ ]' } }
@@ -204,14 +212,16 @@ function Add-TerminalSectionHeading {
     $line = Add-TerminalFrameLine -Frame $Frame
     if ($line -lt 0) { return }
     $title = $Label.ToUpperInvariant() + ' '
-    Add-TerminalFrameSegment -Frame $Frame -LineIndex $line -X 2 -Text $title -PresentationRole Section
-    $ruleWidth = [Math]::Max(0, $Frame.Width - 4 - $title.Length)
+    $titleX = 1
+    Add-TerminalFrameSegment -Frame $Frame -LineIndex $line -X $titleX -Text $title -PresentationRole Section
+    $ruleX = $titleX + $title.Length
+    $ruleWidth = [Math]::Max(0, $Frame.Width - 2 - $ruleX)
     if ($ruleWidth -le 0) { return }
     $rule = ('- ' * [Math]::Ceiling($ruleWidth / 2.0)).Substring(0, $ruleWidth)
     Add-TerminalFrameSegment `
         -Frame $Frame `
         -LineIndex $line `
-        -X (2 + $title.Length) `
+        -X $ruleX `
         -Text $rule `
         -PresentationRole SectionSeparator
 }
@@ -486,6 +496,7 @@ function Get-TerminalInteractionFrame {
         [object]$OwnerActionMenu,
         [string]$FocusedTargetId,
         [bool]$SupportsUnicode = $true,
+        [ValidateSet('Supported', 'Unsupported', 'Unknown')][string]$ColorCapability = 'Supported',
         [ValidateRange(0, 2147483647)][int]$BodyOffset = 0,
         [ValidateRange(0, 2147483647)][int]$JournalOffset = 0
     )
@@ -499,21 +510,21 @@ function Get-TerminalInteractionFrame {
     }
 
     $navigationGrid = Get-TerminalNavigationGrid -OwnerActionMenu $OwnerActionMenu -Width $Width
-    $frame = New-TerminalFramePlan -View $View -Width $Width -Height $Height
+    $frame = New-TerminalFramePlan -View $View -Width $Width -Height $Height -ColorCapability $ColorCapability
     Add-TerminalHeader -Frame $frame -View $View -SupportsUnicode $SupportsUnicode
     switch ($View.Kind) {
         'ActionMenu' {
-            $bodyFrame = New-TerminalFramePlan -View $View -Width $Width -Height 1000
+            $bodyFrame = New-TerminalFramePlan -View $View -Width $Width -Height 1000 -ColorCapability $ColorCapability
             Add-TerminalActionMenuBody -Frame $bodyFrame -View $View -NavigationGrid $navigationGrid -FocusedTargetId $FocusedTargetId
             Add-TerminalPagedBody -Frame $frame -BodyFrame $bodyFrame -BodyOffset $BodyOffset -FocusedTargetId $FocusedTargetId
         }
         'Content' {
-            $bodyFrame = New-TerminalFramePlan -View $View -Width $Width -Height 1000
+            $bodyFrame = New-TerminalFramePlan -View $View -Width $Width -Height 1000 -ColorCapability $ColorCapability
             Add-TerminalContentBody -Frame $bodyFrame -View $View -NavigationGrid $navigationGrid -FocusedTargetId $FocusedTargetId
             Add-TerminalPagedBody -Frame $frame -BodyFrame $bodyFrame -BodyOffset $BodyOffset -FocusedTargetId $FocusedTargetId
         }
         'Preparation' {
-            $bodyFrame = New-TerminalFramePlan -View $View -Width $Width -Height 1000
+            $bodyFrame = New-TerminalFramePlan -View $View -Width $Width -Height 1000 -ColorCapability $ColorCapability
             Add-TerminalPreparationBody -Frame $bodyFrame -View $View -NavigationGrid $navigationGrid -FocusedTargetId $FocusedTargetId
             Add-TerminalPagedBody -Frame $frame -BodyFrame $bodyFrame -BodyOffset $BodyOffset -FocusedTargetId $FocusedTargetId
         }

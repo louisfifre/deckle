@@ -103,6 +103,7 @@ function Start-TerminalInteraction {
                 -Height $metrics.Height `
                 -FocusedTargetId $currentState.FocusedTargetId `
                 -SupportsUnicode ($hostState.UnicodeOutput -eq 'Supported') `
+                -ColorCapability $hostState.Color `
                 -BodyOffset $currentState.BodyOffset `
                 -JournalOffset $currentState.JournalOffset
 
@@ -120,6 +121,7 @@ function Start-TerminalInteraction {
                     -Height $metrics.Height `
                     -FocusedTargetId $currentState.FocusedTargetId `
                     -SupportsUnicode ($hostState.UnicodeOutput -eq 'Supported') `
+                    -ColorCapability $hostState.Color `
                     -BodyOffset $currentState.BodyOffset `
                     -JournalOffset $currentState.JournalOffset
             }

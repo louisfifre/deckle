@@ -40,6 +40,9 @@ $launchRelease = Get-Placement -Frame $wide -TargetId action.launch.release
 $launchDebug = Get-Placement -Frame $wide -TargetId action.launch.debug
 Assert-Equal $launchRelease.Y $launchDebug.Y 'Action Variants share their Action Row in a wide terminal'
 Assert-True ($launchRelease.X -lt $launchDebug.X) 'Release precedes Debug without semantic reordering'
+$runHeading = @($wide.Lines | ForEach-Object { $_.Segments } | Where-Object { $_.PresentationRole -eq 'Section' -and $_.Text -eq 'RUN ' })[0]
+$launchSubject = @($wide.Lines | ForEach-Object { $_.Segments } | Where-Object { $_.PresentationRole -eq 'Action' -and $_.Text -eq 'Launch' })[0]
+Assert-Equal ($runHeading.X + 1) $launchSubject.X 'Action Row subjects keep one cell of indentation beneath their Section'
 
 $maintenance = Get-Placement -Frame $wide -TargetId access.maintenance
 $setup = Get-Placement -Frame $wide -TargetId access.setup

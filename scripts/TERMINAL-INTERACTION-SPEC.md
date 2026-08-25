@@ -150,7 +150,7 @@ The Terminal Host normalizes physical key, character, wheel, and pointer events 
 
 Page Up and Page Down MAY be equivalent alternate bindings, but neither the interaction design nor its discoverability may depend on those keys being present.
 
-The visible Back control is a Navigation Control. It is not an Action and does not represent work.
+The visible Back control is a Navigation Control. It is not an Action and does not represent work. Its label carries a leftward marker independently from the focus treatment, so its outward direction remains visible whether or not it is focused.
 
 At the same terminal geometry, the visible Back control MUST inherit the first option track and cell width of its owning Action Menu. Preparation, Panel, Content, and Execution compositions MUST reuse that owner grid; they MUST NOT derive Back from their own body grid or from a generic fallback. Different Action Menus MAY define different option tracks, and responsive navigation layout MAY reflow the inherited track when the terminal geometry itself changes.
 
@@ -224,6 +224,10 @@ An Action Menu MAY contain both Actions and Accesses because its responsibility 
 - An Action Variant changes how the Action is carried out without navigating.
 
 Actions without variants MAY occupy one activation target. Action Rows with variants MUST preserve the Action subject when focus moves among variants.
+
+A visible Access label ends with an ellipsis as a non-color disclosure cue that another durable View context will open. The Access descriptor remains the source of its intent; neither the Interaction Core nor the renderer may infer navigation from that punctuation.
+
+In a wide Action Menu, Section headings begin one display cell before their Action subjects. The indentation belongs to the heading relationship only; it MUST NOT shift option tracks, trailing controls, or the inherited Back track.
 
 The semantic order of Sections, Actions, Variants, and Accesses is stable. Responsive layout MAY change widths or placement but MUST NOT reorder them according to available geometry.
 
@@ -329,24 +333,29 @@ The default Deckle terminal theme preserves the existing script hierarchy:
 
 | Semantic presentation | Default Deckle treatment |
 |---|---|
-| Repository banner | Blue |
-| Current context | Inherit the terminal foreground |
-| Section, Panel, Review, and Effective Scope title | Inherit the terminal foreground |
-| Primary Header separator | Grey solid rule |
-| Section separator | Dark grey dashed rule |
-| Panel separator | Dark grey local rule |
+| Repository banner | Blue at compact text size |
+| Current context | Dark grey |
+| Section, Panel, Review, and Effective Scope title | Magenta |
+| Primary Header separator | Dark grey solid rule |
+| Section separator | Grey dashed rule |
+| Panel separator | Grey local rule |
 | Paging separator | Dark grey local rule |
-| Action subject, Filter label, safe standalone Action, and safe Confirmation | Cyan |
-| Action Variant, Selection, Review body, Effective Scope body, and ordinary detail | Inherit the terminal foreground |
-| Access, Selector target, and current editable value | Dark yellow |
-| Navigation Control and supporting explanation | Dark grey |
-| Exit and destructive choice | Red |
+| Action subject | Cyan |
+| Action Variant, Filter label, safe standalone Action, safe Confirmation, Selector target, current editable value, and Selection | Inherit the terminal foreground |
+| Access | Dark yellow |
+| Review body, Effective Scope body, and ordinary detail | Inherit the terminal foreground |
+| Navigation Control | Dark grey |
+| Supporting explanation | Dark grey |
+| Exit | Red; ordinary classic focus when active |
+| Destructive choice | Red; white-on-dark-red focus when active |
 | Completed Tracking step | Dark grey |
 | Successful, running or partial, and failed Execution Result | Green, yellow, and red respectively |
 | Global or scrolling command key | Grey |
-| Global or scrolling command label | A nearby darker grey |
+| Global or scrolling command label | Dark grey |
 
-Ordinary focus uses a high-contrast selection background while retaining a structural focus marker. Focused danger and Exit use a distinct danger-focused treatment. Disabled targets remain present, include a concise reason, and use a structural marker plus muted treatment. If color is unavailable, these markers, labels, grouping, and state text preserve the same meaning.
+Ordinary focus uses the classic black-on-grey selection treatment. Focused danger and Error use the classic white-on-dark-red treatment, while Exit remains an ordinary selectable command. When color is supported, the reserved focus-marker cell stays blank because the selection background already identifies focus. When color is unavailable or unknown, that same cell carries `>` as the structural focus fallback, so focus never depends on hue alone. Disabled targets remain present, include a concise reason, and use a structural marker plus muted treatment.
+
+The default theme reproduces the original Deckle launcher's `ConsoleColor` table, except that command keys retain the validated middle-grey distinction from their dark-grey command labels. User-remapped terminal palettes remain outside the launcher's control, so structural labels and markers preserve meaning when a host palette changes the perceived contrast.
 
 Execution Journal presentation is not remapped through the launcher theme. Admitted native presentation segments retain their own allowed semantics inside the Journal Panel; launcher-owned Panel titles, Tracking states, and Execution Result use the Deckle theme.
 
