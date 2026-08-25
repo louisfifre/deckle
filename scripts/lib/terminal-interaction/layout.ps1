@@ -4,7 +4,8 @@ function New-TerminalFramePlan {
     param(
         [Parameter(Mandatory)][object]$View,
         [Parameter(Mandatory)][ValidateRange(20, 1000)][int]$Width,
-        [Parameter(Mandatory)][ValidateRange(8, 1000)][int]$Height
+        [Parameter(Mandatory)][ValidateRange(8, 1000)][int]$Height,
+        [ValidateSet('Supported', 'Unsupported', 'Unknown')][string]$ColorCapability = 'Supported'
     )
 
     return [pscustomobject][ordered]@{
@@ -18,6 +19,7 @@ function New-TerminalFramePlan {
         BodyLineCount = 0
         JournalPageSize = 0
         JournalLineCount = 0
+        ColorCapability = $ColorCapability
         DefaultTargetId = if ($View.PSObject.Properties['DefaultTargetId']) { $View.DefaultTargetId } else { $null }
     }
 }
@@ -49,7 +51,7 @@ function Add-TerminalFrameSegment {
         [ValidateSet(
             'Banner', 'Context', 'Section', 'SectionSeparator',
             'Action', 'ActionVariant', 'Access', 'Adjust', 'Navigation', 'Exit', 'Danger',
-            'PanelTitle', 'Body', 'Supporting', 'PrimarySeparator', 'PanelSeparator', 'Separator',
+            'PanelTitle', 'Body', 'Supporting', 'PrimarySeparator', 'PanelSeparator', 'PagingSeparator', 'Separator',
             'CommandKey', 'CommandLabel', 'Success', 'Warning', 'Error'
         )]
         [string]$PresentationRole = 'Body',
@@ -164,12 +166,19 @@ function Add-TerminalTarget {
         [Parameter(Mandatory)][int]$Width,
         [string]$FocusedTargetId,
         [switch]$AsActionVariant,
-        [bool]$ShowDisabledReason = $true
+        [bool]$ShowDisabledReason = $true,
+        [ValidateLength(1, 1)][string]$DisabledMarker = 'x'
     )
 
     if ($LineIndex -lt 0) { return }
     $focused = $Target.TargetId -eq $FocusedTargetId
-    $focusMarker = if (-not $Target.Enabled) { 'x' } elseif ($focused) { '>' } else { ' ' }
+    $focusMarker = if (-not $Target.Enabled) {
+        $DisabledMarker
+    } elseif ($focused -and $Frame.ColorCapability -ne 'Supported') {
+        '>'
+    } else {
+        ' '
+    }
     $selectionMarker = switch ($Target.SelectionMode) {
         'Single' { if ($Target.Selected) { '(*)' } else { '( )' } }
         'Multiple' { if ($Target.Selected) { '[x]' } else { '[ ]' } }
@@ -203,14 +212,16 @@ function Add-TerminalSectionHeading {
     $line = Add-TerminalFrameLine -Frame $Frame
     if ($line -lt 0) { return }
     $title = $Label.ToUpperInvariant() + ' '
-    Add-TerminalFrameSegment -Frame $Frame -LineIndex $line -X 2 -Text $title -PresentationRole Section
-    $ruleWidth = [Math]::Max(0, $Frame.Width - 4 - $title.Length)
+    $titleX = 1
+    Add-TerminalFrameSegment -Frame $Frame -LineIndex $line -X $titleX -Text $title -PresentationRole Section
+    $ruleX = $titleX + $title.Length
+    $ruleWidth = [Math]::Max(0, $Frame.Width - 2 - $ruleX)
     if ($ruleWidth -le 0) { return }
     $rule = ('- ' * [Math]::Ceiling($ruleWidth / 2.0)).Substring(0, $ruleWidth)
     Add-TerminalFrameSegment `
         -Frame $Frame `
         -LineIndex $line `
-        -X (2 + $title.Length) `
+        -X $ruleX `
         -Text $rule `
         -PresentationRole SectionSeparator
 }
@@ -320,35 +331,6 @@ function Get-TerminalMenuGrid {
     }
 }
 
-function Add-TerminalNavigationTarget {
-    param(
-        [Parameter(Mandatory)][object]$Frame,
-        [Parameter(Mandatory)][object]$Target,
-        [Parameter(Mandatory)][int]$LineIndex,
-        [object]$Grid,
-        [string]$FocusedTargetId
-    )
-
-    if ($Frame.Width -ge 72) {
-        if ($null -eq $Grid) { $Grid = Get-TerminalMenuGrid -Width $Frame.Width }
-        Add-TerminalTarget `
-            -Frame $Frame `
-            -Target $Target `
-            -LineIndex $LineIndex `
-            -X $Grid.TargetX `
-            -Width $Grid.ColumnWidth `
-            -FocusedTargetId $FocusedTargetId
-    } else {
-        Add-TerminalTarget `
-            -Frame $Frame `
-            -Target $Target `
-            -LineIndex $LineIndex `
-            -X 4 `
-            -Width ([Math]::Max(1, $Frame.Width - 6)) `
-            -FocusedTargetId $FocusedTargetId
-    }
-}
-
 function Add-TerminalMenuRow {
     param(
         [Parameter(Mandatory)][object]$Frame,
@@ -406,6 +388,7 @@ function Add-TerminalActionMenuBody {
     param(
         [Parameter(Mandatory)][object]$Frame,
         [Parameter(Mandatory)][object]$View,
+        [Parameter(Mandatory)][object]$NavigationGrid,
         [string]$FocusedTargetId
     )
 
@@ -416,7 +399,7 @@ function Add-TerminalActionMenuBody {
     [void](Add-TerminalFrameLine -Frame $Frame)
     if ($null -ne $View.BackTarget) {
         $backLine = Add-TerminalFrameLine -Frame $Frame
-        Add-TerminalNavigationTarget -Frame $Frame -Target $View.BackTarget -LineIndex $backLine -Grid $grid -FocusedTargetId $FocusedTargetId
+        Add-TerminalNavigationTarget -Frame $Frame -Target $View.BackTarget -LineIndex $backLine -Grid $NavigationGrid -FocusedTargetId $FocusedTargetId
         [void](Add-TerminalFrameLine -Frame $Frame)
     }
 
@@ -434,13 +417,14 @@ function Add-TerminalContentBody {
     param(
         [Parameter(Mandatory)][object]$Frame,
         [Parameter(Mandatory)][object]$View,
+        [Parameter(Mandatory)][object]$NavigationGrid,
         [string]$FocusedTargetId
     )
 
     [void](Add-TerminalFrameLine -Frame $Frame)
     if ($null -ne $View.BackTarget) {
         $backLine = Add-TerminalFrameLine -Frame $Frame
-        Add-TerminalNavigationTarget -Frame $Frame -Target $View.BackTarget -LineIndex $backLine -FocusedTargetId $FocusedTargetId
+        Add-TerminalNavigationTarget -Frame $Frame -Target $View.BackTarget -LineIndex $backLine -Grid $NavigationGrid -FocusedTargetId $FocusedTargetId
         [void](Add-TerminalFrameLine -Frame $Frame)
     }
     foreach ($contentLine in $View.Lines) {
@@ -451,47 +435,6 @@ function Add-TerminalContentBody {
     foreach ($target in $View.Targets) {
         $line = Add-TerminalFrameLine -Frame $Frame
         Add-TerminalTarget -Frame $Frame -Target $target -LineIndex $line -X 2 -Width ([Math]::Max(1, $Frame.Width - 4)) -FocusedTargetId $FocusedTargetId
-    }
-}
-
-function Add-TerminalPagingFooter {
-    param(
-        [Parameter(Mandatory)][object]$Frame,
-        [Parameter(Mandatory)][int]$Offset,
-        [Parameter(Mandatory)][int]$PageSize,
-        [Parameter(Mandatory)][int]$LineCount,
-        [string]$FocusedTargetId
-    )
-
-    $line = Add-TerminalFrameLine -Frame $Frame
-    $lastOffset = [Math]::Max(0, $LineCount - $PageSize)
-    $previous = New-TerminalTarget `
-        -TargetId navigation.page.previous `
-        -Label Previous `
-        -IntentKind Navigation `
-        -Payload ([pscustomobject]@{ Command = 'Page'; PageDirection = 'Previous' }) `
-        -PresentationRole Navigation `
-        -Enabled ($Offset -gt 0) `
-        -DisabledReason $(if ($Offset -gt 0) { $null } else { 'First page.' })
-    $next = New-TerminalTarget `
-        -TargetId navigation.page.next `
-        -Label Next `
-        -IntentKind Navigation `
-        -Payload ([pscustomobject]@{ Command = 'Page'; PageDirection = 'Next' }) `
-        -PresentationRole Navigation `
-        -Enabled ($Offset -lt $lastOffset) `
-        -DisabledReason $(if ($Offset -lt $lastOffset) { $null } else { 'Latest page.' })
-    $targetWidth = if ($Frame.Width -ge 50) { 14 } else { 11 }
-    Add-TerminalTarget -Frame $Frame -Target $previous -LineIndex $line -X 2 -Width $targetWidth -FocusedTargetId $FocusedTargetId
-    Add-TerminalTarget -Frame $Frame -Target $next -LineIndex $line -X (4 + $targetWidth) -Width $targetWidth -FocusedTargetId $FocusedTargetId
-
-    $wheel = 'Wheel'
-    $label = 'Scroll'
-    $textLength = $wheel.Length + 1 + $label.Length
-    $x = $Frame.Width - 2 - $textLength
-    if ($x -gt 6 + ($targetWidth * 2)) {
-        Add-TerminalFrameSegment -Frame $Frame -LineIndex $line -X $x -Text $wheel -PresentationRole CommandKey
-        Add-TerminalFrameSegment -Frame $Frame -LineIndex $line -X ($x + $wheel.Length + 1) -Text $label -PresentationRole CommandLabel
     }
 }
 
@@ -508,7 +451,11 @@ function Add-TerminalPagedBody {
     if ($available -eq 0) { return }
 
     $hasPages = $BodyFrame.Lines.Count -gt $available
-    $pageSize = if ($hasPages) { [Math]::Max(1, $available - 1) } else { $available }
+    $pageSize = if ($hasPages) {
+        [Math]::Max(1, $available - (Get-TerminalPagingFooterHeight))
+    } else {
+        $available
+    }
     $lastOffset = [Math]::Max(0, $BodyFrame.Lines.Count - $pageSize)
     $offset = if ($hasPages) { [Math]::Max(0, [Math]::Min($BodyOffset, $lastOffset)) } else { 0 }
     $Frame.BodyPageSize = $pageSize
@@ -546,31 +493,42 @@ function Get-TerminalInteractionFrame {
         [Parameter(Mandatory)][object]$View,
         [Parameter(Mandatory)][ValidateRange(20, 1000)][int]$Width,
         [Parameter(Mandatory)][ValidateRange(8, 1000)][int]$Height,
+        [object]$OwnerActionMenu,
         [string]$FocusedTargetId,
         [bool]$SupportsUnicode = $true,
+        [ValidateSet('Supported', 'Unsupported', 'Unknown')][string]$ColorCapability = 'Supported',
         [ValidateRange(0, 2147483647)][int]$BodyOffset = 0,
         [ValidateRange(0, 2147483647)][int]$JournalOffset = 0
     )
 
-    $frame = New-TerminalFramePlan -View $View -Width $Width -Height $Height
+    if ($View.Kind -eq 'ActionMenu') {
+        $OwnerActionMenu = $View
+    } elseif ($null -eq $OwnerActionMenu) {
+        throw "View '$($View.ViewId)' requires its owning Action Menu for navigation layout."
+    } elseif ($OwnerActionMenu.Kind -ne 'ActionMenu' -or $OwnerActionMenu.ViewId -ne $View.OwnerActionMenuId) {
+        throw "View '$($View.ViewId)' does not belong to Action Menu '$($OwnerActionMenu.ViewId)'."
+    }
+
+    $navigationGrid = Get-TerminalNavigationGrid -OwnerActionMenu $OwnerActionMenu -Width $Width
+    $frame = New-TerminalFramePlan -View $View -Width $Width -Height $Height -ColorCapability $ColorCapability
     Add-TerminalHeader -Frame $frame -View $View -SupportsUnicode $SupportsUnicode
     switch ($View.Kind) {
         'ActionMenu' {
-            $bodyFrame = New-TerminalFramePlan -View $View -Width $Width -Height 1000
-            Add-TerminalActionMenuBody -Frame $bodyFrame -View $View -FocusedTargetId $FocusedTargetId
+            $bodyFrame = New-TerminalFramePlan -View $View -Width $Width -Height 1000 -ColorCapability $ColorCapability
+            Add-TerminalActionMenuBody -Frame $bodyFrame -View $View -NavigationGrid $navigationGrid -FocusedTargetId $FocusedTargetId
             Add-TerminalPagedBody -Frame $frame -BodyFrame $bodyFrame -BodyOffset $BodyOffset -FocusedTargetId $FocusedTargetId
         }
         'Content' {
-            $bodyFrame = New-TerminalFramePlan -View $View -Width $Width -Height 1000
-            Add-TerminalContentBody -Frame $bodyFrame -View $View -FocusedTargetId $FocusedTargetId
+            $bodyFrame = New-TerminalFramePlan -View $View -Width $Width -Height 1000 -ColorCapability $ColorCapability
+            Add-TerminalContentBody -Frame $bodyFrame -View $View -NavigationGrid $navigationGrid -FocusedTargetId $FocusedTargetId
             Add-TerminalPagedBody -Frame $frame -BodyFrame $bodyFrame -BodyOffset $BodyOffset -FocusedTargetId $FocusedTargetId
         }
         'Preparation' {
-            $bodyFrame = New-TerminalFramePlan -View $View -Width $Width -Height 1000
-            Add-TerminalPreparationBody -Frame $bodyFrame -View $View -FocusedTargetId $FocusedTargetId
+            $bodyFrame = New-TerminalFramePlan -View $View -Width $Width -Height 1000 -ColorCapability $ColorCapability
+            Add-TerminalPreparationBody -Frame $bodyFrame -View $View -NavigationGrid $navigationGrid -FocusedTargetId $FocusedTargetId
             Add-TerminalPagedBody -Frame $frame -BodyFrame $bodyFrame -BodyOffset $BodyOffset -FocusedTargetId $FocusedTargetId
         }
-        'Execution' { Add-TerminalExecutionBody -Frame $frame -View $View -FocusedTargetId $FocusedTargetId -JournalOffset $JournalOffset }
+        'Execution' { Add-TerminalExecutionBody -Frame $frame -View $View -NavigationGrid $navigationGrid -FocusedTargetId $FocusedTargetId -JournalOffset $JournalOffset }
         default { throw "Unknown View kind '$($View.Kind)'." }
     }
     while ($frame.Lines.Count -lt $frame.Height) { [void](Add-TerminalFrameLine -Frame $frame) }

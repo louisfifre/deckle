@@ -7,6 +7,46 @@ type: module-journal
 
 Durable findings about the script launcher and its terminal interaction model. Most recent on top.
 
+## 2026-08-25 — Terminal color output
+
+Kept command keys at `Gray` and command labels at `DarkGray` instead of copying the original single tone because manual review had already validated their two-level readability.
+
+Chose the original Deckle launcher's exact `ConsoleColor` table as the default theme while retaining semantic Presentation Roles and independent interaction-state overlays.
+
+Revised the single structural accent after manual review because it collapsed three different hierarchy levels. Section and Panel titles use blue, Action subjects use cyan, Accesses use dark yellow, and Action Variants remain bright neutral; focus still replaces every resting role treatment with black on white.
+
+Chose the launcher's established ellipsis suffix for every Access. It distinguishes entries that open another View while their resting color is replaced by the same black-on-white focus treatment as every other target.
+
+Found that Campbell's bright magenta reaches only about 3.2:1 against its default black background, below the 4.5:1 WCAG AA threshold used here for normal terminal text. Chose its calmer dark-cyan slot for the single structural accent shared by Section and Panel titles and Accesses; ordinary Actions, variants, Selectors, and adjustments remain bright neutral.
+
+Revised focus after manual Windows Terminal review: every target now uses one white selection surface. Danger and Exit retain dark-red text on that surface rather than introducing a red background. The focus-marker cell stays reserved but blank when color is supported and restores `>` only when color is unavailable or unknown; Back carries its own `<` navigation marker independently.
+
+Revised the menu relationship to one display cell between a Section heading and its Action subjects. Only the heading moved; option tracks, trailing Quit, and Back alignment remain unchanged.
+
+Observed visible flicker when every focus move repaints the complete frame in Windows Terminal. Keep the deterministic full redraw while the hierarchy pass is being judged; investigate damaged-cell rendering as a separate workstream so it cannot reintroduce stale attributes or partial frames.
+
+Chose Exit as the one exceptional command colored red at rest, with the same white-on-dark-red focused treatment as danger.
+
+Found that role-colored focus backgrounds made selection change visual language between Actions, Accesses, and adjustments. Chose one black-on-white ordinary focus across every target; only danger and Exit retain the dark-red exception.
+
+Found that cyan Actions and dark-yellow Accesses and adjustments over-colored the root menu and Preparation. Chose bright-neutral ordinary targets, magenta Section and Panel titles, neutral chrome, and semantic color only for danger and Execution states.
+
+Chose the classic relative menu indentation: a Section title occupies the left content track and its Action Row subjects begin two cells later.
+
+Found that the VT-capable renderer positioned content with VT sequences but applied presentation attributes through the legacy Console color properties. In Windows Terminal, role foregrounds and focus contrast did not paint as the render plan specified. Chose one ordered VT stream for cursor position, SGR attributes, and text whenever VT is supported.
+
+Found that confining hue to identity, consequence, and outcome left the root Action Menu without enough visible semantic differentiation. Actions use cyan; Accesses and adjustments use dark yellow; their focused states retain that role hue as the background with a contrasting foreground. Navigation remains neutral.
+
+## 2026-08-24 — Navigation and paging frame
+
+Chose to reintroduce hue only where it carries identity, consequence, or outcome. The Banner is blue; Danger and Error are red; Warning is yellow; Success is green. Actions, Accesses, adjustments, Navigation, titles, separators, and commands retain the accepted grayscale hierarchy. Exit remains neutral at rest and uses the danger-focused treatment only while focused.
+
+Chose Back to inherit the first option track of its owning Action Menu. The interaction core resolves that retained owner from the View stack, while deterministic rendering supplies it explicitly; child Preparation and Execution compositions never recalculate Back from their own body or a generic grid.
+
+Chose a locally separated paging footer scoped to the content it controls. Unavailable page directions use a neutral structural marker, and reaching a boundary transfers focus to the available paging control instead of returning to Back.
+
+Found that mapping both the `Navigation` presentation role and the `Disabled` state overlay to `DarkGray` made available and unavailable paging directions tonally identical. The grayscale pass keeps enabled Navigation at `Gray` and Disabled at `DarkGray`.
+
 ## 2026-08-23 — Terminal visual hierarchy
 
 Chose two stable content rails for the Persistent Header: banner first, current context second. Global Command Indications use the remaining right-hand space and hide by priority instead of growing the Header or displacing the context.

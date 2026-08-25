@@ -74,6 +74,81 @@ function Get-TerminalCursorPositionSequence {
     return "$escape[$($Y + 1);$($X + 1)H"
 }
 
+function Get-TerminalColorSequenceCode {
+    param(
+        [Parameter(Mandatory)][ConsoleColor]$Color,
+        [switch]$Background
+    )
+
+    if ($Background) {
+        $code = switch ($Color) {
+            Black { 40 }
+            DarkBlue { 44 }
+            DarkGreen { 42 }
+            DarkCyan { 46 }
+            DarkRed { 41 }
+            DarkMagenta { 45 }
+            DarkYellow { 43 }
+            Gray { 47 }
+            DarkGray { 100 }
+            Blue { 104 }
+            Green { 102 }
+            Cyan { 106 }
+            Red { 101 }
+            Magenta { 105 }
+            Yellow { 103 }
+            White { 107 }
+        }
+        return $code
+    }
+
+    $code = switch ($Color) {
+        Black { 30 }
+        DarkBlue { 34 }
+        DarkGreen { 32 }
+        DarkCyan { 36 }
+        DarkRed { 31 }
+        DarkMagenta { 35 }
+        DarkYellow { 33 }
+        Gray { 37 }
+        DarkGray { 90 }
+        Blue { 94 }
+        Green { 92 }
+        Cyan { 96 }
+        Red { 91 }
+        Magenta { 95 }
+        Yellow { 93 }
+        White { 97 }
+    }
+    return $code
+}
+
+function Get-TerminalTextAttributeSequence {
+    param(
+        [Parameter(Mandatory)][ConsoleColor]$Foreground,
+        [Parameter(Mandatory)][ConsoleColor]$Background
+    )
+
+    $escape = [char]27
+    $foregroundCode = Get-TerminalColorSequenceCode -Color $Foreground
+    $backgroundCode = Get-TerminalColorSequenceCode -Color $Background -Background
+    return "$escape[$foregroundCode;${backgroundCode}m"
+}
+
+function Get-TerminalSegmentSequence {
+    param(
+        [Parameter(Mandatory)][ValidateRange(0, 1000000)][int]$X,
+        [Parameter(Mandatory)][ValidateRange(0, 1000000)][int]$Y,
+        [Parameter(Mandatory)][AllowEmptyString()][string]$Text,
+        [Parameter(Mandatory)][ConsoleColor]$Foreground,
+        [Parameter(Mandatory)][ConsoleColor]$Background
+    )
+
+    $position = Get-TerminalCursorPositionSequence -X $X -Y $Y
+    $attributes = Get-TerminalTextAttributeSequence -Foreground $Foreground -Background $Background
+    return "$position$attributes$Text"
+}
+
 function Write-TerminalInteractionFrame {
     param(
         [Parameter(Mandatory)][object]$Frame,
@@ -85,12 +160,23 @@ function Write-TerminalInteractionFrame {
         return
     }
 
+    $useVirtualTerminal = $HostState.VirtualTerminal -eq 'Supported'
     $paintWidth = [Math]::Max(1, $Frame.Width - 1)
     for ($lineIndex = 0; $lineIndex -lt $Frame.Lines.Count; $lineIndex++) {
-        Set-TerminalFrameCursorPosition -X 0 -Y $lineIndex -HostState $HostState
-        [Console]::ForegroundColor = $HostState.OriginalForeground
-        [Console]::BackgroundColor = $HostState.OriginalBackground
-        [Console]::Write([string]::new(' ', $paintWidth))
+        $blankLine = [string]::new(' ', $paintWidth)
+        if ($useVirtualTerminal) {
+            [Console]::Write((Get-TerminalSegmentSequence `
+                -X 0 `
+                -Y $lineIndex `
+                -Text $blankLine `
+                -Foreground $HostState.OriginalForeground `
+                -Background $HostState.OriginalBackground))
+        } else {
+            Set-TerminalFrameCursorPosition -X 0 -Y $lineIndex -HostState $HostState
+            [Console]::ForegroundColor = $HostState.OriginalForeground
+            [Console]::BackgroundColor = $HostState.OriginalBackground
+            [Console]::Write($blankLine)
+        }
 
         foreach ($segment in $Frame.Lines[$lineIndex].Segments) {
             if ($segment.X -ge $paintWidth) { continue }
@@ -99,12 +185,27 @@ function Write-TerminalInteractionFrame {
             if ($text.Length -gt $available) { $text = $text.Substring(0, $available) }
             if ($text.Length -eq 0) { continue }
             $colors = Get-TerminalSegmentColors -Segment $segment -HostState $HostState
-            Set-TerminalFrameCursorPosition -X $segment.X -Y $lineIndex -HostState $HostState
-            [Console]::ForegroundColor = $colors.Foreground
-            [Console]::BackgroundColor = $colors.Background
-            [Console]::Write($text)
+            if ($useVirtualTerminal) {
+                [Console]::Write((Get-TerminalSegmentSequence `
+                    -X $segment.X `
+                    -Y $lineIndex `
+                    -Text $text `
+                    -Foreground $colors.Foreground `
+                    -Background $colors.Background))
+            } else {
+                Set-TerminalFrameCursorPosition -X $segment.X -Y $lineIndex -HostState $HostState
+                [Console]::ForegroundColor = $colors.Foreground
+                [Console]::BackgroundColor = $colors.Background
+                [Console]::Write($text)
+            }
         }
     }
-    [Console]::ForegroundColor = $HostState.OriginalForeground
-    [Console]::BackgroundColor = $HostState.OriginalBackground
+    if ($useVirtualTerminal) {
+        [Console]::Write((Get-TerminalTextAttributeSequence `
+            -Foreground $HostState.OriginalForeground `
+            -Background $HostState.OriginalBackground))
+    } else {
+        [Console]::ForegroundColor = $HostState.OriginalForeground
+        [Console]::BackgroundColor = $HostState.OriginalBackground
+    }
 }

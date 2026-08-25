@@ -3,7 +3,7 @@
 function New-DecklePreviewBackTarget {
     return New-TerminalTarget `
         -TargetId 'navigation.back' `
-        -Label 'Back' `
+        -Label '< Back' `
         -IntentKind Navigation `
         -Payload ([pscustomobject]@{ Command = 'Back' }) `
         -PresentationRole Navigation
@@ -34,7 +34,7 @@ function New-DecklePreviewAccessTarget {
 
     return New-TerminalTarget `
         -TargetId "access.$AccessId" `
-        -Label $Label `
+        -Label ($Label + [char]0x2026) `
         -IntentKind Access `
         -Payload ([pscustomobject]@{ AccessId = $AccessId })
 }

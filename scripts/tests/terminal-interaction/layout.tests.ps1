@@ -40,6 +40,9 @@ $launchRelease = Get-Placement -Frame $wide -TargetId action.launch.release
 $launchDebug = Get-Placement -Frame $wide -TargetId action.launch.debug
 Assert-Equal $launchRelease.Y $launchDebug.Y 'Action Variants share their Action Row in a wide terminal'
 Assert-True ($launchRelease.X -lt $launchDebug.X) 'Release precedes Debug without semantic reordering'
+$runHeading = @($wide.Lines | ForEach-Object { $_.Segments } | Where-Object { $_.PresentationRole -eq 'Section' -and $_.Text -eq 'RUN ' })[0]
+$launchSubject = @($wide.Lines | ForEach-Object { $_.Segments } | Where-Object { $_.PresentationRole -eq 'Action' -and $_.Text -eq 'Launch' })[0]
+Assert-Equal ($runHeading.X + 1) $launchSubject.X 'Action Row subjects keep one cell of indentation beneath their Section'
 
 $maintenance = Get-Placement -Frame $wide -TargetId access.maintenance
 $setup = Get-Placement -Frame $wide -TargetId access.setup
@@ -72,7 +75,12 @@ foreach ($line in @(ConvertTo-TerminalFrameText -Frame $narrow -PreserveWidth)) 
 $shortFirst = Get-TerminalInteractionFrame -View $root -Width 60 -Height 14 -FocusedTargetId action.launch.release
 $nextPage = Get-Placement -Frame $shortFirst -TargetId navigation.page.next
 Assert-Equal $true $nextPage.Target.Enabled 'a short first page exposes an enabled Next target'
-Assert-True ((@(ConvertTo-TerminalFrameText -Frame $shortFirst) -join "`n") -match 'Wheel Scroll') 'scrolling commands appear only in the paging footer'
+$shortFirstText = @(ConvertTo-TerminalFrameText -Frame $shortFirst) -join "`n"
+Assert-True ($shortFirstText -match 'Wheel Scroll') 'scrolling commands appear only in the paging footer'
+Assert-True ($shortFirstText -match '- Previous') 'an unavailable page direction uses a neutral structural marker'
+Assert-True ($shortFirstText -notmatch 'x Previous') 'a page boundary is not presented as an error'
+$rootPagingSeparator = Get-RoleLineIndex -Frame $shortFirst -PresentationRole PagingSeparator
+Assert-Equal ($rootPagingSeparator + 1) $nextPage.Y 'the paging separator frames the controls beneath the paged content'
 
 $shortLast = Get-TerminalInteractionFrame -View $root -Width 60 -Height 14 -BodyOffset ([int]::MaxValue) -FocusedTargetId navigation.page.previous
 $previousPage = Get-Placement -Frame $shortLast -TargetId navigation.page.previous
@@ -91,7 +99,19 @@ Assert-True ($projectText -match 'Escape Back') 'a nested View advertises Escape
 
 $repositoryRoot = Split-Path -Parent $ScriptsDir
 $preparation = Get-DecklePreviewSnapshotView -Name Preparation -RepositoryRoot $repositoryRoot
-$preparationNarrow = Get-TerminalInteractionFrame -View $preparation -Width 60 -Height 24 -FocusedTargetId $preparation.DefaultTargetId
+$maintenanceView = Get-DecklePreviewMaintenanceView
+$maintenanceFrame = Get-TerminalInteractionFrame -View $maintenanceView -Width 100 -Height 48 -FocusedTargetId action.repository-stats
+$repositoryStatistics = Get-Placement -Frame $maintenanceFrame -TargetId action.repository-stats
+$preparationWide = Get-TerminalInteractionFrame `
+    -View $preparation `
+    -OwnerActionMenu $maintenanceView `
+    -Width 100 `
+    -Height 48 `
+    -FocusedTargetId $preparation.DefaultTargetId
+$preparationBack = Get-Placement -Frame $preparationWide -TargetId navigation.back
+Assert-Equal $repositoryStatistics.X $preparationBack.X 'Preparation Back inherits the first option track of its owning Action Menu'
+Assert-Equal $repositoryStatistics.Width $preparationBack.Width 'Preparation Back inherits the option-cell width of its owning Action Menu'
+$preparationNarrow = Get-TerminalInteractionFrame -View $preparation -OwnerActionMenu $maintenanceView -Width 60 -Height 24 -FocusedTargetId $preparation.DefaultTargetId
 $preparationNarrowText = @(ConvertTo-TerminalFrameText -Frame $preparationNarrow) -join "`n"
 Assert-Equal 2 (Get-RoleLineIndex -Frame $preparationNarrow -PresentationRole PrimarySeparator) 'a narrow Header never grows beyond its two content rails'
 Assert-True ($preparationNarrowText -match 'Maintenance / Repository statistics') 'commands preserve the complete narrow View context'
@@ -108,13 +128,17 @@ $runningExecution = New-TerminalExecutionView `
     -TrackingSteps @([pscustomobject]@{ Label = 'Build'; State = 'Running' }) `
     -BackTarget $project.BackTarget `
     -OwnerActionMenuId menu.root
-$runningFrame = Get-TerminalInteractionFrame -View $runningExecution -Width 60 -Height 20 -FocusedTargetId navigation.back
+$runningFrame = Get-TerminalInteractionFrame -View $runningExecution -OwnerActionMenu $root -Width 60 -Height 20 -FocusedTargetId navigation.back
 $runningText = @(ConvertTo-TerminalFrameText -Frame $runningFrame) -join "`n"
 Assert-True ($runningText -match 'Ctrl\+C Quit') 'a running Execution keeps emergency exit discoverable'
 Assert-True ($runningText -notmatch 'Enter Open|Backspace Back|Escape Back') 'a running Execution advertises no unavailable command'
 
 $execution = Get-DecklePreviewSnapshotView -Name Execution
-$executionWide = Get-TerminalInteractionFrame -View $execution -Width 120 -Height 24 -FocusedTargetId navigation.back -JournalOffset ([int]::MaxValue)
+$executionAlignment = Get-TerminalInteractionFrame -View $execution -OwnerActionMenu $root -Width 100 -Height 24 -FocusedTargetId navigation.back -JournalOffset ([int]::MaxValue)
+$executionBack = Get-Placement -Frame $executionAlignment -TargetId navigation.back
+Assert-Equal $launchRelease.X $executionBack.X 'Execution Back inherits the first option track of its owning Action Menu'
+Assert-Equal $launchRelease.Width $executionBack.Width 'Execution Back inherits the option-cell width of its owning Action Menu'
+$executionWide = Get-TerminalInteractionFrame -View $execution -OwnerActionMenu $root -Width 120 -Height 24 -FocusedTargetId navigation.back -JournalOffset ([int]::MaxValue)
 $executionWideText = @(ConvertTo-TerminalFrameText -Frame $executionWide)
 $panelTitleLine = @($executionWideText | Where-Object { $_ -match 'Execution Journal' -and $_ -match 'Execution Tracking' })
 Assert-Equal 1 $panelTitleLine.Count 'wide Execution presents Journal and Tracking side by side'
@@ -136,8 +160,22 @@ $wideResultText = @(
 ) -join ' '
 Assert-Equal 'Result: Preview only; no repository changes.' $wideResultText 'wide Tracking wraps the complete Result instead of clipping it'
 Assert-True (@($panelTitleFrameLine[0].Segments | Where-Object { $_.PresentationRole -eq 'PanelSeparator' }).Count -eq 1) 'wide Panel framing separates the title rail'
+$widePanelSeparator = @($panelTitleFrameLine[0].Segments | Where-Object { $_.PresentationRole -eq 'PanelSeparator' })[0]
+$widePrevious = Get-Placement -Frame $executionWide -TargetId navigation.page.previous
+$wideNext = Get-Placement -Frame $executionWide -TargetId navigation.page.next
+Assert-True (($widePrevious.X + $widePrevious.Width) -le $widePanelSeparator.X) 'wide Previous stays inside the Journal Panel'
+Assert-True (($wideNext.X + $wideNext.Width) -le $widePanelSeparator.X) 'wide Next stays inside the Journal Panel'
+$wideWheel = @(
+    foreach ($line in $executionWide.Lines) {
+        $line.Segments | Where-Object { $_.Text -eq 'Wheel' }
+    }
+)
+Assert-Equal 1 $wideWheel.Count 'wide Execution exposes one scrolling command indication'
+Assert-True (($wideWheel[0].X + $wideWheel[0].Text.Length) -lt $widePanelSeparator.X) 'wide scrolling indication belongs to the Journal Panel'
+$executionPagingSeparator = Get-RoleLineIndex -Frame $executionWide -PresentationRole PagingSeparator
+Assert-Equal ($executionPagingSeparator + 1) $widePrevious.Y 'wide Journal content is separated from its paging controls'
 
-$executionNarrow = Get-TerminalInteractionFrame -View $execution -Width 60 -Height 20 -FocusedTargetId navigation.back -JournalOffset ([int]::MaxValue)
+$executionNarrow = Get-TerminalInteractionFrame -View $execution -OwnerActionMenu $root -Width 60 -Height 20 -FocusedTargetId navigation.back -JournalOffset ([int]::MaxValue)
 $executionNarrowText = @(ConvertTo-TerminalFrameText -Frame $executionNarrow)
 $journalTitleIndex = [Array]::IndexOf($executionNarrowText, '  Execution Journal')
 $trackingTitleIndex = [Array]::IndexOf($executionNarrowText, '  Execution Tracking')

@@ -28,10 +28,11 @@ if ($HostSmokeTest) {
     } else {
         Get-DecklePreviewRootView
     }
+    $smokeOwnerActionMenu = Get-DecklePreviewOwnerActionMenu -View $smokeView
     $smokeFocus = if ($Snapshot -eq 'Preparation') { $smokeView.DefaultTargetId } else { 'action.launch.release' }
     $module = Get-Module terminal-interaction
     & $module {
-        param($view, $focus)
+        param($view, $ownerActionMenu, $focus)
         $originalOutputCodePage = [Console]::OutputEncoding.CodePage
         $hostState = Start-TerminalHost
         try {
@@ -41,6 +42,7 @@ if ($HostSmokeTest) {
             $metrics = Get-TerminalHostMetrics
             $frame = Get-TerminalInteractionFrame `
                 -View $view `
+                -OwnerActionMenu $ownerActionMenu `
                 -Width $metrics.Width `
                 -Height $metrics.Height `
                 -FocusedTargetId $focus
@@ -52,12 +54,13 @@ if ($HostSmokeTest) {
         if ([Console]::OutputEncoding.CodePage -ne $originalOutputCodePage) {
             throw 'The host smoke test did not restore the original console output encoding.'
         }
-    } $smokeView $smokeFocus
+    } $smokeView $smokeOwnerActionMenu $smokeFocus
     return
 }
 
 if ($Snapshot) {
     $view = Get-DecklePreviewSnapshotView -Name $Snapshot -RepositoryRoot $RepositoryRoot
+    $ownerActionMenu = Get-DecklePreviewOwnerActionMenu -View $view
     $focus = switch ($Snapshot) {
         'Menu' { 'action.launch.release' }
         'Project' { 'navigation.back' }
@@ -66,6 +69,7 @@ if ($Snapshot) {
     }
     $frame = Get-TerminalInteractionFrame `
         -View $view `
+        -OwnerActionMenu $ownerActionMenu `
         -Width $Width `
         -Height $Height `
         -FocusedTargetId $focus `

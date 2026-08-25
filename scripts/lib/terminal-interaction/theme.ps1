@@ -8,7 +8,7 @@ function Get-TerminalPresentationStyle {
         [ValidateSet(
             'Banner', 'Context', 'Section', 'SectionSeparator',
             'Action', 'ActionVariant', 'Access', 'Adjust', 'Navigation', 'Exit', 'Danger',
-            'PanelTitle', 'Body', 'Supporting', 'PrimarySeparator', 'PanelSeparator', 'Separator',
+            'PanelTitle', 'Body', 'Supporting', 'PrimarySeparator', 'PanelSeparator', 'PagingSeparator', 'Separator',
             'CommandKey', 'CommandLabel', 'Success', 'Warning', 'Error'
         )]
         [string]$Role,
@@ -29,7 +29,7 @@ function Get-TerminalPresentationStyle {
             Background = $null
         }
     }
-    if ($State -eq 'Focused' -and $Role -in @('Danger', 'Exit', 'Error')) {
+    if ($State -eq 'Focused' -and $Role -in @('Danger', 'Error')) {
         return [pscustomobject]@{
             Foreground = [ConsoleColor]::White
             Background = [ConsoleColor]::DarkRed
@@ -44,20 +44,21 @@ function Get-TerminalPresentationStyle {
 
     $foreground = switch ($Role) {
         'Banner' { [ConsoleColor]::Blue }
-        'Context' { $null }
-        'Section' { $null }
-        'SectionSeparator' { [ConsoleColor]::DarkGray }
+        'Context' { [ConsoleColor]::DarkGray }
+        'Section' { [ConsoleColor]::Magenta }
+        'SectionSeparator' { [ConsoleColor]::Gray }
         'Action' { [ConsoleColor]::Cyan }
         'ActionVariant' { $null }
         'Access' { [ConsoleColor]::DarkYellow }
-        'Adjust' { [ConsoleColor]::DarkYellow }
+        'Adjust' { $null }
         'Navigation' { [ConsoleColor]::DarkGray }
         'Exit' { [ConsoleColor]::Red }
         'Danger' { [ConsoleColor]::Red }
-        'PanelTitle' { $null }
+        'PanelTitle' { [ConsoleColor]::Magenta }
         'Supporting' { [ConsoleColor]::DarkGray }
-        'PrimarySeparator' { [ConsoleColor]::Gray }
-        'PanelSeparator' { [ConsoleColor]::DarkGray }
+        'PrimarySeparator' { [ConsoleColor]::DarkGray }
+        'PanelSeparator' { [ConsoleColor]::Gray }
+        'PagingSeparator' { [ConsoleColor]::DarkGray }
         'Separator' { [ConsoleColor]::DarkGray }
         'CommandKey' { [ConsoleColor]::Gray }
         'CommandLabel' { [ConsoleColor]::DarkGray }
