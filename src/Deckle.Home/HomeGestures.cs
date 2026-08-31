@@ -201,7 +201,7 @@ public sealed class HomeGestures
             string type = HomeObjectJson.TypeKey(target);
             if (type == HomeSchema.Types.Idea && item.Name is not null)
                 throw new InvalidOperationException(
-                    "Le titre d'une idée est la première ligne de son corps ; édite le texte dans l'app.");
+                    "Une idée est une note sans champ titre ; édite son corps dans l'app.");
             if (item.Name is not null && string.IsNullOrWhiteSpace(item.Name))
                 throw new ArgumentException("Le nom ne peut pas être vide.", nameof(items));
 
@@ -259,7 +259,9 @@ public sealed class HomeGestures
         DateTime started = DateTime.UtcNow;
         await _runtime.GetAsync(ct).ConfigureAwait(false);
         HomeObjectIndex index = await HomeObjectIndex.LoadAsync(_api, _spaceId, ct).ConfigureAwait(false);
-        JsonObject value = index.Resolve(selector);
+        JsonObject summary = index.Resolve(selector);
+        JsonObject value = await _api.GetObjectAsync(
+            _spaceId, HomeObjectJson.Id(summary), ct).ConfigureAwait(false);
         DeckleHomeSource.Log.GestureCompleted("get", Elapsed(started));
         return index.Render(value);
     }
@@ -621,11 +623,11 @@ public sealed class HomeGestures
             $"Le type {type} exige un code normatif.", nameof(code));
 
     // A free-titled object carries no code: equipment, plants, errands,
-    // worksites and todos are titled by their free name, an idée by the first
-    // line of its text (the dev-space capture shape: short text becomes the
-    // whole title, long text keeps its head as title and the full text as
-    // body). Only an appareil keeps the free-form body allowance inherited
-    // from the former outil type.
+    // worksites and todos are titled by their free name. An idée is an Anytype
+    // note: it has no separate name, its whole text lives in body, and Home
+    // uses the returned snippet only as a compact display excerpt.
+    // Only an appareil keeps the free-form body allowance inherited from the
+    // former outil type.
     private static (string Display, JsonObject Payload, IReadOnlyList<string> Collections) PrepareFreeTitledItem(
         string type,
         HomeCreateItem item,
@@ -640,6 +642,7 @@ public sealed class HomeGestures
         string? name = item.Name?.Trim();
         string? text = item.Text?.Trim();
         var payload = new JsonObject { ["type_key"] = type };
+        string display;
 
         if (type == HomeSchema.Types.Idea)
         {
@@ -647,10 +650,10 @@ public sealed class HomeGestures
                 throw new ArgumentException("Une idée est son texte : fournis « text ».", nameof(item));
             if (name is not null)
                 throw new InvalidOperationException(
-                    "Une idée n'a pas de titre : sa première ligne en tient lieu.");
-            bool isShort = text.Length <= 80 && !text.Contains('\n');
-            payload["name"] = isShort ? text : FirstWords(text, 80);
-            if (!isShort) payload["body"] = text;
+                    "Une idée est une note sans champ titre : écris tout dans « text », "
+                    + "par exemple « sujet · détail ».");
+            display = FirstWords(text, 80);
+            payload["body"] = text;
         }
         else
         {
@@ -661,11 +664,12 @@ public sealed class HomeGestures
                     $"Un objet {type} n'a pas de corps : utilise la propriété « Notes ».");
             payload["name"] = name;
             if (!string.IsNullOrEmpty(text)) payload["body"] = text;
+            display = name;
         }
 
         if (properties.Count > 0) payload["properties"] = properties;
         if (templateId is not null) payload["template_id"] = templateId;
-        return (payload["name"]!.GetValue<string>(), payload, collectionWriter.Resolve(item.Collections));
+        return (display, payload, collectionWriter.Resolve(item.Collections));
     }
 
     private static string FirstWords(string content, int maxLength)

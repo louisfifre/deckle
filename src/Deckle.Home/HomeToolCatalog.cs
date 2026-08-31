@@ -13,7 +13,7 @@ public static class HomeToolCatalog
         [
             new ToolDescriptor(
                 "create",
-                "Create one or more Home objects of one type. Titles are human names; coded types (room, point, circuit, panel) also require an immutable code in the item's code field, stored in the Code property — a point code follows PIÈCE-CAT[SUB]NN and its room prefix is checked against the live Pièce objects, never a compiled registry; a point's room and category derive from its code. A circuit may omit its name and start titled by its code. Free-titled types take no code; an idea takes text whose first line becomes its title. A component requires 'Fait partie de' (an existing Système) — prefer component_create. An optional template names one of the type's templates by its app label, so the object is born with that structure. Optional collections are Anytype memberships, not relation properties.",
+                "Create one or more Home objects of one type. Titles are human names; coded types (room, point, circuit, panel) also require an immutable code in the item's code field, stored in the Code property — a point code follows PIÈCE-CAT[SUB]NN and its room prefix is checked against the live Pièce objects, never a compiled registry; a point's room and category derive from its code. A circuit may omit its name and start titled by its code. Free-titled types take no code; an idea is a note without a separate title, so its complete free-form content goes directly in text (a compact capture may use 'subject · detail'). A component requires 'Fait partie de' (an existing Système) — prefer component_create. An optional template names one of the type's templates by its app label, so the object is born with that structure. Optional collections are Anytype memberships, not relation properties.",
                 CreateSchema(),
                 (args, ct) => gestures().CreateAsync(
                     RequiredString(args, "type"), CreateItems(args), ct),
@@ -21,7 +21,7 @@ public static class HomeToolCatalog
 
             new ToolDescriptor(
                 "update",
-                "Update one or more Home objects. Codes are immutable; a point's room and category are derived from its code and cannot be changed directly. Titles are renamable human names, except an idea whose title is the first line of its body. A component cannot clear 'Fait partie de' — retype it in the app instead. Relations accept object codes, names, or ids. Collection membership uses add_to_collections/remove_from_collections and is distinct from relations.",
+                "Update one or more Home objects. Codes are immutable; a point's room and category are derived from its code and cannot be changed directly. Titles are renamable human names, except an idea: it is a titleless note whose body is edited in the app. A component cannot clear 'Fait partie de' — retype it in the app instead. Relations accept object codes, names, or ids. Collection membership uses add_to_collections/remove_from_collections and is distinct from relations.",
                 UpdateSchema(),
                 (args, ct) => gestures().UpdateAsync(UpdateItems(args), ct),
                 ToolExecutionContract.OverwritingUncertain),
@@ -169,8 +169,8 @@ public static class HomeToolCatalog
                     optional:
                     [
                         ("code", StringSchema("Normative immutable code, stored in the Code property — required for room, point, circuit, and panel; forbidden for free-titled types.")),
-                        ("name", StringSchema("Human title — required everywhere except an idea (title derives from text) and a circuit (falls back to its code).")),
-                        ("text", StringSchema("Body text: required for an idea (first line becomes the title), optional initial body for a device, forbidden elsewhere.")),
+                        ("name", StringSchema("Human title — required everywhere except a titleless idea and a circuit (falls back to its code).")),
+                        ("text", StringSchema("Complete note body: required for an idea, optional initial body for a device, forbidden elsewhere.")),
                         ("properties", PropertyMapSchema()),
                         ("collections", StringArraySchema("Collections to add the created object to, by name, code, or id.")),
                         ("template", StringSchema("Name of one of the type's templates as shown in the app; the object is born with that template's structure. Resolved against the live type at call time and composes with text and properties.")),
@@ -191,7 +191,7 @@ public static class HomeToolCatalog
                     required: [("object", StringSchema("Object code, name, or id."))],
                     optional:
                     [
-                        ("name", StringSchema("New human title; the Code property is untouched. Refused for an idea.")),
+                        ("name", StringSchema("New human title; the Code property is untouched. Refused for a titleless idea.")),
                         ("properties", PropertyMapSchema()),
                         ("add_to_collections", StringArraySchema("Collections to add the object to, by name, code, or id.")),
                         ("remove_from_collections", StringArraySchema("Collections to remove the object from, by name, code, or id.")),
