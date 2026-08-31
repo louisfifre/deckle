@@ -116,8 +116,15 @@ internal sealed class FakeHomeAnytypeServer : IDisposable
     public static JsonObject Plant(string id, string name) => Object(
         id, HomeSchema.Types.Plant, name);
 
-    public static JsonObject Idea(string id, string name) => Object(
-        id, HomeSchema.Types.Idea, name);
+    public static JsonObject Idea(string id, string text) => new()
+    {
+        ["id"] = id,
+        ["name"] = "",
+        ["snippet"] = text.Split('\n', 2)[0].Trim(),
+        ["markdown"] = text,
+        ["type"] = new JsonObject { ["key"] = HomeSchema.Types.Idea },
+        ["properties"] = new JsonArray(),
+    };
 
     public static JsonObject Errand(string id, string name, bool done) => Object(
         id, HomeSchema.Types.Errand, name,
@@ -216,6 +223,8 @@ internal sealed class FakeHomeAnytypeServer : IDisposable
             && path.EndsWith("/tags", StringComparison.Ordinal))
             return (200, SchemaTags(path.Split('/')[^2]).ToJsonString());
         if (method == "GET" && path == root + "/objects") return (200, ObjectPage().ToJsonString());
+        if (method == "GET" && path.StartsWith(root + "/objects/", StringComparison.Ordinal))
+            return Get(path.Split('/')[^1]);
         if (method == "POST" && path == root + "/objects") return Create(body);
         if (method == "POST" && path.StartsWith(root + "/lists/", StringComparison.Ordinal)
             && path.EndsWith("/objects", StringComparison.Ordinal))
@@ -306,17 +315,32 @@ internal sealed class FakeHomeAnytypeServer : IDisposable
         return Page(data);
     }
 
+    private (int Status, string Json) Get(string id)
+    {
+        JsonObject? target = _objects.SingleOrDefault(value => value["id"]?.GetValue<string>() == id);
+        return target is null
+            ? (404, "{}")
+            : (200, new JsonObject { ["object"] = target.DeepClone() }.ToJsonString());
+    }
+
     private (int Status, string Json) Create(string body)
     {
         JsonObject payload = (JsonObject)JsonNode.Parse(body)!;
         string id = "created-" + Interlocked.Increment(ref _nextId);
+        string typeKey = payload["type_key"]?.GetValue<string>() ?? "";
+        bool isNote = ((JsonArray)_schemaManifest["types"]!).OfType<JsonObject>().Any(value =>
+            value["key"]?.GetValue<string>() == typeKey
+            && value["layout"]?.GetValue<string>() == "note");
+        string markdown = payload["body"]?.GetValue<string>() ?? "";
         var created = new JsonObject
         {
             ["id"] = id,
-            ["name"] = payload["name"]?.GetValue<string>() ?? "",
-            ["type"] = new JsonObject { ["key"] = payload["type_key"]?.GetValue<string>() ?? "" },
+            ["name"] = isNote ? "" : payload["name"]?.GetValue<string>() ?? "",
+            ["type"] = new JsonObject { ["key"] = typeKey },
             ["properties"] = payload["properties"]?.DeepClone(),
         };
+        if (markdown.Length > 0) created["markdown"] = markdown;
+        if (isNote && markdown.Length > 0) created["snippet"] = markdown.Split('\n', 2)[0].Trim();
         _objects.Add(created);
         return (200, new JsonObject { ["object"] = created.DeepClone() }.ToJsonString());
     }

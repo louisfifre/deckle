@@ -387,7 +387,7 @@ public class HomeGesturesTests
     }
 
     [Fact]
-    public async Task CreateShortIdeaBecomesItsWholeTitleWithoutBody()
+    public async Task CreateShortIdeaWritesItsWholeTextAsNoteBodyWithoutAName()
     {
         using var server = new FakeHomeAnytypeServer();
 
@@ -398,8 +398,8 @@ public class HomeGesturesTests
 
         JsonObject body = (JsonObject)JsonNode.Parse(server.Requests.Single(r => r.Method == "POST").Body)!;
         Assert.Equal(HomeSchema.Types.Idea, body["type_key"]!.GetValue<string>());
-        Assert.Equal("Tester des LED fictives en corniche", body["name"]!.GetValue<string>());
-        Assert.DoesNotContain("body", body.Select(pair => pair.Key));
+        Assert.DoesNotContain("name", body.Select(pair => pair.Key));
+        Assert.Equal("Tester des LED fictives en corniche", body["body"]!.GetValue<string>());
     }
 
     [Fact]
@@ -415,9 +415,29 @@ public class HomeGesturesTests
 
         JsonObject body = (JsonObject)JsonNode.Parse(server.Requests.Single(r => r.Method == "POST").Body)!;
         Assert.Equal(text, body["body"]!.GetValue<string>());
-        string title = body["name"]!.GetValue<string>();
-        Assert.StartsWith("Repeindre le volet fictif", title);
-        Assert.True(title.Length <= 81, $"title too long: {title.Length}");
+        Assert.DoesNotContain("name", body.Select(pair => pair.Key));
+    }
+
+    [Fact]
+    [Trait("Category", "regression")]
+    public async Task CreatedIdeaCanBeFoundAndReadFromItsBodyExcerpt()
+    {
+        using var server = new FakeHomeAnytypeServer();
+        const string text = "Tester une idée fictive · conserver aussi son détail dans le même corps de note.";
+        HomeGestures gestures = Gestures(server);
+
+        await gestures.CreateAsync(
+            HomeSchema.Types.Idea,
+            [new HomeCreateItem(null, null, null, Text: text)],
+            Ct);
+
+        string search = await gestures.SearchAsync(
+            new HomeSearchFilter("Tester une idée fictive", HomeSchema.Types.Idea, null, null, null, null),
+            Ct);
+        string detail = await gestures.GetAsync("Tester une idée fictive", Ct);
+
+        Assert.Contains("idea · Tester une idée fictive · conserver", search);
+        Assert.Contains(text, detail);
     }
 
     [Fact]

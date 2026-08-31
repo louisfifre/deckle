@@ -10,7 +10,24 @@ internal static class HomeObjectJson
 
     public static string Id(JsonObject value) => String(value, "id");
 
-    public static string Name(JsonObject value) => String(value, "name");
+    public static string Name(JsonObject value)
+    {
+        string name = String(value, "name").Trim();
+        if (name.Length > 0 || TypeKey(value) != HomeSchema.Types.Idea) return name;
+
+        // A note-layout object has no name. List/search responses expose its
+        // beginning as snippet, while a detailed read exposes the full body as
+        // markdown. This fallback is only a compact display excerpt: the body
+        // remains the idea and no title is synthesized on the Anytype object.
+        string content = String(value, "snippet");
+        if (string.IsNullOrWhiteSpace(content)) content = String(value, "markdown");
+        if (string.IsNullOrWhiteSpace(content)) return "";
+
+        string firstLine = content.Split('\n', 2)[0].Trim();
+        if (firstLine.Length <= 80) return firstLine;
+        int cut = firstLine.LastIndexOf(' ', 80);
+        return (cut > 0 ? firstLine[..cut] : firstLine[..80]).TrimEnd() + "…";
+    }
 
     public static string TypeKey(JsonObject value) =>
         value["type"]?["key"]?.GetValue<string>()
