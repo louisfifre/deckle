@@ -112,16 +112,16 @@ function Get-DecklePreviewMaintenanceView {
         -BackTarget (New-DecklePreviewBackTarget) `
         -Sections @(
             New-TerminalSection -Label Statistics -Items @(
-                New-DecklePreviewActionTarget -ActionId repository-stats -Label Repository
-                New-DecklePreviewActionTarget -ActionId context-stats -Label Context
+                New-DecklePreviewActionTarget -ActionId repository-stats -Label 'Repository statistics'
+                New-DecklePreviewActionTarget -ActionId context-stats -Label 'Context statistics'
             )
             New-TerminalSection -Label Cleanup -Items @(
-                New-DecklePreviewActionTarget -ActionId clean -Label 'Build outputs'
-                New-DecklePreviewActionTarget -ActionId build-servers -Label 'Build servers'
+                New-DecklePreviewActionTarget -ActionId clean -Label 'Clean build outputs'
+                New-DecklePreviewActionTarget -ActionId build-servers -Label 'Stop .NET build servers'
             )
             New-TerminalSection -Label 'AI sessions' -Items @(
-                New-DecklePreviewActionTarget -ActionId inspect-agent-state -Label Inspect
-                New-DecklePreviewActionTarget -ActionId reset-agent-state -Label Reset -Role Danger
+                New-DecklePreviewActionTarget -ActionId inspect-agent-state -Label 'Inspect AI session state'
+                New-DecklePreviewActionTarget -ActionId reset-agent-state -Label 'Reset AI session state' -Role Danger
             )
         )
 }

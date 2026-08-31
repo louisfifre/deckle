@@ -54,7 +54,7 @@ function Add-TerminalSelector {
             -LineIndex $labelLine `
             -X $Grid.Left `
             -Text (Limit-TerminalText -Text $Selector.FilterLabel -Width $Grid.LabelWidth) `
-            -PresentationRole Action
+            -PresentationRole Body
         foreach ($target in $Selector.Targets) {
             $line = Add-TerminalFrameLine -Frame $Frame
             Add-TerminalTarget `
@@ -77,7 +77,7 @@ function Add-TerminalSelector {
                 -LineIndex $line `
                 -X $Grid.Left `
                 -Text (Limit-TerminalText -Text $Selector.FilterLabel -Width $Grid.LabelWidth) `
-                -PresentationRole Action
+                -PresentationRole Body
         }
         for ($columnIndex = 0; $columnIndex -lt $Grid.ColumnCount; $columnIndex++) {
             $targetIndex = ($rowIndex * $Grid.ColumnCount) + $columnIndex

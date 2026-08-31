@@ -21,6 +21,13 @@ Run it interactively:
 pwsh -NoProfile -File scripts/deckle-preview.ps1
 ```
 
+`Auto` uses the console's indexed background as a compatibility hint. Force either approved palette when judging both variants independently from the Windows Terminal profile:
+
+```powershell
+pwsh -NoProfile -File scripts/deckle-preview.ps1 -ThemeVariant Dark
+pwsh -NoProfile -File scripts/deckle-preview.ps1 -ThemeVariant Light
+```
+
 Render a deterministic frame without taking over the terminal when comparing layouts or writing tests:
 
 ```powershell

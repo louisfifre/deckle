@@ -227,7 +227,10 @@ function Add-TerminalSectionHeading {
 }
 
 function ConvertTo-TerminalMenuLayoutSections {
-    param([Parameter(Mandatory)][object[]]$Sections)
+    param(
+        [Parameter(Mandatory)][object[]]$Sections,
+        [switch]$CompactSections
+    )
 
     $layoutSections = [System.Collections.Generic.List[object]]::new()
     foreach ($section in $Sections) {
@@ -271,9 +274,25 @@ function ConvertTo-TerminalMenuLayoutSections {
                 $rows[$rows.Count - 1].TrailingTarget = $trailingTarget
             }
         }
+        # In a nested menu, a labelled Section of independent Actions only is
+        # a compact Action Group: its label titles its first row, as an Action
+        # Row label does, and no heading or rule is drawn. Its Actions keep
+        # their own intents; they never become Variants.
+        $independentActions = @(
+            $section.Items | Where-Object {
+                -not ($_.PSObject.Properties['Kind'] -and $_.Kind -eq 'ActionRow') -and
+                $_.IntentKind -eq 'Action'
+            }
+        )
+        $compact = $CompactSections -and
+            -not [string]::IsNullOrEmpty($section.Label) -and
+            $section.Items.Count -gt 0 -and
+            $independentActions.Count -eq $section.Items.Count
+        if ($compact) { $rows[0].Label = $section.Label }
         $layoutSections.Add([pscustomobject]@{
-            Label = $section.Label
+            Label = if ($compact) { '' } else { $section.Label }
             Rows = @($rows)
+            Compact = $compact
         })
     }
     return @($layoutSections)
@@ -443,7 +462,11 @@ function Add-TerminalActionMenuBody {
     )
 
     $wide = $Frame.Width -ge 72
-    $layoutSections = @(ConvertTo-TerminalMenuLayoutSections -Sections $View.Sections)
+    $layoutSections = @(
+        ConvertTo-TerminalMenuLayoutSections `
+            -Sections $View.Sections `
+            -CompactSections:($null -ne $View.BackTarget)
+    )
     $grid = Get-TerminalMenuGrid -LayoutSections $layoutSections -Width $Frame.Width
 
     [void](Add-TerminalFrameLine -Frame $Frame)
@@ -455,7 +478,10 @@ function Add-TerminalActionMenuBody {
 
     for ($sectionIndex = 0; $sectionIndex -lt $layoutSections.Count; $sectionIndex++) {
         $section = $layoutSections[$sectionIndex]
-        if ($sectionIndex -gt 0) { [void](Add-TerminalFrameLine -Frame $Frame) }
+        $previousSection = if ($sectionIndex -gt 0) { $layoutSections[$sectionIndex - 1] } else { $null }
+        if ($sectionIndex -gt 0 -and (-not $section.Compact -or -not $previousSection.Compact)) {
+            [void](Add-TerminalFrameLine -Frame $Frame)
+        }
         if (-not [string]::IsNullOrEmpty($section.Label)) {
             Add-TerminalSectionHeading -Frame $Frame -Label $section.Label
         }

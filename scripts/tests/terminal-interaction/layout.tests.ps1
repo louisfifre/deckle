@@ -105,7 +105,33 @@ $repositoryRoot = Split-Path -Parent $ScriptsDir
 $preparation = Get-DecklePreviewSnapshotView -Name Preparation -RepositoryRoot $repositoryRoot
 $maintenanceView = Get-DecklePreviewMaintenanceView
 $maintenanceFrame = Get-TerminalInteractionFrame -View $maintenanceView -Width 100 -Height 48 -FocusedTargetId action.repository-stats
+$maintenanceText = @(ConvertTo-TerminalFrameText -Frame $maintenanceFrame) -join "`n"
 $repositoryStatistics = Get-Placement -Frame $maintenanceFrame -TargetId action.repository-stats
+$contextStatistics = Get-Placement -Frame $maintenanceFrame -TargetId action.context-stats
+$cleanBuildOutputs = Get-Placement -Frame $maintenanceFrame -TargetId action.clean
+$stopBuildServers = Get-Placement -Frame $maintenanceFrame -TargetId action.build-servers
+$inspectAiSessions = Get-Placement -Frame $maintenanceFrame -TargetId action.inspect-agent-state
+$resetAiSessions = Get-Placement -Frame $maintenanceFrame -TargetId action.reset-agent-state
+Assert-Equal 3 $maintenanceView.Sections.Count 'Maintenance keeps its three semantic groups'
+$maintenanceItems = @($maintenanceView.Sections | ForEach-Object { $_.Items })
+Assert-Equal 6 $maintenanceItems.Count 'Maintenance keeps six independently activatable targets'
+Assert-Equal 0 @($maintenanceItems | Where-Object { $_.PSObject.Properties['Kind'] -and $_.Kind -eq 'ActionRow' }).Count 'compact Maintenance groups do not reclassify independent Actions as Action Rows'
+Assert-Equal Action $maintenanceItems[0].IntentKind 'Repository statistics remains an independent Action intent'
+Assert-Equal Action $maintenanceItems[0].PresentationRole 'the semantic target remains an Action before layout projection'
+$maintenanceSegments = @($maintenanceFrame.Lines | ForEach-Object { $_.Segments })
+Assert-Equal 0 @($maintenanceSegments | Where-Object { $_.PresentationRole -eq 'Section' }).Count 'compact Maintenance groups avoid full Section headings'
+Assert-Equal 0 @($maintenanceSegments | Where-Object { $_.PresentationRole -eq 'SectionSeparator' }).Count 'compact Maintenance groups avoid full-width Section rules'
+Assert-Equal 1 @($maintenanceSegments | Where-Object { $_.Text -eq 'Statistics' -and $_.PresentationRole -eq 'ActionLabel' }).Count 'a compact group label takes the Action Row label role'
+Assert-Equal 1 @($maintenanceSegments | Where-Object { $_.Text -match 'Repository statistics' -and $_.PresentationRole -eq 'Action' }).Count 'an independent grouped Action keeps its Action role'
+Assert-Equal 1 @($maintenanceSegments | Where-Object { $_.Text -match 'Reset AI session state' -and $_.PresentationRole -eq 'Danger' }).Count 'danger survives compact grouping'
+Assert-Equal $repositoryStatistics.Y $contextStatistics.Y 'statistics Actions share one compact group row'
+Assert-Equal $cleanBuildOutputs.Y $stopBuildServers.Y 'cleanup Actions share one compact group row'
+Assert-Equal $inspectAiSessions.Y $resetAiSessions.Y 'AI-session Actions share one compact group row'
+Assert-Equal ($repositoryStatistics.Y + 1) $cleanBuildOutputs.Y 'compact Maintenance rows are vertically adjacent'
+Assert-Equal ($cleanBuildOutputs.Y + 1) $inspectAiSessions.Y 'all compact Maintenance rows remain vertically adjacent'
+Assert-Equal $repositoryStatistics.X $cleanBuildOutputs.X 'first Maintenance Actions share one stable option track'
+Assert-Equal $contextStatistics.X $stopBuildServers.X 'second Maintenance Actions share one stable option track'
+Assert-True ($maintenanceText -match 'Statistics\s+Repository statistics\s+Context statistics') 'the compact statistics row preserves its subject and complete choices'
 $preparationWide = Get-TerminalInteractionFrame `
     -View $preparation `
     -OwnerActionMenu $maintenanceView `

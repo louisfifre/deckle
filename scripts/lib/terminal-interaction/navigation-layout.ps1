@@ -9,7 +9,11 @@ function Get-TerminalNavigationGrid {
     if ($OwnerActionMenu.Kind -ne 'ActionMenu') {
         throw "Navigation layout owner '$($OwnerActionMenu.ViewId)' is not an Action Menu."
     }
-    $layoutSections = @(ConvertTo-TerminalMenuLayoutSections -Sections $OwnerActionMenu.Sections)
+    $layoutSections = @(
+        ConvertTo-TerminalMenuLayoutSections `
+            -Sections $OwnerActionMenu.Sections `
+            -CompactSections:($null -ne $OwnerActionMenu.BackTarget)
+    )
     return Get-TerminalMenuGrid -LayoutSections $layoutSections -Width $Width
 }
 

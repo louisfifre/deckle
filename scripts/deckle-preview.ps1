@@ -9,6 +9,7 @@ param(
     [ValidateSet('Menu', 'Project', 'Preparation', 'Execution', 'Catalog', 'Confirmation')][string]$Snapshot,
     [ValidateRange(20, 240)][int]$Width = 100,
     [ValidateRange(8, 100)][int]$Height = 30,
+    [ValidateSet('Auto', 'Dark', 'Light')][string]$ThemeVariant = 'Auto',
     [switch]$HostSmokeTest,
     [switch]$Discovered
 )
@@ -65,9 +66,9 @@ if ($HostSmokeTest) {
     }
     $module = Get-Module terminal-interaction
     & $module {
-        param($view, $ownerActionMenu, $focus)
+        param($view, $ownerActionMenu, $focus, $themeVariant)
         $originalOutputCodePage = [Console]::OutputEncoding.CodePage
-        $hostState = Start-TerminalHost
+        $hostState = Start-TerminalHost -ThemeVariant $themeVariant
         try {
             if ($hostState.UnicodeOutput -ne 'Supported' -or [Console]::OutputEncoding.CodePage -ne 65001) {
                 throw 'The host smoke test could not activate UTF-8 console output.'
@@ -87,7 +88,7 @@ if ($HostSmokeTest) {
         if ([Console]::OutputEncoding.CodePage -ne $originalOutputCodePage) {
             throw 'The host smoke test did not restore the original console output encoding.'
         }
-    } $smokeView $smokeOwnerActionMenu $smokeFocus
+    } $smokeView $smokeOwnerActionMenu $smokeFocus $ThemeVariant
     return
 }
 
@@ -129,7 +130,7 @@ $rootView = if ($Discovered) {
 } else {
     Get-DecklePreviewRootView
 }
-Start-TerminalInteraction -RootView $rootView -IntentHandler {
+Start-TerminalInteraction -RootView $rootView -ThemeVariant $ThemeVariant -IntentHandler {
     param($request, $sourceView)
     if ($Discovered -and $request.IntentKind -eq 'Access') {
         $level = Resolve-DecklePreviewDiscoveredAccess -Catalog $DiscoveredCatalog -AccessId $request.Payload.AccessId
