@@ -20,7 +20,7 @@ public static class SchemaAdminToolCatalog
 
             new(
                 "schema_preview",
-                "Preview an additive schema manifest against a configured Anytype space. It reports reuse, creations and conflicts, and returns a deterministic preview id for schema_apply. No write happens here and no server-side session is retained.",
+                "Preview a schema manifest against a configured Anytype space. It reports reuse, creations and conflicts, and — for every type whose properties the manifest lists — the properties to detach and whether the live order will be rewritten to the manifest's. Returns a deterministic preview id for schema_apply. No write happens here and no server-side session is retained.",
                 Schema(
                     required:
                     [
@@ -40,7 +40,7 @@ public static class SchemaAdminToolCatalog
 
             new(
                 "schema_apply",
-                "Apply a previous schema_preview. Repeat the exact manifest and its deterministic preview_id; the live plan must still match what was reviewed. Additive only: create missing types/properties/tags, set missing type icons and descriptions, attach properties to types, and provision section collections with their member types. Requires confirm:true.",
+                "Apply a previous schema_preview. Repeat the exact manifest and its deterministic preview_id; the live plan must still match what was reviewed. Additive for the space: create missing types/properties/tags, set missing type icons and descriptions, provision section collections with their member types. Exact for a type's property list: when the manifest lists a type's properties, the type's regular list becomes that list in that order — properties the manifest omits are detached from the type (never deleted); header and hidden properties are untouched. Requires confirm:true.",
                 Schema(
                     required:
                     [
@@ -282,6 +282,7 @@ public static class SchemaAdminToolCatalog
                         {
                             "create_property", "create_tag", "create_type",
                             "set_icon", "set_description", "attach_property",
+                            "detach_property", "order_properties",
                             "create_section", "add_to_section",
                         },
                     },

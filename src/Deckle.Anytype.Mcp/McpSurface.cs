@@ -56,8 +56,13 @@ public sealed record McpSurfaceDescriptor(string Name, string Title, string Inst
         + "two bounded cross-space utilities: additive collection membership and "
         + "select writes addressed by existing tag keys. It never accepts a "
         + "raw space_id; use configured aliases such as dev or home. Schema "
-        + "manifests stay additive only: no delete, key rename, property format "
-        + "change, or property removal.");
+        + "manifests stay additive for the space: no delete, key rename, or "
+        + "property format change. A type's property list is the exception: when "
+        + "a manifest lists a type's properties, the type's regular list becomes "
+        + "exactly that list, in that order. A live property the manifest omits "
+        + "is detached from the type, never deleted, and the preview names every "
+        + "detachment and reorder before confirm. Header and hidden properties "
+        + "are untouched: the app owns them.");
 
     public static readonly McpSurfaceDescriptor All = new(
         "deckle-anytype-all",

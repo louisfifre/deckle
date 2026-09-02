@@ -42,7 +42,7 @@ The Anytype MCP surface dedicated to structured home knowledge: rooms, infrastru
 _Avoid_ : Cartographie (too narrow for the intended long-term scope), Électrique (too narrow), Maison surface (French label rejected for the surface name), Maison générique (too broad).
 
 **Schema admin surface** :
-The Anytype MCP surface dedicated to schema administration: inspecting spaces, planning type/property/tag/template changes, previewing the diff against a live space, applying confirmed schema changes, and freezing the measured result into code. Its first scope is additive only: create or attach types, properties, tags and templates; no delete, key rename, property format change, or property removal. Cross-space work uses Deckle-configured aliases such as `dev` and `home`, never a free `space_id` argument.
+The Anytype MCP surface dedicated to schema administration: inspecting spaces, planning type/property/tag/template changes, previewing the diff against a live space, applying confirmed schema changes, and freezing the measured result into code. Its scope is additive for the space, create types, properties and tags with no delete, key rename or property format change, while a type's property list follows the manifest exactly: membership and order, with every detachment and reorder named in the preview. Header and hidden buckets stay the app's. Cross-space work uses Deckle-configured aliases such as `dev` and `home`, never a free `space_id` argument.
 _Avoid_ : putting type/property creation inside Home tools, generic Anytype MCP (too unconstrained for Deckle's guarded workflow).
 
 ## Space provisioning

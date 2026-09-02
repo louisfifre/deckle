@@ -189,29 +189,23 @@ public sealed partial class SchemaAdminGestures(AnytypeApiClient api, AnytypeSpa
                 throw new InvalidOperationException(
                     $"Impossible d'attacher les propriétés à « {type.Key} » : id de type introuvable.");
 
+            // The regular list is re-posted whole, in manifest order, whenever
+            // it differs from the live one: the API replaces recommendedRelations
+            // with the array it receives, minus the header keys, and leaves the
+            // hidden bucket alone — so header and hidden survive the rewrite.
             var payload = new JsonObject();
-            bool propertiesChanged = false;
+            string propertiesOutcome = string.Empty;
             if (type.Properties.Count > 0)
             {
-                var links = SchemaPlanner.ResolveTypePropertyLinks(liveType, propertiesByKey).ToList();
-                foreach (string propKey in type.Properties)
-                {
-                    if (!propertiesByKey.TryGetValue(propKey, out SchemaPropertyInfo? property))
-                        throw new InvalidOperationException(
-                            $"Propriété « {propKey} » introuvable pour le type « {type.Key} ».");
-
-                    if (!links.Any(link => SchemaPlanner.LinkMatches(link, property)))
-                    {
-                        links.Add(SchemaPlanner.LinkFrom(property));
-                        propertiesChanged = true;
-                    }
-                }
-
-                if (propertiesChanged)
+                SchemaPlanner.TypePropertyDiff diff =
+                    SchemaPlanner.DiffTypeProperties(type, liveType, propertiesByKey);
+                if (diff.Changed)
                 {
                     payload["name"] = SchemaPlanner.OrDefault(liveType.Name, type.Name);
                     payload["plural_name"] = SchemaPlanner.OrDefault(liveType.PluralName, type.PluralName);
-                    payload["properties"] = SchemaPlanner.PropertyLinkArray(links);
+                    payload["properties"] = SchemaPlanner.PropertyLinkArray(
+                        SchemaPlanner.RequestedPropertyLinks(type, propertiesByKey));
+                    propertiesOutcome = DescribePropertyDiff(diff);
                 }
             }
 
@@ -228,8 +222,8 @@ public sealed partial class SchemaAdminGestures(AnytypeApiClient api, AnytypeSpa
                 liveType.Id,
                 payload,
                 ct);
-            if (propertiesChanged)
-                applied.Add($"propriétés attachées à {type.Key}");
+            if (propertiesOutcome.Length > 0)
+                applied.Add($"propriétés alignées sur le manifeste · {type.Key} · {propertiesOutcome}");
             if (iconChanged)
                 applied.Add($"icône définie {type.Key} · {type.Icon!.Display}");
         }
@@ -342,6 +336,15 @@ public sealed partial class SchemaAdminGestures(AnytypeApiClient api, AnytypeSpa
                 result.Add(new SchemaCollectionObjectInfo(id, name));
         }
         return result;
+    }
+
+    private static string DescribePropertyDiff(SchemaPlanner.TypePropertyDiff diff)
+    {
+        var parts = new List<string>();
+        foreach (string key in diff.Attached) parts.Add("+" + key);
+        foreach (string key in diff.Detached) parts.Add("−" + key);
+        if (diff.Reordered) parts.Add("ordre");
+        return string.Join(" ", parts);
     }
 
     private static double Elapsed(DateTime startUtc) =>
