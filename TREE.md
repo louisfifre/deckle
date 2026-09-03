@@ -1902,6 +1902,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── ReleaseResolverTests.cs
 │   │   └── RunningProcessesBugNotes.md
 │   ├── Deckle.Lighting.Ambient.Tests/
+│   │   ├── AmbientBrightnessBugNotes.md
 │   │   ├── AmbientBrightnessCurveTests.cs
 │   │   ├── AmbientHeartbeatWindowTests.cs
 │   │   ├── AmbientHueChangeAttributorTests.cs

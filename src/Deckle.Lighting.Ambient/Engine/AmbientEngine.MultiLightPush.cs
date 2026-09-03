@@ -79,6 +79,7 @@ public sealed partial class AmbientEngine
             double bri = 1.0;
             if (lightBrightness is not null && lightBrightness.TryGetValue(light.Id, out var b))
                 bri = Math.Clamp(b, 0.0, 1.0);
+            bool lightExplicitlyOff = bri <= 0.0;
             byte scaledR = (byte)Math.Round(zoneColor.R * bri);
             byte scaledG = (byte)Math.Round(zoneColor.G * bri);
             byte scaledB = (byte)Math.Round(zoneColor.B * bri);
@@ -91,7 +92,9 @@ public sealed partial class AmbientEngine
             // Apply HDR tuning (saturation boost + min brightness)
             // per light, same rationale as GroupTick : the early-exit
             // compares on tuned values so a slider move always pushes.
-            var tuned = PreparePushColor(scaledR, scaledG, scaledB);
+            var tuned = lightExplicitlyOff
+                ? (R: (byte)0, G: (byte)0, B: (byte)0, IsDark: true)
+                : PreparePushColor(scaledR, scaledG, scaledB);
             byte targetR = tuned.R;
             byte targetG = tuned.G;
             byte targetB = tuned.B;
@@ -101,6 +104,18 @@ public sealed partial class AmbientEngine
             // trail (a fast cut on the left side doesn't reset the
             // right-side lamp's history).
             (targetR, targetG, targetB) = ApplyMultiSmoothing(light.Id, targetR, targetG, targetB);
+
+            // Smoothing can dip between two differently coloured floor
+            // values. Clamp the final colour unless zero was an explicit
+            // per-light instruction rather than screen-derived darkness.
+            if (_minBrightnessEnabled && !lightExplicitlyOff)
+            {
+                (targetR, targetG, targetB) = AmbientColorPipeline.ApplyMinBrightness(
+                    targetR,
+                    targetG,
+                    targetB,
+                    _minBrightness);
+            }
 
             // Stash the intent colour for the Playground swatches —
             // batched event fires once at the end of the loop.

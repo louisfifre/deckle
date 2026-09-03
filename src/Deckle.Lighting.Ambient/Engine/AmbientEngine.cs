@@ -88,15 +88,13 @@ public sealed partial class AmbientEngine : IAsyncDisposable
     // value seen by GroupTickAsync / MultiLightTickAsync via the
     // _changeThreshold field below.
 
-    // Lights-out threshold — if every channel of the analysed average
-    // is at or below this, we clamp the colour to (0,0,0) before the
-    // push. HueColorMath maps pure black to bri=0 which the bridge
-    // client translates into on:false (lamp off) ; without the clamp,
-    // a near-black sample like (5,5,5) maps to bri≈2 and the lamp
-    // stays faintly on instead of going dark when the screen is dark.
-    // J5 will surface this in the Playground tuning panel ; for V0 we
-    // keep it conservative (8 / 255 ≈ 3 %) so it only triggers on
-    // unambiguously dark content (lock screen, off display).
+    // Dark-sample threshold — if every channel of the analysed average
+    // is at or below this, we clamp the colour to (0,0,0) before tuning.
+    // With the brightness floor off, HueColorMath maps that black to
+    // on:false. With the floor on, AmbientColorPipeline lifts it to the
+    // configured neutral floor instead, so screen content can never
+    // bypass the user's minimum. Eight out of 255 remains conservative:
+    // it only classifies unambiguously dark content.
     private const int OffThreshold = 8;
 
     // Zone-sampling band thickness. V0 hardcoded an asymmetric pair

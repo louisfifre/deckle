@@ -17,7 +17,7 @@ internal static class AmbientColorPipeline
         bool minBrightnessEnabled,
         int minBrightness)
     {
-        if (isDark) return (0, 0, 0);
+        if (isDark && !minBrightnessEnabled) return (0, 0, 0);
 
         (byte sR, byte sG, byte sB) = ApplySaturationBoost(r, g, b, saturationBoost);
         (byte cR, byte cG, byte cB) = AmbientBrightnessCurve.Apply(
@@ -45,14 +45,20 @@ internal static class AmbientColorPipeline
         return (result.R, result.G, result.B);
     }
 
-    private static (byte R, byte G, byte B) ApplyMinBrightness(byte r, byte g, byte b, int minBri)
+    internal static (byte R, byte G, byte B) ApplyMinBrightness(byte r, byte g, byte b, int minBri)
     {
-        if (minBri <= 0) return (r, g, b);
+        int floor = Math.Clamp(minBri, 0, 254);
+        if (floor == 0) return (r, g, b);
 
         int max = Math.Max(r, Math.Max(g, b));
-        if (max == 0 || max >= minBri) return (r, g, b);
+        if (max == 0)
+        {
+            byte neutral = (byte)floor;
+            return (neutral, neutral, neutral);
+        }
+        if (max >= floor) return (r, g, b);
 
-        double scale = minBri / (double)max;
+        double scale = floor / (double)max;
         return (
             (byte)Math.Min(255, Math.Round(r * scale)),
             (byte)Math.Min(255, Math.Round(g * scale)),

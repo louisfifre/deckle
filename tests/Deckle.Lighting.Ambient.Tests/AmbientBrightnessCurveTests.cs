@@ -63,12 +63,13 @@ public sealed class AmbientBrightnessCurveTests
     }
 
     [Fact]
-    public void DarkSampleStaysBlackEvenWhenFloorEnabled()
+    [Trait("Category", "regression")]
+    public void MinimumBrightnessEnabledKeepsBlackSampleAtFloor()
     {
         var tuned = AmbientColorPipeline.ApplyTuning(
-            30,
-            20,
-            10,
+            0,
+            0,
+            0,
             isDark: true,
             saturationBoost: 1.0,
             brightnessCurveX1: 0.18,
@@ -76,7 +77,26 @@ public sealed class AmbientBrightnessCurveTests
             brightnessCurveX2: 0.40,
             brightnessCurveY2: 0.90,
             minBrightnessEnabled: true,
-            minBrightness: 180);
+            minBrightness: 90);
+
+        Assert.Equal((90, 90, 90), tuned);
+    }
+
+    [Fact]
+    public void MinimumBrightnessDisabledAllowsBlackSample()
+    {
+        var tuned = AmbientColorPipeline.ApplyTuning(
+            0,
+            0,
+            0,
+            isDark: true,
+            saturationBoost: 1.0,
+            brightnessCurveX1: 0.18,
+            brightnessCurveY1: 0.55,
+            brightnessCurveX2: 0.40,
+            brightnessCurveY2: 0.90,
+            minBrightnessEnabled: false,
+            minBrightness: 90);
 
         Assert.Equal((0, 0, 0), tuned);
     }
