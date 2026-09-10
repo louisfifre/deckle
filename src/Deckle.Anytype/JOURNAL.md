@@ -7,6 +7,39 @@ type: module-journal
 
 Module-level dated notes. Most recent on top.
 
+## 2026-09-02 — PATCH replaces a type's property list whole; header and hidden are out of REST's reach
+
+Verified in anytype-heart source (core/api/service/type.go, main): `PATCH
+/types/{id}` with a `properties` array rebuilds relation ids from that array
+and writes `recommendedRelations` as exactly that list, in that order, after
+filtering out every id already in `recommendedFeaturedRelations`; the handler
+never sets `recommendedFeaturedRelations` or `recommendedHiddenRelations`.
+`GET /types/{id}` returns featured then regular merged into one flat
+`properties` list and never returns hidden ones. Measured consequences for the
+schema surface: order is settable on a live type by re-posting the list;
+omitting a key detaches it from the regular bucket; the header survives a
+re-post because the API drops header keys itself; a hidden property is
+invisible to the surface, so a manifest that lists it re-attaches it to the
+regular list (not yet observed on a live space). Chose to let the manifest own
+a type's regular list — membership and order — with `detach_property` and
+`order_properties` named in the preview; the space itself stays additive:
+never a property deletion, never a rename. The REST client pins
+Anytype-Version 2025-11-08, the release that added the type PATCH; no later
+version touches types, views or templates.
+
+Reported by a research agent from pb/protos/commands.proto and the bundled
+relations, not re-verified here: header and hidden are written only through
+gRPC — `Rpc.ObjectType.Recommended.FeaturedRelationsSet`, or
+`Rpc.Object.SetDetails` on the type object with the detail keys
+`recommendedFeaturedRelations` / `recommendedHiddenRelations`; dataview views
+(`Rpc.BlockDataview.View.*`) and templates (`Rpc.Template.CreateFromObject`,
+`Rpc.Object.ApplyTemplate`) are gRPC-only for writes while REST reads them
+(`GET /lists/{id}/views`, `GET /types/{id}/templates`);
+`Rpc.Object.ListExport` in Protobuf or JSON serializes full object state —
+types with their relation lists, templates as objects, views inside
+set/collection dataview blocks — and the gallery experiences are such
+Protobuf zips, re-importable; REST has no export endpoint.
+
 ## 2026-08-23 — A type's description writes through its object face
 
 Verified in anytype-heart source (core/api/model/type.go, service/object.go):

@@ -417,7 +417,7 @@ public class SchemaAdminGesturesTests
 
         Assert.Contains("Conflits ignorés (additif seulement)", digest);
         Assert.Contains("icône existante icon:home:grey, demandée icon:bed", digest);
-        Assert.DoesNotContain("Actions additives :\n- set_icon", digest);
+        Assert.DoesNotContain("Actions :\n- set_icon", digest);
         Assert.DoesNotContain(server.Requests, request => request.Method is "POST" or "PATCH");
     }
 
@@ -446,7 +446,7 @@ public class SchemaAdminGesturesTests
             }),
             Ct);
 
-        Assert.Contains("Aucune création additive nécessaire.", digest);
+        Assert.Contains("Rien à faire", digest);
         Assert.DoesNotContain("Conflits ignorés", digest);
     }
 
@@ -778,7 +778,7 @@ public class SchemaAdminGesturesTests
             "set_description · piece · description existante « Autre texte, posé en app », "
             + "demandée « Espace physique de la maison »",
             digest);
-        Assert.Contains("Aucune création additive nécessaire", digest);
+        Assert.Contains("Rien à faire", digest);
     }
 
     [Fact]
@@ -792,7 +792,7 @@ public class SchemaAdminGesturesTests
         string digest = await NewGestures(server).PreviewAsync(
             "home", DescriptionManifest("Espace physique de la maison"), Ct);
 
-        Assert.Contains("Aucune création additive nécessaire", digest);
+        Assert.Contains("Rien à faire", digest);
         Assert.DoesNotContain("set_description", digest);
     }
 
@@ -1143,6 +1143,126 @@ public class SchemaAdminGesturesTests
         Assert.DoesNotContain(server.Requests, r => r.Method is "POST" or "PATCH");
     }
 
+
+    static JsonObject NotesProperty() => new()
+    {
+        ["id"] = "prop-notes",
+        ["key"] = "notes",
+        ["name"] = "Notes",
+        ["format"] = "text",
+    };
+
+    static JsonObject ExtraProperty() => new()
+    {
+        ["id"] = "prop-extra",
+        ["key"] = "extra",
+        ["name"] = "Extra",
+        ["format"] = "text",
+    };
+
+    // A manifest that lists two properties on the type, in this order.
+    static JsonObject OrderedManifest() => new()
+    {
+        ["properties"] = new JsonArray
+        {
+            new JsonObject
+            {
+                ["key"] = "etat_identification",
+                ["name"] = "État d'identification",
+                ["format"] = "select",
+            },
+            new JsonObject { ["key"] = "notes", ["name"] = "Notes", ["format"] = "text" },
+        },
+        ["types"] = new JsonArray
+        {
+            new JsonObject
+            {
+                ["key"] = "piece",
+                ["name"] = "Pièce",
+                ["plural_name"] = "Pièces",
+                ["layout"] = "basic",
+                ["properties"] = new JsonArray { "etat_identification", "notes" },
+            },
+        },
+    };
+
+    [Fact]
+    public async Task PreviewPlansPropertyOrderWhenTheLiveTypeDiffersFromTheManifest()
+    {
+        using var server = new FakeAnytypeServer();
+        server.OnListTypes(Page(new JsonArray { ExistingType(properties: new JsonArray { "prop-notes", "prop-etat" }) }));
+        server.OnListProperties(Page(new JsonArray { ExistingProperty(), NotesProperty() }));
+        server.OnListPropertyTags("prop-etat", EmptyList());
+
+        string digest = await NewGestures(server).PreviewAsync("home", OrderedManifest(), Ct);
+
+        Assert.Contains("order_properties · piece · etat_identification notes", digest);
+        Assert.DoesNotContain("attach_property", digest);
+        Assert.DoesNotContain("detach_property", digest);
+        Assert.DoesNotContain(server.Requests, r => r.Method is "POST" or "PATCH");
+    }
+
+    [Fact]
+    public async Task PreviewPlansDetachForALivePropertyTheManifestOmits()
+    {
+        using var server = new FakeAnytypeServer();
+        server.OnListTypes(Page(new JsonArray
+        {
+            ExistingType(properties: new JsonArray { "prop-etat", "prop-notes", "prop-extra" }),
+        }));
+        server.OnListProperties(Page(new JsonArray { ExistingProperty(), NotesProperty(), ExtraProperty() }));
+        server.OnListPropertyTags("prop-etat", EmptyList());
+
+        string digest = await NewGestures(server).PreviewAsync("home", OrderedManifest(), Ct);
+
+        Assert.Contains("detach_property · piece:extra", digest);
+        Assert.DoesNotContain("order_properties", digest);
+        Assert.DoesNotContain("attach_property", digest);
+    }
+
+    [Fact]
+    public async Task PreviewStaysSilentWhenTheLiveListMatchesTheManifest()
+    {
+        using var server = new FakeAnytypeServer();
+        server.OnListTypes(Page(new JsonArray { ExistingType(properties: new JsonArray { "prop-etat", "prop-notes" }) }));
+        server.OnListProperties(Page(new JsonArray { ExistingProperty(), NotesProperty() }));
+        server.OnListPropertyTags("prop-etat", EmptyList());
+
+        string digest = await NewGestures(server).PreviewAsync("home", OrderedManifest(), Ct);
+
+        Assert.Contains("Rien à faire", digest);
+        Assert.DoesNotContain("order_properties", digest);
+        Assert.DoesNotContain("detach_property", digest);
+    }
+
+    [Fact]
+    public async Task ApplyRewritesTheTypePropertyListInManifestOrder()
+    {
+        using var server = new FakeAnytypeServer();
+        server.OnListTypes(Page(new JsonArray
+        {
+            ExistingType(properties: new JsonArray { "prop-extra", "prop-notes", "prop-etat" }),
+        }));
+        server.OnListProperties(Page(new JsonArray { ExistingProperty(), NotesProperty(), ExtraProperty() }));
+        server.OnListPropertyTags("prop-etat", EmptyList());
+        server.OnPatchType("type-piece", ExistingType(properties: new JsonArray { "prop-etat", "prop-notes" }));
+
+        var gestures = NewGestures(server);
+        string previewId = PreviewId(await gestures.PreviewAsync("home", OrderedManifest(), Ct));
+
+        string digest = await gestures.ApplyAsync("home", previewId, OrderedManifest(), confirm: true, Ct);
+
+        Assert.Contains("propriétés alignées sur le manifeste · piece", digest);
+        JsonObject patch = server.Requests
+            .Where(r => r.Method == "PATCH" && r.Path.EndsWith("/types/type-piece", StringComparison.Ordinal))
+            .Select(r => (JsonObject)JsonNode.Parse(r.Body)!)
+            .Single();
+        JsonArray links = Assert.IsType<JsonArray>(patch["properties"]);
+        Assert.Equal(
+            new[] { "etat_identification", "notes" },
+            links.Select(link => link!["key"]!.GetValue<string>()).ToArray());
+        Assert.All(links, link => Assert.False(string.IsNullOrEmpty(link!["format"]?.GetValue<string>())));
+    }
     private static string PreviewId(string digest) =>
         digest.Split(' ', StringSplitOptions.RemoveEmptyEntries)[1];
 }

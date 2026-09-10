@@ -67,11 +67,13 @@ internal static class SchemaPlanner
                         $"demandée « {type.Description} »");
             }
 
+            bool unknownProperty = false;
             foreach (string propKey in type.Properties)
             {
                 if (!manifest.Properties.Any(p => p.Key == propKey) && !snapshot.Properties.ContainsKey(propKey))
                 {
                     conflicts.Add($"type {type.Key} : propriété demandée inconnue {propKey}");
+                    unknownProperty = true;
                     continue;
                 }
 
@@ -79,6 +81,25 @@ internal static class SchemaPlanner
                     && IsPropertyAttached(existing, snapshot, propKey);
                 if (!alreadyAttached)
                     actions.Add(new SchemaAction("attach_property", $"{type.Key}:{propKey}", propKey));
+            }
+
+            // A manifest that lists a type's properties owns that type's
+            // regular list — membership and order. A live link the manifest
+            // omits is detached (the property itself stays in the space); a
+            // live order that differs is rewritten. Header and hidden buckets
+            // are out of reach on this surface: the API drops header keys from
+            // the regular list it receives and never touches the hidden one.
+            if (exists && !unknownProperty && type.Properties.Count > 0)
+            {
+                TypePropertyDiff diff = DiffTypeProperties(type, existingType!, snapshot.Properties);
+                foreach (string dangling in diff.Unresolvable)
+                    conflicts.Add(
+                        $"type {type.Key} : lien de propriété vivant illisible {dangling} — " +
+                        "schema_apply refuse de réécrire la liste sans key, name et format.");
+                foreach (string extra in diff.Detached)
+                    actions.Add(new SchemaAction("detach_property", $"{type.Key}:{extra}", extra));
+                if (diff.Reordered)
+                    actions.Add(new SchemaAction("order_properties", type.Key, string.Join(" ", type.Properties)));
             }
         }
 
@@ -161,15 +182,15 @@ internal static class SchemaPlanner
 
         if (preview.Actions.Count == 0)
         {
-            sb.Append("Aucune création additive nécessaire.");
+            sb.Append("Rien à faire : l'espace correspond au manifeste.");
             return sb.ToString().TrimEnd();
         }
 
-        sb.Append("Actions additives :\n");
+        sb.Append("Actions :\n");
         foreach (SchemaAction action in preview.Actions)
         {
             sb.Append("- ").Append(action.Kind).Append(" · ").Append(action.Key);
-            if (action.Kind is "set_icon" or "set_description")
+            if (action.Kind is "set_icon" or "set_description" or "order_properties")
                 sb.Append(" · ").Append(action.Name);
             sb.Append('\n');
         }
@@ -227,28 +248,47 @@ internal static class SchemaPlanner
         return payload;
     }
 
-    internal static IEnumerable<SchemaPropertyLinkInfo> ResolveTypePropertyLinks(
-        SchemaTypeInfo type,
+    // What separates a live type's regular list from the manifest's, by key.
+    // Attached: manifest keys the type lacks (created first when new).
+    // Detached: live keys the manifest omits. Reordered: the shared keys do
+    // not follow the manifest sequence. Unresolvable: live links that carry
+    // neither a readable key nor a known id — the list is never rewritten
+    // over one of those, because rewriting would drop it silently.
+    internal sealed record TypePropertyDiff(
+        IReadOnlyList<string> Attached,
+        IReadOnlyList<string> Detached,
+        bool Reordered,
+        IReadOnlyList<string> Unresolvable)
+    {
+        public bool Changed => Attached.Count > 0 || Detached.Count > 0 || Reordered;
+    }
+
+    internal static TypePropertyDiff DiffTypeProperties(
+        TypeSpec type,
+        SchemaTypeInfo live,
         IReadOnlyDictionary<string, SchemaPropertyInfo> propertiesByKey)
     {
-        foreach (SchemaPropertyLinkInfo link in type.PropertyLinks)
+        var liveKeys = new List<string>();
+        var unresolvable = new List<string>();
+        foreach (SchemaPropertyLinkInfo link in live.PropertyLinks)
         {
             if (TryResolveLink(link, propertiesByKey, out SchemaPropertyInfo? property))
-            {
-                yield return LinkFrom(property!);
-                continue;
-            }
-
-            if (link.HasPayload)
-            {
-                yield return link;
-                continue;
-            }
-
-            throw new InvalidOperationException(
-                $"Type « {type.Key} » : lien de propriété existant impossible à résoudre. " +
-                "schema_apply refuse de réécrire ce type sans key, name et format.");
+                liveKeys.Add(property!.Key);
+            else if (link.HasPayload)
+                liveKeys.Add(link.Key);
+            else
+                unresolvable.Add(link.Id.Length > 0 ? link.Id : link.Key);
         }
+
+        var manifestKeys = type.Properties.Distinct(StringComparer.Ordinal).ToList();
+        var attached = manifestKeys.Where(k => !liveKeys.Contains(k, StringComparer.Ordinal)).ToList();
+        var detached = liveKeys.Where(k => !manifestKeys.Contains(k, StringComparer.Ordinal)).ToList();
+        bool reordered = !liveKeys
+            .Where(k => manifestKeys.Contains(k, StringComparer.Ordinal))
+            .SequenceEqual(
+                manifestKeys.Where(k => liveKeys.Contains(k, StringComparer.Ordinal)),
+                StringComparer.Ordinal);
+        return new TypePropertyDiff(attached, detached, reordered, unresolvable);
     }
 
     private static bool TryResolveLink(
