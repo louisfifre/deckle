@@ -42,8 +42,7 @@ public sealed class ProjectGestures(AnytypeApiClient api, NameResolver resolver)
     {
         var started = DateTime.UtcNow;
 
-        JsonObject root = await api.SearchAsync(string.Empty, [DevSpace.Types.Project], limit: 200, ct);
-        JsonArray hits = root["data"]?.AsArray() ?? [];
+        IReadOnlyList<JsonObject> hits = await ObjectListing.AllOfTypesAsync(api, api.SpaceId, [DevSpace.Types.Project], ct);
 
         string? wantedEtat = state is null
             ? null
@@ -52,9 +51,8 @@ public sealed class ProjectGestures(AnytypeApiClient api, NameResolver resolver)
 
         // Group projects by their état key; keep insertion order per group.
         var byEtat = new Dictionary<string, List<JsonObject>>(StringComparer.Ordinal);
-        foreach (JsonNode? node in hits)
+        foreach (JsonObject p in hits)
         {
-            if (node is not JsonObject p) continue;
             if (PropReader.Checkbox(p, DevSpace.Props.Archive)) continue;
 
             string etat = PropReader.Select(p, DevSpace.Props.Etat) ?? "";
@@ -184,18 +182,17 @@ public sealed class ProjectGestures(AnytypeApiClient api, NameResolver resolver)
     // Appends the project's active task lines and returns every related task id
     // for the report join. Archiving a task removes that task from the active
     // view, but does not archive the separate reports linked to it.
-    // Tasks are searched by type then filtered client-side on relation_projet
-    // containing this project id — the search API has no relation filter.
+    // Every task of the space is read (ObjectListing pages the search to the
+    // end) then filtered client-side on relation_projet containing this project
+    // id: one page would drop the least recently modified tasks past its size.
     async Task<IReadOnlyList<string>> AppendTasksAsync(StringBuilder sb, string projectId, CancellationToken ct)
     {
-        JsonObject root = await api.SearchAsync(string.Empty, [DevSpace.Types.Task], limit: 200, ct);
-        JsonArray hits = root["data"]?.AsArray() ?? [];
+        IReadOnlyList<JsonObject> hits = await ObjectListing.AllOfTypesAsync(api, api.SpaceId, [DevSpace.Types.Task], ct);
 
         var taskIds = new List<string>();
         bool any = false;
-        foreach (JsonNode? node in hits)
+        foreach (JsonObject t in hits)
         {
-            if (node is not JsonObject t) continue;
             if (!PropReader.ObjectRefs(t, DevSpace.Props.RelationProjet).Contains(projectId)) continue;
 
             taskIds.Add(PropReader.Id(t));
@@ -210,19 +207,18 @@ public sealed class ProjectGestures(AnytypeApiClient api, NameResolver resolver)
 
     // Reports of the project = reports linked to any of the project's tasks (the
     // link lives on the report side, « Tâche(s) liée(s) »; the project itself has
-    // no report link). Page reports, keep those touching a project task, most
-    // recent journal date first.
+    // no report link). Read every report (ObjectListing pages the search to the
+    // end), keep those touching a project task, most recent journal date first.
     async Task AppendRecentReportsAsync(StringBuilder sb, IReadOnlyList<string> taskIds, int reportCount, bool fullBody, CancellationToken ct)
     {
         if (taskIds.Count == 0) return;
         var taskSet = new HashSet<string>(taskIds, StringComparer.Ordinal);
 
-        JsonObject root = await api.SearchAsync(string.Empty, [DevSpace.Types.Rapport], limit: 200, ct);
-        JsonArray hits = root["data"]?.AsArray() ?? [];
+        IReadOnlyList<JsonObject> hits = await ObjectListing.AllOfTypesAsync(api, api.SpaceId, [DevSpace.Types.Rapport], ct);
 
         var reports = new List<JsonObject>();
-        foreach (JsonNode? node in hits)
-            if (node is JsonObject r && PropReader.ObjectRefs(r, DevSpace.Props.TachesLiees).Any(taskSet.Contains))
+        foreach (JsonObject r in hits)
+            if (PropReader.ObjectRefs(r, DevSpace.Props.TachesLiees).Any(taskSet.Contains))
                 reports.Add(r);
 
         // Most recent journal date first; missing dates sort last.

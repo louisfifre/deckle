@@ -117,7 +117,7 @@ public sealed class NameResolver(AnytypeApiClient api)
         IReadOnlyList<string>? typeKeys,
         CancellationToken ct)
     {
-        var root = await _api.SearchAsync(spaceId, query, typeKeys, limit: 20, ct);
+        var root = await _api.SearchAsync(spaceId, query, typeKeys, limit: 20, ct: ct);
         var data = root["data"] as JsonArray;
         var result = new List<Candidate>();
         if (data is null) return result;

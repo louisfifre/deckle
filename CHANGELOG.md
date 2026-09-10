@@ -30,6 +30,8 @@ doctrine). This file is generated from the Conventional-Commit history by
 - **scripts:** Preserve terminal presentation hierarchy
 - **home:** Preserve titleless idea bodies
 - **ambient:** Keep brightness floor on black scenes
+- **anytype:** Page exhaustive listings past the first search page
+- **anytype:** Get reads the archived state
 
 ## [0.35.0](https://github.com/louisfifre/deckle/compare/v0.31.6...v0.35.0) — 2026-08-13
 

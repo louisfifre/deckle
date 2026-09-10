@@ -177,18 +177,17 @@ public sealed class SessionGestures(AnytypeApiClient api, NameResolver resolver)
     }
 
     // Reports linking this task, most-recent journal date first. The link lives on
-    // the report side (« Tâche(s) liée(s) »); search has no relation filter, so we
-    // page reports and filter client-side (same shape as ProjectGestures).
+    // the report side (« Tâche(s) liée(s) »); every report is read (ObjectListing
+    // pages the search to the end) and filtered client-side, as ProjectGestures does.
     async Task<List<JsonObject>> ReportsForTaskAsync(string taskId, CancellationToken ct)
     {
         if (taskId.Length == 0) return [];
 
-        JsonObject root = await _api.SearchAsync(string.Empty, new[] { DevSpace.Types.Rapport }, limit: 200, ct);
-        JsonArray hits = root["data"]?.AsArray() ?? [];
+        IReadOnlyList<JsonObject> hits = await ObjectListing.AllOfTypesAsync(_api, _api.SpaceId, [DevSpace.Types.Rapport], ct);
 
         var reports = new List<JsonObject>();
-        foreach (JsonNode? node in hits)
-            if (node is JsonObject r && ReadObjectIds(r, DevSpace.Props.TachesLiees).Contains(taskId))
+        foreach (JsonObject r in hits)
+            if (ReadObjectIds(r, DevSpace.Props.TachesLiees).Contains(taskId))
                 reports.Add(r);
 
         reports.Sort((a, b) => string.CompareOrdinal(

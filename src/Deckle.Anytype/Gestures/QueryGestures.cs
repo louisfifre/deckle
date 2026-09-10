@@ -28,13 +28,20 @@ public sealed class QueryGestures(AnytypeApiClient api, NameResolver resolver)
         sb.Append(QueryProp.Name(obj));
         if (objType.Length > 0) sb.Append(" (").Append(objType).Append(')');
 
-        // Surface every mapped property the object actually carries a value for,
-        // in the type's digest order.
+        // Surface every mapped property the object carries a value for, in the
+        // type's digest order. A checkbox the API leaves out is an unticked one —
+        // absence is a value for a binary — so « Terminé » and « Archivé » always
+        // read, and an archived object never passes for a live one.
         foreach (PropertyDef def in DevSpace.PropertiesFor(objType))
         {
-            string? value = QueryProp.Render(obj, def.Key);
+            string? value = QueryProp.Render(obj, def.Key)
+                ?? (def.Format == "checkbox" ? "non" : null);
             if (value is not null) sb.Append('\n').Append(def.Label).Append(" : ").Append(value);
         }
+
+        // Anytype's own bin (the delete gesture), distinct from the space's
+        // « Archivé » checkbox: a binned object still answers a GET by id.
+        if (obj["archived"]?.GetValue<bool>() == true) sb.Append("\nCorbeille : oui");
 
         string md = QueryProp.Markdown(obj);
         if (md.Length > 0) sb.Append("\n\n").Append(md);
@@ -55,7 +62,7 @@ public sealed class QueryGestures(AnytypeApiClient api, NameResolver resolver)
     {
         var started = DateTime.UtcNow;
 
-        JsonObject root = await api.SearchAsync(text, typeKeys, limit: 20, ct);
+        JsonObject root = await api.SearchAsync(text, typeKeys, limit: 20, ct: ct);
         JsonArray hits = root["data"]?.AsArray() ?? [];
 
         var sb = new StringBuilder();

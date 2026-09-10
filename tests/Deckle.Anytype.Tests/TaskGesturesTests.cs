@@ -202,7 +202,8 @@ internal sealed class FakeAnytypeServer : IDisposable
     readonly Task _loop;
 
     sealed record Route(string Method, string Path, int Status, string Json);
-    public readonly record struct Received(string Method, string Path, string Body);
+    // Query is the raw query string ("?offset=0&limit=1000"), empty when absent.
+    public readonly record struct Received(string Method, string Path, string Query, string Body);
 
     public FakeAnytypeServer()
     {
@@ -298,11 +299,12 @@ internal sealed class FakeAnytypeServer : IDisposable
             catch { return; } // listener stopped
 
             string method = ctx.Request.HttpMethod;
-            string path = ctx.Request.Url!.AbsolutePath;
+            Uri url = ctx.Request.Url!;
+            string path = url.AbsolutePath;
             string body;
             using (var reader = new StreamReader(ctx.Request.InputStream, Encoding.UTF8))
                 body = await reader.ReadToEndAsync();
-            _received.Enqueue(new Received(method, path, body));
+            _received.Enqueue(new Received(method, path, url.Query, body));
 
             Route? route = NextRoute(method, path);
             byte[] payload = Encoding.UTF8.GetBytes(route?.Json ?? "{}");
