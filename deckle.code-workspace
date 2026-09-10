@@ -7,7 +7,10 @@
 			"path": "../../skills"
 		},
 		{
-			"path": "../../worktrees/deckle"
+			"path": "../home"
+		},
+		{
+			"path": "../../worktrees"
 		}
 	],
 	"settings": {
