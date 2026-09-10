@@ -77,6 +77,50 @@ public class QueryGesturesTests
         },
     };
 
+    // ── GetAsync ─────────────────────────────────────────────────────────────
+
+    // The live GET leaves an unticked checkbox out of `properties` (observed
+    // 2026-09-10): a task never archived carries no « archive » entry at all.
+    // Absence is a value for a binary, so the read must say « non » rather
+    // than stay silent — silence let an archived object pass for a live one.
+    [Fact]
+    public async Task GetReadsAnUnsetCheckboxAsUnticked()
+    {
+        using var server = new FakeAnytypeServer();
+        server.OnGetObject(TaskId, TaskObject());
+
+        string digest = await NewGestures(server).GetAsync(TaskId, ct: Ct);
+
+        Assert.Contains("Terminé : non", digest);
+        Assert.Contains("Archivé : non", digest);
+    }
+
+    // Anytype's bin is a root `archived` flag on the object, not the space's
+    // « Archivé » checkbox; a binned object still answers a GET by id.
+    [Fact]
+    public async Task GetFlagsAnObjectInAnytypesBin()
+    {
+        using var server = new FakeAnytypeServer();
+        JsonObject binned = TaskObject();
+        binned["object"]!["archived"] = true;
+        server.OnGetObject(TaskId, binned);
+
+        string digest = await NewGestures(server).GetAsync(TaskId, ct: Ct);
+
+        Assert.Contains("Corbeille : oui", digest);
+    }
+
+    [Fact]
+    public async Task GetStaysSilentOnTheBinForALiveObject()
+    {
+        using var server = new FakeAnytypeServer();
+        server.OnGetObject(TaskId, TaskObject());
+
+        string digest = await NewGestures(server).GetAsync(TaskId, ct: Ct);
+
+        Assert.DoesNotContain("Corbeille", digest);
+    }
+
     // ── CompleteAsync ────────────────────────────────────────────────────────
 
     [Fact]
