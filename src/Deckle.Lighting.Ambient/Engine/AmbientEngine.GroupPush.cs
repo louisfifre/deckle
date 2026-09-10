@@ -31,6 +31,18 @@ public sealed partial class AmbientEngine
         // colour, not the raw sampler output.
         (targetR, targetG, targetB) = ApplyGroupSmoothing(targetR, targetG, targetB);
 
+        // An EMA between different hues can put every channel below the
+        // floor even when both endpoints respected it. Re-apply the floor
+        // to the final colour that will be compared and pushed.
+        if (_minBrightnessEnabled)
+        {
+            (targetR, targetG, targetB) = AmbientColorPipeline.ApplyMinBrightness(
+                targetR,
+                targetG,
+                targetB,
+                _minBrightness);
+        }
+
         // Publish the intent colour for the Playground swatch viewer
         // even when the delta gate drops the actual push.
         PublishGroupEmitted(targetR, targetG, targetB);

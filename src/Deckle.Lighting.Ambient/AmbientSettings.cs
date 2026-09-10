@@ -203,19 +203,19 @@ public sealed class AmbientSettings
     public double SaturationBoost { get; set; } = 1.0;
 
     /// <summary>Whether <see cref="MinBrightness"/> is applied to the
-    /// derived Hue <c>bri</c>. False keeps black / near-black scenes
-    /// free to go fully dark ; true lifts any non-dark scene to the
+    /// derived Hue <c>bri</c>. False lets black / near-black scenes go
+    /// fully dark; true lifts every scene, including black, to the
     /// stored floor.</summary>
     public bool MinBrightnessEnabled { get; set; } = true;
 
     /// <summary>Floor for the bri value pushed to Hue, in the bridge's
     /// 0–254 range. The derived bri (max-channel based) is raised to
-    /// this floor only when <see cref="MinBrightnessEnabled"/> is true
-    /// and the lamp is on (i.e. above OffThreshold), so mid-tone scenes
-    /// don't dim the lamp below readability. 254 forces full brightness
-    /// for any non-dark scene. Default 180 ≈ 70 % — bright enough to
-    /// colour the room, dim enough to follow the screen's intent.
-    /// Tuned in AmbientPage.</summary>
+    /// this floor whenever <see cref="MinBrightnessEnabled"/> is true,
+    /// so neither mid-tone nor black scenes can dim the lamp below it.
+    /// Pure black has no chromaticity, so it becomes neutral RGB at the
+    /// floor. 254 forces full brightness. Default 180 ≈ 70 % — bright
+    /// enough to colour the room, dim enough to follow the screen's
+    /// intent. Tuned in AmbientPage.</summary>
     public int MinBrightness { get; set; } = 180;
 
     /// <summary>First cubic-Bézier control point X coordinate in [0, 1].

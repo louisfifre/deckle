@@ -389,7 +389,7 @@
                                 <ToggleSwitch x:Name="PlaygroundMinBrightnessToggle"
                                               Grid.Column="1"
                                               OnContent="Floor on"
-                                              OffContent="Black allowed"
+                                              OffContent="Floor off"
                                               Toggled="OnPlaygroundMinBrightnessEnabledToggled" />
                             </Grid>
                             <Grid x:Name="PlaygroundMinBrightnessRow"

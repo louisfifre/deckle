@@ -300,8 +300,8 @@ public sealed partial class AmbientPage
             ? Visibility.Visible
             : Visibility.Collapsed;
         PlaygroundMinBrightnessCaption.Text = enabled
-            ? "Floor on bulb brightness when on. Stops the diffuser swallowing mid-tone scenes."
-            : "Off leaves dark scenes free to fall to black.";
+            ? "Keeps bulb brightness at or above the selected floor, even on black scenes."
+            : "Allows brightness to fall below the selected floor, including to black.";
         PlaygroundBrightnessCurveCanvas.MinBrightnessEnabled = enabled;
     }
 
