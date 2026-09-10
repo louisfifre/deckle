@@ -7,6 +7,25 @@ type: module-journal
 
 Module-level dated notes. Most recent on top.
 
+## 2026-09-10 — Search pages through the query string; the body carries a property filter
+
+Found on the local OpenAPI document (`GET /docs/openapi.json`, version
+2025-11-08): `POST /spaces/{id}/search` takes `offset` and `limit` as query
+parameters (default 100, maximum 1000) and answers `pagination {offset,
+limit, total, has_more}`. The `SearchRequest` body holds `query`, `types`,
+`sort` and `filters` — a `FilterExpression` (and/or, nested) over
+format-specific conditions, among them an `ObjectsFilterItem`
+(`property_key`, `condition`, `objects: [ids]`) with the conditions `eq, ne,
+in, nin, all, empty, nempty` available. The client had sent `limit` in the
+body, a field the schema does not carry, so every exhaustive listing read one
+default page; `project_overview` lost the least recently modified tasks once
+the space outgrew it. Chose to page every exhaustive listing to the end
+through `ObjectListing` rather than adopt `filters`: the filter's condition
+semantics on relation properties are unmeasured on a live space. Also found:
+the GET object carries a root `archived` boolean — Anytype's bin flag,
+distinct from the space's « Archivé » checkbox — and leaves an unticked
+checkbox out of `properties` altogether.
+
 ## 2026-09-02 — PATCH replaces a type's property list whole; header and hidden are out of REST's reach
 
 Verified in anytype-heart source (core/api/service/type.go, main): `PATCH
