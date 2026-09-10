@@ -15,6 +15,7 @@ doctrine). This file is generated from the Conventional-Commit history by
 
 - **anytype:** Schema surface provisions type descriptions through the object face
 - **scripts:** Establish terminal visual hierarchy
+- **anytype:** The manifest owns a type's property list — order and membership follow it, detachments named before confirm
 
 ### Changed
 
