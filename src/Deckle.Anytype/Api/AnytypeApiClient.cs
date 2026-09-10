@@ -114,29 +114,33 @@ public sealed partial class AnytypeApiClient : IDisposable
     }
 
     // POST search → returns the root node ({data, pagination}). typeKeys null
-    // → no type filter. sort by last-modified desc is the API default; the
-    // gestures pass an explicit sort when they need another order.
+    // → no type filter. Sort is the API default, last-modified desc.
+    //
+    // offset/limit ride in the query string: the request body has no paging
+    // field, so a body `limit` is silently dropped and the server pages by its
+    // default of 100 (measured 2026-09-10 on the 2025-11-08 OpenAPI). The API
+    // caps limit at SearchPageMax; an exhaustive read walks pagination.has_more.
     public Task<JsonObject> SearchAsync(
         string query,
         IReadOnlyList<string>? typeKeys = null,
+        int offset = 0,
         int limit = 20,
         CancellationToken ct = default) =>
-        SearchAsync(SpaceId, query, typeKeys, limit, ct);
+        SearchAsync(SpaceId, query, typeKeys, offset, limit, ct);
 
     public async Task<JsonObject> SearchAsync(
         string spaceId,
         string query,
         IReadOnlyList<string>? typeKeys = null,
+        int offset = 0,
         int limit = 20,
         CancellationToken ct = default)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(spaceId);
+        if (offset < 0) throw new ArgumentOutOfRangeException(nameof(offset));
+        if (limit is < 1 or > SearchPageMax) throw new ArgumentOutOfRangeException(nameof(limit));
 
-        var body = new JsonObject
-        {
-            ["query"] = query,
-            ["limit"] = limit
-        };
+        var body = new JsonObject { ["query"] = query };
         if (typeKeys is { Count: > 0 })
         {
             var arr = new JsonArray();
@@ -144,11 +148,15 @@ public sealed partial class AnytypeApiClient : IDisposable
             body["types"] = arr;
         }
 
+        string path = $"{SpacePath(spaceId)}/search?offset={offset}&limit={limit}";
         return await SendAsync(
-                HttpMethod.Post, $"{SpacePath(spaceId)}/search", body, ct,
+                HttpMethod.Post, path, body, ct,
                 replaySafety: RequestReplaySafety.Safe)
             .ConfigureAwait(false);
     }
+
+    // The largest page the search endpoint serves — its documented maximum.
+    public const int SearchPageMax = 1000;
 
     // GET all objects for one space page. Home uses this exhaustive path for
     // room-registry and code-uniqueness checks: free-text search is deliberately

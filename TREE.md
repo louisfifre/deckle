@@ -436,6 +436,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   ├── LiveTagResolver.cs
 │   │   │   ├── ManagementGestures.cs
 │   │   │   ├── MarkdownBody.cs
+│   │   │   ├── ObjectListing.cs
 │   │   │   ├── ProjectGestures.cs
 │   │   │   ├── QueryGestures.cs
 │   │   │   ├── Resolution.cs

@@ -312,17 +312,17 @@ public sealed partial class SchemaAdminGestures(AnytypeApiClient api, AnytypeSpa
     }
 
     // Live built-in collection objects, read only when the manifest declares
-    // sections. One bounded empty-query search (the ProjectGestures listing
-    // idiom); the type filter keeps collection-LAYOUT domain types (floor…)
-    // out, and the type-key check below re-asserts it on each hit.
+    // sections. The exhaustive empty-query listing (ObjectListing pages the
+    // search to the end); the type filter keeps collection-LAYOUT domain types
+    // (floor…) out, and the type-key check below re-asserts it on each hit.
     private async Task<IReadOnlyList<SchemaCollectionObjectInfo>> ReadSectionCollectionsAsync(
         string spaceId, SchemaManifest manifest, CancellationToken ct)
     {
         if (manifest.Sections.Count == 0) return [];
 
-        JsonObject root = await api.SearchAsync(spaceId, string.Empty, ["collection"], limit: 200, ct);
+        IReadOnlyList<JsonObject> hits = await ObjectListing.AllOfTypesAsync(api, spaceId, ["collection"], ct);
         var result = new List<SchemaCollectionObjectInfo>();
-        foreach (JsonObject obj in SchemaApiJson.Data(root))
+        foreach (JsonObject obj in hits)
         {
             if (!string.Equals(
                     obj["type"]?["key"]?.GetValue<string>() ?? "",

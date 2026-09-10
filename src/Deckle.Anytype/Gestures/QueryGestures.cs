@@ -55,7 +55,7 @@ public sealed class QueryGestures(AnytypeApiClient api, NameResolver resolver)
     {
         var started = DateTime.UtcNow;
 
-        JsonObject root = await api.SearchAsync(text, typeKeys, limit: 20, ct);
+        JsonObject root = await api.SearchAsync(text, typeKeys, limit: 20, ct: ct);
         JsonArray hits = root["data"]?.AsArray() ?? [];
 
         var sb = new StringBuilder();

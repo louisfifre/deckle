@@ -14,6 +14,8 @@ public class ProjectGesturesTests
     const string EpicId    = "bafyreiepicaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
     const string ActiveTaskId = "bafyreiTaskactiveaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
     const string ArchivedTaskId = "bafyreiTaskarchivedaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
+    const string OldTaskId = "bafyreiTaskoldaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
+    const string OtherProjectId = "bafyreiprojectotheraaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
     static CancellationToken Ct => TestContext.Current.CancellationToken;
 
     static ProjectGestures NewGestures(FakeAnytypeServer server)
@@ -122,6 +124,49 @@ public class ProjectGesturesTests
         Assert.Contains("Rapport archivé", digest);
     }
 
+    // The live search serves one page at a time (100 by default, 1000 at most,
+    // last-modified first). Once the space held more tasks than a page, a task
+    // untouched for a while never reached the overview although its
+    // relation_projet named the project (measured 2026-09-10). The overview
+    // must walk the pages to the end, and paging rides in the query string —
+    // the search body has no paging field.
+    [Fact]
+    [Trait("Category", "regression")]
+    public async Task OverviewListsALinkedTaskBeyondTheFirstSearchPage()
+    {
+        using var server = new FakeAnytypeServer();
+        server.OnGetObject(ProjectId, ProjectObject());
+        // Task page 1: another project's task only, more pages announced.
+        server.OnSearch(SearchPage(hasMore: true,
+            TaskHit(ActiveTaskId, "Tâche d'un autre projet", archived: false, project: OtherProjectId)));
+        // Task page 2, the last: the old linked task.
+        server.OnSearch(SearchPage(hasMore: false,
+            TaskHit(OldTaskId, "Tâche ancienne", archived: false)));
+        // Reports: one empty page.
+        server.OnSearch(SearchPage(hasMore: false));
+
+        string digest = await NewGestures(server).OverviewAsync(ProjectId, Ct);
+
+        Assert.Contains("Tâche ancienne", digest);
+        Assert.DoesNotContain("Tâche d'un autre projet", digest);
+
+        // Two task pages, then the single report page.
+        var searches = server.Requests.Where(r => r.Method == "POST" && r.Path.EndsWith("/search")).ToList();
+        Assert.Equal(3, searches.Count);
+
+        // Each page starts where the previous one ended, at the same size.
+        (int offset1, int limit1) = Paging(searches[0].Query);
+        (int offset2, int limit2) = Paging(searches[1].Query);
+        Assert.Equal(0, offset1);
+        Assert.Equal(offset1 + limit1, offset2);
+        Assert.Equal(limit1, limit2);
+
+        // The body carries no paging field — the live API would drop it silently.
+        JsonObject body = (JsonObject)JsonNode.Parse(searches[0].Body)!;
+        Assert.False(body.ContainsKey("limit"));
+        Assert.False(body.ContainsKey("offset"));
+    }
+
     [Fact]
     public async Task OverviewShowsTheCanonicalProjectCompletionSignal()
     {
@@ -168,7 +213,22 @@ public class ProjectGesturesTests
         },
     };
 
-    static JsonObject TaskHit(string id, string name, bool archived) => new()
+    static JsonObject SearchPage(bool hasMore, params JsonObject[] hits) => new()
+    {
+        ["data"] = new JsonArray(hits),
+        ["pagination"] = new JsonObject { ["has_more"] = hasMore },
+    };
+
+    // (offset, limit) as the query string carries them.
+    static (int Offset, int Limit) Paging(string query)
+    {
+        var parameters = query.TrimStart('?').Split('&', StringSplitOptions.RemoveEmptyEntries)
+            .Select(pair => pair.Split('=', 2))
+            .ToDictionary(kv => kv[0], kv => kv[1], StringComparer.Ordinal);
+        return (int.Parse(parameters["offset"]), int.Parse(parameters["limit"]));
+    }
+
+    static JsonObject TaskHit(string id, string name, bool archived, string? project = null) => new()
     {
         ["id"] = id,
         ["name"] = name,
@@ -178,7 +238,7 @@ public class ProjectGesturesTests
             new JsonObject
             {
                 ["key"] = DevSpace.Props.RelationProjet,
-                ["objects"] = new JsonArray(ProjectId),
+                ["objects"] = new JsonArray(project ?? ProjectId),
             },
             new JsonObject
             {
