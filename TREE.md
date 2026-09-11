@@ -1562,7 +1562,8 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   ├── EnergySegmenter.cs
 │   │   │   ├── EnergySegmenterSettings.cs
 │   │   │   ├── SegmentedTranscriptionSession.cs
-│   │   │   └── Utterance.cs
+│   │   │   ├── Utterance.cs
+│   │   │   └── UtteranceProgress.cs
 │   │   ├── Strings/
 │   │   │   └── en-US/
 │   │   │       └── Resources.resw
@@ -1997,7 +1998,8 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── TranscriptionDeliveryTests.cs
 │   │   ├── TranscriptionObservabilityContractTests.cs
 │   │   ├── TranscriptionSettingsMigrationTests.cs
-│   │   └── UnitBezierTests.cs
+│   │   ├── UnitBezierTests.cs
+│   │   └── UtteranceProgressTests.cs
 │   ├── Deckle.Transcription.Whisper.Tests/
 │   │   ├── Deckle.Transcription.Whisper.Tests.csproj
 │   │   ├── KnownHallucinationsTests.cs

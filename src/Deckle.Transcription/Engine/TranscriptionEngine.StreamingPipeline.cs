@@ -62,6 +62,7 @@ public sealed partial class TranscriptionEngine
         void OnFrame(CaptureFrame f)
         {
             session.Push(f);
+            UtteranceProgressChanged?.Invoke(session.Progress);
 
             if (!OperationalLogAdmission.IsDetailEnabled(
                     OperationalLogActivity.Transcription,
@@ -96,6 +97,7 @@ public sealed partial class TranscriptionEngine
         // utterances they yield) arrive during Record. It crosses the prime gate
         // before its first backend call; utterances queue in the unbounded channel
         // meanwhile, so nothing is lost while the model warms.
+        UtteranceProgressChanged?.Invoke(session.Progress);
         _capture.Frame += OnFrame;
 
         CaptureResult capture;
@@ -112,7 +114,8 @@ public sealed partial class TranscriptionEngine
                 // ran inside it, on this same thread). Flush the open utterance, then
                 // seal the channel so the consumer's ReadAllAsync completes.
                 _capture.Frame -= OnFrame;
-                session.Complete();
+                try { session.Complete(); }
+                finally { UtteranceProgressChanged?.Invoke(default); }
             }
         }
         catch

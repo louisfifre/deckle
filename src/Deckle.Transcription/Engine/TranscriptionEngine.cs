@@ -97,6 +97,10 @@ public sealed partial class TranscriptionEngine : IDisposable
     // will hook in later).
     public event Action<float>? AudioLevel;
 
+    // Live streaming capture only; emitted on the audio producer thread.
+    // Independent of optional diagnostics and of the ASR consumer's latency.
+    public event Action<UtteranceProgress>? UtteranceProgressChanged;
+
     // Per-segment notification streamed by the active IAsrBackend during
     // inference — fired immediately after the backend's native callback
     // (or backend's equivalent) appends the segment to its internal list.
