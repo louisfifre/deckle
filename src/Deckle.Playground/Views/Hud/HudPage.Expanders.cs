@@ -1,3 +1,5 @@
+using Microsoft.UI.Xaml;
+using Microsoft.UI.Xaml.Controls;
 using Deckle.Audio;
 using Deckle.Composition;
 
@@ -30,7 +32,7 @@ public sealed partial class HudPage
     // creation), so the slider must trigger a stroke rebuild on change.
     private void AddHudGeometryExpander()
     {
-        var stack = NewExpander("HUD geometry", ResetHudGeometry);
+        var stack = NewTuningSection("HUD geometry", ResetHudGeometry);
         AddFloatRow(stack, "InsetDip", -16, 4, 0.5, HudComposition.InsetDip,
             v => HudComposition.InsetDip = (float)v, rebuild: true);
     }
@@ -44,7 +46,7 @@ public sealed partial class HudPage
 
     private void AddPaletteExpander()
     {
-        var stack = NewExpander("Palette (OKLCh)", ResetPalette);
+        var stack = NewTuningSection("Palette (OKLCh)", ResetPalette);
         AddFloatRow(stack, "OklchLightness", 0, 1, 0.05, _tuning.OklchLightness,
             v => _tuning.OklchLightness = (float)v, rebuild: true);
         AddFloatRow(stack, "OklchChroma", 0, 0.4, 0.05, _tuning.OklchChroma,
@@ -70,7 +72,7 @@ public sealed partial class HudPage
 
     private void AddConicFadeExpander()
     {
-        var stack = NewExpander("Conic fade & span", ResetConicFade);
+        var stack = NewTuningSection("Conic fade & span", ResetConicFade);
         AddFloatRow(stack, "ConicSpanTurns", 0.05, 1.0, 0.05, _tuning.ConicSpanTurns,
             v => _tuning.ConicSpanTurns = (float)v, rebuild: true);
         AddFloatRow(stack, "ConicLeadFadeTurns", 0, 1, 0.05, _tuning.ConicLeadFadeTurns,
@@ -96,7 +98,7 @@ public sealed partial class HudPage
 
     private void AddHueRotationExpander()
     {
-        var stack = NewExpander("Hue rotation", ResetHueRotation);
+        var stack = NewTuningSection("Hue rotation", ResetHueRotation);
         AddFloatRow(stack, "HuePeriodSeconds", 0, 60, 0.5, _tuning.HuePeriodSeconds,
             v => _tuning.HuePeriodSeconds = v, rebuild: true);
         AddDirectionRow(stack, "HueDirection", _tuning.HueDirection,
@@ -125,7 +127,7 @@ public sealed partial class HudPage
 
     private void AddArcRotationExpander()
     {
-        var stack = NewExpander("Arc rotation", ResetArcRotation);
+        var stack = NewTuningSection("Arc rotation", ResetArcRotation);
         AddFloatRow(stack, "ArcPeriodSeconds", 0.5, 30, 0.5, _tuning.ArcPeriodSeconds,
             v => _tuning.ArcPeriodSeconds = v, rebuild: true);
         AddDirectionRow(stack, "ArcDirection", _tuning.ArcDirection,
@@ -154,7 +156,7 @@ public sealed partial class HudPage
 
     private void AddRecordingExpander()
     {
-        var stack = NewExpander("Recording", ResetRecording);
+        var stack = NewTuningSection("Recording", ResetRecording);
         AddFloatRow(stack, "RecordingConicSpanTurns", 0.05, 1, 0.05, _tuning.RecordingConicSpanTurns,
             v => _tuning.RecordingConicSpanTurns = (float)v, rebuild: true);
         AddFloatRow(stack, "RecordingConicLeadFadeTurns", 0, 1, 0.05, _tuning.RecordingConicLeadFadeTurns,
@@ -196,7 +198,7 @@ public sealed partial class HudPage
 
     private void AddTranscribingExpander()
     {
-        var stack = NewExpander("Transcribing", ResetTranscribing);
+        var stack = NewTuningSection("Transcribing", ResetTranscribing);
         AddFloatRow(stack, "TranscribingSaturationDark", 0, 1, 0.05, _tuning.TranscribingSaturationDark,
             v => _tuning.TranscribingSaturationDark = (float)v, rebuild: true);
         AddFloatRow(stack, "TranscribingSaturationLight", 0, 1, 0.05, _tuning.TranscribingSaturationLight,
@@ -222,7 +224,7 @@ public sealed partial class HudPage
 
     private void AddRewritingExpander()
     {
-        var stack = NewExpander("Rewriting", ResetRewriting);
+        var stack = NewTuningSection("Rewriting", ResetRewriting);
         AddFloatRow(stack, "RewritingSaturation", 0, 1, 0.05, _tuning.RewritingSaturation,
             v => _tuning.RewritingSaturation = (float)v, rebuild: true);
         AddFloatRow(stack, "RewritingHueShiftTurns", 0, 1, 0.05, _tuning.RewritingHueShiftTurns,
@@ -242,7 +244,7 @@ public sealed partial class HudPage
 
     private void AddAudioMappingExpander()
     {
-        var stack = NewExpander("Audio mapping (Recording)", ResetAudioMapping);
+        var stack = NewTuningSection("Audio mapping (Recording)", ResetAudioMapping);
         // Static mutables on AudioLevelMapper (Deckle.Audio) — no
         // rebuild, read live each sample.
         AddFloatRow(stack, "EmaAlpha", 0, 1, 0.05, AudioLevelMapper.EmaAlpha,
@@ -267,7 +269,7 @@ public sealed partial class HudPage
 
     private void AddSimulatedRmsExpander()
     {
-        var stack = NewExpander("Simulated RMS (Recording only)", ResetSimulatedRms);
+        var stack = NewTuningSection("Simulated RMS (Recording only)", ResetSimulatedRms);
         // Step 0.001 (not 0.05/0.01) — the RMS range is 0..0.3 and the
         // meaningful defaults (0.013 = engine gate at -38 dBFS, 0.100 =
         // conversational mid -20 dBFS) need 3 decimals to display
@@ -304,7 +306,7 @@ public sealed partial class HudPage
     // the live digit reveal through the shared config — paint-time, debounced.
     private void AddClonePlacementExpander()
     {
-        var stack = NewExpander("Conic clone", ResetClonePlacement);
+        var stack = NewTuningSection("Conic clone", ResetClonePlacement);
         AddFloatRow(stack, "Cone centre X", 0, NakedHudSize.X, 2,
             _tuning.CloneCentreXFraction * NakedHudSize.X,
             v => _tuning.CloneCentreXFraction = (float)v / NakedHudSize.X, rebuild: true);
@@ -344,11 +346,16 @@ public sealed partial class HudPage
 
     // Parked expander — fields only observable during a variant
     // transition or at stroke creation. Muted by construction in the
-    // single-target playground ; collapsed by default so they don't
-    // drown the active knobs, but kept visible for default-tweaking.
+    // single-target playground; shown only on targets where those
+    // stroke defaults apply.
     private void AddParkedExpander()
     {
-        var stack = NewExpander("Variant transitions — parked", ResetParked, expanded: false);
+        var stack = NewTuningSection("Transition and rotation defaults", ResetParked);
+        stack.Children.Add(new TextBlock
+        {
+            Text = "Initial orientations, rotation speeds and blends between HUD states. These do not control utterance timing.",
+            Style = (Style)Resources["HudTuningHelpTextStyle"],
+        });
         AddFloatRow(stack, "HuePhaseTurns", 0, 1, 0.05, _tuning.HuePhaseTurns,
             v => _tuning.HuePhaseTurns = (float)v, rebuild: true);
         AddFloatRow(stack, "ArcPhaseTurns", 0, 1, 0.05, _tuning.ArcPhaseTurns,

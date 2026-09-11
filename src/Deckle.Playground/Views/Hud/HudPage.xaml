@@ -12,6 +12,16 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:chrono="using:Deckle.Hud">
 
+    <Page.Resources>
+        <Style x:Key="HudTuningHelpTextStyle" TargetType="TextBlock"
+               BasedOn="{StaticResource BodyTextBlockStyle}">
+            <Setter Property="Foreground" Value="{ThemeResource TextFillColorSecondaryBrush}" />
+            <Setter Property="TextWrapping" Value="Wrap" />
+            <Setter Property="MaxWidth" Value="400" />
+            <Setter Property="HorizontalAlignment" Value="Left" />
+        </Style>
+    </Page.Resources>
+
     <Grid>
         <Grid.ColumnDefinitions>
             <!-- Col 0 absorbs slack ; min 320 keeps the preview
@@ -213,7 +223,7 @@
                       HorizontalScrollBarVisibility="Disabled"
                       Padding="12,24,24,24"
                       MinWidth="480"
-                      MaxWidth="920">
+                      MaxWidth="600">
             <StackPanel x:Name="TuningStack" Spacing="6">
 
                 <!-- Header : "Tunables" title + description, with Reset to defaults

@@ -91,6 +91,7 @@ public sealed partial class HudPage : Page
     // circuits the paired event during every programmatic write.
     // Read by row factories in HudPage.RowFactories.cs.
     private bool _syncing;
+    private bool _tuningPanelInitialized;
 
     // ── Naked preview bundle ────────────────────────────────────────────
     //
@@ -156,7 +157,7 @@ public sealed partial class HudPage : Page
     // or the target menu triggers the next rebuild path.
     private void OnPageLoaded(object sender, RoutedEventArgs e)
     {
-        BuildTuningPanel();
+        if (!_tuningPanelInitialized) BuildTuningPanel();
         ApplyTarget();
         // First Loaded = page ready after the heavy work above. Measured from
         // the nav-start clock set in PlaygroundWindow.OnNavSelectionChanged.
@@ -514,6 +515,7 @@ public sealed partial class HudPage : Page
 
     private void BuildTuningPanel()
     {
+        _tuningPanelInitialized = true;
         // Keep the static header (title + description + Reset all)
         // from XAML, clear anything below it (in case this is ever
         // invoked twice), then append only the expanders for the
