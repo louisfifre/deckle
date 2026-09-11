@@ -1013,6 +1013,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── CLAUDE.md
 │   │   ├── Deckle.Hud.csproj
 │   │   ├── DeckleHudSource.cs
+│   │   ├── HudMaterialTuning.cs
 │   │   ├── HudMessage.xaml
 │   │   ├── HudMessage.xaml.cs
 │   │   ├── JOURNAL.md  — [module-journal] Diagnosis notes, render doctrine, and deferred work for Deckle.Hud — read on de…
@@ -1875,6 +1876,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── AnimationGateTests.cs
 │   │   ├── Deckle.Hud.Tests.csproj
 │   │   ├── DeckleHudSourceTests.cs
+│   │   ├── HudMaterialTuningTests.cs
 │   │   ├── ProximityRollupAggregatorTests.cs
 │   │   └── UtteranceCountdownGeometryTests.cs
 │   ├── Deckle.Input.PrecisionScroll.Tests/
