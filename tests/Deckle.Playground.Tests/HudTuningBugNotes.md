@@ -35,5 +35,14 @@ Manual WinUI validation is still required for both visual issues: enter the page
 - **Observed symptom:** progress had started but the contour stayed invisible or appeared displaced.
 - **Cause:** two fixed fade ramps were multiplied, suppressing the small initial overlap. The angle controls also permitted an invisible sweep before reaching the frame.
 - **Invariant:** an opening grows from the chosen visible start, with the same height and timing on both sides.
-- **Fix:** deform a single feathered canonical wedge per side, scale fades with its opening, and constrain both endpoint controls to the straight-side angle range. Oversize the canonical surface before its 45-degree rotation so source bounds cannot truncate the rays at the HUD edges.
+- **Fix:** deform a single feathered canonical wedge per side, scale fades with its opening, and constrain both endpoint controls to the frame-corner angle range. Oversize the canonical surface before its 45-degree rotation so source bounds cannot truncate the rays at the HUD edges.
 - **Regression coverage:** UtteranceCountdownGeometryTests in Deckle.Hud.Tests covers fixed base, linear front, mirror and endpoint bounds. Alpha rasterization and first visible pixels require manual rendering validation.
+
+## Angle controls could not reach the frame corners
+
+- **Trigger:** increase Start angle or decrease End angle to reach a HUD corner.
+- **Observed symptom:** controls stopped at +12/-12 degrees for a 272x78 frame.
+- **Cause:** the bound subtracted the rounded corner radius before calculating the angle, then the UI floored that result.
+- **Invariant:** both controls reach the center-to-corner ray for the current frame aspect ratio without an arbitrary whole-degree cap.
+- **Fix:** derive the bound from the whole half-height and half-width; retain fractional bounds and expose 0.1-degree steps.
+- **Regression coverage:** UtteranceCountdownGeometryTests.EndpointLimitReachesFrameCornersForDifferentHudSizes. Corner pixels and fades remain a manual rendering check.

@@ -155,8 +155,8 @@ public static partial class HudComposition
     public static float UtteranceCountdownAngleLimit(Vector2 hudSize)
     {
         float halfWidth = MathF.Max(1f, hudSize.X / 2f);
-        float straightHalfHeight = MathF.Max(0f, hudSize.Y / 2f - CornerRadiusDip);
-        return MathF.Atan(straightHalfHeight / halfWidth) * 180f / MathF.PI;
+        float halfHeight = MathF.Max(0f, hudSize.Y / 2f);
+        return MathF.Atan(halfHeight / halfWidth) * 180f / MathF.PI;
     }
 
     public static Matrix3x2 GetUtteranceCountdownTransform(

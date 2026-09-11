@@ -38,13 +38,16 @@ public sealed class UtteranceCountdownGeometryTests
         Assert.True(leftRay.X < 0);
     }
 
-    [Fact]
-    public void AllowedStartAnglesMeetTheVisibleSidesInsteadOfEnteringFromOutside()
+    [Theory]
+    [InlineData(272f, 78f)]
+    [InlineData(400f, 120f)]
+    [InlineData(300f, 120f)]
+    public void EndpointLimitReachesFrameCornersForDifferentHudSizes(float width, float height)
     {
-        var size = new Vector2(272, 78);
+        var size = new Vector2(width, height);
         float limit = HudComposition.UtteranceCountdownAngleLimit(size);
-        float edgeHeight = size.X / 2 * MathF.Tan(limit * MathF.PI / 180);
-        Assert.InRange(edgeHeight, 0, size.Y / 2 - 1);
+        float edgeHeight = width / 2 * MathF.Tan(limit * MathF.PI / 180);
+        Assert.InRange(MathF.Abs(edgeHeight - height / 2), 0, 0.0001f);
         var defaults = new UtteranceCountdownConfig();
         Assert.InRange(defaults.StartDegrees, -limit, limit);
         Assert.InRange(defaults.EndDegrees, -limit, limit);

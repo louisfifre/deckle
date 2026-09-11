@@ -86,12 +86,12 @@ public sealed partial class HudPage
         });
         geometry.Children.Add(TuningHelp(
             "Uses the shared Transcribing material. These settings update the live HUD."));
-        // Limit the knobs to rays that actually meet the straight sides. A
-        // start outside the visible frame used to create an invisible lead-in.
-        double angleLimit = Math.Floor(HudComposition.UtteranceCountdownAngleLimit(NakedHudSize));
-        AddFloatRow(geometry, "Start angle (°)", -angleLimit, angleLimit, 0.5, _countdownConfig.StartDegrees,
+        geometry.Children.Add(TuningHelp("0 degrees is the side midpoint. Positive angles point down; negative angles point up."));
+        // Include the corner region and retain sub-degree precision.
+        double angleLimit = HudComposition.UtteranceCountdownAngleLimit(NakedHudSize);
+        AddFloatRow(geometry, "Start angle (°)", -angleLimit, angleLimit, 0.1, _countdownConfig.StartDegrees,
             value => _countdownConfig = _countdownConfig with { StartDegrees = (float)value }, rebuild: true);
-        AddFloatRow(geometry, "End angle (°)", -angleLimit, angleLimit, 0.5, _countdownConfig.EndDegrees,
+        AddFloatRow(geometry, "End angle (°)", -angleLimit, angleLimit, 0.1, _countdownConfig.EndDegrees,
             value => _countdownConfig = _countdownConfig with { EndDegrees = (float)value }, rebuild: true);
         AddFloatRow(geometry, "Stroke thickness (dip)", 0.5, 12, 0.5, _countdownConfig.StrokeThickness,
             value => _countdownConfig = _countdownConfig with { StrokeThickness = (float)value }, rebuild: true);
