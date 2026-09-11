@@ -960,25 +960,35 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── TelemetrySettings.cs
 │   │   └── TelemetrySettingsService.cs
 │   ├── Deckle.Home/
+│   │   ├── Schema/
+│   │   │   ├── README.md
+│   │   │   ├── schema-annotations.json
+│   │   │   └── schema-manifest.json
 │   │   ├── Terms/
 │   │   │   └── terms.fr.json
 │   │   ├── AGENTS.md  — [agent-instructions] Home inventory domain — public nomenclature, live Anytype room registry, guarde…
 │   │   ├── CONTEXT.md  — [agent-instructions] Home inventory vocabulary — the public norm, personal room registry, point code…
 │   │   ├── Deckle.Home.csproj
 │   │   ├── DeckleHomeSource.cs
+│   │   ├── HomeBodyEditor.cs
 │   │   ├── HomeCode.cs
 │   │   ├── HomeCollectionWriter.cs
 │   │   ├── HomeGestures.cs
 │   │   ├── HomeMcp.cs
 │   │   ├── HomeObjects.cs
 │   │   ├── HomePropertyWriter.cs
+│   │   ├── HomeRelationEdits.cs
 │   │   ├── HomeRequests.cs
 │   │   ├── HomeRuntimeProvider.cs
 │   │   ├── HomeSchema.cs
 │   │   ├── HomeSchemaRuntime.cs
+│   │   ├── HomeSchemaTargetData.cs
+│   │   ├── HomeSearch.cs
 │   │   ├── HomeTerms.cs
 │   │   ├── HomeToolCatalog.cs
-│   │   └── JOURNAL.md  — [journal] Durable findings and frozen decisions for the Home inventory domain.
+│   │   ├── HomeTypedToolCatalog.cs
+│   │   ├── JOURNAL.md  — [journal] Durable findings and frozen decisions for the Home inventory domain.
+│   │   └── OPERATIONS.md
 │   ├── Deckle.Hud/
 │   │   ├── Chrono/
 │   │   │   ├── AGENTS.md
@@ -1863,11 +1873,16 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   ├── Deckle.Home.Tests/
 │   │   ├── Deckle.Home.Tests.csproj
 │   │   ├── FakeHomeAnytypeServer.cs
+│   │   ├── HomeBodyTests.cs
 │   │   ├── HomeCodeTests.cs
 │   │   ├── HomeGesturesBugNotes.md
 │   │   ├── HomeGesturesTests.cs
 │   │   ├── HomeMcpTests.cs
-│   │   └── HomeToolCatalogTests.cs
+│   │   ├── HomeRelationTests.cs
+│   │   ├── HomeSchemaAlignmentTests.cs
+│   │   ├── HomeSearchTests.cs
+│   │   ├── HomeToolCatalogTests.cs
+│   │   └── HomeTypedToolCatalogTests.cs
 │   ├── Deckle.Hud.Tests/
 │   │   ├── AnimationGateTests.cs
 │   │   ├── Deckle.Hud.Tests.csproj

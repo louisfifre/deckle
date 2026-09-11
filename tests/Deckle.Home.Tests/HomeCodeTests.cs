@@ -7,8 +7,8 @@ namespace Deckle.Home.Tests;
 public class HomeCodeTests
 {
     [Theory]
-    [InlineData("ZZ-P01", "ZZ", "P", 1)]
-    [InlineData("YY-DR12", "YY", "DR", 12)]
+    [InlineData("ZZ-PS01", "ZZ", "PS", 1)]
+    [InlineData("YY-SD12", "YY", "SD", 12)]
     public void ElementCodeSeparatesRoomCategoryAndSequence(
         string value, string room, string category, int sequence)
     {
@@ -21,7 +21,7 @@ public class HomeCodeTests
 
     [Theory]
     [InlineData("Z-P01")]
-    [InlineData("ZZ-P00")]
+    [InlineData("ZZ-PS00")]
     [InlineData("ZZ-Q01")]
     [InlineData("ZZP01")]
     public void ElementCodeRejectsValuesOutsideThePublicGrammar(string value)
@@ -30,10 +30,10 @@ public class HomeCodeTests
     }
 
     [Fact]
-    public void CategoryValidatesAgainstTheFrozenFourteenAndLowercasesTheOptionKey()
+    public void CategoryValidatesAgainstTheRetainedManifestAndLowercasesTheOptionKey()
     {
         Assert.Equal("PS", HomeCategories.Validate("ps"));
-        Assert.Equal("pj", HomeCategories.OptionKey("PJ"));
+        Assert.Equal("pn", HomeCategories.OptionKey("PN"));
         Assert.Throws<ArgumentException>(() => HomeCategories.Validate("RJ"));
         Assert.Throws<ArgumentException>(() => HomeCategories.Validate("Q"));
     }
