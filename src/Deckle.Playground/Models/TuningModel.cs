@@ -24,7 +24,21 @@ namespace Deckle.Playground;
 // side.
 internal sealed class TuningModel
 {
-    public TuningModel() => LoadMaterial(new ConicArcStrokeConfig());
+    public TuningModel()
+    {
+        var defaults = new ConicArcStrokeConfig();
+        LoadMaterial(defaults);
+        LoadGeometry(defaults);
+    }
+
+    public float StrokeThickness;
+    public float InsetDip;
+
+    public void LoadGeometry(ConicArcStrokeConfig source)
+    {
+        StrokeThickness = source.StrokeThickness;
+        InsetDip = source.InsetDip;
+    }
 
     // ── Colour palette (paint-time, OKLCh) ──────────────────────────────
     public float OklchLightness = 0.75f;
@@ -146,6 +160,8 @@ internal sealed class TuningModel
     // errors flag any drift between this file and the shipping struct.
     public ConicArcStrokeConfig ToConfig() => new()
     {
+        StrokeThickness = StrokeThickness,
+        InsetDip = InsetDip,
         OklchLightness    = OklchLightness,
         OklchChroma       = OklchChroma,
         HueStart          = HueStart,

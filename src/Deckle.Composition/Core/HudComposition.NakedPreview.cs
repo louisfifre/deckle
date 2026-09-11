@@ -164,7 +164,7 @@ public static partial class HudComposition
         // naked preview paints the same brush footprint. Any drift here
         // would invalidate the diagnostic — the user would be looking at
         // a different geometry than the shipping stroke samples.
-        var innerSize = new Vector2(hudSize.X - 2f * InsetDip, hudSize.Y - 2f * InsetDip);
+        var innerSize = new Vector2(hudSize.X - 2f * cfg.InsetDip, hudSize.Y - 2f * cfg.InsetDip);
         int pxSquare = (int)Math.Ceiling(Math.Sqrt(
             (double)innerSize.X * innerSize.X +
             (double)innerSize.Y * innerSize.Y));

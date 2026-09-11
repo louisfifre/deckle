@@ -128,6 +128,7 @@ public sealed partial class HudPage : Page
         InitializeComponent();
         LoadCountdownTuning();
         _tuning.LoadMaterial(HudMaterialTuning.Current);
+        _tuning.LoadGeometry(HudGeometryTuning.Current);
         NavigationCacheMode = NavigationCacheMode.Required;
 
         _rebuildDebounce.Tick += (_, _) =>
@@ -186,6 +187,7 @@ public sealed partial class HudPage : Page
     public void DisposeResources()
     {
         HudMaterialTuning.Apply(_tuning.ToConfig());
+        HudGeometryTuning.Apply(_tuning.ToConfig());
         // Retain the last slider edit even when closed during the debounce.
         if (ViewModel.IsCountdownTarget) PublishCountdownTuning();
         SettingsService.Instance.OverlayAnimationsChanged -= OnOverlayAnimationsChanged;
@@ -285,6 +287,7 @@ public sealed partial class HudPage : Page
     {
         SnapshotCountdownReplay();
         HudMaterialTuning.Apply(_tuning.ToConfig());
+        HudGeometryTuning.Apply(_tuning.ToConfig());
         if (ViewModel.IsCountdownTarget) PublishCountdownTuning();
         // Tear down everything first.
         ChronoPreview.ApplyState(HudState.Hidden);
@@ -517,10 +520,6 @@ public sealed partial class HudPage : Page
         // Audio mapping statics stay aligned with ResetAudioMapping.
         AudioLevelMapper.Apply(new LevelWindowSettings());
         AudioLevelMapper.EmaAlpha = 0.25f;
-
-        // HudComposition geometry mutables tuned via the HUD geometry
-        // expander.
-        HudComposition.InsetDip = -2f;
 
         BuildTuningPanel();
         ApplyTarget();

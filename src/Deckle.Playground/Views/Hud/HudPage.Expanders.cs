@@ -27,19 +27,21 @@ namespace Deckle.Playground;
 public sealed partial class HudPage
 {
     // HUD geometry — dimensions of the stroke rect itself, independent
-    // of any conic/arc/recording variant. InsetDip lives on
-    // HudComposition (paint-time, baked into the stroke geometry on
-    // creation), so the slider must trigger a stroke rebuild on change.
+    // of any conic/arc/recording variant. Paint-time changes rebuild the
+    // preview and are published through the shared geometry source.
     private void AddHudGeometryExpander()
     {
         var stack = NewTuningSection("HUD geometry", ResetHudGeometry);
-        AddFloatRow(stack, "InsetDip", -16, 4, 0.5, HudComposition.InsetDip,
-            v => HudComposition.InsetDip = (float)v, rebuild: true);
+        stack.Children.Add(TuningHelp("Shared by Recording, Transcribing and Rewriting. Negative inset places part of the stroke outside the HUD."));
+        AddFloatRow(stack, "Stroke thickness (dip)", 0.5, 12, 0.5, _tuning.StrokeThickness,
+            v => _tuning.StrokeThickness = (float)v, rebuild: true);
+        AddFloatRow(stack, "InsetDip", -16, 4, 0.5, _tuning.InsetDip,
+            v => _tuning.InsetDip = (float)v, rebuild: true);
     }
 
     private void ResetHudGeometry()
     {
-        HudComposition.InsetDip = -2f;
+        _tuning.LoadGeometry(new HudComposition.ConicArcStrokeConfig());
         RebuildTuningPanel();
         RequestRebuild();
     }

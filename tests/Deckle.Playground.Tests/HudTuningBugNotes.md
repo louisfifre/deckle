@@ -46,3 +46,12 @@ Manual WinUI validation is still required for both visual issues: enter the page
 - **Invariant:** both controls reach the center-to-corner ray for the current frame aspect ratio without an arbitrary whole-degree cap.
 - **Fix:** derive the bound from the whole half-height and half-width; retain fractional bounds and expose 0.1-degree steps.
 - **Regression coverage:** UtteranceCountdownGeometryTests.EndpointLimitReachesFrameCornersForDifferentHudSizes. Corner pixels and fades remain a manual rendering check.
+
+## Base stroke thickness was missing from live geometry tuning
+
+- **Trigger:** try to reduce the global Recording/Transcribing/Rewriting stroke width from HUD geometry.
+- **Observed symptom:** only InsetDip was available; countdown thickness did not change the base stroke.
+- **Cause:** the base stroke width remained a private Composition constant outside the tunable config.
+- **Invariant:** the base stroke has one shared, live width; material, sweep masks and countdown geometry remain independent.
+- **Fix:** carry StrokeThickness and InsetDip through the production config and a process-local geometry source observed by the real HUD; both update together rather than relying on a mutable inset read only when the next stroke is created.
+- **Regression coverage:** HudGeometryTuningTests.SharedThicknessPreservesMaterialMasksAndCountdownGeometry. Visual thickness changes require a manual HUD check.

@@ -138,6 +138,10 @@ public static partial class HudComposition
     {
         public ConicArcStrokeConfig() {}
 
+        // Shared across Recording, Transcribing and Rewriting.
+        public float StrokeThickness { get; init; } = 4f;
+        public float InsetDip { get; init; } = -2f;
+
         // ── Colour palette (paint-time, baked once) ──────────────────────
         // OKLCh replaces HSV so the baked conic wheel has perceptually
         // uniform luminance across hues — critical for the

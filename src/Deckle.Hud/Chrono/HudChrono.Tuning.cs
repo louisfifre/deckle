@@ -18,8 +18,19 @@ public sealed partial class HudChrono
             return;
         }
         RebuildCountdownVisual();
+        RebuildTunedStroke();
+    }
+
+    private void OnGeometryTuningChanged()
+    {
+        if (DispatcherQueue.HasThreadAccess) RebuildTunedStroke();
+        else DispatcherQueue.TryEnqueue(RebuildTunedStroke);
+    }
+
+    private void RebuildTunedStroke()
+    {
         if (_processingStroke is not { } previous || _currentVariant is not { } variant) return;
-        var config = HudMaterialTuning.ApplyTo(previous.Config);
+        var config = HudGeometryTuning.ApplyTo(HudMaterialTuning.ApplyTo(previous.Config));
         if (config.Equals(previous.Config)) return;
 
         var compositor = ElementCompositionPreview.GetElementVisual(ProcessingSurfaceHost).Compositor;

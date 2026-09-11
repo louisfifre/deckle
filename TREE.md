@@ -987,10 +987,10 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   ├── CLAUDE.md
 │   │   │   ├── CONTEXT.md  — context-deckle-hud-chrono [agent-instructions] Chrono HUD element vocabulary — the face's eight elements, accent twins, and th…
 │   │   │   ├── HudChrono.Clock.cs
-│   │   │   ├── HudChrono.Material.cs
 │   │   │   ├── HudChrono.Reveal.cs
 │   │   │   ├── HudChrono.RevealMask.cs
 │   │   │   ├── HudChrono.Stroke.cs
+│   │   │   ├── HudChrono.Tuning.cs
 │   │   │   ├── HudChrono.UtteranceCountdown.cs
 │   │   │   ├── HudChrono.xaml
 │   │   │   ├── HudChrono.xaml.cs
@@ -1016,6 +1016,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── CLAUDE.md
 │   │   ├── Deckle.Hud.csproj
 │   │   ├── DeckleHudSource.cs
+│   │   ├── HudGeometryTuning.cs
 │   │   ├── HudMaterialTuning.cs
 │   │   ├── HudMessage.xaml
 │   │   ├── HudMessage.xaml.cs
@@ -1882,6 +1883,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── AnimationGateTests.cs
 │   │   ├── Deckle.Hud.Tests.csproj
 │   │   ├── DeckleHudSourceTests.cs
+│   │   ├── HudGeometryTuningTests.cs
 │   │   ├── HudMaterialTuningTests.cs
 │   │   ├── ProximityRollupAggregatorTests.cs
 │   │   ├── UtteranceCountdownGeometryTests.cs

@@ -50,5 +50,7 @@ public sealed class HudTargetControlsTests
         Assert.Equal(expected.TranscribingExposureDark, actual.TranscribingExposureDark);
         Assert.Equal(expected.TranscribingExposureLight, actual.TranscribingExposureLight);
         Assert.Equal(expected.HuePeriodSeconds, actual.HuePeriodSeconds);
+        Assert.Equal(expected.StrokeThickness, actual.StrokeThickness);
+        Assert.Equal(expected.InsetDip, actual.InsetDip);
     }
 }
