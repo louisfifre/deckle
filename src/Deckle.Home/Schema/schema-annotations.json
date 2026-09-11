@@ -1,0 +1,152 @@
+{
+  "description": "Home model annotations and preserved migration coordinates. This file is documentation for domain alignment; schema-admin does not read or enforce it.",
+  "schema": "schema-manifest.json",
+  "decisions": "JOURNAL.md",
+  "vocabulary_policy": {
+    "closed": "Only the listed options; domain commands do not extend or delete them.",
+    "seeded": "Initial options may be extended after explicit validation; domain commands do not delete options.",
+    "open": "No seed; a new dictated value may create an option during the domain operation."
+  },
+  "types": {
+    "zone": {
+      "note": "The collection-layout type requires an app/experience setup path; creating its objects is a separate operation."
+    },
+    "point": {
+      "note": "Accepted 17-property order for the reviewed connection/control cases. Manufacturer, model and manual describe the fitting itself. Templates select the relevant subset. Two independently wired RJ45 terminations are two Points even on one faceplate; outlet_count remains available."
+    },
+    "circuit": {
+      "note": "A physical departure and its run. Rating, dedicated RCD and panel position describe LV breaker departures, not relay modules.",
+      "property_blocks": {
+        "lv_230": ["rating", "dedicated_rcd", "panel_position", "cable"],
+        "elv_24": ["cable"],
+        "data": ["cable", "poe"],
+        "air": ["duct_diameter"],
+        "water": ["pipe"]
+      }
+    },
+    "panel": {"property_blocks": {"lv_230": ["rcd_head", "rcd_type", "free_slots", "conduits", "sub_meter"]}},
+    "device": {
+      "note": "Includes plugged-in and permanently wired equipment. One physical bulb is one Device, linked directly to its Point; shared model data must not duplicate a serial. System grouping is optional; quantity remains available for other equipment."
+    },
+    "component": {
+      "note": "System membership remains required. Removing that requirement for a dismantled part has not been accepted."
+    },
+    "idea": {
+      "note": "The body is the idea; the first line supplies its display name. Pinned alone, outside the five sections."
+    },
+    "todo": {
+      "note": "Native done marks completion. Task/worksite multi-attachment behavior and the proposed create/update asymmetry remain to be settled."
+    }
+  },
+  "properties": {
+    "category": {
+      "vocabulary": "closed",
+      "note": "Legacy v4 vocabulary retained pending a complete replacement decision. Hardwired equipment is now a Device; old equipment-named Point categories are not instructions for new classification. PC covers heater/shutter cable outlets; LC/LW/LS, CS and the simple AR relay remain. LR, CP and assemblies are deferred."
+    },
+    "conduit_diameter": {"vocabulary": "seeded"},
+    "switch_nature": {"vocabulary": "seeded"},
+    "control_link": {
+      "vocabulary": "seeded",
+      "note": "Links actually used to control equipment; multiple values are possible. Supported protocols are a separate fact."
+    },
+    "power_supply": {"vocabulary": "seeded"},
+    "measured_quantity": {"vocabulary": "seeded"},
+    "duct_diameter": {"vocabulary": "seeded"},
+    "carries": {"vocabulary": "seeded"},
+    "assignment": {"vocabulary": "seeded"},
+    "rating": {"vocabulary": "seeded"},
+    "cable": {"vocabulary": "seeded"},
+    "pipe": {"vocabulary": "seeded", "note": "Seed intentionally empty until the water-circuit review."},
+    "rcd_type": {"vocabulary": "closed"},
+    "domain": {"vocabulary": "seeded"},
+    "equipment_category": {"vocabulary": "seeded"},
+    "manufacturer": {"vocabulary": "open"},
+    "supplier": {"vocabulary": "open"},
+    "os": {"vocabulary": "open"},
+    "socket": {"vocabulary": "open"},
+    "chipset": {"vocabulary": "open"},
+    "memory_type": {"vocabulary": "open"},
+    "technical_interface": {"vocabulary": "open"},
+    "storage_medium": {"vocabulary": "open"},
+    "plant_family": {"vocabulary": "open"},
+    "plant_genus": {"vocabulary": "open"},
+    "substrate": {"vocabulary": "open"},
+    "plant_exposure": {"vocabulary": "open"},
+    "environment": {"vocabulary": "open"},
+    "horizon": {"vocabulary": "closed"},
+    "product_category": {"vocabulary": "seeded"},
+    "state": {"vocabulary": "closed"},
+    "priority": {"vocabulary": "closed"},
+    "earthed": {"vocabulary": "closed", "note": "Yes and No are explicit observations; an empty value means unknown."},
+    "dcl": {"vocabulary": "closed", "note": "Yes and No are explicit observations; an empty value means unknown."},
+    "bulb_base": {
+      "vocabulary": "seeded",
+      "note": "Extensible standard vocabulary, separate from the computing socket property."
+    },
+    "lighting_capabilities": {
+      "vocabulary_status": "pending",
+      "extension_policy_note": "Initial values are accepted; the policy for adding further options has not been settled.",
+      "note": "CCT means adjustable white. No Fixed White tag; missing tags do not establish fixed white."
+    },
+    "supported_protocols": {
+      "vocabulary_status": "pending",
+      "extension_policy_note": "Initial values are accepted; the policy for adding further options has not been settled.",
+      "note": "Protocols supported by the Device, whether installed or stored."
+    },
+    "installed_in": {"target_types": ["room"]},
+    "stored_in": {"target_types": ["room"]},
+    "zone": {"target_types": ["zone"]},
+    "connected_to": {
+      "target_types": ["point"],
+      "note": "Device connection to one or more physical Points. Storage-only or battery equipment may have no connection. No direct Device-to-Circuit shortcut."
+    },
+    "controls": {
+      "target_types": ["point", "device"],
+      "note": "Targets the actual controlled Point or Device. Circuit membership and control are separate relations."
+    },
+    "controlled_by": {"target_types": ["point", "device"]},
+    "circuit": {
+      "target_types": ["circuit"],
+      "note": "Multiple Circuit values are possible on a Point. A legally unconnected Point can leave this relation empty."
+    },
+    "panel": {"target_types": ["panel"]},
+    "upstream_panel": {
+      "target_types": ["panel"],
+      "note": "Immediate parent Panel; a root leaves this empty. Cross-medium power feeds are ordinary Circuits, not hierarchy links."
+    },
+    "part_of": {
+      "target_types": ["system"],
+      "note": "Required for Component, optional for Device. The removed-component proposal remains unresolved."
+    },
+    "rated_input_power": {
+      "note": "Documented nominal absorbed power only; not an instantaneous measurement, peak, or audio output rating."
+    },
+    "rated_output_power": {
+      "attachment_status": "pending_assembly_review",
+      "note": "Documented nominal electrical output power. Defined but not attached to a type until the supply/assembly classification is settled."
+    },
+    "color_temperature_min": {"note": "Documented lower bound; equals the upper bound for documented fixed-white equipment."},
+    "color_temperature_max": {"note": "Documented upper bound; equals the lower bound for documented fixed-white equipment."},
+    "luminous_flux": {
+      "paired_with": "luminous_flux_reference_temperature",
+      "note": "Keep a documented flux value with its reference temperature. No universal temperature is assumed. Additional documented conditions belong in the body."
+    },
+    "luminous_flux_reference_temperature": {"paired_with": "luminous_flux"}
+  },
+  "migration": {
+    "status": "Historical coordinates, preserved unchanged. Not executable conversion rules; the final clean-key and experience strategy is unresolved.",
+    "_live_space_type_keys_until_rebirth": {"product": "errand"},
+    "_live_space_keys_until_rebirth": {
+      "product_category": "errand_category",
+      "zone": "floor",
+      "manual": "documents",
+      "power": "power_watts",
+      "memory_size": "memory_size_gb",
+      "memory_frequency": "memory_frequency_mhz",
+      "switch_nature": "switch_kind"
+    },
+    "power_split": "The historical power -> power_watts entry refers to the old ambiguous quantity. Neither old value is automatically assignable to rated_input_power or rated_output_power; interpret each preserved value from its evidence.",
+    "format_changes": "earthed and dcl change from checkbox to select; control_link changes from select to multi_select. Preserve source values and unknowns before any live conversion.",
+    "key_collisions": "Anytype built-in keys deliberately avoided: `project` (type), `status`, `due_date`, `description` (properties) — hence `state` for Statut and `target_date` for Date cible. Arbitrated on the 2026-08-10 fresh space, to re-verify at preview on the new one: `task` is a built-in type (Task, action layout) — fallback applies, type key `todo`, label 'Tâche' unchanged; `exposure` is a built-in property (Camera exposure, text) — plant property is `plant_exposure`, label 'Exposition'. A type key CAN coexist with a same-key property (verified live 2026-07-21): point/circuit/panel/worksite property keys are safe. The Gestion keys (priority, depends_on, estimated_budget, actual_budget, estimated_effort, actual_effort, definition_of_done, related_tasks) matched no built-in on the previous space; preview will confirm on the new one."
+  }
+}

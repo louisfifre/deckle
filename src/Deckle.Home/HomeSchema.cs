@@ -3,14 +3,10 @@ using Deckle.Anytype;
 
 namespace Deckle.Home;
 
-// The Home contract of 2026-08-10, revised at the 2026-08-12 reboot and the
-// 2026-08-23 electricity grill (nomenclature v3): 14 types
-// in five families, English keys, human titles, the derived identity code in
-// the `code` property. The applied truth lives in the home project's
-// mcp/schema-manifest.json; this class is its compiled mirror for validation
-// and payload building — a required SUBSET: conformity tolerates surplus, so
-// manifest-only properties (needed, errand_category…) write through the live
-// schema without appearing here. French labels live in Terms/terms.fr.json
+// The canonical Home contract is embedded from Schema/schema-manifest.json;
+// this class projects its stable English keys onto the historical wire keys
+// used by the live space. Required membership, formats, relations, and seed
+// tags come from that snapshot. French labels live in Terms/terms.fr.json
 // (HomeTerms), never in code.
 public static class HomeSchema
 {
@@ -42,14 +38,17 @@ public static class HomeSchema
         public const string Documents = "documents";
         public const string Location = "location";
         public const string InstalledIn = "installed_in";
+        public const string ConnectedTo = "connected_to";
         public const string StoredIn = "stored_in";
         public const string Floor = "floor";
         public const string Category = "category";
         public const string Condition = "condition";
         public const string Circuit = "circuit";
         public const string Panel = "panel";
+        public const string UpstreamPanel = "upstream_panel";
         public const string OutletCount = "outlet_count";
         public const string Earthed = "earthed";
+        public const string Dcl = "dcl";
         public const string LightNature = "light_nature";
         public const string SwitchKind = "switch_kind";
         public const string Controls = "controls";
@@ -58,10 +57,14 @@ public static class HomeSchema
         public const string PowerWatts = "power_watts";
         public const string MeasuredQuantity = "measured_quantity";
         public const string PowerSupply = "power_supply";
+        public const string Carries = "carries";
+        public const string Assignment = "assignment";
         public const string Nature = "nature";
         public const string PoweredBy = "powered_by";
         public const string Rating = "rating";
         public const string Cable = "cable";
+        public const string Pipe = "pipe";
+        public const string Poe = "poe";
         public const string OriginLabel = "origin_label";
         public const string PanelPosition = "panel_position";
         public const string DedicatedRcd = "dedicated_rcd";
@@ -81,34 +84,64 @@ public static class HomeSchema
         public const string Receipt = "receipt";
         public const string PartOf = "part_of";
         public const string Quantity = "quantity";
+        public const string RatedInputPower = "rated_input_power";
+        public const string RatedOutputPower = "rated_output_power";
+        public const string BulbBase = "bulb_base";
+        public const string LightingCapabilities = "lighting_capabilities";
+        public const string ColorTemperatureMin = "color_temperature_min";
+        public const string ColorTemperatureMax = "color_temperature_max";
+        public const string LuminousFlux = "luminous_flux";
+        public const string LuminousFluxReferenceTemperature = "luminous_flux_reference_temperature";
+        public const string SupportedProtocols = "supported_protocols";
         public const string BatteryCapacity = "battery_capacity";
         public const string StorageCapacity = "storage_capacity";
         public const string PowerRms = "power_rms";
         public const string Impedance = "impedance";
         public const string Os = "os";
         public const string Weight = "weight";
+        public const string Socket = "socket";
+        public const string Chipset = "chipset";
+        public const string MemoryType = "memory_type";
+        public const string MemoryFrequency = "memory_frequency_mhz";
+        public const string MemorySize = "memory_size_gb";
+        public const string CoreCount = "core_count";
+        public const string ThreadCount = "thread_count";
+        public const string TechnicalInterface = "technical_interface";
+        public const string StorageMedium = "storage_medium";
         public const string PlantFamily = "plant_family";
         public const string PlantGenus = "plant_genus";
         public const string ScientificName = "scientific_name";
         public const string Substrate = "substrate";
         public const string PlantExposure = "plant_exposure";
         public const string PlantPhoto = "plant_photo";
+        public const string Environment = "environment";
+        public const string AcquisitionDate = "acquisition_date";
+        public const string LastRepotting = "last_repotting";
         public const string Horizon = "horizon";
         public const string Aisle = "aisle";
+        public const string ProductCategory = "product_category";
+        public const string ErrandCategory = "errand_category";
         public const string About = "about";
         public const string State = "state";
         public const string TargetDate = "target_date";
         public const string Worksite = "worksite";
+        public const string Priority = "priority";
+        public const string DependsOn = "depends_on";
+        public const string EstimatedBudget = "estimated_budget";
+        public const string ActualBudget = "actual_budget";
+        public const string EstimatedEffort = "estimated_effort";
+        public const string ActualEffort = "actual_effort";
+        public const string DefinitionOfDone = "definition_of_done";
     }
 
     public static class State
     {
-        public const string Open = "ouvert";
-        public const string InProgress = "en_cours";
-        public const string Waiting = "en_attente";
+        public const string Open = "open";
+        public const string InProgress = "in_progress";
+        public const string Waiting = "waiting";
         public const string Dormant = "dormant";
-        public const string Done = "termine";
-        public const string Abandoned = "abandonne";
+        public const string Done = "done";
+        public const string Abandoned = "abandoned";
     }
 
     // Inventory types whose identity is an immutable code in the `code`
@@ -134,207 +167,57 @@ public static class HomeSchema
     public static readonly IReadOnlyList<string> CreatableTypes =
     [.. CodedTypes, .. EquipmentTypes, .. LifeTypes, .. WorkTypes];
 
-    internal static readonly IReadOnlyDictionary<string, string> RequiredProperties =
-        new Dictionary<string, string>(StringComparer.Ordinal)
-        {
-            [Properties.Code] = "text",
-            [Properties.Notes] = "text",
-            [Properties.Documents] = "files",
-            [Properties.Location] = "text",
-            [Properties.InstalledIn] = "objects",
-            [Properties.StoredIn] = "objects",
-            [Properties.Floor] = "objects",
-            [Properties.Category] = "select",
-            [Properties.Condition] = "select",
-            [Properties.Circuit] = "objects",
-            [Properties.Panel] = "objects",
-            [Properties.OutletCount] = "number",
-            [Properties.Earthed] = "checkbox",
-            [Properties.LightNature] = "select",
-            [Properties.SwitchKind] = "select",
-            [Properties.Controls] = "objects",
-            [Properties.ControlledBy] = "objects",
-            [Properties.ControlLink] = "select",
-            [Properties.PowerWatts] = "number",
-            [Properties.MeasuredQuantity] = "multi_select",
-            [Properties.PowerSupply] = "select",
-            [Properties.Nature] = "select",
-            [Properties.PoweredBy] = "objects",
-            [Properties.Rating] = "select",
-            [Properties.Cable] = "select",
-            [Properties.OriginLabel] = "text",
-            [Properties.PanelPosition] = "text",
-            [Properties.DedicatedRcd] = "text",
-            [Properties.RcdHead] = "text",
-            [Properties.RcdType] = "select",
-            [Properties.FreeSlots] = "number",
-            [Properties.Conduits] = "text",
-            [Properties.SubMeter] = "text",
-            [Properties.Domain] = "select",
-            [Properties.EquipmentCategory] = "select",
-            [Properties.Manufacturer] = "select",
-            [Properties.Supplier] = "select",
-            [Properties.ModelRef] = "text",
-            [Properties.SerialNumber] = "text",
-            [Properties.PurchasePrice] = "number",
-            [Properties.PurchaseDate] = "date",
-            [Properties.Receipt] = "files",
-            [Properties.PartOf] = "objects",
-            [Properties.Quantity] = "number",
-            [Properties.BatteryCapacity] = "number",
-            [Properties.StorageCapacity] = "number",
-            [Properties.PowerRms] = "number",
-            [Properties.Impedance] = "number",
-            [Properties.Os] = "select",
-            [Properties.Weight] = "number",
-            [Properties.PlantFamily] = "select",
-            [Properties.PlantGenus] = "select",
-            [Properties.ScientificName] = "text",
-            [Properties.Substrate] = "multi_select",
-            [Properties.PlantExposure] = "select",
-            [Properties.PlantPhoto] = "files",
-            [Properties.Horizon] = "select",
-            [Properties.Aisle] = "select",
-            [Properties.About] = "objects",
-            [Properties.State] = "select",
-            [Properties.TargetDate] = "date",
-            [Properties.Worksite] = "objects",
-        };
+    internal static readonly IReadOnlyDictionary<string, string> TargetRequiredProperties =
+        HomeSchemaTargetData.RequiredProperties;
+    internal static readonly IReadOnlyDictionary<string, IReadOnlyList<string>> TargetRequiredByType =
+        HomeSchemaTargetData.RequiredByType;
+    internal static readonly IReadOnlyDictionary<string, IReadOnlyList<string>> TargetObjectPropertyTargets =
+        HomeSchemaTargetData.ObjectPropertyTargets;
+    internal static readonly IReadOnlyDictionary<string, IReadOnlyList<string>> TargetClosedVocabularies =
+        HomeSchemaTargetData.ClosedVocabularies;
+    internal static readonly IReadOnlyDictionary<string, IReadOnlyList<string>> TargetSeededVocabularies =
+        HomeSchemaTargetData.SeededVocabularies;
 
-    // Objects properties whose target must carry a specific type; unlisted
-    // properties (about, stored_in for containers to come) accept any Home
-    // object. The floor property is special-cased in the writer: its targets
-    // are the app-created collection objects of the runtime floor type.
-    // powered_by (2026-08-23): the departure of a circuit that has no panel —
-    // the driver point feeding a 24 V LED circuit.
-    internal static readonly IReadOnlyDictionary<string, IReadOnlyList<string>> ObjectPropertyTargets =
-        new Dictionary<string, IReadOnlyList<string>>(StringComparer.Ordinal)
-        {
-            [Properties.InstalledIn] = [Types.Room],
-            [Properties.StoredIn] = [Types.Room],
-            [Properties.Circuit] = [Types.Circuit],
-            [Properties.Panel] = [Types.Panel],
-            [Properties.PartOf] = [Types.System],
-            [Properties.Worksite] = [Types.Worksite],
-            [Properties.Controls] = [Types.Point],
-            [Properties.ControlledBy] = [Types.Point],
-            [Properties.PoweredBy] = [Types.Point],
-        };
+    internal static readonly IReadOnlyDictionary<string, string> RequiredProperties = TargetRequiredProperties;
+    internal static readonly IReadOnlyDictionary<string, IReadOnlyList<string>> RequiredByType = TargetRequiredByType;
+    internal static readonly IReadOnlyDictionary<string, IReadOnlyList<string>> ObjectPropertyTargets = TargetObjectPropertyTargets;
+    internal static readonly IReadOnlyDictionary<string, IReadOnlyList<string>> ClosedVocabularies = TargetClosedVocabularies;
 
-    internal static readonly IReadOnlyDictionary<string, IReadOnlyList<string>> RequiredByType =
-        new Dictionary<string, IReadOnlyList<string>>(StringComparer.Ordinal)
-        {
-            [Types.Room] =
-            [Properties.Code, Properties.Floor, Properties.Notes, Properties.Documents],
-            [Types.Point] =
-            [
-                Properties.Code, Properties.Category, Properties.InstalledIn,
-                Properties.Condition, Properties.Controls, Properties.ControlledBy,
-                Properties.Circuit, Properties.Panel, Properties.OutletCount,
-                Properties.Earthed, Properties.LightNature, Properties.PowerWatts,
-                Properties.SwitchKind, Properties.ControlLink, Properties.PowerSupply,
-                Properties.MeasuredQuantity, Properties.Location, Properties.Notes,
-            ],
-            [Types.Circuit] =
-            [
-                Properties.Code, Properties.Nature, Properties.Panel, Properties.PoweredBy,
-                Properties.Rating, Properties.DedicatedRcd, Properties.PanelPosition,
-                Properties.OriginLabel, Properties.Cable, Properties.Notes,
-            ],
-            [Types.Panel] =
-            [
-                Properties.Code, Properties.InstalledIn, Properties.RcdHead, Properties.RcdType,
-                Properties.FreeSlots, Properties.Conduits, Properties.SubMeter,
-                Properties.Notes, Properties.Documents,
-            ],
-            [Types.System] =
-            [
-                Properties.Domain, Properties.EquipmentCategory, Properties.Manufacturer,
-                Properties.InstalledIn, Properties.StoredIn, Properties.Notes,
-                Properties.Documents,
-            ],
-            [Types.Device] =
-            [
-                Properties.Domain, Properties.EquipmentCategory, Properties.Manufacturer,
-                Properties.Supplier, Properties.ModelRef, Properties.SerialNumber,
-                Properties.PurchasePrice, Properties.PurchaseDate, Properties.Receipt,
-                Properties.PartOf, Properties.StoredIn, Properties.InstalledIn,
-                Properties.Quantity, Properties.BatteryCapacity,
-                Properties.StorageCapacity, Properties.PowerRms, Properties.Impedance,
-                Properties.Os, Properties.Weight, Properties.Documents, Properties.Notes,
-            ],
-            [Types.Component] =
-            [
-                Properties.Domain, Properties.EquipmentCategory, Properties.Manufacturer,
-                Properties.Supplier, Properties.ModelRef, Properties.SerialNumber,
-                Properties.PurchasePrice, Properties.PurchaseDate, Properties.Receipt,
-                Properties.PartOf, Properties.StoredIn, Properties.Quantity,
-                Properties.BatteryCapacity,
-                Properties.StorageCapacity, Properties.PowerRms, Properties.Impedance,
-                Properties.Weight, Properties.Documents, Properties.Notes,
-            ],
-            [Types.Utensil] =
-            [
-                Properties.EquipmentCategory, Properties.Manufacturer, Properties.Supplier,
-                Properties.ModelRef, Properties.PurchasePrice, Properties.PurchaseDate,
-                Properties.Receipt, Properties.PartOf, Properties.StoredIn,
-                Properties.Quantity, Properties.Documents, Properties.Notes,
-            ],
-            [Types.Plant] =
-            [
-                Properties.PlantFamily, Properties.PlantGenus, Properties.ScientificName,
-                Properties.Substrate, Properties.PlantExposure,
-                Properties.PlantPhoto, Properties.InstalledIn, Properties.Notes,
-            ],
-            [Types.Idea] = [Properties.Horizon],
-            [Types.Errand] =
-            [Properties.Aisle, Properties.Quantity, Properties.About, Properties.Notes],
-            [Types.Worksite] =
-            [
-                Properties.State, Properties.About, Properties.TargetDate,
-                Properties.Notes, Properties.Documents,
-            ],
-            [Types.Todo] =
-            [
-                Properties.State, Properties.About, Properties.Worksite,
-                Properties.TargetDate, Properties.Notes,
-            ],
-        };
+    public static JsonObject TargetManifest => HomeSchemaTargetData.CloneManifest();
 
-    // Closed vocabularies: options are applied, never invented. Open selects
-    // (equipment_category, manufacturer, supplier, os, plant_*, substrate) are
-    // absent here on purpose — their options grow from Louis in the app and
-    // resolve against the live space only. Supplier left the closed set at the
-    // 2026-08-12 reboot: real purchases (Decathlon, LDLC, Rakuten…) outgrew
-    // the compiled six. The electricity selects born on 2026-08-23 (nature,
-    // rating, cable, control_link, measured_quantity) are open too: the
-    // manifest seeds them, Louis extends them in the app (« on pré-remplit,
-    // mais on peut ajouter toujours »), and a compiled list would lock the
-    // guichet the day he renames or drops an option. Category stays closed:
-    // it is the code grammar.
-    internal static readonly IReadOnlyDictionary<string, IReadOnlyList<string>> ClosedVocabularies =
-        new Dictionary<string, IReadOnlyList<string>>(StringComparer.Ordinal)
-        {
-            [Properties.Category] =
-            ["p", "ps", "pj", "pf", "l", "lr", "c", "v", "a", "ds", "dr", "dx", "de"],
-            [Properties.Condition] = ["bon", "vetuste", "endommage", "hors_service"],
-            [Properties.LightNature] = ["plafonnier", "applique", "spot", "dcl"],
-            [Properties.SwitchKind] = ["interrupteur_simple", "va_et_vient", "poussoir"],
-            [Properties.PowerSupply] = ["poe", "pile", "cinq_volts", "vingt_quatre_volts", "secteur"],
-            [Properties.RcdType] = ["type_a", "type_ac", "inconnu"],
-            [Properties.Domain] =
-            [
-                "audio", "informatique", "electronique", "outillage",
-                "cuisine", "electromenager", "jardin",
-            ],
-            [Properties.Horizon] = ["maintenant", "bientot", "un_jour", "peut_etre"],
-            [Properties.Aisle] = ["alimentaire", "bricolage", "maison", "jardin", "autre"],
-            [Properties.State] =
-            [
-                State.Open, State.InProgress, State.Waiting,
-                State.Dormant, State.Done, State.Abandoned,
-            ],
-        };
+    public static string WireTypeKey(string canonicalType) => canonicalType switch
+    {
+        "product" => Types.Errand,
+        "zone" => Types.Floor,
+        _ => canonicalType,
+    };
+
+    public static string WirePropertyKey(string canonicalProperty) => canonicalProperty switch
+    {
+        "zone" => Properties.Floor,
+        "manual" => Properties.Documents,
+        "product_category" => Properties.ErrandCategory,
+        "memory_size" => Properties.MemorySize,
+        "memory_frequency" => Properties.MemoryFrequency,
+        "switch_nature" => Properties.SwitchKind,
+        _ => canonicalProperty,
+    };
+
+    internal static bool IsAllowedProperty(string typeKey, string propertyKey) =>
+        string.Equals(WireTypeKey(typeKey), Types.Floor, StringComparison.Ordinal)
+            ? HomeSchemaTargetData.ZoneProperties.Contains(WirePropertyKey(propertyKey), StringComparer.Ordinal)
+            : TargetRequiredByType.TryGetValue(WireTypeKey(typeKey), out IReadOnlyList<string>? allowed)
+                && allowed.Contains(WirePropertyKey(propertyKey), StringComparer.Ordinal);
+
+    internal static IReadOnlyList<string> OptionAliases(string propertyKey, string optionKey)
+    {
+        JsonObject? definition = HomeSchemaTargetData.Manifest["properties"]!.AsArray().OfType<JsonObject>()
+            .FirstOrDefault(property => WirePropertyKey(property["key"]!.GetValue<string>()) == propertyKey);
+        JsonObject? option = (definition?["tags"] as JsonArray)?.OfType<JsonObject>()
+            .FirstOrDefault(tag => tag["key"]!.GetValue<string>() == optionKey);
+        return new[] { optionKey, OptionLabel(propertyKey, optionKey), option?["name"]?.GetValue<string>() ?? optionKey }
+            .Distinct(StringComparer.OrdinalIgnoreCase).ToArray();
+    }
 
     internal static string OptionLabel(string propertyKey, string optionKey) =>
         HomeTerms.Current.OptionName(propertyKey, optionKey);
@@ -356,7 +239,7 @@ public static class HomeSchema
                 ["name"] = terms.PropertyName(key),
                 ["format"] = format,
             };
-            if (ClosedVocabularies.TryGetValue(key, out IReadOnlyList<string>? optionKeys))
+            if (TargetSeededVocabularies.TryGetValue(key, out IReadOnlyList<string>? optionKeys))
             {
                 var tags = new JsonArray();
                 foreach (string optionKey in optionKeys)
@@ -422,10 +305,10 @@ public static class HomeSchema
             tags ??= new Dictionary<string, SchemaTagInfo>(StringComparer.Ordinal);
             foreach (string key in optionKeys)
             {
-                string name = OptionLabel(propertyKey, key);
+                IReadOnlyList<string> names = OptionAliases(propertyKey, key);
                 if (!tags.Values.Distinct().Any(tag =>
-                        string.Equals(tag.Key, key, StringComparison.OrdinalIgnoreCase)
-                        || string.Equals(tag.Name, name, StringComparison.OrdinalIgnoreCase)))
+                        names.Contains(tag.Key, StringComparer.OrdinalIgnoreCase)
+                        || names.Contains(tag.Name, StringComparer.OrdinalIgnoreCase)))
                 {
                     failures.Add($"vocabulaire {propertyKey} : option manquante {key}");
                 }
@@ -435,7 +318,7 @@ public static class HomeSchema
         if (failures.Count > 0)
             throw new HomeSchemaException(
                 "Le schéma Home n’est pas conforme : " + string.Join(" ; ", failures)
-                + ". Applique le manifeste Home avec schema-admin puis réessaie.");
+                + ". Compare le snapshot au manifeste canonique, préserve les anciennes coordonnées et migre explicitement les formats et valeurs avant de réessayer.");
 
         return new HomeSchemaRuntime(snapshot, FloorTypeKey(snapshot));
     }
@@ -447,11 +330,21 @@ public static class HomeSchema
     // whole schema closed.
     internal static string? FloorTypeKey(SchemaSnapshot snapshot)
     {
-        if (snapshot.Types.ContainsKey(Types.Floor)) return Types.Floor;
-        return snapshot.Types.Values.FirstOrDefault(type =>
+        if (snapshot.Types.TryGetValue(Types.Floor, out SchemaTypeInfo? nominal))
+        {
+            if (nominal.Layout != "collection")
+                throw new HomeSchemaException("Le type Zone attendu doit avoir un layout collection.");
+            return Types.Floor;
+        }
+        SchemaTypeInfo[] matches = snapshot.Types.Values.Where(type =>
                 string.Equals(type.Layout, "collection", StringComparison.Ordinal)
-                && type.Name is "Zone" or "Zones")
-            ?.Key;
+                && type.Name is "Zone" or "Zones").ToArray();
+        return matches.Length switch
+        {
+            0 => null,
+            1 => matches[0].Key,
+            _ => throw new HomeSchemaException("Plusieurs types Zone correspondent : précise le schéma avant d'écrire."),
+        };
     }
 
     private static bool LinkMatches(SchemaPropertyLinkInfo link, SchemaPropertyInfo property) =>

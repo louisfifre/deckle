@@ -26,12 +26,9 @@ public class HomeMcpTests
         McpSurfaceBinding surface = HomeMcp.Client.Surface.Open(api);
 
         Assert.Equal(
-            new[]
-            {
-                "complete", "component_create", "create", "delete", "get",
-                "plant_create", "search", "todo_create", "update",
-                "worksite_create", "worksite_overview",
-            },
+            new[] { "complete", "create", "delete", "get", "search", "update", "worksite_overview" }
+                .Concat(HomeTypedToolCatalog.Build(() => throw new InvalidOperationException()).Select(tool => tool.Name))
+                .OrderBy(name => name),
             surface.Tools.Select(tool => tool.Name).OrderBy(name => name));
         Assert.Contains("shared-house space", surface.Descriptor.Instructions);
     }

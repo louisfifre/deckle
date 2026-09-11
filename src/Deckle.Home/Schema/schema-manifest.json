@@ -1,0 +1,699 @@
+{
+  "types": [
+    {
+      "key": "zone",
+      "name": "Zone",
+      "plural_name": "Zones",
+      "description": "Grouping of rooms",
+      "layout": "collection",
+      "icon": {"format": "icon", "name": "expand", "color": "grey"},
+      "properties": ["notes"]
+    },
+    {
+      "key": "room",
+      "name": "Room",
+      "plural_name": "Rooms",
+      "description": "Physical space of the house",
+      "layout": "basic",
+      "icon": {"format": "icon", "name": "cube", "color": "grey"},
+      "properties": ["code", "zone", "notes", "manual"]
+    },
+    {
+      "key": "point",
+      "name": "Point",
+      "plural_name": "Points",
+      "description": "Installation connection or fixed control position, including its fitting",
+      "layout": "basic",
+      "icon": {"format": "icon", "name": "git-commit", "color": "yellow"},
+      "properties": [
+        "code",
+        "category",
+        "installed_in",
+        "controls",
+        "controlled_by",
+        "circuit",
+        "outlet_count",
+        "earthed",
+        "conduit_diameter",
+        "dcl",
+        "switch_nature",
+        "duct_diameter",
+        "manufacturer",
+        "model_ref",
+        "manual",
+        "location",
+        "notes"
+      ]
+    },
+    {
+      "key": "circuit",
+      "name": "Circuit",
+      "plural_name": "Circuits",
+      "description": "A departure and everything it feeds",
+      "layout": "basic",
+      "icon": {"format": "icon", "name": "git-compare", "color": "yellow"},
+      "properties": [
+        "code",
+        "carries",
+        "assignment",
+        "panel",
+        "powered_by",
+        "origin_label",
+        "rating",
+        "dedicated_rcd",
+        "panel_position",
+        "cable",
+        "poe",
+        "duct_diameter",
+        "pipe",
+        "notes"
+      ]
+    },
+    {
+      "key": "panel",
+      "name": "Panel",
+      "plural_name": "Panels",
+      "description": "Board from which circuits depart",
+      "layout": "basic",
+      "icon": {"format": "icon", "name": "git-branch", "color": "yellow"},
+      "properties": [
+        "code",
+        "carries",
+        "upstream_panel",
+        "installed_in",
+        "rcd_head",
+        "rcd_type",
+        "free_slots",
+        "conduits",
+        "sub_meter",
+        "notes",
+        "manual"
+      ]
+    },
+    {
+      "key": "system",
+      "name": "System",
+      "plural_name": "Systems",
+      "description": "Assembly of several devices or components",
+      "layout": "basic",
+      "icon": {"format": "icon", "name": "grid", "color": "purple"},
+      "properties": [
+        "domain",
+        "equipment_category",
+        "manufacturer",
+        "installed_in",
+        "stored_in",
+        "purchase_date",
+        "purchase_price",
+        "receipt",
+        "os",
+        "notes",
+        "manual"
+      ]
+    },
+    {
+      "key": "device",
+      "name": "Device",
+      "plural_name": "Devices",
+      "description": "Equipment connected to the installation or operating independently",
+      "layout": "basic",
+      "icon": {"format": "icon", "name": "square", "color": "purple"},
+      "properties": [
+        "domain",
+        "equipment_category",
+        "manufacturer",
+        "supplier",
+        "model_ref",
+        "serial_number",
+        "purchase_price",
+        "purchase_date",
+        "receipt",
+        "part_of",
+        "stored_in",
+        "installed_in",
+        "connected_to",
+        "controls",
+        "controlled_by",
+        "control_link",
+        "power_supply",
+        "measured_quantity",
+        "quantity",
+        "rated_input_power",
+        "bulb_base",
+        "lighting_capabilities",
+        "color_temperature_min",
+        "color_temperature_max",
+        "luminous_flux",
+        "luminous_flux_reference_temperature",
+        "supported_protocols",
+        "battery_capacity",
+        "storage_capacity",
+        "power_rms",
+        "impedance",
+        "os",
+        "weight",
+        "needed",
+        "manual",
+        "notes"
+      ]
+    },
+    {
+      "key": "component",
+      "name": "Component",
+      "plural_name": "Components",
+      "description": "Internal technical part of a system",
+      "layout": "basic",
+      "icon": {"format": "icon", "name": "apps", "color": "purple"},
+      "properties": [
+        "domain",
+        "equipment_category",
+        "manufacturer",
+        "supplier",
+        "model_ref",
+        "serial_number",
+        "purchase_price",
+        "purchase_date",
+        "receipt",
+        "part_of",
+        "stored_in",
+        "quantity",
+        "battery_capacity",
+        "storage_capacity",
+        "power_rms",
+        "impedance",
+        "weight",
+        "socket",
+        "chipset",
+        "memory_type",
+        "memory_frequency",
+        "memory_size",
+        "core_count",
+        "thread_count",
+        "technical_interface",
+        "storage_medium",
+        "needed",
+        "manual",
+        "notes"
+      ]
+    },
+    {
+      "key": "utensil",
+      "name": "Kitchen utensil",
+      "plural_name": "Kitchen utensils",
+      "description": "Kitchen smallware",
+      "layout": "basic",
+      "icon": {"format": "icon", "name": "restaurant", "color": "teal"},
+      "properties": [
+        "equipment_category",
+        "manufacturer",
+        "supplier",
+        "model_ref",
+        "purchase_price",
+        "purchase_date",
+        "receipt",
+        "part_of",
+        "stored_in",
+        "quantity",
+        "needed",
+        "manual",
+        "notes"
+      ]
+    },
+    {
+      "key": "plant",
+      "name": "Plant",
+      "plural_name": "Plants",
+      "description": "Care tracking of the house plants",
+      "layout": "basic",
+      "icon": {"format": "icon", "name": "leaf", "color": "lime"},
+      "properties": [
+        "plant_family",
+        "plant_genus",
+        "scientific_name",
+        "substrate",
+        "plant_exposure",
+        "environment",
+        "acquisition_date",
+        "last_repotting",
+        "plant_photo",
+        "installed_in",
+        "notes"
+      ]
+    },
+    {
+      "key": "idea",
+      "name": "Idea",
+      "plural_name": "Ideas",
+      "description": "Wish or project captured on the fly",
+      "layout": "note",
+      "icon": {"format": "icon", "name": "bulb", "color": "pink"},
+      "properties": ["horizon"]
+    },
+    {
+      "key": "product",
+      "name": "Product",
+      "plural_name": "Products",
+      "description": "Everyday product, ticked when needed",
+      "layout": "action",
+      "icon": {"format": "icon", "name": "cart", "color": "grey"},
+      "properties": ["product_category", "needed", "quantity", "about", "notes"]
+    },
+    {
+      "key": "worksite",
+      "name": "Worksite",
+      "plural_name": "Worksites",
+      "description": "Finite body of work on the house",
+      "layout": "action",
+      "icon": {"format": "icon", "name": "construct", "color": "orange"},
+      "properties": [
+        "state",
+        "priority",
+        "about",
+        "depends_on",
+        "target_date",
+        "estimated_budget",
+        "actual_budget",
+        "estimated_effort",
+        "actual_effort",
+        "notes",
+        "manual"
+      ]
+    },
+    {
+      "key": "todo",
+      "name": "Task",
+      "plural_name": "Tasks",
+      "description": "Concrete action, standalone or within a worksite",
+      "layout": "action",
+      "icon": {"format": "icon", "name": "checkbox", "color": "orange"},
+      "properties": [
+        "state",
+        "priority",
+        "about",
+        "worksite",
+        "depends_on",
+        "definition_of_done",
+        "target_date",
+        "estimated_effort",
+        "notes"
+      ]
+    }
+  ],
+  "sections": [
+    {"name": "Structure", "types": ["zone", "room"]},
+    {"name": "Electricity", "types": ["point", "circuit", "panel"]},
+    {"name": "Equipment", "types": ["system", "device", "component", "utensil"]},
+    {"name": "Daily life", "types": ["plant", "product"]},
+    {"name": "Management", "types": ["worksite", "todo"]}
+  ],
+  "properties": [
+    {"key": "code", "name": "Code", "format": "text"},
+    {"key": "notes", "name": "Notes", "format": "text"},
+    {"key": "manual", "name": "Manual", "format": "files"},
+    {"key": "location", "name": "Location", "format": "text"},
+    {"key": "installed_in", "name": "Installed in", "format": "objects"},
+    {"key": "connected_to", "name": "Connected to", "format": "objects"},
+    {"key": "stored_in", "name": "Stored in", "format": "objects"},
+    {"key": "zone", "name": "Zone", "format": "objects"},
+    {
+      "key": "category",
+      "name": "Category",
+      "format": "select",
+      "tags": [
+        {"key": "ps", "name": "PS — standard socket"},
+        {"key": "pp", "name": "PP — power socket"},
+        {"key": "pn", "name": "PN — network socket"},
+        {"key": "pf", "name": "PF — fiber socket"},
+        {"key": "pc", "name": "PC — cable outlet"},
+        {"key": "pr", "name": "PR — reserve outlet"},
+        {"key": "lc", "name": "LC — ceiling light"},
+        {"key": "lw", "name": "LW — wall light"},
+        {"key": "ls", "name": "LS — spot"},
+        {"key": "lr", "name": "LR — LED ribbon"},
+        {"key": "cp", "name": "CP — control panel"},
+        {"key": "cs", "name": "CS — switch"},
+        {"key": "sr", "name": "SR — room sensor"},
+        {"key": "sp", "name": "SP — probe"},
+        {"key": "sc", "name": "SC — opening contact"},
+        {"key": "sv", "name": "SV — camera"},
+        {"key": "sd", "name": "SD — detector"},
+        {"key": "sl", "name": "SL — leak detector"},
+        {"key": "af", "name": "AF — fan"},
+        {"key": "ar", "name": "AR — relay"},
+        {"key": "ad", "name": "AD — driver"},
+        {"key": "ah", "name": "AH — heater"},
+        {"key": "av", "name": "AV — valve"},
+        {"key": "ap", "name": "AP — pump"},
+        {"key": "as", "name": "AS — sounder"},
+        {"key": "ac", "name": "AC — cooler"},
+        {"key": "al", "name": "AL — lock actuator"},
+        {"key": "or", "name": "OR — roller shutter"},
+        {"key": "os", "name": "OS — screen"},
+        {"key": "og", "name": "OG — gate"},
+        {"key": "ow", "name": "OW — motorized window"},
+        {"key": "ve", "name": "VE — extraction vent"},
+        {"key": "vs", "name": "VS — supply vent"},
+        {"key": "vt", "name": "VT — transfer grille"},
+        {"key": "vf", "name": "VF — flue terminal"},
+        {"key": "vp", "name": "VP — suction port"},
+        {"key": "ws", "name": "WS — water supply"},
+        {"key": "wt", "name": "WT — tap"},
+        {"key": "wd", "name": "WD — drain"}
+      ]
+    },
+    {"key": "circuit", "name": "Circuit", "format": "objects"},
+    {"key": "panel", "name": "Panel", "format": "objects"},
+    {"key": "outlet_count", "name": "Outlets", "format": "number"},
+    {
+      "key": "earthed",
+      "name": "Earthed",
+      "format": "select",
+      "tags": [{"key": "yes", "name": "Yes"}, {"key": "no", "name": "No"}]
+    },
+    {
+      "key": "conduit_diameter",
+      "name": "Conduit diameter (mm)",
+      "format": "select",
+      "tags": [
+        {"key": "mm_16", "name": "16 mm"},
+        {"key": "mm_20", "name": "20 mm"},
+        {"key": "mm_25", "name": "25 mm"},
+        {"key": "mm_32", "name": "32 mm"},
+        {"key": "mm_40", "name": "40 mm"},
+        {"key": "mm_50", "name": "50 mm"},
+        {"key": "mm_63", "name": "63 mm"}
+      ]
+    },
+    {
+      "key": "dcl",
+      "name": "DCL outlet",
+      "format": "select",
+      "tags": [{"key": "yes", "name": "Yes"}, {"key": "no", "name": "No"}]
+    },
+    {
+      "key": "switch_nature",
+      "name": "Switch nature",
+      "format": "select",
+      "tags": [
+        {"key": "single_switch", "name": "Single switch"},
+        {"key": "two_way_switch", "name": "Two-way switch"},
+        {"key": "push_button", "name": "Push button"}
+      ]
+    },
+    {"key": "controls", "name": "Controls", "format": "objects"},
+    {"key": "controlled_by", "name": "Controlled by", "format": "objects"},
+    {
+      "key": "control_link",
+      "name": "Control link",
+      "format": "multi_select",
+      "tags": [
+        {"key": "wired", "name": "Wired"},
+        {"key": "radio", "name": "Radio"},
+        {"key": "ethernet", "name": "Ethernet"},
+        {"key": "wifi", "name": "Wi-Fi"},
+        {"key": "zigbee", "name": "Zigbee"},
+        {"key": "bluetooth", "name": "Bluetooth"},
+        {"key": "pilot_wire", "name": "Pilot wire"},
+        {"key": "manual", "name": "Manual"}
+      ]
+    },
+    {"key": "rated_input_power", "name": "Rated input power (W)", "format": "number"},
+    {"key": "rated_output_power", "name": "Rated electrical output power (W)", "format": "number"},
+    {
+      "key": "bulb_base",
+      "name": "Bulb base",
+      "format": "select",
+      "tags": [{"key": "e14", "name": "E14"}, {"key": "e27", "name": "E27"}, {"key": "gu10", "name": "GU10"}]
+    },
+    {
+      "key": "lighting_capabilities",
+      "name": "Lighting capabilities",
+      "format": "multi_select",
+      "tags": [{"key": "cct", "name": "CCT"}, {"key": "rgb", "name": "RGB"}, {"key": "dimmable", "name": "Dimmable"}]
+    },
+    {"key": "color_temperature_min", "name": "Minimum color temperature (K)", "format": "number"},
+    {"key": "color_temperature_max", "name": "Maximum color temperature (K)", "format": "number"},
+    {"key": "luminous_flux", "name": "Luminous flux (lm)", "format": "number"},
+    {
+      "key": "luminous_flux_reference_temperature",
+      "name": "Luminous flux reference temperature (K)",
+      "format": "number"
+    },
+    {
+      "key": "supported_protocols",
+      "name": "Supported protocols",
+      "format": "multi_select",
+      "tags": [{"key": "zigbee", "name": "Zigbee"}, {"key": "bluetooth", "name": "Bluetooth"}]
+    },
+    {
+      "key": "power_supply",
+      "name": "Power supply",
+      "format": "select",
+      "tags": [
+        {"key": "poe", "name": "PoE"},
+        {"key": "battery", "name": "Battery"},
+        {"key": "v_5", "name": "5 V"},
+        {"key": "v_24", "name": "24 V"},
+        {"key": "mains", "name": "Mains"}
+      ]
+    },
+    {
+      "key": "measured_quantity",
+      "name": "Measured quantity",
+      "format": "multi_select",
+      "tags": [
+        {"key": "temperature", "name": "Temperature"},
+        {"key": "humidity", "name": "Humidity"},
+        {"key": "presence", "name": "Presence"},
+        {"key": "motion", "name": "Motion"},
+        {"key": "opening", "name": "Opening"},
+        {"key": "light_level", "name": "Light level"},
+        {"key": "co2", "name": "CO₂"},
+        {"key": "consumption", "name": "Consumption"},
+        {"key": "smoke", "name": "Smoke"},
+        {"key": "carbon_monoxide", "name": "Carbon monoxide"}
+      ]
+    },
+    {
+      "key": "duct_diameter",
+      "name": "Vent duct diameter (mm)",
+      "format": "select",
+      "tags": [
+        {"key": "mm_80", "name": "80 mm"},
+        {"key": "mm_100", "name": "100 mm"},
+        {"key": "mm_125", "name": "125 mm"},
+        {"key": "mm_150", "name": "150 mm"},
+        {"key": "mm_160", "name": "160 mm"},
+        {"key": "mm_200", "name": "200 mm"}
+      ]
+    },
+    {
+      "key": "carries",
+      "name": "Carries",
+      "format": "select",
+      "tags": [
+        {"key": "lv_230", "name": "LV 230 V"},
+        {"key": "elv_24", "name": "ELV 24 V"},
+        {"key": "data", "name": "Data"},
+        {"key": "air", "name": "Air"},
+        {"key": "water", "name": "Water"}
+      ]
+    },
+    {
+      "key": "assignment",
+      "name": "Assignment",
+      "format": "select",
+      "tags": [
+        {"key": "lighting", "name": "Lighting"},
+        {"key": "sockets", "name": "Sockets"},
+        {"key": "dedicated", "name": "Dedicated"}
+      ]
+    },
+    {"key": "powered_by", "name": "Powered by", "format": "objects"},
+    {
+      "key": "rating",
+      "name": "Rating",
+      "format": "select",
+      "tags": [
+        {"key": "a_2", "name": "2 A"},
+        {"key": "a_6", "name": "6 A"},
+        {"key": "a_10", "name": "10 A"},
+        {"key": "a_16", "name": "16 A"},
+        {"key": "a_20", "name": "20 A"},
+        {"key": "a_25", "name": "25 A"},
+        {"key": "a_32", "name": "32 A"},
+        {"key": "a_40", "name": "40 A"},
+        {"key": "a_63", "name": "63 A"}
+      ]
+    },
+    {"key": "origin_label", "name": "Origin label", "format": "text"},
+    {"key": "panel_position", "name": "Position", "format": "text"},
+    {"key": "dedicated_rcd", "name": "Dedicated RCD", "format": "text"},
+    {
+      "key": "cable",
+      "name": "Cable",
+      "format": "select",
+      "tags": [
+        {"key": "mm2_1_5", "name": "1.5 mm²"},
+        {"key": "mm2_2_5", "name": "2.5 mm²"},
+        {"key": "mm2_4", "name": "4 mm²"},
+        {"key": "mm2_6", "name": "6 mm²"},
+        {"key": "mm2_10", "name": "10 mm²"},
+        {"key": "mm2_16", "name": "16 mm²"},
+        {"key": "cat_5e", "name": "Cat 5e"},
+        {"key": "cat_6", "name": "Cat 6"},
+        {"key": "cat_6a", "name": "Cat 6a"},
+        {"key": "fibre", "name": "Fibre"},
+        {"key": "coax", "name": "Coax"}
+      ]
+    },
+    {"key": "poe", "name": "PoE", "format": "checkbox"},
+    {"key": "pipe", "name": "Pipe", "format": "select", "tags": []},
+    {"key": "upstream_panel", "name": "Upstream panel", "format": "objects"},
+    {"key": "rcd_head", "name": "Head RCD", "format": "text"},
+    {
+      "key": "rcd_type",
+      "name": "RCD type",
+      "format": "select",
+      "tags": [
+        {"key": "type_a", "name": "Type A"},
+        {"key": "type_ac", "name": "Type AC"},
+        {"key": "unknown", "name": "Unknown"}
+      ]
+    },
+    {"key": "free_slots", "name": "Free slots", "format": "number"},
+    {"key": "conduits", "name": "Conduits", "format": "text"},
+    {"key": "sub_meter", "name": "Sub-meter", "format": "text"},
+    {
+      "key": "domain",
+      "name": "Domain",
+      "format": "select",
+      "tags": [
+        {"key": "audio", "name": "Audio"},
+        {"key": "it", "name": "IT"},
+        {"key": "electronics", "name": "Electronics"},
+        {"key": "tools", "name": "Tools"},
+        {"key": "kitchen", "name": "Kitchen"},
+        {"key": "appliances", "name": "Appliances"},
+        {"key": "garden", "name": "Garden"}
+      ]
+    },
+    {
+      "key": "equipment_category",
+      "name": "Equipment category",
+      "format": "select",
+      "tags": [
+        {"key": "motherboard", "name": "Motherboard"},
+        {"key": "network_card", "name": "Network card"},
+        {"key": "speaker", "name": "Speaker"},
+        {"key": "clock", "name": "Clock"},
+        {"key": "ram", "name": "RAM"},
+        {"key": "peripheral", "name": "Peripheral"},
+        {"key": "processor", "name": "Processor"},
+        {"key": "cooling", "name": "Cooling"},
+        {"key": "smartphone", "name": "Smartphone"},
+        {"key": "storage", "name": "Storage"},
+        {"key": "bulb", "name": "Bulb"}
+      ]
+    },
+    {"key": "manufacturer", "name": "Manufacturer", "format": "select", "tags": []},
+    {"key": "supplier", "name": "Supplier", "format": "select", "tags": []},
+    {"key": "model_ref", "name": "Model reference", "format": "text"},
+    {"key": "serial_number", "name": "Serial number", "format": "text"},
+    {"key": "purchase_price", "name": "Purchase price (€)", "format": "number"},
+    {"key": "purchase_date", "name": "Purchase date", "format": "date"},
+    {"key": "receipt", "name": "Proof of purchase", "format": "files"},
+    {"key": "part_of", "name": "Part of", "format": "objects"},
+    {"key": "quantity", "name": "Quantity", "format": "number"},
+    {"key": "battery_capacity", "name": "Battery capacity (mAh)", "format": "number"},
+    {"key": "storage_capacity", "name": "Storage capacity (GB)", "format": "number"},
+    {"key": "power_rms", "name": "Power (W RMS)", "format": "number"},
+    {"key": "impedance", "name": "Impedance (Ω)", "format": "number"},
+    {"key": "os", "name": "OS", "format": "select", "tags": []},
+    {"key": "socket", "name": "Socket", "format": "select", "tags": []},
+    {"key": "chipset", "name": "Chipset", "format": "select", "tags": []},
+    {"key": "memory_type", "name": "Memory type", "format": "select", "tags": []},
+    {"key": "memory_frequency", "name": "Memory frequency (MHz)", "format": "number"},
+    {"key": "memory_size", "name": "Memory size (GB)", "format": "number"},
+    {"key": "core_count", "name": "Cores", "format": "number"},
+    {"key": "thread_count", "name": "Threads", "format": "number"},
+    {"key": "technical_interface", "name": "Technical interface", "format": "select", "tags": []},
+    {"key": "storage_medium", "name": "Storage medium", "format": "select", "tags": []},
+    {"key": "weight", "name": "Weight (g)", "format": "number"},
+    {"key": "plant_family", "name": "Family (botanical)", "format": "select", "tags": []},
+    {"key": "plant_genus", "name": "Genus (botanical)", "format": "select", "tags": []},
+    {"key": "scientific_name", "name": "Scientific name", "format": "text"},
+    {"key": "substrate", "name": "Substrate", "format": "multi_select", "tags": []},
+    {"key": "plant_exposure", "name": "Exposure", "format": "select", "tags": []},
+    {"key": "environment", "name": "Environment", "format": "select", "tags": []},
+    {"key": "acquisition_date", "name": "Acquisition date", "format": "date"},
+    {"key": "last_repotting", "name": "Last repotting", "format": "date"},
+    {"key": "plant_photo", "name": "Photo(s)", "format": "files"},
+    {
+      "key": "horizon",
+      "name": "Horizon",
+      "format": "select",
+      "tags": [
+        {"key": "now", "name": "Now"},
+        {"key": "soon", "name": "Soon"},
+        {"key": "someday", "name": "Someday"},
+        {"key": "maybe", "name": "Maybe"}
+      ]
+    },
+    {"key": "needed", "name": "Needed", "format": "checkbox"},
+    {
+      "key": "product_category",
+      "name": "Product category",
+      "format": "select",
+      "tags": [
+        {"key": "sweet_products", "name": "Sweet products"},
+        {"key": "savoury_products", "name": "Savoury products"},
+        {"key": "dairy_products", "name": "Dairy products"},
+        {"key": "dry_cereal_products", "name": "Dry cereal products"},
+        {"key": "dry_plant_products", "name": "Dry plant products"},
+        {"key": "animal_products", "name": "Animal products"},
+        {"key": "vegetables", "name": "Vegetables"},
+        {"key": "fruit", "name": "Fruit"},
+        {"key": "cooking_ingredients", "name": "Cooking ingredients"},
+        {"key": "seasonings", "name": "Seasonings"},
+        {"key": "tins_and_jars", "name": "Tins and jars"},
+        {"key": "drinks", "name": "Drinks"},
+        {"key": "cleaning", "name": "Cleaning"},
+        {"key": "hygiene_and_health", "name": "Hygiene and health"}
+      ]
+    },
+    {"key": "about", "name": "About", "format": "objects"},
+    {
+      "key": "state",
+      "name": "Status",
+      "format": "select",
+      "tags": [
+        {"key": "open", "name": "Open"},
+        {"key": "in_progress", "name": "In progress"},
+        {"key": "waiting", "name": "Waiting"},
+        {"key": "dormant", "name": "Dormant"},
+        {"key": "done", "name": "Done"},
+        {"key": "abandoned", "name": "Abandoned"}
+      ]
+    },
+    {"key": "target_date", "name": "Target date", "format": "date"},
+    {"key": "worksite", "name": "Worksite", "format": "objects"},
+    {
+      "key": "priority",
+      "name": "Priority",
+      "format": "select",
+      "tags": [
+        {"key": "low", "name": "Low"},
+        {"key": "normal", "name": "Normal"},
+        {"key": "high", "name": "High"},
+        {"key": "urgent", "name": "Urgent"}
+      ]
+    },
+    {"key": "depends_on", "name": "Depends on", "format": "objects"},
+    {"key": "estimated_budget", "name": "Estimated budget (€)", "format": "number"},
+    {"key": "actual_budget", "name": "Actual budget (€)", "format": "number"},
+    {"key": "estimated_effort", "name": "Estimated effort (days)", "format": "number"},
+    {"key": "actual_effort", "name": "Actual effort (days)", "format": "number"},
+    {"key": "definition_of_done", "name": "Definition of done", "format": "text"}
+  ]
+}

@@ -9,7 +9,7 @@ public readonly record struct HomeElementCode(
     int Sequence)
 {
     private static readonly Regex Pattern = new(
-        "^(?<room>[A-Z]{2})-(?<category>PS|PJ|PF|LR|DS|DR|DX|DE|P|L|C|V|A)(?<sequence>[0-9]{2})$",
+        "^(?<room>[A-Z]{2})-(?<category>[A-Z]{2})(?<sequence>[0-9]{2})$",
         RegexOptions.CultureInvariant | RegexOptions.Compiled);
 
     public static HomeElementCode Parse(string value)
@@ -29,7 +29,7 @@ public readonly record struct HomeElementCode(
         return new HomeElementCode(
             value,
             match.Groups["room"].Value,
-            match.Groups["category"].Value,
+            HomeCategories.Validate(match.Groups["category"].Value),
             sequence);
     }
 
@@ -45,17 +45,15 @@ public readonly record struct HomeElementCode(
     }
 }
 
-// The 13 category codes of nomenclature v3 (2026-08-23: the R family
-// dissolved into P — a network socket is a socket, PJ RJ45 and PF fibre;
-// the bay is a panel; coax and TPL are not inventoried). Since the point
-// merge (2026-08-10) every category maps to the single point type: the
-// category is the point's nature, carried by the `category` select — no
-// longer a type discriminator. The select option key is the category code
-// lowercased.
+// Retained category vocabulary from the accepted target manifest. Some entries
+// await the assembly/network review; recognition is not a classification rule.
 public static class HomeCategories
 {
     private static readonly IReadOnlyList<string> Codes =
-    ["P", "PS", "PJ", "PF", "L", "LR", "C", "V", "A", "DS", "DR", "DX", "DE"];
+        HomeSchema.TargetManifest["properties"]!.AsArray().OfType<System.Text.Json.Nodes.JsonObject>()
+            .Single(property => property["key"]!.GetValue<string>() == "category")["tags"]!
+            .AsArray().OfType<System.Text.Json.Nodes.JsonObject>()
+            .Select(tag => tag["key"]!.GetValue<string>().ToUpperInvariant()).ToArray();
 
     public static IReadOnlyCollection<string> All => Codes;
 
