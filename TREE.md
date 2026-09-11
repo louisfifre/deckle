@@ -865,7 +865,9 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   ├── HudComposition.NakedPreview.cs
 │   │   │   ├── HudComposition.Painting.cs
 │   │   │   ├── HudComposition.ProcessingStroke.cs
-│   │   │   └── ProcessingVariant.cs
+│   │   │   ├── HudComposition.UtteranceCountdownVisual.cs
+│   │   │   ├── ProcessingVariant.cs
+│   │   │   └── UtteranceCountdownConfig.cs
 │   │   ├── Primitives/
 │   │   │   └── ColorSpace.cs
 │   │   └── Deckle.Composition.csproj
@@ -1873,7 +1875,8 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── AnimationGateTests.cs
 │   │   ├── Deckle.Hud.Tests.csproj
 │   │   ├── DeckleHudSourceTests.cs
-│   │   └── ProximityRollupAggregatorTests.cs
+│   │   ├── ProximityRollupAggregatorTests.cs
+│   │   └── UtteranceCountdownGeometryTests.cs
 │   ├── Deckle.Input.PrecisionScroll.Tests/
 │   │   ├── Fixtures/
 │   │   │   └── precision-scroll-baseline.json
