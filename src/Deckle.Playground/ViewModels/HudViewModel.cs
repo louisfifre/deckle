@@ -23,6 +23,9 @@ public enum HudTarget
     // config as the contour — a placement sandbox for the digit-reveal material.
     ConicClone,
     UtteranceCountdown,
+    CountdownMaterial,
+    CountdownMasks,
+    MaskedCountdown,
 }
 
 // Logical groups of tuning expanders. The HUD tuning panel is rebuilt
@@ -108,6 +111,9 @@ public partial class HudViewModel : ObservableObject
                       or HudTarget.Combined
                       or HudTarget.ConicClone;
 
+    public bool IsCountdownTarget => CurrentTarget is HudTarget.UtteranceCountdown
+        or HudTarget.CountdownMaterial or HudTarget.CountdownMasks or HudTarget.MaskedCountdown;
+
     // Computed transport enable-flags. Derived from IsPlaying ; the
     // partial change method below fires change notifications for these
     // so x:Bind picks them up on the toolbar. Two-button transport
@@ -130,6 +136,9 @@ public partial class HudViewModel : ObservableObject
         HudTarget.Combined   => "Masked cone",
         HudTarget.ConicClone => "Cone clone",
         HudTarget.UtteranceCountdown => "Utterance countdown",
+        HudTarget.CountdownMaterial => "Countdown material",
+        HudTarget.CountdownMasks => "Countdown masks",
+        HudTarget.MaskedCountdown => "Masked countdown",
         _                    => CurrentTarget.ToString(),
     };
 
@@ -213,7 +222,8 @@ public partial class HudViewModel : ObservableObject
                     HudTuningSection.ConicFade,
                     HudTuningSection.ArcRotation,
                 },
-            HudTarget.UtteranceCountdown =>
+            HudTarget.UtteranceCountdown or HudTarget.CountdownMaterial
+                or HudTarget.CountdownMasks or HudTarget.MaskedCountdown =>
                 new[] { HudTuningSection.UtteranceCountdown },
             HudTarget.ConicClone =>
                 new[]

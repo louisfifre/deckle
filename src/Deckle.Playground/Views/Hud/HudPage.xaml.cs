@@ -187,7 +187,7 @@ public sealed partial class HudPage : Page
     {
         HudMaterialTuning.Apply(_tuning.ToConfig());
         // Retain the last slider edit even when closed during the debounce.
-        if (ViewModel.CurrentTarget == HudTarget.UtteranceCountdown) PublishCountdownTuning();
+        if (ViewModel.IsCountdownTarget) PublishCountdownTuning();
         SettingsService.Instance.OverlayAnimationsChanged -= OnOverlayAnimationsChanged;
         _rmsTimer.Stop();
         _rmsClock.Stop();
@@ -285,7 +285,7 @@ public sealed partial class HudPage : Page
     {
         SnapshotCountdownReplay();
         HudMaterialTuning.Apply(_tuning.ToConfig());
-        if (ViewModel.CurrentTarget == HudTarget.UtteranceCountdown) PublishCountdownTuning();
+        if (ViewModel.IsCountdownTarget) PublishCountdownTuning();
         // Tear down everything first.
         ChronoPreview.ApplyState(HudState.Hidden);
         ElementCompositionPreview.SetElementChildVisual(NakedPreviewHost, null);
@@ -310,11 +310,10 @@ public sealed partial class HudPage : Page
         }
 
         var currentTarget = ViewModel.CurrentTarget;
-        bool isNaked = currentTarget is HudTarget.Conic
+        bool isNaked = ViewModel.IsCountdownTarget || currentTarget is HudTarget.Conic
                                      or HudTarget.ArcMask
                                      or HudTarget.Combined
-                                     or HudTarget.ConicClone
-                                     or HudTarget.UtteranceCountdown;
+                                     or HudTarget.ConicClone;
         ChronoPreview.Visibility    = isNaked ? Visibility.Collapsed : Visibility.Visible;
         NakedPreviewHost.Visibility = isNaked ? Visibility.Visible   : Visibility.Collapsed;
         // The grading toggle rides with the geometry-only previews.
@@ -324,7 +323,7 @@ public sealed partial class HudPage : Page
         {
             // The clone is its own factory (a placed cone), not one of the three
             // raw NakedMaskParts — branch it out before the part mapping.
-            if (currentTarget == HudTarget.UtteranceCountdown)
+            if (ViewModel.IsCountdownTarget)
             {
                 AttachUtteranceCountdownPreview();
                 return;
@@ -565,7 +564,7 @@ public sealed partial class HudPage : Page
             }
         }
 
-        if (ViewModel.CurrentTarget != HudTarget.UtteranceCountdown)
+        if (!ViewModel.IsCountdownTarget)
             AddParkedExpander();
     }
 

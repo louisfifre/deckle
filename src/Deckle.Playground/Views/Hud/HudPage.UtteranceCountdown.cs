@@ -28,15 +28,12 @@ public sealed partial class HudPage
         _setCountdownPosition?.Invoke(_countdownTuning.Progress * 100);
     }
 
-    private enum CountdownInspection { Contour, Material, Masks, MaskedMaterial }
-
     // Simulation and inspection never change the live transcription signal.
     private sealed class CountdownTuning
     {
         public float Progress;
         public float MaterialOpacity = 0.2f;
         public double DurationSeconds = 3;
-        public CountdownInspection Inspection;
     }
 
     private void LoadCountdownTuning() => _countdownConfig = UtteranceCountdownTuning.Current;
@@ -48,7 +45,7 @@ public sealed partial class HudPage
         bool isDark = ActualTheme != ElementTheme.Light;
         bool animations = SettingsService.Instance.Current.Overlay.Animations;
         var material = HudMaterialTuning.Current;
-        if (_countdownTuning.Inspection == CountdownInspection.Material)
+        if (ViewModel.CurrentTarget == HudTarget.CountdownMaterial)
         {
             _nakedPreview = HudComposition.CreateNakedMaskPreview(
                 compositor, NakedHudSize, material, HudComposition.NakedMaskPart.Conic,
@@ -60,8 +57,8 @@ public sealed partial class HudPage
             return;
         }
 
-        bool maskOnly = _countdownTuning.Inspection == CountdownInspection.Masks;
-        float opacity = _countdownTuning.Inspection == CountdownInspection.Contour
+        bool maskOnly = ViewModel.CurrentTarget == HudTarget.CountdownMasks;
+        float opacity = ViewModel.CurrentTarget == HudTarget.UtteranceCountdown
             ? _countdownTuning.MaterialOpacity : 1f;
         _utteranceCountdownPreview = HudComposition.CreateUtteranceCountdownVisual(
             compositor, new Vector2(NakedHostDim), NakedHudSize, material, isDark,
@@ -72,6 +69,11 @@ public sealed partial class HudPage
 
     private void AddUtteranceCountdownExpander()
     {
+        if (ViewModel.CurrentTarget == HudTarget.CountdownMaterial)
+        {
+            AddCountdownPreviewSection();
+            return;
+        }
         var geometry = NewTuningSection("Countdown geometry", () =>
         {
             var defaults = new UtteranceCountdownConfig();
@@ -82,7 +84,7 @@ public sealed partial class HudPage
             };
             RebuildTuningPanel();
         });
-        geometry.Children.Add(CountdownHelp(
+        geometry.Children.Add(TuningHelp(
             "Uses the shared Transcribing material. These settings update the live HUD."));
         // Limit the knobs to rays that actually meet the straight sides. A
         // start outside the visible frame used to create an invisible lead-in.
@@ -104,7 +106,7 @@ public sealed partial class HudPage
             };
             RebuildTuningPanel();
         });
-        fade.Children.Add(CountdownHelp("Same fade units as Sweep mask. The fades scale with the cone opening."));
+        fade.Children.Add(TuningHelp("Same fade units as Sweep mask. The fades scale with the cone opening."));
         AddFloatRow(fade, "Lead fade (turns)", 0, 1, 0.005, _countdownConfig.LeadFadeTurns,
             value => _countdownConfig = _countdownConfig with { LeadFadeTurns = (float)value }, rebuild: true);
         AddFloatRow(fade, "Tail fade (turns)", 0, 1, 0.005, _countdownConfig.TailFadeTurns,
@@ -115,12 +117,6 @@ public sealed partial class HudPage
         AddCountdownPreviewSection();
     }
 
-    private TextBlock CountdownHelp(string text) => new()
-    {
-        Text = text,
-        Style = (Style)Resources["HudTuningHelpTextStyle"],
-    };
-
     private void AddCountdownPreviewSection()
     {
         var preview = NewTuningSection("Preview only", () =>
@@ -129,16 +125,9 @@ public sealed partial class HudPage
             _countdownTuning = new();
             RebuildTuningPanel();
         });
-        preview.Children.Add(CountdownHelp("Inspect the material, its masks or the resulting contour. Simulation does not affect dictation."));
-        var inspection = new ComboBox
-        {
-            Header = "View",
-            HorizontalAlignment = HorizontalAlignment.Stretch,
-            ItemsSource = new[] { "Contour and cones", "Transcribing material", "Countdown masks", "Masked material" },
-            SelectedIndex = (int)_countdownTuning.Inspection,
-        };
-        preview.Children.Add(inspection);
-        preview.Children.Add(CountdownHelp("The shared palette and its rotation are adjusted in Cone; grayscale grading is adjusted in Transcribing."));
+        preview.Children.Add(TuningHelp("The shared palette and its rotation are adjusted in Cone; grayscale grading is adjusted in Transcribing."));
+        if (ViewModel.CurrentTarget == HudTarget.CountdownMaterial) return;
+        preview.Children.Add(TuningHelp("Simulation does not affect dictation. Choose another inspection view in Target."));
 
         var simulation = new StackPanel { Spacing = 4 };
         preview.Children.Add(simulation);
@@ -151,26 +140,11 @@ public sealed partial class HudPage
             });
         AddFloatRow(simulation, "Pause duration (s)", 0.5, 5, 0.1, _countdownTuning.DurationSeconds,
             value => _countdownTuning.DurationSeconds = value);
-        AddFloatRow(simulation, "Cone visibility (%)", 0, 100, 5, _countdownTuning.MaterialOpacity * 100,
-            value => _countdownTuning.MaterialOpacity = (float)value / 100f, rebuild: true);
-        var coneVisibilityRow = simulation.Children[simulation.Children.Count - 1];
+        if (ViewModel.CurrentTarget == HudTarget.UtteranceCountdown)
+            AddFloatRow(simulation, "Cone visibility (%)", 0, 100, 5, _countdownTuning.MaterialOpacity * 100,
+                value => _countdownTuning.MaterialOpacity = (float)value / 100f, rebuild: true);
 
-        void UpdateInspectionControls()
-        {
-            simulation.Visibility = _countdownTuning.Inspection == CountdownInspection.Material
-                ? Visibility.Collapsed : Visibility.Visible;
-            coneVisibilityRow.Visibility = _countdownTuning.Inspection == CountdownInspection.Contour
-                ? Visibility.Visible : Visibility.Collapsed;
-        }
-        inspection.SelectionChanged += (_, _) =>
-        {
-            _countdownTuning.Inspection = (CountdownInspection)inspection.SelectedIndex;
-            UpdateInspectionControls();
-            RequestRebuild();
-        };
-        UpdateInspectionControls();
-
-        simulation.Children.Add(CountdownHelp("Replay holds at the end. Resume speech returns to the start."));
+        simulation.Children.Add(TuningHelp("Replay holds at the end. Resume speech returns to the start."));
         var transport = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8, Margin = new Thickness(0, 12, 0, 0) };
         var replay = new Button { Content = "Replay pause" };
         replay.Click += (_, _) =>

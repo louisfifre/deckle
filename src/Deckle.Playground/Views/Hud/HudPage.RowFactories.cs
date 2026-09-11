@@ -22,6 +22,12 @@ namespace Deckle.Playground;
 
 public sealed partial class HudPage
 {
+    private TextBlock TuningHelp(string text) => new()
+    {
+        Text = text,
+        Style = (Style)Resources["HudTuningHelpTextStyle"],
+    };
+
     // Section header hosts the title and an aligned-right "Reset
     // section" button — icon + label, hidden until the section is hovered or the
     // button is focused, the same Settings reveal as TuningCard's section reset.

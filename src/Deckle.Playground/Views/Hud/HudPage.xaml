@@ -131,6 +131,15 @@
                             <MenuFlyoutItem Text="Utterance countdown"
                                             Tag="UtteranceCountdown" MinHeight="36"
                                             Click="OnTargetMenuItemClick" />
+                            <MenuFlyoutItem Text="Countdown material"
+                                            Tag="CountdownMaterial" MinHeight="36"
+                                            Click="OnTargetMenuItemClick" />
+                            <MenuFlyoutItem Text="Countdown masks"
+                                            Tag="CountdownMasks" MinHeight="36"
+                                            Click="OnTargetMenuItemClick" />
+                            <MenuFlyoutItem Text="Masked countdown"
+                                            Tag="MaskedCountdown" MinHeight="36"
+                                            Click="OnTargetMenuItemClick" />
                         </MenuFlyout>
                     </DropDownButton.Flyout>
                 </DropDownButton>

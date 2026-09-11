@@ -9,16 +9,24 @@ public sealed class HudTargetControlsTests
     [Theory]
     [InlineData(HudTarget.ArcMask)]
     [InlineData(HudTarget.UtteranceCountdown)]
+    [InlineData(HudTarget.CountdownMaterial)]
+    [InlineData(HudTarget.CountdownMasks)]
+    [InlineData(HudTarget.MaskedCountdown)]
     public void UncoloredMaskAndCountdownDoNotOfferAColorVariant(HudTarget target)
     {
         var model = new HudViewModel { CurrentTarget = target };
         Assert.False(model.IsVariantToggleVisible);
     }
 
-    [Fact]
-    public void CountdownDoesNotOfferItsOwnPalette()
+    [Theory]
+    [InlineData(HudTarget.UtteranceCountdown)]
+    [InlineData(HudTarget.CountdownMaterial)]
+    [InlineData(HudTarget.CountdownMasks)]
+    [InlineData(HudTarget.MaskedCountdown)]
+    public void CountdownViewsShareGeometryAndDoNotOfferAnotherPalette(HudTarget target)
     {
-        var model = new HudViewModel { CurrentTarget = HudTarget.UtteranceCountdown };
+        var model = new HudViewModel { CurrentTarget = target };
+        Assert.True(model.IsCountdownTarget);
         Assert.Contains(HudTuningSection.UtteranceCountdown, model.ActiveTuningSections);
         Assert.DoesNotContain(HudTuningSection.Palette, model.ActiveTuningSections);
     }
