@@ -987,11 +987,14 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   ├── CLAUDE.md
 │   │   │   ├── CONTEXT.md  — context-deckle-hud-chrono [agent-instructions] Chrono HUD element vocabulary — the face's eight elements, accent twins, and th…
 │   │   │   ├── HudChrono.Clock.cs
+│   │   │   ├── HudChrono.Material.cs
 │   │   │   ├── HudChrono.Reveal.cs
 │   │   │   ├── HudChrono.RevealMask.cs
 │   │   │   ├── HudChrono.Stroke.cs
+│   │   │   ├── HudChrono.UtteranceCountdown.cs
 │   │   │   ├── HudChrono.xaml
-│   │   │   └── HudChrono.xaml.cs
+│   │   │   ├── HudChrono.xaml.cs
+│   │   │   └── UtteranceCountdownState.cs
 │   │   ├── Model/
 │   │   │   ├── HudPalette.cs
 │   │   │   ├── HudState.cs
@@ -1017,7 +1020,8 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── HudMessage.xaml
 │   │   ├── HudMessage.xaml.cs
 │   │   ├── JOURNAL.md  — [module-journal] Diagnosis notes, render doctrine, and deferred work for Deckle.Hud — read on de…
-│   │   └── ProximityRollupAggregator.cs
+│   │   ├── ProximityRollupAggregator.cs
+│   │   └── UtteranceCountdownTuning.cs
 │   ├── Deckle.Inference.Onnx/
 │   │   ├── AGENTS.md  — [agent-instructions] ONNX Runtime CPU inference substrate — isolates the process-wide OnnxRuntime de…
 │   │   ├── CLAUDE.md
@@ -1878,7 +1882,8 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── DeckleHudSourceTests.cs
 │   │   ├── HudMaterialTuningTests.cs
 │   │   ├── ProximityRollupAggregatorTests.cs
-│   │   └── UtteranceCountdownGeometryTests.cs
+│   │   ├── UtteranceCountdownGeometryTests.cs
+│   │   └── UtteranceCountdownStateTests.cs
 │   ├── Deckle.Input.PrecisionScroll.Tests/
 │   │   ├── Fixtures/
 │   │   │   └── precision-scroll-baseline.json

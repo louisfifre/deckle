@@ -72,6 +72,9 @@
         <Border x:Name="ProcessingSurfaceHost"
                 IsHitTestVisible="False" />
 
+        <!-- Independent live silence gauge; never participates in hit testing. -->
+        <Border x:Name="CountdownSurfaceHost" IsHitTestVisible="False" />
+
         <!-- 8 elements inside a StackPanel: 6 digit Grids (each holding a
              primary TextBlock + an accent overlay) and 2 standalone dot
              TextBlocks.

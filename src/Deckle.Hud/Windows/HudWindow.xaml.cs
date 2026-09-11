@@ -253,6 +253,10 @@ public sealed partial class HudWindow : Window
     // recording outline isn't attached.
     public void OnAudioLevel(float rms) => Chrono.UpdateAudioLevel(rms);
 
+    // Capture-thread mailbox only; the chrono renders the snapshot on the UI thread.
+    public void OnUtteranceProgress(bool active, float progress, int completed)
+        => Chrono.UpdateUtteranceProgress(active, progress, completed);
+
     private void OnSystemAnimationsChanged(bool enabled)
     {
         EnqueueUI(() =>
