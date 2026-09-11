@@ -1353,6 +1353,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   │   ├── HudPage.Expanders.cs
 │   │   │   │   ├── HudPage.RowFactories.cs
 │   │   │   │   ├── HudPage.SectionState.cs
+│   │   │   │   ├── HudPage.UtteranceCountdown.cs
 │   │   │   │   ├── HudPage.xaml
 │   │   │   │   └── HudPage.xaml.cs
 │   │   │   ├── Segmentation/
@@ -1959,6 +1960,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── CorrectionApplicationEvidenceTests.cs
 │   │   ├── CorrectionApplicationTrialTests.cs
 │   │   ├── Deckle.Playground.Tests.csproj
+│   │   ├── HudTargetControlsTests.cs
 │   │   └── HudTuningBugNotes.md
 │   ├── Deckle.Security.Tests/
 │   │   ├── Deckle.Security.Tests.csproj

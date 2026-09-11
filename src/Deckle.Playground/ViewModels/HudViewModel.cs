@@ -22,6 +22,7 @@ public enum HudTarget
     // A second, freely-placed conic cone (own surface) painted from the same
     // config as the contour — a placement sandbox for the digit-reveal material.
     ConicClone,
+    UtteranceCountdown,
 }
 
 // Logical groups of tuning expanders. The HUD tuning panel is rebuilt
@@ -42,6 +43,7 @@ public enum HudTuningSection
     AudioMapping,
     SimulatedRms,
     ClonePlacement,
+    UtteranceCountdown,
     Parked,
 }
 
@@ -103,7 +105,6 @@ public partial class HudViewModel : ObservableObject
     // variant. HudPage binds the toggle's Visibility here.
     public bool IsVariantToggleVisible =>
         CurrentTarget is HudTarget.Conic
-                      or HudTarget.ArcMask
                       or HudTarget.Combined
                       or HudTarget.ConicClone;
 
@@ -128,6 +129,7 @@ public partial class HudViewModel : ObservableObject
         HudTarget.ArcMask    => "Sweep mask",
         HudTarget.Combined   => "Masked cone",
         HudTarget.ConicClone => "Cone clone",
+        HudTarget.UtteranceCountdown => "Utterance countdown",
         _                    => CurrentTarget.ToString(),
     };
 
@@ -202,16 +204,17 @@ public partial class HudViewModel : ObservableObject
             HudTarget.Conic =>
                 new[]
                 {
-                    HudTuningSection.Geometry,
                     HudTuningSection.Palette,
-                    HudTuningSection.ConicFade,
+                    HudTuningSection.HueRotation,
                 },
             HudTarget.ArcMask =>
                 new[]
                 {
-                    HudTuningSection.Geometry,
+                    HudTuningSection.ConicFade,
                     HudTuningSection.ArcRotation,
                 },
+            HudTarget.UtteranceCountdown =>
+                new[] { HudTuningSection.UtteranceCountdown },
             HudTarget.ConicClone =>
                 new[]
                 {

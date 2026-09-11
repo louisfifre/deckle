@@ -126,6 +126,8 @@ public sealed partial class HudPage : Page
     public HudPage()
     {
         InitializeComponent();
+        LoadCountdownTuning();
+        _tuning.LoadMaterial(HudMaterialTuning.Current);
         NavigationCacheMode = NavigationCacheMode.Required;
 
         _rebuildDebounce.Tick += (_, _) =>
@@ -183,6 +185,9 @@ public sealed partial class HudPage : Page
     // on Closed.
     public void DisposeResources()
     {
+        HudMaterialTuning.Apply(_tuning.ToConfig());
+        // Retain the last slider edit even when closed during the debounce.
+        if (ViewModel.CurrentTarget == HudTarget.UtteranceCountdown) PublishCountdownTuning();
         SettingsService.Instance.OverlayAnimationsChanged -= OnOverlayAnimationsChanged;
         _rmsTimer.Stop();
         _rmsClock.Stop();
@@ -192,6 +197,8 @@ public sealed partial class HudPage : Page
         _nakedPreview = null;
         _conicClonePreview?.Dispose();
         _conicClonePreview = null;
+        _utteranceCountdownPreview?.Dispose();
+        _utteranceCountdownPreview = null;
     }
 
     private void OnOverlayAnimationsChanged(bool enabled)
@@ -276,6 +283,9 @@ public sealed partial class HudPage : Page
 
     private void ApplyTarget()
     {
+        SnapshotCountdownReplay();
+        HudMaterialTuning.Apply(_tuning.ToConfig());
+        if (ViewModel.CurrentTarget == HudTarget.UtteranceCountdown) PublishCountdownTuning();
         // Tear down everything first.
         ChronoPreview.ApplyState(HudState.Hidden);
         ElementCompositionPreview.SetElementChildVisual(NakedPreviewHost, null);
@@ -283,6 +293,8 @@ public sealed partial class HudPage : Page
         _nakedPreview = null;
         _conicClonePreview?.Dispose();
         _conicClonePreview = null;
+        _utteranceCountdownPreview?.Dispose();
+        _utteranceCountdownPreview = null;
         StopRmsPump();
 
         if (!ViewModel.IsPlaying)
@@ -301,16 +313,23 @@ public sealed partial class HudPage : Page
         bool isNaked = currentTarget is HudTarget.Conic
                                      or HudTarget.ArcMask
                                      or HudTarget.Combined
-                                     or HudTarget.ConicClone;
+                                     or HudTarget.ConicClone
+                                     or HudTarget.UtteranceCountdown;
         ChronoPreview.Visibility    = isNaked ? Visibility.Collapsed : Visibility.Visible;
         NakedPreviewHost.Visibility = isNaked ? Visibility.Visible   : Visibility.Collapsed;
         // The grading toggle rides with the geometry-only previews.
-        VariantToggle.Visibility    = isNaked ? Visibility.Visible   : Visibility.Collapsed;
+        VariantToggle.Visibility    = ViewModel.IsVariantToggleVisible ? Visibility.Visible : Visibility.Collapsed;
 
         if (isNaked)
         {
             // The clone is its own factory (a placed cone), not one of the three
             // raw NakedMaskParts — branch it out before the part mapping.
+            if (currentTarget == HudTarget.UtteranceCountdown)
+            {
+                AttachUtteranceCountdownPreview();
+                return;
+            }
+
             if (currentTarget == HudTarget.ConicClone)
             {
                 AttachConicClonePreview();
@@ -480,6 +499,9 @@ public sealed partial class HudPage : Page
         // TuningModel : swap for a fresh instance — its field
         // initialisers ARE the shipping defaults.
         _tuning = new TuningModel();
+        _countdownReplayClock.Reset();
+        _countdownTuning = new();
+        _countdownConfig = new();
 
         // Sim fields : keep aligned with the defaults documented at
         // the field declarations above. Source of truth duplicated
@@ -538,11 +560,13 @@ public sealed partial class HudPage : Page
                 case HudTuningSection.Rewriting:     AddRewritingExpander();      break;
                 case HudTuningSection.AudioMapping:  AddAudioMappingExpander();   break;
                 case HudTuningSection.SimulatedRms:  AddSimulatedRmsExpander();   break;
+                case HudTuningSection.UtteranceCountdown: AddUtteranceCountdownExpander(); break;
                 case HudTuningSection.ClonePlacement: AddClonePlacementExpander(); break;
             }
         }
 
-        AddParkedExpander();
+        if (ViewModel.CurrentTarget != HudTarget.UtteranceCountdown)
+            AddParkedExpander();
     }
 
     // Rebuild the whole tuning panel from the current _tuning state.
