@@ -215,4 +215,23 @@ Assert-Equal $tightPatch.X $tightMajor.X 'a wrapped Variant sits beneath the fir
 $labelLine = @($bumpTight.Lines | ForEach-Object { $_.Segments } | Where-Object { $_.PresentationRole -eq 'ActionLabel' })
 Assert-Equal 1 $labelLine.Count 'the label is written once, on the first line of its row'
 
+# A frame line paints as runs that cover every cell exactly once and
+# reproduce its text, so the Host writes it in one pass without a blank first.
+$module = Get-Module terminal-interaction
+$paintWidth = $wide.Width - 1
+$bannerRuns = 0
+foreach ($line in $wide.Lines) {
+    $runs = @(& $module { param($line, $paintWidth) ConvertTo-TerminalFrameRuns -Line $line -PaintWidth $paintWidth } $line $paintWidth)
+    $expected = (-join (& $module { param($line) ConvertTo-TerminalFrameCharacters -Line $line } $line)).Substring(0, $paintWidth)
+    Assert-Equal $expected (-join ($runs | ForEach-Object Text)) 'runs reproduce the line text'
+    $cursor = 0
+    foreach ($run in $runs) {
+        Assert-Equal $cursor $run.X 'runs are contiguous'
+        $cursor += $run.Text.Length
+        if ($null -ne $run.Segment -and $run.Segment.PresentationRole -eq 'Banner') { $bannerRuns++ }
+    }
+    Assert-Equal $paintWidth $cursor 'runs cover the painted width exactly once'
+}
+Assert-Equal 1 $bannerRuns 'the banner paints as one run carrying its segment role'
+
 Write-Host 'layout.tests.ps1: PASS' -ForegroundColor Green
