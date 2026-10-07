@@ -7,6 +7,44 @@ type: module-journal
 
 Durable findings about the script launcher and its terminal interaction model. Most recent on top.
 
+## 2026-10-05 — Product framing and interaction review
+
+Chose the launcher's purpose: one backbone that gathers every script of a repository so the maintainer can find and run them without an LLM. The Action Menu is an exhaustive inventory of the repository's scripts; nothing stays reachable only from the command line. Folders group rarely used scripts rather than hiding them.
+
+Chose where scripts live: a repository keeps its scripts under its own `scripts/` subfolders and the menu links to them; the backbone itself ships standard commands such as scans.
+
+Chose a distributable product: a repository installable into a new project at its creation, usable by other people. Wiring a script into the menu must be understandable by an agent and by a person, and an installer meeting an existing setup adjusts it rather than replacing it. The installation mechanism remains open.
+
+Chose PowerShell on Windows as the runtime; a port to another runtime waits for a real need.
+
+Chose Enter and the arrow keys as the complete input set: every interaction, including toggling a checkbox or a radio button, is reachable with them, and a visible Back control always exists. Space, Backspace, Escape, and Ctrl+C remain as shortcuts with their current contracts.
+
+Chose reflow before any resize request: a narrow terminal stacks compositions vertically. The absolute floor below which nothing fits remains to be measured.
+
+Chose one identical focus treatment for ordinary targets; Danger and Exit keep their distinct treatment. The unmerged `experiment/terminal-visual-hierarchy` branch unifies focus for every target, which is refused; its palette, compact Action Groups, and changed-line repaint remain to be judged. The specification table and the 2026-08-25 entry below disagree on the focused Exit treatment; not settled.
+
+Chose the Figma `22:27` palette, light and dark variants, as the default theme; per-role RGB customization from a repository configuration is a later capability.
+
+Kept pagination as the only overflow interaction; fine line scrolling is no longer a planned capability. Kept mouse-wheel paging; its indication is shown beside Page Up and Page Down. Whether terminals already translate wheel events in the alternate buffer is not verified.
+
+Chose one layout per use case; a new layout is created only when a use case breaks several existing rules.
+
+Chose to keep the Execution Journals produced since the launcher started, in memory and without filtering, so a completed build's output remains reachable after returning to the Action Menu: a Logs Access above Quit opens a plain paginated list of the runs and their results.
+
+Chose that a running analysis can be cancelled and restarted without closing the launcher; a cancelled analysis shows nothing rather than partial findings.
+
+Chose an optional "are you sure" step between Review and Execution, a separate step rather than an inset; each Action declares whether it uses it.
+
+Chose that the backbone provides ready-made means for a new script to report success, failure, partial completion, or skipped work, so a script author does not rebuild them.
+
+Reported by the maintainer, not reproduced: while following a running Execution, the Journal pages appeared in reversed order.
+
+Chose full terminal width with no cap: content stays left-aligned, and right-aligned elements stay right.
+
+Chose two kinds of action-owned output: a Report is shown on screen, an Artifact is written to disk; `TREE.md` is an Artifact, and the separate "changed files" category disappears.
+
+Left open: the Preparation filters, kept as a low-priority reusable system of checkboxes and radio buttons that any Action can declare.
+
 ## 2026-08-25 — Terminal color output
 
 Kept command keys at `Gray` and command labels at `DarkGray` instead of copying the original single tone because manual review had already validated their two-level readability.
