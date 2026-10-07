@@ -191,4 +191,28 @@ foreach ($line in @(ConvertTo-TerminalFrameText -Frame $executionNarrow -Preserv
     Assert-Equal 60 $line.Length 'Execution clipping protects narrow width'
 }
 
+# Variant cells keep a width floor: past it the grid drops a column and the
+# row wraps beneath its first cell, never beneath the label, without a gap.
+$bumpVariants = @(foreach ($value in @('patch', 'minor', 'major')) {
+    New-TerminalTarget -TargetId "action.bump.$value" -Label $value -IntentKind Action -Payload ([pscustomobject]@{ Variant = $value })
+})
+$bumpMenu = New-TerminalActionMenuView -ViewId menu.bump -Banner 'Bump' -Sections @(
+    New-TerminalSection -Label Project -Items @(New-TerminalActionRow -Label 'Record version' -Variants $bumpVariants)
+)
+$bumpRoomy = Get-TerminalInteractionFrame -View $bumpMenu -Width 100 -Height 12 -FocusedTargetId action.bump.patch
+$roomyPatch = Get-Placement -Frame $bumpRoomy -TargetId action.bump.patch
+$roomyMajor = Get-Placement -Frame $bumpRoomy -TargetId action.bump.major
+Assert-Equal $roomyPatch.Y $roomyMajor.Y 'three Variants share one line while their cells stay above the floor'
+Assert-True ($roomyPatch.Width -ge 16) 'a roomy terminal keeps Variant cells above the width floor'
+$bumpTight = Get-TerminalInteractionFrame -View $bumpMenu -Width 72 -Height 12 -FocusedTargetId action.bump.patch
+$tightPatch = Get-Placement -Frame $bumpTight -TargetId action.bump.patch
+$tightMinor = Get-Placement -Frame $bumpTight -TargetId action.bump.minor
+$tightMajor = Get-Placement -Frame $bumpTight -TargetId action.bump.major
+Assert-True ($tightPatch.Width -ge 16) 'a tight terminal drops a column before a cell shrinks below the floor'
+Assert-Equal $tightPatch.Y $tightMinor.Y 'the first two Variants keep the label line'
+Assert-Equal ($tightPatch.Y + 1) $tightMajor.Y 'the third Variant wraps to the very next line'
+Assert-Equal $tightPatch.X $tightMajor.X 'a wrapped Variant sits beneath the first cell, not beneath the label'
+$labelLine = @($bumpTight.Lines | ForEach-Object { $_.Segments } | Where-Object { $_.PresentationRole -eq 'ActionLabel' })
+Assert-Equal 1 $labelLine.Count 'the label is written once, on the first line of its row'
+
 Write-Host 'layout.tests.ps1: PASS' -ForegroundColor Green

@@ -292,6 +292,24 @@ function Get-TerminalActionLabelWidth {
     return [Math]::Min(20, [Math]::Max(12, $maximum))
 }
 
+function Get-TerminalMinimumColumnWidth {
+    param([AllowEmptyCollection()][object[]]$LayoutSections = @())
+
+    # A Variant cell shrinks with the terminal down to this floor only; past
+    # it the grid drops a column and the row wraps, so a cell never squeezes
+    # its label into a few characters first.
+    $longest = 0
+    foreach ($section in $LayoutSections) {
+        foreach ($row in $section.Rows) {
+            if ($row.Kind -ne 'ActionRow') { continue }
+            foreach ($variant in $row.Variants) {
+                if ($variant.Label.Length -gt $longest) { $longest = $variant.Label.Length }
+            }
+        }
+    }
+    return [Math]::Max(16, $longest + 4)
+}
+
 function Get-TerminalMenuGrid {
     param(
         [AllowEmptyCollection()][object[]]$LayoutSections = @(),
@@ -318,6 +336,11 @@ function Get-TerminalMenuGrid {
     $targetAreaWidth = [Math]::Max(1, $right - $targetX)
     if ($trailingWidth -gt 0) { $targetAreaWidth -= $trailingWidth + $gap }
     $columnWidth = [Math]::Max(1, [Math]::Floor(($targetAreaWidth - (($columnCount - 1) * $gap)) / $columnCount))
+    $minimumColumnWidth = Get-TerminalMinimumColumnWidth -LayoutSections $LayoutSections
+    if ($columnWidth -lt $minimumColumnWidth) {
+        $columnCount = [Math]::Max(1, [Math]::Floor(($targetAreaWidth + $gap) / ($minimumColumnWidth + $gap)))
+        $columnWidth = [Math]::Max(1, [Math]::Floor(($targetAreaWidth - (($columnCount - 1) * $gap)) / $columnCount))
+    }
 
     return [pscustomobject][ordered]@{
         Left = $left
@@ -347,20 +370,27 @@ function Add-TerminalMenuRow {
         if ($Row.Label) {
             Add-TerminalFrameSegment -Frame $Frame -LineIndex $line -X $left -Text (Limit-TerminalText -Text $Row.Label -Width $Grid.LabelWidth) -PresentationRole ActionLabel
         }
+        if ($null -ne $Row.TrailingTarget) {
+            Add-TerminalTarget -Frame $Frame -Target $Row.TrailingTarget -LineIndex $line -X ($Grid.Right - $Grid.TrailingWidth) -Width $Grid.TrailingWidth -FocusedTargetId $FocusedTargetId
+        }
         $targets = @(if ($Row.Kind -eq 'ActionRow') { $Row.Variants } else { $Row.Targets })
-        $trailing = $Row.TrailingTarget
+        $columns = [Math]::Max(1, $Grid.ColumnCount)
         for ($i = 0; $i -lt $targets.Count; $i++) {
+            $column = $i % $columns
+            if ($i -gt 0 -and $column -eq 0) {
+                # Cells beyond the last column wrap beneath the first cell,
+                # never beneath the label, without a blank line.
+                $line = Add-TerminalFrameLine -Frame $Frame
+                if ($line -lt 0) { return }
+            }
             Add-TerminalTarget `
                 -Frame $Frame `
                 -Target $targets[$i] `
                 -LineIndex $line `
-                -X ($Grid.TargetX + ($i * ($Grid.ColumnWidth + $Grid.Gap))) `
+                -X ($Grid.TargetX + ($column * ($Grid.ColumnWidth + $Grid.Gap))) `
                 -Width $Grid.ColumnWidth `
                 -FocusedTargetId $FocusedTargetId `
                 -AsActionVariant:($Row.Kind -eq 'ActionRow')
-        }
-        if ($null -ne $trailing) {
-            Add-TerminalTarget -Frame $Frame -Target $trailing -LineIndex $line -X ($Grid.Right - $Grid.TrailingWidth) -Width $Grid.TrailingWidth -FocusedTargetId $FocusedTargetId
         }
         return
     }
