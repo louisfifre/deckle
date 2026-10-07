@@ -198,14 +198,22 @@ foreach ($line in @(ConvertTo-TerminalFrameText -Frame $executionNarrow -Preserv
 $bumpVariants = @(foreach ($value in @('patch', 'minor', 'major')) {
     New-TerminalTarget -TargetId "action.bump.$value" -Label $value -IntentKind Action -Payload ([pscustomobject]@{ Variant = $value })
 })
+$bumpAccesses = @(foreach ($name in @('release', 'maintenance', 'setup')) {
+    New-TerminalTarget -TargetId "access.$name" -Label "$name…" -IntentKind Access -Payload ([pscustomobject]@{ AccessId = $name }) -PresentationRole Access
+})
 $bumpMenu = New-TerminalActionMenuView -ViewId menu.bump -Banner 'Bump' -Sections @(
     New-TerminalSection -Label Project -Items @(New-TerminalActionRow -Label 'Record version' -Variants $bumpVariants)
+    New-TerminalSection -Label $null -Items $bumpAccesses
 )
 $bumpRoomy = Get-TerminalInteractionFrame -View $bumpMenu -Width 100 -Height 12 -FocusedTargetId action.bump.patch
 $roomyPatch = Get-Placement -Frame $bumpRoomy -TargetId action.bump.patch
 $roomyMajor = Get-Placement -Frame $bumpRoomy -TargetId action.bump.major
 Assert-Equal $roomyPatch.Y $roomyMajor.Y 'three Variants share one line while their cells stay above the floor'
 Assert-True ($roomyPatch.Width -ge 16) 'a roomy terminal keeps Variant cells above the width floor'
+$roomyRelease = Get-Placement -Frame $bumpRoomy -TargetId access.release
+$roomySetup = Get-Placement -Frame $bumpRoomy -TargetId access.setup
+Assert-Equal $roomyRelease.Y $roomySetup.Y 'three Accesses fill the three Variant columns of their level on one line'
+Assert-Equal $roomyMajor.X $roomySetup.X 'Accesses align on the Variant columns'
 $bumpTight = Get-TerminalInteractionFrame -View $bumpMenu -Width 72 -Height 12 -FocusedTargetId action.bump.patch
 $tightPatch = Get-Placement -Frame $bumpTight -TargetId action.bump.patch
 $tightMinor = Get-Placement -Frame $bumpTight -TargetId action.bump.minor

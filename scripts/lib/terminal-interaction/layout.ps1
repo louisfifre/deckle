@@ -256,11 +256,9 @@ function ConvertTo-TerminalMenuLayoutSections {
                 $trailingTarget = $item
                 continue
             }
+            # Consecutive plain targets form one row; the renderer fills the
+            # grid's columns with them and wraps the rest, like Variants.
             $pendingTargets.Add($item)
-            if ($pendingTargets.Count -eq 2) {
-                $rows.Add([pscustomobject]@{ Kind = 'TargetRow'; Label = ''; Targets = @($pendingTargets); TrailingTarget = $null })
-                $pendingTargets.Clear()
-            }
         }
         if ($pendingTargets.Count -gt 0) {
             $rows.Add([pscustomobject]@{ Kind = 'TargetRow'; Label = ''; Targets = @($pendingTargets); TrailingTarget = $null })
@@ -314,12 +312,13 @@ function Get-TerminalMenuGrid {
         [Parameter(Mandatory)][int]$Width
     )
 
+    # The Variant rows set the column count; plain targets fill those columns
+    # and wrap, so a long list of Actions never narrows the grid.
     $columnCount = 2
     $trailingWidth = 0
     foreach ($section in $LayoutSections) {
         foreach ($row in $section.Rows) {
-            $targets = @(if ($row.Kind -eq 'ActionRow') { $row.Variants } else { $row.Targets })
-            $columnCount = [Math]::Max($columnCount, $targets.Count)
+            if ($row.Kind -eq 'ActionRow') { $columnCount = [Math]::Max($columnCount, @($row.Variants).Count) }
             if ($null -ne $row.TrailingTarget) {
                 $trailingWidth = [Math]::Max($trailingWidth, [Math]::Max(8, $row.TrailingTarget.Label.Length + 2))
             }
