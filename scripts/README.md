@@ -155,7 +155,7 @@ What each part does:
 - The Variants of every Action come from the script's single `[ValidateSet]` parameter of scalar type, in declaration order, the default preselected; activating a Variant passes that value. A `[ValidateSet]` on an array parameter is a Filter, not an axis. A script that needs two axes is two scripts. A `-Target` parameter opens the worktree Selector in the launcher.
 - Inside the block no line may start with a dot followed by letters except a help keyword, and no keyword may be invented: the block dies silently, with no error.
 
-A subfolder of `commands/` is a menu level: an Access labelled by its name, or by the `name` of its `README.md` front matter, which may also carry `description` and `order`. Scripts at the root of `commands/` sit on the root menu. Within a level, Action Rows come first grouped by `section`, then the subfolders as one group.
+A subfolder of `commands/` is a menu level: an Access labelled by its name, or by the `name` of its `README.md` front matter, which may also carry `description` and `order`. Scripts at the root of `commands/` sit on the root menu. Within a level, Action Rows come first grouped by `section`, then the subfolders as one group. Inside a section the scripts with Variants come first, then the others, each by `order`.
 
 A script without a Header stays out of the menu on purpose, so the folder can keep a script that served once. `commands/check-script-headers.ps1` lists the hidden scripts and fails on a Header that is present but voided; run it before closing a change that touches a script, and `script-layout.tests.ps1` enforces the same rule.
 

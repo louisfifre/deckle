@@ -47,12 +47,12 @@ Assert-Equal 'action.alpha.0' $alphaTarget.TargetId 'a row without Variants is o
 Assert-Equal 'Alpha task' $alphaTarget.Label 'the Action target is labelled by its row'
 
 $buildItems = @($sections[1].Items)
-Assert-Equal 'action.gamma.0' $buildItems[0].TargetId 'gamma rows come first in Build'
-Assert-Equal Action $buildItems[0].PresentationRole 'an ordinary Action keeps the Action role'
-Assert-Equal 'action.gamma.1' $buildItems[1].TargetId 'the second action keeps its own id'
-Assert-Equal Danger $buildItems[1].PresentationRole 'a danger action takes the Danger role'
-$betaRow = $buildItems[2]
-Assert-Equal 'ActionRow' $betaRow.Kind 'a row with Variants becomes an Action Row'
+Assert-Equal 'action.gamma.0' $buildItems[1].TargetId 'gamma rows follow the Action Row in Build'
+Assert-Equal Action $buildItems[1].PresentationRole 'an ordinary Action keeps the Action role'
+Assert-Equal 'action.gamma.1' $buildItems[2].TargetId 'the second action keeps its own id'
+Assert-Equal Danger $buildItems[2].PresentationRole 'a danger action takes the Danger role'
+$betaRow = $buildItems[0]
+Assert-Equal 'ActionRow' $betaRow.Kind 'a row with Variants becomes an Action Row and leads its Section'
 Assert-Equal 'Beta build' $betaRow.Label 'the Action Row keeps the row label'
 Assert-Equal 'Release,Debug' ((@($betaRow.Variants) | ForEach-Object Label) -join ',') 'each Variant is one Action target labelled by its value'
 Assert-Equal 'action.beta.0.release' $betaRow.Variants[0].TargetId 'Variant target ids append the lowercased value'

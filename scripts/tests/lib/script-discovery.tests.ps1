@@ -126,10 +126,10 @@ Assert-Equal $null $sections[0].Label 'scripts without section form the first, u
 Assert-Equal 'Build' $sections[1].Label 'a section with an ordered row comes before unordered ones'
 Assert-Equal 'Care' $sections[2].Label 'a section without ordered rows comes after'
 Assert-Equal 'Alpha task,Array set' ((@($sections[0].Rows) | ForEach-Object Label) -join ',') 'unordered rows sort by label'
-Assert-Equal 'Pack,Ship,Beta build' ((@($sections[1].Rows) | ForEach-Object Label) -join ',') 'gamma rows (order 10) come before beta (order 20) in declaration order'
-Assert-Equal 1 $sections[1].Rows[1].ActionIndex 'a row keeps its position among the script actions'
-Assert-Equal 'gamma.ps1' $sections[1].Rows[0].RelativePath 'rows carry their path relative to the catalog root'
-Assert-Equal 'Release,Debug' ((@($sections[1].Rows[2].Variants) | ForEach-Object Value) -join ',') 'beta row carries its Variants'
+Assert-Equal 'Beta build,Pack,Ship' ((@($sections[1].Rows) | ForEach-Object Label) -join ',') 'beta (Variants, order 20) comes before gamma (no Variants, order 10), whose rows keep declaration order'
+Assert-Equal 1 $sections[1].Rows[2].ActionIndex 'a row keeps its position among the script actions'
+Assert-Equal 'gamma.ps1' $sections[1].Rows[1].RelativePath 'rows carry their path relative to the catalog root'
+Assert-Equal 'Release,Debug' ((@($sections[1].Rows[0].Variants) | ForEach-Object Value) -join ',') 'beta row carries its Variants'
 
 $accesses = @($catalog.Accesses)
 Assert-Equal 'Tooling,zone' ((@($accesses) | ForEach-Object Label) -join ',') 'ordered Accesses come first, a folder without README is labelled by its name'

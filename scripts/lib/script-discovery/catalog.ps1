@@ -15,8 +15,9 @@ function Get-DeckleCatalogRelativePath {
 function Compare-DeckleOrderThenLabel {
     param($Left, $Right)
 
-    # Ordered entries come first, ascending; the rest follow by label. The
-    # original index breaks every tie, which makes List.Sort stable.
+    # A lower rank comes first; then ordered entries, ascending; the rest follow
+    # by label. The original index breaks every tie, which makes List.Sort stable.
+    if ($Left.Rank -ne $Right.Rank) { return $Left.Rank.CompareTo($Right.Rank) }
     $leftHasOrder = $null -ne $Left.Order
     $rightHasOrder = $null -ne $Right.Order
     if ($leftHasOrder -ne $rightHasOrder) { if ($leftHasOrder) { return -1 } else { return 1 } }
@@ -31,10 +32,12 @@ function Sort-DeckleCatalogEntries {
 
     $list = [System.Collections.Generic.List[object]]::new()
     for ($index = 0; $index -lt $Entries.Count; $index++) {
+        $entry = $Entries[$index]
         $list.Add([pscustomobject]@{
-            Item = $Entries[$index].Item
-            Order = $Entries[$index].Order
-            Label = $Entries[$index].Label
+            Item = $entry.Item
+            Order = $entry.Order
+            Label = $entry.Label
+            Rank = if ($entry.PSObject.Properties['Rank']) { [int]$entry.Rank } else { 0 }
             Index = $index
         })
     }
@@ -130,8 +133,11 @@ function New-DeckleCatalogLevel {
         $rows = @(New-DeckleCatalogRows -Header $header -RelativePath $relativePath)
         if ($rows.Count -eq 0) { continue }
         # Scripts sort as units so the rows of a multi-action script stay
-        # consecutive and in declaration order.
-        $scriptEntries.Add([pscustomobject]@{ Item = $rows; Order = $header.Order; Label = $rows[0].Label })
+        # consecutive and in declaration order. Scripts with Variants rank
+        # first in their Section: their labelled rows sit above the bare
+        # Actions, which the menu packs side by side.
+        $rank = if (@($rows[0].Variants).Count -gt 0) { 0 } else { 1 }
+        $scriptEntries.Add([pscustomobject]@{ Item = $rows; Order = $header.Order; Label = $rows[0].Label; Rank = $rank })
     }
 
     $groups = [System.Collections.Specialized.OrderedDictionary]::new([System.StringComparer]::OrdinalIgnoreCase)
