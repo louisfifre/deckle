@@ -1,8 +1,17 @@
-# clean.ps1 — Local workspace cleanup
-#
-# Removes generated build output from a Deckle worktree without touching
-# anything tracked by git. All `.gitignore`d, rebuilt by the next build,
-# safe to delete and re-create at will.
+<#
+.SYNOPSIS
+    Clean build outputs
+.DESCRIPTION
+    Remove generated build output from a Deckle worktree without touching
+    anything tracked by git. Everything removed is ignored by git and rebuilt
+    by the next build. The running Deckle process is stopped first.
+.NOTES
+    section: Maintenance
+    order: 430
+    action: Clean build outputs | | danger | Deletes generated build outputs from the target worktree.
+#>
+
+# Operational notes
 #
 # Two locations, since the repo uses the .NET artifacts output layout
 # (root Directory.Build.props sets ArtifactsPath):

@@ -1,8 +1,16 @@
-# update-readme-stats.ps1
-#
-# Regenerates the small "Development pulse" section in README.md from the
-# local Git history. The section is bounded by invisible HTML comments so the
-# visible README stays clean while automation has a stable replacement target.
+<#
+.SYNOPSIS
+    Update the README pulse
+.DESCRIPTION
+    Regenerate the small "Development pulse" section in README.md from the
+    local Git history. The section is bounded by invisible HTML comments so
+    the visible README stays clean while automation has a stable replacement
+    target.
+.NOTES
+    section: Project
+    order: 210
+    action: Update README pulse | -Commit
+#>
 
 [CmdletBinding()]
 param(

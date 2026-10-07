@@ -1,10 +1,18 @@
-# bootstrap-dev-env.ps1
-#
-# Brings a fresh Windows 11 machine up to speed for building and running
-# Deckle. Probes what's already installed, then installs the missing pieces
-# via winget (OS-level installers) and scoop (dev toolchain). Idempotent:
-# safe to re-run.
-#
+<#
+.SYNOPSIS
+    Bootstrap the dev environment
+.DESCRIPTION
+    Brings a fresh Windows 11 machine up to speed for building and running
+    Deckle. Probes what is already installed, then installs the missing pieces
+    with winget (OS-level installers) and scoop (dev toolchain). Idempotent:
+    safe to re-run.
+.NOTES
+    section: Setup
+    order: 510
+    action: Plan the bootstrap (dry run) | -DryRun
+    action: Bootstrap dev environment | -Yes | danger | Installs tools on this machine with winget and scoop.
+#>
+
 # Out of scope (intentional):
 #   - Does NOT build or run Deckle (see scripts/commands/build-run.ps1, and
 #     CLAUDE.md non-negotiable).

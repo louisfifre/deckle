@@ -1,7 +1,19 @@
-# publish-app.ps1
-#
-# Cuts a Deckle GitHub Release: builds the two artefacts a release carries and
-# (with -Publish) uploads them under the version tag.
+<#
+.SYNOPSIS
+    Prepare or publish the app release
+.DESCRIPTION
+    Builds the two artifacts a Deckle GitHub Release carries: the installer
+    stub and the self-contained app ZIP with its sha256 sidecar. Without
+    -Publish both are built locally for inspection; with -Publish they are
+    also uploaded as a GitHub Release under the version tag via gh.
+.NOTES
+    section: Release
+    order: 310
+    action: Prepare app artifacts |
+    action: Publish app release | -Publish | danger | Publishes a public GitHub Release of the app.
+#>
+
+# Release artefacts:
 #
 #   1. The installer stub — Deckle-Setup-v<X.Y.Z>-win-x64.exe — the HEADLINE
 #      asset, the file an end user downloads and runs. A small NativeAOT exe
@@ -19,8 +31,7 @@
 # Those are provisioned per-user by the app's first-run wizard (the native
 # bundle has its own publish-native-runtime.ps1 / native-vX.Y.Z release cycle).
 #
-# `publish` is the maintainer's act: without -Publish this builds both artefacts
-# locally for inspection; -Publish ALSO creates the GitHub Release via gh.
+# `publish` is the maintainer's act.
 #
 # Pendant to publish-native-runtime.ps1 — same shared workflow presentation and
 # zip + sha256 + paste-ready-summary + optional -Publish shape.

@@ -1,11 +1,17 @@
-# changelog.ps1 — Generate CHANGELOG.md and release notes from the git history.
-#
-# Turns the Conventional-Commit history into a Keep a Changelog document, with
-# NO external dependency: plain `git log` + PowerShell, no git-cliff binary, no
-# GitHub API, no network. That autonomy is a founding goal of Deckle — a
-# maintainer dev-tool should not reach for a paid/cloud/foreign dependency any
-# more than the shipped app does.
-#
+<#
+.SYNOPSIS
+    Update the changelog
+.DESCRIPTION
+    Generate the changelog and release notes from the git history. The
+    Conventional-Commit history becomes a Keep a Changelog document with no
+    external dependency: plain git log and PowerShell, no git-cliff binary, no
+    GitHub API, no network. That autonomy is a founding goal of Deckle.
+.NOTES
+    section: Project
+    order: 220
+    action: Update changelog | -Commit
+#>
+
 # Two outputs, one engine:
 #   - default            → regenerate the whole CHANGELOG.md in place. The file
 #                          is fully generated; do not hand-edit it.

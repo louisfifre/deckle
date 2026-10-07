@@ -1,9 +1,18 @@
-# setup-assets.ps1
-#
-# Populates <UserDataRoot>\native\ and <UserDataRoot>\models\ with the
-# whisper.cpp DLLs, MinGW C++ runtime, and Whisper models the app needs
-# at runtime. This is the canonical setup step — the app reads from
-# <UserDataRoot> exclusively (see src/Deckle.Core/Paths/AppPaths.cs).
+<#
+.SYNOPSIS
+    Set up runtime assets
+.DESCRIPTION
+    Populates the native and models folders under the user data root with the
+    whisper.cpp DLLs, the MinGW C++ runtime and the Whisper models the app
+    needs at runtime. Idempotent: skips files already present at the same
+    size unless -Force.
+.NOTES
+    section: Setup
+    order: 520
+#>
+
+# The app reads from <UserDataRoot> exclusively (see
+# src/Deckle.Core/Paths/AppPaths.cs).
 #
 # Default <UserDataRoot> resolution mirrors AppPaths.ResolveUserDataRoot
 # on the C# side:

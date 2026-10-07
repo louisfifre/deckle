@@ -1,4 +1,14 @@
-# validate-resources.ps1 - Read-only audit of WinUI resource inventories.
+<#
+.SYNOPSIS
+    Validate WinUI resources
+.DESCRIPTION
+    Read-only audit of the WinUI resource inventories. Reports missing
+    resource keys, divergences between required mirrors and module copies
+    that look unused.
+.NOTES
+    section: Maintenance
+    order: 460
+#>
 
 [CmdletBinding()]
 param(

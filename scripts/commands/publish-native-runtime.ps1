@@ -1,9 +1,20 @@
-# publish-native-runtime.ps1
-#
-# Packages a versioned zip of the native DLLs Deckle's first-run wizard
-# downloads at install time. The wizard fetches this zip from a GitHub
-# Release of the Deckle repo (URL hardcoded in NativeRuntime.CurrentBundle)
-# and extracts it into <UserDataRoot>\native\.
+<#
+.SYNOPSIS
+    Prepare or publish the native runtime
+.DESCRIPTION
+    Packages a versioned zip of the native DLLs that Deckle's first-run wizard
+    downloads at install time. The wizard fetches this zip from a GitHub
+    Release of the Deckle repo and extracts it into the user data folder.
+    With -Publish the zip is also published as a native-vX.Y.Z release via gh.
+.NOTES
+    section: Release
+    order: 320
+    action: Prepare native runtime |
+    action: Publish native runtime | -Publish | danger | Publishes a public GitHub Release of the native runtime.
+#>
+
+# The wizard URL is hardcoded in NativeRuntime.CurrentBundle; the zip is
+# extracted into <UserDataRoot>\native\.
 #
 # Bundle layout (flat, matches NativeRuntime.CopyFromFolder semantics):
 #   libwhisper.dll, ggml.dll, ggml-base.dll, ggml-cpu.dll, ggml-vulkan.dll

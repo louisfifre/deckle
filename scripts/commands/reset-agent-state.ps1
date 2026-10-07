@@ -1,3 +1,17 @@
+<#
+.SYNOPSIS
+    Inspect or reset local AI sessions
+.DESCRIPTION
+    Build a cleanup plan for the local Codex and Claude Code session data of
+    the current account. Without the apply switch it only validates the plan
+    and changes nothing. The reset needs the exact confirmation phrase.
+.NOTES
+    section: Maintenance
+    order: 450
+    action: Inspect AI sessions |
+    action: Reset AI sessions | -Apply -Confirmation 'RESET LOCAL AI SESSIONS' | danger | Deletes local Codex and Claude Code session data for the current account.
+#>
+
 [CmdletBinding()]
 param(
     [ValidateSet('Codex', 'Claude')]

@@ -1,4 +1,13 @@
-# inspect-context.ps1 - Inventory the repository's tracked Markdown context.
+<#
+.SYNOPSIS
+    Context inventory
+.DESCRIPTION
+    Inventory the repository's tracked Markdown context, grouped by loading
+    mode, with line counts and recent additions.
+.NOTES
+    section: Maintenance
+    order: 420
+#>
 
 [CmdletBinding()]
 param(

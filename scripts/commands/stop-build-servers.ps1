@@ -1,9 +1,15 @@
-# stop-build-servers.ps1 — Stop .NET build cache processes
-#
-# Stops MSBuild/Roslyn build servers left behind by dotnet builds. These show
-# up in Task Manager as ".NET Host" and "VBCSCompiler" processes. They speed up
-# follow-up builds, but repeated agent/worktree builds can accumulate enough of
-# them to hurt Windows and WinUI responsiveness.
+<#
+.SYNOPSIS
+    Stop .NET build servers
+.DESCRIPTION
+    Stop the MSBuild and Roslyn build servers left behind by dotnet builds.
+    They show up in Task Manager as ".NET Host" and "VBCSCompiler". They speed
+    up follow-up builds, but repeated agent and worktree builds can accumulate
+    enough of them to hurt Windows and WinUI responsiveness.
+.NOTES
+    section: Maintenance
+    order: 440
+#>
 
 [CmdletBinding()]
 param()

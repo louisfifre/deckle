@@ -1,10 +1,15 @@
-#!/usr/bin/env pwsh
-#Requires -Version 7
 <#
 .SYNOPSIS
-    Install Deckle's repository and global git hooks.
-    Run once after a clone: hook sources are versioned, installed hooks are not.
+    Install git hooks
+.DESCRIPTION
+    Install Deckle's repository and global git hooks. Run once after a clone:
+    hook sources are versioned, installed hooks are not.
+.NOTES
+    section: Setup
+    order: 530
 #>
+
+#Requires -Version 7
 
 [CmdletBinding()]
 param(

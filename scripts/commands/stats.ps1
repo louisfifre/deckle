@@ -1,4 +1,16 @@
-# stats.ps1 - File inventory and line counts per Deckle module
+<#
+.SYNOPSIS
+    Repository statistics
+.DESCRIPTION
+    Walk every project under src\ and build one file inventory per Deckle
+    module, with line counts. The console shows a long-file watch list, a
+    module summary, file-type counts and a per-module file tree.
+.NOTES
+    section: Maintenance
+    order: 410
+#>
+
+# Operational notes
 #
 # Walks every .csproj under <RepoRoot>\src\, then builds a single file
 # inventory for each module. The console views are derived from that same
