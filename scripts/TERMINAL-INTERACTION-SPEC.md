@@ -1,35 +1,21 @@
 ---
-description: "Normative contracts for Deckle's reusable terminal-interaction system: module boundaries, view composition, interaction state, rendering, and first-cycle scope."
+description: "Behavior and composition contracts of the reusable terminal launcher beneath Deckle Scripts: product, modules, input, views, preparation, execution, rendering, reuse."
 type: module-specification
 ---
 
 # Terminal interaction specification
 
-This specification defines the reusable terminal-interaction system beneath Deckle Scripts. Read it before designing, implementing, or reusing the launcher's views and interaction primitives.
+The contracts of the reusable terminal launcher beneath Deckle Scripts. Read it before designing, implementing, or reusing the launcher's views and interaction primitives. `CONTEXT.md` governs the vocabulary; this document governs behavior and composition, written in the indicative: every sentence is a rule unless it says otherwise. A term the glossary does not hold is defined in bold where it first appears.
 
-`CONTEXT.md` governs the vocabulary. This document governs behavior and composition. Examples illustrate the contracts without narrowing them to Deckle's current workflows.
+## Product
 
-The key words **MUST**, **MUST NOT**, **SHOULD**, **SHOULD NOT**, and **MAY** express normative weight.
+The launcher is one backbone that gathers every script of a repository, so its maintainer finds and runs them without an LLM. The Action Menu is the exhaustive inventory of the repository's scripts: nothing stays reachable only from the command line, and folders group rarely used scripts rather than hiding them. Every workflow command also remains callable on its own from the command line.
 
-## Purpose
+A repository keeps its scripts under its own `scripts/` subfolders and the menu links to them; the backbone ships the standard commands every repository needs, such as scans. The backbone is a distributable product, installable into another repository at its creation and usable by other people. Wiring a script into the menu is understandable by a person and by an agent, and an installer that meets an existing setup adjusts it rather than replacing it. The installation mechanism and automatic updates are open.
 
-The system presents repository workflows through one understandable terminal interface while keeping workflow commands independently usable from the command line. Its reusable framework MUST work for another repository without carrying Deckle actions, paths, branding, or release policy with it.
+The runtime is PowerShell on Windows. The backbone is written for Windows PowerShell 5.1, which every Windows ships, so it also runs under PowerShell 7. A port to another runtime waits for a real need.
 
-The first cycle provides the structure used every day:
-
-- one controlled terminal session;
-- a Persistent Header and composable View Body;
-- Action Menu, Preparation, and Execution View compositions;
-- normalized focus, activation, selection, navigation, cancellation, paging, and exit commands;
-- captured execution output with separate Journal and Tracking responsibilities;
-- deterministic redraw from retained state;
-- launcher and daily-action compatibility with Windows PowerShell 5.1 and PowerShell 7.
-
-The first cycle retains Executions in memory only. Global Logs, execution history, durable run identity, Rerun, Retry, user cancellation that keeps the launcher open, fine-grained scrolling, general disabled-action explanations, and ConPTY are later capabilities. Emergency session exit still quiesces the active child before restoring the terminal. Cross-repository packaging, installation, and automatic updates are also deferred.
-
-The design MUST leave those capabilities additive. Their future insertion points MAY be reserved in the composition grammar, but the first cycle MUST NOT render empty placeholders for absent features.
-
-## Module map
+## Modules
 
 ```text
                               Deckle Launcher
@@ -44,398 +30,102 @@ The design MUST leave those capabilities additive. Their future insertion points
           Interaction Renderer   Terminal Host
 ```
 
-Arrows show primary code dependencies. A destination MUST NOT import, call, or inspect its source. The Deckle Launcher also calls the Interaction Core's public facade directly to submit handler decisions and immutable Execution projections; this coordination dependency does not allow the Core to call back into the Launcher.
+Arrows are the only code dependencies: a destination never imports, calls, or inspects its source. Descriptor, snapshot, input-event, and render-plan types are shared public types, not dependencies in this sense. The Launcher also calls the Core's public facade to submit handler decisions and Execution projections; the Core never calls back.
 
-### Terminal Host
+- **Terminal Host** — one console host behind normalized capabilities, input events, and drawing operations. It owns the reversible platform state (alternate buffer, cursor, input mode, color, viewport, pointer registration) and restores every state it changed on any exit, including an exceptional one. It knows nothing of Views, Actions, Executions, repositories, or engines.
+- **Interaction Core** — one structured session: the current View, the navigation stack, the focused target, keyed paging positions, and the render cycle. It resolves normalized input against the focused target into explicit transitions. Repository state and the authoritative Execution stay outside it and enter as immutable projections. It invokes no repository work and infers nothing from labels, punctuation, colors, positions, or presentation roles.
+- **Interaction Compositions** — pure builders and reducers over public Core descriptors that turn the semantic model into View definitions: Persistent Header, Action Menu, Preparation, Execution View, Panels, Selectors, Review, Confirmation, Logs. They declare intents and execute none, and contain no Deckle workflow code. A consumer uses the whole library or only the compositions it needs.
+- **Interaction Renderer** — a pure projection of View descriptors, retained state, terminal metrics, theme, and capabilities into a render plan of clipped display cells and drawing operations. It owns layout, reflow, display-cell measurement, clipping, theme resolution, and the separator hierarchy. It reads no input, keeps no state, navigates nowhere, and never writes to the console: the Host alone executes its plan.
+- **Execution Runtime** — one active Execution: its frozen request, the child-process lifecycle, the captured Journal, Tracking, and the structured completion, published as immutable `Started`, `Journal updated`, `Tracking updated`, and `Completed` updates. It consumes a repository-supplied **execution adapter** that declares engine requirement, profile behavior, working directory, elevation, executable, argument values, and the meaning of its output; none of these is inferred from another. The Runtime validates the declaration, selects a compatible engine, builds the invocation through the engine's API rather than string concatenation, captures the streams, and observes the exit. It depends on nothing interactive.
+- **Deckle Launcher** — the shell that presents one repository's workflows: banner and context, the catalog of Actions and Accesses, Preparation controllers, intent handlers, engine requirements, and the presentation of action-owned output. Workflow commands never import the launcher or the interaction modules; the backbone ships a separate **result library** they may use to report their conclusion.
 
-The Terminal Host translates between one console host and normalized terminal capabilities, input events, and drawing operations.
+## Public surface
 
-It owns the reversible platform state needed by a terminal session: alternate buffer, cursor visibility, input mode, color capability, viewport dimensions, and pointer-input registration. It MUST restore every state it changes when the session ends, including exceptional exit.
+The framework exposes responsibilities, never rendering mechanisms: start and close a session; describe a View and its body; publish stable target descriptors and the commands currently available; apply a command and return a transition; apply an immutable external update; render retained state for the current metrics. The module facade is the only supported import. Consumers never build rows, coordinates, ANSI sequences, or key records.
 
-It MUST NOT know about Views, Actions, Preparations, Executions, repository paths, command names, or PowerShell engines. Console-host differences belong behind this boundary.
+A target descriptor carries a View-local stable `TargetId`, an `IntentKind`, an immutable payload, an enabled state with an optional reason, and a presentation role. The role never determines the intent. Activating an enabled target emits an **Intent Request** (source View and target, kind, payload) to the Launcher, which invokes the registered handler. The handler answers with a **Transition Decision**, which the Launcher submits to the Core, or an **Execution Request**, which the Launcher starts through the Runtime after installing the Execution View. Activating a disabled target keeps the View and shows the reason.
 
-### Interaction Core
+An Execution Request names the Action and its Variant, carries the exact reviewed Preparation revision, or an immutable input snapshot for an Action without Preparation, and selects the execution adapter.
 
-The Interaction Core runs one structured interaction session.
+## State
 
-It owns the current View snapshot, navigation stack, focused target, keyed paging positions, and render cycle. It resolves normalized physical input according to the focused target and applies explicit state transitions. Repository-owned state and the authoritative Execution are not Core state; immutable projections enter through its public update seam.
+Exactly one View is current, and its retained state is the only source of every redraw; the terminal contents are never state. Every interaction yields one outcome: Stay, Open (push a View), Replace (swap the current View so that Back reaches its caller), Back, Cancel (discard the unaccepted state of a transient interaction), Request Intent, or Exit. Drawing never navigates and never executes work.
 
-It MUST NOT invoke repository commands or infer semantics from labels, punctuation, colors, row positions, or presentation roles.
+Opening an Access pushes a View; Back restores the caller with its focus, Selections, and paging intact. A View opens only for another durable context: focus moves, Selector editing, validation messages, paging, and reflow never open one.
 
-### Interaction Compositions
+## Input
 
-Interaction Compositions turn the shared semantic model into reusable View definitions.
+Enter and the arrow keys are the complete input set. Arrows move focus through the composition's semantic order; Enter activates the focused target, which for a Checkbox or a Radio Button means toggling it. Everything else is a shortcut or an alternative:
 
-They provide the Persistent Header, Action Menu, Preparation, Execution View, Panels, Selectors, Review, and Confirmation compositions. A Composition is a pure builder and reducer over public Interaction Core descriptors and state snapshots. It declares behavior through explicit interaction intents and does not execute their handlers.
+| Input | Command |
+|---|---|
+| Space | Toggle the focused option |
+| Backspace, visible Back control | Return by one View; never exits |
+| Escape | Cancel the transient interaction that owns input; otherwise Back; at the root Action Menu, Exit |
+| Ctrl+C | Emergency exit: quiesce the child process, restore the terminal, leave |
+| Page Up, Page Down, mouse wheel | Previous or next page of the targeted Panel |
+| Home, End | First or last page |
 
-They MUST NOT depend on Deckle workflow implementations. Another repository MAY use the complete composition library or only the compositions it needs.
+A visible Back control exists in every nested View. It is a Navigation Control, not an Action: its label carries a leftward marker independent of focus, and at a given geometry it inherits the first option track and cell width of its owning Action Menu rather than a grid of its own. The root Action Menu ends with a Quit target whose intent is Exit.
 
-### Deckle Launcher
+A focused text editor consumes characters, Space, Backspace, Delete, Home, End, and the horizontal arrows before View commands; Escape cancels the edit without accepting its buffer.
 
-The Deckle Launcher is the shell that presents Deckle's repository workflows.
+Paging is the only overflow interaction. Every paged Panel is focusable and shows Previous and Next targets whenever more than one page exists, so every page is reachable with arrows and Enter; when an activated direction reaches its boundary, focus moves to the other paging target. Pages run chronologically: Next shows newer content. A wheel event targets the Panel under the pointer when coordinates are available, otherwise the focused paged Panel. Wheel paging is required wherever the host reports pointer input; its indication appears beside Page Up and Page Down.
 
-It owns the Deckle banner and context, the catalog of Actions and Accesses, workflow-specific Preparation controllers, intent handlers, Action engine requirements, domain-specific outputs, and the mapping from completed work back to its owning Action Menu.
+Global Command Indications are generated from the active bindings as key-and-label pairs in the Header's right-hand space, grouped by spacing, and hide by priority on a narrow terminal: activation and editing commands first, then Back, movement last. Scrolling Command Indications sit at the bottom, framed by a local separator, only while the View or Panel pages, and name the targeted Panel. A View never advertises a command it cannot honor.
 
-Workflow commands MUST remain independently callable and MUST NOT import the launcher or terminal-interaction modules.
+## Focus and presentation
 
-### Execution Runtime
+A View with interactive content has exactly one focused target, which survives redraw and resize. Every ordinary target shares one identical focus treatment. Danger and Exit keep their distinct treatment: both are red at rest; a focused Danger target inverts to white on dark red, a focused Exit target takes the ordinary treatment. Color is never the only carrier of focus, checked, disabled, danger, or completion: each state has a structural or textual mark, and without color the focus cell carries `>`. A disabled target stays visible, carries a structural marker, and shows its reason when one is declared.
 
-The Execution Runtime owns one active Execution: its frozen request, child-process lifecycle, captured Journal, Tracking state, and structured completion. It consumes a repository-supplied execution adapter and emits immutable `Started`, `Journal updated`, `Tracking updated`, and `Completed` updates. `Completed` carries the structured conclusion and MAY carry a repository-owned output value without interpreting or relabeling it.
+Presentation and intent are independent. Descriptors say what an object is; the renderer derives its presentation role; the theme maps role and state to terminal attributes, and callers never supply colors or layout variants. The role inventory is stable: banner, context, titles, separators, Action, Variant and body, Access, Navigation, supporting text, Exit, Danger, outcomes, command key and command label. The default theme is the Figma `22:27` palette in its light and dark variants; per-role customization from a repository configuration is a later capability. Journal content keeps its own admitted presentation and is not remapped.
 
-The adapter declares engine requirement, profile behavior, working directory, elevation policy, executable, argument values, and the meaning of its returned output. The Runtime validates that declaration, selects a compatible engine, quotes and constructs the process invocation, captures streams, and observes exit. It MUST NOT depend on the Interaction Core, Interaction Compositions, or terminal drawing. The Deckle Launcher passes its updates into the Interaction Core as external View-state projections and interprets any completed repository-owned output.
+## Views
 
-### Interaction Renderer
+A View is one Persistent Header over one View Body. The Header owns two rails, banner then current context, the Global Command Indications in the remaining right-hand space of either rail, and one primary separator; indications never add a rail or displace the context. The primary separator is distinguished from local ones by structure, not by tone alone. Sections use lighter separators or whitespace; no full-width rule per Section or item.
 
-The Interaction Renderer is a pure support module. It projects View descriptors, retained snapshots, terminal metrics, theme, and capabilities into a render plan containing clipped display cells and drawing operations.
+The View Body composes an Action Menu, a Preparation, and Panels, together or apart. Rows and columns are layout results, never semantic children. A Panel owns one content responsibility, keeps its identity when reflow moves it, retains its paging state in the Core under that identity, and is titled by its content, never by a generic `Results`.
 
-It owns layout, responsive reflow, display-cell measurement, clipping, theme resolution, and separator hierarchy. It MUST NOT read input, retain session state, navigate, invoke work, or write to the console. The Terminal Host alone executes its render plan.
-
-## Public contract
-
-The reusable framework's public surface MUST expose responsibilities rather than rendering mechanisms:
-
-- start and close one interaction session;
-- describe a View and its body compositions;
-- publish stable target descriptors and the normalized commands currently available;
-- apply an interaction command and return a transition;
-- apply an immutable external state update;
-- render retained state for the current terminal metrics.
-
-Consumers MUST NOT construct renderer rows, cursor coordinates, ANSI cursor movement, or terminal-specific key records. The module facade MUST be the only supported import surface; internal files MAY change without changing consumers.
-
-Every interactive target descriptor contains a View-local stable `TargetId`, an `IntentKind`, an immutable payload, an enabled state, an optional disabled reason, and a presentation role. Presentation role MUST NOT determine intent. Activation of an enabled target emits its declared intent; activation of a disabled target keeps the View and exposes its reason.
-
-Activation returns an `Intent Request` from the Interaction Core to the Deckle Launcher. The request contains the source View and Target identities, Intent Kind, and immutable payload. The Launcher resolves and invokes the registered handler. A handler returns either a `Transition Decision` or an `Execution Request`; the Launcher submits a Transition Decision to the Core facade, or installs the Execution View through that facade and starts the Execution Request through the Runtime. The Core never calls a handler or emits repository work itself.
-
-An Execution Request contains the owning Action and Action Variant identifiers, the exact immutable reviewed Preparation revision when one exists, and the selected execution adapter. A direct Action without Preparation carries an immutable Action input snapshot instead.
-
-## State and transitions
-
-### Single source of visible state
-
-Exactly one View is current. Its retained state is the source for every redraw. The terminal contents themselves MUST NOT be treated as state.
-
-Every interaction produces one explicit outcome:
-
-- **Stay** — update state within the current View;
-- **Open** — push and present another View;
-- **Back** — close the current View and restore its caller;
-- **Cancel interaction** — discard unaccepted state owned by a transient interaction and return control to the current View;
-- **Request Intent** — emit the focused target's declared intent to the Deckle Launcher;
-- **Exit** — close the complete interaction session.
-
-A renderer MUST NOT navigate or execute work as a side effect of drawing.
-
-### Navigation state
-
-Opening an Access pushes a View. Back restores the prior View with its focus, Selections, and paging positions intact.
-
-Editing a Selector inside Preparation is a local interaction, not navigation. It MAY temporarily own focus or open a transient chooser, but it MUST NOT add a technical parameter to the View breadcrumb or navigation stack.
-
-### Default command bindings
-
-The Terminal Host normalizes physical key, character, wheel, and pointer events without assigning workflow meaning. The Interaction Core resolves commands according to the focused target and its current input mode. Outside text editing, the default Deckle bindings are:
-
-| Input | Command | Contract |
-|---|---|---|
-| Arrow keys | Move focus | Move through the current composition's semantic order. |
-| Enter | Activate | Invoke the focused target's declared intent. |
-| Space | Toggle selection | Change the focused option in a multi-selection interaction. |
-| Backspace | Back | Return by one View. |
-| Visible Back control | Back | Behave exactly like Backspace. |
-| Escape | Cancel interaction, Back, or Exit | Cancel a transient interaction first; otherwise return by one View, or exit from the root Action Menu. |
-| Ctrl+C | Exit | Restore the terminal and leave the launcher. |
-| Mouse wheel | Previous or next page | Move paginated content by one non-overlapping page. |
-| Home, End | First or last page | Reach the beginning or latest page. |
-
-Page Up and Page Down MAY be equivalent alternate bindings, but neither the interaction design nor its discoverability may depend on those keys being present.
-
-The visible Back control is a Navigation Control. It is not an Action and does not represent work. Its label carries a leftward marker independently from the focus treatment, so its outward direction remains visible whether or not it is focused.
-
-At the same terminal geometry, the visible Back control MUST inherit the first option track and cell width of its owning Action Menu. Preparation, Panel, Content, and Execution compositions MUST reuse that owner grid; they MUST NOT derive Back from their own body grid or from a generic fallback. Different Action Menus MAY define different option tracks, and responsive navigation layout MAY reflow the inherited track when the terminal geometry itself changes.
-
-A focused text editor consumes characters, Space, Backspace, Delete, Home, End, and horizontal arrows before View commands. Its Global Command Indications reflect editing commands and MUST NOT advertise `Backspace · Back` while Backspace edits text. Escape cancels the local edit without accepting its buffer; after the editor closes, the View bindings apply again.
-
-Every paged Panel is focusable and exposes visible Previous Page and Next Page targets whenever more than one page exists. These targets provide the complete keyboard path on a keyboard without Page Up or Page Down. When an activated direction reaches a boundary and becomes unavailable, focus transfers to the available paging target in the same footer instead of returning to another View control. A wheel event targets the Panel beneath its pointer coordinates when those coordinates are available; otherwise it targets the focused paged Panel. When several Panels overflow, Scrolling Command Indications describe the currently targeted Panel.
-
-If a transient chooser or Confirmation currently owns input, Escape cancels that local interaction first. Otherwise Escape behaves as Back while another View exists beneath the current one. At the root Action Menu, Escape exits the complete interaction session. Backspace never exits the launcher.
-
-Global Command Indications MUST be generated as structured key-or-gesture and command-label pairs from the active bindings and placed in the Persistent Header's upper-right track. They are non-interactive legends, not the visible Back control. When color is available, the key or gesture and its command label use two nearby grey levels; the pair remains understandable without color. Command pairs are grouped by spacing rather than a rule between every pair. On a narrow terminal, indications hide by priority before the context is clipped: currently necessary activation or editing commands remain, then cancellation or Back, while already familiar movement indications may collapse first.
-
-Scrolling Command Indications are the only command legends normally placed at the bottom. They appear only when the current View or Panel can scroll or paginate, and they MUST include the mouse wheel whenever wheel paging is available. A local paging separator frames the footer from its content. The footer remains within the horizontal bounds of the View or Panel it controls.
-
-A View MUST NOT advertise a command it cannot currently honor.
-
-### Focus and activation
-
-A View with interactive content has exactly one focused target. Focus survives redraw and resize and returns with retained View state. Each Panel may retain local content state through a keyed immutable snapshot, but the Interaction Core owns the session copy and the association between that state and its Panel.
-
-Every interactive target declares its intent. Activation MUST NOT infer intent from an ellipsis, a `Value` naming convention, a color role, or the target's position.
-
-Visual role and interaction intent are independent. A destructive Confirmation can therefore share activation mechanics with an ordinary Confirmation while retaining distinct presentation and safety contracts. Color MUST NOT be the only carrier of focus, checked, disabled, danger, or completion state; every state has a textual or structural distinction.
-
-An Action that cannot run under the active PowerShell engine remains visible. It MUST either be disabled with a concise explanation of its engine requirement or explicitly delegate to a compatible installed engine.
-
-## View composition
-
-### View
-
-A View is the complete visible interface state. It always contains one Persistent Header and one View Body.
-
-Navigation creates another View only when the user enters another durable interface context. Focus changes, Selector editing, validation messages, paging, and responsive reflow do not create Views.
-
-### Persistent Header
-
-The Persistent Header has four stable responsibilities:
-
-1. present the repository-supplied banner;
-2. identify the current context;
-3. present active Global Command Indications;
-4. separate itself from the View Body.
-
-Its structure persists across Views. Its context and command indications derive from current state. Body compositions MUST NOT reproduce the header.
-
-The Persistent Header reserves two content rails before its separator. The first presents the banner; the second presents the current context. Global Command Indications use the available right-hand space on either rail and hide by priority when they do not fit. They MUST NOT add a third rail or displace the complete current context.
-
-One primary separator closes the Persistent Header. It has a stronger presentation role than local Panel separators. Sections MAY use lighter dashed separators, and whitespace separates groups. The interface MUST NOT draw a full-width rule for every Section or item.
-
-### View Body
-
-The View Body composes semantic regions. It MAY contain an Action Menu, Preparation, and one or more Panels together or separately.
-
-Rows and columns are layout results, never semantic children exposed to workflow callers. Reflow MAY change placement but MUST preserve each composition's responsibility, content, focus target, interaction intent, and semantic order.
-
-The focused target and checked Selections MUST remain clearly distinguishable in every supported color mode.
-
-### Panel
-
-A Panel owns one content responsibility and declares the schema and behavior of its local overflow state. The Interaction Core retains that state by Panel identity for the current session. A Panel MUST remain identifiable when responsive layout moves or resizes it.
-
-Panel titles name their content, not the generic fact that content exists. `Results` is therefore unsuitable when the content is specifically a Report, Execution Journal, Execution Tracking account, or Review.
-
-## Action Menu
-
-An Action Menu MAY contain both Actions and Accesses because its responsibility is to organize the work available from one context.
-
-- A Section is non-interactive and groups related items.
-- An Action starts an interaction flow for intended work.
-- An Access opens another View.
-- An Action Row keeps one Action visible beside its Action Variants.
-- An Action Variant changes how the Action is carried out without navigating.
-
-Actions without variants MAY occupy one activation target. Action Rows with variants MUST preserve the Action subject when focus moves among variants.
-
-A visible Access label ends with an ellipsis as a non-color disclosure cue that another durable View context will open. The Access descriptor remains the source of its intent; neither the Interaction Core nor the renderer may infer navigation from that punctuation.
-
-In a wide Action Menu, Section headings begin one display cell before their Action subjects. The indentation belongs to the heading relationship only; it MUST NOT shift option tracks, trailing controls, or the inherited Back track.
-
-The semantic order of Sections, Actions, Variants, and Accesses is stable. Responsive layout MAY change widths or placement but MUST NOT reorder them according to available geometry.
-
-The composition grammar reserves two later insertion points without rendering them in the first cycle: a global Logs Access above Quit at the far right of the main Action Menu, and a Rerun Action immediately to the right of the visible Back control in a completed Execution View.
+An Action Menu organizes Sections, Actions, Action Rows with their Variants, and Accesses in a stable semantic order that reflow never changes. A folder of scripts is an Access. An Access label ends with an ellipsis as the non-color cue that a View will open; its descriptor, not the punctuation, carries the intent. The main Action Menu ends with a Logs Access above Quit.
 
 ## Preparation
 
-Preparation composes the inputs needed to begin one Action without turning each input into navigation.
+A Preparation keeps its Selectors, Effective Scope, Review, and Confirmation in one View Body, paginating vertically when height requires while retaining every Selection and the focused Selector. A Selector declares whether it accepts one value, several, free text, or a bounded edit; multi-selection is state inside one Selector. Filters remain a low-priority reusable system of Checkbox and Radio Groups that any Action can declare.
 
-Its grammar is:
+The Launcher supplies one **Preparation Controller** per Action. It owns accepted Selections, creates an immutable and distinct revision after every change, resolves Effective Scope from the current Selections and the execution target, validates, and publishes the snapshot. A result for a stale revision is discarded; a resolution failure appears beside the Preparation content, never as a View of its own. Every change invalidates the Review; Review and Confirmation reference the same revision; Confirmation is unavailable while resolution is pending or failed; Execution starts from that exact revision.
 
-- a **Filter** is a material criterion that constrains what the Action will affect;
-- a **Selector** is the interaction that edits one Filter or another material Action input;
-- a **Selection** is the value or values currently accepted by one Selector;
-- the **Effective Scope** is the resolved set the Action will actually inspect or change after its target and Filters are applied;
-- **Review** is the read-only account of the intended Action, its material inputs, and Effective Scope;
-- **Confirmation** is the deliberate activation that permits Execution to begin.
-
-A Preparation MUST keep its Selectors, Effective Scope, Review, and Confirmation in one View Body. It MAY paginate vertically when height requires it; pagination MUST retain every Selection and the focused Selector.
-
-A Selector declares whether it accepts one value, several values, free text, or a bounded edit. Multi-selection is state within one Selector, not a collection of navigable Views.
-
-Effective Scope MUST be derived from current Selections and the selected execution target. A failure to resolve it appears beside the relevant Preparation content and MUST NOT create an error destination.
-
-The Launcher supplies one Preparation Controller for the Action. It owns accepted Selections, creates a monotonically distinct immutable revision after every accepted change, resolves Effective Scope, validates the revision, and publishes its snapshot to the Interaction Core. Every asynchronous resolution is tagged with the revision it started from; a result for a stale revision is discarded.
-
-Every accepted Preparation change invalidates the prior Review. Review and Confirmation reference the same resolved revision identifier. Confirmation is unavailable while resolution or validation is pending or failed, and the Execution Request carries that exact reviewed revision. Beginning Execution from another revision violates the contract. Interaction Compositions render and edit drafts through descriptors; they do not resolve repository scope themselves.
-
-Destructive Confirmation MUST name the effect and Effective Scope, distinguish the safe choice, focus the safe choice initially, and require deliberate activation of the destructive choice. A generic caller option MUST NOT reverse the safe initial focus. Escape cancels it.
+An Action may declare that its Confirmation is a separate step between Review and Execution rather than an inset of the Preparation. That step names the effect and the Effective Scope, distinguishes the safe choice, focuses it first, requires deliberate activation of the other choice, and is cancelled by Escape.
 
 ## Execution
 
-The Deckle Launcher begins Execution only from an Execution Request. The Execution Runtime freezes that reviewed Action revision for one run. Later edits create another Execution rather than mutating the running or completed one.
+Execution begins only from an Execution Request; the Runtime freezes that revision for one run, and later edits or a restart create another Execution. The flow is Action Menu, Preparation, the confirmation step when declared, Execution. Execution replaces its Preparation, so Back after completion returns to the owning Action Menu; an Action without Preparation opens its Execution directly over the menu. In the Execution View, the Header and its separator remain, the Action Menu disappears, and the body shows the Back control followed by the Journal and Tracking Panels.
 
-The Execution Runtime publishes updates asynchronously with respect to the interaction loop. Focus and Journal paging remain usable while a run is active even though navigation away from the Execution View is unavailable.
+Runtime updates arrive asynchronously; focus and Journal paging stay usable during a run. An analysis, scan, or statistics Execution can be cancelled from the launcher through a declared command shown while available: the child stops, the result is cancellation, nothing partial is shown, and the launcher returns to the menu ready to relaunch. Whether other Actions can be cancelled is undecided; while a run that cannot be cancelled is active, Back, Backspace, and Escape are disabled, the Header does not advertise them, and Tracking says the run must finish. Ctrl+C remains the emergency exit in every case: the Runtime forwards an interrupt, waits for the child to exit or to reach its declared forced-termination boundary, publishes cancellation or failure, and only then lets the terminal restore.
 
-The default flow uses `Action Menu → Preparation → Execution`. Choosing an Action pushes Preparation when material input or Confirmation is required. An Execution Request replaces Preparation with Execution so Back after completion returns to the owning Action Menu, not to a stale Review. An immediately executable Action pushes Execution directly over its retained owning Action Menu. An Access remains the only catalog item whose purpose is to push another durable View context.
+The Execution Journal Panel and the Execution Tracking Panel are independent. On a wide terminal the Journal takes about five-sixths of the width and Tracking one-sixth, chosen from measured minimum widths so Tracking stays readable; on a narrow one, a height-limited Journal stacks above Tracking. Tracking wraps; Journal lines never wrap and are clipped to the available cells. A running Journal follows its latest page; a completed Journal reopens at its latest page; a Report, a Review, and guidance open at their beginning.
 
-### Primary Execution flow
+The Journal retains complete structured records in admission order per stream, with no cross-stream order promised: time, source, stream, logical content, presentation segments. Output is captured, never passed through, so a child cannot draw across the Tracking Panel; ConPTY remains an optional host strategy. Only SGR presentation semantics (colors, intensity, emphasis, reset) are retained; every other control sequence is discarded, and presentation resets at every rendered line. A carriage return replaces the provisional progress record until a newline commits it.
 
-The Persistent Header and its primary separator remain. The Action Menu disappears. The View Body presents the visible Back control, followed directly by the Execution View.
+Tracking is Deckle-owned state: significant steps, current state, elapsed time where useful, and the Execution Result. The executor publishes a structured conclusion; free text such as `Result : Success` is compatibility evidence, never the canonical source. The result vocabulary is success, failure, partial completion, skipped work, and cancellation, and the result library gives a script ready-made means to report each.
 
-While Execution is `Running`, the visible Back control, Backspace, and Escape are unavailable because the first cycle neither backgrounds nor cancels a child process. The Header does not advertise them, and Tracking states that the run must finish before returning. After completion, the visible Back control, Backspace, and Escape return to the owning Action Menu.
+An Execution may also produce **action-owned output** of two kinds: a **Report**, shown on screen, or an **Artifact**, written to disk (`TREE.md` is one). The adapter returns it, the Runtime transports it unchanged in `Completed`, and the Launcher presents it with or after the Execution View; the Core never relabels it as the Execution Result, and the framework never invents a continuation the workflow does not implement.
 
-Ctrl+C remains the emergency session exit during a run. The Execution Runtime MUST forward an interrupt through the selected engine or process adapter, wait for the child to exit or reach a declared forced-termination boundary, publish cancellation or failure, and only then allow terminal restoration. It MUST NOT abandon a redirected child process that can continue writing to disposed pipes.
+The session keeps every Execution Journal produced since the launcher started, in memory, unfiltered, until exit. The Logs Access opens a plain paginated list of the runs and their results; opening a run reopens its Journal at its latest page.
 
-The first cycle renders no Rerun control. The reserved Rerun insertion point does not change the Back control's stable position.
+## Rendering
 
-### Execution View
+Rendering is a deterministic projection of retained state, metrics, theme, and capabilities; a complete redraw is valid whenever geometry or capability changes, continuous resize animation is not a goal, and redundant redraws are avoided. The launcher uses the full terminal width with no cap: content stays left-aligned and right-aligned elements stay right. A narrow terminal reflows compositions vertically, in their semantic order, before any resize message; below the floor where nothing fits, still to be measured, the renderer presents one resize state rather than a partial View. One layout serves each use case; a new layout appears only when a use case breaks several existing rules.
 
-The Execution View presents two independent Panels:
+Resize preserves the current View and stack, the focused target, Selections, Execution state and Journal, and the nearest valid page of each Panel. Layout measures display cells, not string length; clipping accounts for presentation sequences and should account for wide and combining characters. The session leaves the terminal valid after narrow dimensions, interrupted drawing, an exception, or exit.
 
-- the Execution Journal Panel presents the detailed emitted evidence;
-- the Execution Tracking Panel presents Deckle's concise account of significant steps, current state, and final conclusion.
+## Capabilities and engines
 
-On a wide terminal, the Journal occupies approximately five-sixths of the usable width and Tracking one-sixth. The renderer uses measured minimum viable widths for both Panels to choose the split; the ratio alone MUST NOT make Tracking unreadable. A local separator frames the boundary through the shared title rail, content, and Journal paging footer. Tracking text wraps within its Panel while Journal lines remain clipped without wrapping.
+The Host probes capabilities instead of trusting a PowerShell version, a terminal brand, or a parent process. Each reports Supported, Unsupported, or Unknown; at minimum: interactive input and output, width and height, cursor addressing and clear, color and safe VT presentation, alternate buffer, pointer input. Degradation is explicit: without color, markers carry every state; without an alternate buffer, the main buffer is used and restored without erasing prior content; without cursor addressing, the launcher refuses to start with one static explanation; without pointer input, the keyboard path is complete; every changed mode returns to its observed prior value.
 
-In a narrow IDE panel, a height-limited Journal appears above Tracking so both remain visible in their established order. One local horizontal separator preserves the same Panel boundary without imitating the Persistent Header's primary separator.
+The backbone and its bootstrap parse and import under Windows PowerShell 5.1, from sources in an encoding it decodes deterministically; PowerShell 7 syntax stays behind a file or process boundary that 5.1 never reads. An Action declares when it requires PowerShell 7: under 5.1 it stays visible, disabled with that reason, or delegates to an installed `pwsh`.
 
-The Execution composition MUST use the terminal's usable width. A global preferred-width cap intended for menus MUST NOT constrain it.
+## Reuse
 
-### Execution Journal
+The reusable modules take one injected launcher context as input: branding, context, catalog, labels, intent handlers, Preparation controllers, execution adapters with their engine requirements, Tracking steps, and the presentation of action-owned output. They contain no Deckle path, branch, command name, workflow assumption, or output label, and never call a repository script directly. A consumer edits no internal file and depends on no launcher global; Exit and other control flow cross the facade as public transitions, never as exceptions. A repository-neutral fixture proves reuse until a second consumer does.
 
-The Journal retains structured records in observed admission order. A record carries its observed time, source, stream, complete logical content, and presentation segments. Order is preserved within each captured stream; no exact emission order is promised between independently redirected stdout and stderr streams.
-
-Journal lines MUST remain complete in retained state and MUST NOT wrap in the panel. Rendering clips them to the available display cells without corrupting presentation sequences. Paging changes the visible records, not the retained records.
-
-ANSI preservation uses an explicit allowlist of SGR presentation semantics: foreground and background color, intensity, emphasis, and reset. The parser retains semantic segments rather than raw escape sequences, carries incomplete sequences across reads, and resets presentation at every rendered line boundary. It discards OSC, cursor movement, erasure, title changes, private modes, and any unsupported control instead of replaying them.
-
-A carriage return replaces the current provisional native-progress record until a newline commits it; PowerShell `ProgressRecord` values are a separate input kind and MUST be admitted explicitly if supported. Empty lines are retained. Tabs remain logical tab characters in state and expand to the next configured tab stop only during rendering.
-
-Direct child-process pass-through cannot satisfy this containment contract. The first implementation uses captured output. ConPTY remains an optional host strategy only when a concrete workflow requires genuine terminal behavior.
-
-While an Execution runs, the Journal follows its latest page by default. After completion, a retained Journal reopens on its latest page. Guidance, Review, and Reports open at their beginning.
-
-### Execution Tracking
-
-Tracking is Deckle-owned state, not a classification projected from journal lines. It records significant workflow steps, the current step and state, elapsed time where useful, and the eventual Execution Result.
-
-The executor MUST publish a structured conclusion. Free text such as `Result : Success` MAY be admitted as compatibility evidence but MUST NOT remain the canonical source of the Execution Result.
-
-The result vocabulary supports success, failure, partial completion, skipped work, and cancellation. A first-cycle runner need not offer user cancellation to produce or display a cancellation reported by a workflow.
-
-### Action-owned output
-
-An Execution MAY produce action-owned output in addition to its Journal and Result. That output uses its domain name: statistics produce a Report, builds may produce Artifacts, and other Actions may produce changed files, a plan, or another named deliverable. The execution adapter returns the structured value, the Runtime transports it unchanged in `Completed`, and the Launcher maps it to its Action-owned presentation.
-
-The Interaction Core MUST NOT relabel this output as the Execution Result. Its presentation is supplied by the Action's composition and MAY coexist with or follow the completed Execution View.
-
-The framework MUST NOT invent a continuation that the workflow does not implement. An Action that produces a plan has completed with that plan unless the repository separately declares an Apply or another continuation Action.
-
-## Rendering and responsive behavior
-
-Rendering is a deterministic projection of retained state, terminal metrics, theme, and host capabilities. A complete redraw is valid whenever geometry or capability state changes; continuous resize animation is not a goal.
-
-### Semantic presentation and theme
-
-Semantic descriptors state what an interface object is. The renderer derives a presentation role from that object and its composition, then the active theme maps the role plus interaction state to terminal attributes. Workflow callers MUST NOT supply `ConsoleColor`, ANSI codes, focus colors, or layout-dependent variants.
-
-Presentation and behavior remain independent. An Action Variant is still an Action intent even when it inherits the body color; an Access keeps its Access intent even if another theme gives it the same color as an Action. Focus, disabled, checked, danger, and completion are state overlays rather than replacements for the underlying semantic role.
-
-The default Deckle terminal theme preserves the existing script hierarchy:
-
-| Semantic presentation | Default Deckle treatment |
-|---|---|
-| Repository banner | Blue at compact text size |
-| Current context | Dark grey |
-| Section, Panel, Review, and Effective Scope title | Magenta |
-| Primary Header separator | Dark grey solid rule |
-| Section separator | Grey dashed rule |
-| Panel separator | Grey local rule |
-| Paging separator | Dark grey local rule |
-| Action subject | Cyan |
-| Action Variant, Filter label, safe standalone Action, safe Confirmation, Selector target, current editable value, and Selection | Inherit the terminal foreground |
-| Access | Dark yellow |
-| Review body, Effective Scope body, and ordinary detail | Inherit the terminal foreground |
-| Navigation Control | Dark grey |
-| Supporting explanation | Dark grey |
-| Exit | Red; ordinary classic focus when active |
-| Destructive choice | Red; white-on-dark-red focus when active |
-| Completed Tracking step | Dark grey |
-| Successful, running or partial, and failed Execution Result | Green, yellow, and red respectively |
-| Global or scrolling command key | Grey |
-| Global or scrolling command label | Dark grey |
-
-Ordinary focus uses the classic black-on-grey selection treatment. Focused danger and Error use the classic white-on-dark-red treatment, while Exit remains an ordinary selectable command. When color is supported, the reserved focus-marker cell stays blank because the selection background already identifies focus. When color is unavailable or unknown, that same cell carries `>` as the structural focus fallback, so focus never depends on hue alone. Disabled targets remain present, include a concise reason, and use a structural marker plus muted treatment.
-
-The default theme reproduces the original Deckle launcher's `ConsoleColor` table, except that command keys retain the validated middle-grey distinction from their dark-grey command labels. User-remapped terminal palettes remain outside the launcher's control, so structural labels and markers preserve meaning when a host palette changes the perceived contrast.
-
-Execution Journal presentation is not remapped through the launcher theme. Admitted native presentation segments retain their own allowed semantics inside the Journal Panel; launcher-owned Panel titles, Tracking states, and Execution Result use the Deckle theme.
-
-Resize MUST preserve:
-
-- current View and navigation stack;
-- focused semantic target;
-- Selections and confirmed values;
-- current Execution state and retained Journal;
-- the nearest valid page for each paged Panel.
-
-The renderer MUST remain usable in narrow IDE panels and wide standalone terminals. It MUST use available width, avoid fixed content-width caps, preserve semantic order, and avoid redundant redraws that cause excessive flicker.
-
-The renderer MUST leave the terminal in a valid state after narrow dimensions, interrupted drawing, an exception, or normal exit. When a terminal becomes too small for even the narrow composition, it presents one resize state rather than partially drawing an unusable View.
-
-Layout uses available display cells, not string length alone. Clipping MUST account for presentation sequences and SHOULD account for wide and combining characters before reuse is declared complete.
-
-Paging is the first-cycle overflow interaction. Fine line scrolling MAY be added later without changing Panel content or navigation contracts. Mouse-wheel paging is a required path; Page Up and Page Down are optional equivalents.
-
-## Capability and engine boundaries
-
-The Terminal Host probes capabilities instead of using the PowerShell version, terminal brand, or parent process as a proxy. Every capability reports `Supported`, `Unsupported`, or `Unknown`. At minimum the Host reports:
-
-- interactive input and output availability;
-- terminal width and height;
-- cursor addressing and clear support;
-- color and safe VT presentation support;
-- alternate-buffer support;
-- pointer-input support.
-
-Capability degradation is explicit:
-
-- without color, structural and textual markers preserve every state;
-- without an alternate buffer, the system MAY use the main buffer but MUST restore its cursor and modes without erasing prior content;
-- without cursor addressing, the structured interface refuses to start and presents one static compatibility explanation;
-- without pointer input, visible page targets keep the interface complete by keyboard;
-- every changed input or output mode is restored to its exact observed prior value.
-
-Mouse-wheel paging is required wherever the Windows host reports pointer input as `Supported`; a host that cannot provide it degrades to the complete keyboard path. Click activation is an enhancement.
-
-The launcher and daily Actions target Windows PowerShell 5.1 and PowerShell 7. All bootstrap files loaded by both engines MUST parse and import under Windows PowerShell 5.1. Engine-specific syntax stays behind a file or process boundary that an incompatible parser never reads. Source files loaded by Windows PowerShell 5.1 use an encoding it decodes deterministically, including files containing arrows, ellipses, and accents.
-
-Each Action declares whether it can run under either engine or requires one specific engine. Parser syntax, source encoding, safe argument construction, and platform detection MUST remain outside semantic compositions. The execution adapter constructs arguments through the runtime's supported API and MUST NOT fall back to ambiguous string concatenation.
-
-An execution adapter distinguishes engine choice, shell profile behavior, working directory, and elevation. None of those concerns may be inferred from another.
-
-## Reuse contract
-
-The reusable modules MUST accept repository-owned branding, contexts, Actions, labels, engine requirements, and execution adapters as inputs. They MUST NOT contain:
-
-- Deckle paths, branches, configurations, or command names;
-- assumptions about worktrees, releases, statistics, or Folder Covers;
-- hard-coded output labels such as `Results`;
-- direct calls to repository workflow scripts.
-
-One repository adopting the framework should need to inject a launcher context containing its branding, catalog, Action handlers, execution adapters, Tracking steps, and action-owned outputs. It should not need to edit a reusable module's internal files or depend on launcher globals. Exit and other control flow cross the facade as public transitions rather than internal exception types.
-
-The first cycle proves reuse through a repository-neutral configuration fixture and the absence of Deckle assumptions from the public surface. Adoption by a later consumer provides the cross-repository integration proof. The first cycle does not provide a shared package, installer, or update channel.
-
-## Conformance scenarios
-
-The first implementation is conformant when all of these scenarios hold through the public surface:
-
-1. **Mixed menu** — one Action Menu presents Sections, an Action Row with variants, standalone Actions, and Accesses; activation follows declared intent rather than presentation.
-2. **Compact Preparation** — a statistics Action edits scope, files, measures, grouping, thresholds, and target in one Preparation; Review and Confirmation use the same resolved Effective Scope.
-3. **Execution separation** — a running build replaces the Action Menu, updates Journal and Tracking independently, preserves safe native presentation, and cannot draw across the Tracking Panel.
-4. **Navigation contract** — visible Back and Backspace produce the same one-View transition without exiting; Escape cancels a transient interaction first, otherwise returns by one View and exits at the root Action Menu; Ctrl+C restores and exits the terminal session.
-5. **Discoverable input** — arrow, Enter, Space, Backspace, Escape, and wheel commands are usable and shown in the correct indication region when active.
-6. **Retained state** — resizing and paging retain focus, Selections, Execution state, and complete Journal records in both narrow and wide layouts.
-7. **Content policy** — a completed Journal opens at its latest page while a Report opens at its beginning.
-8. **Engine boundary** — a 5.1-only, 7-only, and either-engine Action each presents and dispatches according to its declared requirement without changing the composition.
-9. **Text editing** — a focused free-text Selector consumes Space, Backspace, Delete, Home, End, and horizontal arrows without triggering View commands.
-10. **Multiple overflow regions** — wheel and keyboard paging target the deterministic active Panel, every page remains reachable without pointer input or Page Up and Page Down keys, and boundary navigation retains focus inside the paging footer.
-11. **Running navigation** — Back, Backspace, and Escape remain unavailable while an Execution is running; emergency Ctrl+C quiesces the child before the terminal session closes.
-12. **ANSI containment** — fragmented and nested SGR is preserved semantically, hostile OSC and cursor controls are discarded, and presentation resets at every rendered line boundary.
-13. **Captured order and progress** — simultaneous stdout and stderr preserve per-stream order without claiming exact cross-stream emission order; carriage-return progress updates one provisional record.
-14. **Degraded hosts** — narrow headers, no-color output, no alternate buffer, absent pointer input, and absent cursor addressing follow their declared degradation policy.
-15. **Bootstrap compatibility** — the launcher parses and imports under Windows PowerShell 5.1 before dispatching 5.1-only, 7-only, and either-engine Actions.
-16. **Repository-neutral fixture** — different branding and workflows are declared without changing a reusable module's internal files or installing a shared package.
-
-Tests SHOULD assert these behavioral contracts through the values and public seams the implementation actually uses. Renderer-unit tests MAY additionally assert pure layout, clipping, color, and separator invariants.
-
-Host acceptance MUST exercise Windows Terminal, conhost, and the supported IDE terminal under both Windows PowerShell 5.1 and PowerShell 7. These named environments form the validation matrix; runtime behavior still follows probed capabilities rather than host names.
+Tests assert these contracts through the public surface; renderer tests may add pure layout, clipping, and separator invariants. Host acceptance covers Windows Terminal, conhost, and the supported IDE terminal under Windows PowerShell 5.1 and PowerShell 7.
