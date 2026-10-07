@@ -1,5 +1,5 @@
 ---
-description: "Behavior and composition contracts of the reusable terminal launcher beneath Deckle Scripts: product, modules, input, views, preparation, execution, rendering, reuse."
+description: "Behavior and composition contracts of the reusable terminal launcher beneath Deckle Scripts: product, modules, input, views, discovery, preparation, execution, rendering, reuse."
 type: module-specification
 ---
 
@@ -9,25 +9,25 @@ The contracts of the reusable terminal launcher beneath Deckle Scripts. Read it 
 
 ## Product
 
-The launcher is one backbone that gathers every script of a repository, so its maintainer finds and runs them without an LLM. The Action Menu is the exhaustive inventory of the repository's scripts: nothing stays reachable only from the command line, and folders group rarely used scripts rather than hiding them. Every workflow command also remains callable on its own from the command line.
+The launcher is one backbone that gathers the scripts of a repository, so its maintainer finds and runs them without an LLM. The Action Menu is the inventory of the repository's described scripts: every script with a **Header**, its PowerShell comment-based help, is reachable from the menu, folders group the rarely used ones, and a script without a Header stays out of the menu on purpose, kept beside the others for the day it serves again. Every workflow command also remains callable on its own from the command line.
 
-A repository keeps its scripts under its own `scripts/` subfolders and the menu links to them; the backbone ships the standard commands every repository needs, such as scans. The backbone is a distributable product, installable into another repository at its creation and usable by other people. Wiring a script into the menu is understandable by a person and by an agent, and an installer that meets an existing setup adjusts it rather than replacing it. The installation mechanism and automatic updates are open.
+A repository keeps its scripts under its own `scripts/` subfolders and the menu links to them; the backbone ships the standard commands every repository needs, such as scans. The backbone is a distributable product, installable into another repository at its creation and usable by other people. Wiring a script into the menu is writing its Header, a gesture a person and an agent both understand, and an installer that meets an existing setup adjusts it rather than replacing it. The installation mechanism and automatic updates are open.
 
 The runtime is PowerShell 7 on Windows, the engine of every development environment the launcher serves. A minimal bootstrap that Windows PowerShell 5.1 can read relaunches the launcher under an installed `pwsh`, or explains that PowerShell 7 must be installed. A port to another runtime waits for a real need.
 
 ## Modules
 
 ```text
-                              Deckle Launcher
-                              /             \
-                             v               v
-              Interaction Compositions   Execution Runtime ---> Workflow commands
-                             |
-                             v
-                      Interaction Core
-                        /           \
-                       v             v
-          Interaction Renderer   Terminal Host
+                                   Deckle Launcher
+                                 /        |        \
+                                v         v         v
+              Script Discovery   Interaction Compositions   Execution Runtime ---> Workflow commands
+                                          |
+                                          v
+                                   Interaction Core
+                                     /           \
+                                    v             v
+                       Interaction Renderer   Terminal Host
 ```
 
 Arrows are the only code dependencies: a destination never imports, calls, or inspects its source. Descriptor, snapshot, input-event, and render-plan types are shared public types, not dependencies in this sense. The Launcher also calls the Core's public facade to submit handler decisions and Execution projections; the Core never calls back.
@@ -37,7 +37,8 @@ Arrows are the only code dependencies: a destination never imports, calls, or in
 - **Interaction Compositions** — pure builders and reducers over public Core descriptors that turn the semantic model into View definitions: Persistent Header, Action Menu, Preparation, Execution View, Panels, Selectors, Review, Confirmation, Logs. They declare intents and execute none, and contain no Deckle workflow code. A consumer uses the whole library or only the compositions it needs.
 - **Interaction Renderer** — a pure projection of View descriptors, retained state, terminal metrics, theme, and capabilities into a render plan of clipped display cells and drawing operations. It owns layout, reflow, display-cell measurement, clipping, theme resolution, and the separator hierarchy. It reads no input, keeps no state, navigates nowhere, and never writes to the console: the Host alone executes its plan.
 - **Execution Runtime** — one active Execution: its frozen request, the child-process lifecycle, the captured Journal, Tracking, and the structured completion, published as immutable `Started`, `Journal updated`, `Tracking updated`, and `Completed` updates. It consumes a repository-supplied **execution adapter** that declares engine requirement, profile behavior, working directory, elevation, executable, argument values, and the meaning of its output; none of these is inferred from another. The Runtime validates the declaration, selects a compatible engine, builds the invocation through the engine's API rather than string concatenation, captures the streams, and observes the exit. It depends on nothing interactive.
-- **Deckle Launcher** — the shell that presents one repository's workflows: banner and context, the catalog of Actions and Accesses, Preparation controllers, intent handlers, engine requirements, and the presentation of action-owned output. Workflow commands never import the launcher or the interaction modules; the backbone ships a separate **result library** they may use to report their conclusion.
+- **Script Discovery** — the pure reader that turns a scripts folder into the catalog of Actions and Accesses: it parses each script without executing it, reads its Header and `param` block, and reports the scripts it leaves out with their reason. It knows the Header contract and nothing of Views or Executions.
+- **Deckle Launcher** — the shell that presents one repository's workflows: banner and context, the catalog that Script Discovery builds, Preparation controllers, intent handlers, engine requirements, and the presentation of action-owned output. Workflow commands never import the launcher or the interaction modules; the backbone ships a separate **result library** they may use to report their conclusion.
 
 ## Public surface
 
@@ -87,6 +88,22 @@ A View is one Persistent Header over one View Body. The Header owns two rails, b
 The View Body composes an Action Menu, a Preparation, and Panels, together or apart. Rows and columns are layout results, never semantic children. A Panel owns one content responsibility, keeps its identity when reflow moves it, retains its paging state in the Core under that identity, and is titled by its content, never by a generic `Results`.
 
 An Action Menu organizes Sections, Actions, Action Rows with their Variants, and Accesses in a stable semantic order that reflow never changes. A folder of scripts is an Access. An Access label ends with an ellipsis as the non-color cue that a View will open; its descriptor, not the punctuation, carries the intent. The main Action Menu ends with a Logs Access above Quit.
+
+In an Action Menu the label column is fixed: its width is the longest label of the menu plus a constant margin, and content never widens it. Variant cells share one cell width across the menu, so their columns align between rows; cells beyond the remaining width wrap beneath the first cell, never beneath the label, without a blank line, down to a single column. A Variant is chosen by focusing its cell and activating it; a configuration shared by several Actions is never a Selector placed above them.
+
+## Discovery
+
+Script Discovery builds the catalog at every launch from the repository's scripts folder; no hand-written catalog exists. It reads each script through the PowerShell parser, which executes nothing: the comment-based help, the `param` block, and the `#Requires` lines. It never calls `Get-Help`.
+
+A Header is first in its file, with `#Requires` after it. `.SYNOPSIS` is the label the menu shows and `.DESCRIPTION` its help sentence; `TREE.md` takes them as the name and description it already takes from Markdown front matter. `.NOTES` carries the menu keys as `key: value` lines, read by the same reader as that front matter: `section`, `order`, and `action`. Inside a Header no line starts with a dot except a keyword, because an unknown keyword, such a line, or a comment glued above the block voids the whole help without an error.
+
+A script without a Header, or with a voided one, is absent from the menu on purpose: it stays in its folder for the day it serves again, and a backbone check lists every such script with its reason, so an omission is a choice and never a surprise.
+
+The subfolders of the scripts folder are the menu levels: a folder is an Access labelled by its name, and its `README.md` front matter may carry `name`, `description`, `section`, and `order`. Scripts at the root of the scripts folder sit on the root Action Menu. Within one level the Action Rows come first, grouped by `section`, and the Accesses come last as one group; `order` sorts inside each group, label or name otherwise. Actions without a section form the first, untitled group; Sections follow in the order of their smallest `order`, then by name. A level made of Accesses alone is valid.
+
+A script declares one Action by default: its synopsis as label, no arguments. Each `action:` line declares one Action instead, as segments separated by `|`: the label, then the arguments appended to the invocation, then in any order the word `danger`, which gives the Danger treatment, and a sentence, which makes the Confirmation a separate step naming that sentence. Every Action is one Action Row. The Variants of every Action of a script are the values of its single `[ValidateSet]` parameter, in declaration order, the default preselected; activating a Variant passes that value. A script without such a parameter has Action Rows without Variants, and a script that needs two axes is two scripts. Other parameters reach Preparation through the launcher context, which maps them to Selectors; in Deckle, a `-Target` parameter opens the worktree Selector.
+
+Logs and Quit belong to the launcher and are never discovered. An Action whose flow exceeds one invocation with arguments, such as a publication that checks the branch, chooses a version, and runs two scripts, is launcher code with its own Preparation Controller; discovery covers every script whose Actions are one invocation each.
 
 ## Preparation
 
