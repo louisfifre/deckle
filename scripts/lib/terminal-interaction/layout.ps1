@@ -50,7 +50,7 @@ function Add-TerminalFrameSegment {
         [AllowEmptyString()][string]$Text,
         [ValidateSet(
             'Banner', 'Context', 'Section', 'SectionSeparator',
-            'Action', 'ActionVariant', 'Access', 'Adjust', 'Navigation', 'Exit', 'Danger',
+            'Action', 'ActionLabel', 'ActionVariant', 'Access', 'Adjust', 'Navigation', 'Exit', 'Danger',
             'PanelTitle', 'Body', 'Supporting', 'PrimarySeparator', 'PanelSeparator', 'PagingSeparator', 'Separator',
             'CommandKey', 'CommandLabel', 'Success', 'Warning', 'Error'
         )]
@@ -345,7 +345,7 @@ function Add-TerminalMenuRow {
         $line = Add-TerminalFrameLine -Frame $Frame
         if ($line -lt 0) { return }
         if ($Row.Label) {
-            Add-TerminalFrameSegment -Frame $Frame -LineIndex $line -X $left -Text (Limit-TerminalText -Text $Row.Label -Width $Grid.LabelWidth) -PresentationRole Action
+            Add-TerminalFrameSegment -Frame $Frame -LineIndex $line -X $left -Text (Limit-TerminalText -Text $Row.Label -Width $Grid.LabelWidth) -PresentationRole ActionLabel
         }
         $targets = @(if ($Row.Kind -eq 'ActionRow') { $Row.Variants } else { $Row.Targets })
         $trailing = $Row.TrailingTarget
@@ -367,7 +367,7 @@ function Add-TerminalMenuRow {
 
     if ($Row.Label) {
         $labelLine = Add-TerminalFrameLine -Frame $Frame
-        Add-TerminalFrameSegment -Frame $Frame -LineIndex $labelLine -X $left -Text $Row.Label -PresentationRole Action
+        Add-TerminalFrameSegment -Frame $Frame -LineIndex $labelLine -X $left -Text $Row.Label -PresentationRole ActionLabel
     }
     $targets = @(if ($Row.Kind -eq 'ActionRow') { $Row.Variants } else { $Row.Targets })
     if ($null -ne $Row.TrailingTarget) { $targets += $Row.TrailingTarget }

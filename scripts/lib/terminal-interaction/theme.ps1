@@ -7,7 +7,7 @@ function Get-TerminalPresentationStyle {
         [Parameter(Mandatory)]
         [ValidateSet(
             'Banner', 'Context', 'Section', 'SectionSeparator',
-            'Action', 'ActionVariant', 'Access', 'Adjust', 'Navigation', 'Exit', 'Danger',
+            'Action', 'ActionLabel', 'ActionVariant', 'Access', 'Adjust', 'Navigation', 'Exit', 'Danger',
             'PanelTitle', 'Body', 'Supporting', 'PrimarySeparator', 'PanelSeparator', 'PagingSeparator', 'Separator',
             'CommandKey', 'CommandLabel', 'Success', 'Warning', 'Error'
         )]
@@ -48,6 +48,9 @@ function Get-TerminalPresentationStyle {
         'Section' { [ConsoleColor]::Magenta }
         'SectionSeparator' { [ConsoleColor]::Gray }
         'Action' { [ConsoleColor]::Cyan }
+        # The label of an Action Row titles its Variants and is not a target,
+        # so it stays off the Action color and reads as a bright heading.
+        'ActionLabel' { [ConsoleColor]::White }
         'ActionVariant' { $null }
         'Access' { [ConsoleColor]::DarkYellow }
         'Adjust' { $null }
