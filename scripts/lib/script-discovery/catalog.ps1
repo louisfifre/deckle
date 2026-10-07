@@ -24,6 +24,7 @@ function Compare-DeckleOrderThenLabel {
     if ($leftHasOrder -and $Left.Order -ne $Right.Order) { return $Left.Order.CompareTo($Right.Order) }
     $byLabel = [System.StringComparer]::OrdinalIgnoreCase.Compare([string]$Left.Label, [string]$Right.Label)
     if ($byLabel -ne 0) { return $byLabel }
+    if ($Left.Position -ne $Right.Position) { return $Left.Position.CompareTo($Right.Position) }
     return $Left.Index.CompareTo($Right.Index)
 }
 
@@ -38,6 +39,7 @@ function Sort-DeckleCatalogEntries {
             Order = $entry.Order
             Label = $entry.Label
             Rank = if ($entry.PSObject.Properties['Rank']) { [int]$entry.Rank } else { 0 }
+            Position = if ($entry.PSObject.Properties['Position']) { [int]$entry.Position } else { 0 }
             Index = $index
         })
     }
@@ -132,12 +134,20 @@ function New-DeckleCatalogLevel {
         }
         $rows = @(New-DeckleCatalogRows -Header $header -RelativePath $relativePath)
         if ($rows.Count -eq 0) { continue }
-        # Scripts sort as units so the rows of a multi-action script stay
-        # consecutive and in declaration order. Scripts with Variants rank
-        # first in their Section: their labelled rows sit above the bare
-        # Actions, which the menu packs side by side.
-        $rank = if (@($rows[0].Variants).Count -gt 0) { 0 } else { 1 }
-        $scriptEntries.Add([pscustomobject]@{ Item = $rows; Order = $header.Order; Label = $rows[0].Label; Rank = $rank })
+        # A Section ranks its rows in three bands: Action Rows with Variants
+        # first, as one unit per script so they stay consecutive; then the
+        # plain Actions; then the Danger Actions, last, where a hand does not
+        # reach them by accident. Inside a band the script's order and
+        # synopsis sort, then the action's position, so the actions of one
+        # script keep their declaration order.
+        if (@($rows[0].Variants).Count -gt 0) {
+            $scriptEntries.Add([pscustomobject]@{ Item = $rows; Order = $header.Order; Label = $header.Label; Rank = 0; Position = 0 })
+            continue
+        }
+        foreach ($row in $rows) {
+            $rank = if ($row.Danger) { 2 } else { 1 }
+            $scriptEntries.Add([pscustomobject]@{ Item = @($row); Order = $header.Order; Label = $header.Label; Rank = $rank; Position = $row.ActionIndex })
+        }
     }
 
     $groups = [System.Collections.Specialized.OrderedDictionary]::new([System.StringComparer]::OrdinalIgnoreCase)

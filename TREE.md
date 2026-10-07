@@ -384,6 +384,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │       ├── gamma.ps1  — Gamma package [script] Packs or ships the gamma package.
 │   │   │       ├── glued-requires.ps1
 │   │   │       ├── no-header.ps1
+│   │   │       ├── theta.ps1  — Axe delta [script] Removes delta for good.
 │   │   │       └── two-axes.ps1
 │   │   ├── launcher/
 │   │   │   ├── action-log.tests.ps1

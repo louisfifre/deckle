@@ -130,6 +130,8 @@ Assert-Equal 'Beta build,Pack,Ship' ((@($sections[1].Rows) | ForEach-Object Labe
 Assert-Equal 1 $sections[1].Rows[2].ActionIndex 'a row keeps its position among the script actions'
 Assert-Equal 'gamma.ps1' $sections[1].Rows[1].RelativePath 'rows carry their path relative to the catalog root'
 Assert-Equal 'Release,Debug' ((@($sections[1].Rows[0].Variants) | ForEach-Object Value) -join ',') 'beta row carries its Variants'
+Assert-Equal 'Delta care,Axe delta' ((@($sections[2].Rows) | ForEach-Object Label) -join ',') 'a Danger Action comes last in its Section whatever its label'
+Assert-Equal $true $sections[2].Rows[1].Danger 'the last Care row is the Danger one'
 
 $accesses = @($catalog.Accesses)
 Assert-Equal 'Tooling,zone' ((@($accesses) | ForEach-Object Label) -join ',') 'ordered Accesses come first, a folder without README is labelled by its name'
@@ -144,7 +146,7 @@ $hiddenNames = (@($catalog.Hidden) | ForEach-Object RelativePath) -join ','
 Assert-Equal 'dot-word.ps1,glued-requires.ps1,no-header.ps1,two-axes.ps1' $hiddenNames 'the root level lists the scripts it leaves out'
 Assert-Equal 4 @(Get-DeckleCatalogHiddenScripts -Catalog $catalog).Count 'hidden scripts flatten across levels'
 Assert-Equal 'InvalidHeader' (@($catalog.Hidden | Where-Object RelativePath -eq 'two-axes.ps1')[0].Status) 'hidden entries keep their status'
-Assert-Equal 9 @(Get-DeckleCatalogRows -Catalog $catalog).Count 'every Action Row is reachable depth-first'
+Assert-Equal 10 @(Get-DeckleCatalogRows -Catalog $catalog).Count 'every Action Row is reachable depth-first'
 
 Assert-True (-not (Test-Path -LiteralPath $marker)) 'discovery never executes a script'
 
