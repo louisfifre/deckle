@@ -30,6 +30,9 @@ try {
     Copy-Item -LiteralPath (Join-Path $CommandDir 'install-hooks.ps1') -Destination (Join-Path $repository 'scripts\commands\install-hooks.ps1')
     Copy-Item -LiteralPath (Join-Path $LibDir 'action-summary.ps1') -Destination (Join-Path $repository 'scripts\lib\action-summary.ps1')
     Copy-Item -LiteralPath (Join-Path $LibDir 'script-output.ps1') -Destination (Join-Path $repository 'scripts\lib\script-output.ps1')
+    # update-tree.ps1 reads front matter and script Headers through Script Discovery.
+    Copy-Item -LiteralPath (Join-Path $LibDir 'script-discovery.psm1') -Destination (Join-Path $repository 'scripts\lib\script-discovery.psm1')
+    Copy-Item -LiteralPath (Join-Path $LibDir 'script-discovery') -Destination (Join-Path $repository 'scripts\lib\script-discovery') -Recurse
     Copy-Item -LiteralPath (Join-Path $ScriptsDir 'hooks\pre-commit') -Destination (Join-Path $repository 'scripts\hooks\pre-commit')
     Copy-Item -LiteralPath (Join-Path $ScriptsDir 'hooks\update-tree.ps1') -Destination (Join-Path $repository 'scripts\hooks\update-tree.ps1')
     Copy-Item -LiteralPath (Join-Path $ScriptsDir 'hooks\validate-commit-attribution.ps1') -Destination (Join-Path $repository 'scripts\hooks\validate-commit-attribution.ps1')
