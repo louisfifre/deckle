@@ -406,7 +406,9 @@ function Add-TerminalActionMenuBody {
     for ($sectionIndex = 0; $sectionIndex -lt $layoutSections.Count; $sectionIndex++) {
         $section = $layoutSections[$sectionIndex]
         if ($sectionIndex -gt 0) { [void](Add-TerminalFrameLine -Frame $Frame) }
-        Add-TerminalSectionHeading -Frame $Frame -Label $section.Label
+        if (-not [string]::IsNullOrEmpty($section.Label)) {
+            Add-TerminalSectionHeading -Frame $Frame -Label $section.Label
+        }
         foreach ($row in $section.Rows) {
             Add-TerminalMenuRow -Frame $Frame -Row $row -Grid $grid -Wide $wide -FocusedTargetId $FocusedTargetId
         }

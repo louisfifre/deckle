@@ -290,6 +290,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   └── sqlite-cleanup.ps1
 │   │   ├── deckle-preview/
 │   │   │   ├── catalog.ps1
+│   │   │   ├── discovered-catalog.ps1
 │   │   │   ├── flows.ps1
 │   │   │   └── statistics-preparation.ps1
 │   │   ├── launcher/
@@ -415,6 +416,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   └── text-input.tests.ps1
 │   │   └── terminal-interaction/
 │   │       ├── contracts.tests.ps1
+│   │       ├── discovered-catalog.tests.ps1
 │   │       ├── flows.tests.ps1
 │   │       ├── host.tests.ps1
 │   │       ├── HostBugNotes.md
