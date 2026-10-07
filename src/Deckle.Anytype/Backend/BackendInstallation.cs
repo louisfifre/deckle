@@ -40,21 +40,28 @@ public static class BackendInstallation
         long SizeBytes,
         string DisplayName);
 
+    // The last version that ever lived in the legacy install path. A legacy
+    // payload is always this version, whatever CurrentBundle pins today, so
+    // migration must label it with this constant and never with the pin.
+    internal const string LegacyBundleVersion = "0.3.6";
+
     // The version pin (known-good, never auto-update — JOURNAL 2026-06-18).
     // The release publishes no checksum manifest, so the SHA-256 is the GitHub
-    // per-asset digest pinned by ourselves (JOURNAL 2026-07-01, measured on
-    // v0.3.6). Installing the binary is only half the first run: the bot
-    // account and API key are a separate, interactive provisioning act.
+    // per-asset digest pinned by ourselves (JOURNAL 2026-07-01; re-measured on
+    // v0.4.0 on 2026-10-05 and 2026-10-07). Installing the binary is only half
+    // the first run: the bot account and API key are a separate, interactive
+    // provisioning act.
     public static BackendBundle CurrentBundle { get; } = new(
-        Version:     "0.3.6",
-        Url:         "https://github.com/anyproto/anytype-cli/releases/download/v0.3.6/anytype-cli-v0.3.6-windows-amd64.zip",
-        Sha256:      "3aa8db0a02f9349164c1dacf5ede32e8a0b0cf966ced59cb37ff82e2605ab1be",
-        SizeBytes:   46_072_129L,
+        Version:     "0.4.0",
+        Url:         "https://github.com/anyproto/anytype-cli/releases/download/v0.4.0/anytype-cli-v0.4.0-windows-amd64.zip",
+        Sha256:      "23a8dacda0095c80770c398f16dfde5c4b75b31cbfbaf9dc7728d12201797a14",
+        SizeBytes:   49_686_030L,
         DisplayName: "Anytype backend (anytype-cli)");
 
-    // The provisioning predicate: has the pinned binary been downloaded? False
-    // means the module stays dormant — never a boot failure.
-    public static bool IsInstalled() => Store.IsInstalled();
+    // The provisioning predicate: is the pinned version installed and activated?
+    // False means the module stays dormant — never a boot failure — and the
+    // wizard downloads the pin. An older active version does not count.
+    public static bool IsInstalled() => Store.IsInstalled(CurrentBundle.Version);
 
     // Extracts a downloaded (and already checksum-verified) bundle zip into the
     // install folder. The asset's internal layout is not contractual, so when
@@ -67,7 +74,7 @@ public static class BackendInstallation
     // Copies the already verified legacy payload into an immutable version and
     // activates that copy. The running legacy image is not moved or terminated.
     public static Task<bool> PrepareAsync(CancellationToken ct = default) =>
-        Store.MigrateLegacyAsync(CurrentBundle.Version, ct);
+        Store.MigrateLegacyAsync(LegacyBundleVersion, ct);
 
     public static async Task<ProvisioningResult> ProvisionAsync(
         IProgress<Downloader.DownloadProgress> progress,
