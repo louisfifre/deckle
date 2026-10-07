@@ -7,7 +7,7 @@ module: scripts
 
 # `scripts/` — Deckle dev workflows
 
-The current daily launcher and workflow commands target PowerShell 7+. The parallel interaction preview targets Windows PowerShell 5.1 and PowerShell 7. The stable entry point lives at [`deckle.ps1`](deckle.ps1); the commands it dispatches to live under [`commands/`](commands/) and stay usable on their own CLI for automation. Tracked workflows resolve the repository from their own location, so the checkout drive and the terminal's current directory are not part of their contract.
+Everything here runs under PowerShell 7. The stable entry point lives at [`deckle.ps1`](deckle.ps1); the commands it dispatches to live under [`commands/`](commands/) and stay usable on their own CLI for automation. Tracked workflows resolve the repository from their own location, so the checkout drive and the terminal's current directory are not part of their contract. Every command carries a Header, the comment-based help block that the launcher reads to build its menu: see *Adding a script* below before writing one.
 
 The reusable launcher's vocabulary lives in [`CONTEXT.md`](CONTEXT.md), and its normative module, composition, state, and rendering contracts live in [`TERMINAL-INTERACTION-SPEC.md`](TERMINAL-INTERACTION-SPEC.md). Narrower engine requirements are declared per Action when necessary.
 
@@ -15,11 +15,10 @@ The reusable launcher's vocabulary lives in [`CONTEXT.md`](CONTEXT.md), and its 
 
 [`deckle-preview.ps1`](deckle-preview.ps1) is a safe second launcher for evaluating the replacement interaction framework while `deckle.ps1` remains the daily reference. It mirrors Deckle's Action Menu, Accesses, Back behavior, responsive columns, paging, and Execution layout, but every Action opens an in-memory sample Execution. It never invokes a repository command.
 
-Run it interactively with either supported engine:
+Run it interactively:
 
 ```powershell
 pwsh -NoProfile -File scripts/deckle-preview.ps1
-powershell -NoProfile -ExecutionPolicy Bypass -File scripts/deckle-preview.ps1
 ```
 
 Render a deterministic frame without taking over the terminal when comparing layouts or writing tests:
@@ -28,6 +27,13 @@ Render a deterministic frame without taking over the terminal when comparing lay
 pwsh -NoProfile -File scripts/deckle-preview.ps1 -Snapshot Menu -Width 60 -Height 20
 pwsh -NoProfile -File scripts/deckle-preview.ps1 -Snapshot Preparation -Width 100 -Height 30
 pwsh -NoProfile -File scripts/deckle-preview.ps1 -Snapshot Execution -Width 120 -Height 24
+```
+
+The same preview can build its menu from the script Headers under `commands/` instead of its hand-written catalog. Actions still open the sample Execution; only the menu is discovered:
+
+```powershell
+pwsh -NoProfile -File scripts/deckle-preview.ps1 -Discovered
+pwsh -NoProfile -File scripts/deckle-preview.ps1 -Snapshot Catalog -Width 100 -Height 30
 ```
 
 ## Entry point — `deckle.ps1`
@@ -114,6 +120,45 @@ Each command is callable directly from a terminal or a `launch.json` profile —
 | [`commands/changelog.ps1`](commands/changelog.ps1) | Generate `CHANGELOG.md` and release notes from Conventional Commits and the public-release boundaries in `release-history.json`. Default preserves an `[Unreleased]` accumulator since the latest public release; `-NotesFor X.Y.Z` emits that full release range for GitHub. | `-Target <worktree>`, `-Pick`, `-NotesFor X.Y.Z`, `-OutFile <path>` |
 | [`commands/publish-native-runtime.ps1`](commands/publish-native-runtime.ps1) | **Maintainer-only.** Validate and optionally publish the bundle pinned by `NativeRuntime.CurrentBundle`, auto-discovered under `artifacts/` or supplied with `-ArtifactPath`. When no current bundle exists, package a new one from an already-built local whisper.cpp tree and the paired MinGW runtime. Local and downloaded release assets are verified by size, archive contract, and SHA-256. No CMake or Deckle build is invoked. | `-ArtifactPath <zip>` or `-WhisperRepo <path>`; `-Target <Deckle repo>`, `-OutDir <path>`, `-Publish`, `-Version X.Y.Z`, `-Notes <path>` |
 
+## Adding a script — the Header
+
+The menu is built at every launch from the scripts folder by [`lib/script-discovery.psm1`](lib/script-discovery.psm1); no catalog is written by hand. Dropping a script into `commands/`, or into a subfolder of it, and giving it a Header is the whole gesture, for a person and for an agent alike. The Header is PowerShell's own comment-based help, read through the parser without running the script:
+
+```powershell
+<#
+.SYNOPSIS
+    Build the app
+.DESCRIPTION
+    Build the chosen configuration without persistent build servers, then
+    launch the freshly built executable.
+.NOTES
+    section: Run
+    order: 120
+    action: Build & run |
+    action: Build (no run) | -NoRun
+#>
+
+[CmdletBinding()]
+param(
+    [ValidateSet('Release', 'Debug')]
+    [string]$Configuration = 'Release',
+    [string]$Target
+)
+```
+
+What each part does:
+
+- The block is first in the file, `#Requires` comes after it, and one blank line follows `#>`. A `#Requires` line or a comment glued directly above the block voids it silently.
+- `.SYNOPSIS` is the label the menu shows, one line. `.DESCRIPTION` is its help sentence. `TREE.md` takes them as the script's name and description.
+- `.NOTES` carries the menu keys as `key: value` lines, the same syntax as the front matter of the Markdown files: `section` groups the script with others at the same level, `order` ranks it within the level, and each `action:` line declares one Action. Sections sort by the smallest `order` they hold, so the orders are numbered across sections and the hundreds digit names the section: Run 1xx, Project 2xx, Release 3xx, Maintenance 4xx, Setup 5xx. Without an `action:` line the script declares one Action, its synopsis as label, no arguments.
+- An `action:` line reads `Label | arguments | danger | sentence`. The label comes first, then the arguments appended verbatim to the invocation (may be empty), then in any order the word `danger`, which gives the Danger treatment, and a sentence, which makes the Confirmation a separate step naming that sentence.
+- The Variants of every Action come from the script's single `[ValidateSet]` parameter of scalar type, in declaration order, the default preselected; activating a Variant passes that value. A `[ValidateSet]` on an array parameter is a Filter, not an axis. A script that needs two axes is two scripts. A `-Target` parameter opens the worktree Selector in the launcher.
+- Inside the block no line may start with a dot followed by letters except a help keyword, and no keyword may be invented: the block dies silently, with no error.
+
+A subfolder of `commands/` is a menu level: an Access labelled by its name, or by the `name` of its `README.md` front matter, which may also carry `description` and `order`. Scripts at the root of `commands/` sit on the root menu. Within a level, Action Rows come first grouped by `section`, then the subfolders as one group.
+
+A script without a Header stays out of the menu on purpose, so the folder can keep a script that served once. `commands/check-script-headers.ps1` lists the hidden scripts and fails on a Header that is present but voided; run it before closing a change that touches a script, and `script-layout.tests.ps1` enforces the same rule.
+
 ## Library — `lib/`
 
 Nothing under `lib/` is a user command. It contains the shared process, inventory, release, launcher, and terminal-menu implementation imported by `deckle.ps1` or by `commands/`.
@@ -125,6 +170,7 @@ Nothing under `lib/` is a user command. It contains the shared process, inventor
 | [`lib/action-summary.ps1`](lib/action-summary.ps1) | Shared final action-summary writer. |
 | [`lib/deckle-process.ps1`](lib/deckle-process.ps1) | Shared process guard for commands that replace locked app artifacts. |
 | [`lib/menu.psm1`](lib/menu.psm1) | Internal facade over the terminal primitives in `lib/menu/`. |
+| [`lib/script-discovery.psm1`](lib/script-discovery.psm1) | Script Discovery: reads Headers and folders into the menu catalog without executing a script; also the shared `key: value` reader behind Markdown front matter. |
 | [`lib/launcher/`](lib/launcher/) | Deckle-specific menu context, dispatch, results, and submenu definitions. |
 
 ## Tests — `tests/`
@@ -135,7 +181,7 @@ PowerShell tests mirror the same boundaries under `tests/commands/`, `tests/lib/
 
 A `pre-commit` hook regenerates [`TREE.md`](../TREE.md) at the repo root before every commit and stages it automatically, so the repo always carries an up-to-date view of its tracked tree. Source in [`hooks/pre-commit`](hooks/pre-commit), local install via [`commands/install-hooks.ps1`](commands/install-hooks.ps1) or the `deckle.ps1` Setup menu to run once after a clone — hooks live under `.git/hooks/` and are not versioned by git.
 
-The hook delegates to [`hooks/update-tree.ps1`](hooks/update-tree.ps1), which rebuilds `TREE.md` from `git ls-files` (flat view, zero gitignored file, no annotation). It can also run by hand to refresh outside a commit: `pwsh scripts/hooks/update-tree.ps1`.
+The hook delegates to [`hooks/update-tree.ps1`](hooks/update-tree.ps1), which rebuilds `TREE.md` from `git ls-files`: tracked files only, each Markdown file annotated from its front matter and each script from its Header, through the same discovery module as the menu. It can also run by hand to refresh outside a commit: `pwsh scripts/hooks/update-tree.ps1`.
 
 The same installer copies [`hooks/validate-commit-attribution.ps1`](hooks/validate-commit-attribution.ps1) to the user's Git configuration directory and registers it as a global configured `commit-msg` hook. Git 2.54+ runs configured hooks alongside repository hooks, so the global guard applies to every local repository without replacing their own `.git/hooks` directory. Before Git creates a commit, it requires both author and committer to be exactly `Louis <git@louisfifre.com>` and rejects co-author, generated-by, AI-generated, and assisted-by markers.
 
