@@ -5,8 +5,8 @@
     Inventory the repository's tracked Markdown context, grouped by loading
     mode, with line counts and recent additions.
 .NOTES
-    section: Maintenance
-    order: 420
+    section: Statistics
+    order: 120
 #>
 
 [CmdletBinding()]
@@ -23,7 +23,7 @@ param(
 
 $ErrorActionPreference = 'Stop'
 $ScriptDir = $PSScriptRoot
-$LibDir = Join-Path (Split-Path -Parent $ScriptDir) 'lib'
+$LibDir = Join-Path (Split-Path -Parent (Split-Path -Parent $ScriptDir)) 'lib'
 . (Join-Path $LibDir 'action-summary.ps1')
 Import-Module (Join-Path $LibDir 'context-inventory.psm1') -Force
 
@@ -34,7 +34,7 @@ if ($Pick) {
 } elseif ($Target) {
     $RepoRoot = (Resolve-Path -LiteralPath $Target).Path
 } else {
-    $RepoRoot = Split-Path -Parent (Split-Path $ScriptDir)
+    $RepoRoot = Split-Path -Parent (Split-Path -Parent (Split-Path -Parent $ScriptDir))
 }
 
 $documents = @(Get-ContextInventory `

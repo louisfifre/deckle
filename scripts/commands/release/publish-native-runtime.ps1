@@ -8,7 +8,7 @@
     With -Publish the zip is also published as a native-vX.Y.Z release via gh.
 .NOTES
     section: Release
-    order: 320
+    order: 120
     action: Prepare native runtime |
     action: Publish native runtime | -Publish | danger | Publishes a public GitHub Release of the native runtime.
 #>
@@ -64,7 +64,7 @@ param(
 
 $ErrorActionPreference = 'Stop'
 $ScriptDir = $PSScriptRoot
-$LibDir = Join-Path (Split-Path -Parent $ScriptDir) 'lib'
+$LibDir = Join-Path (Split-Path -Parent (Split-Path -Parent $ScriptDir)) 'lib'
 . (Join-Path $LibDir 'action-summary.ps1')
 Import-Module (Join-Path $LibDir 'native-runtime-release.psm1') -Force
 Import-Module (Join-Path $LibDir 'release-validation.psm1') -Force
@@ -74,7 +74,7 @@ $RepoRoot = if ($Target) {
     if (-not (Test-Path -LiteralPath $Target -PathType Container)) { throw "Target not found: $Target" }
     (Get-Item -LiteralPath $Target).FullName
 } else {
-    Split-Path -Parent (Split-Path -Parent $ScriptDir)
+    Split-Path -Parent (Split-Path -Parent (Split-Path -Parent $ScriptDir))
 }
 $NativeRuntimeSource = Join-Path $RepoRoot 'src\Deckle.Transcription.Whisper\Setup\NativeRuntime.cs'
 $NativeRuntimeCatalog = Get-DeckleNativeRuntimeCatalog -SourcePath $NativeRuntimeSource
@@ -359,7 +359,7 @@ MinGW C++ runtime  : GPL-3 with runtime exception (libgcc, libstdc++) /
 
 Reproduction
 ------------
-Built by scripts/commands/publish-native-runtime.ps1 from the local
+Built by scripts/commands/release/publish-native-runtime.ps1 from the local
 whisper.cpp build and MinGW runtime directories recorded above.
 "@
 

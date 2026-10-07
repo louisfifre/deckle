@@ -7,8 +7,8 @@
     a Header without any error; a script without a Header stays hidden by choice
     and does not fail it.
 .NOTES
-    section: Maintenance
-    order: 480
+    section: Checks
+    order: 430
 #>
 
 [CmdletBinding()]
@@ -18,7 +18,7 @@ param(
 
 $ErrorActionPreference = 'Stop'
 $ScriptDir = $PSScriptRoot
-$LibDir = Join-Path (Split-Path -Parent $ScriptDir) 'lib'
+$LibDir = Join-Path (Split-Path -Parent (Split-Path -Parent $ScriptDir)) 'lib'
 . (Join-Path $LibDir 'action-summary.ps1')
 Import-Module (Join-Path $LibDir 'script-discovery.psm1') -Force
 
@@ -38,7 +38,7 @@ trap {
 $RepoRoot = if ($Target) {
     (Resolve-Path -LiteralPath $Target).Path
 } else {
-    Split-Path -Parent (Split-Path $ScriptDir)
+    Split-Path -Parent (Split-Path -Parent (Split-Path -Parent $ScriptDir))
 }
 $ScriptsRoot = Join-Path $RepoRoot 'scripts'
 $TestsRoot = Join-Path $ScriptsRoot 'tests'

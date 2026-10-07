@@ -8,13 +8,13 @@
     any surface exposes it today. The sweep reads text only (no build, no
     reflection, no runtime) and keeps the file and line of every entry.
 .NOTES
-    section: Maintenance
-    order: 470
+    section: Checks
+    order: 420
 #>
 
 [CmdletBinding()]
 param(
-    [string]$RepoRoot = (Resolve-Path (Join-Path $PSScriptRoot '..' '..')).Path,
+    [string]$RepoRoot = (Resolve-Path (Join-Path $PSScriptRoot '..' '..' '..')).Path,
     [string]$OutputPath = '',
     [switch]$Quiet
 )

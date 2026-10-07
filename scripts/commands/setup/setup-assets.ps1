@@ -7,8 +7,8 @@
     needs at runtime. Idempotent: skips files already present at the same
     size unless -Force.
 .NOTES
-    section: Setup
-    order: 520
+    section: Machine
+    order: 120
 #>
 
 # The app reads from <UserDataRoot> exclusively (see
@@ -73,12 +73,12 @@ param(
 
 $ErrorActionPreference = 'Stop'
 $ScriptDir = $PSScriptRoot
-$LibDir = Join-Path (Split-Path -Parent $ScriptDir) 'lib'
+$LibDir = Join-Path (Split-Path -Parent (Split-Path -Parent $ScriptDir)) 'lib'
 . (Join-Path $LibDir 'action-summary.ps1')
 Import-Module (Join-Path $LibDir 'native-runtime-release.psm1') -Force
 
-# Repo paths — two levels up: scripts/commands → scripts → repo root
-$Repo = Split-Path -Parent (Split-Path -Parent $PSScriptRoot)
+# Repo paths — three levels up: scripts/commands/setup → commands → scripts → repo root
+$Repo = Split-Path -Parent (Split-Path -Parent (Split-Path -Parent $PSScriptRoot))
 
 # Scoop respects the SCOOP env var when installed in a non-default location;
 # fall back to the per-user default %USERPROFILE%\scoop otherwise.

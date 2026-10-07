@@ -6,8 +6,8 @@
     the current account. Without the apply switch it only validates the plan
     and changes nothing. The reset needs the exact confirmation phrase.
 .NOTES
-    section: Maintenance
-    order: 450
+    section: AI sessions
+    order: 310
     action: Inspect AI sessions |
     action: Reset AI sessions | -Apply -Confirmation 'RESET LOCAL AI SESSIONS' | danger | Deletes local Codex and Claude Code session data for the current account.
 #>
@@ -21,7 +21,7 @@ param(
 )
 
 $ErrorActionPreference = 'Stop'
-$LibDir = Join-Path (Split-Path -Parent $PSScriptRoot) 'lib'
+$LibDir = Join-Path (Split-Path -Parent (Split-Path -Parent $PSScriptRoot)) 'lib'
 . (Join-Path $LibDir 'action-summary.ps1')
 Import-Module (Join-Path $LibDir 'agent-state-maintenance.psm1') -Force
 $strings = Get-AgentStateStrings

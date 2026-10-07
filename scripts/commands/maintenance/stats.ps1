@@ -6,8 +6,8 @@
     module, with line counts. The console shows a long-file watch list, a
     module summary, file-type counts and a per-module file tree.
 .NOTES
-    section: Maintenance
-    order: 410
+    section: Statistics
+    order: 110
 #>
 
 # Operational notes
@@ -33,7 +33,7 @@
 [CmdletBinding()]
 param(
     # Override the target worktree. Defaults to the repo containing
-    # this script (two levels up: scripts/commands -> scripts -> repo root).
+    # this script (three levels up: scripts/commands/maintenance -> commands -> scripts -> repo root).
     [string]$Target,
 
     # Interactive worktree picker via scripts/lib/menu.psm1. Overrides
@@ -69,7 +69,7 @@ param(
 
 $ErrorActionPreference = 'Stop'
 $ScriptDir = $PSScriptRoot
-$LibDir = Join-Path (Split-Path -Parent $ScriptDir) 'lib'
+$LibDir = Join-Path (Split-Path -Parent (Split-Path -Parent $ScriptDir)) 'lib'
 . (Join-Path $LibDir 'action-summary.ps1')
 Import-Module (Join-Path $LibDir 'source-metrics.psm1') -Force
 
@@ -97,7 +97,7 @@ if ($Pick) {
     if (-not (Test-Path $Target)) { throw "Target not found: $Target" }
     $RepoRoot = (Get-Item $Target).FullName
 } else {
-    $RepoRoot = Split-Path -Parent (Split-Path $ScriptDir)
+    $RepoRoot = Split-Path -Parent (Split-Path -Parent (Split-Path -Parent $ScriptDir))
 }
 
 Write-Host "Repo: $RepoRoot" -ForegroundColor DarkGray

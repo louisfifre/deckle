@@ -7,8 +7,8 @@
     up follow-up builds, but repeated agent and worktree builds can accumulate
     enough of them to hurt Windows and WinUI responsiveness.
 .NOTES
-    section: Maintenance
-    order: 440
+    section: Cleanup
+    order: 210
 #>
 
 [CmdletBinding()]
@@ -16,7 +16,7 @@ param()
 
 $ErrorActionPreference = 'Stop'
 $ScriptDir = $PSScriptRoot
-$LibDir = Join-Path (Split-Path -Parent $ScriptDir) 'lib'
+$LibDir = Join-Path (Split-Path -Parent (Split-Path -Parent $ScriptDir)) 'lib'
 . (Join-Path $LibDir 'action-summary.ps1')
 . (Join-Path $LibDir 'build-server-cleanup.ps1')
 
