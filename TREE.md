@@ -259,30 +259,30 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   └── secondary.png
 ├── scripts/
 │   ├── commands/
-│   │   ├── bootstrap-dev-env.ps1
-│   │   ├── build-run.ps1
-│   │   ├── changelog.ps1
-│   │   ├── clean.ps1
+│   │   ├── bootstrap-dev-env.ps1  — Bootstrap the dev environment [script] Brings a fresh Windows 11 machine up to speed for building and running Deckle.…
+│   │   ├── build-run.ps1  — Build the app [script] Build Deckle for the chosen configuration (x64) and, unless told not to, launch…
+│   │   ├── changelog.ps1  — Update the changelog [script] Generate the changelog and release notes from the git history. The Conventional…
+│   │   ├── clean.ps1  — Clean build outputs [script] Remove generated build output from a Deckle worktree without touching anything…
 │   │   ├── cut-version.ps1
 │   │   ├── fetch-autocorrect-data.ps1
-│   │   ├── inspect-context.ps1
-│   │   ├── install-hooks.ps1
-│   │   ├── launch-app.ps1
-│   │   ├── publish-app.ps1
-│   │   ├── publish-native-runtime.ps1
+│   │   ├── inspect-context.ps1  — Context inventory [script] Inventory the repository's tracked Markdown context, grouped by loading mode, w…
+│   │   ├── install-hooks.ps1  — Install git hooks [script] Install Deckle's repository and global git hooks. Run once after a clone: hook…
+│   │   ├── launch-app.ps1  — Launch the freshest built app [script] Replace the running Deckle instance with the freshest already-built executable…
+│   │   ├── publish-app.ps1  — Prepare or publish the app release [script] Builds the two artifacts a Deckle GitHub Release carries: the installer stub an…
+│   │   ├── publish-native-runtime.ps1  — Prepare or publish the native runtime [script] Packages a versioned zip of the native DLLs that Deckle's first-run wizard down…
 │   │   ├── record-release.ps1
-│   │   ├── record-version.ps1
-│   │   ├── reset-agent-state.ps1
-│   │   ├── setup-assets.ps1
-│   │   ├── stats.ps1
-│   │   ├── stop-build-servers.ps1
-│   │   ├── sweep-exposables.ps1
-│   │   ├── update-readme-stats.ps1
-│   │   └── validate-resources.ps1
+│   │   ├── record-version.ps1  — Record an internal version [script] Record internal progress without publishing a release. A version record bumps t…
+│   │   ├── reset-agent-state.ps1  — Inspect or reset local AI sessions [script] Build a cleanup plan for the local Codex and Claude Code session data of the cu…
+│   │   ├── setup-assets.ps1  — Set up runtime assets [script] Populates the native and models folders under the user data root with the whisp…
+│   │   ├── stats.ps1  — Repository statistics [script] Walk every project under src\ and build one file inventory per Deckle module, w…
+│   │   ├── stop-build-servers.ps1  — Stop .NET build servers [script] Stop the MSBuild and Roslyn build servers left behind by dotnet builds. They sh…
+│   │   ├── sweep-exposables.ps1  — Sweep exposable source values [script] Text sweep of the exposables carried by the source tree. An exposable is a code…
+│   │   ├── update-readme-stats.ps1  — Update the README pulse [script] Regenerate the small "Development pulse" section in README.md from the local Gi…
+│   │   └── validate-resources.ps1  — Validate WinUI resources [script] Read-only audit of the WinUI resource inventories. Reports missing resource key…
 │   ├── hooks/
 │   │   ├── pre-commit
-│   │   ├── update-tree.ps1
-│   │   └── validate-commit-attribution.ps1
+│   │   ├── update-tree.ps1  — Regenerate TREE.md from git ls-files [script] Serves the pre-commit hook and direct manual runs. Annotates Markdown files wit…
+│   │   └── validate-commit-attribution.ps1  — Enforce Deckle's sole maintainer identity and reject agent attribution markers. [script]
 │   ├── lib/
 │   │   ├── agent-state-maintenance/
 │   │   │   ├── sanitization.ps1
@@ -311,6 +311,11 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   ├── session.ps1
 │   │   │   ├── status-view.ps1
 │   │   │   └── text-input.ps1
+│   │   ├── script-discovery/
+│   │   │   ├── catalog.ps1
+│   │   │   ├── front-matter.ps1
+│   │   │   ├── header.ps1
+│   │   │   └── key-value-lines.ps1
 │   │   ├── terminal-interaction/
 │   │   │   ├── contracts.ps1
 │   │   │   ├── execution-layout.ps1
@@ -337,6 +342,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── release-validation.psm1
 │   │   ├── repository-inventory.psm1
 │   │   ├── resource-inventory.psm1
+│   │   ├── script-discovery.psm1
 │   │   ├── script-output.ps1
 │   │   ├── source-metrics.psm1
 │   │   └── terminal-interaction.psm1
@@ -352,6 +358,24 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   ├── publish-native-runtime.tests.ps1
 │   │   │   ├── update-readme-stats.tests.ps1
 │   │   │   └── versioning-workflow.tests.ps1
+│   │   ├── fixtures/
+│   │   │   └── script-discovery/
+│   │   │       ├── tools/
+│   │   │       │   ├── deep/
+│   │   │       │   │   └── zeta.ps1  — Zeta tool [script]
+│   │   │       │   ├── epsilon.ps1  — Epsilon tool [script]
+│   │   │       │   └── README.md  — Tooling Tools that are rarely used.
+│   │   │       ├── zone/
+│   │   │       │   └── eta.ps1  — Eta zone task [script]
+│   │   │       ├── alpha.ps1  — Alpha task [script] Runs the alpha task over two lines.
+│   │   │       ├── array-set.ps1  — Array set [script] Takes a multi-value scope filter.
+│   │   │       ├── beta.ps1  — Beta build [script] Builds the beta target in the chosen configuration.
+│   │   │       ├── delta.ps1  — Delta care [script] Takes care of delta.
+│   │   │       ├── dot-word.ps1
+│   │   │       ├── gamma.ps1  — Gamma package [script] Packs or ships the gamma package.
+│   │   │       ├── glued-requires.ps1
+│   │   │       ├── no-header.ps1
+│   │   │       └── two-axes.ps1
 │   │   ├── launcher/
 │   │   │   ├── action-log.tests.ps1
 │   │   │   ├── action-results.tests.ps1
@@ -375,6 +399,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   ├── release-validation.tests.ps1
 │   │   │   ├── repository-inventory.tests.ps1
 │   │   │   ├── resource-inventory.tests.ps1
+│   │   │   ├── script-discovery.tests.ps1
 │   │   │   ├── script-layout.tests.ps1
 │   │   │   ├── script-output.tests.ps1
 │   │   │   └── source-metrics.tests.ps1
@@ -1104,7 +1129,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   ├── Deckle.Input.Trackpad/
 │   │   ├── Acts/
 │   │   │   ├── ConnectionRepair.cs
-│   │   │   ├── repair-trackpad-connection.ps1
+│   │   │   ├── repair-trackpad-connection.ps1  — Repairs the Apple Magic Trackpad 2 Bluetooth pairing on Windows. [script] The Apple Precision Touchpad driver (appleprecisiontrackpadbluetooth.inf, signe…
 │   │   │   └── WindowsGestureNeutralizer.cs
 │   │   ├── Engine/
 │   │   │   ├── ThreeFingerDragRecognizer.cs
