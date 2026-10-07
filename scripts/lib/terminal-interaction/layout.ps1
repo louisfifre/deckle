@@ -266,11 +266,9 @@ function ConvertTo-TerminalMenuLayoutSections {
             $rows.Add([pscustomobject]@{ Kind = 'TargetRow'; Label = ''; Targets = @($pendingTargets); TrailingTarget = $null })
         }
         if ($null -ne $trailingTarget) {
-            if ($rows.Count -eq 0 -or $null -ne $rows[$rows.Count - 1].TrailingTarget) {
-                $rows.Add([pscustomobject]@{ Kind = 'TargetRow'; Label = ''; Targets = @(); TrailingTarget = $trailingTarget })
-            } else {
-                $rows[$rows.Count - 1].TrailingTarget = $trailingTarget
-            }
+            # The Exit target closes the menu on a line of its own, so it
+            # never takes a column away from the option grid above it.
+            $rows.Add([pscustomobject]@{ Kind = 'TargetRow'; Label = ''; Targets = @(); TrailingTarget = $trailingTarget })
         }
         $layoutSections.Add([pscustomobject]@{
             Label = $section.Label
@@ -334,7 +332,6 @@ function Get-TerminalMenuGrid {
     $targetX = $left + $labelWidth + 3
     $gap = 2
     $targetAreaWidth = [Math]::Max(1, $right - $targetX)
-    if ($trailingWidth -gt 0) { $targetAreaWidth -= $trailingWidth + $gap }
     $columnWidth = [Math]::Max(1, [Math]::Floor(($targetAreaWidth - (($columnCount - 1) * $gap)) / $columnCount))
     $minimumColumnWidth = Get-TerminalMinimumColumnWidth -LayoutSections $LayoutSections
     if ($columnWidth -lt $minimumColumnWidth) {

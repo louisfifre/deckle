@@ -48,9 +48,11 @@ $maintenance = Get-Placement -Frame $wide -TargetId access.maintenance
 $setup = Get-Placement -Frame $wide -TargetId access.setup
 $releaseAccess = Get-Placement -Frame $wide -TargetId access.release
 $quit = Get-Placement -Frame $wide -TargetId command.quit
-Assert-Equal $maintenance.Y $quit.Y 'Quit keeps the final Access row in a wide terminal'
+Assert-Equal ($maintenance.Y + 1) $quit.Y 'Quit takes a line of its own right beneath the last Access row'
 Assert-True ($maintenance.X -lt $setup.X -and $setup.X -lt $quit.X) 'Accesses and Quit keep their declared order'
-Assert-Equal $releaseAccess.X $setup.X 'Quit does not shift Setup out of the second option column'
+Assert-Equal $releaseAccess.X $setup.X 'Release and Setup share the second option column'
+Assert-Equal 98 ($quit.X + $quit.Width) 'Quit ends on the right rail of a 100-column frame'
+Assert-True (($launchDebug.X + $launchDebug.Width) -gt $quit.X) 'the Quit line reserves no column from the option grid'
 Assert-Equal 0 @($wide.Targets | Where-Object { $_.TargetId -like 'navigation.page.*' }).Count 'a fitting menu has no paging controls'
 Assert-True (($wideText -join "`n") -match 'Enter Open') 'global command indications are visible in the Header'
 Assert-True (($wideText -join "`n") -notmatch 'Backspace Back') 'the root menu does not advertise Back'
