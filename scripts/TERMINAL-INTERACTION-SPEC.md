@@ -13,7 +13,7 @@ The launcher is one backbone that gathers every script of a repository, so its m
 
 A repository keeps its scripts under its own `scripts/` subfolders and the menu links to them; the backbone ships the standard commands every repository needs, such as scans. The backbone is a distributable product, installable into another repository at its creation and usable by other people. Wiring a script into the menu is understandable by a person and by an agent, and an installer that meets an existing setup adjusts it rather than replacing it. The installation mechanism and automatic updates are open.
 
-The runtime is PowerShell on Windows. The backbone is written for Windows PowerShell 5.1, which every Windows ships, so it also runs under PowerShell 7. A port to another runtime waits for a real need.
+The runtime is PowerShell 7 on Windows, the engine of every development environment the launcher serves. A minimal bootstrap that Windows PowerShell 5.1 can read relaunches the launcher under an installed `pwsh`, or explains that PowerShell 7 must be installed. A port to another runtime waits for a real need.
 
 ## Modules
 
@@ -122,10 +122,10 @@ Resize preserves the current View and stack, the focused target, Selections, Exe
 
 The Host probes capabilities instead of trusting a PowerShell version, a terminal brand, or a parent process. Each reports Supported, Unsupported, or Unknown; at minimum: interactive input and output, width and height, cursor addressing and clear, color and safe VT presentation, alternate buffer, pointer input. Degradation is explicit: without color, markers carry every state; without an alternate buffer, the main buffer is used and restored without erasing prior content; without cursor addressing, the launcher refuses to start with one static explanation; without pointer input, the keyboard path is complete; every changed mode returns to its observed prior value.
 
-The backbone and its bootstrap parse and import under Windows PowerShell 5.1, from sources in an encoding it decodes deterministically; PowerShell 7 syntax stays behind a file or process boundary that 5.1 never reads. An Action declares when it requires PowerShell 7: under 5.1 it stays visible, disabled with that reason, or delegates to an installed `pwsh`.
+The backbone requires PowerShell 7 and its sources are UTF-8 without a byte order mark, the encoding PowerShell 7 decodes by default. The bootstrap is the only code Windows PowerShell 5.1 ever reads: it stays ASCII, uses no PowerShell 7 syntax, and either relaunches under an installed `pwsh` or stops with one static explanation. An Action declares no engine: every Execution runs under the launcher's engine.
 
 ## Reuse
 
 The reusable modules take one injected launcher context as input: branding, context, catalog, labels, intent handlers, Preparation controllers, execution adapters with their engine requirements, Tracking steps, and the presentation of action-owned output. They contain no Deckle path, branch, command name, workflow assumption, or output label, and never call a repository script directly. A consumer edits no internal file and depends on no launcher global; Exit and other control flow cross the facade as public transitions, never as exceptions. A repository-neutral fixture proves reuse until a second consumer does.
 
-Tests assert these contracts through the public surface; renderer tests may add pure layout, clipping, and separator invariants. Host acceptance covers Windows Terminal, conhost, and the supported IDE terminal under Windows PowerShell 5.1 and PowerShell 7.
+Tests assert these contracts through the public surface; renderer tests may add pure layout, clipping, and separator invariants. Host acceptance covers Windows Terminal, conhost, and the supported IDE terminal under PowerShell 7; the bootstrap alone is accepted under Windows PowerShell 5.1.
