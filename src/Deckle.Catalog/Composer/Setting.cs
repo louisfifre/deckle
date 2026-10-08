@@ -280,6 +280,35 @@ public static class Setting
         };
     }
 
+    // A module-owned editor for a value with a shape (a curve, an envelope), over
+    // any value type T. EditorArgs carries the element builder; the get/set
+    // selectors are still declared so the composer can drive the per-card reset
+    // (dirty check against the Default, write-back of the Default) — the element
+    // itself binds to the model on its own. No advisory and no confirmOnEnable: an
+    // editor has no inline warning channel and nothing to enable.
+    public static SettingDescriptor Editor<T>(
+        string labelKey,
+        Func<T> get,
+        Action<T> set,
+        EditorArgs args,
+        string? glyph = null,
+        bool isAdvanced = false,
+        Func<bool>? enabledWhen = null,
+        Func<bool>? visibleWhen = null,
+        Func<T>? defaultValue = null) => new()
+        {
+            Kind = SettingKind.Editor,
+            LabelKey = labelKey,
+            Glyph = glyph,
+            IsAdvanced = isAdvanced,
+            Args = args,
+            GetValue = () => get(),
+            SetValue = value => set((T)value!),
+            EnabledWhen = enabledWhen,
+            VisibleWhen = visibleWhen,
+            Default = defaultValue is null ? null : () => defaultValue(),
+        };
+
     // A master toggle that reveals child settings. Like Toggle, the get/set
     // selectors are the master's own bool — what the composer wires to the
     // ToggleSwitch in the expander header; the children are the dependent

@@ -665,6 +665,30 @@
   <data name="WhisperSegThresholdCard.Description" xml:space="preserve">
     <value>Audio at or above this raw level (in dBFS) counts as speech. Lower is more sensitive; raise it if quiet background noise keeps a segment open. Default: -45 dBFS.</value>
   </data>
+  <data name="WhisperCutPresetCard.Header" xml:space="preserve">
+    <value>Pause before cutting</value>
+  </data>
+  <data name="WhisperCutPresetCard.Description" xml:space="preserve">
+    <value>How long a pause must last before the utterance is cut and transcribed. Patient waits through thinking pauses, Quick sends sentences sooner, and Balanced is the default. Custom shows the curve and its bounds.</value>
+  </data>
+  <data name="WhisperCutPresetPatient.Content" xml:space="preserve">
+    <value>Patient</value>
+  </data>
+  <data name="WhisperCutPresetBalanced.Content" xml:space="preserve">
+    <value>Balanced</value>
+  </data>
+  <data name="WhisperCutPresetQuick.Content" xml:space="preserve">
+    <value>Quick</value>
+  </data>
+  <data name="WhisperCutPresetCustom.Content" xml:space="preserve">
+    <value>Custom</value>
+  </data>
+  <data name="WhisperCutCurveCard.Header" xml:space="preserve">
+    <value>Cut curve</value>
+  </data>
+  <data name="WhisperCutCurveCard.Description" xml:space="preserve">
+    <value>Drag the two handles to shape how the wait shrinks as an utterance grows. The four settings below set its bounds.</value>
+  </data>
   <data name="WhisperSegHangoverMaxCard.Header" xml:space="preserve">
     <value>Hangover (max)</value>
   </data>

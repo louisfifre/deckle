@@ -37,77 +37,103 @@ public sealed partial class SettingsComposer
             s.SetValue(picker.Path);
         };
 
-        // Per-card reset when the descriptor carries a Default — the same reset
-        // machinery every other kind uses (BuildResetButton + WireReveal + the
-        // _dirtyChecks/_resetActions surface + active-when-dirty + tooltip), but
-        // laid out by hand instead of through WrapWithReset. WrapWithReset assumes a
-        // trailing-edge value control and puts the reset to its LEFT; the Path card
-        // hosts its picker VERTICALLY (card.ContentAlignment = Vertical, so the
-        // picker sits on its own row below the description). So the reset goes at the
-        // TRAILING edge of that row instead — a [picker* | reset] grid mirroring how
-        // the hand-authored Whisper ModelsDirectory hangs its reset off the picker's
-        // RightContent slot (WhisperPage.xaml). The picker stretches (star column),
-        // the reset takes its natural width on the right, revealed on the card's
-        // hover/focus like every other reset.
-        Action? updateReset = null;
-        FrameworkElement content;
-        if (s.Default is not null)
-        {
-            Button reset = BuildResetButton();
-
-            // Reveal on the CARD's hover and the BUTTON's keyboard focus, matching
-            // WrapWithReset — either keeps it shown so leaving one while the other
-            // holds does not hide it early.
-            WireReveal(card, reset);
-
-            // active-when-dirty: the path differing from its Default (typically ""
-            // → the empty-means-AppPaths fallback) is what enables the reset,
-            // evaluated live through the refresher below. Registered into the shared
-            // reset surface so a page-level "Reset all" folds this row in too.
-            bool Dirty() => !DefaultEquals(s.GetValue(), s.Default!());
-            _dirtyChecks.Add(Dirty);
-            _resetActions.Add(() => s.SetValue(s.Default!()));
-
-            // Reset drives the value back to the descriptor's Default through the
-            // normal setter; the model's PropertyChanged then re-syncs picker.Path
-            // via the refresher, so no manual picker update is needed here.
-            reset.Click += (_, _) => s.SetValue(s.Default!());
-
-            // A two-column grid rather than a StackPanel so the picker keeps the full
-            // width it had as the card's sole content (star column) and the reset
-            // hugs the trailing edge — a horizontal StackPanel would instead shrink
-            // the picker to its content width.
-            var grid = new Grid { ColumnSpacing = 4 };
-            grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
-            grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
-            Grid.SetColumn(picker.View, 0);
-            Grid.SetColumn(reset, 1);
-            grid.Children.Add(picker.View);
-            grid.Children.Add(reset);
-            content = grid;
-
-            // The tooltip string is constant, but resolved once here (not per
-            // refresh) so the dirty-driven refresher only flips IsEnabled.
-            string tooltip = ResolveResetTooltip();
-            updateReset = () =>
-            {
-                reset.IsEnabled = Dirty();
-                ToolTipService.SetToolTip(reset, tooltip);
-            };
-        }
-        else
-        {
-            // No Default → no reset chrome, the picker is the card's whole content,
-            // exactly as before.
-            content = picker.View;
-        }
-
+        // Per-card reset at the trailing edge of the picker's row (see
+        // WrapWithTrailingReset); no Default leaves the picker as the whole content.
+        (FrameworkElement content, Action? updateReset) = WrapWithTrailingReset(card, picker.View, s);
         card.Content = content;
 
         _refreshers.Add(() =>
         {
             string value = AsString(s.GetValue());
             if (picker.Path != value) picker.Path = value;
+            updateReset?.Invoke();
+            ApplyReactiveState(card, s);
+        });
+    }
+
+    // Per-card reset for a VERTICALLY hosted content (card.ContentAlignment =
+    // Vertical, the content on its own row below the description) when the
+    // descriptor carries a Default — the same reset machinery every other kind
+    // uses (BuildResetButton + WireReveal + the _dirtyChecks/_resetActions surface
+    // + active-when-dirty + tooltip), but laid out by hand instead of through
+    // WrapWithReset. WrapWithReset assumes a trailing-edge value control and puts
+    // the reset to its LEFT; a vertical row puts it at the TRAILING edge instead —
+    // a [content* | reset] grid mirroring how the hand-authored Whisper
+    // ModelsDirectory hangs its reset off the picker's RightContent slot
+    // (WhisperPage.xaml). The content stretches (star column), the reset takes its
+    // natural width on the right, revealed on the card's hover/focus like every
+    // other reset. Shared by Path and Editor. Returns (content, null) when the
+    // descriptor has no Default: no reset chrome, the content is the card's whole
+    // content.
+    private (FrameworkElement Content, Action? UpdateState) WrapWithTrailingReset(
+        SettingsCard card, FrameworkElement content, SettingDescriptor s)
+    {
+        if (s.Default is null) return (content, null);
+
+        Button reset = BuildResetButton();
+
+        // Reveal on the CARD's hover and the BUTTON's keyboard focus, matching
+        // WrapWithReset — either keeps it shown so leaving one while the other
+        // holds does not hide it early.
+        WireReveal(card, reset);
+
+        // active-when-dirty: the value differing from its Default is what enables
+        // the reset, evaluated live through the caller's refresher. Registered into
+        // the shared reset surface so a page-level "Reset all" folds this row in too.
+        bool Dirty() => !DefaultEquals(s.GetValue(), s.Default!());
+        _dirtyChecks.Add(Dirty);
+        _resetActions.Add(() => s.SetValue(s.Default!()));
+
+        // Reset drives the value back to the descriptor's Default through the
+        // normal setter; the model's PropertyChanged then re-syncs the content
+        // (the caller's refresher, or the element's own binding), so no manual
+        // update is needed here.
+        reset.Click += (_, _) => s.SetValue(s.Default!());
+
+        // A two-column grid rather than a StackPanel so the content keeps the full
+        // width it had as the card's sole content (star column) and the reset hugs
+        // the trailing edge — a horizontal StackPanel would instead shrink the
+        // content to its own width.
+        var grid = new Grid { ColumnSpacing = 4 };
+        grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+        grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+        Grid.SetColumn(content, 0);
+        Grid.SetColumn(reset, 1);
+        grid.Children.Add(content);
+        grid.Children.Add(reset);
+
+        // The tooltip string is constant, but resolved once here (not per refresh)
+        // so the dirty-driven refresher only flips IsEnabled.
+        string tooltip = ResolveResetTooltip();
+        return (grid, () =>
+        {
+            reset.IsEnabled = Dirty();
+            ToolTipService.SetToolTip(reset, tooltip);
+        });
+    }
+
+    // A module-owned editor for a value with a shape (a curve, an envelope). The
+    // Path kind's picker is host-owned, built through PathControlFactory; here the
+    // element is descriptor-owned, built through EditorArgs.Build. The composer owns
+    // only the card chrome: vertical hosting (an editor needs the row's width, not
+    // the trailing edge), the Default-gated trailing reset shared with Path, and the
+    // reactive state. Unlike every other kind there is no value-sync in the
+    // refresher: the element binds to the model itself (x:Bind or its own events),
+    // so pushing a value into it would duplicate, and fight, that binding.
+    private void BuildEditor(SettingsCard card, SettingDescriptor s)
+    {
+        // Required by Setting.Editor, so the cast is safe; a wrong-kind args here is
+        // a manifest bug, hence the hard cast.
+        var args = (EditorArgs)s.Args!;
+
+        card.ContentAlignment = ContentAlignment.Vertical;
+
+        FrameworkElement element = args.Build();
+        (FrameworkElement content, Action? updateReset) = WrapWithTrailingReset(card, element, s);
+        card.Content = content;
+
+        _refreshers.Add(() =>
+        {
             updateReset?.Invoke();
             ApplyReactiveState(card, s);
         });

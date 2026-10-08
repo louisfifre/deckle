@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<UserControl
+    x:Class="Deckle.Transcription.CutCurveEditor"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:local="using:Deckle.Transcription">
+
+    <!-- Same 280 height the Playground gives this control. Anchors are one-way
+         (the four Number cards own them, in ms; the canvas wants seconds); the
+         two control points are two-way (the handles write them back). -->
+    <local:HangoverCurveCanvas
+        Height="280"
+        HangoverMaxSec="{x:Bind local:CutCurveEditor.Seconds(ViewModel.SegHangoverMaxMs), Mode=OneWay}"
+        HangoverMinSec="{x:Bind local:CutCurveEditor.Seconds(ViewModel.SegHangoverMinMs), Mode=OneWay}"
+        RampStartSec="{x:Bind local:CutCurveEditor.Seconds(ViewModel.SegHangoverRampStartMs), Mode=OneWay}"
+        RampEndSec="{x:Bind local:CutCurveEditor.Seconds(ViewModel.SegHangoverRampEndMs), Mode=OneWay}"
+        X1="{x:Bind ViewModel.SegCurveX1, Mode=TwoWay}"
+        Y1="{x:Bind ViewModel.SegCurveY1, Mode=TwoWay}"
+        X2="{x:Bind ViewModel.SegCurveX2, Mode=TwoWay}"
+        Y2="{x:Bind ViewModel.SegCurveY2, Mode=TwoWay}" />
+</UserControl>

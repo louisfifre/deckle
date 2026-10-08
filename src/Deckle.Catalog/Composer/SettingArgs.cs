@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using Microsoft.UI.Xaml;
 
 namespace Deckle.Catalog;
 
@@ -73,6 +74,15 @@ public sealed record TextArgs(
     string? Placeholder = null,
     bool Multiline = false,
     int? MaxLength = null) : SettingArgs;
+
+// ── EditorArgs ────────────────────────────────────────────────────────────────
+//
+// The builder of an Editor setting's element. Build is invoked once at compose
+// time and returns the element the card hosts; the element keeps itself in sync
+// with the model (the composer has no control value to push into it). Unlike a
+// Path picker, which is host-owned and built through PathControlFactory, an
+// editor is descriptor-owned: the module that declares the setting supplies it.
+public sealed record EditorArgs(Func<FrameworkElement> Build) : SettingArgs;
 
 // ── FolderPickerMode ──────────────────────────────────────────────────────────
 //
