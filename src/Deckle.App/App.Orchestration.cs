@@ -5,15 +5,18 @@ namespace Deckle.App;
 public partial class App
 {
     private OrchestrationRuntime? _orchestration;
+    private WatcherForegroundMonitor? _orchestrationForeground;
 
-    // The NullForegroundMonitor is the seam the shared foreground service
-    // fills at integration: a small adapter here, from that service's own
-    // event to IForegroundMonitor, so neither module references the other.
+    // The runtime reads foreground changes from the one ForegroundWatcher
+    // started just before it (InitializeStartupModules), through an adapter
+    // that subscribes to it: no second set of WinEvent hooks. An app launched
+    // after Deckle is noticed when it comes to the front, elevated or not.
     private void InitializeOrchestration()
     {
+        _orchestrationForeground = new WatcherForegroundMonitor(_foregroundWatcher!);
         var runtime = new OrchestrationRuntime(
             OrchestrationSettingsService.Instance,
-            new NullForegroundMonitor(),
+            _orchestrationForeground,
             new WmiProcessStartSource(),
             new ProcessExitWatch(),
             effects: [new HdrRuleEffect()]);
@@ -32,6 +35,8 @@ public partial class App
         OrchestrationRuntime.StatusProvider = null;
         _orchestration?.Dispose();
         _orchestration = null;
+        _orchestrationForeground?.Dispose();
+        _orchestrationForeground = null;
         OrchestrationSettingsService.Instance.Flush();
     }
 }
