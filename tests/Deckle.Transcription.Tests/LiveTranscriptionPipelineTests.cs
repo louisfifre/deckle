@@ -80,6 +80,53 @@ public sealed class LiveTranscriptionPipelineTests
         Assert.False(engine.IsBusy);
     }
 
+    [Fact]
+    public async Task EachTranscribedUtteranceIsPublishedInOrderWithItsText()
+    {
+        CancellationToken testCancellation = TestContext.Current.CancellationToken;
+        var capture = new ScriptedMicrophoneCapture(utteranceCount: 2);
+        var backend = new SequencedBackend(["bonjour", "Deckle"]);
+        var clipboard = new RecordingClipboardWriter();
+        using var engine = new TranscriptionEngine(
+            new StreamingHost(),
+            backend,
+            capture,
+            clipboard);
+        var utterances = new ConcurrentQueue<TranscribedUtterance>();
+        var finished = new TaskCompletionSource<TranscriptionOutcome>(
+            TaskCreationOptions.RunContinuationsAsynchronously);
+        var ready = new TaskCompletionSource(
+            TaskCreationOptions.RunContinuationsAsynchronously);
+
+        engine.UtteranceTranscribed += utterances.Enqueue;
+        engine.StatusChanged += status =>
+        {
+            if (status == Loc.Get("Status_Ready"))
+                ready.TrySetResult();
+        };
+        engine.TranscriptionFinished += outcome => finished.TrySetResult(outcome);
+
+        Assert.Equal(
+            ToggleResult.Started,
+            engine.RequestToggle(null, shouldPaste: false, requireProfile: false));
+        await backend.TwoCallsCompleted.Task.WaitAsync(
+            TimeSpan.FromSeconds(5), testCancellation);
+        Assert.Equal(
+            ToggleResult.Stopped,
+            engine.RequestToggle(null, shouldPaste: false, requireProfile: false));
+
+        await finished.Task.WaitAsync(TimeSpan.FromSeconds(5), testCancellation);
+        await ready.Task.WaitAsync(TimeSpan.FromSeconds(5), testCancellation);
+
+        TranscribedUtterance[] published = utterances.ToArray();
+        Assert.Equal(2, published.Length);
+        Assert.Equal(0, published[0].Index);
+        Assert.Equal("bonjour", published[0].Text);
+        Assert.True(published[0].EndedOnSilence);
+        Assert.Equal(1, published[1].Index);
+        Assert.Equal("Deckle", published[1].Text);
+    }
+
     private sealed class StreamingHost : ITranscriptionEngineHost
     {
         public StreamingHost()
