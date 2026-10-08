@@ -93,7 +93,7 @@ Notes on the diagram:
 | Hotkey press | `src/Deckle.App/App.Hotkeys.cs` → `_engine.RequestToggle`; `src/Deckle.Transcription/Engine/TranscriptionEngine.StateMachine.cs` → `RequestToggle` | Win + the key left of 1 (`HOTKEY_ID_TRANSCRIBE` in `src/Deckle.Core/Interop/NativeMethods.cs`). Shift or Ctrl added picks a rewrite profile. A press while Idle starts; a press while Recording stops; any other state ignores the press. |
 | Mic probe | `src/Deckle.Transcription/Engine/TranscriptionEngine.StateMachine.cs` → `TryStartFromIdleLocked` (`_capture.Probe`) | Checks the microphone before anything else. On failure, an error is shown and no take starts. Then the worker thread starts at AboveNormal priority. |
 | waveIn capture | `src/Deckle.Audio/MicrophoneCapture.cs` → `Record` (`N_BUFFERS = 4`, `BYTES_PER_BUF` = 50 ms) | Opens the microphone at 16 kHz, mono, 16-bit, with a ring of four 50 ms buffers. |
-| One CaptureFrame per 50 ms | `src/Deckle.Audio/Internal/WaveInLoop.cs` → `Pump`, `EmitSubWindows`; `src/Deckle.Audio/CaptureFrame.cs` | Cuts each buffer into 50 ms frames of 800 samples, computes the RMS (the average loudness) of each, and raises the `Frame` and `AudioLevel` events. |
+| One CaptureFrame per 50 ms | `src/Deckle.Audio/Internal/WaveInLoop.cs` → `Pump`, `EmitSubWindows`; `src/Deckle.Audio/CaptureFrame.cs` | Cuts each buffer into 50 ms frames of 800 samples, computes the RMS (the average loudness) of each, and raises the `Frame` and `AudioLevel` events. The same loop runs the low-audio tracker described under the engine constants. |
 | AudioLevel event | `src/Deckle.Audio/MicrophoneCapture.cs` → `AudioLevel`; `src/Deckle.App/App.Startup.Shell.cs` → `_engine.AudioLevel += _hudWindow.OnAudioLevel`; `src/Deckle.Audio/AudioLevelMapper.cs`; `src/Deckle.Hud/Chrono/HudChrono.Stroke.cs` | About 20 times per second, the RMS goes to the HUD, which maps it to the brightness of the outline. Display only. |
 | Streaming.Strategy | `src/Deckle.Transcription/Engine/TranscriptionEngine.StateMachine.cs` → `WorkerRun` | Reads the strategy from the live settings at each take, so a change applies to the next dictation without restart. |
 | EnergySegmenter.Push | `src/Deckle.Transcription/Streaming/EnergySegmenter.cs` → `Push`, `Flush`; called from `OnFrame` in `src/Deckle.Transcription/Engine/TranscriptionEngine.StreamingPipeline.cs` | Decides, frame by frame, whether you are speaking, pausing, or done. Runs on the capture thread. Detailed in the next section. |
@@ -271,6 +271,7 @@ Reading: `LevelWindowSettings` uses public fields, while every other settings cl
 | `MODEL_IDLE_TIMEOUT_MS` | `src/Deckle.Transcription/Engine/TranscriptionEngine.cs` | `5 * 60 * 1000` (5 min) before the model is freed | No |
 | `N_BUFFERS`, `BYTES_PER_BUF` | `src/Deckle.Audio/MicrophoneCapture.cs` | 4 buffers of 50 ms (1600 bytes) | No |
 | `FrameMs` | `src/Deckle.Transcription/Streaming/EnergySegmenter.cs` | `50` ms; every segmenter duration is rounded to whole frames | No |
+| Low-audio warning: `NormalVoiceDbfsThreshold`, `NormalVoiceSustainedMs`, `WarnAfterSilenceMs` | `src/Deckle.Audio/Internal/WaveInLoop.cs` (the per-buffer tracker in `Pump`) | If the first 5 s of a take never contain 200 ms in a row at or above −45 dBFS, the capture raises `LowAudioDetected` once, and `OnCaptureLowAudioDetected` in `src/Deckle.Transcription/Engine/TranscriptionEngine.cs` shows the `Engine_LowAudio_Title` / `Engine_LowAudio_Body` overlay | No |
 
 ### Louis's own values
 
@@ -280,7 +281,7 @@ Louis reports that he runs the Streaming strategy with the segmenter threshold a
 
 ### What the code measures for each take
 
-At the end of each dictation, `RecordPipelineMetrics` emits the `LatencyRecorded` event (`src/Deckle.Transcription/Engine/TranscriptionEngine.Finalize.Observability.cs`). It is not emitted for file transcription. These are the only per-take timings the code measures.
+At the end of each dictation, `RecordPipelineMetrics` emits the `LatencyRecorded` event (`src/Deckle.Transcription/Engine/TranscriptionEngine.Finalize.Observability.cs`). It is not emitted for file transcription. The table lists the dictation-chain timings. The same event also carries three rewrite sub-timings (`ollama_load_ms`, `llm_prompt_eval_ms`, `llm_eval_ms`, set in the same file); they are left out here because they belong to the rewrite.
 
 | Field | Start → end | Where it is measured |
 |---|---|---|
@@ -298,7 +299,7 @@ On a cold take, `AwaitPrime` also emits `PrimeOverlap` with the prime's own dura
 
 Reading: in Streaming, `stop_to_pipeline_ms` is the delay you feel after the second press, minus finalize. It includes the drain and the transcription of whatever utterances were still queued.
 
-The Latency toggle on the Dictation page (`GeneralLatencyCard`) says it records these timings to `latency.jsonl`. Unverified: whether it is on by default and how the toggle gates the event; this note does not trace it.
+The Latency toggle is `LatencyEnabled` in `src/Deckle.Diagnostics.Telemetry/TelemetrySettings.cs`, and its default is `false`. `src/Deckle.Diagnostics.Telemetry/TelemetryListenerBootstrap.cs` writes `LatencyRecorded` events to `latency.jsonl` only while it is `true`. The event itself is emitted on every dictation, whatever the toggle.
 
 A code comment in `EnsurePrimed` says the dummy inference takes "~200–800 ms on RX 7900 XT with Vulkan ggml". That is a comment, not a measurement this note can rely on.
 
