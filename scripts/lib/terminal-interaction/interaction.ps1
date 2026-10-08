@@ -85,12 +85,12 @@ function Start-TerminalInteraction {
     param(
         [Parameter(Mandatory)][object]$RootView,
         [Parameter(Mandatory)][scriptblock]$IntentHandler,
-        [ValidateSet('Auto', 'Dark', 'Light')][string]$ThemeVariant = 'Auto'
+        [ValidateSet('Terminal', 'Deckle')][string]$Palette = 'Terminal'
     )
 
     $viewStack = [System.Collections.Generic.List[object]]::new()
     $viewStack.Add((New-TerminalViewState -View $RootView))
-    $hostState = Start-TerminalHost -ThemeVariant $ThemeVariant
+    $hostState = Start-TerminalHost -Palette $Palette
     try {
         $exitRequested = $false
         $previousFrame = $null

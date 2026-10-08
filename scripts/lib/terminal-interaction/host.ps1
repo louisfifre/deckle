@@ -242,7 +242,7 @@ function Write-TerminalHostSequence {
 
 function Start-TerminalHost {
     [CmdletBinding()]
-    param([ValidateSet('Auto', 'Dark', 'Light')][string]$ThemeVariant = 'Auto')
+    param([ValidateSet('Terminal', 'Deckle')][string]$Palette = 'Terminal')
 
     if ([Console]::IsInputRedirected -or [Console]::IsOutputRedirected) {
         throw 'Interactive terminal input and output are required. Use snapshot mode when output is redirected.'
@@ -251,7 +251,7 @@ function Start-TerminalHost {
     $state = [pscustomobject][ordered]@{
         OriginalForeground = [Console]::ForegroundColor
         OriginalBackground = [Console]::BackgroundColor
-        ThemeVariant = $null
+        Palette = $null
         OriginalCursorVisible = $true
         OriginalTreatControlCAsInput = [Console]::TreatControlCAsInput
         OriginalOutputEncoding = [Console]::OutputEncoding
@@ -266,11 +266,7 @@ function Start-TerminalHost {
         UnicodeOutput = 'Unknown'
         Color = 'Supported'
     }
-    $state.ThemeVariant = if ($ThemeVariant -eq 'Auto') {
-        Resolve-TerminalThemeVariant -BackgroundColor $state.OriginalBackground
-    } else {
-        $ThemeVariant
-    }
+    $state.Palette = Resolve-TerminalPalette -Palette $Palette -BackgroundColor $state.OriginalBackground
     try { $state.OriginalCursorVisible = [Console]::CursorVisible } catch { }
 
     try {

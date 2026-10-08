@@ -15,10 +15,10 @@ Regression coverage: `scripts/tests/terminal-interaction/host.tests.ps1` asserts
 - **Trigger:** Render the approved Figma dark or light theme through the VT drawing path.
 - **Observed symptom:** Sections, Action subjects, Accesses, body text, surfaces, and selection could not match their specified RGB values even though their semantic roles reached the renderer.
 - **Cause:** VT attributes were serialized only as ANSI 16-color codes derived from `ConsoleColor`; the style and renderer had no 24-bit foreground or background channel.
-- **Violated invariant:** A VT-capable host paints the exact active-theme tokens while a legacy host alone uses semantic `ConsoleColor` fallbacks.
+- **Violated invariant:** Under the Deckle palette, a VT-capable host paints the exact active-variant tokens while a legacy host alone uses semantic `ConsoleColor` fallbacks. The default Terminal palette sends console colours only.
 - **Recurrence cue:** Theme RGB values are reduced to `ConsoleColor` before VT serialization, or coverage checks role separation without asserting the emitted `38;2` and `48;2` sequences for both theme variants.
 
-Regression coverage: `scripts/tests/terminal-interaction/theme.tests.ps1` asserts every approved dark/light role token and uniform selection inversion; `scripts/tests/terminal-interaction/host.tests.ps1` asserts exact 24-bit Section and dark/light focus sequences.
+Regression coverage: `scripts/tests/terminal-interaction/theme.tests.ps1` asserts every approved dark/light role token, the uniform selection inversion, and that the default Terminal palette names no RGB value; `scripts/tests/terminal-interaction/host.tests.ps1` asserts exact 24-bit Section and dark/light focus sequences, and sixteen-colour sequences for the Terminal palette.
 
 ## Focus highlight changed width with the selected label
 

@@ -87,17 +87,17 @@ function Get-TerminalSegmentColors {
     $colorCapability = 'Supported'
     $colorProperty = $HostState.PSObject.Properties['Color']
     if ($null -ne $colorProperty) { $colorCapability = [string]$colorProperty.Value }
-    $themeVariantProperty = $HostState.PSObject.Properties['ThemeVariant']
-    $themeVariant = if ($null -ne $themeVariantProperty -and $themeVariantProperty.Value -in @('Dark', 'Light')) {
-        [string]$themeVariantProperty.Value
-    } else {
-        Resolve-TerminalThemeVariant -BackgroundColor $HostState.OriginalBackground
+    # A host that names no resolved palette keeps the console colours.
+    $palette = 'Terminal'
+    $paletteProperty = $HostState.PSObject.Properties['Palette']
+    if ($null -ne $paletteProperty -and $paletteProperty.Value -in @('DeckleDark', 'DeckleLight')) {
+        $palette = [string]$paletteProperty.Value
     }
     $style = Get-TerminalPresentationStyle `
         -Role $Segment.PresentationRole `
         -State $Segment.State `
         -ColorCapability $colorCapability `
-        -ThemeVariant $themeVariant
+        -Palette $palette
     $foreground = if ($null -eq $style.Foreground) { $HostState.OriginalForeground } else { $style.Foreground }
     $background = if ($null -eq $style.Background) { $HostState.OriginalBackground } else { $style.Background }
     return [pscustomobject]@{

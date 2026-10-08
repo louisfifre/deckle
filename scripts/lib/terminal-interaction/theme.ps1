@@ -1,5 +1,8 @@
-# Semantic presentation roles mapped to the default Deckle terminal theme.
-# Exact RGB tokens serve VT hosts; ConsoleColor values remain as the legacy fallback.
+# Semantic presentation roles mapped to terminal attributes, from one of two
+# palettes. Terminal, the default, names every role in the sixteen console
+# colours and lets the terminal's own scheme give them their values. Deckle
+# carries the designed RGB tokens, sent exactly to VT hosts, with the console
+# colours kept as the fallback of a legacy host.
 
 # The indexed background is only a hint: Windows Terminal sets a profile's RGB
 # background apart from its sixteen-colour table, so Console.BackgroundColor
@@ -22,14 +25,26 @@ function Resolve-TerminalThemeVariant {
     return 'Light'
 }
 
+# Resolves the launcher's palette choice into the one the theme applies: the
+# Deckle palette takes its dark or light variant from the console background.
+function Resolve-TerminalPalette {
+    param(
+        [Parameter(Mandatory)][ValidateSet('Terminal', 'Deckle')][string]$Palette,
+        [Parameter(Mandatory)][ConsoleColor]$BackgroundColor
+    )
+
+    if ($Palette -eq 'Terminal') { return 'Terminal' }
+    return 'Deckle' + (Resolve-TerminalThemeVariant -BackgroundColor $BackgroundColor)
+}
+
 # The maintainer's palette, Figma "Deckle Scripts", node 22-27: title,
 # sections, action-row title, body text, selection, access, and background.
 # It names no colour for a plain Action, muted chrome, or outcomes; those
 # roles keep their ConsoleColor fallback rather than an invented value.
 function Get-TerminalThemePalette {
-    param([Parameter(Mandatory)][ValidateSet('Dark', 'Light')][string]$ThemeVariant)
+    param([Parameter(Mandatory)][ValidateSet('DeckleDark', 'DeckleLight')][string]$Palette)
 
-    if ($ThemeVariant -eq 'Light') {
+    if ($Palette -eq 'DeckleLight') {
         return [pscustomobject]@{
             Background = [int[]]@(246, 246, 246)  # F6F6F6
             Title = [int[]]@(40, 142, 215)        # 288ED7
@@ -64,7 +79,7 @@ function Get-TerminalPresentationStyle {
         [string]$Role,
         [ValidateSet('Normal', 'Focused', 'Disabled')][string]$State = 'Normal',
         [ValidateSet('Supported', 'Unsupported', 'Unknown')][string]$ColorCapability = 'Supported',
-        [ValidateSet('Dark', 'Light')][string]$ThemeVariant = 'Dark'
+        [ValidateSet('Terminal', 'DeckleDark', 'DeckleLight')][string]$Palette = 'Terminal'
     )
 
     if ($ColorCapability -ne 'Supported') {
@@ -76,26 +91,39 @@ function Get-TerminalPresentationStyle {
         }
     }
 
-    $palette = Get-TerminalThemePalette -ThemeVariant $ThemeVariant
+    $designed = if ($Palette -eq 'Terminal') { $null } else { Get-TerminalThemePalette -Palette $Palette }
+    $surfaceRgb = if ($null -eq $designed) { $null } else { $designed.Background }
     if ($State -eq 'Disabled') {
         return [pscustomobject]@{
             Foreground = [ConsoleColor]::DarkGray
             Background = $null
             ForegroundRgb = $null
-            BackgroundRgb = $palette.Background
+            BackgroundRgb = $surfaceRgb
         }
     }
-    # One selection for every target, Danger, Error and Exit included: the
-    # focused text takes the background token and the cell the selection
-    # token, so a consequence shows at rest and selection keeps one language.
+    if ($State -eq 'Focused' -and $null -eq $designed) {
+        # The console-colour selection: Danger and Error invert to white on
+        # dark red, every other target, Exit included, to black on grey.
+        $consequence = $Role -in @('Danger', 'Error')
+        return [pscustomobject]@{
+            Foreground = if ($consequence) { [ConsoleColor]::White } else { [ConsoleColor]::Black }
+            Background = if ($consequence) { [ConsoleColor]::DarkRed } else { [ConsoleColor]::Gray }
+            ForegroundRgb = $null
+            BackgroundRgb = $null
+        }
+    }
+    # The designed selection is one for every target, Danger, Error and Exit
+    # included: the focused text takes the background token and the cell the
+    # selection token, so a consequence shows at rest and selection keeps one
+    # language.
     if ($State -eq 'Focused') {
-        $foreground = if ($ThemeVariant -eq 'Dark') { [ConsoleColor]::Black } else { [ConsoleColor]::White }
-        $background = if ($ThemeVariant -eq 'Dark') { [ConsoleColor]::White } else { [ConsoleColor]::DarkGray }
+        $foreground = if ($Palette -eq 'DeckleDark') { [ConsoleColor]::Black } else { [ConsoleColor]::White }
+        $background = if ($Palette -eq 'DeckleDark') { [ConsoleColor]::White } else { [ConsoleColor]::DarkGray }
         return [pscustomobject]@{
             Foreground = $foreground
             Background = $background
-            ForegroundRgb = $palette.Background
-            BackgroundRgb = $palette.Selection
+            ForegroundRgb = $designed.Background
+            BackgroundRgb = $designed.Selection
         }
     }
 
@@ -128,26 +156,28 @@ function Get-TerminalPresentationStyle {
         'Error' { [ConsoleColor]::Red }
         default { $null }
     }
-    $foregroundRgb = switch ($Role) {
-        'Banner' { $palette.Title }
-        'Section' { $palette.Section }
-        'PanelTitle' { $palette.Section }
-        'SectionSeparator' { $palette.Selection }
-        'PanelSeparator' { $palette.Body }
-        'Action' { $palette.Body }
-        'ActionLabel' { $palette.ActionLabel }
-        'Access' { $palette.Access }
-        'ActionVariant' { $palette.Body }
-        'Adjust' { $palette.Body }
-        'Navigation' { $palette.Body }
-        'Body' { $palette.Body }
-        'CommandKey' { $palette.Body }
-        default { $null }
+    $foregroundRgb = if ($null -eq $designed) { $null } else {
+        switch ($Role) {
+            'Banner' { $designed.Title }
+            'Section' { $designed.Section }
+            'PanelTitle' { $designed.Section }
+            'SectionSeparator' { $designed.Selection }
+            'PanelSeparator' { $designed.Body }
+            'Action' { $designed.Body }
+            'ActionLabel' { $designed.ActionLabel }
+            'Access' { $designed.Access }
+            'ActionVariant' { $designed.Body }
+            'Adjust' { $designed.Body }
+            'Navigation' { $designed.Body }
+            'Body' { $designed.Body }
+            'CommandKey' { $designed.Body }
+            default { $null }
+        }
     }
     return [pscustomobject]@{
         Foreground = $foreground
         Background = $null
         ForegroundRgb = $foregroundRgb
-        BackgroundRgb = $palette.Background
+        BackgroundRgb = $surfaceRgb
     }
 }

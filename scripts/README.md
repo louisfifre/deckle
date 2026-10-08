@@ -21,11 +21,10 @@ Run it interactively:
 pwsh -NoProfile -File scripts/deckle-preview.ps1
 ```
 
-`Auto` uses the console's indexed background as a compatibility hint. Force either approved palette when judging both variants independently from the Windows Terminal profile:
+By default the preview paints with the console colours, which the terminal's own scheme turns into values. `-Palette Deckle` paints with the designed palette of the Figma file "Deckle Scripts" instead, its dark or light variant chosen from the console background:
 
 ```powershell
-pwsh -NoProfile -File scripts/deckle-preview.ps1 -ThemeVariant Dark
-pwsh -NoProfile -File scripts/deckle-preview.ps1 -ThemeVariant Light
+pwsh -NoProfile -File scripts/deckle-preview.ps1 -Palette Deckle
 ```
 
 Render a deterministic frame without taking over the terminal when comparing layouts or writing tests:

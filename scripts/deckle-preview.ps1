@@ -9,7 +9,10 @@ param(
     [ValidateSet('Menu', 'Project', 'Preparation', 'Execution', 'Catalog', 'Confirmation')][string]$Snapshot,
     [ValidateRange(20, 240)][int]$Width = 100,
     [ValidateRange(8, 100)][int]$Height = 30,
-    [ValidateSet('Auto', 'Dark', 'Light')][string]$ThemeVariant = 'Auto',
+    # Terminal paints with the console colours of the terminal's scheme;
+    # Deckle paints with the designed RGB palette, dark or light after the
+    # console background. Redirected output carries no colour either way.
+    [ValidateSet('Terminal', 'Deckle')][string]$Palette = 'Terminal',
     [switch]$HostSmokeTest,
     [switch]$Discovered
 )
@@ -66,9 +69,9 @@ if ($HostSmokeTest) {
     }
     $module = Get-Module terminal-interaction
     & $module {
-        param($view, $ownerActionMenu, $focus, $themeVariant)
+        param($view, $ownerActionMenu, $focus, $palette)
         $originalOutputCodePage = [Console]::OutputEncoding.CodePage
-        $hostState = Start-TerminalHost -ThemeVariant $themeVariant
+        $hostState = Start-TerminalHost -Palette $palette
         try {
             if ($hostState.UnicodeOutput -ne 'Supported' -or [Console]::OutputEncoding.CodePage -ne 65001) {
                 throw 'The host smoke test could not activate UTF-8 console output.'
@@ -88,7 +91,7 @@ if ($HostSmokeTest) {
         if ([Console]::OutputEncoding.CodePage -ne $originalOutputCodePage) {
             throw 'The host smoke test did not restore the original console output encoding.'
         }
-    } $smokeView $smokeOwnerActionMenu $smokeFocus $ThemeVariant
+    } $smokeView $smokeOwnerActionMenu $smokeFocus $Palette
     return
 }
 
@@ -130,7 +133,7 @@ $rootView = if ($Discovered) {
 } else {
     Get-DecklePreviewRootView
 }
-Start-TerminalInteraction -RootView $rootView -ThemeVariant $ThemeVariant -IntentHandler {
+Start-TerminalInteraction -RootView $rootView -Palette $Palette -IntentHandler {
     param($request, $sourceView)
     if ($Discovered -and $request.IntentKind -eq 'Access') {
         $level = Resolve-DecklePreviewDiscoveredAccess -Catalog $DiscoveredCatalog -AccessId $request.Payload.AccessId
