@@ -1,17 +1,6 @@
 using System;
-using System.Diagnostics;
-using Deckle.Catalog;
 using Deckle.Core;
-using Deckle.Diagnostics;
-using Deckle.Shell.TrayMenu;
-using Microsoft.UI;
-using Microsoft.UI.Dispatching;
-using Microsoft.UI.Windowing;
-using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
-using Microsoft.UI.Xaml.Controls.Primitives;
-using Microsoft.UI.Xaml.Media;
-using WinRT.Interop;
 
 namespace Deckle.Shell.TrayMenu;
 
@@ -19,40 +8,23 @@ namespace Deckle.Shell.TrayMenu;
 //
 // Host that bridges the Win32 tray (Shell_NotifyIcon) to the native WinUI 3
 // MenuFlyout. The pattern, inspired by the open-source H.NotifyIcon library
-// (MIT), fits in a transparent WinUI window pre-created at init: on tray
-// right-click, it is positioned at the cursor and a MenuFlyout opens on it in
-// FlyoutShowMode.Transient. Without this carrier window, a MenuFlyout cannot
-// anchor to a message-only HWND; it needs a XamlRoot.
+// (MIT), fits in a transparent WinUI window pre-created at init (the
+// TrayCarrierWindow): on tray right-click, it is positioned at the icon and a
+// MenuFlyout opens on it in FlyoutShowMode.Transient. Without this carrier
+// window, a MenuFlyout cannot anchor to a message-only HWND; it needs a
+// XamlRoot.
 //
-// The carrier window is invisible: WS_EX_LAYERED + SetLayeredWindowAttributes
-// with alpha=0. The MenuFlyout is rendered by WinUI in its own popup (detached
-// child HWND), so it remains fully visible. Win11 rendering (mica, rounded
-// corners, Fluent shadow, native animations) comes for free with the control.
-//
-// Dismiss: Window.Activated → Deactivated covers click-outside and global
-// focus loss; each item's Click closes explicitly. No close animation, to avoid
-// the reopen-during-close hack H.NotifyIcon has to use
+// Dismiss: the carrier's Deactivated covers click-outside and global focus
+// loss; each item's Click closes explicitly. No close animation, to avoid the
+// reopen-during-close hack H.NotifyIcon has to use
 // (AreOpenCloseAnimationsEnabled = false).
 //
-// Observability: positioning events (anchor, monitor, popup position,
-// move-and-resize) are emitted through WindowingProbe on the cross-cutting
-// DeckleWindowingSource sub-provider, with no duplication on the module-local
-// provider. The local Deckle.Shell.TrayMenu sub-provider traces only tray-menu
-// specifics: prime cycle, item measurement, dismiss reason.
+// Observability: positioning events are emitted by the carrier through
+// WindowingProbe. The local Deckle.Shell.TrayMenu sub-provider traces only
+// tray-menu specifics: prime cycle, item measurement, dismiss reason.
 
 public sealed partial class TrayContextMenuHost : IDisposable
 {
-    // Owner HWND (tray message-only host). Defines the popup's parent z-order
-    // so activation/deactivation chains correctly with the tray. Stored as the
-    // Win32 GWLP_HWNDPARENT (-8) const offset.
-    private const int GWLP_HWNDPARENT = -8;
-
-    // Exclusion margin around the cursor, in physical pixels. Prevents the
-    // popup from covering the tray icon itself (CalculatePopupWindowPosition
-    // looks for a location adjacent to the exclusion rect). 36 px = typical
-    // tray icon slot size at 100% DPI.
-    private const int CursorExcludeHalfExtent = 18;
-
     // Flat margin for the MeasureFlyout fallback path (presenter not captured
     // during the prime cycle). 4 px per side. Imprecise by nature; it
     // overestimated the presenter's real chrome (≈ 4-6 DIP), creating the Mica
@@ -60,21 +32,16 @@ public sealed partial class TrayContextMenuHost : IDisposable
     // presenter's DesiredSize (_primedPresenterSize).
     private const double FlyoutFrameMargin = 4.0;
 
-    private readonly IntPtr _ownerHwnd;
+    private readonly TrayCarrierWindow _carrier;
 
-    private Window? _window;
-    private Frame? _frame;
     private MenuFlyout? _flyout;
     private MenuFlyoutItem? _ambientItem;
     private MenuFlyoutItem? _autocorrectItem;
     private MenuFlyoutItem? _taskbarCoverItem;
     private MenuFlyoutItem? _precisionScrollItem;
     private MenuFlyoutItem? _transcribeFilesItem;
-    private IntPtr _hwnd;
-    private AppWindow? _appWindow;
 
     private bool _isVisible;
-    private bool _primed;
     private bool _disposed;
 
     // Trackers for the ShowRequested event: inter-open delta calculation,
@@ -126,8 +93,9 @@ public sealed partial class TrayContextMenuHost : IDisposable
 
     public TrayContextMenuHost(IntPtr ownerHwnd)
     {
-        _ownerHwnd = ownerHwnd;
-        BuildWindow();
+        _carrier = new TrayCarrierWindow(ownerHwnd, "tray-popup");
+        _carrier.Loaded += OnCarrierLoaded;
+        _carrier.Deactivated += OnCarrierDeactivated;
         BuildFlyout();
 
         DeckleShellTrayMenuSource.Log.HostConstructed();
@@ -136,15 +104,17 @@ public sealed partial class TrayContextMenuHost : IDisposable
 
     // ── Lifecycle handlers ────────────────────────────────────────────────────
 
-    private void OnFrameLoaded(object sender, RoutedEventArgs e)
+    // The carrier raises Loaded once, after finalizing its popup style: the
+    // XamlRoot is ready, so the flyout is primed exactly once here.
+    private void OnCarrierLoaded()
     {
-        DeckleShellTrayMenuSource.Log.FrameLoaded(_primed);
-
-        if (_primed || _flyout is null || _frame is null) return;
-        _primed = true;
-
-        FinalizePopupWindow();
+        if (_flyout is null) return;
         PrimeFlyout();
+    }
+
+    private void OnCarrierDeactivated()
+    {
+        if (_isVisible) Hide("deactivated");
     }
 
     // ── Dispose ───────────────────────────────────────────────────────────────
@@ -154,18 +124,14 @@ public sealed partial class TrayContextMenuHost : IDisposable
         if (_disposed) return;
         _disposed = true;
 
-        if (_window is not null)
+        _carrier.Loaded -= OnCarrierLoaded;
+        _carrier.Deactivated -= OnCarrierDeactivated;
+        if (_flyout is not null)
         {
-            _window.Activated -= OnWindowActivated;
-            if (_frame is not null)
-                _frame.Loaded -= OnFrameLoaded;
-            if (_flyout is not null)
-            {
-                _flyout.Closed -= OnFlyoutClosed;
-                _flyout.Opened -= OnFlyoutOpened;
-            }
-            _window.Close();
+            _flyout.Closed -= OnFlyoutClosed;
+            _flyout.Opened -= OnFlyoutOpened;
         }
+        _carrier.Dispose();
 
         DeckleShellTrayMenuSource.Log.Disposed();
     }

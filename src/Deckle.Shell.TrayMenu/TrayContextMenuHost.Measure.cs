@@ -52,9 +52,9 @@ public sealed partial class TrayContextMenuHost
         bool traceWindowing = DeckleShellTrayMenuSource.IsDetailEnabled(
             EventLevel.Verbose, (EventKeywords)Keywords.Lifecycle);
         var sw = traceWindowing ? Stopwatch.StartNew() : null;
-        _flyout!.ShowAt(_frame, new FlyoutShowOptions { ShowMode = FlyoutShowMode.Transient });
+        _flyout!.ShowAt(_carrier.Frame, new FlyoutShowOptions { ShowMode = FlyoutShowMode.Transient });
 
-        _frame!.DispatcherQueue.TryEnqueue(DispatcherQueuePriority.Low, () =>
+        _carrier.Frame.DispatcherQueue.TryEnqueue(DispatcherQueuePriority.Low, () =>
         {
             // Capture DesiredSize for items attached to the popup visual tree,
             // after forcing NarrowPadding state on each item. The framework
@@ -77,7 +77,7 @@ public sealed partial class TrayContextMenuHost
                 // Force a layout pass so the new Padding values applied by the
                 // VisualState Storyboard are effective in the DesiredSize we
                 // are about to capture.
-                _frame!.UpdateLayout();
+                _carrier.Frame.UpdateLayout();
 
                 _primedSizes.Clear();
                 foreach (var item in _flyout.Items)
