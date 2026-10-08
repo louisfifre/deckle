@@ -264,8 +264,9 @@ public sealed partial class AmbientEngine
             _heartbeatWindow.Stop();
             ResetHeartbeatCounters();
             _lastR = _lastG = _lastB = -1;
-            _smoothedR = _smoothedG = _smoothedB = -1f;
-            _multiSmoothed.Clear();
+            _smoother.Clear();
+            _blackLatch.Clear();
+            _lastTickTimestamp = 0;
             ClearHueAttributionStates();
             _stopReason = "user";
             lock (_emittedLock) _emittedColors.Clear();
@@ -446,7 +447,7 @@ public sealed partial class AmbientEngine
     }
 
     public static LightColor SampleZone(SampledFrame sample, LightZone zone, int bandCells)
-        => AmbientZoneSampler.SampleZone(sample, zone, bandCells);
+        => SrgbColor.FromLinear(AmbientZoneSampler.SampleZone(sample, zone, bandCells)).Quantize();
 
     public async ValueTask DisposeAsync()
     {

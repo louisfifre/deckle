@@ -18,7 +18,9 @@ internal static class AmbientZoneSampler
         return Math.Clamp(raw, 1, axisDim);
     }
 
-    public static LightColor SampleZone(SampledFrame sample, LightZone zone, int bandCells)
+    // Mean of the zone's band cells in linear light, unrounded. Exactly
+    // (0, 0, 0) only when every cell of the band is black.
+    public static (float R, float G, float B) SampleZone(SampledFrame sample, LightZone zone, int bandCells)
     {
         int cols = sample.Cols;
         int rows = sample.Rows;
@@ -51,7 +53,7 @@ internal static class AmbientZoneSampler
                 rMax = rows - 1;
                 break;
             default:
-                return LightColor.Black;
+                return (0f, 0f, 0f);
         }
 
         double sumRLin = 0, sumGLin = 0, sumBLin = 0;
@@ -68,14 +70,8 @@ internal static class AmbientZoneSampler
                 count++;
             }
         }
-        if (count == 0) return LightColor.Black;
+        if (count == 0) return (0f, 0f, 0f);
 
-        float avgR = (float)(sumRLin / count);
-        float avgG = (float)(sumGLin / count);
-        float avgB = (float)(sumBLin / count);
-        return new LightColor(
-            (byte)Math.Clamp((int)MathF.Round(ColorSpace.LinearToSrgb(avgR) * 255f), 0, 255),
-            (byte)Math.Clamp((int)MathF.Round(ColorSpace.LinearToSrgb(avgG) * 255f), 0, 255),
-            (byte)Math.Clamp((int)MathF.Round(ColorSpace.LinearToSrgb(avgB) * 255f), 0, 255));
+        return ((float)(sumRLin / count), (float)(sumGLin / count), (float)(sumBLin / count));
     }
 }

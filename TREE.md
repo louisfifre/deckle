@@ -1240,8 +1240,10 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   └── LightDescriptor.cs
 │   ├── Deckle.Lighting.Ambient/
 │   │   ├── Engine/
+│   │   │   ├── AmbientBlackLatch.cs
 │   │   │   ├── AmbientBrightnessCurve.cs
 │   │   │   ├── AmbientColorPipeline.cs
+│   │   │   ├── AmbientColorSmoother.cs
 │   │   │   ├── AmbientEngine.CaptureEvents.cs
 │   │   │   ├── AmbientEngine.cs
 │   │   │   ├── AmbientEngine.GroupPush.cs
@@ -1261,7 +1263,8 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   ├── HueEndpointResolver.cs
 │   │   │   ├── HuePairingService.cs
 │   │   │   ├── LightZone.cs
-│   │   │   └── LightZoneSuggester.cs
+│   │   │   ├── LightZoneSuggester.cs
+│   │   │   └── SrgbColor.cs
 │   │   ├── Strings/
 │   │   │   └── en-US/
 │   │   │       └── Resources.resw

@@ -34,10 +34,10 @@ public sealed partial class AmbientEngine
         int bandRows = AmbientZoneSampler.ResolveBandCells(_borderMode, _borderDepth, _borderCells, sample.Rows);
         int bandCols = AmbientZoneSampler.ResolveBandCells(_borderMode, _borderDepth, _borderCells, sample.Cols);
 
-        var topColor    = AmbientZoneSampler.SampleZone(sample, LightZone.Top,    bandRows);
-        var bottomColor = AmbientZoneSampler.SampleZone(sample, LightZone.Bottom, bandRows);
-        var leftColor   = AmbientZoneSampler.SampleZone(sample, LightZone.Left,   bandCols);
-        var rightColor  = AmbientZoneSampler.SampleZone(sample, LightZone.Right,  bandCols);
+        var topLinear    = AmbientZoneSampler.SampleZone(sample, LightZone.Top,    bandRows);
+        var bottomLinear = AmbientZoneSampler.SampleZone(sample, LightZone.Bottom, bandRows);
+        var leftLinear   = AmbientZoneSampler.SampleZone(sample, LightZone.Left,   bandCols);
+        var rightLinear  = AmbientZoneSampler.SampleZone(sample, LightZone.Right,  bandCols);
 
         // Per-light fan-out + per-light early-exit. We build a
         // dictionary of (lightId → colour) only for lights whose target
@@ -61,68 +61,59 @@ public sealed partial class AmbientEngine
                 continue;
             }
 
-            LightColor zoneColor = zone switch
+            (float R, float G, float B) zoneLinear = zone switch
             {
-                LightZone.Top    => topColor,
-                LightZone.Bottom => bottomColor,
-                LightZone.Left   => leftColor,
-                LightZone.Right  => rightColor,
-                _                => LightColor.Black,
+                LightZone.Top    => topLinear,
+                LightZone.Bottom => bottomLinear,
+                LightZone.Left   => leftLinear,
+                LightZone.Right  => rightLinear,
+                _                => (0f, 0f, 0f),
             };
 
-            // Apply the per-light brightness multiplier in [0, 1].
-            // Scaling RGB linearly here halves Hue's derived `bri`
-            // (max-channel based, see HueColorMath) so the lamp shows
-            // the same chromaticity at the requested intensity. The
-            // multiplier defaults to 1.0 when the user hasn't touched
-            // the slider yet.
+            // Apply the per-light brightness multiplier in [0, 1] to the
+            // encoded channels. Scaling them here halves Hue's derived
+            // `bri` (max-channel based, see HueColorMath) so the lamp
+            // shows the same chromaticity at the requested intensity.
+            // The multiplier defaults to 1.0 when the user hasn't
+            // touched the slider yet.
             double bri = 1.0;
             if (lightBrightness is not null && lightBrightness.TryGetValue(light.Id, out var b))
                 bri = Math.Clamp(b, 0.0, 1.0);
             bool lightExplicitlyOff = bri <= 0.0;
-            byte scaledR = (byte)Math.Round(zoneColor.R * bri);
-            byte scaledG = (byte)Math.Round(zoneColor.G * bri);
-            byte scaledB = (byte)Math.Round(zoneColor.B * bri);
+            SrgbColor scaled = SrgbColor.FromLinear(zoneLinear).Scale((float)bri);
 
-            // Off-threshold applied per light independently after the
-            // brightness scale — a zone of the screen can be near-black
-            // while the rest is bright, AND the user can pin a single
-            // lamp to "off" by sliding its brightness to 0 (which
-            // collapses scaledR/G/B below the threshold).
+            // Black gate per light : a zone of the screen can be exactly
+            // black while the rest is lit, and the user can pin a single
+            // lamp to "off" by sliding its brightness to 0. The explicit
+            // off skips the floor ; screen-derived black goes through it.
             // Apply HDR tuning (saturation boost + min brightness)
             // per light, same rationale as GroupTick : the early-exit
             // compares on tuned values so a slider move always pushes.
-            var tuned = lightExplicitlyOff
-                ? (R: (byte)0, G: (byte)0, B: (byte)0, IsDark: true)
-                : PreparePushColor(scaledR, scaledG, scaledB);
-            byte targetR = tuned.R;
-            byte targetG = tuned.G;
-            byte targetB = tuned.B;
+            bool zoneIsBlack = AmbientColorPipeline.IsBlackSource(zoneLinear);
+            SrgbColor target = lightExplicitlyOff
+                ? SrgbColor.Black
+                : TuneColor(scaled, zoneIsBlack);
 
             // Per-light temporal smoothing on the tuned colour. State
             // is keyed by fixture id so each lamp keeps its own EMA
             // trail (a fast cut on the left side doesn't reset the
             // right-side lamp's history).
-            (targetR, targetG, targetB) = ApplyMultiSmoothing(light.Id, targetR, targetG, targetB);
+            target = SmoothColor(light.Id, target);
 
             // Smoothing can dip between two differently coloured floor
             // values. Clamp the final colour unless zero was an explicit
             // per-light instruction rather than screen-derived darkness.
             if (_minBrightnessEnabled && !lightExplicitlyOff)
-            {
-                (targetR, targetG, targetB) = AmbientColorPipeline.ApplyMinBrightness(
-                    targetR,
-                    targetG,
-                    targetB,
-                    _minBrightness);
-            }
+                target = AmbientColorPipeline.ApplyMinBrightness(target, _minBrightness);
+
+            // The single quantisation of this light's tick.
+            LightColor targetColor = _blackLatch.Quantize(light.Id, target);
 
             // Stash the intent colour for the Playground swatches —
             // batched event fires once at the end of the loop.
-            PublishMultiEmitted(light.Id, targetR, targetG, targetB);
+            PublishMultiEmitted(light.Id, targetColor);
 
             var prev = _multiLastPushed.TryGetValue(light.Id, out var last) ? last : (-1, -1, -1);
-            var targetColor = new LightColor(targetR, targetG, targetB);
             bool dropped = AmbientPushGate.ShouldDrop(
                 targetColor,
                 prev,

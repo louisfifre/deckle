@@ -14,14 +14,23 @@ internal static class AmbientPushCadence
     public static double AdaptSmoothingAlpha(double referenceAlpha, int actualRateHz)
     {
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(actualRateHz);
+        return AdaptSmoothingAlpha(referenceAlpha, 1.0 / actualRateHz);
+    }
 
+    // The stored alpha is the EMA step for one 1/15 s tick. Over dtSeconds
+    // the same response keeps (1 - alpha)^(dt × 15) of the previous state,
+    // so a late or skipped tick catches up instead of slowing the fade.
+    public static double AdaptSmoothingAlpha(double referenceAlpha, double dtSeconds)
+    {
         double clampedAlpha = Math.Clamp(referenceAlpha, 0.0, 1.0);
         if (clampedAlpha is 0.0 or 1.0)
             return clampedAlpha;
+        if (!(dtSeconds > 0.0))
+            return 0.0;
 
         return 1.0 - Math.Pow(
             1.0 - clampedAlpha,
-            (double)SmoothingReferenceRateHz / actualRateHz);
+            dtSeconds * SmoothingReferenceRateHz);
     }
 
     public static long AdvanceDeadline(

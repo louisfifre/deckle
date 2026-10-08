@@ -88,14 +88,13 @@ public sealed partial class AmbientEngine : IAsyncDisposable
     // value seen by GroupTickAsync / MultiLightTickAsync via the
     // _changeThreshold field below.
 
-    // Dark-sample threshold — if every channel of the analysed average
-    // is at or below this, we clamp the colour to (0,0,0) before tuning.
-    // With the brightness floor off, HueColorMath maps that black to
-    // on:false. With the floor on, AmbientColorPipeline lifts it to the
-    // configured neutral floor instead, so screen content can never
-    // bypass the user's minimum. Eight out of 255 remains conservative:
-    // it only classifies unambiguously dark content.
-    private const int OffThreshold = 8;
+    // Black gate — a light is sent black only when its source is exactly
+    // black : the frame's linear average (group) or the zone's linear
+    // mean (multi) is exactly (0, 0, 0). A dark but non-black frame goes
+    // through the tuning like any other. With the brightness floor off,
+    // HueColorMath maps a pushed (0, 0, 0) to on:false ; with the floor
+    // on, AmbientColorPipeline lifts black to the neutral floor instead.
+    // The colour stays in float until one quantisation before the push.
 
     // Zone-sampling band thickness. V0 hardcoded an asymmetric pair
     // (lateral 0.33, vertical 0.40) tuned for a 3-lamp Top + Left + Right
@@ -276,8 +275,8 @@ public sealed partial class AmbientEngine : IAsyncDisposable
     private double              _borderDepth  = 0.33;
     private int                 _borderCells  = 8;
     // EMA factor snapshot at the 15 Hz reference cadence. 1.0 = pass-through
-    // (no temporal smoothing). AmbientPushCadence adapts it to the actual
-    // output rate so 50 Hz streaming adds intermediate steps without making
+    // (no temporal smoothing). AmbientPushCadence adapts it to the measured
+    // tick interval so 50 Hz streaming adds intermediate steps without making
     // the preset converge faster in wall-clock time. Refreshed at the top of
     // each tick from _host.Ambient.SmoothingAlpha.
     // The lamp jitter observed in dark scenes with small moving
@@ -285,18 +284,21 @@ public sealed partial class AmbientEngine : IAsyncDisposable
     // this knob plus the per-tick state below close that gap.
     private double _smoothingAlpha       = 1.0;
 
-    // EMA state — group mode. Float to preserve sub-byte precision so
-    // a slow ramp progresses each tick instead of getting clipped to
-    // the previous integer step. Sentinel -1f means "not yet seeded"
-    // — the first tick after Start adopts the raw value (effectively
-    // alpha = 1 for that single frame, no fade-in from black).
-    private float _smoothedR = -1f, _smoothedG = -1f, _smoothedB = -1f;
+    // EMA state, keyed "group" in group mode and by fixture id in multi
+    // mode. Cleared on every StartAsync so a re-pair doesn't carry over
+    // the previous setup's smoothing trail.
+    private const string GroupKey = "group";
+    private readonly AmbientColorSmoother _smoother = new();
 
-    // EMA state — multi mode. One entry per fixture id, lazy-initialised
-    // the first time the light shows up post-Start. Cleared on every
-    // StartAsync so a re-pair doesn't carry over the previous setup's
-    // smoothing trail. Float for the same reason as the group state.
-    private readonly Dictionary<string, (float R, float G, float B)> _multiSmoothed = new();
+    // The single quantisation per key, with its near-black latch. Same
+    // keys and lifetime as the smoother. See AmbientBlackLatch.
+    private readonly AmbientBlackLatch _blackLatch = new();
+
+    // Measured time between two push ticks, fed to the smoother. Zero
+    // timestamp = no tick yet since Start ; the first tick uses the
+    // nominal interval.
+    private long _lastTickTimestamp;
+    private double _tickDtSeconds;
 
     // Most-recent "intent" colour after tuning + smoothing, even when
     // the ChangeThreshold delta check drops the actual push. The

@@ -83,6 +83,12 @@ public sealed partial class AmbientEngine
                         ResetHeartbeatCounters();
                 }
 
+                long tickTimestamp = Stopwatch.GetTimestamp();
+                _tickDtSeconds = _lastTickTimestamp != 0
+                    ? (tickTimestamp - _lastTickTimestamp) / (double)Stopwatch.Frequency
+                    : 1.0 / _pushRateHz;
+                _lastTickTimestamp = tickTimestamp;
+
                 if (_multiLightActive)
                 {
                     await MultiLightTickAsync(
@@ -156,14 +162,12 @@ public sealed partial class AmbientEngine
         }
     }
 
-    private (byte R, byte G, byte B, bool IsDark) PreparePushColor(byte r, byte g, byte b)
-    {
-        bool isDark = r <= OffThreshold && g <= OffThreshold && b <= OffThreshold;
-        var tuned = AmbientColorPipeline.ApplyTuning(
-            isDark ? (byte)0 : r,
-            isDark ? (byte)0 : g,
-            isDark ? (byte)0 : b,
-            isDark,
+    // Tuning with the tick's settings snapshot. isBlack is decided by the
+    // caller on the unrounded source (see the black gate in AmbientEngine).
+    private SrgbColor TuneColor(SrgbColor color, bool isBlack)
+        => AmbientColorPipeline.ApplyTuning(
+            color,
+            isBlack,
             _saturationBoost,
             _brightnessCurveX1,
             _brightnessCurveY1,
@@ -171,74 +175,18 @@ public sealed partial class AmbientEngine
             _brightnessCurveY2,
             _minBrightnessEnabled,
             _minBrightness);
-        return (tuned.R, tuned.G, tuned.B, isDark);
-    }
 
-    // EMA smoothing — group mode. State carried in _smoothedR/G/B as
-    // float so a slow ramp progresses each tick instead of being
-    // clipped to the previous integer step. Alpha is read from the
-    // tick-time snapshot _smoothingAlpha (refreshed at the top of
-    // PushLoopAsync). On first call (sentinel -1f) and on alpha ≥ 1
-    // the filter passes through without fading from black.
-    private (byte R, byte G, byte B) ApplyGroupSmoothing(byte r, byte g, byte b)
-    {
-        float alpha = (float)AmbientPushCadence.AdaptSmoothingAlpha(
-            _smoothingAlpha,
-            _pushRateHz);
-        if (_smoothedR < 0f || alpha >= 1f)
-        {
-            _smoothedR = r;
-            _smoothedG = g;
-            _smoothedB = b;
-        }
-        else
-        {
-            _smoothedR = alpha * r + (1f - alpha) * _smoothedR;
-            _smoothedG = alpha * g + (1f - alpha) * _smoothedG;
-            _smoothedB = alpha * b + (1f - alpha) * _smoothedB;
-        }
-        return (
-            (byte)Math.Clamp((int)MathF.Round(_smoothedR), 0, 255),
-            (byte)Math.Clamp((int)MathF.Round(_smoothedG), 0, 255),
-            (byte)Math.Clamp((int)MathF.Round(_smoothedB), 0, 255));
-    }
-
-    // EMA smoothing — multi-light mode. One EMA trail per fixture id ;
-    // a new id seen for the first time adopts its raw value (no
-    // fade-in from black). Same semantics as ApplyGroupSmoothing
-    // otherwise.
-    private (byte R, byte G, byte B) ApplyMultiSmoothing(string lightId, byte r, byte g, byte b)
-    {
-        float alpha = (float)AmbientPushCadence.AdaptSmoothingAlpha(
-            _smoothingAlpha,
-            _pushRateHz);
-        (float R, float G, float B) state;
-        bool seeded = _multiSmoothed.TryGetValue(lightId, out state);
-        if (!seeded || alpha >= 1f)
-        {
-            state = (r, g, b);
-        }
-        else
-        {
-            state = (
-                alpha * r + (1f - alpha) * state.R,
-                alpha * g + (1f - alpha) * state.G,
-                alpha * b + (1f - alpha) * state.B);
-        }
-        _multiSmoothed[lightId] = state;
-        return (
-            (byte)Math.Clamp((int)MathF.Round(state.R), 0, 255),
-            (byte)Math.Clamp((int)MathF.Round(state.G), 0, 255),
-            (byte)Math.Clamp((int)MathF.Round(state.B), 0, 255));
-    }
+    // EMA over the measured tick interval, per key. See AmbientColorSmoother.
+    private SrgbColor SmoothColor(string key, SrgbColor tuned)
+        => _smoother.Smooth(key, tuned, _smoothingAlpha, _tickDtSeconds);
 
     // Publish + notify in one shot for group mode. Always invokes the
     // event — group ticks are atomic, no batching to wait for.
-    private void PublishGroupEmitted(byte r, byte g, byte b)
+    private void PublishGroupEmitted(LightColor color)
     {
         lock (_emittedLock)
         {
-            _emittedColors["group"] = new LightColor(r, g, b);
+            _emittedColors[GroupKey] = color;
         }
         EmittedColorsChanged?.Invoke();
     }
@@ -246,11 +194,11 @@ public sealed partial class AmbientEngine
     // Stash the per-light intent without firing the event — the
     // multi tick fires once at the end of its fan-out so subscribers
     // get a coherent batch update instead of N rapid-fire callbacks.
-    private void PublishMultiEmitted(string lightId, byte r, byte g, byte b)
+    private void PublishMultiEmitted(string lightId, LightColor color)
     {
         lock (_emittedLock)
         {
-            _emittedColors[lightId] = new LightColor(r, g, b);
+            _emittedColors[lightId] = color;
         }
     }
 

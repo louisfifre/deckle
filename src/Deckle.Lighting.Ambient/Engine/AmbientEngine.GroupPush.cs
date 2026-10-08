@@ -12,42 +12,37 @@ public sealed partial class AmbientEngine
         bool pushDetailEnabled,
         bool heartbeatDetailEnabled)
     {
-        var avg = sample.Average;
+        // Black only on an exactly black frame : the gate reads the
+        // unrounded linear average, before any tuning.
+        var linear = sample.AverageLinear;
+        bool isBlack = AmbientColorPipeline.IsBlackSource(linear);
 
         // Apply HDR tuning (saturation boost + min brightness floor)
         // BEFORE the early-exit so a user moving the AmbientPage
         // slider on a static screen still gets the new look pushed —
         // comparing on the raw values would suppress the change.
-        var tuned = PreparePushColor(avg.R, avg.G, avg.B);
-        bool isDark = tuned.IsDark;
-        byte targetR = tuned.R;
-        byte targetG = tuned.G;
-        byte targetB = tuned.B;
+        SrgbColor target = TuneColor(SrgbColor.FromLinear(linear), isBlack);
 
-        // Temporal smoothing on the tuned colour. See _smoothedR/G/B
-        // field doc — damps small per-frame jitter (moving highlights
-        // in a globally dark scene) without dulling real cuts. Applied
-        // before the delta gate so the gate compares the eye-relevant
-        // colour, not the raw sampler output.
-        (targetR, targetG, targetB) = ApplyGroupSmoothing(targetR, targetG, targetB);
+        // Temporal smoothing on the tuned colour — damps small per-frame
+        // jitter (moving highlights in a globally dark scene) without
+        // dulling real cuts. Applied before the delta gate so the gate
+        // compares the eye-relevant colour, not the raw sampler output.
+        target = SmoothColor(GroupKey, target);
 
         // An EMA between different hues can put every channel below the
         // floor even when both endpoints respected it. Re-apply the floor
         // to the final colour that will be compared and pushed.
         if (_minBrightnessEnabled)
-        {
-            (targetR, targetG, targetB) = AmbientColorPipeline.ApplyMinBrightness(
-                targetR,
-                targetG,
-                targetB,
-                _minBrightness);
-        }
+            target = AmbientColorPipeline.ApplyMinBrightness(target, _minBrightness);
+
+        // The single quantisation of the tick : everything above stays
+        // in float.
+        LightColor color = _blackLatch.Quantize(GroupKey, target);
 
         // Publish the intent colour for the Playground swatch viewer
         // even when the delta gate drops the actual push.
-        PublishGroupEmitted(targetR, targetG, targetB);
+        PublishGroupEmitted(color);
 
-        var color = new LightColor(targetR, targetG, targetB);
         bool dropped = AmbientPushGate.ShouldDrop(
             color,
             (_lastR, _lastG, _lastB),
@@ -73,7 +68,7 @@ public sealed partial class AmbientEngine
             if (heartbeatDetailEnabled)
                 (_hbPushDurationsMs ??= new List<double>(128)).Add(pushMs);
 
-            _lastR = targetR; _lastG = targetG; _lastB = targetB;
+            _lastR = color.R; _lastG = color.G; _lastB = color.B;
             // Stamp the pushed Hue state for echo discrimination — the
             // bridge emits a grouped_light EventStream update for this
             // PUT, sometimes later than a pure timing window can cover.
@@ -82,7 +77,7 @@ public sealed partial class AmbientEngine
             _pushedCount++;
             if (heartbeatDetailEnabled) _hbPushed++;
             if (pushDetailEnabled)
-                DeckleAmbientSource.Log.PushGroup(targetR, targetG, targetB, isDark, pushMs);
+                DeckleAmbientSource.Log.PushGroup(color.R, color.G, color.B, isBlack, pushMs);
         }
         catch (OperationCanceledException) { throw; }
         catch (Exception ex)
