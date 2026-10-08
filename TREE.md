@@ -1373,13 +1373,29 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── Deckle.Notifications.csproj
 │   │   └── DeckleNotificationsSource.cs
 │   ├── Deckle.Orchestration/
+│   │   ├── Interop/
+│   │   │   └── ProcessNativeMethods.cs
+│   │   ├── Processes/
+│   │   │   └── RunningApps.cs
 │   │   ├── Registry/
+│   │   │   ├── AppDisplayName.cs
 │   │   │   ├── AppEntry.cs
 │   │   │   ├── AppKind.cs
 │   │   │   ├── AppMatcher.cs
 │   │   │   ├── AppRules.cs
 │   │   │   ├── AppSource.cs
 │   │   │   └── HdrRule.cs
+│   │   ├── Strings/
+│   │   │   └── en-US/
+│   │   │       └── Resources.resw
+│   │   ├── Ui/
+│   │   │   ├── OrchestrationPage.xaml
+│   │   │   ├── OrchestrationPage.xaml.cs
+│   │   │   ├── RunningProcessDialog.xaml
+│   │   │   └── RunningProcessDialog.xaml.cs
+│   │   ├── ViewModels/
+│   │   │   ├── AppEntryRow.cs
+│   │   │   └── OrchestrationViewModel.cs
 │   │   ├── AGENTS.md  — [agent-instructions] Apps and games domain module — the registry of apps the user cares about, notic…
 │   │   ├── CLAUDE.md
 │   │   ├── Deckle.Orchestration.csproj
