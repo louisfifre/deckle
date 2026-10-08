@@ -1172,7 +1172,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── TrackpadSettingsModule.cs
 │   │   └── TrackpadSettingsService.cs
 │   ├── Deckle.Install/
-│   │   ├── AGENTS.md  — [agent-instructions] Windows integration of an installed Deckle — install locations, Start Menu shor…
+│   │   ├── AGENTS.md  — [agent-instructions] Windows integration primitives shared by the stub and the wizard.
 │   │   ├── CLAUDE.md
 │   │   ├── Deckle.Install.csproj
 │   │   ├── InstallPaths.cs
@@ -1191,7 +1191,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── Ui/
 │   │   │   ├── MessageDialog.cs
 │   │   │   └── ProgressWindow.cs
-│   │   ├── AGENTS.md  — [agent-instructions] NativeAOT download stub — silent, no console; fetches the payload to temp and h…
+│   │   ├── AGENTS.md  — [agent-instructions] NativeAOT download stub and registered uninstaller.
 │   │   ├── app.manifest
 │   │   ├── CLAUDE.md
 │   │   ├── Deckle.Installer.csproj
@@ -1342,7 +1342,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── LlmSettingsService.cs
 │   │   └── SettingsSearch.cs
 │   ├── Deckle.Modules/
-│   │   ├── AGENTS.md  — [agent-instructions] Module catalogue and presence — which user-facing modules exist, their dependen…
+│   │   ├── AGENTS.md  — [agent-instructions] Module catalogue and presence — which modules exist and are installed.
 │   │   ├── CLAUDE.md
 │   │   ├── Deckle.Modules.csproj
 │   │   ├── DeckleModulesSource.cs
@@ -1481,7 +1481,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │       └── Resources.resw
 │   │   ├── Update/
 │   │   │   └── UpdateService.cs
-│   │   ├── AGENTS.md  — [agent-instructions] First-run wizard — module selection then ASR provisioning; owns the flow, deleg…
+│   │   ├── AGENTS.md  — [agent-instructions] First-run wizard, installer and updater; delegates provisioning.
 │   │   ├── ByteSizeFormatter.cs
 │   │   ├── ChoicesPage.xaml
 │   │   ├── ChoicesPage.xaml.cs

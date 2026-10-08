@@ -1,18 +1,23 @@
 ---
-description: First-run wizard — module selection then ASR provisioning; owns the flow, delegates provisioning to the backend modules; also the installer and the in-app updater.
+description: First-run wizard, installer and updater; delegates provisioning.
 type: agent-instructions
 ---
 
 # AGENTS.md — Deckle.Setup
 
-The first-run wizard. `SetupWindow` owns the wizard state (`SetupContext`) and the four-page flow (Modules → Choices → Installing → Summary); it does **not** own provisioning. `ModulesPage` is the presence selector: it renders the `Deckle.Modules` catalogue as checkbox cards, cascades on the dependency edges through `ModuleGraph`, records the choice via `ModulePresence`, and routes into the Choices page only when Dictation is selected — otherwise straight to the install step when something is missing, or to completion. Module wording is keyed by module id in this module's `.resw` (mirrored to the root map): the future companion must be able to name a module whose DLLs are not on disk, so the wording cannot live in the described assembly.
+## Wizard
 
-The install step is a plan, not a hardcoded sequence: `InstallPlan` maps the selected modules to `InstallItem`s (Dictation → native runtime + chosen model + Silero VAD; Autocorrect → the CamemBERT set, in by decision, not an option; Anytype → the pinned anytype-cli binary — the bot-account auth is a later, interactive act) and `InstallingPage` renders one row per item and runs them sequentially. Anytype MCP adapters are managed assemblies already carried by the application payload, not downloadable install items; after credentials exist, the application composition root selects their client profiles and the resident host provisions their bearers. Each backend owns its complete provisioning gesture — detection, download, placement, validation and cleanup — beside the runtime it serves (`NativeRuntime`/`SpeechModels` in `Deckle.Transcription.Whisper`, `SileroVadModel` in `Deckle.Vad`, `CamembertAssets` in `Deckle.Autocorrect.Mlm`, `BackendInstallation` in `Deckle.Anytype`). The plan only selects and composes these gestures. When a second ASR backend ships, it carries its own provisioning gesture and the plan selects it for that backend.
+- `SetupWindow` owns the wizard state and the flow. It does not own provisioning.
+- Module wording is keyed by module id in this module's `.resw`, mirrored to the root map. The rule and its why are in `Deckle.Modules/AGENTS.md`.
+- The install step is a plan, not a hardcoded sequence. `InstallPlan` maps the selected modules to install items; it only selects and composes provisioning gestures.
+- Each backend owns its whole provisioning gesture beside the runtime it serves: `Deckle.Transcription.Whisper`, `Deckle.Vad`, `Deckle.Autocorrect.Mlm`, `Deckle.Anytype`. A new ASR backend brings its own gesture.
+- Autocorrect installs the CamemBERT set by decision, not as an option.
+- Anytype MCP adapters are not install items: the application payload already carries them.
+- The wizard blocks at first launch, because without a model nothing useful runs. It can be reopened from Settings afterwards.
+- `SetupContext` lives here, not in the Transcription parent. Since the Whisper catalogs moved into `Deckle.Transcription.Whisper`, hosting it in the parent creates a parent↔child cycle.
 
-The same wizard is also the installer (`SetupContext.InstallMode`), launched by the download stub as `Deckle.exe --install` from the extracted payload in a temp folder. The flow gains two pages: `FoldersPage` (app + data folders, per-drive space gate) between Modules and Choices, and `DeployPage` as the terminal step — running-process gate, binary copy, Windows integration through the shared `Deckle.Install` primitives (Start Menu shortcut, Installed-apps entry with the stub copied in as uninstaller, `DECKLE_DATA_ROOT`), presence written into the CHOSEN data root via `PresenceFile.SaveTo`, then spawn of the installed `Deckle.exe --install-continue`. The split is forced by `AppPaths` freezing its data root at first touch: the temp process can place and integrate, but only the installed process — launched with `DECKLE_DATA_ROOT` in its environment block — can provision into a custom root, so it runs Installing → Summary. Both branches live in `App.Install.cs`, not here.
+## Install and update modes
 
-The same wizard is also the updater (`SetupContext.UpdateMode`), in two legs mirroring the install split with the roles reversed. `UpdateService` is the silent check: the App runs it in the background (boot + daily, gated by the Settings opt-out and by an installed-launch guard — dev builds never see updates), resolving through the shared `ReleaseResolver` and parking a newer release in `Available`, from which the toast prompt and the Settings version row both read. The user's explicit click opens `UpdateDownloadPage` in the running app — fetch, sidecar SHA-256 verify, extract to temp — which spawns the NEW payload's `Deckle.exe --update-apply` and completes so the App exits. That temp process runs `DeployPage` verbatim over the live install (its gate auto-absorbs the old app's exit latency in update mode) and hands to `--install-continue`, whose existing provisioning check, temp cleanup and plain relaunch close the chain unchanged.
-
-Blocking at first launch — no model means nothing useful runs — and reopenable from Settings afterwards for a model swap or a native re-import.
-
-`SetupContext` lives in this module, not in the backend: once the Whisper catalogs moved into `Deckle.Transcription.Whisper`, hosting the context in the parent created a parent↔child cycle. Only the wizard pages consume it, so it belongs here — moving it back into the Transcription parent reintroduces the cycle.
+- Install mode exists because `AppPaths` freezes the data root at first touch. The temp process launched by the stub can place and integrate. Only the installed process, launched with `DECKLE_DATA_ROOT` in its environment, can provision into a custom root. Both branches live in `src/Deckle.App/App.Install.cs`, not here.
+- Update mode mirrors the install split with the roles reversed. The new payload's temp process runs `DeployPage` verbatim over the live install, then hands over to the installed process.
+- `UpdateService` runs only when the Settings opt-out allows it and the launch is an installed one. Dev builds never see updates.

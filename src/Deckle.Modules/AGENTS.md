@@ -1,16 +1,11 @@
 ---
-description: Module catalogue and presence — which user-facing modules exist, their dependency edges, and which ones the user chose to have installed.
+description: Module catalogue and presence — which modules exist and are installed.
 type: agent-instructions
 ---
 
 # AGENTS.md — Deckle.Modules
 
-The presence catalogue: `ModuleDescriptor` names a user-facing module (id, glyph, dependency edges), `ModuleRegistry` holds the set the composition root declares at boot, `ModulePresence` answers « did the user choose to have this module installed? » from `modules/presence.json`, and `ModuleGraph` carries the selector's cascade rules as pure set arithmetic. Non-UI support: the checkbox page rendering this model lives in `Deckle.Setup`.
-
-Two axes, never merged: **presence** (chosen at install — unchecked means the module's engine is not composed and its settings pages never register) sits above **runtime activation** (a module's own `Enabled` toggle — a disabled module is still installed). Provisioning belongs to the backend that owns each artifact and is evaluated by the setup plan, not by this catalogue.
-
-Non-obvious decisions:
-
-- **Descriptors are declared by the composition root, not by the modules they name** — the deliberate inverse of `SettingsModuleDescriptor`. The installer companion's end state is a catalogue that can describe a module whose DLLs are *not on disk*; knowledge hosted inside the described assembly can never reach that state. Selector wording follows the same logic and lives with the selector, keyed by module id.
-- **No choice on disk = everything present.** Installs that predate the presence model and dev builds keep today's behaviour; a corrupt file degrades the same way (with a warning) instead of making modules vanish on a bad byte.
-- **No Changed event on the registry**, unlike `SettingsModuleRegistry`: composition happens once in `OnLaunched`, so a presence change only takes effect through the restart the wizard already performs.
+- **Presence and runtime activation are two axes, never merged.** Presence is chosen at install: an absent module's engine is not composed and its settings pages never register. Activation is a module's own `Enabled` toggle: a disabled module is still installed.
+- **Descriptors are declared by the composition root, not by the modules they name.** This is the deliberate inverse of `SettingsModuleDescriptor`. The catalogue must describe a module whose DLLs are not on disk, so this knowledge cannot live in the described assembly. Selector wording follows the same rule: it lives with the selector, keyed by module id.
+- **No choice on disk means everything present.** Older installs and dev builds keep working. A corrupt file degrades the same way, with a warning, instead of making modules vanish.
+- **The registry has no `Changed` event**, unlike `SettingsModuleRegistry`. Composition happens once in `OnLaunched`, so a presence change takes effect through the restart the wizard performs.
