@@ -1374,6 +1374,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   └── DeckleNotificationsSource.cs
 │   ├── Deckle.Orchestration/
 │   │   ├── Detection/
+│   │   │   ├── AppSessionTracker.cs
 │   │   │   ├── ForegroundChange.cs
 │   │   │   ├── IForegroundMonitor.cs
 │   │   │   ├── IProcessStartSource.cs
