@@ -36,6 +36,14 @@ public enum SettingKind
     // TextArgs.
     Text,
 
+    // A global hotkey chord over a HotkeyChord? (null = unbound): the modifiers
+    // as four toggle buttons (Ctrl, Shift, Alt, Win) plus one button that
+    // captures the key. Toggle buttons, not a pressed chord, because pressing
+    // Win alone opens Start before the page sees it. The value is written only
+    // when complete (a modifier and a key) or cleared to null; HotkeyArgs says
+    // whether clearing is allowed.
+    Hotkey,
+
     // A master toggle that reveals dependent child settings, rendered as a
     // SettingsExpander (toggle in the header, children as expanded rows). The
     // descriptor's own value IS the master toggle (a bool); the children live in

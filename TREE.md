@@ -875,6 +875,8 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   └── StaleWorkProbeCommand.cs
 │   ├── Deckle.Catalog/
 │   │   ├── Composer/
+│   │   │   ├── HotkeyChordText.cs
+│   │   │   ├── HotkeyKeyNames.cs
 │   │   │   ├── IPathControl.cs
 │   │   │   ├── Setting.cs
 │   │   │   ├── SettingArgs.cs
@@ -883,6 +885,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   ├── SettingsComposer.Chrome.cs
 │   │   │   ├── SettingsComposer.cs
 │   │   │   ├── SettingsComposer.Folds.cs
+│   │   │   ├── SettingsComposer.Hotkey.cs
 │   │   │   ├── SettingsComposer.Inputs.cs
 │   │   │   └── SettingsComposer.Numeric.cs
 │   │   ├── Hotkeys/
@@ -1893,6 +1896,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   ├── Deckle.Catalog.Tests/
 │   │   ├── Deckle.Catalog.Tests.csproj
 │   │   ├── HotkeyChordTests.cs
+│   │   ├── HotkeyChordTextTests.cs
 │   │   └── SettingFactoryTests.cs
 │   ├── Deckle.Chrono.Tests/
 │   │   ├── ChronoFormatterTests.cs

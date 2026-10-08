@@ -134,6 +134,34 @@
   <data name="SettingsComposer_ResetToDefault" xml:space="preserve">
     <value>Reset to default</value>
   </data>
+  <!-- The composer's Hotkey kind: the four modifier toggle buttons, the key
+       capture button (its listening and unbound states), the Clear button and
+       the advisory shown when a captured key has no modifier yet. Composer-owned,
+       resolved from this root map like the reset tooltip above. -->
+  <data name="SettingsComposer_HotkeyModifierCtrl" xml:space="preserve">
+    <value>Ctrl</value>
+  </data>
+  <data name="SettingsComposer_HotkeyModifierShift" xml:space="preserve">
+    <value>Shift</value>
+  </data>
+  <data name="SettingsComposer_HotkeyModifierAlt" xml:space="preserve">
+    <value>Alt</value>
+  </data>
+  <data name="SettingsComposer_HotkeyModifierWin" xml:space="preserve">
+    <value>Win</value>
+  </data>
+  <data name="SettingsComposer_HotkeyPressKey" xml:space="preserve">
+    <value>Press a key</value>
+  </data>
+  <data name="SettingsComposer_HotkeyUnbound" xml:space="preserve">
+    <value>Not set</value>
+  </data>
+  <data name="SettingsComposer_HotkeyClear" xml:space="preserve">
+    <value>Clear</value>
+  </data>
+  <data name="SettingsComposer_HotkeyNeedsModifier" xml:space="preserve">
+    <value>Add Ctrl, Shift, Alt or Win</value>
+  </data>
   <data name="Common_Remove" xml:space="preserve">
     <value>Remove</value>
   </data>

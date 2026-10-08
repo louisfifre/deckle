@@ -170,6 +170,33 @@ public static class Setting
             Advisory = advisory,
         };
 
+    // Global hotkey chord, null when unbound. HotkeyArgs is required because
+    // whether the chord may be cleared is a decision each manifest must state.
+    // No enabledWhen: a hotkey card is shown or hidden, never greyed. The
+    // composer calls set only with a complete chord, or with null on Clear.
+    public static SettingDescriptor Hotkey(
+        string labelKey,
+        Func<HotkeyChord?> get,
+        Action<HotkeyChord?> set,
+        HotkeyArgs args,
+        string? glyph = null,
+        bool isAdvanced = false,
+        Func<bool>? visibleWhen = null,
+        Func<HotkeyChord?>? defaultValue = null,
+        Func<string?>? advisory = null) => new()
+        {
+            Kind = SettingKind.Hotkey,
+            LabelKey = labelKey,
+            Glyph = glyph,
+            IsAdvanced = isAdvanced,
+            Args = args,
+            GetValue = () => get(),
+            SetValue = value => set((HotkeyChord?)value),
+            VisibleWhen = visibleWhen,
+            Default = defaultValue is null ? null : () => defaultValue(),
+            Advisory = advisory,
+        };
+
     // Folder path as a string. PathArgs carries the picker mode and the
     // deferred default-path lookup; like Slider's args it is required, since a
     // FolderPickerCard needs at minimum its mode.

@@ -268,7 +268,7 @@ public sealed partial class SettingsComposer
         SettingsCard card = BuildCard(child);
         expander.Items.Add(card);
 
-        if (child.Advisory is null) return;
+        if (!HasAdvisory(child)) return;
 
         // Severity.Warning is the single tone the channel renders; IsClosable=false
         // because the message is a live state of the setting, not a notification the
@@ -292,9 +292,9 @@ public sealed partial class SettingsComposer
         };
         expander.Items.Add(noteRow);
 
-        _refreshers.Add(() =>
+        void Refresh()
         {
-            string? message = child.Advisory!();
+            string? message = ResolveAdvisory(child);
             if (message is null)
             {
                 info.IsOpen = false;
@@ -309,7 +309,10 @@ public sealed partial class SettingsComposer
             // the advisory disappears with the card when VisibleWhen collapses it
             // (the card's kind-refresher has already applied that visibility above).
             noteRow.Visibility = card.Visibility;
-        });
+        }
+
+        _refreshers.Add(Refresh);
+        _advisoryRefreshers[child] = Refresh;
     }
 }
 
