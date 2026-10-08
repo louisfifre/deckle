@@ -2008,6 +2008,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── CorrectionApplicationEvidenceTests.cs
 │   │   ├── CorrectionApplicationTrialTests.cs
 │   │   ├── Deckle.Playground.Tests.csproj
+│   │   ├── HudTuningSectionsBugNotes.md
 │   │   └── HudViewModelTests.cs
 │   ├── Deckle.Security.Tests/
 │   │   ├── Deckle.Security.Tests.csproj
