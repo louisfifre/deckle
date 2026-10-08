@@ -2064,6 +2064,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   └── libraryfolders.vdf
 │   │   ├── AppMatcherTests.cs
 │   │   ├── AppRulesTests.cs
+│   │   ├── AppSessionTrackerTests.cs
 │   │   ├── Deckle.Orchestration.Tests.csproj
 │   │   ├── DeckleOrchestrationSourceTests.cs
 │   │   ├── ExecutableLocatorTests.cs
