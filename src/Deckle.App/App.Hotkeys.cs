@@ -7,7 +7,15 @@ namespace Deckle.App;
 
 public partial class App
 {
+    // WM_HOTKEY and the tray panel's Record button land here. Dispatches on
+    // the action list built at startup (App.Hotkeys.Actions.cs); an id with
+    // no action (module absent) is ignored.
     private void OnHotkey(int hotkeyId)
+    {
+        _hotkeyActions.FirstOrDefault(action => action.Id == hotkeyId)?.Invoke();
+    }
+
+    private void ToggleRecordingFromHotkey()
     {
         if (_engine is null)
         {
@@ -22,9 +30,7 @@ public partial class App
             return;
         }
 
-        string hotkeyName = hotkeyId == NativeMethods.HOTKEY_ID_TRANSCRIBE
-            ? "transcribe"
-            : $"id={hotkeyId}";
+        const string hotkeyName = "transcribe";
 
         // The press carries no profile: the engine applies the persisted
         // active rewrite profile at finalize.

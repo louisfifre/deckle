@@ -72,5 +72,10 @@ public sealed partial class DeckleAppSource : DeckleEventSource
     public const int EvtAppStarting                 = 43;
     public const int EvtAppReady                    = 44;
     public const int EvtShutdownCompleted           = 45;
+    // Editable hotkeys: per-binding registration and toggle actions.
+    public const int EvtHotkeyRegistrationFailed       = 46;
+    public const int EvtHotkeyRegistrationFailedDetail = 47;
+    public const int EvtHotkeyToggle                   = 48;
+    public const int EvtHotkeyToggleDetail             = 49;
 
 }

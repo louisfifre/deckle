@@ -206,39 +206,39 @@ public partial class App
             // user was in. File transcription opens the system file picker
             // and runs each file through the dictation pipeline (see
             // App.FileTranscription.cs).
-            _trayPanel.OnRecord = () => OnHotkey(NativeMethods.HOTKEY_ID_TRANSCRIBE);
+            _trayPanel.OnRecord = () => OnHotkey(RecordHotkeyId);
             _trayPanel.OnTranscribeFiles = () => TranscribeFilesFromTray();
         }
         // Module switches (App.TrayToggles.cs); Ambient Light in the footer.
-        _trayPanel.Toggles = BuildTrayToggles(context);
-        _trayPanel.FooterToggles = BuildTrayFooterToggles(context);
+        // Built once: the hotkey actions below derive from the same lists, so
+        // a toggle's hotkey runs exactly what its panel switch runs.
+        IReadOnlyList<TrayToggle> trayToggles = BuildTrayToggles(context);
+        IReadOnlyList<TrayToggle> trayFooterToggles = BuildTrayFooterToggles(context);
+        _trayPanel.Toggles = trayToggles;
+        _trayPanel.FooterToggles = trayFooterToggles;
         _tray.LeftClickRequested += () => _trayPanel.Show();
 
         _tray.Register(_messageHost.Hwnd);
-        // Presence gates the chord itself: absent Dictation means no
-        // transcription chord, leaving the OS-wide combo free for other apps,
-        // symmetric with its settings page never registering.
-        IReadOnlyList<GlobalHotkeyBinding> hotkeyBindings = context.TranscriptionPresent
-            ? [new(NativeMethods.HOTKEY_ID_TRANSCRIBE,
-                   NativeMethods.MOD_WIN | NativeMethods.MOD_NOREPEAT,
-                   NativeMethods.SC_LEFT_OF_ONE)]
-            : [];
-        _hotkeyManager = new HotkeyManager(_messageHost.Hwnd, OnHotkey, hotkeyBindings);
-        // Try/catch required: RegisterHotKey can fail with err 1409
-        // (ERROR_HOTKEY_ALREADY_REGISTERED) when another process already owns
-        // the chord; typically WhispInteropTest still running through the
-        // scheduled Whisp task, or PowerToys / a third-party app that took
-        // Win+1. Without this safety net, HotkeyManager's throw bubbles to
-        // OnLaunched and the app refuses to start.
+
+        // Global hotkeys (App.Hotkeys.Actions.cs). Presence gates the actions
+        // themselves: an absent module has no action, so its chord is never
+        // registered and stays free for other apps. Only complete chords
+        // (a modifier and a key) are registered; each one is acquired on its
+        // own, so a chord another app owns fails alone and is reported through
+        // the HUD while the others work. The tray stays operational either way
+        // (Record in the left-click panel).
         //
-        // Compromise: the app continues to start but without hotkeys. The tray
-        // remains operational (Settings, Quit, Record in the left-click panel), so
-        // the user is not locked out. UserFeedback Overlay informs visually
-        // through the HUD at boot.
+        // The Ambient forced-OFF above runs before this registration, so an
+        // Ambient chord cannot bounce the pipeline back on at boot.
+        _hotkeyActions = BuildHotkeyActions(context, [.. trayToggles, .. trayFooterToggles]);
+        _hotkeyManager = new HotkeyManager(_messageHost.Hwnd, OnHotkey, BuildHotkeyBindings());
+        // Try/catch kept for the one remaining throw: the WM_HOTKEY subclass
+        // could not be installed on the message-only window. Without it the
+        // throw would bubble to OnLaunched and the app would refuse to start.
         try
         {
-            if (_hotkeyManager.Register().Count > 0)
-                throw new InvalidOperationException("The transcription chord is owned by another app.");
+            ReportHotkeyFailures(_hotkeyManager.Register());
+            _hotkeysInstalled = true;
         }
         catch (Exception ex)
         {
@@ -247,9 +247,12 @@ public partial class App
             DeckleAppSource.Log.UserFeedbackEmitted(
                 2, // Error
                 "Hotkeys unavailable",
-                "Another app owns the chord (often WhispInteropTest still running). Use the tray panel to record.",
+                "Deckle could not listen for its shortcuts. Use the tray panel to record.",
                 1); // Overlay
         }
+        // Editing a chord in settings.json (and, later, in Settings) rebinds
+        // the set when it actually changed.
+        Settings.SettingsService.Instance.Changed += OnShellSettingsChangedForHotkeys;
         context.Milestone("hotkeys");
 
         // No model warmup at boot: nothing is loaded into VRAM while the app

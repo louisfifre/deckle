@@ -572,6 +572,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── App.Autocorrect.cs
 │   │   ├── App.Autocorrect.Lifecycle.cs
 │   │   ├── App.FileTranscription.cs
+│   │   ├── App.Hotkeys.Actions.cs
 │   │   ├── App.Hotkeys.cs
 │   │   ├── App.Input.cs
 │   │   ├── App.Install.cs
