@@ -16,7 +16,7 @@ namespace Deckle.Audio;
 // settings (auto-paste + overlay HUD) were moved back to GeneralPage —
 // what remains is the capture pipeline itself : microphone device
 // selection (Win32 waveIn enumeration), the maximum recording length,
-// the pre-processing toggle and its mic check, voice level window
+// the pre-processing toggle, its mic check and listening test, voice level window
 // calibration (sliders + auto-calibration toggle) and the microphone
 // telemetry opt-in. Same patterns as
 // GeneralPage / DiagnosticsPage : NavigationCacheMode.Required and
@@ -131,6 +131,14 @@ public sealed partial class RecordingPage : Page
     {
         base.OnNavigatedTo(e);
         LoadAndSync();
+    }
+
+    // The page is cached, so a listening-test clip would keep playing behind
+    // the next Settings page; leaving the page stops it.
+    protected override void OnNavigatedFrom(NavigationEventArgs e)
+    {
+        ViewModel.StopListeningPlayback();
+        base.OnNavigatedFrom(e);
     }
 
     private void LoadAndSync()

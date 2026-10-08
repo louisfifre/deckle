@@ -58,6 +58,14 @@ public static class SettingsSearch
             Keywords = ["test", "meter", "calibrate", "volume"],
         },
 
+        // Listening test command (bespoke). The playback card under it is NOT
+        // indexed: it stays collapsed until a take exists.
+        new SettingSearchEntry
+        {
+            LabelKey = "RecordingPageListeningTestCard",
+            Keywords = ["listen", "playback", "hear", "speakers", "headphones"],
+        },
+
         // Voice-level window group (composed Group — the sliders live under it).
         new SettingSearchEntry
         {

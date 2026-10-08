@@ -134,7 +134,7 @@
     <value>Recording</value>
   </data>
   <data name="RecordingPageSubtitleLabel.Text" xml:space="preserve">
-    <value>Microphone selection, maximum recording length, signal pre-processing, and voice level window calibration.</value>
+    <value>Microphone selection, maximum recording length, signal pre-processing with a listening test, and voice level window calibration.</value>
   </data>
   <data name="RecordingPageSectionHeaderLabel.Text" xml:space="preserve">
     <value>Defaults</value>
@@ -206,6 +206,41 @@
   </data>
   <data name="RecordingPageMicAdviceError.Title" xml:space="preserve">
     <value>Couldn't read the microphone. Check the device above and try again.</value>
+  </data>
+
+  <!-- Listening test (bespoke cards + InfoBars) -->
+  <data name="RecordingPageListeningTestCard.Header" xml:space="preserve">
+    <value>Listening test</value>
+  </data>
+  <data name="RecordingPageListeningTestCard.Description" xml:space="preserve">
+    <value>Record a few seconds, then play them back on your speakers or headphones to hear what pre-processing does to your voice. Nothing is saved or transcribed.</value>
+  </data>
+  <data name="RecordingPageListeningRecordButton.Content" xml:space="preserve">
+    <value>Record</value>
+  </data>
+  <data name="RecordingPageListeningRecording.Title" xml:space="preserve">
+    <value>Recording — speak now…</value>
+  </data>
+  <data name="RecordingPageListeningPlaybackCard.Header" xml:space="preserve">
+    <value>Play back</value>
+  </data>
+  <data name="RecordingPageListeningPlaybackCard.Description" xml:space="preserve">
+    <value>Off is your raw microphone. On applies pre-processing with your current parameters, whether the toggle above is on or not. 25 % and 75 % blend the two.</value>
+  </data>
+  <data name="RecordingPageListeningPlayOff.Content" xml:space="preserve">
+    <value>Off</value>
+  </data>
+  <data name="RecordingPageListeningPlay25.Content" xml:space="preserve">
+    <value>25 %</value>
+  </data>
+  <data name="RecordingPageListeningPlay75.Content" xml:space="preserve">
+    <value>75 %</value>
+  </data>
+  <data name="RecordingPageListeningPlayOn.Content" xml:space="preserve">
+    <value>On</value>
+  </data>
+  <data name="RecordingPageListeningError.Title" xml:space="preserve">
+    <value>Couldn't record or play back. Check the microphone above and your output device, then try again.</value>
   </data>
 
   <!-- Composed voice-level group + sliders (composer label keys) -->

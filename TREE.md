@@ -650,6 +650,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── RecordingPage.xaml.cs
 │   │   ├── RecordingSettingsModule.cs
 │   │   ├── RecordingViewModel.cs
+│   │   ├── RecordingViewModel.ListeningTest.cs
 │   │   ├── RecordingViewModel.Settings.cs
 │   │   ├── SettingsSearch.cs
 │   │   └── SpeakerOutput.cs
