@@ -2084,6 +2084,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   └── SileroSpeechTimestampsTests.cs
 │   ├── Deckle.Vision.Tests/
 │   │   ├── CapturePacerTests.cs
+│   │   ├── ContentPeakReleaseTests.cs
 │   │   ├── Deckle.Vision.Tests.csproj
 │   │   └── DeckleVisionSourceTests.cs
 │   ├── CONTEXT.md  — context-deckle-tests [agent-instructions] Test taxonomy — the four categories inside the automatic scope (unit, integrati…

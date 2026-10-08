@@ -5,7 +5,8 @@ namespace Deckle.Vision;
 
 public sealed partial class FrameSampler
 {
-    private SampledFrame ReadSampleFromMapped(in ScreenCaptureInterop.D3D11_MAPPED_SUBRESOURCE mapped)
+    private SampledFrame ReadSampleFromMapped(
+        in ScreenCaptureInterop.D3D11_MAPPED_SUBRESOURCE mapped, double elapsedSeconds)
     {
         var grid = new Color[_gridCols * _gridRows];
         double sumRLin = 0, sumGLin = 0, sumBLin = 0;
@@ -13,7 +14,7 @@ public sealed partial class FrameSampler
 
         if (_isHdr)
         {
-            ReadGridFP16(in mapped, grid, ref sumRLin, ref sumGLin, ref sumBLin, ref count);
+            ReadGridFP16(in mapped, grid, elapsedSeconds, ref sumRLin, ref sumGLin, ref sumBLin, ref count);
         }
         else
         {
@@ -109,12 +110,14 @@ public sealed partial class FrameSampler
     private void ReadGridFP16(
         in ScreenCaptureInterop.D3D11_MAPPED_SUBRESOURCE mapped,
         Color[] grid,
+        double elapsedSeconds,
         ref double sumRLin, ref double sumGLin, ref double sumBLin, ref int count)
     {
         // Tone-map runs against the rolling content peak captured by
         // the *previous* frame ; this frame's max feeds the rolling
-        // update at the end of the loop. One-frame lag at 15 Hz is
-        // imperceptible and avoids a two-pass read.
+        // update at the end of the loop. The lag is one frame at the
+        // capture rate (~16 ms at 60 Hz), imperceptible, and avoids a
+        // two-pass read.
         float framePeak = 1f; // SDR floor — never normalise below 1.0
         float toneMapPeak = _contentPeak;
         double exposureEv = _exposureEv;
@@ -162,15 +165,18 @@ public sealed partial class FrameSampler
         // but doesn't crash when a dark frame slips in. Capped at the
         // display's hard ceiling — a freak sun-glint pixel reading
         // above peakWhite (rare but possible in scRGB) cannot crush
-        // the rest of the scene below it.
+        // the rest of the scene below it. The release retention covers
+        // the time since the previous processed frame, so the peak
+        // falls at the same speed whatever the capture rate.
         if (framePeak > _contentPeak)
         {
             _contentPeak = framePeak;
         }
         else
         {
-            _contentPeak = _contentPeak * ContentPeakReleaseDecay
-                         + framePeak * (1f - ContentPeakReleaseDecay);
+            float retention = ContentPeakRetention(elapsedSeconds);
+            _contentPeak = _contentPeak * retention
+                         + framePeak * (1f - retention);
         }
         if (_contentPeak > _displayPeakScRgb) _contentPeak = _displayPeakScRgb;
         if (_contentPeak < 1f) _contentPeak = 1f; // SDR floor
