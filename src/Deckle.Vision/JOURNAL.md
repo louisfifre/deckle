@@ -7,6 +7,12 @@ type: module-journal
 
 Dated notes on the capture loop — the why behind a fix the code no longer shows. Most recent on top.
 
+## 2026-10-08 — What a 60 Hz capture has to carry along
+
+Found while scoping the move from the 66 ms throttle to ~16 ms (`ScreenCaptureService.ThrottleIntervalMs` is the only cadence knob). Two values in `FrameSampler` are written as 15 Hz facts: the content-peak release is `ContentPeakReleaseDecay = 0.97` applied per processed frame, so the same constant releases four times faster at 60 Hz; the comment on `_contentPeak` calls the one-frame tone-map lag "harmless at 15 Hz". Both need a second look with the cadence. The 2026-10-07 synthesis also records the Ambient smoothing as normalised on 15 Hz; not re-read today.
+
+Also recorded, from the sampler's own comments rather than a new measurement: the CPU side reads a ~30 × 17 grid (~510 pixels, ~1 KB BGRA8 or ~2 KB FP16 per frame) after a GPU mip chain. The capture is not "240p"; the GPU downsample is where the per-frame cost sits, and no cost at 60 Hz has been measured yet. Push rates stay transport-bound (Hue Entertainment at 50 Hz).
+
 ## 2026-06-19 — `AcquireNextFrame` INVALID_CALL can wedge Ambient
 
 Found in `app.jsonl`: Ambient can stay running while Vision returns `DXGI_ERROR_INVALID_CALL` from `AcquireNextFrame` every ~500 ms. In that state Ambient heartbeats report `pushed=0` and all ticks dropped; no `ACCESS_LOST`, `ReleaseFrameNonZero`, sampler failure, or consumer exception is emitted first. Microsoft documents this HRESULT as "previous frame not released", so the loop now attempts `ReleaseFrame`, recreates the duplication if DXGI still reports inconsistent ownership, and stops capture after repeated consecutive failures.
