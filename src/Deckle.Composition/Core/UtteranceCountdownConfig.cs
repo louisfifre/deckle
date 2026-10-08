@@ -2,10 +2,11 @@ namespace Deckle.Composition;
 
 public sealed record UtteranceCountdownConfig
 {
-    public float StartDegrees { get; init; } = 12f;
-    public float EndDegrees { get; init; } = -12f;
+    // Reach is the fraction of the HUD half-width lit along the top and
+    // bottom edges, measured from the edge centre: 0 = edge centre, 1 = corner.
+    public float StartReach { get; init; } = 0f;
+    public float EndReach { get; init; } = 1f;
     public float StrokeThickness { get; init; } = 4f;
-    public float LeadFadeTurns { get; init; } = 0.01f;
-    public float TailFadeTurns { get; init; } = 0.01f;
+    public float EdgeFadeTurns { get; init; } = 0.01f;
     public float FadeCurve { get; init; } = 1f;
 }

@@ -37,6 +37,7 @@ Manual WinUI validation is still required for both visual issues: enter the page
 - **Invariant:** an opening grows from the chosen visible start, with the same height and timing on both sides.
 - **Fix:** deform a single feathered canonical wedge per side, scale fades with its opening, and constrain both endpoint controls to the frame-corner angle range. Oversize the canonical surface before its 45-degree rotation so source bounds cannot truncate the rays at the HUD edges.
 - **Regression coverage:** UtteranceCountdownGeometryTests in Deckle.Hud.Tests covers fixed base, linear front, mirror and endpoint bounds. Alpha rasterization and first visible pixels require manual rendering validation.
+- Superseded 2026-10-08: the countdown now grows from the top and bottom edge centres toward the corners (reach fractions); the invariant is carried by UtteranceCountdownGeometryTests.FullReachLightsTheFrameCorners.
 
 ## Angle controls could not reach the frame corners
 
@@ -46,6 +47,7 @@ Manual WinUI validation is still required for both visual issues: enter the page
 - **Invariant:** both controls reach the center-to-corner ray for the current frame aspect ratio without an arbitrary whole-degree cap.
 - **Fix:** derive the bound from the whole half-height and half-width; retain fractional bounds and expose 0.1-degree steps.
 - **Regression coverage:** UtteranceCountdownGeometryTests.EndpointLimitReachesFrameCornersForDifferentHudSizes. Corner pixels and fades remain a manual rendering check.
+- Superseded 2026-10-08: the countdown now grows from the top and bottom edge centres toward the corners (reach fractions); the invariant is carried by UtteranceCountdownGeometryTests.FullReachLightsTheFrameCorners.
 
 ## Base stroke thickness was missing from live geometry tuning
 

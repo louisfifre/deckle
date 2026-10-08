@@ -79,20 +79,18 @@ public sealed partial class HudPage
             var defaults = new UtteranceCountdownConfig();
             _countdownConfig = _countdownConfig with
             {
-                StartDegrees = defaults.StartDegrees, EndDegrees = defaults.EndDegrees,
+                StartReach = defaults.StartReach, EndReach = defaults.EndReach,
                 StrokeThickness = defaults.StrokeThickness,
             };
             RebuildTuningPanel();
         });
         geometry.Children.Add(TuningHelp(
             "Uses the shared Transcribing material. These settings update the live HUD."));
-        geometry.Children.Add(TuningHelp("0 degrees is the side midpoint. Positive angles point down; negative angles point up."));
-        // Include the corner region and retain sub-degree precision.
-        double angleLimit = HudComposition.UtteranceCountdownAngleLimit(NakedHudSize);
-        AddFloatRow(geometry, "Start angle (°)", -angleLimit, angleLimit, 0.1, _countdownConfig.StartDegrees,
-            value => _countdownConfig = _countdownConfig with { StartDegrees = (float)value }, rebuild: true);
-        AddFloatRow(geometry, "End angle (°)", -angleLimit, angleLimit, 0.1, _countdownConfig.EndDegrees,
-            value => _countdownConfig = _countdownConfig with { EndDegrees = (float)value }, rebuild: true);
+        geometry.Children.Add(TuningHelp("Reach is the share of the top and bottom edges lit from their centre: 0 % is the edge centre, 100 % the corners."));
+        AddFloatRow(geometry, "Start reach (%)", 0, 100, 1, _countdownConfig.StartReach * 100,
+            value => _countdownConfig = _countdownConfig with { StartReach = (float)value / 100f }, rebuild: true);
+        AddFloatRow(geometry, "End reach (%)", 0, 100, 1, _countdownConfig.EndReach * 100,
+            value => _countdownConfig = _countdownConfig with { EndReach = (float)value / 100f }, rebuild: true);
         AddFloatRow(geometry, "Stroke thickness (dip)", 0.5, 12, 0.5, _countdownConfig.StrokeThickness,
             value => _countdownConfig = _countdownConfig with { StrokeThickness = (float)value }, rebuild: true);
 
@@ -101,16 +99,14 @@ public sealed partial class HudPage
             var defaults = new UtteranceCountdownConfig();
             _countdownConfig = _countdownConfig with
             {
-                LeadFadeTurns = defaults.LeadFadeTurns, TailFadeTurns = defaults.TailFadeTurns,
+                EdgeFadeTurns = defaults.EdgeFadeTurns,
                 FadeCurve = defaults.FadeCurve,
             };
             RebuildTuningPanel();
         });
-        fade.Children.Add(TuningHelp("Same fade units as Sweep mask. The fades scale with the cone opening."));
-        AddFloatRow(fade, "Lead fade (turns)", 0, 1, 0.005, _countdownConfig.LeadFadeTurns,
-            value => _countdownConfig = _countdownConfig with { LeadFadeTurns = (float)value }, rebuild: true);
-        AddFloatRow(fade, "Tail fade (turns)", 0, 1, 0.005, _countdownConfig.TailFadeTurns,
-            value => _countdownConfig = _countdownConfig with { TailFadeTurns = (float)value }, rebuild: true);
+        fade.Children.Add(TuningHelp("Same fade units as Sweep mask. The fade scales with the wedge opening."));
+        AddFloatRow(fade, "Edge fade (turns)", 0, 1, 0.005, _countdownConfig.EdgeFadeTurns,
+            value => _countdownConfig = _countdownConfig with { EdgeFadeTurns = (float)value }, rebuild: true);
         AddFloatRow(fade, "Fade curve", 0.5, 10, 0.1, _countdownConfig.FadeCurve,
             value => _countdownConfig = _countdownConfig with { FadeCurve = (float)value }, rebuild: true);
 

@@ -11,10 +11,12 @@ public static partial class HudComposition
 {
     private const float CountdownCanonicalSpanTurns = 0.25f; // [0, PI/2]
     private const float CountdownMinimumSpread = 0.0005f;
+    private const float CountdownCanonicalRotation = -3f * MathF.PI / 4f;
 
-    // Progress-driven mirrored masks over the same animated, graded conic material
-    // used by the processing stroke. The conic is one shared brush; only the two
-    // mask transforms read progress.
+    // A progress-driven mirrored mask over the same animated, graded conic
+    // material used by the processing stroke. One mask brush lights two wedges,
+    // centred on 12 and 6 o'clock, that widen toward the four corners; only its
+    // transform reads progress.
     public sealed class UtteranceCountdownVisual : IDisposable
     {
         private readonly List<IDisposable> _resources = new();
@@ -59,33 +61,28 @@ public static partial class HudComposition
         internal void BindProgressMask(
             CompositionSurfaceBrush brush,
             Vector2 centre,
-            float startRadians,
-            float endRadians,
-            bool mirror)
+            Vector2 hudSize,
+            float startReach,
+            float endReach)
         {
-            // The expression language follows the same formulas as
-            // GetUtteranceCountdownTransform, but evaluates them on the
-            // Composition render thread.
-            const string front = "ATan(Lerp(startSlope, endSlope, progress.Value))";
-            string signedSpread = $"Tan((startRadians - {front}) * 0.5)";
-            string spread = $"({signedSpread} < 0 ? -Max(-{signedSpread}, minimumSpread) : Max({signedSpread}, minimumSpread))";
+            // The expression language follows the same formula as
+            // GetUtteranceCountdownTransform, but evaluates it on the
+            // Composition render thread. It has no float literal suffixes,
+            // so every constant travels as a scalar parameter.
             var progressExpression = Own(_compositor.CreateExpressionAnimation(
                 "Matrix3x2.CreateTranslation(-centre) * " +
-                "Matrix3x2.CreateRotation(-quarter) * " +
-                $"Matrix3x2.CreateScale(Vector2(one, {spread})) * " +
-                $"Matrix3x2.CreateRotation((startRadians + {front}) * 0.5) * " +
-                "Matrix3x2.CreateScale(reflection) * " +
+                "Matrix3x2.CreateRotation(angle) * " +
+                "Matrix3x2.CreateScale(Vector2(" +
+                "Max(Lerp(startReach, endReach, progress.Value) * aspect, minimumSpread), one)) * " +
                 "Matrix3x2.CreateTranslation(centre)"));
             progressExpression.SetReferenceParameter("progress", _progress);
             progressExpression.SetVector2Parameter("centre", centre);
-            progressExpression.SetScalarParameter("startRadians", startRadians);
-            progressExpression.SetScalarParameter("startSlope", MathF.Tan(startRadians));
-            progressExpression.SetScalarParameter("endSlope", MathF.Tan(endRadians));
-            progressExpression.SetScalarParameter("quarter", MathF.PI / 4f);
-            progressExpression.SetScalarParameter("one", 1f);
+            progressExpression.SetScalarParameter("angle", CountdownCanonicalRotation);
+            progressExpression.SetScalarParameter("startReach", startReach);
+            progressExpression.SetScalarParameter("endReach", endReach);
+            progressExpression.SetScalarParameter("aspect", CountdownAspect(hudSize));
             progressExpression.SetScalarParameter("minimumSpread", CountdownMinimumSpread);
-            progressExpression.SetVector2Parameter(
-                "reflection", new Vector2(mirror ? -1f : 1f, 1f));
+            progressExpression.SetScalarParameter("one", 1f);
 
             brush.StartAnimation("TransformMatrix", progressExpression);
             _movingBrushes.Add(brush);
@@ -152,36 +149,33 @@ public static partial class HudComposition
         }
     }
 
-    public static float UtteranceCountdownAngleLimit(Vector2 hudSize)
-    {
-        float halfWidth = MathF.Max(1f, hudSize.X / 2f);
-        float halfHeight = MathF.Max(0f, hudSize.Y / 2f);
-        return MathF.Atan(halfHeight / halfWidth) * 180f / MathF.PI;
-    }
+    // Half-width over half-height: turns a reach fraction along the top edge
+    // into the tangent of the wedge's half-angle.
+    private static float CountdownAspect(Vector2 hudSize)
+        => (hudSize.X / 2f) / MathF.Max(1f, hudSize.Y / 2f);
 
+    // The canonical mask is painted with ArcMirror = true and
+    // ConicSpanTurns = 0.25, i.e. the slices [0°, 90°] and [180°, 270°] in
+    // Win2D's Y-down angle. Rotating by -135° centres them on 12 and 6
+    // o'clock. Scaling X by `spread` then sets each wedge's half-angle to
+    // atan(spread); with spread = reach · halfWidth / halfHeight the boundary
+    // rays cross the top and bottom edges at x = centre ± reach · halfWidth,
+    // so the lit edge length grows linearly with progress and meets the four
+    // corners exactly at reach 1. Row-vector convention, as System.Numerics.
     public static Matrix3x2 GetUtteranceCountdownTransform(
         Vector2 centre,
-        float startDegrees,
-        float endDegrees,
-        float progress,
-        bool mirror)
+        Vector2 hudSize,
+        float startReach,
+        float endReach,
+        float progress)
     {
         float p = Math.Clamp(progress, 0f, 1f);
-        float start = Math.Clamp(startDegrees, -89f, 89f) * MathF.PI / 180f;
-        float end = Math.Clamp(endDegrees, -89f, 89f) * MathF.PI / 180f;
-        float startSlope = MathF.Tan(start);
-        float endSlope = MathF.Tan(end);
-        float front = MathF.Atan(startSlope + (endSlope - startSlope) * p);
-        float spread = MathF.Tan((start - front) * 0.5f);
-        if (MathF.Abs(spread) < CountdownMinimumSpread)
-            spread = spread < 0f ? -CountdownMinimumSpread : CountdownMinimumSpread;
-        float midpoint = (start + front) * 0.5f;
+        float reach = startReach + (endReach - startReach) * p;
+        float spread = MathF.Max(reach * CountdownAspect(hudSize), CountdownMinimumSpread);
 
         return Matrix3x2.CreateTranslation(-centre)
-             * Matrix3x2.CreateRotation(-MathF.PI / 4f)
-             * Matrix3x2.CreateScale(1f, spread)
-             * Matrix3x2.CreateRotation(midpoint)
-             * Matrix3x2.CreateScale(mirror ? -1f : 1f, 1f)
+             * Matrix3x2.CreateRotation(CountdownCanonicalRotation)
+             * Matrix3x2.CreateScale(spread, 1f)
              * Matrix3x2.CreateTranslation(centre);
     }
 
@@ -196,9 +190,8 @@ public static partial class HudComposition
         bool maskOnly = false,
         bool animationsEnabled = true)
     {
-        float angleLimit = UtteranceCountdownAngleLimit(hudSize);
-        float startDegrees = Math.Clamp(countdown.StartDegrees, -angleLimit, angleLimit);
-        float endDegrees = Math.Clamp(countdown.EndDegrees, -angleLimit, angleLimit);
+        float startReach = countdown.StartReach;
+        float endReach = countdown.EndReach;
 
         Vector2 centre = hostSize / 2f;
         var progress = compositor.CreatePropertySet();
@@ -210,7 +203,7 @@ public static partial class HudComposition
 
         try
         {
-            if (startDegrees == endDegrees) return visual;
+            if (startReach == endReach) return visual;
             var device = CanvasDevice.GetSharedDevice();
             EnsureDeviceLostHook(device);
             var graphics = visual.Own(
@@ -251,21 +244,23 @@ public static partial class HudComposition
             float thickness = Math.Clamp(
                 countdown.StrokeThickness, 0.5f, MathF.Max(0.5f, hudSize.X / 2f));
 
-            float fullOpening = MathF.Max(MathF.Abs(startDegrees - endDegrees) / 360f, 0.0001f);
+            // The fade is authored in turns of the full opening (each wedge at
+            // EndReach) and rescaled into the canonical quarter-turn span.
+            float fullOpeningTurns = MathF.Max(
+                2f * MathF.Atan(endReach * CountdownAspect(hudSize)) / MathF.Tau, 0.0001f);
+            float edgeFade = Math.Clamp(
+                countdown.EdgeFadeTurns / fullOpeningTurns * CountdownCanonicalSpanTurns,
+                0f, CountdownCanonicalSpanTurns);
             var maskConfig = config with
             {
-                ArcMirror = false,
+                ArcMirror = true,
                 ConicSpanTurns = CountdownCanonicalSpanTurns,
-                ConicLeadFadeTurns = Math.Clamp(
-                    countdown.LeadFadeTurns / fullOpening * CountdownCanonicalSpanTurns,
-                    0f, CountdownCanonicalSpanTurns),
-                ConicTailFadeTurns = Math.Clamp(
-                    countdown.TailFadeTurns / fullOpening * CountdownCanonicalSpanTurns,
-                    0f, CountdownCanonicalSpanTurns),
+                ConicLeadFadeTurns = edgeFade,
+                ConicTailFadeTurns = edgeFade,
                 ConicFadeCurve = MathF.Max(0.01f, countdown.FadeCurve),
             };
-            // The canonical boundary rays lose sqrt(2) of their horizontal
-            // reach after the -45 degree rotation. Oversize before compressing
+            // The canonical boundary rays lose sqrt(2) of their vertical
+            // reach after the -135 degree rotation. Oversize before scaling
             // so both feathered boundaries still reach the real HUD edges.
             int maskSquare = (int)Math.Ceiling(
                 CoverageSquareSide(hostSize, centre) * Math.Sqrt(2));
@@ -281,83 +276,64 @@ public static partial class HudComposition
             using (var drawing = CanvasComposition.CreateDrawingSession(contourSurface))
             {
                 drawing.Clear(Microsoft.UI.Colors.Transparent);
-                drawing.FillRectangle(
-                    new Windows.Foundation.Rect(offsetX, offsetY, thickness, hudSize.Y),
-                    Microsoft.UI.Colors.White);
-                drawing.FillRectangle(
+                // The outline follows the HUD frame into its rounded corners,
+                // so the lit band reads as the HUD stroke itself.
+                drawing.DrawRoundedRectangle(
                     new Windows.Foundation.Rect(
-                        offsetX + hudSize.X - thickness, offsetY,
-                        thickness, hudSize.Y),
-                    Microsoft.UI.Colors.White);
+                        offsetX + thickness / 2f, offsetY + thickness / 2f,
+                        MathF.Max(0f, hudSize.X - thickness),
+                        MathF.Max(0f, hudSize.Y - thickness)),
+                    CornerRadiusDip, CornerRadiusDip,
+                    Microsoft.UI.Colors.White, thickness);
             }
 
             var contourBrush = visual.Own(compositor.CreateSurfaceBrush(contourSurface));
             contourBrush.Stretch = CompositionStretch.Fill;
 
+            var maskBrush = visual.Own(compositor.CreateSurfaceBrush(maskSurface));
+            maskBrush.Stretch = CompositionStretch.None;
+            visual.BindProgressMask(maskBrush, centre, hudSize, startReach, endReach);
+
             bool showMaterial = maskOnly || materialOpacity > 0f;
-            for (int side = 0; side < 2; side++)
+            if (showMaterial)
             {
-                var maskBrush = visual.Own(compositor.CreateSurfaceBrush(maskSurface));
-                maskBrush.Stretch = CompositionStretch.None;
-                visual.BindProgressMask(
-                    maskBrush, centre, startDegrees * MathF.PI / 180f,
-                    endDegrees * MathF.PI / 180f, mirror: side == 1);
-
-                float leftInset = offsetX + hudSize.X - thickness;
-                float rightInset = hostSize.X - offsetX - thickness;
-
-                if (showMaterial)
+                var materialGraph = new AlphaMaskEffect
                 {
-                    var materialGraph = new AlphaMaskEffect
-                    {
-                        Source = new CompositionEffectSourceParameter("Material"),
-                        AlphaMask = new CompositionEffectSourceParameter("Arc"),
-                    };
-                    using var materialFactory =
-                        compositor.CreateEffectFactory(materialGraph);
-                    var materialBrush = visual.Own(materialFactory.CreateBrush());
-                    materialBrush.SetSourceParameter("Material", materialSource);
-                    materialBrush.SetSourceParameter("Arc", maskBrush);
-
-                    var materialSprite = visual.Own(compositor.CreateSpriteVisual());
-                    materialSprite.Size = hostSize;
-                    materialSprite.Brush = materialBrush;
-                    materialSprite.Opacity = maskOnly
-                        ? 1f : Math.Clamp(materialOpacity, 0f, 1f);
-                    var materialClip = visual.Own(compositor.CreateInsetClip());
-                    if (side == 0) materialClip.LeftInset = hostSize.X / 2f;
-                    else materialClip.RightInset = hostSize.X / 2f;
-                    materialSprite.Clip = materialClip;
-                    visual.Container.Children.InsertAtTop(materialSprite);
-                }
-
-                var contourGraph = new AlphaMaskEffect
-                {
-                    Source = new AlphaMaskEffect
-                    {
-                        Source = new CompositionEffectSourceParameter("Material"),
-                        AlphaMask = new CompositionEffectSourceParameter("Arc"),
-                    },
-                    AlphaMask = new CompositionEffectSourceParameter("Contour"),
+                    Source = new CompositionEffectSourceParameter("Material"),
+                    AlphaMask = new CompositionEffectSourceParameter("Arc"),
                 };
-                using var contourFactory =
-                    compositor.CreateEffectFactory(contourGraph);
-                var contourEffectBrush = visual.Own(contourFactory.CreateBrush());
-                contourEffectBrush.SetSourceParameter("Material", materialSource);
-                contourEffectBrush.SetSourceParameter("Arc", maskBrush);
-                contourEffectBrush.SetSourceParameter("Contour", contourBrush);
+                using var materialFactory = compositor.CreateEffectFactory(materialGraph);
+                var materialBrush = visual.Own(materialFactory.CreateBrush());
+                materialBrush.SetSourceParameter("Material", materialSource);
+                materialBrush.SetSourceParameter("Arc", maskBrush);
 
-                var contourSprite = visual.Own(compositor.CreateSpriteVisual());
-                contourSprite.Size = hostSize;
-                contourSprite.Brush = contourEffectBrush;
-                var contourClip = visual.Own(compositor.CreateInsetClip());
-                contourClip.TopInset = offsetY;
-                contourClip.BottomInset = offsetY;
-                if (side == 0) contourClip.LeftInset = leftInset;
-                else contourClip.RightInset = rightInset;
-                contourSprite.Clip = contourClip;
-                visual.Container.Children.InsertAtTop(contourSprite);
+                var materialSprite = visual.Own(compositor.CreateSpriteVisual());
+                materialSprite.Size = hostSize;
+                materialSprite.Brush = materialBrush;
+                materialSprite.Opacity = maskOnly
+                    ? 1f : Math.Clamp(materialOpacity, 0f, 1f);
+                visual.Container.Children.InsertAtTop(materialSprite);
             }
+
+            var contourGraph = new AlphaMaskEffect
+            {
+                Source = new AlphaMaskEffect
+                {
+                    Source = new CompositionEffectSourceParameter("Material"),
+                    AlphaMask = new CompositionEffectSourceParameter("Arc"),
+                },
+                AlphaMask = new CompositionEffectSourceParameter("Contour"),
+            };
+            using var contourFactory = compositor.CreateEffectFactory(contourGraph);
+            var contourEffectBrush = visual.Own(contourFactory.CreateBrush());
+            contourEffectBrush.SetSourceParameter("Material", materialSource);
+            contourEffectBrush.SetSourceParameter("Arc", maskBrush);
+            contourEffectBrush.SetSourceParameter("Contour", contourBrush);
+
+            var contourSprite = visual.Own(compositor.CreateSpriteVisual());
+            contourSprite.Size = hostSize;
+            contourSprite.Brush = contourEffectBrush;
+            visual.Container.Children.InsertAtTop(contourSprite);
 
             return visual;
         }
