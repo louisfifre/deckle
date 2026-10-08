@@ -15,7 +15,8 @@ public partial class App
             OrchestrationSettingsService.Instance,
             new NullForegroundMonitor(),
             new WmiProcessStartSource(),
-            new ProcessExitWatch());
+            new ProcessExitWatch(),
+            effects: [new HdrRuleEffect()]);
         _orchestration = runtime;
 
         // The settings page reads the detection status through this hook
