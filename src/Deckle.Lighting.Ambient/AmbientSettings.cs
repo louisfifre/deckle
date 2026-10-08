@@ -248,7 +248,10 @@ public sealed class AmbientSettings
     /// <summary>Sum-of-absolute-channel-deltas threshold that gates
     /// pushes — if the new tuned-and-smoothed colour differs from the
     /// last pushed one by less than this on the 0-765 scale, the
-    /// push is dropped. 0 disables the gate, useful when smoothing
+    /// previous colour stays : a persistent output (Hue REST) gets no
+    /// push, a continuous one (Hue Entertainment) gets the previous
+    /// colour again. A change to exact black always goes out
+    /// (AmbientPushGate). 0 disables the gate, useful when smoothing
     /// already does the heavy lifting. Default 6 (raised from the
     /// legacy 3) damps the residual quantisation noise without
     /// killing perceptible motion. Tuned in the Playground.</summary>

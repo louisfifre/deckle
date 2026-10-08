@@ -39,9 +39,9 @@ public sealed partial class AmbientEngine
         var leftLinear   = AmbientZoneSampler.SampleZone(sample, LightZone.Left,   bandCols);
         var rightLinear  = AmbientZoneSampler.SampleZone(sample, LightZone.Right,  bandCols);
 
-        // Per-light fan-out + per-light early-exit. We build a
-        // dictionary of (lightId → colour) only for lights whose target
-        // colour has changed enough to warrant a push ; lights mapped
+        // Per-light fan-out + per-light change gate (AmbientPushGate).
+        // We build a dictionary of (lightId → colour) for lights whose
+        // colour goes out this tick, new or held ; lights mapped
         // to <see cref="LightZone.None"/> (or unmapped entirely) are
         // skipped without counting as dropped — they're explicit
         // opt-outs, not throttled pushes.
@@ -114,19 +114,23 @@ public sealed partial class AmbientEngine
             PublishMultiEmitted(light.Id, targetColor);
 
             var prev = _multiLastPushed.TryGetValue(light.Id, out var last) ? last : (-1, -1, -1);
-            bool dropped = AmbientPushGate.ShouldDrop(
+            var decision = AmbientPushGate.Decide(
                 targetColor,
                 prev,
                 _changeThreshold,
                 _requiresContinuousColorUpdates);
 
-            if (dropped)
+            if (decision == AmbientPushDecision.Drop)
             {
                 droppedThisTick++;
                 continue;
             }
 
-            toPush[light.Id] = targetColor;
+            // A hold re-sends the light's last pushed colour so every
+            // mapped light stays in the streamed frame.
+            toPush[light.Id] = decision == AmbientPushDecision.HoldPrevious
+                ? AmbientPushGate.PreviousColor(prev)
+                : targetColor;
         }
 
         // Track per-tick lights-with-no-zone count so the heartbeat

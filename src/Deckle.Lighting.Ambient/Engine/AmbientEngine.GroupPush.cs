@@ -40,21 +40,26 @@ public sealed partial class AmbientEngine
         LightColor color = _blackLatch.Quantize(GroupKey, target);
 
         // Publish the intent colour for the Playground swatch viewer
-        // even when the delta gate drops the actual push.
+        // even when the delta gate drops or holds the actual push.
         PublishGroupEmitted(color);
 
-        bool dropped = AmbientPushGate.ShouldDrop(
+        var decision = AmbientPushGate.Decide(
             color,
             (_lastR, _lastG, _lastB),
             _changeThreshold,
             _requiresContinuousColorUpdates);
 
-        if (dropped)
+        if (decision == AmbientPushDecision.Drop)
         {
             _droppedCount++;
             if (heartbeatDetailEnabled) _hbDropped++;
             return; // Silent : the heartbeat will summarise.
         }
+
+        // A hold keeps the stream alive with the last pushed colour ; it
+        // counts as a push.
+        if (decision == AmbientPushDecision.HoldPrevious)
+            color = AmbientPushGate.PreviousColor((_lastR, _lastG, _lastB));
 
         try
         {
