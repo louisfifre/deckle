@@ -641,6 +641,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── DeckleAudioSource.cs
 │   │   ├── IAudioRecordingHost.cs
 │   │   ├── IMicrophoneCapture.cs
+│   │   ├── ListeningTake.cs
 │   │   ├── MicLevelTester.cs
 │   │   ├── MicrophoneCapture.cs
 │   │   ├── ProbeResult.cs
@@ -1784,6 +1785,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── CaptureSettingsMigrationTests.cs
 │   │   ├── Deckle.Audio.Tests.csproj
 │   │   ├── DeckleAudioSourceTests.cs
+│   │   ├── ListeningTakeTests.cs
 │   │   ├── MicLevelCheckTests.cs
 │   │   ├── MicrophoneTelemetryCalculatorTests.cs
 │   │   ├── OperationalObservabilityCollection.cs
