@@ -10,9 +10,10 @@ namespace Deckle.Playground;
 // One Add*Expander method per logical knob group (palette, hue rotation,
 // arc rotation, recording variant, etc.) plus the matching Reset*
 // method that snaps the group back to compiled defaults. Filtered by
-// HudViewModel.ActiveTuningSections so only the expanders that affect
-// the active target are rendered ; Parked is always appended (collapsed
-// by default) for the transition-only knobs.
+// HudViewModel.ActiveTuningSections so only the expanders whose rows
+// reach the active target's preview are rendered ; Parked follows them
+// (collapsed by default) for the transition-only knobs, and is skipped
+// with them on Charging, which has no stroke.
 //
 // Step-frequency convention (kept aligned with HudPage.RowFactories) :
 //   fractional [0..1, ease Y, saturation/opacity/hue]   → 0.05
@@ -113,6 +114,8 @@ public sealed partial class HudPage
             v => _tuning.HueEaseP2X = (float)v, rebuild: true);
         AddFloatRow(stack, "HueEaseP2.Y", -0.5, 1.5, 0.05, _tuning.HueEaseP2Y,
             v => _tuning.HueEaseP2Y = (float)v, rebuild: true);
+        AddFloatRow(stack, "HueMinSpeedFraction", 0, 1, 0.05, _tuning.HueMinSpeedFraction,
+            v => _tuning.HueMinSpeedFraction = (float)v, rebuild: true);
     }
 
     private void ResetHueRotation()
@@ -124,6 +127,7 @@ public sealed partial class HudPage
         _tuning.HueEaseP1Y       = d.HueEaseP1Y;
         _tuning.HueEaseP2X       = d.HueEaseP2X;
         _tuning.HueEaseP2Y       = d.HueEaseP2Y;
+        _tuning.HueMinSpeedFraction = d.HueMinSpeedFraction;
         RebuildTuningPanel();
     }
 
@@ -142,6 +146,8 @@ public sealed partial class HudPage
             v => _tuning.ArcEaseP2X = (float)v, rebuild: true);
         AddFloatRow(stack, "ArcEaseP2.Y", -0.5, 1.5, 0.05, _tuning.ArcEaseP2Y,
             v => _tuning.ArcEaseP2Y = (float)v, rebuild: true);
+        AddFloatRow(stack, "ArcMinSpeedFraction", 0, 1, 0.05, _tuning.ArcMinSpeedFraction,
+            v => _tuning.ArcMinSpeedFraction = (float)v, rebuild: true);
     }
 
     private void ResetArcRotation()
@@ -153,6 +159,7 @@ public sealed partial class HudPage
         _tuning.ArcEaseP1Y       = d.ArcEaseP1Y;
         _tuning.ArcEaseP2X       = d.ArcEaseP2X;
         _tuning.ArcEaseP2Y       = d.ArcEaseP2Y;
+        _tuning.ArcMinSpeedFraction = d.ArcMinSpeedFraction;
         RebuildTuningPanel();
     }
 
@@ -169,6 +176,10 @@ public sealed partial class HudPage
             v => _tuning.RecordingConicFadeCurve = (float)v, rebuild: true);
         AddToggleRow(stack, "RecordingArcMirror", _tuning.RecordingArcMirror,
             v => _tuning.RecordingArcMirror = v, rebuild: true);
+        AddFloatRow(stack, "RecordingArcPhaseTurns", 0, 1, 0.05, _tuning.RecordingArcPhaseTurns,
+            v => _tuning.RecordingArcPhaseTurns = (float)v, rebuild: true);
+        AddFloatRow(stack, "RecordingHuePeriodSeconds", 0, 60, 0.5, _tuning.RecordingHuePeriodSeconds,
+            v => _tuning.RecordingHuePeriodSeconds = v, rebuild: true);
         AddFloatRow(stack, "RecordingSaturationDark", 0, 1, 0.05, _tuning.RecordingSaturationDark,
             v => _tuning.RecordingSaturationDark = (float)v, rebuild: true);
         AddFloatRow(stack, "RecordingSaturationLight", 0, 1, 0.05, _tuning.RecordingSaturationLight,
@@ -190,6 +201,8 @@ public sealed partial class HudPage
         _tuning.RecordingConicTailFadeTurns = d.RecordingConicTailFadeTurns;
         _tuning.RecordingConicFadeCurve     = d.RecordingConicFadeCurve;
         _tuning.RecordingArcMirror          = d.RecordingArcMirror;
+        _tuning.RecordingArcPhaseTurns      = d.RecordingArcPhaseTurns;
+        _tuning.RecordingHuePeriodSeconds   = d.RecordingHuePeriodSeconds;
         _tuning.RecordingSaturationDark     = d.RecordingSaturationDark;
         _tuning.RecordingSaturationLight    = d.RecordingSaturationLight;
         _tuning.RecordingHueShiftTurns      = d.RecordingHueShiftTurns;
@@ -211,6 +224,8 @@ public sealed partial class HudPage
             v => _tuning.TranscribingExposureDark = (float)v, rebuild: true);
         AddFloatRow(stack, "TranscribingExposureLight", -2, 2, 0.1, _tuning.TranscribingExposureLight,
             v => _tuning.TranscribingExposureLight = (float)v, rebuild: true);
+        AddFloatRow(stack, "TranscribingOpacity", 0, 1, 0.05, _tuning.TranscribingOpacity,
+            v => _tuning.TranscribingOpacity = (float)v, rebuild: true);
     }
 
     private void ResetTranscribing()
@@ -221,6 +236,7 @@ public sealed partial class HudPage
         _tuning.TranscribingHueShiftTurns   = d.TranscribingHueShiftTurns;
         _tuning.TranscribingExposureDark    = d.TranscribingExposureDark;
         _tuning.TranscribingExposureLight   = d.TranscribingExposureLight;
+        _tuning.TranscribingOpacity         = d.TranscribingOpacity;
         RebuildTuningPanel();
     }
 
@@ -233,6 +249,8 @@ public sealed partial class HudPage
             v => _tuning.RewritingHueShiftTurns = (float)v, rebuild: true);
         AddFloatRow(stack, "RewritingExposure", -2, 2, 0.1, _tuning.RewritingExposure,
             v => _tuning.RewritingExposure = (float)v, rebuild: true);
+        AddFloatRow(stack, "RewritingOpacity", 0, 1, 0.05, _tuning.RewritingOpacity,
+            v => _tuning.RewritingOpacity = (float)v, rebuild: true);
     }
 
     private void ResetRewriting()
@@ -241,6 +259,7 @@ public sealed partial class HudPage
         _tuning.RewritingSaturation    = d.RewritingSaturation;
         _tuning.RewritingHueShiftTurns = d.RewritingHueShiftTurns;
         _tuning.RewritingExposure      = d.RewritingExposure;
+        _tuning.RewritingOpacity       = d.RewritingOpacity;
         RebuildTuningPanel();
     }
 
@@ -334,50 +353,40 @@ public sealed partial class HudPage
 
     private void ResetClonePlacement()
     {
-        _tuning.CloneCentreXFraction = 196f / NakedHudSize.X;
-        _tuning.CloneCentreYFraction = 0f;
-        _tuning.CloneOklchLightness   = 0.9f;
-        _tuning.CloneOklchChroma      = 0.3f;
-        _tuning.CloneHuePeriodSeconds = 7.0;
-        _tuning.CloneHueDirection     = -1f;
-        _tuning.CloneArcPeriodSeconds = 4.0;
-        _tuning.CloneArcDirection     = -1f;
+        var d = new TuningModel();
+        _tuning.CloneCentreXFraction  = d.CloneCentreXFraction;
+        _tuning.CloneCentreYFraction  = d.CloneCentreYFraction;
+        _tuning.CloneOklchLightness   = d.CloneOklchLightness;
+        _tuning.CloneOklchChroma      = d.CloneOklchChroma;
+        _tuning.CloneHuePeriodSeconds = d.CloneHuePeriodSeconds;
+        _tuning.CloneHueDirection     = d.CloneHueDirection;
+        _tuning.CloneArcPeriodSeconds = d.CloneArcPeriodSeconds;
+        _tuning.CloneArcDirection     = d.CloneArcDirection;
         RebuildTuningPanel();
         ApplyTarget();
     }
 
-    // Parked expander — fields only observable during a variant
-    // transition or at stroke creation. Muted by construction in the
-    // single-target playground; shown only on targets where those
-    // stroke defaults apply.
+    // Parked expander — phases are only observable at stroke creation, the
+    // blends only during a variant transition (visible in the preview only on
+    // Rewriting at each Start and on a live theme switch), which is why these
+    // rows stay parked on every target that has a stroke (the countdown views
+    // have none).
     private void AddParkedExpander()
     {
         var stack = NewTuningSection("Transition and rotation defaults", ResetParked);
         stack.Children.Add(new TextBlock
         {
-            Text = "Initial orientations, rotation speeds and blends between HUD states. These do not control utterance timing.",
+            Text = "Initial orientations and blends between HUD states. These do not control utterance timing.",
             Style = (Style)Resources["HudTuningHelpTextStyle"],
         });
         AddFloatRow(stack, "HuePhaseTurns", 0, 1, 0.05, _tuning.HuePhaseTurns,
             v => _tuning.HuePhaseTurns = (float)v, rebuild: true);
         AddFloatRow(stack, "ArcPhaseTurns", 0, 1, 0.05, _tuning.ArcPhaseTurns,
             v => _tuning.ArcPhaseTurns = (float)v, rebuild: true);
-        AddFloatRow(stack, "RecordingArcPhaseTurns", 0, 1, 0.05, _tuning.RecordingArcPhaseTurns,
-            v => _tuning.RecordingArcPhaseTurns = (float)v, rebuild: true);
-        AddFloatRow(stack, "HueMinSpeedFraction", 0, 1, 0.05, _tuning.HueMinSpeedFraction,
-            v => _tuning.HueMinSpeedFraction = (float)v, rebuild: true);
-        AddFloatRow(stack, "ArcMinSpeedFraction", 0, 1, 0.05, _tuning.ArcMinSpeedFraction,
-            v => _tuning.ArcMinSpeedFraction = (float)v, rebuild: true);
         AddFloatRow(stack, "RecordingBlendSeconds", 0, 5, 0.1, _tuning.RecordingBlendSeconds,
             v => _tuning.RecordingBlendSeconds = v, rebuild: true);
-        AddFloatRow(stack, "RecordingHuePeriodSeconds", 0, 60, 0.5, _tuning.RecordingHuePeriodSeconds,
-            v => _tuning.RecordingHuePeriodSeconds = v, rebuild: true);
-        AddFloatRow(stack, "TranscribingOpacity", 0, 1, 0.05, _tuning.TranscribingOpacity,
-            v => _tuning.TranscribingOpacity = (float)v, rebuild: true);
         AddFloatRow(stack, "TranscribingBlendSeconds", 0, 5, 0.1, _tuning.TranscribingBlendSeconds,
             v => _tuning.TranscribingBlendSeconds = v, rebuild: true);
-        AddFloatRow(stack, "RewritingOpacity", 0, 1, 0.05, _tuning.RewritingOpacity,
-            v => _tuning.RewritingOpacity = (float)v, rebuild: true);
         AddFloatRow(stack, "RewritingBlendSeconds", 0, 5, 0.1, _tuning.RewritingBlendSeconds,
             v => _tuning.RewritingBlendSeconds = v, rebuild: true);
     }
@@ -387,14 +396,8 @@ public sealed partial class HudPage
         var d = new TuningModel();
         _tuning.HuePhaseTurns             = d.HuePhaseTurns;
         _tuning.ArcPhaseTurns             = d.ArcPhaseTurns;
-        _tuning.RecordingArcPhaseTurns    = d.RecordingArcPhaseTurns;
-        _tuning.HueMinSpeedFraction       = d.HueMinSpeedFraction;
-        _tuning.ArcMinSpeedFraction       = d.ArcMinSpeedFraction;
         _tuning.RecordingBlendSeconds     = d.RecordingBlendSeconds;
-        _tuning.RecordingHuePeriodSeconds = d.RecordingHuePeriodSeconds;
-        _tuning.TranscribingOpacity       = d.TranscribingOpacity;
         _tuning.TranscribingBlendSeconds  = d.TranscribingBlendSeconds;
-        _tuning.RewritingOpacity          = d.RewritingOpacity;
         _tuning.RewritingBlendSeconds     = d.RewritingBlendSeconds;
         RebuildTuningPanel();
     }

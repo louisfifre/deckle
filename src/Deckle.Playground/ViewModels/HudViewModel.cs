@@ -29,10 +29,10 @@ public enum HudTarget
 }
 
 // Logical groups of tuning expanders. The HUD tuning panel is rebuilt
-// every time the target changes, showing only the expanders relevant to
-// the active target. Parked is always available (collapsed by default)
-// so the developer can tweak transition-only defaults regardless of
-// what's on the preview stage.
+// every time the target changes, showing only the sections whose rows
+// reach the active target's preview. Parked follows them (collapsed by
+// default) so the developer can tweak transition-only defaults from any
+// target; it is skipped when the list is empty (Charging, no stroke).
 public enum HudTuningSection
 {
     Geometry,
@@ -164,32 +164,33 @@ public partial class HudViewModel : ObservableObject
         IsPlaying = false;
     }
 
-    // Returns the set of tuning expanders relevant to the active target.
-    // HudPage's BuildTuningPanel reads this and only creates the matching
-    // expanders. The Parked group is appended unconditionally below.
+    // Returns the tuning sections whose rows reach the active target's
+    // preview. A generic section replaced by the target's own section is
+    // hidden; its rows stay reachable from another target because the
+    // page holds one shared TuningModel. HudPage's BuildTuningPanel
+    // creates the matching expanders, then Parked, unless the list is
+    // empty.
     public IReadOnlyCollection<HudTuningSection> ActiveTuningSections =>
         CurrentTarget switch
         {
-            HudTarget.Charging =>
-                new[]
-                {
-                    HudTuningSection.Geometry,
-                    HudTuningSection.Palette,
-                    HudTuningSection.ConicFade,
-                    HudTuningSection.HueRotation,
-                    HudTuningSection.ArcRotation,
-                },
+            // Charging: HudChrono.ApplyCharging detaches the stroke and no
+            // config is armed, so no row reaches the preview.
+            HudTarget.Charging => System.Array.Empty<HudTuningSection>(),
+            // No ConicFade nor HueRotation: CreateRecordingStroke replaces the
+            // generic conic slots with the Recording* fields and overrides the
+            // hue period, so those rows would change nothing. The Recording
+            // expander carries the rows that act.
             HudTarget.Recording =>
                 new[]
                 {
                     HudTuningSection.Geometry,
                     HudTuningSection.Palette,
-                    HudTuningSection.ConicFade,
-                    HudTuningSection.HueRotation,
                     HudTuningSection.Recording,
                     HudTuningSection.AudioMapping,
                     HudTuningSection.SimulatedRms,
                 },
+            // Transcribing: CreateProcessingStroke spins the arc mask with the
+            // Arc* fields (the visible sweep) and the digit reveal reads Clone*.
             HudTarget.Transcribing =>
                 new[]
                 {
@@ -197,9 +198,11 @@ public partial class HudViewModel : ObservableObject
                     HudTuningSection.Palette,
                     HudTuningSection.ConicFade,
                     HudTuningSection.HueRotation,
+                    HudTuningSection.ArcRotation,
                     HudTuningSection.Transcribing,
                     HudTuningSection.ClonePlacement,
                 },
+            // Rewriting: same CreateProcessingStroke as Transcribing, own grading.
             HudTarget.Rewriting =>
                 new[]
                 {
@@ -207,32 +210,43 @@ public partial class HudViewModel : ObservableObject
                     HudTuningSection.Palette,
                     HudTuningSection.ConicFade,
                     HudTuningSection.HueRotation,
+                    HudTuningSection.ArcRotation,
                     HudTuningSection.Rewriting,
                     HudTuningSection.ClonePlacement,
                 },
+            // Conic: CreateNakedMaskPreview shows only the conic brush, which
+            // spins with the Hue* fields; the arc fade never shows.
             HudTarget.Conic =>
-                new[]
-                {
-                    HudTuningSection.Palette,
-                    HudTuningSection.HueRotation,
-                },
-            HudTarget.ArcMask =>
-                new[]
-                {
-                    HudTuningSection.ConicFade,
-                    HudTuningSection.ArcRotation,
-                },
-            HudTarget.UtteranceCountdown or HudTarget.CountdownMaterial
-                or HudTarget.CountdownMasks or HudTarget.MaskedCountdown =>
-                new[] { HudTuningSection.UtteranceCountdown },
-            HudTarget.ConicClone =>
                 new[]
                 {
                     HudTuningSection.Geometry,
                     HudTuningSection.Palette,
                     HudTuningSection.HueRotation,
+                },
+            // ArcMask: CreateNakedMaskPreview shows only the arc brush, painted
+            // from the ConicFade fields and spun by the Arc* fields.
+            HudTarget.ArcMask =>
+                new[]
+                {
+                    HudTuningSection.Geometry,
+                    HudTuningSection.ConicFade,
+                    HudTuningSection.ArcRotation,
+                },
+            // Countdown views: the gauge reads the shared geometry and its own
+            // tuning; no stroke palette or rotation reaches the preview.
+            HudTarget.UtteranceCountdown or HudTarget.CountdownMaterial
+                or HudTarget.CountdownMasks or HudTarget.MaskedCountdown =>
+                new[] { HudTuningSection.UtteranceCountdown },
+            // ConicClone: CreateConicClonePreview ignores InsetDip and replaces
+            // Lightness/Chroma and the hue period/direction with the Clone* fields.
+            HudTarget.ConicClone =>
+                new[]
+                {
+                    HudTuningSection.ConicFade,
                     HudTuningSection.ClonePlacement,
                 },
+            // Combined: CreateNakedMaskPreview shows the masked cone, so every
+            // generic section acts.
             _ /* Combined */ =>
                 new[]
                 {

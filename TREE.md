@@ -641,6 +641,8 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── DeckleAudioSource.cs
 │   │   ├── IAudioRecordingHost.cs
 │   │   ├── IMicrophoneCapture.cs
+│   │   ├── ListeningTake.cs
+│   │   ├── ListeningTester.cs
 │   │   ├── MicLevelTester.cs
 │   │   ├── MicrophoneCapture.cs
 │   │   ├── ProbeResult.cs
@@ -648,6 +650,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── RecordingPage.xaml.cs
 │   │   ├── RecordingSettingsModule.cs
 │   │   ├── RecordingViewModel.cs
+│   │   ├── RecordingViewModel.ListeningTest.cs
 │   │   ├── RecordingViewModel.Settings.cs
 │   │   ├── SettingsSearch.cs
 │   │   └── SpeakerOutput.cs
@@ -1248,8 +1251,10 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   └── LightDescriptor.cs
 │   ├── Deckle.Lighting.Ambient/
 │   │   ├── Engine/
+│   │   │   ├── AmbientBlackLatch.cs
 │   │   │   ├── AmbientBrightnessCurve.cs
 │   │   │   ├── AmbientColorPipeline.cs
+│   │   │   ├── AmbientColorSmoother.cs
 │   │   │   ├── AmbientEngine.CaptureEvents.cs
 │   │   │   ├── AmbientEngine.cs
 │   │   │   ├── AmbientEngine.GroupPush.cs
@@ -1268,29 +1273,42 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   ├── AmbientZoneSampler.cs
 │   │   │   ├── HueEndpointResolver.cs
 │   │   │   ├── HuePairingService.cs
+│   │   │   ├── LightPlacementResolver.cs
 │   │   │   ├── LightZone.cs
-│   │   │   └── LightZoneSuggester.cs
+│   │   │   ├── LightZoneSuggester.cs
+│   │   │   └── SrgbColor.cs
 │   │   ├── Strings/
 │   │   │   └── en-US/
 │   │   │       └── Resources.resw
 │   │   ├── Ui/
 │   │   │   ├── Controls/
+│   │   │   │   ├── AmbientPreviewCard.xaml
+│   │   │   │   ├── AmbientPreviewCard.xaml.cs
 │   │   │   │   ├── BrightnessCurveCanvas.xaml
-│   │   │   │   └── BrightnessCurveCanvas.xaml.cs
+│   │   │   │   ├── BrightnessCurveCanvas.xaml.cs
+│   │   │   │   ├── LightZonesCard.xaml
+│   │   │   │   └── LightZonesCard.xaml.cs
 │   │   │   ├── AmbientPage.Hue.cs
 │   │   │   ├── AmbientPage.xaml
 │   │   │   └── AmbientPage.xaml.cs
+│   │   ├── ViewModels/
+│   │   │   ├── AmbientViewModel.cs
+│   │   │   └── AmbientViewModel.Settings.cs
+│   │   ├── AmbientCaptureRate.cs
 │   │   ├── AmbientSettings.cs
 │   │   ├── AmbientSettingsModule.cs
 │   │   ├── AmbientSettingsService.cs
+│   │   ├── AmbientStartSettings.cs
 │   │   ├── Deckle.Lighting.Ambient.csproj
 │   │   ├── DeckleAmbientSource.CaptureAndSampling.cs
 │   │   ├── DeckleAmbientSource.cs
 │   │   ├── DeckleAmbientSource.Lifecycle.cs
+│   │   ├── DeckleAmbientSource.LightPlacement.cs
 │   │   ├── DeckleAmbientSource.Pairing.cs
 │   │   ├── DeckleAmbientSource.Push.cs
 │   │   ├── DeckleAmbientSource.UiAndSettings.cs
 │   │   ├── IAmbientEngineHost.cs
+│   │   ├── JOURNAL.md  — [module-journal] Dated findings for Deckle.Lighting.Ambient — how a light colour is derived from…
 │   │   └── SettingsSearch.cs
 │   ├── Deckle.Llm/
 │   │   ├── Deckle.Llm.csproj
@@ -1390,18 +1408,9 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   └── en-US/
 │   │   │       └── Resources.resw
 │   │   ├── ViewModels/
-│   │   │   ├── AmbientViewModel.cs
 │   │   │   ├── HudViewModel.cs
 │   │   │   └── SegmentationViewModel.cs
 │   │   ├── Views/
-│   │   │   ├── Ambient/
-│   │   │   │   ├── AmbientPage.HdrTuning.cs
-│   │   │   │   ├── AmbientPage.Hue.cs
-│   │   │   │   ├── AmbientPage.LightZones.cs
-│   │   │   │   ├── AmbientPage.Preview.cs
-│   │   │   │   ├── AmbientPage.ScreenCapture.cs
-│   │   │   │   ├── AmbientPage.xaml
-│   │   │   │   └── AmbientPage.xaml.cs
 │   │   │   ├── Autocorrect/
 │   │   │   │   ├── CorrectionApplicationPage.xaml
 │   │   │   │   ├── CorrectionApplicationPage.xaml.cs
@@ -1426,6 +1435,10 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── DecklePlaygroundSource.cs
 │   │   ├── PlaygroundNotifications.cs
 │   │   └── PlaygroundShell.cs
+│   ├── Deckle.Presets/
+│   │   ├── Deckle.Presets.csproj
+│   │   ├── Preset.cs
+│   │   └── PresetFamily.cs
 │   ├── Deckle.Security/
 │   │   ├── CONTEXT.md  — context-deckle-security [agent-instructions] Security vocabulary — the trusted-session boundary, captured content, and where…
 │   │   ├── Deckle.Security.csproj
@@ -1625,6 +1638,8 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── Setup/
 │   │   │   └── ModelEntry.cs
 │   │   ├── Streaming/
+│   │   │   ├── CutCurveValues.cs
+│   │   │   ├── CutPresets.cs
 │   │   │   ├── EnergySegmenter.cs
 │   │   │   ├── EnergySegmenterSettings.cs
 │   │   │   ├── SegmentedTranscriptionSession.cs
@@ -1635,6 +1650,8 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │       └── Resources.resw
 │   │   ├── Ui/
 │   │   │   └── Controls/
+│   │   │       ├── CutCurveEditor.xaml
+│   │   │       ├── CutCurveEditor.xaml.cs
 │   │   │       ├── HangoverCurveCanvas.xaml
 │   │   │       └── HangoverCurveCanvas.xaml.cs
 │   │   ├── ViewModels/
@@ -1722,6 +1739,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │       ├── AGENTS.md  — [agent-instructions] Screen-capture and frame-analysis module — DXGI Output Duplication, the transie…
 │       ├── CapturedFrame.cs
 │       ├── CaptureMonitor.cs
+│       ├── CapturePacer.cs
 │       ├── CLAUDE.md
 │       ├── Deckle.Vision.csproj
 │       ├── DeckleVisionSource.cs
@@ -1792,8 +1810,10 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   └── TaskGesturesTests.cs
 │   ├── Deckle.Audio.Tests/
 │   │   ├── CaptureAnomalyEpisodeTests.cs
+│   │   ├── CaptureSettingsMigrationTests.cs
 │   │   ├── Deckle.Audio.Tests.csproj
 │   │   ├── DeckleAudioSourceTests.cs
+│   │   ├── ListeningTakeTests.cs
 │   │   ├── MicLevelCheckTests.cs
 │   │   ├── MicrophoneTelemetryCalculatorTests.cs
 │   │   ├── OperationalObservabilityCollection.cs
@@ -1981,13 +2001,18 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   ├── Deckle.Lighting.Ambient.Tests/
 │   │   ├── AmbientBrightnessBugNotes.md
 │   │   ├── AmbientBrightnessCurveTests.cs
+│   │   ├── AmbientCaptureRateTests.cs
+│   │   ├── AmbientColorSmootherTests.cs
 │   │   ├── AmbientHeartbeatWindowTests.cs
 │   │   ├── AmbientHueChangeAttributorTests.cs
+│   │   ├── AmbientNearBlackTests.cs
 │   │   ├── AmbientPushCadenceTests.cs
 │   │   ├── AmbientPushGateTests.cs
+│   │   ├── AmbientStartSettingsTests.cs
 │   │   ├── Deckle.Lighting.Ambient.Tests.csproj
 │   │   ├── DeckleAmbientSourceTests.cs
-│   │   └── HueEndpointResolverTests.cs
+│   │   ├── HueEndpointResolverTests.cs
+│   │   └── LightPlacementResolverTests.cs
 │   ├── Deckle.Lighting.Tests/
 │   │   ├── BugExamples/
 │   │   │   └── dns-sd-pending-status-lifetime.json
@@ -2024,7 +2049,13 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── CorrectionApplicationTrialTests.cs
 │   │   ├── Deckle.Playground.Tests.csproj
 │   │   ├── HudTargetControlsTests.cs
-│   │   └── HudTuningBugNotes.md
+│   │   ├── HudTuningBugNotes.md
+│   │   ├── HudTuningSectionsBugNotes.md
+│   │   ├── HudViewModelTests.cs
+│   │   └── TuningModelTests.cs
+│   ├── Deckle.Presets.Tests/
+│   │   ├── Deckle.Presets.Tests.csproj
+│   │   └── PresetFamilyTests.cs
 │   ├── Deckle.Security.Tests/
 │   │   ├── Deckle.Security.Tests.csproj
 │   │   └── SecretVaultTests.cs
@@ -2056,6 +2087,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── WindowsAppSdkBootstrap.cs
 │   │   └── WindowsAppSdkModuleInitializer.cs
 │   ├── Deckle.Transcription.Tests/
+│   │   ├── CutPresetsTests.cs
 │   │   ├── Deckle.Transcription.Tests.csproj
 │   │   ├── DeckleLlmSourceTests.cs
 │   │   ├── DeckleWhispSourceTests.cs
@@ -2098,6 +2130,8 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── Deckle.Vad.Tests.csproj
 │   │   └── SileroSpeechTimestampsTests.cs
 │   ├── Deckle.Vision.Tests/
+│   │   ├── CapturePacerTests.cs
+│   │   ├── ContentPeakReleaseTests.cs
 │   │   ├── Deckle.Vision.Tests.csproj
 │   │   └── DeckleVisionSourceTests.cs
 │   ├── CONTEXT.md  — context-deckle-tests [agent-instructions] Test taxonomy — the four categories inside the automatic scope (unit, integrati…

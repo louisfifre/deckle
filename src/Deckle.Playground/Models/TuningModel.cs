@@ -14,26 +14,26 @@ namespace Deckle.Playground;
 // slider.ValueChanged, so we hold a mutable class here and project it
 // into a fresh ConicArcStrokeConfig on every rebuild.
 //
-// Field defaults mirror the shipping struct defaults one-to-one — if
-// those defaults diverge, this mirror must follow (or the playground
-// would render with different numbers than the shipping HUD, which
-// would defeat the point).
+// Field defaults are read from a default-constructed shipping struct,
+// never restated here, so the playground opens on exactly the numbers
+// the shipping HUD renders and the two cannot drift apart. A value that
+// proves right in the playground is promoted to the struct's default;
+// it never becomes a playground-only default in this file.
 //
 // Field grouping matches the NavigationView section order in
 // PlaygroundWindow.xaml.cs so the reader can scan both files side by
 // side.
 internal sealed class TuningModel
 {
-    public TuningModel()
-    {
-        var defaults = new ConicArcStrokeConfig();
-        LoadMaterial(defaults);
-        LoadGeometry(defaults);
-    }
+    // Single source of the defaults below: the shipping struct itself.
+    private static readonly ConicArcStrokeConfig Defaults = new();
 
-    public float StrokeThickness;
-    public float InsetDip;
+    // ── HUD geometry (shared by the live stroke and the countdown) ──────
+    public float StrokeThickness = Defaults.StrokeThickness;
+    public float InsetDip        = Defaults.InsetDip;
 
+    // Reloads the geometry fields from a config (the shared live tuning
+    // on page open, the shipping struct on reset).
     public void LoadGeometry(ConicArcStrokeConfig source)
     {
         StrokeThickness = source.StrokeThickness;
@@ -41,93 +41,93 @@ internal sealed class TuningModel
     }
 
     // ── Colour palette (paint-time, OKLCh) ──────────────────────────────
-    public float OklchLightness = 0.75f;
-    public float OklchChroma    = 0.3f;
-    public float HueStart       = 0f;
-    public float HueRange       = 1f;
-    public int   WedgeCount     = 360;
+    public float OklchLightness = Defaults.OklchLightness;
+    public float OklchChroma    = Defaults.OklchChroma;
+    public float HueStart       = Defaults.HueStart;
+    public float HueRange       = Defaults.HueRange;
+    public int   WedgeCount     = Defaults.WedgeCount;
 
     // ── Hue rotation ────────────────────────────────────────────────────
-    public double HuePeriodSeconds = 14.0;
-    public float  HueDirection     = 1f;
-    public float  HuePhaseTurns    = 0f;
+    public double HuePeriodSeconds = Defaults.HuePeriodSeconds;
+    public float  HueDirection     = Defaults.HueDirection;
+    public float  HuePhaseTurns    = Defaults.HuePhaseTurns;
     // Out-in (0.125, 0.375, 0.875, 0.625) — endpoint tangent slope 3.0
     // on both sides → C¹-continuous seam when the keyframe loops. See
     // HudComposition.StartRotation header for details.
-    public float  HueEaseP1X       = 0.125f;
-    public float  HueEaseP1Y       = 0.375f;
-    public float  HueEaseP2X       = 0.875f;
-    public float  HueEaseP2Y       = 0.625f;
-    public float  HueMinSpeedFraction = 0f;
+    public float  HueEaseP1X       = Defaults.HueEaseP1X;
+    public float  HueEaseP1Y       = Defaults.HueEaseP1Y;
+    public float  HueEaseP2X       = Defaults.HueEaseP2X;
+    public float  HueEaseP2Y       = Defaults.HueEaseP2Y;
+    public float  HueMinSpeedFraction = Defaults.HueMinSpeedFraction;
 
     // ── Arc mask shape ──────────────────────────────────────────────────
-    public float ConicSpanTurns     = 0.5f;
-    public float ConicLeadFadeTurns = 1f;
-    public float ConicTailFadeTurns = 1f;
-    public float ConicFadeCurve     = 4f;
-    public bool  ArcMirror          = true;
+    public float ConicSpanTurns     = Defaults.ConicSpanTurns;
+    public float ConicLeadFadeTurns = Defaults.ConicLeadFadeTurns;
+    public float ConicTailFadeTurns = Defaults.ConicTailFadeTurns;
+    public float ConicFadeCurve     = Defaults.ConicFadeCurve;
+    public bool  ArcMirror          = Defaults.ArcMirror;
 
     // ── Arc rotation ────────────────────────────────────────────────────
-    public double ArcPeriodSeconds = 8.0;
-    public float  ArcDirection     = 1f;
-    public float  ArcPhaseTurns    = 0f;
-    public float  ArcEaseP1X       = 0.125f;
-    public float  ArcEaseP1Y       = 0.375f;
-    public float  ArcEaseP2X       = 0.875f;
-    public float  ArcEaseP2Y       = 0.625f;
-    public float  ArcMinSpeedFraction = 0f;
+    public double ArcPeriodSeconds = Defaults.ArcPeriodSeconds;
+    public float  ArcDirection     = Defaults.ArcDirection;
+    public float  ArcPhaseTurns    = Defaults.ArcPhaseTurns;
+    public float  ArcEaseP1X       = Defaults.ArcEaseP1X;
+    public float  ArcEaseP1Y       = Defaults.ArcEaseP1Y;
+    public float  ArcEaseP2X       = Defaults.ArcEaseP2X;
+    public float  ArcEaseP2Y       = Defaults.ArcEaseP2Y;
+    public float  ArcMinSpeedFraction = Defaults.ArcMinSpeedFraction;
 
     // ── Clone-cone placement (digit reveal + ConicClone preview) ─────────
     // Fraction of the host frame; (0.5, 0.5) = centred. See the matching
     // ConicArcStrokeConfig block for the full geometry rationale.
-    public float CloneCentreXFraction = 196f / 272f;
-    public float CloneCentreYFraction = 0f;
+    public float CloneCentreXFraction = Defaults.CloneCentreXFraction;
+    public float CloneCentreYFraction = Defaults.CloneCentreYFraction;
 
     // ── Clone-cone palette — reveal's own OKLCh lightness/chroma (the peps
     //    knob), decoupled from the contour. See the matching ConicArcStrokeConfig
     //    block. ─────────────────────────────────────────────────────────────────
-    public float CloneOklchLightness = 0.9f;
-    public float CloneOklchChroma    = 0.3f;
+    public float CloneOklchLightness = Defaults.CloneOklchLightness;
+    public float CloneOklchChroma    = Defaults.CloneOklchChroma;
 
     // ── Clone-cone rotation — independent speeds/directions, default =
     //    contour. See the matching ConicArcStrokeConfig block. ────────────
-    public double CloneHuePeriodSeconds = 7.0;
-    public float  CloneHueDirection     = -1f;
-    public double CloneArcPeriodSeconds = 4.0;
-    public float  CloneArcDirection     = -1f;
+    public double CloneHuePeriodSeconds = Defaults.CloneHuePeriodSeconds;
+    public float  CloneHueDirection     = Defaults.CloneHueDirection;
+    public double CloneArcPeriodSeconds = Defaults.CloneArcPeriodSeconds;
+    public float  CloneArcDirection     = Defaults.CloneArcDirection;
 
     // ── Rewriting variant ───────────────────────────────────────────────
-    public float  RewritingSaturation    = 1f;
-    public float  RewritingHueShiftTurns = 0f;
-    public float  RewritingExposure      = 0f;
-    public float  RewritingOpacity       = 1f;
-    public double RewritingBlendSeconds  = 2;
+    public float  RewritingSaturation    = Defaults.RewritingSaturation;
+    public float  RewritingHueShiftTurns = Defaults.RewritingHueShiftTurns;
+    public float  RewritingExposure      = Defaults.RewritingExposure;
+    public float  RewritingOpacity       = Defaults.RewritingOpacity;
+    public double RewritingBlendSeconds  = Defaults.RewritingBlendSeconds;
 
     // ── Transcribing variant ────────────────────────────────────────────
-    public float  TranscribingSaturationDark  = 0f;
-    public float  TranscribingSaturationLight = 0f;
-    public float  TranscribingHueShiftTurns   = 0f;
-    public float  TranscribingExposureDark    = 1.0f;
-    public float  TranscribingExposureLight   = -1.0f;
-    public float  TranscribingOpacity         = 1f;
-    public double TranscribingBlendSeconds    = 2;
+    public float  TranscribingSaturationDark  = Defaults.TranscribingSaturationDark;
+    public float  TranscribingSaturationLight = Defaults.TranscribingSaturationLight;
+    public float  TranscribingHueShiftTurns   = Defaults.TranscribingHueShiftTurns;
+    public float  TranscribingExposureDark    = Defaults.TranscribingExposureDark;
+    public float  TranscribingExposureLight   = Defaults.TranscribingExposureLight;
+    public float  TranscribingOpacity         = Defaults.TranscribingOpacity;
+    public double TranscribingBlendSeconds    = Defaults.TranscribingBlendSeconds;
 
     // ── Recording variant — paint-time ──────────────────────────────────
-    public float RecordingConicSpanTurns     = 0.5f;
-    public float RecordingConicLeadFadeTurns = 1f;
-    public float RecordingConicTailFadeTurns = 1f;
-    public float RecordingConicFadeCurve     = 2f;
-    public bool  RecordingArcMirror          = true;
-    public float RecordingArcPhaseTurns      = 0f;
+    public float RecordingConicSpanTurns     = Defaults.RecordingConicSpanTurns;
+    public float RecordingConicLeadFadeTurns = Defaults.RecordingConicLeadFadeTurns;
+    public float RecordingConicTailFadeTurns = Defaults.RecordingConicTailFadeTurns;
+    public float RecordingConicFadeCurve     = Defaults.RecordingConicFadeCurve;
+    public bool  RecordingArcMirror          = Defaults.RecordingArcMirror;
+    public float RecordingArcPhaseTurns      = Defaults.RecordingArcPhaseTurns;
 
     // ── Recording variant — runtime ─────────────────────────────────────
-    public float  RecordingSaturationDark  = 0f;
-    public float  RecordingSaturationLight = 0f;
-    public float  RecordingHueShiftTurns   = 0f;
-    public float  RecordingExposureDark    = 1.0f;
-    public float  RecordingExposureLight   = -1.0f;
-    public double RecordingBlendSeconds    = 2;
-    public double RecordingHuePeriodSeconds = 0;
+    public float  RecordingSaturationDark  = Defaults.RecordingSaturationDark;
+    public float  RecordingSaturationLight = Defaults.RecordingSaturationLight;
+    public float  RecordingHueShiftTurns   = Defaults.RecordingHueShiftTurns;
+    public float  RecordingExposureDark    = Defaults.RecordingExposureDark;
+    public float  RecordingExposureLight   = Defaults.RecordingExposureLight;
+    public double RecordingBlendSeconds    = Defaults.RecordingBlendSeconds;
+    public double RecordingHuePeriodSeconds = Defaults.RecordingHuePeriodSeconds;
 
     public void LoadMaterial(ConicArcStrokeConfig source)
     {
