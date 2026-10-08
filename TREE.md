@@ -2009,7 +2009,8 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── CorrectionApplicationTrialTests.cs
 │   │   ├── Deckle.Playground.Tests.csproj
 │   │   ├── HudTuningSectionsBugNotes.md
-│   │   └── HudViewModelTests.cs
+│   │   ├── HudViewModelTests.cs
+│   │   └── TuningModelTests.cs
 │   ├── Deckle.Security.Tests/
 │   │   ├── Deckle.Security.Tests.csproj
 │   │   └── SecretVaultTests.cs
