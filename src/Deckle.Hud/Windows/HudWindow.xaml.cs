@@ -48,7 +48,7 @@ public sealed partial class HudWindow : Window
 {
     private const int HUD_WIDTH         = 272;
     private const int HUD_HEIGHT        =  78;
-    private const int HUD_BOTTOM_MARGIN =  96;
+    internal const int HUD_BOTTOM_MARGIN =  96;
 
     // Continuous fade: alpha mapped to cursor/HUD distance through smoothstep.
     //   distance >= FAR_RADIUS → alpha MAX_ALPHA (full HUD)
