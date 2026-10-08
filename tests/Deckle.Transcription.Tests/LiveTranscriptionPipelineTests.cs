@@ -108,12 +108,12 @@ public sealed class LiveTranscriptionPipelineTests
 
         Assert.Equal(
             ToggleResult.Started,
-            engine.RequestToggle(null, shouldPaste: false, requireProfile: false));
+            engine.RequestToggle(shouldPaste: false));
         await backend.TwoCallsCompleted.Task.WaitAsync(
             TimeSpan.FromSeconds(5), testCancellation);
         Assert.Equal(
             ToggleResult.Stopped,
-            engine.RequestToggle(null, shouldPaste: false, requireProfile: false));
+            engine.RequestToggle(shouldPaste: false));
 
         await finished.Task.WaitAsync(TimeSpan.FromSeconds(5), testCancellation);
         await ready.Task.WaitAsync(TimeSpan.FromSeconds(5), testCancellation);
