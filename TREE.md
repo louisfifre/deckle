@@ -1383,7 +1383,11 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── AGENTS.md  — [agent-instructions] Apps and games domain module — the registry of apps the user cares about, notic…
 │   │   ├── CLAUDE.md
 │   │   ├── Deckle.Orchestration.csproj
-│   │   └── DeckleOrchestrationSource.cs
+│   │   ├── DeckleOrchestrationSource.cs
+│   │   ├── OrchestrationSettings.cs
+│   │   ├── OrchestrationSettingsModule.cs
+│   │   ├── OrchestrationSettingsService.cs
+│   │   └── SettingsSearch.cs
 │   ├── Deckle.Playground/
 │   │   ├── Models/
 │   │   │   ├── CorrectionApplicationEvidence.cs
