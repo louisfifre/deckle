@@ -2047,10 +2047,18 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── NotificationCatalogTests.cs
 │   │   └── NotificationDispatcherTests.cs
 │   ├── Deckle.Orchestration.Tests/
+│   │   ├── Fixtures/
+│   │   │   ├── appmanifest_480.acf
+│   │   │   └── libraryfolders.vdf
 │   │   ├── AppMatcherTests.cs
 │   │   ├── AppRulesTests.cs
 │   │   ├── Deckle.Orchestration.Tests.csproj
-│   │   └── DeckleOrchestrationSourceTests.cs
+│   │   ├── DeckleOrchestrationSourceTests.cs
+│   │   ├── ExecutableLocatorTests.cs
+│   │   ├── Fixture.cs
+│   │   ├── KeyValuesReaderTests.cs
+│   │   ├── ScanOnDiskTests.cs
+│   │   └── SteamLibraryTests.cs
 │   ├── Deckle.Playground.Tests/
 │   │   ├── CorrectionApplicationEvidenceTests.cs
 │   │   ├── CorrectionApplicationTrialTests.cs

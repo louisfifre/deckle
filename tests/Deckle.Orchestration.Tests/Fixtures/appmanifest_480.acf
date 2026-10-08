@@ -1,0 +1,25 @@
+"AppState"
+{
+	"appid"		"480"
+	"Universe"		"1"
+	"name"		"Spacewar"
+	"StateFlags"		"4"
+	"installdir"		"Spacewar"
+	"LastUpdated"		"1700000000"
+	"SizeOnDisk"		"12345"
+	"buildid"		"100"
+	"LastOwner"		"0"
+	"AutoUpdateBehavior"		"0"
+	"InstalledDepots"
+	{
+		"481"
+		{
+			"manifest"		"1111111111111111111"
+			"size"		"12345"
+		}
+	}
+	"UserConfig"
+	{
+		"language"		"english"
+	}
+}
