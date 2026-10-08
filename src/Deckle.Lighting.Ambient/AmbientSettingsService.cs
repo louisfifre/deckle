@@ -68,7 +68,7 @@ public sealed class AmbientSettingsService
     /// <see cref="AmbientSettings.Mode"/> to the same value, then
     /// saves. Custom is a no-op : the mode flips to Custom but every
     /// other knob keeps its current value (this is the path the
-    /// Playground takes when the user starts tuning by hand). Fires
+    /// AmbientViewModel takes when the user starts tuning by hand). Fires
     /// <see cref="Changed"/> as part of <see cref="Save"/>.</summary>
     public void ApplyPreset(AmbientMode mode)
     {

@@ -21,26 +21,21 @@ internal readonly struct AmbientBrightnessCurve
         _ay = 1.0 - _cy - _by;
     }
 
-    public static (byte R, byte G, byte B) Apply(
-        byte r,
-        byte g,
-        byte b,
+    // Shapes the encoded max channel through the curve and scales the
+    // three channels by the same factor, so the chromaticity holds and
+    // only the brightness moves. Black stays black.
+    public static SrgbColor Apply(
+        SrgbColor color,
         double x1,
         double y1,
         double x2,
         double y2)
     {
-        int max = Math.Max(r, Math.Max(g, b));
-        if (max == 0) return (r, g, b);
+        float max = color.Max;
+        if (max <= 0f) return color;
 
-        double ratio = max / 255.0;
-        double shaped = new AmbientBrightnessCurve(x1, y1, x2, y2).Solve(ratio);
-        double scale = shaped / ratio;
-
-        return (
-            (byte)Math.Clamp((int)Math.Round(r * scale), 0, 255),
-            (byte)Math.Clamp((int)Math.Round(g * scale), 0, 255),
-            (byte)Math.Clamp((int)Math.Round(b * scale), 0, 255));
+        double shaped = new AmbientBrightnessCurve(x1, y1, x2, y2).Solve(max);
+        return color.Scale((float)(shaped / max));
     }
 
     public double Solve(double x, double epsilon = 1e-6)

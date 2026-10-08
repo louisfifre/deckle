@@ -1,3 +1,4 @@
+using Deckle.Lighting;
 using Xunit;
 
 namespace Deckle.Lighting.Ambient.Tests;
@@ -9,10 +10,8 @@ public sealed class AmbientBrightnessCurveTests
     public void LinearBezierLeavesColourUnchangedWhenFloorDisabled()
     {
         var tuned = AmbientColorPipeline.ApplyTuning(
-            50,
-            100,
-            25,
-            isDark: false,
+            Encoded(50, 100, 25),
+            isBlack: false,
             saturationBoost: 1.0,
             brightnessCurveX1: 1.0 / 3.0,
             brightnessCurveY1: 1.0 / 3.0,
@@ -21,17 +20,15 @@ public sealed class AmbientBrightnessCurveTests
             minBrightnessEnabled: false,
             minBrightness: 180);
 
-        Assert.Equal((50, 100, 25), tuned);
+        Assert.Equal(new LightColor(50, 100, 25), tuned.Quantize());
     }
 
     [Fact]
     public void MinimumBrightnessDisabledLeavesDimColourDim()
     {
         var tuned = AmbientColorPipeline.ApplyTuning(
-            10,
-            5,
-            0,
-            isDark: false,
+            Encoded(10, 5, 0),
+            isBlack: false,
             saturationBoost: 1.0,
             brightnessCurveX1: 1.0 / 3.0,
             brightnessCurveY1: 1.0 / 3.0,
@@ -40,17 +37,15 @@ public sealed class AmbientBrightnessCurveTests
             minBrightnessEnabled: false,
             minBrightness: 100);
 
-        Assert.Equal((10, 5, 0), tuned);
+        Assert.Equal(new LightColor(10, 5, 0), tuned.Quantize());
     }
 
     [Fact]
     public void MinimumBrightnessEnabledRaisesDimColourFloor()
     {
         var tuned = AmbientColorPipeline.ApplyTuning(
-            10,
-            5,
-            0,
-            isDark: false,
+            Encoded(10, 5, 0),
+            isBlack: false,
             saturationBoost: 1.0,
             brightnessCurveX1: 1.0 / 3.0,
             brightnessCurveY1: 1.0 / 3.0,
@@ -59,7 +54,7 @@ public sealed class AmbientBrightnessCurveTests
             minBrightnessEnabled: true,
             minBrightness: 100);
 
-        Assert.Equal((100, 50, 0), tuned);
+        Assert.Equal(new LightColor(100, 50, 0), tuned.Quantize());
     }
 
     [Fact]
@@ -67,10 +62,8 @@ public sealed class AmbientBrightnessCurveTests
     public void MinimumBrightnessEnabledKeepsBlackSampleAtFloor()
     {
         var tuned = AmbientColorPipeline.ApplyTuning(
-            0,
-            0,
-            0,
-            isDark: true,
+            SrgbColor.FromLinear(0f, 0f, 0f),
+            isBlack: true,
             saturationBoost: 1.0,
             brightnessCurveX1: 0.18,
             brightnessCurveY1: 0.55,
@@ -79,17 +72,15 @@ public sealed class AmbientBrightnessCurveTests
             minBrightnessEnabled: true,
             minBrightness: 90);
 
-        Assert.Equal((90, 90, 90), tuned);
+        Assert.Equal(new LightColor(90, 90, 90), tuned.Quantize());
     }
 
     [Fact]
     public void MinimumBrightnessDisabledAllowsBlackSample()
     {
         var tuned = AmbientColorPipeline.ApplyTuning(
-            0,
-            0,
-            0,
-            isDark: true,
+            SrgbColor.FromLinear(0f, 0f, 0f),
+            isBlack: true,
             saturationBoost: 1.0,
             brightnessCurveX1: 0.18,
             brightnessCurveY1: 0.55,
@@ -98,7 +89,7 @@ public sealed class AmbientBrightnessCurveTests
             minBrightnessEnabled: false,
             minBrightness: 90);
 
-        Assert.Equal((0, 0, 0), tuned);
+        Assert.Equal(LightColor.Black, tuned.Quantize());
     }
 
     [Fact]
@@ -113,4 +104,7 @@ public sealed class AmbientBrightnessCurveTests
         Assert.Equal(0.40, settings.BrightnessCurveX2);
         Assert.Equal(0.90, settings.BrightnessCurveY2);
     }
+
+    private static SrgbColor Encoded(byte r, byte g, byte b)
+        => new(r / 255f, g / 255f, b / 255f);
 }

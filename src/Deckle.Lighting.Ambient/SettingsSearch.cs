@@ -10,28 +10,38 @@ namespace Deckle.Lighting.Ambient;
 // each entry's text from this module's PRI subtree at boot (Loc.GetFrom on the page's
 // OwningAssembly) and answers queries over the resolved set — no page is ever composed.
 //
-// The list is declared by hand because AmbientPage is entirely hand-authored: it has no
-// SettingDescriptor manifest to enumerate (its would-be ViewModel lives in
-// Deckle.Playground and is not owned here), so every card exists only as a XAML x:Uid
-// and this list is the searchable set's only source. Each entry's LabelKey IS that
-// x:Uid: it resolves "<key>/Header" and "<key>/Description" straight from the module
-// .resw, and it is the same string stamped onto the card's Tag in AmbientPage.xaml so a
-// hit can scroll the card into view. No LiteralLabel is needed — these cards are
-// localized through x:Uid like any composed card, only without a composer to stamp the Tag.
+// Each entry's LabelKey resolves "<key>/Header" and "<key>/Description" from the module
+// .resw and is the string on the card's Tag, the handle a hit scrolls into view: the
+// composer stamps it on the cards it builds from AmbientViewModel.Settings.cs, and the
+// bespoke cards carry Tag="<key>" in AmbientPage.xaml.
+//
+// Children of a composed fold (the band shape and depth under "Colour per zone", the
+// floor level under "Brightness floor") are not indexed — a hit must be bringable into
+// view, and they hide with their master — so the fold's keywords bridge to them. The
+// per-light rows (LightZonesCard) hide with the per-zone fold too and are reached
+// through its keywords the same way.
 //
 // Maintenance contract: a card added to AmbientPage that a user should be able to find
-// gets one entry here AND a matching Tag in the XAML. The transient NotPaired InfoBar is
-// deliberately absent — it is a state banner, not a setting.
+// gets one entry here (and, when bespoke, a matching Tag in the XAML). The transient
+// NotPaired InfoBar is deliberately absent — it is a state banner, not a setting.
 public static class SettingsSearch
 {
     public static IReadOnlyList<SettingSearchEntry> Entries { get; } =
     [
         new() { LabelKey = "AmbientEnabledCard", Keywords = ["ambilight", "bias lighting", "backlight"] },
-        new() { LabelKey = "AmbientModeCard", Keywords = ["preset", "game", "movie"] },
+        new() { LabelKey = "AmbientModeCard", Keywords = ["preset", "game", "movie", "custom"] },
+        new() { LabelKey = "AmbientZonesGroup", Keywords = ["multi light", "zones", "edges", "border", "depth", "band", "per light", "lamp", "identify"] },
+        new() { LabelKey = "AmbientBrightnessCurveCard", Keywords = ["curve", "bezier", "response", "shadows"] },
+        new() { LabelKey = "AmbientMinBrightnessGroup", Keywords = ["minimum brightness", "floor", "dark scenes"] },
+        new() { LabelKey = "AmbientSmoothingCard", Keywords = ["smoothing", "speed", "fade", "lag"] },
+        new() { LabelKey = "AmbientChangeThresholdCard", Keywords = ["threshold", "flicker", "steady"] },
+        new() { LabelKey = "AmbientExposureCard", Keywords = ["ev", "brightness", "hdr"] },
+        new() { LabelKey = "AmbientSaturationCard", Keywords = ["vivid", "colour", "color", "chroma"] },
+        new() { LabelKey = "AmbientMonitorCard", Keywords = ["monitor", "screen", "display"] },
+        new() { LabelKey = "AmbientCaptureRateCard", Keywords = ["fps", "frame rate", "hz", "performance"] },
         new() { LabelKey = "HueBridgeExpander", Keywords = ["philips", "pair", "connect"] },
         new() { LabelKey = "HueBridgeAddressCard", Keywords = ["ip", "discover", "network"] },
         new() { LabelKey = "HueBridgeGroupCard", Keywords = ["group", "entertainment", "lights"] },
         new() { LabelKey = "HueBridgeForgetCard", Keywords = ["remove", "unpair", "delete"] },
-        new() { LabelKey = "AmbientOpenPlaygroundCard", Keywords = ["tuning", "calibrate"] },
     ];
 }

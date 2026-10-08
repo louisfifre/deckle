@@ -31,7 +31,7 @@ public interface IFrameAnalyzer
     /// <summary>Inspects a sampled frame and returns optional hints
     /// the downstream consumer can use to bias its colour reduction.
     /// Implementations should be cheap — this runs on every tick of
-    /// the capture pump (~15 Hz). Return <c>default</c> when the
+    /// the capture pump (60 Hz by default). Return <c>default</c> when the
     /// analyzer has nothing useful to say for this frame.</summary>
     FrameAnalysisHint Analyze(SampledFrame frame);
 }

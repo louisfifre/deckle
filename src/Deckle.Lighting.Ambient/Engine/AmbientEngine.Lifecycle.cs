@@ -69,7 +69,7 @@ public sealed partial class AmbientEngine
              || string.IsNullOrEmpty(ambient.HueLastGroupId))
             {
                 throw new InvalidOperationException(
-                    "Hue bridge not paired or no group selected — open the Playground and complete the Hue pair + group selection first.");
+                    "Hue bridge not paired or no group selected — open Settings > Ambient Light and complete the Hue pair + group selection first.");
             }
 
             if (!HueBridgeClient.IsPrivateBridgeIp(ambient.HueBridgeIp))
@@ -100,9 +100,9 @@ public sealed partial class AmbientEngine
             // ── Wire owned deps ───────────────────────────────────
             // The bridge client is owned by HuePairingService — a
             // process-wide singleton that auto-restores from settings
-            // on first access (and is shared with the Playground +
-            // Settings AmbientPage so re-pairing from one surface
-            // takes effect everywhere without an engine restart). The
+            // on first access (and is shared with the Settings
+            // AmbientPage and LightZonesCard so re-pairing from one
+            // surface takes effect everywhere without an engine restart). The
             // engine borrows the reference, never disposes it.
             // Verify the cached LAN endpoint before allocating capture
             // resources. A DHCP move is repaired through one local
@@ -123,7 +123,8 @@ public sealed partial class AmbientEngine
                 .ConfigureAwait(false);
             _managedGroupId = ambient.HueLastGroupId;
 
-            _capture = new ScreenCaptureService();
+            _capture = new ScreenCaptureService(
+                AmbientCaptureRate.Snap(ambient.CaptureFrameRateHz));
             _capture.Start(ambient.SelectedMonitorDeviceName);
 
             _sampler = new FrameSampler(
@@ -263,8 +264,9 @@ public sealed partial class AmbientEngine
             _heartbeatWindow.Stop();
             ResetHeartbeatCounters();
             _lastR = _lastG = _lastB = -1;
-            _smoothedR = _smoothedG = _smoothedB = -1f;
-            _multiSmoothed.Clear();
+            _smoother.Clear();
+            _blackLatch.Clear();
+            _lastTickTimestamp = 0;
             ClearHueAttributionStates();
             _stopReason = "user";
             lock (_emittedLock) _emittedColors.Clear();
@@ -417,8 +419,7 @@ public sealed partial class AmbientEngine
         // loop's exit first (cancellation already triggered above),
         // then DisposeOwnedDepsAsync which releases the DXGI duplication
         // held by the capture — freeing the output for any other
-        // ScreenCaptureService (e.g. the Playground's standalone test
-        // toggle) that wants to call DuplicateOutput1 on the same
+        // other ScreenCaptureService that wants to call DuplicateOutput1 on the same
         // monitor right after.
         var pushTask = _pushLoopTask;
         _stopCleanupTask = Task.Run(async () =>
@@ -443,9 +444,6 @@ public sealed partial class AmbientEngine
             SetState(AmbientEngineState.Off);
         });
     }
-
-    public static LightColor SampleZone(SampledFrame sample, LightZone zone, int bandCells)
-        => AmbientZoneSampler.SampleZone(sample, zone, bandCells);
 
     public async ValueTask DisposeAsync()
     {

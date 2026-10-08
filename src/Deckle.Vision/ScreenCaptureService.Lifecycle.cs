@@ -86,7 +86,8 @@ public sealed partial class ScreenCaptureService
                 {
                     DeckleVisionSource.Log.CaptureSessionConfigured(
                         (long)_hmon, _lastSize.Width, _lastSize.Height, _activeFormat.ToString(),
-                        _isHdrSession ? "on" : "off", _peakLuminance, (int)AcquireTimeoutMs, ThrottleIntervalMs);
+                        _isHdrSession ? "on" : "off", _peakLuminance, (int)AcquireTimeoutMs,
+                        (int)Math.Round(1000.0 / _targetFrameRateHz));
                 }
             }
             catch (Exception ex)

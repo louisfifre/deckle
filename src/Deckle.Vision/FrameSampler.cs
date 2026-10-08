@@ -88,12 +88,31 @@ public sealed partial class FrameSampler : IAsyncDisposable
     // Rolling max of the recent frames' max-channel scRGB values,
     // consumed by ColorSpace.ScRgbToSrgb as the normalisation peak.
     // Updated at the end of each ReadGridFP16 ; consumed at the start
-    // of the next frame's tone-map (one-frame lag is harmless at
-    // 15 Hz). Asymmetric attack / release :
+    // of the next frame's tone-map, so the tone-map lags by one frame
+    // at the capture rate (~16 ms at 60 Hz). Asymmetric attack / release :
     //   - attack instant (rises with the first bright frame)
-    //   - release exponential — ContentPeakReleaseDecay per frame
+    //   - release exponential in time — ContentPeakRetentionPerSecond,
+    //     applied over the measured interval between processed frames
+    //     so the release speed does not depend on the capture rate.
     private float _contentPeak = 1.0f;
-    private const float ContentPeakReleaseDecay = 0.97f;
+
+    // Share of the gap between the rolling peak and the current frame's
+    // peak that survives one second of release: 0.97^15 ≈ 0.633, a
+    // half-life of about 1.5 s. Kept equal to the former 0.97 per frame
+    // at the original 15 Hz capture.
+    internal static readonly double ContentPeakRetentionPerSecond = Math.Pow(0.97, 15);
+
+    // Stopwatch timestamp of the previous processed frame, 0 before the
+    // first one. Feeds the release interval; guarded by _lock.
+    private long _lastProcessedTicks;
+
+    /// <summary>Share of the content-peak release gap kept after
+    /// <paramref name="elapsedSeconds"/>. 1 (no release) for a zero or
+    /// negative interval, such as the first frame of a session.</summary>
+    internal static float ContentPeakRetention(double elapsedSeconds)
+        => elapsedSeconds <= 0
+            ? 1f
+            : (float)Math.Pow(ContentPeakRetentionPerSecond, elapsedSeconds);
 
     // Live-reloaded by the engine before each tick when the user
     // moves the AmbientPage Exposure slider. Applied as a linear-

@@ -60,12 +60,6 @@
                         <FontIcon Glyph="{StaticResource Icon.Speaker}" />
                     </NavigationViewItem.Icon>
                 </NavigationViewItem>
-                <NavigationViewItem x:Uid="PlaygroundNavAmbient"
-                                    Tag="Deckle.Playground.AmbientPage">
-                    <NavigationViewItem.Icon>
-                        <FontIcon Glyph="{StaticResource Icon.Lightbulb}" />
-                    </NavigationViewItem.Icon>
-                </NavigationViewItem>
                 <NavigationViewItem x:Uid="PlaygroundNavSegmentation"
                                     Tag="Deckle.Playground.SegmentationPage">
                     <NavigationViewItem.Icon>

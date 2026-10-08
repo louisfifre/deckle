@@ -119,13 +119,29 @@
   <!-- AmbientPage strings consumed via x:Uid. Master state +
        Behaviour (Mode) + HDR tuning (Exposure / Saturation /
        Min brightness / Brightness curve) + Configuration (Hue
-       bridge pairing). Per-light zones and per-light brightness
-       still live in the Playground until phase II migrates them. -->
+       bridge pairing). The live preview and the per-light rows
+       (zone, brightness, Identify) follow further down. -->
   <data name="AmbientPageTitleLabel.Text" xml:space="preserve">
     <value>Ambient Light</value>
   </data>
   <data name="AmbientPageSubtitleLabel.Text" xml:space="preserve">
     <value>Mirror your screen to your Philips Hue lights. Works best with HDR content.</value>
+  </data>
+
+  <!-- Page-level Reset all (title row) and its confirmation dialog.
+       The dialog keys are read by Loc.Get in AmbientPage.xaml.cs and
+       mirrored in src/Deckle.App/Strings/en-US/Resources.resw. -->
+  <data name="AmbientPage_ResetAll.ToolTipService.ToolTip" xml:space="preserve">
+    <value>Reset all Ambient Light settings to defaults</value>
+  </data>
+  <data name="AmbientPageResetAllLabel.Text" xml:space="preserve">
+    <value>Reset all</value>
+  </data>
+  <data name="Settings_ResetAmbientDialog_Title" xml:space="preserve">
+    <value>Reset all settings?</value>
+  </data>
+  <data name="Settings_ResetAmbientDialog_Content" xml:space="preserve">
+    <value>This will restore the mode, the fine tuning, the colour per zone with its edge band, and the capture rate to their default values. Your Hue bridge pairing, light group, display, per-light zones and brightness, and whether Ambient Light is on stay as they are.</value>
   </data>
 
   <!-- ── State ─────────────────────────────────────────────── -->
@@ -156,8 +172,9 @@
     <value>Mode</value>
   </data>
   <data name="AmbientModeCard.Description" xml:space="preserve">
-    <value>Game is vivid and quick. Movie smooths colour changes for cinematic content. Ambient stays soft and slow as room mood lighting. Custom is what the Playground tunes when you touch a slider.</value>
+    <value>Game is vivid and quick. Movie smooths colour changes for cinematic content. Ambient stays soft and slow as room mood lighting. Changing a fine-tuning setting below switches to Custom.</value>
   </data>
+  <!-- Mode options: composed (Setting.Choice), read as "<key>.Content". -->
   <data name="AmbientModeGame.Content" xml:space="preserve">
     <value>Game</value>
   </data>
@@ -170,24 +187,85 @@
   <data name="AmbientModeCustom.Content" xml:space="preserve">
     <value>Custom</value>
   </data>
+  <data name="AmbientZonesGroup.Header" xml:space="preserve">
+    <value>Colour per zone</value>
+  </data>
+  <data name="AmbientZonesGroup.Description" xml:space="preserve">
+    <value>Each light takes the colour of the screen edge it is assigned to, instead of every light sharing one colour.</value>
+  </data>
+  <data name="AmbientBorderModeCard.Header" xml:space="preserve">
+    <value>Edge depth measured</value>
+  </data>
+  <data name="AmbientBorderModeCard.Description" xml:space="preserve">
+    <value>Choose whether each edge reaches the same share of the screen, or the same distance on every side.</value>
+  </data>
+  <data name="AmbientBorderModeShare.Content" xml:space="preserve">
+    <value>As a share of the screen</value>
+  </data>
+  <data name="AmbientBorderModeCells.Content" xml:space="preserve">
+    <value>Equally on every edge</value>
+  </data>
+  <data name="AmbientBorderDepthCard.Header" xml:space="preserve">
+    <value>Edge depth</value>
+  </data>
+  <data name="AmbientBorderDepthCard.Description" xml:space="preserve">
+    <value>How far into the screen each light looks. Deeper edges give calmer colours.</value>
+  </data>
+  <data name="AmbientBorderCellsCard.Header" xml:space="preserve">
+    <value>Edge depth</value>
+  </data>
+  <data name="AmbientBorderCellsCard.Description" xml:space="preserve">
+    <value>How far into the screen each light looks, the same on every edge. Deeper edges give calmer colours.</value>
+  </data>
 
-  <!-- ── HDR tuning ────────────────────────────────────────── -->
-  <!-- The four HDR slider cards (Exposure, Saturation, MinBrightness,
-       BrightnessCurve) moved to the Playground in V0.3. The Settings
-       page keeps only a section header and a single card pointing to
-       the Playground for fine tuning ; the empirical knobs benefit
-       from the Playground's live preview. -->
+  <!-- ── Fine tuning ───────────────────────────────────────── -->
   <data name="AmbientTuningSectionHeader.Text" xml:space="preserve">
     <value>Fine tuning</value>
   </data>
-  <data name="AmbientOpenPlaygroundCard.Header" xml:space="preserve">
-    <value>Open the Playground</value>
+  <data name="AmbientBrightnessCurveCard.Header" xml:space="preserve">
+    <value>Brightness response</value>
   </data>
-  <data name="AmbientOpenPlaygroundCard.Description" xml:space="preserve">
-    <value>Adjust exposure, saturation, brightness curve, smoothing, and per-light settings with a live preview of the sampled grid.</value>
+  <data name="AmbientBrightnessCurveCard.Description" xml:space="preserve">
+    <value>How the screen's brightness turns into the lights' brightness. Drag the two points to lift dark scenes or keep them low.</value>
+  </data>
+  <data name="AmbientMinBrightnessGroup.Header" xml:space="preserve">
+    <value>Brightness floor</value>
+  </data>
+  <data name="AmbientMinBrightnessGroup.Description" xml:space="preserve">
+    <value>Keeps the lights bright enough for their colour to show in dark scenes. Off lets dark scenes go fully dark.</value>
+  </data>
+  <data name="AmbientMinBrightnessCard.Header" xml:space="preserve">
+    <value>Floor level</value>
+  </data>
+  <data name="AmbientMinBrightnessCard.Description" xml:space="preserve">
+    <value>The lowest brightness the lights go down to, up to 254 for full brightness.</value>
+  </data>
+  <data name="AmbientSmoothingCard.Header" xml:space="preserve">
+    <value>Reaction speed</value>
+  </data>
+  <data name="AmbientSmoothingCard.Description" xml:space="preserve">
+    <value>How quickly the lights follow the screen. Lower values glide between colours; 1 follows every change at once.</value>
+  </data>
+  <data name="AmbientChangeThresholdCard.Header" xml:space="preserve">
+    <value>Change threshold</value>
+  </data>
+  <data name="AmbientChangeThresholdCard.Description" xml:space="preserve">
+    <value>Ignores colour changes smaller than this, so the lights stay steady on still scenes. 0 follows every change.</value>
+  </data>
+  <data name="AmbientExposureCard.Header" xml:space="preserve">
+    <value>Exposure</value>
+  </data>
+  <data name="AmbientExposureCard.Description" xml:space="preserve">
+    <value>Brightens or darkens the screen image before it reaches the lights. +1 EV doubles the brightness, −1 EV halves it.</value>
+  </data>
+  <data name="AmbientSaturationCard.Header" xml:space="preserve">
+    <value>Saturation</value>
+  </data>
+  <data name="AmbientSaturationCard.Description" xml:space="preserve">
+    <value>Makes the light colours more vivid or more muted. 1× keeps the screen's colours, 0× turns them grey.</value>
   </data>
 
-  <!-- ── Configuration : Hue bridge pairing ────────────────── -->
+  <!-- ── Configuration : capture and Hue bridge pairing ────── -->
   <data name="AmbientConfigSectionHeader.Text" xml:space="preserve">
     <value>Configuration</value>
   </data>
@@ -195,7 +273,22 @@
     <value>Capture display</value>
   </data>
   <data name="AmbientMonitorCard.Description" xml:space="preserve">
-    <value>Choose the display Ambient Light follows. Changes apply the next time it starts.</value>
+    <value>Choose the display Ambient Light follows.</value>
+  </data>
+  <data name="AmbientCaptureRateCard.Header" xml:space="preserve">
+    <value>Capture rate</value>
+  </data>
+  <data name="AmbientCaptureRateCard.Description" xml:space="preserve">
+    <value>How often the screen is read. Higher rates keep the lights smooth and quick; lower rates ease the load on slower PCs.</value>
+  </data>
+  <data name="AmbientCaptureRate60.Content" xml:space="preserve">
+    <value>60 times per second</value>
+  </data>
+  <data name="AmbientCaptureRate30.Content" xml:space="preserve">
+    <value>30 times per second</value>
+  </data>
+  <data name="AmbientCaptureRate15.Content" xml:space="preserve">
+    <value>15 times per second</value>
   </data>
   <data name="AmbientMonitor_Primary" xml:space="preserve">
     <value>Primary display (follow Windows)</value>
@@ -326,6 +419,60 @@
     <value>Deckle is already paired with a bridge. Pairing again replaces the current address and credentials with the new ones.</value>
   </data>
 
+  <!-- AmbientPreviewCard (x:Uid). -->
+  <data name="AmbientPreviewExpander.Header" xml:space="preserve">
+    <value>Live preview</value>
+  </data>
+  <data name="AmbientPreviewExpander.Description" xml:space="preserve">
+    <value>See what the capture samples and the colour each light receives, while Ambient Light runs.</value>
+  </data>
+  <!-- AmbientPreviewCard code-behind (Loc.Get) — mirrored in Deckle.App. -->
+  <data name="AmbientPreview_GroupSwatch" xml:space="preserve">
+    <value>All lights</value>
+  </data>
+
+  <!-- LightZonesCard (x:Uid). -->
+  <data name="AmbientLightsExpander.Header" xml:space="preserve">
+    <value>Lights</value>
+  </data>
+  <data name="AmbientLightsExpander.Description" xml:space="preserve">
+    <value>Pick the screen edge each light follows and how bright it gets. A light with no zone keeps its current state.</value>
+  </data>
+  <data name="AmbientLightsEmptyState.Text" xml:space="preserve">
+    <value>No lights returned for this group. If this is an Entertainment Area, try selecting the matching Room/Zone instead, or check the Hue app.</value>
+  </data>
+  <!-- LightZonesCard code-behind (Loc.Get) — mirrored in Deckle.App's
+       Resources.resw, this copy is the source of truth for wording. -->
+  <data name="AmbientLights_Zone_None" xml:space="preserve">
+    <value>No zone</value>
+  </data>
+  <data name="AmbientLights_Zone_Top" xml:space="preserve">
+    <value>Top</value>
+  </data>
+  <data name="AmbientLights_Zone_Bottom" xml:space="preserve">
+    <value>Bottom</value>
+  </data>
+  <data name="AmbientLights_Zone_Left" xml:space="preserve">
+    <value>Left</value>
+  </data>
+  <data name="AmbientLights_Zone_Right" xml:space="preserve">
+    <value>Right</value>
+  </data>
+  <data name="AmbientLights_ZoneName" xml:space="preserve">
+    <value>Screen edge</value>
+  </data>
+  <data name="AmbientLights_BrightnessName" xml:space="preserve">
+    <value>Brightness</value>
+  </data>
+  <data name="AmbientLights_Identify" xml:space="preserve">
+    <value>Identify</value>
+  </data>
+  <data name="AmbientLights_Identifying" xml:space="preserve">
+    <value>Flashing…</value>
+  </data>
+  <data name="AmbientLights_Offline" xml:space="preserve">
+    <value>Offline</value>
+  </data>
   <data name="SettingsModuleNavLabel" xml:space="preserve">
     <value>Ambient Light</value>
   </data>

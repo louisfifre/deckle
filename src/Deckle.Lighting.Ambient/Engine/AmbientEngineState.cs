@@ -1,8 +1,7 @@
 namespace Deckle.Lighting.Ambient;
 
 // State machine for AmbientEngine, exposed via the StateChanged event.
-// Five values let consumers (tray status text, AmbientPage ProgressRing,
-// Playground button) distinguish a transient "in flight" state from a
+// Five values let consumers (tray status text, AmbientPage ProgressRing) distinguish a transient "in flight" state from a
 // settled Off / Running, and surface failures explicitly.
 //
 // Canonical transitions :

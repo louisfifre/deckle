@@ -24,6 +24,12 @@
     <ProjectReference Include="..\Deckle.Composition\Deckle.Composition.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <!-- Pure-logic internals (CapturePacer, the content-peak release)
+         are tested without a GPU. -->
+    <InternalsVisibleTo Include="Deckle.Vision.Tests" />
+  </ItemGroup>
+
   <PropertyGroup>
     <!-- EventSource [Event] parameters use snake_case so the ETW
          payload keys land directly in the JSONL output. Convention

@@ -2,13 +2,24 @@ using Deckle.Composition;
 
 namespace Deckle.Lighting.Ambient;
 
+// Per-tick tuning of one target colour, in float. Saturation runs in
+// OKLCh on linear light ; the brightness curve and the floor run on the
+// encoded channels. Nothing is rounded here : the push quantises once,
+// after smoothing.
 internal static class AmbientColorPipeline
 {
-    public static (byte R, byte G, byte B) ApplyTuning(
-        byte r,
-        byte g,
-        byte b,
-        bool isDark,
+    // The black gate : a source is black only when its unrounded linear
+    // mean is exactly (0, 0, 0), i.e. every cell it covers is black. A
+    // dark but non-black source is tuned like any other.
+    public static bool IsBlackSource((float R, float G, float B) linear)
+        => linear.R == 0f && linear.G == 0f && linear.B == 0f;
+
+    // isBlack marks an exactly black source (a linear mean of exactly
+    // (0, 0, 0), or a light the user turned off). It yields black when
+    // the floor is off and the neutral floor when it is on.
+    public static SrgbColor ApplyTuning(
+        SrgbColor color,
+        bool isBlack,
         double saturationBoost,
         double brightnessCurveX1,
         double brightnessCurveY1,
@@ -17,51 +28,50 @@ internal static class AmbientColorPipeline
         bool minBrightnessEnabled,
         int minBrightness)
     {
-        if (isDark && !minBrightnessEnabled) return (0, 0, 0);
+        if (isBlack)
+        {
+            return minBrightnessEnabled
+                ? ApplyMinBrightness(SrgbColor.Black, minBrightness)
+                : SrgbColor.Black;
+        }
 
-        (byte sR, byte sG, byte sB) = ApplySaturationBoost(r, g, b, saturationBoost);
-        (byte cR, byte cG, byte cB) = AmbientBrightnessCurve.Apply(
-            sR,
-            sG,
-            sB,
+        SrgbColor saturated = ApplySaturationBoost(color, saturationBoost);
+        SrgbColor shaped = AmbientBrightnessCurve.Apply(
+            saturated,
             brightnessCurveX1,
             brightnessCurveY1,
             brightnessCurveX2,
             brightnessCurveY2);
         return minBrightnessEnabled
-            ? ApplyMinBrightness(cR, cG, cB, minBrightness)
-            : (cR, cG, cB);
+            ? ApplyMinBrightness(shaped, minBrightness)
+            : shaped;
     }
 
-    private static (byte R, byte G, byte B) ApplySaturationBoost(byte r, byte g, byte b, double boost)
+    private static SrgbColor ApplySaturationBoost(SrgbColor color, double boost)
     {
-        if (Math.Abs(boost - 1.0) < 0.001) return (r, g, b);
+        if (Math.Abs(boost - 1.0) < 0.001) return color;
 
-        var (L, C, h) = ColorSpace.RgbToOklch(r, g, b);
-        if (C <= 0f) return (r, g, b);
+        var (rLin, gLin, bLin) = color.ToLinear();
+        var (L, C, h) = ColorSpace.LinearRgbToOklch(rLin, gLin, bLin);
+        if (C <= 0f) return color;
 
         float newC = (float)Math.Max(0.0, C * boost);
-        var result = ColorSpace.OklchToRgb(L, newC, h);
-        return (result.R, result.G, result.B);
+        return SrgbColor.FromLinear(ColorSpace.OklchToLinearRgb(L, newC, h));
     }
 
-    internal static (byte R, byte G, byte B) ApplyMinBrightness(byte r, byte g, byte b, int minBri)
+    // A floor of N raises the encoded max channel to N/255 (the byte
+    // semantics of MinBrightness), scaling the other channels with it ;
+    // black becomes the neutral floor.
+    internal static SrgbColor ApplyMinBrightness(SrgbColor color, int minBri)
     {
-        int floor = Math.Clamp(minBri, 0, 254);
-        if (floor == 0) return (r, g, b);
+        int floorByte = Math.Clamp(minBri, 0, 254);
+        if (floorByte == 0) return color;
 
-        int max = Math.Max(r, Math.Max(g, b));
-        if (max == 0)
-        {
-            byte neutral = (byte)floor;
-            return (neutral, neutral, neutral);
-        }
-        if (max >= floor) return (r, g, b);
+        float floor = floorByte / 255f;
+        float max = color.Max;
+        if (max <= 0f) return new SrgbColor(floor, floor, floor);
+        if (max >= floor) return color;
 
-        double scale = floor / (double)max;
-        return (
-            (byte)Math.Min(255, Math.Round(r * scale)),
-            (byte)Math.Min(255, Math.Round(g * scale)),
-            (byte)Math.Min(255, Math.Round(b * scale)));
+        return color.Scale(floor / max);
     }
 }

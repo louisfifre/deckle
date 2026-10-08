@@ -1,14 +1,12 @@
 using System;
 using System.Collections.Generic;
-using System.Threading;
-using Deckle.Lighting;
+using System.ComponentModel;
 using Deckle.Catalog;
+using Deckle.Diagnostics;
 using Deckle.Shell;
 using Deckle.Vision;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
-using Microsoft.UI.Xaml.Controls.Primitives;
-using Microsoft.UI.Xaml.Media;
 
 namespace Deckle.Lighting.Ambient;
 
@@ -16,51 +14,71 @@ namespace Deckle.Lighting.Ambient;
 // NavigationView from src/Deckle.Settings/SettingsWindow.xaml via the
 // item Tag "Deckle.Lighting.Ambient.AmbientPage, Deckle.Lighting.Ambient".
 //
-// Surface : master Enabled toggle, mode selector, Hue bridge pairing
-// expander (Discover / Pair / List groups / Forget), and an entry point
-// to the Playground for detailed tuning. The heavy visual tuning UI lives
-// in the Playground so Settings stays operational rather than experimental.
+// Surface : most cards are composed by SettingsComposer from the manifests in
+// AmbientViewModel.Settings.cs, one composer per host panel (StateHost,
+// BehaviourHost, TuningHost, CaptureHost). Six parts stay hand-authored
+// because the composer cannot express them, each marked "bespoke" in the
+// XAML: the NotPaired InfoBar, the live preview (AmbientPreviewCard), the
+// per-light rows (LightZonesCard), the
+// brightness-curve editor, the display picker (runtime labels) and the Hue
+// bridge expander (AmbientPage.Hue.cs).
 //
-// Persistence : event-handler style (Toggled / SelectionChanged /
-// ValueChanged) that mutates AmbientSettings.Current and calls
-// AmbientSettingsService.Instance.Save() inline. No view-model layer.
-//
-// Sync state : three subscriptions wired in Loaded and dropped in
-// Unloaded. The Settings Changed event re-syncs the controls from
-// settings so a flip from the tray / Playground propagates immediately
-// to the ToggleSwitch. The engine StateChanged event drives the
-// transient UI (ModeCombo gating). The HuePairingService.BridgeChanged
-// event re-syncs the Hue expander row so a re-pair / forget from the
-// Playground reflects live. All three are guarded by a _loading flag
-// that suppresses the re-fire loop when handlers touch the same
-// controls that triggered them.
+// Sync : the view model writes every edit straight to AmbientSettingsService
+// and saves. The page observes AmbientSettingsService.Changed and reloads the
+// view model, so an edit from the tray or a preset lands here
+// at once; the composers follow the view model's PropertyChanged. The
+// HuePairingService.BridgeChanged event re-syncs the Hue expander. Both are
+// wired in Loaded and dropped in Unloaded. A _loading flag keeps the display
+// combo's SelectionChanged from saving while the page fills it.
 public sealed partial class AmbientPage : Page
 {
+    public AmbientViewModel ViewModel { get; } = new();
+
+    // Held so each composer's PropertyChanged subscription lives as long as
+    // the page.
+    private readonly List<SettingsComposer> _composers = new();
+
     private bool _loading = true;
-    private AmbientEngine? _observedEngine;
 
     public AmbientPage()
     {
         InitializeComponent();
+
+        // Load before composing so every composed card starts on the stored
+        // value rather than the view model's constructor seed.
+        ViewModel.Load();
+        ComposeRegion(StateHost, ViewModel.StateSettings);
+        ComposeRegion(BehaviourHost, ViewModel.BehaviourSettings);
+        ComposeRegion(TuningHost, ViewModel.TuningSettings);
+        ComposeRegion(CaptureHost, ViewModel.CaptureSettings);
+
+        // The curve card's hand-authored reset: shown on hover like the
+        // composed resets, enabled only while the curve is off its default.
+        BrightnessCurveCard.PointerEntered += (_, _) => BrightnessCurveReset.Opacity = 1;
+        BrightnessCurveCard.PointerExited += (_, _) => BrightnessCurveReset.Opacity = 0;
+        ToolTipService.SetToolTip(BrightnessCurveReset, Loc.Get("SettingsComposer_ResetToDefault"));
+        ViewModel.PropertyChanged += OnViewModelPropertyChanged;
+        UpdateBrightnessCurveReset();
+
         Loaded   += AmbientPage_Loaded;
         Unloaded += AmbientPage_Unloaded;
     }
 
+    private void ComposeRegion(Panel host, IReadOnlyList<SettingDescriptor> settings)
+    {
+        var composer = new SettingsComposer(host, ViewModel);
+        composer.Compose(settings);
+        _composers.Add(composer);
+    }
+
     private void AmbientPage_Loaded(object sender, RoutedEventArgs e)
     {
-        var engine = AmbientEngine.Current;
-
+        ViewModel.Load();
         ResyncFromSettings();
         SyncHueBridgeUi();
-        ApplyEngineState(engine?.State ?? AmbientEngineState.Off);
 
         AmbientSettingsService.Instance.Changed += OnSettingsChanged;
         HuePairingService.Instance.BridgeChanged += OnHueBridgeChanged;
-        if (engine is not null)
-        {
-            _observedEngine = engine;
-            _observedEngine.StateChanged += OnEngineStateChanged;
-        }
 
         _loading = false;
     }
@@ -76,17 +94,12 @@ public sealed partial class AmbientPage : Page
 
         AmbientSettingsService.Instance.Changed -= OnSettingsChanged;
         HuePairingService.Instance.BridgeChanged -= OnHueBridgeChanged;
-        if (_observedEngine is not null)
-        {
-            _observedEngine.StateChanged -= OnEngineStateChanged;
-            _observedEngine = null;
-        }
         _loading = true;
     }
 
-    // Pulls the current persisted state into the controls. Called on
-    // first load and on every Changed event. Guarded by _loading so
-    // the handlers don't re-fire Save during the assignment loop.
+    // Pulls the persisted state the bespoke cards show: the display picker
+    // and the NotPaired banner. Guarded by _loading so the display combo's
+    // handler does not save while it is refilled.
     private void ResyncFromSettings()
     {
         bool prevLoading = _loading;
@@ -95,18 +108,6 @@ public sealed partial class AmbientPage : Page
         {
             var s = AmbientSettingsService.Instance.Current;
 
-            EnabledToggle.IsOn = s.Enabled;
-
-            ComboBoxItem? toSelect = null;
-            foreach (var item in ModeCombo.Items)
-            {
-                if (item is ComboBoxItem cbi && cbi.Tag is string tag && tag == s.Mode.ToString())
-                {
-                    toSelect = cbi;
-                    break;
-                }
-            }
-            ModeCombo.SelectedItem = toSelect ?? ModeCombo.Items[0];
             PopulateMonitorChoices(s.SelectedMonitorDeviceName);
 
             // Pair completeness drives the NotPaired InfoBar. The
@@ -130,56 +131,59 @@ public sealed partial class AmbientPage : Page
     {
         DispatcherQueue.TryEnqueueObserved(
             operation: "settings-reload", caller: "ambient-page",
-            callback: ResyncFromSettings,
+            callback: () =>
+            {
+                ViewModel.Load();
+                ResyncFromSettings();
+            },
             rejectSource: "AMBIENT", rejectWhat: "settings reload");
     }
 
-    private void OnEngineStateChanged(AmbientEngineState state)
-    {
-        DispatcherQueue.TryEnqueueObserved(
-            operation: "engine-state-sync", caller: "ambient-page",
-            callback: () => ApplyEngineState(state),
-            rejectSource: "AMBIENT", rejectWhat: "engine state sync");
-    }
+    // ── Brightness curve (bespoke) ─────────────────────────────────────
 
-    // Surfaces the engine's transition state on the page. The previous
-    // pass surfaced a ProgressRing for the transient Starting /
-    // Stopping states, but the ring stayed stuck in one runtime
-    // observation and the feature offered marginal value while a Hue
-    // pair takes only ~300–800 ms ; it has been retired. The
-    // ApplyEngineState pass is kept for the ModeCombo gating, which is
-    // genuinely useful : changing Mode mid-Running silently desyncs
-    // the radios from the pipeline shape, so we lock the combo while
-    // the engine runs.
-    private void ApplyEngineState(AmbientEngineState state)
+    private void OnViewModelPropertyChanged(object? sender, PropertyChangedEventArgs e)
     {
-        bool canReconfigure = state != AmbientEngineState.Running;
-        ModeCombo.IsEnabled = canReconfigure;
-        MonitorCombo.IsEnabled = canReconfigure;
-    }
-
-    private void EnabledToggle_Toggled(object sender, RoutedEventArgs e)
-    {
-        if (_loading) return;
-        AmbientSettingsService.Instance.Current.Enabled = EnabledToggle.IsOn;
-        AmbientSettingsService.Instance.Save();
-    }
-
-    private void ModeCombo_SelectionChanged(object sender, SelectionChangedEventArgs e)
-    {
-        if (_loading) return;
-        if (ModeCombo.SelectedItem is ComboBoxItem cbi
-            && cbi.Tag is string tag
-            && Enum.TryParse<AmbientMode>(tag, out var mode))
+        switch (e.PropertyName)
         {
-            // ApplyPreset copies the preset's full tuning snapshot
-            // onto Current and saves in one shot. Custom is a special
-            // case : it just sets Mode = Custom without touching any
-            // other knob, so the Playground's hand-tuned values stay
-            // exactly where the user left them.
-            AmbientSettingsService.Instance.ApplyPreset(mode);
+            case nameof(AmbientViewModel.BrightnessCurveX1):
+            case nameof(AmbientViewModel.BrightnessCurveY1):
+            case nameof(AmbientViewModel.BrightnessCurveX2):
+            case nameof(AmbientViewModel.BrightnessCurveY2):
+                UpdateBrightnessCurveReset();
+                break;
         }
     }
+
+    private void UpdateBrightnessCurveReset()
+        => BrightnessCurveReset.IsEnabled = ViewModel.IsBrightnessCurveDirty();
+
+    private void BrightnessCurveReset_Click(object sender, RoutedEventArgs e)
+        => ViewModel.ResetBrightnessCurve();
+
+    // ── Reset all ──────────────────────────────────────────────────────
+    //
+    // The page-level reset: every value the page tunes goes back to its
+    // default; pairing, group, display, per-light rows and the on/off state
+    // stay. Confirmed first because it wipes several groups at once. The
+    // view model writes once and saves; Changed reloads the page.
+
+    private async void ResetAll_Click(object sender, RoutedEventArgs e)
+    {
+        bool confirmed = await ConfirmationService.RequestAsync(
+            this.XamlRoot,
+            new ConfirmationRequest(
+                Loc.Get("Settings_ResetAmbientDialog_Title"),
+                Loc.Get("Settings_ResetAmbientDialog_Content"),
+                Loc.Get("AmbientPageResetAllLabel.Text"),
+                IsDestructive: true));
+        if (!confirmed) return;
+
+        DeckleSettingsUxSource.Log.SectionReset();
+        DeckleSettingsUxSource.Log.SectionResetDetail("Ambient page");
+        ViewModel.ResetDefaults();
+    }
+
+    // ── Capture display (bespoke) ──────────────────────────────────────
 
     private void PopulateMonitorChoices(string? selectedDeviceName)
     {
@@ -240,25 +244,7 @@ public sealed partial class AmbientPage : Page
         AmbientSettingsService.Instance.Save();
     }
 
-    // The four HDR slider handlers (ExposureSlider_ValueChanged et al.)
-    // and their per-knob / per-section reset companions used to live
-    // here. They moved out to the Playground in the V0.3 refactor —
-    // the live preview next to them makes empirical tuning so much
-    // cheaper that duplicating the controls in Settings was net
-    // negative. The Mode preset selector above is what carries the
-    // tuning intent in Settings now ; pick Game / Movie / Ambient
-    // to apply a snapshot, or open the Playground for the fine-grain
-    // knobs.
-
-    // Opens the Playground via the same callback the AmbientEngine
-    // uses for its NotPaired InfoBar action. The App wires this slot
-    // at boot to its lazy ShowPlaygroundLazy(), so picking the card
-    // here brings the Playground forward without forcing a reference
-    // from Lighting.Ambient back to the app host.
-    private void OpenPlaygroundCard_Click(object sender, RoutedEventArgs e)
-    {
-        AmbientEngine.OpenPlaygroundRequested?.Invoke();
-    }
+    // ── NotPaired banner (bespoke) ─────────────────────────────────────
 
     private void ConfigureBridgeButton_Click(object sender, RoutedEventArgs e)
     {

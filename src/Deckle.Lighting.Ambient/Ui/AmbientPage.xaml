@@ -20,17 +20,18 @@
             </Style.Setters>
         </Style>
 
-        <!-- Slider value text + reset button styles. The slider itself
-             is plain WinUI 3 (Width inline so the four sliders in the
-             section line up visually) — no shared style needed beyond
-             value + reset which appear next to every slider. -->
-        <Style x:Key="SliderValueTextStyle"
-               BasedOn="{StaticResource BodyTextBlockStyle}"
-               TargetType="TextBlock">
+        <!-- Per-card reset for the bespoke curve card, matching the composed
+             cards' reset: subtle, 32×32, hidden until the card is hovered
+             (code-behind flips Opacity), enabled only once the curve differs
+             from its default. -->
+        <Style x:Key="ResetButtonStyle"
+               BasedOn="{StaticResource SubtleButtonStyle}"
+               TargetType="Button">
+            <Setter Property="Opacity" Value="0" />
+            <Setter Property="Width" Value="32" />
+            <Setter Property="Height" Value="32" />
+            <Setter Property="Padding" Value="0" />
             <Setter Property="VerticalAlignment" Value="Center" />
-            <Setter Property="MinWidth" Value="40" />
-            <Setter Property="TextAlignment" Value="Right" />
-            <Setter Property="Foreground" Value="{ThemeResource TextFillColorSecondaryBrush}" />
         </Style>
     </Page.Resources>
 
@@ -42,9 +43,29 @@
                         HorizontalAlignment="Stretch"
                         Spacing="{StaticResource SettingsCardSpacing}">
 
-                <TextBlock x:Uid="AmbientPageTitleLabel"
-                           Style="{StaticResource TitleTextBlockStyle}"
-                           Margin="0,0,0,8" />
+                <!-- Title row with the page-level reset (the third reset
+                     level after the per-card and per-group ones). Enabled
+                     only while the page is off its defaults; confirmed in
+                     code-behind before it writes. Same shape as WhisperPage. -->
+                <Grid Margin="0,0,0,8">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <TextBlock x:Uid="AmbientPageTitleLabel"
+                               Style="{StaticResource TitleTextBlockStyle}" />
+                    <Button x:Uid="AmbientPage_ResetAll"
+                            Grid.Column="1"
+                            VerticalAlignment="Center"
+                            Style="{StaticResource SubtleButtonStyle}"
+                            IsEnabled="{x:Bind ViewModel.CanReset, Mode=OneWay}"
+                            Click="ResetAll_Click">
+                        <StackPanel Orientation="Horizontal" Spacing="8">
+                            <FontIcon Glyph="{StaticResource Icon.Reset}" FontSize="14" />
+                            <TextBlock x:Uid="AmbientPageResetAllLabel" />
+                        </StackPanel>
+                    </Button>
+                </Grid>
 
                 <TextBlock x:Uid="AmbientPageSubtitleLabel"
                            Style="{StaticResource BodyTextBlockStyle}"
@@ -56,13 +77,9 @@
                 <TextBlock x:Uid="AmbientStateSectionHeader"
                            Style="{StaticResource SettingsSectionHeaderTextBlockStyle}" />
 
-                <!-- Surfaced when the persisted Hue bridge state is
-                     incomplete (no IP / no username / no group). The
-                     toggle stays usable but a click will immediately
-                     revert. The action button expands the Hue bridge
-                     expander in the Configuration section below and
-                     scrolls to it. Tied to the Loaded / Changed
-                     observer in code-behind. -->
+                <!-- bespoke: a state banner, not a setting. It opens while the
+                     persisted Hue bridge state is incomplete (no IP / username /
+                     group) and its action opens the Hue bridge expander below. -->
                 <InfoBar x:Name="NotPairedInfoBar"
                          x:Uid="AmbientNotPairedInfoBar"
                          IsClosable="False"
@@ -76,59 +93,91 @@
                     </InfoBar.ActionButton>
                 </InfoBar>
 
-                <!-- Enabled + Mode (below) are deliberately left hand-
-                     authored for now rather than composed. AmbientViewModel
-                     lives in Deckle.Playground and does not own these
-                     properties, so composing them would mean relocating the
-                     VM into Deckle.Lighting.Ambient — a module-boundary
-                     refactor deferred to the Ambient rework. Until then the
-                     event-handler style (Toggled / SelectionChanged →
-                     AmbientSettings + Save) stays as-is. -->
-                <controls:SettingsCard x:Uid="AmbientEnabledCard"
-                                       Tag="AmbientEnabledCard"
-                                       HeaderIcon="{ui:FontIcon Glyph={StaticResource Icon.Lightbulb}}">
-                    <ToggleSwitch x:Name="EnabledToggle"
-                                  Toggled="EnabledToggle_Toggled" />
-                </controls:SettingsCard>
+                <!-- Composed: Enabled (AmbientViewModel.StateSettings). -->
+                <StackPanel x:Name="StateHost"
+                            Spacing="{StaticResource SettingsCardSpacing}" />
+
+                <!-- bespoke: a live instrument, not a setting — the sampled
+                     grid at the display's exact ratio, the colour each light
+                     receives and the zone bands. Shown while the engine runs,
+                     opened by the user, refreshed only while open. -->
+                <ambientControls:AmbientPreviewCard />
 
                 <!-- ── Behaviour ──────────────────────────────────────────── -->
                 <TextBlock x:Uid="AmbientBehaviourSectionHeader"
                            Style="{StaticResource SettingsSectionHeaderTextBlockStyle}" />
 
-                <controls:SettingsCard x:Uid="AmbientModeCard"
-                                       Tag="AmbientModeCard"
-                                       HeaderIcon="{ui:FontIcon Glyph={StaticResource Icon.Theme}}">
-                    <ComboBox x:Name="ModeCombo"
-                              MinWidth="160"
-                              SelectionChanged="ModeCombo_SelectionChanged">
-                        <ComboBoxItem x:Uid="AmbientModeGame" Tag="Game" />
-                        <ComboBoxItem x:Uid="AmbientModeMovie" Tag="Movie" />
-                        <ComboBoxItem x:Uid="AmbientModeAmbient" Tag="Ambient" />
-                        <ComboBoxItem x:Uid="AmbientModeCustom" Tag="Custom" />
-                    </ComboBox>
+                <!-- Composed: Mode, per-zone colours with the band shape
+                     (AmbientViewModel.BehaviourSettings). -->
+                <StackPanel x:Name="BehaviourHost"
+                            Spacing="{StaticResource SettingsCardSpacing}" />
+
+                <!-- bespoke: one row per light of the selected Hue group
+                     (zone, brightness, Identify) — the set of lights is only
+                     known at runtime, from the bridge. Shown under the
+                     per-zone group, only while it is on and a group is
+                     selected in the Hue bridge expander below. -->
+                <ambientControls:LightZonesCard />
+
+                <!-- ── Fine tuning ────────────────────────────────────────── -->
+                <TextBlock x:Uid="AmbientTuningSectionHeader"
+                           Style="{StaticResource SettingsSectionHeaderTextBlockStyle}" />
+
+                <!-- bespoke: a curve is a shape, edited by dragging its two
+                     control points; the composer has no kind for a relationship
+                     between four values (and a row of raw numbers is not an
+                     editor). Bound two-way to the view model; the floor drawn on
+                     the plot follows the floor group below. -->
+                <controls:SettingsCard x:Name="BrightnessCurveCard"
+                                       x:Uid="AmbientBrightnessCurveCard"
+                                       Tag="AmbientBrightnessCurveCard"
+                                       HeaderIcon="{ui:FontIcon Glyph={StaticResource Icon.Tuning}}">
+                    <StackPanel Orientation="Horizontal" Spacing="4">
+                        <Button x:Name="BrightnessCurveReset"
+                                Style="{StaticResource ResetButtonStyle}"
+                                Click="BrightnessCurveReset_Click">
+                            <FontIcon Glyph="{StaticResource Icon.Refresh}" FontSize="14" />
+                        </Button>
+                        <ambientControls:BrightnessCurveCanvas
+                            X1="{x:Bind ViewModel.BrightnessCurveX1, Mode=TwoWay}"
+                            Y1="{x:Bind ViewModel.BrightnessCurveY1, Mode=TwoWay}"
+                            X2="{x:Bind ViewModel.BrightnessCurveX2, Mode=TwoWay}"
+                            Y2="{x:Bind ViewModel.BrightnessCurveY2, Mode=TwoWay}"
+                            MinBrightnessEnabled="{x:Bind ViewModel.MinBrightnessEnabled, Mode=OneWay}"
+                            MinBrightness="{x:Bind ViewModel.MinBrightness, Mode=OneWay}" />
+                    </StackPanel>
                 </controls:SettingsCard>
 
+                <!-- Composed: brightness floor, smoothing, change threshold,
+                     exposure, saturation (AmbientViewModel.TuningSettings). -->
+                <StackPanel x:Name="TuningHost"
+                            Spacing="{StaticResource SettingsCardSpacing}" />
+
                 <!-- ── Configuration ──────────────────────────────────────── -->
-                <!--
-                    Hue bridge pairing now lives in this page (was in the
-                    Playground in V0). The bridge state is owned by the
-                    process-wide HuePairingService — the same instance the
-                    Playground and the AmbientEngine consume — so re-pairing
-                    or forgetting from either surface takes effect everywhere.
-                    Per-light zone assignment and per-light brightness still
-                    live in the Playground for now (richer UI tied to the
-                    preview grid).
-                -->
                 <TextBlock x:Uid="AmbientConfigSectionHeader"
                            Style="{StaticResource SettingsSectionHeaderTextBlockStyle}" />
 
+                <!-- bespoke: the options are the displays connected right now,
+                     labelled at runtime (number, resolution, primary); the
+                     composer's choices are fixed .resw keys. -->
                 <controls:SettingsCard x:Uid="AmbientMonitorCard"
+                                       Tag="AmbientMonitorCard"
                                        HeaderIcon="{ui:FontIcon Glyph={StaticResource Icon.Window}}">
                     <ComboBox x:Name="MonitorCombo"
                               MinWidth="280"
                               SelectionChanged="MonitorCombo_SelectionChanged" />
                 </controls:SettingsCard>
 
+                <!-- Composed: capture rate (AmbientViewModel.CaptureSettings). -->
+                <StackPanel x:Name="CaptureHost"
+                            Spacing="{StaticResource SettingsCardSpacing}" />
+
+                <!-- bespoke: a multi-step pairing flow (discover, pair with the
+                     link-button countdown, load rooms, forget behind a
+                     confirmation), commands and live status rather than stored
+                     values. The bridge state is owned by the process-wide
+                     HuePairingService, so a re-pair or forget from anywhere takes
+                     effect everywhere. -->
                 <controls:SettingsExpander x:Uid="HueBridgeExpander"
                                            x:Name="HueBridgeExpander"
                                            Tag="HueBridgeExpander"
@@ -228,23 +277,6 @@
                         </StackPanel>
                     </controls:SettingsExpander.ItemsFooter>
                 </controls:SettingsExpander>
-
-                <!-- Tuning lives in the Playground now. The Settings
-                     page keeps only the mode preset selector (above)
-                     and a clear pointer to the Playground for fine
-                     calibration — moving four near-identical slider
-                     cards into a single place where the live preview
-                     sits next to the user. -->
-                <TextBlock x:Uid="AmbientTuningSectionHeader"
-                           Style="{StaticResource SettingsSectionHeaderTextBlockStyle}" />
-
-                <controls:SettingsCard x:Uid="AmbientOpenPlaygroundCard"
-                                       Tag="AmbientOpenPlaygroundCard"
-                                       IsClickEnabled="True"
-                                       ActionIcon="{ui:FontIcon Glyph={StaticResource Icon.OpenExternal}}"
-                                       Click="OpenPlaygroundCard_Click" />
-
-                <!-- ── Diagnostics ────────────────────────────────────────── -->
             </StackPanel>
         </Grid>
     </ScrollViewer>

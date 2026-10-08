@@ -44,12 +44,12 @@ namespace Deckle.Lighting.Ambient;
 // zoned variant.
 //
 // Why an engine at all (vs. wiring the events directly in the
-// Playground or in AmbientPage code-behind) : we want a single
+// AmbientPage code-behind) : we want a single
 // well-tested object that owns the lifecycle (start, stop, dispose),
 // the cadence (throttle pushes to a sane Hz against the bridge),
 // and the error surface (one Warning when a push fails, never spam
-// the LogWindow). Both the Playground tuning surface and the Settings
-// master toggle route through the same engine — only the trigger differs.
+// the LogWindow). The Settings master toggle and the AmbientPage
+// tuning controls route through the same engine.
 //
 // Ownership.
 //   - The ScreenCaptureService is owned. The engine constructs it in
@@ -64,7 +64,7 @@ namespace Deckle.Lighting.Ambient;
 //   - The ILightOutput is owned. ConnectAsync on Start ; DisposeAsync
 //     (or Dispose) in the Stop cleanup.
 //   - The HueBridgeClient is borrowed from HuePairingService, the
-//     process-wide singleton owner shared with the Playground and the
+//     process-wide singleton owner shared with the
 //     Settings AmbientPage. The engine releases the reference on Stop
 //     but never disposes it.
 //   - The engine owns its CancellationTokenSource and the push
@@ -88,14 +88,13 @@ public sealed partial class AmbientEngine : IAsyncDisposable
     // value seen by GroupTickAsync / MultiLightTickAsync via the
     // _changeThreshold field below.
 
-    // Dark-sample threshold — if every channel of the analysed average
-    // is at or below this, we clamp the colour to (0,0,0) before tuning.
-    // With the brightness floor off, HueColorMath maps that black to
-    // on:false. With the floor on, AmbientColorPipeline lifts it to the
-    // configured neutral floor instead, so screen content can never
-    // bypass the user's minimum. Eight out of 255 remains conservative:
-    // it only classifies unambiguously dark content.
-    private const int OffThreshold = 8;
+    // Black gate — a light is sent black only when its source is exactly
+    // black : the frame's linear average (group) or the zone's linear
+    // mean (multi) is exactly (0, 0, 0). A dark but non-black frame goes
+    // through the tuning like any other. With the brightness floor off,
+    // HueColorMath maps a pushed (0, 0, 0) to on:false ; with the floor
+    // on, AmbientColorPipeline lifts black to the neutral floor instead.
+    // The colour stays in float until one quantisation before the push.
 
     // Zone-sampling band thickness. V0 hardcoded an asymmetric pair
     // (lateral 0.33, vertical 0.40) tuned for a 3-lamp Top + Left + Right
@@ -128,7 +127,7 @@ public sealed partial class AmbientEngine : IAsyncDisposable
     // monitor selection + HDR negotiation are picked up from the
     // current Windows state rather than a stale snapshot. The bridge
     // client is borrowed from HuePairingService (singleton owner,
-    // shared with the Playground and Settings AmbientPage) — never
+    // shared with the Settings AmbientPage) — never
     // disposed here, the reference is simply released on Stop.
     private ScreenCaptureService? _capture;
     private HueBridgeClient? _bridgeClient;
@@ -149,7 +148,8 @@ public sealed partial class AmbientEngine : IAsyncDisposable
     // multi-light pipeline shape is locked for the session : changing
     // UseMultiLight live mid-run would force a Stop + Start to reshape
     // the loop and the per-light state, so we snapshot at start and
-    // ignore later host mutations until the next start.
+    // ignore later host mutations until the next start. The app does
+    // that Stop + Start when the value changes (AmbientStartSettings).
     private bool _useMultiLightRequested;
 
     private CancellationTokenSource? _cts;
@@ -276,8 +276,8 @@ public sealed partial class AmbientEngine : IAsyncDisposable
     private double              _borderDepth  = 0.33;
     private int                 _borderCells  = 8;
     // EMA factor snapshot at the 15 Hz reference cadence. 1.0 = pass-through
-    // (no temporal smoothing). AmbientPushCadence adapts it to the actual
-    // output rate so 50 Hz streaming adds intermediate steps without making
+    // (no temporal smoothing). AmbientPushCadence adapts it to the measured
+    // tick interval so 50 Hz streaming adds intermediate steps without making
     // the preset converge faster in wall-clock time. Refreshed at the top of
     // each tick from _host.Ambient.SmoothingAlpha.
     // The lamp jitter observed in dark scenes with small moving
@@ -285,22 +285,25 @@ public sealed partial class AmbientEngine : IAsyncDisposable
     // this knob plus the per-tick state below close that gap.
     private double _smoothingAlpha       = 1.0;
 
-    // EMA state — group mode. Float to preserve sub-byte precision so
-    // a slow ramp progresses each tick instead of getting clipped to
-    // the previous integer step. Sentinel -1f means "not yet seeded"
-    // — the first tick after Start adopts the raw value (effectively
-    // alpha = 1 for that single frame, no fade-in from black).
-    private float _smoothedR = -1f, _smoothedG = -1f, _smoothedB = -1f;
+    // EMA state, keyed "group" in group mode and by fixture id in multi
+    // mode. Cleared on every StartAsync so a re-pair doesn't carry over
+    // the previous setup's smoothing trail.
+    private const string GroupKey = "group";
+    private readonly AmbientColorSmoother _smoother = new();
 
-    // EMA state — multi mode. One entry per fixture id, lazy-initialised
-    // the first time the light shows up post-Start. Cleared on every
-    // StartAsync so a re-pair doesn't carry over the previous setup's
-    // smoothing trail. Float for the same reason as the group state.
-    private readonly Dictionary<string, (float R, float G, float B)> _multiSmoothed = new();
+    // The single quantisation per key, with its near-black latch. Same
+    // keys and lifetime as the smoother. See AmbientBlackLatch.
+    private readonly AmbientBlackLatch _blackLatch = new();
+
+    // Measured time between two push ticks, fed to the smoother. Zero
+    // timestamp = no tick yet since Start ; the first tick uses the
+    // nominal interval.
+    private long _lastTickTimestamp;
+    private double _tickDtSeconds;
 
     // Most-recent "intent" colour after tuning + smoothing, even when
     // the ChangeThreshold delta check drops the actual push. The
-    // Playground swatches read these via SnapshotEmittedColors() to
+    // AmbientPreviewCard reads these via SnapshotEmittedColors() to
     // visualise the colour the engine wants to send right now — what
     // the user would see if the lamp were faster than the delta gate.
     // Key "group" in group mode, fixture id in multi mode. The lock
@@ -332,13 +335,6 @@ public sealed partial class AmbientEngine : IAsyncDisposable
     // scenarios (tests) get the most recent. Set by the ctor below.
     public static AmbientEngine? Current { get; private set; }
 
-    // Bridged action invoked by the AmbientPage's "Open Playground"
-    // button (rendered inside the NotPaired InfoBar). The App wires
-    // this at boot to its lazy ShowPlaygroundLazy() — same approach as
-    // TrayIconManager.OnShowPlayground. Lighting.Ambient cannot
-    // reference App directly, so the App side fills the slot.
-    public static Action? OpenPlaygroundRequested { get; set; }
-
     // ctor : the engine is glued to a host that exposes the live
     // AmbientSettings snapshot. The capture, the Hue bridge client,
     // the light output and the frame sampler are all owned — created
@@ -365,8 +361,8 @@ public sealed partial class AmbientEngine : IAsyncDisposable
     public IReadOnlyList<LightDescriptor>? MultiLights => _multiLights;
 
     // Preview accessors — forwarded from the owned FrameSampler. Null /
-    // zero / 1.0 when the engine is idle ; consumers (Playground
-    // preview grid, AmbientPage tuning panel) should treat the absence
+    // zero / 1.0 when the engine is idle ; consumers (AmbientPreviewCard,
+    // AmbientPage tuning panel) should treat the absence
     // of a sample as "engine not running" and render an empty state.
     public SampledFrame? LatestSample => _sampler?.LatestSample;
     public int   GridCols     => _sampler?.GridCols ?? 0;
@@ -374,9 +370,16 @@ public sealed partial class AmbientEngine : IAsyncDisposable
     public bool  IsHdr        => _sampler?.IsHdr ?? false;
     public float ContentPeak  => _sampler?.ContentPeak ?? 1f;
 
+    /// <summary>Pixel size of the captured display, or null while no
+    /// capture runs. The Settings preview sizes its cells from it
+    /// (width / GridCols × height / GridRows) so the grid keeps the
+    /// screen's exact ratio.</summary>
+    public Windows.Graphics.SizeInt32? SourceSize
+        => _capture is { IsRunning: true } capture ? capture.ContentSize : null;
+
     // State machine fired on every transition. Consumers (App tray
     // tooltip + log, AmbientPage ProgressRing / InfoBar / ModeCombo
-    // gating, Playground Pipeline UI) subscribe to surface the live
+    // gating) subscribe to surface the live
     // status and distinguish a transient "Starting" / "Stopping" from
     // a settled "Off" / "Running". Error is a transient blip — the
     // engine immediately collapses to Off after raising it, so the

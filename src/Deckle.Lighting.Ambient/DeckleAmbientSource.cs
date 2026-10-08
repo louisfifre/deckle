@@ -96,5 +96,25 @@ public sealed partial class DeckleAmbientSource : DeckleEventSource
     public const int EvtBridgeEndpointRecoveredDetail   = 61;
     public const int EvtBridgeEndpointRecoveryFailed    = 62;
     public const int EvtBridgeEndpointRecoveryFailedDetail = 63;
+    public const int EvtPipelineRestartDetail           = 64;
+
+    // ── AmbientViewModel setters (moved from Deckle-Playground ids 3, 16, 17,
+    // which stay reserved there) ─────────────────────────────────────────
+    public const int EvtTuningChanged                   = 65;
+    public const int EvtPipelineModeChanged             = 66;
+    public const int EvtPipelineModeChangedDetail       = 67;
+
+    // ── Per-light placement (moved from Deckle-Playground ids 7, 8, 9, 15,
+    // 18-22, which stay reserved there) ──────────────────────────────────
+    public const int EvtLightCallFailed                 = 68;
+    public const int EvtLightCallFailedDetail           = 69;
+    public const int EvtLightsResolved                  = 70;
+    public const int EvtEntertainmentAreaUsed           = 71;
+    public const int EvtEntertainmentAreaUsedDetail     = 72;
+    public const int EvtEntertainmentAreaMatched        = 73;
+    public const int EvtZoneSuggested                   = 74;
+    public const int EvtLightZoneUpdated                = 75;
+    public const int EvtLightZoneUpdatedDetail          = 76;
+    public const int EvtLightBrightnessChanged          = 77;
 
 }

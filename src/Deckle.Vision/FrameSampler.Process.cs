@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Diagnostics.Tracing;
 using Deckle.Diagnostics;
 
@@ -61,7 +62,12 @@ public sealed partial class FrameSampler
 
                     try
                     {
-                        var sample = ReadSampleFromMapped(in mapped);
+                        double elapsedSeconds = _lastProcessedTicks == 0
+                            ? 0
+                            : (frame.TimestampTicks - _lastProcessedTicks) / (double)Stopwatch.Frequency;
+                        _lastProcessedTicks = frame.TimestampTicks;
+
+                        var sample = ReadSampleFromMapped(in mapped, elapsedSeconds);
                         Volatile.Write(ref _latestSample, sample);
                     }
                     finally

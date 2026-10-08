@@ -37,24 +37,7 @@ public static class ColorSpace
     //            0.75=blue (approximate, OKLab hue ordering).
     public static Color OklchToRgb(float L, float C, float hTurns)
     {
-        float hRad = hTurns * MathF.Tau;
-        float a    = C * MathF.Cos(hRad);
-        float b    = C * MathF.Sin(hRad);
-
-        // OKLab → non-linear cone responses (Björn Ottosson's matrix).
-        float l_ = L + 0.3963377774f * a + 0.2158037573f * b;
-        float m_ = L - 0.1055613458f * a - 0.0638541728f * b;
-        float s_ = L - 0.0894841775f * a - 1.2914855480f * b;
-
-        // Cube to recover linear cone responses.
-        float lc = l_ * l_ * l_;
-        float mc = m_ * m_ * m_;
-        float sc = s_ * s_ * s_;
-
-        // Cone responses → linear sRGB.
-        float rLin = +4.0767416621f * lc - 3.3077115913f * mc + 0.2309699292f * sc;
-        float gLin = -1.2684380046f * lc + 2.6097574011f * mc - 0.3413193965f * sc;
-        float bLin = -0.0041960863f * lc - 0.7034186147f * mc + 1.7076147010f * sc;
+        var (rLin, gLin, bLin) = OklchToLinearRgb(L, C, hTurns);
 
         return Color.FromArgb(
             0xFF,
@@ -84,37 +67,7 @@ public static class ColorSpace
     // gives h = 0 — caller is expected to treat C == 0 as "hue
     // irrelevant" rather than read h.
     public static (float L, float C, float h) RgbToOklch(byte r, byte g, byte b)
-    {
-        float rLin = SrgbToLinear8Lut[r];
-        float gLin = SrgbToLinear8Lut[g];
-        float bLin = SrgbToLinear8Lut[b];
-
-        // Linear sRGB → non-linear cone responses (forward, Björn
-        // Ottosson's matrix — inverse of the OklchToRgb step).
-        float lLin = 0.4122214708f * rLin + 0.5363325363f * gLin + 0.0514459929f * bLin;
-        float mLin = 0.2119034982f * rLin + 0.6806995451f * gLin + 0.1073969566f * bLin;
-        float sLin = 0.0883024619f * rLin + 0.2817188376f * gLin + 0.6299787005f * bLin;
-
-        // Cube root to recover the non-linear cone responses (inverse
-        // of the cube in OklchToRgb). Negative branches don't appear
-        // for in-gamut sRGB inputs but Cbrt handles them either way.
-        float l_ = MathF.Cbrt(lLin);
-        float m_ = MathF.Cbrt(mLin);
-        float s_ = MathF.Cbrt(sLin);
-
-        // Cone responses → OKLab (forward matrix).
-        float L    = 0.2104542553f * l_ + 0.7936177850f * m_ - 0.0040720468f * s_;
-        float a    = 1.9779984951f * l_ - 2.4285922050f * m_ + 0.4505937099f * s_;
-        float bLab = 0.0259040371f * l_ + 0.7827717662f * m_ - 0.8086757660f * s_;
-
-        // OKLab → OKLCh (polar in the a-b plane).
-        float C = MathF.Sqrt(a * a + bLab * bLab);
-        float hRad = MathF.Atan2(bLab, a);
-        float h = hRad / MathF.Tau;
-        if (h < 0f) h += 1f;
-
-        return (L, C, h);
-    }
+        => LinearRgbToOklch(SrgbToLinear8Lut[r], SrgbToLinear8Lut[g], SrgbToLinear8Lut[b]);
 
     // sRGB OETF (IEC 61966-2-1). Handles the linear toe for small
     // values so the curve stays continuous at the piecewise seam.
@@ -240,5 +193,66 @@ public static class ColorSpace
     {
         const float A = 0.15f, B = 0.50f, C = 0.10f, D = 0.20f, E = 0.02f, F = 0.30f;
         return ((x * (A * x + C * B) + D * E) / (x * (A * x + B) + D * F)) - E / F;
+    }
+
+    // Linear sRGB (float) → OKLCh. The body of RgbToOklch without the
+    // byte decode, for callers that already hold linear light and must
+    // not round it to 8 bits first (the ambient colour path computes in
+    // float and quantises once at its output). Same conventions : hue
+    // in turns ∈ [0, 1), C == 0 means "hue irrelevant".
+    public static (float L, float C, float h) LinearRgbToOklch(float rLin, float gLin, float bLin)
+    {
+        // Linear sRGB → non-linear cone responses (forward, Björn
+        // Ottosson's matrix — inverse of the OklchToRgb step).
+        float lLin = 0.4122214708f * rLin + 0.5363325363f * gLin + 0.0514459929f * bLin;
+        float mLin = 0.2119034982f * rLin + 0.6806995451f * gLin + 0.1073969566f * bLin;
+        float sLin = 0.0883024619f * rLin + 0.2817188376f * gLin + 0.6299787005f * bLin;
+
+        // Cube root to recover the non-linear cone responses (inverse
+        // of the cube in OklchToRgb). Negative branches don't appear
+        // for in-gamut sRGB inputs but Cbrt handles them either way.
+        float l_ = MathF.Cbrt(lLin);
+        float m_ = MathF.Cbrt(mLin);
+        float s_ = MathF.Cbrt(sLin);
+
+        // Cone responses → OKLab (forward matrix).
+        float L    = 0.2104542553f * l_ + 0.7936177850f * m_ - 0.0040720468f * s_;
+        float a    = 1.9779984951f * l_ - 2.4285922050f * m_ + 0.4505937099f * s_;
+        float bLab = 0.0259040371f * l_ + 0.7827717662f * m_ - 0.8086757660f * s_;
+
+        // OKLab → OKLCh (polar in the a-b plane).
+        float C = MathF.Sqrt(a * a + bLab * bLab);
+        float hRad = MathF.Atan2(bLab, a);
+        float h = hRad / MathF.Tau;
+        if (h < 0f) h += 1f;
+
+        return (L, C, h);
+    }
+
+    // OKLCh → linear sRGB (float). The body of OklchToRgb without the
+    // gamma encode and the 8-bit rounding. Out-of-gamut combinations
+    // return values outside [0, 1] ; clamping is the caller's choice.
+    public static (float R, float G, float B) OklchToLinearRgb(float L, float C, float hTurns)
+    {
+        float hRad = hTurns * MathF.Tau;
+        float a    = C * MathF.Cos(hRad);
+        float b    = C * MathF.Sin(hRad);
+
+        // OKLab → non-linear cone responses (Björn Ottosson's matrix).
+        float l_ = L + 0.3963377774f * a + 0.2158037573f * b;
+        float m_ = L - 0.1055613458f * a - 0.0638541728f * b;
+        float s_ = L - 0.0894841775f * a - 1.2914855480f * b;
+
+        // Cube to recover linear cone responses.
+        float lc = l_ * l_ * l_;
+        float mc = m_ * m_ * m_;
+        float sc = s_ * s_ * s_;
+
+        // Cone responses → linear sRGB.
+        float rLin = +4.0767416621f * lc - 3.3077115913f * mc + 0.2309699292f * sc;
+        float gLin = -1.2684380046f * lc + 2.6097574011f * mc - 0.3413193965f * sc;
+        float bLin = -0.0041960863f * lc - 0.7034186147f * mc + 1.7076147010f * sc;
+
+        return (rLin, gLin, bLin);
     }
 }
