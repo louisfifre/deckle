@@ -563,7 +563,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── Strings/
 │   │   │   └── en-US/
 │   │   │       └── Resources.resw
-│   │   ├── AGENTS.md  — [agent-instructions] WinUI 3 host composing the Deckle.* modules — the composition boundary, the OnL…
+│   │   ├── AGENTS.md  — [agent-instructions] WinUI 3 host — composition root, OnLaunched ordering, WinUI 3 pitfalls.
 │   │   ├── App.Ambient.cs
 │   │   ├── App.Anytype.cs
 │   │   ├── App.Autocorrect.cs
@@ -1034,7 +1034,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   └── OPERATIONS.md
 │   ├── Deckle.Hud/
 │   │   ├── Chrono/
-│   │   │   ├── AGENTS.md
+│   │   │   ├── AGENTS.md  — [agent-instructions] Chrono face of the HUD — tone layers and animation rules.
 │   │   │   ├── CLAUDE.md
 │   │   │   ├── CONTEXT.md  — context-deckle-hud-chrono [agent-instructions] Chrono HUD element vocabulary — the face's eight elements, accent twins, and th…
 │   │   │   ├── HudChrono.Clock.cs
@@ -1059,7 +1059,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   ├── HudWindow.xaml.cs
 │   │   │   ├── SystemAnimationPreference.cs
 │   │   │   └── WindowSlideAnimator.cs
-│   │   ├── AGENTS.md  — [agent-instructions] HUD overlay surface — non-focusable, click-through, always-on-top windows that…
+│   │   ├── AGENTS.md  — [agent-instructions] HUD overlays — non-focusable, click-through, always-on-top windows.
 │   │   ├── AnimationGate.cs
 │   │   ├── CLAUDE.md
 │   │   ├── Deckle.Hud.csproj
@@ -1518,7 +1518,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── UpdateDownloadPage.xaml.cs
 │   │   └── UpdatePredecessor.cs
 │   ├── Deckle.Shell/
-│   │   ├── AGENTS.md  — [agent-instructions] System shell module — the low-level OS primitives (hotkeys, tray, autostart, me…
+│   │   ├── AGENTS.md  — [agent-instructions] Low-level OS primitives (hotkeys, tray, autostart) kept business-free.
 │   │   ├── AutostartService.cs
 │   │   ├── CLAUDE.md
 │   │   ├── CursorMovementSignal.cs
@@ -1555,7 +1555,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   └── TrayMenuNativeMethods.cs
 │   │   ├── Themes/
 │   │   │   └── TrayMenu.xaml
-│   │   ├── AGENTS.md  — [agent-instructions] WinUI 3 tray context menu — the carrier-window pattern and the DWM pitfalls it…
+│   │   ├── AGENTS.md  — [agent-instructions] WinUI 3 tray context menu — carrier-window pattern and its DWM pitfalls.
 │   │   ├── CLAUDE.md
 │   │   ├── Deckle.Shell.TrayMenu.csproj
 │   │   ├── DeckleShellTrayMenuSource.cs
@@ -1567,7 +1567,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── TrayContextMenuHost.Window.cs
 │   │   └── TraySwitchMenuItem.cs
 │   ├── Deckle.Shell.WindowChrome/
-│   │   ├── AGENTS.md  — [agent-instructions] Window-chrome corrections shared by Deckle's XAML windows — workarounds for Win…
+│   │   ├── AGENTS.md  — [agent-instructions] Window-chrome workarounds for WinAppSDK bugs, deleted when fixed upstream.
 │   │   ├── CaptionInsetCorrection.cs
 │   │   ├── CLAUDE.md
 │   │   └── Deckle.Shell.WindowChrome.csproj
