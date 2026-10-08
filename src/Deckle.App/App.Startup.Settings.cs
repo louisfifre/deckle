@@ -23,7 +23,7 @@ public partial class App
         // Wire the recording cap into the Hud lib. Deckle.Hud is
         // a Settings-agnostic module ; the App is the one that reads
         // Settings on every vsync to honour live edits to MaxRecordingDurationSeconds
-        // (Capture page slider). Provider is invoked from UpdateClock at vsync.
+        // (the Recording page's maximum recording length picker). Provider is invoked from UpdateClock at vsync.
         Deckle.Hud.HudChrono.MaxRecordingDurationSecondsProvider =
             () => Audio.CaptureSettingsService.Instance.Current.MaxRecordingDurationSeconds;
 
