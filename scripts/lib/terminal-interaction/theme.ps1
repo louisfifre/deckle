@@ -47,10 +47,12 @@ function Get-TerminalPresentationStyle {
         'Context' { [ConsoleColor]::DarkGray }
         'Section' { [ConsoleColor]::Magenta }
         'SectionSeparator' { [ConsoleColor]::Gray }
-        'Action' { [ConsoleColor]::Cyan }
-        # The label of an Action Row titles its Variants and is not a target,
-        # so it stays off the Action color and reads as a bright heading.
-        'ActionLabel' { [ConsoleColor]::White }
+        # A plain Action reads as body text, like a Variant; only the label of
+        # an Action Row takes the teal of the launcher's row titles. The
+        # maintainer's palette (Figma "Deckle Scripts", node 22-27) names
+        # title, sections, action-row title, body text, selection, access.
+        'Action' { $null }
+        'ActionLabel' { [ConsoleColor]::Cyan }
         'ActionVariant' { $null }
         'Access' { [ConsoleColor]::DarkYellow }
         'Adjust' { $null }

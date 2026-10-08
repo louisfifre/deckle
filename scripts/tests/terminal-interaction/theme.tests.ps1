@@ -33,7 +33,7 @@ $palette = @{
     Context = [ConsoleColor]::DarkGray
     Section = [ConsoleColor]::Magenta
     SectionSeparator = [ConsoleColor]::Gray
-    Action = [ConsoleColor]::Cyan
+    ActionLabel = [ConsoleColor]::Cyan
     Access = [ConsoleColor]::DarkYellow
     Navigation = [ConsoleColor]::DarkGray
     Exit = [ConsoleColor]::Red
@@ -53,6 +53,7 @@ foreach ($entry in $palette.GetEnumerator()) {
     Assert-Equal $entry.Value $style.Foreground "the Deckle theme maps $($entry.Key) semantically"
 }
 Assert-Equal $null (Get-TerminalPresentationStyle -Role Body).Foreground 'Body content preserves the host foreground'
+Assert-Equal $null (Get-TerminalPresentationStyle -Role Action).Foreground 'plain Actions read as body text, as in the launcher'
 Assert-Equal $null (Get-TerminalPresentationStyle -Role ActionVariant).Foreground 'Action Variants preserve the host foreground'
 Assert-Equal $null (Get-TerminalPresentationStyle -Role Adjust).Foreground 'adjustments preserve the host foreground'
 
