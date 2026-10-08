@@ -2007,7 +2007,8 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   ├── Deckle.Playground.Tests/
 │   │   ├── CorrectionApplicationEvidenceTests.cs
 │   │   ├── CorrectionApplicationTrialTests.cs
-│   │   └── Deckle.Playground.Tests.csproj
+│   │   ├── Deckle.Playground.Tests.csproj
+│   │   └── HudViewModelTests.cs
 │   ├── Deckle.Security.Tests/
 │   │   ├── Deckle.Security.Tests.csproj
 │   │   └── SecretVaultTests.cs

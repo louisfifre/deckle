@@ -168,13 +168,15 @@ public partial class HudViewModel : ObservableObject
                     HudTuningSection.HueRotation,
                     HudTuningSection.ArcRotation,
                 },
+            // No ConicFade nor HueRotation: CreateRecordingStroke replaces the
+            // generic conic slots with the Recording* fields and overrides the
+            // hue period, so those rows would change nothing. The Recording
+            // expander carries the rows that act.
             HudTarget.Recording =>
                 new[]
                 {
                     HudTuningSection.Geometry,
                     HudTuningSection.Palette,
-                    HudTuningSection.ConicFade,
-                    HudTuningSection.HueRotation,
                     HudTuningSection.Recording,
                     HudTuningSection.AudioMapping,
                     HudTuningSection.SimulatedRms,

@@ -165,6 +165,10 @@ public sealed partial class HudPage
             v => _tuning.RecordingConicFadeCurve = (float)v, rebuild: true);
         AddToggleRow(stack, "RecordingArcMirror", _tuning.RecordingArcMirror,
             v => _tuning.RecordingArcMirror = v, rebuild: true);
+        AddFloatRow(stack, "RecordingArcPhaseTurns", 0, 1, 0.05, _tuning.RecordingArcPhaseTurns,
+            v => _tuning.RecordingArcPhaseTurns = (float)v, rebuild: true);
+        AddFloatRow(stack, "RecordingHuePeriodSeconds", 0, 60, 0.5, _tuning.RecordingHuePeriodSeconds,
+            v => _tuning.RecordingHuePeriodSeconds = v, rebuild: true);
         AddFloatRow(stack, "RecordingSaturationDark", 0, 1, 0.05, _tuning.RecordingSaturationDark,
             v => _tuning.RecordingSaturationDark = (float)v, rebuild: true);
         AddFloatRow(stack, "RecordingSaturationLight", 0, 1, 0.05, _tuning.RecordingSaturationLight,
@@ -186,7 +190,9 @@ public sealed partial class HudPage
         _tuning.RecordingConicTailFadeTurns = d.RecordingConicTailFadeTurns;
         _tuning.RecordingConicFadeCurve     = d.RecordingConicFadeCurve;
         _tuning.RecordingArcMirror          = d.RecordingArcMirror;
-        _tuning.RecordingSaturationDark     = d.RecordingSaturationDark;
+        _tuning.RecordingArcPhaseTurns      = d.RecordingArcPhaseTurns;
+        _tuning.RecordingHuePeriodSeconds   = d.RecordingHuePeriodSeconds;
+        _tuning.RecordingSaturationDark    = d.RecordingSaturationDark;
         _tuning.RecordingSaturationLight    = d.RecordingSaturationLight;
         _tuning.RecordingHueShiftTurns      = d.RecordingHueShiftTurns;
         _tuning.RecordingExposureDark       = d.RecordingExposureDark;
@@ -353,16 +359,12 @@ public sealed partial class HudPage
             v => _tuning.HuePhaseTurns = (float)v, rebuild: true);
         AddFloatRow(stack, "ArcPhaseTurns", 0, 1, 0.05, _tuning.ArcPhaseTurns,
             v => _tuning.ArcPhaseTurns = (float)v, rebuild: true);
-        AddFloatRow(stack, "RecordingArcPhaseTurns", 0, 1, 0.05, _tuning.RecordingArcPhaseTurns,
-            v => _tuning.RecordingArcPhaseTurns = (float)v, rebuild: true);
         AddFloatRow(stack, "HueMinSpeedFraction", 0, 1, 0.05, _tuning.HueMinSpeedFraction,
             v => _tuning.HueMinSpeedFraction = (float)v, rebuild: true);
         AddFloatRow(stack, "ArcMinSpeedFraction", 0, 1, 0.05, _tuning.ArcMinSpeedFraction,
             v => _tuning.ArcMinSpeedFraction = (float)v, rebuild: true);
         AddFloatRow(stack, "RecordingBlendSeconds", 0, 5, 0.1, _tuning.RecordingBlendSeconds,
             v => _tuning.RecordingBlendSeconds = v, rebuild: true);
-        AddFloatRow(stack, "RecordingHuePeriodSeconds", 0, 60, 0.5, _tuning.RecordingHuePeriodSeconds,
-            v => _tuning.RecordingHuePeriodSeconds = v, rebuild: true);
         AddFloatRow(stack, "TranscribingOpacity", 0, 1, 0.05, _tuning.TranscribingOpacity,
             v => _tuning.TranscribingOpacity = (float)v, rebuild: true);
         AddFloatRow(stack, "TranscribingBlendSeconds", 0, 5, 0.1, _tuning.TranscribingBlendSeconds,
@@ -378,12 +380,10 @@ public sealed partial class HudPage
         var d = new TuningModel();
         _tuning.HuePhaseTurns             = d.HuePhaseTurns;
         _tuning.ArcPhaseTurns             = d.ArcPhaseTurns;
-        _tuning.RecordingArcPhaseTurns    = d.RecordingArcPhaseTurns;
-        _tuning.HueMinSpeedFraction       = d.HueMinSpeedFraction;
+        _tuning.HueMinSpeedFraction      = d.HueMinSpeedFraction;
         _tuning.ArcMinSpeedFraction       = d.ArcMinSpeedFraction;
         _tuning.RecordingBlendSeconds     = d.RecordingBlendSeconds;
-        _tuning.RecordingHuePeriodSeconds = d.RecordingHuePeriodSeconds;
-        _tuning.TranscribingOpacity       = d.TranscribingOpacity;
+        _tuning.TranscribingOpacity      = d.TranscribingOpacity;
         _tuning.TranscribingBlendSeconds  = d.TranscribingBlendSeconds;
         _tuning.RewritingOpacity          = d.RewritingOpacity;
         _tuning.RewritingBlendSeconds     = d.RewritingBlendSeconds;
