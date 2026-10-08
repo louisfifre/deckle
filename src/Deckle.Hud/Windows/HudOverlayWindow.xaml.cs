@@ -271,7 +271,7 @@ public sealed partial class HudOverlayWindow : Window
         _fade?.FadeTo(0, onComplete: onComplete);
     }
 
-    // ── Proximity: cursor-distance → alpha smoothstep ────────────────────────
+    // ── Proximity: cursor-distance → alpha smoothstep (the curve lives in ProximityFade) ──
     //
     // Same profile as HudWindow.UpdateProximity, driven by the shared cursor
     // signal. The proximity-requested alpha only modulates downward from
@@ -308,21 +308,8 @@ public sealed partial class HudOverlayWindow : Window
         int right  = pos.X + size.Width;
         int bottom = pos.Y + size.Height;
 
-        int dx = cursor.X < left ? left - cursor.X : (cursor.X > right  ? cursor.X - right  : 0);
-        int dy = cursor.Y < top  ? top  - cursor.Y : (cursor.Y > bottom ? cursor.Y - bottom : 0);
-        double distancePx = Math.Sqrt(dx * dx + dy * dy);
-
-        double scale  = _dpiScale;
-        double nearPx = NEAR_RADIUS_DIP * scale;
-        double farPx  = FAR_RADIUS_DIP  * scale;
-
-        double t = (distancePx - nearPx) / (farPx - nearPx);
-        if (t < 0.0) t = 0.0;
-        if (t > 1.0) t = 1.0;
-
-        double eased = t * t * (3.0 - 2.0 * t);
-
-        byte alpha = (byte)Math.Round(MIN_ALPHA + eased * (MAX_ALPHA - MIN_ALPHA));
+        double distancePx = ProximityFade.DistanceToRectPx(cursor.X, cursor.Y, left, top, right, bottom);
+        byte alpha = ProximityFade.Alpha(distancePx, _dpiScale, NEAR_RADIUS_DIP, FAR_RADIUS_DIP, MIN_ALPHA, MAX_ALPHA);
         if (alpha == _proximityAlpha) return;
         _proximityAlpha = alpha;
         _fade?.FadeTo(alpha, instant: true);

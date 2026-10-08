@@ -467,6 +467,7 @@ public sealed partial class TranscriptionEngine
                 if (sb.Length > 0) sb.Append(pendingParagraphBreak ? "\n\n" : " ");
                 sb.Append(text);
                 pendingParagraphBreak = u.EndedOnSilence;
+                UtteranceTranscribed?.Invoke(new TranscribedUtterance(u.Index, text, u.EndedOnSilence));
             }
 
             DeckleWhispSource.Log.ConsumerUtterance(

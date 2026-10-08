@@ -83,6 +83,7 @@ public partial class WhisperViewModel : ObservableObject
         OverlayFadeOnProximity = overlay.FadeOnProximity;
         OverlayAnimations = overlay.Animations;
         OverlayPosition = (overlay.Position ?? "").StartsWith("Top") ? "TopCenter" : "BottomCenter";
+        TranscriptPanelSide = NormalizeTranscriptPanelSide(overlay.TranscriptPanelSide);
 
         // Dataset opt-ins seed closed until the user consents. Overwritten by Load().
         TelemetryLatencyEnabled = false;
@@ -147,6 +148,7 @@ public partial class WhisperViewModel : ObservableObject
             OverlayFadeOnProximity = shell.Overlay.FadeOnProximity;
             OverlayAnimations = shell.Overlay.Animations;
             OverlayPosition = (shell.Overlay.Position ?? "").StartsWith("Top") ? "TopCenter" : "BottomCenter";
+            TranscriptPanelSide = NormalizeTranscriptPanelSide(shell.Overlay.TranscriptPanelSide);
 
             // Dataset consents are read here so composed cards reflect persisted state.
             var t = TelemetrySettingsService.Instance.Current;

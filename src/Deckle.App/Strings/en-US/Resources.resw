@@ -827,6 +827,9 @@
   <data name="HudOverlay_WindowTitle" xml:space="preserve">
     <value>Deckle Overlay</value>
   </data>
+  <data name="TranscriptPanel_WindowTitle" xml:space="preserve">
+    <value>Deckle Transcript</value>
+  </data>
 
   <!-- ── Settings cross-page search (code-behind, Loc.Get / Loc.Format) ──
        Terminal, non-navigating rows the suggestion list is closed with:

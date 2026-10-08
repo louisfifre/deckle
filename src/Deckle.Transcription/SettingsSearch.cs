@@ -44,12 +44,12 @@ public static class SettingsSearch
 {
     public static IReadOnlyList<SettingSearchEntry> Entries { get; } =
     [
-        // "Overlay and pasting" — the overlay group (fade / animations / position
-        // ride under it as composed children).
+        // "Overlay and pasting" — the overlay group (fade / animations / position /
+        // transcript panel side ride under it as composed children).
         new SettingSearchEntry
         {
             LabelKey = "GeneralOverlayExpander",
-            Keywords = ["hud", "indicator", "fade", "position"],
+            Keywords = ["hud", "indicator", "fade", "position", "transcript", "panel"],
         },
 
         // Auto-paste toggle (composed).
