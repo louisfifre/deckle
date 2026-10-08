@@ -1373,6 +1373,12 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── Deckle.Notifications.csproj
 │   │   └── DeckleNotificationsSource.cs
 │   ├── Deckle.Orchestration/
+│   │   ├── Detection/
+│   │   │   ├── ForegroundChange.cs
+│   │   │   ├── IForegroundMonitor.cs
+│   │   │   ├── IProcessStartSource.cs
+│   │   │   ├── NullForegroundMonitor.cs
+│   │   │   └── ProcessStarted.cs
 │   │   ├── Interop/
 │   │   │   └── ProcessNativeMethods.cs
 │   │   ├── Processes/
