@@ -5,7 +5,7 @@ type: agent-instructions
 
 # AGENTS.md — Deckle.Shell.TrayMenu
 
-Renders the tray context menu. Lives as a sibling of [Deckle.Shell](../Deckle.Shell/CLAUDE.md) to keep the shell's Win32-pure invariant intact: Shell carries only system primitives, the menu's WinUI layer is isolated here. `Deckle.App` wires the junction in `OnLaunched`.
+Renders the tray context menu. Lives as a sibling of [Deckle.Shell](../Deckle.Shell/AGENTS.md) to keep the shell's Win32-pure invariant intact: Shell carries only system primitives, the menu's WinUI layer is isolated here. `Deckle.App` wires the junction in `OnLaunched`.
 
 ## Why a carrier window
 
@@ -31,4 +31,4 @@ The Ambient item uses a custom template with a hand-drawn on/off pill, not the n
 
 ## Pointers
 
-[Deckle.Shell](../Deckle.Shell/CLAUDE.md) owns the Win32 tray and the `RightClickRequested` event; [Deckle.App](../Deckle.App/CLAUDE.md) the wiring sequence and the transverse WinUI pitfalls (UI-thread affinity, `AllowUnsafeBlocks`).
+[Deckle.Shell](../Deckle.Shell/AGENTS.md) owns the Win32 tray and the `RightClickRequested` event; [Deckle.App](../Deckle.App/AGENTS.md) the wiring sequence and the transverse WinUI pitfalls (UI-thread affinity, `AllowUnsafeBlocks`).

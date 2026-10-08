@@ -13,7 +13,7 @@ A prompt returns the user's `NotificationResponse`, or **null** for either of tw
 
 `NotificationDescriptor.Id` is `point.snake_case`, stable from day one. It keys the catalogue, threads through the toast activation as the routing token, and may surface in user preferences later. Never rename it, never recycle a retired Id for a different notification — a stale Id in a delivered toast or a persisted preference would silently mis-route.
 
-The descriptor's Title/Body/label/placeholder keys are resolved by the channel through `Loc`, which reads the **root resource map only**: every descriptor string key must be mirrored into Deckle.App's `Resources.resw` (the owning module's `.resw` copy is the wording source of truth, but serves `x:Uid` alone). A key left un-mirrored does not fail — the toast still shows, with the `[!key]` marker in DEBUG and *blank text* in RELEASE — so the marker on a DEBUG toast is the one visible symptom; see Deckle.Catalog/CLAUDE.md.
+The descriptor's Title/Body/label/placeholder keys are resolved by the channel through `Loc`, which reads the **root resource map only**: every descriptor string key must be mirrored into Deckle.App's `Resources.resw` (the owning module's `.resw` copy is the wording source of truth, but serves `x:Uid` alone). A key left un-mirrored does not fail — the toast still shows, with the `[!key]` marker in DEBUG and *blank text* in RELEASE — so the marker on a DEBUG toast is the one visible symptom; see Deckle.Catalog/AGENTS.md.
 
 ## Adding a consumer module
 

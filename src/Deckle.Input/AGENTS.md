@@ -19,4 +19,4 @@ Support layer of the input pillar: it reads raw device input and synthesizes poi
 
 ## Attribution
 
-HID parsing follows `emoacht/RawInput.Touchpad` (MIT), with hybrid-mode frame reassembly per the Microsoft Precision Touchpad spec. See `NOTICE.md`.
+HID parsing follows `emoacht/RawInput.Touchpad` (MIT), with hybrid-mode frame reassembly per the Microsoft Precision Touchpad spec. See the repository root `NOTICE.md`.
