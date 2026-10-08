@@ -126,6 +126,60 @@ function Resolve-DecklePreviewDiscoveredAccess {
     return $null
 }
 
+function Get-DecklePreviewDiscoveredOwnerId {
+    param([Parameter(Mandatory)][AllowEmptyString()][string]$RelativePath)
+
+    # The owning Action Menu of a script is the View of its folder.
+    $separator = $RelativePath.LastIndexOf('/')
+    if ($separator -lt 0) { return 'menu.discovered' }
+    return "menu.discovered.$(ConvertTo-DecklePreviewIdPath -RelativePath $RelativePath.Substring(0, $separator))"
+}
+
+function New-DecklePreviewConfirmationView {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory)][object]$Action,
+        [Parameter(Mandatory)][string]$Banner,
+        [Parameter(Mandatory)][string]$OwnerActionMenuId
+    )
+
+    # The Confirmation step names the effect, puts the safe choice first so
+    # it takes the focus, and makes the other choice a deliberate Danger
+    # activation. Escape and Back leave without running anything.
+    $variantLabel = if ($Action.Variant) { " / $($Action.Variant)" } else { '' }
+    $keep = New-TerminalTarget `
+        -TargetId "confirmation.$($Action.ActionId).keep" `
+        -Label 'Keep everything as it is' `
+        -IntentKind Navigation `
+        -Payload ([pscustomobject]@{ Command = 'Back' }) `
+        -PresentationRole Navigation
+    $proceed = New-TerminalTarget `
+        -TargetId "confirmation.$($Action.ActionId).proceed" `
+        -Label "$($Action.Label)$variantLabel" `
+        -IntentKind Action `
+        -Payload $Action `
+        -PresentationRole Danger
+    return New-TerminalContentView `
+        -ViewId "confirmation.$($Action.ActionId)" `
+        -Banner $Banner `
+        -Context "$($Action.Label)$variantLabel" `
+        -Lines @(
+            $Action.Confirmation
+            "Script: $($Action.ScriptRelativePath)$(if ($Action.Arguments) { " $($Action.Arguments)" })"
+            ''
+            'Nothing has run yet.'
+        ) `
+        -Targets @($keep, $proceed) `
+        -BackTarget (New-DecklePreviewBackTarget) `
+        -OwnerActionMenuId $OwnerActionMenuId
+}
+
+function Test-DecklePreviewConfirmationView {
+    param([Parameter(Mandatory)][object]$View)
+
+    return $View.Kind -eq 'Content' -and $View.ViewId.StartsWith('confirmation.', [StringComparison]::Ordinal)
+}
+
 function Get-DecklePreviewFirstTargetId {
     param([Parameter(Mandatory)][object]$View)
 

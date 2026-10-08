@@ -34,7 +34,10 @@ The same preview can build its menu from the script Headers under `commands/` in
 ```powershell
 pwsh -NoProfile -File scripts/deckle-preview.ps1 -Discovered
 pwsh -NoProfile -File scripts/deckle-preview.ps1 -Snapshot Catalog -Width 100 -Height 30
+pwsh -NoProfile -File scripts/deckle-preview.ps1 -Snapshot Confirmation -Width 100 -Height 20
 ```
+
+An Action whose Header carries a confirmation sentence opens that sentence as a step before the sample Execution: the safe choice comes first and leaves, the Danger choice runs.
 
 ## Entry point — `deckle.ps1`
 

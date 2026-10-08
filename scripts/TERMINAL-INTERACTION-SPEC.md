@@ -133,6 +133,8 @@ The session keeps every Execution Journal produced since the launcher started, i
 
 Rendering is a deterministic projection of retained state, metrics, theme, and capabilities; a complete redraw is valid whenever geometry or capability changes, continuous resize animation is not a goal, and redundant redraws are avoided. The launcher uses the full terminal width with no cap: content stays left-aligned and right-aligned elements stay right. A narrow terminal reflows compositions vertically, in their semantic order, before any resize message; below the floor where nothing fits, still to be measured, the renderer presents one resize state rather than a partial View. One layout serves each use case; a new layout appears only when a use case breaks several existing rules.
 
+The theme names presentation roles in the sixteen console colours and never in absolute values, so the terminal's own scheme gives every role its colour and one theme serves light and dark terminals alike. The maintainer's palette for those roles, title, sections, action-row titles, body text, selection, accesses, lives in the Figma file "Deckle Scripts"; a terminal scheme built on it renders the launcher as designed.
+
 Resize preserves the current View and stack, the focused target, Selections, Execution state and Journal, and the nearest valid page of each Panel. Layout measures display cells, not string length; clipping accounts for presentation sequences and should account for wide and combining characters. The session leaves the terminal valid after narrow dimensions, interrupted drawing, an exception, or exit.
 
 ## Capabilities and engines

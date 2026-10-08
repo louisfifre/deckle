@@ -84,6 +84,28 @@ $deepView = ConvertTo-DecklePreviewDiscoveredView -Level $deep -Banner 'Fixture 
 Assert-Equal 'action.tools.deep.zeta.0' $deepView.Sections[0].Items[0].TargetId 'nested Action ids carry the whole path'
 Assert-Equal $null (Resolve-DecklePreviewDiscoveredAccess -Catalog $catalog -AccessId 'missing') 'an unknown Access resolves to nothing'
 
+# The Confirmation step of a Danger Action: the sentence, the safe choice first
+# as a Back navigation, then the Danger choice carrying the Action payload.
+$shipTarget = @($buildItems | Where-Object { $_.TargetId -eq 'action.gamma.1' })[0]
+$confirmation = New-DecklePreviewConfirmationView -Action $shipTarget.Payload -Banner 'Fixture Preview' -OwnerActionMenuId $root.ViewId
+Assert-Equal 'confirmation.gamma.1' $confirmation.ViewId 'the Confirmation View is named after its Action'
+Assert-Equal 'Content' $confirmation.Kind 'the Confirmation step is a Content View'
+Assert-True ($confirmation.Lines -contains 'Ships the package to the public feed.') 'the step names the effect with the Header sentence'
+Assert-Equal Navigation $confirmation.Targets[0].IntentKind 'the safe choice comes first'
+Assert-Equal 'Back' $confirmation.Targets[0].Payload.Command 'the safe choice leaves without running anything'
+Assert-Equal Danger $confirmation.Targets[1].PresentationRole 'the other choice is a deliberate Danger activation'
+Assert-Equal 'gamma.1' $confirmation.Targets[1].Payload.ActionId 'the Danger choice carries the Action'
+Assert-True (Test-DecklePreviewConfirmationView -View $confirmation) 'a Confirmation View is recognised by its id'
+Assert-Equal $false (Test-DecklePreviewConfirmationView -View $root) 'an Action Menu is not a Confirmation View'
+Assert-Equal 'menu.discovered.tools' (Get-DecklePreviewDiscoveredOwnerId -RelativePath 'tools/epsilon.ps1') 'a script in a folder is owned by that folder menu'
+Assert-Equal 'menu.discovered' (Get-DecklePreviewDiscoveredOwnerId -RelativePath 'alpha.ps1') 'a root script is owned by the root menu'
+$confirmationFrame = Get-TerminalInteractionFrame -View $confirmation -OwnerActionMenu $root -Width 100 -Height 20 -FocusedTargetId $confirmation.Targets[0].TargetId
+$confirmationLines = @(ConvertTo-TerminalFrameText -Frame $confirmationFrame)
+Assert-True (($confirmationLines -join "`n") -match 'Ships the package') 'the Confirmation step renders its sentence'
+$keepLine = [Array]::FindIndex($confirmationLines, [Predicate[string]]{ param($l) $l -match 'Keep everything' })
+$proceedLine = [Array]::FindIndex($confirmationLines, ($keepLine + 1), [Predicate[string]]{ param($l) $l -match '^\s+Ship\s*$' })
+Assert-True ($keepLine -ge 0 -and $proceedLine -eq $keepLine + 1) 'the safe choice is drawn right above the Danger choice'
+
 foreach ($width in @(100, 50)) {
     $frame = Get-TerminalInteractionFrame -View $root -Width $width -Height 40 -FocusedTargetId (Get-DecklePreviewFirstTargetId -View $root)
     $text = @(ConvertTo-TerminalFrameText -Frame $frame) -join "`n"
