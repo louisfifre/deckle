@@ -8,6 +8,7 @@ using Deckle.Modules;
 using Deckle.Playground;
 using Deckle.Setup;
 using Deckle.Shell;
+using Deckle.Shell.Foreground;
 using Deckle.Shell.TaskbarCover;
 using Deckle.Shell.TrayMenu;
 using Deckle.Speech;
@@ -92,6 +93,17 @@ public partial class App
         {
             context.Milestone("trackpad_skipped");
         }
+
+        // The single process-wide view of the foreground window — which app,
+        // which monitor, fullscreen or not — read by the taskbar cover and the
+        // apps and games runtime composed below, so it must exist before them.
+        // Its WinEvent hooks deliver on the thread that starts it: this is the
+        // UI thread, which pumps once OnLaunched returns, and it is disposed
+        // on it at quit. A failed start is logged by the watcher itself; the
+        // app runs on without foreground changes.
+        _foregroundWatcher = new ForegroundWatcher();
+        _foregroundWatcher.Start();
+        context.Milestone("foreground_watcher");
 
         // Taskbar cover module — dedicated band thread reconciled with the
         // persisted module settings (off by default; the thread only spins

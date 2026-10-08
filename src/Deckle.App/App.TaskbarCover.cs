@@ -12,8 +12,8 @@ public partial class App
 
     private void InitializeTaskbarCover()
     {
-        // InitializeStartupShell built and started the watcher earlier on the
-        // same UI thread; the cover only subscribes to it.
+        // InitializeStartupModules built and started the watcher just before
+        // this call, on the same UI thread; the cover only subscribes to it.
         _taskbarCover = new TaskbarCoverHost(_foregroundWatcher!);
 
         TaskbarCoverSettingsService.Instance.Changed += ReconcileTaskbarCover;

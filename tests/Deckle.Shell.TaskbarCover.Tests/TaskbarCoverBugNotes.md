@@ -17,3 +17,12 @@
 - **Violated invariant:** Only a fullscreen window on the band's monitor suppresses the band.
 - **Recurrence cue:** A suppression decision that reads "is anything fullscreen" without comparing the foreground window's monitor with the band's; or a band monitor that is not re-read when the layout changes.
 - **Regression coverage:** `CoverSuppressionTests.FullscreenOnAnotherMonitorLeavesTheCoverUp` drives `CoverSuppression.Applies`, the predicate the host uses. The notification-state stage has no monitor of its own; the fix compares the foreground window's monitor for both stages, the best available discriminator.
+
+## Cover composed before the foreground watcher existed
+
+- **Trigger:** Deckle boots with the taskbar cover's master switch on. `OnLaunched` runs `InitializeStartupModules` (which calls `InitializeTaskbarCover`) before `InitializeStartupShell` (which created and started the `ForegroundWatcher`).
+- **Observed symptom:** Established in code, never run: `TaskbarCoverHost` received a null watcher through `_foregroundWatcher!`. Its `Start` then subscribes to `_foreground.Changed` on the UI thread and its band thread reads `_foreground.Current` in `BootstrapState`, both null dereferences; the one on the band thread is unhandled. Whether this crashed a running build is unverified: the ordering came together when the taskbar cover branch moved the cover onto the shared watcher.
+- **Cause:** The watcher was created in the shell phase of startup, while its consumers are composed in the earlier modules phase. The null-forgiving `!` hid the ordering from the compiler.
+- **Violated invariant:** The shared `ForegroundWatcher` is created and started before any module that subscribes to it is composed.
+- **Recurrence cue:** A new consumer of the watcher composed in a startup phase that runs before the watcher's creation, or the watcher moved later in `OnLaunched`; any `_foregroundWatcher!` read at composition.
+- **Regression coverage:** None. The order lives in `Deckle.App`'s startup partials, which have no test project; no natural seam reproduces it. The watcher now starts at the head of the taskbar cover step in `App.Startup.Modules.cs`, before the cover and the apps and games runtime.
