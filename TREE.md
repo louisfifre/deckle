@@ -1386,7 +1386,9 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   ├── AppSource.cs
 │   │   │   └── HdrRule.cs
 │   │   ├── Scan/
-│   │   │   └── ExecutableLocator.cs
+│   │   │   ├── ExecutableLocator.cs
+│   │   │   ├── FolderScanner.cs
+│   │   │   └── RegistryScan.cs
 │   │   ├── Steam/
 │   │   │   ├── KeyValuesNode.cs
 │   │   │   ├── KeyValuesReader.cs

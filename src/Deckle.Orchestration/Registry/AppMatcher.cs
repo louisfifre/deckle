@@ -81,6 +81,26 @@ public static class AppMatcher
         return false;
     }
 
+    // The candidates that repeat neither an existing entry nor an earlier
+    // candidate, in order. The existing list is never changed: merging is
+    // additive, so a scan run twice adds nothing the second time.
+    public static IReadOnlyList<AppEntry> SelectNew(
+        IReadOnlyList<AppEntry> existing, IEnumerable<AppEntry> candidates)
+    {
+        ArgumentNullException.ThrowIfNull(existing);
+        ArgumentNullException.ThrowIfNull(candidates);
+
+        var seen = new List<AppEntry>(existing);
+        var fresh = new List<AppEntry>();
+        foreach (AppEntry candidate in candidates)
+        {
+            if (IsDuplicate(seen, candidate)) continue;
+            seen.Add(candidate);
+            fresh.Add(candidate);
+        }
+        return fresh;
+    }
+
     // True when path sits inside directory. The directory is compared with a
     // trailing separator so "C:\Games\Foo" never claims "C:\Games\FooBar\x.exe".
     private static bool IsUnder(string fullPath, string? directory)

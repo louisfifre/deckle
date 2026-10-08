@@ -88,19 +88,12 @@ public sealed class OrchestrationSettingsService
         lock (_writeLock)
         {
             var settings = Current;
-            var next = new List<AppEntry>(settings.Entries);
-            int added = 0;
-            foreach (AppEntry entry in entries)
-            {
-                if (AppMatcher.IsDuplicate(next, entry)) continue;
-                next.Add(entry);
-                LogAdded(entry);
-                added++;
-            }
-            if (added == 0) return 0;
-            settings.Entries = next;
+            IReadOnlyList<AppEntry> fresh = AppMatcher.SelectNew(settings.Entries, entries);
+            if (fresh.Count == 0) return 0;
+            settings.Entries = [.. settings.Entries, .. fresh];
+            foreach (AppEntry entry in fresh) LogAdded(entry);
             Save();
-            return added;
+            return fresh.Count;
         }
     }
 
