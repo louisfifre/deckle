@@ -1404,7 +1404,8 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   └── RunningProcessDialog.xaml.cs
 │   │   ├── ViewModels/
 │   │   │   ├── AppEntryRow.cs
-│   │   │   └── OrchestrationViewModel.cs
+│   │   │   ├── OrchestrationViewModel.cs
+│   │   │   └── ScanFolderRow.cs
 │   │   ├── AGENTS.md  — [agent-instructions] Apps and games domain module — the registry of apps the user cares about, notic…
 │   │   ├── CLAUDE.md
 │   │   ├── Deckle.Orchestration.csproj

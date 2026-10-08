@@ -27,6 +27,7 @@ public sealed partial class OrchestrationPage : Page
     {
         base.OnNavigatedTo(e);
         DuplicateInfo.IsOpen = false;
+        NothingNew.Visibility = Visibility.Collapsed;
         ViewModel.Load();
         RefreshEmptyState();
     }
@@ -72,6 +73,50 @@ public sealed partial class OrchestrationPage : Page
         catch (Exception ex)
         {
             ReportFailure("change_executable", ex);
+        }
+    }
+
+    // Scan Steam and the chosen folders. The button greys while the scan runs
+    // so a second click cannot start a parallel one; the outcome is the list
+    // itself, or the "Nothing new found" line when nothing was added.
+    private async void OnScanClick(object sender, RoutedEventArgs e)
+    {
+        ScanButton.IsEnabled = false;
+        NothingNew.Visibility = Visibility.Collapsed;
+        DuplicateInfo.IsOpen = false;
+        try
+        {
+            ScanResult result = await ViewModel.ScanAsync();
+            NothingNew.Visibility = result.Added == 0 ? Visibility.Visible : Visibility.Collapsed;
+        }
+        catch (Exception ex)
+        {
+            ReportFailure("scan", ex);
+        }
+        finally
+        {
+            ScanButton.IsEnabled = true;
+        }
+    }
+
+    private async void OnAddFolderClick(object sender, RoutedEventArgs e)
+    {
+        try
+        {
+            var picker = new FolderPicker(XamlRoot.ContentIslandEnvironment.AppWindowId)
+            {
+                SuggestedStartLocation = PickerLocationId.ComputerFolder,
+            };
+            PickFolderResult? result = await picker.PickSingleFolderAsync();
+            if (result?.Path is { } path)
+            {
+                ViewModel.AddFolder(path); // a folder already listed is ignored
+                FoldersExpander.IsExpanded = true;
+            }
+        }
+        catch (Exception ex)
+        {
+            ReportFailure("add_scan_folder", ex);
         }
     }
 

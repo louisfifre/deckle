@@ -12,6 +12,9 @@ public sealed class OrchestrationViewModel
     // Ordered by display name so the list reads the same across reloads.
     public ObservableCollection<AppEntryRow> Entries { get; } = new();
 
+    // The folders the scan walks besides Steam, in the order the user added them.
+    public ObservableCollection<ScanFolderRow> ScanFolders { get; } = new();
+
     public OrchestrationViewModel() => Load();
 
     // Rebuilt on every navigation: cheap, and it picks up entries a scan or
@@ -22,7 +25,42 @@ public sealed class OrchestrationViewModel
         foreach (AppEntry entry in Service.Current.Entries
                      .OrderBy(e => e.DisplayName, StringComparer.CurrentCultureIgnoreCase))
             Entries.Add(CreateRow(entry));
+
+        ScanFolders.Clear();
+        foreach (string folder in Service.Current.ScanFolders)
+            ScanFolders.Add(new ScanFolderRow(folder, OnFolderRemoved));
     }
+
+    // Steam and the chosen folders, on a worker: the scan reads the disk. The
+    // list is reloaded afterwards on the caller's (UI) thread.
+    public async Task<ScanResult> ScanAsync()
+    {
+        ScanResult result = await Task.Run(() => RegistryScan.Run(Service));
+        Load();
+        return result;
+    }
+
+    /// <summary>Add a folder to scan. False when it is already listed.</summary>
+    public bool AddFolder(string path)
+    {
+        // TrimEndingDirectorySeparator leaves a drive root ("D:\") whole.
+        string trimmed = Path.TrimEndingDirectorySeparator(path);
+        if (ScanFolders.Any(f => string.Equals(f.Path, trimmed, StringComparison.OrdinalIgnoreCase)))
+            return false;
+
+        ScanFolders.Add(new ScanFolderRow(trimmed, OnFolderRemoved));
+        SaveFolders();
+        return true;
+    }
+
+    private void OnFolderRemoved(ScanFolderRow row)
+    {
+        ScanFolders.Remove(row);
+        SaveFolders();
+    }
+
+    private void SaveFolders() =>
+        Service.SetScanFolders(ScanFolders.Select(f => f.Path).ToList());
 
     // The entries as they are now, for filtering the running-app dialog.
     public IReadOnlyList<AppEntry> Snapshot() => Service.Current.Entries;

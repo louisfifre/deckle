@@ -21,5 +21,11 @@ public static class SettingsSearch
                 "hdr", "per-app", "profile",
             ],
         },
+        new SettingSearchEntry
+        {
+            LabelKey = "OrchestrationPage_FoldersExpander",
+            LiteralLabel = "Folders to scan",
+            Keywords = ["steam", "scan", "library", "folder"],
+        },
     ];
 }

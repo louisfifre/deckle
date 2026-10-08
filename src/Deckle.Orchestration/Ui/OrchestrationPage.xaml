@@ -55,6 +55,11 @@
                                 Click="OnAddAppClick" />
                         <Button x:Uid="OrchestrationPage_AddRunningButton"
                                 Click="OnAddRunningClick" />
+                        <!-- Disabled while the scan runs: the one transient
+                             "busy" grey the settings doctrine allows. -->
+                        <Button x:Name="ScanButton"
+                                x:Uid="OrchestrationPage_ScanButton"
+                                Click="OnScanClick" />
                     </StackPanel>
 
                     <!-- One inline channel for "already in your list"; closed on
@@ -63,6 +68,46 @@
                              x:Uid="OrchestrationPage_DuplicateInfo"
                              Severity="Informational"
                              IsOpen="False" />
+
+                    <!-- The scan is silent; this line is its only outcome when
+                         nothing was added. Hidden again when the next scan starts. -->
+                    <TextBlock x:Name="NothingNew"
+                               x:Uid="OrchestrationPage_NothingNew"
+                               Style="{StaticResource BodyTextBlockStyle}"
+                               Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                               TextWrapping="Wrap"
+                               Margin="0,0,0,8"
+                               Visibility="Collapsed" />
+
+                    <!-- Folders the scan walks besides Steam. "Add folder…" sits
+                         on the header, as in Windows Settings' excluded-folders
+                         list, so it is reachable without expanding. Tag is the
+                         search index's scroll-to handle. -->
+                    <controls:SettingsExpander x:Name="FoldersExpander"
+                                               x:Uid="OrchestrationPage_FoldersExpander"
+                                               Tag="OrchestrationPage_FoldersExpander"
+                                               ItemsSource="{x:Bind ViewModel.ScanFolders}"
+                                               Margin="0,0,0,8">
+                        <controls:SettingsExpander.HeaderIcon>
+                            <FontIcon Glyph="{StaticResource Icon.Folder}" />
+                        </controls:SettingsExpander.HeaderIcon>
+
+                        <Button x:Uid="OrchestrationPage_AddFolderButton"
+                                Click="OnAddFolderClick" />
+
+                        <controls:SettingsExpander.ItemTemplate>
+                            <DataTemplate x:DataType="local:ScanFolderRow">
+                                <controls:SettingsCard Header="{x:Bind Path}">
+                                    <Button x:Uid="OrchestrationPage_RemoveFolderButton"
+                                            Style="{StaticResource SubtleButtonStyle}"
+                                            Command="{x:Bind RemoveCommand}">
+                                        <FontIcon Glyph="{StaticResource Icon.Delete}"
+                                                  FontSize="16" />
+                                    </Button>
+                                </controls:SettingsCard>
+                            </DataTemplate>
+                        </controls:SettingsExpander.ItemTemplate>
+                    </controls:SettingsExpander>
 
                     <!-- Trades places with the list from code-behind, off
                          Entries.CollectionChanged. -->
