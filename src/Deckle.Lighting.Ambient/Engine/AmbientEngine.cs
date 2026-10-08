@@ -335,13 +335,6 @@ public sealed partial class AmbientEngine : IAsyncDisposable
     // scenarios (tests) get the most recent. Set by the ctor below.
     public static AmbientEngine? Current { get; private set; }
 
-    // Bridged action invoked by the AmbientPage's "Open Playground"
-    // button (rendered inside the NotPaired InfoBar). The App wires
-    // this at boot to its lazy ShowPlaygroundLazy() — same approach as
-    // TrayIconManager.OnShowPlayground. Lighting.Ambient cannot
-    // reference App directly, so the App side fills the slot.
-    public static Action? OpenPlaygroundRequested { get; set; }
-
     // ctor : the engine is glued to a host that exposes the live
     // AmbientSettings snapshot. The capture, the Hue bridge client,
     // the light output and the frame sampler are all owned — created

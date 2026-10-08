@@ -72,10 +72,6 @@ public partial class App
         if (context.AmbientPresent)
         {
             _ambientEngine = new AmbientEngine(new AppAmbientEngineHost());
-            // AmbientPage's NotPaired InfoBar action button needs to open
-            // the Playground (where Hue pairing lives in V0). Lighting.
-            // Ambient cannot reference Deckle, so the App fills the slot.
-            AmbientEngine.OpenPlaygroundRequested = () => ShowPlaygroundLazy();
             context.Milestone("ambient_engine");
         }
         else
