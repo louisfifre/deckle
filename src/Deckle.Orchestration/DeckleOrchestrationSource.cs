@@ -50,6 +50,7 @@ public sealed class DeckleOrchestrationSource : DeckleEventSource
     public const int EvtHdrSetFailed = 38;
     public const int EvtHdrSetFailedDetail = 39;
     public const int EvtHdrRuleSkipped = 40;
+    public const int EvtForegroundPathUnavailable = 41;
 
     [Event(EvtSettingsLoadWarning,
            Level = EventLevel.Warning,
@@ -439,5 +440,17 @@ public sealed class DeckleOrchestrationSource : DeckleEventSource
     public void HdrRuleSkipped(string device, string reason)
     {
         if (IsEnabled()) WriteEvent(EvtHdrRuleSkipped, device, reason);
+    }
+
+    // The foreground window's process refused the image path query
+    // (protected process) or exited first. The change is still raised with
+    // a null path, so the entry can match by process name. Once per pid.
+    [Event(EvtForegroundPathUnavailable,
+           Level = EventLevel.Verbose,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Message = "foreground image path unavailable | pid={0} | process_name={1}")]
+    public void ForegroundPathUnavailable(int pid, string process_name)
+    {
+        if (IsEnabled()) WriteEvent(EvtForegroundPathUnavailable, pid, process_name);
     }
 }

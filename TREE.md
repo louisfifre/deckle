@@ -1418,12 +1418,14 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   ├── AppSessionTracker.cs
 │   │   │   ├── DetectionStatus.cs
 │   │   │   ├── ForegroundChange.cs
+│   │   │   ├── ForegroundChangeMapping.cs
 │   │   │   ├── IForegroundMonitor.cs
 │   │   │   ├── IProcessStartSource.cs
 │   │   │   ├── NullForegroundMonitor.cs
 │   │   │   ├── OrchestrationRuntime.cs
 │   │   │   ├── ProcessExitWatch.cs
 │   │   │   ├── ProcessStarted.cs
+│   │   │   ├── WatcherForegroundMonitor.cs
 │   │   │   └── WmiProcessStartSource.cs
 │   │   ├── Display/
 │   │   │   ├── DisplayTarget.cs
@@ -2156,6 +2158,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── DisplayConfigLayoutTests.cs
 │   │   ├── ExecutableLocatorTests.cs
 │   │   ├── Fixture.cs
+│   │   ├── ForegroundChangeMappingTests.cs
 │   │   ├── KeyValuesReaderTests.cs
 │   │   ├── ProfileTransactionTests.cs
 │   │   ├── ScanOnDiskTests.cs
