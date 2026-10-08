@@ -1416,6 +1416,10 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── DecklePlaygroundSource.cs
 │   │   ├── PlaygroundNotifications.cs
 │   │   └── PlaygroundShell.cs
+│   ├── Deckle.Presets/
+│   │   ├── Deckle.Presets.csproj
+│   │   ├── Preset.cs
+│   │   └── PresetFamily.cs
 │   ├── Deckle.Security/
 │   │   ├── CONTEXT.md  — context-deckle-security [agent-instructions] Security vocabulary — the trusted-session boundary, captured content, and where…
 │   │   ├── Deckle.Security.csproj

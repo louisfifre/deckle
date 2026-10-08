@@ -1,0 +1,10 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <RootNamespace>Deckle.Presets</RootNamespace>
+  </PropertyGroup>
+
+  <!-- Preset families — named sets of values for a declared group of one
+       module's settings: which preset the current values match, and how to
+       apply one through the module's own setter. Pure non-UI support: no
+       XAML, no WindowsAppSDK, no project or package reference. -->
+</Project>
