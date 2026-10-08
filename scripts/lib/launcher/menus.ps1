@@ -174,7 +174,7 @@ function Show-SetupMenu {
             'bootstrap' { Invoke-BootstrapDev -MenuRows $menuRows }
             'assets'    { Invoke-SetupAssets -MenuRows $menuRows }
             'hooks' {
-                $scriptPath = Join-Path $CommandDir 'install-hooks.ps1'
+                $scriptPath = Join-Path $CommandDir 'setup\install-hooks.ps1'
                 Invoke-DeckleMenuAction -Header 'Deckle > Setup > Git hooks' -Label 'Install git hooks' -Source Setup -MenuRows $menuRows -Action { & $scriptPath }
             }
         }

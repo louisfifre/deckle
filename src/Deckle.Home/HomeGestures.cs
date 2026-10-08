@@ -6,7 +6,7 @@ using Deckle.Anytype;
 
 namespace Deckle.Home;
 
-public sealed class HomeGestures
+public sealed partial class HomeGestures
 {
     private const int MaxBatchSize = 100;
     private static readonly Regex CircuitCodePattern = new(
@@ -67,14 +67,13 @@ public sealed class HomeGestures
                 JsonArray freeProperties = await propertyWriter.BuildAsync(
                     type, item.Properties, [], ct).ConfigureAwait(false);
                 RequireComponentSystem(type, freeProperties);
-                prepared.Add(PrepareFreeTitledItem(
-                    type, item, freeProperties, collectionWriter, templateId));
+                var freeItem = PrepareFreeTitledItem(
+                    type, item, freeProperties, collectionWriter, templateId);
+                freeItem.Payload["type_key"] = schema.TypeKey(type);
+                prepared.Add(freeItem);
                 continue;
             }
 
-            if (item.Text is not null)
-                throw new InvalidOperationException(
-                    "Le corps est réservé aux idées et aux appareils ; un objet d'inventaire est fait de propriétés.");
             string code = ValidateCode(type, RequireCode(type, item.Code));
             if (!seen.Add(code) || index.ContainsCode(code))
             {
@@ -141,6 +140,7 @@ public sealed class HomeGestures
                 ["properties"] = properties,
             };
             if (templateId is not null) codedPayload["template_id"] = templateId;
+            if (!string.IsNullOrWhiteSpace(item.Text)) codedPayload["body"] = item.Text.Trim();
 
             prepared.Add((
                 string.Equals(title, code, StringComparison.Ordinal) ? code : $"{code} · {title}",
@@ -171,9 +171,16 @@ public sealed class HomeGestures
         return "Créé :\n" + string.Join("\n", prepared.Select(item => $"- {type} · {item.Display}"));
     }
 
-    public async Task<string> UpdateAsync(
+    public Task<string> UpdateAsync(
         IReadOnlyList<HomeUpdateItem> items,
-        CancellationToken ct = default)
+        CancellationToken ct = default) => UpdateCoreAsync(null, items, ct);
+
+    public Task<string> UpdateTypedAsync(
+        string type, IReadOnlyList<HomeUpdateItem> items, CancellationToken ct = default) =>
+        UpdateCoreAsync(NormalizeType(type), items, ct);
+
+    private async Task<string> UpdateCoreAsync(
+        string? expectedType, IReadOnlyList<HomeUpdateItem> items, CancellationToken ct)
     {
         DateTime started = DateTime.UtcNow;
         ValidateBatch(items, "update");
@@ -193,7 +200,8 @@ public sealed class HomeGestures
 
         foreach (HomeUpdateItem item in items)
         {
-            JsonObject target = index.Resolve(item.Object);
+            JsonObject target = index.Resolve(item.Object,
+                expectedType is null ? null : [schema.TypeKey(expectedType)]);
             string id = HomeObjectJson.Id(target);
             if (!targets.Add(id))
                 throw new InvalidOperationException($"Le lot cible deux fois « {HomeObjectIndex.Display(target)} ».");
@@ -201,7 +209,7 @@ public sealed class HomeGestures
             string type = HomeObjectJson.TypeKey(target);
             if (type == HomeSchema.Types.Idea && item.Name is not null)
                 throw new InvalidOperationException(
-                    "Une idée est une note sans champ titre ; édite son corps dans l'app.");
+                    "Une idée est une note sans champ titre ; modifie son corps avec append_text ou section.");
             if (item.Name is not null && string.IsNullOrWhiteSpace(item.Name))
                 throw new ArgumentException("Le nom ne peut pas être vide.", nameof(items));
 
@@ -209,7 +217,16 @@ public sealed class HomeGestures
             IReadOnlyCollection<string> reserved = type == HomeSchema.Types.Point
                 ? [HomeSchema.Properties.InstalledIn, HomeSchema.Properties.Category]
                 : [];
-            JsonArray properties = await writer.BuildAsync(type, item.Properties, reserved, ct)
+            JsonObject? current = null;
+            JsonObject? propertyValues = item.Properties;
+            if (HomeRelationEdits.HasEdits(propertyValues))
+            {
+                current = HomeObjectJson.Unwrap(
+                    await _api.GetObjectAsync(_spaceId, id, ct).ConfigureAwait(false));
+                propertyValues = await HomeRelationEdits.ApplyAsync(
+                    type, propertyValues!, current, schema, writer, ct).ConfigureAwait(false);
+            }
+            JsonArray properties = await writer.BuildAsync(type, propertyValues, reserved, ct)
                 .ConfigureAwait(false);
             RefuseComponentOrphaning(type, properties);
             IReadOnlyList<string> addToCollections = collectionWriter.Resolve(item.AddToCollections);
@@ -221,7 +238,8 @@ public sealed class HomeGestures
                     "Une même collection ne peut pas être ajoutée et retirée dans la même mise à jour.");
 
             if (item.Name is null && properties.Count == 0
-                && addToCollections.Count == 0 && removeFromCollections.Count == 0)
+                && addToCollections.Count == 0 && removeFromCollections.Count == 0
+                && item.AppendText is null && item.Section is null)
                 throw new ArgumentException(
                     $"Rien à mettre à jour pour « {item.Object} » : fournis name, properties "
                     + "ou un changement de collections.", nameof(items));
@@ -229,6 +247,13 @@ public sealed class HomeGestures
             var payload = new JsonObject();
             if (item.Name is not null) payload["name"] = item.Name.Trim();
             if (properties.Count > 0) payload["properties"] = properties;
+            if (item.AppendText is not null || item.Section is not null)
+            {
+                current ??= HomeObjectJson.Unwrap(
+                    await _api.GetObjectAsync(_spaceId, id, ct).ConfigureAwait(false));
+                payload["markdown"] = HomeBodyEditor.Edit(
+                    HomeObjectJson.String(current, "markdown"), item.AppendText, item.Section);
+            }
             prepared.Add((
                 id,
                 HomeObjectIndex.Display(target),
@@ -237,21 +262,35 @@ public sealed class HomeGestures
                 removeFromCollections));
         }
 
+        var verificationFailures = new List<string>();
         foreach ((
             string id,
-            string _,
+            string display,
             JsonObject payload,
             IReadOnlyList<string> addToCollections,
             IReadOnlyList<string> removeFromCollections) in prepared)
         {
             if (payload.Count > 0)
-                await _api.UpdateObjectAsync(_spaceId, id, payload, ct).ConfigureAwait(false);
+            {
+                JsonObject updated = HomeObjectJson.Unwrap(
+                    await _api.UpdateObjectAsync(_spaceId, id, payload, ct).ConfigureAwait(false));
+                if (payload["markdown"] is JsonValue intended)
+                {
+                    if (updated["markdown"] is not JsonValue)
+                        updated = HomeObjectJson.Unwrap(
+                            await _api.GetObjectAsync(_spaceId, id, ct).ConfigureAwait(false));
+                    if (!HomeBodyEditor.Matches(intended.GetValue<string>(), HomeObjectJson.String(updated, "markdown")))
+                        verificationFailures.Add(display);
+                }
+            }
             await collectionWriter.AddAsync(addToCollections, id, ct).ConfigureAwait(false);
             await collectionWriter.RemoveAsync(removeFromCollections, id, ct).ConfigureAwait(false);
         }
 
         DeckleHomeSource.Log.GestureCompleted("update", Elapsed(started));
-        return "Mis à jour :\n" + string.Join("\n", prepared.Select(item => "- " + item.Display));
+        return "Mis à jour :\n" + string.Join("\n", prepared.Select(item => "- " + item.Display))
+            + (verificationFailures.Count == 0 ? "" : "\nÉcriture effectuée, mais le corps relu diffère pour : "
+                + string.Join(", ", verificationFailures) + ". Relis avant toute nouvelle écriture.");
     }
 
     public async Task<string> GetAsync(string selector, CancellationToken ct = default)
@@ -264,63 +303,6 @@ public sealed class HomeGestures
             _spaceId, HomeObjectJson.Id(summary), ct).ConfigureAwait(false);
         DeckleHomeSource.Log.GestureCompleted("get", Elapsed(started));
         return index.Render(value);
-    }
-
-    public async Task<string> SearchAsync(HomeSearchFilter filter, CancellationToken ct = default)
-    {
-        ArgumentNullException.ThrowIfNull(filter);
-        DateTime started = DateTime.UtcNow;
-        await _runtime.GetAsync(ct).ConfigureAwait(false);
-        HomeObjectIndex index = await HomeObjectIndex.LoadAsync(_api, _spaceId, ct).ConfigureAwait(false);
-
-        string? type = filter.Type is null ? null : NormalizeType(filter.Type);
-        string? category = filter.Category is null ? null : HomeCategories.OptionKey(filter.Category);
-        string? condition = NormalizeVocabulary(HomeSchema.Properties.Condition, filter.Condition);
-        string? state = NormalizeVocabulary(HomeSchema.Properties.State, filter.State);
-        string? worksiteId = filter.Worksite is null
-            ? null
-            : HomeObjectJson.Id(index.Resolve(filter.Worksite, [HomeSchema.Types.Worksite]));
-        string? systemId = filter.System is null
-            ? null
-            : HomeObjectJson.Id(index.Resolve(filter.System, [HomeSchema.Types.System]));
-        string? roomId = filter.Room is null
-            ? null
-            : HomeObjectJson.Id(index.Resolve(filter.Room, [HomeSchema.Types.Room]));
-        string? circuitId = filter.Circuit is null
-            ? null
-            : HomeObjectJson.Id(index.Resolve(filter.Circuit, [HomeSchema.Types.Circuit]));
-
-        IEnumerable<JsonObject> query = index.Objects;
-        if (type is not null) query = query.Where(value => HomeObjectJson.TypeKey(value) == type);
-        if (roomId is not null)
-            query = query.Where(value =>
-                HomeObjectJson.ObjectReferences(value, HomeSchema.Properties.InstalledIn).Contains(roomId)
-                || HomeObjectJson.ObjectReferences(value, HomeSchema.Properties.StoredIn).Contains(roomId));
-        if (circuitId is not null)
-            query = query.Where(value => HomeObjectJson.ObjectReferences(value, HomeSchema.Properties.Circuit).Contains(circuitId));
-        if (category is not null)
-            query = query.Where(value => SelectMatches(value, HomeSchema.Properties.Category, category));
-        if (condition is not null)
-            query = query.Where(value => SelectMatches(value, HomeSchema.Properties.Condition, condition));
-        if (state is not null)
-            query = query.Where(value => SelectMatches(value, HomeSchema.Properties.State, state));
-        if (worksiteId is not null)
-            query = query.Where(value => HomeObjectJson.ObjectReferences(value, HomeSchema.Properties.Worksite).Contains(worksiteId));
-        if (systemId is not null)
-            query = query.Where(value => HomeObjectJson.ObjectReferences(value, HomeSchema.Properties.PartOf).Contains(systemId));
-        if (filter.Done is bool done)
-            query = query.Where(value => CheckboxValue(value, "done") == done);
-        if (!string.IsNullOrWhiteSpace(filter.Text))
-        {
-            string text = filter.Text.Trim();
-            query = query.Where(value => SearchText(value, index).Contains(text, StringComparison.OrdinalIgnoreCase));
-        }
-
-        JsonObject[] matches = query.ToArray();
-        DeckleHomeSource.Log.GestureCompleted("search", Elapsed(started));
-        if (matches.Length == 0) return "Aucun résultat.";
-        return string.Join("\n", matches.Select(value =>
-            $"{HomeObjectJson.TypeKey(value)} · {HomeObjectIndex.Display(value)} · {HomeObjectJson.Id(value)}"));
     }
 
     public async Task<string> DeleteAsync(
@@ -440,7 +422,7 @@ public sealed class HomeGestures
         string type = HomeObjectJson.TypeKey(target);
         string id = HomeObjectJson.Id(target);
 
-        if (type is HomeSchema.Types.Todo or HomeSchema.Types.Errand)
+        if (type == HomeSchema.Types.Todo)
         {
             var payload = new JsonObject
             {
@@ -469,7 +451,7 @@ public sealed class HomeGestures
 
         throw new InvalidOperationException(
             $"« {HomeObjectIndex.Display(target)} » ({type}) ne se termine pas : "
-            + "complete s'applique aux tâches, aux courses et aux chantiers.");
+            + "complete s'applique aux tâches et aux chantiers. Pour un produit, modifie « Prendre ».");
     }
 
     public async Task<string> WorksiteOverviewAsync(string selector, CancellationToken ct = default)
@@ -585,8 +567,8 @@ public sealed class HomeGestures
     {
         if (string.IsNullOrWhiteSpace(value))
             throw new ArgumentException("Le type Home ne peut pas être vide.", nameof(value));
-        value = value.Trim().ToLowerInvariant();
-        if (!HomeSchema.CreatableTypes.Contains(value))
+        value = HomeSchema.WireTypeKey(value.Trim().ToLowerInvariant());
+        if (value != HomeSchema.Types.Floor && !HomeSchema.CreatableTypes.Contains(value))
             throw new ArgumentException(
                 $"Type Home inconnu « {value} ». Types admis : {string.Join(", ", HomeSchema.CreatableTypes)}.",
                 nameof(value));
@@ -626,8 +608,8 @@ public sealed class HomeGestures
     // worksites and todos are titled by their free name. An idée is an Anytype
     // note: it has no separate name, its whole text lives in body, and Home
     // uses the returned snippet only as a compact display excerpt.
-    // Only an appareil keeps the free-form body allowance inherited from the
-    // former outil type.
+    // Initial dictation text is available on every type; later body edits
+    // append or target one existing section under the shared write scope.
     private static (string Display, JsonObject Payload, IReadOnlyList<string> Collections) PrepareFreeTitledItem(
         string type,
         HomeCreateItem item,
@@ -659,9 +641,6 @@ public sealed class HomeGestures
         {
             if (string.IsNullOrEmpty(name))
                 throw new ArgumentException($"Un objet {type} exige un nom.", nameof(item));
-            if (text is not null && type != HomeSchema.Types.Device)
-                throw new InvalidOperationException(
-                    $"Un objet {type} n'a pas de corps : utilise la propriété « Notes ».");
             payload["name"] = name;
             if (!string.IsNullOrEmpty(text)) payload["body"] = text;
             display = name;
@@ -710,7 +689,7 @@ public sealed class HomeGestures
             throw new InvalidOperationException(
                 "Un composant n'existe que dans son système : fournis « Fait partie de » "
                 + "(un Système existant). Si le système n'a pas de nom, ce n'est pas un "
-                + "composant — crée un appareil, le retypage est facile.");
+                + "composant — crée un appareil. Le retypage reste disponible dans l'app.");
     }
 
     private static void RefuseComponentOrphaning(string type, JsonArray properties)
@@ -780,44 +759,6 @@ public sealed class HomeGestures
         for (int sequence = 1; sequence <= 99; sequence++)
             if (!used.Contains(sequence)) return $"{parsed.Room}-{parsed.Category}{sequence:00}";
         return "aucun (séquence 01–99 épuisée)";
-    }
-
-    private static string? NormalizeVocabulary(string propertyKey, string? value)
-    {
-        if (value is null) return null;
-        IReadOnlyList<string> optionKeys = HomeSchema.ClosedVocabularies[propertyKey];
-        string[] matches = optionKeys.Where(key =>
-                string.Equals(key, value.Trim(), StringComparison.OrdinalIgnoreCase)
-                || string.Equals(
-                    HomeSchema.OptionLabel(propertyKey, key), value.Trim(),
-                    StringComparison.OrdinalIgnoreCase))
-            .ToArray();
-        if (matches.Length != 1)
-            throw new ArgumentException(
-                $"Valeur inconnue « {value} ». Valeurs admises : "
-                + string.Join(", ", HomeSchema.OptionLabels(propertyKey)) + ".");
-        return matches[0];
-    }
-
-    private static bool SelectMatches(JsonObject value, string propertyKey, string expected)
-    {
-        JsonNode? select = HomeObjectJson.Property(value, propertyKey)?["select"];
-        if (select is null) return false;
-        string actual = select switch
-        {
-            JsonValue scalar when scalar.TryGetValue<string>(out string? text) => text ?? "",
-            JsonObject obj => HomeObjectJson.String(obj, "key") is { Length: > 0 } key
-                ? key
-                : HomeObjectJson.String(obj, "name"),
-            _ => "",
-        };
-        if (string.Equals(actual, expected, StringComparison.OrdinalIgnoreCase)) return true;
-        if (HomeSchema.ClosedVocabularies.TryGetValue(propertyKey, out IReadOnlyList<string>? optionKeys)
-            && optionKeys.Contains(expected, StringComparer.OrdinalIgnoreCase))
-            return string.Equals(
-                actual, HomeSchema.OptionLabel(propertyKey, expected.ToLowerInvariant()),
-                StringComparison.OrdinalIgnoreCase);
-        return false;
     }
 
     private static string SearchText(JsonObject value, HomeObjectIndex index)

@@ -10,6 +10,16 @@
 
 Regression coverage: `scripts/tests/terminal-interaction/host.tests.ps1` asserts that VT segments serialize cursor position, SGR foreground and background, and text together, including focused Action contrast and distinct command-key and command-label tones.
 
+## Virtual-terminal output approximated the approved palette
+
+- **Trigger:** Render the approved Figma dark or light theme through the VT drawing path.
+- **Observed symptom:** Sections, Action subjects, Accesses, body text, surfaces, and selection could not match their specified RGB values even though their semantic roles reached the renderer.
+- **Cause:** VT attributes were serialized only as ANSI 16-color codes derived from `ConsoleColor`; the style and renderer had no 24-bit foreground or background channel.
+- **Violated invariant:** Under the Deckle palette, a VT-capable host paints the exact active-variant tokens while a legacy host alone uses semantic `ConsoleColor` fallbacks. The default Terminal palette sends console colours only.
+- **Recurrence cue:** Theme RGB values are reduced to `ConsoleColor` before VT serialization, or coverage checks role separation without asserting the emitted `38;2` and `48;2` sequences for both theme variants.
+
+Regression coverage: `scripts/tests/terminal-interaction/theme.tests.ps1` asserts every approved dark/light role token, the uniform selection inversion, and that the default Terminal palette names no RGB value; `scripts/tests/terminal-interaction/host.tests.ps1` asserts exact 24-bit Section and dark/light focus sequences, and sixteen-colour sequences for the Terminal palette.
+
 ## Focus highlight changed width with the selected label
 
 - **Trigger:** Focus moved between targets whose labels had different lengths inside stable layout columns.
@@ -29,3 +39,13 @@ Regression coverage: `scripts/tests/terminal-interaction/theme.tests.ps1` assert
 - **Recurrence cue:** An enabled selectable role maps to the same foreground and background as its Disabled overlay.
 
 Regression coverage: `scripts/tests/terminal-interaction/theme.tests.ps1` keeps enabled `Navigation` at the middle grayscale level and disabled targets at the muted level while semantic hues remain confined to identity, consequence, and outcome roles.
+
+## Focus movement repainted the complete frame
+
+- **Trigger:** Move focus between targets without changing the View, terminal geometry, or any other retained content.
+- **Observed symptom:** Windows Terminal visibly flickered on each focus move.
+- **Cause:** The interaction loop submitted every projected frame as a complete redraw, and the renderer erased then repainted every line even when only the previous and current focus lines differed.
+- **Violated invariant:** A stable terminal geometry redraws only frame lines whose text or presentation changed; a complete redraw remains reserved for the initial frame or a geometry or capability change.
+- **Recurrence cue:** `Write-TerminalInteractionFrame` has no prior-frame comparison, or a focus-only change schedules every frame line for repaint.
+
+Regression coverage: `scripts/tests/terminal-interaction/host.tests.ps1` verifies that identical frames schedule no repaint, focus movement schedules only the affected lines, and a geometry change schedules a complete redraw.

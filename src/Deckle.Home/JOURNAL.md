@@ -5,6 +5,13 @@ type: journal
 
 # Deckle.Home — Journal
 
+## 2026-09-11
+
+- The accepted Home target from Home commit `d4f98c6` is embedded in `Schema/`. Formats, per-type fields and initial options are derived from it; closed-vocabulary and target policies come from the accompanying annotations. Historical same-meaning wire coordinates remain explicit. No old power value is interpreted as nominal input or output power.
+- Individual Home commands expose per-type fields, with shared guards in the gestures/writer. Point membership now follows the accepted 17 fields; Device connection targets Points, and controls may target Points or Devices. Earth/DCL use explicit yes/no options and control links allow multiple values. Unattached output power and deferred category classification stay unresolved.
+- Relation add/remove edits read existing members under the write scope. Initial bodies are available to all types; body updates append or replace one existing section and check the provider read-back. Products use needed, while task/worksite completion retains its own meaning.
+- Scoped search returns a structured, bounded page and a text fallback. Provider enumeration is still complete and archive coverage remains unverified. The LLM's retrieval-before-writing rule is an interaction contract, not an automatic semantic duplicate detector.
+
 ## 2026-08-23
 
 - **Existence leaves the schema; the point exit is `delete`, guarded by references only.** The electricity grill (Louis, dictated while building templates and views in the app): existence is not a notion — « si c'est là, ça existe » — so the property leaves the compiled contract, the search filter, the creation default (new points no longer receive Existence = Existant) and the `delete` doctrine. A point taken off a wall is deleted to Anytype's bin (which keeps the trace); the one guard left is the reference — a point another object points at (Commande, Commandé par, Alimenté par…) refuses until those references are cleared, otherwise the graph dangles. And no "never reallocate a code" rule exists: it was the assistant's note from the reboot grill, never Louis's (« je n'ai jamais dit ça ») — a socket replaced at the same spot keeps its code, an added one takes the next number, an entry mistake deleted and re-entered is not a re-creation. The server instruction, the tool descriptions and the guard message say only that.

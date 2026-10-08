@@ -1,14 +1,20 @@
-# Text sweep of the exposables carried by the source tree.
-#
-# An exposable is a code value someone could act on — a persisted setting, a
-# hardcoded tuning constant, a default, a Playground memory-only parameter —
-# whether or not any surface exposes it today. The sweep reads text only: no
-# build, no reflection, no runtime. Every entry keeps its file and line so the
-# arbitration that follows can go back to the source.
+<#
+.SYNOPSIS
+    Sweep exposable source values
+.DESCRIPTION
+    Text sweep of the exposables carried by the source tree. An exposable is a
+    code value someone could act on: a persisted setting, a hardcoded tuning
+    constant, a default, a Playground memory-only parameter, whether or not
+    any surface exposes it today. The sweep reads text only (no build, no
+    reflection, no runtime) and keeps the file and line of every entry.
+.NOTES
+    section: Checks
+    order: 420
+#>
 
 [CmdletBinding()]
 param(
-    [string]$RepoRoot = (Resolve-Path (Join-Path $PSScriptRoot '..' '..')).Path,
+    [string]$RepoRoot = (Resolve-Path (Join-Path $PSScriptRoot '..' '..' '..')).Path,
     [string]$OutputPath = '',
     [switch]$Quiet
 )

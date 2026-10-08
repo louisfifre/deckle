@@ -50,7 +50,7 @@ function Add-TerminalFrameSegment {
         [AllowEmptyString()][string]$Text,
         [ValidateSet(
             'Banner', 'Context', 'Section', 'SectionSeparator',
-            'Action', 'ActionVariant', 'Access', 'Adjust', 'Navigation', 'Exit', 'Danger',
+            'Action', 'ActionLabel', 'ActionVariant', 'Access', 'Adjust', 'Navigation', 'Exit', 'Danger',
             'PanelTitle', 'Body', 'Supporting', 'PrimarySeparator', 'PanelSeparator', 'PagingSeparator', 'Separator',
             'CommandKey', 'CommandLabel', 'Success', 'Warning', 'Error'
         )]
@@ -227,7 +227,10 @@ function Add-TerminalSectionHeading {
 }
 
 function ConvertTo-TerminalMenuLayoutSections {
-    param([Parameter(Mandatory)][object[]]$Sections)
+    param(
+        [Parameter(Mandatory)][object[]]$Sections,
+        [switch]$CompactSections
+    )
 
     $layoutSections = [System.Collections.Generic.List[object]]::new()
     foreach ($section in $Sections) {
@@ -256,25 +259,40 @@ function ConvertTo-TerminalMenuLayoutSections {
                 $trailingTarget = $item
                 continue
             }
+            # Consecutive plain targets form one row; the renderer fills the
+            # grid's columns with them and wraps the rest, like Variants.
             $pendingTargets.Add($item)
-            if ($pendingTargets.Count -eq 2) {
-                $rows.Add([pscustomobject]@{ Kind = 'TargetRow'; Label = ''; Targets = @($pendingTargets); TrailingTarget = $null })
-                $pendingTargets.Clear()
-            }
         }
         if ($pendingTargets.Count -gt 0) {
             $rows.Add([pscustomobject]@{ Kind = 'TargetRow'; Label = ''; Targets = @($pendingTargets); TrailingTarget = $null })
         }
         if ($null -ne $trailingTarget) {
-            if ($rows.Count -eq 0 -or $null -ne $rows[$rows.Count - 1].TrailingTarget) {
+            # The Exit target seats at the right end of the menu's last line.
+            if ($rows.Count -eq 0) {
                 $rows.Add([pscustomobject]@{ Kind = 'TargetRow'; Label = ''; Targets = @(); TrailingTarget = $trailingTarget })
             } else {
                 $rows[$rows.Count - 1].TrailingTarget = $trailingTarget
             }
         }
+        # In a nested menu, a labelled Section of independent Actions only is
+        # a compact Action Group: its label titles its first row, as an Action
+        # Row label does, and no heading or rule is drawn. Its Actions keep
+        # their own intents; they never become Variants.
+        $independentActions = @(
+            $section.Items | Where-Object {
+                -not ($_.PSObject.Properties['Kind'] -and $_.Kind -eq 'ActionRow') -and
+                $_.IntentKind -eq 'Action'
+            }
+        )
+        $compact = $CompactSections -and
+            -not [string]::IsNullOrEmpty($section.Label) -and
+            $section.Items.Count -gt 0 -and
+            $independentActions.Count -eq $section.Items.Count
+        if ($compact) { $rows[0].Label = $section.Label }
         $layoutSections.Add([pscustomobject]@{
-            Label = $section.Label
+            Label = if ($compact) { '' } else { $section.Label }
             Rows = @($rows)
+            Compact = $compact
         })
     }
     return @($layoutSections)
@@ -292,18 +310,37 @@ function Get-TerminalActionLabelWidth {
     return [Math]::Min(20, [Math]::Max(12, $maximum))
 }
 
+function Get-TerminalMinimumColumnWidth {
+    param([AllowEmptyCollection()][object[]]$LayoutSections = @())
+
+    # A Variant cell shrinks with the terminal down to this floor only; past
+    # it the grid drops a column and the row wraps, so a cell never squeezes
+    # its label into a few characters first.
+    $longest = 0
+    foreach ($section in $LayoutSections) {
+        foreach ($row in $section.Rows) {
+            if ($row.Kind -ne 'ActionRow') { continue }
+            foreach ($variant in $row.Variants) {
+                if ($variant.Label.Length -gt $longest) { $longest = $variant.Label.Length }
+            }
+        }
+    }
+    return [Math]::Max(22, $longest + 4)
+}
+
 function Get-TerminalMenuGrid {
     param(
         [AllowEmptyCollection()][object[]]$LayoutSections = @(),
         [Parameter(Mandatory)][int]$Width
     )
 
+    # The Variant rows set the column count; plain targets fill those columns
+    # and wrap, so a long list of Actions never narrows the grid.
     $columnCount = 2
     $trailingWidth = 0
     foreach ($section in $LayoutSections) {
         foreach ($row in $section.Rows) {
-            $targets = @(if ($row.Kind -eq 'ActionRow') { $row.Variants } else { $row.Targets })
-            $columnCount = [Math]::Max($columnCount, $targets.Count)
+            if ($row.Kind -eq 'ActionRow') { $columnCount = [Math]::Max($columnCount, @($row.Variants).Count) }
             if ($null -ne $row.TrailingTarget) {
                 $trailingWidth = [Math]::Max($trailingWidth, [Math]::Max(8, $row.TrailingTarget.Label.Length + 2))
             }
@@ -316,8 +353,12 @@ function Get-TerminalMenuGrid {
     $targetX = $left + $labelWidth + 3
     $gap = 2
     $targetAreaWidth = [Math]::Max(1, $right - $targetX)
-    if ($trailingWidth -gt 0) { $targetAreaWidth -= $trailingWidth + $gap }
     $columnWidth = [Math]::Max(1, [Math]::Floor(($targetAreaWidth - (($columnCount - 1) * $gap)) / $columnCount))
+    $minimumColumnWidth = Get-TerminalMinimumColumnWidth -LayoutSections $LayoutSections
+    if ($columnWidth -lt $minimumColumnWidth) {
+        $columnCount = [Math]::Max(1, [Math]::Floor(($targetAreaWidth + $gap) / ($minimumColumnWidth + $gap)))
+        $columnWidth = [Math]::Max(1, [Math]::Floor(($targetAreaWidth - (($columnCount - 1) * $gap)) / $columnCount))
+    }
 
     return [pscustomobject][ordered]@{
         Left = $left
@@ -345,29 +386,57 @@ function Add-TerminalMenuRow {
         $line = Add-TerminalFrameLine -Frame $Frame
         if ($line -lt 0) { return }
         if ($Row.Label) {
-            Add-TerminalFrameSegment -Frame $Frame -LineIndex $line -X $left -Text (Limit-TerminalText -Text $Row.Label -Width $Grid.LabelWidth) -PresentationRole Action
+            Add-TerminalFrameSegment -Frame $Frame -LineIndex $line -X $left -Text (Limit-TerminalText -Text $Row.Label -Width $Grid.LabelWidth) -PresentationRole ActionLabel
         }
         $targets = @(if ($Row.Kind -eq 'ActionRow') { $Row.Variants } else { $Row.Targets })
-        $trailing = $Row.TrailingTarget
+        $columns = [Math]::Max(1, $Grid.ColumnCount)
+        # Exit reserves nothing from the grid: only a cell that would run
+        # under it, on the row's last line, is shortened to stop before it.
+        $exitX = if ($null -ne $Row.TrailingTarget) { $Grid.Right - $Grid.TrailingWidth } else { $Grid.Right + 1 }
+        $lastLineStart = [Math]::Floor(($targets.Count - 1) / $columns) * $columns
+        $column = 0
         for ($i = 0; $i -lt $targets.Count; $i++) {
+            if ($i -gt 0) { $column++ }
+            if ($i -gt 0 -and $column -eq $columns) {
+                # Cells beyond the last column wrap beneath the first cell,
+                # never beneath the label, without a blank line.
+                $line = Add-TerminalFrameLine -Frame $Frame
+                if ($line -lt 0) { return }
+                $column = 0
+            }
+            $x = $Grid.TargetX + ($column * ($Grid.ColumnWidth + $Grid.Gap))
+            $width = $Grid.ColumnWidth
+            if ($i -ge $lastLineStart -and ($x + $width) -gt ($exitX - $Grid.Gap)) {
+                $width = $exitX - $Grid.Gap - $x
+                if ($width -lt 8) {
+                    # Too little room beside Exit: the cell takes a new line
+                    # instead, which becomes the row's last line.
+                    $line = Add-TerminalFrameLine -Frame $Frame
+                    if ($line -lt 0) { return }
+                    $column = 0
+                    $x = $Grid.TargetX
+                    $width = $Grid.ColumnWidth
+                    $lastLineStart = $i
+                }
+            }
             Add-TerminalTarget `
                 -Frame $Frame `
                 -Target $targets[$i] `
                 -LineIndex $line `
-                -X ($Grid.TargetX + ($i * ($Grid.ColumnWidth + $Grid.Gap))) `
-                -Width $Grid.ColumnWidth `
+                -X $x `
+                -Width $width `
                 -FocusedTargetId $FocusedTargetId `
                 -AsActionVariant:($Row.Kind -eq 'ActionRow')
         }
-        if ($null -ne $trailing) {
-            Add-TerminalTarget -Frame $Frame -Target $trailing -LineIndex $line -X ($Grid.Right - $Grid.TrailingWidth) -Width $Grid.TrailingWidth -FocusedTargetId $FocusedTargetId
+        if ($null -ne $Row.TrailingTarget) {
+            Add-TerminalTarget -Frame $Frame -Target $Row.TrailingTarget -LineIndex $line -X $exitX -Width $Grid.TrailingWidth -FocusedTargetId $FocusedTargetId
         }
         return
     }
 
     if ($Row.Label) {
         $labelLine = Add-TerminalFrameLine -Frame $Frame
-        Add-TerminalFrameSegment -Frame $Frame -LineIndex $labelLine -X $left -Text $Row.Label -PresentationRole Action
+        Add-TerminalFrameSegment -Frame $Frame -LineIndex $labelLine -X $left -Text $Row.Label -PresentationRole ActionLabel
     }
     $targets = @(if ($Row.Kind -eq 'ActionRow') { $Row.Variants } else { $Row.Targets })
     if ($null -ne $Row.TrailingTarget) { $targets += $Row.TrailingTarget }
@@ -393,7 +462,11 @@ function Add-TerminalActionMenuBody {
     )
 
     $wide = $Frame.Width -ge 72
-    $layoutSections = @(ConvertTo-TerminalMenuLayoutSections -Sections $View.Sections)
+    $layoutSections = @(
+        ConvertTo-TerminalMenuLayoutSections `
+            -Sections $View.Sections `
+            -CompactSections:($null -ne $View.BackTarget)
+    )
     $grid = Get-TerminalMenuGrid -LayoutSections $layoutSections -Width $Frame.Width
 
     [void](Add-TerminalFrameLine -Frame $Frame)
@@ -405,8 +478,13 @@ function Add-TerminalActionMenuBody {
 
     for ($sectionIndex = 0; $sectionIndex -lt $layoutSections.Count; $sectionIndex++) {
         $section = $layoutSections[$sectionIndex]
-        if ($sectionIndex -gt 0) { [void](Add-TerminalFrameLine -Frame $Frame) }
-        Add-TerminalSectionHeading -Frame $Frame -Label $section.Label
+        $previousSection = if ($sectionIndex -gt 0) { $layoutSections[$sectionIndex - 1] } else { $null }
+        if ($sectionIndex -gt 0 -and (-not $section.Compact -or -not $previousSection.Compact)) {
+            [void](Add-TerminalFrameLine -Frame $Frame)
+        }
+        if (-not [string]::IsNullOrEmpty($section.Label)) {
+            Add-TerminalSectionHeading -Frame $Frame -Label $section.Label
+        }
         foreach ($row in $section.Rows) {
             Add-TerminalMenuRow -Frame $Frame -Row $row -Grid $grid -Wide $wide -FocusedTargetId $FocusedTargetId
         }

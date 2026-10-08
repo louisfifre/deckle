@@ -17,26 +17,23 @@ public static class HomeMcp
     private static readonly McpSurfaceDescriptor Descriptor = new(
         "deckle-home",
         "Deckle Home",
-        "Guarded shared-house space stored in the configured Anytype Home "
-        + "space: fixed inventory (rooms, points, circuits, panels), owned "
-        + "equipment (systems, devices, components, kitchen utensils), house "
-        + "life (plants, ideas, errands) and pilotage (worksites, todos). "
-        + "Titles are human names written for the whole household — no bare "
-        + "acronyms; the immutable identity code of inventory objects lives "
-        + "in the Code property. Point codes follow PIÈCE-CAT[SUB]NN, their "
-        + "room prefix must exist in the live room registry, and a point's "
-        + "room and category derive from its code. Equipment doctrine: a "
-        + "Système aggregates, an Appareil stands alone and may join a "
-        + "Système via Fait partie de, a Composant only exists inside its "
-        + "Système — creation without one is refused; an Ustensile de "
-        + "cuisine holds kitchen gear and may join a Système like an "
-        + "Appareil; in doubt create an Appareil, retyping is cheap. Plants, "
-        + "worksites and todos have dedicated verbs; done todos are the "
-        + "record. Closed vocabularies are applied, never invented; files "
-        + "are deposited in the app. A point that leaves the wall is deleted "
-        + "to the bin; a point referenced by another object refuses until the "
-        + "references are cleared. "
-        + "Content is French.");
+        "Guarded shared-house space in the dedicated Home Anytype profile. "
+        + "Use typed *_create and *_update for individual records; create/update keep batch support. "
+        + "Start from known objects and read before editing. Before creating a task or worksite, "
+        + "search relevant tasks and worksites in the stated context; use a few focused queries. "
+        + "Look at active work first, then completed work if needed. Do not search unrelated projects "
+        + "when a worksite is explicit. A failed read is not evidence that an object is absent. "
+        + "Ask a focused question when the target or action is ambiguous; leave unknown facts empty. "
+        + "Search returns structured candidates for clients that can offer choices. "
+        + "Point means a connection or fixed control with its fitting; hardwired equipment remains a Device. "
+        + "One physical bulb is one Device, connected_to its Point; a System is optional. "
+        + "Device connection, circuit membership and controls are separate relations. "
+        + "Point codes derive their room and category from the live room registry. Codes are immutable. "
+        + "Supplied relation arrays replace the stored list. Use a relation's add/remove edit to change members while retaining other links. "
+        + "Components still require a System. Products use needed (Prendre); complete is for work. "
+        + "Initial text stores dictation in the body; updates append text or replace an existing section. "
+        + "Existing select options are resolved by key or label; missing options require clarification. "
+        + "Files are still added in Anytype. Content is French.");
 
     private static McpSurfaceBinding Open(AnytypeApiClient api)
     {

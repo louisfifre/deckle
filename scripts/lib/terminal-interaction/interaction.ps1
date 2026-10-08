@@ -84,14 +84,16 @@ function Start-TerminalInteraction {
     [CmdletBinding()]
     param(
         [Parameter(Mandatory)][object]$RootView,
-        [Parameter(Mandatory)][scriptblock]$IntentHandler
+        [Parameter(Mandatory)][scriptblock]$IntentHandler,
+        [ValidateSet('Terminal', 'Deckle')][string]$Palette = 'Terminal'
     )
 
     $viewStack = [System.Collections.Generic.List[object]]::new()
     $viewStack.Add((New-TerminalViewState -View $RootView))
-    $hostState = Start-TerminalHost
+    $hostState = Start-TerminalHost -Palette $Palette
     try {
         $exitRequested = $false
+        $previousFrame = $null
         while (-not $exitRequested) {
             $metrics = Get-TerminalHostMetrics
             $currentState = $viewStack[$viewStack.Count - 1]
@@ -125,7 +127,8 @@ function Start-TerminalInteraction {
                     -BodyOffset $currentState.BodyOffset `
                     -JournalOffset $currentState.JournalOffset
             }
-            Write-TerminalInteractionFrame -Frame $frame -HostState $hostState
+            Write-TerminalInteractionFrame -Frame $frame -HostState $hostState -PreviousFrame $previousFrame
+            $previousFrame = $frame
 
             $inputEvent = Read-TerminalHostEvent -State $hostState
             $kind = $inputEvent.Kind.ToString()

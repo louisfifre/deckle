@@ -70,7 +70,8 @@ function New-TerminalActionRow {
 function New-TerminalSection {
     [CmdletBinding()]
     param(
-        [Parameter(Mandatory)][ValidateNotNullOrEmpty()][string]$Label,
+        # An empty label declares an untitled group: its items render without a title line.
+        [Parameter(Mandatory)][AllowNull()][AllowEmptyString()][string]$Label,
         [Parameter(Mandatory)][ValidateNotNullOrEmpty()][object[]]$Items
     )
 

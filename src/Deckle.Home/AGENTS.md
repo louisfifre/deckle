@@ -23,7 +23,8 @@ codes and data.
 
 ## Domain boundary
 
-The code grammar and the frozen category vocabulary are the public norm. Room
+The code grammar and the retained target category vocabulary are the public norm.
+Category recognition does not settle deferred network and assembly classification. Room
 membership, object values, and relation targets are live data. A code is valid
 only when its room prefix exists in that live registry.
 
@@ -37,6 +38,10 @@ authentication and stateless MCP requests remain in `Deckle.Anytype.Mcp`.
 Home runs only against the public managed schema contract. Type and property
 keys are normative; Anytype ids and tag keys are resolved from the live space.
 An absent or incompatible required shape fails closed before a write.
+The accepted structure is embedded in `Schema/schema-manifest.json`; its provenance
+and historical wire projections live in `Schema/README.md`. Domain guards apply
+on every path, including generic batch writes. `OPERATIONS.md` describes the typed
+commands, relation edits, body edits, retrieval, and remaining limits.
 
 Titles are human names, written for a shared household — the space is meant to
 be read by more than its author, so no bare acronyms. The immutable identity code of
@@ -65,10 +70,11 @@ but written only in the app.
 Work types (`worksite`, `todo`) are free-titled like life types and carry the
 house's pilotage without the dev-space PM discipline: creation is loose (a
 name suffices), tasks may live orphan, and there is no intervention journal —
-done tasks are the record. Prefer the dedicated verbs (`worksite_create`,
-`todo_create`, `complete`, `worksite_overview`, plus `component_create`,
-`plant_create`) over the generic gestures; completion is the
-native `done` checkbox on action layouts and `state = Terminé` on a worksite.
+done tasks are the record. Prefer the per-type create/update commands for individual records. Task completion
+uses native `done`; worksite completion uses `state = done` (Terminé). Product
+still addresses the historical `errand` type but uses `needed` (Prendre).
+Initial text is available on every type. Body updates append or replace a unique
+existing section under the Home write scope and verify the returned content.
 
 French labels — type names, property names, closed-vocabulary options — live
 in `Terms/terms.fr.json`, loaded by `HomeTerms` at runtime (the pattern

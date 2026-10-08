@@ -58,7 +58,26 @@ internal sealed class BackendProviderStore(
         return [.. paths];
     }
 
-    internal bool IsInstalled() => ResolveActiveExecutable() is not null || File.Exists(LegacyExecutablePath);
+    // The version recorded in active.json, or null when there is no valid
+    // activation (missing, malformed, or pointing at an incomplete version).
+    internal string? ActiveVersion()
+    {
+        if (ResolveActiveExecutable() is null) return null;
+        try
+        {
+            return JsonSerializer.Deserialize<BackendActivation>(File.ReadAllText(ActivationPath))?.Version;
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or JsonException)
+        {
+            return null;
+        }
+    }
+
+    // "Installed" means this exact version is both present and activated. An older
+    // active version, or a legacy executable alone, does not satisfy a newer pin:
+    // the install wizard must still download it.
+    internal bool IsInstalled(string version) =>
+        string.Equals(ActiveVersion(), version, StringComparison.OrdinalIgnoreCase);
 
     internal async Task<bool> MigrateLegacyAsync(string version, CancellationToken ct)
     {

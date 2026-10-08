@@ -1,7 +1,19 @@
-# publish-app.ps1
-#
-# Cuts a Deckle GitHub Release: builds the two artefacts a release carries and
-# (with -Publish) uploads them under the version tag.
+<#
+.SYNOPSIS
+    Prepare or publish the app release
+.DESCRIPTION
+    Builds the two artifacts a Deckle GitHub Release carries: the installer
+    stub and the self-contained app ZIP with its sha256 sidecar. Without
+    -Publish both are built locally for inspection; with -Publish they are
+    also uploaded as a GitHub Release under the version tag via gh.
+.NOTES
+    section: Release
+    order: 110
+    action: Prepare app artifacts |
+    action: Publish app release | -Publish | danger | Publishes a public GitHub Release of the app.
+#>
+
+# Release artefacts:
 #
 #   1. The installer stub — Deckle-Setup-v<X.Y.Z>-win-x64.exe — the HEADLINE
 #      asset, the file an end user downloads and runs. A small NativeAOT exe
@@ -19,8 +31,7 @@
 # Those are provisioned per-user by the app's first-run wizard (the native
 # bundle has its own publish-native-runtime.ps1 / native-vX.Y.Z release cycle).
 #
-# `publish` is the maintainer's act: without -Publish this builds both artefacts
-# locally for inspection; -Publish ALSO creates the GitHub Release via gh.
+# `publish` is the maintainer's act.
 #
 # Pendant to publish-native-runtime.ps1 — same shared workflow presentation and
 # zip + sha256 + paste-ready-summary + optional -Publish shape.
@@ -53,8 +64,9 @@ param(
 )
 
 $ErrorActionPreference = 'Stop'
-$ScriptDir = $PSScriptRoot                                  # scripts/commands/
-$LibDir = Join-Path (Split-Path -Parent $ScriptDir) 'lib'
+$ScriptDir = $PSScriptRoot                                  # scripts/commands/release/
+$CommandDir = Split-Path -Parent $ScriptDir                 # scripts/commands/
+$LibDir = Join-Path (Split-Path -Parent $CommandDir) 'lib'
 . (Join-Path $LibDir 'action-summary.ps1')
 . (Join-Path $LibDir 'deckle-process.ps1')
 . (Join-Path $LibDir 'native-console.ps1')
@@ -97,7 +109,7 @@ if ($Pick) {
     if (-not (Test-Path $Target)) { throw "Target not found: $Target" }
     $RepoRoot = (Get-Item $Target).FullName
 } else {
-    $RepoRoot = Split-Path -Parent (Split-Path $ScriptDir)
+    $RepoRoot = Split-Path -Parent (Split-Path -Parent $CommandDir)
 }
 
 Write-DeckleOutputText -Text "Repo: $RepoRoot" -Role Muted
@@ -217,7 +229,7 @@ if ($Publish) {
             }
             Write-DeckleWorkflowMessage -Output $WorkflowOutput -Message "GitHub release $tag made public"
         }
-        & (Join-Path $ScriptDir 'record-release.ps1') -Target $RepoRoot -Version $Version -Push
+        & (Join-Path $CommandDir 'record-release.ps1') -Target $RepoRoot -Version $Version -Push
         if (-not $?) { throw 'record-release.ps1 failed after GitHub publication' }
         Write-DeckleWorkflowMessage -Output $WorkflowOutput -Message "$tag recorded locally and synchronized"
         $Published = $true
@@ -284,7 +296,7 @@ $InstallerPubDir = Join-Path $OutDir 'installer'
 if ($Publish) {
     if (-not $Notes) {
         $Notes = Join-Path $OutDir 'release-notes.md'
-        & (Join-Path $ScriptDir 'changelog.ps1') -Target $RepoRoot -NotesFor $Version -OutFile $Notes
+        & (Join-Path $CommandDir 'changelog.ps1') -Target $RepoRoot -NotesFor $Version -OutFile $Notes
         if ($LASTEXITCODE -ne 0) { throw "changelog.ps1 notes generation failed (code $LASTEXITCODE)" }
         Write-DeckleWorkflowMessage -Output $WorkflowOutput -Message "Release notes generated from history: $Notes"
     } elseif (-not (Test-Path -LiteralPath $Notes -PathType Leaf)) {
@@ -407,7 +419,7 @@ Write-Host @"
     https://github.com/$OwnerRepo/releases/download/v$Version/$ShaName
 
   To publish (maintainer act):
-    pwsh scripts/commands/publish-app.ps1 -Target "$RepoRoot" -Publish
+    pwsh scripts/commands/release/publish-app.ps1 -Target "$RepoRoot" -Publish
 
 "@ -ForegroundColor Green
 
@@ -480,7 +492,7 @@ if ($Publish) {
         -ExpectedSizes $expectedAssets
 
     Write-DeckleWorkflowStep -Output $WorkflowOutput -Message 'Freeze the public release into CHANGELOG.md'
-    & (Join-Path $ScriptDir 'record-release.ps1') -Target $RepoRoot -Version $Version -Push
+    & (Join-Path $CommandDir 'record-release.ps1') -Target $RepoRoot -Version $Version -Push
     if (-not $?) { throw 'record-release.ps1 failed after GitHub publication' }
     $Published = $true
     Write-DeckleWorkflowMessage -Output $WorkflowOutput -Message "Released as $tag"

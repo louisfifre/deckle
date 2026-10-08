@@ -15,5 +15,6 @@
 
   <ItemGroup>
     <EmbeddedResource Include="Terms\*.json" WithCulture="false" />
+    <EmbeddedResource Include="Schema\*.json" WithCulture="false" />
   </ItemGroup>
 </Project>

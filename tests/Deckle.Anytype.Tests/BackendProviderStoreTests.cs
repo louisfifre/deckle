@@ -187,6 +187,91 @@ public sealed class BackendProviderStoreTests
     }
 
     [Fact]
+    public async Task Pinned_version_absent_from_store_is_not_installed_while_older_active_version_stays_launchable()
+    {
+        string root = NewRoot();
+        try
+        {
+            var store = NewStore(root);
+            string olderDirectory = store.VersionDirectory("1.0.0");
+            Directory.CreateDirectory(olderDirectory);
+            string older = Path.Combine(olderDirectory, "anytype.exe");
+            await File.WriteAllTextAsync(older, "older", Ct);
+            store.Activate("1.0.0");
+
+            Assert.True(store.IsInstalled("1.0.0"));
+            Assert.False(store.IsInstalled("2.0.0"));
+            Assert.Equal("1.0.0", store.ActiveVersion());
+            Assert.Equal(Path.GetFullPath(older), store.ResolveActiveSpec()?.ExecutablePath);
+            Assert.Contains(Path.GetFullPath(older), store.TrustedExecutablePaths());
+
+            string zip = Path.Combine(root, "provider.zip");
+            using (ZipArchive archive = ZipFile.Open(zip, ZipArchiveMode.Create))
+            {
+                ZipArchiveEntry executable = archive.CreateEntry("anytype.exe");
+                await using Stream writer = executable.Open();
+                await writer.WriteAsync("newer"u8.ToArray(), Ct);
+            }
+            Assert.True(await store.InstallFromZipAsync(zip, "2.0.0", Ct));
+
+            Assert.True(store.IsInstalled("2.0.0"));
+            Assert.False(store.IsInstalled("1.0.0"));
+            Assert.Contains(Path.GetFullPath(older), store.TrustedExecutablePaths());
+        }
+        finally
+        {
+            Directory.Delete(root, recursive: true);
+        }
+    }
+
+    [Fact]
+    public async Task Legacy_executable_alone_never_counts_as_the_requested_version_installed()
+    {
+        string root = NewRoot();
+        try
+        {
+            var store = NewStore(root);
+            Directory.CreateDirectory(store.LegacyDirectory);
+            await File.WriteAllTextAsync(store.LegacyExecutablePath, "legacy", Ct);
+
+            Assert.False(store.IsInstalled(BackendInstallation.CurrentBundle.Version));
+            Assert.False(store.IsInstalled(BackendInstallation.LegacyBundleVersion));
+            Assert.Null(store.ActiveVersion());
+        }
+        finally
+        {
+            Directory.Delete(root, recursive: true);
+        }
+    }
+
+    [Fact]
+    [Trait("Category", "regression")]
+    public async Task Legacy_migration_is_labeled_with_the_legacy_version_not_the_pin()
+    {
+        string root = NewRoot();
+        try
+        {
+            var store = NewStore(root);
+            Directory.CreateDirectory(store.LegacyDirectory);
+            await File.WriteAllTextAsync(store.LegacyExecutablePath, "legacy", Ct);
+
+            Assert.True(await store.MigrateLegacyAsync(BackendInstallation.LegacyBundleVersion, Ct));
+
+            Assert.Equal(BackendInstallation.LegacyBundleVersion, store.ActiveVersion());
+            Assert.True(File.Exists(Path.Combine(
+                store.VersionDirectory(BackendInstallation.LegacyBundleVersion), "anytype.exe")));
+            // The legacy payload must not be filed under the pin, or the wizard
+            // would later treat an old binary as the pinned version.
+            Assert.False(store.IsInstalled(BackendInstallation.CurrentBundle.Version));
+            Assert.False(Directory.Exists(store.VersionDirectory(BackendInstallation.CurrentBundle.Version)));
+        }
+        finally
+        {
+            Directory.Delete(root, recursive: true);
+        }
+    }
+
+    [Fact]
     public void Provider_root_is_outside_replaceable_application_payload()
     {
         string provider = Path.GetFullPath(BackendInstallation.InstallDirectory);

@@ -7,6 +7,92 @@ type: module-journal
 
 Module-level dated notes. Most recent on top.
 
+## 2026-10-08 — The 0.4.0 crash is a cross-allocator free in tantivy-go, exposed by the cli's msvcrt-linked Windows asset
+
+Found, same day, by a debugger pass on the dump, a pclntab read of the
+stripped binary, the sources, and a rebuild from source. Import tables
+(`objdump -p`): the cli 0.3.6 asset imports the Universal CRT
+(`api-ms-win-crt-*`); the 0.3.7 and 0.4.0 assets import `msvcrt.dll`.
+The dump: `RtlFreeHeap` was called on the process heap (`PEB.ProcessHeap`)
+with a block that belongs to `msvcrt!crtheap`, msvcrt.dll's private heap;
+the block held the C string `release` with its first byte zeroed, 8 bytes
+requested. The native frame is tantivy-go's Rust export `string_free`
+(bytes matched against `libtantivy_go.a`), which does
+`drop(CString::from_raw(s))`; Rust's allocator on Windows frees with
+`HeapFree(GetProcessHeap())`. The Go frames, resolved with Go 1.27's
+`debug/gosym` from the pclntab (the header's `textStart` is 0, so the text
+start had to be derived from the `go:buildid` marker): heart
+`ftsearch.(*ftSearch).Init` (ftsearch.go:311,
+`tantivy.LibInit(false, true, "release")`) → tantivy-go
+`internal.LibInit` (libinit.go:16-17: `C.CString(initVal)` then
+`defer C.string_free(cInitVal)`) → `_Cfunc_string_free`. So Go allocates
+with C `malloc` and Rust frees with the process heap. Under the UCRT,
+`malloc` is `HeapAlloc(GetProcessHeap())` and the mismatch passes by
+coincidence; under msvcrt it is an invalid free. The cli's CRT changed with
+commit 0af687d (2026-09-07, « Restructure release.yml »): the Windows job
+moved from `macos-15` + Homebrew mingw-w64 14 (UCRT default) to
+`ubuntu-latest` + apt `gcc-mingw-w64-x86-64` (mingw-w64 11.0.1, msvcrt
+default). tantivy-go v1.0.6 is the same in 0.3.6, 0.3.7 and 0.4.0 and has
+had the pattern since go/v0.0.2, at 16 call sites. Desktop 0.57.4's
+`anytypeHelper.exe` (heart 0.51.5) imports the UCRT. Rebuilt the v0.4.0
+source on this machine with Go 1.27.2 and the scoop mingw-w64 GCC 16.2.0
+(UCRT by default), ports moved to 4101x: the UCRT build logs in and serves
+`/docs/openapi.json` in about 3 s; the same build with
+`-mcrtdll=msvcrt-os` dies with the official signature. Recipe, artifacts,
+evidence files and an upstream issue draft are in
+`.tmp/anytype-v2-2026-10/crash-2026-10-08b/`. Correction to the entry
+below: the 0.3.6 asset is go1.25.11, not go1.25.7. Trap: the pin landed by
+09aa40c2 names the official 0.4.0 asset, so a fresh provisioning would
+install a binary known to die on Windows; the install path for a
+self-built provider is not decided. Same evening, the fix was tested: a
+v0.4.0 build linked against msvcrt with `C.free(unsafe.Pointer(p))` in
+place of `C.string_free(p)` at the 16 Go call sites of tantivy-go logs in,
+serves the JSON API and runs 60 s under cdb without a heap break; the same
+patch on the UCRT build behaves the same. Patching `libinit.go` alone is
+not enough: the invalid free moves to `schemabuilder.go:101`
+(`AddTextField`, `defer C.string_free(cTokenizer)`), reached from
+`ftsearch.(*ftSearch).Run` during `AccountSelect`. The indexing and search
+sites are patched but were not exercised by that smoke test. Diff and
+binaries under `crash-2026-10-08b/build/` (`tantivy-go-patch.diff`,
+`patch-test.md`).
+
+## 2026-10-08 — The anytype-cli 0.4.0 Windows build dies at account open; pin kept at 0.4.0, activation rolled back to 0.3.6
+
+Measured on the maintainer's machine (Windows 11 IoT Enterprise LTSC 2024,
+10.0.26100): `anytype.exe serve --no-update-check` from the official
+`anytype-cli-v0.4.0-windows-amd64.zip` (sha256 `23a8dacd…7a14`) prints the
+gRPC-Web and JSON API banners, « Found stored account key, attempting
+auto-login... », the account id, then tantivy-go's debug line `### lenient
+true`, and exits 2.5–3 s after start with code -1073740940
+(0xC0000374, STATUS_HEAP_CORRUPTION). The REST listener never binds. The
+supervisor logs `decision=start-rejected` and retries on its backoff (60 s
+plateau), which touches the bot store for a few seconds each time. Same
+exit when started by hand with redirected stdio, with `DATA_PATH` pointing
+at an empty directory (the account cold-starts there), with Windhawk fully
+exited, and with `GOTRACEBACK=crash` (the Go runtime prints nothing). `auth
+status` on 0.4.0 works and sees the keychain credentials. Under cdb the debug
+heap breaks on an invalid free: `ntdll!RtlFreeHeap` called from code inside
+`anytype.exe` (stripped: no symbol table; nearest export
+`preUpdateHookTrampoline+0x102622`), with both `ucrtbase.dll` and
+`msvcrt.dll` loaded. `go version -m` on the binary: go1.26.5, anytype-heart
+v0.51.4, any-store v1.0.2, any-sync v0.13.5, tantivy-go v1.0.6, go-sqlite
+v1.4.2-any; the 0.3.6 asset that works is go1.25.7, heart v0.50.10,
+any-store v0.4.6, tantivy-go v1.0.6. No upstream issue or forum thread
+mentions it as of this date; 0.4.0 is the latest cli release. Rolling
+`active.json` back to 0.3.6 brought the REST surface up in 12 s on the same
+store after six short 0.4.0 opens, and the MCP tools read the space again.
+Traps: the cli has no flag or environment variable for its ports (31011 and
+31012 are constants), so any 0.4.0 test needs the serving backend stopped and
+Deckle closed; `DATA_PATH` is the only data-directory override; the `version`
+banner of 0.4.0 still does not print the embedded heart version. Chose to
+keep `CurrentBundle` at 0.4.0 in code and leave the activation on 0.3.6 by
+hand: the wizard's download and the provider store did their job, the binary
+is the problem. The full record, the cdb stack, the loaded modules and the
+candidate next moves (resolve the frames with Go 1.27's `debug/gosym`, build
+the cli from source, test 0.3.7) are in
+`.tmp/anytype-v2-2026-10/cli-0.4.0-crash-investigation.md` and in the
+session report of « Bascule 0.4.0, étape 2 ».
+
 ## 2026-09-10 — Search pages through the query string; the body carries a property filter
 
 Found on the local OpenAPI document (`GET /docs/openapi.json`, version

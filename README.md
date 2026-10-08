@@ -43,9 +43,9 @@ Deckle currently ships as one application bundle. Module selection controls what
 
 | First commit | Commits | Active days | Lines added | Lines touched | Current tracked lines |
 |---:|---:|---:|---:|---:|---:|
-| 2026-04-01 | 2,271 | 92 | 399,878 | 564,772 | 234,498 |
+| 2026-04-01 | 2,308 | 99 | 401,862 | 567,426 | 235,812 |
 
-<sub>Generated from Git history on 2026-09-01. Counts include tracked text files only for the current line total.</sub>
+<sub>Generated from Git history on 2026-10-01. Counts include tracked text files only for the current line total.</sub>
 <!-- deckle-stats:end -->
 
 ---
@@ -118,7 +118,7 @@ Deckle is an early public release, and its capabilities differ in maturity. Dict
 Bootstrap a fresh Windows 11 machine, then build and run:
 
 ```powershell
-pwsh scripts/commands/bootstrap-dev-env.ps1              # .NET 10, VS 2026, tooling
+pwsh scripts/commands/setup/bootstrap-dev-env.ps1        # .NET 10, VS 2026, tooling
 pwsh scripts/commands/build-run.ps1 -Configuration Release
 ```
 

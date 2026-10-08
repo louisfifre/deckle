@@ -3,7 +3,7 @@ $ScriptsDir = Split-Path -Parent (Split-Path -Parent $PSScriptRoot)
 $CommandDir = Join-Path $ScriptsDir 'commands'
 $LibDir = Join-Path $ScriptsDir 'lib'
 
-$scriptPath = Join-Path $CommandDir 'publish-native-runtime.ps1'
+$scriptPath = Join-Path $CommandDir 'release\publish-native-runtime.ps1'
 $tokens = $null
 $parseErrors = $null
 $ast = [Management.Automation.Language.Parser]::ParseFile(

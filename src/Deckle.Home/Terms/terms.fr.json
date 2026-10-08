@@ -1,25 +1,67 @@
 {
   "language": "fr",
   "types": {
-    "floor": { "name": "Zone", "plural": "Zones" },
-    "room": { "name": "Pièce", "plural": "Pièces" },
-    "point": { "name": "Point", "plural": "Points" },
-    "circuit": { "name": "Circuit", "plural": "Circuits" },
-    "panel": { "name": "Tableau", "plural": "Tableaux" },
-    "system": { "name": "Système", "plural": "Systèmes" },
-    "device": { "name": "Appareil", "plural": "Appareils" },
-    "component": { "name": "Composant", "plural": "Composants" },
-    "utensil": { "name": "Ustensile de cuisine", "plural": "Ustensiles de cuisine" },
-    "plant": { "name": "Plante", "plural": "Plantes" },
-    "idea": { "name": "Idée", "plural": "Idées" },
-    "errand": { "name": "Course", "plural": "Courses" },
-    "worksite": { "name": "Chantier", "plural": "Chantiers" },
-    "todo": { "name": "Tâche", "plural": "Tâches" }
+    "floor": {
+      "name": "Zone",
+      "plural": "Zones"
+    },
+    "room": {
+      "name": "Pièce",
+      "plural": "Pièces"
+    },
+    "point": {
+      "name": "Point",
+      "plural": "Points"
+    },
+    "circuit": {
+      "name": "Circuits",
+      "plural": "Circuits"
+    },
+    "panel": {
+      "name": "Tableaux",
+      "plural": "Tableaux"
+    },
+    "system": {
+      "name": "Systèmes",
+      "plural": "Systèmes"
+    },
+    "device": {
+      "name": "Appareils",
+      "plural": "Appareils"
+    },
+    "component": {
+      "name": "Composants",
+      "plural": "Composants"
+    },
+    "utensil": {
+      "name": "Ustensile de cuisine",
+      "plural": "Ustensiles de cuisine"
+    },
+    "plant": {
+      "name": "Plantes",
+      "plural": "Plantes"
+    },
+    "idea": {
+      "name": "Idée",
+      "plural": "Idées"
+    },
+    "errand": {
+      "name": "Produit",
+      "plural": "Produits"
+    },
+    "worksite": {
+      "name": "Chantier",
+      "plural": "Chantiers"
+    },
+    "todo": {
+      "name": "Tâche",
+      "plural": "Tâches"
+    }
   },
   "properties": {
     "code": "Code",
     "notes": "Notes",
-    "documents": "Documents",
+    "documents": "Manuel",
     "location": "Localisation",
     "installed_in": "Installé dans",
     "stored_in": "Rangé dans",
@@ -31,7 +73,7 @@
     "outlet_count": "Postes",
     "earthed": "Terre",
     "light_nature": "Nature lumineuse",
-    "switch_kind": "Sorte",
+    "switch_kind": "Sorte d'interrupteur",
     "controls": "Commande",
     "controlled_by": "Commandé par",
     "control_link": "Pilotage",
@@ -72,18 +114,57 @@
     "scientific_name": "Nom scientifique",
     "substrate": "Substrat",
     "plant_exposure": "Exposition",
-    "plant_photo": "Photo",
+    "plant_photo": "Photo(s)",
     "horizon": "Horizon",
     "aisle": "Rayon",
     "about": "Concerne",
     "state": "Statut",
     "target_date": "Date cible",
-    "worksite": "Chantier"
+    "worksite": "Chantier lié",
+    "connected_to": "Raccordé à",
+    "upstream_panel": "Tableau amont",
+    "dcl": "Sortie DCL",
+    "carries": "Transporte",
+    "assignment": "Affectation",
+    "pipe": "Tuyau",
+    "poe": "PoE",
+    "rated_input_power": "Puissance nominale absorbée (W)",
+    "rated_output_power": "Puissance électrique de sortie nominale (W)",
+    "bulb_base": "Culot",
+    "lighting_capabilities": "Capacités d'éclairage",
+    "color_temperature_min": "Température de couleur minimale (K)",
+    "color_temperature_max": "Température de couleur maximale (K)",
+    "luminous_flux": "Flux lumineux (lm)",
+    "luminous_flux_reference_temperature": "Température de référence du flux lumineux (K)",
+    "supported_protocols": "Protocoles pris en charge",
+    "environment": "Environnement",
+    "acquisition_date": "Date d'acquisition",
+    "last_repotting": "Dernier rempotage",
+    "needed": "Prendre",
+    "errand_category": "Catégorie de produit",
+    "priority": "Priorité",
+    "depends_on": "Dépend de",
+    "estimated_budget": "Budget estimé (€)",
+    "actual_budget": "Budget réel (€)",
+    "estimated_effort": "Charge estimée (jours)",
+    "actual_effort": "Charge réelle (jours)",
+    "definition_of_done": "Définition de fini",
+    "memory_size_gb": "Taille mémoire (Go)",
+    "memory_frequency_mhz": "Fréquence mémoire (MHz)",
+    "conduit_diameter": "Diamètre de gaine (mm)",
+    "duct_diameter": "Diamètre de gaine de ventilation (mm)",
+    "socket": "Socket",
+    "chipset": "Chipset",
+    "memory_type": "Type de mémoire",
+    "core_count": "Nombre de cœurs",
+    "thread_count": "Nombre de threads",
+    "technical_interface": "Interface technique",
+    "storage_medium": "Support de stockage"
   },
   "options": {
     "category": {
       "p": "P — prise 230 V",
-      "ps": "PS — prise spécialisée",
+      "ps": "PS — prise standard",
       "pj": "PJ — prise RJ45",
       "pf": "PF — prise fibre",
       "l": "L — point lumineux",
@@ -94,7 +175,43 @@
       "ds": "DS — capteur",
       "dr": "DR — relais",
       "dx": "DX — panneau de contrôle",
-      "de": "DE — nœud ESP32"
+      "de": "DE — nœud ESP32",
+      "pp": "PP — prise de puissance",
+      "pn": "PN — prise réseau",
+      "pc": "PC — sortie de câble",
+      "pr": "PR — gaine en attente",
+      "lc": "LC — plafonnier",
+      "lw": "LW — applique",
+      "ls": "LS — spot",
+      "cp": "CP — panneau de contrôle",
+      "cs": "CS — interrupteur",
+      "sr": "SR — capteur d'ambiance",
+      "sp": "SP — sonde",
+      "sc": "SC — contact d'ouverture",
+      "sv": "SV — caméra",
+      "sd": "SD — détecteur",
+      "sl": "SL — détecteur de fuite",
+      "af": "AF — ventilateur",
+      "ar": "AR — relais",
+      "ad": "AD — alimentation TBT",
+      "ah": "AH — chauffage fixe",
+      "av": "AV — vanne motorisée",
+      "ap": "AP — pompe",
+      "as": "AS — avertisseur sonore",
+      "ac": "AC — clim fixe",
+      "al": "AL — gâche électrique",
+      "or": "OR — volet roulant",
+      "os": "OS — store",
+      "og": "OG — portail",
+      "ow": "OW — fenêtre motorisée",
+      "ve": "VE — bouche d'extraction",
+      "vs": "VS — arrivée d'air",
+      "vt": "VT — grille de transfert",
+      "vf": "VF — débouché de fumée",
+      "vp": "VP — prise d'aspiration",
+      "ws": "WS — arrivée d'eau",
+      "wt": "WT — robinet",
+      "wd": "WD — évacuation"
     },
     "condition": {
       "bon": "Bon",
@@ -111,19 +228,27 @@
     "switch_kind": {
       "interrupteur_simple": "Interrupteur simple",
       "va_et_vient": "Va-et-vient",
-      "poussoir": "Poussoir"
+      "poussoir": "Poussoir",
+      "single_switch": "Interrupteur simple",
+      "two_way_switch": "Va-et-vient",
+      "push_button": "Poussoir"
     },
     "power_supply": {
       "poe": "PoE",
       "pile": "Pile",
       "cinq_volts": "5 V",
       "vingt_quatre_volts": "24 V",
-      "secteur": "Secteur"
+      "secteur": "Secteur",
+      "battery": "Pile",
+      "v_5": "5 V",
+      "v_24": "24 V",
+      "mains": "Secteur"
     },
     "rcd_type": {
       "type_a": "Type A",
       "type_ac": "Type AC",
-      "inconnu": "Inconnu"
+      "inconnu": "Inconnu",
+      "unknown": "Inconnu"
     },
     "domain": {
       "audio": "Audio",
@@ -132,13 +257,23 @@
       "outillage": "Outillage",
       "cuisine": "Cuisine",
       "electromenager": "Électroménager",
-      "jardin": "Jardin"
+      "jardin": "Jardin",
+      "it": "Informatique",
+      "electronics": "Électronique",
+      "tools": "Outillage",
+      "kitchen": "Cuisine",
+      "appliances": "Électroménager",
+      "garden": "Jardin"
     },
     "horizon": {
       "maintenant": "Maintenant",
       "bientot": "Bientôt",
       "un_jour": "Un jour",
-      "peut_etre": "Peut-être"
+      "peut_etre": "Peut-être",
+      "now": "Maintenant",
+      "soon": "Bientôt",
+      "someday": "Un jour",
+      "maybe": "Peut-être"
     },
     "aisle": {
       "alimentaire": "Alimentaire",
@@ -153,7 +288,144 @@
       "en_attente": "En attente",
       "dormant": "Dormant",
       "termine": "Terminé",
-      "abandonne": "Abandonné"
+      "abandonne": "Abandonné",
+      "open": "Ouvert",
+      "in_progress": "En cours",
+      "waiting": "En attente",
+      "done": "Terminé",
+      "abandoned": "Abandonné"
+    },
+    "conduit_diameter": {
+      "mm_16": "16 mm",
+      "mm_20": "20 mm",
+      "mm_25": "25 mm",
+      "mm_32": "32 mm",
+      "mm_40": "40 mm",
+      "mm_50": "50 mm",
+      "mm_63": "63 mm"
+    },
+    "duct_diameter": {
+      "mm_80": "80 mm",
+      "mm_100": "100 mm",
+      "mm_125": "125 mm",
+      "mm_150": "150 mm",
+      "mm_160": "160 mm",
+      "mm_200": "200 mm"
+    },
+    "control_link": {
+      "wired": "Filaire",
+      "radio": "Radio",
+      "ethernet": "Ethernet",
+      "wifi": "Wi-Fi",
+      "zigbee": "Zigbee",
+      "bluetooth": "Bluetooth",
+      "pilot_wire": "Fil pilote",
+      "manual": "Manuel"
+    },
+    "measured_quantity": {
+      "temperature": "Température",
+      "humidity": "Humidité",
+      "presence": "Présence",
+      "motion": "Mouvement",
+      "opening": "Ouverture",
+      "light_level": "Luminosité",
+      "co2": "CO₂",
+      "consumption": "Consommation",
+      "smoke": "Fumée",
+      "carbon_monoxide": "Monoxyde de carbone"
+    },
+    "carries": {
+      "lv_230": "BT 230 V",
+      "elv_24": "TBT 24 V",
+      "data": "Données",
+      "air": "Air",
+      "water": "Eau"
+    },
+    "assignment": {
+      "lighting": "Éclairage",
+      "sockets": "Prises",
+      "dedicated": "Dédié"
+    },
+    "rating": {
+      "a_2": "2 A",
+      "a_6": "6 A",
+      "a_10": "10 A",
+      "a_16": "16 A",
+      "a_20": "20 A",
+      "a_25": "25 A",
+      "a_32": "32 A",
+      "a_40": "40 A",
+      "a_63": "63 A"
+    },
+    "cable": {
+      "mm2_1_5": "1,5 mm²",
+      "mm2_2_5": "2,5 mm²",
+      "mm2_4": "4 mm²",
+      "mm2_6": "6 mm²",
+      "mm2_10": "10 mm²",
+      "mm2_16": "16 mm²",
+      "cat_5e": "Cat 5e",
+      "cat_6": "Cat 6",
+      "cat_6a": "Cat 6a",
+      "fibre": "Fibre",
+      "coax": "Coaxial"
+    },
+    "equipment_category": {
+      "motherboard": "Carte mère",
+      "network_card": "Carte réseau",
+      "speaker": "Enceinte",
+      "clock": "Horloge",
+      "ram": "Mémoire vive",
+      "peripheral": "Périphérique",
+      "processor": "Processeur",
+      "cooling": "Refroidissement",
+      "smartphone": "Smartphone",
+      "storage": "Stockage",
+      "bulb": "Ampoule"
+    },
+    "errand_category": {
+      "sweet_products": "Produits sucrés",
+      "savoury_products": "Produits salés",
+      "dairy_products": "Produits laitiers",
+      "dry_cereal_products": "Produits céréaliers secs",
+      "dry_plant_products": "Produits végétaux secs",
+      "animal_products": "Produits animaliers",
+      "vegetables": "Légumes",
+      "fruit": "Fruits",
+      "cooking_ingredients": "Ingrédients culinaires",
+      "seasonings": "Assaisonnements",
+      "tins_and_jars": "Conserves et bocaux",
+      "drinks": "Boissons",
+      "cleaning": "Entretien",
+      "hygiene_and_health": "Hygiène et santé"
+    },
+    "priority": {
+      "low": "Basse",
+      "normal": "Normale",
+      "high": "Haute",
+      "urgent": "Urgente"
+    },
+    "earthed": {
+      "yes": "Oui",
+      "no": "Non"
+    },
+    "dcl": {
+      "yes": "Oui",
+      "no": "Non"
+    },
+    "bulb_base": {
+      "e14": "E14",
+      "e27": "E27",
+      "gu10": "GU10"
+    },
+    "lighting_capabilities": {
+      "cct": "CCT",
+      "rgb": "RGB",
+      "dimmable": "Dimmable"
+    },
+    "supported_protocols": {
+      "zigbee": "Zigbee",
+      "bluetooth": "Bluetooth"
     }
   }
 }

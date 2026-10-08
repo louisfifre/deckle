@@ -1,10 +1,15 @@
-#!/usr/bin/env pwsh
-#Requires -Version 7
 <#
 .SYNOPSIS
-    Install Deckle's repository and global git hooks.
-    Run once after a clone: hook sources are versioned, installed hooks are not.
+    Install git hooks
+.DESCRIPTION
+    Install Deckle's repository and global git hooks. Run once after a clone:
+    hook sources are versioned, installed hooks are not.
+.NOTES
+    section: Repo
+    order: 210
 #>
+
+#Requires -Version 7
 
 [CmdletBinding()]
 param(
@@ -13,10 +18,10 @@ param(
 
 $ErrorActionPreference = 'Stop'
 $scriptDir = $PSScriptRoot
-$libDir = Join-Path (Split-Path -Parent $scriptDir) 'lib'
+$libDir = Join-Path (Split-Path -Parent (Split-Path -Parent $scriptDir)) 'lib'
 . (Join-Path $libDir 'action-summary.ps1')
 
-$repoRoot = Split-Path -Parent (Split-Path -Parent $scriptDir)
+$repoRoot = Split-Path -Parent (Split-Path -Parent (Split-Path -Parent $scriptDir))
 $gitCommonDir = (git -C $repoRoot rev-parse --path-format=absolute --git-common-dir).Trim()
 if ($LASTEXITCODE -ne 0 -or [string]::IsNullOrWhiteSpace($gitCommonDir)) {
     throw 'Could not resolve the shared Git directory.'

@@ -1,15 +1,18 @@
-#!/usr/bin/env pwsh
-#Requires -Version 7
 <#
 .SYNOPSIS
-    Regenerate TREE.md from git ls-files.
-    Supports the pre-commit hook and direct manual runs.
+    Regenerate TREE.md from git ls-files
+.DESCRIPTION
+    Serves the pre-commit hook and direct manual runs. Annotates Markdown files
+    with their front matter and scripts with their Header.
 #>
+
+#Requires -Version 7
 
 $ErrorActionPreference = 'Stop'
 $repoRoot   = Split-Path -Parent (Split-Path -Parent $PSScriptRoot)
 $outputFile = Join-Path $repoRoot 'TREE.md'
 . (Join-Path $repoRoot 'scripts\lib\script-output.ps1')
+Import-Module (Join-Path $repoRoot 'scripts\lib\script-discovery.psm1') -Force
 
 $WorkflowOutput = New-DeckleWorkflowOutput -Category 'tree'
 
@@ -24,111 +27,42 @@ Write-DeckleWorkflowMessage -Output $WorkflowOutput -Message "$($files.Count) tr
 
 # ── Frontmatter ───────────────────────────────────────────────────────────
 
-function Get-Frontmatter {
-    param([string]$Path)
+function Format-TreeSuffix {
+    param([string]$Name, [string]$Type, [string]$Description)
 
-    if (-not (Test-Path -LiteralPath $Path)) { return $null }
+    if (-not $Name -and -not $Type -and -not $Description) { return '' }
 
-    $lines = Get-Content -LiteralPath $Path -TotalCount 120 -Encoding UTF8 -ErrorAction SilentlyContinue
-    if (-not $lines -or $lines.Count -lt 2) { return $null }
-    if ($lines[0].Trim() -ne '---') { return $null }
-
-    $fields = @{}
-    $i = 1
-    while ($i -lt $lines.Count) {
-        $line = $lines[$i]
-        if ($line.Trim() -eq '---') {
-            if ($fields.Count -eq 0) { return $null }
-            return $fields
-        }
-        if ($line -match '^([A-Za-z0-9_-]+)\s*:\s*(.*)$') {
-            $key = $Matches[1].ToLowerInvariant()
-            $value = $Matches[2].Trim()
-
-            if ($value -match '^[|>][+-]?$') {
-                $blockLines = [System.Collections.Generic.List[string]]::new()
-                $i++
-                while ($i -lt $lines.Count) {
-                    $blockLine = $lines[$i]
-                    if ($blockLine.Trim() -eq '---') {
-                        $i--
-                        break
-                    }
-                    if ($blockLine -match '^[A-Za-z0-9_-]+\s*:') {
-                        $i--
-                        break
-                    }
-                    $blockLines.Add($blockLine) | Out-Null
-                    $i++
-                }
-                $value = Format-FrontmatterBlock -Lines $blockLines
-            }
-
-            # Strip surrounding quotes if present
-            if (($value.StartsWith('"') -and $value.EndsWith('"')) -or
-                ($value.StartsWith("'") -and $value.EndsWith("'"))) {
-                if ($value.Length -ge 2) {
-                    $value = $value.Substring(1, $value.Length - 2)
-                }
-            }
-            $fields[$key] = $value
-        }
-        $i++
-    }
-    # Closing --- never found
-    return $null
-}
-
-function Format-FrontmatterBlock {
-    param([System.Collections.Generic.List[string]]$Lines)
-
-    if (-not $Lines -or $Lines.Count -eq 0) { return '' }
-
-    $minIndent = $null
-    foreach ($line in $Lines) {
-        if ($line.Trim() -eq '') { continue }
-        $indent = ([regex]::Match($line, '^\s*')).Value.Length
-        if ($null -eq $minIndent -or $indent -lt $minIndent) {
-            $minIndent = $indent
-        }
+    if ($Description -and $Description.Length -gt 80) {
+        $Description = $Description.Substring(0, 79).TrimEnd() + '…'
     }
 
-    if ($null -eq $minIndent) { return '' }
-
-    $normalized = foreach ($line in $Lines) {
-        if ($line.Length -ge $minIndent) {
-            $line.Substring($minIndent)
-        } else {
-            $line.TrimStart()
-        }
-    }
-
-    return (($normalized -join ' ') -replace '\s+', ' ').Trim()
-}
-
-function Format-MarkdownSuffix {
-    param([string]$AbsolutePath)
-
-    $fm = Get-Frontmatter -Path $AbsolutePath
-    if (-not $fm) { return '' }
-
-    $name = $fm['name']
-    $type = $fm['type']
-    $description = $fm['description']
-    if (-not $name -and -not $type -and -not $description) { return '' }
-
-    if ($description -and $description.Length -gt 80) {
-        $description = $description.Substring(0, 79).TrimEnd() + '…'
-    }
-
-    $namePart = if ($name) { $name } else { '' }
-    $typePart = if ($type) { "[$type]" } else { '' }
-    $descPart = if ($description) { $description } else { '' }
+    $namePart = if ($Name) { $Name } else { '' }
+    $typePart = if ($Type) { "[$Type]" } else { '' }
+    $descPart = if ($Description) { $Description } else { '' }
 
     $parts = @($namePart, $typePart, $descPart) | Where-Object { $_ }
     $tail = $parts -join ' '
     if (-not $tail) { return '' }
     return "  — $tail"
+}
+
+function Format-MarkdownSuffix {
+    param([string]$AbsolutePath)
+
+    $fm = Get-DeckleMarkdownFrontMatter -Path $AbsolutePath
+    if (-not $fm) { return '' }
+    return Format-TreeSuffix -Name $fm['name'] -Type $fm['type'] -Description $fm['description']
+}
+
+# A script Header plays the role of front matter: its synopsis names the
+# file and its description describes it, so TREE.md reads both alike.
+function Format-ScriptSuffix {
+    param([string]$AbsolutePath)
+
+    if (-not (Test-Path -LiteralPath $AbsolutePath -PathType Leaf)) { return '' }
+    $header = Read-DeckleScriptHeader -Path $AbsolutePath
+    if ($header.Status -ne 'Described') { return '' }
+    return Format-TreeSuffix -Name $header.Label -Type 'script' -Description $header.Description
 }
 
 # ── Construction de l'arbre ───────────────────────────────────────────────
@@ -185,10 +119,11 @@ function Render-Node {
             Render-Node $Node.Dirs[$e.Name] "$Prefix$indent" $childRel
         } else {
             $suffix = ''
+            $rel = if ($RelDir) { "$RelDir/$($e.Name)" } else { $e.Name }
             if ($e.Name -like '*.md') {
-                $rel = if ($RelDir) { "$RelDir/$($e.Name)" } else { $e.Name }
-                $abs = Join-Path $repoRoot $rel
-                $suffix = Format-MarkdownSuffix -AbsolutePath $abs
+                $suffix = Format-MarkdownSuffix -AbsolutePath (Join-Path $repoRoot $rel)
+            } elseif ($e.Name -like '*.ps1' -or $e.Name -like '*.psm1') {
+                $suffix = Format-ScriptSuffix -AbsolutePath (Join-Path $repoRoot $rel)
             }
             $script:lines.Add("$Prefix$conn$($e.Name)$suffix")
         }

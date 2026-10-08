@@ -58,7 +58,7 @@ function Invoke-CleanBuildOutputs {
         -CancelLabel 'Keep files' `
         -Destructive
     if (-not $confirmed) { return }
-    $scriptPath = Join-Path $CommandDir 'clean.ps1'
+    $scriptPath = Join-Path $CommandDir 'maintenance\clean.ps1'
     return Invoke-DeckleMenuAction -Header 'Deckle > Maintenance > Clean' -Label 'Clean build outputs' -Source Clean -MenuRows $MenuRows -Action {
         & $scriptPath -Target $wt
     }
@@ -66,7 +66,7 @@ function Invoke-CleanBuildOutputs {
 
 function Invoke-StopBuildServers {
     param([Parameter(Mandatory)][object[]]$MenuRows)
-    $scriptPath = Join-Path $CommandDir 'stop-build-servers.ps1'
+    $scriptPath = Join-Path $CommandDir 'maintenance\stop-build-servers.ps1'
     return Invoke-DeckleMenuAction -Header 'Deckle > Maintenance > Build servers' -Label 'Stop build servers' -Source Clean -MenuRows $MenuRows -Action {
         & $scriptPath
     }
@@ -75,7 +75,7 @@ function Invoke-StopBuildServers {
 function Invoke-InspectAgentState {
     param([Parameter(Mandatory)][object[]]$MenuRows)
     $strings = Import-PowerShellDataFile (Join-Path $LibDir 'agent-state-maintenance.strings.psd1')
-    $scriptPath = Join-Path $CommandDir 'reset-agent-state.ps1'
+    $scriptPath = Join-Path $CommandDir 'maintenance\reset-agent-state.ps1'
     return Invoke-DeckleMenuAction -Header $strings.MenuInspectHeader -Label $strings.MenuInspect -Source Maintenance -MenuRows $MenuRows -Action {
         & $scriptPath
     }
@@ -94,7 +94,7 @@ function Invoke-ResetAgentState {
         Destructive = $true
     }
     if (-not (Read-YesNo @question)) { return }
-    $scriptPath = Join-Path $CommandDir 'reset-agent-state.ps1'
+    $scriptPath = Join-Path $CommandDir 'maintenance\reset-agent-state.ps1'
     return Invoke-DeckleMenuAction -Header $strings.MenuResetHeader -Label $strings.MenuReset -Source Maintenance -MenuRows $MenuRows -Action {
         & $scriptPath -Apply -Confirmation $strings.ConfirmationPhrase
     }
@@ -265,7 +265,7 @@ function Invoke-PublishRelease {
     }
 
     $recordScript = Join-Path $CommandDir 'record-version.ps1'
-    $publishScript = Join-Path $CommandDir 'publish-app.ps1'
+    $publishScript = Join-Path $CommandDir 'release\publish-app.ps1'
     return Invoke-DeckleMenuAction -Header 'Deckle > Release > Publish app' -Label "Publish app v$target" -Source Release -MenuRows $MenuRows -Action {
         if ($recordVersion) {
             & $recordScript @recordArgs
@@ -279,7 +279,7 @@ function Invoke-PrepareArtifacts {
     param([Parameter(Mandatory)][object[]]$MenuRows)
     $wt = Get-WorktreeOrReturn
     if ($null -eq $wt) { return }
-    $scriptPath = Join-Path $CommandDir 'publish-app.ps1'
+    $scriptPath = Join-Path $CommandDir 'release\publish-app.ps1'
     return Invoke-DeckleMenuAction -Header 'Deckle > Release > Prepare app' -Label 'Prepare app artifacts' -Source Release -MenuRows $MenuRows -Action {
         & $scriptPath -Target $wt
     }
@@ -365,7 +365,7 @@ function Invoke-NativeRuntime {
     else                      { $nativeArgs.WhisperRepo = $whisperRepo }
     if ($outDir)  { $nativeArgs.OutDir = $outDir }
     if ($Publish) { $nativeArgs.Publish = $true }
-    $scriptPath = Join-Path $CommandDir 'publish-native-runtime.ps1'
+    $scriptPath = Join-Path $CommandDir 'release\publish-native-runtime.ps1'
     $label = if ($Publish) { "Publish native-v$version" } else { "Prepare native-v$version" }
     return Invoke-DeckleMenuAction -Header "Deckle > Release > $label" -Label $label -Source Release -MenuRows $MenuRows -Action {
         & $scriptPath @nativeArgs
@@ -381,7 +381,7 @@ function Invoke-BootstrapDev {
     if ($full)   { $bootstrapArgs.Full = $true }
     if (-not $dryRun -and -not (Read-YesNo -Question 'Apply the environment bootstrap now?' -Default $false -ConfirmLabel 'Apply setup' -CancelLabel 'Keep machine unchanged' -Destructive)) { return }
     if (-not $dryRun) { $bootstrapArgs.Yes = $true }
-    $scriptPath = Join-Path $CommandDir 'bootstrap-dev-env.ps1'
+    $scriptPath = Join-Path $CommandDir 'setup\bootstrap-dev-env.ps1'
     return Invoke-DeckleMenuAction -Header 'Deckle > Setup > Bootstrap' -Label 'Bootstrap dev environment' -Source Setup -MenuRows $MenuRows -Action {
         & $scriptPath @bootstrapArgs
     }
@@ -400,7 +400,7 @@ function Invoke-SetupAssets {
     if ($fromRelease) { $assetArgs.FromRelease = $fromRelease }
     if (Read-YesNo -Question 'Download ggml-large-v3.bin (~3 GB)?' -Default $false) { $assetArgs.WithLarge = $true }
     if (Read-YesNo -Question 'Force re-copy / re-download existing files?' -Default $false -ConfirmLabel 'Replace files' -CancelLabel 'Keep existing' -Destructive) { $assetArgs.Force = $true }
-    $scriptPath = Join-Path $CommandDir 'setup-assets.ps1'
+    $scriptPath = Join-Path $CommandDir 'setup\setup-assets.ps1'
     return Invoke-DeckleMenuAction -Header 'Deckle > Setup > Runtime assets' -Label 'Set up runtime assets' -Source Setup -MenuRows $MenuRows -Action {
         & $scriptPath @assetArgs
     }

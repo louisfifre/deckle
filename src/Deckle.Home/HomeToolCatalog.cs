@@ -13,7 +13,7 @@ public static class HomeToolCatalog
         [
             new ToolDescriptor(
                 "create",
-                "Create one or more Home objects of one type. Titles are human names; coded types (room, point, circuit, panel) also require an immutable code in the item's code field, stored in the Code property — a point code follows PIÈCE-CAT[SUB]NN and its room prefix is checked against the live Pièce objects, never a compiled registry; a point's room and category derive from its code. A circuit may omit its name and start titled by its code. Free-titled types take no code; an idea is a note without a separate title, so its complete free-form content goes directly in text (a compact capture may use 'subject · detail'). A component requires 'Fait partie de' (an existing Système) — prefer component_create. An optional template names one of the type's templates by its app label, so the object is born with that structure. Optional collections are Anytype memberships, not relation properties.",
+                "Create a batch of one Home type. Prefer the typed *_create commands for individual records. Coded objects require a code; Point room/category derive from it. Search relevant existing tasks and worksites before creating one. The batch validates before sequential writes; a transport failure may leave a partial batch: search before retrying.",
                 CreateSchema(),
                 (args, ct) => gestures().CreateAsync(
                     RequiredString(args, "type"), CreateItems(args), ct),
@@ -21,7 +21,7 @@ public static class HomeToolCatalog
 
             new ToolDescriptor(
                 "update",
-                "Update one or more Home objects. Codes are immutable; a point's room and category are derived from its code and cannot be changed directly. Titles are renamable human names, except an idea: it is a titleless note whose body is edited in the app. A component cannot clear 'Fait partie de' — retype it in the app instead. Relations accept object codes, names, or ids. Collection membership uses add_to_collections/remove_from_collections and is distinct from relations.",
+                "Update a Home batch. Prefer typed *_update for individual records. Read existing content first; omitted fields stay unchanged, supplied relation arrays replace their contents. Codes and Point room/category are immutable. append_text adds to the current body; section replaces one existing section. Relation fields may instead use {add:[selectors],remove:[selectors]} to retain other targets. Collections are separate from relations.",
                 UpdateSchema(),
                 (args, ct) => gestures().UpdateAsync(UpdateItems(args), ct),
                 ToolExecutionContract.OverwritingUncertain),
@@ -36,21 +36,31 @@ public static class HomeToolCatalog
 
             new ToolDescriptor(
                 "search",
-                "List Home objects with optional text, type, room, circuit, category, condition, done, worksite, state, and system filters. All filters combine; omit every filter to list the space.",
+                "Find Home objects within known context before writing. Filters combine; use domain and equipment_category for devices, worksite/about for tasks. Results are paged with IDs for selection. This searches the provider's object index, not a full-text body or archive service.",
                 ObjectSchema(optional:
                 [
                     ("text", StringSchema("Text matched against names, codes, and property values.")),
-                    ("type", EnumSchema("Home type key.", HomeSchema.CreatableTypes)),
+                    ("type", EnumSchema("Home type key.", InputTypeKeys())),
                     ("room", StringSchema("Room code, name, or id — matches Installé dans and Rangé dans.")),
                     ("circuit", StringSchema("Circuit code, name, or id.")),
                     ("category", EnumSchema("Point category code.", HomeCategories.All)),
                     ("condition", StringSchema("Condition key or label: bon, vétuste, endommagé, hors service.")),
-                    ("done", BooleanSchema("Filter on the native done checkbox (errands, todos): true for checked, false for unchecked.")),
+                    ("done", BooleanSchema("Filter the native task done checkbox. For products use needed.")),
                     ("worksite", StringSchema("Chantier name or id: keep objects whose Chantier relation targets it.")),
                     ("state", StringSchema("Statut key or label: ouvert, en cours, en attente, dormant, terminé, abandonné.")),
                     ("system", StringSchema("Système name or id: keep objects whose Fait partie de targets it.")),
+                    ("domain", StringSchema("Equipment domain key or live label.")),
+                    ("equipment_category", StringSchema("Equipment category key or live label, e.g. bulb.")),
+                    ("connected_to", StringSchema("Point code, name or id connected to a Device.")),
+                    ("panel", StringSchema("Panel code, name or id attached to a circuit.")),
+                    ("about", StringSchema("Home object concerned by the task or worksite.")),
+                    ("needed", BooleanSchema("Prendre: true for products or equipment currently needed.")),
+                    ("limit", new JsonObject { ["type"] = "integer", ["minimum"] = 1, ["maximum"] = 100, ["default"] = 50 }),
+                    ("offset", new JsonObject { ["type"] = "integer", ["minimum"] = 0, ["default"] = 0 }),
                 ]),
-                (args, ct) => gestures().SearchAsync(new HomeSearchFilter(
+                async (args, ct) =>
+                {
+                    HomeSearchPage page = await gestures().SearchPageAsync(new HomeSearchFilter(
                     OptionalString(args, "text"),
                     OptionalString(args, "type"),
                     OptionalString(args, "room"),
@@ -60,8 +70,18 @@ public static class HomeToolCatalog
                     OptionalBoolean(args, "done"),
                     OptionalString(args, "worksite"),
                     OptionalString(args, "state"),
-                    OptionalString(args, "system")), ct),
-                ToolExecutionContract.ReadOnly),
+                    OptionalString(args, "system"),
+                    OptionalString(args, "domain"),
+                    OptionalString(args, "equipment_category"),
+                    OptionalString(args, "connected_to"),
+                    OptionalString(args, "panel"),
+                    OptionalString(args, "about"),
+                    OptionalBoolean(args, "needed"),
+                    OptionalInteger(args, "limit") ?? 50,
+                    OptionalInteger(args, "offset") ?? 0), ct).ConfigureAwait(false);
+                    return new ToolOutput(page.Text, page.Data);
+                },
+                ToolExecutionContract.ReadOnly) { OutputSchema = SearchOutputSchema() },
 
             new ToolDescriptor(
                 "delete",
@@ -73,75 +93,13 @@ public static class HomeToolCatalog
                     RequiredString(args, "object"), OptionalBoolean(args, "confirm") ?? false, ct),
                 ToolExecutionContract.DestructiveVerifiable),
 
-            new ToolDescriptor(
-                "component_create",
-                "Create a Composant inside its Système — the system argument is mandatory because a composant is defined by its 'Fait partie de' relation, not its nature. If the system has no name, it is not a composant: create an Appareil instead (retyping is cheap).",
-                ObjectSchema(
-                    required:
-                    [
-                        ("name", StringSchema("Human component name.")),
-                        ("system", StringSchema("Existing Système, by name or id.")),
-                    ],
-                    optional: [("properties", PropertyMapSchema())]),
-                (args, ct) => gestures().CreateComponentAsync(
-                    RequiredString(args, "name"),
-                    RequiredString(args, "system"),
-                    OptionalObject(args, "properties"), ct),
-                ToolExecutionContract.AdditiveRequiresDeduplication),
-
-            new ToolDescriptor(
-                "plant_create",
-                "Create a plant: a free name, optionally the room it lives in, and its botanical properties when known. Select vocabularies (famille, genre, exposition, substrat) grow from the app — options are applied, never invented here.",
-                ObjectSchema(
-                    required: [("name", StringSchema("Plant name as the household calls it."))],
-                    optional:
-                    [
-                        ("room", StringSchema("Room the plant lives in, by code, name, or id.")),
-                        ("properties", PropertyMapSchema()),
-                    ]),
-                (args, ct) => gestures().CreatePlantAsync(
-                    RequiredString(args, "name"),
-                    OptionalString(args, "room"),
-                    OptionalObject(args, "properties"), ct),
-                ToolExecutionContract.AdditiveRequiresDeduplication),
-
-            new ToolDescriptor(
-                "worksite_create",
-                "Open a chantier — one finite piece of house work. Creation is deliberately loose: a name suffices; statut, concerne, date cible, and notes are added when known, to prioritize and list. Close it later with complete (statut = Terminé).",
-                ObjectSchema(
-                    required: [("name", StringSchema("Free chantier title."))],
-                    optional:
-                    [
-                        ("properties", PropertyMapSchema()),
-                        ("collections", StringArraySchema("Collections to add the chantier to, by name or id.")),
-                    ]),
-                (args, ct) => gestures().CreateWorksiteAsync(
-                    RequiredString(args, "name"),
-                    OptionalObject(args, "properties"),
-                    OptionalStringArray(args, "collections"), ct),
-                ToolExecutionContract.AdditiveRequiresDeduplication),
-
-            new ToolDescriptor(
-                "todo_create",
-                "Create a house task. Orphan by default — small chores live alone; pass worksite to attach it to real works, or attach later with update. A name suffices; the native done checkbox (complete) is the completion signal, and done tasks are the chantier's history.",
-                ObjectSchema(
-                    required: [("name", StringSchema("Free task title."))],
-                    optional:
-                    [
-                        ("worksite", StringSchema("Chantier to attach the task to, by name or id.")),
-                        ("properties", PropertyMapSchema()),
-                    ]),
-                (args, ct) => gestures().CreateTodoAsync(
-                    RequiredString(args, "name"),
-                    OptionalString(args, "worksite"),
-                    OptionalObject(args, "properties"), ct),
-                ToolExecutionContract.AdditiveRequiresDeduplication),
+            .. HomeTypedToolCatalog.Build(gestures),
 
             new ToolDescriptor(
                 "complete",
-                "Mark work done: checks the native done box of a todo or errand, or sets statut = Terminé on a chantier (reporting its still-open tasks). Done tasks are the record — there is no separate intervention journal.",
+                "Complete a task, or a worksite while reporting its remaining open tasks. Products use needed (Prendre), not task completion.",
                 ObjectSchema(
-                    required: [("object", StringSchema("Tâche, course, or chantier name or id."))]),
+                    required: [("object", StringSchema("Task or worksite name or id."))]),
                 (args, ct) => gestures().CompleteAsync(RequiredString(args, "object"), ct),
                 ToolExecutionContract.OverwritingIdempotent),
 
@@ -155,10 +113,14 @@ public static class HomeToolCatalog
         ];
     }
 
+    private static IEnumerable<string> InputTypeKeys() => HomeSchema.TargetManifest["types"]!
+        .AsArray().OfType<JsonObject>().Select(type => type["key"]!.GetValue<string>())
+        .Concat(HomeSchema.CreatableTypes).Append(HomeSchema.Types.Floor).Distinct(StringComparer.Ordinal);
+
     private static JsonObject CreateSchema() => ObjectSchema(
         required:
         [
-            ("type", EnumSchema("Home type key shared by every item in the batch.", HomeSchema.CreatableTypes)),
+            ("type", EnumSchema("Home type key shared by every item in the batch.", InputTypeKeys())),
             ("items", new JsonObject
             {
                 ["type"] = "array",
@@ -170,7 +132,7 @@ public static class HomeToolCatalog
                     [
                         ("code", StringSchema("Normative immutable code, stored in the Code property — required for room, point, circuit, and panel; forbidden for free-titled types.")),
                         ("name", StringSchema("Human title — required everywhere except a titleless idea and a circuit (falls back to its code).")),
-                        ("text", StringSchema("Complete note body: required for an idea, optional initial body for a device, forbidden elsewhere.")),
+                        ("text", StringSchema("Initial Markdown body; required for an idea, optional for other Home types.")),
                         ("properties", PropertyMapSchema()),
                         ("collections", StringArraySchema("Collections to add the created object to, by name, code, or id.")),
                         ("template", StringSchema("Name of one of the type's templates as shown in the app; the object is born with that template's structure. Resolved against the live type at call time and composes with text and properties.")),
@@ -191,10 +153,12 @@ public static class HomeToolCatalog
                     required: [("object", StringSchema("Object code, name, or id."))],
                     optional:
                     [
-                        ("name", StringSchema("New human title; the Code property is untouched. Refused for a titleless idea.")),
+                        ("name", StringSchema("New human title. Codes stay unchanged; ideas have no separate title.")),
                         ("properties", PropertyMapSchema()),
                         ("add_to_collections", StringArraySchema("Collections to add the object to, by name, code, or id.")),
                         ("remove_from_collections", StringArraySchema("Collections to remove the object from, by name, code, or id.")),
+                        ("append_text", StringSchema("Text to append to the current body. Do not resend after an uncertain write; read first.")),
+                        ("section", ObjectSchema(required: [("heading", StringSchema("Existing heading, matched uniquely.")), ("text", StringSchema("New section content; empty clears the section."))])) ,
                     ]),
             }),
         ]);
@@ -288,17 +252,52 @@ public static class HomeToolCatalog
             JsonObject item = RequiredObject(node, "items[]");
             RequireOnly(
                 item,
-                ["object", "name", "properties", "add_to_collections", "remove_from_collections"],
+                ["object", "name", "properties", "add_to_collections", "remove_from_collections", "append_text", "section"],
                 "items[]");
             result.Add(new HomeUpdateItem(
                 RequiredString(item, "object"),
                 OptionalString(item, "name"),
                 OptionalObject(item, "properties"),
                 OptionalStringArray(item, "add_to_collections"),
-                OptionalStringArray(item, "remove_from_collections")));
+                OptionalStringArray(item, "remove_from_collections"),
+                OptionalString(item, "append_text"),
+                ReadSection(item)));
         }
         return result;
     }
+
+    private static HomeSectionEdit? ReadSection(JsonObject item)
+    {
+        JsonObject? section = OptionalObject(item, "section");
+        if (section is null) return null;
+        RequireOnly(section, ["heading", "text"], "section");
+        return new HomeSectionEdit(RequiredString(section, "heading"), RequiredString(section, "text"));
+    }
+
+    private static int? OptionalInteger(JsonObject? args, string name)
+    {
+        if (args is null || !args.TryGetPropertyValue(name, out JsonNode? node)) return null;
+        if (node is JsonValue value && value.TryGetValue<int>(out int number)) return number;
+        throw new ArgumentException($"Argument '{name}' must be an integer.");
+    }
+
+    private static JsonObject SearchOutputSchema() => ObjectSchema(required:
+    [
+        ("matches", new JsonObject
+        {
+            ["type"] = "array",
+            ["items"] = ObjectSchema(required:
+            [
+                ("id", StringSchema("Resolved object id.")),
+                ("type", StringSchema("Home type key.")),
+                ("name", StringSchema("Human object name.")),
+                ("code", StringSchema("Inventory code, empty for uncoded objects.")),
+            ]),
+        }),
+        ("total", new JsonObject { ["type"] = "integer" }),
+        ("offset", new JsonObject { ["type"] = "integer" }),
+        ("next_offset", new JsonObject { ["type"] = new JsonArray("integer", "null") }),
+    ]);
 
     private static JsonArray RequiredArray(JsonObject? args, string name)
     {

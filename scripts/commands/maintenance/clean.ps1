@@ -1,8 +1,17 @@
-# clean.ps1 — Local workspace cleanup
-#
-# Removes generated build output from a Deckle worktree without touching
-# anything tracked by git. All `.gitignore`d, rebuilt by the next build,
-# safe to delete and re-create at will.
+<#
+.SYNOPSIS
+    Clean build outputs
+.DESCRIPTION
+    Remove generated build output from a Deckle worktree without touching
+    anything tracked by git. Everything removed is ignored by git and rebuilt
+    by the next build. The running Deckle process is stopped first.
+.NOTES
+    section: Cleanup
+    order: 220
+    action: Clean build outputs | | danger | Deletes generated build outputs from the target worktree.
+#>
+
+# Operational notes
 #
 # Two locations, since the repo uses the .NET artifacts output layout
 # (root Directory.Build.props sets ArtifactsPath):
@@ -46,7 +55,7 @@ param(
 
 $ErrorActionPreference = 'Stop'
 $ScriptDir = $PSScriptRoot
-$LibDir = Join-Path (Split-Path -Parent $ScriptDir) 'lib'
+$LibDir = Join-Path (Split-Path -Parent (Split-Path -Parent $ScriptDir)) 'lib'
 . (Join-Path $LibDir 'action-summary.ps1')
 . (Join-Path $LibDir 'build-server-cleanup.ps1')
 . (Join-Path $LibDir 'deckle-process.ps1')
@@ -82,8 +91,8 @@ trap {
 # =============================================================================
 # RepoRoot resolution — mirrors build-run.ps1 so the two scripts behave
 # the same way when called from the same context (VS Code Run, terminal,
-# scripts/deckle.ps1 with -Target). Two levels up from this script:
-# scripts/commands/clean.ps1 → scripts/ → <repo root>.
+# scripts/deckle.ps1 with -Target). Three levels up from this script:
+# scripts/commands/maintenance/clean.ps1 → commands/ → scripts/ → <repo root>.
 # =============================================================================
 if ($Pick) {
     Import-Module (Join-Path $LibDir 'menu.psm1') -Force
@@ -92,7 +101,7 @@ if ($Pick) {
     if (-not (Test-Path $Target)) { throw "Target not found: $Target" }
     $RepoRoot = (Get-Item $Target).FullName
 } else {
-    $RepoRoot = Split-Path -Parent (Split-Path $ScriptDir)
+    $RepoRoot = Split-Path -Parent (Split-Path -Parent (Split-Path -Parent $ScriptDir))
 }
 
 Write-Host "Repo: $RepoRoot" -ForegroundColor DarkGray

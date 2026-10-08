@@ -70,6 +70,8 @@ Assert-True ($wideText -match 'Space Toggle') 'a multi-selection Selector advert
 Assert-True ($wideText -match '\[x\] Root files') 'multi-selection scope has a structural checked marker'
 Assert-True ($wideText -match '\[x\] File count') 'multi-selection has a structural checked marker'
 Assert-True ($wideText -match 'Scope: Whole repository') 'exhaustive atomic scope is summarized as the whole repository'
+$scopeLabelSegment = @($wide.Lines | ForEach-Object { $_.Segments } | Where-Object { $_.Text -eq 'Scope' })[0]
+Assert-Equal Body $scopeLabelSegment.PresentationRole 'Filter labels inherit neutral body presentation instead of Action color'
 
 $scopeRoot = Get-Placement -Frame $wide -TargetId selector.scope.root-files
 $scopeSource = Get-Placement -Frame $wide -TargetId 'selector.scope.folder:src'

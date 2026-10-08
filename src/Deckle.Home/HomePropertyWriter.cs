@@ -66,35 +66,26 @@ internal sealed class HomePropertyWriter(
         SchemaPropertyInfo property, string requested, CancellationToken ct)
     {
         string normalized = requested.Trim();
-        if (HomeSchema.ClosedVocabularies.TryGetValue(property.Key, out IReadOnlyList<string>? optionKeys))
-        {
-            string[] matches = optionKeys.Where(key =>
-                    string.Equals(key, normalized, StringComparison.OrdinalIgnoreCase)
-                    || string.Equals(
-                        HomeSchema.OptionLabel(property.Key, key), normalized,
-                        StringComparison.OrdinalIgnoreCase))
-                .ToArray();
-            if (matches.Length != 1)
-                throw new InvalidOperationException(
-                    $"Valeur inconnue « {requested} » pour {property.Name}. Valeurs admises : "
-                    + string.Join(", ", HomeSchema.OptionLabels(property.Key)));
-            normalized = matches[0];
-            string expectedName = HomeSchema.OptionLabel(property.Key, normalized);
-            SchemaTagInfo? live = schema.TagsFor(property.Key).Values.Distinct().FirstOrDefault(tag =>
-                string.Equals(tag.Key, normalized, StringComparison.OrdinalIgnoreCase)
-                || string.Equals(tag.Name, expectedName, StringComparison.OrdinalIgnoreCase));
-            if (live is not null && live.Id.Length > 0) return live.Id;
-        }
+        var aliases = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { normalized };
+        bool closed = HomeSchema.ClosedVocabularies.TryGetValue(property.Key, out IReadOnlyList<string>? closedKeys);
+        IReadOnlyList<string> known = closedKeys
+            ?? (HomeSchema.TargetSeededVocabularies.TryGetValue(property.Key, out var seeded) ? seeded : []);
+        string[] matches = known.Where(key => HomeSchema.OptionAliases(property.Key, key)
+            .Contains(normalized, StringComparer.OrdinalIgnoreCase)).ToArray();
+        if (matches.Length > 1 || (closed && matches.Length != 1))
+            throw new InvalidOperationException(
+                $"Valeur inconnue ou ambiguë « {requested} » pour {property.Name}. Valeurs admises : "
+                + string.Join(", ", known.Select(key => HomeSchema.OptionLabel(property.Key, key))));
+        if (matches.Length == 1)
+            aliases.UnionWith(HomeSchema.OptionAliases(property.Key, matches[0]));
 
         IReadOnlyList<SchemaTagInfo> liveTags = await ReadTagsAsync(property, ct).ConfigureAwait(false);
-        SchemaTagInfo[] candidates = liveTags.Where(tag =>
-                string.Equals(tag.Key, normalized, StringComparison.OrdinalIgnoreCase)
-                || string.Equals(tag.Name, requested, StringComparison.OrdinalIgnoreCase))
-            .ToArray();
+        SchemaTagInfo[] candidates = liveTags.Where(tag => aliases.Contains(tag.Key) || aliases.Contains(tag.Name))
+            .DistinctBy(tag => tag.Id).ToArray();
         if (candidates.Length == 1 && candidates[0].Id.Length > 0) return candidates[0].Id;
 
         throw new InvalidOperationException(
-            $"Option inconnue « {requested} » pour {property.Name}. Options présentes : "
+            $"Option inconnue ou ambiguë « {requested} » pour {property.Name}. Options présentes : "
             + string.Join(", ", liveTags.Select(tag => tag.Name).Where(name => name.Length > 0).Distinct()));
     }
 

@@ -61,7 +61,7 @@ internal sealed class FakeHomeAnytypeServer : IDisposable
         seeded.Add((templateId, name));
     }
 
-    public void AddSchemaType(string key, string name, string pluralName, string layout)
+    public void AddSchemaType(string key, string name, string pluralName, string layout, params string[] propertyKeys)
     {
         JsonArray types = (JsonArray)_schemaManifest["types"]!;
         types.Add(new JsonObject
@@ -70,9 +70,13 @@ internal sealed class FakeHomeAnytypeServer : IDisposable
             ["name"] = name,
             ["plural_name"] = pluralName,
             ["layout"] = layout,
-            ["properties"] = new JsonArray(),
+            ["properties"] = new JsonArray(propertyKeys.Select(key => (JsonNode?)JsonValue.Create(key)).ToArray()),
         });
     }
+
+    public void SetSchemaFormat(string key, string format) =>
+        _schemaManifest["properties"]!.AsArray().OfType<JsonObject>()
+            .Single(property => property["key"]!.GetValue<string>() == key)["format"] = format;
 
     // Seeds a live option on an open select — the space-grown options the
     // compiled manifest deliberately no longer carries (supplier & co).
@@ -95,7 +99,7 @@ internal sealed class FakeHomeAnytypeServer : IDisposable
         {
             TextProperty(HomeSchema.Properties.Code, "Code", code),
             ObjectsProperty(HomeSchema.Properties.InstalledIn, "Installé dans", roomId),
-            SelectProperty(HomeSchema.Properties.Category, "Catégorie", "p", "P — prise 230 V"),
+            SelectProperty(HomeSchema.Properties.Category, "Catégorie", "ps", "PS — prise standard"),
         };
         if (controls.Length > 0)
             properties.Add(ObjectsProperty(HomeSchema.Properties.Controls, "Commande", controls));
@@ -132,7 +136,7 @@ internal sealed class FakeHomeAnytypeServer : IDisposable
 
     public static JsonObject Worksite(string id, string name, params string[] backlinkIds) => Object(
         id, HomeSchema.Types.Worksite, name,
-        SelectProperty(HomeSchema.Properties.State, "Statut", "en_cours", "En cours"),
+        SelectProperty(HomeSchema.Properties.State, "Statut", "in_progress", "En cours"),
         ObjectsProperty("backlinks", "Backlinks", backlinkIds));
 
     public static JsonObject Todo(string id, string name, string? worksiteId, bool done) =>
@@ -351,7 +355,19 @@ internal sealed class FakeHomeAnytypeServer : IDisposable
         if (target is null) return (404, "{}");
         JsonObject payload = (JsonObject)JsonNode.Parse(body)!;
         if (payload["name"] is JsonValue name) target["name"] = name.GetValue<string>();
-        if (payload["properties"] is JsonArray properties) target["properties"] = properties.DeepClone();
+        if (payload["properties"] is JsonArray properties)
+        {
+            var merged = target["properties"] as JsonArray ?? new JsonArray();
+            foreach (JsonObject entry in properties.OfType<JsonObject>())
+            {
+                JsonObject? old = merged.OfType<JsonObject>().FirstOrDefault(value =>
+                    value["key"]?.GetValue<string>() == entry["key"]?.GetValue<string>());
+                if (old is not null) merged.Remove(old);
+                merged.Add(entry.DeepClone());
+            }
+            if (target["properties"] is null) target["properties"] = merged;
+        }
+        if (payload["markdown"] is JsonValue markdown) target["markdown"] = markdown.GetValue<string>();
         return (200, new JsonObject { ["object"] = target.DeepClone() }.ToJsonString());
     }
 

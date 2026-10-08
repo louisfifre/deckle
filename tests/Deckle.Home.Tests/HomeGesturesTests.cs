@@ -21,19 +21,19 @@ public class HomeGesturesTests
 
         string digest = await Gestures(server).CreateAsync(
             HomeSchema.Types.Point,
-            [new HomeCreateItem("ZZ-P01", "Prise témoin", null)],
+            [new HomeCreateItem("ZZ-PS01", "Prise témoin", null)],
             Ct);
 
-        Assert.Contains("ZZ-P01", digest);
+        Assert.Contains("ZZ-PS01", digest);
         JsonObject body = (JsonObject)JsonNode.Parse(server.Requests.Single(r => r.Method == "POST").Body)!;
         Assert.Equal(HomeSchema.Types.Point, body["type_key"]!.GetValue<string>());
         Assert.Equal("Prise témoin", body["name"]!.GetValue<string>());
         JsonArray properties = Assert.IsType<JsonArray>(body["properties"]);
-        Assert.Equal("ZZ-P01", Entry(properties, HomeSchema.Properties.Code)["text"]!.GetValue<string>());
+        Assert.Equal("ZZ-PS01", Entry(properties, HomeSchema.Properties.Code)["text"]!.GetValue<string>());
         JsonNode roomReference = Assert.Single(Assert.IsType<JsonArray>(
             Entry(properties, HomeSchema.Properties.InstalledIn)["objects"]))!;
         Assert.Equal("room-zz", roomReference.GetValue<string>());
-        Assert.Equal("tag-category-p", Entry(properties, HomeSchema.Properties.Category)["select"]!.GetValue<string>());
+        Assert.Equal("tag-category-ps", Entry(properties, HomeSchema.Properties.Category)["select"]!.GetValue<string>());
         Assert.DoesNotContain(properties.OfType<JsonObject>(), entry =>
             entry["key"]?.GetValue<string>() == "existence");
     }
@@ -47,7 +47,7 @@ public class HomeGesturesTests
         ArgumentException error = await Assert.ThrowsAsync<ArgumentException>(() =>
             Gestures(server).CreateAsync(
                 HomeSchema.Types.Point,
-                [new HomeCreateItem("ZZ-P01", null, null)], Ct));
+                [new HomeCreateItem("ZZ-PS01", null, null)], Ct));
 
         Assert.Contains("nom humain", error.Message);
         Assert.DoesNotContain(server.Requests, request => request.Method == "POST");
@@ -142,7 +142,7 @@ public class HomeGesturesTests
         InvalidOperationException error = await Assert.ThrowsAsync<InvalidOperationException>(() =>
             Gestures(server).CreateAsync(
                 HomeSchema.Types.Point,
-                [new HomeCreateItem("YY-P01", "Prise fictive", null)], Ct));
+                [new HomeCreateItem("YY-PS01", "Prise fictive", null)], Ct));
 
         Assert.Contains("Code de pièce inconnu", error.Message);
         Assert.DoesNotContain(server.Requests, request => request.Method == "POST");
@@ -190,11 +190,11 @@ public class HomeGesturesTests
             .Single(property => property["key"]?.GetValue<string>() == "domain");
         Assert.Contains(
             ((JsonArray)domain["tags"]!).OfType<JsonObject>(),
-            tag => tag["key"]?.GetValue<string>() == "electronique");
+            tag => tag["key"]?.GetValue<string>() == "electronics");
 
         JsonObject supplier = properties.OfType<JsonObject>()
             .Single(property => property["key"]?.GetValue<string>() == "supplier");
-        Assert.Null(supplier["tags"]);
+        Assert.Empty(supplier["tags"]?.AsArray() ?? new JsonArray());
     }
 
     [Fact]
@@ -203,14 +203,14 @@ public class HomeGesturesTests
         using var server = new FakeHomeAnytypeServer();
         server.SetObjects(
             FakeHomeAnytypeServer.Room("room-zz", "ZZ", "Pièce fictive"),
-            FakeHomeAnytypeServer.Point("point-1", "ZZ-P01", "Prise fictive", "room-zz"));
+            FakeHomeAnytypeServer.Point("point-1", "ZZ-PS01", "Prise fictive", "room-zz"));
 
         InvalidOperationException error = await Assert.ThrowsAsync<InvalidOperationException>(() =>
             Gestures(server).CreateAsync(
                 HomeSchema.Types.Point,
-                [new HomeCreateItem("ZZ-P01", "Prise doublon", null)], Ct));
+                [new HomeCreateItem("ZZ-PS01", "Prise doublon", null)], Ct));
 
-        Assert.Contains("ZZ-P02", error.Message);
+        Assert.Contains("ZZ-PS02", error.Message);
         Assert.DoesNotContain(server.Requests, request => request.Method == "POST");
     }
 
@@ -220,11 +220,11 @@ public class HomeGesturesTests
         using var server = new FakeHomeAnytypeServer();
         server.SetObjects(
             FakeHomeAnytypeServer.Room("room-zz", "ZZ", "Pièce fictive"),
-            FakeHomeAnytypeServer.Point("point-1", "ZZ-P01", "Prise fictive", "room-zz"));
+            FakeHomeAnytypeServer.Point("point-1", "ZZ-PS01", "Prise fictive", "room-zz"));
 
         InvalidOperationException error = await Assert.ThrowsAsync<InvalidOperationException>(() =>
             Gestures(server).UpdateAsync(
-                [new HomeUpdateItem("ZZ-P01", null, new JsonObject { ["code"] = "ZZ-P02" })], Ct));
+                [new HomeUpdateItem("ZZ-PS01", null, new JsonObject { ["code"] = "ZZ-PS02" })], Ct));
 
         Assert.Contains("immuable", error.Message);
         Assert.DoesNotContain(server.Requests, request => request.Method == "PATCH");
@@ -236,11 +236,11 @@ public class HomeGesturesTests
         using var server = new FakeHomeAnytypeServer();
         server.SetObjects(
             FakeHomeAnytypeServer.Room("room-zz", "ZZ", "Pièce fictive"),
-            FakeHomeAnytypeServer.Point("point-1", "ZZ-L01", "Plafonnier fictif", "room-zz"),
-            FakeHomeAnytypeServer.Point("point-2", "ZZ-C01", "Interrupteur fictif", "room-zz", "point-1"));
+            FakeHomeAnytypeServer.Point("point-1", "ZZ-LC01", "Plafonnier fictif", "room-zz"),
+            FakeHomeAnytypeServer.Point("point-2", "ZZ-CS01", "Interrupteur fictif", "room-zz", "point-1"));
 
         InvalidOperationException error = await Assert.ThrowsAsync<InvalidOperationException>(() =>
-            Gestures(server).DeleteAsync("ZZ-L01", confirm: false, Ct));
+            Gestures(server).DeleteAsync("ZZ-LC01", confirm: false, Ct));
 
         Assert.Contains("référencé", error.Message);
         Assert.DoesNotContain(server.Requests, request => request.Method == "DELETE");
@@ -252,9 +252,9 @@ public class HomeGesturesTests
         using var server = new FakeHomeAnytypeServer();
         server.SetObjects(
             FakeHomeAnytypeServer.Room("room-zz", "ZZ", "Pièce fictive"),
-            FakeHomeAnytypeServer.Point("point-1", "ZZ-P01", "Prise saisie par erreur", "room-zz"));
+            FakeHomeAnytypeServer.Point("point-1", "ZZ-PS01", "Prise saisie par erreur", "room-zz"));
 
-        string preview = await Gestures(server).DeleteAsync("ZZ-P01", confirm: false, Ct);
+        string preview = await Gestures(server).DeleteAsync("ZZ-PS01", confirm: false, Ct);
         Assert.Contains("point-1", preview);
 
         string result = await Gestures(server).DeleteAsync("point-1", confirm: true, Ct);
@@ -448,20 +448,20 @@ public class HomeGesturesTests
         InvalidOperationException codeError = await Assert.ThrowsAsync<InvalidOperationException>(() =>
             Gestures(server).CreateAsync(
                 HomeSchema.Types.Errand,
-                [new HomeCreateItem("ZZ-P01", "Vis fictives", null)], Ct));
+                [new HomeCreateItem("ZZ-PS01", "Vis fictives", null)], Ct));
         Assert.Contains("ne porte pas de code", codeError.Message);
 
         InvalidOperationException nameError = await Assert.ThrowsAsync<InvalidOperationException>(() =>
             Gestures(server).CreateAsync(
                 HomeSchema.Types.Idea,
                 [new HomeCreateItem(null, "Un titre", null, Text: "Une idée fictive")], Ct));
-        Assert.Contains("première ligne", nameError.Message);
+        Assert.Contains("sans champ titre", nameError.Message);
 
         Assert.DoesNotContain(server.Requests, request => request.Method == "POST");
     }
 
     [Fact]
-    public async Task CreateErrandTakesAFreeNameTheGuardedAisleAndANumericQuantity()
+    public async Task CreateProductUsesNeededInsteadOfAisleAndQuantity()
     {
         using var server = new FakeHomeAnytypeServer();
 
@@ -469,16 +469,14 @@ public class HomeGesturesTests
             HomeSchema.Types.Errand,
             [new HomeCreateItem(null, "Vis fictives 4×40 (boîte de 100)", new JsonObject
             {
-                ["Rayon"] = "Bricolage",
-                ["Quantité"] = 2,
+                ["needed"] = true,
             })],
             Ct);
 
         JsonObject body = (JsonObject)JsonNode.Parse(server.Requests.Single(r => r.Method == "POST").Body)!;
         Assert.Equal("Vis fictives 4×40 (boîte de 100)", body["name"]!.GetValue<string>());
         JsonArray properties = Assert.IsType<JsonArray>(body["properties"]);
-        Assert.Equal("tag-aisle-bricolage", Entry(properties, HomeSchema.Properties.Aisle)["select"]!.GetValue<string>());
-        Assert.Equal(2, Entry(properties, HomeSchema.Properties.Quantity)["number"]!.GetValue<double>());
+        Assert.True(Entry(properties, "needed")["checkbox"]!.GetValue<bool>());
     }
 
     [Fact]
@@ -528,7 +526,7 @@ public class HomeGesturesTests
         InvalidOperationException error = await Assert.ThrowsAsync<InvalidOperationException>(() =>
             Gestures(server).UpdateAsync(
                 [new HomeUpdateItem("Tester une idée fictive", "Nouveau titre", null)], Ct));
-        Assert.Contains("première ligne", error.Message);
+        Assert.Contains("sans champ titre", error.Message);
 
         await Gestures(server).UpdateAsync(
             [new HomeUpdateItem("Vis fictives", "Vis inox fictives", null)], Ct);
@@ -614,7 +612,7 @@ public class HomeGesturesTests
     }
 
     [Fact]
-    public async Task TodoCreateAllowsAnOrphanAndWorkTypesRefuseCodeAndBody()
+    public async Task TodoCreateAllowsAnOrphanAndInitialBodyButRefusesCode()
     {
         using var server = new FakeHomeAnytypeServer();
 
@@ -627,14 +625,14 @@ public class HomeGesturesTests
         InvalidOperationException codeError = await Assert.ThrowsAsync<InvalidOperationException>(() =>
             Gestures(server).CreateAsync(
                 HomeSchema.Types.Worksite,
-                [new HomeCreateItem("ZZ-P01", "Chantier fictif", null)], Ct));
+                [new HomeCreateItem("ZZ-PS01", "Chantier fictif", null)], Ct));
         Assert.Contains("ne porte pas de code", codeError.Message);
 
-        InvalidOperationException bodyError = await Assert.ThrowsAsync<InvalidOperationException>(() =>
-            Gestures(server).CreateAsync(
-                HomeSchema.Types.Todo,
-                [new HomeCreateItem(null, "Tâche fictive", null, Text: "un corps")], Ct));
-        Assert.Contains("Notes", bodyError.Message);
+        await Gestures(server).CreateAsync(
+            HomeSchema.Types.Todo,
+            [new HomeCreateItem(null, "Tâche fictive", null, Text: "un corps")], Ct);
+        JsonObject created = (JsonObject)JsonNode.Parse(server.Requests.Last(r => r.Method == "POST").Body)!;
+        Assert.Equal("un corps", created["body"]!.GetValue<string>());
     }
 
     [Fact]
@@ -666,7 +664,7 @@ public class HomeGesturesTests
         Assert.Contains("1 tâche", digest);
         JsonObject patch = (JsonObject)JsonNode.Parse(server.Requests.Single(r => r.Method == "PATCH").Body)!;
         Assert.Equal(
-            "tag-state-termine",
+            "tag-state-done",
             Entry(Assert.IsType<JsonArray>(patch["properties"]), HomeSchema.Properties.State)["select"]!.GetValue<string>());
     }
 
