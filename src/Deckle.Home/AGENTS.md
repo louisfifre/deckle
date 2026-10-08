@@ -39,4 +39,4 @@ Space ids, object ids, account identities, tokens and inventory values are runti
 
 - The Zone type is created in the app: the Anytype API refuses to create a collection-layout type. Zone objects are ordinary API objects.
 - Its key is app-derived, discovered at runtime (`HomeSchema.FloorTypeKey`), never compiled.
-- The `floor` relation on `room` may only target objects of that type.
+- The English key `floor` predates the rename to Zone and stays as the technical coordinate (see `JOURNAL.md`). The `floor` relation on `room` may only target objects of that type.
