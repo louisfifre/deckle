@@ -1284,6 +1284,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── DeckleAmbientSource.Push.cs
 │   │   ├── DeckleAmbientSource.UiAndSettings.cs
 │   │   ├── IAmbientEngineHost.cs
+│   │   ├── JOURNAL.md  — [module-journal] Dated findings for Deckle.Lighting.Ambient — how a light colour is derived from…
 │   │   └── SettingsSearch.cs
 │   ├── Deckle.Llm/
 │   │   ├── Deckle.Llm.csproj
