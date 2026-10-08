@@ -1,0 +1,5 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Deckle.Shell.Foreground\Deckle.Shell.Foreground.csproj" />
+  </ItemGroup>
+</Project>
