@@ -264,9 +264,13 @@ function ConvertTo-TerminalMenuLayoutSections {
             $rows.Add([pscustomobject]@{ Kind = 'TargetRow'; Label = ''; Targets = @($pendingTargets); TrailingTarget = $null })
         }
         if ($null -ne $trailingTarget) {
-            # The Exit target closes the menu on a line of its own, so it
-            # never takes a column away from the option grid above it.
-            $rows.Add([pscustomobject]@{ Kind = 'TargetRow'; Label = ''; Targets = @(); TrailingTarget = $trailingTarget })
+            # The Exit target seats at the right end of the menu's last line,
+            # in the narrow slot the grid reserves beside its columns.
+            if ($rows.Count -eq 0) {
+                $rows.Add([pscustomobject]@{ Kind = 'TargetRow'; Label = ''; Targets = @(); TrailingTarget = $trailingTarget })
+            } else {
+                $rows[$rows.Count - 1].TrailingTarget = $trailingTarget
+            }
         }
         $layoutSections.Add([pscustomobject]@{
             Label = $section.Label
@@ -331,6 +335,9 @@ function Get-TerminalMenuGrid {
     $targetX = $left + $labelWidth + 3
     $gap = 2
     $targetAreaWidth = [Math]::Max(1, $right - $targetX)
+    # The Exit slot is narrow and reserved on every row, so the columns stay
+    # aligned and the last line keeps room for it.
+    if ($trailingWidth -gt 0) { $targetAreaWidth = [Math]::Max(1, $targetAreaWidth - ($trailingWidth + $gap)) }
     $columnWidth = [Math]::Max(1, [Math]::Floor(($targetAreaWidth - (($columnCount - 1) * $gap)) / $columnCount))
     $minimumColumnWidth = Get-TerminalMinimumColumnWidth -LayoutSections $LayoutSections
     if ($columnWidth -lt $minimumColumnWidth) {
@@ -366,9 +373,6 @@ function Add-TerminalMenuRow {
         if ($Row.Label) {
             Add-TerminalFrameSegment -Frame $Frame -LineIndex $line -X $left -Text (Limit-TerminalText -Text $Row.Label -Width $Grid.LabelWidth) -PresentationRole ActionLabel
         }
-        if ($null -ne $Row.TrailingTarget) {
-            Add-TerminalTarget -Frame $Frame -Target $Row.TrailingTarget -LineIndex $line -X ($Grid.Right - $Grid.TrailingWidth) -Width $Grid.TrailingWidth -FocusedTargetId $FocusedTargetId
-        }
         $targets = @(if ($Row.Kind -eq 'ActionRow') { $Row.Variants } else { $Row.Targets })
         $columns = [Math]::Max(1, $Grid.ColumnCount)
         for ($i = 0; $i -lt $targets.Count; $i++) {
@@ -387,6 +391,10 @@ function Add-TerminalMenuRow {
                 -Width $Grid.ColumnWidth `
                 -FocusedTargetId $FocusedTargetId `
                 -AsActionVariant:($Row.Kind -eq 'ActionRow')
+        }
+        if ($null -ne $Row.TrailingTarget) {
+            # Exit sits on the row's last line, after any wrap, in its slot.
+            Add-TerminalTarget -Frame $Frame -Target $Row.TrailingTarget -LineIndex $line -X ($Grid.Right - $Grid.TrailingWidth) -Width $Grid.TrailingWidth -FocusedTargetId $FocusedTargetId
         }
         return
     }
