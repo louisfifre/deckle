@@ -8,9 +8,10 @@ namespace Deckle.Playground;
 // One Add*Expander method per logical knob group (palette, hue rotation,
 // arc rotation, recording variant, etc.) plus the matching Reset*
 // method that snaps the group back to compiled defaults. Filtered by
-// HudViewModel.ActiveTuningSections so only the expanders that affect
-// the active target are rendered ; Parked is always appended (collapsed
-// by default) for the transition-only knobs.
+// HudViewModel.ActiveTuningSections so only the expanders whose rows
+// reach the active target's preview are rendered ; Parked follows them
+// (collapsed by default) for the transition-only knobs, and is skipped
+// with them on Charging, which has no stroke.
 //
 // Step-frequency convention (kept aligned with HudPage.RowFactories) :
 //   fractional [0..1, ease Y, saturation/opacity/hue]   → 0.05
@@ -198,7 +199,7 @@ public sealed partial class HudPage
         _tuning.RecordingArcMirror          = d.RecordingArcMirror;
         _tuning.RecordingArcPhaseTurns      = d.RecordingArcPhaseTurns;
         _tuning.RecordingHuePeriodSeconds   = d.RecordingHuePeriodSeconds;
-        _tuning.RecordingSaturationDark    = d.RecordingSaturationDark;
+        _tuning.RecordingSaturationDark     = d.RecordingSaturationDark;
         _tuning.RecordingSaturationLight    = d.RecordingSaturationLight;
         _tuning.RecordingHueShiftTurns      = d.RecordingHueShiftTurns;
         _tuning.RecordingExposureDark       = d.RecordingExposureDark;

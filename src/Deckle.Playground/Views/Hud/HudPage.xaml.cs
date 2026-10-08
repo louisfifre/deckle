@@ -489,8 +489,8 @@ public sealed partial class HudPage : Page
         _simRmsPeriodSeconds   = 2.0f;
         _simManualOverride     = false;
         _simManualValue        = 0.012f;
-        // Conic clone placement resets with the fresh TuningModel above
-        // (CloneCentre*Fraction field initialisers = 0.5, i.e. centred).
+        // Conic clone placement resets with the fresh TuningModel above,
+        // whose fields read the shipping struct's defaults.
 
         // Audio mapping statics stay aligned with ResetAudioMapping.
         AudioLevelMapper.Apply(new LevelWindowSettings());
