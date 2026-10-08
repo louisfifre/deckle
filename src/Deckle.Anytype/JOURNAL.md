@@ -7,6 +7,45 @@ type: module-journal
 
 Module-level dated notes. Most recent on top.
 
+## 2026-10-08 — The 0.4.0 crash is a cross-allocator free in tantivy-go, exposed by the cli's msvcrt-linked Windows asset
+
+Found, same day, by a debugger pass on the dump, a pclntab read of the
+stripped binary, the sources, and a rebuild from source. Import tables
+(`objdump -p`): the cli 0.3.6 asset imports the Universal CRT
+(`api-ms-win-crt-*`); the 0.3.7 and 0.4.0 assets import `msvcrt.dll`.
+The dump: `RtlFreeHeap` was called on the process heap (`PEB.ProcessHeap`)
+with a block that belongs to `msvcrt!crtheap`, msvcrt.dll's private heap;
+the block held the C string `release` with its first byte zeroed, 8 bytes
+requested. The native frame is tantivy-go's Rust export `string_free`
+(bytes matched against `libtantivy_go.a`), which does
+`drop(CString::from_raw(s))`; Rust's allocator on Windows frees with
+`HeapFree(GetProcessHeap())`. The Go frames, resolved with Go 1.27's
+`debug/gosym` from the pclntab (the header's `textStart` is 0, so the text
+start had to be derived from the `go:buildid` marker): heart
+`ftsearch.(*ftSearch).Init` (ftsearch.go:311,
+`tantivy.LibInit(false, true, "release")`) → tantivy-go
+`internal.LibInit` (libinit.go:16-17: `C.CString(initVal)` then
+`defer C.string_free(cInitVal)`) → `_Cfunc_string_free`. So Go allocates
+with C `malloc` and Rust frees with the process heap. Under the UCRT,
+`malloc` is `HeapAlloc(GetProcessHeap())` and the mismatch passes by
+coincidence; under msvcrt it is an invalid free. The cli's CRT changed with
+commit 0af687d (2026-09-07, « Restructure release.yml »): the Windows job
+moved from `macos-15` + Homebrew mingw-w64 14 (UCRT default) to
+`ubuntu-latest` + apt `gcc-mingw-w64-x86-64` (mingw-w64 11.0.1, msvcrt
+default). tantivy-go v1.0.6 is the same in 0.3.6, 0.3.7 and 0.4.0 and has
+had the pattern since go/v0.0.2, at 16 call sites. Desktop 0.57.4's
+`anytypeHelper.exe` (heart 0.51.5) imports the UCRT. Rebuilt the v0.4.0
+source on this machine with Go 1.27.2 and the scoop mingw-w64 GCC 16.2.0
+(UCRT by default), ports moved to 4101x: the UCRT build logs in and serves
+`/docs/openapi.json` in about 3 s; the same build with
+`-mcrtdll=msvcrt-os` dies with the official signature. Recipe, artifacts,
+evidence files and an upstream issue draft are in
+`.tmp/anytype-v2-2026-10/crash-2026-10-08b/`. Correction to the entry
+below: the 0.3.6 asset is go1.25.11, not go1.25.7. Trap: the pin landed by
+09aa40c2 names the official 0.4.0 asset, so a fresh provisioning would
+install a binary known to die on Windows; the install path for a
+self-built provider is not decided.
+
 ## 2026-10-08 — The anytype-cli 0.4.0 Windows build dies at account open; pin kept at 0.4.0, activation rolled back to 0.3.6
 
 Measured on the maintainer's machine (Windows 11 IoT Enterprise LTSC 2024,
