@@ -9,6 +9,7 @@ using Deckle.Modules;
 using Deckle.Playground;
 using Deckle.Setup;
 using Deckle.Shell;
+using Deckle.Shell.Foreground;
 using Deckle.Shell.TaskbarCover;
 using Deckle.Shell.TrayMenu;
 using Deckle.Speech;
@@ -21,6 +22,7 @@ public partial class App : Microsoft.UI.Xaml.Application
 {
     private MessageOnlyHost? _messageHost;
     private CursorMovementSignal? _cursorSignal;
+    private ForegroundWatcher? _foregroundWatcher;
     private HotkeyManager? _hotkeyManager;
     private LogWindow? _logWindow;
 

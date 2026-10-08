@@ -10,6 +10,7 @@ using Deckle.Modules;
 using Deckle.Playground;
 using Deckle.Setup;
 using Deckle.Shell;
+using Deckle.Shell.Foreground;
 using Deckle.Shell.TaskbarCover;
 using Deckle.Shell.TrayMenu;
 using Deckle.Speech;
@@ -37,6 +38,16 @@ public partial class App
         // (the HUD and its overlay cards). Held in a field so the rooted
         // subclass delegate is not collected.
         _cursorSignal = new CursorMovementSignal(_messageHost.Hwnd);
+
+        // The single process-wide view of the foreground window — which app,
+        // which monitor, fullscreen or not — shared by the taskbar cover today
+        // and meant for Ambient and the games registry. Its WinEvent hooks
+        // deliver on the thread that starts it, so it starts here on the UI
+        // thread, which pumps, and is disposed on it at quit. A failed start
+        // is logged by the watcher itself; the app runs on without it and the
+        // cover simply never stands down for a fullscreen app.
+        _foregroundWatcher = new ForegroundWatcher();
+        _foregroundWatcher.Start();
 
         // HudWindow created once, never destroyed. No initial Show: the
         // constructor captures the HWND and sets up subclass / extended styles
