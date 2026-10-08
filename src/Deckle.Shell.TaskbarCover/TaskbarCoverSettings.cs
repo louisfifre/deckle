@@ -7,7 +7,6 @@ public sealed class TaskbarCoverSettings
     /// <summary>Master switch — the cover host runs only when on.</summary>
     public bool Enabled { get; set; } = false;
 
-    // The reveal-zone depth and the re-cover delay are frozen constants
-    // (CoverGeometry.RevealZoneDepth, TaskbarCoverHost.RecoverDelayMs) —
-    // calibrated in the standalone utility, deliberately not exposed.
+    // The approach-zone factor and the fade curve are constants in
+    // CoverGeometry (ApproachZoneFactor, Opacity); no setting is exposed.
 }

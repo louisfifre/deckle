@@ -13,29 +13,71 @@ public enum TaskbarEdge
     Bottom = 3,
 }
 
-// Pure geometry of the cover band and its reveal zone — no Win32 call,
-// no state. The band is exactly the taskbar rect; the reveal zone is the
-// band extended inward from the anchored screen edge, so approaching
-// that edge reveals the taskbar before the cursor reaches the band.
+// Pure geometry of the cover band and its approach zone — no Win32 call,
+// no state. The band is exactly the taskbar rect; the approach zone is the
+// band extended inward from the anchored screen edge. Inside the zone the
+// band's opacity follows the cursor's distance to the band: transparent on
+// the band, opaque again at the zone's outer boundary.
 public static class CoverGeometry
 {
-    // Depth of the reveal zone, measured inward from the anchored screen
-    // edge, in physical pixels. Includes the band thickness itself.
-    // Ported from the standalone utility (EDGE_ZONE), where the value was
-    // calibrated in daily use; deliberately a constant, not a setting.
-    public const int RevealZoneDepth = 192;
+    // Depth of the approach zone, as a multiple of the band thickness,
+    // measured inward from the anchored screen edge with the band included.
+    // A constant, not a setting: the factor and the curve live here.
+    public const int ApproachZoneFactor = 4;
 
-    // The reveal zone spans the band's extent along the edge (a cursor
+    // Band size perpendicular to its anchored edge.
+    public static int Thickness(NativeMethods.RECT band, TaskbarEdge edge)
+        => edge is TaskbarEdge.Left or TaskbarEdge.Right
+            ? band.right - band.left
+            : band.bottom - band.top;
+
+    // The approach zone spans the band's extent along the edge (a cursor
     // near the same screen edge on another monitor stays out of it) and
-    // reaches RevealZoneDepth inward perpendicular to the edge.
-    public static NativeMethods.RECT RevealZone(NativeMethods.RECT band, TaskbarEdge edge, int depth)
-        => edge switch
+    // reaches ApproachZoneFactor × Thickness inward perpendicular to the edge.
+    public static NativeMethods.RECT ApproachZone(NativeMethods.RECT band, TaskbarEdge edge)
+    {
+        int depth = ApproachZoneFactor * Thickness(band, edge);
+        return edge switch
         {
             TaskbarEdge.Left   => new() { left = band.left,           top = band.top,            right = band.left + depth, bottom = band.bottom },
             TaskbarEdge.Right  => new() { left = band.right - depth,  top = band.top,            right = band.right,        bottom = band.bottom },
             TaskbarEdge.Top    => new() { left = band.left,           top = band.top,            right = band.right,        bottom = band.top + depth },
             _                  => new() { left = band.left,           top = band.bottom - depth, right = band.right,        bottom = band.bottom },
         };
+    }
+
+    // Perpendicular distance in pixels from the band's inner edge, 0 on or
+    // behind the band. The first pixel past the band is at distance 0 on
+    // every edge, so the last pixel inside the zone sits one pixel short of
+    // the full span and the first pixel outside lands exactly on it.
+    public static int DistanceToBand(NativeMethods.RECT band, TaskbarEdge edge, POINT p)
+    {
+        int d = edge switch
+        {
+            TaskbarEdge.Left   => p.X - band.right,
+            TaskbarEdge.Right  => band.left - 1 - p.X,
+            TaskbarEdge.Top    => p.Y - band.bottom,
+            _                  => band.top - 1 - p.Y,
+        };
+        return d < 0 ? 0 : d;
+    }
+
+    // Band opacity for a cursor at p: 1 outside the approach zone, otherwise
+    // smoothstep of the distance to the band over the zone's span beyond the
+    // band — 0 on the band, 1 at the outer boundary. Same curve as the HUD's
+    // proximity fade, so both surfaces ease the same way.
+    public static double Opacity(NativeMethods.RECT band, TaskbarEdge edge, POINT p)
+    {
+        if (!Contains(ApproachZone(band, edge), p)) return 1.0;
+
+        int span = (ApproachZoneFactor - 1) * Thickness(band, edge);
+        if (span <= 0) return 1.0;
+
+        double t = (double)DistanceToBand(band, edge, p) / span;
+        if (t < 0.0) t = 0.0;
+        if (t > 1.0) t = 1.0;
+        return t * t * (3.0 - 2.0 * t);
+    }
 
     // Half-open on right/bottom, the Win32 RECT convention.
     public static bool Contains(NativeMethods.RECT r, POINT p)

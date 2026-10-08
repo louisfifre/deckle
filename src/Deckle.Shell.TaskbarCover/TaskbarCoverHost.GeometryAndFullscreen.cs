@@ -1,6 +1,7 @@
 using System.Runtime.InteropServices;
 using Deckle.Core;
 using Deckle.Diagnostics;
+using Deckle.Shell.Foreground;
 using Deckle.Shell.TaskbarCover;
 using static Deckle.Shell.TaskbarCover.TaskbarCoverNativeMethods;
 
@@ -8,19 +9,25 @@ namespace Deckle.Shell.TaskbarCover;
 
 public sealed partial class TaskbarCoverHost
 {
-    // Another app came to the foreground: track it (the location-change hook
-    // compares against it to catch an in-place F11 resize), reconcile
+    // ── Foreground ────────────────────────────────────────────────────────
+
+    // Raised by the watcher on its own thread (the UI thread): hand the news
+    // to the cover thread, which owns every state field. Only the band handle
+    // is read here, published before _running turned true; a post racing a
+    // Stop lands on a destroyed window and fails harmlessly.
+    private void OnForegroundChanged(ForegroundState state)
+    {
+        if (_running) PostMessage(_hwnd, WM_APP_FOREGROUND, IntPtr.Zero, IntPtr.Zero);
+    }
+
+    // The foreground switched or toggled fullscreen in place: reconcile
     // suppression, and — while the band is up — climb back above the taskbar,
     // which Explorer re-asserts topmost on fullscreen exit.
-    private void OnForegroundEvent(
-        IntPtr hWinEventHook, uint evt, IntPtr hwnd,
-        int idObject, int idChild, uint idEventThread, uint dwmsEventTime)
+    private void ApplyForeground(ForegroundState state)
     {
-        if (idObject != OBJID_WINDOW) return;
         if (_systemSuspended || !_layoutKnown) return;
 
-        _foregroundHwnd = hwnd;
-        EvaluateAppSuppressed();
+        UpdateAppSuppressed(state);
         if (_coverVisible) ReassertTopmost();
     }
 
@@ -32,8 +39,8 @@ public sealed partial class TaskbarCoverHost
         if (SHAppBarMessage(ABM_GETTASKBARPOS, ref abd) == IntPtr.Zero)
         {
             // No fabricated fallback: a wrong band is worse than no band.
-            // The cover stays hidden until TaskbarCreated or the retry tick
-            // finds the taskbar.
+            // The cover stays hidden until a later TaskbarCreated,
+            // WM_SETTINGCHANGE or WM_DISPLAYCHANGE finds the taskbar.
             if (!_layoutFailureLogged)
             {
                 DeckleShellTaskbarCoverSource.Log.LayoutQueryFailed();
@@ -54,11 +61,33 @@ public sealed partial class TaskbarCoverHost
             || band.right != _band.right || band.bottom != _band.bottom;
 
         _layoutKnown = true;
-        if (!changed) return; // WM_SETTINGCHANGE fires for plenty of unrelated settings
+
+        // Re-read even when the rect is unchanged: a WM_DISPLAYCHANGE can
+        // invalidate monitor handles under the same taskbar rect. The verdict
+        // is re-applied from the watcher's snapshot, so a band that moved to
+        // another monitor — or a layout that was unknown while the foreground
+        // changed — re-evaluates suppression now rather than at the next
+        // foreground change.
+        _bandMonitor = MonitorFromRect(ref band, MONITOR_DEFAULTTONEAREST);
+
+        if (!changed)
+        {
+            UpdateAppSuppressed(_foreground.Current);
+            // Same rect, but the taskbar may have been re-created (Explorer
+            // restart, a Windhawk mod re-injecting: TaskbarCreated) or
+            // restacked by Explorer during the setting or display change. It
+            // is topmost too and the last positioned topmost window wins, so
+            // without this the band would stay under it, still "visible",
+            // until the next foreground change. One SetWindowPos on a
+            // user-cadence message; WM_SETTINGCHANGE also fires for plenty
+            // of unrelated settings, which is why nothing else is redone.
+            if (_coverVisible) ReassertTopmost();
+            return;
+        }
 
         _edge = edge;
         _band = band;
-        _zone = CoverGeometry.RevealZone(band, edge, CoverGeometry.RevealZoneDepth);
+        _zone = CoverGeometry.ApproachZone(band, edge);
 
         NativeMethods.SetWindowPos(_hwnd, NativeMethods.HWND_TOPMOST,
             band.left, band.top, band.right - band.left, band.bottom - band.top,
@@ -69,23 +98,23 @@ public sealed partial class TaskbarCoverHost
             edge.ToString(), band.left, band.top, band.right, band.bottom, reason);
 
         // The zone moved with the band — recompute where the cursor stands.
+        // Suppression after the band is in place, so a show it triggers never
+        // lands on the old rect or a stale alpha.
         ResetZoneStateFromCursor();
+        UpdateAppSuppressed(_foreground.Current);
         UpdateCover("layout_rebuilt");
     }
 
-    // Direct re-read of the cursor against the current zone, cancelling any
-    // pending re-cover delay: used at boot, on layout change and on resume,
-    // where the transition logic (and its 5 s hysteresis) would be stale.
+    // Direct re-read of the band's alpha from where the cursor stands now:
+    // used at boot, on layout change and on resume, where the last alpha may
+    // be stale. Unknown layout or cursor falls back to 0, the pessimistic
+    // "revealed" state. The caller runs UpdateCover with its own reason.
     private void ResetZoneStateFromCursor()
     {
-        if (_recoverTimerArmed)
-        {
-            KillTimer(_hwnd, TIMER_RECOVER);
-            _recoverTimerArmed = false;
-        }
-        _cursorInRevealZone = !_layoutKnown
-            || !NativeMethods.GetCursorPos(out var p)
-            || CoverGeometry.Contains(_zone, p);
+        byte alpha = _layoutKnown && NativeMethods.GetCursorPos(out var p)
+            ? CoverAlphaAt(p)
+            : (byte)0;
+        if (alpha != _coverAlpha) ApplyCoverAlpha(alpha);
     }
 
     // ── Gates ─────────────────────────────────────────────────────────────
@@ -94,12 +123,6 @@ public sealed partial class TaskbarCoverHost
     {
         if (_systemSuspended) return;
         _systemSuspended = true;
-
-        if (_recoverTimerArmed)
-        {
-            KillTimer(_hwnd, TIMER_RECOVER);
-            _recoverTimerArmed = false;
-        }
 
         UpdateCover("suspended");
         DeckleShellTaskbarCoverSource.Log.SystemSuspended();
@@ -112,76 +135,33 @@ public sealed partial class TaskbarCoverHost
         _systemSuspended = false;
 
         ResetZoneStateFromCursor();
-        _foregroundHwnd = NativeMethods.GetForegroundWindow();
-        EvaluateAppSuppressed();
+        UpdateAppSuppressed(_foreground.Current);
 
         UpdateCover("resumed");
         DeckleShellTaskbarCoverSource.Log.SystemResumed();
         DeckleShellTaskbarCoverSource.Log.SystemResumedDetail(reason);
     }
 
-    // Two stages: the shell's own notion of "busy fullscreen" first (cheap,
-    // catches D3D exclusive and presentation mode), then the geometric test —
-    // the foreground window's DWM visual bounds covering its whole monitor
-    // (catches borderless fullscreen and F11).
-    private void EvaluateAppSuppressed()
+    // A fullscreen foreground on the band's monitor — as the watcher's
+    // two-stage test reads it — stands the band down (CoverSuppression).
+    // Only a change of verdict logs and updates.
+    private void UpdateAppSuppressed(ForegroundState state)
     {
-        bool suppressed = false;
-        string stage = "none";
-
-        if (SHQueryUserNotificationState(out int quns) == 0
-            && quns is QUNS_BUSY or QUNS_RUNNING_D3D_FULL_SCREEN or QUNS_PRESENTATION_MODE)
-        {
-            suppressed = true;
-            stage = "notification_state";
-        }
-
-        if (!suppressed)
-        {
-            IntPtr fg = NativeMethods.GetForegroundWindow();
-            if (fg != IntPtr.Zero && !IsDesktopWindow(fg)
-                && DwmGetWindowAttribute(fg, DWMWA_EXTENDED_FRAME_BOUNDS,
-                       out var bounds, (uint)Marshal.SizeOf<NativeMethods.RECT>()) == 0)
-            {
-                IntPtr mon = MonitorFromWindow(fg, MONITOR_DEFAULTTONEAREST);
-                var mi = new MONITORINFO { cbSize = (uint)Marshal.SizeOf<MONITORINFO>() };
-                if (mon != IntPtr.Zero && GetMonitorInfo(mon, ref mi))
-                {
-                    var m = mi.rcMonitor;
-                    suppressed = bounds.left <= m.left && bounds.top <= m.top
-                              && bounds.right >= m.right && bounds.bottom >= m.bottom;
-                    if (suppressed) stage = "fullscreen_geometry";
-                }
-            }
-        }
-
+        bool suppressed = CoverSuppression.Applies(state, _bandMonitor);
         if (suppressed == _appSuppressed) return;
         _appSuppressed = suppressed;
         if (suppressed)
         {
             DeckleShellTaskbarCoverSource.Log.CoverSuppressed();
-            DeckleShellTaskbarCoverSource.Log.CoverSuppressedDetail(stage);
+            DeckleShellTaskbarCoverSource.Log.CoverSuppressedDetail(
+                state.Fullscreen == FullscreenStage.NotificationState
+                    ? "notification_state" : "fullscreen_geometry");
         }
         else
         {
             DeckleShellTaskbarCoverSource.Log.CoverUnsuppressed();
         }
         UpdateCover(suppressed ? "fullscreen_enter" : "fullscreen_exit");
-    }
-
-    // The desktop covers the whole monitor and would pass the fullscreen
-    // geometry test: clicking the wallpaper makes it foreground and the band
-    // would stand down over a bare desktop until something else takes the
-    // foreground. Excluded by the canonical guard Windows itself uses (the
-    // shell and root desktop windows) plus the WorkerW host that backs an
-    // animated or secondary wallpaper.
-    private static bool IsDesktopWindow(IntPtr hwnd)
-    {
-        if (hwnd == GetShellWindow() || hwnd == GetDesktopWindow()) return true;
-
-        var cls = new System.Text.StringBuilder(16);
-        return NativeMethods.GetClassName(hwnd, cls, cls.Capacity) > 0
-            && cls.ToString() == "WorkerW";
     }
 
 }

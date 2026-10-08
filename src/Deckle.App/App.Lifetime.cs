@@ -66,6 +66,10 @@ public partial class App
         TryShutdown("speech engine dispose", () => _speechEngine?.Dispose());
         TryShutdown("trackpad shutdown", ShutdownTrackpad);
         TryShutdown("taskbar cover shutdown", ShutdownTaskbarCover);
+        // After the cover, its only subscriber today. UnhookWinEvent only
+        // succeeds on the UI thread that started the watcher; from any other
+        // caller the hooks still die with the process at Environment.Exit.
+        TryShutdown("foreground watcher dispose", () => _foregroundWatcher?.Dispose());
         TryShutdown("precision scroll shutdown", ShutdownPrecisionScroll);
         TryShutdown("mouse wheel shutdown", ShutdownMouseWheel);
         TryShutdown("paragraph rewrite shutdown", ShutdownParagraphRewrite);

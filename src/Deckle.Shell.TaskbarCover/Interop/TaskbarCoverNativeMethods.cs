@@ -5,7 +5,7 @@ namespace Deckle.Shell.TaskbarCover;
 
 // Module-local Win32 surface for the cover host — everything the band
 // window, its message pump, the taskbar query, the cursor WinEvent hook
-// and the suspend/suppression probes need beyond what Deckle.Core's
+// and the suspend gates need beyond what Deckle.Core's
 // NativeMethods already declares. Same precedent as TrayMenuNativeMethods:
 // APIs consumed by a single module stay in that module.
 internal static class TaskbarCoverNativeMethods
@@ -56,16 +56,6 @@ internal static class TaskbarCoverNativeMethods
     [DllImport("gdi32.dll")]
     public static extern bool DeleteObject(IntPtr hObject);
 
-    // ── Timers ────────────────────────────────────────────────────────────────
-
-    public const uint WM_TIMER = 0x0113;
-
-    [DllImport("user32.dll", SetLastError = true)]
-    public static extern UIntPtr SetTimer(IntPtr hWnd, UIntPtr nIDEvent, uint uElapse, IntPtr lpTimerFunc);
-
-    [DllImport("user32.dll")]
-    public static extern bool KillTimer(IntPtr hWnd, UIntPtr uIDEvent);
-
     // ── Taskbar position (SHAppBarMessage) ───────────────────────────────────
     //
     // ABM_GETTASKBARPOS fills uEdge (ABE_* — the TaskbarEdge ordinals) and rc
@@ -87,6 +77,17 @@ internal static class TaskbarCoverNativeMethods
 
     [DllImport("shell32.dll")]
     public static extern IntPtr SHAppBarMessage(uint dwMessage, ref APPBARDATA pData);
+
+    // ── Band monitor ─────────────────────────────────────────────────────────
+    //
+    // The monitor with the largest intersection with the band rect, compared
+    // with the foreground window's monitor to decide fullscreen suppression.
+    // DEFAULTTONEAREST: a taskbar rect always yields a monitor, never NULL.
+
+    public const uint MONITOR_DEFAULTTONEAREST = 0x00000002;
+
+    [DllImport("user32.dll")]
+    public static extern IntPtr MonitorFromRect(ref NativeMethods.RECT lprc, uint dwFlags);
 
     // ── Cursor WinEvent hook ─────────────────────────────────────────────────
     //
@@ -117,27 +118,17 @@ internal static class TaskbarCoverNativeMethods
     [DllImport("user32.dll")]
     public static extern bool UnhookWinEvent(IntPtr hWinEventHook);
 
-    // ── Foreground change signal & desktop exclusion ─────────────────────────
+    // ── Foreground hand-off ──────────────────────────────────────────────────
     //
-    // EVENT_SYSTEM_FOREGROUND (same hook family, same thread) drives the
-    // immediate half of the fullscreen/z-order reconciliation: on a foreground
-    // change we re-evaluate suppression and climb back above the taskbar, which
-    // Explorer re-asserts topmost on fullscreen exit. An in-place F11 toggle
-    // raises no foreground event; the location-change hook on the foreground
-    // window catches that one instead — no poll on either path.
-    // GetShellWindow / GetDesktopWindow let the fullscreen geometry probe
-    // exclude the desktop itself — clicking the wallpaper makes it foreground
-    // and it covers the whole monitor, so without the guard it reads as a
-    // fullscreen app and the band stands down over a bare desktop.
+    // The ForegroundWatcher raises Changed on the UI thread; the host posts
+    // this private message to its band so the cover thread, which owns every
+    // state field, reads the snapshot itself. WM_APP range: private to the
+    // window class, never sent by the system.
 
-    public const uint EVENT_SYSTEM_FOREGROUND = 0x0003;
-    public const int  OBJID_WINDOW            = 0;
+    public const uint WM_APP_FOREGROUND = 0x8000 + 1;
 
-    [DllImport("user32.dll")]
-    public static extern IntPtr GetShellWindow();
-
-    [DllImport("user32.dll")]
-    public static extern IntPtr GetDesktopWindow();
+    [DllImport("user32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
+    public static extern bool PostMessage(IntPtr hWnd, uint msg, IntPtr wParam, IntPtr lParam);
 
     // ── System messages the band window reacts to ────────────────────────────
 
@@ -166,42 +157,4 @@ internal static class TaskbarCoverNativeMethods
 
     [DllImport("wtsapi32.dll")]
     public static extern bool WTSUnRegisterSessionNotification(IntPtr hWnd);
-
-    // ── Fullscreen suppression probes ────────────────────────────────────────
-    //
-    // Stage 1: SHQueryUserNotificationState — QUNS_BUSY (2),
-    // QUNS_RUNNING_D3D_FULL_SCREEN (3) and QUNS_PRESENTATION_MODE (4) suppress
-    // without touching geometry. Stage 2: the foreground window's DWM extended
-    // frame bounds (visual rect without the invisible shadow margins) covering
-    // its whole monitor.
-
-    public const int QUNS_BUSY                    = 2;
-    public const int QUNS_RUNNING_D3D_FULL_SCREEN = 3;
-    public const int QUNS_PRESENTATION_MODE       = 4;
-
-    [DllImport("shell32.dll")]
-    public static extern int SHQueryUserNotificationState(out int pquns);
-
-    public const uint DWMWA_EXTENDED_FRAME_BOUNDS = 9;
-
-    [DllImport("dwmapi.dll")]
-    public static extern int DwmGetWindowAttribute(
-        IntPtr hWnd, uint dwAttribute, out NativeMethods.RECT pvAttribute, uint cbAttribute);
-
-    public const uint MONITOR_DEFAULTTONEAREST = 2;
-
-    [DllImport("user32.dll")]
-    public static extern IntPtr MonitorFromWindow(IntPtr hWnd, uint dwFlags);
-
-    [StructLayout(LayoutKind.Sequential)]
-    public struct MONITORINFO
-    {
-        public uint cbSize;
-        public NativeMethods.RECT rcMonitor;
-        public NativeMethods.RECT rcWork;
-        public uint dwFlags;
-    }
-
-    [DllImport("user32.dll", CharSet = CharSet.Unicode)]
-    public static extern bool GetMonitorInfo(IntPtr hMonitor, ref MONITORINFO lpmi);
 }

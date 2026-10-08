@@ -13,7 +13,7 @@ public sealed partial class TaskbarCoverHost
     private void UpdateCover(string reason)
     {
         bool shouldBeVisible = _layoutKnown && !_appSuppressed
-                            && !_cursorInRevealZone && !_systemSuspended;
+                            && !_systemSuspended && _coverAlpha > 0;
         if (shouldBeVisible == _coverVisible) return;
 
         _coverVisible = shouldBeVisible;
@@ -41,7 +41,10 @@ public sealed partial class TaskbarCoverHost
     // Climb to the top of the topmost band. The taskbar is topmost too and
     // among topmost windows the most recently positioned wins, so this is how
     // the band stays above it — re-asserted when shown, on every foreground
-    // change, and on the suppression poll as a fallback.
+    // change and F11 toggle while visible, on every layout message while
+    // visible (TaskbarCreated, WM_SETTINGCHANGE, WM_DISPLAYCHANGE, even with
+    // an unchanged rect), and when the band returns to full opacity on
+    // leaving the approach zone.
     private void ReassertTopmost() =>
         NativeMethods.SetWindowPos(_hwnd, NativeMethods.HWND_TOPMOST, 0, 0, 0, 0,
             NativeMethods.SWP_NOMOVE | NativeMethods.SWP_NOSIZE | NativeMethods.SWP_NOACTIVATE);

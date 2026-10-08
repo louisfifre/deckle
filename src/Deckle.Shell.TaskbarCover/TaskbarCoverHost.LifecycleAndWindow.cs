@@ -81,6 +81,10 @@ public sealed partial class TaskbarCoverHost
             }
 
             _running = true;
+            // Subscribed on the caller's thread once the band exists: the
+            // handler only posts to it. A switch landing before this line is
+            // not lost — BootstrapState reads the watcher's snapshot itself.
+            _foreground.Changed += OnForegroundChanged;
             return true;
         }
     }
@@ -94,6 +98,7 @@ public sealed partial class TaskbarCoverHost
         {
             if (!_running || _thread is null) return;
             _running = false;
+            _foreground.Changed -= OnForegroundChanged;
             thread = _thread;
             threadId = _threadId;
             _thread = null;
@@ -154,8 +159,11 @@ public sealed partial class TaskbarCoverHost
         // below the taskbar. Born topmost, it isn't subject to that gate; the
         // SetWindowPos(HWND_TOPMOST) calls then only restack an already-topmost
         // window, which carries no permission requirement.
+        // LAYERED: the band's opacity follows the cursor in the approach
+        // zone through SetLayeredWindowAttributes(LWA_ALPHA).
         _hwnd = NativeMethods.CreateWindowEx(
-            dwExStyle:    NativeMethods.WS_EX_TOOLWINDOW | NativeMethods.WS_EX_NOACTIVATE | NativeMethods.WS_EX_TOPMOST,
+            dwExStyle:    NativeMethods.WS_EX_TOOLWINDOW | NativeMethods.WS_EX_NOACTIVATE
+                        | NativeMethods.WS_EX_TOPMOST | NativeMethods.WS_EX_LAYERED,
             lpClassName:  ClassName,
             lpWindowName: null,
             dwStyle:      WS_POPUP,
@@ -169,6 +177,11 @@ public sealed partial class TaskbarCoverHost
             throw new InvalidOperationException(
                 $"CreateWindowEx failed (Win32 err {Marshal.GetLastWin32Error()})");
 
+        // A layered window renders nothing until its attributes are set once
+        // (Microsoft Learn, Window Features: layered windows). Opaque to start;
+        // ApplyCoverAlpha moves it from there.
+        NativeMethods.SetLayeredWindowAttributes(_hwnd, 0, 255, NativeMethods.LWA_ALPHA);
+
         // Without the cursor signal the band would cover the taskbar and
         // never reveal it — a dead hook fails the whole start.
         _cursorHookDelegate = OnLocationChange;
@@ -179,17 +192,6 @@ public sealed partial class TaskbarCoverHost
         {
             throw new InvalidOperationException("SetWinEventHook(EVENT_OBJECT_LOCATIONCHANGE) failed");
         }
-
-        // Foreground changes drive the immediate reconciliation of fullscreen
-        // suppression and z-order. Non-fatal, unlike the cursor hook: on
-        // failure the 5 s poll alone still does the job, just lazily — so the
-        // band never gets stuck, it just reacts slower.
-        _foregroundHookDelegate = OnForegroundEvent;
-        _foregroundHook = SetWinEventHook(
-            EVENT_SYSTEM_FOREGROUND, EVENT_SYSTEM_FOREGROUND,
-            IntPtr.Zero, _foregroundHookDelegate, 0, 0, WINEVENT_OUTOFCONTEXT);
-        if (_foregroundHook == IntPtr.Zero)
-            DeckleShellTaskbarCoverSource.Log.ForegroundHookFailed();
 
         if (!WTSRegisterSessionNotification(_hwnd, NOTIFY_FOR_THIS_SESSION))
             DeckleShellTaskbarCoverSource.Log.SessionNotifyFailed();

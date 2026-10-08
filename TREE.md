@@ -1560,19 +1560,31 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── ResizeGesture.cs
 │   │   ├── StartupService.cs
 │   │   └── TrayIconManager.cs
+│   ├── Deckle.Shell.Foreground/
+│   │   ├── Interop/
+│   │   │   └── ForegroundNativeMethods.cs
+│   │   ├── AGENTS.md  — [agent-instructions] Foreground module — one event-driven snapshot of the foreground window (process…
+│   │   ├── CLAUDE.md
+│   │   ├── Deckle.Shell.Foreground.csproj
+│   │   ├── DeckleShellForegroundSource.cs
+│   │   ├── ForegroundState.cs
+│   │   ├── ForegroundWatcher.cs
+│   │   ├── ForegroundWatcher.Probe.cs
+│   │   └── FullscreenGeometry.cs
 │   ├── Deckle.Shell.TaskbarCover/
 │   │   ├── Interop/
 │   │   │   └── TaskbarCoverNativeMethods.cs
-│   │   ├── AGENTS.md  — [agent-instructions] Taskbar cover module — an opaque topmost band that masks the taskbar until the…
+│   │   ├── AGENTS.md  — [agent-instructions] Taskbar cover module — an opaque topmost band over the taskbar that fades as th…
 │   │   ├── CLAUDE.md
 │   │   ├── CoverGeometry.cs
+│   │   ├── CoverSuppression.cs
 │   │   ├── Deckle.Shell.TaskbarCover.csproj
 │   │   ├── DeckleShellTaskbarCoverSource.cs
+│   │   ├── TaskbarCoverHost.Approach.cs
 │   │   ├── TaskbarCoverHost.CallbacksAndMessagePump.cs
 │   │   ├── TaskbarCoverHost.cs
 │   │   ├── TaskbarCoverHost.GeometryAndFullscreen.cs
 │   │   ├── TaskbarCoverHost.LifecycleAndWindow.cs
-│   │   ├── TaskbarCoverHost.RevealAndTimer.cs
 │   │   ├── TaskbarCoverHost.Visibility.cs
 │   │   ├── TaskbarCoverSettings.cs
 │   │   └── TaskbarCoverSettingsService.cs
@@ -2066,9 +2078,14 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── PayloadDeploymentTests.cs
 │   │   ├── UpdateHandoffBugNotes.md
 │   │   └── UpdatePredecessorTests.cs
+│   ├── Deckle.Shell.Foreground.Tests/
+│   │   ├── Deckle.Shell.Foreground.Tests.csproj
+│   │   └── FullscreenGeometryTests.cs
 │   ├── Deckle.Shell.TaskbarCover.Tests/
 │   │   ├── CoverGeometryTests.cs
-│   │   └── Deckle.Shell.TaskbarCover.Tests.csproj
+│   │   ├── CoverSuppressionTests.cs
+│   │   ├── Deckle.Shell.TaskbarCover.Tests.csproj
+│   │   └── TaskbarCoverBugNotes.md
 │   ├── Deckle.Shell.Tests/
 │   │   ├── Deckle.Shell.Tests.csproj
 │   │   ├── DispatcherQueueExtensionsTests.cs
