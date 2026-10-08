@@ -95,6 +95,7 @@ public sealed partial class HudChrono : UserControl
         UtteranceCountdownTuning.Changed += OnCountdownTuningChanged;
         HudMaterialTuning.Changed += OnMaterialTuningChanged;
         HudGeometryTuning.Changed += OnGeometryTuningChanged;
+        HudStrokeTuning.Changed += OnStrokeTuningChanged;
         SetCountdownRecording(_state == HudState.Recording);
     }
 
@@ -106,6 +107,7 @@ public sealed partial class HudChrono : UserControl
         UtteranceCountdownTuning.Changed -= OnCountdownTuningChanged;
         HudMaterialTuning.Changed -= OnMaterialTuningChanged;
         HudGeometryTuning.Changed -= OnGeometryTuningChanged;
+        HudStrokeTuning.Changed -= OnStrokeTuningChanged;
         SetCountdownRecording(false);
     }
 

@@ -1094,6 +1094,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── HudMaterialTuning.cs
 │   │   ├── HudMessage.xaml
 │   │   ├── HudMessage.xaml.cs
+│   │   ├── HudStrokeTuning.cs
 │   │   ├── JOURNAL.md  — [module-journal] Diagnosis notes, render doctrine, and deferred work for Deckle.Hud — read on de…
 │   │   ├── ProximityRollupAggregator.cs
 │   │   └── UtteranceCountdownTuning.cs
@@ -2064,6 +2065,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── DeckleHudSourceTests.cs
 │   │   ├── HudGeometryTuningTests.cs
 │   │   ├── HudMaterialTuningTests.cs
+│   │   ├── HudStrokeTuningTests.cs
 │   │   ├── ProximityFadeTests.cs
 │   │   ├── ProximityRollupAggregatorTests.cs
 │   │   ├── TranscriptHistoryTests.cs

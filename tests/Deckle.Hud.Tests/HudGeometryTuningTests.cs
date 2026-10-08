@@ -4,6 +4,7 @@ using Xunit;
 namespace Deckle.Hud.Tests;
 
 [Trait("Category", "regression")]
+[Collection(HudLiveTuningCollection.Name)]
 public sealed class HudGeometryTuningTests
 {
     [Fact]

@@ -33,10 +33,22 @@ public sealed partial class HudChrono
         RebuildTunedStroke();
     }
 
+    // The countdown never reads the stroke-only fields, so only the stroke
+    // is rebuilt.
+    private void OnStrokeTuningChanged()
+    {
+        if (!DispatcherQueue.HasThreadAccess)
+        {
+            DispatcherQueue.TryEnqueue(OnStrokeTuningChanged);
+            return;
+        }
+        RebuildTunedStroke();
+    }
+
     private void RebuildTunedStroke()
     {
         if (_processingStroke is not { } previous || _currentVariant is not { } variant) return;
-        var config = HudGeometryTuning.ApplyTo(HudMaterialTuning.ApplyTo(previous.Config));
+        var config = HudStrokeTuning.ApplyAll(previous.Config);
         if (config.Equals(previous.Config)) return;
 
         var compositor = ElementCompositionPreview.GetElementVisual(ProcessingSurfaceHost).Compositor;
