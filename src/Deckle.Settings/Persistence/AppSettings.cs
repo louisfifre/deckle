@@ -1,3 +1,5 @@
+using Deckle.Catalog;
+
 namespace Deckle.Settings;
 
 // ── AppSettings ───────────────────────────────────────────────────────────────
@@ -15,6 +17,7 @@ namespace Deckle.Settings;
 //   • Startup     — boot behaviour.
 //   • Overlay     — HUD overlay system.
 //   • Paste       — auto-paste vs clipboard-only.
+//   • Hotkeys     — global hotkey chords, one per App hotkey action.
 //
 // What moved out (loaded via the matching XxxSettingsService.Instance):
 //   • CaptureSettings        → Deckle.Audio/CaptureSettingsService
@@ -30,6 +33,23 @@ public sealed class AppSettings
     public OverlaySettings     Overlay     { get; set; } = new();
     public PasteSettings       Paste       { get; set; } = new();
     public UpdatesSettings     Updates     { get; set; } = new();
+    public HotkeysSettings     Hotkeys     { get; set; } = new();
+}
+
+// Global hotkeys, one property per hotkey action the App exposes: Record
+// (dictation start/stop) and one per switchable module toggle. null = unbound.
+// The POCO initializers are the single source of defaults: the composer's
+// reset reads them. Record keeps the historical chord, Win + the physical key
+// left of "1" (scancode 0x29); toggles start unbound.
+public sealed class HotkeysSettings
+{
+    public HotkeyChord? Record          { get; set; } = new(HotkeyModifiers.Win, 0x29);
+    public HotkeyChord? AmbientLight    { get; set; }
+    public HotkeyChord? Autocorrect     { get; set; }
+    public HotkeyChord? TaskbarCover    { get; set; }
+    public HotkeyChord? PrecisionScroll { get; set; }
+    public HotkeyChord? Rewrite         { get; set; }
+    public HotkeyChord? Trackpad        { get; set; }
 }
 
 // The silent update check (UpdateService, run by the App at boot then daily).
