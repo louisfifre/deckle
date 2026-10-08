@@ -28,7 +28,7 @@ public sealed partial class ForegroundWatcher
     private static ForegroundState ProbePlacement(ForegroundState state)
     {
         IntPtr monitor = MonitorFromWindow(state.Hwnd, MONITOR_DEFAULTTONEAREST);
-        var mi = new MONITORINFO { cbSize = (uint)Marshal.SizeOf<MONITORINFO>() };
+        var mi = new MONITORINFOEX { cbSize = (uint)Marshal.SizeOf<MONITORINFOEX>() };
         if (monitor == IntPtr.Zero || !GetMonitorInfo(monitor, ref mi))
         {
             monitor = IntPtr.Zero;
@@ -38,6 +38,7 @@ public sealed partial class ForegroundWatcher
         return state with
         {
             Monitor = monitor,
+            MonitorDeviceName = mi.szDevice ?? "",
             MonitorRect = mi.rcMonitor,
             WorkRect = mi.rcWork,
             Fullscreen = FullscreenStageOf(state.Hwnd, monitor, mi.rcMonitor),

@@ -73,17 +73,24 @@ internal static class ForegroundNativeMethods
     [DllImport("user32.dll")]
     public static extern IntPtr MonitorFromWindow(IntPtr hWnd, uint dwFlags);
 
-    [StructLayout(LayoutKind.Sequential)]
-    public struct MONITORINFO
+    // MONITORINFOEXW: MONITORINFO plus the monitor's GDI device name
+    // (szDevice, CCHDEVICENAME = 32 WCHARs, e.g. "\\.\DISPLAY1"), the name
+    // Ambient and the games registry key monitors by. cbSize must be
+    // sizeof(MONITORINFOEXW) for GetMonitorInfoW to fill szDevice.
+    [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
+    public struct MONITORINFOEX
     {
         public uint cbSize;
         public NativeMethods.RECT rcMonitor;
         public NativeMethods.RECT rcWork;
         public uint dwFlags;
+        [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 32)]
+        public string szDevice;
     }
 
-    [DllImport("user32.dll", CharSet = CharSet.Unicode)]
-    public static extern bool GetMonitorInfo(IntPtr hMonitor, ref MONITORINFO lpmi);
+    [DllImport("user32.dll", CharSet = CharSet.Unicode, EntryPoint = "GetMonitorInfoW")]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    public static extern bool GetMonitorInfo(IntPtr hMonitor, ref MONITORINFOEX lpmi);
 
     // ── Process image name ───────────────────────────────────────────────────
     //

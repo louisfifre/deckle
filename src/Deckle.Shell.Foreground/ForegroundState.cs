@@ -25,6 +25,11 @@ public sealed record ForegroundState(
 {
     public bool IsFullscreen => Fullscreen != FullscreenStage.None;
 
+    // GDI device name of Monitor (MONITORINFOEXW.szDevice, "\\.\DISPLAY1"),
+    // read by the same GetMonitorInfoW call as the rects; "" when the monitor
+    // is unknown. The name modules that persist a monitor choice key by.
+    public string MonitorDeviceName { get; init; } = "";
+
     // No foreground known: before Start, after Stop, or a foreground the
     // system did not name.
     public static readonly ForegroundState None =
