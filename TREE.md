@@ -884,6 +884,9 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   ├── SettingsComposer.Folds.cs
 │   │   │   ├── SettingsComposer.Inputs.cs
 │   │   │   └── SettingsComposer.Numeric.cs
+│   │   ├── Hotkeys/
+│   │   │   ├── HotkeyChord.cs
+│   │   │   └── HotkeyModifiers.cs
 │   │   ├── Themes/
 │   │   │   └── Icons.xaml
 │   │   ├── AGENTS.md  — [agent-instructions] Shared WinUI floor — the UI primitives every module depends on and that depend…
@@ -1888,6 +1891,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   └── WordBoundariesTests.cs
 │   ├── Deckle.Catalog.Tests/
 │   │   ├── Deckle.Catalog.Tests.csproj
+│   │   ├── HotkeyChordTests.cs
 │   │   └── SettingFactoryTests.cs
 │   ├── Deckle.Chrono.Tests/
 │   │   ├── ChronoFormatterTests.cs
