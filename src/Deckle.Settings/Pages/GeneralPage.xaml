@@ -60,6 +60,29 @@
                            TextWrapping="Wrap"
                            Margin="0,0,0,12" />
 
+                <!-- ── Hotkeys ─────────────────────────────────────────────── -->
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <TextBlock x:Uid="GeneralPageShortcutsHeaderLabel"
+                               Grid.Column="0"
+                               Style="{StaticResource SettingsSectionHeaderTextBlockStyle}" />
+                    <HyperlinkButton x:Name="HotkeysResetLink"
+                                     x:Uid="Settings_SectionResetLink"
+                                     Grid.Column="1"
+                                     VerticalAlignment="Bottom"
+                                     Margin="0,0,0,2"
+                                     Click="ResetHotkeys_Click" />
+                </Grid>
+
+                <!-- Composed: one hotkey card per action the App built
+                     (GeneralViewModel.HotkeySettings); an absent module's card
+                     is hidden. -->
+                <StackPanel x:Name="HotkeysHost"
+                            Spacing="{StaticResource SettingsCardSpacing}" />
+
                 <!-- ── Appearance ──────────────────────────────────────────── -->
                 <Grid>
                     <Grid.ColumnDefinitions>

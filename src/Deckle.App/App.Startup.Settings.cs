@@ -106,6 +106,12 @@ public partial class App
         // Lives in App.Relocate.cs.
         Settings.SettingsHost.RelocateDataRoot = StartDataRelocation;
 
+        // General › Hotkeys shows a card per hotkey action the App built, so a
+        // module that is absent has no hotkey card. Read at call time: the
+        // actions are built later, when the shell starts.
+        Settings.SettingsHost.IsHotkeyActionAvailable =
+            id => _hotkeyActions.Any(action => action.ToggleId == id);
+
         // Settings module nav registry + cross-page search index — each module-owned
         // settings page declares its own nav identity (page tag + module PRI + icon) in
         // its own assembly, via its <Module>SettingsModule.Describe(order). The

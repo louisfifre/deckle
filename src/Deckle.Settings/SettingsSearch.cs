@@ -17,7 +17,7 @@ namespace Deckle.Settings;
 // so reaching their descriptors means constructing the VM, which pulls registry and
 // OS reads through its side-effecting setters. The index may not do that at boot to
 // enumerate cards, so the LabelKeys are declared flat and side-effect-free. The
-// bespoke cards (the shortcut readouts, the data-folder and backup commands) have no
+// bespoke cards (the version row, the data-folder and backup commands) have no
 // manifest at all — they only ever existed as XAML — so a hand-written entry is their
 // only possible declaration. Every General card thus lives here, composed and bespoke
 // alike, under one contract.
@@ -38,6 +38,43 @@ public static class SettingsSearch
         {
             LabelKey = "GeneralAppThemeCard",
             Keywords = ["appearance", "dark mode", "color"],
+        },
+
+        // ── Hotkeys (composed: GeneralViewModel.HotkeySettings) ──
+        new SettingSearchEntry
+        {
+            LabelKey = "GeneralHotkeyRecordCard",
+            Keywords = ["shortcut", "hotkey", "keybinding", "dictation", "transcription"],
+        },
+        new SettingSearchEntry
+        {
+            LabelKey = "GeneralHotkeyPrecisionScrollCard",
+            Keywords = ["shortcut", "hotkey", "keybinding", "precision scrolling"],
+        },
+        new SettingSearchEntry
+        {
+            LabelKey = "GeneralHotkeyTrackpadCard",
+            Keywords = ["shortcut", "hotkey", "keybinding", "trackpad"],
+        },
+        new SettingSearchEntry
+        {
+            LabelKey = "GeneralHotkeyTaskbarCoverCard",
+            Keywords = ["shortcut", "hotkey", "keybinding", "taskbar cover"],
+        },
+        new SettingSearchEntry
+        {
+            LabelKey = "GeneralHotkeyAutocorrectCard",
+            Keywords = ["shortcut", "hotkey", "keybinding", "autocorrect"],
+        },
+        new SettingSearchEntry
+        {
+            LabelKey = "GeneralHotkeyRewriteCard",
+            Keywords = ["shortcut", "hotkey", "keybinding", "rewrite"],
+        },
+        new SettingSearchEntry
+        {
+            LabelKey = "GeneralHotkeyAmbientLightCard",
+            Keywords = ["shortcut", "hotkey", "keybinding", "ambient light"],
         },
 
         // ── Startup (composed: GeneralViewModel.StartupSettings) ──

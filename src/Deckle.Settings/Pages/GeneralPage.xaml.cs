@@ -22,6 +22,7 @@ public sealed partial class GeneralPage : Page
         InitializeComponent();
         NavigationCacheMode = NavigationCacheMode.Required;
 
+        ComposeHotkeysSection();
         ComposeAppearanceSection();
         ComposeStartupSection();
         ComposeUpdatesSection();
@@ -30,10 +31,25 @@ public sealed partial class GeneralPage : Page
         // The page-level "Reset all" gate spans every section composer; re-gate it
         // whenever any goes dirty (each section link keeps its own gating too).
         foreach (var composer in new[]
-                 { _appearanceComposer, _startupComposer, _updatesComposer, _applicationDataComposer })
+                 { _hotkeysComposer, _appearanceComposer, _startupComposer, _updatesComposer, _applicationDataComposer })
             composer!.DirtyChanged += (_, _) => GateResetAll();
 
         LoadAndSync();
+    }
+
+    // ── Composed Hotkeys section ──────────────────────────────────────────────
+    //
+    // Same host-only pattern as Appearance: one Hotkey card per action, each
+    // hidden when the App did not build that action. The App rebinds the
+    // global hotkeys itself when the saved settings change.
+    private SettingsComposer? _hotkeysComposer;
+
+    private void ComposeHotkeysSection()
+    {
+        _hotkeysComposer = new SettingsComposer(HotkeysHost, ViewModel);
+        _hotkeysComposer.DirtyChanged += (_, _) =>
+            HotkeysResetLink.IsEnabled = _hotkeysComposer.IsDirty();
+        _hotkeysComposer.Compose(ViewModel.HotkeySettings);
     }
 
     // ── Composed Appearance section ───────────────────────────────────────────
@@ -170,6 +186,7 @@ public sealed partial class GeneralPage : Page
     private void GateResetAll()
     {
         ResetAllButton.IsEnabled =
+            (_hotkeysComposer?.IsDirty() ?? false) ||
             (_appearanceComposer?.IsDirty() ?? false) ||
             (_startupComposer?.IsDirty() ?? false) ||
             (_updatesComposer?.IsDirty() ?? false) ||
@@ -178,6 +195,7 @@ public sealed partial class GeneralPage : Page
 
     private void ResetAll_Click(object sender, RoutedEventArgs e)
     {
+        _hotkeysComposer?.ResetAll();
         _appearanceComposer?.ResetAll();
         _startupComposer?.ResetAll();
         _updatesComposer?.ResetAll();
@@ -195,6 +213,13 @@ public sealed partial class GeneralPage : Page
     // ApplyTheme in OnThemeChanged, Startup's registry write in
     // OnAutostartEnabledChanged — so the handler only triggers the reset and keeps
     // the section-reset log line the VM methods used to emit.
+
+    private void ResetHotkeys_Click(object sender, RoutedEventArgs e)
+    {
+        _hotkeysComposer?.ResetAll();
+        DeckleSettingsUxSource.Log.SectionReset();
+        DeckleSettingsUxSource.Log.SectionResetDetail("Hotkeys");
+    }
 
     private void ResetAppearance_Click(object sender, RoutedEventArgs e)
     {
