@@ -19,6 +19,13 @@ public static partial class HudComposition
     // transform reads progress.
     public sealed class UtteranceCountdownVisual : IDisposable
     {
+        // Windows motion guidance: the fast duration (167 ms) and the
+        // "fast out, slow in" curve, documented for an object quickly
+        // returning to rest.
+        private static readonly TimeSpan RetreatDuration = TimeSpan.FromMilliseconds(167);
+        private static readonly Vector2 RetreatEaseControlPoint1 = new(0f, 0f);
+        private static readonly Vector2 RetreatEaseControlPoint2 = new(0f, 1f);
+
         private readonly List<IDisposable> _resources = new();
         private readonly List<CompositionSurfaceBrush> _movingBrushes = new();
         private readonly Compositor _compositor;
@@ -93,10 +100,25 @@ public static partial class HudComposition
             if (_disposed) return;
 
             float value = Math.Clamp(progress, 0f, 1f);
-            if (!interpolate || value == 0f || value == 1f)
+            if (!interpolate || value == 1f)
             {
                 _progress.StopAnimation("Value");
                 _progress.InsertScalar("Value", value);
+                return;
+            }
+
+            if (value == 0f)
+            {
+                // Speech resumed: the wedges ease back to the edge centres.
+                // The container opacity expression keeps the visual shown
+                // while Value > 0 and hides it when the retreat lands.
+                using var retreat = _compositor.CreateScalarKeyFrameAnimation();
+                using var easing = _compositor.CreateCubicBezierEasingFunction(
+                    RetreatEaseControlPoint1, RetreatEaseControlPoint2);
+                retreat.InsertExpressionKeyFrame(0f, "this.CurrentValue");
+                retreat.InsertKeyFrame(1f, 0f, easing);
+                retreat.Duration = RetreatDuration;
+                _progress.StartAnimation("Value", retreat);
                 return;
             }
 

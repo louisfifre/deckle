@@ -140,7 +140,7 @@ public sealed partial class HudPage
             AddFloatRow(simulation, "Cone visibility (%)", 0, 100, 5, _countdownTuning.MaterialOpacity * 100,
                 value => _countdownTuning.MaterialOpacity = (float)value / 100f, rebuild: true);
 
-        simulation.Children.Add(TuningHelp("Replay holds at the end. Resume speech returns to the start."));
+        simulation.Children.Add(TuningHelp("Replay holds at the end. Resume speech plays the retreat to the edge centre."));
         var transport = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8, Margin = new Thickness(0, 12, 0, 0) };
         var replay = new Button { Content = "Replay pause" };
         replay.Click += (_, _) =>
@@ -174,7 +174,8 @@ public sealed partial class HudPage
             _countdownReplayClock.Reset();
             _countdownTuning.Progress = 0;
             _setCountdownPosition?.Invoke(0);
-            _utteranceCountdownPreview?.SetProgress(0);
+            _utteranceCountdownPreview?.SetProgress(
+                0, interpolate: SettingsService.Instance.Current.Overlay.Animations);
         };
         transport.Children.Add(replay);
         transport.Children.Add(resume);
