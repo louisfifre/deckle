@@ -26,23 +26,28 @@ public sealed partial class FrameSampler
         // the source pixels would produce. Arithmetic averaging on the
         // raw sRGB bytes would bias mid-tones upward (sRGB's ~2.4 gamma
         // makes equal byte deltas non-uniform in photons).
+        // The linear mean is also published unrounded : the engine tunes
+        // it in float and quantises once at its output.
         Color avg;
+        (float R, float G, float B) avgLinear;
         if (count == 0)
         {
             avg = Color.FromArgb(0xFF, 0, 0, 0);
+            avgLinear = (0f, 0f, 0f);
         }
         else
         {
             float avgR = (float)(sumRLin / count);
             float avgG = (float)(sumGLin / count);
             float avgB = (float)(sumBLin / count);
+            avgLinear = (avgR, avgG, avgB);
             avg = Color.FromArgb(0xFF,
                 (byte)Math.Clamp((int)MathF.Round(ColorSpace.LinearToSrgb(avgR) * 255f), 0, 255),
                 (byte)Math.Clamp((int)MathF.Round(ColorSpace.LinearToSrgb(avgG) * 255f), 0, 255),
                 (byte)Math.Clamp((int)MathF.Round(ColorSpace.LinearToSrgb(avgB) * 255f), 0, 255));
         }
 
-        return new SampledFrame(avg, grid, _gridCols, _gridRows);
+        return new SampledFrame(avg, grid, _gridCols, _gridRows, avgLinear);
     }
 
     private void ReadGridBGRA8(
