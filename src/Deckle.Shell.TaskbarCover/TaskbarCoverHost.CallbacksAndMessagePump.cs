@@ -17,8 +17,7 @@ public sealed partial class TaskbarCoverHost
     {
         RebuildLayout("boot");
         ResetZoneStateFromCursor();
-        _foregroundHwnd = NativeMethods.GetForegroundWindow();
-        EvaluateAppSuppressed();
+        UpdateAppSuppressed(_foreground.Current);
 
         UpdateCover("boot");
     }
@@ -39,11 +38,6 @@ public sealed partial class TaskbarCoverHost
             // Must run on the thread that called SetWinEventHook — we are on it.
             UnhookWinEvent(_cursorHook);
             _cursorHook = IntPtr.Zero;
-        }
-        if (_foregroundHook != IntPtr.Zero)
-        {
-            UnhookWinEvent(_foregroundHook);
-            _foregroundHook = IntPtr.Zero;
         }
         if (_hwnd != IntPtr.Zero)
         {
@@ -68,8 +62,7 @@ public sealed partial class TaskbarCoverHost
         _coverAlpha          = 0;
         _appSuppressed       = false;
         _systemSuspended     = false;
-        _foregroundHwnd      = IntPtr.Zero;
-        _layoutKnown         = false;
+        _layoutKnown        = false;
         _layoutFailureLogged = false;
     }
 
@@ -83,6 +76,12 @@ public sealed partial class TaskbarCoverHost
 
         switch (msg)
         {
+            case WM_APP_FOREGROUND:
+                // Posted by OnForegroundChanged; the snapshot is read here,
+                // so a burst of posts converges on the latest one.
+                ApplyForeground(_foreground.Current);
+                return IntPtr.Zero;
+
             case WM_SETTINGCHANGE:
                 RebuildLayout("setting_change");
                 return IntPtr.Zero;

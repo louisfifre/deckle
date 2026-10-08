@@ -49,7 +49,8 @@ public sealed class DeckleShellTaskbarCoverSource : DeckleEventSource
     public const int EvtSessionNotifyFailed   = 20;
     // 21, 22 and 25 are reserved: TimerArmFailed, TimerArmFailedDetail and
     // TimerArmRecovered, retired with the re-cover timer (2026-10-08).
-    public const int EvtForegroundHookFailed  = 23;
+    // 23 is reserved: ForegroundHookFailed, retired when the foreground hook
+    // moved to the shared ForegroundWatcher (2026-10-08), which logs its own.
     public const int EvtLayoutQueryRecovered  = 24;
 
     // ── Host lifecycle ────────────────────────────────────────────────────────
@@ -266,14 +267,5 @@ public sealed class DeckleShellTaskbarCoverSource : DeckleEventSource
     public void SessionNotifyFailed()
     {
         if (IsEnabled()) WriteEvent(EvtSessionNotifyFailed);
-    }
-
-    [Event(EvtForegroundHookFailed,
-           Level = EventLevel.Warning,
-           Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "The foreground hook is unavailable — fullscreen and z-order recovery no longer follow app switches")]
-    public void ForegroundHookFailed()
-    {
-        if (IsEnabled()) WriteEvent(EvtForegroundHookFailed);
     }
 }

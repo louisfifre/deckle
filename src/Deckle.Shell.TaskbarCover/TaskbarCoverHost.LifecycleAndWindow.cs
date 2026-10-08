@@ -81,6 +81,10 @@ public sealed partial class TaskbarCoverHost
             }
 
             _running = true;
+            // Subscribed on the caller's thread once the band exists: the
+            // handler only posts to it. A switch landing before this line is
+            // not lost — BootstrapState reads the watcher's snapshot itself.
+            _foreground.Changed += OnForegroundChanged;
             return true;
         }
     }
@@ -94,6 +98,7 @@ public sealed partial class TaskbarCoverHost
         {
             if (!_running || _thread is null) return;
             _running = false;
+            _foreground.Changed -= OnForegroundChanged;
             thread = _thread;
             threadId = _threadId;
             _thread = null;
@@ -187,18 +192,6 @@ public sealed partial class TaskbarCoverHost
         {
             throw new InvalidOperationException("SetWinEventHook(EVENT_OBJECT_LOCATIONCHANGE) failed");
         }
-
-        // Foreground changes drive the immediate reconciliation of fullscreen
-        // suppression and z-order. Non-fatal, unlike the cursor hook: on
-        // failure the F11 location-change path and the zone-exit re-assert
-        // still reconcile, but app switches are no longer followed — degraded
-        // and logged, not silent.
-        _foregroundHookDelegate = OnForegroundEvent;
-        _foregroundHook = SetWinEventHook(
-            EVENT_SYSTEM_FOREGROUND, EVENT_SYSTEM_FOREGROUND,
-            IntPtr.Zero, _foregroundHookDelegate, 0, 0, WINEVENT_OUTOFCONTEXT);
-        if (_foregroundHook == IntPtr.Zero)
-            DeckleShellTaskbarCoverSource.Log.ForegroundHookFailed();
 
         if (!WTSRegisterSessionNotification(_hwnd, NOTIFY_FOR_THIS_SESSION))
             DeckleShellTaskbarCoverSource.Log.SessionNotifyFailed();

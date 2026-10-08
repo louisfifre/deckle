@@ -7,11 +7,11 @@ public sealed partial class TaskbarCoverHost
 {
     // ── Cursor signal ─────────────────────────────────────────────────────
 
-    // The single EVENT_OBJECT_LOCATIONCHANGE hook carries two signals across
-    // every process: the cursor (hwnd == NULL + OBJID_CURSOR) drives the
-    // band's opacity in the approach zone; a geometry change on the
-    // *foreground* window (OBJID_WINDOW, hwnd == _foregroundHwnd) is the
-    // in-place F11 toggle, which raises no foreground event. Runs at input
+    // The process's single global EVENT_OBJECT_LOCATIONCHANGE hook; only the
+    // cursor (hwnd == NULL + OBJID_CURSOR) matters here, it drives the band's
+    // opacity in the approach zone. The foreground window's in-place F11
+    // toggle reaches the host through the ForegroundWatcher instead, whose
+    // own location hook is narrowed to the foreground process. Runs at input
     // cadence: outside the zone with the band already opaque, the cursor path
     // costs one GetCursorPos, one rect test and one byte compare.
     private void OnLocationChange(
@@ -20,17 +20,6 @@ public sealed partial class TaskbarCoverHost
     {
         if (_systemSuspended || !_layoutKnown) return;
 
-        // The foreground window resized in place (F11): re-evaluate
-        // suppression and, while visible, climb back over the taskbar.
-        if (idObject == OBJID_WINDOW && idChild == 0
-            && hwnd != IntPtr.Zero && hwnd == _foregroundHwnd)
-        {
-            EvaluateAppSuppressed();
-            if (_coverVisible) ReassertTopmost();
-            return;
-        }
-
-        // Cursor moves: the approach-zone fade.
         if (idObject != OBJID_CURSOR || hwnd != IntPtr.Zero) return;
         if (!NativeMethods.GetCursorPos(out var p)) return;
 

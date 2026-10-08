@@ -1,6 +1,7 @@
 using System.Runtime.InteropServices;
 using Deckle.Core;
 using Deckle.Diagnostics;
+using Deckle.Shell.Foreground;
 using Deckle.Shell.TaskbarCover;
 using static Deckle.Shell.TaskbarCover.TaskbarCoverNativeMethods;
 
@@ -8,19 +9,25 @@ namespace Deckle.Shell.TaskbarCover;
 
 public sealed partial class TaskbarCoverHost
 {
-    // Another app came to the foreground: track it (the location-change hook
-    // compares against it to catch an in-place F11 resize), reconcile
+    // ── Foreground ────────────────────────────────────────────────────────
+
+    // Raised by the watcher on its own thread (the UI thread): hand the news
+    // to the cover thread, which owns every state field. Only the band handle
+    // is read here, published before _running turned true; a post racing a
+    // Stop lands on a destroyed window and fails harmlessly.
+    private void OnForegroundChanged(ForegroundState state)
+    {
+        if (_running) PostMessage(_hwnd, WM_APP_FOREGROUND, IntPtr.Zero, IntPtr.Zero);
+    }
+
+    // The foreground switched or toggled fullscreen in place: reconcile
     // suppression, and — while the band is up — climb back above the taskbar,
     // which Explorer re-asserts topmost on fullscreen exit.
-    private void OnForegroundEvent(
-        IntPtr hWinEventHook, uint evt, IntPtr hwnd,
-        int idObject, int idChild, uint idEventThread, uint dwmsEventTime)
+    private void ApplyForeground(ForegroundState state)
     {
-        if (idObject != OBJID_WINDOW) return;
         if (_systemSuspended || !_layoutKnown) return;
 
-        _foregroundHwnd = hwnd;
-        EvaluateAppSuppressed();
+        UpdateAppSuppressed(state);
         if (_coverVisible) ReassertTopmost();
     }
 
@@ -115,76 +122,32 @@ public sealed partial class TaskbarCoverHost
         _systemSuspended = false;
 
         ResetZoneStateFromCursor();
-        _foregroundHwnd = NativeMethods.GetForegroundWindow();
-        EvaluateAppSuppressed();
+        UpdateAppSuppressed(_foreground.Current);
 
         UpdateCover("resumed");
         DeckleShellTaskbarCoverSource.Log.SystemResumed();
         DeckleShellTaskbarCoverSource.Log.SystemResumedDetail(reason);
     }
 
-    // Two stages: the shell's own notion of "busy fullscreen" first (cheap,
-    // catches D3D exclusive and presentation mode), then the geometric test —
-    // the foreground window's DWM visual bounds covering its whole monitor
-    // (catches borderless fullscreen and F11).
-    private void EvaluateAppSuppressed()
+    // A fullscreen foreground — as the watcher's two-stage test reads it —
+    // stands the band down. Only a change of verdict logs and updates.
+    private void UpdateAppSuppressed(ForegroundState state)
     {
-        bool suppressed = false;
-        string stage = "none";
-
-        if (SHQueryUserNotificationState(out int quns) == 0
-            && quns is QUNS_BUSY or QUNS_RUNNING_D3D_FULL_SCREEN or QUNS_PRESENTATION_MODE)
-        {
-            suppressed = true;
-            stage = "notification_state";
-        }
-
-        if (!suppressed)
-        {
-            IntPtr fg = NativeMethods.GetForegroundWindow();
-            if (fg != IntPtr.Zero && !IsDesktopWindow(fg)
-                && DwmGetWindowAttribute(fg, DWMWA_EXTENDED_FRAME_BOUNDS,
-                       out var bounds, (uint)Marshal.SizeOf<NativeMethods.RECT>()) == 0)
-            {
-                IntPtr mon = MonitorFromWindow(fg, MONITOR_DEFAULTTONEAREST);
-                var mi = new MONITORINFO { cbSize = (uint)Marshal.SizeOf<MONITORINFO>() };
-                if (mon != IntPtr.Zero && GetMonitorInfo(mon, ref mi))
-                {
-                    var m = mi.rcMonitor;
-                    suppressed = bounds.left <= m.left && bounds.top <= m.top
-                              && bounds.right >= m.right && bounds.bottom >= m.bottom;
-                    if (suppressed) stage = "fullscreen_geometry";
-                }
-            }
-        }
-
+        bool suppressed = state.IsFullscreen;
         if (suppressed == _appSuppressed) return;
         _appSuppressed = suppressed;
         if (suppressed)
         {
             DeckleShellTaskbarCoverSource.Log.CoverSuppressed();
-            DeckleShellTaskbarCoverSource.Log.CoverSuppressedDetail(stage);
+            DeckleShellTaskbarCoverSource.Log.CoverSuppressedDetail(
+                state.Fullscreen == FullscreenStage.NotificationState
+                    ? "notification_state" : "fullscreen_geometry");
         }
         else
         {
             DeckleShellTaskbarCoverSource.Log.CoverUnsuppressed();
         }
         UpdateCover(suppressed ? "fullscreen_enter" : "fullscreen_exit");
-    }
-
-    // The desktop covers the whole monitor and would pass the fullscreen
-    // geometry test: clicking the wallpaper makes it foreground and the band
-    // would stand down over a bare desktop until something else takes the
-    // foreground. Excluded by the canonical guard Windows itself uses (the
-    // shell and root desktop windows) plus the WorkerW host that backs an
-    // animated or secondary wallpaper.
-    private static bool IsDesktopWindow(IntPtr hwnd)
-    {
-        if (hwnd == GetShellWindow() || hwnd == GetDesktopWindow()) return true;
-
-        var cls = new System.Text.StringBuilder(16);
-        return NativeMethods.GetClassName(hwnd, cls, cls.Capacity) > 0
-            && cls.ToString() == "WorkerW";
     }
 
 }

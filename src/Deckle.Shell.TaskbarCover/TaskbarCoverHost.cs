@@ -1,6 +1,7 @@
 using System.Runtime.InteropServices;
 using Deckle.Core;
 using Deckle.Diagnostics;
+using Deckle.Shell.Foreground;
 using Deckle.Shell.TaskbarCover;
 using static Deckle.Shell.TaskbarCover.TaskbarCoverNativeMethods;
 
@@ -15,12 +16,11 @@ namespace Deckle.Shell.TaskbarCover;
 //   • in the approach zone (CoverGeometry.ApproachZone) the band fades with
 //     the cursor's distance to it, gone on the band itself; leaving the
 //     zone re-covers at once, fully opaque;
-//   • a fullscreen / presentation foreground app suppresses the band;
-//     two WinEvent signals reconcile it — and the band's z-order above the
-//     taskbar — the instant it happens: a foreground change (another app
-//     comes forward) and a location change on the foreground window itself
-//     (an in-place F11 toggle, which raises no foreground event). Event
-//     driven only, no timer;
+//   • a fullscreen / presentation foreground app suppresses the band; the
+//     shared ForegroundWatcher (Deckle.Shell.Foreground) tells the host the
+//     instant the foreground switches or its window toggles fullscreen in
+//     place, and the host reconciles suppression — and the band's z-order
+//     above the taskbar — on its own thread. Event driven only, no timer;
 //   • sleep and session lock park the machine entirely.
 //
 // Cursor movement arrives through a WinEvent hook
@@ -38,6 +38,15 @@ public sealed partial class TaskbarCoverHost : IDisposable
 
     private readonly object _stateLock = new();
 
+    // Shared foreground snapshot, owned and started by the App on the UI
+    // thread. The host never hooks the foreground itself.
+    private readonly ForegroundWatcher _foreground;
+
+    public TaskbarCoverHost(ForegroundWatcher foreground)
+    {
+        _foreground = foreground;
+    }
+
     private Thread? _thread;
     // Worker that outlived its Join in Stop() — it still owns the window
     // class, the delegates and the native handles, so Start() refuses to
@@ -49,13 +58,11 @@ public sealed partial class TaskbarCoverHost : IDisposable
     private IntPtr _hInstance;
     private IntPtr _brush;
     private IntPtr _cursorHook;
-    private IntPtr _foregroundHook;
     private uint _wmTaskbarCreated;
 
     // Rooted for the GC while native code holds their function pointers.
     private NativeMethods.WndProc? _wndProcDelegate;
     private WinEventProc? _cursorHookDelegate;
-    private WinEventProc? _foregroundHookDelegate;
 
     private volatile bool _running;
 
@@ -71,12 +78,6 @@ public sealed partial class TaskbarCoverHost : IDisposable
     private byte _coverAlpha;
     private bool _appSuppressed;
     private bool _systemSuspended;
-
-    // Last foreground window — tracked by the foreground hook so the
-    // location-change hook can recognise an in-place resize of *that* window
-    // (the F11 fullscreen toggle) with a pointer compare, no syscall on the
-    // input-cadence path.
-    private IntPtr _foregroundHwnd;
 
     private bool _layoutKnown;
     private bool _layoutFailureLogged;
