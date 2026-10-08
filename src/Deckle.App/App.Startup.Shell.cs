@@ -74,7 +74,7 @@ public partial class App
             // Left-click tray = toggle transcription via the same path as the
             // standard hotkey. An absent Dictation module leaves the click
             // unbound instead of pointing to a Settings page that is absent too.
-            _tray.OnToggleRecording = () => OnHotkey(NativeMethods.HOTKEY_ID_TRANSCRIBE);
+            _tray.LeftClickRequested += () => OnHotkey(NativeMethods.HOTKEY_ID_TRANSCRIBE);
         }
         context.Milestone("tray");
 
