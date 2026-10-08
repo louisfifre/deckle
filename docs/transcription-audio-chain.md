@@ -21,7 +21,7 @@ Paths are relative to the repository root.
 
 Most terms are defined in the module vocabularies. This list gives one line each and points to the file that owns the term.
 
-- **Streaming** is the value `PipelineStrategyKind.Streaming` in `src/Deckle.Transcription/TranscriptionSettings.cs`. It is the pipeline that cuts the dictation into utterances while you speak and transcribes each one as soon as it ends. It does not mean that text appears on screen while you speak; Deckle has no such feature.
+- **Streaming** is the value `PipelineStrategyKind.Streaming` in `src/Deckle.Transcription/TranscriptionSettings.cs`. It is the pipeline that cuts the dictation into utterances while you speak and transcribes each one as soon as it ends. The text of each utterance then appears in the live transcript panel beside the HUD; there is no word-by-word display inside an utterance.
 - **Monolithic** is the other value of the same enum. It captures the whole take, then makes one transcription call at the end.
 - The code default is Monolithic, and the comment above the enum says the monolithic path "is slated for removal once streaming proves out".
 - **Utterance** vs **segment**: an utterance is the audio span Deckle cuts and sends to Whisper in one call; a segment is a piece of text Whisper returns inside that call. See `src/Deckle.Transcription/CONTEXT.md`.
@@ -69,12 +69,14 @@ flowchart TD
     subgraph HUDM["Deckle.Hud"]
         HUD["HUD states<br/>Charging, Recording,<br/>Transcribing, Rewriting"]
         OUT["ShowPasted or ShowCopied"]
+        PANEL["Transcript panel<br/>one Append per utterance"]
     end
 
     HK --> PROBE --> CAP --> FRAME --> FORK
     CAP --> LEVEL --> HUD
     FORK -- Streaming --> SEG --> CHAN --> CONS
     CONS --> DSP --> TRIM --> ASR --> ASSEMBLE --> FIN
+    ASSEMBLE -- UtteranceTranscribed --> PANEL
     FORK -- Monolithic --> MONO --> FIN
     FIN --> OUT
 ```
@@ -90,7 +92,7 @@ Notes on the diagram:
 
 | Node | File (→ member) | What it does |
 |---|---|---|
-| Hotkey press | `src/Deckle.App/App.Hotkeys.cs` → `_engine.RequestToggle`; `src/Deckle.Transcription/Engine/TranscriptionEngine.StateMachine.cs` → `RequestToggle` | Win + the key left of 1 (`HOTKEY_ID_TRANSCRIBE` in `src/Deckle.Core/Interop/NativeMethods.cs`). Shift or Ctrl added picks a rewrite profile. A press while Idle starts; a press while Recording stops; any other state ignores the press. |
+| Hotkey press | `src/Deckle.App/App.Hotkeys.cs` → `ToggleRecordingFromHotkey` → `_engine.RequestToggle`; `src/Deckle.Transcription/Engine/TranscriptionEngine.StateMachine.cs` → `RequestToggle` | The chord is `HotkeysSettings.Record` in `src/Deckle.Settings/Persistence/AppSettings.cs`: Win + the key left of 1 (scan code `0x29`) by default, editable in Settings ▸ General. The Record button of the tray panel lands on the same method. The press carries no rewrite profile: the active profile applies at finalize. A press while Idle starts; a press while Recording stops; any other state ignores the press. |
 | Mic probe | `src/Deckle.Transcription/Engine/TranscriptionEngine.StateMachine.cs` → `TryStartFromIdleLocked` (`_capture.Probe`) | Checks the microphone before anything else. On failure, an error is shown and no take starts. Then the worker thread starts at AboveNormal priority. |
 | waveIn capture | `src/Deckle.Audio/MicrophoneCapture.cs` → `Record` (`N_BUFFERS = 4`, `BYTES_PER_BUF` = 50 ms) | Opens the microphone at 16 kHz, mono, 16-bit, with a ring of four 50 ms buffers. |
 | One CaptureFrame per 50 ms | `src/Deckle.Audio/Internal/WaveInLoop.cs` → `Pump`, `EmitSubWindows`; `src/Deckle.Audio/CaptureFrame.cs` | Cuts each buffer into 50 ms frames of 800 samples, computes the RMS (the average loudness) of each, and raises the `Frame` and `AudioLevel` events. The same loop runs the low-audio tracker described under the engine constants. |
@@ -107,6 +109,7 @@ Notes on the diagram:
 | FinalizeTranscription | `src/Deckle.Transcription/Engine/TranscriptionEngine.Finalize.cs` → `FinalizeTranscription`, `CopyToClipboard`, `DeliverTranscript`, `PasteFromClipboard`; `src/Deckle.Transcription/Engine/TranscriptionEngine.Finalize.Rewrite.cs` → `ApplyRewrite` | Copies the raw text to the clipboard first. Then, if a rewrite profile applies, rewrites it with Ollama. Then pastes with Ctrl+V only if paste is enabled, the foreground window is not Deckle, and UI Automation confirms the focused element is a text field (Edit or Document). Paste is off by default (`AutoPasteEnabled = false` in `src/Deckle.Settings/Persistence/AppSettings.cs`). |
 | HUD states | `src/Deckle.App/App.Startup.Shell.cs` → `StatusChanged` handler; `src/Deckle.App/App.Hotkeys.cs` → `ShowPreparing`, `SwitchToTranscribing`; `src/Deckle.Hud/Model/HudState.cs`; `src/Deckle.Hud/Windows/HudWindow.State.cs` | Start press → Charging. "Recording" status → Recording. Stop press → Transcribing at once. "Rewriting…" status → Rewriting. |
 | ShowPasted or ShowCopied | `src/Deckle.App/App.Startup.Shell.cs` → `TranscriptionFinished` handler | Pasted → green flash. ClipboardOnly → the "copied" message. No text → the HUD hides. |
+| Transcript panel | `src/Deckle.Transcription/Engine/TranscriptionEngine.StreamingPipeline.cs` → `UtteranceTranscribed?.Invoke` (event declared in `src/Deckle.Transcription/Engine/TranscriptionEngine.Utterances.cs`); `src/Deckle.App/App.TranscriptPanel.cs`; `src/Deckle.Hud/Transcript/TranscriptPanelWindow.xaml.cs` | Raised once per utterance that yields text, right after the text joins the assembly. The panel opens a take when the engine starts recording, appends each text with the same paragraph rule as the assembly (`src/Deckle.Hud/Transcript/TranscriptHistory.cs`), closes the take when the transcription finishes, and hides with the HUD. With the HUD turned off (`Overlay.Enabled`), no take opens. Its side is `Overlay.TranscriptPanelSide` (Settings ▸ Dictation). Monolithic raises no event, so the panel stays hidden. |
 
 ## Diagram 2 — one Streaming take over time
 
@@ -119,6 +122,7 @@ sequenceDiagram
     participant C as Consumer task
     participant WB as Whisper backend
     participant HUD as HUD
+    participant P as Transcript panel
 
     HK->>HK: Press 1 - RequestToggle, state Idle to Starting
     HK->>HK: Mic probe, state Starting to Recording
@@ -137,6 +141,7 @@ sequenceDiagram
     WB-->>C: Prime done, gate opens
     C->>WB: TranscribeAsync utterance 1
     WB-->>C: Text 1
+    C->>P: UtteranceTranscribed - Append text 1
     W->>C: Utterance 2 queued
     C->>WB: TranscribeAsync utterance 2
     HK->>HK: Press 2 - state Recording to Stopping
@@ -175,6 +180,7 @@ Notes on the diagram:
 | Frames to the segmenter | `src/Deckle.Transcription/Engine/TranscriptionEngine.StreamingPipeline.cs` → `ProduceStreamingAsync` (`OnFrame`); `src/Deckle.Transcription/Streaming/SegmentedTranscriptionSession.cs` → `Push` |
 | Utterance queued | `src/Deckle.Transcription/Streaming/EnergySegmenter.cs` → `EmitOnSilence`; `src/Deckle.Transcription/Streaming/SegmentedTranscriptionSession.cs` → `TryWrite` |
 | TranscribeAsync | `src/Deckle.Transcription.Whisper/WhisperBackend.Transcribe.cs` → `TranscribeAsync` |
+| UtteranceTranscribed, Append | `src/Deckle.Transcription/Engine/TranscriptionEngine.StreamingPipeline.cs` → `ConsumeUtterancesAsync`; `src/Deckle.App/App.TranscriptPanel.cs`; `src/Deckle.Hud/Transcript/TranscriptPanelWindow.xaml.cs` → `Append` |
 | Press 2, Recording → Stopping | `src/Deckle.Transcription/Engine/TranscriptionEngine.StateMachine.cs` → `RequestToggle` (`_recordCts.Cancel`) |
 | SwitchToTranscribing at once | `src/Deckle.App/App.Hotkeys.cs` → `ToggleResult.Stopped` |
 | Drain | `src/Deckle.Audio/Internal/WaveInLoop.cs` → `waveInStop`, `Thread.Sleep(100)`, last `EmitSubWindows` pass |
@@ -196,7 +202,7 @@ Where the files live:
 
 Where the settings are shown:
 
-- **Settings ▸ Dictation**: `src/Deckle.Transcription/ViewModels/WhisperViewModel.Settings.cs` (composed cards), plus the hand-written cards of `src/Deckle.Transcription/WhisperPage.xaml` and `src/Deckle.Transcription/WhisperPage.xaml.cs` (model, language, initial prompt).
+- **Settings ▸ Dictation**: `src/Deckle.Transcription/ViewModels/WhisperViewModel.Settings.cs` (composed cards, including the cut-preset selector and the curve editor `src/Deckle.Transcription/Ui/Controls/CutCurveEditor.xaml.cs`), plus the hand-written cards of `src/Deckle.Transcription/WhisperPage.xaml` and `src/Deckle.Transcription/WhisperPage.xaml.cs` (model, language, initial prompt).
 - **Playground ▸ Segmentation**: `src/Deckle.Playground/ViewModels/SegmentationViewModel.cs`, with the curve plot `src/Deckle.Transcription/Ui/Controls/HangoverCurveCanvas.xaml.cs` on `src/Deckle.Playground/Views/Segmentation/SegmentationPage.xaml`. Edits there wait for a Save button.
 - **Settings ▸ Recording**: `src/Deckle.Audio/RecordingViewModel.Settings.cs`, plus the microphone picker in `src/Deckle.Audio/RecordingPage.xaml.cs`.
 
@@ -223,14 +229,14 @@ Where the settings are shown:
 | `OutputFilters.SuppressRegex` | same | `""` | `outputFilters` | Dictation (`WhisperSuppressRegexCard`) |
 | `Streaming.Strategy` | `src/Deckle.Transcription/Engine/TranscriptionEngine.StateMachine.cs` → `WorkerRun` | `Monolithic` | `streaming` | Dictation (`WhisperStreamingEnabledCard` toggle: on = Streaming) |
 | `Streaming.Segmenter.ThresholdDbfs` | `src/Deckle.Transcription/Streaming/EnergySegmenter.cs` | `-45.0` | `streaming.segmenter` | Dictation (number field) and Playground |
-| `Streaming.Segmenter.HangoverMaxMs` | same | `5000` | `streaming.segmenter` | Dictation and Playground |
-| `Streaming.Segmenter.HangoverMinMs` | same | `500` | `streaming.segmenter` | Dictation and Playground |
-| `Streaming.Segmenter.HangoverRampStartMs` | same | `15000` | `streaming.segmenter` | Dictation and Playground |
-| `Streaming.Segmenter.HangoverRampEndMs` | same | `120000` | `streaming.segmenter` | Dictation and Playground |
-| `Streaming.Segmenter.HangoverCurveX1` | same (via `src/Deckle.Transcription/Curves/UnitBezier.cs`) | `0.85` | `streaming.segmenter` | Playground only |
-| `Streaming.Segmenter.HangoverCurveY1` | same | `0.10` | `streaming.segmenter` | Playground only |
-| `Streaming.Segmenter.HangoverCurveX2` | same | `0.90` | `streaming.segmenter` | Playground only |
-| `Streaming.Segmenter.HangoverCurveY2` | same | `0.25` | `streaming.segmenter` | Playground only |
+| `Streaming.Segmenter.HangoverMaxMs` | same | `5000` | `streaming.segmenter` | Dictation (Custom cut preset) and Playground |
+| `Streaming.Segmenter.HangoverMinMs` | same | `500` | `streaming.segmenter` | Dictation (Custom cut preset) and Playground |
+| `Streaming.Segmenter.HangoverRampStartMs` | same | `15000` | `streaming.segmenter` | Dictation (Custom cut preset) and Playground |
+| `Streaming.Segmenter.HangoverRampEndMs` | same | `120000` | `streaming.segmenter` | Dictation (Custom cut preset) and Playground |
+| `Streaming.Segmenter.HangoverCurveX1` | same (via `src/Deckle.Transcription/Curves/UnitBezier.cs`) | `0.85` | `streaming.segmenter` | Dictation (curve editor, Custom cut preset) and Playground |
+| `Streaming.Segmenter.HangoverCurveY1` | same | `0.10` | `streaming.segmenter` | Dictation (curve editor, Custom cut preset) and Playground |
+| `Streaming.Segmenter.HangoverCurveX2` | same | `0.90` | `streaming.segmenter` | Dictation (curve editor, Custom cut preset) and Playground |
+| `Streaming.Segmenter.HangoverCurveY2` | same | `0.25` | `streaming.segmenter` | Dictation (curve editor, Custom cut preset) and Playground |
 | `Streaming.Segmenter.MarginMs` | same | `150` | `streaming.segmenter` | Dictation and Playground |
 | `Streaming.Segmenter.MinUtteranceMs` | same | `250` | `streaming.segmenter` | Dictation and Playground |
 | `Streaming.SpeechTrim.Enabled` | `src/Deckle.Transcription/Engine/TranscriptionEngine.StreamingPipeline.cs` → `StartSegmentedTranscription` | `true` | `streaming.speechTrim` | Dictation (`WhisperVadEnabledCard`, visible only when Streaming is on) |
@@ -239,14 +245,14 @@ Where the settings are shown:
 | `Streaming.SpeechTrim.MinSilenceDurationMs` | same | `100` | `streaming.speechTrim` | Dictation slider, same visibility |
 | `Streaming.SpeechTrim.SpeechPadMs` | same | `30` | `streaming.speechTrim` | Dictation slider, same visibility |
 
-The seven segmenter values on the Dictation page are number fields shown when the Streaming toggle is on. The four Silero values are sliders shown when both Streaming and the VAD toggle are on. The four curve control points can be edited only in the Playground: no Settings descriptor names them.
+On the Dictation page, the segmenter values sit in the Streaming fold, shown when the Streaming toggle is on. The threshold, the margin and the minimum utterance are always-visible number fields. The four hangover values and the four curve control points are set together by a cut preset (Patient, Balanced or Quick; Balanced equals the code defaults, `src/Deckle.Transcription/Streaming/CutPresets.cs`). Choosing Custom reveals the curve editor and the four hangover number fields, which edit all eight. The four Silero values are sliders shown when both Streaming and the VAD toggle are on.
 
 ### Audio module — `modules/audio/settings.json`
 
 | Parameter | Acts in | Default in code | Stored in (section) | Exposed where |
 |---|---|---|---|---|
 | `AudioInputDeviceId` | `src/Deckle.Audio/MicrophoneCapture.cs` (`Probe`, `Record`) | `-1` (system default device) | root | Recording (microphone picker, `RecordingPage.xaml.cs`) |
-| `MaxRecordingDurationSeconds` | `src/Deckle.Audio/Internal/WaveInLoop.cs` (cap check) | `20 * 60` (20 min) | root | Not exposed anywhere |
+| `MaxRecordingDurationSeconds` | `src/Deckle.Audio/Internal/WaveInLoop.cs` (cap check, skipped at 0) | `0` (no limit); a file still holding the former 20 min default is migrated to 0 (`src/Deckle.Audio/CaptureSettingsService.cs`) | root | Recording (`RecordingLimitCard`, "Maximum recording length": No limit, 10, 20, 30 min, 1 h, 2 h) |
 | `LevelWindow.MinDbfs` | `src/Deckle.Audio/AudioLevelMapper.cs` (HUD display only) | `-55` | `levelWindow` | Recording (`GeneralVoiceLevelFloorCard`) |
 | `LevelWindow.MaxDbfs` | same | `-32` | `levelWindow` | Recording (`GeneralVoiceLevelCeilingCard`) |
 | `LevelWindow.DbfsCurveExponent` | same | `1.0` | `levelWindow` | Recording (`GeneralVoiceLevelCurveCard`) |
@@ -259,7 +265,7 @@ The seven segmenter values on the Dictation page are number fields shown when th
 | `Preprocessing.TargetRmsDbfs`, `MaxMakeupGainDb` | same | `-20`, `24` | `preprocessing` | Not exposed |
 | `Preprocessing.LimiterEnabled`, `LimiterCeilingDbfs`, `LimiterReleaseMs` | same | `true`, `-1`, `50` | `preprocessing` | Not exposed |
 
-The pre-processing has 18 fixed fields after `Enabled`: four stage switches and fourteen values. `PreprocessingSettings.cs` says they are "an engineer's starting point, NOT measured optima". A comment in `src/Deckle.Audio/CaptureSettings.cs` says the fine parameters "live in the Playground"; no Playground file references them, so that comment is out of date.
+The pre-processing has 18 fixed fields after `Enabled`: four stage switches and fourteen values. `PreprocessingSettings.cs` says they are "an engineer's starting point, NOT measured optima". No Settings card and no Playground page edits them.
 
 Reading: `LevelWindowSettings` uses public fields, while every other settings class uses properties "so System.Text.Json round-trips them". Whether the level window survives a restart is not established here.
 
@@ -355,7 +361,7 @@ How to read it:
 - **Hangover**: an utterance is open, and the last frames were silent. The segmenter is not sure yet whether this is a short pause inside a sentence or the end. It counts the silent frames in a row. A voiced frame sets the count back to 0 and returns to Speech. When the count reaches the required hangover, the segmenter cuts and emits the utterance with `EndedOnSilence = true`.
 - **Flush at Stop**: when you press the hotkey to stop, the open utterance is emitted whatever its state, with `EndedOnSilence = false`. In Silence, Flush does nothing.
 - The step Speech → Hangover also checks the required hangover. With the defaults it never cuts there, because the minimum hangover is 10 frames. It only matters if a hangover rounds to one frame (under 75 ms: `FramesFromMs` uses `Math.Round`, which rounds 75 ms, 1.5 frames, to 2).
-- The segmenter has no maximum utterance length. An utterance only ends on a silence long enough, or at Stop. The header of `EnergySegmenter.cs` says so ("No hard cap"). Reading: `src/Deckle.Transcription/Streaming/Utterance.cs` and `src/Deckle.Transcription/CONTEXT.md` still mention a "safety ceiling"; the only ceiling in the code is the capture cap (`MaxRecordingDurationSeconds`, 20 min), which ends the whole take through the same Flush.
+- The segmenter has no maximum utterance length. An utterance only ends on a silence long enough, or at Stop. The header of `EnergySegmenter.cs` says so ("No hard cap"). Reading: `src/Deckle.Transcription/Streaming/Utterance.cs` and `src/Deckle.Transcription/CONTEXT.md` still mention a "safety ceiling"; the code has no such ceiling. The only cap is the optional capture limit (`MaxRecordingDurationSeconds`, off by default), which ends the whole take through the same Flush when the user has set one.
 
 #### Node → file
 
@@ -462,7 +468,6 @@ Nothing queued is lost on a user Stop: the consumer is cancelled only by `drainC
 
 ### What is not exposed
 
-- The four curve control points (`HangoverCurveX1` to `HangoverCurveY2`) can be edited only in the Playground (Segmentation page), not in Settings.
 - The 50 ms frame (`FrameMs` in `EnergySegmenter.cs`) and the ring of four 50 ms capture buffers (`src/Deckle.Audio/MicrophoneCapture.cs`) are fixed in code.
 - The Silero window (512 samples) and the release gap (0.15) are fixed in `src/Deckle.Vad/SileroSpeechTimestamps.cs`.
 
