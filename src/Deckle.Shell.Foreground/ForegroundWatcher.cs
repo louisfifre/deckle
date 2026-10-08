@@ -6,7 +6,7 @@ namespace Deckle.Shell.Foreground;
 // and process it is, which monitor it sits on, whether it reads as
 // fullscreen. Consumers read Current from any thread or subscribe to Changed.
 //
-// Two WinEvent hooks, no timer, no polling:
+// Two WinEvent hooks, event driven only:
 //   • EVENT_SYSTEM_FOREGROUND, global — another window comes forward;
 //   • EVENT_OBJECT_LOCATIONCHANGE, narrowed to the foreground window's
 //     process and re-armed on each switch — the foreground window moves or

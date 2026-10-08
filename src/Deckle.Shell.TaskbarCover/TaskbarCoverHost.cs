@@ -20,7 +20,7 @@ namespace Deckle.Shell.TaskbarCover;
 //     shared ForegroundWatcher (Deckle.Shell.Foreground) tells the host the
 //     instant the foreground switches or its window toggles fullscreen in
 //     place, and the host reconciles suppression — and the band's z-order
-//     above the taskbar — on its own thread. Event driven only, no timer;
+//     above the taskbar — on its own thread. Event driven only;
 //   • sleep and session lock park the machine entirely.
 //
 // Cursor movement arrives through a WinEvent hook

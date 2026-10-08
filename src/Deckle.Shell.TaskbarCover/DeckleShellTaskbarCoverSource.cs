@@ -47,8 +47,9 @@ public sealed class DeckleShellTaskbarCoverSource : DeckleEventSource
     public const int EvtSystemResumedDetail   = 18;
     public const int EvtCursorHookFailed      = 19;
     public const int EvtSessionNotifyFailed   = 20;
-    // 21, 22 and 25 are reserved: TimerArmFailed, TimerArmFailedDetail and
-    // TimerArmRecovered, retired with the re-cover timer (2026-10-08).
+    // 21, 22 and 25 are reserved: the arm-failed, arm-failed detail and
+    // arm-recovered events of the delayed re-cover, retired when the band
+    // started re-covering at once on leaving the approach zone (2026-10-08).
     // 23 is reserved: ForegroundHookFailed, retired when the foreground hook
     // moved to the shared ForegroundWatcher (2026-10-08), which logs its own.
     public const int EvtLayoutQueryRecovered  = 24;
