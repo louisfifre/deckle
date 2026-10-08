@@ -43,6 +43,8 @@ public sealed class DeckleShellTrayMenuSource : DeckleEventSource
     public const int EvtPrimeCycleStarted         = 4;
     public const int EvtPrimeCycleCompleted       = 5;
     public const int EvtShowRequested             = 6;
+    // 7 and 16 retired with the menu's module switches (now in the
+    // quick-actions panel, traced by PanelToggleClicked): reserved, never reuse.
     public const int EvtAmbientStateRead          = 7;
     public const int EvtItemMeasured              = 8;
     public const int EvtFlyoutMeasured            = 9;
@@ -176,26 +178,6 @@ public sealed class DeckleShellTrayMenuSource : DeckleEventSource
     {
         if (IsDetailEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Lifecycle))
             WriteEvent(EvtShowRequestedDetail, ms_since_last_show, show_count);
-    }
-
-    [Event(EvtAmbientStateRead,
-           Level = EventLevel.Verbose,
-           Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "ambient state read | is_on={0}")]
-    public void AmbientStateRead(bool is_on)
-    {
-        if (IsDetailEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Lifecycle))
-            WriteEvent(EvtAmbientStateRead, is_on);
-    }
-
-    [Event(EvtTaskbarCoverStateRead,
-           Level = EventLevel.Verbose,
-           Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "taskbar cover state read | is_on={0}")]
-    public void TaskbarCoverStateRead(bool is_on)
-    {
-        if (IsDetailEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Lifecycle))
-            WriteEvent(EvtTaskbarCoverStateRead, is_on);
     }
 
     // ── Flyout measurement ───────────────────────────────────────────────────

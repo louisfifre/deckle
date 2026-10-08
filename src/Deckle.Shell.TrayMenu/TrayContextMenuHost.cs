@@ -35,11 +35,6 @@ public sealed partial class TrayContextMenuHost : IDisposable
     private readonly TrayCarrierWindow _carrier;
 
     private MenuFlyout? _flyout;
-    private MenuFlyoutItem? _ambientItem;
-    private MenuFlyoutItem? _autocorrectItem;
-    private MenuFlyoutItem? _taskbarCoverItem;
-    private MenuFlyoutItem? _precisionScrollItem;
-    private MenuFlyoutItem? _transcribeFilesItem;
 
     private bool _isVisible;
     private bool _disposed;
@@ -67,20 +62,11 @@ public sealed partial class TrayContextMenuHost : IDisposable
     // cycle has run, or if the presenter could not be found.
     private Windows.Foundation.Size? _primedPresenterSize;
 
-    public Action? OnTranscribeFiles { get; set; }
     public Action? OnShowLogs        { get; set; }
     public Action? OnShowSettings    { get; set; }
     public Action? OnShowPlayground  { get; set; }
-    public Action? OnToggleAmbient   { get; set; }
-    public Action? OnToggleAutocorrect { get; set; }
-    public Action? OnToggleTaskbarCover { get; set; }
-    public Action? OnTogglePrecisionScroll { get; set; }
     public Action? OnRestart         { get; set; }
     public Action? OnQuit            { get; set; }
-    public Func<bool>? IsAmbientOn   { get; set; }
-    public Func<bool>? IsAutocorrectOn { get; set; }
-    public Func<bool>? IsTaskbarCoverOn { get; set; }
-    public Func<bool>? IsPrecisionScrollOn { get; set; }
 
     /// <summary>
     /// Optional accessor for the tray icon's screen rect. When provided, the

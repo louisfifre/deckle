@@ -35,20 +35,6 @@ public sealed partial class TrayContextMenuHost
     // process lifetime.
     private void PrimeFlyout()
     {
-        // Module-owned entries follow their delegate: the flyout is built in
-        // the constructor, before the App wires the commands of the modules
-        // actually installed, so presence lands here as a visibility pass —
-        // an unwired command simply never shows. Applied BEFORE the ShowAt so
-        // the primed sizes (and the presenter capture below) reflect the menu
-        // the user will actually see; presence is boot-constant, so once is
-        // enough.
-        if (_ambientItem is not null)
-            _ambientItem.Visibility = OnToggleAmbient is null ? Visibility.Collapsed : Visibility.Visible;
-        if (_autocorrectItem is not null)
-            _autocorrectItem.Visibility = OnToggleAutocorrect is null ? Visibility.Collapsed : Visibility.Visible;
-        if (_transcribeFilesItem is not null)
-            _transcribeFilesItem.Visibility = OnTranscribeFiles is null ? Visibility.Collapsed : Visibility.Visible;
-
         bool traceWindowing = DeckleShellTrayMenuSource.IsDetailEnabled(
             EventLevel.Verbose, (EventKeywords)Keywords.Lifecycle);
         var sw = traceWindowing ? Stopwatch.StartNew() : null;

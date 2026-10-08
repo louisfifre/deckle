@@ -191,24 +191,6 @@ public partial class App
             OnShowLogs       = () => ShowLogWindowLazy(),
             OnShowSettings   = () => ShowSettingsWindowLazy(),
             OnShowPlayground = () => ShowPlaygroundLazy(),
-            // Taskbar cover tray entry — the pill
-            // mirrors the persisted TaskbarCoverSettings.Enabled, click flips
-            // it, the host start/stop reacts via the settings observer wired
-            // in InitializeTaskbarCover.
-            IsTaskbarCoverOn      = () => TaskbarCoverSettingsService.Instance.Current.Enabled,
-            OnToggleTaskbarCover  = () =>
-            {
-                var s = TaskbarCoverSettingsService.Instance.Current;
-                s.Enabled = !s.Enabled;
-                TaskbarCoverSettingsService.Instance.Save();
-            },
-            IsPrecisionScrollOn = () => PrecisionScrollSettingsService.Instance.Current.Enabled,
-            OnTogglePrecisionScroll = () =>
-            {
-                var s = PrecisionScrollSettingsService.Instance.Current;
-                s.Enabled = !s.Enabled;
-                PrecisionScrollSettingsService.Instance.Save();
-            },
             OnRestart        = () => RestartAppFromTray(),
             OnQuit           = () => QuitApp(),
             // Tray icon screen rect — the menu host uses it as the
@@ -217,40 +199,6 @@ public partial class App
             GetIconRect      = () => _tray.GetIconRect(),
         };
 
-        // Module-owned tray entries follow presence: the menu host shows an
-        // item only when its delegate is wired, so an absent module's command
-        // simply never appears (see TrayContextMenuHost.PrimeFlyout).
-        if (context.TranscriptionPresent)
-        {
-            // File transcription — opens the system file picker and runs each
-            // chosen audio file through the same pipeline as dictation (see
-            // App.FileTranscription.cs). Delivered on the UI thread the tray
-            // click arrives on.
-            _trayMenu.OnTranscribeFiles = () => TranscribeFilesFromTray();
-        }
-        if (context.AmbientPresent)
-        {
-            // Ambient Light tray entry — checkmark mirrors the persisted
-            // AmbientSettings.Enabled, click flips it. The actual engine
-            // start/stop reacts via the AmbientSettingsService.Changed
-            // observer wired above.
-            _trayMenu.IsAmbientOn     = () => AmbientSettingsService.Instance.Current.Enabled;
-            _trayMenu.OnToggleAmbient = () =>
-            {
-                var s = AmbientSettingsService.Instance.Current;
-                s.Enabled = !s.Enabled;
-                AmbientSettingsService.Instance.Save();
-            };
-        }
-        if (context.AutocorrectPresent)
-        {
-            _trayMenu.IsAutocorrectOn = () => AutocorrectSettingsService.Instance.Current.Enabled;
-            _trayMenu.OnToggleAutocorrect = () =>
-            {
-                bool enabled = AutocorrectSettingsService.Instance.Current.Enabled;
-                AutocorrectSettingsService.Instance.SetEnabled(!enabled);
-            };
-        }
         _tray.RightClickRequested += () => _trayMenu.Show();
 
         _tray.Register(_messageHost.Hwnd);

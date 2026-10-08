@@ -1,4 +1,4 @@
-// TrayContextMenuHost — state sync, show on the carrier, and hide.
+// TrayContextMenuHost — show on the carrier, and hide.
 
 using System;
 using System.Diagnostics.Tracing;
@@ -10,6 +10,9 @@ namespace Deckle.Shell.TrayMenu;
 public sealed partial class TrayContextMenuHost
 {
     // ── Show ──────────────────────────────────────────────────────────────────
+
+    // Menu items are static (no module state to reflect), so a show is only
+    // anchor + measure + open.
 
     public void Show()
     {
@@ -26,30 +29,6 @@ public sealed partial class TrayContextMenuHost
             _lastShowTickMs = nowTickMs;
             DeckleShellTrayMenuSource.Log.ShowRequested();
             DeckleShellTrayMenuSource.Log.ShowRequestedDetail(msSinceLastShow, _showCount);
-        }
-
-        if (_ambientItem is not null && IsAmbientOn is not null)
-        {
-            bool ambientOn = IsAmbientOn();
-            TraySwitchMenuItem.SetState(_ambientItem, ambientOn);
-            if (traceWindowing) DeckleShellTrayMenuSource.Log.AmbientStateRead(ambientOn);
-        }
-
-        if (_autocorrectItem is not null && IsAutocorrectOn is not null)
-        {
-            TraySwitchMenuItem.SetState(_autocorrectItem, IsAutocorrectOn());
-        }
-
-        if (_taskbarCoverItem is not null && IsTaskbarCoverOn is not null)
-        {
-            bool coverOn = IsTaskbarCoverOn();
-            TraySwitchMenuItem.SetState(_taskbarCoverItem, coverOn);
-            if (traceWindowing) DeckleShellTrayMenuSource.Log.TaskbarCoverStateRead(coverOn);
-        }
-
-        if (_precisionScrollItem is not null && IsPrecisionScrollOn is not null)
-        {
-            TraySwitchMenuItem.SetState(_precisionScrollItem, IsPrecisionScrollOn());
         }
 
         // The carrier anchors on the icon, resolves the monitor DPI and asks

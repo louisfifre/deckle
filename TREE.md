@@ -1556,8 +1556,6 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   ├── Deckle.Shell.TrayMenu/
 │   │   ├── Interop/
 │   │   │   └── TrayMenuNativeMethods.cs
-│   │   ├── Themes/
-│   │   │   └── TrayMenu.xaml
 │   │   ├── AGENTS.md  — [agent-instructions] WinUI 3 tray context menu — the carrier-window pattern and the DWM pitfalls it…
 │   │   ├── CLAUDE.md
 │   │   ├── Deckle.Shell.TrayMenu.csproj
@@ -1571,7 +1569,6 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── TrayQuickActionsHost.Build.cs
 │   │   ├── TrayQuickActionsHost.cs
 │   │   ├── TrayQuickActionsHost.Show.cs
-│   │   ├── TraySwitchMenuItem.cs
 │   │   └── TrayToggle.cs
 │   ├── Deckle.Shell.WindowChrome/
 │   │   ├── AGENTS.md  — [agent-instructions] Window-chrome corrections shared by Deckle's XAML windows — workarounds for Win…
