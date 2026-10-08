@@ -50,6 +50,10 @@ public partial class App
         // positions; reacts to main HUD show/hide via MainHudVisibilityChanged.
         _overlayManager = new HudOverlayManager(_hudWindow, _hudWindow.DispatcherQueue, _cursorSignal);
 
+        // Live transcript panel beside the HUD: needs the HUD, the cursor
+        // signal and the engine, and follows the HUD's visibility.
+        InitializeTranscriptPanel();
+
         // Unique HUD feedback sink (direct EventSource channel since
         // sub-wave 6b). `HudFeedbackSink` (Deckle.Diagnostics)
         // filters `UserFeedbackEmitted` events from any Deckle.* provider and
