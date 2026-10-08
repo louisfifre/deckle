@@ -58,11 +58,27 @@ public partial class WhisperViewModel
         PushBehaviourToSettings();
     }
 
+    // Which side of the primary display the live transcript panel sits on:
+    // "Left" or "Right", read by the panel at the start of each take.
+    [ObservableProperty]
+    public partial string TranscriptPanelSide { get; set; }
+
     partial void OnOverlayPositionChanged(string value)
     {
         if (_isSyncing) return;
         PushBehaviourToSettings();
     }
+
+    partial void OnTranscriptPanelSideChanged(string value)
+    {
+        if (_isSyncing) return;
+        PushBehaviourToSettings();
+    }
+
+    // Folds a hand-edited or unknown persisted value onto a real picker option,
+    // so the Choice always shows a selection: anything but "Left" is "Right".
+    private static string NormalizeTranscriptPanelSide(string? side) =>
+        side == "Left" ? "Left" : "Right";
 
     // Writes the overlay/paste values back to the shell's Overlay/Paste sections —
     // kept separate from PushToSettings (which persists this module's own
@@ -75,6 +91,7 @@ public partial class WhisperViewModel
         shell.Overlay.FadeOnProximity = OverlayFadeOnProximity;
         shell.Overlay.Animations = OverlayAnimations;
         shell.Overlay.Position = OverlayPosition;
+        shell.Overlay.TranscriptPanelSide = TranscriptPanelSide;
         SettingsService.Instance.Save();
     }
 }

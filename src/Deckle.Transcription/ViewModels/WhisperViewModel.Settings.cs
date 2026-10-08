@@ -33,6 +33,8 @@ public partial class WhisperViewModel
     // relocated from GeneralPage. The overlay is a Group (master OverlayEnabled +
     // fade/animations/position children, each masked while the master is off); the
     // position Choice matches the normalized "TopCenter"/"BottomCenter" the VM seeds.
+    // The transcript panel side Choice ("Left"/"Right") sits in the same group, since the
+    // panel is part of the HUD and follows its master toggle.
     // Defaults read the shell POCO initializers (OverlaySettings / PasteSettings), the
     // single source the shell's SettingsService persists. The x:Uids reuse the same
     // keys the General cards carried — already present in this module's .resw.
@@ -64,6 +66,14 @@ public partial class WhisperViewModel
                         (new OverlaySettings().Position ?? "").StartsWith("Top")
                             ? "TopCenter"
                             : "BottomCenter"),
+                Setting.Choice<string>("GeneralTranscriptPanelSideCard",
+                    () => TranscriptPanelSide,
+                    value => TranscriptPanelSide = value,
+                    [
+                        ("Left", "GeneralTranscriptPanelSideLeft"),
+                        ("Right", "GeneralTranscriptPanelSideRight"),
+                    ],
+                    defaultValue: () => new OverlaySettings().TranscriptPanelSide),
             ],
             glyph: Glyphs.Overlay,
             defaultValue: () => new OverlaySettings().Enabled),

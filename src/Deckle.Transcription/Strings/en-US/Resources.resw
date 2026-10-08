@@ -376,6 +376,18 @@
   <data name="GeneralOverlayPositionBottom.Content" xml:space="preserve">
     <value>Bottom</value>
   </data>
+  <data name="GeneralTranscriptPanelSideCard.Header" xml:space="preserve">
+    <value>Transcript panel side</value>
+  </data>
+  <data name="GeneralTranscriptPanelSideCard.Description" xml:space="preserve">
+    <value>Which side of your primary display shows the live text while you dictate. Applied on the next recording.</value>
+  </data>
+  <data name="GeneralTranscriptPanelSideLeft.Content" xml:space="preserve">
+    <value>Left</value>
+  </data>
+  <data name="GeneralTranscriptPanelSideRight.Content" xml:space="preserve">
+    <value>Right</value>
+  </data>
   <data name="GeneralLatencyCard.Header" xml:space="preserve">
     <value>Latency</value>
   </data>
