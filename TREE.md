@@ -1711,6 +1711,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │       ├── AGENTS.md  — [agent-instructions] Screen-capture and frame-analysis module — DXGI Output Duplication, the transie…
 │       ├── CapturedFrame.cs
 │       ├── CaptureMonitor.cs
+│       ├── CapturePacer.cs
 │       ├── CLAUDE.md
 │       ├── Deckle.Vision.csproj
 │       ├── DeckleVisionSource.cs
@@ -2080,6 +2081,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── Deckle.Vad.Tests.csproj
 │   │   └── SileroSpeechTimestampsTests.cs
 │   ├── Deckle.Vision.Tests/
+│   │   ├── CapturePacerTests.cs
 │   │   ├── Deckle.Vision.Tests.csproj
 │   │   └── DeckleVisionSourceTests.cs
 │   ├── CONTEXT.md  — context-deckle-tests [agent-instructions] Test taxonomy — the four categories inside the automatic scope (unit, integrati…

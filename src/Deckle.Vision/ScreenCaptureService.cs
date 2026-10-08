@@ -36,9 +36,12 @@ namespace Deckle.Vision;
 // IDXGIOutput6::GetDesc1 during the adapter walk.
 //
 // Cadence. AcquireNextFrame blocks the loop thread until a desktop
-// update or timeout. We throttle to ~15 Hz by sleeping the remainder
-// of the 66 ms window after each delivered frame — same cadence as
-// the AmbientEngine push loop.
+// update or timeout. The target delivery rate is a constructor
+// parameter (60 Hz by default); CapturePacer admits frames against a
+// deadline grid at that rate and the others are released on the GPU
+// without a copy. The rate is independent of how often a consumer
+// pushes to its lights: the AmbientEngine push loop reads the latest
+// sample at its transport's own rate.
 //
 // Recovery. DXGI_ERROR_ACCESS_LOST fires on desktop switch, mode
 // change, or fullscreen exclusive swap ; DXGI_ERROR_ACCESS_DENIED
@@ -51,13 +54,19 @@ namespace Deckle.Vision;
 // stop immediately. The workflow consumer owns the human terminal error.
 public sealed partial class ScreenCaptureService : IDisposable
 {
-    // ~15 Hz target. Matches the AmbientEngine push cadence so we
-    // don't acquire frames the engine never consumes.
-    private const int ThrottleIntervalMs = 66;
+    /// <summary>Delivery rate used when the caller does not choose one.</summary>
+    public const int DefaultTargetFrameRateHz = 60;
 
-    // AcquireNextFrame timeout. Short enough that cancellation responds
-    // promptly on Stop, long enough that we don't spin the CPU between
-    // frames on a static screen.
+    // Target delivery rate fixed at construction. The loop builds its
+    // CapturePacer from it; the throttle interval is logged at Start.
+    private readonly int _targetFrameRateHz;
+
+    // AcquireNextFrame timeout. It bounds how long the loop waits when
+    // the screen is static and how quickly Stop is honoured; it does
+    // not cap the delivery rate (AcquireNextFrame returns as soon as a
+    // desktop update exists), so it is independent of the target rate.
+    // Short enough that cancellation responds promptly on Stop, long
+    // enough that we don't spin the CPU on a static screen.
     private const uint AcquireTimeoutMs = 200;
 
     // Back-off when AcquireNextFrame returns an unexpected error
@@ -84,7 +93,8 @@ public sealed partial class ScreenCaptureService : IDisposable
     // 5 s matches the Ambient engine cadence (DeckleAmbientSource.Heartbeat)
     // so the two rollups line up in the log, and keeps a long session
     // readable — at 1 s a multi-hour capture flooded the window with
-    // thousands of lines. fps stays stable at our ~15 Hz target over 5 s.
+    // thousands of lines. A 5 s window averages out the pacer's
+    // frame-to-frame jitter at any target rate.
     private const int HeartbeatIntervalMs = 5_000;
 
     // Format priorities passed to DuplicateOutput1. The first format
@@ -136,6 +146,24 @@ public sealed partial class ScreenCaptureService : IDisposable
     // to compute age_ms in DeckleResourceSource. Rewritten on each duplication
     // (re)creation.
     private long _duplicationAcquiredTicks;
+
+    /// <summary>
+    /// Creates a capture service that delivers at most
+    /// <paramref name="targetFrameRateHz"/> frames per second to
+    /// <see cref="FrameArrived"/>. The rate is fixed for the lifetime of
+    /// the instance; a different rate means a new instance.
+    /// </summary>
+    /// <param name="targetFrameRateHz">Target delivery rate in Hz.
+    /// Defaults to <see cref="DefaultTargetFrameRateHz"/>. The desktop's
+    /// own refresh rate and update activity remain upper bounds.</param>
+    public ScreenCaptureService(int targetFrameRateHz = DefaultTargetFrameRateHz)
+    {
+        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(targetFrameRateHz);
+        _targetFrameRateHz = targetFrameRateHz;
+    }
+
+    /// <summary>Target delivery rate this instance was built with.</summary>
+    public int TargetFrameRateHz => _targetFrameRateHz;
 
     /// <summary>True when a capture session is currently running.</summary>
     public bool IsRunning { get; private set; }

@@ -9,13 +9,14 @@ public sealed partial class ScreenCaptureService
 {
     private void CaptureLoop(CancellationToken ct)
     {
-        long lastDeliveredTicks = 0;
-        long throttleTicks = Stopwatch.Frequency * ThrottleIntervalMs / 1000;
+        var pacer = new CapturePacer(_targetFrameRateHz, Stopwatch.Frequency);
         int invalidCallRecoveryAttempts = 0;
 
         // Heartbeat rollup accumulators — reset every HeartbeatIntervalMs
         // by EmitHeartbeatIfDue. Allocated lazily (capacity 320 covers a
-        // 5 s window at our cadence with margin) and only populated
+        // 5 s window of a 60 Hz desktop with margin; the lists grow on
+        // faster desktops, where more frames are acquired than delivered)
+        // and only populated
         // when the Verbose|Heartbeat gate is open. The collection itself
         // is bypassed when the gate is closed — zero alloc on the hot
         // path of a typical session with no listener attached.
@@ -170,10 +171,7 @@ public sealed partial class ScreenCaptureService
             try
             {
                 long now = Stopwatch.GetTimestamp();
-                bool skipForThrottle = lastDeliveredTicks != 0
-                                    && (now - lastDeliveredTicks) < throttleTicks;
-
-                if (skipForThrottle)
+                if (!pacer.TryAdmit(now))
                 {
                     // Honour the cadence cap: release the GPU buffer
                     // without copying it into the consumer's grid.
@@ -208,7 +206,7 @@ public sealed partial class ScreenCaptureService
                 }
 
                 // Cross-cutting Resource sub-provider: frame texture acquire.
-                // High-frequency loop (~15 Hz target) gated by
+                // High-frequency loop (target rate, 60 Hz by default) gated by
                 // IsEnabled(Verbose, Resource) on the provider side: zero alloc
                 // and zero WriteEvent when no listener is attached. Timestamp
                 // capture is done here because release is in the downstream
@@ -233,7 +231,6 @@ public sealed partial class ScreenCaptureService
                 try
                 {
                     Interlocked.Increment(ref _frameCount);
-                    lastDeliveredTicks = now;
 
                     var capturedFrame = new CapturedFrame(
                         texturePtr:     texturePtr,
@@ -361,8 +358,9 @@ public sealed partial class ScreenCaptureService
     // is open ; the gate is re-checked here for safety but the bulk of
     // the cost (sample collection) is already gated upstream. Sorts
     // both duration buffers in place to pick percentiles — buffer
-    // capacity is bounded by the per-window frame count (~15 at the
-    // engine push cadence) so the sort cost is negligible.
+    // size is the per-window acquired frame count (about 300 for a
+    // 60 Hz desktop over 5 s, more on faster desktops), so one sort
+    // every 5 s stays negligible.
     private static void EmitHeartbeatIfDue(
         ref long windowStartTicks,
         ref int acquired,
