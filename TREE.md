@@ -1540,7 +1540,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   ├── Deckle.Shell.TaskbarCover/
 │   │   ├── Interop/
 │   │   │   └── TaskbarCoverNativeMethods.cs
-│   │   ├── AGENTS.md  — [agent-instructions] Taskbar cover module — an opaque topmost band that masks the taskbar until the…
+│   │   ├── AGENTS.md  — [agent-instructions] Taskbar cover module — an opaque topmost band over the taskbar that fades as th…
 │   │   ├── CLAUDE.md
 │   │   ├── CoverGeometry.cs
 │   │   ├── Deckle.Shell.TaskbarCover.csproj
