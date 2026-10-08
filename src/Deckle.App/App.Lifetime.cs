@@ -71,6 +71,7 @@ public partial class App
         // caller the hooks still die with the process at Environment.Exit.
         TryShutdown("foreground watcher dispose", () => _foregroundWatcher?.Dispose());
         TryShutdown("precision scroll shutdown", ShutdownPrecisionScroll);
+        TryShutdown("orchestration shutdown", ShutdownOrchestration);
         TryShutdown("mouse wheel shutdown", ShutdownMouseWheel);
         TryShutdown("paragraph rewrite shutdown", ShutdownParagraphRewrite);
         TryShutdown("autocorrect shutdown", ShutdownAutocorrect);

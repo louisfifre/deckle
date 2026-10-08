@@ -108,6 +108,7 @@
     <ProjectReference Include="..\Deckle.Llm.Rewrite\Deckle.Llm.Rewrite.csproj" />
     <ProjectReference Include="..\Deckle.Modules\Deckle.Modules.csproj" />
     <ProjectReference Include="..\Deckle.Notifications\Deckle.Notifications.csproj" />
+    <ProjectReference Include="..\Deckle.Orchestration\Deckle.Orchestration.csproj" />
     <ProjectReference Include="..\Deckle.Playground\Deckle.Playground.csproj" />
     <ProjectReference Include="..\Deckle.Settings\Deckle.Settings.csproj" />
     <ProjectReference Include="..\Deckle.Setup\Deckle.Setup.csproj" />

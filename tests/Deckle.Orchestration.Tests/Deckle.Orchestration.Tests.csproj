@@ -1,0 +1,10 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Deckle.Orchestration\Deckle.Orchestration.csproj" />
+  </ItemGroup>
+
+  <!-- Steam files with invented data, read through GetManifestResourceStream. -->
+  <ItemGroup>
+    <EmbeddedResource Include="Fixtures\**" />
+  </ItemGroup>
+</Project>

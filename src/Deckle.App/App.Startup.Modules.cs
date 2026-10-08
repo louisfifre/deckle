@@ -110,6 +110,13 @@ public partial class App
         InitializePrecisionScroll();
         context.Milestone("precision_scroll");
 
+        // Apps and games — notices when a listed app starts and stops, from
+        // events only. Always composed; it stays idle (no WMI subscription,
+        // no enumeration) while no entry is enabled. Its first reconcile runs
+        // on the thread pool, off the boot path.
+        InitializeOrchestration();
+        context.Milestone("orchestration");
+
         // Paragraph retaille — observes the shared keyboard stream, requests a
         // gated local rewrite on Shift+Enter, and surfaces it in a non-activating
         // interactive inset. The module is entirely absent when Rewrite was not

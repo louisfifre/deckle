@@ -578,6 +578,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── App.Lifetime.cs
 │   │   ├── app.manifest
 │   │   ├── App.MouseWheel.cs
+│   │   ├── App.Orchestration.cs
 │   │   ├── App.ParagraphRewrite.cs
 │   │   ├── App.PrecisionScroll.cs
 │   │   ├── App.Relocate.cs
@@ -1398,6 +1399,72 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── CLAUDE.md
 │   │   ├── Deckle.Notifications.csproj
 │   │   └── DeckleNotificationsSource.cs
+│   ├── Deckle.Orchestration/
+│   │   ├── Detection/
+│   │   │   ├── AppSessionTracker.cs
+│   │   │   ├── DetectionStatus.cs
+│   │   │   ├── ForegroundChange.cs
+│   │   │   ├── IForegroundMonitor.cs
+│   │   │   ├── IProcessStartSource.cs
+│   │   │   ├── NullForegroundMonitor.cs
+│   │   │   ├── OrchestrationRuntime.cs
+│   │   │   ├── ProcessExitWatch.cs
+│   │   │   ├── ProcessStarted.cs
+│   │   │   └── WmiProcessStartSource.cs
+│   │   ├── Display/
+│   │   │   ├── DisplayTarget.cs
+│   │   │   ├── DisplayTargets.cs
+│   │   │   └── HdrStateSwitch.cs
+│   │   ├── Interop/
+│   │   │   ├── DisplayConfigNativeMethods.cs
+│   │   │   └── ProcessNativeMethods.cs
+│   │   ├── Processes/
+│   │   │   └── RunningApps.cs
+│   │   ├── Registry/
+│   │   │   ├── AppDisplayName.cs
+│   │   │   ├── AppEntry.cs
+│   │   │   ├── AppKind.cs
+│   │   │   ├── AppMatcher.cs
+│   │   │   ├── AppRules.cs
+│   │   │   ├── AppSource.cs
+│   │   │   └── HdrRule.cs
+│   │   ├── Rules/
+│   │   │   ├── AppliedProfile.cs
+│   │   │   ├── HdrRuleEffect.cs
+│   │   │   ├── IRuleEffect.cs
+│   │   │   └── ProfileTransaction.cs
+│   │   ├── Scan/
+│   │   │   ├── ExecutableLocator.cs
+│   │   │   ├── FolderScanner.cs
+│   │   │   └── RegistryScan.cs
+│   │   ├── Steam/
+│   │   │   ├── KeyValuesNode.cs
+│   │   │   ├── KeyValuesReader.cs
+│   │   │   ├── SteamLibrary.cs
+│   │   │   └── SteamManifest.cs
+│   │   ├── Strings/
+│   │   │   └── en-US/
+│   │   │       └── Resources.resw
+│   │   ├── Ui/
+│   │   │   ├── EntryItemTemplateSelector.cs
+│   │   │   ├── OrchestrationPage.xaml
+│   │   │   ├── OrchestrationPage.xaml.cs
+│   │   │   ├── RunningProcessDialog.xaml
+│   │   │   └── RunningProcessDialog.xaml.cs
+│   │   ├── ViewModels/
+│   │   │   ├── AppEntryRow.cs
+│   │   │   ├── EntryItems.cs
+│   │   │   ├── MonitorHdrRow.cs
+│   │   │   ├── OrchestrationViewModel.cs
+│   │   │   └── ScanFolderRow.cs
+│   │   ├── AGENTS.md  — [agent-instructions] Apps and games domain module — the registry of apps the user cares about, notic…
+│   │   ├── CLAUDE.md
+│   │   ├── Deckle.Orchestration.csproj
+│   │   ├── DeckleOrchestrationSource.cs
+│   │   ├── OrchestrationSettings.cs
+│   │   ├── OrchestrationSettingsModule.cs
+│   │   ├── OrchestrationSettingsService.cs
+│   │   └── SettingsSearch.cs
 │   ├── Deckle.Playground/
 │   │   ├── Models/
 │   │   │   ├── CorrectionApplicationEvidence.cs
@@ -2056,6 +2123,22 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── FakeNotificationChannel.cs
 │   │   ├── NotificationCatalogTests.cs
 │   │   └── NotificationDispatcherTests.cs
+│   ├── Deckle.Orchestration.Tests/
+│   │   ├── Fixtures/
+│   │   │   ├── appmanifest_480.acf
+│   │   │   └── libraryfolders.vdf
+│   │   ├── AppMatcherTests.cs
+│   │   ├── AppRulesTests.cs
+│   │   ├── AppSessionTrackerTests.cs
+│   │   ├── Deckle.Orchestration.Tests.csproj
+│   │   ├── DeckleOrchestrationSourceTests.cs
+│   │   ├── DisplayConfigLayoutTests.cs
+│   │   ├── ExecutableLocatorTests.cs
+│   │   ├── Fixture.cs
+│   │   ├── KeyValuesReaderTests.cs
+│   │   ├── ProfileTransactionTests.cs
+│   │   ├── ScanOnDiskTests.cs
+│   │   └── SteamLibraryTests.cs
 │   ├── Deckle.Playground.Tests/
 │   │   ├── CorrectionApplicationEvidenceTests.cs
 │   │   ├── CorrectionApplicationTrialTests.cs

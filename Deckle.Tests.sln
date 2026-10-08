@@ -1,4 +1,4 @@
-﻿
+
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.0.31903.59
@@ -156,6 +156,10 @@ EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Deckle.Shell.Foreground", "src\Deckle.Shell.Foreground\Deckle.Shell.Foreground.csproj", "{D61256DD-F06F-45C3-80C3-1E75E1213D5B}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Deckle.Shell.Foreground.Tests", "tests\Deckle.Shell.Foreground.Tests\Deckle.Shell.Foreground.Tests.csproj", "{32AE6426-203B-4A84-8870-B59D42EF2F02}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Deckle.Orchestration", "src\Deckle.Orchestration\Deckle.Orchestration.csproj", "{32DE2944-F614-4694-AAE3-D1C3C16F7829}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Deckle.Orchestration.Tests", "tests\Deckle.Orchestration.Tests\Deckle.Orchestration.Tests.csproj", "{0922844A-3E35-4196-946B-B8D1AD0730BB}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -1067,6 +1071,30 @@ Global
 		{32AE6426-203B-4A84-8870-B59D42EF2F02}.Release|x64.Build.0 = Release|x64
 		{32AE6426-203B-4A84-8870-B59D42EF2F02}.Release|x86.ActiveCfg = Release|x64
 		{32AE6426-203B-4A84-8870-B59D42EF2F02}.Release|x86.Build.0 = Release|x64
+		{32DE2944-F614-4694-AAE3-D1C3C16F7829}.Debug|Any CPU.ActiveCfg = Debug|x64
+		{32DE2944-F614-4694-AAE3-D1C3C16F7829}.Debug|Any CPU.Build.0 = Debug|x64
+		{32DE2944-F614-4694-AAE3-D1C3C16F7829}.Debug|x64.ActiveCfg = Debug|x64
+		{32DE2944-F614-4694-AAE3-D1C3C16F7829}.Debug|x64.Build.0 = Debug|x64
+		{32DE2944-F614-4694-AAE3-D1C3C16F7829}.Debug|x86.ActiveCfg = Debug|x64
+		{32DE2944-F614-4694-AAE3-D1C3C16F7829}.Debug|x86.Build.0 = Debug|x64
+		{32DE2944-F614-4694-AAE3-D1C3C16F7829}.Release|Any CPU.ActiveCfg = Release|x64
+		{32DE2944-F614-4694-AAE3-D1C3C16F7829}.Release|Any CPU.Build.0 = Release|x64
+		{32DE2944-F614-4694-AAE3-D1C3C16F7829}.Release|x64.ActiveCfg = Release|x64
+		{32DE2944-F614-4694-AAE3-D1C3C16F7829}.Release|x64.Build.0 = Release|x64
+		{32DE2944-F614-4694-AAE3-D1C3C16F7829}.Release|x86.ActiveCfg = Release|x64
+		{32DE2944-F614-4694-AAE3-D1C3C16F7829}.Release|x86.Build.0 = Release|x64
+		{0922844A-3E35-4196-946B-B8D1AD0730BB}.Debug|Any CPU.ActiveCfg = Debug|x64
+		{0922844A-3E35-4196-946B-B8D1AD0730BB}.Debug|Any CPU.Build.0 = Debug|x64
+		{0922844A-3E35-4196-946B-B8D1AD0730BB}.Debug|x64.ActiveCfg = Debug|x64
+		{0922844A-3E35-4196-946B-B8D1AD0730BB}.Debug|x64.Build.0 = Debug|x64
+		{0922844A-3E35-4196-946B-B8D1AD0730BB}.Debug|x86.ActiveCfg = Debug|x64
+		{0922844A-3E35-4196-946B-B8D1AD0730BB}.Debug|x86.Build.0 = Debug|x64
+		{0922844A-3E35-4196-946B-B8D1AD0730BB}.Release|Any CPU.ActiveCfg = Release|x64
+		{0922844A-3E35-4196-946B-B8D1AD0730BB}.Release|Any CPU.Build.0 = Release|x64
+		{0922844A-3E35-4196-946B-B8D1AD0730BB}.Release|x64.ActiveCfg = Release|x64
+		{0922844A-3E35-4196-946B-B8D1AD0730BB}.Release|x64.Build.0 = Release|x64
+		{0922844A-3E35-4196-946B-B8D1AD0730BB}.Release|x86.ActiveCfg = Release|x64
+		{0922844A-3E35-4196-946B-B8D1AD0730BB}.Release|x86.Build.0 = Release|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -1147,5 +1175,7 @@ Global
 		{590FC3C5-84C3-47F0-821C-CEB252C36E04} = {0AB3BF05-4346-4AA6-1389-037BE0695223}
 		{D61256DD-F06F-45C3-80C3-1E75E1213D5B} = {827E0CD3-B72D-47B6-A68D-7590B98EB39B}
 		{32AE6426-203B-4A84-8870-B59D42EF2F02} = {0AB3BF05-4346-4AA6-1389-037BE0695223}
+		{32DE2944-F614-4694-AAE3-D1C3C16F7829} = {827E0CD3-B72D-47B6-A68D-7590B98EB39B}
+		{0922844A-3E35-4196-946B-B8D1AD0730BB} = {0AB3BF05-4346-4AA6-1389-037BE0695223}
 	EndGlobalSection
 EndGlobal

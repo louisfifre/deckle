@@ -33,6 +33,9 @@ public static class Glyphs
     // Segoe Fluent "Spelling" (F87B) — proofing / autocorrect.
     public const string Autocorrect = "";
 
+    // Segoe Fluent "Game" (E7FC) — the apps and games registry.
+    public const string Games = "";
+
     // Common semantic concepts
     public const string Shortcut = "";
     public const string Theme = "";
