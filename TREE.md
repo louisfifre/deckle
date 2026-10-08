@@ -2012,6 +2012,9 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── CorrectionApplicationEvidenceTests.cs
 │   │   ├── CorrectionApplicationTrialTests.cs
 │   │   └── Deckle.Playground.Tests.csproj
+│   ├── Deckle.Presets.Tests/
+│   │   ├── Deckle.Presets.Tests.csproj
+│   │   └── PresetFamilyTests.cs
 │   ├── Deckle.Security.Tests/
 │   │   ├── Deckle.Security.Tests.csproj
 │   │   └── SecretVaultTests.cs
