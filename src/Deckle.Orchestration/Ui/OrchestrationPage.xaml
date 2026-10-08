@@ -19,6 +19,48 @@
                 <Setter Property="Margin" Value="1,30,0,6" />
             </Style.Setters>
         </Style>
+
+        <!-- The cards inside an entry's expander. They go through ItemsSource
+             because the monitor cards come and go with the monitors; the
+             expander takes static Items or an ItemsSource, not both. -->
+        <local:EntryItemTemplateSelector x:Key="EntryItemTemplateSelector">
+            <local:EntryItemTemplateSelector.KindTemplate>
+                <DataTemplate x:DataType="local:EntryKindItem">
+                    <controls:SettingsCard x:Uid="OrchestrationPage_KindCard">
+                        <ComboBox MinWidth="120"
+                                  SelectedIndex="{x:Bind Row.KindIndex, Mode=TwoWay}">
+                            <ComboBoxItem x:Uid="OrchestrationPage_KindApp" />
+                            <ComboBoxItem x:Uid="OrchestrationPage_KindGame" />
+                        </ComboBox>
+                    </controls:SettingsCard>
+                </DataTemplate>
+            </local:EntryItemTemplateSelector.KindTemplate>
+            <local:EntryItemTemplateSelector.ExecutableTemplate>
+                <DataTemplate x:DataType="local:EntryExecutableItem">
+                    <controls:SettingsCard x:Uid="OrchestrationPage_ExecutableCard"
+                                           Description="{x:Bind Row.ExecutablePath, Mode=OneWay}">
+                        <Button x:Uid="OrchestrationPage_ChangeButton"
+                                Click="OnChangeExecutableClick" />
+                    </controls:SettingsCard>
+                </DataTemplate>
+            </local:EntryItemTemplateSelector.ExecutableTemplate>
+            <!-- One per HDR-capable monitor: the monitor's name, and what to
+                 do with its HDR while the app runs. -->
+            <local:EntryItemTemplateSelector.MonitorHdrTemplate>
+                <DataTemplate x:DataType="local:MonitorHdrRow">
+                    <controls:SettingsCard x:Uid="OrchestrationPage_MonitorHdrCard"
+                                           Header="{x:Bind FriendlyName}">
+                        <ComboBox MinWidth="120"
+                                  AutomationProperties.Name="{x:Bind FriendlyName}"
+                                  SelectedIndex="{x:Bind RuleIndex, Mode=TwoWay}">
+                            <ComboBoxItem x:Uid="OrchestrationPage_HdrLeave" />
+                            <ComboBoxItem x:Uid="OrchestrationPage_HdrOn" />
+                            <ComboBoxItem x:Uid="OrchestrationPage_HdrOff" />
+                        </ComboBox>
+                    </controls:SettingsCard>
+                </DataTemplate>
+            </local:EntryItemTemplateSelector.MonitorHdrTemplate>
+        </local:EntryItemTemplateSelector>
     </Page.Resources>
 
     <ScrollViewer Padding="32,24,32,24"
@@ -146,7 +188,9 @@
                         <ItemsControl.ItemTemplate>
                             <DataTemplate x:DataType="local:AppEntryRow">
                                 <controls:SettingsExpander Header="{x:Bind DisplayName}"
-                                                           Description="{x:Bind Description, Mode=OneWay}">
+                                                           Description="{x:Bind Description, Mode=OneWay}"
+                                                           ItemsSource="{x:Bind Items}"
+                                                           ItemTemplate="{StaticResource EntryItemTemplateSelector}">
                                     <controls:SettingsExpander.HeaderIcon>
                                         <FontIcon Glyph="{x:Bind Glyph, Mode=OneWay}" />
                                     </controls:SettingsExpander.HeaderIcon>
@@ -163,21 +207,6 @@
                                                       FontSize="16" />
                                         </Button>
                                     </StackPanel>
-
-                                    <controls:SettingsExpander.Items>
-                                        <controls:SettingsCard x:Uid="OrchestrationPage_KindCard">
-                                            <ComboBox MinWidth="120"
-                                                      SelectedIndex="{x:Bind KindIndex, Mode=TwoWay}">
-                                                <ComboBoxItem x:Uid="OrchestrationPage_KindApp" />
-                                                <ComboBoxItem x:Uid="OrchestrationPage_KindGame" />
-                                            </ComboBox>
-                                        </controls:SettingsCard>
-                                        <controls:SettingsCard x:Uid="OrchestrationPage_ExecutableCard"
-                                                               Description="{x:Bind ExecutablePath, Mode=OneWay}">
-                                            <Button x:Uid="OrchestrationPage_ChangeButton"
-                                                    Click="OnChangeExecutableClick" />
-                                        </controls:SettingsCard>
-                                    </controls:SettingsExpander.Items>
                                 </controls:SettingsExpander>
                             </DataTemplate>
                         </ItemsControl.ItemTemplate>

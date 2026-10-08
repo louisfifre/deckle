@@ -30,6 +30,24 @@ public sealed partial class OrchestrationPage : Page
         NothingNew.Visibility = Visibility.Collapsed;
         ViewModel.Load();
         RefreshEmptyState();
+        _ = RefreshMonitorsAsync();
+    }
+
+    // Reading the display configuration is a few driver calls: done off the
+    // UI thread, then the cards are updated back on it (the await resumes on
+    // the page's dispatcher). Monitors can change between visits, so it runs
+    // on every navigation.
+    private async Task RefreshMonitorsAsync()
+    {
+        try
+        {
+            IReadOnlyList<DisplayTarget> targets = await Task.Run(DisplayTargets.Enumerate);
+            ViewModel.SetMonitors(targets);
+        }
+        catch (Exception ex)
+        {
+            ReportFailure("read_monitors", ex);
+        }
     }
 
     private async void OnAddAppClick(object sender, RoutedEventArgs e)
@@ -63,7 +81,7 @@ public sealed partial class OrchestrationPage : Page
 
     private async void OnChangeExecutableClick(object sender, RoutedEventArgs e)
     {
-        if ((sender as FrameworkElement)?.DataContext is not AppEntryRow row) return;
+        if ((sender as FrameworkElement)?.DataContext is not EntryExecutableItem { Row: var row }) return;
         try
         {
             string? path = await PickExecutableAsync();

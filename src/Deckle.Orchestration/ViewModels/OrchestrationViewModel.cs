@@ -15,6 +15,10 @@ public sealed class OrchestrationViewModel
     // The folders the scan walks besides Steam, in the order the user added them.
     public ObservableCollection<ScanFolderRow> ScanFolders { get; } = new();
 
+    // The HDR-capable monitors last enumerated, one per GDI device name. Kept
+    // so rows built by a reload or an addition get their monitor cards at once.
+    private IReadOnlyList<DisplayTarget> _hdrMonitors = [];
+
     public OrchestrationViewModel() => Load();
 
     // Rebuilt on every navigation: cheap, and it picks up entries a scan or
@@ -134,8 +138,35 @@ public sealed class OrchestrationViewModel
         return true;
     }
 
-    private AppEntryRow CreateRow(AppEntry entry) =>
-        new(entry, OnRowEnabledChanged, OnRowKindChanged, OnRowRemoved);
+    /// <summary>
+    /// Show one HDR card per HDR-capable monitor under every entry. A monitor
+    /// that cannot do HDR gets no card (hidden, not greyed); clone mode lists
+    /// one device name twice, kept once.
+    /// </summary>
+    internal void SetMonitors(IReadOnlyList<DisplayTarget> targets)
+    {
+        _hdrMonitors = targets
+            .Where(t => t.HdrSupported)
+            .DistinctBy(t => t.GdiDeviceName, StringComparer.OrdinalIgnoreCase)
+            .OrderBy(t => t.GdiDeviceName, StringComparer.OrdinalIgnoreCase)
+            .ToList();
+        foreach (AppEntryRow row in Entries) row.SetMonitors(_hdrMonitors);
+    }
+
+    private AppEntryRow CreateRow(AppEntry entry)
+    {
+        var row = new AppEntryRow(entry, OnRowEnabledChanged, OnRowKindChanged, OnRowRemoved, OnRowHdrChanged);
+        row.SetMonitors(_hdrMonitors);
+        return row;
+    }
+
+    // Leave removes the key: an absent monitor and Leave mean the same.
+    private static void OnRowHdrChanged(AppEntryRow row, string device, HdrRule rule) =>
+        Service.UpdateEntry(row.Id, entry =>
+        {
+            if (rule == HdrRule.Leave) entry.Rules.HdrByMonitor.Remove(device);
+            else entry.Rules.HdrByMonitor[device] = rule;
+        });
 
     private void Refresh(AppEntryRow row)
     {

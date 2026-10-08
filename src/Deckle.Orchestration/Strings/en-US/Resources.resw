@@ -108,6 +108,18 @@
   <data name="OrchestrationPage_ChangeButton.Content" xml:space="preserve">
     <value>Change…</value>
   </data>
+  <data name="OrchestrationPage_MonitorHdrCard.Description" xml:space="preserve">
+    <value>HDR while this app runs</value>
+  </data>
+  <data name="OrchestrationPage_HdrLeave.Content" xml:space="preserve">
+    <value>Don't change</value>
+  </data>
+  <data name="OrchestrationPage_HdrOn.Content" xml:space="preserve">
+    <value>On</value>
+  </data>
+  <data name="OrchestrationPage_HdrOff.Content" xml:space="preserve">
+    <value>Off</value>
+  </data>
   <data name="OrchestrationPage_ScanButton.Content" xml:space="preserve">
     <value>Scan Steam and folders</value>
   </data>

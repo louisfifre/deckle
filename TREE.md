@@ -1420,12 +1420,15 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   └── en-US/
 │   │   │       └── Resources.resw
 │   │   ├── Ui/
+│   │   │   ├── EntryItemTemplateSelector.cs
 │   │   │   ├── OrchestrationPage.xaml
 │   │   │   ├── OrchestrationPage.xaml.cs
 │   │   │   ├── RunningProcessDialog.xaml
 │   │   │   └── RunningProcessDialog.xaml.cs
 │   │   ├── ViewModels/
 │   │   │   ├── AppEntryRow.cs
+│   │   │   ├── EntryItems.cs
+│   │   │   ├── MonitorHdrRow.cs
 │   │   │   ├── OrchestrationViewModel.cs
 │   │   │   └── ScanFolderRow.cs
 │   │   ├── AGENTS.md  — [agent-instructions] Apps and games domain module — the registry of apps the user cares about, notic…
