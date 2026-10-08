@@ -1385,9 +1385,13 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   ├── AppRules.cs
 │   │   │   ├── AppSource.cs
 │   │   │   └── HdrRule.cs
+│   │   ├── Scan/
+│   │   │   └── ExecutableLocator.cs
 │   │   ├── Steam/
 │   │   │   ├── KeyValuesNode.cs
-│   │   │   └── KeyValuesReader.cs
+│   │   │   ├── KeyValuesReader.cs
+│   │   │   ├── SteamLibrary.cs
+│   │   │   └── SteamManifest.cs
 │   │   ├── Strings/
 │   │   │   └── en-US/
 │   │   │       └── Resources.resw

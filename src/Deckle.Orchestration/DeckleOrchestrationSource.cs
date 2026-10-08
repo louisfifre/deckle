@@ -18,6 +18,11 @@ public sealed class DeckleOrchestrationSource : DeckleEventSource
     public const int EvtEntryRemovedDetail = 6;
     public const int EvtPageActionFailed = 7;
     public const int EvtPageActionFailedDetail = 8;
+    public const int EvtSteamNotFound = 9;
+    public const int EvtScanCompleted = 10;
+    public const int EvtScanCompletedDetail = 11;
+    public const int EvtScanFolderMissing = 12;
+    public const int EvtScanFileUnreadable = 13;
 
     [Event(EvtSettingsLoadWarning,
            Level = EventLevel.Warning,
@@ -91,5 +96,56 @@ public sealed class DeckleOrchestrationSource : DeckleEventSource
     public void PageActionFailedDetail(string action, string error_type, string message)
     {
         if (IsEnabled()) WriteEvent(EvtPageActionFailedDetail, action, error_type, message);
+    }
+
+    // Neither the SteamPath registry value nor the default install folder led
+    // to Steam; the scan goes on with the chosen folders only.
+    [Event(EvtSteamNotFound,
+           Level = EventLevel.Verbose,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Message = "steam not found | checked=registry_steam_path,program_files_x86")]
+    public void SteamNotFound()
+    {
+        if (IsEnabled()) WriteEvent(EvtSteamNotFound);
+    }
+
+    [Event(EvtScanCompleted,
+           Level = EventLevel.Informational,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Message = "The scan finished")]
+    public void ScanCompleted()
+    {
+        if (IsEnabled()) WriteEvent(EvtScanCompleted);
+    }
+
+    [Event(EvtScanCompletedDetail,
+           Level = EventLevel.Verbose,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Message = "scan completed | steam_found={0} | folder_found={1} | added={2}")]
+    public void ScanCompletedDetail(int steam_found, int folder_found, int added)
+    {
+        if (IsEnabled()) WriteEvent(EvtScanCompletedDetail, steam_found, folder_found, added);
+    }
+
+    // A folder the user chose to scan is gone (renamed, unplugged drive). It
+    // stays in the list; the next scan tries it again.
+    [Event(EvtScanFolderMissing,
+           Level = EventLevel.Verbose,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Message = "scan folder missing | folder={0}")]
+    public void ScanFolderMissing(string folder)
+    {
+        if (IsEnabled()) WriteEvent(EvtScanFolderMissing, folder);
+    }
+
+    // A Steam file or a folder could not be read or parsed during a scan; it
+    // is skipped and the scan goes on.
+    [Event(EvtScanFileUnreadable,
+           Level = EventLevel.Verbose,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Message = "scan path skipped | path={0} | error_type={1} | message={2}")]
+    public void ScanFileUnreadable(string path, string error_type, string message)
+    {
+        if (IsEnabled()) WriteEvent(EvtScanFileUnreadable, path, error_type, message);
     }
 }
