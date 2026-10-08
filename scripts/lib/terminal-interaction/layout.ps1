@@ -307,7 +307,7 @@ function Get-TerminalMinimumColumnWidth {
             }
         }
     }
-    return [Math]::Max(16, $longest + 4)
+    return [Math]::Max(20, $longest + 4)
 }
 
 function Get-TerminalMenuGrid {

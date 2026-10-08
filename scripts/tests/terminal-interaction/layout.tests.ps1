@@ -210,7 +210,7 @@ $bumpRoomy = Get-TerminalInteractionFrame -View $bumpMenu -Width 100 -Height 12 
 $roomyPatch = Get-Placement -Frame $bumpRoomy -TargetId action.bump.patch
 $roomyMajor = Get-Placement -Frame $bumpRoomy -TargetId action.bump.major
 Assert-Equal $roomyPatch.Y $roomyMajor.Y 'three Variants share one line while their cells stay above the floor'
-Assert-True ($roomyPatch.Width -ge 16) 'a roomy terminal keeps Variant cells above the width floor'
+Assert-True ($roomyPatch.Width -ge 20) 'a roomy terminal keeps Variant cells above the width floor'
 $roomyRelease = Get-Placement -Frame $bumpRoomy -TargetId access.release
 $roomySetup = Get-Placement -Frame $bumpRoomy -TargetId access.setup
 Assert-Equal $roomyRelease.Y $roomySetup.Y 'three Accesses fill the three Variant columns of their level on one line'
@@ -219,7 +219,7 @@ $bumpTight = Get-TerminalInteractionFrame -View $bumpMenu -Width 72 -Height 12 -
 $tightPatch = Get-Placement -Frame $bumpTight -TargetId action.bump.patch
 $tightMinor = Get-Placement -Frame $bumpTight -TargetId action.bump.minor
 $tightMajor = Get-Placement -Frame $bumpTight -TargetId action.bump.major
-Assert-True ($tightPatch.Width -ge 16) 'a tight terminal drops a column before a cell shrinks below the floor'
+Assert-True ($tightPatch.Width -ge 20) 'a tight terminal drops a column before a cell shrinks below the floor'
 Assert-Equal $tightPatch.Y $tightMinor.Y 'the first two Variants keep the label line'
 Assert-Equal ($tightPatch.Y + 1) $tightMajor.Y 'the third Variant wraps to the very next line'
 Assert-Equal $tightPatch.X $tightMajor.X 'a wrapped Variant sits beneath the first cell, not beneath the label'
