@@ -1272,6 +1272,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   ├── AmbientPage.Hue.cs
 │   │   │   ├── AmbientPage.xaml
 │   │   │   └── AmbientPage.xaml.cs
+│   │   ├── AmbientCaptureRate.cs
 │   │   ├── AmbientSettings.cs
 │   │   ├── AmbientSettingsModule.cs
 │   │   ├── AmbientSettingsService.cs
@@ -1967,6 +1968,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   ├── Deckle.Lighting.Ambient.Tests/
 │   │   ├── AmbientBrightnessBugNotes.md
 │   │   ├── AmbientBrightnessCurveTests.cs
+│   │   ├── AmbientCaptureRateTests.cs
 │   │   ├── AmbientHeartbeatWindowTests.cs
 │   │   ├── AmbientHueChangeAttributorTests.cs
 │   │   ├── AmbientPushCadenceTests.cs

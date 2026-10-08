@@ -123,7 +123,8 @@ public sealed partial class AmbientEngine
                 .ConfigureAwait(false);
             _managedGroupId = ambient.HueLastGroupId;
 
-            _capture = new ScreenCaptureService();
+            _capture = new ScreenCaptureService(
+                AmbientCaptureRate.Snap(ambient.CaptureFrameRateHz));
             _capture.Start(ambient.SelectedMonitorDeviceName);
 
             _sampler = new FrameSampler(

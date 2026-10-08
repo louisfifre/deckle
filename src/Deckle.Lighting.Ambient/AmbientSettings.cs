@@ -62,6 +62,16 @@ public sealed class AmbientSettings
     /// <c>ScreenCaptureService.GetAvailableMonitors</c>.</summary>
     public string? SelectedMonitorDeviceName { get; set; }
 
+    /// <summary>Screen-capture rate in Hz, a closed choice among
+    /// <see cref="AmbientCaptureRate.Allowed"/> (60, 30, 15); the engine
+    /// snaps any other stored value with <see cref="AmbientCaptureRate.Snap"/>.
+    /// Default 60: a sample every ~16 ms keeps the smoothing fed and the
+    /// lights reactive. 30 or 15 lighten the GPU readback on weaker
+    /// machines. The push to the lights keeps its own transport rate.
+    /// Applies at the next engine start. Settings files written before
+    /// this field existed load the default.</summary>
+    public int CaptureFrameRateHz { get; set; } = AmbientCaptureRate.Default;
+
     // ── Mode selection (J6 scaffolding) ────────────────────────────
     //
     // The enum and the property are pre-wired so a new behaviour lands
