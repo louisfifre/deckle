@@ -242,6 +242,16 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── AGENTS.md  — [agent-instructions] Why Deckle keeps ADRs and the questions that gate one. Read before writing or p…
 │   │   └── CLAUDE.md
 │   ├── research/
+│   │   ├── taskbar-probes/
+│   │   │   ├── explorer-restart.ps1
+│   │   │   ├── feature-flags.ps1
+│   │   │   ├── native-test.ps1
+│   │   │   ├── pe-keys2.ps1
+│   │   │   ├── README.md
+│   │   │   ├── taskbar-accent.ps1
+│   │   │   ├── taskbar-probe.ps1
+│   │   │   ├── taskbar-strings.ps1
+│   │   │   └── tray-uia.ps1
 │   │   ├── 2026-06-12--notifications-catalogue.md
 │   │   ├── 2026-06-15--mouse-wheel-to-virtual-touchpad-spec.md
 │   │   ├── research--anytype-backlog-audit--2026-07-27.html
