@@ -642,6 +642,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── IAudioRecordingHost.cs
 │   │   ├── IMicrophoneCapture.cs
 │   │   ├── ListeningTake.cs
+│   │   ├── ListeningTester.cs
 │   │   ├── MicLevelTester.cs
 │   │   ├── MicrophoneCapture.cs
 │   │   ├── ProbeResult.cs
