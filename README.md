@@ -20,8 +20,8 @@ Press the hotkey, speak, and press it again when you are done. Deckle cuts your 
 
 - **One hotkey, pressed twice.** Win + the key left of 1 starts a take; the same key stops it. It is a toggle, so your hands are free while you speak. Adding Shift or Ctrl to the same chord picks a rewrite profile.
 - **Utterances cut on your pauses.** An energy threshold watches the microphone level and cuts an utterance when you pause long enough. A Silero voice-activity model then trims each utterance down to the speech it contains.
-- **A local Whisper model.** Speech recognition runs through [whisper.cpp](https://github.com/ggerganov/whisper.cpp) on your GPU through Vulkan, with a CPU fallback. The default model is Whisper base (about 150 MB); Whisper large-v3 (about 3 GB) is available for better accuracy.
-- **Transcription while you speak.** Each utterance is transcribed as soon as it is cut, so pressing stop only waits for the last one.
+- **A local Whisper model.** Speech recognition runs through [whisper.cpp](https://github.com/ggerganov/whisper.cpp) on your GPU through Vulkan, with a CPU fallback. The default model is Whisper base (`ggml-base`, about 150 MB); Whisper large-v3 (about 3 GB) is available for better accuracy.
+- **Transcription while you speak.** Each utterance is transcribed as soon as it is cut, so pressing stop only waits for the utterances still in the queue.
 - **A pause becomes a paragraph.** Each utterance cut on a pause starts a new paragraph in the text.
 - **Clipboard first, paste on request.** The text always goes to the clipboard. Paste is off by default; when you turn it on, Deckle pastes only into a field that UI Automation confirms is editable.
 - **Optional rewrite.** A local [Ollama](https://ollama.com/) model can clean up the transcript before it is delivered.
