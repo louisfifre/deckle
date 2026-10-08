@@ -1319,6 +1319,8 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │       └── Resources.resw
 │   │   ├── Ui/
 │   │   │   ├── BoolToVisibilityConverter.cs
+│   │   │   ├── LlmActiveProfileSection.xaml
+│   │   │   ├── LlmActiveProfileSection.xaml.cs
 │   │   │   ├── LlmGeneralSection.xaml
 │   │   │   ├── LlmGeneralSection.xaml.cs
 │   │   │   ├── LlmModelsSection.xaml
@@ -1328,8 +1330,6 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   ├── LlmPage.xaml.cs
 │   │   │   ├── LlmProfilesSection.xaml
 │   │   │   ├── LlmProfilesSection.xaml.cs
-│   │   │   ├── LlmShortcutSlotsSection.xaml
-│   │   │   ├── LlmShortcutSlotsSection.xaml.cs
 │   │   │   ├── ProfileViewModel.cs
 │   │   │   ├── RewriteChangeView.cs
 │   │   │   ├── RewriteOfferWindow.xaml

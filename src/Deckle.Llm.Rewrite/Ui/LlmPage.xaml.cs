@@ -13,7 +13,7 @@ namespace Deckle.Llm.Rewrite;
 
 // ─── LlmPage — thin host ───────────────────────────────────────────────────
 //
-// Stacks four sections as autonomous UserControls (General, ShortcutSlots,
+// Stacks four sections as autonomous UserControls (General, ActiveProfile,
 // Profiles, Models) + the Ollama status InfoBar. All functional content
 // lives in Settings/Llm/. Only these remain here:
 //
@@ -25,7 +25,7 @@ namespace Deckle.Llm.Rewrite;
 //  - global Reset all
 //
 // The Models section depends on Ollama and receives the context via
-// Initialize() + StateChanged. Others (General, Profiles, ShortcutSlots)
+// Initialize() + StateChanged. Others (General, Profiles, ActiveProfile)
 // reload directly from SettingsService.
 
 public sealed partial class LlmPage : Page
@@ -101,14 +101,14 @@ public sealed partial class LlmPage : Page
         // Synchronous, no try/catch needed: Reload() only touches in-memory
         // collections. If a Reload throws, it is a state bug elsewhere and the
         // global UnhandledException captures it.
-        ShortcutSlotsSection.Reload();
+        ActiveProfileSection.Reload();
     }
 
     private void Hydrate()
     {
         GeneralSection.Reload();
         ProfilesSection.Reload();
-        ShortcutSlotsSection.Reload();
+        ActiveProfileSection.Reload();
     }
 
     private async Task RefreshOllamaStateAsync()

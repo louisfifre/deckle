@@ -56,8 +56,8 @@
                      layout when rewriting is off, driven by the General master
                      toggle. The Enabled toggle itself (in GeneralSection) stays
                      always visible. -->
-                <llm:LlmShortcutSlotsSection x:Name="ShortcutSlotsSection"
-                                             Visibility="{x:Bind GeneralSection.IsRewritingEnabled, Mode=OneWay, Converter={StaticResource BoolToVisibility}}" />
+                <llm:LlmActiveProfileSection x:Name="ActiveProfileSection"
+                                            Visibility="{x:Bind GeneralSection.IsRewritingEnabled, Mode=OneWay, Converter={StaticResource BoolToVisibility}}" />
                 <llm:LlmProfilesSection x:Name="ProfilesSection"
                                         Visibility="{x:Bind GeneralSection.IsRewritingEnabled, Mode=OneWay, Converter={StaticResource BoolToVisibility}}" />
                 <llm:LlmModelsSection x:Name="ModelsSection"

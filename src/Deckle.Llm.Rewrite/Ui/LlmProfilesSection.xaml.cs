@@ -76,9 +76,11 @@ public sealed partial class LlmProfilesSection : UserControl
         if (sender is not FrameworkElement fe || fe.Tag is not ProfileViewModel vm)
             return;
 
-        // Removing a profile keeps shortcut-slot references intact until the
-        // user reassigns them. Retained legacy auto-rule data is also preserved
-        // for lossless deserialization, although it has no runtime or UI consumer.
+        // Removing the active profile clears the active choice (back to plain
+        // transcription), so the page and the engine agree instead of keeping
+        // an orphan the ComboBox shows as (None). Retained legacy auto-rule data
+        // is preserved for lossless deserialization, although it has no runtime
+        // or UI consumer.
         bool confirmed = await ConfirmationService.RequestAsync(
             this.XamlRoot,
             new ConfirmationRequest(
@@ -89,12 +91,21 @@ public sealed partial class LlmProfilesSection : UserControl
         if (!confirmed)
             return;
 
-        var profiles = LlmSettingsService.Instance.Current.Profiles;
+        var settings = LlmSettingsService.Instance.Current;
+        var profiles = settings.Profiles;
         if (vm.ProfileIndex < profiles.Count)
         {
+            RewriteProfile removed = profiles[vm.ProfileIndex];
+            if (!string.IsNullOrEmpty(settings.ActiveProfileId)
+                    ? settings.ActiveProfileId == removed.Id
+                    : string.Equals(settings.ActiveProfileName, removed.Name, StringComparison.OrdinalIgnoreCase))
+            {
+                settings.ActiveProfileId = null;
+                settings.ActiveProfileName = null;
+            }
             profiles.RemoveAt(vm.ProfileIndex);
-            // Reconcile shortcut slots and retained legacy references against
-            // the remaining profile list. The migration never deletes data.
+            // Reconcile the active profile and retained legacy references
+            // against the remaining profile list. The migration never deletes data.
             LlmSettingsMigrations.RepairProfileReferences(LlmSettingsService.Instance.Current);
             LlmSettingsService.Instance.Save();
         }

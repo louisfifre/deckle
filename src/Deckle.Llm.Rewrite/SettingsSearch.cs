@@ -44,16 +44,11 @@ public static class SettingsSearch
             Keywords = ["server", "host", "api", "address"],
         },
 
-        // Shortcut slots — bespoke cards. Tag hand-authored in LlmShortcutSlotsSection.
+        // Active profile — bespoke card. Tag hand-authored in LlmActiveProfileSection.
         new SettingSearchEntry
         {
-            LabelKey = "LlmPrimarySlotCard",
-            Keywords = ["shortcut", "hotkey", "keybinding"],
-        },
-        new SettingSearchEntry
-        {
-            LabelKey = "LlmSecondarySlotCard",
-            Keywords = ["shortcut", "hotkey", "keybinding"],
+            LabelKey = "LlmActiveProfileCard",
+            Keywords = ["profile", "rewrite", "default"],
         },
 
         // Profiles — runtime ItemsRepeater, one section entry.
