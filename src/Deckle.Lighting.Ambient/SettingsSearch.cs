@@ -17,7 +17,9 @@ namespace Deckle.Lighting.Ambient;
 //
 // Children of a composed fold (the band shape and depth under "Colour per zone", the
 // floor level under "Brightness floor") are not indexed — a hit must be bringable into
-// view, and they hide with their master — so the fold's keywords bridge to them.
+// view, and they hide with their master — so the fold's keywords bridge to them. The
+// per-light rows (LightZonesCard) hide with the per-zone fold too and are reached
+// through its keywords the same way.
 //
 // Maintenance contract: a card added to AmbientPage that a user should be able to find
 // gets one entry here (and, when bespoke, a matching Tag in the XAML). The transient
@@ -28,7 +30,7 @@ public static class SettingsSearch
     [
         new() { LabelKey = "AmbientEnabledCard", Keywords = ["ambilight", "bias lighting", "backlight"] },
         new() { LabelKey = "AmbientModeCard", Keywords = ["preset", "game", "movie", "custom"] },
-        new() { LabelKey = "AmbientZonesGroup", Keywords = ["multi light", "zones", "edges", "border", "depth", "band"] },
+        new() { LabelKey = "AmbientZonesGroup", Keywords = ["multi light", "zones", "edges", "border", "depth", "band", "per light", "lamp", "identify"] },
         new() { LabelKey = "AmbientBrightnessCurveCard", Keywords = ["curve", "bezier", "response", "shadows"] },
         new() { LabelKey = "AmbientMinBrightnessGroup", Keywords = ["minimum brightness", "floor", "dark scenes"] },
         new() { LabelKey = "AmbientSmoothingCard", Keywords = ["smoothing", "speed", "fade", "lag"] },

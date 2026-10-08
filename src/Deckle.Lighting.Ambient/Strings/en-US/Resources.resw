@@ -403,6 +403,48 @@
     <value>Deckle is already paired with a bridge. Pairing again replaces the current address and credentials with the new ones.</value>
   </data>
 
+  <!-- LightZonesCard (x:Uid). -->
+  <data name="AmbientLightsExpander.Header" xml:space="preserve">
+    <value>Lights</value>
+  </data>
+  <data name="AmbientLightsExpander.Description" xml:space="preserve">
+    <value>Pick the screen edge each light follows and how bright it gets. A light with no zone keeps its current state.</value>
+  </data>
+  <data name="AmbientLightsEmptyState.Text" xml:space="preserve">
+    <value>No lights returned for this group. If this is an Entertainment Area, try selecting the matching Room/Zone instead, or check the Hue app.</value>
+  </data>
+  <!-- LightZonesCard code-behind (Loc.Get) — mirrored in Deckle.App's
+       Resources.resw, this copy is the source of truth for wording. -->
+  <data name="AmbientLights_Zone_None" xml:space="preserve">
+    <value>No zone</value>
+  </data>
+  <data name="AmbientLights_Zone_Top" xml:space="preserve">
+    <value>Top</value>
+  </data>
+  <data name="AmbientLights_Zone_Bottom" xml:space="preserve">
+    <value>Bottom</value>
+  </data>
+  <data name="AmbientLights_Zone_Left" xml:space="preserve">
+    <value>Left</value>
+  </data>
+  <data name="AmbientLights_Zone_Right" xml:space="preserve">
+    <value>Right</value>
+  </data>
+  <data name="AmbientLights_ZoneName" xml:space="preserve">
+    <value>Screen edge</value>
+  </data>
+  <data name="AmbientLights_BrightnessName" xml:space="preserve">
+    <value>Brightness</value>
+  </data>
+  <data name="AmbientLights_Identify" xml:space="preserve">
+    <value>Identify</value>
+  </data>
+  <data name="AmbientLights_Identifying" xml:space="preserve">
+    <value>Flashing…</value>
+  </data>
+  <data name="AmbientLights_Offline" xml:space="preserve">
+    <value>Offline</value>
+  </data>
   <data name="SettingsModuleNavLabel" xml:space="preserve">
     <value>Ambient Light</value>
   </data>

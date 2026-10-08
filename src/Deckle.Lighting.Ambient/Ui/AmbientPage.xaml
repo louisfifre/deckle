@@ -86,6 +86,13 @@
                 <StackPanel x:Name="BehaviourHost"
                             Spacing="{StaticResource SettingsCardSpacing}" />
 
+                <!-- bespoke: one row per light of the selected Hue group
+                     (zone, brightness, Identify) — the set of lights is only
+                     known at runtime, from the bridge. Shown under the
+                     per-zone group, only while it is on and a group is
+                     selected in the Hue bridge expander below. -->
+                <ambientControls:LightZonesCard />
+
                 <!-- ── Fine tuning ────────────────────────────────────────── -->
                 <TextBlock x:Uid="AmbientTuningSectionHeader"
                            Style="{StaticResource SettingsSectionHeaderTextBlockStyle}" />

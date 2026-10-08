@@ -1262,6 +1262,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   ├── AmbientZoneSampler.cs
 │   │   │   ├── HueEndpointResolver.cs
 │   │   │   ├── HuePairingService.cs
+│   │   │   ├── LightPlacementResolver.cs
 │   │   │   ├── LightZone.cs
 │   │   │   ├── LightZoneSuggester.cs
 │   │   │   └── SrgbColor.cs
@@ -1271,7 +1272,9 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── Ui/
 │   │   │   ├── Controls/
 │   │   │   │   ├── BrightnessCurveCanvas.xaml
-│   │   │   │   └── BrightnessCurveCanvas.xaml.cs
+│   │   │   │   ├── BrightnessCurveCanvas.xaml.cs
+│   │   │   │   ├── LightZonesCard.xaml
+│   │   │   │   └── LightZonesCard.xaml.cs
 │   │   │   ├── AmbientPage.Hue.cs
 │   │   │   ├── AmbientPage.xaml
 │   │   │   └── AmbientPage.xaml.cs
@@ -1287,6 +1290,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── DeckleAmbientSource.CaptureAndSampling.cs
 │   │   ├── DeckleAmbientSource.cs
 │   │   ├── DeckleAmbientSource.Lifecycle.cs
+│   │   ├── DeckleAmbientSource.LightPlacement.cs
 │   │   ├── DeckleAmbientSource.Pairing.cs
 │   │   ├── DeckleAmbientSource.Push.cs
 │   │   ├── DeckleAmbientSource.UiAndSettings.cs
@@ -1985,7 +1989,8 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── AmbientStartSettingsTests.cs
 │   │   ├── Deckle.Lighting.Ambient.Tests.csproj
 │   │   ├── DeckleAmbientSourceTests.cs
-│   │   └── HueEndpointResolverTests.cs
+│   │   ├── HueEndpointResolverTests.cs
+│   │   └── LightPlacementResolverTests.cs
 │   ├── Deckle.Lighting.Tests/
 │   │   ├── BugExamples/
 │   │   │   └── dns-sd-pending-status-lifetime.json

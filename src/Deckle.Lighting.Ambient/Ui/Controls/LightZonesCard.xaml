@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<UserControl
+    x:Class="Deckle.Lighting.Ambient.LightZonesCard"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:controls="using:CommunityToolkit.WinUI.Controls"
+    xmlns:ui="using:CommunityToolkit.WinUI"
+    Visibility="Collapsed">
+
+    <!-- One SettingsCard per light of the selected Hue group, built in
+         code-behind (the set is only known at runtime): zone picker,
+         brightness slider, Identify. The header's ProgressRing runs while
+         the bridge is asked for the group's lights. -->
+    <controls:SettingsExpander x:Name="LightsExpander"
+                               x:Uid="AmbientLightsExpander"
+                               Tag="AmbientLightsExpander"
+                               IsExpanded="True"
+                               HeaderIcon="{ui:FontIcon Glyph={StaticResource Icon.LightbulbFilled}}">
+        <ProgressRing x:Name="ResolvingRing"
+                      Width="20"
+                      Height="20"
+                      IsActive="False" />
+        <controls:SettingsExpander.ItemsFooter>
+            <TextBlock x:Name="EmptyStateText"
+                       x:Uid="AmbientLightsEmptyState"
+                       Visibility="Collapsed"
+                       Style="{ThemeResource CaptionTextBlockStyle}"
+                       Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                       TextWrapping="Wrap"
+                       Margin="16,8,16,12" />
+        </controls:SettingsExpander.ItemsFooter>
+    </controls:SettingsExpander>
+</UserControl>

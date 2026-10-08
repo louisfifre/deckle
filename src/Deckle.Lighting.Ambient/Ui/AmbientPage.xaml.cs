@@ -15,10 +15,11 @@ namespace Deckle.Lighting.Ambient;
 //
 // Surface : most cards are composed by SettingsComposer from the manifests in
 // AmbientViewModel.Settings.cs, one composer per host panel (StateHost,
-// BehaviourHost, TuningHost, CaptureHost). Four parts stay hand-authored
+// BehaviourHost, TuningHost, CaptureHost). Five parts stay hand-authored
 // because the composer cannot express them, each marked "bespoke" in the
-// XAML: the NotPaired InfoBar, the brightness-curve editor, the display
-// picker (runtime labels) and the Hue bridge expander (AmbientPage.Hue.cs).
+// XAML: the NotPaired InfoBar, the per-light rows (LightZonesCard), the
+// brightness-curve editor, the display picker (runtime labels) and the Hue
+// bridge expander (AmbientPage.Hue.cs).
 //
 // Sync : the view model writes every edit straight to AmbientSettingsService
 // and saves. The page observes AmbientSettingsService.Changed and reloads the

@@ -933,6 +933,40 @@
     <value>Deckle is already paired with a bridge. Pairing again replaces the current address and credentials with the new ones.</value>
   </data>
 
+  <!-- LightZonesCard code-behind (Loc.Get) — duplicated from
+       src/Deckle.Lighting.Ambient/Strings/en-US/Resources.resw, which stays
+       the source of truth for wording. -->
+  <data name="AmbientLights_Zone_None" xml:space="preserve">
+    <value>No zone</value>
+  </data>
+  <data name="AmbientLights_Zone_Top" xml:space="preserve">
+    <value>Top</value>
+  </data>
+  <data name="AmbientLights_Zone_Bottom" xml:space="preserve">
+    <value>Bottom</value>
+  </data>
+  <data name="AmbientLights_Zone_Left" xml:space="preserve">
+    <value>Left</value>
+  </data>
+  <data name="AmbientLights_Zone_Right" xml:space="preserve">
+    <value>Right</value>
+  </data>
+  <data name="AmbientLights_ZoneName" xml:space="preserve">
+    <value>Screen edge</value>
+  </data>
+  <data name="AmbientLights_BrightnessName" xml:space="preserve">
+    <value>Brightness</value>
+  </data>
+  <data name="AmbientLights_Identify" xml:space="preserve">
+    <value>Identify</value>
+  </data>
+  <data name="AmbientLights_Identifying" xml:space="preserve">
+    <value>Flashing…</value>
+  </data>
+  <data name="AmbientLights_Offline" xml:space="preserve">
+    <value>Offline</value>
+  </data>
+
   <!-- ── TrackpadPage code-behind (Loc.Get) ──────
        Duplicated from src/Deckle.Input.Trackpad/Strings/en-US/
        Resources.resw — same Loc-mirror-pattern as the AmbientPage
