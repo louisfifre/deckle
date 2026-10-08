@@ -3,7 +3,17 @@ using Deckle.Core;
 
 namespace Deckle.Shell;
 
-internal readonly record struct GlobalHotkeyBinding(int Id, uint Modifiers);
+// One OS-wide chord the host asks for. Modifiers are the RegisterHotKey
+// fsModifiers (MOD_* flags, MOD_NOREPEAT included); ScanCode names the
+// physical key, 0xE0-prefixed in the high byte for an extended key.
+public readonly record struct GlobalHotkeyBinding(int Id, uint Modifiers, uint ScanCode);
+
+// A chord the shell could not acquire. Win32Error is GetLastError after
+// RegisterHotKey (1409 = ERROR_HOTKEY_ALREADY_REGISTERED: another app, or
+// another Deckle binding, owns the chord), the error of the failed release
+// when the id is still held from the previous set, or 0 when the scancode has
+// no virtual key under the active keyboard layout.
+public sealed record HotkeyRegistrationFailure(int Id, int Win32Error);
 
 internal interface IGlobalHotkeyApi
 {
@@ -12,43 +22,65 @@ internal interface IGlobalHotkeyApi
     int LastError { get; }
 }
 
-// Acquires a selected set of OS-wide chords as one transaction. If any chord
-// is unavailable, every chord acquired earlier in the attempt is released.
-internal sealed class GlobalHotkeyBindings(
-    IntPtr window,
-    IReadOnlyList<GlobalHotkeyBinding> requested,
-    IGlobalHotkeyApi api)
+// Acquires a set of OS-wide chords one by one. A chord that fails is reported
+// and skipped; the others stay registered. Each call replaces the previous
+// set: everything acquired before is released first. A release that fails
+// keeps its id tracked, so the next Unregister retries it and the next
+// Register reports that id instead of stacking a second registration on it.
+//
+// The virtual key is resolved per binding through a delegate rather than an
+// HKL: the host resolves it with MapVirtualKeyExW under the active layout,
+// and a test passes a plain mapping, so the class stays free of Win32 calls
+// beyond IGlobalHotkeyApi.
+internal sealed class GlobalHotkeyBindings(IntPtr window, IGlobalHotkeyApi api)
 {
-    private readonly List<GlobalHotkeyBinding> _acquired = [];
+    private readonly List<int> _acquired = [];
+    private readonly Dictionary<int, int> _releaseErrors = [];
 
-    public void Register(uint virtualKey)
+    public IReadOnlyList<HotkeyRegistrationFailure> Register(
+        IReadOnlyList<GlobalHotkeyBinding> requested,
+        Func<uint, uint> resolveVirtualKey)
     {
-        if (!Unregister())
-            throw new InvalidOperationException("A previous global hotkey binding could not be released.");
+        Unregister();
 
+        var failures = new List<HotkeyRegistrationFailure>();
         foreach (GlobalHotkeyBinding binding in requested)
         {
-            if (api.Register(window, binding.Id, binding.Modifiers, virtualKey))
+            if (_acquired.Contains(binding.Id))
             {
-                _acquired.Add(binding);
+                failures.Add(new(binding.Id, _releaseErrors.GetValueOrDefault(binding.Id)));
                 continue;
             }
 
-            int error = api.LastError;
-            bool rollbackComplete = Unregister();
-            throw new InvalidOperationException(
-                $"RegisterHotKey id={binding.Id} modifiers=0x{binding.Modifiers:X} " +
-                $"vk=0x{virtualKey:X2} failed (Win32 err {error})" +
-                (rollbackComplete ? "." : "; an earlier binding could not be released."));
+            uint virtualKey = resolveVirtualKey(binding.ScanCode);
+            if (virtualKey == 0)
+            {
+                failures.Add(new(binding.Id, 0));
+                continue;
+            }
+
+            if (api.Register(window, binding.Id, binding.Modifiers, virtualKey))
+                _acquired.Add(binding.Id);
+            else
+                failures.Add(new(binding.Id, api.LastError));
         }
+        return failures;
     }
 
     public bool Unregister()
     {
         for (int index = _acquired.Count - 1; index >= 0; index--)
         {
-            if (api.Unregister(window, _acquired[index].Id))
+            int id = _acquired[index];
+            if (api.Unregister(window, id))
+            {
                 _acquired.RemoveAt(index);
+                _releaseErrors.Remove(id);
+            }
+            else
+            {
+                _releaseErrors[id] = api.LastError;
+            }
         }
         return _acquired.Count == 0;
     }
@@ -63,10 +95,4 @@ internal sealed class Win32GlobalHotkeyApi : IGlobalHotkeyApi
         NativeMethods.UnregisterHotKey(window, id);
 
     public int LastError => Marshal.GetLastWin32Error();
-}
-
-public static class HotkeySelection
-{
-    public static IReadOnlyList<int> ForModulePresence(bool transcriptionPresent) =>
-        transcriptionPresent ? [NativeMethods.HOTKEY_ID_TRANSCRIBE] : [];
 }

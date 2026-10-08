@@ -218,9 +218,12 @@ public partial class App
         // Presence gates the chord itself: absent Dictation means no
         // transcription chord, leaving the OS-wide combo free for other apps,
         // symmetric with its settings page never registering.
-        IReadOnlyList<int> hotkeyIds = HotkeySelection.ForModulePresence(
-            context.TranscriptionPresent);
-        _hotkeyManager = new HotkeyManager(_messageHost.Hwnd, OnHotkey, hotkeyIds);
+        IReadOnlyList<GlobalHotkeyBinding> hotkeyBindings = context.TranscriptionPresent
+            ? [new(NativeMethods.HOTKEY_ID_TRANSCRIBE,
+                   NativeMethods.MOD_WIN | NativeMethods.MOD_NOREPEAT,
+                   NativeMethods.SC_LEFT_OF_ONE)]
+            : [];
+        _hotkeyManager = new HotkeyManager(_messageHost.Hwnd, OnHotkey, hotkeyBindings);
         // Try/catch required: RegisterHotKey can fail with err 1409
         // (ERROR_HOTKEY_ALREADY_REGISTERED) when another process already owns
         // the chord; typically WhispInteropTest still running through the
@@ -234,7 +237,8 @@ public partial class App
         // through the HUD at boot.
         try
         {
-            _hotkeyManager.Register();
+            if (_hotkeyManager.Register().Count > 0)
+                throw new InvalidOperationException("The transcription chord is owned by another app.");
         }
         catch (Exception ex)
         {
