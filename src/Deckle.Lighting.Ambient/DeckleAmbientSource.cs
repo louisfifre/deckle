@@ -98,4 +98,10 @@ public sealed partial class DeckleAmbientSource : DeckleEventSource
     public const int EvtBridgeEndpointRecoveryFailedDetail = 63;
     public const int EvtPipelineRestartDetail           = 64;
 
+    // ── AmbientViewModel setters (moved from Deckle-Playground ids 3, 16, 17,
+    // which stay reserved there) ─────────────────────────────────────────
+    public const int EvtTuningChanged                   = 65;
+    public const int EvtPipelineModeChanged             = 66;
+    public const int EvtPipelineModeChangedDetail       = 67;
+
 }

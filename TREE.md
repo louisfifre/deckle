@@ -1275,6 +1275,8 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   ├── AmbientPage.Hue.cs
 │   │   │   ├── AmbientPage.xaml
 │   │   │   └── AmbientPage.xaml.cs
+│   │   ├── ViewModels/
+│   │   │   └── AmbientViewModel.cs
 │   │   ├── AmbientCaptureRate.cs
 │   │   ├── AmbientSettings.cs
 │   │   ├── AmbientSettingsModule.cs
@@ -1388,7 +1390,6 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   └── en-US/
 │   │   │       └── Resources.resw
 │   │   ├── ViewModels/
-│   │   │   ├── AmbientViewModel.cs
 │   │   │   ├── HudViewModel.cs
 │   │   │   └── SegmentationViewModel.cs
 │   │   ├── Views/

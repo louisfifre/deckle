@@ -45,6 +45,38 @@ public sealed partial class DeckleAmbientSource
         WriteEvent(EvtAmbientPageListGroupsFailedDetail, ex_type, ex_message);
     }
 
+    // ── AmbientViewModel setters ────────────────────────────────────────
+
+    [Event(EvtTuningChanged,
+           Level = EventLevel.Verbose,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Message = "tuning changed | setting={0} | value={1}")]
+    public void TuningChanged(string setting, string value)
+    {
+        if (!IsAmbientDetailEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Lifecycle)) return;
+        WriteEvent(EvtTuningChanged, setting, value);
+    }
+
+    [Event(EvtPipelineModeChanged,
+           Level = EventLevel.Informational,
+           Keywords = (EventKeywords)Keywords.Pipeline,
+           Message = "The ambient pipeline mode changed")]
+    public void PipelineModeChanged()
+    {
+        if (IsEnabled(EventLevel.Informational, (EventKeywords)Keywords.Pipeline))
+            WriteEvent(EvtPipelineModeChanged);
+    }
+
+    [Event(EvtPipelineModeChangedDetail,
+           Level = EventLevel.Verbose,
+           Keywords = (EventKeywords)Keywords.Pipeline,
+           Message = "pipeline mode | mode={0}")]
+    public void PipelineModeChangedDetail(string mode)
+    {
+        if (!IsAmbientDetailEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Pipeline)) return;
+        WriteEvent(EvtPipelineModeChangedDetail, mode);
+    }
+
     // ── Settings persistence ────────────────────────────────────────────
 
     [Event(EvtSettingsLoaded,

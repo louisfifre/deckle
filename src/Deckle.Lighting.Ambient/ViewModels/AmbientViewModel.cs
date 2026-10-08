@@ -1,29 +1,28 @@
 using CommunityToolkit.Mvvm.ComponentModel;
-using Deckle.Lighting.Ambient;
 
-namespace Deckle.Playground;
+namespace Deckle.Lighting.Ambient;
 
-// ─── Ambient lighting Playground ViewModel ───────────────────────────────────
+// ─── Ambient lighting ViewModel ──────────────────────────────────────────────
 //
 // Mirrors GeneralViewModel in Deckle.Settings : partial-properties pattern
 // (MVVMTK0045 AOT-safe), _isSyncing guard around Load(), auto-save through
-// PushToSettings on each property change.
+// AmbientSettingsService.Save() on each property change.
 //
-// Backs the HDR tuning sandbox + pipeline mode toggle on AmbientPage.
-// Persistence lands in <UserDataRoot>/modules/ambient/settings.json via
-// AmbientSettingsService — same store the Settings AmbientPage and the
-// canonical App-side AmbientEngine consume, so a slider drag here applies
+// Owned by this module so the Settings AmbientPage can compose its cards
+// from the manifests in AmbientViewModel.Settings.cs; the Playground's
+// Ambient tab still consumes it until that tab is removed. Persistence lands
+// in <UserDataRoot>/modules/ambient/settings.json via AmbientSettingsService
+// — the same store the App-side AmbientEngine reads, so a slider drag applies
 // live on the next push tick.
 //
-// Touching a tuning slider implicitly switches Mode to Custom (the user is
-// shaping their own thing, presets should not silently overwrite). This is
-// the same contract as Settings → Ambient lighting. The mode flip happens
-// inside each property's partial change method below ; PushToSettings is
+// Touching a tuning value implicitly switches Mode to Custom (the user is
+// shaping their own thing, presets should not silently overwrite). The mode
+// flip happens inside each property's partial change method below ; Save() is
 // called once per change so the file write is debounced by JsonSettingsStore.
 //
-// Runtime state owned by AmbientPage (capture service, frame sampler,
-// Hue REST output, preview cells, light-zone rects) is NOT here — its
-// lifetime is tied to the Page instance, not to the persisted settings.
+// Runtime state owned by a page (capture service, frame sampler, Hue REST
+// output, preview cells, light-zone rects) is NOT here — its lifetime is tied
+// to the Page instance, not to the persisted settings.
 public partial class AmbientViewModel : ObservableObject
 {
     private bool _isSyncing;
@@ -88,6 +87,12 @@ public partial class AmbientViewModel : ObservableObject
     [ObservableProperty]
     public partial bool Enabled { get; set; }
 
+    // Screen-capture rate in Hz, one of AmbientCaptureRate.Allowed. A
+    // structural value like UseMultiLight: it never flips Mode to Custom, and
+    // the app restarts a running engine when it changes.
+    [ObservableProperty]
+    public partial int CaptureFrameRateHz { get; set; }
+
     // ── Command-enable flag ──────────────────────────────────────────────────
     //
     // Enabled only when the tuning surface (HDR + zone sampling + mode) differs
@@ -114,7 +119,7 @@ public partial class AmbientViewModel : ObservableObject
     partial void OnExposureEvChanged(double value)
     {
         if (_isSyncing) return;
-        DecklePlaygroundSource.Log.TuningChanged("Exposure", $"{value:F2} EV");
+        DeckleAmbientSource.Log.TuningChanged("Exposure", $"{value:F2} EV");
         AmbientSettingsService.Instance.Current.ExposureEv = value;
         FlipToCustomMode();
         AmbientSettingsService.Instance.Save();
@@ -123,7 +128,7 @@ public partial class AmbientViewModel : ObservableObject
     partial void OnSaturationBoostChanged(double value)
     {
         if (_isSyncing) return;
-        DecklePlaygroundSource.Log.TuningChanged("Saturation", $"{value * 100.0:F0} %");
+        DeckleAmbientSource.Log.TuningChanged("Saturation", $"{value * 100.0:F0} %");
         AmbientSettingsService.Instance.Current.SaturationBoost = value;
         FlipToCustomMode();
         AmbientSettingsService.Instance.Save();
@@ -132,7 +137,7 @@ public partial class AmbientViewModel : ObservableObject
     partial void OnMinBrightnessChanged(int value)
     {
         if (_isSyncing) return;
-        DecklePlaygroundSource.Log.TuningChanged("MinBrightness", value.ToString());
+        DeckleAmbientSource.Log.TuningChanged("MinBrightness", value.ToString());
         AmbientSettingsService.Instance.Current.MinBrightness = value;
         FlipToCustomMode();
         AmbientSettingsService.Instance.Save();
@@ -141,7 +146,7 @@ public partial class AmbientViewModel : ObservableObject
     partial void OnMinBrightnessEnabledChanged(bool value)
     {
         if (_isSyncing) return;
-        DecklePlaygroundSource.Log.TuningChanged("MinBrightnessEnabled", value ? "on" : "off");
+        DeckleAmbientSource.Log.TuningChanged("MinBrightnessEnabled", value ? "on" : "off");
         AmbientSettingsService.Instance.Current.MinBrightnessEnabled = value;
         FlipToCustomMode();
         AmbientSettingsService.Instance.Save();
@@ -150,7 +155,7 @@ public partial class AmbientViewModel : ObservableObject
     partial void OnBrightnessCurveX1Changed(double value)
     {
         if (_isSyncing) return;
-        DecklePlaygroundSource.Log.TuningChanged("BrightnessCurveX1", value.ToString("F2"));
+        DeckleAmbientSource.Log.TuningChanged("BrightnessCurveX1", value.ToString("F2"));
         AmbientSettingsService.Instance.Current.BrightnessCurveX1 = value;
         FlipToCustomMode();
         AmbientSettingsService.Instance.Save();
@@ -159,7 +164,7 @@ public partial class AmbientViewModel : ObservableObject
     partial void OnBrightnessCurveY1Changed(double value)
     {
         if (_isSyncing) return;
-        DecklePlaygroundSource.Log.TuningChanged("BrightnessCurveY1", value.ToString("F2"));
+        DeckleAmbientSource.Log.TuningChanged("BrightnessCurveY1", value.ToString("F2"));
         AmbientSettingsService.Instance.Current.BrightnessCurveY1 = value;
         FlipToCustomMode();
         AmbientSettingsService.Instance.Save();
@@ -168,7 +173,7 @@ public partial class AmbientViewModel : ObservableObject
     partial void OnBrightnessCurveX2Changed(double value)
     {
         if (_isSyncing) return;
-        DecklePlaygroundSource.Log.TuningChanged("BrightnessCurveX2", value.ToString("F2"));
+        DeckleAmbientSource.Log.TuningChanged("BrightnessCurveX2", value.ToString("F2"));
         AmbientSettingsService.Instance.Current.BrightnessCurveX2 = value;
         FlipToCustomMode();
         AmbientSettingsService.Instance.Save();
@@ -177,7 +182,7 @@ public partial class AmbientViewModel : ObservableObject
     partial void OnBrightnessCurveY2Changed(double value)
     {
         if (_isSyncing) return;
-        DecklePlaygroundSource.Log.TuningChanged("BrightnessCurveY2", value.ToString("F2"));
+        DeckleAmbientSource.Log.TuningChanged("BrightnessCurveY2", value.ToString("F2"));
         AmbientSettingsService.Instance.Current.BrightnessCurveY2 = value;
         FlipToCustomMode();
         AmbientSettingsService.Instance.Save();
@@ -186,7 +191,7 @@ public partial class AmbientViewModel : ObservableObject
     partial void OnChangeThresholdChanged(int value)
     {
         if (_isSyncing) return;
-        DecklePlaygroundSource.Log.TuningChanged("ChangeThreshold", value.ToString());
+        DeckleAmbientSource.Log.TuningChanged("ChangeThreshold", value.ToString());
         AmbientSettingsService.Instance.Current.ChangeThreshold = value;
         FlipToCustomMode();
         AmbientSettingsService.Instance.Save();
@@ -195,7 +200,7 @@ public partial class AmbientViewModel : ObservableObject
     partial void OnSmoothingAlphaChanged(double value)
     {
         if (_isSyncing) return;
-        DecklePlaygroundSource.Log.TuningChanged("SmoothingAlpha", value.ToString("F2"));
+        DeckleAmbientSource.Log.TuningChanged("SmoothingAlpha", value.ToString("F2"));
         AmbientSettingsService.Instance.Current.SmoothingAlpha = value;
         FlipToCustomMode();
         AmbientSettingsService.Instance.Save();
@@ -204,7 +209,7 @@ public partial class AmbientViewModel : ObservableObject
     partial void OnBorderModeChanged(BorderThicknessMode value)
     {
         if (_isSyncing) return;
-        DecklePlaygroundSource.Log.TuningChanged("BorderMode", value.ToString());
+        DeckleAmbientSource.Log.TuningChanged("BorderMode", value.ToString());
         AmbientSettingsService.Instance.Current.BorderMode = value;
         AmbientSettingsService.Instance.Save();
     }
@@ -212,7 +217,7 @@ public partial class AmbientViewModel : ObservableObject
     partial void OnBorderDepthChanged(double value)
     {
         if (_isSyncing) return;
-        DecklePlaygroundSource.Log.TuningChanged("BorderDepth", $"{value * 100.0:F0} %");
+        DeckleAmbientSource.Log.TuningChanged("BorderDepth", $"{value * 100.0:F0} %");
         AmbientSettingsService.Instance.Current.BorderDepth = value;
         // No FlipToCustomMode — see the property doc above.
         AmbientSettingsService.Instance.Save();
@@ -221,7 +226,7 @@ public partial class AmbientViewModel : ObservableObject
     partial void OnBorderCellsChanged(int value)
     {
         if (_isSyncing) return;
-        DecklePlaygroundSource.Log.TuningChanged("BorderCells", value.ToString());
+        DeckleAmbientSource.Log.TuningChanged("BorderCells", value.ToString());
         AmbientSettingsService.Instance.Current.BorderCells = value;
         AmbientSettingsService.Instance.Save();
     }
@@ -230,8 +235,8 @@ public partial class AmbientViewModel : ObservableObject
     {
         if (_isSyncing) return;
         string modeLabel = value ? "per-zone" : "group";
-        DecklePlaygroundSource.Log.PipelineModeChanged();
-        DecklePlaygroundSource.Log.PipelineModeChangedDetail(modeLabel);
+        DeckleAmbientSource.Log.PipelineModeChanged();
+        DeckleAmbientSource.Log.PipelineModeChangedDetail(modeLabel);
         AmbientSettingsService.Instance.Current.UseMultiLight = value;
         AmbientSettingsService.Instance.Save();
     }
@@ -240,6 +245,24 @@ public partial class AmbientViewModel : ObservableObject
     {
         if (_isSyncing) return;
         AmbientSettingsService.Instance.Current.Enabled = value;
+        AmbientSettingsService.Instance.Save();
+    }
+
+    partial void OnCaptureFrameRateHzChanged(int value)
+    {
+        if (_isSyncing) return;
+        // Snap an off-list value onto the closed set before it is stored, and
+        // mirror the snapped value back into the VM under _isSyncing so this
+        // handler does not run again for it.
+        int snapped = AmbientCaptureRate.Snap(value);
+        if (snapped != value)
+        {
+            _isSyncing = true;
+            try   { CaptureFrameRateHz = snapped; }
+            finally { _isSyncing = false; }
+        }
+        DeckleAmbientSource.Log.TuningChanged("CaptureFrameRateHz", snapped.ToString());
+        AmbientSettingsService.Instance.Current.CaptureFrameRateHz = snapped;
         AmbientSettingsService.Instance.Save();
     }
 
@@ -296,6 +319,7 @@ public partial class AmbientViewModel : ObservableObject
         Mode                   = AmbientMode.Game;
         UseMultiLight          = false;
         Enabled                = false;
+        CaptureFrameRateHz     = AmbientCaptureRate.Default;
 
         // _isSyncing stays true — Load() flips it to false.
     }
@@ -322,6 +346,7 @@ public partial class AmbientViewModel : ObservableObject
             Mode                  = s.Mode;
             UseMultiLight         = s.UseMultiLight;
             Enabled               = s.Enabled;
+            CaptureFrameRateHz    = AmbientCaptureRate.Snap(s.CaptureFrameRateHz);
         }
         finally
         {

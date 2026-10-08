@@ -55,6 +55,21 @@ public class DeckleAmbientSourceTests
     }
 
     [Fact]
+    public void TuningChangedNamesTheSettingAndItsValue()
+    {
+        using var listener = new TestEventListener("Deckle-Ambient");
+
+        DeckleAmbientSource.Log.TuningChanged("CaptureFrameRateHz", "30");
+
+        var ev = Assert.Single(listener.Events);
+        Assert.Equal(DeckleAmbientSource.EvtTuningChanged, ev.EventId);
+        Assert.Equal(EventLevel.Verbose, ev.Level);
+        Assert.True(ev.HasKeyword(Keywords.Lifecycle));
+        Assert.Equal("CaptureFrameRateHz", ev.Payload?[0]);
+        Assert.Equal("30", ev.Payload?[1]);
+    }
+
+    [Fact]
     public void EchoIgnoredEmitsVerboseDetail()
     {
         using var listener = new TestEventListener("Deckle-Ambient");

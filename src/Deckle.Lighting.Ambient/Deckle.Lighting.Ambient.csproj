@@ -2,7 +2,7 @@
   <PropertyGroup>
     <RootNamespace>Deckle.Lighting.Ambient</RootNamespace>
     <!-- WinUI XAML compilation : Lighting.Ambient ships AmbientPage.xaml
-         (Settings page) + AmbientViewModel.cs starting in J0c. Aligned on
+         (Settings page) + ViewModels/AmbientViewModel.cs. Aligned on
          Deckle.Transcription / Deckle.Llm pattern. -->
     <UseWinUI>true</UseWinUI>
     <DefaultLanguage>en-US</DefaultLanguage>
@@ -20,6 +20,8 @@
     <!-- Versions aligned on Deckle.csproj. -->
     <PackageReference Include="Microsoft.WindowsAppSDK" />
     <PackageReference Include="Microsoft.Windows.SDK.BuildTools" />
+    <!-- AmbientViewModel (ObservableObject, partial properties). -->
+    <PackageReference Include="CommunityToolkit.Mvvm" />
   </ItemGroup>
 
   <ItemGroup>
