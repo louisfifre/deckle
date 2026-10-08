@@ -517,8 +517,8 @@
        tooltip in the Page resources). -->
 
   <!-- ─── LlmPage + sections ─────────────────────────────────────────
-       Third page in the Settings nav. Hosts five sections rendered as
-       UserControls (General, ShortcutSlots, Profiles, Models).
+       Third page in the Settings nav. Hosts four sections rendered as
+       UserControls (General, ActiveProfile, Profiles, Models).
        The Ollama InfoBar is inline on the page. -->
 
   <!-- LlmGeneralSection -->
@@ -526,8 +526,6 @@
   <!-- LlmModelsSection -->
 
   <!-- LlmProfilesSection -->
-
-  <!-- LlmShortcutSlotsSection -->
 
   <!-- ─── Settings — TextBlock labels for x:Uid ──────────────────────
        Page titles, subtitles, and section headers rendered as plain
@@ -580,8 +578,6 @@
   <!-- WhisperPage Reset all dialog -->
 
   <!-- LlmPage Reset all rewriting dialog + Ollama status -->
-
-  <!-- LlmShortcutSlotsSection Reset dialog -->
 
   <!-- LlmProfilesSection Remove + Reset dialogs -->
 
