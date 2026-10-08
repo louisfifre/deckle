@@ -37,9 +37,10 @@ public sealed class CaptureSettings
     // ASR backend: per utterance by the streaming pipeline, once per take by
     // the monolithic one. It lifts and homogenises a quiet/dynamic
     // mic for machine intelligibility. Off by default; the only knob in
-    // Settings ▸ Recording is the opt-in toggle, fine params live in the
-    // Playground. Distinct from LevelWindow above, which drives the HUD
-    // display level and never alters the audio.
+    // Settings ▸ Recording is the opt-in toggle, and no surface edits the
+    // fine params (only a hand-edited settings file changes them).
+    // Distinct from LevelWindow above, which drives the HUD display level
+    // and never alters the audio.
     public PreprocessingSettings Preprocessing { get; set; } = new();
 }
 

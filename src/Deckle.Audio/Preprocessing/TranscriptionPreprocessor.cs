@@ -8,19 +8,20 @@ namespace Deckle.Audio;
 // float[] → float[] transform sitting between microphone capture and the ASR
 // backend, with the sole purpose of maximising machine intelligibility — not
 // listening quality. It does NOT touch how the buffer is windowed for the
-// backend (whisper.cpp keeps its 30 s + dynamic-seek windowing); when the
-// home-grown windowing workstream lands, this stage simply runs per window
-// instead of once, unchanged.
+// backend. Its callers choose the span: the Streaming pipeline runs it once
+// per utterance, as each one is cut; the Monolithic pipeline runs it once
+// over the whole take, after Stop.
 //
-// Two-pass by design — and this is what the hotkey-driven dictation buys us.
-// All audio is available at Stop, so we don't need a real-time adaptive AGC
-// (which pumps, has transients, and is hard to test). Instead: pass 1 runs
-// the dynamics chain and measures the resulting level; pass 2 applies the
-// exact makeup gain to hit an absolute RMS target. Self-normalising per take,
-// O(n), ~tens of ms over 20 min — invisible next to inference.
+// Two-pass by design — and this is what cut-then-process buys us. The whole
+// span is available before processing starts, so we don't need a real-time
+// adaptive AGC (which pumps, has transients, and is hard to test). Instead:
+// pass 1 runs the dynamics chain and measures the resulting level; pass 2
+// applies the exact makeup gain to hit an absolute RMS target.
+// Self-normalising per span, O(n), ~tens of ms over 20 min — invisible next
+// to inference.
 //
-// Canonical voice order, each stage individually bypassable so the Playground
-// can A/B a single stage's contribution:
+// Canonical voice order, each stage individually bypassable so a single
+// stage's contribution can be A/B tested:
 //   1. high-pass   — rumble / plosives / DC offset
 //   2. noise gate  — soft, OFF by default (silence is the VAD's job)
 //   3. compressor  — gentle, tames intra-take dynamics
@@ -41,7 +42,7 @@ public static class TranscriptionPreprocessor
     // see Deckle.Audio/CLAUDE.md). The DSP time constants depend on it.
     public const double SampleRate = 16000.0;
 
-    // Process a take. Returns the processed buffer plus the metrics worth
+    // Process one span (an utterance or a take). Returns the processed buffer plus the metrics worth
     // observing (input/output level, the makeup gain that was applied).
     // An empty input is returned as-is with neutral metrics.
     public static PreprocessingResult Process(float[] pcm, PreprocessingSettings s)
