@@ -58,7 +58,7 @@ public sealed partial class TaskbarCoverHost
 
         _edge = edge;
         _band = band;
-        _zone = CoverGeometry.RevealZone(band, edge, CoverGeometry.RevealZoneDepth);
+        _zone = CoverGeometry.ApproachZone(band, edge);
 
         NativeMethods.SetWindowPos(_hwnd, NativeMethods.HWND_TOPMOST,
             band.left, band.top, band.right - band.left, band.bottom - band.top,
