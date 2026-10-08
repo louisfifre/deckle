@@ -9,11 +9,11 @@
 - **Recurrence cue:** An early return or a "nothing changed" shortcut in a layout, display or shell-restart handler that skips the topmost re-assert; or a new path that leaves the band visible after the taskbar may have been repositioned without calling `ReassertTopmost`.
 - **Regression coverage:** None. The fix is a `SetWindowPos` decision inside a Win32 message handler on the cover thread; there is no natural seam to reproduce it automatically, and the repository does not accept a seam created only for a test. Watch the recurrence cue in review instead.
 
-## Fullscreen window on another monitor suppresses the band (pending)
+## Fullscreen window on another monitor suppresses the band
 
-- **Trigger:** A window covering its whole monitor is the foreground window, or the shell reports a busy/fullscreen notification state, while the band sits on a different monitor.
+- **Trigger:** The foreground window reads as fullscreen (its DWM bounds cover its whole monitor, or the shell reports a busy, D3D fullscreen or presentation notification state) while that window sits on a monitor other than the band's.
 - **Observed symptom:** Established in code, not observed in logs: the band hides on its own monitor although nothing there is fullscreen. On a single monitor it cannot happen. Whether Louis's desk has a second monitor is unverified.
-- **Cause:** `TaskbarCoverHost.EvaluateAppSuppressed` compares the foreground window's DWM bounds with the foreground window's own monitor, never with the band's monitor, and its `SHQueryUserNotificationState` stage is a session-wide state with no monitor.
+- **Cause:** Suppression read only "is the foreground fullscreen": first `TaskbarCoverHost.EvaluateAppSuppressed`, then `ForegroundState.IsFullscreen` once the cover moved onto the `ForegroundWatcher`. The geometry stage tests the foreground window against its own monitor and the `SHQueryUserNotificationState` stage is session-wide; neither looked at the band's monitor.
 - **Violated invariant:** Only a fullscreen window on the band's monitor suppresses the band.
-- **Recurrence cue:** A suppression test that reads "is anything fullscreen" without comparing monitors.
-- **Regression coverage:** Not fixed yet; planned with the shared foreground service, which exposes the foreground window's monitor and a pure fullscreen predicate that a test can drive.
+- **Recurrence cue:** A suppression decision that reads "is anything fullscreen" without comparing the foreground window's monitor with the band's; or a band monitor that is not re-read when the layout changes.
+- **Regression coverage:** `CoverSuppressionTests.FullscreenOnAnotherMonitorLeavesTheCoverUp` drives `CoverSuppression.Applies`, the predicate the host uses. The notification-state stage has no monitor of its own; the fix compares the foreground window's monitor for both stages, the best available discriminator.

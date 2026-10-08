@@ -1554,6 +1554,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── AGENTS.md  — [agent-instructions] Taskbar cover module — an opaque topmost band over the taskbar that fades as th…
 │   │   ├── CLAUDE.md
 │   │   ├── CoverGeometry.cs
+│   │   ├── CoverSuppression.cs
 │   │   ├── Deckle.Shell.TaskbarCover.csproj
 │   │   ├── DeckleShellTaskbarCoverSource.cs
 │   │   ├── TaskbarCoverHost.Approach.cs
@@ -2034,6 +2035,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   └── FullscreenGeometryTests.cs
 │   ├── Deckle.Shell.TaskbarCover.Tests/
 │   │   ├── CoverGeometryTests.cs
+│   │   ├── CoverSuppressionTests.cs
 │   │   ├── Deckle.Shell.TaskbarCover.Tests.csproj
 │   │   └── TaskbarCoverBugNotes.md
 │   ├── Deckle.Shell.Tests/

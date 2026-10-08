@@ -78,6 +78,17 @@ internal static class TaskbarCoverNativeMethods
     [DllImport("shell32.dll")]
     public static extern IntPtr SHAppBarMessage(uint dwMessage, ref APPBARDATA pData);
 
+    // ── Band monitor ─────────────────────────────────────────────────────────
+    //
+    // The monitor with the largest intersection with the band rect, compared
+    // with the foreground window's monitor to decide fullscreen suppression.
+    // DEFAULTTONEAREST: a taskbar rect always yields a monitor, never NULL.
+
+    public const uint MONITOR_DEFAULTTONEAREST = 0x00000002;
+
+    [DllImport("user32.dll")]
+    public static extern IntPtr MonitorFromRect(ref NativeMethods.RECT lprc, uint dwFlags);
+
     // ── Cursor WinEvent hook ─────────────────────────────────────────────────
     //
     // EVENT_OBJECT_LOCATIONCHANGE filtered on OBJID_CURSOR is the global

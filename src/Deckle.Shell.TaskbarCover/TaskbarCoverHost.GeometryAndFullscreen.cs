@@ -61,8 +61,18 @@ public sealed partial class TaskbarCoverHost
             || band.right != _band.right || band.bottom != _band.bottom;
 
         _layoutKnown = true;
+
+        // Re-read even when the rect is unchanged: a WM_DISPLAYCHANGE can
+        // invalidate monitor handles under the same taskbar rect. The verdict
+        // is re-applied from the watcher's snapshot, so a band that moved to
+        // another monitor — or a layout that was unknown while the foreground
+        // changed — re-evaluates suppression now rather than at the next
+        // foreground change.
+        _bandMonitor = MonitorFromRect(ref band, MONITOR_DEFAULTTONEAREST);
+
         if (!changed)
         {
+            UpdateAppSuppressed(_foreground.Current);
             // Same rect, but the taskbar may have been re-created (Explorer
             // restart, a Windhawk mod re-injecting: TaskbarCreated) or
             // restacked by Explorer during the setting or display change. It
@@ -88,7 +98,10 @@ public sealed partial class TaskbarCoverHost
             edge.ToString(), band.left, band.top, band.right, band.bottom, reason);
 
         // The zone moved with the band — recompute where the cursor stands.
+        // Suppression after the band is in place, so a show it triggers never
+        // lands on the old rect or a stale alpha.
         ResetZoneStateFromCursor();
+        UpdateAppSuppressed(_foreground.Current);
         UpdateCover("layout_rebuilt");
     }
 
@@ -129,11 +142,12 @@ public sealed partial class TaskbarCoverHost
         DeckleShellTaskbarCoverSource.Log.SystemResumedDetail(reason);
     }
 
-    // A fullscreen foreground — as the watcher's two-stage test reads it —
-    // stands the band down. Only a change of verdict logs and updates.
+    // A fullscreen foreground on the band's monitor — as the watcher's
+    // two-stage test reads it — stands the band down (CoverSuppression).
+    // Only a change of verdict logs and updates.
     private void UpdateAppSuppressed(ForegroundState state)
     {
-        bool suppressed = state.IsFullscreen;
+        bool suppressed = CoverSuppression.Applies(state, _bandMonitor);
         if (suppressed == _appSuppressed) return;
         _appSuppressed = suppressed;
         if (suppressed)

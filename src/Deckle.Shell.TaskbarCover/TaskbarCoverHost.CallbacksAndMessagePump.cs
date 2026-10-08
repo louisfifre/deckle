@@ -62,8 +62,9 @@ public sealed partial class TaskbarCoverHost
         _coverAlpha          = 0;
         _appSuppressed       = false;
         _systemSuspended     = false;
-        _layoutKnown        = false;
+        _layoutKnown         = false;
         _layoutFailureLogged = false;
+        _bandMonitor         = IntPtr.Zero;
     }
 
     private IntPtr WndProc(IntPtr hWnd, uint msg, IntPtr wParam, IntPtr lParam)

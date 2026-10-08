@@ -84,5 +84,8 @@ public sealed partial class TaskbarCoverHost : IDisposable
     private TaskbarEdge _edge;
     private NativeMethods.RECT _band;
     private NativeMethods.RECT _zone;
+    // Monitor the band sits on, re-read on every successful layout query;
+    // fullscreen suppression only applies to a window on this monitor.
+    private IntPtr _bandMonitor;
 
 }
