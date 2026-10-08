@@ -1385,6 +1385,9 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   ├── AppRules.cs
 │   │   │   ├── AppSource.cs
 │   │   │   └── HdrRule.cs
+│   │   ├── Steam/
+│   │   │   ├── KeyValuesNode.cs
+│   │   │   └── KeyValuesReader.cs
 │   │   ├── Strings/
 │   │   │   └── en-US/
 │   │   │       └── Resources.resw
