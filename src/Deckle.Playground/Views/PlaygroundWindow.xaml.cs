@@ -17,7 +17,7 @@ namespace Deckle.Playground;
 // ─── Playground window shell ─────────────────────────────────────────────────
 //
 // Native TitleBar + Mica backdrop + compact NavigationView + Frame. Hosts
-// five pages : HomePage, HudPage, AmbientPage, SegmentationPage, and
+// four pages : HomePage, HudPage, SegmentationPage, and
 // CorrectionApplicationPage — each owning
 // its tuning surface, ViewModel, and runtime resources. The window itself only
 // routes navigation and forwards the lifecycle calls the App makes
@@ -31,7 +31,7 @@ namespace Deckle.Playground;
 // via the DisposeResources() entry points.
 //
 // Real-destruction lifetime : Close tears the window down, disposes
-// HudPage/AmbientPage resources, and App clears its lazy reference so
+// the pages' resources, and App clears its lazy reference so
 // the next open constructs a fresh Playground instance.
 public sealed partial class PlaygroundWindow : Window
 {
@@ -48,7 +48,6 @@ public sealed partial class PlaygroundWindow : Window
     // ForcePause / DisposeResources without walking the Frame's content
     // tree on every interaction.
     private HudPage? _hudPage;
-    private AmbientPage? _ambientPage;
     private SegmentationPage? _segmentationPage;
     private CorrectionApplicationPage? _correctionApplicationPage;
     private PlaygroundWindowActivation _windowActivation;
@@ -80,7 +79,7 @@ public sealed partial class PlaygroundWindow : Window
 
         // Wire the Pages → shell navigation callback. HomePage's
         // routing cards invoke PlaygroundShell.NavigateTo("hud" /
-        // "ambient") to bring the matching NavigationView item into
+        // "segmentation" / …) to bring the matching NavigationView item into
         // selected state without holding a back-reference to this
         // Window.
         PlaygroundShell.NavigateTo = NavigateTo;
@@ -111,13 +110,11 @@ public sealed partial class PlaygroundWindow : Window
         AppWindow.SetPresenter(presenter);
 
         // Close → real destruction. The Playground holds heavy runtime
-        // resources (Win2D composition, screen capture, frame sampler,
-        // Hue REST client, preview timers) — when the user dismisses
-        // the window they expect the costs to go with it. App.xaml.cs
-        // nullifies its reference on Closed so the next ShowPlaygroundLazy
-        // call builds a fresh instance, starting from the persisted
-        // AmbientSettings without any in-memory carry-over from the
-        // previous session.
+        // resources (Win2D composition, preview timers) — when the user
+        // dismisses the window they expect the costs to go with it.
+        // App.xaml.cs nullifies its reference on Closed so the next
+        // ShowPlaygroundLazy call builds a fresh instance without any
+        // in-memory carry-over from the previous session.
 
         // NavigationView pane toggle tooltip override : default OS locale
         // string ("Ouvrir navigation" on FR) clashes with the rest of the
@@ -269,7 +266,6 @@ public sealed partial class PlaygroundWindow : Window
         // releases the resources instead of leaving an idle visual tree
         // alive behind the tray.
         try { _hudPage?.DisposeResources(); } catch { /* best effort */ }
-        try { _ambientPage?.DisposeResources(); } catch { /* best effort */ }
         try { _correctionApplicationPage?.DisposeResources(); } catch { /* best effort */ }
 
         // Remove the HWND subclass before the window is gone.
@@ -340,9 +336,6 @@ public sealed partial class PlaygroundWindow : Window
                 case HudPage hud:
                     _hudPage = hud;
                     break;
-                case AmbientPage amb:
-                    _ambientPage = amb;
-                    break;
                 case SegmentationPage seg:
                     _segmentationPage = seg;
                     break;
@@ -372,7 +365,6 @@ public sealed partial class PlaygroundWindow : Window
         {
             "home"         => "Deckle.Playground.HomePage",
             "hud"          => "Deckle.Playground.HudPage",
-            "ambient"      => "Deckle.Playground.AmbientPage",
             "segmentation" => "Deckle.Playground.SegmentationPage",
             "correction"   => "Deckle.Playground.CorrectionApplicationPage",
             _              => "",

@@ -69,7 +69,7 @@ public sealed partial class AmbientEngine
              || string.IsNullOrEmpty(ambient.HueLastGroupId))
             {
                 throw new InvalidOperationException(
-                    "Hue bridge not paired or no group selected — open the Playground and complete the Hue pair + group selection first.");
+                    "Hue bridge not paired or no group selected — open Settings > Ambient Light and complete the Hue pair + group selection first.");
             }
 
             if (!HueBridgeClient.IsPrivateBridgeIp(ambient.HueBridgeIp))

@@ -271,8 +271,8 @@ public sealed partial class AmbientPage
         if (HueGroupComboBox.SelectedItem is not ComboBoxItem { Tag: HueGroup group }) return;
 
         // Persist the chosen group so AmbientEngine.StartAsync finds it
-        // on the next pipeline start. Symmetric with the Playground
-        // OnHueGroupSelectionChanged handler.
+        // on the next pipeline start. The save's Changed event is also what
+        // makes LightZonesCard resolve the new group's lights.
         AmbientSettingsService.Instance.Current.HueLastGroupId = group.Id;
         AmbientSettingsService.Instance.Save();
     }

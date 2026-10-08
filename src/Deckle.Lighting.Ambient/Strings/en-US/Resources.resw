@@ -119,8 +119,8 @@
   <!-- AmbientPage strings consumed via x:Uid. Master state +
        Behaviour (Mode) + HDR tuning (Exposure / Saturation /
        Min brightness / Brightness curve) + Configuration (Hue
-       bridge pairing). Per-light zones and per-light brightness
-       still live in the Playground until phase II migrates them. -->
+       bridge pairing). The live preview and the per-light rows
+       (zone, brightness, Identify) follow further down. -->
   <data name="AmbientPageTitleLabel.Text" xml:space="preserve">
     <value>Ambient Light</value>
   </data>

@@ -22,8 +22,8 @@ namespace Deckle.Lighting.Ambient;
 // arbitrary. We surface "no clear suggestion" instead, the user picks
 // from the ComboBox explicitly.
 //
-// Why public. The Playground assembly consumes Suggest() directly to
-// pre-fill the per-light ComboBoxes. Keeping the heuristic here avoids
+// LightPlacementResolver calls Suggest() to pre-fill the per-light zone
+// pickers of the Settings page. Keeping the heuristic here avoids
 // duplicating ambient-domain rules in UI code.
 public static class LightZoneSuggester
 {

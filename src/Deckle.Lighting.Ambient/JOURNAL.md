@@ -7,6 +7,17 @@ type: module-journal
 
 Dated notes on the colour path from the sampled frame to the lights — the why behind a choice the code no longer shows. Most recent on top.
 
+## 2026-10-08 — The Playground Ambient tab is retired; what stays bespoke in Settings
+
+Chose: the Playground Ambient tab is removed (page, nav item, home card, strings, its Deckle-Playground events with ids 3, 5-9 and 14-22 reserved there). Ambient is set in Settings > Ambient Light. Not migrated: the standalone screen-capture test and the Hue test-colour and rotation buttons; Identify survives in the per-light rows.
+
+Bespoke in the Settings page, because the composer cannot express them:
+
+- `LightZonesCard`: one row per light of the selected group (zone, brightness, Identify). The set of lights is only known at runtime, from the bridge. Zone pickers are DropDownButton + MenuFlyout: a ComboBox built in code-behind missed its first click in the Playground.
+- `AmbientPreviewCard`: a live instrument, not a setting. It opens on the user's gesture and refreshes only while open and while the engine runs. Its cells measure sourceWidth / cols by sourceHeight / rows (`AmbientEngine.SourceSize`), so the preview has the display's exact ratio; the Playground's square cells did not. One brush per cell is required: a shared brush made every cell show the grid's last pixel.
+
+Found: the push loop reads `LightZones` and `LightBrightness` on its own thread every tick. The Settings rows replace those dictionaries on each edit instead of mutating them.
+
 ## 2026-10-08 — Change threshold holds on continuous outputs; restart on start-time settings
 
 Found: `AmbientPushGate` never dropped on a continuous output, so Change threshold did nothing on Hue Entertainment. A continuous stream needs a colour on every tick, and dropping was the gate's only answer.

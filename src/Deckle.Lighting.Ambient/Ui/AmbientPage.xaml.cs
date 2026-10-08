@@ -24,7 +24,7 @@ namespace Deckle.Lighting.Ambient;
 //
 // Sync : the view model writes every edit straight to AmbientSettingsService
 // and saves. The page observes AmbientSettingsService.Changed and reloads the
-// view model, so an edit from the tray, the Playground or a preset lands here
+// view model, so an edit from the tray or a preset lands here
 // at once; the composers follow the view model's PropertyChanged. The
 // HuePairingService.BridgeChanged event re-syncs the Hue expander. Both are
 // wired in Loaded and dropped in Unloaded. A _loading flag keeps the display

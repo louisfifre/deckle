@@ -12,7 +12,7 @@ namespace Deckle.Playground;
 public static class PlaygroundShell
 {
     // Switches the PlaygroundWindow's NavigationView selection to the item
-    // bearing the given tag ("home" / "hud" / "ambient" / "segmentation" /
+    // bearing the given tag ("home" / "hud" / "segmentation" /
     // "correction"). Wired by
     // PlaygroundWindow on construction ; null until the window is first
     // instantiated. Pages must null-check before invoking — a tag passed

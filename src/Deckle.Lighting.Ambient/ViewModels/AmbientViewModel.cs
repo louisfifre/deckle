@@ -9,8 +9,7 @@ namespace Deckle.Lighting.Ambient;
 // AmbientSettingsService.Save() on each property change.
 //
 // Owned by this module so the Settings AmbientPage can compose its cards
-// from the manifests in AmbientViewModel.Settings.cs; the Playground's
-// Ambient tab still consumes it until that tab is removed. Persistence lands
+// from the manifests in AmbientViewModel.Settings.cs. Persistence lands
 // in <UserDataRoot>/modules/ambient/settings.json via AmbientSettingsService
 // — the same store the App-side AmbientEngine reads, so a slider drag applies
 // live on the next push tick.
