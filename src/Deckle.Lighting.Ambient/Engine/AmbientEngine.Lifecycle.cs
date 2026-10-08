@@ -446,9 +446,6 @@ public sealed partial class AmbientEngine
         });
     }
 
-    public static LightColor SampleZone(SampledFrame sample, LightZone zone, int bandCells)
-        => SrgbColor.FromLinear(AmbientZoneSampler.SampleZone(sample, zone, bandCells)).Quantize();
-
     public async ValueTask DisposeAsync()
     {
         if (_disposed) return;
