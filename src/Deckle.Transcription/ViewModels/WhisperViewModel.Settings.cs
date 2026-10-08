@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using Deckle.Catalog;
 using Deckle.Core;
+using Deckle.Presets;
 using Deckle.Settings;
 
 namespace Deckle.Transcription;
@@ -158,11 +159,22 @@ public partial class WhisperViewModel
     ];
 
     // Streaming pipeline — the energy-segmenter fold. The master is StreamingEnabled
-    // (the user-facing on/off projected onto PipelineStrategyKind); the seven
-    // segmenter parameters are its children, hidden by the composer while streaming
-    // is off. They are Number cards (exact figures typed, not swept) — the same
-    // NumberBoxes the hand-authored cards used, with their Min/Max/Small/Large
-    // copied verbatim.
+    // (the user-facing on/off projected onto PipelineStrategyKind); its children
+    // are hidden by the composer while streaming is off. In order: the silence
+    // threshold, the cut-preset selector, the curve editor, the four hangover
+    // anchors, then the cut margin and the minimum utterance. The numeric cards
+    // are Number cards (exact figures typed, not swept) — the same NumberBoxes the
+    // hand-authored cards used, with their Min/Max/Small/Large copied verbatim.
+    //
+    // A cut preset (Patient / Balanced / Quick, see CutPresets) carries the eight
+    // hangover values: the four anchors (max, min, ramp start, ramp end) and the
+    // four curve control points. It does not carry the threshold (mic-dependent)
+    // nor the margin and minimum utterance (blip rules). Custom is not stored: it
+    // shows whenever the values match no preset, and choosing it changes nothing,
+    // it only reveals the curve editor and the four anchor cards (masked
+    // otherwise). The selector's reset returns to Balanced, which equals the
+    // shipped EnergySegmenterSettings defaults; the editor's reset writes those
+    // same defaults back through WriteCutValues.
     //
     // The master's default mirrors the VM's own projection of the segmenter Strategy
     // onto the bool (Load/Push: StreamingEnabled = Strategy == Streaming), read off a
@@ -179,25 +191,40 @@ public partial class WhisperViewModel
                     value => SegThresholdDbfs = value,
                     new NumberArgs(-90, 0, 1, 5),
                     defaultValue: () => new EnergySegmenterSettings().ThresholdDbfs),
+                Setting.Choice<string>("WhisperCutPresetCard",
+                    () => CutPreset,
+                    value => CutPreset = value,
+                    _cutPresets.SelectorOptions("WhisperCutPresetCustom"),
+                    defaultValue: () => CutPresets.Balanced),
+                Setting.Editor<CutCurveValues>("WhisperCutCurveCard",
+                    ReadCutValues,
+                    WriteCutValues,
+                    new EditorArgs(() => new CutCurveEditor(this)),
+                    visibleWhen: () => CutPreset == PresetFamily.Custom,
+                    defaultValue: () => CutCurveValues.From(new EnergySegmenterSettings())),
                 Setting.Number("WhisperSegHangoverMaxCard",
                     () => SegHangoverMaxMs,
                     value => SegHangoverMaxMs = value,
                     new NumberArgs(500, 15000, 100, 500),
+                    visibleWhen: () => CutPreset == PresetFamily.Custom,
                     defaultValue: () => new EnergySegmenterSettings().HangoverMaxMs),
                 Setting.Number("WhisperSegHangoverMinCard",
                     () => SegHangoverMinMs,
                     value => SegHangoverMinMs = value,
                     new NumberArgs(100, 2000, 50, 100),
+                    visibleWhen: () => CutPreset == PresetFamily.Custom,
                     defaultValue: () => new EnergySegmenterSettings().HangoverMinMs),
                 Setting.Number("WhisperSegHangoverRampStartCard",
                     () => SegHangoverRampStartMs,
                     value => SegHangoverRampStartMs = value,
                     new NumberArgs(0, 600000, 5000, 30000),
+                    visibleWhen: () => CutPreset == PresetFamily.Custom,
                     defaultValue: () => new EnergySegmenterSettings().HangoverRampStartMs),
                 Setting.Number("WhisperSegHangoverRampEndCard",
                     () => SegHangoverRampEndMs,
                     value => SegHangoverRampEndMs = value,
                     new NumberArgs(30000, 900000, 5000, 30000),
+                    visibleWhen: () => CutPreset == PresetFamily.Custom,
                     defaultValue: () => new EnergySegmenterSettings().HangoverRampEndMs),
                 Setting.Number("WhisperSegMarginCard",
                     () => SegMarginMs,
