@@ -26,12 +26,9 @@ public sealed partial class TranscriptionEngine
     // returns the result; the caller only switches on the outcome to drive
     // HUD and logs, never to decide what to do.
     //
-    // requireProfile: passed by App for rewrite hotkeys. When a press lands
-    // in Idle but the rewrite slot has no profile bound, refuse with
-    // IgnoredNoProfile so the press doesn't start an empty rewrite session.
-    // Pressed during Recording, requireProfile is silent — the press is a
-    // valid Stop irrespective of profile binding.
-    public ToggleResult RequestToggle(string? manualProfileName, bool shouldPaste, bool requireProfile)
+    // The rewrite applied at finalize is the persisted active profile
+    // (RewriteProfileSelection.ForDictation); a press carries no profile.
+    public ToggleResult RequestToggle(bool shouldPaste)
     {
         // _disposed is set before Dispose CAS's the state to Disposed, so it
         // catches the moment between "Quit clicked" and "Dispose finished".
@@ -83,16 +80,7 @@ public sealed partial class TranscriptionEngine
             return ToggleResult.IgnoredBusy;
         }
 
-        if (requireProfile && string.IsNullOrWhiteSpace(manualProfileName))
-        {
-            // Rewrite hotkey from Idle without a profile bound — same
-            // semantics as before the refactor: warn and refuse. The press
-            // does NOT take the Idle → Starting CAS, so a subsequent
-            // transcribe-hotkey press will still start cleanly.
-            return ToggleResult.IgnoredNoProfile;
-        }
-
-        return TryStartFromIdle(manualProfileName, shouldPaste);
+        return TryStartFromIdle(shouldPaste);
     }
 
     // ── File-transcription entry point ──────────────────────────────────────
@@ -172,8 +160,7 @@ public sealed partial class TranscriptionEngine
             // A file batch never pastes and never rewrites. Delivery is carried
             // explicitly by each prepared item rather than hidden in engine-wide
             // mutable state.
-            _shouldPaste       = false;
-            _manualProfileName = null;
+            _shouldPaste = false;
 
             // Cancel any pending idle unload — a pipeline is starting.
             _idleTimer?.Change(Timeout.Infinite, Timeout.Infinite);
@@ -212,8 +199,7 @@ public sealed partial class TranscriptionEngine
     }
 
     // Idle → Starting → Recording. Called only when RequestToggle has
-    // verified the engine is in Idle and (for rewrite hotkeys) the profile
-    // is bound. CAS Idle → Starting up front so a second hotkey press
+    // verified the engine is in Idle. CAS Idle → Starting up front so a second hotkey press
     // arriving inside the warmup gate or the mic probe rebounds immediately.
     // The entire Starting window is mutually exclusive with any other Start
     // attempt, even one that fires while MicrophoneCapture.Probe() is
@@ -223,13 +209,13 @@ public sealed partial class TranscriptionEngine
     // CRITICAL: every early-return path below MUST roll the state back to
     // Idle and signal _idleEvent, otherwise the engine permanently locks
     // out future hotkeys. The try/finally with `committed` ensures this.
-    private ToggleResult TryStartFromIdle(string? manualProfileName, bool shouldPaste)
+    private ToggleResult TryStartFromIdle(bool shouldPaste)
     {
         lock (_lifecycleLock)
-            return TryStartFromIdleLocked(manualProfileName, shouldPaste);
+            return TryStartFromIdleLocked(shouldPaste);
     }
 
-    private ToggleResult TryStartFromIdleLocked(string? manualProfileName, bool shouldPaste)
+    private ToggleResult TryStartFromIdleLocked(bool shouldPaste)
     {
         if (Interlocked.CompareExchange(
                 ref _state,
@@ -276,8 +262,7 @@ public sealed partial class TranscriptionEngine
                 return ToggleResult.IgnoredBusy;
             }
 
-            _shouldPaste       = shouldPaste;
-            _manualProfileName = manualProfileName;
+            _shouldPaste = shouldPaste;
 
             // Cancel any pending idle unload — a new pipeline is starting.
             _idleTimer?.Change(Timeout.Infinite, Timeout.Infinite);

@@ -36,7 +36,7 @@ public sealed partial class DeckleWhispSource
     [Event(EvtManualProfileNotFoundDetail,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Pipeline,
-           Message = "manual profile not found | profile_name={0}")]
+           Message = "active profile not found | profile_name={0}")]
     public void ManualProfileNotFoundDetail(string profile_name)
     {
         if (IsEnabled()) WriteEvent(EvtManualProfileNotFoundDetail, profile_name);

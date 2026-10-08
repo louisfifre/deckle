@@ -37,22 +37,4 @@ public sealed partial class DeckleAppSource
         if (IsEnabled()) WriteEvent(EvtHotkeyStop);
     }
 
-    [Event(EvtHotkeyNoProfile,
-           Level = EventLevel.Warning,
-           Keywords = (EventKeywords)Keywords.Capture,
-           Message = "A rewrite hotkey was pressed with no profile bound")]
-    public void HotkeyNoProfile()
-    {
-        if (IsEnabled()) WriteEvent(EvtHotkeyNoProfile);
-    }
-
-    [Event(EvtHotkeyNoProfileDetail,
-           Level = EventLevel.Verbose,
-           Keywords = (EventKeywords)Keywords.Capture,
-           Message = "hotkey ignored, no profile bound | hotkey={0}")]
-    public void HotkeyNoProfileDetail(string hotkey_name)
-    {
-        if (IsEnabled()) WriteEvent(EvtHotkeyNoProfileDetail, hotkey_name);
-    }
-
 }

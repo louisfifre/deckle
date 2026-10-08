@@ -7,12 +7,12 @@ namespace Deckle.Transcription.Tests;
 public sealed class RewriteProfileSelectionTests
 {
     [Fact]
-    public void PlainTranscriptionNeverSelectsAnAutomaticRule()
+    public void PlainDictationWithoutActiveProfileKeepsTheTranscript()
     {
         var settings = new LlmSettings
         {
             Enabled = true,
-            Profiles = [new RewriteProfile { Name = "Clean up" }],
+            Profiles = [new RewriteProfile { Id = "a1", Name = "Clean up" }],
             AutoRewriteRules =
             [
                 new AutoRewriteRule
@@ -23,27 +23,50 @@ public sealed class RewriteProfileSelectionTests
             ],
         };
 
-        RewriteProfile? selected = RewriteProfileSelection.ForHotkey(
-            settings,
-            requestedProfileName: null);
-
-        Assert.Null(selected);
+        Assert.Null(RewriteProfileSelection.ForDictation(settings));
     }
 
     [Fact]
-    public void ExplicitRewriteHotkeySelectsItsProfile()
+    public void ActiveProfileResolvesById()
     {
-        var profile = new RewriteProfile { Name = "Clean up" };
+        var profile = new RewriteProfile { Id = "a1", Name = "Clean up" };
+        var settings = new LlmSettings
+        {
+            Enabled = true,
+            Profiles = [new RewriteProfile { Id = "b2", Name = "Other" }, profile],
+            ActiveProfileId = "a1",
+            ActiveProfileName = "Stale name",
+        };
+
+        Assert.Same(profile, RewriteProfileSelection.ForDictation(settings));
+    }
+
+    [Fact]
+    public void ActiveProfileFallsBackToItsNameWhenTheIdIsUnknown()
+    {
+        var profile = new RewriteProfile { Id = "a1", Name = "Clean up" };
         var settings = new LlmSettings
         {
             Enabled = true,
             Profiles = [profile],
+            ActiveProfileId = "gone",
+            ActiveProfileName = "clean UP",
         };
 
-        RewriteProfile? selected = RewriteProfileSelection.ForHotkey(
-            settings,
-            requestedProfileName: "clean UP");
+        Assert.Same(profile, RewriteProfileSelection.ForDictation(settings));
+    }
 
-        Assert.Same(profile, selected);
+    [Fact]
+    public void DisabledRewritingKeepsTheTranscript()
+    {
+        var settings = new LlmSettings
+        {
+            Enabled = false,
+            Profiles = [new RewriteProfile { Id = "a1", Name = "Clean up" }],
+            ActiveProfileId = "a1",
+            ActiveProfileName = "Clean up",
+        };
+
+        Assert.Null(RewriteProfileSelection.ForDictation(settings));
     }
 }
