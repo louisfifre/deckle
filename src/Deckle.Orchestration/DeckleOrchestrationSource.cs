@@ -30,6 +30,13 @@ public sealed class DeckleOrchestrationSource : DeckleEventSource
     public const int EvtExitWatchUnavailable = 18;
     public const int EvtExitWatchUnavailableDetail = 19;
     public const int EvtProcessTraceEventUnreadable = 20;
+    public const int EvtRuntimeStarted = 21;
+    public const int EvtRuntimeStopped = 22;
+    public const int EvtSessionStarted = 23;
+    public const int EvtSessionStartedDetail = 24;
+    public const int EvtSessionEnded = 25;
+    public const int EvtSessionEndedDetail = 26;
+    public const int EvtReconcileDetail = 27;
 
     [Event(EvtSettingsLoadWarning,
            Level = EventLevel.Warning,
@@ -227,5 +234,70 @@ public sealed class DeckleOrchestrationSource : DeckleEventSource
     public void ProcessTraceEventUnreadable(string error_type, string message)
     {
         if (IsEnabled()) WriteEvent(EvtProcessTraceEventUnreadable, error_type, message);
+    }
+
+    [Event(EvtRuntimeStarted,
+           Level = EventLevel.Informational,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Message = "Watching for listed apps")]
+    public void RuntimeStarted()
+    {
+        if (IsEnabled()) WriteEvent(EvtRuntimeStarted);
+    }
+
+    [Event(EvtRuntimeStopped,
+           Level = EventLevel.Informational,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Message = "Stopped watching for listed apps")]
+    public void RuntimeStopped()
+    {
+        if (IsEnabled()) WriteEvent(EvtRuntimeStopped);
+    }
+
+    [Event(EvtSessionStarted,
+           Level = EventLevel.Informational,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Message = "An app session started")]
+    public void SessionStarted()
+    {
+        if (IsEnabled()) WriteEvent(EvtSessionStarted);
+    }
+
+    [Event(EvtSessionStartedDetail,
+           Level = EventLevel.Verbose,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Message = "app session started | entry_id={0} | display_name={1} | process_name={2} | pid={3}")]
+    public void SessionStartedDetail(string entry_id, string display_name, string process_name, int pid)
+    {
+        if (IsEnabled()) WriteEvent(EvtSessionStartedDetail, entry_id, display_name, process_name, pid);
+    }
+
+    [Event(EvtSessionEnded,
+           Level = EventLevel.Informational,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Message = "An app session ended")]
+    public void SessionEnded()
+    {
+        if (IsEnabled()) WriteEvent(EvtSessionEnded);
+    }
+
+    [Event(EvtSessionEndedDetail,
+           Level = EventLevel.Verbose,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Message = "app session ended | entry_id={0} | display_name={1}")]
+    public void SessionEndedDetail(string entry_id, string display_name)
+    {
+        if (IsEnabled()) WriteEvent(EvtSessionEndedDetail, entry_id, display_name);
+    }
+
+    // One reconcile pass: how many entries are enabled, whether start events
+    // flow, and how many processes the one-shot enumeration offered the tracker.
+    [Event(EvtReconcileDetail,
+           Level = EventLevel.Verbose,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Message = "reconcile | enabled_entries={0} | process_trace={1} | processes_seen={2}")]
+    public void ReconcileDetail(int enabled_entries, bool process_trace, int processes_seen)
+    {
+        if (IsEnabled()) WriteEvent(EvtReconcileDetail, enabled_entries, process_trace, processes_seen);
     }
 }

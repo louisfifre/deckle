@@ -1375,10 +1375,12 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   ├── Deckle.Orchestration/
 │   │   ├── Detection/
 │   │   │   ├── AppSessionTracker.cs
+│   │   │   ├── DetectionStatus.cs
 │   │   │   ├── ForegroundChange.cs
 │   │   │   ├── IForegroundMonitor.cs
 │   │   │   ├── IProcessStartSource.cs
 │   │   │   ├── NullForegroundMonitor.cs
+│   │   │   ├── OrchestrationRuntime.cs
 │   │   │   ├── ProcessExitWatch.cs
 │   │   │   ├── ProcessStarted.cs
 │   │   │   └── WmiProcessStartSource.cs

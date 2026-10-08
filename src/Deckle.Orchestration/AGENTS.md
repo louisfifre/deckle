@@ -13,6 +13,8 @@ This module keeps one registry of apps and games (`Registry/AppEntry`), persiste
 
 **No poll.** Detection is event-based only (foreground change, process start events, process exit handles). Never add a timer that enumerates processes.
 
+**Detection sources.** `Detection/OrchestrationRuntime` feeds `AppSessionTracker` from three sources: `IForegroundMonitor` (implemented by the shared foreground service; `NullForegroundMonitor` until the App adapts it), `WmiProcessStartSource` (`Win32_ProcessStartTrace`), and `ProcessExitWatch` (a `SYNCHRONIZE` handle waited on by the thread pool). WMI start events only work when Deckle runs elevated; unelevated, the page advises "Start elevated". The only process enumeration is one pass per reconcile (boot, registry change).
+
 **No master toggle.** Each entry's `Enabled` switch is the control; the runtime runs only while at least one entry is enabled. A module-wide switch would hide the list and add a setting nobody asked for.
 
 **Mutations swap references.** `OrchestrationSettingsService` replaces `Entries` with a new list under its write lock, never edits it in place, so runtime readers see a complete old or new list.
