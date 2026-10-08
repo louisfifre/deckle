@@ -41,6 +41,20 @@ public class DeckleAmbientSourceTests
     }
 
     [Fact]
+    public void PipelineRestartDetailNamesTheChangedSettings()
+    {
+        using var listener = new TestEventListener("Deckle-Ambient");
+
+        DeckleAmbientSource.Log.PipelineRestartDetail("UseMultiLight");
+
+        var ev = Assert.Single(listener.Events);
+        Assert.Equal(DeckleAmbientSource.EvtPipelineRestartDetail, ev.EventId);
+        Assert.Equal(EventLevel.Verbose, ev.Level);
+        Assert.True(ev.HasKeyword(Keywords.Lifecycle));
+        Assert.Equal("UseMultiLight", ev.Payload?[0]);
+    }
+
+    [Fact]
     public void EchoIgnoredEmitsVerboseDetail()
     {
         using var listener = new TestEventListener("Deckle-Ambient");

@@ -1279,6 +1279,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── AmbientSettings.cs
 │   │   ├── AmbientSettingsModule.cs
 │   │   ├── AmbientSettingsService.cs
+│   │   ├── AmbientStartSettings.cs
 │   │   ├── Deckle.Lighting.Ambient.csproj
 │   │   ├── DeckleAmbientSource.CaptureAndSampling.cs
 │   │   ├── DeckleAmbientSource.cs
@@ -1979,6 +1980,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── AmbientNearBlackTests.cs
 │   │   ├── AmbientPushCadenceTests.cs
 │   │   ├── AmbientPushGateTests.cs
+│   │   ├── AmbientStartSettingsTests.cs
 │   │   ├── Deckle.Lighting.Ambient.Tests.csproj
 │   │   ├── DeckleAmbientSourceTests.cs
 │   │   └── HueEndpointResolverTests.cs

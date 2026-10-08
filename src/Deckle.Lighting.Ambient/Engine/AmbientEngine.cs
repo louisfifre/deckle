@@ -148,7 +148,8 @@ public sealed partial class AmbientEngine : IAsyncDisposable
     // multi-light pipeline shape is locked for the session : changing
     // UseMultiLight live mid-run would force a Stop + Start to reshape
     // the loop and the per-light state, so we snapshot at start and
-    // ignore later host mutations until the next start.
+    // ignore later host mutations until the next start. The app does
+    // that Stop + Start when the value changes (AmbientStartSettings).
     private bool _useMultiLightRequested;
 
     private CancellationTokenSource? _cts;

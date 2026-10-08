@@ -96,5 +96,6 @@ public sealed partial class DeckleAmbientSource : DeckleEventSource
     public const int EvtBridgeEndpointRecoveredDetail   = 61;
     public const int EvtBridgeEndpointRecoveryFailed    = 62;
     public const int EvtBridgeEndpointRecoveryFailedDetail = 63;
+    public const int EvtPipelineRestartDetail           = 64;
 
 }

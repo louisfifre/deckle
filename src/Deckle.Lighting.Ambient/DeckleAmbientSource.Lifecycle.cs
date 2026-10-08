@@ -82,6 +82,19 @@ public sealed partial class DeckleAmbientSource
         if (IsEnabled()) WriteEvent(EvtPipelineStopDetail, reason, shape, duration_sec, pushed, dropped);
     }
 
+    // Emitted by the app before it restarts a running engine because a
+    // setting read only at start changed; the Stopping / Started milestones
+    // narrate the restart itself. settings = comma-separated property names.
+    [Event(EvtPipelineRestartDetail,
+           Level = EventLevel.Verbose,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Message = "restart | settings={0}")]
+    public void PipelineRestartDetail(string settings)
+    {
+        if (!IsAmbientDetailEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Lifecycle)) return;
+        WriteEvent(EvtPipelineRestartDetail, settings);
+    }
+
     // Entirely human-readable statement, no params and no placeholders — cleaned
     // in place (dropped the module name and the DEVICE_REMOVED / DEVICE_HUNG
     // implementation aside), no Verbose mirror.
