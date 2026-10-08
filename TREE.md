@@ -1973,6 +1973,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── AmbientBrightnessBugNotes.md
 │   │   ├── AmbientBrightnessCurveTests.cs
 │   │   ├── AmbientCaptureRateTests.cs
+│   │   ├── AmbientColorSmootherTests.cs
 │   │   ├── AmbientHeartbeatWindowTests.cs
 │   │   ├── AmbientHueChangeAttributorTests.cs
 │   │   ├── AmbientNearBlackTests.cs

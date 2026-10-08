@@ -9,7 +9,11 @@ namespace Deckle.Lighting.Ambient;
 // smoother applies it over the measured time since the previous tick
 // (AmbientPushCadence.AdaptSmoothingAlpha), so the wall-clock response
 // is the same at any push rate and across skipped ticks. A key seen for
-// the first time adopts its target (no fade-in from black).
+// the first time, or reset, adopts its target (no fade-in from black).
+//
+// The state stays in [0, 1] and finite : a NaN channel in the target
+// counts as 0 and a NaN alpha turns smoothing off, so one bad tick
+// never poisons the trail.
 //
 // Not thread-safe : the push loop is its only caller.
 internal sealed class AmbientColorSmoother
@@ -18,6 +22,7 @@ internal sealed class AmbientColorSmoother
 
     public SrgbColor Smooth(string key, SrgbColor target, double referenceAlpha, double dtSeconds)
     {
+        target = new SrgbColor(Sanitize(target.R), Sanitize(target.G), Sanitize(target.B));
         float alpha = (float)AmbientPushCadence.AdaptSmoothingAlpha(referenceAlpha, dtSeconds);
         SrgbColor next = _states.TryGetValue(key, out var state) && alpha < 1f
             ? new SrgbColor(
@@ -29,5 +34,11 @@ internal sealed class AmbientColorSmoother
         return next;
     }
 
+    // Forget one key's trail : its next target is adopted as is.
+    public void Reset(string key) => _states.Remove(key);
+
     public void Clear() => _states.Clear();
+
+    private static float Sanitize(float channel)
+        => float.IsNaN(channel) ? 0f : Math.Clamp(channel, 0f, 1f);
 }

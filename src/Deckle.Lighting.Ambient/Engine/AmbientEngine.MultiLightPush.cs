@@ -57,6 +57,13 @@ public sealed partial class AmbientEngine
 
             if (zone == LightZone.None)
             {
+                // The engine stops driving this light : forget its trail
+                // so a later remap starts from the new zone's colour
+                // instead of fading from a stale one, and its first
+                // push goes out whatever the threshold.
+                _smoother.Reset(light.Id);
+                _blackLatch.Reset(light.Id);
+                _multiLastPushed.Remove(light.Id);
                 unmappedThisTick++;
                 continue;
             }

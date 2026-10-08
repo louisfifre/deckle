@@ -44,5 +44,7 @@ internal sealed class AmbientBlackLatch
             : quantized;
     }
 
+    public void Reset(string key) => _lit.Remove(key);
+
     public void Clear() => _lit.Clear();
 }
