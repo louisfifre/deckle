@@ -45,6 +45,11 @@ public sealed class DeckleOrchestrationSource : DeckleEventSource
     public const int EvtRuleApplyFailedDetail = 33;
     public const int EvtRuleRestoreFailed = 34;
     public const int EvtRuleRestoreFailedDetail = 35;
+    public const int EvtDisplayQueryFailed = 36;
+    public const int EvtHdrStateChanged = 37;
+    public const int EvtHdrSetFailed = 38;
+    public const int EvtHdrSetFailedDetail = 39;
+    public const int EvtHdrRuleSkipped = 40;
 
     [Event(EvtSettingsLoadWarning,
            Level = EventLevel.Warning,
@@ -385,5 +390,54 @@ public sealed class DeckleOrchestrationSource : DeckleEventSource
     public void RuleRestoreFailedDetail(string entry_id, string effect, string error_type, string message)
     {
         if (IsEnabled()) WriteEvent(EvtRuleRestoreFailedDetail, entry_id, effect, error_type, message);
+    }
+
+    // QueryDisplayConfig failed; the monitor list reads as empty, so no HDR
+    // row shows and no HDR rule applies this time.
+    [Event(EvtDisplayQueryFailed,
+           Level = EventLevel.Verbose,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Message = "display query failed | win32_error={0}")]
+    public void DisplayQueryFailed(int win32_error)
+    {
+        if (IsEnabled()) WriteEvent(EvtDisplayQueryFailed, win32_error);
+    }
+
+    [Event(EvtHdrStateChanged,
+           Level = EventLevel.Verbose,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Message = "hdr switched | device={0} | from={1} | to={2}")]
+    public void HdrStateChanged(string device, bool from, bool to)
+    {
+        if (IsEnabled()) WriteEvent(EvtHdrStateChanged, device, from, to);
+    }
+
+    [Event(EvtHdrSetFailed,
+           Level = EventLevel.Warning,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Message = "HDR could not be switched on a monitor")]
+    public void HdrSetFailed()
+    {
+        if (IsEnabled()) WriteEvent(EvtHdrSetFailed);
+    }
+
+    [Event(EvtHdrSetFailedDetail,
+           Level = EventLevel.Verbose,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Message = "hdr switch failed | device={0} | win32_error={1}")]
+    public void HdrSetFailedDetail(string device, int win32_error)
+    {
+        if (IsEnabled()) WriteEvent(EvtHdrSetFailedDetail, device, win32_error);
+    }
+
+    // A monitor named in a rule was left alone: reason = absent (not
+    // connected now), not_hdr_capable, or unreadable (its state could not be read).
+    [Event(EvtHdrRuleSkipped,
+           Level = EventLevel.Verbose,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Message = "hdr rule skipped | device={0} | reason={1}")]
+    public void HdrRuleSkipped(string device, string reason)
+    {
+        if (IsEnabled()) WriteEvent(EvtHdrRuleSkipped, device, reason);
     }
 }

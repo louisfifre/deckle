@@ -1385,7 +1385,12 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   ├── ProcessExitWatch.cs
 │   │   │   ├── ProcessStarted.cs
 │   │   │   └── WmiProcessStartSource.cs
+│   │   ├── Display/
+│   │   │   ├── DisplayTarget.cs
+│   │   │   ├── DisplayTargets.cs
+│   │   │   └── HdrStateSwitch.cs
 │   │   ├── Interop/
+│   │   │   ├── DisplayConfigNativeMethods.cs
 │   │   │   └── ProcessNativeMethods.cs
 │   │   ├── Processes/
 │   │   │   └── RunningApps.cs
