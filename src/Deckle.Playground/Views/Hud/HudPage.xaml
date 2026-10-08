@@ -4,8 +4,9 @@
      in code-behind from the active target's section list (see
      HudViewModel.ActiveTuningSections), so the user only sees the
      knobs that actually affect the current preview ; the "Parked"
-     expander is appended unconditionally (collapsed by default) so
-     transition-only defaults stay reachable for tweaking. -->
+     expander is appended (collapsed by default) so transition-only
+     defaults stay reachable for tweaking, except on a target with no
+     section (Charging), which shows a placeholder line instead. -->
 <Page
     x:Class="Deckle.Playground.HudPage"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"

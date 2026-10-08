@@ -508,9 +508,11 @@ public sealed partial class HudPage : Page
     //
     // Filters the expander list by ViewModel.ActiveTuningSections so
     // only the knobs that affect the active target are rendered. Parked
-    // is always appended (collapsed by default) for the transition-only
-    // knobs the developer still wants to tweak from any target. The
-    // per-section Add/Reset methods live in HudPage.Expanders.cs.
+    // is appended (collapsed by default) for the transition-only knobs
+    // the developer still wants to tweak from any target, except when
+    // the list is empty (Charging): no stroke, so a placeholder line
+    // replaces the expanders. The per-section Add/Reset methods live in
+    // HudPage.Expanders.cs.
 
     private void BuildTuningPanel()
     {
@@ -522,6 +524,20 @@ public sealed partial class HudPage : Page
             TuningStack.Children.RemoveAt(TuningStack.Children.Count - 1);
 
         var sections = ViewModel.ActiveTuningSections;
+        if (sections.Count == 0)
+        {
+            // An empty column would read as a bug; say why there is nothing.
+            TuningStack.Children.Add(new TextBlock
+            {
+                Text         = "Charging has no stroke, so there is nothing to tune in this state.",
+                Style        = (Style)Application.Current.Resources["BodyTextBlockStyle"],
+                Foreground   = (Microsoft.UI.Xaml.Media.Brush)Application.Current.Resources["TextFillColorSecondaryBrush"],
+                TextWrapping = TextWrapping.Wrap,
+                Margin       = new Thickness(0, 4, 0, 0),
+            });
+            return;
+        }
+
         foreach (var section in sections)
         {
             switch (section)
