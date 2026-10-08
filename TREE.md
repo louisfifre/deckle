@@ -1397,6 +1397,10 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   ├── AppRules.cs
 │   │   │   ├── AppSource.cs
 │   │   │   └── HdrRule.cs
+│   │   ├── Rules/
+│   │   │   ├── AppliedProfile.cs
+│   │   │   ├── IRuleEffect.cs
+│   │   │   └── ProfileTransaction.cs
 │   │   ├── Scan/
 │   │   │   ├── ExecutableLocator.cs
 │   │   │   ├── FolderScanner.cs

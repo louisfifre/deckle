@@ -37,6 +37,14 @@ public sealed class DeckleOrchestrationSource : DeckleEventSource
     public const int EvtSessionEnded = 25;
     public const int EvtSessionEndedDetail = 26;
     public const int EvtReconcileDetail = 27;
+    public const int EvtProfileApplied = 28;
+    public const int EvtProfileAppliedDetail = 29;
+    public const int EvtProfileRestored = 30;
+    public const int EvtProfileRestoredDetail = 31;
+    public const int EvtRuleApplyFailed = 32;
+    public const int EvtRuleApplyFailedDetail = 33;
+    public const int EvtRuleRestoreFailed = 34;
+    public const int EvtRuleRestoreFailedDetail = 35;
 
     [Event(EvtSettingsLoadWarning,
            Level = EventLevel.Warning,
@@ -299,5 +307,83 @@ public sealed class DeckleOrchestrationSource : DeckleEventSource
     public void ReconcileDetail(int enabled_entries, bool process_trace, int processes_seen)
     {
         if (IsEnabled()) WriteEvent(EvtReconcileDetail, enabled_entries, process_trace, processes_seen);
+    }
+
+    // A session's rules were applied at launch. effects = the effect names that
+    // applied, comma-separated; changes = how many things a restore will undo
+    // (0 when everything was already as wanted).
+    [Event(EvtProfileApplied,
+           Level = EventLevel.Informational,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Message = "App rules applied")]
+    public void ProfileApplied()
+    {
+        if (IsEnabled()) WriteEvent(EvtProfileApplied);
+    }
+
+    [Event(EvtProfileAppliedDetail,
+           Level = EventLevel.Verbose,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Message = "app rules applied | entry_id={0} | effects={1} | changes={2}")]
+    public void ProfileAppliedDetail(string entry_id, string effects, int changes)
+    {
+        if (IsEnabled()) WriteEvent(EvtProfileAppliedDetail, entry_id, effects, changes);
+    }
+
+    [Event(EvtProfileRestored,
+           Level = EventLevel.Informational,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Message = "App rules restored")]
+    public void ProfileRestored()
+    {
+        if (IsEnabled()) WriteEvent(EvtProfileRestored);
+    }
+
+    [Event(EvtProfileRestoredDetail,
+           Level = EventLevel.Verbose,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Message = "app rules restored | entry_id={0} | restored={1}")]
+    public void ProfileRestoredDetail(string entry_id, int restored)
+    {
+        if (IsEnabled()) WriteEvent(EvtProfileRestoredDetail, entry_id, restored);
+    }
+
+    // One effect threw while applying; the effects applied before it were
+    // undone and the session runs without rules.
+    [Event(EvtRuleApplyFailed,
+           Level = EventLevel.Warning,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Message = "App rules could not be applied — the previous state was restored")]
+    public void RuleApplyFailed()
+    {
+        if (IsEnabled()) WriteEvent(EvtRuleApplyFailed);
+    }
+
+    [Event(EvtRuleApplyFailedDetail,
+           Level = EventLevel.Verbose,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Message = "rule apply failed | entry_id={0} | effect={1} | error_type={2} | message={3}")]
+    public void RuleApplyFailedDetail(string entry_id, string effect, string error_type, string message)
+    {
+        if (IsEnabled()) WriteEvent(EvtRuleApplyFailedDetail, entry_id, effect, error_type, message);
+    }
+
+    // One undo threw; the other undos still ran. What it changed stays changed.
+    [Event(EvtRuleRestoreFailed,
+           Level = EventLevel.Warning,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Message = "A rule could not be restored")]
+    public void RuleRestoreFailed()
+    {
+        if (IsEnabled()) WriteEvent(EvtRuleRestoreFailed);
+    }
+
+    [Event(EvtRuleRestoreFailedDetail,
+           Level = EventLevel.Verbose,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Message = "rule restore failed | entry_id={0} | effect={1} | error_type={2} | message={3}")]
+    public void RuleRestoreFailedDetail(string entry_id, string effect, string error_type, string message)
+    {
+        if (IsEnabled()) WriteEvent(EvtRuleRestoreFailedDetail, entry_id, effect, error_type, message);
     }
 }
