@@ -103,9 +103,9 @@ public partial class AmbientViewModel : ObservableObject
 
     // ── Command-enable flag ──────────────────────────────────────────────────
     //
-    // Enabled only when the tuning surface (HDR + zone sampling + mode) differs
-    // from the shipping defaults — drives the Reset-to-defaults button in the
-    // page's action bar. Recomputed on every Load(), and every live-save edit
+    // Enabled only when the tuning surface (HDR + zone sampling + mode +
+    // per-zone colours + capture rate) differs from the shipping defaults —
+    // drives the Reset all button in the page's title row. Recomputed on every Load(), and every live-save edit
     // round-trips through Load() via the AmbientSettingsService.Changed observer,
     // so the button greys out the moment the surface is back at defaults.
     [ObservableProperty]
@@ -365,11 +365,15 @@ public partial class AmbientViewModel : ObservableObject
 
     // ── Reset to defaults ────────────────────────────────────────────────────
     //
-    // Snaps the tuning surface — HDR grading, zone-sampling band, and the Mode
-    // preset — back to the AmbientSettings shipping defaults. Connection state
-    // (bridge pairing, last group, monitor) and the pipeline on/off flag are
-    // deliberately preserved : a reset shouldn't unpair the lights or kill a
-    // running pipeline. We write straight onto the store and Save() once (rather
+    // Snaps the tuning surface — HDR grading, zone-sampling band, the Mode
+    // preset, per-zone colours and the capture rate — back to the
+    // AmbientSettings shipping defaults. Connection state (bridge pairing,
+    // last group, monitor), the per-light rows (LightZones, LightBrightness)
+    // and the pipeline on/off flag are deliberately preserved : a reset
+    // shouldn't unpair the lights, forget a per-light setup the user built
+    // light by light, or kill a running pipeline. Mode goes back to its POCO
+    // default together with the POCO tuning values, not the preset's own
+    // values (pre-existing; settled by the presets migration). We write straight onto the store and Save() once (rather
     // than going through the VM setters, which would fire a Save per field and
     // flip Mode to Custom on each) ; Save() raises Changed, the page's observer
     // reloads the VM and repaints every slider.
@@ -380,6 +384,8 @@ public partial class AmbientViewModel : ObservableObject
 
         ApplyHdrDefaults(cur, d);
         ApplyZoneSamplingDefaults(cur, d);
+        cur.UseMultiLight      = d.UseMultiLight;
+        cur.CaptureFrameRateHz = d.CaptureFrameRateHz;
 
         AmbientSettingsService.Instance.Save();
     }
@@ -476,6 +482,8 @@ public partial class AmbientViewModel : ObservableObject
             s.BorderMode            != d.BorderMode ||
             s.BorderDepth           != d.BorderDepth ||
             s.BorderCells           != d.BorderCells ||
-            s.Mode                  != d.Mode;
+            s.Mode                  != d.Mode ||
+            s.UseMultiLight         != d.UseMultiLight ||
+            AmbientCaptureRate.Snap(s.CaptureFrameRateHz) != d.CaptureFrameRateHz;
     }
 }

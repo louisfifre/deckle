@@ -43,9 +43,29 @@
                         HorizontalAlignment="Stretch"
                         Spacing="{StaticResource SettingsCardSpacing}">
 
-                <TextBlock x:Uid="AmbientPageTitleLabel"
-                           Style="{StaticResource TitleTextBlockStyle}"
-                           Margin="0,0,0,8" />
+                <!-- Title row with the page-level reset (the third reset
+                     level after the per-card and per-group ones). Enabled
+                     only while the page is off its defaults; confirmed in
+                     code-behind before it writes. Same shape as WhisperPage. -->
+                <Grid Margin="0,0,0,8">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <TextBlock x:Uid="AmbientPageTitleLabel"
+                               Style="{StaticResource TitleTextBlockStyle}" />
+                    <Button x:Uid="AmbientPage_ResetAll"
+                            Grid.Column="1"
+                            VerticalAlignment="Center"
+                            Style="{StaticResource SubtleButtonStyle}"
+                            IsEnabled="{x:Bind ViewModel.CanReset, Mode=OneWay}"
+                            Click="ResetAll_Click">
+                        <StackPanel Orientation="Horizontal" Spacing="8">
+                            <FontIcon Glyph="{StaticResource Icon.Reset}" FontSize="14" />
+                            <TextBlock x:Uid="AmbientPageResetAllLabel" />
+                        </StackPanel>
+                    </Button>
+                </Grid>
 
                 <TextBlock x:Uid="AmbientPageSubtitleLabel"
                            Style="{StaticResource BodyTextBlockStyle}"

@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using Deckle.Catalog;
+using Deckle.Diagnostics;
 using Deckle.Shell;
 using Deckle.Vision;
 using Microsoft.UI.Xaml;
@@ -158,6 +159,29 @@ public sealed partial class AmbientPage : Page
 
     private void BrightnessCurveReset_Click(object sender, RoutedEventArgs e)
         => ViewModel.ResetBrightnessCurve();
+
+    // ── Reset all ──────────────────────────────────────────────────────
+    //
+    // The page-level reset: every value the page tunes goes back to its
+    // default; pairing, group, display, per-light rows and the on/off state
+    // stay. Confirmed first because it wipes several groups at once. The
+    // view model writes once and saves; Changed reloads the page.
+
+    private async void ResetAll_Click(object sender, RoutedEventArgs e)
+    {
+        bool confirmed = await ConfirmationService.RequestAsync(
+            this.XamlRoot,
+            new ConfirmationRequest(
+                Loc.Get("Settings_ResetAmbientDialog_Title"),
+                Loc.Get("Settings_ResetAmbientDialog_Content"),
+                Loc.Get("AmbientPageResetAllLabel.Text"),
+                IsDestructive: true));
+        if (!confirmed) return;
+
+        DeckleSettingsUxSource.Log.SectionReset();
+        DeckleSettingsUxSource.Log.SectionResetDetail("Ambient page");
+        ViewModel.ResetDefaults();
+    }
 
     // ── Capture display (bespoke) ──────────────────────────────────────
 
