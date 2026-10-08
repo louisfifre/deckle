@@ -47,7 +47,7 @@ public partial class App
         _firstThemeApplyDone = true;
 
         foreach (var window in new Microsoft.UI.Xaml.Window?[]
-                 { app._settingsWindow, app._playgroundWindow, app._logWindow, app._hudWindow })
+                 { app._settingsWindow, app._playgroundWindow, app._logWindow, app._hudWindow, app._transcriptPanel })
         {
             ApplyThemeToSingle(window);
         }
