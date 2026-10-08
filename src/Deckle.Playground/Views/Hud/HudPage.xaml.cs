@@ -127,8 +127,7 @@ public sealed partial class HudPage : Page
     {
         InitializeComponent();
         LoadCountdownTuning();
-        _tuning.LoadMaterial(HudMaterialTuning.Current);
-        _tuning.LoadGeometry(HudGeometryTuning.Current);
+        _tuning.LoadLive();
         NavigationCacheMode = NavigationCacheMode.Required;
 
         _rebuildDebounce.Tick += (_, _) =>
@@ -186,8 +185,7 @@ public sealed partial class HudPage : Page
     // on Closed.
     public void DisposeResources()
     {
-        HudMaterialTuning.Apply(_tuning.ToConfig());
-        HudGeometryTuning.Apply(_tuning.ToConfig());
+        _tuning.PublishLive();
         // Retain the last slider edit even when closed during the debounce.
         if (ViewModel.IsCountdownTarget) PublishCountdownTuning();
         SettingsService.Instance.OverlayAnimationsChanged -= OnOverlayAnimationsChanged;
@@ -286,8 +284,7 @@ public sealed partial class HudPage : Page
     private void ApplyTarget()
     {
         SnapshotCountdownReplay();
-        HudMaterialTuning.Apply(_tuning.ToConfig());
-        HudGeometryTuning.Apply(_tuning.ToConfig());
+        _tuning.PublishLive();
         if (ViewModel.IsCountdownTarget) PublishCountdownTuning();
         // Tear down everything first.
         ChronoPreview.ApplyState(HudState.Hidden);
