@@ -1,5 +1,5 @@
 ---
-description: How a dictation travels from the hotkey to the pasted text — vocabulary, two diagrams, every parameter with its default and where it is exposed, and the latencies the code measures.
+description: How a dictation travels from the hotkey to the pasted text — vocabulary, three diagrams, every parameter with its default and where it is exposed, the latencies the code measures, and how the energy segmenter cuts utterances.
 type: architecture-note
 ---
 
@@ -53,7 +53,7 @@ flowchart TD
         SEG["EnergySegmenter.Push<br/>on the capture thread"]
         CHAN["Utterance queued in<br/>an unbounded Channel"]
         CONS["Consumer task<br/>ConsumeUtterancesAsync"]
-        ASSEMBLE["Text assembly<br/>silence cut = paragraph break<br/>Flush cut = space"]
+        ASSEMBLE["Text assembly<br/>silence cut = paragraph break"]
         MONO["Monolithic: whole take,<br/>DSP once, one backend call"]
         FIN["FinalizeTranscription<br/>clipboard, optional rewrite,<br/>optional paste"]
     end
@@ -102,7 +102,7 @@ Notes on the diagram:
 | Optional pre-processing | `src/Deckle.Audio/Preprocessing/TranscriptionPreprocessor.cs` → `Process`; `src/Deckle.Audio/Preprocessing/PreprocessingSettings.cs` | Off by default. When on: high-pass filter, noise gate (off), compressor, makeup gain to a target level in two passes, limiter. Works on a copy of the audio. |
 | Optional Silero trim | `src/Deckle.Vad/VadService.cs` → `EnsureReady`; `src/Deckle.Vad/SileroVad.cs` → `Trim`; `src/Deckle.Vad/SileroSpeechTimestamps.cs` | On by default. Keeps only the speech inside the utterance. If no speech is found, the utterance is dropped. If the model file is missing, it starts a background download and this take runs untrimmed. |
 | WhisperBackend.TranscribeAsync | `src/Deckle.Transcription.Whisper/WhisperBackend.Transcribe.cs` → `TranscribeSync`; `src/Deckle.Transcription.Whisper/Engine/WhisperParamsMapper.cs` → `Apply` | One `whisper_full` call per utterance. The prompt is the fixed `InitialPrompt` plus the last 30 words of the previous utterance (`BuildPriming`, `TailOf`, `PrimingTailWords`). Whisper's own VAD is forced off (`wparams.vad = 0`). |
-| Text assembly | `src/Deckle.Transcription/Engine/TranscriptionEngine.StreamingPipeline.cs` → `pendingParagraphBreak = u.EndedOnSilence` | Joins the texts. After an utterance that ended on a silence, the next text starts a new paragraph (`\n\n`). After one closed by the final Flush, a space. |
+| Text assembly | `src/Deckle.Transcription/Engine/TranscriptionEngine.StreamingPipeline.cs` → `pendingParagraphBreak = u.EndedOnSilence` | Joins the texts. After an utterance that ended on a silence, the next text starts a new paragraph (`\n\n`); otherwise a space. Only the last utterance of a take can end without a silence (the Flush at Stop), so in a dictation the texts are joined by paragraph breaks. See "The paragraph rule" below. |
 | Monolithic | `src/Deckle.Transcription/Engine/TranscriptionEngine.MonolithicPipeline.cs` → `ProduceMonolithicAsync`; `src/Deckle.Transcription/Engine/TranscriptionEngine.Pipeline.cs` → `ConsumeMonolithicAudioAsync` | Captures the whole take, waits for the prime after Stop, runs the pre-processing once, makes one backend call. Whisper then cuts its own 30 s windows inside that call. |
 | FinalizeTranscription | `src/Deckle.Transcription/Engine/TranscriptionEngine.Finalize.cs` → `FinalizeTranscription`, `CopyToClipboard`, `DeliverTranscript`, `PasteFromClipboard`; `src/Deckle.Transcription/Engine/TranscriptionEngine.Finalize.Rewrite.cs` → `ApplyRewrite` | Copies the raw text to the clipboard first. Then, if a rewrite profile applies, rewrites it with Ollama. Then pastes with Ctrl+V only if paste is enabled, the foreground window is not Deckle, and UI Automation confirms the focused element is a text field (Edit or Document). Paste is off by default (`AutoPasteEnabled = false` in `src/Deckle.Settings/Persistence/AppSettings.cs`). |
 | HUD states | `src/Deckle.App/App.Startup.Shell.cs` → `StatusChanged` handler; `src/Deckle.App/App.Hotkeys.cs` → `ShowPreparing`, `SwitchToTranscribing`; `src/Deckle.Hud/Model/HudState.cs`; `src/Deckle.Hud/Windows/HudWindow.State.cs` | Start press → Charging. "Recording" status → Recording. Stop press → Transcribing at once. "Rewriting…" status → Rewriting. |
@@ -321,4 +321,153 @@ Reading: the hangover is the largest built-in delay. An utterance is handed to W
 
 ## Segmentation
 
-See the next section.
+In Streaming, the energy segmenter decides where one utterance ends and the next begins. It listens to the volume only. It does not know what a word is. This section explains its rules, then what happens to an utterance after the cut.
+
+### A frame and the threshold
+
+A **frame** is one 50 ms slice of the microphone signal: 800 samples at 16 kHz, with its RMS, the average loudness of those samples on a linear scale from 0 to 1 (`src/Deckle.Audio/CaptureFrame.cs`). The segmenter receives one frame at a time, in order, and decides for each one whether it is **voiced** (loud enough to count as speech) or **silent**.
+
+The test is a single comparison. The constructor turns the threshold from decibels into the same linear scale once: `10^(ThresholdDbfs / 20)`. A frame is voiced when its RMS is at or above that value (`EnergySegmenter` constructor and `Push` in `src/Deckle.Transcription/Streaming/EnergySegmenter.cs`). With the default −45 dBFS, the limit is an RMS of about 0.0056. With −38 dBFS, the value Louis reports using, it is about 0.0126: a frame must be about twice as loud to count as speech.
+
+Reading: a higher threshold (closer to 0) makes quiet breaths and room noise count as silence, so pauses are detected more easily; it also risks counting the soft end of a word as silence.
+
+### Diagram 3 — the three states of the segmenter
+
+```mermaid
+stateDiagram-v2
+    [*] --> Silence
+    Silence --> Silence : silent frame, discarded
+    Silence --> Speech : first voiced frame, opens the utterance
+    Speech --> Speech : voiced frame, extends it
+    Speech --> Hangover : silent frame, silence count = 1
+    Hangover --> Speech : voiced frame, silence count reset to 0
+    Hangover --> Hangover : silent frame, silence count + 1
+    Hangover --> Silence : silence count reaches the required hangover, emit
+    Speech --> Silence : Flush at Stop, emit
+    Hangover --> Silence : Flush at Stop, emit
+```
+
+How to read it:
+
+- **Silence**: no utterance is open. Silent frames are thrown away. The first voiced frame opens a new utterance, and that frame is its first sample: nothing before it is kept.
+- **Speech**: an utterance is open and the last frame was voiced. Every frame is added to it, voiced or silent.
+- **Hangover**: an utterance is open, and the last frames were silent. The segmenter is not sure yet whether this is a short pause inside a sentence or the end. It counts the silent frames in a row. A voiced frame sets the count back to 0 and returns to Speech. When the count reaches the required hangover, the segmenter cuts and emits the utterance with `EndedOnSilence = true`.
+- **Flush at Stop**: when you press the hotkey to stop, the open utterance is emitted whatever its state, with `EndedOnSilence = false`. In Silence, Flush does nothing.
+- The step Speech → Hangover also checks the required hangover. With the defaults it never cuts there, because the minimum hangover is 10 frames. It only matters if a hangover is set to one frame (75 ms or less).
+- The segmenter has no maximum utterance length. An utterance only ends on a silence long enough, or at Stop. The header of `EnergySegmenter.cs` says so ("No hard cap"). Reading: `src/Deckle.Transcription/Streaming/Utterance.cs` and `src/Deckle.Transcription/CONTEXT.md` still mention a "safety ceiling"; the only ceiling in the code is the capture cap (`MaxRecordingDurationSeconds`, 20 min), which ends the whole take through the same Flush.
+
+#### Node → file
+
+| Node or transition | File (→ member) |
+|---|---|
+| Silence, Speech, Hangover | `src/Deckle.Transcription/Streaming/EnergySegmenter.cs` → `enum State` |
+| Voiced or silent frame | same → `Push` (`frame.Rms >= _rmsThreshold`); threshold computed in the constructor |
+| Opens the utterance | same → `Push`, case `State.Silence` (`_utteranceStartFrame`, `_lastVoicedIdx = 0`) |
+| Silence count | same → `_hangoverCount`, cases `State.Speech` and `State.Hangover` |
+| Required hangover | same → `RequiredHangoverFrames`; curve in `src/Deckle.Transcription/Curves/UnitBezier.cs` → `Solve` |
+| Emit on silence | same → `EmitOnSilence` → `EmitKept(endedOnSilence: true)` → `Emit` |
+| Flush at Stop | same → `Flush` → `EmitKept(endedOnSilence: false)`; called by `src/Deckle.Transcription/Streaming/SegmentedTranscriptionSession.cs` → `Complete` |
+| Back to Silence | same → `ResetToSilence` |
+| Emitted utterance | `src/Deckle.Transcription/Streaming/Utterance.cs`; written to the channel in `SegmentedTranscriptionSession.cs` (constructor callback) |
+| Live state in the logs | `EnergySegmenter.cs` → `Snapshot`; read by the 1 Hz heartbeat in `OnFrame` (`src/Deckle.Transcription/Engine/TranscriptionEngine.StreamingPipeline.cs`) |
+
+### The hangover ramp
+
+The required hangover is not fixed. It gets shorter as the open utterance gets longer, so that a long monologue is cut on shorter pauses than a short sentence (`RequiredHangoverFrames` in `src/Deckle.Transcription/Streaming/EnergySegmenter.cs`):
+
+- While the open utterance is at or below `HangoverRampStartMs` (15 s), the required hangover is `HangoverMaxMs` (5 s).
+- At or above `HangoverRampEndMs` (120 s), it is `HangoverMinMs` (500 ms).
+- In between, it goes from the maximum down to the minimum along a curve. The progress through the ramp (0 at its start, 1 at its end) goes into `UnitBezier.Solve`, which returns how far the delay has dropped (0 = still at the maximum, 1 = at the minimum). The curve is a cubic Bézier, the same function as CSS `cubic-bezier(x1, y1, x2, y2)`, with the control points `HangoverCurveX1`, `HangoverCurveY1`, `HangoverCurveX2`, `HangoverCurveY2` (`src/Deckle.Transcription/Curves/UnitBezier.cs`). The defaults (0.85, 0.10, 0.90, 0.25) keep the delay near the maximum for most of the ramp, then drop it late.
+
+Three details from the code:
+
+- Every duration is rounded to whole 50 ms frames once, in the constructor (`FramesFromMs`). 5000 ms is 100 frames, 500 ms is 10 frames, 150 ms is 3 frames.
+- If `HangoverMinMs` is set above `HangoverMaxMs`, the minimum is lowered to the maximum. If `HangoverRampEndMs` is set below `HangoverRampStartMs`, the end is raised to the start. So the delay can only stay the same or shrink as the utterance grows.
+- The length that drives the ramp is the number of frames in the open utterance, and that includes the silent frames of the current hangover. Reading: during a long pause, the requirement can therefore shrink a little while the pause goes on; with the defaults this changes at most a few frames.
+
+Required hangover at a given utterance length, with the default values. **Computed from the code, not measured**: the values come from reproducing `UnitBezier.Solve` (Newton-Raphson, then bisection, precision 1e-6) and the rounding of `RequiredHangoverFrames`.
+
+| Utterance length | Progress in the ramp | Curve output | Required hangover |
+|---|---|---|---|
+| 0 s | before the ramp | — | 100 frames = 5000 ms |
+| 15 s | ramp start (included in the maximum) | — | 100 frames = 5000 ms |
+| 30 s | 0.143 | 0.018 | 98 frames = 4900 ms |
+| 60 s | 0.429 | 0.072 | 93 frames = 4650 ms |
+| 90 s | 0.714 | 0.196 | 82 frames = 4100 ms |
+| 120 s | ramp end | — | 10 frames = 500 ms |
+
+The drop is late, as the comment in `src/Deckle.Transcription/Streaming/EnergySegmenterSettings.cs` says: with the same calculation, 105 s still requires 3350 ms, and the curve only falls steeply in the last 15 s before 120 s. Reading: in practice, with the defaults, an utterance under a minute needs a pause of more than 4.5 seconds to be cut.
+
+### Hangover vs margin
+
+These two values are often confused. They answer two different questions.
+
+- The **hangover** answers "when do I decide?". It is how much silence the segmenter waits for before it cuts.
+- The **margin** (`MarginMs`, 150 ms by default) answers "where do I cut?". The kept audio ends `MarginMs` after the last voiced frame. The silence between the end of the margin and the moment of the decision is thrown away (`EmitKept` in `src/Deckle.Transcription/Streaming/EnergySegmenter.cs`: kept frames = voiced extent + margin frames, never more than the frames held).
+
+A worked example with the defaults. You start a take and speak for 3 s. You pause for 0.8 s, then speak for 4 s more. Then you pause for 6 s.
+
+1. The first voiced frame opens the utterance. The state is Speech.
+2. The 0.8 s pause is 16 silent frames. The state moves to Hangover and the count rises to 16. The utterance is only about 4 s long, so the required hangover is 100 frames. Your voice comes back before that: the count goes back to 0, the state returns to Speech. No cut.
+3. The 6 s pause starts after about 7.8 s of utterance. The count rises frame by frame. After 5 s of silence (100 frames, since the utterance is still under 15 s), the segmenter cuts.
+4. The emitted utterance is the 7.8 s from the first voiced frame to the last voiced frame, plus 150 ms of margin: about 7.95 s. The other 4.85 s of silence already collected are dropped. `EndedOnSilence` is true.
+5. The state is back to Silence. The last second of the pause is discarded frame by frame. Your next voiced frame opens a new utterance.
+
+Reading: the hangover is what you wait for, not what Whisper hears. Whisper only receives the margin of silence; the long wait only delays the moment the utterance reaches the consumer.
+
+### The blip floor
+
+A short noise, such as a click or a cough, can open an utterance. When the segmenter emits, it measures the **voiced extent**: from the first frame to the last voiced frame. If that is shorter than `MinUtteranceMs` (250 ms, 5 frames), the utterance is dropped instead of emitted, and the `SegmenterBlipDropped` event is logged (`EmitKept` in `src/Deckle.Transcription/Streaming/EnergySegmenter.cs`, event in `src/Deckle.Transcription/DeckleWhispSource.Streaming.cs`). The same rule applies at Flush.
+
+### After the cut: what the consumer does with an utterance
+
+The consumer takes the utterances one at a time, in order (`ConsumeUtterancesAsync` in `src/Deckle.Transcription/Engine/TranscriptionEngine.StreamingPipeline.cs`). For each one:
+
+1. **Optional pre-processing.** If `Preprocessing.Enabled` is on (off by default), the audio of this utterance alone goes through `TranscriptionPreprocessor.Process` (`src/Deckle.Audio/Preprocessing/TranscriptionPreprocessor.cs`).
+2. **Optional Silero trim.** If `Streaming.SpeechTrim.Enabled` is on (the default) and the model is loaded, the neural VAD keeps only the speech inside the utterance (`Trim` in `src/Deckle.Vad/SileroVad.cs`, decisions in `src/Deckle.Vad/SileroSpeechTimestamps.cs`, values in `src/Deckle.Vad/SileroVadOptions.cs`):
+   - The audio is cut into windows of 512 samples (32 ms). The model gives each window a probability of speech.
+   - A span of speech starts at the first window whose probability is at or above `Threshold` (0.5).
+   - It is released only below `Threshold − 0.15` (0.35 by default, never below 0.01). Between the two values, an open span stays open.
+   - A silence shorter than `MinSilenceDurationMs` (100 ms) does not close a span. When the silence lasts long enough, the span ends where that silence began.
+   - A span of `MinSpeechDurationMs` (250 ms) or less is dropped.
+   - Each kept span gets `SpeechPadMs` (30 ms) of padding on both sides. When two spans are closer than twice the padding, the gap between them is split in half instead.
+   - The kept spans are joined end to end. The silence between them is removed.
+   - If no span is found, the utterance is dropped (`UtteranceDroppedNoSpeech`) and contributes no text. The tail of the previous text is kept for the next prompt.
+   - If the trim throws an error, the utterance goes to Whisper untrimmed and the trim is turned off for the rest of the take.
+3. **Whisper**, one call per utterance (see Diagram 1).
+
+Why two detectors: the energy segmenter must decide live, frame by frame, with only the volume to go on; the neural VAD can look at a finished buffer as a whole and tell speech from noise. The distinction is defined in `src/Deckle.Transcription/CONTEXT.md`, section [Segmentation — detection vs cutting](../src/Deckle.Transcription/CONTEXT.md#segmentation--detection-vs-cutting).
+
+Reading: the segmenter discards everything before the first voiced frame, and the Silero padding works inside the utterance it receives. So the padding cannot bring back a soft word onset that stayed under the energy threshold.
+
+### The paragraph rule
+
+Each utterance carries `EndedOnSilence` (`src/Deckle.Transcription/Streaming/Utterance.cs`): true when the segmenter cut on a pause, false when the Flush at Stop closed it. The consumer uses it to join the texts (`pendingParagraphBreak` in `ConsumeUtterancesAsync`):
+
+- Before the text of an utterance, if text was already written, it adds `\n\n` (a new paragraph) when the previous utterance with text was cut on a silence, and a space otherwise.
+- The flag is only updated by an utterance that yields text. An utterance dropped by Silero, one that fails in Whisper, or one whose text is empty leaves the pending break as it was.
+
+Every utterance except the last one of a take is cut on a silence, because Flush only runs at Stop. Reading: so in a dictation, two texts are always joined by a paragraph break, and the space branch is not reached; every pause long enough to cut (5 s at the start of an utterance with the defaults) becomes a new paragraph.
+
+### Stop
+
+On a user Stop, the capture drains its last buffers, then `Complete` runs (`src/Deckle.Transcription/Streaming/SegmentedTranscriptionSession.cs`):
+
+1. `Flush` emits the open utterance, if any, with the same margin rule: voiced extent + margin, limited to the frames held, so a Stop in the middle of a word still keeps the word. `EndedOnSilence` is false. The blip floor still applies.
+2. The channel is marked complete. No more utterances can be written.
+3. The consumer keeps reading until the channel is empty, then returns the assembled text.
+
+Nothing queued is lost on a user Stop: the consumer is cancelled only by `drainCt`, which only Dispose triggers (header comment of `src/Deckle.Transcription/Engine/TranscriptionEngine.StreamingPipeline.cs`).
+
+### What is not exposed
+
+- The four curve control points (`HangoverCurveX1` to `HangoverCurveY2`) can be edited only in the Playground (Segmentation page), not in Settings.
+- The 50 ms frame (`FrameMs` in `EnergySegmenter.cs`) and the ring of four 50 ms capture buffers (`src/Deckle.Audio/MicrophoneCapture.cs`) are fixed in code.
+- The Silero window (512 samples) and the release gap (0.15) are fixed in `src/Deckle.Vad/SileroSpeechTimestamps.cs`.
+
+### Unverified
+
+- Whether −38 dBFS separates speech from silence well on Louis's microphone and room. Only a recording with the heartbeat log on would show it.
+- How often the blip floor and the Silero trim drop a real utterance in practice.
+- Whether the late drop of the default curve matches how Louis actually pauses: the table above is computed, not observed.
+- The real time between the end of speech and the text, per utterance. The code logs it piece by piece (heartbeat, `ConsumerUtterance`); no measurement is quoted here.
