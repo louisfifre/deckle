@@ -37,6 +37,13 @@ public static class SettingsSearch
             Keywords = ["mic", "source"],
         },
 
+        // Maximum recording length picker (composed Choice).
+        new SettingSearchEntry
+        {
+            LabelKey = "RecordingLimitCard",
+            Keywords = ["duration", "length", "limit", "minutes", "cap", "stop"],
+        },
+
         // Transcription pre-processing toggle (composed).
         new SettingSearchEntry
         {
@@ -49,6 +56,14 @@ public static class SettingsSearch
         {
             LabelKey = "RecordingPageMicCheckCard",
             Keywords = ["test", "meter", "calibrate", "volume"],
+        },
+
+        // Listening test command (bespoke). The playback card under it is NOT
+        // indexed: it stays collapsed until a take exists.
+        new SettingSearchEntry
+        {
+            LabelKey = "RecordingPageListeningTestCard",
+            Keywords = ["listen", "playback", "hear", "speakers", "headphones"],
         },
 
         // Voice-level window group (composed Group — the sliders live under it).

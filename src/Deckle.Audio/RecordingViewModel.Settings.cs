@@ -16,6 +16,29 @@ namespace Deckle.Audio;
 // the voice-level window migrate here.
 public partial class RecordingViewModel
 {
+    // Maximum recording length — a ComboBox of fixed durations, the Windows 11
+    // Settings idiom for a timeout with a "never" state (Screen and sleep). Values
+    // are seconds, the POCO's unit, so the VM needs no projection. 0 is the explicit
+    // "No limit" option and the default, read from the POCO initializer like every
+    // other default here. A stored value outside the list (hand-edited file) shows
+    // as no selection, as Windows does.
+    public IReadOnlyList<SettingDescriptor> RecordingLimitSettings =>
+    [
+        Setting.Choice<int>("RecordingLimitCard",
+            () => MaxRecordingDurationSeconds,
+            value => MaxRecordingDurationSeconds = value,
+            [
+                (0, "RecordingLimitNone"),
+                (600, "RecordingLimit10Min"),
+                (1200, "RecordingLimit20Min"),
+                (1800, "RecordingLimit30Min"),
+                (3600, "RecordingLimit1Hour"),
+                (7200, "RecordingLimit2Hours"),
+            ],
+            glyph: Glyphs.Latency,
+            defaultValue: () => new CaptureSettings().MaxRecordingDurationSeconds),
+    ];
+
     // Transcription pre-processing (the DSP black box). A single opt-in toggle;
     // the change handler (OnPreprocessingEnabledChanged → PushToSettings) and
     // persistence are unchanged, the composer only drives the UI. Reuses the

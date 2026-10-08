@@ -134,7 +134,7 @@
     <value>Recording</value>
   </data>
   <data name="RecordingPageSubtitleLabel.Text" xml:space="preserve">
-    <value>Microphone selection, signal pre-processing, and voice level window calibration.</value>
+    <value>Microphone selection, maximum recording length, signal pre-processing with a listening test, and voice level window calibration.</value>
   </data>
   <data name="RecordingPageSectionHeaderLabel.Text" xml:space="preserve">
     <value>Defaults</value>
@@ -146,6 +146,32 @@
   </data>
   <data name="GeneralMicrophoneCard.Description" xml:space="preserve">
     <value>Audio input device used for recording. Default: system default.</value>
+  </data>
+
+  <!-- Composed maximum-recording-length card (composer label key + Choice option keys) -->
+  <data name="RecordingLimitCard.Header" xml:space="preserve">
+    <value>Maximum recording length</value>
+  </data>
+  <data name="RecordingLimitCard.Description" xml:space="preserve">
+    <value>A recording stops on its own when it reaches this length, as if you'd pressed the hotkey. What you recorded is still transcribed. Default: no limit.</value>
+  </data>
+  <data name="RecordingLimitNone.Content" xml:space="preserve">
+    <value>No limit</value>
+  </data>
+  <data name="RecordingLimit10Min.Content" xml:space="preserve">
+    <value>10 minutes</value>
+  </data>
+  <data name="RecordingLimit20Min.Content" xml:space="preserve">
+    <value>20 minutes</value>
+  </data>
+  <data name="RecordingLimit30Min.Content" xml:space="preserve">
+    <value>30 minutes</value>
+  </data>
+  <data name="RecordingLimit1Hour.Content" xml:space="preserve">
+    <value>1 hour</value>
+  </data>
+  <data name="RecordingLimit2Hours.Content" xml:space="preserve">
+    <value>2 hours</value>
   </data>
 
   <!-- Composed pre-processing card (composer label key) -->
@@ -180,6 +206,41 @@
   </data>
   <data name="RecordingPageMicAdviceError.Title" xml:space="preserve">
     <value>Couldn't read the microphone. Check the device above and try again.</value>
+  </data>
+
+  <!-- Listening test (bespoke cards + InfoBars) -->
+  <data name="RecordingPageListeningTestCard.Header" xml:space="preserve">
+    <value>Listening test</value>
+  </data>
+  <data name="RecordingPageListeningTestCard.Description" xml:space="preserve">
+    <value>Record a few seconds, then play them back on your speakers or headphones to hear what pre-processing does to your voice. Nothing is saved or transcribed.</value>
+  </data>
+  <data name="RecordingPageListeningRecordButton.Content" xml:space="preserve">
+    <value>Record</value>
+  </data>
+  <data name="RecordingPageListeningRecording.Title" xml:space="preserve">
+    <value>Recording — speak now…</value>
+  </data>
+  <data name="RecordingPageListeningPlaybackCard.Header" xml:space="preserve">
+    <value>Play back</value>
+  </data>
+  <data name="RecordingPageListeningPlaybackCard.Description" xml:space="preserve">
+    <value>Off is your raw microphone. On applies pre-processing with your current parameters, whether the toggle above is on or not. 25 % and 75 % blend the two.</value>
+  </data>
+  <data name="RecordingPageListeningPlayOff.Content" xml:space="preserve">
+    <value>Off</value>
+  </data>
+  <data name="RecordingPageListeningPlay25.Content" xml:space="preserve">
+    <value>25 %</value>
+  </data>
+  <data name="RecordingPageListeningPlay75.Content" xml:space="preserve">
+    <value>75 %</value>
+  </data>
+  <data name="RecordingPageListeningPlayOn.Content" xml:space="preserve">
+    <value>On</value>
+  </data>
+  <data name="RecordingPageListeningError.Title" xml:space="preserve">
+    <value>Couldn't record or play back. Check the microphone above and your output device, then try again.</value>
   </data>
 
   <!-- Composed voice-level group + sliders (composer label keys) -->

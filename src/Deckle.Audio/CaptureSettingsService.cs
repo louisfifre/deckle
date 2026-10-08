@@ -56,7 +56,32 @@ public sealed class CaptureSettingsService
             // avoid touching the JsonSettingsStore<T> contract before the wave
             // 4 SettingsHost redesign.
             logWarning:  msg => DeckleAudioSource.Log.SettingsLoadWarning(msg),
-            logError:    msg => DeckleAudioSource.Log.SettingsLoadError(msg));
+            logError:    msg => DeckleAudioSource.Log.SettingsLoadError(msg),
+            postLoadMigration: ApplyPostLoadMigrations);
+    }
+
+    // The recording limit's default before 2026-10. A stored value equal to it
+    // means the user never chose a limit.
+    internal const int LegacyDefaultMaxRecordingDurationSeconds = 20 * 60;
+
+    // Runs on every load (and on fresh defaults) through the store's hook,
+    // like the twin TranscriptionSettingsService. The hook, not
+    // SettingsBootstrap: it stays inside the module, works on the typed POCO
+    // and is unit-testable. Returning true makes the store write the result.
+    //
+    // The SchemaVersion stamp makes the rewrite run once. Without it, a user
+    // who later picks 20 minutes on purpose would see that choice wiped back
+    // to "no limit" at every launch.
+    internal static bool ApplyPostLoadMigrations(CaptureSettings settings)
+    {
+        if (settings.SchemaVersion >= CaptureSettings.CurrentSchemaVersion)
+            return false;
+
+        if (settings.MaxRecordingDurationSeconds == LegacyDefaultMaxRecordingDurationSeconds)
+            settings.MaxRecordingDurationSeconds = 0;
+
+        settings.SchemaVersion = CaptureSettings.CurrentSchemaVersion;
+        return true;
     }
 
     public void Save()                      => _store.Save();

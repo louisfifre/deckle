@@ -16,6 +16,12 @@
          and voice level window calibration. -->
     <Page.Resources>
         <x:Double x:Key="SettingsCardSpacing">4</x:Double>
+        <!-- Listening-test strengths, passed as CommandParameter: typed doubles
+             so RelayCommand<double> receives a boxed double, not a string. -->
+        <x:Double x:Key="ListeningStrengthOff">0</x:Double>
+        <x:Double x:Key="ListeningStrengthQuarter">0.25</x:Double>
+        <x:Double x:Key="ListeningStrengthThreeQuarters">0.75</x:Double>
+        <x:Double x:Key="ListeningStrengthFull">1</x:Double>
         <Style x:Key="SettingsSectionHeaderTextBlockStyle"
                BasedOn="{StaticResource BodyStrongTextBlockStyle}"
                TargetType="TextBlock">
@@ -67,6 +73,13 @@
                               MinWidth="240"
                               SelectionChanged="AudioInputCombo_SelectionChanged" />
                 </controls:SettingsCard>
+
+                <!-- Maximum recording length — composed ComboBox, "No limit" by
+                     default. RecordingPage.ComposeRecordingLimitSection() declares
+                     it as a Choice SettingDescriptor (RecordingViewModel.Settings.cs);
+                     it sits under the microphone because both shape every take. -->
+                <StackPanel x:Name="RecordingLimitHost"
+                            Spacing="{StaticResource SettingsCardSpacing}" />
 
                 <!-- Transcription pre-processing — the DSP black box. Single
                      opt-in toggle ; the fine parameters live in the Playground.
@@ -125,6 +138,59 @@
                 <InfoBar x:Uid="RecordingPageMicAdviceError"
                          IsClosable="False" Severity="Error"
                          IsOpen="{x:Bind ViewModel.AdviceError, Mode=OneWay}" />
+
+                <!-- Listening test — hear the pre-processing. Record a take once
+                     (ListeningTester.TakeSeconds), then play it back on the default
+                     output device in four variants. No microphone loop, nothing
+                     saved, nothing transcribed. Same command + bool-flag InfoBars
+                     pattern as the mic check above. The playback card stays
+                     collapsed until a take exists (bool → Visibility, implicit in
+                     x:Bind); its four buttons share one RelayCommand<double>, each
+                     passing a strength declared as an x:Double in Page.Resources so
+                     a boxed double, not a string, reaches the command. -->
+                <controls:SettingsCard x:Name="ListeningTestCard"
+                                       x:Uid="RecordingPageListeningTestCard"
+                                       Tag="RecordingPageListeningTestCard"
+                                       HeaderIcon="{ui:FontIcon Glyph={StaticResource Icon.Transport.Play}}">
+                    <Button x:Uid="RecordingPageListeningRecordButton"
+                            MinWidth="120"
+                            Command="{x:Bind ViewModel.RecordListeningTakeCommand}" />
+                </controls:SettingsCard>
+
+                <InfoBar x:Uid="RecordingPageListeningRecording"
+                         IsClosable="False"
+                         Severity="Informational"
+                         IsOpen="{x:Bind ViewModel.IsRecordingListeningTake, Mode=OneWay}">
+                    <InfoBar.Content>
+                        <ProgressRing IsActive="True" Width="20" Height="20"
+                                      HorizontalAlignment="Left" Margin="0,0,0,12" />
+                    </InfoBar.Content>
+                </InfoBar>
+
+                <controls:SettingsCard x:Name="ListeningPlaybackCard"
+                                       x:Uid="RecordingPageListeningPlaybackCard"
+                                       Tag="RecordingPageListeningPlaybackCard"
+                                       Visibility="{x:Bind ViewModel.HasListeningTake, Mode=OneWay}">
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                        <Button x:Uid="RecordingPageListeningPlayOff"
+                                Command="{x:Bind ViewModel.PlayListeningVariantCommand}"
+                                CommandParameter="{StaticResource ListeningStrengthOff}" />
+                        <Button x:Uid="RecordingPageListeningPlay25"
+                                Command="{x:Bind ViewModel.PlayListeningVariantCommand}"
+                                CommandParameter="{StaticResource ListeningStrengthQuarter}" />
+                        <Button x:Uid="RecordingPageListeningPlay75"
+                                Command="{x:Bind ViewModel.PlayListeningVariantCommand}"
+                                CommandParameter="{StaticResource ListeningStrengthThreeQuarters}" />
+                        <Button x:Uid="RecordingPageListeningPlayOn"
+                                Command="{x:Bind ViewModel.PlayListeningVariantCommand}"
+                                CommandParameter="{StaticResource ListeningStrengthFull}" />
+                    </StackPanel>
+                </controls:SettingsCard>
+
+                <InfoBar x:Uid="RecordingPageListeningError"
+                         IsClosable="False"
+                         Severity="Error"
+                         IsOpen="{x:Bind ViewModel.ListeningTestFailed, Mode=OneWay}" />
 
                 <!-- Voice level window — the calibration group, composed. The
                      master toggle is "set the window manually": ON reveals the
