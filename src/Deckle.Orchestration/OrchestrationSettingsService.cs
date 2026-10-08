@@ -147,7 +147,8 @@ public sealed class OrchestrationSettingsService
         }
     }
 
-    private static void LogAdded(AppEntry entry)
+    // Internal so the observability test checks the exact pair the service emits.
+    internal static void LogAdded(AppEntry entry)
     {
         DeckleOrchestrationSource.Log.EntryAdded();
         DeckleOrchestrationSource.Log.EntryAddedDetail(

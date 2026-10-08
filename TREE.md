@@ -2036,6 +2036,11 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── FakeNotificationChannel.cs
 │   │   ├── NotificationCatalogTests.cs
 │   │   └── NotificationDispatcherTests.cs
+│   ├── Deckle.Orchestration.Tests/
+│   │   ├── AppMatcherTests.cs
+│   │   ├── AppRulesTests.cs
+│   │   ├── Deckle.Orchestration.Tests.csproj
+│   │   └── DeckleOrchestrationSourceTests.cs
 │   ├── Deckle.Playground.Tests/
 │   │   ├── CorrectionApplicationEvidenceTests.cs
 │   │   ├── CorrectionApplicationTrialTests.cs
