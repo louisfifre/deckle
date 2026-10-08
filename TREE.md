@@ -41,7 +41,6 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │       │   │   ├── interaction-design.md
 │       │   │   ├── research.md
 │       │   │   └── visual-design.md
-│       │   ├── AGENTS.md
 │       │   └── SKILL.md  — ux-designer [skill] Design or review user research, flows, information architecture, wireframes, pr…
 │       └── winui-app/
 │           ├── agents/
@@ -197,8 +196,6 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   └── README.md  — readme-autoresearch-prompts [module-readme] Prompt templates owned by generic autoresearch campaigns.
 │   │   ├── runners/
 │   │   │   └── README.md  — readme-autoresearch-runners [module-readme] Runner helpers for autoresearch campaigns.
-│   │   ├── AGENTS.md  — [agent-instructions] Autoresearch benchmark workspace — reusable iterative optimization loops.
-│   │   ├── CLAUDE.md
 │   │   └── README.md  — readme-autoresearch [module-readme] Generic autoresearch workspace for measurable iterative generation, editing, ju…
 │   ├── input/
 │   │   ├── precision-scroll/
@@ -1696,8 +1693,6 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── TravelTerms.cs
 │   │   └── TravelToolCatalog.cs
 │   ├── Deckle.Vad/
-│   │   ├── AGENTS.md
-│   │   ├── CLAUDE.md
 │   │   ├── Deckle.Vad.csproj
 │   │   ├── DeckleVadSource.cs
 │   │   ├── SileroSpeechTimestamps.cs
