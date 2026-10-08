@@ -46,7 +46,8 @@ public sealed partial class TrayQuickActionsHost
     private void InvalidateContent()
     {
         _content = null;
-        _presenterSize = null;
+        _presenterSizeIdle = null;
+        _presenterSizeRecording = null;
     }
 
     private void EnsureContent()

@@ -18,12 +18,19 @@ public sealed partial class TrayQuickActionsHost
     // carrier to this value is what makes the visible card exactly fit: no
     // empty acrylic band, no inner scroll. Null until captured, or after the
     // content was rebuilt.
-    private Windows.Foundation.Size? _presenterSize;
-
-    // The Record button reads Record or Stop recording, two widths: a size
-    // captured in one state is dropped when the panel opens in the other.
-    private bool _presenterSizeIsRecording;
+    //
+    // The Record button reads Record or Stop recording, two widths, so each
+    // recording state keeps its own captured size and the fallback runs only
+    // before the first capture of that state.
+    private Windows.Foundation.Size? _presenterSizeIdle;
+    private Windows.Foundation.Size? _presenterSizeRecording;
     private bool _syncedIsRecording;
+
+    private ref Windows.Foundation.Size? PresenterSizeFor(bool isRecording)
+    {
+        if (isRecording) return ref _presenterSizeRecording;
+        return ref _presenterSizeIdle;
+    }
 
     // ── Show ──────────────────────────────────────────────────────────────────
 
@@ -57,8 +64,6 @@ public sealed partial class TrayQuickActionsHost
         bool isRecording = IsRecording?.Invoke() ?? false;
         SyncState(isRecording);
         _syncedIsRecording = isRecording;
-        if (_presenterSize is not null && _presenterSizeIsRecording != isRecording)
-            _presenterSize = null;
 
         double dipW = 0, dipH = 0, usedScale = 1;
         int physW = 0, physH = 0;
@@ -137,7 +142,8 @@ public sealed partial class TrayQuickActionsHost
             DeckleShellTrayMenuSource.Log.PanelPrimed();
             DeckleShellTrayMenuSource.Log.PanelPrimedDetail(
                 sw.Elapsed.TotalMilliseconds,
-                _presenterSize?.Width ?? 0, _presenterSize?.Height ?? 0);
+                PresenterSizeFor(_syncedIsRecording)?.Width ?? 0,
+                PresenterSizeFor(_syncedIsRecording)?.Height ?? 0);
         });
     }
 
@@ -145,7 +151,7 @@ public sealed partial class TrayQuickActionsHost
     // rebuilt) captures the real presenter once laid out, for the next show.
     private void OnFlyoutOpened(object? sender, object e)
     {
-        if (_presenterSize is not null) return;
+        if (PresenterSizeFor(_syncedIsRecording) is not null) return;
         _carrier.Frame.DispatcherQueue.TryEnqueue(
             DispatcherQueuePriority.Low, CapturePresenterSize);
     }
@@ -158,10 +164,7 @@ public sealed partial class TrayQuickActionsHost
         presenter.UpdateLayout();
         var size = presenter.DesiredSize;
         if (size.Width > 0 && size.Height > 0)
-        {
-            _presenterSize = size;
-            _presenterSizeIsRecording = _syncedIsRecording;
-        }
+            PresenterSizeFor(_syncedIsRecording) = size;
     }
 
     // Walks up from the content root to the FlyoutPresenter hosting it. Null
@@ -186,7 +189,7 @@ public sealed partial class TrayQuickActionsHost
     // size. Both in DIP.
     private (double Width, double Height, string Source) MeasurePanel()
     {
-        if (_presenterSize is { } primed)
+        if (PresenterSizeFor(_syncedIsRecording) is { } primed)
             return (primed.Width, primed.Height, "primed");
 
         var content = _content!;
@@ -194,7 +197,7 @@ public sealed partial class TrayQuickActionsHost
         var desired = content.DesiredSize;
 
         var resources = Application.Current.Resources;
-        Thickness padding = resources.TryGetValue("FlyoutContentPadding", out var p) && p is Thickness tp ? tp : default;
+        Thickness padding = resources.TryGetValue("FlyoutContentThemePadding", out var p) && p is Thickness tp ? tp : default;
         Thickness border = resources.TryGetValue("FlyoutBorderThemeThickness", out var b) && b is Thickness tb ? tb : default;
         double minWidth = resources.TryGetValue("FlyoutThemeMinWidth", out var mw) && mw is double dmw ? dmw : 0;
         double minHeight = resources.TryGetValue("FlyoutThemeMinHeight", out var mh) && mh is double dmh ? dmh : 0;
