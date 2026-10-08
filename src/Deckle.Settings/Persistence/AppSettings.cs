@@ -67,6 +67,10 @@ public sealed class OverlaySettings
     // processing-material rotations, state blends and microphone response.
     // Simple fades are excluded and follow the Windows animation preference.
     public bool Animations { get; set; } = true;
+
+    // "Left" | "Right": which side of the primary display the live
+    // transcript panel sits on.
+    public string TranscriptPanelSide { get; set; } = "Right";
 }
 
 // User paths. Empty by default → automatic resolution through
