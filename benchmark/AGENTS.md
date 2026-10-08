@@ -1,17 +1,12 @@
 ---
-description: Benchmark workspace router — choose the right benchmark family before touching files.
+description: Benchmark workspace router — pick the right child workspace first.
 type: agent-instructions
 ---
 
-# AGENTS.md — `benchmark/`
+# AGENTS.md — benchmark
 
-`benchmark/` is a host folder, not one benchmark. Pick the child workspace by responsibility before editing:
-
-- `asr/` — speech-recognition and speech-output evaluation: corpora, ASR/TTS sources, prompt regimes, LLM judges, WER/looping/leak metrics, and frozen Voxtral/Phi/TTS studies.
-- `rewrite/` — text-rewrite evaluation against the real `Deckle.Llm.Rewrite` code: prompt samples, gate acceptance, offer latency (paragraph-gate study).
-- `input/` — physical-input capture analysis and replay corpora: trackpad contacts, mouse-wheel cadence, gesture classification, and synthetic-output comparison.
-- `autoresearch/` — generic autonomous experiment loops following the autoresearch skill: goal, metric command/extraction, scope, baseline, experiment commit, run, measure, keep/discard, log.
-- `lib/` — cross-benchmark infrastructure only: path resolution, environment loading, event logs, resource monitoring. No ASR semantics here.
-- `viewers/` — generic result viewers. Keep them independent of ASR-specific source, judge, or metric contracts.
-
-Do not confuse an ASR study with autoresearch. Voxtral validation is an ASR study; it only becomes autoresearch when the active object is the iterative search protocol itself.
+- `benchmark/` is a host folder, not one benchmark. Pick the child workspace by responsibility before editing.
+- `lib/` is cross-benchmark infrastructure only. It carries no ASR semantics.
+- `viewers/` stay independent of ASR-specific source, judge and metric contracts.
+- Autoresearch loops follow the `autoresearch` skill, which lives outside this repository.
+- An ASR study is not autoresearch. Voxtral validation is an ASR study; it becomes autoresearch only when the active object is the iterative search protocol itself.

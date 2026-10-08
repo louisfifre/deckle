@@ -29,7 +29,7 @@ This skill contains **detailed rules** in the `rules/` directory, organized by c
 
 ### Quick Start
 
-1. **Review [AGENTS.md](AGENTS.md)** for a complete compilation of all rules with examples
+1. **Read the `rules/` directory** in priority order (table below)
 2. **Reference specific rules** from `rules/` directory for deep dives
 3. **Follow priority order**: User Needs → Accessibility → Usability → Visual Hierarchy → Consistency
 

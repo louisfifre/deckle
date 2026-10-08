@@ -1,10 +1,9 @@
 ---
-description: Window-chrome corrections shared by Deckle's XAML windows — workarounds for WinAppSDK chrome bugs, each deleted when the SDK fixes upstream.
+description: Window-chrome workarounds for WinAppSDK bugs, deleted when fixed upstream.
 type: agent-instructions
 ---
 
 # AGENTS.md — Deckle.Shell.WindowChrome
 
-Corrections to the native window chrome that every Deckle XAML window needs identically — today the TitleBar caption-inset px/DIP fix. Each correction documents the upstream bug it patches and its deletion condition in its own file; the module empties itself as the SDK catches up.
-
-Lives beside `Deckle.Shell` rather than inside it because the corrections manipulate the XAML visual tree, and `Deckle.Shell` deliberately stays XAML-free (pure WinAppSDK API surface).
+- Each correction names, in its own file, the upstream bug it patches and the condition for deleting it. Delete a correction when the SDK fixes the bug.
+- The module lives beside `Deckle.Shell`, not inside it, because the corrections manipulate the XAML visual tree and `Deckle.Shell` stays XAML-free.

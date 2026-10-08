@@ -1,10 +1,10 @@
 ---
-description: System shell module — the low-level OS primitives (hotkeys, tray, autostart, message-only host) and the boundary that keeps them business-free.
+description: Low-level OS primitives (hotkeys, tray, autostart) kept business-free.
 type: agent-instructions
 ---
 
 # AGENTS.md — Deckle.Shell
 
-OS interactions that belong to no business pipeline: global hotkeys, tray icon, HKCU autostart, and the invisible message-only window they attach to. The boundary is the point of the module — it holds no application knowledge beyond these primitives and binds nothing on its own. The host app supplies every concrete action (tray callback, hotkey handler) and wires them before `Register`; the shell never reaches into a business module.
-
-The tray icon's idle ↔ recording state is pushed in by the host App through `UpdateStatus`; it is never inferred from the localized status text here — the shell doesn't know what recording means.
+- The shell holds no application knowledge and never reaches into a business module. The host app supplies every concrete action (tray callback, hotkey handler) and wires it before `Register`.
+- The host app pushes the tray icon's idle or recording state through `UpdateStatus`. The shell never infers it from the localized status text: it does not know what recording means.
+- Deckle.Shell stays XAML-free. Code that needs the XAML visual tree lives in a sibling module.
