@@ -1404,6 +1404,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   └── HdrRule.cs
 │   │   ├── Rules/
 │   │   │   ├── AppliedProfile.cs
+│   │   │   ├── HdrRuleEffect.cs
 │   │   │   ├── IRuleEffect.cs
 │   │   │   └── ProfileTransaction.cs
 │   │   ├── Scan/
