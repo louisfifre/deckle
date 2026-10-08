@@ -390,24 +390,6 @@ public partial class AmbientViewModel : ObservableObject
         AmbientSettingsService.Instance.Save();
     }
 
-    // Per-section resets — the HDR tuning card and the zone-sampling card each
-    // carry their own reset. Both write straight onto the store and Save() once
-    // (like ResetDefaults), so the Changed observer reloads the VM and repaints
-    // only what changed. Splitting ResetDefaults this way keeps the page-level
-    // "Reset all" and the two section resets reading from one defaults source.
-
-    public void ResetHdrSection()
-    {
-        ApplyHdrDefaults(AmbientSettingsService.Instance.Current, new AmbientSettings());
-        AmbientSettingsService.Instance.Save();
-    }
-
-    public void ResetZoneSamplingSection()
-    {
-        ApplyZoneSamplingDefaults(AmbientSettingsService.Instance.Current, new AmbientSettings());
-        AmbientSettingsService.Instance.Save();
-    }
-
     // The brightness curve's own reset (the Settings curve card). The four
     // control points go back to the POCO defaults in one write and one Save(),
     // so the engine never sees a half-reset curve. Like any tuning edit it
