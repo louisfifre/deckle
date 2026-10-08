@@ -12,21 +12,30 @@ namespace Deckle.Audio;
 // silently in SettingsService.Load.
 public sealed class CaptureSettings
 {
+    // Version of the persisted shape. 0 means the file was written before the
+    // settings were versioned; the post-load migration in
+    // CaptureSettingsService stamps CurrentSchemaVersion once it has run.
+    public const int CurrentSchemaVersion = 1;
+    public int SchemaVersion { get; set; } = 0;
+
     public int AudioInputDeviceId { get; set; } = -1;
 
-    // Hard cap on a single recording's duration, in seconds. When the capture
-    // loop crosses this threshold, recording auto-stops as if the user had
-    // pressed Stop — the captured audio still goes through the full
-    // VAD → Whisper → (LLM) → paste pipeline. Prevents a forgotten hotkey
-    // from running for hours and hitting a Whisper hallucination loop or
-    // running out of RAM. 0 = no cap (legacy behaviour).
-    public int MaxRecordingDurationSeconds { get; set; } = 20 * 60;
+    // Maximum length of a single recording, in seconds. 0 = no limit, the
+    // default since 2026-10 (it used to be 20 minutes). A limit is the
+    // user's opt-in on the Recording page. When the capture loop reaches it,
+    // the capture stops as if the hotkey had been pressed, and the audio
+    // still runs through the full transcription pipeline.
+    // Memory of an unlimited take is documented, not bounded: about 115 MB
+    // per hour of PCM16 in the capture buffer, plus a float copy at Stop.
+    // The user's own limit is the bound.
+    public int MaxRecordingDurationSeconds { get; set; } = 0;
 
     public LevelWindowSettings LevelWindow { get; set; } = new();
 
     // Transcription pre-processing DSP (see CONTEXT.md). A terminal
-    // float[] → float[] signal transform applied after Stop, between
-    // capture and the ASR backend, to lift and homogenise a quiet/dynamic
+    // float[] → float[] signal transform applied between capture and the
+    // ASR backend: per utterance by the streaming pipeline, once per take by
+    // the monolithic one. It lifts and homogenises a quiet/dynamic
     // mic for machine intelligibility. Off by default; the only knob in
     // Settings ▸ Recording is the opt-in toggle, fine params live in the
     // Playground. Distinct from LevelWindow above, which drives the HUD

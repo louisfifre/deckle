@@ -1781,6 +1781,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   └── TaskGesturesTests.cs
 │   ├── Deckle.Audio.Tests/
 │   │   ├── CaptureAnomalyEpisodeTests.cs
+│   │   ├── CaptureSettingsMigrationTests.cs
 │   │   ├── Deckle.Audio.Tests.csproj
 │   │   ├── DeckleAudioSourceTests.cs
 │   │   ├── MicLevelCheckTests.cs
