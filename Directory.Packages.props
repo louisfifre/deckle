@@ -61,6 +61,11 @@
          dictionary. CLI-only; the app and the engine never touch it. -->
     <PackageVersion Include="System.Security.Cryptography.ProtectedData" Version="6.0.0" />
 
+    <!-- WMI Win32_ProcessStartTrace subscription for Deckle.Orchestration: the
+         smallest thing that pushes process start events (raw ETW would be
+         hundreds of lines of interop). Works only when Deckle runs elevated. -->
+    <PackageVersion Include="System.Management" Version="10.0.12" />
+
     <!-- Managed DTLS-PSK for Hue Entertainment v2. Kept inside Deckle.Lighting's
          Hue driver so the transport dependency does not leak into Ambient. -->
     <PackageVersion Include="BouncyCastle.Cryptography" Version="2.6.2" />

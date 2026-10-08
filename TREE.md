@@ -1378,7 +1378,9 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   ├── IForegroundMonitor.cs
 │   │   │   ├── IProcessStartSource.cs
 │   │   │   ├── NullForegroundMonitor.cs
-│   │   │   └── ProcessStarted.cs
+│   │   │   ├── ProcessExitWatch.cs
+│   │   │   ├── ProcessStarted.cs
+│   │   │   └── WmiProcessStartSource.cs
 │   │   ├── Interop/
 │   │   │   └── ProcessNativeMethods.cs
 │   │   ├── Processes/

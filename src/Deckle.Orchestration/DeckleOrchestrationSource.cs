@@ -23,6 +23,13 @@ public sealed class DeckleOrchestrationSource : DeckleEventSource
     public const int EvtScanCompletedDetail = 11;
     public const int EvtScanFolderMissing = 12;
     public const int EvtScanFileUnreadable = 13;
+    public const int EvtProcessTraceStarted = 14;
+    public const int EvtProcessTraceUnavailable = 15;
+    public const int EvtProcessTraceUnavailableDetail = 16;
+    public const int EvtProcessTraceStopFailed = 17;
+    public const int EvtExitWatchUnavailable = 18;
+    public const int EvtExitWatchUnavailableDetail = 19;
+    public const int EvtProcessTraceEventUnreadable = 20;
 
     [Event(EvtSettingsLoadWarning,
            Level = EventLevel.Warning,
@@ -147,5 +154,78 @@ public sealed class DeckleOrchestrationSource : DeckleEventSource
     public void ScanFileUnreadable(string path, string error_type, string message)
     {
         if (IsEnabled()) WriteEvent(EvtScanFileUnreadable, path, error_type, message);
+    }
+
+    // The WMI process start subscription is live: apps are noticed the moment
+    // they start, not only when they come to the foreground.
+    [Event(EvtProcessTraceStarted,
+           Level = EventLevel.Verbose,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Message = "process trace started | query=Win32_ProcessStartTrace")]
+    public void ProcessTraceStarted()
+    {
+        if (IsEnabled()) WriteEvent(EvtProcessTraceStarted);
+    }
+
+    // The subscription was refused, normally because Deckle is not elevated.
+    // Emitted once per process lifetime; the Verbose mirror follows each refusal.
+    [Event(EvtProcessTraceUnavailable,
+           Level = EventLevel.Warning,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Message = "Process start events need an elevated Deckle — apps are noticed only when they come to the foreground")]
+    public void ProcessTraceUnavailable()
+    {
+        if (IsEnabled()) WriteEvent(EvtProcessTraceUnavailable);
+    }
+
+    [Event(EvtProcessTraceUnavailableDetail,
+           Level = EventLevel.Verbose,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Message = "process trace unavailable | error_type={0} | message={1}")]
+    public void ProcessTraceUnavailableDetail(string error_type, string message)
+    {
+        if (IsEnabled()) WriteEvent(EvtProcessTraceUnavailableDetail, error_type, message);
+    }
+
+    // Stopping the subscription threw; swallowed, the watcher is dropped anyway.
+    [Event(EvtProcessTraceStopFailed,
+           Level = EventLevel.Verbose,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Message = "process trace stop failed | error_type={0} | message={1}")]
+    public void ProcessTraceStopFailed(string error_type, string message)
+    {
+        if (IsEnabled()) WriteEvent(EvtProcessTraceStopFailed, error_type, message);
+    }
+
+    // OpenProcess(SYNCHRONIZE) was refused (protected process) or the process
+    // was already gone. Emitted once per process lifetime; the Verbose mirror
+    // follows each refusal with the pid and the Win32 error.
+    [Event(EvtExitWatchUnavailable,
+           Level = EventLevel.Warning,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Message = "An app cannot be watched for exit — its rules will stay applied until Deckle restarts")]
+    public void ExitWatchUnavailable()
+    {
+        if (IsEnabled()) WriteEvent(EvtExitWatchUnavailable);
+    }
+
+    [Event(EvtExitWatchUnavailableDetail,
+           Level = EventLevel.Verbose,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Message = "exit watch unavailable | pid={0} | win32_error={1}")]
+    public void ExitWatchUnavailableDetail(int pid, int win32_error)
+    {
+        if (IsEnabled()) WriteEvent(EvtExitWatchUnavailableDetail, pid, win32_error);
+    }
+
+    // One WMI start event could not be read or handled; it is dropped and the
+    // subscription goes on.
+    [Event(EvtProcessTraceEventUnreadable,
+           Level = EventLevel.Verbose,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Message = "process start event dropped | error_type={0} | message={1}")]
+    public void ProcessTraceEventUnreadable(string error_type, string message)
+    {
+        if (IsEnabled()) WriteEvent(EvtProcessTraceEventUnreadable, error_type, message);
     }
 }
