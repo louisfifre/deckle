@@ -264,8 +264,7 @@ function ConvertTo-TerminalMenuLayoutSections {
             $rows.Add([pscustomobject]@{ Kind = 'TargetRow'; Label = ''; Targets = @($pendingTargets); TrailingTarget = $null })
         }
         if ($null -ne $trailingTarget) {
-            # The Exit target seats at the right end of the menu's last line,
-            # in the narrow slot the grid reserves beside its columns.
+            # The Exit target seats at the right end of the menu's last line.
             if ($rows.Count -eq 0) {
                 $rows.Add([pscustomobject]@{ Kind = 'TargetRow'; Label = ''; Targets = @(); TrailingTarget = $trailingTarget })
             } else {
@@ -307,7 +306,7 @@ function Get-TerminalMinimumColumnWidth {
             }
         }
     }
-    return [Math]::Max(20, $longest + 4)
+    return [Math]::Max(22, $longest + 4)
 }
 
 function Get-TerminalMenuGrid {
@@ -335,9 +334,6 @@ function Get-TerminalMenuGrid {
     $targetX = $left + $labelWidth + 3
     $gap = 2
     $targetAreaWidth = [Math]::Max(1, $right - $targetX)
-    # The Exit slot is narrow and reserved on every row, so the columns stay
-    # aligned and the last line keeps room for it.
-    if ($trailingWidth -gt 0) { $targetAreaWidth = [Math]::Max(1, $targetAreaWidth - ($trailingWidth + $gap)) }
     $columnWidth = [Math]::Max(1, [Math]::Floor(($targetAreaWidth - (($columnCount - 1) * $gap)) / $columnCount))
     $minimumColumnWidth = Get-TerminalMinimumColumnWidth -LayoutSections $LayoutSections
     if ($columnWidth -lt $minimumColumnWidth) {
@@ -375,26 +371,46 @@ function Add-TerminalMenuRow {
         }
         $targets = @(if ($Row.Kind -eq 'ActionRow') { $Row.Variants } else { $Row.Targets })
         $columns = [Math]::Max(1, $Grid.ColumnCount)
+        # Exit reserves nothing from the grid: only a cell that would run
+        # under it, on the row's last line, is shortened to stop before it.
+        $exitX = if ($null -ne $Row.TrailingTarget) { $Grid.Right - $Grid.TrailingWidth } else { $Grid.Right + 1 }
+        $lastLineStart = [Math]::Floor(($targets.Count - 1) / $columns) * $columns
+        $column = 0
         for ($i = 0; $i -lt $targets.Count; $i++) {
-            $column = $i % $columns
-            if ($i -gt 0 -and $column -eq 0) {
+            if ($i -gt 0) { $column++ }
+            if ($i -gt 0 -and $column -eq $columns) {
                 # Cells beyond the last column wrap beneath the first cell,
                 # never beneath the label, without a blank line.
                 $line = Add-TerminalFrameLine -Frame $Frame
                 if ($line -lt 0) { return }
+                $column = 0
+            }
+            $x = $Grid.TargetX + ($column * ($Grid.ColumnWidth + $Grid.Gap))
+            $width = $Grid.ColumnWidth
+            if ($i -ge $lastLineStart -and ($x + $width) -gt ($exitX - $Grid.Gap)) {
+                $width = $exitX - $Grid.Gap - $x
+                if ($width -lt 8) {
+                    # Too little room beside Exit: the cell takes a new line
+                    # instead, which becomes the row's last line.
+                    $line = Add-TerminalFrameLine -Frame $Frame
+                    if ($line -lt 0) { return }
+                    $column = 0
+                    $x = $Grid.TargetX
+                    $width = $Grid.ColumnWidth
+                    $lastLineStart = $i
+                }
             }
             Add-TerminalTarget `
                 -Frame $Frame `
                 -Target $targets[$i] `
                 -LineIndex $line `
-                -X ($Grid.TargetX + ($column * ($Grid.ColumnWidth + $Grid.Gap))) `
-                -Width $Grid.ColumnWidth `
+                -X $x `
+                -Width $width `
                 -FocusedTargetId $FocusedTargetId `
                 -AsActionVariant:($Row.Kind -eq 'ActionRow')
         }
         if ($null -ne $Row.TrailingTarget) {
-            # Exit sits on the row's last line, after any wrap, in its slot.
-            Add-TerminalTarget -Frame $Frame -Target $Row.TrailingTarget -LineIndex $line -X ($Grid.Right - $Grid.TrailingWidth) -Width $Grid.TrailingWidth -FocusedTargetId $FocusedTargetId
+            Add-TerminalTarget -Frame $Frame -Target $Row.TrailingTarget -LineIndex $line -X $exitX -Width $Grid.TrailingWidth -FocusedTargetId $FocusedTargetId
         }
         return
     }

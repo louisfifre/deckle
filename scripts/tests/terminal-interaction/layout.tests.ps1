@@ -52,8 +52,9 @@ Assert-Equal $setup.Y $quit.Y 'Quit seats on the last line of the menu, beside t
 Assert-True ($maintenance.X -lt $setup.X -and $setup.X -lt $quit.X) 'Accesses and Quit keep their declared order'
 Assert-Equal $releaseAccess.X $setup.X 'Release and Setup share the second option column'
 Assert-Equal 98 ($quit.X + $quit.Width) 'Quit ends on the right rail of a 100-column frame'
-Assert-True (($setup.X + $setup.Width) -le ($quit.X - 2)) 'the grid reserves the Quit slot, so the last cell never runs into it'
-Assert-Equal ($launchDebug.X + $launchDebug.Width) ($setup.X + $setup.Width) 'the reserved slot keeps every row on the same columns'
+Assert-True (($setup.X + $setup.Width) -le ($quit.X - 2)) 'the cell beside Quit is shortened so it stops before it'
+Assert-True (($launchDebug.X + $launchDebug.Width) -gt $quit.X) 'Quit reserves nothing: the other rows run to the right rail'
+Assert-Equal $launchDebug.X $setup.X 'the shortened cell keeps its column'
 Assert-Equal 0 @($wide.Targets | Where-Object { $_.TargetId -like 'navigation.page.*' }).Count 'a fitting menu has no paging controls'
 Assert-True (($wideText -join "`n") -match 'Enter Open') 'global command indications are visible in the Header'
 Assert-True (($wideText -join "`n") -notmatch 'Backspace Back') 'the root menu does not advertise Back'
@@ -210,7 +211,7 @@ $bumpRoomy = Get-TerminalInteractionFrame -View $bumpMenu -Width 100 -Height 12 
 $roomyPatch = Get-Placement -Frame $bumpRoomy -TargetId action.bump.patch
 $roomyMajor = Get-Placement -Frame $bumpRoomy -TargetId action.bump.major
 Assert-Equal $roomyPatch.Y $roomyMajor.Y 'three Variants share one line while their cells stay above the floor'
-Assert-True ($roomyPatch.Width -ge 20) 'a roomy terminal keeps Variant cells above the width floor'
+Assert-True ($roomyPatch.Width -ge 22) 'a roomy terminal keeps Variant cells above the width floor'
 $roomyRelease = Get-Placement -Frame $bumpRoomy -TargetId access.release
 $roomySetup = Get-Placement -Frame $bumpRoomy -TargetId access.setup
 Assert-Equal $roomyRelease.Y $roomySetup.Y 'three Accesses fill the three Variant columns of their level on one line'
@@ -219,7 +220,7 @@ $bumpTight = Get-TerminalInteractionFrame -View $bumpMenu -Width 72 -Height 12 -
 $tightPatch = Get-Placement -Frame $bumpTight -TargetId action.bump.patch
 $tightMinor = Get-Placement -Frame $bumpTight -TargetId action.bump.minor
 $tightMajor = Get-Placement -Frame $bumpTight -TargetId action.bump.major
-Assert-True ($tightPatch.Width -ge 20) 'a tight terminal drops a column before a cell shrinks below the floor'
+Assert-True ($tightPatch.Width -ge 22) 'a tight terminal drops a column before a cell shrinks below the floor'
 Assert-Equal $tightPatch.Y $tightMinor.Y 'the first two Variants keep the label line'
 Assert-Equal ($tightPatch.Y + 1) $tightMajor.Y 'the third Variant wraps to the very next line'
 Assert-Equal $tightPatch.X $tightMajor.X 'a wrapped Variant sits beneath the first cell, not beneath the label'
