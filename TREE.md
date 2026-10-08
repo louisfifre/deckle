@@ -882,7 +882,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   └── SettingsComposer.Numeric.cs
 │   │   ├── Themes/
 │   │   │   └── Icons.xaml
-│   │   ├── AGENTS.md  — [agent-instructions] Shared WinUI floor — the UI primitives every module depends on and that depend…
+│   │   ├── AGENTS.md  — [agent-instructions] Shared WinUI floor — strings, glyphs, settings model, confirmation gate.
 │   │   ├── CLAUDE.md
 │   │   ├── ConfirmationService.cs
 │   │   ├── Deckle.Catalog.csproj
@@ -1222,7 +1222,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   ├── HueLocalDiscovery.Interop.cs
 │   │   │   ├── HueProjectedState.cs
 │   │   │   └── HueRestLightOutput.cs
-│   │   ├── AGENTS.md  — [agent-instructions] Generalist light-output driver — the ILightOutput abstraction and the REST Hue…
+│   │   ├── AGENTS.md  — [agent-instructions] Light-output driver — ILightOutput and the Philips Hue transports.
 │   │   ├── CLAUDE.md
 │   │   ├── Deckle.Lighting.csproj
 │   │   ├── DeckleLightingSource.cs
@@ -1365,7 +1365,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   ├── INotificationChannel.cs
 │   │   │   ├── NotificationDispatcher.cs
 │   │   │   └── NotificationResponse.cs
-│   │   ├── AGENTS.md  — [agent-instructions] Notification catalogue, dispatcher, and delivery channels — modules declare des…
+│   │   ├── AGENTS.md  — [agent-instructions] Notification catalogue, dispatcher and channels for user prompts.
 │   │   ├── CLAUDE.md
 │   │   ├── Deckle.Notifications.csproj
 │   │   └── DeckleNotificationsSource.cs
@@ -1407,7 +1407,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   ├── HomePage.xaml.cs
 │   │   │   ├── PlaygroundWindow.xaml
 │   │   │   └── PlaygroundWindow.xaml.cs
-│   │   ├── AGENTS.md  — [agent-instructions] Dev-only tuning sandbox — live-adjust the running pipelines without a rebuild,…
+│   │   ├── AGENTS.md  — [agent-instructions] Dev-only tuning sandbox for the running pipelines and UX prototypes.
 │   │   ├── CLAUDE.md
 │   │   ├── Deckle.Playground.csproj
 │   │   ├── DecklePlaygroundSource.cs
@@ -1452,7 +1452,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── ViewModels/
 │   │   │   ├── GeneralViewModel.cs
 │   │   │   └── GeneralViewModel.Settings.cs
-│   │   ├── AGENTS.md  — [agent-instructions] Settings shell — aggregates module-owned pages in a NavigationView, owns non-mo…
+│   │   ├── AGENTS.md  — [agent-instructions] Settings shell — hosts module-owned pages and non-modular settings.
 │   │   ├── CLAUDE.md
 │   │   ├── Deckle.Settings.csproj
 │   │   ├── DeckleSettingsSource.Backup.cs
