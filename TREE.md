@@ -1050,6 +1050,9 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   ├── HudPalette.cs
 │   │   │   ├── HudState.cs
 │   │   │   └── MessageKind.cs
+│   │   ├── Transcript/
+│   │   │   ├── TranscriptHistory.cs
+│   │   │   └── TranscriptPanelLayout.cs
 │   │   ├── Windows/
 │   │   │   ├── HudOverlayManager.cs
 │   │   │   ├── HudOverlayWindow.xaml
@@ -1937,7 +1940,9 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── Deckle.Hud.Tests.csproj
 │   │   ├── DeckleHudSourceTests.cs
 │   │   ├── ProximityFadeTests.cs
-│   │   └── ProximityRollupAggregatorTests.cs
+│   │   ├── ProximityRollupAggregatorTests.cs
+│   │   ├── TranscriptHistoryTests.cs
+│   │   └── TranscriptPanelLayoutTests.cs
 │   ├── Deckle.Input.PrecisionScroll.Tests/
 │   │   ├── Fixtures/
 │   │   │   └── precision-scroll-baseline.json
