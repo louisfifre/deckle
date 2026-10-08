@@ -282,6 +282,9 @@ public sealed partial class SettingsComposer
             case SettingKind.Text:
                 BuildText(card, s);
                 break;
+            case SettingKind.Editor:
+                BuildEditor(card, s);
+                break;
             default:
                 throw new NotSupportedException(
                     $"SettingKind.{s.Kind} has no composer yet — add it when a setting needs it.");

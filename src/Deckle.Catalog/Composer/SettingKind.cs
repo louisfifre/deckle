@@ -36,6 +36,14 @@ public enum SettingKind
     // TextArgs.
     Text,
 
+    // A module-owned editor for a value with a shape — a curve, an envelope —
+    // where the doctrine wants a dedicated editor rather than a row of raw numbers.
+    // The module builds the element (EditorArgs.Build) and keeps it in sync with
+    // the model itself (x:Bind or its own events); the composer hosts it vertically
+    // in the card and owns the chrome around it: visibility, enablement and, when
+    // a Default is supplied, the per-card reset.
+    Editor,
+
     // A master toggle that reveals dependent child settings, rendered as a
     // SettingsExpander (toggle in the header, children as expanded rows). The
     // descriptor's own value IS the master toggle (a bool); the children live in

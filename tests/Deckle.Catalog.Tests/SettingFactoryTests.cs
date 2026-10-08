@@ -236,6 +236,28 @@ public class SettingFactoryTests
         Assert.Equal(10, args.LargeChange);
     }
 
+    // ── Editor: module-owned element, boxed selectors for the reset ────────────
+
+    [Fact]
+    public void EditorCarriesItsBuilderAndRoundTripsItsValue()
+    {
+        (int A, int B) value = (0, 0);
+        // Build is never invoked here: constructing a WinUI element needs a XAML
+        // runtime. The factory must only carry it.
+        var d = Setting.Editor<(int A, int B)>("k", () => value, v => value = v,
+            new EditorArgs(() => throw new InvalidOperationException("not built in tests")),
+            defaultValue: () => (1, 2));
+
+        Assert.Equal(SettingKind.Editor, d.Kind);
+        var args = Assert.IsType<EditorArgs>(d.Args);
+        Assert.NotNull(args.Build);
+
+        d.SetValue((3, 4));
+        Assert.Equal((3, 4), value);
+        Assert.Equal((3, 4), d.GetValue());
+        Assert.Equal((1, 2), d.Default!());
+    }
+
     // ── Group : maître + enfants, le maître fait l'aller-retour ────────────────
 
     [Fact]

@@ -112,6 +112,33 @@ public sealed partial class SettingsComposer
         });
     }
 
+    // A module-owned editor for a value with a shape (a curve, an envelope). The
+    // Path kind's picker is host-owned, built through PathControlFactory; here the
+    // element is descriptor-owned, built through EditorArgs.Build. The composer owns
+    // only the card chrome: vertical hosting (an editor needs the row's width, not
+    // the trailing edge), the Default-gated trailing reset shared with Path, and the
+    // reactive state. Unlike every other kind there is no value-sync in the
+    // refresher: the element binds to the model itself (x:Bind or its own events),
+    // so pushing a value into it would duplicate, and fight, that binding.
+    private void BuildEditor(SettingsCard card, SettingDescriptor s)
+    {
+        // Required by Setting.Editor, so the cast is safe; a wrong-kind args here is
+        // a manifest bug, hence the hard cast.
+        var args = (EditorArgs)s.Args!;
+
+        card.ContentAlignment = ContentAlignment.Vertical;
+
+        FrameworkElement element = args.Build();
+        (FrameworkElement content, Action? updateReset) = WrapWithTrailingReset(card, element, s);
+        card.Content = content;
+
+        _refreshers.Add(() =>
+        {
+            updateReset?.Invoke();
+            ApplyReactiveState(card, s);
+        });
+    }
+
     // Free-form text via a TextBox, bridged to the descriptor's string selectors.
     // Two shapes from TextArgs: single-line sits on the card's trailing edge with
     // a fixed MinWidth (like the Number box), so the row reads as "label … field";
