@@ -51,6 +51,7 @@ public sealed class DeckleOrchestrationSource : DeckleEventSource
     public const int EvtHdrSetFailedDetail = 39;
     public const int EvtHdrRuleSkipped = 40;
     public const int EvtForegroundPathUnavailable = 41;
+    public const int EvtForegroundDeliveryFailed = 42;
 
     [Event(EvtSettingsLoadWarning,
            Level = EventLevel.Warning,
@@ -452,5 +453,16 @@ public sealed class DeckleOrchestrationSource : DeckleEventSource
     public void ForegroundPathUnavailable(int pid, string process_name)
     {
         if (IsEnabled()) WriteEvent(EvtForegroundPathUnavailable, pid, process_name);
+    }
+
+    // A subscriber of the foreground change threw on the thread pool. The
+    // exception is contained here; the change is dropped for that delivery.
+    [Event(EvtForegroundDeliveryFailed,
+           Level = EventLevel.Warning,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Message = "foreground change delivery failed | pid={0} | exception={1} | message={2}")]
+    public void ForegroundDeliveryFailed(int pid, string exception, string message)
+    {
+        if (IsEnabled()) WriteEvent(EvtForegroundDeliveryFailed, pid, exception, message);
     }
 }

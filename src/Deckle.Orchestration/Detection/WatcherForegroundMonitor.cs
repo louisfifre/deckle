@@ -66,7 +66,15 @@ public sealed class WatcherForegroundMonitor : IForegroundMonitor, IDisposable
 
         ForegroundChange change = ForegroundChangeMapping.ToChange(state, path);
         Volatile.Write(ref _current, change);
-        ThreadPool.QueueUserWorkItem(_ => ForegroundChanged?.Invoke(change));
+        // A subscriber failure must not end the resident process, as in WmiProcessStartSource.
+        ThreadPool.QueueUserWorkItem(_ =>
+        {
+            try { ForegroundChanged?.Invoke(change); }
+            catch (Exception ex)
+            {
+                DeckleOrchestrationSource.Log.ForegroundDeliveryFailed(change.ProcessId, ex.GetType().Name, ex.Message);
+            }
+        });
     }
 
     // Once per process: an F11 toggle or a monitor move of the same window
