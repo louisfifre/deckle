@@ -39,7 +39,7 @@ public sealed partial class HudWindow : Window
         _cursorSignal.Moved -= UpdateProximity;
     }
 
-    // ── Proximity: distance → alpha via smoothstep ────────────────────────────
+    // ── Proximity: distance → alpha via smoothstep (the curve lives in ProximityFade) ──
 
     private void UpdateProximity()
     {
@@ -52,21 +52,9 @@ public sealed partial class HudWindow : Window
         int right  = pos.X + size.Width;
         int bottom = pos.Y + size.Height;
 
-        int dx = cursor.X < left ? left - cursor.X : (cursor.X > right  ? cursor.X - right  : 0);
-        int dy = cursor.Y < top  ? top  - cursor.Y : (cursor.Y > bottom ? cursor.Y - bottom : 0);
-        double distancePx = Math.Sqrt(dx * dx + dy * dy);
-
-        double scale  = _dpiScale;
-        double nearPx = NEAR_RADIUS_DIP * scale;
-        double farPx  = FAR_RADIUS_DIP  * scale;
-
-        double t = (distancePx - nearPx) / (farPx - nearPx);
-        if (t < 0.0) t = 0.0;
-        if (t > 1.0) t = 1.0;
-
-        double eased = t * t * (3.0 - 2.0 * t);
-
-        byte alpha = (byte)Math.Round(MIN_ALPHA + eased * (MAX_ALPHA - MIN_ALPHA));
+        double distancePx = ProximityFade.DistanceToRectPx(cursor.X, cursor.Y, left, top, right, bottom);
+        double scale = _dpiScale;
+        byte alpha = ProximityFade.Alpha(distancePx, scale, NEAR_RADIUS_DIP, FAR_RADIUS_DIP, MIN_ALPHA, MAX_ALPHA);
         if (alpha != _currentAlpha) SetAlphaImmediate(alpha);
 
         // Axis 5: sample collection for ProximityRollup. The
