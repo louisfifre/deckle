@@ -5,7 +5,7 @@ namespace Deckle.Orchestration;
 
 // Process start events from WMI's Win32_ProcessStartTrace: pushed by the
 // system the moment a process starts, nothing polled. The subscription only
-// succeeds when Deckle runs elevated ("Start elevated" in General); from a
+// succeeds when Deckle runs elevated ("Start elevated" on the Trackpad page); from a
 // standard process WMI refuses it and Start() returns false.
 //
 // Start() and Stop() may run on any thread, never the UI one: connecting to
