@@ -1276,7 +1276,8 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   ├── AmbientPage.xaml
 │   │   │   └── AmbientPage.xaml.cs
 │   │   ├── ViewModels/
-│   │   │   └── AmbientViewModel.cs
+│   │   │   ├── AmbientViewModel.cs
+│   │   │   └── AmbientViewModel.Settings.cs
 │   │   ├── AmbientCaptureRate.cs
 │   │   ├── AmbientSettings.cs
 │   │   ├── AmbientSettingsModule.cs

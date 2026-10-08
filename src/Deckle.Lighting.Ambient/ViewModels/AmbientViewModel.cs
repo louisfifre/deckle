@@ -71,7 +71,16 @@ public partial class AmbientViewModel : ObservableObject
     public partial BorderThicknessMode BorderMode { get; set; }
 
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(BorderDepthPercent))]
     public partial double BorderDepth { get; set; }
+
+    // BorderDepth as the percent the Settings slider shows (5..50). The store
+    // keeps the 0.05..0.5 fraction the sampler reads; this is only its face.
+    public double BorderDepthPercent
+    {
+        get => BorderDepth * 100.0;
+        set => BorderDepth = value / 100.0;
+    }
 
     [ObservableProperty]
     public partial int BorderCells { get; set; }
@@ -392,6 +401,34 @@ public partial class AmbientViewModel : ObservableObject
     {
         ApplyZoneSamplingDefaults(AmbientSettingsService.Instance.Current, new AmbientSettings());
         AmbientSettingsService.Instance.Save();
+    }
+
+    // The brightness curve's own reset (the Settings curve card). The four
+    // control points go back to the POCO defaults in one write and one Save(),
+    // so the engine never sees a half-reset curve. Like any tuning edit it
+    // switches Mode to Custom: the user moved away from the preset's curve.
+    public void ResetBrightnessCurve()
+    {
+        var d   = new AmbientSettings();
+        var cur = AmbientSettingsService.Instance.Current;
+        cur.BrightnessCurveX1 = d.BrightnessCurveX1;
+        cur.BrightnessCurveY1 = d.BrightnessCurveY1;
+        cur.BrightnessCurveX2 = d.BrightnessCurveX2;
+        cur.BrightnessCurveY2 = d.BrightnessCurveY2;
+        DeckleAmbientSource.Log.TuningChanged("BrightnessCurve", "default");
+        FlipToCustomMode();
+        AmbientSettingsService.Instance.Save();
+    }
+
+    // True when the curve differs from the POCO default — gates the curve
+    // card's reset, read from the same `new AmbientSettings()` the reset writes.
+    public bool IsBrightnessCurveDirty()
+    {
+        var d = new AmbientSettings();
+        return BrightnessCurveX1 != d.BrightnessCurveX1
+            || BrightnessCurveY1 != d.BrightnessCurveY1
+            || BrightnessCurveX2 != d.BrightnessCurveX2
+            || BrightnessCurveY2 != d.BrightnessCurveY2;
     }
 
     // The HDR grading surface + the Mode preset (Mode lives on the HDR card and
