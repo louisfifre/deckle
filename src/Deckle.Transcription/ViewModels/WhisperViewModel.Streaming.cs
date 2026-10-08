@@ -82,6 +82,20 @@ public partial class WhisperViewModel
     [ObservableProperty]
     public partial double SegHangoverRampEndMs { get; set; }
 
+    // The two Bezier control points shaping the decay between RampStart and
+    // RampEnd (EnergySegmenterSettings.HangoverCurveX1..Y2), each in [0, 1].
+    [ObservableProperty]
+    public partial double SegCurveX1 { get; set; }
+
+    [ObservableProperty]
+    public partial double SegCurveY1 { get; set; }
+
+    [ObservableProperty]
+    public partial double SegCurveX2 { get; set; }
+
+    [ObservableProperty]
+    public partial double SegCurveY2 { get; set; }
+
     [ObservableProperty]
     public partial double SegMarginMs { get; set; }
 
@@ -119,6 +133,30 @@ public partial class WhisperViewModel
     }
 
     partial void OnSegHangoverRampEndMsChanged(double value)
+    {
+        if (_isSyncing || double.IsNaN(value)) return;
+        PushToSettings();
+    }
+
+    partial void OnSegCurveX1Changed(double value)
+    {
+        if (_isSyncing || double.IsNaN(value)) return;
+        PushToSettings();
+    }
+
+    partial void OnSegCurveY1Changed(double value)
+    {
+        if (_isSyncing || double.IsNaN(value)) return;
+        PushToSettings();
+    }
+
+    partial void OnSegCurveX2Changed(double value)
+    {
+        if (_isSyncing || double.IsNaN(value)) return;
+        PushToSettings();
+    }
+
+    partial void OnSegCurveY2Changed(double value)
     {
         if (_isSyncing || double.IsNaN(value)) return;
         PushToSettings();

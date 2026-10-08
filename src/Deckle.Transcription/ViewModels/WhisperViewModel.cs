@@ -60,6 +60,14 @@ public partial class WhisperViewModel : ObservableObject
         SegMarginMs = 150;
         SegMinUtteranceMs = 250;
 
+        // Curve seeds read from the segmenter POCO initializers (their single
+        // source), overwritten by Load().
+        var segmenter = new EnergySegmenterSettings();
+        SegCurveX1 = segmenter.HangoverCurveX1;
+        SegCurveY1 = segmenter.HangoverCurveY1;
+        SegCurveX2 = segmenter.HangoverCurveX2;
+        SegCurveY2 = segmenter.HangoverCurveY2;
+
         // Dictation-experience seeds from the shell POCO initializers (the single
         // source the shell's SettingsService persists), overwritten by Load().
         var overlay = new OverlaySettings();
@@ -117,6 +125,10 @@ public partial class WhisperViewModel : ObservableObject
             SegHangoverMinMs = s.Streaming.Segmenter.HangoverMinMs;
             SegHangoverRampStartMs = s.Streaming.Segmenter.HangoverRampStartMs;
             SegHangoverRampEndMs = s.Streaming.Segmenter.HangoverRampEndMs;
+            SegCurveX1 = s.Streaming.Segmenter.HangoverCurveX1;
+            SegCurveY1 = s.Streaming.Segmenter.HangoverCurveY1;
+            SegCurveX2 = s.Streaming.Segmenter.HangoverCurveX2;
+            SegCurveY2 = s.Streaming.Segmenter.HangoverCurveY2;
             SegMarginMs = s.Streaming.Segmenter.MarginMs;
             SegMinUtteranceMs = s.Streaming.Segmenter.MinUtteranceMs;
 
@@ -184,7 +196,11 @@ public partial class WhisperViewModel : ObservableObject
         if (!double.IsNaN(SegHangoverMinMs))       s.Streaming.Segmenter.HangoverMinMs       = (int)SegHangoverMinMs;
         if (!double.IsNaN(SegHangoverRampStartMs)) s.Streaming.Segmenter.HangoverRampStartMs = (int)SegHangoverRampStartMs;
         if (!double.IsNaN(SegHangoverRampEndMs))   s.Streaming.Segmenter.HangoverRampEndMs   = (int)SegHangoverRampEndMs;
-        if (!double.IsNaN(SegMarginMs))            s.Streaming.Segmenter.MarginMs            = (int)SegMarginMs;
+        if (!double.IsNaN(SegCurveX1))             s.Streaming.Segmenter.HangoverCurveX1     = SegCurveX1;
+        if (!double.IsNaN(SegCurveY1))             s.Streaming.Segmenter.HangoverCurveY1     = SegCurveY1;
+        if (!double.IsNaN(SegCurveX2))             s.Streaming.Segmenter.HangoverCurveX2     = SegCurveX2;
+        if (!double.IsNaN(SegCurveY2))             s.Streaming.Segmenter.HangoverCurveY2     = SegCurveY2;
+        if (!double.IsNaN(SegMarginMs))           s.Streaming.Segmenter.MarginMs            = (int)SegMarginMs;
         if (!double.IsNaN(SegMinUtteranceMs))      s.Streaming.Segmenter.MinUtteranceMs      = (int)SegMinUtteranceMs;
 
         TranscriptionSettingsService.Instance.Save();
