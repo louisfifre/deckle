@@ -336,14 +336,15 @@ public sealed partial class HudPage
 
     private void ResetClonePlacement()
     {
-        _tuning.CloneCentreXFraction = 196f / NakedHudSize.X;
-        _tuning.CloneCentreYFraction = 0f;
-        _tuning.CloneOklchLightness   = 0.9f;
-        _tuning.CloneOklchChroma      = 0.3f;
-        _tuning.CloneHuePeriodSeconds = 7.0;
-        _tuning.CloneHueDirection     = -1f;
-        _tuning.CloneArcPeriodSeconds = 4.0;
-        _tuning.CloneArcDirection     = -1f;
+        var d = new TuningModel();
+        _tuning.CloneCentreXFraction  = d.CloneCentreXFraction;
+        _tuning.CloneCentreYFraction  = d.CloneCentreYFraction;
+        _tuning.CloneOklchLightness   = d.CloneOklchLightness;
+        _tuning.CloneOklchChroma      = d.CloneOklchChroma;
+        _tuning.CloneHuePeriodSeconds = d.CloneHuePeriodSeconds;
+        _tuning.CloneHueDirection     = d.CloneHueDirection;
+        _tuning.CloneArcPeriodSeconds = d.CloneArcPeriodSeconds;
+        _tuning.CloneArcDirection     = d.CloneArcDirection;
         RebuildTuningPanel();
         ApplyTarget();
     }
