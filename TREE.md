@@ -2080,9 +2080,11 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── AppSessionTrackerTests.cs
 │   │   ├── Deckle.Orchestration.Tests.csproj
 │   │   ├── DeckleOrchestrationSourceTests.cs
+│   │   ├── DisplayConfigLayoutTests.cs
 │   │   ├── ExecutableLocatorTests.cs
 │   │   ├── Fixture.cs
 │   │   ├── KeyValuesReaderTests.cs
+│   │   ├── ProfileTransactionTests.cs
 │   │   ├── ScanOnDiskTests.cs
 │   │   └── SteamLibraryTests.cs
 │   ├── Deckle.Playground.Tests/
