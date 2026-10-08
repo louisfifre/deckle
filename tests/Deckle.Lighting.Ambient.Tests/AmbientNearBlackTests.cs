@@ -93,15 +93,54 @@ public sealed class AmbientNearBlackTests
         Assert.InRange(CountBlackToggles(output.Skip(SettlingTicks).ToList()), 0, 1);
     }
 
+    // Under the default curve (0.42, 0, 1, 1), 6/255 maps to ~0.26/255 and
+    // 10/255 to ~0.71/255 : one on each side of the half step (0.5/255) at
+    // which plain rounding turns a value into black. A grey sequence that
+    // switches between them every half second makes the smoothed value
+    // cross that boundary again and again, while the whole swing stays
+    // inside the latch's band (enter black below 0.25/255, leave above
+    // 0.75/255), so the latch has no reason to toggle.
+    private const byte BelowHalfStepLevel = 6;
+    private const byte AboveHalfStepLevel = 10;
+    private const int SwitchEveryFrames = CaptureRateHz / 2;
+
+    public static TheoryData<bool> SmoothingAlphas => new() { false, true };
+
+    [Theory]
+    [MemberData(nameof(SmoothingAlphas))]
+    [Trait("Category", "regression")]
+    public void LevelsAcrossTheRoundingBoundaryDoNotToggleBlackOnceLatched(bool ambientAlpha)
+    {
+        byte LevelAtFrame(int frame)
+            => frame / SwitchEveryFrames % 2 == 0 ? BelowHalfStepLevel : AboveHalfStepLevel;
+
+        var latched = Simulate(LevelAtFrame, ambientCurve: false, ambientAlpha, new AmbientBlackLatch().Quantize);
+        var rounded = Simulate(LevelAtFrame, ambientCurve: false, ambientAlpha, (_, smoothed) => smoothed.Quantize());
+
+        // The sequence is faulty for plain rounding : without the latch the
+        // lamp goes on and off with the smoothed value.
+        Assert.True(
+            CountBlackToggles(rounded.Skip(SettlingTicks).ToList()) >= 2,
+            "plain rounding was expected to toggle black at the boundary");
+        Assert.InRange(CountBlackToggles(latched.Skip(SettlingTicks).ToList()), 0, 1);
+    }
+
+    private static List<LightColor> Simulate(Func<int, byte> encodedLevelAtFrame, bool ambientCurve, bool ambientAlpha)
+        => Simulate(encodedLevelAtFrame, ambientCurve, ambientAlpha, new AmbientBlackLatch().Quantize);
+
     // Feeds a 60 Hz sequence of grey frames (encoded byte level per frame)
     // through the push-side path at 50 Hz, floor off : black gate,
-    // tuning, smoothing over the tick interval, one latched quantisation.
-    private static List<LightColor> Simulate(Func<int, byte> encodedLevelAtFrame, bool ambientCurve, bool ambientAlpha)
+    // tuning, smoothing over the tick interval, then the given quantiser
+    // (called with the key "group" and the smoothed colour).
+    private static List<LightColor> Simulate(
+        Func<int, byte> encodedLevelAtFrame,
+        bool ambientCurve,
+        bool ambientAlpha,
+        Func<string, SrgbColor, LightColor> quantize)
     {
         AmbientSettings curve = SettingsFor(ambientCurve);
         double alpha = SettingsFor(ambientAlpha).SmoothingAlpha;
         var smoother = new AmbientColorSmoother();
-        var latch = new AmbientBlackLatch();
         var output = new List<LightColor>();
 
         for (int tick = 0; tick < SimulatedSeconds * PushRateHz; tick++)
@@ -110,7 +149,7 @@ public sealed class AmbientNearBlackTests
             var linear = LinearOfEncoded(encodedLevelAtFrame(frame));
             SrgbColor tuned = Tune(linear, curve);
             SrgbColor smoothed = smoother.Smooth("group", tuned, alpha, 1.0 / PushRateHz);
-            output.Add(latch.Quantize("group", smoothed));
+            output.Add(quantize("group", smoothed));
         }
 
         return output;
