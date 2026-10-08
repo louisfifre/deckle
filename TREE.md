@@ -1630,6 +1630,8 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │       └── Resources.resw
 │   │   ├── Ui/
 │   │   │   └── Controls/
+│   │   │       ├── CutCurveEditor.xaml
+│   │   │       ├── CutCurveEditor.xaml.cs
 │   │   │       ├── HangoverCurveCanvas.xaml
 │   │   │       └── HangoverCurveCanvas.xaml.cs
 │   │   ├── ViewModels/
