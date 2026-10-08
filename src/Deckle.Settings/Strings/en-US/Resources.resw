@@ -359,24 +359,6 @@
        First page in the Settings nav. Page title, page subtitle, then
        sections in order: Shortcuts, Appearance, Startup, Recording,
        Telemetry, Back up & restore, Application data. -->
-  <data name="GeneralTranscribeCard.Header" xml:space="preserve">
-    <value>Principal hotkey</value>
-  </data>
-  <data name="GeneralTranscribeCard.Description" xml:space="preserve">
-    <value>Start and stop transcription. The text is copied to the clipboard.</value>
-  </data>
-  <data name="GeneralPrimaryRewriteCard.Header" xml:space="preserve">
-    <value>Primary rewrite</value>
-  </data>
-  <data name="GeneralPrimaryRewriteCard.Description" xml:space="preserve">
-    <value>Transcribe, then rewrite with the primary profile. Choose the profile on the Rewriting page.</value>
-  </data>
-  <data name="GeneralSecondaryRewriteCard.Header" xml:space="preserve">
-    <value>Secondary rewrite</value>
-  </data>
-  <data name="GeneralSecondaryRewriteCard.Description" xml:space="preserve">
-    <value>Transcribe, then rewrite with the secondary profile. Choose the profile on the Rewriting page.</value>
-  </data>
   <data name="GeneralAppThemeCard.Header" xml:space="preserve">
     <value>App theme</value>
   </data>
@@ -526,15 +508,6 @@
 
   <data name="GeneralPageApplicationDataHeaderLabel.Text" xml:space="preserve">
     <value>Application data</value>
-  </data>
-  <data name="GeneralShortcutTranscribeKey.Text" xml:space="preserve">
-    <value>Win + `</value>
-  </data>
-  <data name="GeneralShortcutPrimaryRewriteKey.Text" xml:space="preserve">
-    <value>Shift + Win + `</value>
-  </data>
-  <data name="GeneralShortcutSecondaryRewriteKey.Text" xml:space="preserve">
-    <value>Ctrl + Win + `</value>
   </data>
 
   <!-- ─── Settings — code-behind dialogs ─────────────────────────────

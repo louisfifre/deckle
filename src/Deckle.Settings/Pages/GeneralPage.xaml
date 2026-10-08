@@ -60,34 +60,6 @@
                            TextWrapping="Wrap"
                            Margin="0,0,0,12" />
 
-                <!-- ── Shortcuts ───────────────────────────────────────────── -->
-                <TextBlock x:Uid="GeneralPageShortcutsHeaderLabel"
-                           Style="{StaticResource SettingsSectionHeaderTextBlockStyle}" />
-
-                <controls:SettingsCard x:Uid="GeneralTranscribeCard"
-                                       Tag="GeneralTranscribeCard"
-                                       HeaderIcon="{ui:FontIcon Glyph={StaticResource Icon.Shortcut}}">
-                    <TextBlock x:Uid="GeneralShortcutTranscribeKey"
-                               VerticalAlignment="Center"
-                               Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
-                </controls:SettingsCard>
-
-                <controls:SettingsCard x:Uid="GeneralPrimaryRewriteCard"
-                                       Tag="GeneralPrimaryRewriteCard"
-                                       HeaderIcon="{ui:FontIcon Glyph={StaticResource Icon.Shortcut}}">
-                    <TextBlock x:Uid="GeneralShortcutPrimaryRewriteKey"
-                               VerticalAlignment="Center"
-                               Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
-                </controls:SettingsCard>
-
-                <controls:SettingsCard x:Uid="GeneralSecondaryRewriteCard"
-                                       Tag="GeneralSecondaryRewriteCard"
-                                       HeaderIcon="{ui:FontIcon Glyph={StaticResource Icon.Shortcut}}">
-                    <TextBlock x:Uid="GeneralShortcutSecondaryRewriteKey"
-                               VerticalAlignment="Center"
-                               Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
-                </controls:SettingsCard>
-
                 <!-- ── Appearance ──────────────────────────────────────────── -->
                 <Grid>
                     <Grid.ColumnDefinitions>

@@ -33,23 +33,6 @@ public static class SettingsSearch
 {
     public static IReadOnlyList<SettingSearchEntry> Entries { get; } =
     [
-        // ── Shortcuts ──
-        new SettingSearchEntry
-        {
-            LabelKey = "GeneralTranscribeCard",
-            Keywords = ["shortcut", "dictation", "voice"],
-        },
-        new SettingSearchEntry
-        {
-            LabelKey = "GeneralPrimaryRewriteCard",
-            Keywords = ["shortcut", "hotkey", "llm"],
-        },
-        new SettingSearchEntry
-        {
-            LabelKey = "GeneralSecondaryRewriteCard",
-            Keywords = ["shortcut", "hotkey", "llm"],
-        },
-
         // ── Appearance (composed: GeneralViewModel.AppearanceSettings) ──
         new SettingSearchEntry
         {
