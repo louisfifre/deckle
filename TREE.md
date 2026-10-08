@@ -2020,7 +2020,8 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   └── UpdatePredecessorTests.cs
 │   ├── Deckle.Shell.TaskbarCover.Tests/
 │   │   ├── CoverGeometryTests.cs
-│   │   └── Deckle.Shell.TaskbarCover.Tests.csproj
+│   │   ├── Deckle.Shell.TaskbarCover.Tests.csproj
+│   │   └── TaskbarCoverBugNotes.md
 │   ├── Deckle.Shell.Tests/
 │   │   ├── Deckle.Shell.Tests.csproj
 │   │   ├── DispatcherQueueExtensionsTests.cs
