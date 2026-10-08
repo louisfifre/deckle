@@ -1,0 +1,18 @@
+---
+description: Apps and games domain module — the registry of apps the user cares about, noticing when they run, and applying their rules while they do.
+type: agent-instructions
+---
+
+# AGENTS.md — Deckle.Orchestration
+
+This module keeps one registry of apps and games (`Registry/AppEntry`), persisted in `modules/orchestration/settings.json`, and its Settings page "Apps and games". Later steps add detection and per-app rules (HDR per monitor first).
+
+**Sources.** An entry comes from one of three kinds of source: added by hand (an executable, or a running process), found in a Steam library, or found in a folder the user chose to scan. `AppSource` records which one.
+
+**Matching.** `AppMatcher` is the only place that decides whether a process is an entry. Precedence: same executable path, then an image path under the entry's install directory, then the same process name (exe stem, case-insensitive). Disabled entries never match. Keep it pure and tested.
+
+**No poll.** Detection is event-based only (foreground change, process start events, process exit handles). Never add a timer that enumerates processes.
+
+**No master toggle.** Each entry's `Enabled` switch is the control; the runtime runs only while at least one entry is enabled. A module-wide switch would hide the list and add a setting nobody asked for.
+
+**Mutations swap references.** `OrchestrationSettingsService` replaces `Entries` with a new list under its write lock, never edits it in place, so runtime readers see a complete old or new list.
