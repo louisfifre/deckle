@@ -118,7 +118,7 @@ Deckle is an early public release, and its capabilities differ in maturity. Dict
 Bootstrap a fresh Windows 11 machine, then build and run:
 
 ```powershell
-pwsh scripts/commands/bootstrap-dev-env.ps1              # .NET 10, VS 2026, tooling
+pwsh scripts/commands/setup/bootstrap-dev-env.ps1        # .NET 10, VS 2026, tooling
 pwsh scripts/commands/build-run.ps1 -Configuration Release
 ```
 

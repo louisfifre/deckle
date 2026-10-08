@@ -33,7 +33,7 @@ $palette = @{
     Context = [ConsoleColor]::DarkGray
     Section = [ConsoleColor]::Magenta
     SectionSeparator = [ConsoleColor]::Gray
-    Action = [ConsoleColor]::Cyan
+    ActionLabel = [ConsoleColor]::Cyan
     Access = [ConsoleColor]::DarkYellow
     Navigation = [ConsoleColor]::DarkGray
     Exit = [ConsoleColor]::Red
@@ -53,6 +53,7 @@ foreach ($entry in $palette.GetEnumerator()) {
     Assert-Equal $entry.Value $style.Foreground "the Deckle theme maps $($entry.Key) semantically"
 }
 Assert-Equal $null (Get-TerminalPresentationStyle -Role Body).Foreground 'Body content preserves the host foreground'
+Assert-Equal $null (Get-TerminalPresentationStyle -Role Action).Foreground 'plain Actions read as body text, as in the launcher'
 Assert-Equal $null (Get-TerminalPresentationStyle -Role ActionVariant).Foreground 'Action Variants preserve the host foreground'
 Assert-Equal $null (Get-TerminalPresentationStyle -Role Adjust).Foreground 'adjustments preserve the host foreground'
 
@@ -117,7 +118,8 @@ $rootFrame = Get-TerminalInteractionFrame -View $root -Width 100 -Height 24 -Foc
 Assert-Equal Banner (Get-Segment -Frame $rootFrame -Predicate { param($s) $s.Text -eq 'Deckle Interaction Preview' } -Case 'banner').PresentationRole 'the repository banner keeps its semantic role'
 Assert-Equal Section (Get-Segment -Frame $rootFrame -Predicate { param($s) $s.Text -eq 'RUN ' } -Case 'Run Section').PresentationRole 'Section titles are categories'
 Assert-Equal SectionSeparator (Get-Segment -Frame $rootFrame -Predicate { param($s) $s.PresentationRole -eq 'SectionSeparator' -and $s.Text.Length -gt 90 } -Case 'Run Section separator').PresentationRole 'Section hierarchy owns its dashed separator'
-Assert-Equal Action (Get-Segment -Frame $rootFrame -Predicate { param($s) $s.Text -eq 'Launch' } -Case 'Action subject').PresentationRole 'Action Row subjects are distinct from their variants'
+Assert-Equal ActionLabel (Get-Segment -Frame $rootFrame -Predicate { param($s) $s.Text -eq 'Launch' } -Case 'Action subject').PresentationRole 'Action Row subjects are distinct from their variants'
+Assert-Equal $false ((Get-TerminalPresentationStyle -Role ActionLabel).Foreground -eq (Get-TerminalPresentationStyle -Role Action).Foreground) 'Action Row subjects and Action targets use distinct colors'
 $focusedVariant = Get-Segment -Frame $rootFrame -Predicate { param($s) $s.Text.TrimEnd() -eq '  Release' -and $s.State -eq 'Focused' } -Case 'focused Action Variant'
 Assert-Equal ActionVariant $focusedVariant.PresentationRole 'Action Variants keep their own semantic role'
 Assert-Equal Focused $focusedVariant.State 'focus is an independent state overlay'

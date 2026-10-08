@@ -1,9 +1,9 @@
-#!/usr/bin/env pwsh
-#Requires -Version 7
 <#
 .SYNOPSIS
     Enforce Deckle's sole maintainer identity and reject agent attribution markers.
 #>
+
+#Requires -Version 7
 
 [CmdletBinding()]
 param(

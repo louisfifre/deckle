@@ -1,10 +1,18 @@
-# bootstrap-dev-env.ps1
-#
-# Brings a fresh Windows 11 machine up to speed for building and running
-# Deckle. Probes what's already installed, then installs the missing pieces
-# via winget (OS-level installers) and scoop (dev toolchain). Idempotent:
-# safe to re-run.
-#
+<#
+.SYNOPSIS
+    Bootstrap the dev environment
+.DESCRIPTION
+    Brings a fresh Windows 11 machine up to speed for building and running
+    Deckle. Probes what is already installed, then installs the missing pieces
+    with winget (OS-level installers) and scoop (dev toolchain). Idempotent:
+    safe to re-run.
+.NOTES
+    section: Machine
+    order: 110
+    action: Plan the bootstrap (dry run) | -DryRun
+    action: Bootstrap dev environment | -Yes | danger | Installs tools on this machine with winget and scoop.
+#>
+
 # Out of scope (intentional):
 #   - Does NOT build or run Deckle (see scripts/commands/build-run.ps1, and
 #     CLAUDE.md non-negotiable).
@@ -23,11 +31,11 @@
 #             assets when native DLLs or models are missing.
 #
 # Usage:
-#   scripts\commands\bootstrap-dev-env.ps1                      # default tier only
-#   scripts\commands\bootstrap-dev-env.ps1 -DryRun              # probe only, no install
-#   scripts\commands\bootstrap-dev-env.ps1 -Full                # full toolchain
-#   scripts\commands\bootstrap-dev-env.ps1 -IncludeAssets       # also run setup-assets.ps1
-#   scripts\commands\bootstrap-dev-env.ps1 -Yes                 # no confirmation prompt
+#   scripts\commands\setup\bootstrap-dev-env.ps1                # default tier only
+#   scripts\commands\setup\bootstrap-dev-env.ps1 -DryRun        # probe only, no install
+#   scripts\commands\setup\bootstrap-dev-env.ps1 -Full          # full toolchain
+#   scripts\commands\setup\bootstrap-dev-env.ps1 -IncludeAssets # also run setup-assets.ps1
+#   scripts\commands\setup\bootstrap-dev-env.ps1 -Yes           # no confirmation prompt
 
 [CmdletBinding()]
 param(
@@ -39,7 +47,7 @@ param(
     # local LLM rewrite path. Off by default to keep first setup lean.
     [switch]$Full,
 
-    # Also invoke scripts/commands/setup-assets.ps1 after environment bootstrap.
+    # Also invoke scripts/commands/setup/setup-assets.ps1 after environment bootstrap.
     # Kept for explicit dev-machine provisioning; the app's first-run wizard
     # is the normal runtime-assets path.
     [switch]$IncludeAssets,
@@ -59,7 +67,7 @@ param(
 
 $ErrorActionPreference = 'Stop'
 $ScriptDir = $PSScriptRoot
-$LibDir = Join-Path (Split-Path -Parent $ScriptDir) 'lib'
+$LibDir = Join-Path (Split-Path -Parent (Split-Path -Parent $ScriptDir)) 'lib'
 . (Join-Path $LibDir 'action-summary.ps1')
 Import-Module (Join-Path $LibDir 'menu.psm1') -Force
 
@@ -527,7 +535,7 @@ Write-Host "  1. Open a new PowerShell terminal so VULKAN_SDK and any" -Foregrou
 Write-Host "     freshly-installed tool become visible." -ForegroundColor White
 Write-Host ""
 Write-Host "  2. Verify nothing is missing:" -ForegroundColor White
-Write-Host "       scripts\commands\bootstrap-dev-env.ps1 -DryRun" -ForegroundColor DarkGray
+Write-Host "       scripts\commands\setup\bootstrap-dev-env.ps1 -DryRun" -ForegroundColor DarkGray
 Write-Host ""
 Write-Host "  3. Build + run Deckle:" -ForegroundColor White
 Write-Host "       scripts\commands\build-run.ps1" -ForegroundColor DarkGray
@@ -537,7 +545,7 @@ Write-Host "       scripts\deckle.ps1" -ForegroundColor DarkGray
 if ($Full) {
     Write-Host ""
     Write-Host "  4. (-Full only) Clone whisper.cpp for native rebuilds:" -ForegroundColor White
-    $repoRoot = Split-Path -Parent (Split-Path -Parent $ScriptDir)
+    $repoRoot = Split-Path -Parent (Split-Path -Parent (Split-Path -Parent $ScriptDir))
     $whisperRepo = [IO.Path]::GetFullPath((Join-Path $repoRoot '..\whisper.cpp'))
     Write-Host "       git clone https://github.com/ggerganov/whisper.cpp `"$whisperRepo`"" -ForegroundColor DarkGray
     Write-Host "     Then build whisper.cpp with Vulkan before publishing a native bundle." -ForegroundColor DarkGray
@@ -573,6 +581,6 @@ Write-DeckleActionSummary `
     }) `
     -Next @(
         "Open a new PowerShell terminal."
-        "Run scripts\commands\bootstrap-dev-env.ps1 -DryRun to verify."
+        "Run scripts\commands\setup\bootstrap-dev-env.ps1 -DryRun to verify."
         "Run scripts\deckle.ps1 and choose Build & run."
     )

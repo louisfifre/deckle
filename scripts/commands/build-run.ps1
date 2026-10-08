@@ -1,3 +1,18 @@
+<#
+.SYNOPSIS
+    Build the app
+.DESCRIPTION
+    Build Deckle for the chosen configuration (x64) and, unless told not to,
+    launch the fresh build. The build-only variant never stops the running
+    instance: when it runs from this build's output directory the build is
+    refused before compiling.
+.NOTES
+    section: Run
+    order: 120
+    action: Build & run |
+    action: Build (no run) | -NoRun
+#>
+
 [CmdletBinding()]
 param(
     # Build only. The running Deckle instance is never stopped; when it runs

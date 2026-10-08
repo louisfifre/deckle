@@ -1,4 +1,14 @@
-# validate-resources.ps1 - Read-only audit of WinUI resource inventories.
+<#
+.SYNOPSIS
+    Validate WinUI resources
+.DESCRIPTION
+    Read-only audit of the WinUI resource inventories. Reports missing
+    resource keys, divergences between required mirrors and module copies
+    that look unused.
+.NOTES
+    section: Checks
+    order: 410
+#>
 
 [CmdletBinding()]
 param(
@@ -12,7 +22,7 @@ param(
 
 $ErrorActionPreference = 'Stop'
 $ScriptDir = $PSScriptRoot
-$LibDir = Join-Path (Split-Path -Parent $ScriptDir) 'lib'
+$LibDir = Join-Path (Split-Path -Parent (Split-Path -Parent $ScriptDir)) 'lib'
 . (Join-Path $LibDir 'action-summary.ps1')
 Import-Module (Join-Path $LibDir 'resource-inventory.psm1') -Force
 
@@ -22,7 +32,7 @@ if ($Pick) {
 } elseif ($Target) {
     $RepoRoot = (Resolve-Path -LiteralPath $Target).Path
 } else {
-    $RepoRoot = Split-Path -Parent (Split-Path $ScriptDir)
+    $RepoRoot = Split-Path -Parent (Split-Path -Parent (Split-Path -Parent $ScriptDir))
 }
 if (-not $Allowlist) { $Allowlist = Join-Path $RepoRoot 'scripts/resource-validation.allowlist.json' }
 

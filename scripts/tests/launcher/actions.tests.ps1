@@ -116,7 +116,8 @@ $null = New-Item -ItemType Directory -Path $agentDispatchRoot
 $previousCommandDir = $script:CommandDir
 $previousMarker = $env:DECKLE_AGENT_STATE_TEST_MARKER
 try {
-    $agentScript = Join-Path $agentDispatchRoot 'reset-agent-state.ps1'
+    $agentScript = Join-Path $agentDispatchRoot 'maintenance\reset-agent-state.ps1'
+    $null = New-Item -ItemType Directory -Path (Split-Path -Parent $agentScript)
     $agentMarker = Join-Path $agentDispatchRoot 'agent-state.txt'
     $env:DECKLE_AGENT_STATE_TEST_MARKER = $agentMarker
     Set-Content -LiteralPath $agentScript -Encoding utf8NoBOM -Value 'param([switch]$Apply, [string]$Confirmation) Set-Content -LiteralPath $env:DECKLE_AGENT_STATE_TEST_MARKER -Value "$([bool]$Apply)|$Confirmation" -Encoding utf8NoBOM'

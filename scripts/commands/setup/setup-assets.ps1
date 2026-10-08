@@ -1,9 +1,18 @@
-# setup-assets.ps1
-#
-# Populates <UserDataRoot>\native\ and <UserDataRoot>\models\ with the
-# whisper.cpp DLLs, MinGW C++ runtime, and Whisper models the app needs
-# at runtime. This is the canonical setup step — the app reads from
-# <UserDataRoot> exclusively (see src/Deckle.Core/Paths/AppPaths.cs).
+<#
+.SYNOPSIS
+    Set up runtime assets
+.DESCRIPTION
+    Populates the native and models folders under the user data root with the
+    whisper.cpp DLLs, the MinGW C++ runtime and the Whisper models the app
+    needs at runtime. Idempotent: skips files already present at the same
+    size unless -Force.
+.NOTES
+    section: Machine
+    order: 120
+#>
+
+# The app reads from <UserDataRoot> exclusively (see
+# src/Deckle.Core/Paths/AppPaths.cs).
 #
 # Default <UserDataRoot> resolution mirrors AppPaths.ResolveUserDataRoot
 # on the C# side:
@@ -64,12 +73,12 @@ param(
 
 $ErrorActionPreference = 'Stop'
 $ScriptDir = $PSScriptRoot
-$LibDir = Join-Path (Split-Path -Parent $ScriptDir) 'lib'
+$LibDir = Join-Path (Split-Path -Parent (Split-Path -Parent $ScriptDir)) 'lib'
 . (Join-Path $LibDir 'action-summary.ps1')
 Import-Module (Join-Path $LibDir 'native-runtime-release.psm1') -Force
 
-# Repo paths — two levels up: scripts/commands → scripts → repo root
-$Repo = Split-Path -Parent (Split-Path -Parent $PSScriptRoot)
+# Repo paths — three levels up: scripts/commands/setup → commands → scripts → repo root
+$Repo = Split-Path -Parent (Split-Path -Parent (Split-Path -Parent $PSScriptRoot))
 
 # Scoop respects the SCOOP env var when installed in a non-default location;
 # fall back to the per-user default %USERPROFILE%\scoop otherwise.

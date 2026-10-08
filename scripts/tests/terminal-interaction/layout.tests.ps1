@@ -41,16 +41,20 @@ $launchDebug = Get-Placement -Frame $wide -TargetId action.launch.debug
 Assert-Equal $launchRelease.Y $launchDebug.Y 'Action Variants share their Action Row in a wide terminal'
 Assert-True ($launchRelease.X -lt $launchDebug.X) 'Release precedes Debug without semantic reordering'
 $runHeading = @($wide.Lines | ForEach-Object { $_.Segments } | Where-Object { $_.PresentationRole -eq 'Section' -and $_.Text -eq 'RUN ' })[0]
-$launchSubject = @($wide.Lines | ForEach-Object { $_.Segments } | Where-Object { $_.PresentationRole -eq 'Action' -and $_.Text -eq 'Launch' })[0]
+$launchSubject = @($wide.Lines | ForEach-Object { $_.Segments } | Where-Object { $_.PresentationRole -eq 'ActionLabel' -and $_.Text -eq 'Launch' })[0]
 Assert-Equal ($runHeading.X + 1) $launchSubject.X 'Action Row subjects keep one cell of indentation beneath their Section'
 
 $maintenance = Get-Placement -Frame $wide -TargetId access.maintenance
 $setup = Get-Placement -Frame $wide -TargetId access.setup
 $releaseAccess = Get-Placement -Frame $wide -TargetId access.release
 $quit = Get-Placement -Frame $wide -TargetId command.quit
-Assert-Equal $maintenance.Y $quit.Y 'Quit keeps the final Access row in a wide terminal'
+Assert-Equal $setup.Y $quit.Y 'Quit seats on the last line of the menu, beside the last Access'
 Assert-True ($maintenance.X -lt $setup.X -and $setup.X -lt $quit.X) 'Accesses and Quit keep their declared order'
-Assert-Equal $releaseAccess.X $setup.X 'Quit does not shift Setup out of the second option column'
+Assert-Equal $releaseAccess.X $setup.X 'Release and Setup share the second option column'
+Assert-Equal 98 ($quit.X + $quit.Width) 'Quit ends on the right rail of a 100-column frame'
+Assert-True (($setup.X + $setup.Width) -le ($quit.X - 2)) 'the cell beside Quit is shortened so it stops before it'
+Assert-True (($launchDebug.X + $launchDebug.Width) -gt $quit.X) 'Quit reserves nothing: the other rows run to the right rail'
+Assert-Equal $launchDebug.X $setup.X 'the shortened cell keeps its column'
 Assert-Equal 0 @($wide.Targets | Where-Object { $_.TargetId -like 'navigation.page.*' }).Count 'a fitting menu has no paging controls'
 Assert-True (($wideText -join "`n") -match 'Enter Open') 'global command indications are visible in the Header'
 Assert-True (($wideText -join "`n") -notmatch 'Backspace Back') 'the root menu does not advertise Back'
@@ -190,5 +194,56 @@ Assert-True (@(
 foreach ($line in @(ConvertTo-TerminalFrameText -Frame $executionNarrow -PreserveWidth)) {
     Assert-Equal 60 $line.Length 'Execution clipping protects narrow width'
 }
+
+# Variant cells keep a width floor: past it the grid drops a column and the
+# row wraps beneath its first cell, never beneath the label, without a gap.
+$bumpVariants = @(foreach ($value in @('patch', 'minor', 'major')) {
+    New-TerminalTarget -TargetId "action.bump.$value" -Label $value -IntentKind Action -Payload ([pscustomobject]@{ Variant = $value })
+})
+$bumpAccesses = @(foreach ($name in @('release', 'maintenance', 'setup')) {
+    New-TerminalTarget -TargetId "access.$name" -Label "$name…" -IntentKind Access -Payload ([pscustomobject]@{ AccessId = $name }) -PresentationRole Access
+})
+$bumpMenu = New-TerminalActionMenuView -ViewId menu.bump -Banner 'Bump' -Sections @(
+    New-TerminalSection -Label Project -Items @(New-TerminalActionRow -Label 'Record version' -Variants $bumpVariants)
+    New-TerminalSection -Label $null -Items $bumpAccesses
+)
+$bumpRoomy = Get-TerminalInteractionFrame -View $bumpMenu -Width 100 -Height 12 -FocusedTargetId action.bump.patch
+$roomyPatch = Get-Placement -Frame $bumpRoomy -TargetId action.bump.patch
+$roomyMajor = Get-Placement -Frame $bumpRoomy -TargetId action.bump.major
+Assert-Equal $roomyPatch.Y $roomyMajor.Y 'three Variants share one line while their cells stay above the floor'
+Assert-True ($roomyPatch.Width -ge 22) 'a roomy terminal keeps Variant cells above the width floor'
+$roomyRelease = Get-Placement -Frame $bumpRoomy -TargetId access.release
+$roomySetup = Get-Placement -Frame $bumpRoomy -TargetId access.setup
+Assert-Equal $roomyRelease.Y $roomySetup.Y 'three Accesses fill the three Variant columns of their level on one line'
+Assert-Equal $roomyMajor.X $roomySetup.X 'Accesses align on the Variant columns'
+$bumpTight = Get-TerminalInteractionFrame -View $bumpMenu -Width 72 -Height 12 -FocusedTargetId action.bump.patch
+$tightPatch = Get-Placement -Frame $bumpTight -TargetId action.bump.patch
+$tightMinor = Get-Placement -Frame $bumpTight -TargetId action.bump.minor
+$tightMajor = Get-Placement -Frame $bumpTight -TargetId action.bump.major
+Assert-True ($tightPatch.Width -ge 22) 'a tight terminal drops a column before a cell shrinks below the floor'
+Assert-Equal $tightPatch.Y $tightMinor.Y 'the first two Variants keep the label line'
+Assert-Equal ($tightPatch.Y + 1) $tightMajor.Y 'the third Variant wraps to the very next line'
+Assert-Equal $tightPatch.X $tightMajor.X 'a wrapped Variant sits beneath the first cell, not beneath the label'
+$labelLine = @($bumpTight.Lines | ForEach-Object { $_.Segments } | Where-Object { $_.PresentationRole -eq 'ActionLabel' })
+Assert-Equal 1 $labelLine.Count 'the label is written once, on the first line of its row'
+
+# A frame line paints as runs that cover every cell exactly once and
+# reproduce its text, so the Host writes it in one pass without a blank first.
+$module = Get-Module terminal-interaction
+$paintWidth = $wide.Width - 1
+$bannerRuns = 0
+foreach ($line in $wide.Lines) {
+    $runs = @(& $module { param($line, $paintWidth) ConvertTo-TerminalFrameRuns -Line $line -PaintWidth $paintWidth } $line $paintWidth)
+    $expected = (-join (& $module { param($line) ConvertTo-TerminalFrameCharacters -Line $line } $line)).Substring(0, $paintWidth)
+    Assert-Equal $expected (-join ($runs | ForEach-Object Text)) 'runs reproduce the line text'
+    $cursor = 0
+    foreach ($run in $runs) {
+        Assert-Equal $cursor $run.X 'runs are contiguous'
+        $cursor += $run.Text.Length
+        if ($null -ne $run.Segment -and $run.Segment.PresentationRole -eq 'Banner') { $bannerRuns++ }
+    }
+    Assert-Equal $paintWidth $cursor 'runs cover the painted width exactly once'
+}
+Assert-Equal 1 $bannerRuns 'the banner paints as one run carrying its segment role'
 
 Write-Host 'layout.tests.ps1: PASS' -ForegroundColor Green

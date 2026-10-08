@@ -7,7 +7,7 @@ function Get-TerminalPresentationStyle {
         [Parameter(Mandatory)]
         [ValidateSet(
             'Banner', 'Context', 'Section', 'SectionSeparator',
-            'Action', 'ActionVariant', 'Access', 'Adjust', 'Navigation', 'Exit', 'Danger',
+            'Action', 'ActionLabel', 'ActionVariant', 'Access', 'Adjust', 'Navigation', 'Exit', 'Danger',
             'PanelTitle', 'Body', 'Supporting', 'PrimarySeparator', 'PanelSeparator', 'PagingSeparator', 'Separator',
             'CommandKey', 'CommandLabel', 'Success', 'Warning', 'Error'
         )]
@@ -47,7 +47,12 @@ function Get-TerminalPresentationStyle {
         'Context' { [ConsoleColor]::DarkGray }
         'Section' { [ConsoleColor]::Magenta }
         'SectionSeparator' { [ConsoleColor]::Gray }
-        'Action' { [ConsoleColor]::Cyan }
+        # A plain Action reads as body text, like a Variant; only the label of
+        # an Action Row takes the teal of the launcher's row titles. The
+        # maintainer's palette (Figma "Deckle Scripts", node 22-27) names
+        # title, sections, action-row title, body text, selection, access.
+        'Action' { $null }
+        'ActionLabel' { [ConsoleColor]::Cyan }
         'ActionVariant' { $null }
         'Access' { [ConsoleColor]::DarkYellow }
         'Adjust' { $null }

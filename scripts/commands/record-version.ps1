@@ -1,9 +1,17 @@
-# record-version.ps1 - Record internal progress without publishing a release.
-#
-# A frequent version record bumps <Version>, commits that one-line change, and
-# refreshes the generated [Unreleased] changelog accumulated since the latest
-# public release. It creates no git tag and no GitHub Release. -Current only
-# refreshes the accumulator for an already-recorded version.
+<#
+.SYNOPSIS
+    Record an internal version
+.DESCRIPTION
+    Record internal progress without publishing a release. A version record
+    bumps the version, commits that one-line change, and refreshes the
+    generated [Unreleased] changelog accumulated since the latest public
+    release. It creates no git tag and no GitHub Release. The -Current switch
+    only refreshes the accumulator for an already-recorded version.
+.NOTES
+    section: Project
+    order: 230
+    action: Record version | -Push
+#>
 
 [CmdletBinding(DefaultParameterSetName = 'Next')]
 param(

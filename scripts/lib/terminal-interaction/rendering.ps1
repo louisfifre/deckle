@@ -149,6 +149,45 @@ function Get-TerminalSegmentSequence {
     return "$position$attributes$Text"
 }
 
+function ConvertTo-TerminalFrameRuns {
+    param(
+        [Parameter(Mandatory)][object]$Line,
+        [Parameter(Mandatory)][ValidateRange(1, 1000000)][int]$PaintWidth
+    )
+
+    # One run per stretch of cells owned by the same segment, blanks included,
+    # so a line paints in one left-to-right pass instead of a blank line
+    # followed by its segments. A later segment wins a cell, as in text output.
+    $owners = New-Object int[] $PaintWidth
+    $characters = New-Object char[] $PaintWidth
+    for ($index = 0; $index -lt $PaintWidth; $index++) {
+        $owners[$index] = -1
+        $characters[$index] = ' '
+    }
+    for ($segmentIndex = 0; $segmentIndex -lt $Line.Segments.Count; $segmentIndex++) {
+        $segment = $Line.Segments[$segmentIndex]
+        for ($index = 0; $index -lt $segment.Text.Length; $index++) {
+            $position = $segment.X + $index
+            if ($position -lt 0 -or $position -ge $PaintWidth) { continue }
+            $owners[$position] = $segmentIndex
+            $characters[$position] = $segment.Text[$index]
+        }
+    }
+
+    $runs = [System.Collections.Generic.List[object]]::new()
+    $start = 0
+    for ($position = 1; $position -le $PaintWidth; $position++) {
+        if ($position -lt $PaintWidth -and $owners[$position] -eq $owners[$start]) { continue }
+        $runs.Add([pscustomobject]@{
+            X = $start
+            Text = [string]::new($characters, $start, $position - $start)
+            Segment = if ($owners[$start] -ge 0) { $Line.Segments[$owners[$start]] } else { $null }
+        })
+        $start = $position
+    }
+    return @($runs)
+}
+
 function Write-TerminalInteractionFrame {
     param(
         [Parameter(Mandatory)][object]$Frame,
@@ -162,48 +201,40 @@ function Write-TerminalInteractionFrame {
 
     $useVirtualTerminal = $HostState.VirtualTerminal -eq 'Supported'
     $paintWidth = [Math]::Max(1, $Frame.Width - 1)
+    $escape = [char]27
+    # The whole frame goes out in one write, bracketed as a synchronized
+    # update, so the terminal never shows a half-painted frame: that is what
+    # made the Header blink on every redraw.
+    $builder = [System.Text.StringBuilder]::new()
+    if ($useVirtualTerminal) { [void]$builder.Append("$escape[?2026h") }
     for ($lineIndex = 0; $lineIndex -lt $Frame.Lines.Count; $lineIndex++) {
-        $blankLine = [string]::new(' ', $paintWidth)
-        if ($useVirtualTerminal) {
-            [Console]::Write((Get-TerminalSegmentSequence `
-                -X 0 `
-                -Y $lineIndex `
-                -Text $blankLine `
-                -Foreground $HostState.OriginalForeground `
-                -Background $HostState.OriginalBackground))
-        } else {
-            Set-TerminalFrameCursorPosition -X 0 -Y $lineIndex -HostState $HostState
-            [Console]::ForegroundColor = $HostState.OriginalForeground
-            [Console]::BackgroundColor = $HostState.OriginalBackground
-            [Console]::Write($blankLine)
-        }
-
-        foreach ($segment in $Frame.Lines[$lineIndex].Segments) {
-            if ($segment.X -ge $paintWidth) { continue }
-            $text = $segment.Text
-            $available = $paintWidth - $segment.X
-            if ($text.Length -gt $available) { $text = $text.Substring(0, $available) }
-            if ($text.Length -eq 0) { continue }
-            $colors = Get-TerminalSegmentColors -Segment $segment -HostState $HostState
+        foreach ($run in @(ConvertTo-TerminalFrameRuns -Line $Frame.Lines[$lineIndex] -PaintWidth $paintWidth)) {
+            $colors = if ($null -eq $run.Segment) {
+                [pscustomobject]@{ Foreground = $HostState.OriginalForeground; Background = $HostState.OriginalBackground }
+            } else {
+                Get-TerminalSegmentColors -Segment $run.Segment -HostState $HostState
+            }
             if ($useVirtualTerminal) {
-                [Console]::Write((Get-TerminalSegmentSequence `
-                    -X $segment.X `
+                [void]$builder.Append((Get-TerminalSegmentSequence `
+                    -X $run.X `
                     -Y $lineIndex `
-                    -Text $text `
+                    -Text $run.Text `
                     -Foreground $colors.Foreground `
                     -Background $colors.Background))
             } else {
-                Set-TerminalFrameCursorPosition -X $segment.X -Y $lineIndex -HostState $HostState
+                Set-TerminalFrameCursorPosition -X $run.X -Y $lineIndex -HostState $HostState
                 [Console]::ForegroundColor = $colors.Foreground
                 [Console]::BackgroundColor = $colors.Background
-                [Console]::Write($text)
+                [Console]::Write($run.Text)
             }
         }
     }
     if ($useVirtualTerminal) {
-        [Console]::Write((Get-TerminalTextAttributeSequence `
+        [void]$builder.Append((Get-TerminalTextAttributeSequence `
             -Foreground $HostState.OriginalForeground `
             -Background $HostState.OriginalBackground))
+        [void]$builder.Append("$escape[?2026l")
+        [Console]::Write($builder.ToString())
     } else {
         [Console]::ForegroundColor = $HostState.OriginalForeground
         [Console]::BackgroundColor = $HostState.OriginalBackground

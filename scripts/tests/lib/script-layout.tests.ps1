@@ -7,7 +7,6 @@ $TestDir = Join-Path $ScriptsDir 'tests'
 
 $commands = @(Get-ChildItem -LiteralPath $CommandDir -File -Filter '*.ps1')
 if ($commands.Count -eq 0) { throw 'scripts/commands must contain the directly executable workflows.' }
-if (Get-ChildItem -LiteralPath $CommandDir -Directory) { throw 'scripts/commands must stay flat so command repo-root resolution remains stable.' }
 
 $testsOutsideTestDir = @(Get-ChildItem -LiteralPath $ScriptsDir -Recurse -File -Filter '*.tests.ps1' |
     Where-Object { -not $_.FullName.StartsWith($TestDir + [IO.Path]::DirectorySeparatorChar, [StringComparison]::OrdinalIgnoreCase) })
@@ -25,6 +24,20 @@ foreach ($file in Get-ChildItem -LiteralPath $LibDir -Recurse -File -Include '*.
 }
 if ($libraryEntryPoints.Count -gt 0) {
     throw "Library files must be imported, not invoked as commands: $($libraryEntryPoints -join ', ')"
+}
+
+# A Header fails silently when voided, so every script either has a valid one
+# or none at all; tests are exempt because their fixtures break Headers on purpose.
+Import-Module (Join-Path $LibDir 'script-discovery.psm1') -Force
+$headerFaults = @(Get-ChildItem -LiteralPath $ScriptsDir -Recurse -File -Include '*.ps1' |
+    Where-Object { -not $_.FullName.StartsWith($TestDir + [IO.Path]::DirectorySeparatorChar, [StringComparison]::OrdinalIgnoreCase) } |
+    ForEach-Object { Read-DeckleScriptHeader -Path $_.FullName } |
+    Where-Object { $_.Status -notin @('Described', 'NoHeader') })
+if ($headerFaults.Count -gt 0) {
+    $faultLines = $headerFaults | ForEach-Object {
+        "$([IO.Path]::GetRelativePath($ScriptsDir, $_.Path)) [$($_.Status)] $($_.Reason)"
+    }
+    throw "Script Headers must be valid or absent:`n$($faultLines -join "`n")"
 }
 
 $workspace = Get-Content -Raw -LiteralPath (Join-Path $RepoRoot 'deckle.code-workspace') | ConvertFrom-Json
