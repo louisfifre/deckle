@@ -1373,6 +1373,13 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── Deckle.Notifications.csproj
 │   │   └── DeckleNotificationsSource.cs
 │   ├── Deckle.Orchestration/
+│   │   ├── Registry/
+│   │   │   ├── AppEntry.cs
+│   │   │   ├── AppKind.cs
+│   │   │   ├── AppMatcher.cs
+│   │   │   ├── AppRules.cs
+│   │   │   ├── AppSource.cs
+│   │   │   └── HdrRule.cs
 │   │   ├── AGENTS.md  — [agent-instructions] Apps and games domain module — the registry of apps the user cares about, notic…
 │   │   ├── CLAUDE.md
 │   │   ├── Deckle.Orchestration.csproj
