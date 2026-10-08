@@ -1060,6 +1060,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   ├── HudWindow.Windowing.cs
 │   │   │   ├── HudWindow.xaml
 │   │   │   ├── HudWindow.xaml.cs
+│   │   │   ├── ProximityFade.cs
 │   │   │   ├── SystemAnimationPreference.cs
 │   │   │   └── WindowSlideAnimator.cs
 │   │   ├── AGENTS.md  — [agent-instructions] HUD overlay surface — non-focusable, click-through, always-on-top windows that…
@@ -1935,6 +1936,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── AnimationGateTests.cs
 │   │   ├── Deckle.Hud.Tests.csproj
 │   │   ├── DeckleHudSourceTests.cs
+│   │   ├── ProximityFadeTests.cs
 │   │   └── ProximityRollupAggregatorTests.cs
 │   ├── Deckle.Input.PrecisionScroll.Tests/
 │   │   ├── Fixtures/
