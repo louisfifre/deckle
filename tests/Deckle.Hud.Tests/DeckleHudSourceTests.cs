@@ -34,6 +34,23 @@ public class DeckleHudSourceTests
     }
 
     [Fact]
+    public void TranscriptPanelVisibilityEmitsVerboseOnLifecycleKeyword()
+    {
+        using var listener = new TestEventListener("Deckle-Hud");
+
+        DeckleHudSource.Log.TranscriptPanelVisibilityChanged(shown: true, side: "Right", utterances: 3);
+
+        var ev = Assert.Single(listener.Events);
+        Assert.Equal(DeckleHudSource.EvtTranscriptPanelVisibilityChanged, ev.EventId);
+        Assert.Equal(12, ev.EventId);
+        Assert.Equal(EventLevel.Verbose, ev.Level);
+        Assert.True(ev.HasKeyword(Keywords.Lifecycle));
+        Assert.Equal(true, ev.Payload?[0]);
+        Assert.Equal("Right", ev.Payload?[1]);
+        Assert.Equal(3, ev.Payload?[2]);
+    }
+
+    [Fact]
     public void RevealMaskFailureSeparatesWarningFromVerboseDetail()
     {
         using var listener = new TestEventListener("Deckle-Hud");

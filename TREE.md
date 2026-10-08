@@ -1052,7 +1052,10 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   └── MessageKind.cs
 │   │   ├── Transcript/
 │   │   │   ├── TranscriptHistory.cs
-│   │   │   └── TranscriptPanelLayout.cs
+│   │   │   ├── TranscriptPanelLayout.cs
+│   │   │   ├── TranscriptPanelWindow.Proximity.cs
+│   │   │   ├── TranscriptPanelWindow.xaml
+│   │   │   └── TranscriptPanelWindow.xaml.cs
 │   │   ├── Windows/
 │   │   │   ├── HudOverlayManager.cs
 │   │   │   ├── HudOverlayWindow.xaml

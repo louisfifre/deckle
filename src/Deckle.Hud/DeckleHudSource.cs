@@ -45,6 +45,8 @@ public sealed class DeckleHudSource : DeckleEventSource
     public const int EvtRevealGeometry      = 10;
     // 11: Verbose mirror for the reveal-mask failure's technical details.
     public const int EvtRevealMaskFailedDetail = 11;
+    // 12: live transcript panel shown / hidden.
+    public const int EvtTranscriptPanelVisibilityChanged = 12;
 
     [Event(EvtHudWarning,
            Level = EventLevel.Warning,
@@ -120,6 +122,21 @@ public sealed class DeckleHudSource : DeckleEventSource
     {
         if (!IsEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Lifecycle)) return;
         WriteEvent(EvtStateChanged, from, to, reason, alpha, dpi);
+    }
+
+    // ─── Live transcript panel visibility ──────────────────────────────
+    //
+    // Emitted by TranscriptPanelWindow when it appears (first text of a take)
+    // and when it leaves. Content-free by design: the side it sits on and the
+    // number of utterances it holds, never the transcript text.
+    [Event(EvtTranscriptPanelVisibilityChanged,
+           Level = EventLevel.Verbose,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Message = "transcript panel | shown={0} | side={1} | utterances={2}")]
+    public void TranscriptPanelVisibilityChanged(bool shown, string side, int utterances)
+    {
+        if (!IsEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Lifecycle)) return;
+        WriteEvent(EvtTranscriptPanelVisibilityChanged, shown, side, utterances);
     }
 
     // ─── Axis 2 — 150 ms cubic ease-out fade-in ────────────────────────
