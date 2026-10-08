@@ -54,7 +54,19 @@ public sealed partial class TaskbarCoverHost
             || band.right != _band.right || band.bottom != _band.bottom;
 
         _layoutKnown = true;
-        if (!changed) return; // WM_SETTINGCHANGE fires for plenty of unrelated settings
+        if (!changed)
+        {
+            // Same rect, but the taskbar may have been re-created (Explorer
+            // restart, a Windhawk mod re-injecting: TaskbarCreated) or
+            // restacked by Explorer during the setting or display change. It
+            // is topmost too and the last positioned topmost window wins, so
+            // without this the band would stay under it, still "visible",
+            // until the next foreground change. One SetWindowPos on a
+            // user-cadence message; WM_SETTINGCHANGE also fires for plenty
+            // of unrelated settings, which is why nothing else is redone.
+            if (_coverVisible) ReassertTopmost();
+            return;
+        }
 
         _edge = edge;
         _band = band;
