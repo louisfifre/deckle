@@ -37,6 +37,13 @@ public static class SettingsSearch
             Keywords = ["mic", "source"],
         },
 
+        // Maximum recording length picker (composed Choice).
+        new SettingSearchEntry
+        {
+            LabelKey = "RecordingLimitCard",
+            Keywords = ["duration", "length", "limit", "minutes", "cap", "stop"],
+        },
+
         // Transcription pre-processing toggle (composed).
         new SettingSearchEntry
         {

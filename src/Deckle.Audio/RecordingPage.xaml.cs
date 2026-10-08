@@ -15,8 +15,10 @@ namespace Deckle.Audio;
 // Extracted from GeneralPage in slice S3. In pass2 the Behaviour
 // settings (auto-paste + overlay HUD) were moved back to GeneralPage —
 // what remains is the capture pipeline itself : microphone device
-// selection (Win32 waveIn enumeration) and voice level window
-// calibration (sliders + auto-calibration toggle). Same patterns as
+// selection (Win32 waveIn enumeration), the maximum recording length,
+// the pre-processing toggle and its mic check, voice level window
+// calibration (sliders + auto-calibration toggle) and the microphone
+// telemetry opt-in. Same patterns as
 // GeneralPage / DiagnosticsPage : NavigationCacheMode.Required and
 // the _initializing guard around the initial sync pass.
 public sealed partial class RecordingPage : Page
@@ -29,10 +31,26 @@ public sealed partial class RecordingPage : Page
     {
         InitializeComponent();
         NavigationCacheMode = NavigationCacheMode.Required;
+        ComposeRecordingLimitSection();
         ComposePreprocessingSection();
         ComposeVoiceLevelSection();
         ComposeTelemetrySection();
         LoadAndSync();
+    }
+
+    // ── Composed maximum-recording-length card ────────────────────────────────
+    //
+    // Same host-only pattern as the pre-processing card below: a single Choice
+    // ComboBox ("No limit" by default) composed into its own host so it can sit
+    // right under the bespoke microphone card. Part of the resettable section,
+    // so it subscribes to DirtyChanged and is folded into GateResetLink.
+    private SettingsComposer? _recordingLimitComposer;
+
+    private void ComposeRecordingLimitSection()
+    {
+        _recordingLimitComposer = new SettingsComposer(RecordingLimitHost, ViewModel);
+        _recordingLimitComposer.Compose(ViewModel.RecordingLimitSettings);
+        _recordingLimitComposer.DirtyChanged += OnComposedDirtyChanged;
     }
 
     // ── Composed pre-processing card ──────────────────────────────────────────
@@ -94,7 +112,7 @@ public sealed partial class RecordingPage : Page
 
     // The section "Reset" link is active-when-dirty (Playground model): enabled only
     // while a composed value differs from its default. Recomputed off the union of
-    // both composers' IsDirty() whenever either raises DirtyChanged, AND once after
+    // the resettable composers' IsDirty() whenever one raises DirtyChanged, AND once after
     // Load() — Load only raises PropertyChanged for values it actually changes, so on
     // a clean profile (loaded values equal the POCO-seeded defaults) no DirtyChanged
     // fires and this explicit call is what settles the link to disabled. The device-id
@@ -104,6 +122,7 @@ public sealed partial class RecordingPage : Page
     private void GateResetLink()
     {
         ResetRecordingLink.IsEnabled =
+            (_recordingLimitComposer?.IsDirty() ?? false) ||
             (_preprocessingComposer?.IsDirty() ?? false) ||
             (_voiceLevelComposer?.IsDirty() ?? false);
     }
@@ -165,7 +184,7 @@ public sealed partial class RecordingPage : Page
     }
 
     // Section "Reset": two halves with different owners. The composed values (the
-    // pre-processing toggle and the voice-level group) go back through their
+    // recording length, the pre-processing toggle and the voice-level group) go back through their
     // composers' ResetAll(), each value driven to its POCO-sourced default via the
     // normal setter + RefreshAll round-trip — which also re-gates this link through
     // OnComposedDirtyChanged. The microphone device is NOT composed (runtime waveIn
@@ -183,6 +202,7 @@ public sealed partial class RecordingPage : Page
     // this gesture — the one place that resets the whole section.
     private void ResetRecording_Click(object sender, RoutedEventArgs e)
     {
+        _recordingLimitComposer?.ResetAll();
         _preprocessingComposer?.ResetAll();
         _voiceLevelComposer?.ResetAll();
 

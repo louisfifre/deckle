@@ -68,6 +68,13 @@
                               SelectionChanged="AudioInputCombo_SelectionChanged" />
                 </controls:SettingsCard>
 
+                <!-- Maximum recording length — composed ComboBox, "No limit" by
+                     default. RecordingPage.ComposeRecordingLimitSection() declares
+                     it as a Choice SettingDescriptor (RecordingViewModel.Settings.cs);
+                     it sits under the microphone because both shape every take. -->
+                <StackPanel x:Name="RecordingLimitHost"
+                            Spacing="{StaticResource SettingsCardSpacing}" />
+
                 <!-- Transcription pre-processing — the DSP black box. Single
                      opt-in toggle ; the fine parameters live in the Playground.
                      The description carries the deferred-activation contract

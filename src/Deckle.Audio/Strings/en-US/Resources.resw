@@ -134,7 +134,7 @@
     <value>Recording</value>
   </data>
   <data name="RecordingPageSubtitleLabel.Text" xml:space="preserve">
-    <value>Microphone selection, signal pre-processing, and voice level window calibration.</value>
+    <value>Microphone selection, maximum recording length, signal pre-processing, and voice level window calibration.</value>
   </data>
   <data name="RecordingPageSectionHeaderLabel.Text" xml:space="preserve">
     <value>Defaults</value>
@@ -146,6 +146,32 @@
   </data>
   <data name="GeneralMicrophoneCard.Description" xml:space="preserve">
     <value>Audio input device used for recording. Default: system default.</value>
+  </data>
+
+  <!-- Composed maximum-recording-length card (composer label key + Choice option keys) -->
+  <data name="RecordingLimitCard.Header" xml:space="preserve">
+    <value>Maximum recording length</value>
+  </data>
+  <data name="RecordingLimitCard.Description" xml:space="preserve">
+    <value>A recording stops on its own when it reaches this length, as if you'd pressed the hotkey. What you recorded is still transcribed. Default: no limit.</value>
+  </data>
+  <data name="RecordingLimitNone.Content" xml:space="preserve">
+    <value>No limit</value>
+  </data>
+  <data name="RecordingLimit10Min.Content" xml:space="preserve">
+    <value>10 minutes</value>
+  </data>
+  <data name="RecordingLimit20Min.Content" xml:space="preserve">
+    <value>20 minutes</value>
+  </data>
+  <data name="RecordingLimit30Min.Content" xml:space="preserve">
+    <value>30 minutes</value>
+  </data>
+  <data name="RecordingLimit1Hour.Content" xml:space="preserve">
+    <value>1 hour</value>
+  </data>
+  <data name="RecordingLimit2Hours.Content" xml:space="preserve">
+    <value>2 hours</value>
   </data>
 
   <!-- Composed pre-processing card (composer label key) -->

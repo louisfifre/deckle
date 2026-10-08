@@ -35,6 +35,21 @@ public partial class RecordingViewModel : ObservableObject
         PushToSettings();
     }
 
+    // ── Maximum recording length ────────────────────────────────────────────
+    //
+    // Seconds, the POCO's unit; 0 = no limit (the default). The capture loop
+    // snapshots it at recording start, so a change applies to the next take.
+
+    [ObservableProperty]
+    public partial int MaxRecordingDurationSeconds { get; set; }
+
+    partial void OnMaxRecordingDurationSecondsChanged(int value)
+    {
+        if (_isSyncing) return;
+        DeckleSettingsUxSource.Log.SettingChanged("MaxRecordingDurationSeconds", value.ToString(CultureInfo.InvariantCulture));
+        PushToSettings();
+    }
+
     // ── Transcription pre-processing (DSP black box) ──────────────────────────
 
     [ObservableProperty]
@@ -200,6 +215,7 @@ public partial class RecordingViewModel : ObservableObject
         // stays an explicit literal here.
         var levelWindow = new LevelWindowSettings();
         AudioInputDeviceId = -1;
+        MaxRecordingDurationSeconds = new CaptureSettings().MaxRecordingDurationSeconds;
         LevelWindowMinDbfs = levelWindow.MinDbfs;
         LevelWindowMaxDbfs = levelWindow.MaxDbfs;
         LevelWindowExponent = levelWindow.DbfsCurveExponent;
@@ -218,6 +234,7 @@ public partial class RecordingViewModel : ObservableObject
             var capture = CaptureSettingsService.Instance.Current;
 
             AudioInputDeviceId = capture.AudioInputDeviceId;
+            MaxRecordingDurationSeconds = capture.MaxRecordingDurationSeconds;
             LevelWindowMinDbfs = capture.LevelWindow.MinDbfs;
             LevelWindowMaxDbfs = capture.LevelWindow.MaxDbfs;
             LevelWindowExponent = capture.LevelWindow.DbfsCurveExponent;
@@ -237,6 +254,7 @@ public partial class RecordingViewModel : ObservableObject
         var capture = CaptureSettingsService.Instance.Current;
 
         capture.AudioInputDeviceId = AudioInputDeviceId;
+        capture.MaxRecordingDurationSeconds = MaxRecordingDurationSeconds;
         capture.LevelWindow.MinDbfs = (float)LevelWindowMinDbfs;
         capture.LevelWindow.MaxDbfs = (float)LevelWindowMaxDbfs;
         capture.LevelWindow.DbfsCurveExponent = (float)LevelWindowExponent;
