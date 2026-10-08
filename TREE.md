@@ -203,7 +203,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   ├── capture_analysis.py
 │   │   │   ├── README.md
 │   │   │   └── test_capture_analysis.py
-│   │   └── AGENTS.md  — [agent-instructions] Input benchmark workspace — raw capture analysis, derived corpora, and behavior…
+│   │   └── AGENTS.md  — [agent-instructions] Input benchmark — capture analysis, derived corpora, replay.
 │   ├── lib/
 │   │   ├── monitor/
 │   │   │   ├── gpu_monitor.ps1
@@ -760,7 +760,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   ├── DomainLanguageRow.cs
 │   │   │   ├── LexicalDomainsViewModel.cs
 │   │   │   └── LexicalDomainTab.cs
-│   │   ├── AGENTS.md  — [agent-instructions] Machine-wide autocorrect domain module — typed-word tracking, conservative corr…
+│   │   ├── AGENTS.md  — [agent-instructions] Machine-wide autocorrect — word tracking, correction engine, dictionary.
 │   │   ├── AutocorrectSettings.cs
 │   │   ├── AutocorrectSettingsModule.cs
 │   │   ├── AutocorrectSettingsService.cs
@@ -1113,7 +1113,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   ├── TouchpadDevice.cs
 │   │   │   ├── TouchpadParser.cs
 │   │   │   └── TouchpadReport.cs
-│   │   ├── AGENTS.md  — [agent-instructions] Input support module — Raw Input hosts, Precision Touchpad HID parsing, and nat…
+│   │   ├── AGENTS.md  — [agent-instructions] Input support — Raw Input hosts, touchpad HID parsing, injection.
 │   │   ├── CLAUDE.md
 │   │   ├── CONTEXT.md  — context-deckle-input [agent-instructions] Input-layer vocabulary — the contact frame as the unit assembled from Raw Input…
 │   │   ├── Deckle.Input.csproj
@@ -1137,7 +1137,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   ├── PrecisionScrollViewModel.cs
 │   │   │   ├── PrecisionScrollViewModel.Settings.cs
 │   │   │   └── PrecisionScrollViewModel.Tuning.cs
-│   │   ├── AGENTS.md  — [agent-instructions] Precision scrolling domain module — classic wheel detents become native two-fin…
+│   │   ├── AGENTS.md  — [agent-instructions] Precision scrolling — wheel detents become native touchpad gestures.
 │   │   ├── Deckle.Input.PrecisionScroll.csproj
 │   │   ├── DecklePrecisionScrollSource.cs
 │   │   ├── PrecisionScrollSettings.cs
@@ -1162,7 +1162,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── ViewModels/
 │   │   │   ├── TrackpadViewModel.cs
 │   │   │   └── TrackpadViewModel.Settings.cs
-│   │   ├── AGENTS.md  — [agent-instructions] Trackpad domain module — three-finger drag recognizer and engine, module settin…
+│   │   ├── AGENTS.md  — [agent-instructions] Trackpad domain module — three-finger drag and its frozen decisions.
 │   │   ├── CLAUDE.md
 │   │   ├── CONTEXT.md  — context-deckle-input-trackpad [agent-instructions] Trackpad gesture vocabulary — the recognizer as the state machine that owns ges…
 │   │   ├── Deckle.Input.Trackpad.csproj
