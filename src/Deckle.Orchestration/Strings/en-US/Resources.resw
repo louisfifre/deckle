@@ -81,6 +81,9 @@
   <data name="OrchestrationPage_DuplicateInfo.Message" xml:space="preserve">
     <value>This app is already in your list.</value>
   </data>
+  <data name="OrchestrationPage_ElevationAdvisory.Message" xml:space="preserve">
+    <value>Deckle only notices apps starting when it runs elevated. Turn on Start elevated in General.</value>
+  </data>
   <data name="OrchestrationPage_Empty.Text" xml:space="preserve">
     <value>No apps yet. Add an app or a game to see it here.</value>
   </data>

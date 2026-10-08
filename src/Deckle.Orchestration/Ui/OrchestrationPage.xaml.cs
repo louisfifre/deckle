@@ -149,5 +149,16 @@ public sealed partial class OrchestrationPage : Page
         bool any = ViewModel.Entries.Count > 0;
         EntriesList.Visibility = any ? Visibility.Visible : Visibility.Collapsed;
         EmptyState.Visibility = any ? Visibility.Collapsed : Visibility.Visible;
+        RefreshElevationAdvisory(any);
+    }
+
+    // Read on navigation and after each list change, never pushed: the status
+    // only changes when the list does (WMI is asked when the first entry is
+    // enabled), and before that the runtime predicts it from elevation.
+    private void RefreshElevationAdvisory(bool anyEntry)
+    {
+        DetectionStatus? status = OrchestrationRuntime.StatusProvider?.Invoke();
+        ElevationAdvisory.IsOpen = anyEntry
+            && status is { ProcessTraceAvailable: false, ForegroundMonitorPresent: false };
     }
 }

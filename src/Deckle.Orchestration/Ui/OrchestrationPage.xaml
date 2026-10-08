@@ -48,6 +48,18 @@
                     <TextBlock x:Uid="OrchestrationPage_Section_Apps"
                                Style="{StaticResource SettingsSectionHeaderTextBlockStyle}" />
 
+                    <!-- Unelevated, and until a foreground service is plugged
+                         in, a listed app is noticed only when the list changes,
+                         not when it starts. Shown from code-behind while entries
+                         exist and neither source runs; not closable, because it
+                         describes a state, not an event. -->
+                    <InfoBar x:Name="ElevationAdvisory"
+                             x:Uid="OrchestrationPage_ElevationAdvisory"
+                             Severity="Warning"
+                             IsClosable="False"
+                             IsOpen="False"
+                             Margin="0,0,0,8" />
+
                     <StackPanel Orientation="Horizontal"
                                 Spacing="8"
                                 Margin="0,0,0,8">
