@@ -5,7 +5,7 @@ type: agent-instructions
 
 # AGENTS.md — Deckle.Shell.TaskbarCover
 
-Masks the taskbar behind a black band: a layered, topmost tool window sized to the exact `ABM_GETTASKBARPOS` rect, whatever the anchored edge, rebuilt on `WM_SETTINGCHANGE`, `WM_DISPLAYCHANGE` and `TaskbarCreated`. A sibling of [Deckle.Shell](../Deckle.Shell/CLAUDE.md) like TrayMenu: a domain module with its own runtime state, not a shell primitive.
+Masks the taskbar behind a black band: a layered, topmost tool window sized to the exact `ABM_GETTASKBARPOS` rect, whatever the anchored edge, rebuilt on `WM_SETTINGCHANGE`, `WM_DISPLAYCHANGE` and `TaskbarCreated`. A sibling of [Deckle.Shell](../Deckle.Shell/AGENTS.md) like TrayMenu: a domain module with its own runtime state, not a shell primitive.
 
 ## The cursor signal — why a WinEvent hook
 

@@ -1672,7 +1672,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   ├── Deckle.Shell.TrayMenu/
 │   │   ├── Interop/
 │   │   │   └── TrayMenuNativeMethods.cs
-│   │   ├── AGENTS.md  — [agent-instructions] WinUI 3 tray context menu — carrier-window pattern and its DWM pitfalls.
+│   │   ├── AGENTS.md  — [agent-instructions] WinUI 3 tray surfaces — the right-click context menu and the left-click quick-a…
 │   │   ├── CLAUDE.md
 │   │   ├── Deckle.Shell.TrayMenu.csproj
 │   │   ├── DeckleShellTrayMenuSource.cs
