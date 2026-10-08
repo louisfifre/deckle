@@ -16,12 +16,122 @@ doctrine). This file is generated from the Conventional-Commit history by
 - **anytype:** Schema surface provisions type descriptions through the object face
 - **scripts:** Establish terminal visual hierarchy
 - **anytype:** The manifest owns a type's property list — order and membership follow it, detachments named before confirm
+- **transcription:** Expose live utterance boundary progress
+- **composition:** Render mirrored utterance countdown masks
+- **hud:** Share transcribing material tuning
+- **hud:** Connect utterance countdown to live dictation
+- **playground:** Tune and inspect the live utterance countdown
+- **hud:** Share live stroke thickness and inset tuning
 - **home:** Align typed operations with the accepted inventory model
+- **scripts:** Add the Script Discovery module
+- **scripts:** Annotate scripts in TREE.md from their Header
+- **scripts:** Describe every command with a Header
+- **scripts:** Add the script header check command
+- **scripts:** Build the preview menu from discovered Headers
+- **scripts:** Lead each Section with the scripts that carry Variants
+- **scripts:** Give Action Row labels their own presentation role
+- **scripts:** Wrap Variant cells beneath a width floor
+- **anytype:** Pin anytype-cli 0.4.0 and make the install check version-aware
+- **scripts:** Rank Danger Actions last in their Section
+- **scripts:** Give Quit a line of its own beneath the menu
+- **scripts:** Fill the Variant columns with plain Actions and Accesses
+- **scripts:** Raise the Variant cell floor to twenty cells
+- **scripts:** Open a Confirmation step before a discovered Danger Action
+- **terminal:** Implement approved visual hierarchy
+- **scripts:** Choose the terminal palette with -Palette, console colours by default
+- **presets:** Add the preset family support module
+- **transcription:** Raise UtteranceTranscribed for each transcribed utterance
+- **catalog:** Add the Editor setting kind for module-owned editors
+- **catalog:** Add the Games glyph
+- **settings:** Add TranscriptPanelSide to the overlay settings
+- **taskbar-cover:** Size the approach zone on the band and add the opacity curve
+- **vision:** Make the capture cadence a start parameter
+- **audio:** Lift the default recording cap and migrate the stored default
+- **transcription:** Expose the cut curve on the settings view model
+- **orchestration:** Add the module skeleton and its event source
+- **orchestration:** Add the registry model and the matcher
+- **orchestration:** Persist the registry and describe the settings page
+- **hud:** Add the shared proximity fade curve
+- **ambient:** Persist a closed capture-rate setting
+- **transcription:** Declare the cut presets over the hangover values
+- **orchestration:** Add the Apps and games settings page
+- **hud:** Add the transcript history and panel layout
+- **tray-menu:** Add the quick-actions panel host
+- **audio:** Expose the maximum recording length on the Recording page
+- **taskbar-cover:** Fade the band with cursor distance and drop the re-cover timer
+- **transcription:** Add the cut curve editor control for Settings
+- **audio:** Render a listening take at a chosen pre-processing strength
+- **audio:** Record and play a listening take
+- **app:** Register the Apps and games settings page
+- **orchestration:** Add a Valve KeyValues reader
+- **transcription:** Select cut presets in the streaming settings
+- **orchestration:** Read Steam libraries and guess a game's executable
+- **composition:** Add float OKLCh overloads on linear sRGB
+- **hud:** Add the live transcript panel window
+- **orchestration:** Scan Steam and chosen folders into the registry
+- **audio:** Add the listening test to the Recording page
+- **vision:** Publish the unrounded linear average with each sample
+- **foreground:** Add the shared foreground and fullscreen watcher
+- **app:** Feed the transcript panel from the engine beside the HUD
+- **orchestration:** Add the scan command and the folders to scan on the page
+- **tray-menu:** Show the Record button only when wired
+- **app:** Open the quick-actions panel on tray left click
+- **orchestration:** Add the foreground and process-start seams
+- **transcription:** Expose the transcript panel side on the Dictation page
+- **app:** Start the foreground watcher on the UI thread
+- **llm-rewrite:** Persist one active rewrite profile
+- **orchestration:** Add the WMI process start source and the exit watch
+- **composition:** Grow the utterance countdown from the top and bottom toward the corners
+- **composition:** Ease the countdown retreat when speech resumes
+- **composition:** Draw the countdown on the live stroke silhouette
+- **orchestration:** Add the app session tracker
+- **llm-rewrite:** Pick the rewrite profile once on the Rewriting page
+- **orchestration:** Add the detection runtime
+- **app:** Compose the orchestration runtime
+- **transcription:** Apply the active rewrite profile to every dictation
+- **orchestration:** Advise Start elevated on the apps and games page
+- **ambient:** Name the start-time settings and log a restart detail
+- **app:** Restart Ambient when a start-time setting changes
+- **shell:** Drop the two rewrite chords
+- **orchestration:** Add the rule effect seam and the transactional profile
+- **orchestration:** Add the display-config interop and the HDR switch
+- **orchestration:** Add the HDR rule effect
+- **orchestration:** Apply rule profiles on app sessions
+- **app:** Wire the HDR rule effect into the orchestration runtime
+- **catalog:** Add the hotkey chord type
+- **settings:** Persist one hotkey chord per hotkey action
+- **orchestration:** Show a per-monitor HDR choice under each app
+- **ambient:** Compose the Ambient settings page
+- **shell:** Register each hotkey binding on its own
+- **app:** Compose hotkey actions from settings and the tray toggles
+- **catalog:** Add the hotkey setting kind
+- **ambient:** Set per-light zones and brightness in Settings
+- **settings:** Edit the hotkeys on the General page
+- **ambient:** Show the live preview in Settings
+- **ambient:** Reset the whole Ambient page from its title
+- **foreground:** Carry the monitor's GDI device name in the snapshot
+- **orchestration:** Adapt the shared foreground watcher to IForegroundMonitor
+- **app:** Feed the apps and games runtime from the foreground watcher
+- **hud:** Share the stroke's own tuning with the live HUD
+- **playground:** Publish every HUD knob to the live HUD
 
 ### Changed
 
 - **home:** Survey date retires from the schema — retraction guard keeps the reference half
 - **home:** Electricity grill — existence leaves, categories v3, the circuit gains a nature
+- **scripts:** Move Release, Maintenance and Setup commands into subfolders
+- **catalog:** Extract the trailing-reset layout from BuildPath
+- **hud:** Expose the HUD bottom margin to sibling surfaces
+- **tray-menu:** Extract the invisible carrier window
+- **playground:** Move the always-visible knobs out of the parked expander
+- **tray-menu:** Reduce the context menu to its rare items
+- **shell:** Raise LeftClickRequested on tray left click
+- **taskbar-cover:** Run fullscreen suppression on the foreground watcher
+- **hud:** Share the proximity fade curve between the HUD surfaces
+- **settings:** Remove the read-only hotkey cards from General
+- **ambient:** Host the Ambient view model in its module
+- **playground:** Retire the Ambient tab
+- **ambient:** Drop the section resets the composer replaced
 
 ### Fixed
 
@@ -33,6 +143,28 @@ doctrine). This file is generated from the Conventional-Commit history by
 - **ambient:** Keep brightness floor on black scenes
 - **anytype:** Page exhaustive listings past the first search page
 - **anytype:** Get reads the archived state
+- **playground:** Preserve collapsible HUD tuning sections
+- **playground:** Move countdown inspection views into Target
+- **composition:** Extend countdown angles to the frame corners
+- **scripts:** Paint each frame in one write to stop the Header blinking
+- **scripts:** Seat Quit at the end of the last menu line again
+- **scripts:** Let Quit reserve nothing from the grid
+- **scripts:** Colour the menu as the launcher and the palette do
+- **playground:** Hide the generic conic section on the Recording target
+- **playground:** Seed TuningModel defaults from ConicArcStrokeConfig
+- **vision:** Express the content-peak release per second
+- **playground:** Show each HUD target only the sections its preview consumes
+- **taskbar-cover:** Re-assert the band above a re-created taskbar
+- **transcription:** Drop the stale 'not applied in streaming' sentence
+- **ambient:** Turn lights black only on an exactly black source
+- **ambient:** Hold the previous colour under the change threshold on continuous outputs
+- **ambient:** Reset an unmapped light's trail and keep the smoother NaN-safe
+- **taskbar-cover:** Suppress the band only for a fullscreen window on its own monitor
+- **app:** Apply the app theme to the transcript panel
+- **orchestration:** Point the elevation advisory at the Trackpad page
+- **tray-menu:** Size the panel's fallback with the real presenter padding
+- **app:** Start the foreground watcher before the modules that read it
+- **orchestration:** Keep a failed foreground delivery off the thread pool's unhandled path
 
 ## [0.35.0](https://github.com/louisfifre/deckle/compare/v0.31.6...v0.35.0) — 2026-08-13
 
