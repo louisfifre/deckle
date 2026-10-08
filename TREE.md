@@ -1619,6 +1619,8 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── Setup/
 │   │   │   └── ModelEntry.cs
 │   │   ├── Streaming/
+│   │   │   ├── CutCurveValues.cs
+│   │   │   ├── CutPresets.cs
 │   │   │   ├── EnergySegmenter.cs
 │   │   │   ├── EnergySegmenterSettings.cs
 │   │   │   ├── SegmentedTranscriptionSession.cs
@@ -2046,6 +2048,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── WindowsAppSdkBootstrap.cs
 │   │   └── WindowsAppSdkModuleInitializer.cs
 │   ├── Deckle.Transcription.Tests/
+│   │   ├── CutPresetsTests.cs
 │   │   ├── Deckle.Transcription.Tests.csproj
 │   │   ├── DeckleLlmSourceTests.cs
 │   │   ├── DeckleWhispSourceTests.cs

@@ -1,5 +1,6 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using Deckle.Diagnostics.Telemetry;
+using Deckle.Presets;
 using Deckle.Settings;
 
 namespace Deckle.Transcription;
@@ -67,6 +68,12 @@ public partial class WhisperViewModel : ObservableObject
         SegCurveY1 = segmenter.HangoverCurveY1;
         SegCurveX2 = segmenter.HangoverCurveX2;
         SegCurveY2 = segmenter.HangoverCurveY2;
+
+        // The cut preset family reads and writes the eight hangover values
+        // through this VM's own setters, so applying a preset persists like a
+        // hand edit. The seed selection is Balanced (the shipped defaults).
+        _cutPresets = new PresetFamily<CutCurveValues>(CutPresets.All, ReadCutValues, WriteCutValues);
+        CutPreset = _cutPresets.Selection;
 
         // Dictation-experience seeds from the shell POCO initializers (the single
         // source the shell's SettingsService persists), overwritten by Load().
@@ -147,6 +154,9 @@ public partial class WhisperViewModel : ObservableObject
             TelemetryCorpusEnabled = t.CorpusEnabled;
             RecordAudioCorpus = t.RecordAudioCorpus;
             AudioCorpusContentIndex = (int)t.AudioCorpusContent;
+
+            // Last: the selection derives from the hangover values read above.
+            CutPreset = _cutPresets.Selection;
         }
         finally
         {

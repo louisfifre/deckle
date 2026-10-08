@@ -51,6 +51,8 @@
     <!-- VAD module. One-way dependency: the orchestrator calls the VAD, never the
          reverse. -->
     <ProjectReference Include="..\Deckle.Vad\Deckle.Vad.csproj" />
+    <!-- Shared preset family (the cut presets). One-way dependency. -->
+    <ProjectReference Include="..\Deckle.Presets\Deckle.Presets.csproj" />
     <ProjectReference Include="..\Deckle.Llm\Deckle.Llm.csproj" />
     <ProjectReference Include="..\Deckle.Llm.Rewrite\Deckle.Llm.Rewrite.csproj" />
     <!-- For SettingsHost.RestartApp — cross-assembly App-side hook called
