@@ -624,7 +624,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   ├── MicrophoneCalibrationCalculator.cs
 │   │   │   ├── MicrophoneTelemetryCalculator.cs
 │   │   │   └── MicrophoneTelemetryPayload.cs
-│   │   ├── AGENTS.md  — [agent-instructions] Audio module — the home for capturing, decoding and analyzing sound: microphone…
+│   │   ├── AGENTS.md  — [agent-instructions] Sound capture, decoding, analysis and transcription pre-processing.
 │   │   ├── AudioFileDecoder.cs
 │   │   ├── AudioFileDecodeResult.cs
 │   │   ├── AudioLevelMapper.cs
@@ -1069,7 +1069,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── JOURNAL.md  — [module-journal] Diagnosis notes, render doctrine, and deferred work for Deckle.Hud — read on de…
 │   │   └── ProximityRollupAggregator.cs
 │   ├── Deckle.Inference.Onnx/
-│   │   ├── AGENTS.md  — [agent-instructions] ONNX Runtime CPU inference substrate — isolates the process-wide OnnxRuntime de…
+│   │   ├── AGENTS.md  — [agent-instructions] ONNX Runtime CPU inference behind a plain-array Run.
 │   │   ├── CLAUDE.md
 │   │   ├── Deckle.Inference.Onnx.csproj
 │   │   └── OnnxModelSession.cs
@@ -1572,7 +1572,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── CLAUDE.md
 │   │   └── Deckle.Shell.WindowChrome.csproj
 │   ├── Deckle.Speech/
-│   │   ├── AGENTS.md  — [agent-instructions] Read-aloud (TTS) output module — the ISpeechBackend boundary, the placeholder s…
+│   │   ├── AGENTS.md  — [agent-instructions] Read-aloud (TTS) output — ISpeechBackend boundary and the Chatterbox port.
 │   │   ├── ChatterboxSpeechBackend.cs
 │   │   ├── CLAUDE.md
 │   │   ├── Deckle.Speech.csproj
@@ -1664,7 +1664,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   ├── NativeRuntime.cs
 │   │   │   ├── SpeechModelResolver.cs
 │   │   │   └── SpeechModels.cs
-│   │   ├── AGENTS.md  — [agent-instructions] whisper.cpp ASR backend (IAsrBackend) — native log compaction, the whisper repe…
+│   │   ├── AGENTS.md  — [agent-instructions] whisper.cpp ASR backend — native log hook, repetition guard, pitfalls.
 │   │   ├── CLAUDE.md
 │   │   ├── Deckle.Transcription.Whisper.csproj
 │   │   ├── KnownHallucinations.cs
