@@ -28,7 +28,7 @@ public sealed class RewriteProfile
 }
 
 // Legacy duration-rule shape, retained so existing settings deserialize without
-// loss. Runtime rewriting is now selected only by dedicated hotkeys.
+// loss. Runtime rewriting now applies the active profile only.
 public sealed class AutoRewriteRule
 {
     public int MinDurationSeconds { get; set; } = 0;
@@ -41,7 +41,7 @@ public sealed class AutoRewriteRule
 }
 
 // Legacy word-rule shape, retained so existing settings deserialize without
-// loss. Runtime rewriting is now selected only by dedicated hotkeys.
+// loss. Runtime rewriting now applies the active profile only.
 public sealed class AutoRewriteRuleByWords
 {
     public int MinWordCount { get; set; } = 0;
@@ -54,21 +54,24 @@ public sealed class LlmSettings
     public bool Enabled { get; set; } = true;
     public string OllamaEndpoint { get; set; } = "http://localhost:11434/api/generate";
 
-    // Profile used by the Primary Rewrite shortcut (Shift+Win+`).
-    // null = primary rewrite disabled (hotkey fires but rewriting is skipped).
-    // Symmetric with Secondary — both slots are opt-in by default. Plain
-    // transcription never picks a profile implicitly.
+    // The active rewrite profile: the one persisted choice applied to every
+    // dictation when Enabled. null = plain transcription (opt-in by default).
+    // Lookup at runtime prefers the Id (stable across renames) and falls back
+    // to the Name; LlmSettingsMigrations.RepairProfileReferences keeps the
+    // pair in sync.
+    public string? ActiveProfileId { get; set; }
+    public string? ActiveProfileName { get; set; }
+
+    // Legacy primary slot, migrated into ActiveProfile* on load, kept so an
+    // older settings.json deserializes without loss. Never read at runtime.
+    // (The legacy secondary slot has no successor: its JSON keys are ignored.)
+    public string? PrimaryRewriteProfileId { get; set; }
     public string? PrimaryRewriteProfileName { get; set; }
 
-    // Profile used by the Secondary Rewrite shortcut (Ctrl+Win+`).
-    // null = secondary rewrite disabled (hotkey fires but rewriting is skipped).
-    public string? SecondaryRewriteProfileName { get; set; }
-
-    // Stable companions to the *ProfileName* fields above — resolved to
-    // RewriteProfile.Id. Lookup at runtime prefers Id, falls back to Name
-    // for legacy configs. Filled by LlmSettingsMigrations.RepairProfileReferences.
-    public string? PrimaryRewriteProfileId { get; set; }
+    // Legacy secondary slot, still read by the secondary rewrite chord; it
+    // goes away with that chord.
     public string? SecondaryRewriteProfileId { get; set; }
+    public string? SecondaryRewriteProfileName { get; set; }
 
     // Three profiles aligned with cleanup brackets (lib/corpus.py:38-47),
     // tuned through an iterative optimization loop on Ministral 14B Q4 (local
@@ -238,8 +241,7 @@ public sealed class LlmSettings
     };
 
     // Legacy auto-rule settings are retained for settings-file compatibility.
-    // They are no longer evaluated: rewriting requires a dedicated hotkey and
-    // an explicitly assigned profile.
+    // They are no longer evaluated: rewriting applies the active profile only.
     public List<AutoRewriteRule> AutoRewriteRules { get; set; } = new()
     {
         new() { MinDurationSeconds = 600, ProfileName = "Arrangement" },

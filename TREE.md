@@ -1991,6 +1991,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   └── LightingObservabilityCollection.cs
 │   ├── Deckle.Llm.Rewrite.Tests/
 │   │   ├── Deckle.Llm.Rewrite.Tests.csproj
+│   │   ├── LlmSettingsMigrationsTests.cs
 │   │   ├── ParagraphDraftTests.cs
 │   │   ├── ParagraphRewriteCoordinatorTests.cs
 │   │   ├── RewriteDiffGateTests.cs
