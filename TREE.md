@@ -1568,7 +1568,11 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── TrayContextMenuHost.Flyout.cs
 │   │   ├── TrayContextMenuHost.Measure.cs
 │   │   ├── TrayContextMenuHost.Show.cs
-│   │   └── TraySwitchMenuItem.cs
+│   │   ├── TrayQuickActionsHost.Build.cs
+│   │   ├── TrayQuickActionsHost.cs
+│   │   ├── TrayQuickActionsHost.Show.cs
+│   │   ├── TraySwitchMenuItem.cs
+│   │   └── TrayToggle.cs
 │   ├── Deckle.Shell.WindowChrome/
 │   │   ├── AGENTS.md  — [agent-instructions] Window-chrome corrections shared by Deckle's XAML windows — workarounds for Win…
 │   │   ├── CaptionInsetCorrection.cs

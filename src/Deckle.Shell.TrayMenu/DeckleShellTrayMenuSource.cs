@@ -58,6 +58,19 @@ public sealed class DeckleShellTrayMenuSource : DeckleEventSource
     public const int EvtShowRequestedDetail       = 19;
     public const int EvtHiddenDetail              = 20;
     public const int EvtItemClickedDetail         = 21;
+    // Quick-actions panel (left click), 22 onward.
+    public const int EvtPanelShown                = 22;
+    public const int EvtPanelShownDetail          = 23;
+    public const int EvtPanelHidden               = 24;
+    public const int EvtPanelHiddenDetail         = 25;
+    public const int EvtPanelShowIgnored          = 26;
+    public const int EvtPanelShowIgnoredDetail    = 27;
+    public const int EvtPanelToggleClicked        = 28;
+    public const int EvtPanelToggleClickedDetail  = 29;
+    public const int EvtPanelActionClicked        = 30;
+    public const int EvtPanelActionClickedDetail  = 31;
+    public const int EvtPanelPrimed               = 32;
+    public const int EvtPanelPrimedDetail         = 33;
 
     // ── Lifecycle ─────────────────────────────────────────────────────────────
 
@@ -279,5 +292,134 @@ public sealed class DeckleShellTrayMenuSource : DeckleEventSource
     {
         if (IsDetailEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Lifecycle))
             WriteEvent(EvtItemClickedDetail, text);
+    }
+
+    // ── Quick-actions panel (left click) ──────────────────────────────────────
+
+    [Event(EvtPanelPrimed,
+           Level = EventLevel.Verbose,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Message = "Quick actions primed")]
+    public void PanelPrimed()
+    {
+        if (IsDetailEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Lifecycle))
+            WriteEvent(EvtPanelPrimed);
+    }
+
+    [Event(EvtPanelPrimedDetail,
+           Level = EventLevel.Verbose,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Message = "panel primed | duration_ms={0:F2} presenter_w={1:F1} presenter_h={2:F1}")]
+    public void PanelPrimedDetail(double duration_ms, double presenter_w, double presenter_h)
+    {
+        if (IsDetailEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Lifecycle))
+            WriteEvent(EvtPanelPrimedDetail, duration_ms, presenter_w, presenter_h);
+    }
+
+    [Event(EvtPanelShown,
+           Level = EventLevel.Verbose,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Message = "Quick actions shown")]
+    public void PanelShown()
+    {
+        if (IsDetailEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Lifecycle))
+            WriteEvent(EvtPanelShown);
+    }
+
+    // size_source: "primed" (presenter captured), "fallback" (content measured
+    // detached + presenter chrome from theme resources).
+    [Event(EvtPanelShownDetail,
+           Level = EventLevel.Verbose,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Message = "panel shown | toggles={0} is_recording={1} dip_w={2:F1} dip_h={3:F1} physical={4}x{5} scale={6:F2} size_source={7}")]
+    public void PanelShownDetail(
+        int toggles, bool is_recording, double dip_w, double dip_h,
+        int physical_w, int physical_h, double scale, string size_source)
+    {
+        if (IsDetailEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Lifecycle))
+            WriteEvent(EvtPanelShownDetail,
+                toggles, is_recording, dip_w, dip_h, physical_w, physical_h, scale, size_source);
+    }
+
+    [Event(EvtPanelHidden,
+           Level = EventLevel.Verbose,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Message = "Quick actions hidden")]
+    public void PanelHidden()
+    {
+        if (IsDetailEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Lifecycle))
+            WriteEvent(EvtPanelHidden);
+    }
+
+    // reason: "deactivated", "flyout_closed", "icon_click", "action:<id>".
+    [Event(EvtPanelHiddenDetail,
+           Level = EventLevel.Verbose,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Message = "panel hidden | reason={0}")]
+    public void PanelHiddenDetail(string reason)
+    {
+        if (IsDetailEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Lifecycle))
+            WriteEvent(EvtPanelHiddenDetail, reason);
+    }
+
+    [Event(EvtPanelShowIgnored,
+           Level = EventLevel.Verbose,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Message = "Quick actions stay closed after a click that dismissed them")]
+    public void PanelShowIgnored()
+    {
+        if (IsDetailEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Lifecycle))
+            WriteEvent(EvtPanelShowIgnored);
+    }
+
+    [Event(EvtPanelShowIgnoredDetail,
+           Level = EventLevel.Verbose,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Message = "panel show ignored | ms_since_dismiss={0} guard_ms={1}")]
+    public void PanelShowIgnoredDetail(long ms_since_dismiss, long guard_ms)
+    {
+        if (IsDetailEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Lifecycle))
+            WriteEvent(EvtPanelShowIgnoredDetail, ms_since_dismiss, guard_ms);
+    }
+
+    [Event(EvtPanelToggleClicked,
+           Level = EventLevel.Verbose,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Message = "A quick-actions switch was flipped")]
+    public void PanelToggleClicked()
+    {
+        if (IsDetailEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Lifecycle))
+            WriteEvent(EvtPanelToggleClicked);
+    }
+
+    [Event(EvtPanelToggleClickedDetail,
+           Level = EventLevel.Verbose,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Message = "panel toggle clicked | id={0} is_on={1}")]
+    public void PanelToggleClickedDetail(string id, bool is_on)
+    {
+        if (IsDetailEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Lifecycle))
+            WriteEvent(EvtPanelToggleClickedDetail, id, is_on);
+    }
+
+    [Event(EvtPanelActionClicked,
+           Level = EventLevel.Verbose,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Message = "A quick action was invoked")]
+    public void PanelActionClicked()
+    {
+        if (IsDetailEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Lifecycle))
+            WriteEvent(EvtPanelActionClicked);
+    }
+
+    // action: "record" (with was_recording), "transcribe-files".
+    [Event(EvtPanelActionClickedDetail,
+           Level = EventLevel.Verbose,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Message = "panel action clicked | action={0} was_recording={1}")]
+    public void PanelActionClickedDetail(string action, bool was_recording)
+    {
+        if (IsDetailEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Lifecycle))
+            WriteEvent(EvtPanelActionClickedDetail, action, was_recording);
     }
 }
