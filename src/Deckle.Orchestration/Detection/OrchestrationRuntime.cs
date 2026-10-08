@@ -16,6 +16,10 @@ namespace Deckle.Orchestration;
 // runs on the thread pool, because connecting to WMI and enumerating processes
 // must not block the UI. Sessions start and end on thread-pool or WMI threads,
 // in order, through AppSessionTracker.
+//
+// Each session start applies the entry's rules through ProfileTransaction;
+// its end, and Stop, restore them. Stop restores every active profile, so a
+// shutdown never leaves a rule applied.
 public sealed class OrchestrationRuntime : IDisposable
 {
     private readonly OrchestrationSettingsService _settings;
@@ -23,6 +27,12 @@ public sealed class OrchestrationRuntime : IDisposable
     private readonly IProcessStartSource _processStarts;
     private readonly ProcessExitWatch _exitWatch;
     private readonly AppSessionTracker _tracker;
+    private readonly IReadOnlyList<IRuleEffect> _effects;
+
+    // Active profiles by entry id. The lock is held while a profile applies,
+    // so Stop cannot restore the list while a new profile is half-applied.
+    private readonly Dictionary<string, AppliedProfile> _profiles = new(StringComparer.Ordinal);
+    private readonly object _profilesLock = new();
 
     // Guards Start/Stop/Dispose.
     private readonly object _lifecycle = new();
@@ -51,7 +61,8 @@ public sealed class OrchestrationRuntime : IDisposable
         OrchestrationSettingsService settings,
         IForegroundMonitor foreground,
         IProcessStartSource processStarts,
-        ProcessExitWatch exitWatch)
+        ProcessExitWatch exitWatch,
+        IReadOnlyList<IRuleEffect>? effects = null)
     {
         ArgumentNullException.ThrowIfNull(settings);
         ArgumentNullException.ThrowIfNull(foreground);
@@ -62,6 +73,7 @@ public sealed class OrchestrationRuntime : IDisposable
         _foreground = foreground;
         _processStarts = processStarts;
         _exitWatch = exitWatch;
+        _effects = effects ?? []; // none: detection only, no rule applied
 
         _tracker = new AppSessionTracker(() => _settings.Current.Entries);
         _tracker.ProcessTracked += OnProcessTracked;
@@ -146,12 +158,19 @@ public sealed class OrchestrationRuntime : IDisposable
             _foreground.ForegroundChanged -= OnForegroundChanged;
             _settings.Changed -= RequestReconcile;
 
+            // Restore before ending sessions: a session end delivered by
+            // another thread may still be queued in the tracker, and Deckle
+            // must not exit with a game's HDR left on. This runs on the
+            // caller's thread (the UI thread at shutdown), because the restore
+            // has to finish before the process does.
+            RestoreAllProfiles();
+
             lock (_reconcileLock)
             {
                 if (_processStartsRunning) _processStarts.Stop();
                 _processStartsRunning = false;
 
-                // Every session ends, so whatever was applied for it is restored.
+                // Every session ends; their profiles are already restored.
                 _tracker.DropSessionsNotIn([]);
                 _exitWatch.UnwatchAll();
             }
@@ -229,16 +248,55 @@ public sealed class OrchestrationRuntime : IDisposable
     private void OnProcessTracked(AppEntry entry, int pid) =>
         _exitWatch.Watch(pid, _tracker.OnProcessExited);
 
+    // Rules apply at launch, from the entry as it was when the session began:
+    // editing an entry's rules while its app runs changes the next launch, not
+    // this one. Runs on the thread that delivered the start (thread pool or
+    // WMI), never the UI thread.
     private void OnSessionStarted(AppEntry entry, int pid)
     {
         LogSessionStarted(entry, pid);
+        ApplyProfile(entry);
         SessionStarted?.Invoke(entry, pid);
     }
 
     private void OnSessionEnded(AppEntry entry)
     {
         LogSessionEnded(entry);
+        RestoreProfile(entry.Id);
         SessionEnded?.Invoke(entry);
+    }
+
+    private void ApplyProfile(AppEntry entry)
+    {
+        lock (_profilesLock)
+        {
+            // Stop has begun: nothing new is applied that nobody would restore.
+            if (!_started) return;
+
+            // A profile left from a session whose end was never seen is
+            // restored first, so the new one captures the true prior state.
+            if (_profiles.Remove(entry.Id, out AppliedProfile? stale)) stale.Restore();
+
+            AppliedProfile profile = ProfileTransaction.Apply(entry, _effects);
+            if (profile.Changes > 0) _profiles[entry.Id] = profile;
+        }
+    }
+
+    private void RestoreProfile(string entryId)
+    {
+        lock (_profilesLock)
+        {
+            if (_profiles.Remove(entryId, out AppliedProfile? profile)) profile.Restore();
+        }
+    }
+
+    private void RestoreAllProfiles()
+    {
+        lock (_profilesLock)
+        {
+            foreach (AppliedProfile profile in _profiles.Values) profile.Restore();
+            _profiles.Clear();
+        }
     }
 
     private void SetProcessTraceAvailable(bool available)
