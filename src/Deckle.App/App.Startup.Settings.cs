@@ -163,6 +163,9 @@ public partial class App
         if (context.TrackpadPresent)
             RegisterSettingsModule(Input.Trackpad.TrackpadSettingsModule.Describe(order: 500), Input.Trackpad.SettingsSearch.Entries);
         RegisterSettingsModule(Input.PrecisionScroll.PrecisionScrollSettingsModule.Describe(order: 550), Input.PrecisionScroll.SettingsSearch.Entries);
+        // Apps and games is not a presence module: nothing to provision, so it
+        // is always registered, like precision scrolling.
+        RegisterSettingsModule(Orchestration.OrchestrationSettingsModule.Describe(order: 560), Orchestration.SettingsSearch.Entries);
         // Diagnostics is shell-level observability, not a presence module —
         // always registered.
         RegisterSettingsModule(Diagnostics.Logging.DiagnosticsSettingsModule.Describe(order: 600), Diagnostics.Logging.SettingsSearch.Entries);
