@@ -403,6 +403,18 @@
     <value>Deckle is already paired with a bridge. Pairing again replaces the current address and credentials with the new ones.</value>
   </data>
 
+  <!-- AmbientPreviewCard (x:Uid). -->
+  <data name="AmbientPreviewExpander.Header" xml:space="preserve">
+    <value>Live preview</value>
+  </data>
+  <data name="AmbientPreviewExpander.Description" xml:space="preserve">
+    <value>See what the capture samples and the colour each light receives, while Ambient Light runs.</value>
+  </data>
+  <!-- AmbientPreviewCard code-behind (Loc.Get) — mirrored in Deckle.App. -->
+  <data name="AmbientPreview_GroupSwatch" xml:space="preserve">
+    <value>All lights</value>
+  </data>
+
   <!-- LightZonesCard (x:Uid). -->
   <data name="AmbientLightsExpander.Header" xml:space="preserve">
     <value>Lights</value>

@@ -370,6 +370,13 @@ public sealed partial class AmbientEngine : IAsyncDisposable
     public bool  IsHdr        => _sampler?.IsHdr ?? false;
     public float ContentPeak  => _sampler?.ContentPeak ?? 1f;
 
+    /// <summary>Pixel size of the captured display, or null while no
+    /// capture runs. The Settings preview sizes its cells from it
+    /// (width / GridCols × height / GridRows) so the grid keeps the
+    /// screen's exact ratio.</summary>
+    public Windows.Graphics.SizeInt32? SourceSize
+        => _capture is { IsRunning: true } capture ? capture.ContentSize : null;
+
     // State machine fired on every transition. Consumers (App tray
     // tooltip + log, AmbientPage ProgressRing / InfoBar / ModeCombo
     // gating, Playground Pipeline UI) subscribe to surface the live

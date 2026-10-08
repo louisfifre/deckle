@@ -1271,6 +1271,8 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │       └── Resources.resw
 │   │   ├── Ui/
 │   │   │   ├── Controls/
+│   │   │   │   ├── AmbientPreviewCard.xaml
+│   │   │   │   ├── AmbientPreviewCard.xaml.cs
 │   │   │   │   ├── BrightnessCurveCanvas.xaml
 │   │   │   │   ├── BrightnessCurveCanvas.xaml.cs
 │   │   │   │   ├── LightZonesCard.xaml

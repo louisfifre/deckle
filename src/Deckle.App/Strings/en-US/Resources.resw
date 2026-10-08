@@ -933,9 +933,12 @@
     <value>Deckle is already paired with a bridge. Pairing again replaces the current address and credentials with the new ones.</value>
   </data>
 
-  <!-- LightZonesCard code-behind (Loc.Get) — duplicated from
-       src/Deckle.Lighting.Ambient/Strings/en-US/Resources.resw, which stays
-       the source of truth for wording. -->
+  <!-- AmbientPreviewCard and LightZonesCard code-behind (Loc.Get) —
+       duplicated from src/Deckle.Lighting.Ambient/Strings/en-US/
+       Resources.resw, which stays the source of truth for wording. -->
+  <data name="AmbientPreview_GroupSwatch" xml:space="preserve">
+    <value>All lights</value>
+  </data>
   <data name="AmbientLights_Zone_None" xml:space="preserve">
     <value>No zone</value>
   </data>

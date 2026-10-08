@@ -77,6 +77,12 @@
                 <StackPanel x:Name="StateHost"
                             Spacing="{StaticResource SettingsCardSpacing}" />
 
+                <!-- bespoke: a live instrument, not a setting — the sampled
+                     grid at the display's exact ratio, the colour each light
+                     receives and the zone bands. Shown while the engine runs,
+                     opened by the user, refreshed only while open. -->
+                <ambientControls:AmbientPreviewCard />
+
                 <!-- ── Behaviour ──────────────────────────────────────────── -->
                 <TextBlock x:Uid="AmbientBehaviourSectionHeader"
                            Style="{StaticResource SettingsSectionHeaderTextBlockStyle}" />

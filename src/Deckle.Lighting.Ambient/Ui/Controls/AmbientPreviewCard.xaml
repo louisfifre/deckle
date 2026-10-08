@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="utf-8"?>
+<UserControl
+    x:Class="Deckle.Lighting.Ambient.AmbientPreviewCard"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:controls="using:CommunityToolkit.WinUI.Controls"
+    xmlns:ui="using:CommunityToolkit.WinUI"
+    Visibility="Collapsed">
+
+    <!-- Live preview of what the engine samples. Collapsed until the user
+         opens it: the expander's own toggle is the gesture that starts the
+         preview, and closing it stops the refresh. The whole card hides
+         while the engine is not running. -->
+    <controls:SettingsExpander x:Name="PreviewExpander"
+                               x:Uid="AmbientPreviewExpander"
+                               Tag="AmbientPreviewExpander"
+                               IsExpanded="False"
+                               HeaderIcon="{ui:FontIcon Glyph={StaticResource Icon.Overlay}}">
+        <controls:SettingsExpander.ItemsFooter>
+            <StackPanel Spacing="12" Margin="16,12,16,16">
+                <!-- One swatch per light (or one for the group): the colour
+                     the engine wants to send on the latest tick. -->
+                <StackPanel x:Name="EmittedSwatches"
+                            Orientation="Horizontal"
+                            Spacing="6" />
+
+                <!-- The stage keeps the screen's ratio exactly: each cell is
+                     sourceWidth / cols wide and sourceHeight / rows high in
+                     source pixels, and the Viewbox scales the whole stage
+                     uniformly. The zone overlay shares those coordinates. -->
+                <Border Background="{ThemeResource LayerFillColorDefaultBrush}"
+                        BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+                        BorderThickness="1"
+                        CornerRadius="{ThemeResource ControlCornerRadius}"
+                        Padding="12">
+                    <Viewbox Stretch="Uniform"
+                             MaxHeight="360">
+                        <Grid x:Name="Stage">
+                            <Grid x:Name="CellsGrid" />
+                            <Canvas x:Name="ZoneOverlay"
+                                    IsHitTestVisible="False">
+                                <Rectangle x:Name="ZoneTopRect"    Visibility="Collapsed" />
+                                <Rectangle x:Name="ZoneBottomRect" Visibility="Collapsed" />
+                                <Rectangle x:Name="ZoneLeftRect"   Visibility="Collapsed" />
+                                <Rectangle x:Name="ZoneRightRect"  Visibility="Collapsed" />
+                            </Canvas>
+                        </Grid>
+                    </Viewbox>
+                </Border>
+            </StackPanel>
+        </controls:SettingsExpander.ItemsFooter>
+    </controls:SettingsExpander>
+</UserControl>
