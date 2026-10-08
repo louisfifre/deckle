@@ -44,7 +44,17 @@ evidence files and an upstream issue draft are in
 below: the 0.3.6 asset is go1.25.11, not go1.25.7. Trap: the pin landed by
 09aa40c2 names the official 0.4.0 asset, so a fresh provisioning would
 install a binary known to die on Windows; the install path for a
-self-built provider is not decided.
+self-built provider is not decided. Same evening, the fix was tested: a
+v0.4.0 build linked against msvcrt with `C.free(unsafe.Pointer(p))` in
+place of `C.string_free(p)` at the 16 Go call sites of tantivy-go logs in,
+serves the JSON API and runs 60 s under cdb without a heap break; the same
+patch on the UCRT build behaves the same. Patching `libinit.go` alone is
+not enough: the invalid free moves to `schemabuilder.go:101`
+(`AddTextField`, `defer C.string_free(cTokenizer)`), reached from
+`ftsearch.(*ftSearch).Run` during `AccountSelect`. The indexing and search
+sites are patched but were not exercised by that smoke test. Diff and
+binaries under `crash-2026-10-08b/build/` (`tantivy-go-patch.diff`,
+`patch-test.md`).
 
 ## 2026-10-08 — The anytype-cli 0.4.0 Windows build dies at account open; pin kept at 0.4.0, activation rolled back to 0.3.6
 
