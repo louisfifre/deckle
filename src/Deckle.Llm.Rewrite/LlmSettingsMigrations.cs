@@ -9,12 +9,14 @@ namespace Deckle.Llm.Rewrite;
 // Deckle.Settings.SettingsService when LlmSettings got its own per-module
 // JSON file in slice C2b).
 //
-// Two jobs:
+// Three jobs:
 //
 //   1. Fill missing stable ids — each RewriteProfile gets a 12-char Guid
 //      suffix on first encounter (legacy configs, freshly-instantiated
 //      defaults).
-//   2. Re-pair ProfileId/ProfileName on shortcut slots and legacy automatic
+//   2. Move the legacy primary shortcut slot into the active profile when
+//      no active choice exists yet.
+//   3. Re-pair ProfileId/ProfileName on the active profile and legacy automatic
 //      rules when the live Profiles list still contains a match. The legacy
 //      lists are no longer executed or exposed, but remain deserializable so
 //      older settings files can be loaded without data loss. Three cases:
@@ -24,9 +26,9 @@ namespace Deckle.Llm.Rewrite;
 //          migration of an older config that never had ids)
 //        - id is stale but name resolves → rewire id from name
 //
-// **Never deletes a legacy rule and never clears a slot.** Orphan references
-// (id+name both unresolvable) stay untouched. Slots remain user-repairable in
-// the UI; legacy rules are preserved only for backward-compatible round trips.
+// **Never deletes a legacy rule and never clears the active profile.** Orphan
+// references (id+name both unresolvable) stay untouched. The active profile
+// remains user-repairable in the UI; legacy rules are preserved only for backward-compatible round trips.
 //
 // The delete-cascade for "remove a profile, drop its dependants" lives
 // in LlmProfilesSection.DeleteProfile_Click, which clears references
@@ -132,21 +134,28 @@ public static class LlmSettingsMigrations
             return false;
         }
 
-        string? primaryId = s.PrimaryRewriteProfileId;
-        string? primaryName = s.PrimaryRewriteProfileName;
-        if (RepairSlot(ref primaryId, ref primaryName))
+        // Legacy primary slot → active profile. Only when no active choice
+        // exists yet, so a settings file written after the migration never
+        // has its choice overwritten by a stale legacy value.
+        bool activeEmpty = string.IsNullOrEmpty(s.ActiveProfileId)
+                        && string.IsNullOrEmpty(s.ActiveProfileName);
+        bool legacySet = !string.IsNullOrEmpty(s.PrimaryRewriteProfileId)
+                      || !string.IsNullOrEmpty(s.PrimaryRewriteProfileName);
+        if (activeEmpty && legacySet)
         {
-            s.PrimaryRewriteProfileId = primaryId;
-            s.PrimaryRewriteProfileName = primaryName;
+            s.ActiveProfileId = s.PrimaryRewriteProfileId;
+            s.ActiveProfileName = s.PrimaryRewriteProfileName;
+            s.PrimaryRewriteProfileId = null;
+            s.PrimaryRewriteProfileName = null;
             mutated = true;
         }
 
-        string? secondaryId = s.SecondaryRewriteProfileId;
-        string? secondaryName = s.SecondaryRewriteProfileName;
-        if (RepairSlot(ref secondaryId, ref secondaryName))
+        string? activeId = s.ActiveProfileId;
+        string? activeName = s.ActiveProfileName;
+        if (RepairSlot(ref activeId, ref activeName))
         {
-            s.SecondaryRewriteProfileId = secondaryId;
-            s.SecondaryRewriteProfileName = secondaryName;
+            s.ActiveProfileId = activeId;
+            s.ActiveProfileName = activeName;
             mutated = true;
         }
 

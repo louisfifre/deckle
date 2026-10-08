@@ -258,6 +258,49 @@ public class SettingFactoryTests
         Assert.Equal((1, 2), d.Default!());
     }
 
+    // ── Hotkey: a nullable chord through the boxed selectors ───────────────────
+
+    [Fact]
+    public void HotkeyRoundTripsAChordAndNullThroughTheBoxedSelectors()
+    {
+        HotkeyChord? value = null;
+        var d = Setting.Hotkey("k", () => value, v => value = v, new HotkeyArgs(AllowUnbound: true));
+
+        Assert.Equal(SettingKind.Hotkey, d.Kind);
+
+        var chord = new HotkeyChord(HotkeyModifiers.Control | HotkeyModifiers.Shift, 0x1E);
+        d.SetValue(chord);
+        Assert.Equal(chord, value);
+        Assert.Equal(chord, d.GetValue());
+
+        d.SetValue(null);
+        Assert.Null(value);
+        Assert.Null(d.GetValue());
+    }
+
+    [Fact]
+    public void HotkeyDefaultEqualsTheBoxedValueItResetsTo()
+    {
+        var def = new HotkeyChord(HotkeyModifiers.Win, 0x29);
+        var d = Setting.Hotkey("k", () => def, _ => { }, new HotkeyArgs(AllowUnbound: false),
+            defaultValue: () => new HotkeyChord(HotkeyModifiers.Win, 0x29));
+
+        // The composer's dirty check compares the boxed value with the boxed
+        // default by Equals: an equal chord must read as clean.
+        Assert.NotNull(d.Default);
+        Assert.Equal(d.GetValue(), d.Default!());
+    }
+
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public void HotkeyCarriesWhetherTheChordMayBeCleared(bool allowUnbound)
+    {
+        var d = Setting.Hotkey("k", () => null, _ => { }, new HotkeyArgs(allowUnbound));
+
+        Assert.Equal(allowUnbound, Assert.IsType<HotkeyArgs>(d.Args).AllowUnbound);
+    }
+
     // ── Group : maître + enfants, le maître fait l'aller-retour ────────────────
 
     [Fact]

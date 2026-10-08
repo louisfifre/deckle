@@ -47,14 +47,14 @@ public sealed class LiveTranscriptionPipelineTests
 
         Assert.Equal(
             ToggleResult.Started,
-            engine.RequestToggle(null, shouldPaste: false, requireProfile: false));
+            engine.RequestToggle(shouldPaste: false));
         await backend.TwoCallsCompleted.Task.WaitAsync(
             TimeSpan.FromSeconds(5), testCancellation);
 
         Assert.True(engine.IsRecording);
         Assert.Equal(
             ToggleResult.Stopped,
-            engine.RequestToggle(null, shouldPaste: false, requireProfile: false));
+            engine.RequestToggle(shouldPaste: false));
 
         Assert.Equal(
             TranscriptionOutcome.ClipboardOnly,

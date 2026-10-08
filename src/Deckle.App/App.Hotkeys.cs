@@ -7,7 +7,15 @@ namespace Deckle.App;
 
 public partial class App
 {
+    // WM_HOTKEY and the tray panel's Record button land here. Dispatches on
+    // the action list built at startup (App.Hotkeys.Actions.cs); an id with
+    // no action (module absent) is ignored.
     private void OnHotkey(int hotkeyId)
+    {
+        _hotkeyActions.FirstOrDefault(action => action.Id == hotkeyId)?.Invoke();
+    }
+
+    private void ToggleRecordingFromHotkey()
     {
         if (_engine is null)
         {
@@ -22,40 +30,12 @@ public partial class App
             return;
         }
 
-        string hotkeyName = hotkeyId switch
-        {
-            NativeMethods.HOTKEY_ID_TRANSCRIBE        => "transcribe",
-            NativeMethods.HOTKEY_ID_PRIMARY_REWRITE   => "primary rewrite",
-            NativeMethods.HOTKEY_ID_SECONDARY_REWRITE => "secondary rewrite",
-            _                                         => $"id={hotkeyId}",
-        };
+        const string hotkeyName = "transcribe";
 
-        bool isRewriteHotkey = hotkeyId == NativeMethods.HOTKEY_ID_PRIMARY_REWRITE
-                            || hotkeyId == NativeMethods.HOTKEY_ID_SECONDARY_REWRITE;
-
-        // Profile slots are read only when a rewrite chord fired. Guarding
-        // the read keeps the plain transcribe path from ever touching the
-        // Rewrite module's settings service — with the module absent its
-        // chords are not even registered (see hotkeyIds in OnLaunched), so
-        // this branch cannot run and the service is never instantiated.
-        string? manualProfile = null;
-        if (isRewriteHotkey)
-        {
-            var llm = Llm.Rewrite.LlmSettingsService.Instance.Current;
-            string? ResolveSlotName(string? id, string? nameFallback) =>
-                (!string.IsNullOrEmpty(id)
-                    ? llm.Profiles.Find(p => p.Id == id)?.Name
-                    : null)
-                ?? nameFallback;
-            manualProfile = hotkeyId == NativeMethods.HOTKEY_ID_PRIMARY_REWRITE
-                ? ResolveSlotName(llm.PrimaryRewriteProfileId, llm.PrimaryRewriteProfileName)
-                : ResolveSlotName(llm.SecondaryRewriteProfileId, llm.SecondaryRewriteProfileName);
-        }
-
+        // The press carries no profile: the engine applies the persisted
+        // active rewrite profile at finalize.
         var result = _engine.RequestToggle(
-            manualProfileName: manualProfile,
-            shouldPaste: Settings.SettingsService.Instance.Current.Paste.AutoPasteEnabled,
-            requireProfile: isRewriteHotkey);
+            shouldPaste: Settings.SettingsService.Instance.Current.Paste.AutoPasteEnabled);
 
         switch (result)
         {
@@ -67,8 +47,7 @@ public partial class App
                         System.Diagnostics.Tracing.EventLevel.Verbose,
                         (System.Diagnostics.Tracing.EventKeywords)Keywords.Capture))
                 {
-                    DeckleAppSource.Log.HotkeyStartDetail(
-                        $"{hotkeyName}{(manualProfile is null ? "" : $", LLM: {manualProfile}")}");
+                    DeckleAppSource.Log.HotkeyStartDetail(hotkeyName);
                 }
                 _hudWindow?.ShowPreparing();
                 break;
@@ -86,11 +65,6 @@ public partial class App
                 // runs invisibly behind it. The later status-driven
                 // SwitchToTranscribing is then an idempotent no-op.
                 _hudWindow?.SwitchToTranscribing();
-                break;
-
-            case ToggleResult.IgnoredNoProfile:
-                DeckleAppSource.Log.HotkeyNoProfile();
-                DeckleAppSource.Log.HotkeyNoProfileDetail(hotkeyName);
                 break;
 
             case ToggleResult.IgnoredBusy:

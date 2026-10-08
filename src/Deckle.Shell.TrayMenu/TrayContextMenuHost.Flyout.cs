@@ -34,66 +34,10 @@ public sealed partial class TrayContextMenuHost
             AreOpenCloseAnimationsEnabled = false,
         };
 
-        // Ambient Light first: this is Louis's most frequent toggle command
-        // (turn LEDs on/off without navigating into Settings). The command
-        // group comes next — file transcription, then the window-opening
-        // commands — separated from lifecycle commands (Restart, Quit) by a
-        // final separator.
-        //
-        // Ambient item built through the reusable TraySwitchMenuItem helper,
-        // which applies ToggleSwitchMenuItemStyle (hand-drawn custom pill, see
-        // Themes/TrayMenu.xaml) and encapsulates the visual state switch. State
-        // is synchronized before each open in Show() through
-        // TraySwitchMenuItem.SetState. To add another togglable item: one
-        // Create line + one SetState line in Show().
-        _ambientItem = TraySwitchMenuItem.Create(
-            Loc.Get("TrayMenu_AmbientLight"),
-            () =>
-            {
-                DeckleShellTrayMenuSource.Log.ItemClicked();
-                DeckleShellTrayMenuSource.Log.ItemClickedDetail(_ambientItem!.Text);
-                Hide("item_click:Ambient");
-                OnToggleAmbient?.Invoke();
-            });
-        _flyout.Items.Add(_ambientItem);
-
-        _autocorrectItem = TraySwitchMenuItem.Create(
-            Loc.Get("TrayMenu_Autocorrect"),
-            () =>
-            {
-                DeckleShellTrayMenuSource.Log.ItemClicked();
-                DeckleShellTrayMenuSource.Log.ItemClickedDetail(_autocorrectItem!.Text);
-                Hide("item_click:Autocorrect");
-                OnToggleAutocorrect?.Invoke();
-            });
-        _flyout.Items.Add(_autocorrectItem);
-
-        _taskbarCoverItem = TraySwitchMenuItem.Create(
-            Loc.Get("TrayMenu_TaskbarCover"),
-            () =>
-            {
-                DeckleShellTrayMenuSource.Log.ItemClicked();
-                DeckleShellTrayMenuSource.Log.ItemClickedDetail(_taskbarCoverItem!.Text);
-                Hide("item_click:TaskbarCover");
-                OnToggleTaskbarCover?.Invoke();
-            });
-        _flyout.Items.Add(_taskbarCoverItem);
-
-        _precisionScrollItem = TraySwitchMenuItem.Create(
-            Loc.Get("TrayMenu_PrecisionScroll"),
-            () =>
-            {
-                DeckleShellTrayMenuSource.Log.ItemClicked();
-                DeckleShellTrayMenuSource.Log.ItemClickedDetail(_precisionScrollItem!.Text);
-                Hide("item_click:PrecisionScroll");
-                OnTogglePrecisionScroll?.Invoke();
-            });
-        _flyout.Items.Add(_precisionScrollItem);
-
-        _flyout.Items.Add(new MenuFlyoutSeparator());
-        _transcribeFilesItem = CreateItem(Loc.Get("TrayMenu_TranscribeFile"), () => OnTranscribeFiles?.Invoke());
-        _flyout.Items.Add(_transcribeFilesItem);
-        _flyout.Items.Add(new MenuFlyoutSeparator());
+        // The rare items only: the window-opening commands, then the lifecycle
+        // commands (Restart, Quit) after a separator. Module switches and the
+        // dictation actions live in the left-click quick-actions panel
+        // (TrayQuickActionsHost), where a switch can flip without closing.
         _flyout.Items.Add(CreateItem(Loc.Get("TrayMenu_Logs"),       () => OnShowLogs?.Invoke()));
         _flyout.Items.Add(CreateItem(Loc.Get("TrayMenu_Settings"),   () => OnShowSettings?.Invoke()));
         _flyout.Items.Add(CreateItem(Loc.Get("TrayMenu_Playground"), () => OnShowPlayground?.Invoke()));
@@ -142,9 +86,6 @@ public sealed partial class TrayContextMenuHost
         // Pure native MenuFlyoutItem: no Style or Template override, no forced
         // Height. The framework fully handles hover, radius, inset, padding,
         // foreground, DPI scaling, and cell height from natural DesiredSize.
-        // The only retemplated tray menu item is Ambient Light, because there
-        // is no native slot to graft a switch on the right (see
-        // ToggleSwitchMenuItemStyle in Themes/TrayMenu.xaml).
         var item = new MenuFlyoutItem { Text = text };
         item.Click += (_, _) =>
         {

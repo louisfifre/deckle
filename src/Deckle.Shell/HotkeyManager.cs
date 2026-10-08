@@ -2,15 +2,19 @@ using Deckle.Core;
 
 namespace Deckle.Shell;
 
-// Registers the host-selected global hotkeys and intercepts WM_HOTKEY via SetWindowSubclass.
+// Registers the host-supplied global hotkeys and intercepts WM_HOTKEY via SetWindowSubclass.
 // SetWindowSubclass chains into the existing message pump of the host window
 // (message-only window in our case) without replacing its WndProc — the only
 // safe approach.
 //
-// Layout portability: the three chords all use the physical key to the left
-// of "1" (scancode 0x29). At registration time we resolve the current VK for
-// that scancode via MapVirtualKeyExW(GetKeyboardLayout(0)). On layout switch
-// we receive WM_INPUTLANGCHANGE, unregister, re-resolve, re-register.
+// The host decides which chords exist and what they do; the shell only binds
+// them. Each binding is acquired on its own: a chord another app owns fails
+// alone and comes back in the failure list, the others stay live.
+//
+// Layout portability: every binding names a physical key by scancode. At
+// registration time the current VK for each scancode is resolved via
+// MapVirtualKeyExW(GetKeyboardLayout(0)). On layout switch we receive
+// WM_INPUTLANGCHANGE, unregister, re-resolve, re-register the current set.
 public sealed class HotkeyManager : IDisposable
 {
     private readonly IntPtr _hwnd;
@@ -22,75 +26,81 @@ public sealed class HotkeyManager : IDisposable
 
     private bool _disposed;
     private readonly GlobalHotkeyBindings _bindings;
+    private IReadOnlyList<GlobalHotkeyBinding> _requested;
 
     // Arbitrary identifier to retrieve our subclass at Remove time.
     private static readonly UIntPtr SubclassId = new(0x5748_4B45); // "WHKE"
 
-    // (id, modifiers) pairs for RegisterAll / UnregisterAll — the full
-    // catalogue of chords the shell knows how to bind. Adding a 4th hotkey
-    // is just adding a line here.
-    private static readonly GlobalHotkeyBinding[] Catalogue =
-    {
-        new(NativeMethods.HOTKEY_ID_TRANSCRIBE,
-            NativeMethods.MOD_WIN | NativeMethods.MOD_NOREPEAT),
-        new(NativeMethods.HOTKEY_ID_PRIMARY_REWRITE,
-            NativeMethods.MOD_SHIFT | NativeMethods.MOD_WIN | NativeMethods.MOD_NOREPEAT),
-        new(NativeMethods.HOTKEY_ID_SECONDARY_REWRITE,
-            NativeMethods.MOD_CONTROL | NativeMethods.MOD_WIN | NativeMethods.MOD_NOREPEAT),
-    };
-
-    // The subset of the catalogue this instance actually binds. The host
-    // decides which chords exist — an absent module's hotkeys are not
-    // registered at all, leaving the chord free for other apps — the shell
-    // only knows how to bind them.
-    public HotkeyManager(IntPtr hwnd, Action<int> onHotkey, IReadOnlyCollection<int> hotkeyIds)
+    public HotkeyManager(IntPtr hwnd, Action<int> onHotkey, IReadOnlyList<GlobalHotkeyBinding> bindings)
     {
         _hwnd = hwnd;
         _onHotkey = onHotkey;
-        GlobalHotkeyBinding[] selected = Array.FindAll(
-            Catalogue, binding => hotkeyIds.Contains(binding.Id));
-        _bindings = new GlobalHotkeyBindings(hwnd, selected, new Win32GlobalHotkeyApi());
+        _requested = bindings;
+        _bindings = new GlobalHotkeyBindings(hwnd, new Win32GlobalHotkeyApi());
     }
 
-    public void Register()
+    // The set currently requested (acquired or not).
+    public IReadOnlyList<GlobalHotkeyBinding> Bindings => _requested;
+
+    // Bindings the last registration pass could not acquire.
+    public IReadOnlyList<HotkeyRegistrationFailure> LastFailures { get; private set; } = [];
+
+    // Installs the WM_HOTKEY subclass, then registers the requested set.
+    // Throws only when the subclass cannot be installed; a chord that cannot
+    // be acquired is returned as a failure.
+    public IReadOnlyList<HotkeyRegistrationFailure> Register()
     {
         _subclassDelegate = SubclassCallback;
         if (!NativeMethods.SetWindowSubclass(_hwnd, _subclassDelegate, SubclassId, IntPtr.Zero))
-            throw new InvalidOperationException("The hotkey window subclass could not be installed.");
-
-        try { RegisterAll(); }
-        catch
         {
-            if (NativeMethods.RemoveWindowSubclass(_hwnd, _subclassDelegate, SubclassId))
-                _subclassDelegate = null;
-            throw;
+            _subclassDelegate = null;
+            throw new InvalidOperationException("The hotkey window subclass could not be installed.");
         }
+
+        return RegisterAll();
     }
 
-    // Resolves the current VK for the physical "left of 1" key under the
-    // active keyboard layout, unregisters any previous bindings, and
-    // registers the selected chords. Called at startup and on every WM_INPUTLANGCHANGE.
-    private void RegisterAll()
+    // Replaces the requested set: releases the current chords, swaps, and
+    // acquires the new ones. Same thread as Register (the host window's).
+    public IReadOnlyList<HotkeyRegistrationFailure> Rebind(IReadOnlyList<GlobalHotkeyBinding> bindings)
     {
-        // Always unregister first — no-op if nothing is registered yet, but
-        // required when re-registering after a layout change.
-        _bindings.Unregister();
+        _requested = bindings;
+        return RegisterAll();
+    }
 
+    // Resolves each binding's VK under the active keyboard layout and
+    // registers it. GlobalHotkeyBindings releases the previous set first.
+    // Called at startup, on Rebind, and on every WM_INPUTLANGCHANGE.
+    private IReadOnlyList<HotkeyRegistrationFailure> RegisterAll()
+    {
         IntPtr hkl = NativeMethods.GetKeyboardLayout(0);
-        uint vk = NativeMethods.MapVirtualKeyExW(
-            NativeMethods.SC_LEFT_OF_ONE,
-            NativeMethods.MAPVK_VSC_TO_VK_EX,
-            hkl);
+        var resolved = new Dictionary<uint, uint>();
 
-        if (vk == 0)
+        uint Resolve(uint scanCode)
         {
-            DeckleShellSource.Log.HotkeyVkResolveFailed();
-            DeckleShellSource.Log.HotkeyVkResolveFailedDetail(hkl.ToInt64());
-            return;
+            // MAPVK_VSC_TO_VK_EX takes an extended scancode as is (0xE0 in
+            // the high byte) and tells left from right modifiers.
+            uint vk = NativeMethods.MapVirtualKeyExW(scanCode, NativeMethods.MAPVK_VSC_TO_VK_EX, hkl);
+            if (vk == 0)
+            {
+                DeckleShellSource.Log.HotkeyVkResolveFailed();
+                DeckleShellSource.Log.HotkeyVkResolveFailedDetail(scanCode, hkl.ToInt64());
+            }
+            resolved[scanCode] = vk;
+            return vk;
         }
 
-        _bindings.Register(vk);
-        DeckleShellSource.Log.HotkeyRegistered(vk, hkl.ToInt64());
+        IReadOnlyList<HotkeyRegistrationFailure> failures = _bindings.Register(_requested, Resolve);
+
+        foreach (GlobalHotkeyBinding binding in _requested)
+        {
+            if (failures.Any(failure => failure.Id == binding.Id)) continue;
+            DeckleShellSource.Log.HotkeyRegistered(
+                binding.Id, binding.ScanCode, resolved[binding.ScanCode], hkl.ToInt64());
+        }
+
+        LastFailures = failures;
+        return failures;
     }
 
     private IntPtr SubclassCallback(
@@ -110,11 +120,12 @@ public sealed class HotkeyManager : IDisposable
             // Keyboard layout changed — re-resolve and re-register. Continue
             // chaining so other subclasses / DefWindowProc still see the message.
             DeckleShellSource.Log.HotkeyLayoutChange();
-            try { RegisterAll(); }
-            catch (Exception ex)
+            IReadOnlyList<HotkeyRegistrationFailure> failures = RegisterAll();
+            if (failures.Count > 0)
             {
                 DeckleShellSource.Log.HotkeyReregisterFailed();
-                DeckleShellSource.Log.HotkeyReregisterFailedDetail(ex.Message);
+                DeckleShellSource.Log.HotkeyReregisterFailedDetail(string.Join(
+                    ", ", failures.Select(failure => $"id={failure.Id} err={failure.Win32Error}")));
             }
         }
 

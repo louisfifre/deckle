@@ -10,15 +10,16 @@ public sealed partial class TranscriptionEngine
         var llmSettings = _host.Llm;
         RewriteProfile? profile = isFileRun
             ? null
-            : RewriteProfileSelection.ForHotkey(llmSettings, _manualProfileName);
+            : RewriteProfileSelection.ForDictation(llmSettings);
 
         if (!isFileRun
             && llmSettings.Enabled
-            && !string.IsNullOrWhiteSpace(_manualProfileName)
+            && RewriteProfileSelection.HasActiveProfile(llmSettings)
             && profile is null)
         {
             DeckleWhispSource.Log.ManualProfileNotFound();
-            DeckleWhispSource.Log.ManualProfileNotFoundDetail(_manualProfileName);
+            DeckleWhispSource.Log.ManualProfileNotFoundDetail(
+                llmSettings.ActiveProfileName ?? llmSettings.ActiveProfileId ?? "");
         }
 
         if (profile is null)

@@ -45,7 +45,7 @@ public sealed partial class DeckleAppSource : DeckleEventSource
     public const int EvtAmbientStartFailed        = 22;
     public const int EvtHotkeyStart               = 23;
     public const int EvtHotkeyStop                = 24;
-    public const int EvtHotkeyNoProfile           = 25;
+    // 25 retired (HotkeyNoProfile, the rewrite chords are gone) — never reuse.
     public const int EvtHudWarning                = 26;
     public const int EvtLogWindowWarning          = 27;
     public const int EvtUserFeedbackEmitted       = 28;
@@ -63,7 +63,7 @@ public sealed partial class DeckleAppSource : DeckleEventSource
     public const int EvtAmbientPipelineStateDetail  = 35;
     public const int EvtAmbientStartFailedDetail    = 36;
     public const int EvtHotkeyStartDetail           = 37;
-    public const int EvtHotkeyNoProfileDetail       = 38;
+    // 38 retired (HotkeyNoProfileDetail, the rewrite chords are gone) — never reuse.
     public const int EvtHudWarningDetail            = 39;
     public const int EvtLogWindowWarningDetail      = 40;
     // Install mode (the wizard as installer).
@@ -72,5 +72,10 @@ public sealed partial class DeckleAppSource : DeckleEventSource
     public const int EvtAppStarting                 = 43;
     public const int EvtAppReady                    = 44;
     public const int EvtShutdownCompleted           = 45;
+    // Editable hotkeys: per-binding registration and toggle actions.
+    public const int EvtHotkeyRegistrationFailed       = 46;
+    public const int EvtHotkeyRegistrationFailedDetail = 47;
+    public const int EvtHotkeyToggle                   = 48;
+    public const int EvtHotkeyToggleDetail             = 49;
 
 }

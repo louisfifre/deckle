@@ -180,7 +180,36 @@ public sealed partial class SettingsComposer
         if (s.Kind == SettingKind.Section) return BuildSection(s);
 
         SettingsCard card = BuildCard(s);
-        return s.Advisory is null ? card : WrapWithAdvisory(card, s);
+        return HasAdvisory(s) ? WrapWithAdvisory(card, s) : card;
+    }
+
+    // A kind may speak through the advisory channel too: the Hotkey kind says
+    // when a captured key still needs a modifier. That message lives in the
+    // control, not in the model, so it is registered here by the kind's builder
+    // (BuildCard runs before the wrapping that reads it).
+    private readonly Dictionary<SettingDescriptor, Func<string?>> _kindAdvisories = new();
+
+    // One advisory refresher per advised card, so a kind can re-evaluate its own
+    // message on a UI change that writes nothing to the model (no PropertyChanged).
+    private readonly Dictionary<SettingDescriptor, Action> _advisoryRefreshers = new();
+
+    private bool HasAdvisory(SettingDescriptor s)
+        => s.Advisory is not null || _kindAdvisories.ContainsKey(s);
+
+    // The kind's own message first, then the descriptor's; null when both are
+    // silent. Two messages share the one bar, one per line.
+    private string? ResolveAdvisory(SettingDescriptor s)
+    {
+        string? kind = _kindAdvisories.TryGetValue(s, out Func<string?>? k) ? k() : null;
+        string? own = s.Advisory?.Invoke();
+        if (kind is null) return own;
+        if (own is null) return kind;
+        return kind + "\n" + own;
+    }
+
+    private void RefreshAdvisory(SettingDescriptor s)
+    {
+        if (_advisoryRefreshers.TryGetValue(s, out Action? refresh)) refresh();
     }
 
     // ── Inline advisory ──────────────────────────────────────────────────────
@@ -224,9 +253,9 @@ public sealed partial class SettingsComposer
         container.Children.Add(card);
         container.Children.Add(info);
 
-        _refreshers.Add(() =>
+        void Refresh()
         {
-            string? message = s.Advisory!();
+            string? message = ResolveAdvisory(s);
             if (message is null)
             {
                 info.IsOpen = false;
@@ -240,7 +269,10 @@ public sealed partial class SettingsComposer
             // Mirror the card's own resolved visibility onto the container so the
             // advisory disappears with the card when VisibleWhen collapses it.
             container.Visibility = card.Visibility;
-        });
+        }
+
+        _refreshers.Add(Refresh);
+        _advisoryRefreshers[s] = Refresh;
 
         return container;
     }
@@ -284,6 +316,9 @@ public sealed partial class SettingsComposer
                 break;
             case SettingKind.Editor:
                 BuildEditor(card, s);
+                break;
+            case SettingKind.Hotkey:
+                BuildHotkey(card, s);
                 break;
             default:
                 throw new NotSupportedException(

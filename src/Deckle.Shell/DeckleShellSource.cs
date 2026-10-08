@@ -314,19 +314,21 @@ public sealed class DeckleShellSource : DeckleEventSource
     [Event(EvtHotkeyVkResolveFailedDetail,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Capture,
-           Message = "hotkey vk resolve failed | scancode=0x29 | hkl=0x{0:X}")]
-    public void HotkeyVkResolveFailedDetail(long hkl)
+           Version = 1,
+           Message = "hotkey vk resolve failed | scancode=0x{0:X} | hkl=0x{1:X}")]
+    public void HotkeyVkResolveFailedDetail(uint scancode, long hkl)
     {
-        if (IsEnabled()) WriteEvent(EvtHotkeyVkResolveFailedDetail, hkl);
+        if (IsEnabled()) WriteEvent(EvtHotkeyVkResolveFailedDetail, scancode, hkl);
     }
 
     [Event(EvtHotkeyRegistered,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Capture,
-           Message = "register scancode 0x29 → VK 0x{0:X2} under HKL {1:X}")]
-    public void HotkeyRegistered(uint vk, long hkl)
+           Version = 1,
+           Message = "hotkey registered | id={0} | scancode=0x{1:X} | vk=0x{2:X2} | hkl=0x{3:X}")]
+    public void HotkeyRegistered(int id, uint scancode, uint vk, long hkl)
     {
-        if (IsEnabled()) WriteEvent(EvtHotkeyRegistered, vk, hkl);
+        if (IsEnabled()) WriteEvent(EvtHotkeyRegistered, id, scancode, vk, hkl);
     }
 
     [Event(EvtHotkeyLayoutChange,
@@ -341,7 +343,7 @@ public sealed class DeckleShellSource : DeckleEventSource
     [Event(EvtHotkeyReregisterFailed,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Capture,
-           Message = "Could not re-register the hotkeys after a keyboard layout change")]
+           Message = "Some hotkeys could not be re-registered after a keyboard layout change")]
     public void HotkeyReregisterFailed()
     {
         if (IsEnabled()) WriteEvent(EvtHotkeyReregisterFailed);
@@ -350,10 +352,11 @@ public sealed class DeckleShellSource : DeckleEventSource
     [Event(EvtHotkeyReregisterFailedDetail,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Capture,
-           Message = "hotkey re-register failed | message={0}")]
-    public void HotkeyReregisterFailedDetail(string message)
+           Version = 1,
+           Message = "hotkey re-register failed | failures={0}")]
+    public void HotkeyReregisterFailedDetail(string failures)
     {
-        if (IsEnabled()) WriteEvent(EvtHotkeyReregisterFailedDetail, message);
+        if (IsEnabled()) WriteEvent(EvtHotkeyReregisterFailedDetail, failures);
     }
 
     // DispatcherEnqueueRejected now lives on DeckleThreadingSource. Callers go

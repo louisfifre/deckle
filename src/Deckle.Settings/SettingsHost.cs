@@ -72,4 +72,10 @@ public static class SettingsHost
     // page validates (space, nesting, emptiness) and confirms before calling;
     // unwired (null) hides the Move affordance entirely.
     public static Action<string>? RelocateDataRoot;
+
+    // Whether the App built the hotkey action with this id ("record", "ambient",
+    // "autocorrect", "taskbar-cover", "precision-scroll", "rewrite",
+    // "trackpad"). The General page hides the hotkey card of an action whose
+    // module is absent. Unwired (null) shows every card.
+    public static Func<string, bool>? IsHotkeyActionAvailable;
 }

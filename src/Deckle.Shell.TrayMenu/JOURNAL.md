@@ -7,6 +7,16 @@ type: module-journal
 
 Dated notes on the tray-menu workstream — the why behind a fix the code no longer shows. Most recent on top.
 
+## 2026-10-08 — Module switches leave the MenuFlyout; the custom pill is retired
+
+Decided: the module switches (Ambient Light, Autocorrect, Taskbar cover, Precision scrolling, plus Trackpad and Rewrite) move from the right-click `MenuFlyout` to a left-click quick-actions panel (`TrayQuickActionsHost`), together with Record and "Transcribe audio files…". The right-click menu keeps Logs, Settings, Playground, Restart, Quit.
+
+Why: every `MenuFlyoutItem` click closes the menu, so flipping two switches meant opening the menu twice. A plain `Flyout` holding real `ToggleSwitch` rows stays open while the user toggles, as Windows 11 quick settings do.
+
+Retired: `TraySwitchMenuItem` and `Themes/TrayMenu.xaml` (`ToggleSwitchMenuItemStyle`, the hand-drawn pill and its `PaddingSizeStates` copy) and their merge in `App.xaml`. The pill only existed because a `MenuFlyoutItem` has no slot for a switch; the panel uses the native control. The "Ambient Light: custom pill" and "Custom item template must reproduce PaddingSizeStates" sections of this module's AGENTS.md are now stale.
+
+The carrier window moved to `TrayCarrierWindow`; both hosts own one instance each, with the same pitfalls (layered alpha 0, `WS_POPUPWINDOW` rewrite in `Frame.Loaded`, prime once, measure the real presenter, DPI from the monitor under the anchor, animations off). Not verified at runtime yet: the panel's size on first open, and the close on a second icon click (a 250 ms guard after a `deactivated` hide stops the click from reopening it).
+
 ## 2026-05-31 — Bottom mica gap and first-click scroll resolved
 
 Both closed, validated visually and over ~30 openings.

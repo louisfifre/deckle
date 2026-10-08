@@ -359,23 +359,54 @@
        First page in the Settings nav. Page title, page subtitle, then
        sections in order: Shortcuts, Appearance, Startup, Recording,
        Telemetry, Back up & restore, Application data. -->
-  <data name="GeneralTranscribeCard.Header" xml:space="preserve">
-    <value>Principal hotkey</value>
+  <!-- Hotkeys section: one composed card per hotkey action
+       (GeneralViewModel.HotkeySettings). Module names as the code names them. -->
+  <data name="GeneralHotkeyRecordCard.Header" xml:space="preserve">
+    <value>Record</value>
   </data>
-  <data name="GeneralTranscribeCard.Description" xml:space="preserve">
-    <value>Start and stop transcription. The text is copied to the clipboard.</value>
+  <data name="GeneralHotkeyRecordCard.Description" xml:space="preserve">
+    <value>Start or stop dictation.</value>
   </data>
-  <data name="GeneralPrimaryRewriteCard.Header" xml:space="preserve">
-    <value>Primary rewrite</value>
+  <data name="GeneralHotkeyPrecisionScrollCard.Header" xml:space="preserve">
+    <value>Precision scrolling</value>
   </data>
-  <data name="GeneralPrimaryRewriteCard.Description" xml:space="preserve">
-    <value>Transcribe, then rewrite with the primary profile. Choose the profile on the Rewriting page.</value>
+  <data name="GeneralHotkeyPrecisionScrollCard.Description" xml:space="preserve">
+    <value>Turn Precision scrolling on or off.</value>
   </data>
-  <data name="GeneralSecondaryRewriteCard.Header" xml:space="preserve">
-    <value>Secondary rewrite</value>
+  <data name="GeneralHotkeyTrackpadCard.Header" xml:space="preserve">
+    <value>Trackpad</value>
   </data>
-  <data name="GeneralSecondaryRewriteCard.Description" xml:space="preserve">
-    <value>Transcribe, then rewrite with the secondary profile. Choose the profile on the Rewriting page.</value>
+  <data name="GeneralHotkeyTrackpadCard.Description" xml:space="preserve">
+    <value>Turn Trackpad on or off.</value>
+  </data>
+  <data name="GeneralHotkeyTaskbarCoverCard.Header" xml:space="preserve">
+    <value>Taskbar cover</value>
+  </data>
+  <data name="GeneralHotkeyTaskbarCoverCard.Description" xml:space="preserve">
+    <value>Turn Taskbar cover on or off.</value>
+  </data>
+  <data name="GeneralHotkeyAutocorrectCard.Header" xml:space="preserve">
+    <value>Autocorrect</value>
+  </data>
+  <data name="GeneralHotkeyAutocorrectCard.Description" xml:space="preserve">
+    <value>Turn Autocorrect on or off.</value>
+  </data>
+  <data name="GeneralHotkeyRewriteCard.Header" xml:space="preserve">
+    <value>Rewrite</value>
+  </data>
+  <data name="GeneralHotkeyRewriteCard.Description" xml:space="preserve">
+    <value>Turn Rewrite on or off.</value>
+  </data>
+  <data name="GeneralHotkeyAmbientLightCard.Header" xml:space="preserve">
+    <value>Ambient Light</value>
+  </data>
+  <data name="GeneralHotkeyAmbientLightCard.Description" xml:space="preserve">
+    <value>Turn Ambient Light on or off.</value>
+  </data>
+  <!-- Advisory under a hotkey card whose chord another action already holds.
+       {0} is that action's card header. -->
+  <data name="GeneralHotkeyAlreadyUsed_Format" xml:space="preserve">
+    <value>Already used by {0}</value>
   </data>
   <data name="GeneralAppThemeCard.Header" xml:space="preserve">
     <value>App theme</value>
@@ -486,8 +517,8 @@
        tooltip in the Page resources). -->
 
   <!-- ─── LlmPage + sections ─────────────────────────────────────────
-       Third page in the Settings nav. Hosts five sections rendered as
-       UserControls (General, ShortcutSlots, Profiles, Models).
+       Third page in the Settings nav. Hosts four sections rendered as
+       UserControls (General, ActiveProfile, Profiles, Models).
        The Ollama InfoBar is inline on the page. -->
 
   <!-- LlmGeneralSection -->
@@ -495,8 +526,6 @@
   <!-- LlmModelsSection -->
 
   <!-- LlmProfilesSection -->
-
-  <!-- LlmShortcutSlotsSection -->
 
   <!-- ─── Settings — TextBlock labels for x:Uid ──────────────────────
        Page titles, subtitles, and section headers rendered as plain
@@ -527,15 +556,6 @@
   <data name="GeneralPageApplicationDataHeaderLabel.Text" xml:space="preserve">
     <value>Application data</value>
   </data>
-  <data name="GeneralShortcutTranscribeKey.Text" xml:space="preserve">
-    <value>Win + `</value>
-  </data>
-  <data name="GeneralShortcutPrimaryRewriteKey.Text" xml:space="preserve">
-    <value>Shift + Win + `</value>
-  </data>
-  <data name="GeneralShortcutSecondaryRewriteKey.Text" xml:space="preserve">
-    <value>Ctrl + Win + `</value>
-  </data>
 
   <!-- ─── Settings — code-behind dialogs ─────────────────────────────
        ContentDialogs raised programmatically by Settings pages and
@@ -558,8 +578,6 @@
   <!-- WhisperPage Reset all dialog -->
 
   <!-- LlmPage Reset all rewriting dialog + Ollama status -->
-
-  <!-- LlmShortcutSlotsSection Reset dialog -->
 
   <!-- LlmProfilesSection Remove + Reset dialogs -->
 

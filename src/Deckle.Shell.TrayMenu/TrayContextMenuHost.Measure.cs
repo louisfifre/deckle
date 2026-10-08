@@ -35,26 +35,12 @@ public sealed partial class TrayContextMenuHost
     // process lifetime.
     private void PrimeFlyout()
     {
-        // Module-owned entries follow their delegate: the flyout is built in
-        // the constructor, before the App wires the commands of the modules
-        // actually installed, so presence lands here as a visibility pass —
-        // an unwired command simply never shows. Applied BEFORE the ShowAt so
-        // the primed sizes (and the presenter capture below) reflect the menu
-        // the user will actually see; presence is boot-constant, so once is
-        // enough.
-        if (_ambientItem is not null)
-            _ambientItem.Visibility = OnToggleAmbient is null ? Visibility.Collapsed : Visibility.Visible;
-        if (_autocorrectItem is not null)
-            _autocorrectItem.Visibility = OnToggleAutocorrect is null ? Visibility.Collapsed : Visibility.Visible;
-        if (_transcribeFilesItem is not null)
-            _transcribeFilesItem.Visibility = OnTranscribeFiles is null ? Visibility.Collapsed : Visibility.Visible;
-
         bool traceWindowing = DeckleShellTrayMenuSource.IsDetailEnabled(
             EventLevel.Verbose, (EventKeywords)Keywords.Lifecycle);
         var sw = traceWindowing ? Stopwatch.StartNew() : null;
-        _flyout!.ShowAt(_frame, new FlyoutShowOptions { ShowMode = FlyoutShowMode.Transient });
+        _flyout!.ShowAt(_carrier.Frame, new FlyoutShowOptions { ShowMode = FlyoutShowMode.Transient });
 
-        _frame!.DispatcherQueue.TryEnqueue(DispatcherQueuePriority.Low, () =>
+        _carrier.Frame.DispatcherQueue.TryEnqueue(DispatcherQueuePriority.Low, () =>
         {
             // Capture DesiredSize for items attached to the popup visual tree,
             // after forcing NarrowPadding state on each item. The framework
@@ -77,7 +63,7 @@ public sealed partial class TrayContextMenuHost
                 // Force a layout pass so the new Padding values applied by the
                 // VisualState Storyboard are effective in the DesiredSize we
                 // are about to capture.
-                _frame!.UpdateLayout();
+                _carrier.Frame.UpdateLayout();
 
                 _primedSizes.Clear();
                 foreach (var item in _flyout.Items)

@@ -60,33 +60,28 @@
                            TextWrapping="Wrap"
                            Margin="0,0,0,12" />
 
-                <!-- ── Shortcuts ───────────────────────────────────────────── -->
-                <TextBlock x:Uid="GeneralPageShortcutsHeaderLabel"
-                           Style="{StaticResource SettingsSectionHeaderTextBlockStyle}" />
+                <!-- ── Hotkeys ─────────────────────────────────────────────── -->
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <TextBlock x:Uid="GeneralPageShortcutsHeaderLabel"
+                               Grid.Column="0"
+                               Style="{StaticResource SettingsSectionHeaderTextBlockStyle}" />
+                    <HyperlinkButton x:Name="HotkeysResetLink"
+                                     x:Uid="Settings_SectionResetLink"
+                                     Grid.Column="1"
+                                     VerticalAlignment="Bottom"
+                                     Margin="0,0,0,2"
+                                     Click="ResetHotkeys_Click" />
+                </Grid>
 
-                <controls:SettingsCard x:Uid="GeneralTranscribeCard"
-                                       Tag="GeneralTranscribeCard"
-                                       HeaderIcon="{ui:FontIcon Glyph={StaticResource Icon.Shortcut}}">
-                    <TextBlock x:Uid="GeneralShortcutTranscribeKey"
-                               VerticalAlignment="Center"
-                               Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
-                </controls:SettingsCard>
-
-                <controls:SettingsCard x:Uid="GeneralPrimaryRewriteCard"
-                                       Tag="GeneralPrimaryRewriteCard"
-                                       HeaderIcon="{ui:FontIcon Glyph={StaticResource Icon.Shortcut}}">
-                    <TextBlock x:Uid="GeneralShortcutPrimaryRewriteKey"
-                               VerticalAlignment="Center"
-                               Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
-                </controls:SettingsCard>
-
-                <controls:SettingsCard x:Uid="GeneralSecondaryRewriteCard"
-                                       Tag="GeneralSecondaryRewriteCard"
-                                       HeaderIcon="{ui:FontIcon Glyph={StaticResource Icon.Shortcut}}">
-                    <TextBlock x:Uid="GeneralShortcutSecondaryRewriteKey"
-                               VerticalAlignment="Center"
-                               Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
-                </controls:SettingsCard>
+                <!-- Composed: one hotkey card per action the App built
+                     (GeneralViewModel.HotkeySettings); an absent module's card
+                     is hidden. -->
+                <StackPanel x:Name="HotkeysHost"
+                            Spacing="{StaticResource SettingsCardSpacing}" />
 
                 <!-- ── Appearance ──────────────────────────────────────────── -->
                 <Grid>

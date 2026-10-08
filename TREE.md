@@ -572,6 +572,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── App.Autocorrect.cs
 │   │   ├── App.Autocorrect.Lifecycle.cs
 │   │   ├── App.FileTranscription.cs
+│   │   ├── App.Hotkeys.Actions.cs
 │   │   ├── App.Hotkeys.cs
 │   │   ├── App.Input.cs
 │   │   ├── App.Install.cs
@@ -590,6 +591,8 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── App.TaskbarCover.cs
 │   │   ├── App.Theme.cs
 │   │   ├── App.Trackpad.cs
+│   │   ├── App.TranscriptPanel.cs
+│   │   ├── App.TrayToggles.cs
 │   │   ├── App.Update.cs
 │   │   ├── App.Windows.cs
 │   │   ├── App.xaml
@@ -877,6 +880,8 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   └── StaleWorkProbeCommand.cs
 │   ├── Deckle.Catalog/
 │   │   ├── Composer/
+│   │   │   ├── HotkeyChordText.cs
+│   │   │   ├── HotkeyKeyNames.cs
 │   │   │   ├── IPathControl.cs
 │   │   │   ├── Setting.cs
 │   │   │   ├── SettingArgs.cs
@@ -885,8 +890,12 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   ├── SettingsComposer.Chrome.cs
 │   │   │   ├── SettingsComposer.cs
 │   │   │   ├── SettingsComposer.Folds.cs
+│   │   │   ├── SettingsComposer.Hotkey.cs
 │   │   │   ├── SettingsComposer.Inputs.cs
 │   │   │   └── SettingsComposer.Numeric.cs
+│   │   ├── Hotkeys/
+│   │   │   ├── HotkeyChord.cs
+│   │   │   └── HotkeyModifiers.cs
 │   │   ├── Themes/
 │   │   │   └── Icons.xaml
 │   │   ├── AGENTS.md  — [agent-instructions] Shared WinUI floor — the UI primitives every module depends on and that depend…
@@ -1059,6 +1068,12 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   ├── HudPalette.cs
 │   │   │   ├── HudState.cs
 │   │   │   └── MessageKind.cs
+│   │   ├── Transcript/
+│   │   │   ├── TranscriptHistory.cs
+│   │   │   ├── TranscriptPanelLayout.cs
+│   │   │   ├── TranscriptPanelWindow.Proximity.cs
+│   │   │   ├── TranscriptPanelWindow.xaml
+│   │   │   └── TranscriptPanelWindow.xaml.cs
 │   │   ├── Windows/
 │   │   │   ├── HudOverlayManager.cs
 │   │   │   ├── HudOverlayWindow.xaml
@@ -1069,6 +1084,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   ├── HudWindow.Windowing.cs
 │   │   │   ├── HudWindow.xaml
 │   │   │   ├── HudWindow.xaml.cs
+│   │   │   ├── ProximityFade.cs
 │   │   │   ├── SystemAnimationPreference.cs
 │   │   │   └── WindowSlideAnimator.cs
 │   │   ├── AGENTS.md  — [agent-instructions] HUD overlay surface — non-focusable, click-through, always-on-top windows that…
@@ -1345,6 +1361,8 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │       └── Resources.resw
 │   │   ├── Ui/
 │   │   │   ├── BoolToVisibilityConverter.cs
+│   │   │   ├── LlmActiveProfileSection.xaml
+│   │   │   ├── LlmActiveProfileSection.xaml.cs
 │   │   │   ├── LlmGeneralSection.xaml
 │   │   │   ├── LlmGeneralSection.xaml.cs
 │   │   │   ├── LlmModelsSection.xaml
@@ -1354,8 +1372,6 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   ├── LlmPage.xaml.cs
 │   │   │   ├── LlmProfilesSection.xaml
 │   │   │   ├── LlmProfilesSection.xaml.cs
-│   │   │   ├── LlmShortcutSlotsSection.xaml
-│   │   │   ├── LlmShortcutSlotsSection.xaml.cs
 │   │   │   ├── ProfileViewModel.cs
 │   │   │   ├── RewriteChangeView.cs
 │   │   │   ├── RewriteOfferWindow.xaml
@@ -1658,19 +1674,20 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   ├── Deckle.Shell.TrayMenu/
 │   │   ├── Interop/
 │   │   │   └── TrayMenuNativeMethods.cs
-│   │   ├── Themes/
-│   │   │   └── TrayMenu.xaml
 │   │   ├── AGENTS.md  — [agent-instructions] WinUI 3 tray context menu — the carrier-window pattern and the DWM pitfalls it…
 │   │   ├── CLAUDE.md
 │   │   ├── Deckle.Shell.TrayMenu.csproj
 │   │   ├── DeckleShellTrayMenuSource.cs
 │   │   ├── JOURNAL.md  — [module-journal] Dated diagnostics for Deckle.Shell.TrayMenu — the tray-menu density, gap, and f…
+│   │   ├── TrayCarrierWindow.cs
 │   │   ├── TrayContextMenuHost.cs
 │   │   ├── TrayContextMenuHost.Flyout.cs
 │   │   ├── TrayContextMenuHost.Measure.cs
 │   │   ├── TrayContextMenuHost.Show.cs
-│   │   ├── TrayContextMenuHost.Window.cs
-│   │   └── TraySwitchMenuItem.cs
+│   │   ├── TrayQuickActionsHost.Build.cs
+│   │   ├── TrayQuickActionsHost.cs
+│   │   ├── TrayQuickActionsHost.Show.cs
+│   │   └── TrayToggle.cs
 │   ├── Deckle.Shell.WindowChrome/
 │   │   ├── AGENTS.md  — [agent-instructions] Window-chrome corrections shared by Deckle's XAML windows — workarounds for Win…
 │   │   ├── CaptionInsetCorrection.cs
@@ -1713,7 +1730,8 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   ├── TranscriptionEngine.Pipeline.cs
 │   │   │   ├── TranscriptionEngine.StateMachine.cs
 │   │   │   ├── TranscriptionEngine.StreamingPipeline.cs
-│   │   │   └── TranscriptionEngine.Telemetry.cs
+│   │   │   ├── TranscriptionEngine.Telemetry.cs
+│   │   │   └── TranscriptionEngine.Utterances.cs
 │   │   ├── Setup/
 │   │   │   └── ModelEntry.cs
 │   │   ├── Streaming/
@@ -1722,6 +1740,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   ├── EnergySegmenter.cs
 │   │   │   ├── EnergySegmenterSettings.cs
 │   │   │   ├── SegmentedTranscriptionSession.cs
+│   │   │   ├── TranscribedUtterance.cs
 │   │   │   ├── Utterance.cs
 │   │   │   └── UtteranceProgress.cs
 │   │   ├── Strings/
@@ -1996,6 +2015,8 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   └── WordBoundariesTests.cs
 │   ├── Deckle.Catalog.Tests/
 │   │   ├── Deckle.Catalog.Tests.csproj
+│   │   ├── HotkeyChordTests.cs
+│   │   ├── HotkeyChordTextTests.cs
 │   │   └── SettingFactoryTests.cs
 │   ├── Deckle.Chrono.Tests/
 │   │   ├── ChronoFormatterTests.cs
@@ -2045,7 +2066,10 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── DeckleHudSourceTests.cs
 │   │   ├── HudGeometryTuningTests.cs
 │   │   ├── HudMaterialTuningTests.cs
+│   │   ├── ProximityFadeTests.cs
 │   │   ├── ProximityRollupAggregatorTests.cs
+│   │   ├── TranscriptHistoryTests.cs
+│   │   ├── TranscriptPanelLayoutTests.cs
 │   │   ├── UtteranceCountdownGeometryTests.cs
 │   │   └── UtteranceCountdownStateTests.cs
 │   ├── Deckle.Input.PrecisionScroll.Tests/
@@ -2108,6 +2132,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   └── LightingObservabilityCollection.cs
 │   ├── Deckle.Llm.Rewrite.Tests/
 │   │   ├── Deckle.Llm.Rewrite.Tests.csproj
+│   │   ├── LlmSettingsMigrationsTests.cs
 │   │   ├── ParagraphDraftTests.cs
 │   │   ├── ParagraphRewriteCoordinatorTests.cs
 │   │   ├── RewriteDiffGateTests.cs
@@ -2173,7 +2198,6 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── Deckle.Shell.Tests.csproj
 │   │   ├── DispatcherQueueExtensionsTests.cs
 │   │   ├── GlobalHotkeyBindingsTests.cs
-│   │   ├── HotkeySelectionTests.cs
 │   │   └── ResizeGestureTests.cs
 │   ├── Deckle.Speech.Tests/
 │   │   ├── Deckle.Speech.Tests.csproj

@@ -53,7 +53,6 @@ public enum ToggleResult
     Started,            // CAS Idle → Starting succeeded, worker spawned.
     Stopped,            // CAS Recording → Stopping succeeded, worker draining.
     IgnoredBusy,        // State was Starting/Stopping/Transcribing — silent no-op.
-    IgnoredNoProfile,   // Rewrite hotkey with no profile bound, called from Idle.
     IgnoredDisposed,    // Engine in shutdown — silent no-op.
 }
 
@@ -201,12 +200,6 @@ public sealed partial class TranscriptionEngine : IDisposable
     // reject competing starts, but they cannot by themselves make publishing
     // the worker and its cancellation channels atomic with backend teardown.
     private readonly object _lifecycleLock = new();
-
-    // Name of the rewrite profile chosen by the explicit rewrite hotkey that
-    // started this recording. null means plain transcription: keep the ASR
-    // result unchanged. Captured in TryStartFromIdle and consumed in
-    // FinalizeTranscription.
-    private string?         _manualProfileName = null;
 
     // Tray selections are immutable batches; the engine is their only consumer.
     // A whole selection leaves this FIFO as one worker lifecycle, so the engine

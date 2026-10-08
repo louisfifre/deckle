@@ -11,13 +11,13 @@ namespace Deckle.Shell;
 // Event flow:
 //   Shell32 → WM_TRAY (WM_USER+1) sent to the main HWND
 //   SubclassCallback intercepte WM_TRAY
-//   → left click  → OnToggleRecording invoked directly
+//   → left click  → LeftClickRequested raised, subscriber renders the panel
 //   → right click → RightClickRequested raised, subscriber renders the menu
 //
-// Context-menu responsibility lives in the sibling Deckle.Shell.TrayMenu
-// module (TrayContextMenuHost), which subscribes to RightClickRequested and
-// presents a native WinUI 3 MenuFlyout. This module stays Win32-pure: it does
-// not know the menu contents.
+// Both surfaces live in the sibling Deckle.Shell.TrayMenu module: the
+// quick-actions panel (TrayQuickActionsHost) on left click, the context menu
+// (TrayContextMenuHost) on right click. This module stays Win32-pure: it does
+// not know what either surface contains.
 
 public sealed class TrayIconManager : IDisposable
 {
@@ -33,11 +33,12 @@ public sealed class TrayIconManager : IDisposable
     private static readonly UIntPtr SubclassId = new(0x5752_4159); // "WRAY"
 
     /// <summary>
-    /// Invoked on left-click of the tray icon. Marshaling to the UI thread is
-    /// the subscriber's responsibility — this handler runs on the message pump
-    /// thread of the host HWND.
+    /// Raised on left-click of the tray icon. The subscriber renders the
+    /// quick-actions panel (typically TrayQuickActionsHost from
+    /// Deckle.Shell.TrayMenu). Raised on the message pump thread of the host
+    /// HWND; marshaling elsewhere is the subscriber's responsibility.
     /// </summary>
-    public Action? OnToggleRecording { get; set; }
+    public event Action? LeftClickRequested;
 
     /// <summary>
     /// Raised on right-click of the tray icon. The subscriber renders the
@@ -146,11 +147,9 @@ public sealed class TrayIconManager : IDisposable
 
             if (mouseEvent == NativeMethods.WM_LBUTTONUP)
             {
-                // Left click = toggle transcription (standard hotkey
-                // equivalent). Allows starting/stopping with the mouse when
-                // only one hand is available. Logs and Settings go through
-                // right click.
-                OnToggleRecording?.Invoke();
+                // Left click = the quick-actions panel (Record, module
+                // switches). Logs and Settings go through right click.
+                LeftClickRequested?.Invoke();
                 return IntPtr.Zero;
             }
         }

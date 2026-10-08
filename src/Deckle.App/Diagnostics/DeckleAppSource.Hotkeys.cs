@@ -37,22 +37,42 @@ public sealed partial class DeckleAppSource
         if (IsEnabled()) WriteEvent(EvtHotkeyStop);
     }
 
-    [Event(EvtHotkeyNoProfile,
+    [Event(EvtHotkeyRegistrationFailed,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Capture,
-           Message = "A rewrite hotkey was pressed with no profile bound")]
-    public void HotkeyNoProfile()
+           Message = "A hotkey could not be registered")]
+    public void HotkeyRegistrationFailed()
     {
-        if (IsEnabled()) WriteEvent(EvtHotkeyNoProfile);
+        if (IsEnabled()) WriteEvent(EvtHotkeyRegistrationFailed);
     }
 
-    [Event(EvtHotkeyNoProfileDetail,
+    // win32_error 1409 = chord owned elsewhere; 0 = key absent from the
+    // active keyboard layout.
+    [Event(EvtHotkeyRegistrationFailedDetail,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Capture,
-           Message = "hotkey ignored, no profile bound | hotkey={0}")]
-    public void HotkeyNoProfileDetail(string hotkey_name)
+           Message = "hotkey registration failed | action={0} | id={1} | modifiers=0x{2:X} | scancode=0x{3:X} | win32_error={4}")]
+    public void HotkeyRegistrationFailedDetail(string action, int id, uint modifiers, uint scancode, int win32_error)
     {
-        if (IsEnabled()) WriteEvent(EvtHotkeyNoProfileDetail, hotkey_name);
+        if (IsEnabled()) WriteEvent(EvtHotkeyRegistrationFailedDetail, action, id, modifiers, scancode, win32_error);
+    }
+
+    [Event(EvtHotkeyToggle,
+           Level = EventLevel.Informational,
+           Keywords = (EventKeywords)Keywords.Capture,
+           Message = "Module switched from its hotkey")]
+    public void HotkeyToggle()
+    {
+        if (IsEnabled()) WriteEvent(EvtHotkeyToggle);
+    }
+
+    [Event(EvtHotkeyToggleDetail,
+           Level = EventLevel.Verbose,
+           Keywords = (EventKeywords)Keywords.Capture,
+           Message = "hotkey toggle | toggle={0}")]
+    public void HotkeyToggleDetail(string toggle)
+    {
+        if (IsEnabled()) WriteEvent(EvtHotkeyToggleDetail, toggle);
     }
 
 }

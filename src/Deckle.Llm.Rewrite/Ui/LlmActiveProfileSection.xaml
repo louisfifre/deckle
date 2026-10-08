@@ -1,5 +1,5 @@
 <UserControl
-    x:Class="Deckle.Llm.Rewrite.LlmShortcutSlotsSection"
+    x:Class="Deckle.Llm.Rewrite.LlmActiveProfileSection"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:controls="using:CommunityToolkit.WinUI.Controls"
@@ -11,7 +11,7 @@
                 <ColumnDefinition Width="*" />
                 <ColumnDefinition Width="Auto" />
             </Grid.ColumnDefinitions>
-            <TextBlock x:Uid="LlmShortcutsHeader"
+            <TextBlock x:Uid="LlmActiveProfileHeader"
                        Grid.Column="0"
                        Style="{StaticResource SettingsSectionHeaderTextBlockStyle}" />
             <HyperlinkButton x:Uid="Settings_SectionResetLink"
@@ -21,20 +21,12 @@
                              Click="ResetSection_Click" />
         </Grid>
 
-        <controls:SettingsCard x:Uid="LlmPrimarySlotCard"
-                               Tag="LlmPrimarySlotCard"
-                               HeaderIcon="{ui:FontIcon Glyph={StaticResource Icon.Shortcut}}">
-            <ComboBox x:Name="PrimaryRewriteProfileCombo"
+        <controls:SettingsCard x:Uid="LlmActiveProfileCard"
+                               Tag="LlmActiveProfileCard"
+                               HeaderIcon="{ui:FontIcon Glyph={StaticResource Icon.Sparkle}}">
+            <ComboBox x:Name="ActiveProfileCombo"
                       MinWidth="200"
-                      SelectionChanged="PrimaryRewriteProfileCombo_SelectionChanged" />
-        </controls:SettingsCard>
-
-        <controls:SettingsCard x:Uid="LlmSecondarySlotCard"
-                               Tag="LlmSecondarySlotCard"
-                               HeaderIcon="{ui:FontIcon Glyph={StaticResource Icon.Shortcut}}">
-            <ComboBox x:Name="SecondaryRewriteProfileCombo"
-                      MinWidth="200"
-                      SelectionChanged="SecondaryRewriteProfileCombo_SelectionChanged" />
+                      SelectionChanged="ActiveProfileCombo_SelectionChanged" />
         </controls:SettingsCard>
     </StackPanel>
 </UserControl>

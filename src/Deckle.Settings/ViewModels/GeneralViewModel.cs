@@ -1,6 +1,7 @@
 using System.Collections.ObjectModel;
 using System.IO;
 using CommunityToolkit.Mvvm.ComponentModel;
+using Deckle.Catalog;
 using Deckle.Shell;
 using Deckle.Core;
 using Deckle.Diagnostics;
@@ -32,6 +33,50 @@ public partial class GeneralViewModel : ObservableObject
         DeckleSettingsUxSource.Log.SettingChanged("Theme", value);
         PushToSettings();
         SettingsHost.ApplyTheme?.Invoke(value);
+    }
+
+    // ── Hotkeys ──────────────────────────────────────────────────────────────
+    //
+    // One chord per hotkey action, null = unbound. The composer writes only
+    // complete chords or null, so every value pushed here is registrable; the
+    // App rebinds when SettingsService.Changed reports a different binding set.
+
+    [ObservableProperty]
+    public partial HotkeyChord? RecordHotkey { get; set; }
+
+    [ObservableProperty]
+    public partial HotkeyChord? AmbientLightHotkey { get; set; }
+
+    [ObservableProperty]
+    public partial HotkeyChord? AutocorrectHotkey { get; set; }
+
+    [ObservableProperty]
+    public partial HotkeyChord? TaskbarCoverHotkey { get; set; }
+
+    [ObservableProperty]
+    public partial HotkeyChord? PrecisionScrollHotkey { get; set; }
+
+    [ObservableProperty]
+    public partial HotkeyChord? RewriteHotkey { get; set; }
+
+    [ObservableProperty]
+    public partial HotkeyChord? TrackpadHotkey { get; set; }
+
+    partial void OnRecordHotkeyChanged(HotkeyChord? value) => OnHotkeyChanged("Hotkeys.Record", value);
+    partial void OnAmbientLightHotkeyChanged(HotkeyChord? value) => OnHotkeyChanged("Hotkeys.AmbientLight", value);
+    partial void OnAutocorrectHotkeyChanged(HotkeyChord? value) => OnHotkeyChanged("Hotkeys.Autocorrect", value);
+    partial void OnTaskbarCoverHotkeyChanged(HotkeyChord? value) => OnHotkeyChanged("Hotkeys.TaskbarCover", value);
+    partial void OnPrecisionScrollHotkeyChanged(HotkeyChord? value) => OnHotkeyChanged("Hotkeys.PrecisionScroll", value);
+    partial void OnRewriteHotkeyChanged(HotkeyChord? value) => OnHotkeyChanged("Hotkeys.Rewrite", value);
+    partial void OnTrackpadHotkeyChanged(HotkeyChord? value) => OnHotkeyChanged("Hotkeys.Trackpad", value);
+
+    private void OnHotkeyChanged(string name, HotkeyChord? value)
+    {
+        if (_isSyncing) return;
+        // Modifier flags and scancode only: no typed text reaches the log.
+        DeckleSettingsUxSource.Log.SettingChanged(
+            name, value is { } c ? $"{c.Modifiers}+0x{c.ScanCode:X}" : "unbound");
+        PushToSettings();
     }
 
     // ── Startup ──────────────────────────────────────────────────────────────
@@ -142,6 +187,7 @@ public partial class GeneralViewModel : ObservableObject
         AutostartEnabled = StartupService.DefaultEnabled;
         BackupDirectory = paths.BackupDirectory;
         UpdateAutoCheckEnabled = updates.AutoCheckEnabled;
+        LoadHotkeys(new HotkeysSettings());
 
         // _isSyncing stays true — Load() will set it to false.
     }
@@ -156,6 +202,7 @@ public partial class GeneralViewModel : ObservableObject
             AutostartEnabled = StartupService.StartsAtLogon();
             BackupDirectory = shell.Paths.BackupDirectory;
             UpdateAutoCheckEnabled = shell.Updates.AutoCheckEnabled;
+            LoadHotkeys(shell.Hotkeys);
         }
         finally
         {
@@ -173,7 +220,25 @@ public partial class GeneralViewModel : ObservableObject
         shell.Appearance.Theme = Theme;
         shell.Paths.BackupDirectory = BackupDirectory ?? "";
         shell.Updates.AutoCheckEnabled = UpdateAutoCheckEnabled;
+        shell.Hotkeys.Record = RecordHotkey;
+        shell.Hotkeys.AmbientLight = AmbientLightHotkey;
+        shell.Hotkeys.Autocorrect = AutocorrectHotkey;
+        shell.Hotkeys.TaskbarCover = TaskbarCoverHotkey;
+        shell.Hotkeys.PrecisionScroll = PrecisionScrollHotkey;
+        shell.Hotkeys.Rewrite = RewriteHotkey;
+        shell.Hotkeys.Trackpad = TrackpadHotkey;
         SettingsService.Instance.Save();
+    }
+
+    private void LoadHotkeys(HotkeysSettings hotkeys)
+    {
+        RecordHotkey = hotkeys.Record;
+        AmbientLightHotkey = hotkeys.AmbientLight;
+        AutocorrectHotkey = hotkeys.Autocorrect;
+        TaskbarCoverHotkey = hotkeys.TaskbarCover;
+        PrecisionScrollHotkey = hotkeys.PrecisionScroll;
+        RewriteHotkey = hotkeys.Rewrite;
+        TrackpadHotkey = hotkeys.Trackpad;
     }
 
     // Section resets moved out of the VM in the composer-reset slice: the composed

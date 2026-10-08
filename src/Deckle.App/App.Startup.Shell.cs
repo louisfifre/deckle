@@ -1,17 +1,14 @@
-using Deckle.Autocorrect;
 using Deckle.Core;
 using Deckle.Diagnostics;
 using Deckle.Diagnostics.Logging;
 using Deckle.Diagnostics.Telemetry;
 using Deckle.Hud;
-using Deckle.Input.PrecisionScroll;
 using Deckle.Lighting.Ambient;
 using Deckle.Modules;
 using Deckle.Playground;
 using Deckle.Setup;
 using Deckle.Shell;
 using Deckle.Shell.Foreground;
-using Deckle.Shell.TaskbarCover;
 using Deckle.Shell.TrayMenu;
 using Deckle.Speech;
 using Deckle.Transcription;
@@ -80,17 +77,10 @@ public partial class App
 
         context.Milestone("hudwindow");
 
-        // Tray icon : only left-click action lives here ; the right-click
-        // context menu is rendered by TrayContextMenuHost (created later,
-        // after the message-only host HWND is available to serve as owner).
+        // Tray icon: raises LeftClickRequested and RightClickRequested; the
+        // two surfaces (quick-actions panel, context menu) are created further
+        // down and subscribe there.
         _tray = new TrayIconManager();
-        if (context.TranscriptionPresent)
-        {
-            // Left-click tray = toggle transcription via the same path as the
-            // standard hotkey. An absent Dictation module leaves the click
-            // unbound instead of pointing to a Settings page that is absent too.
-            _tray.OnToggleRecording = () => OnHotkey(NativeMethods.HOTKEY_ID_TRANSCRIBE);
-        }
         context.Milestone("tray");
 
         // Engine events → UI. StatusChanged, TranscriptionFinished, etc. are
@@ -209,24 +199,6 @@ public partial class App
             OnShowLogs       = () => ShowLogWindowLazy(),
             OnShowSettings   = () => ShowSettingsWindowLazy(),
             OnShowPlayground = () => ShowPlaygroundLazy(),
-            // Taskbar cover tray entry — the pill
-            // mirrors the persisted TaskbarCoverSettings.Enabled, click flips
-            // it, the host start/stop reacts via the settings observer wired
-            // in InitializeTaskbarCover.
-            IsTaskbarCoverOn      = () => TaskbarCoverSettingsService.Instance.Current.Enabled,
-            OnToggleTaskbarCover  = () =>
-            {
-                var s = TaskbarCoverSettingsService.Instance.Current;
-                s.Enabled = !s.Enabled;
-                TaskbarCoverSettingsService.Instance.Save();
-            },
-            IsPrecisionScrollOn = () => PrecisionScrollSettingsService.Instance.Current.Enabled,
-            OnTogglePrecisionScroll = () =>
-            {
-                var s = PrecisionScrollSettingsService.Instance.Current;
-                s.Enabled = !s.Enabled;
-                PrecisionScrollSettingsService.Instance.Save();
-            },
             OnRestart        = () => RestartAppFromTray(),
             OnQuit           = () => QuitApp(),
             // Tray icon screen rect — the menu host uses it as the
@@ -235,65 +207,56 @@ public partial class App
             GetIconRect      = () => _tray.GetIconRect(),
         };
 
-        // Module-owned tray entries follow presence: the menu host shows an
-        // item only when its delegate is wired, so an absent module's command
-        // simply never appears (see TrayContextMenuHost.PrimeFlyout).
-        if (context.TranscriptionPresent)
-        {
-            // File transcription — opens the system file picker and runs each
-            // chosen audio file through the same pipeline as dictation (see
-            // App.FileTranscription.cs). Delivered on the UI thread the tray
-            // click arrives on.
-            _trayMenu.OnTranscribeFiles = () => TranscribeFilesFromTray();
-        }
-        if (context.AmbientPresent)
-        {
-            // Ambient Light tray entry — checkmark mirrors the persisted
-            // AmbientSettings.Enabled, click flips it. The actual engine
-            // start/stop reacts via the AmbientSettingsService.Changed
-            // observer wired above.
-            _trayMenu.IsAmbientOn     = () => AmbientSettingsService.Instance.Current.Enabled;
-            _trayMenu.OnToggleAmbient = () =>
-            {
-                var s = AmbientSettingsService.Instance.Current;
-                s.Enabled = !s.Enabled;
-                AmbientSettingsService.Instance.Save();
-            };
-        }
-        if (context.AutocorrectPresent)
-        {
-            _trayMenu.IsAutocorrectOn = () => AutocorrectSettingsService.Instance.Current.Enabled;
-            _trayMenu.OnToggleAutocorrect = () =>
-            {
-                bool enabled = AutocorrectSettingsService.Instance.Current.Enabled;
-                AutocorrectSettingsService.Instance.SetEnabled(!enabled);
-            };
-        }
         _tray.RightClickRequested += () => _trayMenu.Show();
 
+        // Tray quick-actions panel — left click. Same carrier pattern and
+        // owner as the menu. Every entry follows module presence: an absent
+        // module has no Record button, no file action, no switch.
+        _trayPanel = new TrayQuickActionsHost(_messageHost.Hwnd)
+        {
+            GetIconRect = () => _tray.GetIconRect(),
+            IsRecording = () => _engine?.IsRecording ?? false,
+        };
+        if (context.TranscriptionPresent)
+        {
+            // Record runs the exact path of the transcription hotkey; the
+            // panel closes first so the paste at Stop reaches the window the
+            // user was in. File transcription opens the system file picker
+            // and runs each file through the dictation pipeline (see
+            // App.FileTranscription.cs).
+            _trayPanel.OnRecord = () => OnHotkey(RecordHotkeyId);
+            _trayPanel.OnTranscribeFiles = () => TranscribeFilesFromTray();
+        }
+        // Module switches (App.TrayToggles.cs); Ambient Light in the footer.
+        // Built once: the hotkey actions below derive from the same lists, so
+        // a toggle's hotkey runs exactly what its panel switch runs.
+        IReadOnlyList<TrayToggle> trayToggles = BuildTrayToggles(context);
+        IReadOnlyList<TrayToggle> trayFooterToggles = BuildTrayFooterToggles(context);
+        _trayPanel.Toggles = trayToggles;
+        _trayPanel.FooterToggles = trayFooterToggles;
+        _tray.LeftClickRequested += () => _trayPanel.Show();
+
         _tray.Register(_messageHost.Hwnd);
-        // Presence gates the chords themselves: absent Dictation means no
-        // transcription chord; absent Rewrite leaves only plain transcription.
-        // The unused OS-wide combos stay free for other apps, symmetric with
-        // their settings pages never registering.
-        IReadOnlyList<int> hotkeyIds = HotkeySelection.ForModulePresence(
-            context.TranscriptionPresent,
-            context.RewritePresent);
-        _hotkeyManager = new HotkeyManager(_messageHost.Hwnd, OnHotkey, hotkeyIds);
-        // Try/catch required: RegisterHotKey can fail with err 1409
-        // (ERROR_HOTKEY_ALREADY_REGISTERED) when another process already owns
-        // the chord; typically WhispInteropTest still running through the
-        // scheduled Whisp task, or PowerToys / a third-party app that took
-        // Win+1. Without this safety net, HotkeyManager's throw bubbles to
-        // OnLaunched and the app refuses to start.
+
+        // Global hotkeys (App.Hotkeys.Actions.cs). Presence gates the actions
+        // themselves: an absent module has no action, so its chord is never
+        // registered and stays free for other apps. Only complete chords
+        // (a modifier and a key) are registered; each one is acquired on its
+        // own, so a chord another app owns fails alone and is reported through
+        // the HUD while the others work. The tray stays operational either way
+        // (Record in the left-click panel).
         //
-        // Compromise: the app continues to start but without hotkeys. The tray
-        // remains operational (Settings, Quit, toggle recording by click), so
-        // the user is not locked out. UserFeedback Overlay informs visually
-        // through the HUD at boot.
+        // The Ambient forced-OFF above runs before this registration, so an
+        // Ambient chord cannot bounce the pipeline back on at boot.
+        _hotkeyActions = BuildHotkeyActions(context, [.. trayToggles, .. trayFooterToggles]);
+        _hotkeyManager = new HotkeyManager(_messageHost.Hwnd, OnHotkey, BuildHotkeyBindings());
+        // Try/catch kept for the one remaining throw: the WM_HOTKEY subclass
+        // could not be installed on the message-only window. Without it the
+        // throw would bubble to OnLaunched and the app would refuse to start.
         try
         {
-            _hotkeyManager.Register();
+            ReportHotkeyFailures(_hotkeyManager.Register());
+            _hotkeysInstalled = true;
         }
         catch (Exception ex)
         {
@@ -302,9 +265,12 @@ public partial class App
             DeckleAppSource.Log.UserFeedbackEmitted(
                 2, // Error
                 "Hotkeys unavailable",
-                "Another app owns the chord (often WhispInteropTest still running). Use the tray icon to record.",
+                "Deckle could not listen for its shortcuts. Use the tray panel to record.",
                 1); // Overlay
         }
+        // Editing a chord in settings.json (and, later, in Settings) rebinds
+        // the set when it actually changed.
+        Settings.SettingsService.Instance.Changed += OnShellSettingsChangedForHotkeys;
         context.Milestone("hotkeys");
 
         // No model warmup at boot: nothing is loaded into VRAM while the app

@@ -84,6 +84,14 @@ public sealed record TextArgs(
 // editor is descriptor-owned: the module that declares the setting supplies it.
 public sealed record EditorArgs(Func<FrameworkElement> Build) : SettingArgs;
 
+// ── HotkeyArgs ────────────────────────────────────────────────────────────────
+//
+// Shape of a Hotkey setting. AllowUnbound adds a Clear button that writes null:
+// a module toggle hotkey may be left unbound, the Record hotkey may not (it is
+// the dictation's only keyboard entry point). The value type (HotkeyChord?) is
+// fixed by the kind.
+public sealed record HotkeyArgs(bool AllowUnbound) : SettingArgs;
+
 // ── FolderPickerMode ──────────────────────────────────────────────────────────
 //
 // Whether a folder-path setting lets the user repoint the folder (Configure), let

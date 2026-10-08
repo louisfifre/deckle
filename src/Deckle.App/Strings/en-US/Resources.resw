@@ -134,6 +134,34 @@
   <data name="SettingsComposer_ResetToDefault" xml:space="preserve">
     <value>Reset to default</value>
   </data>
+  <!-- The composer's Hotkey kind: the four modifier toggle buttons, the key
+       capture button (its listening and unbound states), the Clear button and
+       the advisory shown when a captured key has no modifier yet. Composer-owned,
+       resolved from this root map like the reset tooltip above. -->
+  <data name="SettingsComposer_HotkeyModifierCtrl" xml:space="preserve">
+    <value>Ctrl</value>
+  </data>
+  <data name="SettingsComposer_HotkeyModifierShift" xml:space="preserve">
+    <value>Shift</value>
+  </data>
+  <data name="SettingsComposer_HotkeyModifierAlt" xml:space="preserve">
+    <value>Alt</value>
+  </data>
+  <data name="SettingsComposer_HotkeyModifierWin" xml:space="preserve">
+    <value>Win</value>
+  </data>
+  <data name="SettingsComposer_HotkeyPressKey" xml:space="preserve">
+    <value>Press a key</value>
+  </data>
+  <data name="SettingsComposer_HotkeyUnbound" xml:space="preserve">
+    <value>Not set</value>
+  </data>
+  <data name="SettingsComposer_HotkeyClear" xml:space="preserve">
+    <value>Clear</value>
+  </data>
+  <data name="SettingsComposer_HotkeyNeedsModifier" xml:space="preserve">
+    <value>Add Ctrl, Shift, Alt or Win</value>
+  </data>
   <data name="Common_Remove" xml:space="preserve">
     <value>Remove</value>
   </data>
@@ -422,6 +450,18 @@
   <data name="TrayMenu_PrecisionScroll" xml:space="preserve">
     <value>Precision scrolling</value>
   </data>
+  <data name="TrayMenu_Rewrite" xml:space="preserve">
+    <value>Rewrite</value>
+  </data>
+  <data name="TrayMenu_Trackpad" xml:space="preserve">
+    <value>Trackpad</value>
+  </data>
+  <data name="TrayPanel_Record" xml:space="preserve">
+    <value>Record</value>
+  </data>
+  <data name="TrayPanel_StopRecording" xml:space="preserve">
+    <value>Stop recording</value>
+  </data>
   <data name="TrayMenu_Restart" xml:space="preserve">
     <value>Restart</value>
   </data>
@@ -642,8 +682,8 @@
        tooltip in the Page resources). -->
 
   <!-- ─── LlmPage + sections ─────────────────────────────────────────
-       Third page in the Settings nav. Hosts five sections rendered as
-       UserControls (General, ShortcutSlots, Profiles, Models).
+       Third page in the Settings nav. Hosts four sections rendered as
+       UserControls (General, ActiveProfile, Profiles, Models).
        The Ollama InfoBar is inline on the page. -->
 
   <!-- LlmGeneralSection -->
@@ -651,8 +691,6 @@
   <!-- LlmModelsSection -->
 
   <!-- LlmProfilesSection -->
-
-  <!-- LlmShortcutSlotsSection -->
 
   <!-- ─── Settings — TextBlock labels for x:Uid ──────────────────────
        Page titles, subtitles, and section headers rendered as plain

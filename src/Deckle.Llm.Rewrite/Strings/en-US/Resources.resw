@@ -242,8 +242,8 @@
        tooltip in the Page resources). -->
 
   <!-- ─── LlmPage + sections ─────────────────────────────────────────
-       Third page in the Settings nav. Hosts five sections rendered as
-       UserControls (General, ShortcutSlots, Profiles, Models).
+       Third page in the Settings nav. Hosts four sections rendered as
+       UserControls (General, ActiveProfile, Profiles, Models).
        The Ollama InfoBar is inline on the page. -->
   <data name="LlmPage_ResetAll.ToolTipService.ToolTip" xml:space="preserve">
     <value>Reset all rewriting settings to defaults</value>
@@ -342,21 +342,15 @@
     <value>Add profile</value>
   </data>
 
-  <!-- LlmShortcutSlotsSection -->
-  <data name="LlmShortcutsHeader.Text" xml:space="preserve">
-    <value>Rewrite shortcuts</value>
+  <!-- LlmActiveProfileSection -->
+  <data name="LlmActiveProfileHeader.Text" xml:space="preserve">
+    <value>Dictation</value>
   </data>
-  <data name="LlmPrimarySlotCard.Header" xml:space="preserve">
-    <value>Primary rewrite profile</value>
+  <data name="LlmActiveProfileCard.Header" xml:space="preserve">
+    <value>Rewrite profile</value>
   </data>
-  <data name="LlmPrimarySlotCard.Description" xml:space="preserve">
-    <value>Profile triggered by Shift + Win + `.</value>
-  </data>
-  <data name="LlmSecondarySlotCard.Header" xml:space="preserve">
-    <value>Secondary rewrite profile</value>
-  </data>
-  <data name="LlmSecondarySlotCard.Description" xml:space="preserve">
-    <value>Profile triggered by Ctrl + Win + `. Pick (None) to leave this shortcut unbound.</value>
+  <data name="LlmActiveProfileCard.Description" xml:space="preserve">
+    <value>Applied to every dictation. (None) keeps the transcript as spoken.</value>
   </data>
 
   <!-- ─── Settings — TextBlock labels for x:Uid ──────────────────────
@@ -367,7 +361,7 @@
     <value>Rewriting</value>
   </data>
   <data name="LlmPageSubtitleLabel.Text" xml:space="preserve">
-    <value>Clean up and restructure your transcriptions through a local language model via Ollama. Configure rewrite profiles with different models and prompts, then assign them to duration-based rules or the manual shortcut.</value>
+    <value>Clean up and restructure your transcriptions through a local language model via Ollama. Configure rewrite profiles with different models and prompts, then choose the one applied to every dictation.</value>
   </data>
   <data name="LlmPageResetAllLabel.Text" xml:space="preserve">
     <value>Reset all</value>
