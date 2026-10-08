@@ -49,8 +49,16 @@ public sealed partial class TrayQuickActionsHost : IDisposable
     // counts from boot, so a real tick is never 0).
     private long _lastDeactivatedHideTick;
 
-    /// <summary>Starts or stops a dictation, as the transcription hotkey does.</summary>
-    public Action? OnRecord { get; set; }
+    /// <summary>
+    /// Starts or stops a dictation, as the transcription hotkey does.
+    /// Unwired = the Record button is absent.
+    /// </summary>
+    public Action? OnRecord
+    {
+        get => _onRecord;
+        set { _onRecord = value; InvalidateContent(); }
+    }
+    private Action? _onRecord;
 
     /// <summary>Read at each open to label the Record button Record or Stop recording.</summary>
     public Func<bool>? IsRecording { get; set; }

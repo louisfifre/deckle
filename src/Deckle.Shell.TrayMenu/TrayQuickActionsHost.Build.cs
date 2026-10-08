@@ -60,21 +60,27 @@ public sealed partial class TrayQuickActionsHost
         _rows.Clear();
 
         // Record / Stop recording: the accent action, label set at each show.
-        _recordIcon = new FontIcon { Glyph = Glyphs.Microphone };
-        _recordLabel = new TextBlock { Text = Loc.Get("TrayPanel_Record") };
-        _recordButton = new Button
+        _recordButton = null;
+        _recordIcon = null;
+        _recordLabel = null;
+        if (_onRecord is not null)
         {
-            Style = (Style)Application.Current.Resources["AccentButtonStyle"],
-            HorizontalAlignment = HorizontalAlignment.Stretch,
-            Content = new StackPanel
+            _recordIcon = new FontIcon { Glyph = Glyphs.Microphone };
+            _recordLabel = new TextBlock { Text = Loc.Get("TrayPanel_Record") };
+            _recordButton = new Button
             {
-                Orientation = Orientation.Horizontal,
-                Spacing = IconLabelSpacing,
-                Children = { _recordIcon, _recordLabel },
-            },
-        };
-        _recordButton.Click += (_, _) => OnRecordClicked();
-        panel.Children.Add(_recordButton);
+                Style = (Style)Application.Current.Resources["AccentButtonStyle"],
+                HorizontalAlignment = HorizontalAlignment.Stretch,
+                Content = new StackPanel
+                {
+                    Orientation = Orientation.Horizontal,
+                    Spacing = IconLabelSpacing,
+                    Children = { _recordIcon, _recordLabel },
+                },
+            };
+            _recordButton.Click += (_, _) => OnRecordClicked();
+            panel.Children.Add(_recordButton);
+        }
 
         if (_onTranscribeFiles is not null)
         {
@@ -87,17 +93,13 @@ public sealed partial class TrayQuickActionsHost
             panel.Children.Add(transcribe);
         }
 
-        if (_toggles.Count > 0)
+        // A divider separates each group from what precedes it, never leads.
+        foreach (var group in new[] { _toggles, _footerToggles })
         {
-            panel.Children.Add(CreateDivider());
-            foreach (var toggle in _toggles)
-                panel.Children.Add(CreateToggleRow(toggle));
-        }
-
-        if (_footerToggles.Count > 0)
-        {
-            panel.Children.Add(CreateDivider());
-            foreach (var toggle in _footerToggles)
+            if (group.Count == 0) continue;
+            if (panel.Children.Count > 0)
+                panel.Children.Add(CreateDivider());
+            foreach (var toggle in group)
                 panel.Children.Add(CreateToggleRow(toggle));
         }
 
@@ -167,7 +169,7 @@ public sealed partial class TrayQuickActionsHost
         DeckleShellTrayMenuSource.Log.PanelActionClicked();
         DeckleShellTrayMenuSource.Log.PanelActionClickedDetail("record", wasRecording);
         Hide("action:record");
-        OnRecord?.Invoke();
+        _onRecord?.Invoke();
     }
 
     private void OnTranscribeFilesClicked()
