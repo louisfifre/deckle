@@ -1,8 +1,7 @@
 namespace Deckle.Lighting.Ambient;
 
 // Per-mode preset values. Applied onto an AmbientSettings instance
-// when the user picks a preset in the Settings page or the Playground
-// dropdown. Custom is intentionally absent — picking Custom doesn't
+// when the user picks a preset in the Settings page. Custom is intentionally absent — picking Custom doesn't
 // reset anything, it just labels the current values as user-owned so
 // a later preset switch can detect "the user has a custom tuning I'm
 // about to overwrite".

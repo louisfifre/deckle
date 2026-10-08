@@ -4,7 +4,7 @@ namespace Deckle.Lighting.Ambient;
 
 // Process-wide owner of the active Hue bridge pairing. Wraps
 // HueDiscovery + HueBridgeClient + AmbientSettings persistence so the
-// Playground and the Settings AmbientPage share one source of truth :
+// Settings AmbientPage and LightZonesCard share one source of truth :
 // the Bridge they observe is the same instance, persistence is done
 // in one place, and re-pairing from one surface is reflected
 // immediately in the other via the BridgeChanged event.
@@ -24,7 +24,7 @@ namespace Deckle.Lighting.Ambient;
 // singleton so it rarely fires in production code paths.
 //
 // Threading. Pair / Restore / Forget mutate _bridgeClient under a
-// lock so concurrent UI clicks from Playground + Settings don't
+// lock so concurrent UI clicks from AmbientPage + LightZonesCard don't
 // produce torn state. The Bridge property reads outside the lock
 // (snapshot of an immutable reference) — readers see a consistent
 // HueBridgeClient or null, never a half-constructed instance.
@@ -43,13 +43,13 @@ public sealed class HuePairingService : IDisposable
     private bool _disposed;
 
     // Default pairing window — matches the visible countdown the
-    // Playground UI shows. Callers can override per-call if they need
+    // AmbientPage shows. Callers can override per-call if they need
     // a shorter window for testing.
     public static TimeSpan DefaultPairingTimeout => TimeSpan.FromSeconds(30);
     public static TimeSpan DefaultPollInterval   => TimeSpan.FromSeconds(2);
 
     // Lazy singleton init runs RestoreFromSettings as a side-effect on
-    // first access so any caller (Playground, AmbientPage, AmbientEngine)
+    // first access so any caller (AmbientPage, LightZonesCard, AmbientEngine)
     // sees a restored Bridge without having to coordinate a boot-time
     // call. RestoreFromSettings is idempotent — calling it again later
     // (e.g. from a UI Refresh) re-builds the client from the current

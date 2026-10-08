@@ -44,12 +44,12 @@ namespace Deckle.Lighting.Ambient;
 // zoned variant.
 //
 // Why an engine at all (vs. wiring the events directly in the
-// Playground or in AmbientPage code-behind) : we want a single
+// AmbientPage code-behind) : we want a single
 // well-tested object that owns the lifecycle (start, stop, dispose),
 // the cadence (throttle pushes to a sane Hz against the bridge),
 // and the error surface (one Warning when a push fails, never spam
-// the LogWindow). Both the Playground tuning surface and the Settings
-// master toggle route through the same engine — only the trigger differs.
+// the LogWindow). The Settings master toggle and the AmbientPage
+// tuning controls route through the same engine.
 //
 // Ownership.
 //   - The ScreenCaptureService is owned. The engine constructs it in
@@ -64,7 +64,7 @@ namespace Deckle.Lighting.Ambient;
 //   - The ILightOutput is owned. ConnectAsync on Start ; DisposeAsync
 //     (or Dispose) in the Stop cleanup.
 //   - The HueBridgeClient is borrowed from HuePairingService, the
-//     process-wide singleton owner shared with the Playground and the
+//     process-wide singleton owner shared with the
 //     Settings AmbientPage. The engine releases the reference on Stop
 //     but never disposes it.
 //   - The engine owns its CancellationTokenSource and the push
@@ -127,7 +127,7 @@ public sealed partial class AmbientEngine : IAsyncDisposable
     // monitor selection + HDR negotiation are picked up from the
     // current Windows state rather than a stale snapshot. The bridge
     // client is borrowed from HuePairingService (singleton owner,
-    // shared with the Playground and Settings AmbientPage) — never
+    // shared with the Settings AmbientPage) — never
     // disposed here, the reference is simply released on Stop.
     private ScreenCaptureService? _capture;
     private HueBridgeClient? _bridgeClient;
@@ -303,7 +303,7 @@ public sealed partial class AmbientEngine : IAsyncDisposable
 
     // Most-recent "intent" colour after tuning + smoothing, even when
     // the ChangeThreshold delta check drops the actual push. The
-    // Playground swatches read these via SnapshotEmittedColors() to
+    // AmbientPreviewCard reads these via SnapshotEmittedColors() to
     // visualise the colour the engine wants to send right now — what
     // the user would see if the lamp were faster than the delta gate.
     // Key "group" in group mode, fixture id in multi mode. The lock
@@ -361,8 +361,8 @@ public sealed partial class AmbientEngine : IAsyncDisposable
     public IReadOnlyList<LightDescriptor>? MultiLights => _multiLights;
 
     // Preview accessors — forwarded from the owned FrameSampler. Null /
-    // zero / 1.0 when the engine is idle ; consumers (Playground
-    // preview grid, AmbientPage tuning panel) should treat the absence
+    // zero / 1.0 when the engine is idle ; consumers (AmbientPreviewCard,
+    // AmbientPage tuning panel) should treat the absence
     // of a sample as "engine not running" and render an empty state.
     public SampledFrame? LatestSample => _sampler?.LatestSample;
     public int   GridCols     => _sampler?.GridCols ?? 0;
@@ -379,7 +379,7 @@ public sealed partial class AmbientEngine : IAsyncDisposable
 
     // State machine fired on every transition. Consumers (App tray
     // tooltip + log, AmbientPage ProgressRing / InfoBar / ModeCombo
-    // gating, Playground Pipeline UI) subscribe to surface the live
+    // gating) subscribe to surface the live
     // status and distinguish a transient "Starting" / "Stopping" from
     // a settled "Off" / "Running". Error is a transient blip — the
     // engine immediately collapses to Off after raising it, so the

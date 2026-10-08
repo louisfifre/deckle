@@ -100,9 +100,9 @@ public sealed partial class AmbientEngine
             // ── Wire owned deps ───────────────────────────────────
             // The bridge client is owned by HuePairingService — a
             // process-wide singleton that auto-restores from settings
-            // on first access (and is shared with the Playground +
-            // Settings AmbientPage so re-pairing from one surface
-            // takes effect everywhere without an engine restart). The
+            // on first access (and is shared with the Settings
+            // AmbientPage and LightZonesCard so re-pairing from one
+            // surface takes effect everywhere without an engine restart). The
             // engine borrows the reference, never disposes it.
             // Verify the cached LAN endpoint before allocating capture
             // resources. A DHCP move is repaired through one local
@@ -419,8 +419,7 @@ public sealed partial class AmbientEngine
         // loop's exit first (cancellation already triggered above),
         // then DisposeOwnedDepsAsync which releases the DXGI duplication
         // held by the capture — freeing the output for any other
-        // ScreenCaptureService (e.g. the Playground's standalone test
-        // toggle) that wants to call DuplicateOutput1 on the same
+        // other ScreenCaptureService that wants to call DuplicateOutput1 on the same
         // monitor right after.
         var pushTask = _pushLoopTask;
         _stopCleanupTask = Task.Run(async () =>

@@ -116,7 +116,7 @@ public sealed partial class AmbientEngine
             // The single quantisation of this light's tick.
             LightColor targetColor = _blackLatch.Quantize(light.Id, target);
 
-            // Stash the intent colour for the Playground swatches —
+            // Stash the intent colour for the AmbientPreviewCard swatches —
             // batched event fires once at the end of the loop.
             PublishMultiEmitted(light.Id, targetColor);
 
@@ -147,7 +147,7 @@ public sealed partial class AmbientEngine
 
         // Fire the observable event once per tick. Even when toPush is
         // empty (every light dropped by the delta gate) the intent map
-        // has been refreshed by PublishMultiEmitted ; the Playground
+        // has been refreshed by PublishMultiEmitted ; the preview
         // swatches want to reflect that.
         EmittedColorsChanged?.Invoke();
 

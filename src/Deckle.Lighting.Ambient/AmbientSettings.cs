@@ -21,9 +21,9 @@ public sealed class AmbientSettings
 
     // ── Hue bridge persistence (J3 step 2) ─────────────────────────
     //
-    // Populated by the Playground after a successful Pair + group
-    // selection. On subsequent app starts the Playground (and later
-    // the AmbientPage) restores the HueBridgeClient from these values
+    // Populated by the Settings AmbientPage after a successful Pair +
+    // group selection. On subsequent app starts the page restores the
+    // HueBridgeClient from these values
     // without prompting the user to press the bridge's link button
     // again — the bridge keeps the username valid until manually
     // revoked from the Hue mobile app.
@@ -45,8 +45,8 @@ public sealed class AmbientSettings
     public string? HueUsername { get; set; }
 
     /// <summary>CLIP v1 id of the last group the user selected (e.g.
-    /// "1", "5"). Used to pre-select the group in the Playground combo
-    /// after restoring from settings.</summary>
+    /// "1", "5"). Used to pre-select the group in the Settings
+    /// AmbientPage after restoring from settings.</summary>
     public string? HueLastGroupId { get; set; }
 
     // ── Monitor selection ──────────────────────────────────────────
@@ -81,10 +81,10 @@ public sealed class AmbientSettings
     // one that reads as room lighting rather than as an effect.
 
     /// <summary>Active mode preset. Defaults to <see cref="AmbientMode.Ambient"/>.
-    /// Switching the mode (via the Playground or the Settings page)
+    /// Switching the mode (from the Settings page)
     /// invokes <see cref="AmbientSettingsService.ApplyPreset(AmbientMode)"/>
     /// which copies the preset's tuning snapshot onto the other knobs.
-    /// Touching any tuning slider in the Playground silently switches
+    /// Touching any tuning slider in the Settings page silently switches
     /// the mode to <see cref="AmbientMode.Custom"/>.</summary>
     public AmbientMode Mode { get; set; } = AmbientMode.Ambient;
 
@@ -138,7 +138,7 @@ public sealed class AmbientSettings
     /// than columns in the sampler grid). By-cells keeps the same
     /// sampler-cell count on every edge — the band is the same number
     /// of preview cells thick on top as on the sides, regardless of
-    /// aspect ratio. The Playground exposes this as a two-option
+    /// aspect ratio. The Settings page exposes this as a two-option
     /// picker ; the engine swaps the formula on every tick.</summary>
     public BorderThicknessMode BorderMode { get; set; } = BorderThicknessMode.Share;
 
@@ -148,7 +148,7 @@ public sealed class AmbientSettings
     /// y ∈ [1 − <see cref="BorderDepth"/>, 1], the left in
     /// x ∈ [0, <see cref="BorderDepth"/>], the right in
     /// x ∈ [1 − <see cref="BorderDepth"/>, 1]. Range of practical
-    /// interest [0.05, 0.5] ; the slider in the Playground clamps to
+    /// interest [0.05, 0.5] ; the Settings slider clamps to
     /// that interval. Default 0.33 — the V0 lateral value, a
     /// one-third slice that works for a 3-lamp Top + Left + Right
     /// setup without over-summarising the frame.</summary>
@@ -160,7 +160,7 @@ public sealed class AmbientSettings
     /// Same cell count applied on every edge — top, bottom, left, right
     /// — so the band feels equally thick on every side regardless of
     /// the screen aspect ratio. Range of practical interest [4, 24]
-    /// stepping by 2 ; the Playground slider clamps and snaps to that
+    /// stepping by 2 ; the Settings slider clamps and snaps to that
     /// grid so every position lands on an even cell count. 24 cells
     /// on a 60×33 grid covers ~73 % of the vertical axis and ~40 % of
     /// the horizontal — enough headroom for narrow-aspect monitors or
@@ -174,7 +174,7 @@ public sealed class AmbientSettings
     //
     // User-tunable colour-grading controls (exposure / saturation /
     // lift / response curve). The detailed sliders live in the
-    // Playground; AmbientEngine reads the settings on every tick so
+    // Settings AmbientPage; AmbientEngine reads the settings on every tick so
     // changes apply live without restarting the pipeline.
     //
     // Why these four :
@@ -255,7 +255,7 @@ public sealed class AmbientSettings
     /// (AmbientPushGate). 0 disables the gate, useful when smoothing
     /// already does the heavy lifting. Default 6 (raised from the
     /// legacy 3) damps the residual quantisation noise without
-    /// killing perceptible motion. Tuned in the Playground.</summary>
+    /// killing perceptible motion. Tuned in Settings.</summary>
     public int ChangeThreshold { get; set; } = 6;
 
     /// <summary>Exponential moving average factor applied to the colour
@@ -270,7 +270,7 @@ public sealed class AmbientSettings
     /// without dulling real scene changes. Below ~0.10 the lamp lags
     /// perceptibly during fast cuts. Applied per-light in multi
     /// mode, on the single group colour in group mode. Range of
-    /// practical interest [0.05, 1.0]. Tuned in the Playground.</summary>
+    /// practical interest [0.05, 1.0]. Tuned in Settings.</summary>
     public double SmoothingAlpha { get; set; } = 0.30;
 }
 
@@ -278,7 +278,7 @@ public sealed class AmbientSettings
 /// to the lights. The active value lives in <see cref="AmbientSettings.Mode"/>.
 /// Game / Movie / Ambient carry preset tunings ; Custom is the
 /// implicit mode the user lands on as soon as they move a slider in
-/// the Playground, signalling "I'm tuning my own thing — don't
+/// the Settings page, signalling "I'm tuning my own thing — don't
 /// overwrite my values when a preset changes".</summary>
 public enum AmbientMode
 {
@@ -298,7 +298,7 @@ public enum AmbientMode
     Ambient,
 
     /// <summary>Custom — every tuning knob lives where the user put it.
-    /// The Playground sets this implicitly the moment any slider is
+    /// AmbientViewModel sets this implicitly the moment any slider is
     /// touched, so a preset switch never silently overwrites a hand-
     /// calibrated setup.</summary>
     Custom,

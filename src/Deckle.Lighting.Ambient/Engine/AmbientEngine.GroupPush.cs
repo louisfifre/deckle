@@ -39,7 +39,7 @@ public sealed partial class AmbientEngine
         // in float.
         LightColor color = _blackLatch.Quantize(GroupKey, target);
 
-        // Publish the intent colour for the Playground swatch viewer
+        // Publish the intent colour for the AmbientPreviewCard swatches
         // even when the delta gate drops or holds the actual push.
         PublishGroupEmitted(color);
 
