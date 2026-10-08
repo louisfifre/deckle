@@ -943,7 +943,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   ├── JsonlSink.cs
 │   │   │   ├── LogWindowSink.cs
 │   │   │   └── RoutedJsonlSink.cs
-│   │   ├── AGENTS.md  — [agent-instructions] Observability foundation — EventSource providers, levels, sinks, JSONL contract.
+│   │   ├── AGENTS.md  — [agent-instructions] Observability foundation — EventSource providers, levels, sinks.
 │   │   ├── CLAUDE.md
 │   │   ├── CONTEXT.md  — context-deckle-diagnostics [agent-instructions] Observability vocabulary for the Diagnostics family (.Logging, .Telemetry inclu…
 │   │   ├── Deckle.Diagnostics.csproj
@@ -1630,7 +1630,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   ├── WhisperViewModel.Settings.cs
 │   │   │   ├── WhisperViewModel.Streaming.cs
 │   │   │   └── WhisperViewModel.Telemetry.cs
-│   │   ├── AGENTS.md  — [agent-instructions] Backend-agnostic transcription orchestrator — the IAsrBackend boundary, the mod…
+│   │   ├── AGENTS.md  — [agent-instructions] Transcription orchestrator — ASR boundary, model lifecycle, clipboard rules.
 │   │   ├── CLAUDE.md
 │   │   ├── CONTEXT.md  — context-deckle-transcription [agent-instructions] Transcription vocabulary — the two entry points (dictation, file transcription)…
 │   │   ├── Deckle.Transcription.csproj
@@ -1703,7 +1703,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── SpeechTrimResult.cs
 │   │   └── VadService.cs
 │   └── Deckle.Vision/
-│       ├── AGENTS.md  — [agent-instructions] Screen-capture and frame-analysis module — DXGI Output Duplication, the transie…
+│       ├── AGENTS.md  — [agent-instructions] Screen capture and frame analysis — DXGI duplication, recovery, HDR.
 │       ├── CapturedFrame.cs
 │       ├── CaptureMonitor.cs
 │       ├── CLAUDE.md
