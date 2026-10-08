@@ -44,7 +44,7 @@ public sealed partial class HudPage
         var compositor = ElementCompositionPreview.GetElementVisual(NakedPreviewHost).Compositor;
         bool isDark = ActualTheme != ElementTheme.Light;
         bool animations = SettingsService.Instance.Current.Overlay.Animations;
-        var material = HudMaterialTuning.Current;
+        var material = HudGeometryTuning.ApplyTo(HudMaterialTuning.Current);
         if (ViewModel.CurrentTarget == HudTarget.CountdownMaterial)
         {
             _nakedPreview = HudComposition.CreateNakedMaskPreview(
@@ -80,7 +80,6 @@ public sealed partial class HudPage
             _countdownConfig = _countdownConfig with
             {
                 StartReach = defaults.StartReach, EndReach = defaults.EndReach,
-                StrokeThickness = defaults.StrokeThickness,
             };
             RebuildTuningPanel();
         });
@@ -91,8 +90,7 @@ public sealed partial class HudPage
             value => _countdownConfig = _countdownConfig with { StartReach = (float)value / 100f }, rebuild: true);
         AddFloatRow(geometry, "End reach (%)", 0, 100, 1, _countdownConfig.EndReach * 100,
             value => _countdownConfig = _countdownConfig with { EndReach = (float)value / 100f }, rebuild: true);
-        AddFloatRow(geometry, "Stroke thickness (dip)", 0.5, 12, 0.5, _countdownConfig.StrokeThickness,
-            value => _countdownConfig = _countdownConfig with { StrokeThickness = (float)value }, rebuild: true);
+        geometry.Children.Add(TuningHelp("Thickness and inset follow the HUD geometry section."));
 
         var fade = NewTuningSection("Countdown fade", () =>
         {

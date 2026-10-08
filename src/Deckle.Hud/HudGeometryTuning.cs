@@ -3,7 +3,8 @@ using Deckle.Composition;
 namespace Deckle.Hud;
 
 // Process-local geometry shared by the base stroke across HUD states.
-// Countdown geometry and material settings remain independent.
+// The countdown contour reads it too; countdown reach/fade and material
+// settings remain independent.
 public static class HudGeometryTuning
 {
     private sealed record Snapshot(HudComposition.ConicArcStrokeConfig Config);

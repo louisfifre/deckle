@@ -57,3 +57,4 @@ Manual WinUI validation is still required for both visual issues: enter the page
 - **Invariant:** the base stroke has one shared, live width; material, sweep masks and countdown geometry remain independent.
 - **Fix:** carry StrokeThickness and InsetDip through the production config and a process-local geometry source observed by the real HUD; both update together rather than relying on a mutable inset read only when the next stroke is created.
 - **Regression coverage:** HudGeometryTuningTests.SharedThicknessPreservesMaterialMasksAndCountdownGeometry. Visual thickness changes require a manual HUD check.
+- 2026-10-08: the countdown contour now reads the same thickness and inset as the base stroke; its own thickness knob is gone.

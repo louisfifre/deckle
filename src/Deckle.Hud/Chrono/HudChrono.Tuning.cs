@@ -23,8 +23,14 @@ public sealed partial class HudChrono
 
     private void OnGeometryTuningChanged()
     {
-        if (DispatcherQueue.HasThreadAccess) RebuildTunedStroke();
-        else DispatcherQueue.TryEnqueue(RebuildTunedStroke);
+        if (!DispatcherQueue.HasThreadAccess)
+        {
+            DispatcherQueue.TryEnqueue(OnGeometryTuningChanged);
+            return;
+        }
+        // The countdown contour is drawn on the stroke's silhouette.
+        RebuildCountdownVisual();
+        RebuildTunedStroke();
     }
 
     private void RebuildTunedStroke()

@@ -81,7 +81,7 @@ public sealed partial class HudChrono
         var size = new Vector2(width, height);
         var compositor = ElementCompositionPreview.GetElementVisual(CountdownSurfaceHost).Compositor;
         _countdownVisual = HudComposition.CreateUtteranceCountdownVisual(
-            compositor, size, size, HudMaterialTuning.Current,
+            compositor, size, size, HudGeometryTuning.ApplyTo(HudMaterialTuning.Current),
             ChronoRoot.ActualTheme == ElementTheme.Dark,
             style, materialOpacity: 0f, animationsEnabled: _animationsEnabled);
         _renderedCountdownValue = _countdownState.ValueAt(Stopwatch.GetElapsedTime(_countdownStarted));
