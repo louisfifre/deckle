@@ -67,6 +67,7 @@ public partial class App
         TryShutdown("trackpad shutdown", ShutdownTrackpad);
         TryShutdown("taskbar cover shutdown", ShutdownTaskbarCover);
         TryShutdown("precision scroll shutdown", ShutdownPrecisionScroll);
+        TryShutdown("orchestration shutdown", ShutdownOrchestration);
         TryShutdown("mouse wheel shutdown", ShutdownMouseWheel);
         TryShutdown("paragraph rewrite shutdown", ShutdownParagraphRewrite);
         TryShutdown("autocorrect shutdown", ShutdownAutocorrect);
