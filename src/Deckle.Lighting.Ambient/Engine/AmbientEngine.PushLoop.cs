@@ -46,8 +46,9 @@ public sealed partial class AmbientEngine
                 var sample = _sampler!.LatestSample;
                 if (sample is null)
                 {
-                    // Sampler hasn't produced a frame yet (first ~66 ms
-                    // after Start). Wait one cadence and retry.
+                    // Sampler hasn't produced a frame yet (the first
+                    // capture frame after Start). Wait one push interval
+                    // and retry.
                     await Task.Delay(_pushIntervalMs, ct).ConfigureAwait(false);
                     nextDeadline = Stopwatch.GetTimestamp();
                     continue;

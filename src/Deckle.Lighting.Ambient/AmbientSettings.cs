@@ -257,8 +257,11 @@ public sealed class AmbientSettings
     /// <summary>Exponential moving average factor applied to the colour
     /// pushed to each light, in [0, 1]. 1.0 disables the filter
     /// (instantaneous response, legacy behaviour). Lower values trade
-    /// reactivity for stability — 0.30 (the default) damps over
-    /// roughly 3-5 frames at 15 Hz, which is enough to swallow the
+    /// reactivity for stability. The value is defined per push tick at
+    /// the 15 Hz reference rate and adapted to the transport's actual
+    /// push rate (AmbientPushCadence.AdaptSmoothingAlpha); it does not
+    /// depend on the capture rate. 0.30 (the default) damps over
+    /// roughly 3-5 reference ticks (200-330 ms), which is enough to swallow the
     /// jitter of small moving reflections in a globally dark scene
     /// without dulling real scene changes. Below ~0.10 the lamp lags
     /// perceptibly during fast cuts. Applied per-light in multi
