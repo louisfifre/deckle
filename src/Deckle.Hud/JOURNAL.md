@@ -7,6 +7,12 @@ type: module-journal
 
 Not read by default. Come here for the *why* behind a HUD choice the code no longer shows — DWM/layered constraints, deferred work, render rules.
 
+## 2026-10-08 — Recording ignores the generic conic sliders by construction
+
+Found in code, not run. `HudComposition.Factories.CreateRecordingStroke` (`Deckle.Composition/Core/HudComposition.Factories.cs:85-92`) copies the config `with` the `Recording*` values over the generic `ConicSpanTurns`, `ConicLeadFadeTurns`, `ConicTailFadeTurns`, `ConicFadeCurve`, `ArcMirror` and `ArcPhaseTurns` slots before painting, and freezes arc rotation. The Playground's Recording target still lists the generic "Conic fade & span" section next to the "Recording" one (`Deckle.Playground/ViewModels/HudViewModel.cs:171-180`), so those generic rows rebuild the preview and change nothing; the rows that act on Recording are the `RecordingConic*` ones. Reported by Louis as "Recording mal branché".
+
+Also found in git: the Playground never persists HUD tuning on purpose. A Save existed for one day (`6ced4c35`, 2026-04-24, removed by `52867877` on 2026-04-25) because a value that proves right must become a code default, not a second source of truth. The statics that then mirrored the live HUD have since narrowed to `HudComposition.InsetDip`; the arc knobs live in a `ConicArcStrokeConfig` fed only to the Playground's own preview.
+
 ## 2026-06-15 — Digit reveal: pinned, not swept; RMS-on-digits rejected
 
 The left→right swipe wave over the Stop digits is retired for a static pinned reveal — the six glyphs read as one window onto the rotating clone cone. The dormant animator was subsequently deleted on 2026-07-18: restoring the wave is now a product decision, not a hidden constant flip.
