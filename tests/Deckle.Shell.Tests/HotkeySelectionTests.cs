@@ -7,29 +7,19 @@ namespace Deckle.Shell.Tests;
 [Trait("Category", "unit")]
 public sealed class HotkeySelectionTests
 {
-    [Theory]
-    [InlineData(false, false, 0)]
-    [InlineData(false, true, 0)]
-    [InlineData(true, false, 1)]
-    [InlineData(true, true, 3)]
-    public void ModulePresenceControlsTheExposedChords(
-        bool transcriptionPresent,
-        bool rewritePresent,
-        int expectedCount)
+    [Fact]
+    public void TranscriptionPresenceExposesOnlyTheTranscribeChord()
     {
-        IReadOnlyList<int> ids = HotkeySelection.ForModulePresence(
-            transcriptionPresent,
-            rewritePresent);
+        IReadOnlyList<int> ids = HotkeySelection.ForModulePresence(transcriptionPresent: true);
 
-        Assert.Equal(expectedCount, ids.Count);
-        Assert.Equal(
-            transcriptionPresent,
-            ids.Contains(NativeMethods.HOTKEY_ID_TRANSCRIBE));
-        Assert.Equal(
-            transcriptionPresent && rewritePresent,
-            ids.Contains(NativeMethods.HOTKEY_ID_PRIMARY_REWRITE));
-        Assert.Equal(
-            transcriptionPresent && rewritePresent,
-            ids.Contains(NativeMethods.HOTKEY_ID_SECONDARY_REWRITE));
+        Assert.Equal([NativeMethods.HOTKEY_ID_TRANSCRIBE], ids);
+    }
+
+    [Fact]
+    public void AbsentTranscriptionExposesNoChord()
+    {
+        IReadOnlyList<int> ids = HotkeySelection.ForModulePresence(transcriptionPresent: false);
+
+        Assert.Empty(ids);
     }
 }

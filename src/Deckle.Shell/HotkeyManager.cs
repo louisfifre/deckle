@@ -7,8 +7,8 @@ namespace Deckle.Shell;
 // (message-only window in our case) without replacing its WndProc — the only
 // safe approach.
 //
-// Layout portability: the three chords all use the physical key to the left
-// of "1" (scancode 0x29). At registration time we resolve the current VK for
+// Layout portability: the chord uses the physical key to the left of "1"
+// (scancode 0x29). At registration time we resolve the current VK for
 // that scancode via MapVirtualKeyExW(GetKeyboardLayout(0)). On layout switch
 // we receive WM_INPUTLANGCHANGE, unregister, re-resolve, re-register.
 public sealed class HotkeyManager : IDisposable
@@ -27,16 +27,12 @@ public sealed class HotkeyManager : IDisposable
     private static readonly UIntPtr SubclassId = new(0x5748_4B45); // "WHKE"
 
     // (id, modifiers) pairs for RegisterAll / UnregisterAll — the full
-    // catalogue of chords the shell knows how to bind. Adding a 4th hotkey
-    // is just adding a line here.
+    // catalogue of chords the shell knows how to bind. One chord today, the
+    // transcribe toggle, registered when transcription is present.
     private static readonly GlobalHotkeyBinding[] Catalogue =
     {
         new(NativeMethods.HOTKEY_ID_TRANSCRIBE,
             NativeMethods.MOD_WIN | NativeMethods.MOD_NOREPEAT),
-        new(NativeMethods.HOTKEY_ID_PRIMARY_REWRITE,
-            NativeMethods.MOD_SHIFT | NativeMethods.MOD_WIN | NativeMethods.MOD_NOREPEAT),
-        new(NativeMethods.HOTKEY_ID_SECONDARY_REWRITE,
-            NativeMethods.MOD_CONTROL | NativeMethods.MOD_WIN | NativeMethods.MOD_NOREPEAT),
     };
 
     // The subset of the catalogue this instance actually binds. The host

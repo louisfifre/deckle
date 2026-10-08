@@ -68,11 +68,6 @@ public sealed class LlmSettings
     public string? PrimaryRewriteProfileId { get; set; }
     public string? PrimaryRewriteProfileName { get; set; }
 
-    // Legacy secondary slot, still read by the secondary rewrite chord; it
-    // goes away with that chord.
-    public string? SecondaryRewriteProfileId { get; set; }
-    public string? SecondaryRewriteProfileName { get; set; }
-
     // Three profiles aligned with cleanup brackets (lib/corpus.py:38-47),
     // tuned through an iterative optimization loop on Ministral 14B Q4 (local
     // Ollama). Intervention gradient: smoothing (disfluencies) → refinement

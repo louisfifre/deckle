@@ -215,13 +215,11 @@ public partial class App
         _tray.LeftClickRequested += () => _trayPanel.Show();
 
         _tray.Register(_messageHost.Hwnd);
-        // Presence gates the chords themselves: absent Dictation means no
-        // transcription chord; absent Rewrite leaves only plain transcription.
-        // The unused OS-wide combos stay free for other apps, symmetric with
-        // their settings pages never registering.
+        // Presence gates the chord itself: absent Dictation means no
+        // transcription chord, leaving the OS-wide combo free for other apps,
+        // symmetric with its settings page never registering.
         IReadOnlyList<int> hotkeyIds = HotkeySelection.ForModulePresence(
-            context.TranscriptionPresent,
-            context.RewritePresent);
+            context.TranscriptionPresent);
         _hotkeyManager = new HotkeyManager(_messageHost.Hwnd, OnHotkey, hotkeyIds);
         // Try/catch required: RegisterHotKey can fail with err 1409
         // (ERROR_HOTKEY_ALREADY_REGISTERED) when another process already owns
