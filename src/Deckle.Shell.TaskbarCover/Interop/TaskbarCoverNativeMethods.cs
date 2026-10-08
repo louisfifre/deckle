@@ -56,16 +56,6 @@ internal static class TaskbarCoverNativeMethods
     [DllImport("gdi32.dll")]
     public static extern bool DeleteObject(IntPtr hObject);
 
-    // ── Timers ────────────────────────────────────────────────────────────────
-
-    public const uint WM_TIMER = 0x0113;
-
-    [DllImport("user32.dll", SetLastError = true)]
-    public static extern UIntPtr SetTimer(IntPtr hWnd, UIntPtr nIDEvent, uint uElapse, IntPtr lpTimerFunc);
-
-    [DllImport("user32.dll")]
-    public static extern bool KillTimer(IntPtr hWnd, UIntPtr uIDEvent);
-
     // ── Taskbar position (SHAppBarMessage) ───────────────────────────────────
     //
     // ABM_GETTASKBARPOS fills uEdge (ABE_* — the TaskbarEdge ordinals) and rc
@@ -124,7 +114,7 @@ internal static class TaskbarCoverNativeMethods
     // change we re-evaluate suppression and climb back above the taskbar, which
     // Explorer re-asserts topmost on fullscreen exit. An in-place F11 toggle
     // raises no foreground event; the location-change hook on the foreground
-    // window catches that one instead — no poll on either path.
+    // window catches that one instead — both paths are event driven.
     // GetShellWindow / GetDesktopWindow let the fullscreen geometry probe
     // exclude the desktop itself — clicking the wallpaper makes it foreground
     // and it covers the whole monitor, so without the guard it reads as a

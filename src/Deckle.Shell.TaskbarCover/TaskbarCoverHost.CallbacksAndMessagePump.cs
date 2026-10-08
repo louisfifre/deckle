@@ -47,7 +47,6 @@ public sealed partial class TaskbarCoverHost
         }
         if (_hwnd != IntPtr.Zero)
         {
-            if (_recoverTimerArmed) KillTimer(_hwnd, TIMER_RECOVER);
             WTSUnRegisterSessionNotification(_hwnd);
             NativeMethods.DestroyWindow(_hwnd);
             _hwnd = IntPtr.Zero;
@@ -64,16 +63,14 @@ public sealed partial class TaskbarCoverHost
             _brush = IntPtr.Zero;
         }
 
-        // Re-arm the boot-pessimistic state for a potential restart.
-        _coverVisible       = false;
-        _cursorInRevealZone = true;
-        _recoverTimerArmed  = false;
-        _appSuppressed      = false;
-        _systemSuspended    = false;
-        _foregroundHwnd     = IntPtr.Zero;
-        _layoutKnown        = false;
+        // Restore the boot-pessimistic state for a potential restart.
+        _coverVisible        = false;
+        _coverAlpha          = 0;
+        _appSuppressed       = false;
+        _systemSuspended     = false;
+        _foregroundHwnd      = IntPtr.Zero;
+        _layoutKnown         = false;
         _layoutFailureLogged = false;
-        _recoverArmFailureLogged = false;
     }
 
     private IntPtr WndProc(IntPtr hWnd, uint msg, IntPtr wParam, IntPtr lParam)
@@ -92,10 +89,6 @@ public sealed partial class TaskbarCoverHost
 
             case WM_DISPLAYCHANGE:
                 RebuildLayout("display_change");
-                return IntPtr.Zero;
-
-            case WM_TIMER:
-                if ((long)wParam == TIMER_RECOVER_ID) OnRecoverTimer();
                 return IntPtr.Zero;
 
             case WM_POWERBROADCAST:

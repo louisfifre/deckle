@@ -1545,11 +1545,11 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── CoverGeometry.cs
 │   │   ├── Deckle.Shell.TaskbarCover.csproj
 │   │   ├── DeckleShellTaskbarCoverSource.cs
+│   │   ├── TaskbarCoverHost.Approach.cs
 │   │   ├── TaskbarCoverHost.CallbacksAndMessagePump.cs
 │   │   ├── TaskbarCoverHost.cs
 │   │   ├── TaskbarCoverHost.GeometryAndFullscreen.cs
 │   │   ├── TaskbarCoverHost.LifecycleAndWindow.cs
-│   │   ├── TaskbarCoverHost.RevealAndTimer.cs
 │   │   ├── TaskbarCoverHost.Visibility.cs
 │   │   ├── TaskbarCoverSettings.cs
 │   │   └── TaskbarCoverSettingsService.cs

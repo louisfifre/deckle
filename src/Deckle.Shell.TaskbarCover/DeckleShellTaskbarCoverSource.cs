@@ -5,9 +5,10 @@ namespace Deckle.Shell.TaskbarCover;
 
 // TaskbarCover module provider: host lifecycle, taskbar layout, cover
 // visibility transitions and the suppression/suspension gates. Cursor
-// movement itself is never logged — the WinEvent stream runs at input
-// cadence and only its state transitions (zone enter / re-cover) carry
-// diagnostic value; those surface through CoverShown / CoverHidden.
+// movement itself is never logged, nor is each opacity step of the
+// approach-zone fade — the WinEvent stream runs at input cadence and only
+// visibility transitions (band gone on the taskbar, back on zone exit)
+// carry diagnostic value; those surface through CoverShown / CoverHidden.
 //
 // Verbose/Info separation per Deckle.Diagnostics/CLAUDE.md: an Info is a
 // short Capital sentence with no IDs and no k=v; the technical detail
@@ -46,11 +47,10 @@ public sealed class DeckleShellTaskbarCoverSource : DeckleEventSource
     public const int EvtSystemResumedDetail   = 18;
     public const int EvtCursorHookFailed      = 19;
     public const int EvtSessionNotifyFailed   = 20;
-    public const int EvtTimerArmFailed        = 21;
-    public const int EvtTimerArmFailedDetail  = 22;
+    // 21, 22 and 25 are reserved: TimerArmFailed, TimerArmFailedDetail and
+    // TimerArmRecovered, retired with the re-cover timer (2026-10-08).
     public const int EvtForegroundHookFailed  = 23;
     public const int EvtLayoutQueryRecovered  = 24;
-    public const int EvtTimerArmRecovered     = 25;
 
     // ── Host lifecycle ────────────────────────────────────────────────────────
 
@@ -275,33 +275,5 @@ public sealed class DeckleShellTaskbarCoverSource : DeckleEventSource
     public void ForegroundHookFailed()
     {
         if (IsEnabled()) WriteEvent(EvtForegroundHookFailed);
-    }
-
-    [Event(EvtTimerArmFailed,
-           Level = EventLevel.Warning,
-           Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "The re-cover timer failed to arm — the band may not re-cover after the cursor leaves")]
-    public void TimerArmFailed()
-    {
-        if (IsEnabled()) WriteEvent(EvtTimerArmFailed);
-    }
-
-    [Event(EvtTimerArmFailedDetail,
-           Level = EventLevel.Verbose,
-           Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "timer arm failed | timer={0} | win32_error={1}")]
-    public void TimerArmFailedDetail(string timer, int win32_error)
-    {
-        if (!IsEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Lifecycle)) return;
-        WriteEvent(EvtTimerArmFailedDetail, timer, win32_error);
-    }
-
-    [Event(EvtTimerArmRecovered,
-           Level = EventLevel.Informational,
-           Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "The taskbar re-cover timer recovered")]
-    public void TimerArmRecovered()
-    {
-        if (IsEnabled()) WriteEvent(EvtTimerArmRecovered);
     }
 }

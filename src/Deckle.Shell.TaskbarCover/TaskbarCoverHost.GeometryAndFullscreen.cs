@@ -32,8 +32,8 @@ public sealed partial class TaskbarCoverHost
         if (SHAppBarMessage(ABM_GETTASKBARPOS, ref abd) == IntPtr.Zero)
         {
             // No fabricated fallback: a wrong band is worse than no band.
-            // The cover stays hidden until TaskbarCreated or the retry tick
-            // finds the taskbar.
+            // The cover stays hidden until a later TaskbarCreated,
+            // WM_SETTINGCHANGE or WM_DISPLAYCHANGE finds the taskbar.
             if (!_layoutFailureLogged)
             {
                 DeckleShellTaskbarCoverSource.Log.LayoutQueryFailed();
@@ -73,19 +73,16 @@ public sealed partial class TaskbarCoverHost
         UpdateCover("layout_rebuilt");
     }
 
-    // Direct re-read of the cursor against the current zone, cancelling any
-    // pending re-cover delay: used at boot, on layout change and on resume,
-    // where the transition logic (and its 5 s hysteresis) would be stale.
+    // Direct re-read of the band's alpha from where the cursor stands now:
+    // used at boot, on layout change and on resume, where the last alpha may
+    // be stale. Unknown layout or cursor falls back to 0, the pessimistic
+    // "revealed" state. The caller runs UpdateCover with its own reason.
     private void ResetZoneStateFromCursor()
     {
-        if (_recoverTimerArmed)
-        {
-            KillTimer(_hwnd, TIMER_RECOVER);
-            _recoverTimerArmed = false;
-        }
-        _cursorInRevealZone = !_layoutKnown
-            || !NativeMethods.GetCursorPos(out var p)
-            || CoverGeometry.Contains(_zone, p);
+        byte alpha = _layoutKnown && NativeMethods.GetCursorPos(out var p)
+            ? CoverAlphaAt(p)
+            : (byte)0;
+        if (alpha != _coverAlpha) ApplyCoverAlpha(alpha);
     }
 
     // ── Gates ─────────────────────────────────────────────────────────────
@@ -94,12 +91,6 @@ public sealed partial class TaskbarCoverHost
     {
         if (_systemSuspended) return;
         _systemSuspended = true;
-
-        if (_recoverTimerArmed)
-        {
-            KillTimer(_hwnd, TIMER_RECOVER);
-            _recoverTimerArmed = false;
-        }
 
         UpdateCover("suspended");
         DeckleShellTaskbarCoverSource.Log.SystemSuspended();
