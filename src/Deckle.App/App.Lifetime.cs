@@ -57,6 +57,7 @@ public partial class App
         TryShutdown("hotkeys dispose", () => _hotkeyManager?.Dispose());
         TryShutdown("tray dispose", () => _tray?.Dispose());
         TryShutdown("tray menu dispose", () => _trayMenu?.Dispose());
+        TryShutdown("tray panel dispose", () => _trayPanel?.Dispose());
         // Before _messageHost: the signal's subclass + Raw Input sink sit on the
         // host's HWND, which _messageHost.Dispose destroys.
         TryShutdown("cursor signal dispose", () => _cursorSignal?.Dispose());

@@ -422,6 +422,18 @@
   <data name="TrayMenu_PrecisionScroll" xml:space="preserve">
     <value>Precision scrolling</value>
   </data>
+  <data name="TrayMenu_Rewrite" xml:space="preserve">
+    <value>Rewrite</value>
+  </data>
+  <data name="TrayMenu_Trackpad" xml:space="preserve">
+    <value>Trackpad</value>
+  </data>
+  <data name="TrayPanel_Record" xml:space="preserve">
+    <value>Record</value>
+  </data>
+  <data name="TrayPanel_StopRecording" xml:space="preserve">
+    <value>Stop recording</value>
+  </data>
   <data name="TrayMenu_Restart" xml:space="preserve">
     <value>Restart</value>
   </data>

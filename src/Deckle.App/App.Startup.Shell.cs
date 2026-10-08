@@ -1,16 +1,13 @@
-using Deckle.Autocorrect;
 using Deckle.Core;
 using Deckle.Diagnostics;
 using Deckle.Diagnostics.Logging;
 using Deckle.Diagnostics.Telemetry;
 using Deckle.Hud;
-using Deckle.Input.PrecisionScroll;
 using Deckle.Lighting.Ambient;
 using Deckle.Modules;
 using Deckle.Playground;
 using Deckle.Setup;
 using Deckle.Shell;
-using Deckle.Shell.TaskbarCover;
 using Deckle.Shell.TrayMenu;
 using Deckle.Speech;
 using Deckle.Transcription;
@@ -65,17 +62,10 @@ public partial class App
 
         context.Milestone("hudwindow");
 
-        // Tray icon : only left-click action lives here ; the right-click
-        // context menu is rendered by TrayContextMenuHost (created later,
-        // after the message-only host HWND is available to serve as owner).
+        // Tray icon: raises LeftClickRequested and RightClickRequested; the
+        // two surfaces (quick-actions panel, context menu) are created further
+        // down and subscribe there.
         _tray = new TrayIconManager();
-        if (context.TranscriptionPresent)
-        {
-            // Left-click tray = toggle transcription via the same path as the
-            // standard hotkey. An absent Dictation module leaves the click
-            // unbound instead of pointing to a Settings page that is absent too.
-            _tray.LeftClickRequested += () => OnHotkey(NativeMethods.HOTKEY_ID_TRANSCRIBE);
-        }
         context.Milestone("tray");
 
         // Engine events → UI. StatusChanged, TranscriptionFinished, etc. are
@@ -201,6 +191,29 @@ public partial class App
 
         _tray.RightClickRequested += () => _trayMenu.Show();
 
+        // Tray quick-actions panel — left click. Same carrier pattern and
+        // owner as the menu. Every entry follows module presence: an absent
+        // module has no Record button, no file action, no switch.
+        _trayPanel = new TrayQuickActionsHost(_messageHost.Hwnd)
+        {
+            GetIconRect = () => _tray.GetIconRect(),
+            IsRecording = () => _engine?.IsRecording ?? false,
+        };
+        if (context.TranscriptionPresent)
+        {
+            // Record runs the exact path of the transcription hotkey; the
+            // panel closes first so the paste at Stop reaches the window the
+            // user was in. File transcription opens the system file picker
+            // and runs each file through the dictation pipeline (see
+            // App.FileTranscription.cs).
+            _trayPanel.OnRecord = () => OnHotkey(NativeMethods.HOTKEY_ID_TRANSCRIBE);
+            _trayPanel.OnTranscribeFiles = () => TranscribeFilesFromTray();
+        }
+        // Module switches (App.TrayToggles.cs); Ambient Light in the footer.
+        _trayPanel.Toggles = BuildTrayToggles(context);
+        _trayPanel.FooterToggles = BuildTrayFooterToggles(context);
+        _tray.LeftClickRequested += () => _trayPanel.Show();
+
         _tray.Register(_messageHost.Hwnd);
         // Presence gates the chords themselves: absent Dictation means no
         // transcription chord; absent Rewrite leaves only plain transcription.
@@ -218,7 +231,7 @@ public partial class App
         // OnLaunched and the app refuses to start.
         //
         // Compromise: the app continues to start but without hotkeys. The tray
-        // remains operational (Settings, Quit, toggle recording by click), so
+        // remains operational (Settings, Quit, Record in the left-click panel), so
         // the user is not locked out. UserFeedback Overlay informs visually
         // through the HUD at boot.
         try
@@ -232,7 +245,7 @@ public partial class App
             DeckleAppSource.Log.UserFeedbackEmitted(
                 2, // Error
                 "Hotkeys unavailable",
-                "Another app owns the chord (often WhispInteropTest still running). Use the tray icon to record.",
+                "Another app owns the chord (often WhispInteropTest still running). Use the tray panel to record.",
                 1); // Overlay
         }
         context.Milestone("hotkeys");
