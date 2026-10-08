@@ -7,6 +7,18 @@ type: module-journal
 
 Dated notes on the colour path from the sampled frame to the lights — the why behind a choice the code no longer shows. Most recent on top.
 
+## 2026-10-08 — Change threshold holds on continuous outputs; restart on start-time settings
+
+Found: `AmbientPushGate` never dropped on a continuous output, so Change threshold did nothing on Hue Entertainment. A continuous stream needs a colour on every tick, and dropping was the gate's only answer.
+
+Chose:
+
+- The gate decides push new, hold previous or drop (`AmbientPushDecision`). Under the threshold, a continuous output gets the last pushed colour again (in multi mode every mapped light stays in the frame); a persistent output (REST) gets nothing, as before. A hold counts as a push in the counters.
+- A change to exact black always goes out, on every transport, so a lamp can turn off whatever the threshold. Black repeated over black follows the normal rule, so REST does not resend `on:false` every tick.
+- The first push after start, and the first push after a light is remapped, always go out. A light whose zone becomes None loses its smoothing trail, latch state and last pushed colour.
+- The smoother clamps its target to [0, 1], counts a NaN channel as 0, and turns smoothing off on a NaN alpha.
+- The app restarts a running engine when the monitor, UseMultiLight or the capture rate changes (`AmbientStartSettings`, in `App.Ambient.cs`). The Hue bridge fields and the group are also read only at start; they are not part of that set.
+
 ## 2026-10-08 — How a zone colour is derived, and where it is quantised
 
 Found, reading `FrameSampler.Readback.cs`, `AmbientZoneSampler`, `AmbientColorPipeline` and the two push files before changing them.
