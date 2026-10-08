@@ -163,7 +163,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   │   └── validate_judge_prompt.py
 │   │   │   └── README.md  — readme-studies [module-readme] Index of frozen benchmark studies — completed or abandoned ASR/TTS spikes kept…
 │   │   ├── __init__.py
-│   │   ├── AGENTS.md  — [agent-instructions] ASR-specific benchmark workspace — sources, judges, corpora, metrics, and froze…
+│   │   ├── AGENTS.md  — [agent-instructions] ASR benchmark workspace — sources, judges, corpora, speech studies.
 │   │   ├── build_corpus.py
 │   │   ├── CLAUDE.md
 │   │   ├── JOURNAL.md  — [module-journal] Dated findings from the Voxtral/ASR benchmark spike — backends, quantization, a…
@@ -223,7 +223,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   ├── viewers/
 │   │   ├── __init__.py
 │   │   └── build_html.py
-│   ├── AGENTS.md  — [agent-instructions] Benchmark workspace router — choose the right benchmark family before touching…
+│   ├── AGENTS.md  — [agent-instructions] Benchmark workspace router — pick the right child workspace first.
 │   ├── CLAUDE.md
 │   ├── Directory.Build.props
 │   ├── Directory.Packages.props
@@ -236,7 +236,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── 0003-anytype-specialized-spaces-versioned-plans.md  — [adr] Deckle provisions specialized Anytype spaces from versioned composed plans and…
 │   │   ├── 0004-reconcile-anytype-backend-by-listener-owner.md  — [adr] Deckle reconciles one externally versioned Anytype provider by proving which tr…
 │   │   ├── 0005-serve-anytype-mcp-stateless-with-explicit-recovery.md  — [adr] The resident Anytype gateway uses stateless MCP requests and advertises an expl…
-│   │   ├── AGENTS.md  — [agent-instructions] Why Deckle keeps ADRs and the questions that gate one. Read before writing or p…
+│   │   ├── AGENTS.md  — [agent-instructions] Why Deckle keeps ADRs and the questions that gate one.
 │   │   └── CLAUDE.md
 │   ├── research/
 │   │   ├── taskbar-probes/
@@ -496,7 +496,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── Schema/
 │   │   │   ├── AnytypeSpaceAliases.cs
 │   │   │   └── DevSpace.cs
-│   │   ├── AGENTS.md  — [agent-instructions] Anytype core module — headless backend supervision, REST transport, frozen Dev-…
+│   │   ├── AGENTS.md  — [agent-instructions] Anytype core — backend supervision, REST transport, schema, gestures.
 │   │   ├── CLAUDE.md
 │   │   ├── CONTEXT.md  — context-deckle-anytype [agent-instructions] Anytype integration vocabulary (covers Deckle.Anytype.Mcp) — backend vs MCP hos…
 │   │   ├── Deckle.Anytype.csproj
@@ -518,7 +518,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   ├── ToolCatalog.cs
 │   │   │   ├── ToolDescriptor.cs
 │   │   │   └── ToolExecutionContract.cs
-│   │   ├── AGENTS.md  — [agent-instructions] Resident MCP host and reusable Anytype surfaces, extensible by domain MCP adapt…
+│   │   ├── AGENTS.md  — [agent-instructions] Resident MCP host and reusable Anytype tool surfaces.
 │   │   ├── CLAUDE.md
 │   │   ├── Deckle.Anytype.Mcp.csproj
 │   │   ├── DeckleAnytypeMcpSource.cs
@@ -1009,7 +1009,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   └── schema-manifest.json
 │   │   ├── Terms/
 │   │   │   └── terms.fr.json
-│   │   ├── AGENTS.md  — [agent-instructions] Home inventory domain — public nomenclature, live Anytype room registry, guarde…
+│   │   ├── AGENTS.md  — [agent-instructions] Home inventory domain — nomenclature, live room registry, guards.
 │   │   ├── CONTEXT.md  — [agent-instructions] Home inventory vocabulary — the public norm, personal room registry, point code…
 │   │   ├── Deckle.Home.csproj
 │   │   ├── DeckleHomeSource.cs
@@ -1677,7 +1677,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   ├── Deckle.Travel/
 │   │   ├── Terms/
 │   │   │   └── terms.fr.json
-│   │   ├── AGENTS.md  — [agent-instructions] Trip-preparation domain — seven-type model, closed vocabularies, guarded operat…
+│   │   ├── AGENTS.md  — [agent-instructions] Trip-preparation domain — closed vocabularies, guards, terms.
 │   │   ├── CONTEXT.md  — [agent-instructions] Trip-preparation vocabulary — the seven types, their French labels, and the ter…
 │   │   ├── Deckle.Travel.csproj
 │   │   ├── DeckleTravelSource.cs
