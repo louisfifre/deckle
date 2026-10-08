@@ -22,13 +22,18 @@ namespace Deckle.Playground;
 
 public sealed partial class HudPage
 {
-    // Expander header hosts the section title and an aligned-right "Reset
+    private TextBlock TuningHelp(string text) => new()
+    {
+        Text = text,
+        Style = (Style)Resources["HudTuningHelpTextStyle"],
+    };
+
+    // Section header hosts the title and an aligned-right "Reset
     // section" button — icon + label, hidden until the section is hovered or the
     // button is focused, the same Settings reveal as TuningCard's section reset.
-    // A Button absorbs its own click, so tapping Reset doesn't toggle the
-    // Expander it sits in. The button keeps its slot at rest, so the reveal
+    // The button keeps its slot at rest, so the reveal
     // never reflows the header.
-    private StackPanel NewExpander(string title, Action resetAction, bool expanded = true)
+    private StackPanel NewTuningSection(string title, Action resetAction)
     {
         var content = new StackPanel
         {
@@ -66,27 +71,30 @@ public sealed partial class HudPage
         Grid.SetColumn(resetBtn, 1);
         headerGrid.Children.Add(resetBtn);
 
-        var expander = new Expander
+        var section = new Expander
         {
             Header = headerGrid,
             Content = content,
-            IsExpanded = expanded,
+            IsExpanded = !_sectionExpansion.TryGetValue(title, out bool expanded) || expanded,
             HorizontalAlignment = HorizontalAlignment.Stretch,
             HorizontalContentAlignment = HorizontalAlignment.Stretch,
             Margin = new Thickness(0, 4, 0, 4),
         };
+        section.RegisterPropertyChangedCallback(Expander.IsExpandedProperty,
+            (_, _) => _sectionExpansion[title] = section.IsExpanded);
+        section.Loaded += SettleInitialSectionState;
 
         // Reveal the reset on hover / focus — instant, no animation, matching
         // TuningCard. Hovering anywhere on the section (header or rows) shows it ;
         // focusing the button keyboard-reveals it.
         bool pointerOver = false, focused = false;
         void UpdateReveal() => resetBtn.Opacity = pointerOver || focused ? 1 : 0;
-        expander.PointerEntered += (_, _) => { pointerOver = true;  UpdateReveal(); };
-        expander.PointerExited  += (_, _) => { pointerOver = false; UpdateReveal(); };
+        section.PointerEntered += (_, _) => { pointerOver = true;  UpdateReveal(); };
+        section.PointerExited  += (_, _) => { pointerOver = false; UpdateReveal(); };
         resetBtn.GotFocus       += (_, _) => { focused = true;  UpdateReveal(); };
         resetBtn.LostFocus      += (_, _) => { focused = false; UpdateReveal(); };
 
-        TuningStack.Children.Add(expander);
+        TuningStack.Children.Add(section);
         return content;
     }
 
@@ -94,7 +102,7 @@ public sealed partial class HudPage
     // the `_syncing` guard prevents the ValueChanged feedback loop.
     // Rebuild-triggering rows push through RequestRebuild so the
     // CanvasDevice doesn't thrash mid-drag.
-    private void AddFloatRow(
+    private Action<double> AddFloatRow(
         StackPanel stack, string label,
         double min, double max, double step, double value,
         Action<double> setter,
@@ -158,6 +166,17 @@ public sealed partial class HudPage
         };
 
         stack.Children.Add(WrapRow(label, slider, numberBox));
+        // Transport updates preserve the actual controls, focus and layout.
+        return next =>
+        {
+            bool previous = _syncing;
+            _syncing = true;
+            try
+            {
+                slider.Value = numberBox.Value = Math.Clamp(next, min, max);
+            }
+            finally { _syncing = previous; }
+        };
     }
 
     private void AddIntRow(

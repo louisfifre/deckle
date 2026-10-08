@@ -91,6 +91,7 @@ public sealed partial class HudPage : Page
     // circuits the paired event during every programmatic write.
     // Read by row factories in HudPage.RowFactories.cs.
     private bool _syncing;
+    private bool _tuningPanelInitialized;
 
     // ── Naked preview bundle ────────────────────────────────────────────
     //
@@ -125,6 +126,9 @@ public sealed partial class HudPage : Page
     public HudPage()
     {
         InitializeComponent();
+        LoadCountdownTuning();
+        _tuning.LoadMaterial(HudMaterialTuning.Current);
+        _tuning.LoadGeometry(HudGeometryTuning.Current);
         NavigationCacheMode = NavigationCacheMode.Required;
 
         _rebuildDebounce.Tick += (_, _) =>
@@ -156,7 +160,7 @@ public sealed partial class HudPage : Page
     // or the target menu triggers the next rebuild path.
     private void OnPageLoaded(object sender, RoutedEventArgs e)
     {
-        BuildTuningPanel();
+        if (!_tuningPanelInitialized) BuildTuningPanel();
         ApplyTarget();
         // First Loaded = page ready after the heavy work above. Measured from
         // the nav-start clock set in PlaygroundWindow.OnNavSelectionChanged.
@@ -182,6 +186,10 @@ public sealed partial class HudPage : Page
     // on Closed.
     public void DisposeResources()
     {
+        HudMaterialTuning.Apply(_tuning.ToConfig());
+        HudGeometryTuning.Apply(_tuning.ToConfig());
+        // Retain the last slider edit even when closed during the debounce.
+        if (ViewModel.IsCountdownTarget) PublishCountdownTuning();
         SettingsService.Instance.OverlayAnimationsChanged -= OnOverlayAnimationsChanged;
         _rmsTimer.Stop();
         _rmsClock.Stop();
@@ -191,6 +199,8 @@ public sealed partial class HudPage : Page
         _nakedPreview = null;
         _conicClonePreview?.Dispose();
         _conicClonePreview = null;
+        _utteranceCountdownPreview?.Dispose();
+        _utteranceCountdownPreview = null;
     }
 
     private void OnOverlayAnimationsChanged(bool enabled)
@@ -275,6 +285,10 @@ public sealed partial class HudPage : Page
 
     private void ApplyTarget()
     {
+        SnapshotCountdownReplay();
+        HudMaterialTuning.Apply(_tuning.ToConfig());
+        HudGeometryTuning.Apply(_tuning.ToConfig());
+        if (ViewModel.IsCountdownTarget) PublishCountdownTuning();
         // Tear down everything first.
         ChronoPreview.ApplyState(HudState.Hidden);
         ElementCompositionPreview.SetElementChildVisual(NakedPreviewHost, null);
@@ -282,6 +296,8 @@ public sealed partial class HudPage : Page
         _nakedPreview = null;
         _conicClonePreview?.Dispose();
         _conicClonePreview = null;
+        _utteranceCountdownPreview?.Dispose();
+        _utteranceCountdownPreview = null;
         StopRmsPump();
 
         if (!ViewModel.IsPlaying)
@@ -297,19 +313,25 @@ public sealed partial class HudPage : Page
         }
 
         var currentTarget = ViewModel.CurrentTarget;
-        bool isNaked = currentTarget is HudTarget.Conic
+        bool isNaked = ViewModel.IsCountdownTarget || currentTarget is HudTarget.Conic
                                      or HudTarget.ArcMask
                                      or HudTarget.Combined
                                      or HudTarget.ConicClone;
         ChronoPreview.Visibility    = isNaked ? Visibility.Collapsed : Visibility.Visible;
         NakedPreviewHost.Visibility = isNaked ? Visibility.Visible   : Visibility.Collapsed;
         // The grading toggle rides with the geometry-only previews.
-        VariantToggle.Visibility    = isNaked ? Visibility.Visible   : Visibility.Collapsed;
+        VariantToggle.Visibility    = ViewModel.IsVariantToggleVisible ? Visibility.Visible : Visibility.Collapsed;
 
         if (isNaked)
         {
             // The clone is its own factory (a placed cone), not one of the three
             // raw NakedMaskParts — branch it out before the part mapping.
+            if (ViewModel.IsCountdownTarget)
+            {
+                AttachUtteranceCountdownPreview();
+                return;
+            }
+
             if (currentTarget == HudTarget.ConicClone)
             {
                 AttachConicClonePreview();
@@ -479,6 +501,9 @@ public sealed partial class HudPage : Page
         // TuningModel : swap for a fresh instance — its field
         // initialisers ARE the shipping defaults.
         _tuning = new TuningModel();
+        _countdownReplayClock.Reset();
+        _countdownTuning = new();
+        _countdownConfig = new();
 
         // Sim fields : keep aligned with the defaults documented at
         // the field declarations above. Source of truth duplicated
@@ -496,10 +521,6 @@ public sealed partial class HudPage : Page
         AudioLevelMapper.Apply(new LevelWindowSettings());
         AudioLevelMapper.EmaAlpha = 0.25f;
 
-        // HudComposition geometry mutables tuned via the HUD geometry
-        // expander.
-        HudComposition.InsetDip = -2f;
-
         BuildTuningPanel();
         ApplyTarget();
     }
@@ -514,6 +535,7 @@ public sealed partial class HudPage : Page
 
     private void BuildTuningPanel()
     {
+        _tuningPanelInitialized = true;
         // Keep the static header (title + description + Reset all)
         // from XAML, clear anything below it (in case this is ever
         // invoked twice), then append only the expanders for the
@@ -536,11 +558,13 @@ public sealed partial class HudPage : Page
                 case HudTuningSection.Rewriting:     AddRewritingExpander();      break;
                 case HudTuningSection.AudioMapping:  AddAudioMappingExpander();   break;
                 case HudTuningSection.SimulatedRms:  AddSimulatedRmsExpander();   break;
+                case HudTuningSection.UtteranceCountdown: AddUtteranceCountdownExpander(); break;
                 case HudTuningSection.ClonePlacement: AddClonePlacementExpander(); break;
             }
         }
 
-        AddParkedExpander();
+        if (!ViewModel.IsCountdownTarget)
+            AddParkedExpander();
     }
 
     // Rebuild the whole tuning panel from the current _tuning state.

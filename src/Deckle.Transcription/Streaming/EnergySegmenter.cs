@@ -238,6 +238,15 @@ internal sealed class EnergySegmenter
             RequiredHangoverFrames: _state == State.Silence ? _hangoverMaxFrames : RequiredHangoverFrames(),
             TotalUtterancesEmitted: _nextIndex);
 
+    // Read only on the producer thread, immediately after Push. This shares
+    // the exact frame counter and threshold used by the cutting decision.
+    internal UtteranceProgress Progress => new(
+        IsActive: true,
+        IsPausing: _state == State.Hangover,
+        SilenceElapsedMs: (int)(_hangoverCount * FrameMs),
+        SilenceRequiredMs: RequiredHangoverFrames() * (int)FrameMs,
+        CompletedUtterances: _nextIndex);
+
     private float[] Concat(int frameCount)
     {
         int total = 0;

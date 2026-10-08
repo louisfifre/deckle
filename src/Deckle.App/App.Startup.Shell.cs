@@ -149,6 +149,9 @@ public partial class App
             // needed; no-op when the outline isn't attached (any non-Recording
             // state), so permanent subscription is fine.
             _engine.AudioLevel += _hudWindow.OnAudioLevel;
+            _engine.UtteranceProgressChanged += progress =>
+                _hudWindow.OnUtteranceProgress(
+                    progress.IsActive, progress.Fraction, progress.CompletedUtterances);
         }
 
         // Initial status — model loads on-demand at first hotkey, not at

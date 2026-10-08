@@ -147,7 +147,7 @@ public sealed partial class HudChrono
 
                 // Consume the one-shot config override if the playground armed
                 // one before this ApplyState call. Null in shipping Deckle.
-                var cfg = _nextStrokeConfig;
+                var cfg = _nextStrokeConfig ?? HudGeometryTuning.ApplyTo(HudMaterialTuning.ApplyTo(new()));
                 _nextStrokeConfig = null;
 
                 _processingStroke = variant == ProcessingVariant.Recording

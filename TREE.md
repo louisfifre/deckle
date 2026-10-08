@@ -911,7 +911,9 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   ├── HudComposition.NakedPreview.cs
 │   │   │   ├── HudComposition.Painting.cs
 │   │   │   ├── HudComposition.ProcessingStroke.cs
-│   │   │   └── ProcessingVariant.cs
+│   │   │   ├── HudComposition.UtteranceCountdownVisual.cs
+│   │   │   ├── ProcessingVariant.cs
+│   │   │   └── UtteranceCountdownConfig.cs
 │   │   ├── Primitives/
 │   │   │   └── ColorSpace.cs
 │   │   └── Deckle.Composition.csproj
@@ -1044,8 +1046,11 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   ├── HudChrono.Reveal.cs
 │   │   │   ├── HudChrono.RevealMask.cs
 │   │   │   ├── HudChrono.Stroke.cs
+│   │   │   ├── HudChrono.Tuning.cs
+│   │   │   ├── HudChrono.UtteranceCountdown.cs
 │   │   │   ├── HudChrono.xaml
-│   │   │   └── HudChrono.xaml.cs
+│   │   │   ├── HudChrono.xaml.cs
+│   │   │   └── UtteranceCountdownState.cs
 │   │   ├── Model/
 │   │   │   ├── HudPalette.cs
 │   │   │   ├── HudState.cs
@@ -1067,10 +1072,13 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── CLAUDE.md
 │   │   ├── Deckle.Hud.csproj
 │   │   ├── DeckleHudSource.cs
+│   │   ├── HudGeometryTuning.cs
+│   │   ├── HudMaterialTuning.cs
 │   │   ├── HudMessage.xaml
 │   │   ├── HudMessage.xaml.cs
 │   │   ├── JOURNAL.md  — [module-journal] Diagnosis notes, render doctrine, and deferred work for Deckle.Hud — read on de…
-│   │   └── ProximityRollupAggregator.cs
+│   │   ├── ProximityRollupAggregator.cs
+│   │   └── UtteranceCountdownTuning.cs
 │   ├── Deckle.Inference.Onnx/
 │   │   ├── AGENTS.md  — [agent-instructions] ONNX Runtime CPU inference substrate — isolates the process-wide OnnxRuntime de…
 │   │   ├── CLAUDE.md
@@ -1401,6 +1409,8 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   ├── Hud/
 │   │   │   │   ├── HudPage.Expanders.cs
 │   │   │   │   ├── HudPage.RowFactories.cs
+│   │   │   │   ├── HudPage.SectionState.cs
+│   │   │   │   ├── HudPage.UtteranceCountdown.cs
 │   │   │   │   ├── HudPage.xaml
 │   │   │   │   └── HudPage.xaml.cs
 │   │   │   ├── Segmentation/
@@ -1618,7 +1628,8 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   ├── EnergySegmenter.cs
 │   │   │   ├── EnergySegmenterSettings.cs
 │   │   │   ├── SegmentedTranscriptionSession.cs
-│   │   │   └── Utterance.cs
+│   │   │   ├── Utterance.cs
+│   │   │   └── UtteranceProgress.cs
 │   │   ├── Strings/
 │   │   │   └── en-US/
 │   │   │       └── Resources.resw
@@ -1933,7 +1944,11 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── AnimationGateTests.cs
 │   │   ├── Deckle.Hud.Tests.csproj
 │   │   ├── DeckleHudSourceTests.cs
-│   │   └── ProximityRollupAggregatorTests.cs
+│   │   ├── HudGeometryTuningTests.cs
+│   │   ├── HudMaterialTuningTests.cs
+│   │   ├── ProximityRollupAggregatorTests.cs
+│   │   ├── UtteranceCountdownGeometryTests.cs
+│   │   └── UtteranceCountdownStateTests.cs
 │   ├── Deckle.Input.PrecisionScroll.Tests/
 │   │   ├── Fixtures/
 │   │   │   └── precision-scroll-baseline.json
@@ -2007,7 +2022,9 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   ├── Deckle.Playground.Tests/
 │   │   ├── CorrectionApplicationEvidenceTests.cs
 │   │   ├── CorrectionApplicationTrialTests.cs
-│   │   └── Deckle.Playground.Tests.csproj
+│   │   ├── Deckle.Playground.Tests.csproj
+│   │   ├── HudTargetControlsTests.cs
+│   │   └── HudTuningBugNotes.md
 │   ├── Deckle.Security.Tests/
 │   │   ├── Deckle.Security.Tests.csproj
 │   │   └── SecretVaultTests.cs
@@ -2058,7 +2075,8 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── TranscriptionDeliveryTests.cs
 │   │   ├── TranscriptionObservabilityContractTests.cs
 │   │   ├── TranscriptionSettingsMigrationTests.cs
-│   │   └── UnitBezierTests.cs
+│   │   ├── UnitBezierTests.cs
+│   │   └── UtteranceProgressTests.cs
 │   ├── Deckle.Transcription.Whisper.Tests/
 │   │   ├── Deckle.Transcription.Whisper.Tests.csproj
 │   │   ├── KnownHallucinationsTests.cs

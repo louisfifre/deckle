@@ -24,6 +24,22 @@ namespace Deckle.Playground;
 // side.
 internal sealed class TuningModel
 {
+    public TuningModel()
+    {
+        var defaults = new ConicArcStrokeConfig();
+        LoadMaterial(defaults);
+        LoadGeometry(defaults);
+    }
+
+    public float StrokeThickness;
+    public float InsetDip;
+
+    public void LoadGeometry(ConicArcStrokeConfig source)
+    {
+        StrokeThickness = source.StrokeThickness;
+        InsetDip = source.InsetDip;
+    }
+
     // ── Colour palette (paint-time, OKLCh) ──────────────────────────────
     public float OklchLightness = 0.75f;
     public float OklchChroma    = 0.3f;
@@ -113,6 +129,30 @@ internal sealed class TuningModel
     public double RecordingBlendSeconds    = 2;
     public double RecordingHuePeriodSeconds = 0;
 
+    public void LoadMaterial(ConicArcStrokeConfig source)
+    {
+        OklchLightness = source.OklchLightness;
+        OklchChroma = source.OklchChroma;
+        HueStart = source.HueStart;
+        HueRange = source.HueRange;
+        WedgeCount = source.WedgeCount;
+        HuePeriodSeconds = source.HuePeriodSeconds;
+        HueDirection = source.HueDirection;
+        HuePhaseTurns = source.HuePhaseTurns;
+        HueEaseP1X = source.HueEaseP1X;
+        HueEaseP1Y = source.HueEaseP1Y;
+        HueEaseP2X = source.HueEaseP2X;
+        HueEaseP2Y = source.HueEaseP2Y;
+        HueMinSpeedFraction = source.HueMinSpeedFraction;
+        TranscribingSaturationDark = source.TranscribingSaturationDark;
+        TranscribingSaturationLight = source.TranscribingSaturationLight;
+        TranscribingHueShiftTurns = source.TranscribingHueShiftTurns;
+        TranscribingExposureDark = source.TranscribingExposureDark;
+        TranscribingExposureLight = source.TranscribingExposureLight;
+        TranscribingOpacity = source.TranscribingOpacity;
+        TranscribingBlendSeconds = source.TranscribingBlendSeconds;
+    }
+
     // Projects the current field values into a fresh ConicArcStrokeConfig
     // so HudChrono.RebuildStroke can bake a new stroke. Called on every
     // slider change that targets a stroke field. The projection is
@@ -120,6 +160,8 @@ internal sealed class TuningModel
     // errors flag any drift between this file and the shipping struct.
     public ConicArcStrokeConfig ToConfig() => new()
     {
+        StrokeThickness = StrokeThickness,
+        InsetDip = InsetDip,
         OklchLightness    = OklchLightness,
         OklchChroma       = OklchChroma,
         HueStart          = HueStart,

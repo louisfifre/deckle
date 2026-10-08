@@ -55,6 +55,8 @@ internal sealed class SegmentedTranscriptionSession<TResult>
         _segmenter.Push(frame);
     }
 
+    public UtteranceProgress Progress => _completed ? default : _segmenter.Progress;
+
     public SegmenterSnapshot Snapshot() => _segmenter.Snapshot();
 
     public void Complete()

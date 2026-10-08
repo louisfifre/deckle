@@ -22,6 +22,10 @@ public enum HudTarget
     // A second, freely-placed conic cone (own surface) painted from the same
     // config as the contour — a placement sandbox for the digit-reveal material.
     ConicClone,
+    UtteranceCountdown,
+    CountdownMaterial,
+    CountdownMasks,
+    MaskedCountdown,
 }
 
 // Logical groups of tuning expanders. The HUD tuning panel is rebuilt
@@ -42,6 +46,7 @@ public enum HudTuningSection
     AudioMapping,
     SimulatedRms,
     ClonePlacement,
+    UtteranceCountdown,
     Parked,
 }
 
@@ -103,9 +108,11 @@ public partial class HudViewModel : ObservableObject
     // variant. HudPage binds the toggle's Visibility here.
     public bool IsVariantToggleVisible =>
         CurrentTarget is HudTarget.Conic
-                      or HudTarget.ArcMask
                       or HudTarget.Combined
                       or HudTarget.ConicClone;
+
+    public bool IsCountdownTarget => CurrentTarget is HudTarget.UtteranceCountdown
+        or HudTarget.CountdownMaterial or HudTarget.CountdownMasks or HudTarget.MaskedCountdown;
 
     // Computed transport enable-flags. Derived from IsPlaying ; the
     // partial change method below fires change notifications for these
@@ -128,6 +135,10 @@ public partial class HudViewModel : ObservableObject
         HudTarget.ArcMask    => "Sweep mask",
         HudTarget.Combined   => "Masked cone",
         HudTarget.ConicClone => "Cone clone",
+        HudTarget.UtteranceCountdown => "Utterance countdown",
+        HudTarget.CountdownMaterial => "Countdown material",
+        HudTarget.CountdownMasks => "Countdown masks",
+        HudTarget.MaskedCountdown => "Masked countdown",
         _                    => CurrentTarget.ToString(),
     };
 
@@ -202,16 +213,18 @@ public partial class HudViewModel : ObservableObject
             HudTarget.Conic =>
                 new[]
                 {
-                    HudTuningSection.Geometry,
                     HudTuningSection.Palette,
-                    HudTuningSection.ConicFade,
+                    HudTuningSection.HueRotation,
                 },
             HudTarget.ArcMask =>
                 new[]
                 {
-                    HudTuningSection.Geometry,
+                    HudTuningSection.ConicFade,
                     HudTuningSection.ArcRotation,
                 },
+            HudTarget.UtteranceCountdown or HudTarget.CountdownMaterial
+                or HudTarget.CountdownMasks or HudTarget.MaskedCountdown =>
+                new[] { HudTuningSection.UtteranceCountdown },
             HudTarget.ConicClone =>
                 new[]
                 {

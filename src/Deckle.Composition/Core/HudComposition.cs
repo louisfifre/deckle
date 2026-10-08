@@ -47,16 +47,8 @@ public static partial class HudComposition
     // ╔════════════════════════════════════════════════════════════════════╗
     // ║  Shared geometry                                                   ║
     // ╚════════════════════════════════════════════════════════════════════╝
-    // Fixed across all three variants — stroke metrics are a property of
-    // the HUD rect, not of the animation.
-    private const float  StrokeThickness              = 4f;    // dip, stroke width
-    // `public static` (not const) — HudPlayground tunes the inset live to
-    // explore stroke geometry without rebuilding the app. Shipping code
-    // still reads it as if it were a const: the field reads inline cleanly
-    // when nothing mutates it in a given process. Mutating live requires
-    // rebuilding the stroke (paint-time geometry); the playground triggers
-    // that via its existing rebuild path.
-    public  static       float InsetDip                = -2f;  // dip, inset from HUD edge
+    // Stroke thickness and inset live in ConicArcStrokeConfig so geometry
+    // is captured consistently when each visual is created.
     private const float  CornerRadiusDip               = 8f;   // dip, rounded-rect corner radius
 
 }

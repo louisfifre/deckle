@@ -53,6 +53,7 @@ public sealed partial class HudChrono : UserControl
         // idempotent, so this has no cost when a reveal starts later.
         EnsureRevealInfrastructure();
 
+        CountdownSurfaceHost.SizeChanged += (_, _) => RebuildCountdownVisual();
         Loaded += OnLoaded;
         Unloaded += OnUnloaded;
 
@@ -63,6 +64,7 @@ public sealed partial class HudChrono : UserControl
             // live theme switch must re-push the current phase's tone. The
             // accent twins keep their XAML accent brush and need no refresh.
             ReapplyRestToneForState();
+            RebuildCountdownVisual();
 
             // Transcribing exposure is theme-aware (Dark vs Light split),
             // and Recording reuses those same baselines for its greyscale
@@ -90,6 +92,10 @@ public sealed partial class HudChrono : UserControl
         _animationPreferenceSubscribed = true;
         _animationsEnabled = SettingsService.Instance.Current.Overlay.Animations;
         SettingsService.Instance.OverlayAnimationsChanged += OnOverlayAnimationsChanged;
+        UtteranceCountdownTuning.Changed += OnCountdownTuningChanged;
+        HudMaterialTuning.Changed += OnMaterialTuningChanged;
+        HudGeometryTuning.Changed += OnGeometryTuningChanged;
+        SetCountdownRecording(_state == HudState.Recording);
     }
 
     private void OnUnloaded(object sender, RoutedEventArgs e)
@@ -97,6 +103,10 @@ public sealed partial class HudChrono : UserControl
         if (!_animationPreferenceSubscribed) return;
         _animationPreferenceSubscribed = false;
         SettingsService.Instance.OverlayAnimationsChanged -= OnOverlayAnimationsChanged;
+        UtteranceCountdownTuning.Changed -= OnCountdownTuningChanged;
+        HudMaterialTuning.Changed -= OnMaterialTuningChanged;
+        HudGeometryTuning.Changed -= OnGeometryTuningChanged;
+        SetCountdownRecording(false);
     }
 
     private void OnOverlayAnimationsChanged(bool enabled)
@@ -114,6 +124,7 @@ public sealed partial class HudChrono : UserControl
     {
         if (_animationsEnabled == enabled) return;
         _animationsEnabled = enabled;
+        RebuildCountdownVisual();
 
         lock (_strokeSync)
         {
@@ -139,6 +150,7 @@ public sealed partial class HudChrono : UserControl
     public void ApplyState(HudState next)
     {
         _state = next;
+        SetCountdownRecording(next == HudState.Recording);
         switch (next)
         {
             case HudState.Charging:
@@ -286,6 +298,7 @@ public sealed partial class HudChrono : UserControl
     private void OnRendering(object? sender, object e)
     {
         UpdateClock();
+        RenderUtteranceCountdown();
         UpdateReveals();
     }
 }

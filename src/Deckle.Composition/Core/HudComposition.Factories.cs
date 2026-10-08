@@ -212,7 +212,7 @@ public static partial class HudComposition
         var container = compositor.CreateContainerVisual();
         container.Size = hostSize;
 
-        var innerSize = new Vector2(hostSize.X - 2f * InsetDip, hostSize.Y - 2f * InsetDip);
+        var innerSize = new Vector2(hostSize.X - 2f * cfg.InsetDip, hostSize.Y - 2f * cfg.InsetDip);
         // Math.Round (NOT Ceiling) — cf. the "Pixel-perfect sizing note" in
         // the file header. At fractional-DIP extents (e.g. hostSize.Y = 78.4
         // at 125 % DPI), Ceiling oversizes the silhouette surface by up to
@@ -269,15 +269,16 @@ public static partial class HudComposition
             DirectXPixelFormat.B8G8R8A8UIntNormalized,
             DirectXAlphaMode.Premultiplied);
 
+        float strokeThickness = Math.Clamp(cfg.StrokeThickness, 0.5f, Math.Max(0.5f, Math.Min(pxW, pxH)));
         using (var ds = CanvasComposition.CreateDrawingSession(strokeMaskSurface))
         {
             ds.Clear(Colors.Transparent);
             var rect = new Windows.Foundation.Rect(
-                StrokeThickness / 2f,
-                StrokeThickness / 2f,
-                pxW - StrokeThickness,
-                pxH - StrokeThickness);
-            ds.DrawRoundedRectangle(rect, CornerRadiusDip, CornerRadiusDip, Colors.White, StrokeThickness);
+                strokeThickness / 2f,
+                strokeThickness / 2f,
+                pxW - strokeThickness,
+                pxH - strokeThickness);
+            ds.DrawRoundedRectangle(rect, CornerRadiusDip, CornerRadiusDip, Colors.White, strokeThickness);
         }
 
         // ── Surface brushes ──────────────────────────────────────────────
@@ -463,7 +464,7 @@ public static partial class HudComposition
 
         var strokeVisual = compositor.CreateSpriteVisual();
         strokeVisual.Size    = innerSize;
-        strokeVisual.Offset  = new Vector3(InsetDip, InsetDip, 0f);
+        strokeVisual.Offset  = new Vector3(cfg.InsetDip, cfg.InsetDip, 0f);
         strokeVisual.Brush   = effectBrush;
         // initialOpacity sentinel (-1) falls back to the Transcribing
         // baseline used by Processing strokes. Recording passes 0 so the
