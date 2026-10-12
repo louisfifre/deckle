@@ -13,7 +13,7 @@ A flyout needs a `XamlRoot`, so an invisible WinUI `Window`, the carrier (`TrayC
 - A `WS_CAPTION` residue breaks DWM corners. In `Frame.Loaded`, rewrite `GWL_STYLE` to `WS_POPUPWINDOW` with `SetWindowPos(SWP_FRAMECHANGED)`.
 - Anchor from `Shell_NotifyIconGetRect`, never the cursor, so any taskbar orientation works. The cursor is only the fallback.
 - Prime once in `Frame.Loaded` with an invisible `ShowAt` and `Hide`: the first measure is unstable ([microsoft-ui-xaml#7374](https://github.com/microsoft/microsoft-ui-xaml/issues/7374)). Priming on each `Show()` collapses `DesiredSize` to zero.
-- `FlyoutPlacementMode.Full` stretches the presenter to the carrier. Size the carrier from the real presenter's `DesiredSize` (`MenuFlyoutPresenter` for the menu, `FlyoutPresenter` for the panel).
+- `FlyoutPlacementMode.Full` stretches the presenter to the carrier. Size the carrier from the real presenter's `DesiredSize` (`MenuFlyoutPresenter` for the menu, `FlyoutPresenter` for the panel), and only when it holds the items: a degenerate measure reports the presenter's `MinHeight`, one item tall (`TrayMenuSizing`).
 - Take the DPI from `GetDpiForMonitor(MonitorFromPoint(cursor))`. `XamlRoot.RasterizationScale` reports the carrier's monitor.
 - Set `AreOpenCloseAnimationsEnabled = false`, or hiding the carrier cuts the close animation.
 

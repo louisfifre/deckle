@@ -7,6 +7,14 @@ type: module-journal
 
 Dated notes on the tray-menu workstream — the why behind a fix the code no longer shows. Most recent on top.
 
+## 2026-10-12 — A captured presenter size is checked against its items
+
+Found: `DefaultMenuFlyoutPresenterStyle` sets `MinHeight` to `MenuFlyoutThemeMinHeight`, 32 DIP (WindowsAppSDK 1.8 generic.xaml), the height of one narrow item. A presenter measured clipped or before its items are laid out reports that height, which is positive: the old `> 0` check let it size the carrier, and the menu opened one item tall and scrolled.
+
+Found in the 2026-07-16 `app.jsonl`: the carrier's `Frame.Loaded`, so the prime cycle, ran about 150 ms after the host was built, before any open. Good opens measured items at 32 DIP, separators at 3 DIP, and the presenter at items + 2 DIP wide and + 6 DIP tall.
+
+Chose: `TrayMenuSizing.Decide` uses the captured presenter only when it is at least as large as the items, otherwise the items plus a 4 DIP margin per side. The sizes are re-captured after every real open. The `Deckle-TrayMenu` events are Verbose and gated by the Windowing activity, so they were absent from the logs when the bug was reported; a rejected capture now raises a Warning that is not gated.
+
 ## 2026-10-08 — Module switches leave the MenuFlyout; the custom pill is retired
 
 Decided: the module switches (Ambient Light, Autocorrect, Taskbar cover, Precision scrolling, plus Trackpad and Rewrite) move from the right-click `MenuFlyout` to a left-click quick-actions panel (`TrayQuickActionsHost`), together with Record and "Transcribe audio files…". The right-click menu keeps Logs, Settings, Playground, Restart, Quit.

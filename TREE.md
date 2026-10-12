@@ -2203,6 +2203,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   └── ResizeGestureTests.cs
 │   ├── Deckle.Shell.TrayMenu.Tests/
 │   │   ├── Deckle.Shell.TrayMenu.Tests.csproj
+│   │   ├── TrayMenuBugNotes.md
 │   │   └── TrayMenuSizingTests.cs
 │   ├── Deckle.Speech.Tests/
 │   │   ├── Deckle.Speech.Tests.csproj
