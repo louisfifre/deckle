@@ -69,7 +69,8 @@ public sealed partial class SettingsComposer
             // it stays truthful; only the write-back to the model is suppressed.
             valueText.Text = FormatValue(e.NewValue, args.StepFrequency);
             if (_syncingFromModel) return;
-            s.SetValue(e.NewValue);
+            // Same dust as BuildMagnitude: store the value the readout shows.
+            s.SetValue(MagnitudeGrain.Snap(e.NewValue, MagnitudeGrain.DecimalsFor(args.StepFrequency)));
         };
 
         (FrameworkElement cardContent, Action? updateReset) = WrapWithReset(card, content, s);
@@ -180,12 +181,21 @@ public sealed partial class SettingsComposer
             VerticalAlignment = VerticalAlignment.Center,
             // Fixed precision (fraction digits tracking the nice step) and no
             // grouping separators, so the readout matches the slider's grain and a
-            // four-digit figure reads "1200", not "1,200".
+            // four-digit figure reads "1200", not "1,200". FractionDigits is only a
+            // minimum, so the rounder is what caps the readout at the grain: a
+            // value stored with binary dust (0.15000000000000002) still shows
+            // "0.15". It affects display only; a settings.json written before this
+            // fix keeps its dust until the next edit.
             NumberFormatter = new Windows.Globalization.NumberFormatting.DecimalFormatter
             {
                 IntegerDigits = 1,
                 FractionDigits = decimals,
                 IsGrouped = false,
+                NumberRounder = new Windows.Globalization.NumberFormatting.IncrementNumberRounder
+                {
+                    Increment = Math.Pow(10, -decimals),
+                    RoundingAlgorithm = Windows.Globalization.NumberFormatting.RoundingAlgorithm.RoundHalfUp,
+                },
             },
             Value = AsDouble(s.GetValue()),
         };
@@ -201,11 +211,15 @@ public sealed partial class SettingsComposer
         slider.ValueChanged += (_, e) =>
         {
             if (coordinating) return;
+            // Slider detents are sums like 0.05 + 2 * 0.05 (0.15000000000000002):
+            // snap to the display grain before the value reaches the field, the
+            // model, the preset match and settings.json.
+            double snapped = MagnitudeGrain.Snap(e.NewValue, decimals);
             coordinating = true;
-            try { if (box.Value != e.NewValue) box.Value = e.NewValue; }
+            try { if (box.Value != snapped) box.Value = snapped; }
             finally { coordinating = false; }
             if (_syncingFromModel) return;
-            s.SetValue(e.NewValue);
+            s.SetValue(snapped);
         };
 
         box.ValueChanged += (_, _) =>
@@ -214,11 +228,20 @@ public sealed partial class SettingsComposer
             // A cleared field surfaces as NaN; swallow it so it never persists or
             // moves the thumb, the same guard BuildNumber applies.
             if (double.IsNaN(box.Value)) return;
+            // A figure typed finer than the grain (0.1534 on a 0.01 grain) would
+            // display rounded while the model kept the longer value, so what is
+            // stored and compared would differ from what is read. Store the
+            // displayed value instead.
+            double snapped = MagnitudeGrain.Snap(box.Value, decimals);
             coordinating = true;
-            try { if (slider.Value != box.Value) slider.Value = box.Value; }
+            try
+            {
+                if (box.Value != snapped) box.Value = snapped;
+                if (slider.Value != snapped) slider.Value = snapped;
+            }
             finally { coordinating = false; }
             if (_syncingFromModel) return;
-            s.SetValue(box.Value);
+            s.SetValue(snapped);
         };
 
         var content = new StackPanel
