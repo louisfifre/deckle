@@ -2201,6 +2201,9 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── DispatcherQueueExtensionsTests.cs
 │   │   ├── GlobalHotkeyBindingsTests.cs
 │   │   └── ResizeGestureTests.cs
+│   ├── Deckle.Shell.TrayMenu.Tests/
+│   │   ├── Deckle.Shell.TrayMenu.Tests.csproj
+│   │   └── TrayMenuSizingTests.cs
 │   ├── Deckle.Speech.Tests/
 │   │   ├── Deckle.Speech.Tests.csproj
 │   │   ├── SpeechEngineTests.cs
