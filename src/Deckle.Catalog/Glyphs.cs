@@ -33,6 +33,9 @@ public static class Glyphs
     // Segoe Fluent "Spelling" (F87B) — proofing / autocorrect.
     public const string Autocorrect = "";
 
+    // Segoe Fluent "DockBottom" (E90E) — the taskbar cover.
+    public const string Taskbar = "";
+
     // Segoe Fluent "Game" (E7FC) — the apps and games registry.
     public const string Games = "";
 

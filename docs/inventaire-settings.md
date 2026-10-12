@@ -317,7 +317,7 @@
 | SpeechEnabled | setting | hand-authored | Toggle | SpeechSettings initializer: false |  | Not yet exposed |
 | SpeechVoice | setting | hand-authored | Choice / Radio (Pierre/Jessica) | SpeechSettings initializer: Pierre |  | Not yet exposed (reserved for ONNX backend) |
 | SpeechTemperature | setting | hand-authored | Slider (0.5 to 0.7) | SpeechSettings initializer: 0.6 |  | Not yet exposed (reserved for ONNX backend) |
-| TaskbarCoverEnabled | setting | hand-authored | Toggle | TaskbarCoverSettings initializer: false |  | Tray menu or future Settings |
+| TaskbarCoverEnabled | setting | hand-authored | Toggle | TaskbarCoverSettings initializer: false |  | Settings > Taskbar cover; tray panel; hotkey |
 
 **Gestes destructifs :** Reset section (Appearance/Behaviour/Startup/Logging/etc.) _(none)_ · Reset per-card (individual slider/toggle) _(none)_ · Purge audio corpus JSONL _(none)_ · Purge autocorrect decisions JSONL _(none)_ · Clear application log (app.jsonl) _(none)_ · Reset LLM profiles to defaults _(none)_ · Re-pair Hue bridge (clears pairing state) _(none)_
 
@@ -357,7 +357,7 @@
 | SegHangoverRampEndMs | setting | migrated | WhisperViewModel.SegHangoverRampEndMs (Number, child of Streaming Group) | new EnergySegmenterSettings().HangoverRampEndMs (120000) | • | Settings > Transcription > Streaming Pipeline > Segmenter |
 | SegMarginMs | setting | migrated | WhisperViewModel.SegMarginMs (Number, child of Streaming Group) | new EnergySegmenterSettings().MarginMs (150) | • | Settings > Transcription > Streaming Pipeline > Segmenter |
 | SegMinUtteranceMs | setting | migrated | WhisperViewModel.SegMinUtteranceMs (Number, child of Streaming Group) | new EnergySegmenterSettings().MinUtteranceMs (250) | • | Settings > Transcription > Streaming Pipeline > Segmenter |
-| TaskbarCoverEnabled | setting | hand-authored | TaskbarCoverSettings.Enabled (Toggle, NOT in Settings UI) | new TaskbarCoverSettings().Enabled (false) |  | System Tray Context Menu > Taskbar Cover |
+| TaskbarCoverEnabled | setting | composed | TaskbarCoverViewModel.Enabled (Toggle) | new TaskbarCoverSettings().Enabled (false) |  | Settings > Taskbar cover (also the tray panel switch and the hotkey) |
 
 **Gestes destructifs :** Reset all Settings in a section (General, Recording, Diagnostics, Transcription) _(adhoc-dialog)_ · Clear persisted telemetry data (application logs, corpus, autocorrect telemetry) _(adhoc-dialog)_ · Revoke autocorrect on an enrolled app (clear app from Apps dict) _(none)_ · Reset autocorrect personal dictionary _(none)_
 
@@ -642,7 +642,7 @@ Choice already exists and renders as ComboBox; the reports show several small fi
 - EnergySegmenter HangoverCurve (X1/Y1/X2/Y2, defaults 0.85/0.10/0.90/0.25) is persisted but has NO UI anywhere (not Settings, not the composed fold, not Playground) — confirm it is intentionally unexposed (cubic-bezier easing) and whether it should ever surface.
 - Frozen Preprocessing DSP params (HighPassEnabled/Hz, GateEnabled, Compressor bundle, LimiterEnabled) are persisted but exposed only in Playground/never — confirm they stay frozen and are not migration candidates.
 - SpeechSettings (Enabled/Voice/Temperature) are fully persisted to modules/speech/settings.json with NO UI — dormant skeleton. Confirm they stay out of any Settings page until the ONNX backend lands.
-- TaskbarCoverSettings.Enabled and MouseWheelSettings.RecordEvents are persisted but live only in the tray menu / Playground respectively — confirm these are deliberately not in the Settings UI.
+- MouseWheelSettings.RecordEvents is persisted but lives only in the Playground — confirm it is deliberately not in the Settings UI. (TaskbarCoverSettings.Enabled got its Settings page on 2026-10-12.)
 - TemperatureIncrement (InfoBar warning when =0) and Logprob/NoSpeech sliders (Min/Max set in code-behind for a WinUI trimming bug) carry chrome the plain Slider/Number descriptor does not reproduce — confirm the composer can host that auxiliary chrome before migrating, or accept its loss.
 - AudioCorpusContent and LlmSettings.RuleMetric drive the VISIBILITY of sibling panels (not just their own value). The radio-Choice variant alone does not make them composable — they also need cross-sibling visibleWhen, which folds-within-folds and the current flat model may not support. Verify the composer's VisibleWhen reach before counting them as migrate-now.
 - StreamingSettings.Strategy enum→bool projection (Monolithic/Streaming): one report shows it composed (WhisperViewModel.Settings.cs Group master), another lists it hand-authored RadioButtons in WhisperPage. Verified composed in the manifest I read — confirm no stale hand-authored duplicate remains in WhisperPage.xaml.
