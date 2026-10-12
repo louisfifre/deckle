@@ -60,3 +60,13 @@ Manual WinUI validation is still required for both visual issues: enter the page
 - **Regression coverage:** HudGeometryTuningTests.SharedThicknessPreservesMaterialMasksAndCountdownGeometry. Visual thickness changes require a manual HUD check.
 - 2026-10-08: the countdown contour now reads the same thickness and inset as the base stroke; its own thickness knob is gone.
 - Superseded 2026-10-12: HudGeometryTuning and its tests are deleted. StrokeThickness and InsetDip stay in the production config; the live HUD reads their compiled defaults, the Playground tunes them in its previews only.
+
+## The HUD tab wrote its tuning into the live HUD
+
+- **Trigger:** open the HUD tab, or move any knob there (after the 300 ms debounce), press Play/Stop, switch target, or close the Playground.
+- **Observed symptom:** the live HUD redrew with Playground values during dictation.
+- **Cause:** the HUD tab published its model to process-wide static sources that the live HUD reads and watches. `TuningModel.PublishLive` and `HudPage.PublishCountdownTuning` ran in `ApplyTarget` (every rebuild, including the first page load) and in `DisposeResources`; `TuningModel.LoadLive` and `LoadCountdownTuning` loaded those sources back when the tab opened. The sources were `HudMaterialTuning`, `HudGeometryTuning`, `HudStrokeTuning` and `UtteranceCountdownTuning`. Every `HudChrono` rebuilt from them on `Changed`, the live instance included.
+- **Invariant:** the Playground never writes what the live HUD reads. A value found there becomes a default by editing the compiled defaults.
+- **Fix:** the publication and reload calls are gone; the tab opens on the compiled defaults and every preview builds from the page's own model. The four static sources had no other writer and are deleted, so the live HUD builds from the compiled defaults only.
+- **Regression coverage:** TuningModelTests.AnEditChangesItsOwnPreviewOnlyAndAFreshTabOpensOnTheShippingDefaults and TuningModelTests.TheLiveHudOffersNoProcessWideEntryForAHudConfig. That the live HUD stays unchanged while the tab is used remains a manual check.
+- **Recurrence cue:** any static tuning source with a setter reachable from Deckle.Playground. `AudioLevelMapper` (Deckle.Audio) is one: the Audio mapping knobs and Reset all write statics the live HUD reads on each audio sample. It is not fixed here.
