@@ -115,6 +115,12 @@ doctrine). This file is generated from the Conventional-Commit history by
 - **hud:** Share the stroke's own tuning with the live HUD
 - **playground:** Publish every HUD knob to the live HUD
 - **playground:** Widen countdown reach ranges for testing
+- **core:** Add the WM_ACTIVATE and window-owner interop
+- **shell:** Raise DoubleClickRequested on a tray double click
+- **app:** Open Settings on a tray double click
+- **catalog:** Add the Taskbar glyph
+- **taskbar-cover:** Add the Settings page with the master switch
+- **app:** Register the Taskbar cover settings page
 
 ### Changed
 
@@ -175,6 +181,9 @@ doctrine). This file is generated from the Conventional-Commit history by
 - **playground:** Keep HUD tuning in the preview only
 - **playground:** Rebuild the countdown preview before Resume speech
 - **playground:** Explain the countdown edge fade cap and fade curve
+- **tray-menu:** Keep a surface open when activation moves to its own popup
+- **tray-menu:** Never size the quick-actions panel below its content
+- **playground:** Stop writing AudioLevelMapper from the HUD tab
 
 ## [0.35.0](https://github.com/louisfifre/deckle/compare/v0.31.6...v0.35.0) — 2026-08-13
 
