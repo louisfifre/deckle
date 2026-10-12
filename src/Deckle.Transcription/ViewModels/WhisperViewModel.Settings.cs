@@ -179,12 +179,15 @@ public partial class WhisperViewModel
     // A cut preset (Patient / Balanced / Quick, see CutPresets) carries the eight
     // hangover values: the four anchors (max, min, ramp start, ramp end) and the
     // four curve control points. It does not carry the threshold (mic-dependent)
-    // nor the margin and minimum utterance (blip rules). Custom is not stored: it
-    // shows whenever the values match no preset, and choosing it changes nothing,
-    // it only reveals the curve editor and the four anchor cards (masked
-    // otherwise). The selector's reset returns to Balanced, which equals the
-    // shipped EnergySegmenterSettings defaults; the editor's reset writes those
-    // same defaults back through WriteCutValues.
+    // nor the margin and minimum utterance (blip rules). The selection is stored
+    // (EnergySegmenterSettings.CutPreset), and so are the user's own values
+    // (CutCustomValues): any hand edit of the eight values switches the selector
+    // to Custom, and choosing Custom again writes those kept values back. Custom
+    // also reveals the curve editor and the four anchor cards (masked otherwise).
+    // The selector's reset returns to CutPresets.Default (Balanced), which equals
+    // the shipped EnergySegmenterSettings defaults; the editor's reset writes those
+    // same defaults back through WriteCutValues, which counts as a hand edit and
+    // so leaves the selector on Custom.
     //
     // The master's default mirrors the VM's own projection of the segmenter Strategy
     // onto the bool (Load/Push: StreamingEnabled = Strategy == Streaming), read off a
@@ -205,7 +208,7 @@ public partial class WhisperViewModel
                     () => CutPreset,
                     value => CutPreset = value,
                     _cutPresets.SelectorOptions("WhisperCutPresetCustom"),
-                    defaultValue: () => CutPresets.Balanced),
+                    defaultValue: () => CutPresets.Default),
                 Setting.Editor<CutCurveValues>("WhisperCutCurveCard",
                     ReadCutValues,
                     WriteCutValues,

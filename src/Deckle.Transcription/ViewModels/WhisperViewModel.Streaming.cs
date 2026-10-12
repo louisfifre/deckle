@@ -119,84 +119,106 @@ public partial class WhisperViewModel
     {
         if (_isSyncing || double.IsNaN(value)) return;
         PushToSettings();
-        RefreshCutPreset();
+        NotifyCutValueEdited();
     }
 
     partial void OnSegHangoverMinMsChanged(double value)
     {
         if (_isSyncing || double.IsNaN(value)) return;
         PushToSettings();
-        RefreshCutPreset();
+        NotifyCutValueEdited();
     }
 
     partial void OnSegHangoverRampStartMsChanged(double value)
     {
         if (_isSyncing || double.IsNaN(value)) return;
         PushToSettings();
-        RefreshCutPreset();
+        NotifyCutValueEdited();
     }
 
     partial void OnSegHangoverRampEndMsChanged(double value)
     {
         if (_isSyncing || double.IsNaN(value)) return;
         PushToSettings();
-        RefreshCutPreset();
+        NotifyCutValueEdited();
     }
 
     partial void OnSegCurveX1Changed(double value)
     {
         if (_isSyncing || double.IsNaN(value)) return;
         PushToSettings();
-        RefreshCutPreset();
+        NotifyCutValueEdited();
     }
 
     partial void OnSegCurveY1Changed(double value)
     {
         if (_isSyncing || double.IsNaN(value)) return;
         PushToSettings();
-        RefreshCutPreset();
+        NotifyCutValueEdited();
     }
 
     partial void OnSegCurveX2Changed(double value)
     {
         if (_isSyncing || double.IsNaN(value)) return;
         PushToSettings();
-        RefreshCutPreset();
+        NotifyCutValueEdited();
     }
 
     partial void OnSegCurveY2Changed(double value)
     {
         if (_isSyncing || double.IsNaN(value)) return;
         PushToSettings();
-        RefreshCutPreset();
+        NotifyCutValueEdited();
     }
 
     // ── Cut preset ───────────────────────────────────────────────────────────
     //
-    // CutPreset is what the selector shows: a preset id when the eight hangover
-    // values match one, PresetFamily.Custom otherwise. Picking Custom changes no
-    // value (it only reveals the fine controls). Picking a preset writes the
-    // eight values through the normal setters (each pushes to the store), under
-    // _applyingPreset so the per-value hooks do not recompute the selection
-    // mid-write. The persisted truth stays the values; Custom is never stored.
+    // CutPreset is what the selector shows: the STORED selection of the cut preset
+    // family (a preset id or PresetFamily.Custom), mirrored from the family and
+    // persisted in EnergySegmenterSettings.CutPreset. Picking a preset writes its
+    // eight values through the normal setters (each pushes to the settings);
+    // picking Custom writes back the user's own values the family kept. A hand
+    // edit of one of the eight values calls NotifyCutValueEdited, which switches
+    // the selection to Custom and keeps the edited values. While the family
+    // applies a preset it ignores those reports, so this view model needs no
+    // guard of its own for that.
+    //
+    // The family is rebuilt in Load() (see there), hence not readonly.
 
-    private readonly PresetFamily<CutCurveValues> _cutPresets;
-    private bool _applyingPreset;
+    private PresetFamily<CutCurveValues> _cutPresets;
 
     [ObservableProperty]
     public partial string CutPreset { get; set; }
 
     partial void OnCutPresetChanged(string value)
     {
-        if (_isSyncing || value == PresetFamily.Custom) return;
-        _applyingPreset = true;
+        if (_isSyncing) return;
+        _cutPresets.Select(value);
+    }
+
+    private PresetFamily<CutCurveValues> BuildCutPresets(Func<EnergySegmenterSettings> segmenter, Action save) =>
+        new(CutPresets.All, CutPresets.Default, new CutPresetStore(this, segmenter, save));
+
+    // Called after each hand edit of one of the eight hangover values, once it
+    // is pushed to the settings. The family copies the live values into the
+    // Custom slot and stores Custom; the selector then follows. The mirror is
+    // skipped while a preset is being applied: the store has not written the
+    // new selection yet at that point, and mirroring would put the old one
+    // back on the selector. _isSyncing keeps OnCutPresetChanged from calling
+    // Select again for a change that came from the family.
+    private void NotifyCutValueEdited()
+    {
+        if (_isSyncing || _cutPresets.IsApplying) return;
+        _cutPresets.NotifyEdited();
+
+        _isSyncing = true;
         try
         {
-            _cutPresets.Apply(value);
+            CutPreset = _cutPresets.Selection;
         }
         finally
         {
-            _applyingPreset = false;
+            _isSyncing = false;
         }
     }
 
@@ -220,12 +242,6 @@ public partial class WhisperViewModel
         SegCurveY1 = v.CurveY1;
         SegCurveX2 = v.CurveX2;
         SegCurveY2 = v.CurveY2;
-    }
-
-    private void RefreshCutPreset()
-    {
-        if (_isSyncing || _applyingPreset) return;
-        CutPreset = _cutPresets.Selection;
     }
 
     partial void OnSegMarginMsChanged(double value)

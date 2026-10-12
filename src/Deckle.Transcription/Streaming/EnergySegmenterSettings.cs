@@ -43,6 +43,18 @@ namespace Deckle.Transcription;
 //                         between the margin and the hangover expiry is dropped.
 //   MinUtteranceMs      — utterances whose VOICED extent is shorter than this
 //                         are dropped as noise blips rather than emitted.
+//
+//   CutPreset           — the STORED selection of the cut preset family: a preset
+//                         id (see CutPresets) or "custom". It is null in a file
+//                         written before it existed; the family then derives it
+//                         once from the eight hangover values and stores it. After
+//                         that the stored id is the truth, even if the values no
+//                         longer equal the preset's. Nothing in the segmenter
+//                         reads it.
+//   CutCustomValues     — the user's own eight hangover values, kept while a
+//                         preset is selected so choosing Custom again brings them
+//                         back. Null until the user first edits by hand (or the
+//                         first derivation lands on Custom).
 public sealed class EnergySegmenterSettings
 {
     public double ThresholdDbfs       { get; set; } = -45.0;
@@ -56,6 +68,8 @@ public sealed class EnergySegmenterSettings
     public double HangoverCurveY2     { get; set; } = 0.25;
     public int    MarginMs            { get; set; } = 150;
     public int    MinUtteranceMs      { get; set; } = 250;
+    public string?          CutPreset       { get; set; }
+    public CutCurveValues?  CutCustomValues { get; set; }
 
     // True while the hangover curve still equals the shipped default — i.e. the
     // user has not customized it. Compared against a fresh instance so the four

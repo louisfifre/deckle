@@ -1765,6 +1765,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │       ├── HangoverCurveCanvas.xaml
 │   │   │       └── HangoverCurveCanvas.xaml.cs
 │   │   ├── ViewModels/
+│   │   │   ├── CutPresetStore.cs
 │   │   │   ├── WhisperViewModel.cs
 │   │   │   ├── WhisperViewModel.DictationExperience.cs
 │   │   │   ├── WhisperViewModel.Engine.cs

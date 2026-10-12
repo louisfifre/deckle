@@ -6,9 +6,13 @@ namespace Deckle.Transcription;
 // fixes. ThresholdDbfs, MarginMs and MinUtteranceMs are excluded on purpose:
 // they are detection rules, and the threshold depends on the microphone.
 //
-// Value equality of the record struct is what preset matching relies on
-// (PresetFamily compares a preset's values to the current ones).
-public readonly record struct CutCurveValues(
+// A sealed record class, as Deckle.Presets requires (it holds "no Custom values
+// yet" as null). Value equality is still what the family relies on when it
+// derives a selection from the stored values, and what the tests compare. The
+// positional parameters double as the JSON shape: the record is persisted as
+// EnergySegmenterSettings.CutCustomValues, and System.Text.Json builds it
+// through its constructor, matching each parameter to its JSON property by name.
+public sealed record CutCurveValues(
     int HangoverMaxMs,
     int HangoverMinMs,
     int HangoverRampStartMs,
