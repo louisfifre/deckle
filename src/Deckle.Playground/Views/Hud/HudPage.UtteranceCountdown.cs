@@ -109,8 +109,15 @@ public sealed partial class HudPage
         fade.Children.Add(TuningHelp("Same fade units as Sweep mask. The fade scales with the wedge opening."));
         AddFloatRow(fade, "Edge fade (turns)", 0, 1, 0.005, _countdownConfig.EdgeFadeTurns,
             value => _countdownConfig = _countdownConfig with { EdgeFadeTurns = (float)value }, rebuild: true);
+        // The two ramps meet mid-wedge once each reaches half the opening at
+        // End reach (PaintArcMaskSurface rescales them), about 0.21 turn at
+        // 100 % and 0.23 at 200 % on a 272 × 78 HUD.
+        fade.Children.Add(TuningHelp(
+            "Above about 0.2 turn, the fade stops growing because both soft edges already meet in the middle."));
         AddFloatRow(fade, "Fade curve", 0.5, 10, 0.1, _countdownConfig.FadeCurve,
             value => _countdownConfig = _countdownConfig with { FadeCurve = (float)value }, rebuild: true);
+        fade.Children.Add(TuningHelp(
+            "At 1, the soft edge brightens evenly. Higher values keep it dark longer, then brighten it sharply."));
 
         AddCountdownPreviewSection();
     }
