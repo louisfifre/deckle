@@ -7,6 +7,31 @@ type: module-journal
 
 Module-level dated notes. Most recent on top.
 
+## 2026-10-12 — The tantivy-go fix is upstream as a PR; the cli build regression is an issue
+
+Posted under Louis's GitHub account: the 16-line `C.free` patch as
+https://github.com/anyproto/tantivy-go/pull/25 (base `main`, from the fork
+`louisfifre/tantivy-go`, maintainer edits allowed, two commits: the fix and
+a one-line comment on `string_free` they may drop), and the Windows build
+regression as https://github.com/anyproto/anytype-cli/issues/63 (Bug report
+form layout, created through the API, no labels — `triage` does not exist on
+that repo and a non-member cannot set labels anyway). The PR cites a proof a
+maintainer can replay without Anytype: tantivy-go's own test binary built with
+`CGO_LDFLAGS="-L<lib> -mcrtdll=msvcrt-os"` dies with 0xC0000374 in the first
+test on `main` and passes 46/46 on the branch. Both texts state that the
+investigation was done with an LLM under Louis's direction. Follow-up: the
+last external tantivy-go PR waited about six weeks; a polite ping is due no
+earlier than 2026-11-02. The fork is to be deleted once the PR is merged, not
+before (deleting it would orphan the PR's head branch).
+
+Licences, read from the repositories the same day: anytype-cli is MIT, not
+Any Source Available License as the chantier's task said; only anytype-heart,
+embedded in the exe, is ASAL 1.0; tantivy-go is MIT. ASAL allows
+non-commercial use, modification and redistribution provided heart's licence
+ships with the binary and the licence itself is not changed; it has no
+network-use clause. Unsettled by the texts: how MIT and ASAL combine in one
+binary, and the « Anytype » name on a build hosted on a fork.
+
 ## 2026-10-08 — The 0.4.0 crash is a cross-allocator free in tantivy-go, exposed by the cli's msvcrt-linked Windows asset
 
 Found, same day, by a debugger pass on the dump, a pclntab read of the

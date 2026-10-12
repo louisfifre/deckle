@@ -1281,7 +1281,6 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   ├── AmbientEngineState.cs
 │   │   │   ├── AmbientHeartbeatWindow.cs
 │   │   │   ├── AmbientHueChangeAttributor.cs
-│   │   │   ├── AmbientModePresets.cs
 │   │   │   ├── AmbientPushCadence.cs
 │   │   │   ├── AmbientPushGate.cs
 │   │   │   ├── AmbientZoneSampler.cs
@@ -1309,10 +1308,13 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   ├── AmbientViewModel.cs
 │   │   │   └── AmbientViewModel.Settings.cs
 │   │   ├── AmbientCaptureRate.cs
+│   │   ├── AmbientPresets.cs
+│   │   ├── AmbientPresetStore.cs
 │   │   ├── AmbientSettings.cs
 │   │   ├── AmbientSettingsModule.cs
 │   │   ├── AmbientSettingsService.cs
 │   │   ├── AmbientStartSettings.cs
+│   │   ├── AmbientTuning.cs
 │   │   ├── Deckle.Lighting.Ambient.csproj
 │   │   ├── DeckleAmbientSource.CaptureAndSampling.cs
 │   │   ├── DeckleAmbientSource.cs
@@ -1493,6 +1495,14 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   ├── HudViewModel.cs
 │   │   │   └── SegmentationViewModel.cs
 │   │   ├── Views/
+│   │   │   ├── Ambient/
+│   │   │   │   ├── AmbientPage.HdrTuning.cs
+│   │   │   │   ├── AmbientPage.Hue.cs
+│   │   │   │   ├── AmbientPage.LightZones.cs
+│   │   │   │   ├── AmbientPage.Preview.cs
+│   │   │   │   ├── AmbientPage.ScreenCapture.cs
+│   │   │   │   ├── AmbientPage.xaml
+│   │   │   │   └── AmbientPage.xaml.cs
 │   │   │   ├── Autocorrect/
 │   │   │   │   ├── CorrectionApplicationPage.xaml
 │   │   │   │   ├── CorrectionApplicationPage.xaml.cs
@@ -1518,7 +1528,9 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── PlaygroundNotifications.cs
 │   │   └── PlaygroundShell.cs
 │   ├── Deckle.Presets/
+│   │   ├── AGENTS.md  — [agent-instructions] Preset families shared by the modules — built-in value sets, a stored selection…
 │   │   ├── Deckle.Presets.csproj
+│   │   ├── IPresetStore.cs
 │   │   ├── Preset.cs
 │   │   └── PresetFamily.cs
 │   ├── Deckle.Security/
@@ -1765,6 +1777,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │       ├── HangoverCurveCanvas.xaml
 │   │   │       └── HangoverCurveCanvas.xaml.cs
 │   │   ├── ViewModels/
+│   │   │   ├── CutPresetStore.cs
 │   │   │   ├── WhisperViewModel.cs
 │   │   │   ├── WhisperViewModel.DictationExperience.cs
 │   │   │   ├── WhisperViewModel.Engine.cs
@@ -2120,6 +2133,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── AmbientHeartbeatWindowTests.cs
 │   │   ├── AmbientHueChangeAttributorTests.cs
 │   │   ├── AmbientNearBlackTests.cs
+│   │   ├── AmbientPresetsTests.cs
 │   │   ├── AmbientPushCadenceTests.cs
 │   │   ├── AmbientPushGateTests.cs
 │   │   ├── AmbientStartSettingsTests.cs
