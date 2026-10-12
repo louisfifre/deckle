@@ -1516,7 +1516,9 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── PlaygroundNotifications.cs
 │   │   └── PlaygroundShell.cs
 │   ├── Deckle.Presets/
+│   │   ├── AGENTS.md  — [agent-instructions] Preset families shared by the modules — built-in value sets, a stored selection…
 │   │   ├── Deckle.Presets.csproj
+│   │   ├── IPresetStore.cs
 │   │   ├── Preset.cs
 │   │   └── PresetFamily.cs
 │   ├── Deckle.Security/

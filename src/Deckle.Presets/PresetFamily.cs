@@ -1,33 +1,37 @@
 // A preset family: the built-in presets of one group of settings in one
-// module. It tells which preset the current values match (else Custom),
-// applies a preset, and hands a selector its options.
+// module, plus the user's own values under the Custom selection.
 //
-// T is the record of the settings group. Value equality is the contract:
-// a preset matches when its Values equal the current values. Doubles compare
-// exactly, so a preset must hold the very literals Apply writes.
+// The rule (Louis, 2026-10-12): real time. Any hand edit saves at once and
+// switches the selection to Custom; picking a preset writes its values;
+// picking Custom again brings the hand-made values back. So the selection
+// is stored, and so are the Custom values: the family writes both through
+// the store the module hands it.
 //
-// Custom is derived, never stored: it only means "the current values match
-// no preset". Apply writes through the consumer's own read/write delegates,
-// so persistence stays the module's own; the family keeps no parallel store.
+// Reentrance: applying a preset writes the values through the module's own
+// setters, which report every write as an edit. NotifyEdited ignores those
+// reports while IsApplying is true, so the consumer needs no guard of its own.
+//
+// Migration: a store whose Selection is null (a file written before the
+// selection existed) gets it derived once from its values — the preset they
+// equal, else Custom with those values kept.
 
 namespace Deckle.Presets;
 
 public static class PresetFamily
 {
-    /// <summary>The reserved selection id meaning the current values match no preset.</summary>
+    /// <summary>The reserved selection id meaning "the user's own values".</summary>
     public const string Custom = "custom";
 }
 
-public sealed class PresetFamily<T> where T : notnull
+public sealed class PresetFamily<T> where T : class
 {
-    private readonly Func<T> _read;
-    private readonly Action<T> _write;
+    private readonly IPresetStore<T> _store;
 
-    public PresetFamily(IReadOnlyList<Preset<T>> presets, Func<T> read, Action<T> write)
+    public PresetFamily(IReadOnlyList<Preset<T>> presets, string defaultId, IPresetStore<T> store)
     {
         ArgumentNullException.ThrowIfNull(presets);
-        ArgumentNullException.ThrowIfNull(read);
-        ArgumentNullException.ThrowIfNull(write);
+        ArgumentNullException.ThrowIfNull(defaultId);
+        ArgumentNullException.ThrowIfNull(store);
 
         if (presets.Count == 0)
         {
@@ -54,15 +58,27 @@ public sealed class PresetFamily<T> where T : notnull
         }
 
         Presets = presets;
-        _read = read;
-        _write = write;
+        _store = store;
+        Default = Find(defaultId)
+            ?? throw new ArgumentException($"The default id \"{defaultId}\" names no preset.", nameof(defaultId));
+
+        if (_store.Selection is null || (_store.Selection != PresetFamily.Custom && Find(_store.Selection) is null))
+        {
+            DeriveSelectionFromValues();
+        }
     }
 
     /// <summary>The built-in presets, in declared order.</summary>
     public IReadOnlyList<Preset<T>> Presets { get; }
 
-    /// <summary>The selection id: the matching preset's id, else <see cref="PresetFamily.Custom"/>.</summary>
-    public string Selection => Match()?.Id ?? PresetFamily.Custom;
+    /// <summary>The preset a reset returns to.</summary>
+    public Preset<T> Default { get; }
+
+    /// <summary>The stored selection: a preset id or <see cref="PresetFamily.Custom"/>.</summary>
+    public string Selection => _store.Selection ?? PresetFamily.Custom;
+
+    /// <summary>True while <see cref="Select"/> writes a preset's values.</summary>
+    public bool IsApplying { get; private set; }
 
     public Preset<T>? Find(string id)
     {
@@ -77,35 +93,71 @@ public sealed class PresetFamily<T> where T : notnull
         return null;
     }
 
-    /// <summary>The first preset whose values equal the current values, else null.</summary>
-    public Preset<T>? Match()
+    /// <summary>
+    /// Selects a preset and writes its values, or selects Custom and writes
+    /// the kept Custom values back (the live values stay when none were kept
+    /// yet). Returns false, writing nothing, for an unknown id.
+    /// </summary>
+    public bool Select(string id)
     {
-        var current = _read();
-        foreach (var preset in Presets)
+        if (id == PresetFamily.Custom)
         {
-            if (EqualityComparer<T>.Default.Equals(preset.Values, current))
+            IsApplying = true;
+            try
             {
-                return preset;
+                if (_store.CustomValues is { } custom)
+                {
+                    _store.Values = custom;
+                }
+                else
+                {
+                    _store.CustomValues = _store.Values;
+                }
+
+                _store.Selection = PresetFamily.Custom;
             }
+            finally
+            {
+                IsApplying = false;
+            }
+
+            return true;
         }
 
-        return null;
-    }
-
-    /// <summary>
-    /// Writes a known preset's values and returns true; Custom or an unknown
-    /// id writes nothing and returns false.
-    /// </summary>
-    public bool Apply(string id)
-    {
         var preset = Find(id);
         if (preset is null)
         {
             return false;
         }
 
-        _write(preset.Values);
+        IsApplying = true;
+        try
+        {
+            _store.Values = preset.Values;
+            _store.Selection = preset.Id;
+        }
+        finally
+        {
+            IsApplying = false;
+        }
+
         return true;
+    }
+
+    /// <summary>
+    /// Called by the consumer after each hand edit of a value the presets fix:
+    /// the live values become the Custom values and the selection turns to
+    /// Custom. Ignored while a preset is being applied.
+    /// </summary>
+    public void NotifyEdited()
+    {
+        if (IsApplying)
+        {
+            return;
+        }
+
+        _store.CustomValues = _store.Values;
+        _store.Selection = PresetFamily.Custom;
     }
 
     /// <summary>
@@ -122,5 +174,21 @@ public sealed class PresetFamily<T> where T : notnull
 
         options.Add((PresetFamily.Custom, customLabelKey));
         return options;
+    }
+
+    private void DeriveSelectionFromValues()
+    {
+        var current = _store.Values;
+        foreach (var preset in Presets)
+        {
+            if (EqualityComparer<T>.Default.Equals(preset.Values, current))
+            {
+                _store.Selection = preset.Id;
+                return;
+            }
+        }
+
+        _store.CustomValues = current;
+        _store.Selection = PresetFamily.Custom;
     }
 }
