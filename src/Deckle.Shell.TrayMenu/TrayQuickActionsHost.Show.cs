@@ -49,9 +49,9 @@ public sealed partial class TrayQuickActionsHost
             return;
         }
 
-        if (_lastDeactivatedHideTick != 0)
+        if (_lastDismissTick != 0)
         {
-            long sinceDismiss = Environment.TickCount64 - _lastDeactivatedHideTick;
+            long sinceDismiss = Environment.TickCount64 - _lastDismissTick;
             if (sinceDismiss < ReopenGuardMs)
             {
                 DeckleShellTrayMenuSource.Log.PanelShowIgnored();
@@ -91,6 +91,16 @@ public sealed partial class TrayQuickActionsHost
             Placement = FlyoutPlacementMode.Full,
         });
 
+        // Hidden before the open completed: the carrier lost activation or
+        // the flyout closed by itself during ShowAt. The user saw nothing;
+        // the warning says so whatever the Windowing verbosity.
+        if (!_isVisible)
+        {
+            DeckleShellTrayMenuSource.Log.PanelDismissedWhileOpening();
+            DeckleShellTrayMenuSource.Log.PanelDismissedWhileOpeningDetail(_lastHideReason);
+            return;
+        }
+
         DeckleShellTrayMenuSource.Log.PanelShown();
         DeckleShellTrayMenuSource.Log.PanelShownDetail(
             _rows.Count, isRecording, dipW, dipH, physW, physH, usedScale, sizeSource);
@@ -107,6 +117,7 @@ public sealed partial class TrayQuickActionsHost
     {
         if (!_isVisible) return;
         _isVisible = false;
+        _lastHideReason = reason;
         DeckleShellTrayMenuSource.Log.PanelHidden();
         DeckleShellTrayMenuSource.Log.PanelHiddenDetail(reason);
         _flyout.Hide();
