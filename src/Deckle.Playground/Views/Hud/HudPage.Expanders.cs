@@ -1,6 +1,5 @@
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
-using Deckle.Audio;
 using Deckle.Composition;
 
 namespace Deckle.Playground;
@@ -263,31 +262,10 @@ public sealed partial class HudPage
         RebuildTuningPanel();
     }
 
-    private void AddAudioMappingExpander()
-    {
-        var stack = NewTuningSection("Audio mapping (Recording)", ResetAudioMapping);
-        // Static mutables on AudioLevelMapper (Deckle.Audio) — no
-        // rebuild, read live each sample.
-        AddFloatRow(stack, "EmaAlpha", 0, 1, 0.05, AudioLevelMapper.EmaAlpha,
-            v => AudioLevelMapper.EmaAlpha = (float)v);
-        AddFloatRow(stack, "MinDbfs", -80, 0, 1, AudioLevelMapper.MinDbfs,
-            v => AudioLevelMapper.MinDbfs = (float)v);
-        AddFloatRow(stack, "MaxDbfs", -60, 0, 1, AudioLevelMapper.MaxDbfs,
-            v => AudioLevelMapper.MaxDbfs = (float)v);
-        AddFloatRow(stack, "DbfsCurveExponent", 0.5, 4, 0.05, AudioLevelMapper.DbfsCurveExponent,
-            v => AudioLevelMapper.DbfsCurveExponent = (float)v);
-    }
-
-    private void ResetAudioMapping()
-    {
-        // The persisted POCO is the single source of the window defaults —
-        // a fresh instance carries them, so no literal is restated here.
-        // EmaAlpha is not a window field, hence its own literal.
-        AudioLevelMapper.Apply(new LevelWindowSettings());
-        AudioLevelMapper.EmaAlpha = 0.25f;
-        RebuildTuningPanel();
-    }
-
+    // The preview maps the simulated RMS through the live AudioLevelMapper
+    // calibration, which Settings > Recording and auto-calibration own. The
+    // Playground reads it and never writes it: the HUD tab changes previews
+    // only (module AGENTS.md).
     private void AddSimulatedRmsExpander()
     {
         var stack = NewTuningSection("Simulated RMS (Recording only)", ResetSimulatedRms);
