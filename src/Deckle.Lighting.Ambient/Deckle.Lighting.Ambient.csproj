@@ -34,6 +34,8 @@
     <ProjectReference Include="..\Deckle.Diagnostics.Logging\Deckle.Diagnostics.Logging.csproj" />
     <ProjectReference Include="..\Deckle.Lighting\Deckle.Lighting.csproj" />
     <ProjectReference Include="..\Deckle.Catalog\Deckle.Catalog.csproj" />
+    <!-- The Ambient presets (Game, Vivid, Movie, Ambient) and the stored Custom. -->
+    <ProjectReference Include="..\Deckle.Presets\Deckle.Presets.csproj" />
     <ProjectReference Include="..\Deckle.Settings\Deckle.Settings.csproj" />
     <ProjectReference Include="..\Deckle.Vision\Deckle.Vision.csproj" />
     <!-- Shell carries the DispatcherQueue.TryEnqueueObserved extensions

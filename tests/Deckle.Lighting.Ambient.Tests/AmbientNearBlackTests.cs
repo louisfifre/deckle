@@ -93,7 +93,7 @@ public sealed class AmbientNearBlackTests
         Assert.InRange(CountBlackToggles(output.Skip(SettlingTicks).ToList()), 0, 1);
     }
 
-    // Under the default curve (0.42, 0, 1, 1), 6/255 maps to ~0.26/255 and
+    // Under the gamma-like curve (0.42, 0, 1, 1), 6/255 maps to ~0.26/255 and
     // 10/255 to ~0.71/255 : one on each side of the half step (0.5/255) at
     // which plain rounding turns a value into black. A grey sequence that
     // switches between them every half second makes the smoothed value
@@ -181,10 +181,26 @@ public sealed class AmbientNearBlackTests
             minBrightnessEnabled: false,
             minBrightness: 0);
 
+    // The two tunings the sequences run under. True : the Ambient preset
+    // (the shadow-lifting curve, the slow alpha). False : the gamma-like
+    // curve (0.42, 0, 1, 1) with alpha 0.30 — the defaults before the
+    // Ambient preset became the default, kept here as the reference the
+    // JOURNAL's near-black evidence was measured against.
     private static AmbientSettings SettingsFor(bool ambientPreset)
     {
         var settings = new AmbientSettings();
-        if (ambientPreset) AmbientModePresets.Apply(AmbientMode.Ambient, settings);
+        if (ambientPreset)
+        {
+            AmbientPresets.All.Single(p => p.Id == AmbientPresets.Ambient).Values.ApplyTo(settings);
+        }
+        else
+        {
+            settings.BrightnessCurveX1 = 0.42;
+            settings.BrightnessCurveY1 = 0.00;
+            settings.BrightnessCurveX2 = 1.00;
+            settings.BrightnessCurveY2 = 1.00;
+            settings.SmoothingAlpha = 0.30;
+        }
         return settings;
     }
 

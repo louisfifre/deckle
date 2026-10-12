@@ -1279,7 +1279,6 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   ├── AmbientEngineState.cs
 │   │   │   ├── AmbientHeartbeatWindow.cs
 │   │   │   ├── AmbientHueChangeAttributor.cs
-│   │   │   ├── AmbientModePresets.cs
 │   │   │   ├── AmbientPushCadence.cs
 │   │   │   ├── AmbientPushGate.cs
 │   │   │   ├── AmbientZoneSampler.cs
@@ -1307,10 +1306,13 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   ├── AmbientViewModel.cs
 │   │   │   └── AmbientViewModel.Settings.cs
 │   │   ├── AmbientCaptureRate.cs
+│   │   ├── AmbientPresets.cs
+│   │   ├── AmbientPresetStore.cs
 │   │   ├── AmbientSettings.cs
 │   │   ├── AmbientSettingsModule.cs
 │   │   ├── AmbientSettingsService.cs
 │   │   ├── AmbientStartSettings.cs
+│   │   ├── AmbientTuning.cs
 │   │   ├── Deckle.Lighting.Ambient.csproj
 │   │   ├── DeckleAmbientSource.CaptureAndSampling.cs
 │   │   ├── DeckleAmbientSource.cs
@@ -2121,6 +2123,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── AmbientHeartbeatWindowTests.cs
 │   │   ├── AmbientHueChangeAttributorTests.cs
 │   │   ├── AmbientNearBlackTests.cs
+│   │   ├── AmbientPresetsTests.cs
 │   │   ├── AmbientPushCadenceTests.cs
 │   │   ├── AmbientPushGateTests.cs
 │   │   ├── AmbientStartSettingsTests.cs

@@ -7,6 +7,16 @@ type: module-journal
 
 Dated notes on the colour path from the sampled frame to the lights — the why behind a choice the code no longer shows. Most recent on top.
 
+## 2026-10-12 — Presets on Deckle.Presets; the floor leaves the presets; the Playground tab returns
+
+Chose: the Ambient presets move to Deckle.Presets (`AmbientPresets`, `AmbientTuning`, `AmbientPresetStore`), with the stored selection and the stored Custom values the module's v2 contract requires. The `AmbientMode` enum and `AmbientModePresets` are gone; `AmbientSettings.Preset` holds the id and `CustomTuning` the user's own values. Files from before hold an integer `mode`: it is ignored and the selection is derived once from the values (the preset they equal, else Custom with those values kept), so a user whose values were the old Game preset (saturation 1.3, exposure +0.5) now reads Custom, not the new Game.
+
+Chose: a preset fixes eight values (exposure, saturation, the four curve points, reaction speed, change threshold) and never the floor. Louis (2026-10-07, 2026-10-12): the presets must not force the floor; whether the floor survives the black gate is still his call, so its default stays the POCO's (on, 180). Consequence: a fresh install used to receive the Ambient preset's floor of 40 through the removed seeding; it now gets 180.
+
+Chose: the default preset is Ambient and reads the POCO initializers, so the eight initializers took the former Ambient preset's values (-0.5 EV, 0.7, curve 0.18/0.55/0.40/0.90, alpha 0.08, threshold 10). A fresh install already received those through the seeding; the per-card reset and Reset all now return to them too, one source. `AmbientNearBlackTests` keeps the former gamma-like curve (0.42, 0, 1, 1) and alpha 0.30 as explicit literals, because its evidence was measured against them.
+
+Found (Louis, 2026-10-12): Game at saturation 1.0 and exposure 0, "a low threshold and a really quite high reaction speed" without figures (kept at 6 and 0.40); Vivid is Game at saturation 1.10, for Hades; Movie is to be settled before Ambient. He tunes in front of the scene, in the Playground Ambient tab brought back from 3d91dda3^ by his decision, which writes this module's live store like the Settings page.
+
 ## 2026-10-08 — The Playground Ambient tab is retired; what stays bespoke in Settings
 
 Chose: the Playground Ambient tab is removed (page, nav item, home card, strings, its Deckle-Playground events with ids 3, 5-9 and 14-22 reserved there). Ambient is set in Settings > Ambient Light. Not migrated: the standalone screen-capture test and the Hue test-colour and rotation buttons; Identify survives in the per-light rows.

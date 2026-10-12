@@ -1,5 +1,6 @@
 using System.Text.Json;
 using Deckle.Core;
+using Deckle.Presets;
 
 namespace Deckle.Lighting.Ambient;
 
@@ -7,6 +8,9 @@ namespace Deckle.Lighting.Ambient;
 // TranscriptionSettingsService and CaptureSettingsService — same JsonSettingsStore
 // pattern, same singleton lazy, same naming convention. Backing file:
 // <UserDataRoot>/modules/ambient/settings.json.
+//
+// The preset family lives here, one per process, so the Settings page and
+// the Playground tab select and edit the same selection.
 public sealed class AmbientSettingsService
 {
     private static readonly Lazy<AmbientSettingsService> _instance = new(() => new AmbientSettingsService());
@@ -30,6 +34,12 @@ public sealed class AmbientSettingsService
 
     public string Path => _store.Path;
 
+    /// <summary>The Ambient presets over <see cref="Current"/>: selection,
+    /// Custom values and the eight tuning values. Built after the file is
+    /// read, so a file from before the stored selection gets it derived
+    /// once from its values (saved with the next edit).</summary>
+    public PresetFamily<AmbientTuning> Presets { get; }
+
     public event Action? Changed
     {
         add    => _store.Changed += value;
@@ -42,12 +52,6 @@ public sealed class AmbientSettingsService
             AppPaths.UserDataRoot, "modules", "ambient", "settings.json");
         Directory.CreateDirectory(System.IO.Path.GetDirectoryName(path)!);
 
-        // Presets are otherwise applied only on a user gesture, so a fresh
-        // install would display the default mode's label while living on the
-        // POCO initialisers. Seeded once here so AmbientModePresets stays the
-        // single source of the per-mode values.
-        bool freshStore = !File.Exists(path);
-
         _store = new JsonSettingsStore<AmbientSettings>(
             path:        path,
             mutexName:   $"{AppPaths.AppFolderName}-Settings-Ambient-Save",
@@ -55,25 +59,14 @@ public sealed class AmbientSettingsService
             logWarning:  msg => DeckleAmbientSource.Log.SettingsLoadWarning($"[ambient] {msg}"),
             logError:    msg => DeckleAmbientSource.Log.SettingsLoadError($"[ambient] {msg}"));
 
-        if (freshStore) ApplyPreset(Current.Mode);
+        Presets = new PresetFamily<AmbientTuning>(
+            AmbientPresets.All,
+            AmbientPresets.Default,
+            new AmbientPresetStore(() => Current));
     }
 
     public void Save()                       => _store.Save();
     public void Flush()                      => _store.Flush();
     public void Reload()                     => _store.Reload();
     public void Replace(AmbientSettings next) => _store.Replace(next);
-
-    /// <summary>Copies <see cref="AmbientModePresets"/> values for the
-    /// given mode onto <see cref="Current"/>, also sets
-    /// <see cref="AmbientSettings.Mode"/> to the same value, then
-    /// saves. Custom is a no-op : the mode flips to Custom but every
-    /// other knob keeps its current value (this is the path the
-    /// AmbientViewModel takes when the user starts tuning by hand). Fires
-    /// <see cref="Changed"/> as part of <see cref="Save"/>.</summary>
-    public void ApplyPreset(AmbientMode mode)
-    {
-        Current.Mode = mode;
-        AmbientModePresets.Apply(mode, Current);
-        Save();
-    }
 }

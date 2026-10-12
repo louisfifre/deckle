@@ -12,8 +12,9 @@ namespace Deckle.Lighting.Ambient;
 // "<LabelKey>.Header" / ".Description" and "<OptionKey>.Content".
 //
 // The setters are the view model's own properties, so the composed cards keep the
-// contracts of AmbientViewModel exactly: a tuning edit flips Mode to Custom, a Mode
-// pick goes through AmbientSettingsService.ApplyPreset.
+// contracts of AmbientViewModel exactly: a tuning edit reports itself to the preset
+// family and turns the selection to Custom, a preset pick goes through
+// AmbientSettingsService.Presets.Select.
 public partial class AmbientViewModel
 {
     // State: the master switch.
@@ -27,23 +28,20 @@ public partial class AmbientViewModel
             defaultValue: () => new AmbientSettings().Enabled),
     ];
 
-    // Behaviour: the preset mode, then per-zone colours with their band shape.
+    // Behaviour: the preset, then per-zone colours with their band shape.
     // The two band sliders share one place and show only the one the chosen
-    // band mode reads.
+    // band mode reads. The preset options come from the family (each preset
+    // in declared order, then Custom); the selector's reset returns to the
+    // default preset.
     public IReadOnlyList<SettingDescriptor> BehaviourSettings =>
     [
-        Setting.Choice<AmbientMode>(
-            "AmbientModeCard",
-            () => Mode,
-            value => Mode = value,
-            [
-                (AmbientMode.Game, "AmbientModeGame"),
-                (AmbientMode.Movie, "AmbientModeMovie"),
-                (AmbientMode.Ambient, "AmbientModeAmbient"),
-                (AmbientMode.Custom, "AmbientModeCustom"),
-            ],
+        Setting.Choice<string>(
+            "AmbientPresetCard",
+            () => Preset,
+            value => Preset = value,
+            AmbientSettingsService.Instance.Presets.SelectorOptions("AmbientPresetCustom"),
             glyph: Glyphs.Theme,
-            defaultValue: () => new AmbientSettings().Mode),
+            defaultValue: () => AmbientPresets.Default),
 
         Setting.Group(
             "AmbientZonesGroup",

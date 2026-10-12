@@ -102,8 +102,8 @@ public sealed partial class AmbientEngine : IAsyncDisposable
     //   - Share — fraction of the matching screen dimension, same number
     //     on every edge. The top / bottom bands end up thinner in pixels
     //     than the lateral bands on a 16:9 screen.
-    //   - Pixels — fixed source-pixel thickness, same number on every
-    //     edge. The top band reads at the same physical thickness as
+    //   - Cells — fixed sampler-cell thickness, same count on every
+    //     edge. The top band reads at the same number of cells as
     //     the lateral bands regardless of aspect ratio.
     // Both values + the mode selector are persisted on AmbientSettings
     // and snapshotted at the top of every tick (same live-reload
