@@ -114,6 +114,7 @@ doctrine). This file is generated from the Conventional-Commit history by
 - **app:** Feed the apps and games runtime from the foreground watcher
 - **hud:** Share the stroke's own tuning with the live HUD
 - **playground:** Publish every HUD knob to the live HUD
+- **playground:** Widen countdown reach ranges for testing
 
 ### Changed
 
@@ -132,6 +133,8 @@ doctrine). This file is generated from the Conventional-Commit history by
 - **ambient:** Host the Ambient view model in its module
 - **playground:** Retire the Ambient tab
 - **ambient:** Drop the section resets the composer replaced
+- **catalog:** Move the magnitude grain arithmetic into a testable helper
+- **hud:** Build the live HUD from compiled defaults only
 
 ### Fixed
 
@@ -165,6 +168,13 @@ doctrine). This file is generated from the Conventional-Commit history by
 - **tray-menu:** Size the panel's fallback with the real presenter padding
 - **app:** Start the foreground watcher before the modules that read it
 - **orchestration:** Keep a failed foreground delivery off the thread pool's unhandled path
+- **hud:** Wrap the transcript panel text at its right edge
+- **catalog:** Store and show magnitude values on their display grain
+- **hud:** Fade the transcript panel out as the cursor approaches
+- **tray-menu:** Never size the context menu below its items
+- **playground:** Keep HUD tuning in the preview only
+- **playground:** Rebuild the countdown preview before Resume speech
+- **playground:** Explain the countdown edge fade cap and fade curve
 
 ## [0.35.0](https://github.com/louisfifre/deckle/compare/v0.31.6...v0.35.0) — 2026-08-13
 
