@@ -102,9 +102,13 @@ public sealed class PresetFamily<T> where T : class
     {
         if (id == PresetFamily.Custom)
         {
+            // The selection is written before the values: a consumer whose
+            // value setters read Selection back (to mirror it into a selector)
+            // then sees the new one, not the one being left.
             IsApplying = true;
             try
             {
+                _store.Selection = PresetFamily.Custom;
                 if (_store.CustomValues is { } custom)
                 {
                     _store.Values = custom;
@@ -113,8 +117,6 @@ public sealed class PresetFamily<T> where T : class
                 {
                     _store.CustomValues = _store.Values;
                 }
-
-                _store.Selection = PresetFamily.Custom;
             }
             finally
             {
@@ -133,8 +135,8 @@ public sealed class PresetFamily<T> where T : class
         IsApplying = true;
         try
         {
-            _store.Values = preset.Values;
             _store.Selection = preset.Id;
+            _store.Values = preset.Values;
         }
         finally
         {
