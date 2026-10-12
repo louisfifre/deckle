@@ -44,6 +44,11 @@
                                            HeaderIcon="{ui:FontIcon Glyph={StaticResource Icon.Speaker}}"
                                            IsClickEnabled="True"
                                            Click="OnHudCardClick" />
+                    <controls:SettingsCard x:Name="HomeAmbientCard"
+                                           x:Uid="PlaygroundHomeAmbientCard"
+                                           HeaderIcon="{ui:FontIcon Glyph={StaticResource Icon.Lightbulb}}"
+                                           IsClickEnabled="True"
+                                           Click="OnAmbientCardClick" />
                     <controls:SettingsCard x:Name="HomeSegmentationCard"
                                            x:Uid="PlaygroundHomeSegmentationCard"
                                            HeaderIcon="{ui:FontIcon Glyph={StaticResource Icon.Speech}}"

@@ -20,7 +20,7 @@
          tuning view-models. -->
     <PackageReference Include="CommunityToolkit.Mvvm" />
     <!-- SettingsCard / SettingsExpander — canonical Windows 11 pattern for
-         the tuning panels in HudPage. -->
+         the tuning panels in HudPage and AmbientPage. -->
     <PackageReference Include="CommunityToolkit.WinUI.Controls.SettingsControls" />
     <!-- Win2D — used by the HUD preview surface (matches the host App's
          dependency for the stroke conic gradient). -->
@@ -33,6 +33,8 @@
     <ProjectReference Include="..\Deckle.Core\Deckle.Core.csproj" />
     <ProjectReference Include="..\Deckle.Diagnostics\Deckle.Diagnostics.csproj" />
     <ProjectReference Include="..\Deckle.Hud\Deckle.Hud.csproj" />
+    <ProjectReference Include="..\Deckle.Lighting\Deckle.Lighting.csproj" />
+    <ProjectReference Include="..\Deckle.Lighting.Ambient\Deckle.Lighting.Ambient.csproj" />
     <ProjectReference Include="..\Deckle.Notifications\Deckle.Notifications.csproj" />
     <ProjectReference Include="..\Deckle.Settings\Deckle.Settings.csproj" />
     <ProjectReference Include="..\Deckle.Shell\Deckle.Shell.csproj" />
@@ -40,6 +42,7 @@
     <!-- Energy segmenter settings + the HangoverCurveCanvas control consumed by
          the Segmentation tuning page. -->
     <ProjectReference Include="..\Deckle.Transcription\Deckle.Transcription.csproj" />
+    <ProjectReference Include="..\Deckle.Vision\Deckle.Vision.csproj" />
   </ItemGroup>
 
   <ItemGroup>

@@ -1493,6 +1493,14 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   ├── HudViewModel.cs
 │   │   │   └── SegmentationViewModel.cs
 │   │   ├── Views/
+│   │   │   ├── Ambient/
+│   │   │   │   ├── AmbientPage.HdrTuning.cs
+│   │   │   │   ├── AmbientPage.Hue.cs
+│   │   │   │   ├── AmbientPage.LightZones.cs
+│   │   │   │   ├── AmbientPage.Preview.cs
+│   │   │   │   ├── AmbientPage.ScreenCapture.cs
+│   │   │   │   ├── AmbientPage.xaml
+│   │   │   │   └── AmbientPage.xaml.cs
 │   │   │   ├── Autocorrect/
 │   │   │   │   ├── CorrectionApplicationPage.xaml
 │   │   │   │   ├── CorrectionApplicationPage.xaml.cs
