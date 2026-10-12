@@ -121,6 +121,10 @@ doctrine). This file is generated from the Conventional-Commit history by
 - **catalog:** Add the Taskbar glyph
 - **taskbar-cover:** Add the Settings page with the master switch
 - **app:** Register the Taskbar cover settings page
+- **presets:** Store the selection and the Custom values
+- **transcription:** Store the cut preset selection and the Custom values
+- **ambient:** Move the presets to Deckle.Presets, add Vivid, free the floor
+- **playground:** Bring back the Ambient tab
 
 ### Changed
 
@@ -184,6 +188,7 @@ doctrine). This file is generated from the Conventional-Commit history by
 - **tray-menu:** Keep a surface open when activation moves to its own popup
 - **tray-menu:** Never size the quick-actions panel below its content
 - **playground:** Stop writing AudioLevelMapper from the HUD tab
+- **presets:** Write the selection before the values
 
 ## [0.35.0](https://github.com/louisfifre/deckle/compare/v0.31.6...v0.35.0) — 2026-08-13
 
