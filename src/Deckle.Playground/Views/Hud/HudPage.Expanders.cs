@@ -29,7 +29,7 @@ public sealed partial class HudPage
 {
     // HUD geometry — dimensions of the stroke rect itself, independent
     // of any conic/arc/recording variant. Paint-time changes rebuild the
-    // preview and are published through the shared geometry source.
+    // preview only.
     private void AddHudGeometryExpander()
     {
         var stack = NewTuningSection("HUD geometry", ResetHudGeometry);
@@ -323,8 +323,8 @@ public sealed partial class HudPage
     // top-left). The X/Y sliders read in px against the preview frame but STORE a
     // fraction (CloneCentre*Fraction). Rotation: the clone's own hue + arc speeds
     // and directions — default = the contour's, so a fresh clone looks identical
-    // until you tune them apart. All of it drives BOTH the ConicClone preview AND
-    // the live digit reveal through the shared config — paint-time, debounced.
+    // until you tune them apart. All of it drives the ConicClone preview and the
+    // digit reveal of the Transcribing / Rewriting previews — paint-time, debounced.
     private void AddClonePlacementExpander()
     {
         var stack = NewTuningSection("Conic clone", ResetClonePlacement);

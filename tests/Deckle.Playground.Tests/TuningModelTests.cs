@@ -1,5 +1,4 @@
 using System.Reflection;
-using Deckle.Hud;
 using Xunit;
 using static Deckle.Composition.HudComposition;
 
@@ -62,47 +61,57 @@ public class TuningModelTests
         }
     }
 
-    // The live HUD builds its stroke from HudStrokeTuning.ApplyAll; every
-    // Playground knob must land there once published, and a reopened
-    // Playground must read it back.
+    // The Playground is a sandbox: an edit reaches the preview config of the
+    // model that made it and nothing else. The 2026-10-09 bridge published
+    // every edit to the live HUD and reloaded it into the next HUD tab, so a
+    // fresh model no longer opened on the compiled defaults.
     [Fact]
-    public void EveryFieldReachesTheLiveHudAndLoadsBack()
+    [Trait("Category", "regression")]
+    public void AnEditChangesItsOwnPreviewOnlyAndAFreshTabOpensOnTheShippingDefaults()
     {
-        var fields = typeof(TuningModel).GetFields(BindingFlags.Public | BindingFlags.Instance);
-        var model = new TuningModel();
-        for (int index = 0; index < fields.Length; index++)
+        var edited = new TuningModel();
+        foreach (var field in typeof(TuningModel).GetFields(BindingFlags.Public | BindingFlags.Instance))
         {
-            var field = fields[index];
-            field.SetValue(model, field.FieldType switch
+            field.SetValue(edited, field.FieldType switch
             {
-                var t when t == typeof(float) => 100 + index + 0.5f,
-                var t when t == typeof(double) => 200 + index + 0.25,
-                var t when t == typeof(int) => 300 + index,
-                var t when t == typeof(bool) => !(bool)field.GetValue(model)!,
+                var t when t == typeof(float) => (float)field.GetValue(edited)! + 0.5f,
+                var t when t == typeof(double) => (double)field.GetValue(edited)! + 0.25,
+                var t when t == typeof(int) => (int)field.GetValue(edited)! + 1,
+                var t when t == typeof(bool) => !(bool)field.GetValue(edited)!,
                 var t => throw new Xunit.Sdk.XunitException(
                     $"{field.Name} has an unhandled type {t.Name}; add a sentinel for it"),
             });
         }
 
-        var shipping = new TuningModel();
-        try
-        {
-            model.PublishLive();
-            var live = HudStrokeTuning.ApplyAll(new ConicArcStrokeConfig());
-            var reloaded = new TuningModel();
-            reloaded.LoadLive();
+        var shipping = new ConicArcStrokeConfig();
+        Assert.NotEqual(shipping, edited.ToConfig());
+        Assert.Equal(shipping, new TuningModel().ToConfig());
+    }
 
-            foreach (var field in fields)
-            {
-                var property = typeof(ConicArcStrokeConfig)
-                    .GetProperty(field.Name, BindingFlags.Public | BindingFlags.Instance)!;
-                object? want = field.GetValue(model);
-                object? got = property.GetValue(live);
-                Assert.True(Equals(want, got), $"{field.Name}: published {want}, live HUD has {got}");
-                object? back = field.GetValue(reloaded);
-                Assert.True(Equals(want, back), $"{field.Name}: published {want}, reloaded {back}");
-            }
-        }
-        finally { shipping.PublishLive(); }
+    // The live HUD is a single process-wide instance, so the only way the
+    // Playground could reach it with a HUD config is a static entry point.
+    // There must be none: no static method that accepts a config without
+    // returning a visual, no static settable property or field of a config type.
+    [Fact]
+    [Trait("Category", "regression")]
+    public void TheLiveHudOffersNoProcessWideEntryForAHudConfig()
+    {
+        Type[] configs = [typeof(ConicArcStrokeConfig), typeof(Deckle.Composition.UtteranceCountdownConfig)];
+        var flags = BindingFlags.Public | BindingFlags.Static;
+        var entries = new[] { typeof(Deckle.Hud.HudChrono).Assembly, typeof(ConicArcStrokeConfig).Assembly }
+            .SelectMany(assembly => assembly.GetExportedTypes())
+            .SelectMany(type => type.GetMethods(flags)
+                    .Where(m => m.ReturnType == typeof(void)
+                        && m.GetParameters().Any(p => configs.Contains(p.ParameterType)))
+                    .Select(m => $"{type.Name}.{m.Name}")
+                .Concat(type.GetProperties(flags)
+                    .Where(p => configs.Contains(p.PropertyType) && p.SetMethod is { IsPublic: true })
+                    .Select(p => $"{type.Name}.{p.Name}"))
+                .Concat(type.GetFields(flags)
+                    .Where(f => configs.Contains(f.FieldType) && !f.IsInitOnly)
+                    .Select(f => $"{type.Name}.{f.Name}")))
+            .ToList();
+
+        Assert.True(entries.Count == 0, "Static HUD config entries: " + string.Join(", ", entries));
     }
 }

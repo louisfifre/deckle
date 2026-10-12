@@ -36,15 +36,14 @@ public sealed partial class HudPage
         public double DurationSeconds = 3;
     }
 
-    private void LoadCountdownTuning() => _countdownConfig = UtteranceCountdownTuning.Current;
-    private void PublishCountdownTuning() => UtteranceCountdownTuning.Apply(_countdownConfig);
-
     private void AttachUtteranceCountdownPreview()
     {
         var compositor = ElementCompositionPreview.GetElementVisual(NakedPreviewHost).Compositor;
         bool isDark = ActualTheme != ElementTheme.Light;
         bool animations = SettingsService.Instance.Current.Overlay.Animations;
-        var material = HudGeometryTuning.ApplyTo(HudMaterialTuning.Current);
+        // The page's own model: the material and geometry tuned on the other
+        // targets. Nothing here is read by the live HUD.
+        var material = _tuning.ToConfig();
         if (ViewModel.CurrentTarget == HudTarget.CountdownMaterial)
         {
             _nakedPreview = HudComposition.CreateNakedMaskPreview(
@@ -84,11 +83,16 @@ public sealed partial class HudPage
             RebuildTuningPanel();
         });
         geometry.Children.Add(TuningHelp(
-            "Uses the shared Transcribing material. These settings update the live HUD."));
-        geometry.Children.Add(TuningHelp("Reach is the share of the top and bottom edges lit from their centre: 0 % is the edge centre, 100 % the corners."));
-        AddFloatRow(geometry, "Start reach (%)", 0, 100, 1, _countdownConfig.StartReach * 100,
+            "Uses the Transcribing material tuned in Cone and Transcribing."));
+        geometry.Children.Add(TuningHelp(
+            "Reach is how far the light runs along the top and bottom edges, from their centre. " +
+            "0 % is the centre and 100 % the corners. Above 100 %, the light runs past the corners. " +
+            "Below 0 %, the gauge waits before it opens."));
+        // Wider than the useful range on purpose, for testing: the renderer
+        // lerps reach freely and clamps the spread to its minimum.
+        AddFloatRow(geometry, "Start reach (%)", -50, 100, 1, _countdownConfig.StartReach * 100,
             value => _countdownConfig = _countdownConfig with { StartReach = (float)value / 100f }, rebuild: true);
-        AddFloatRow(geometry, "End reach (%)", 0, 100, 1, _countdownConfig.EndReach * 100,
+        AddFloatRow(geometry, "End reach (%)", 0, 200, 1, _countdownConfig.EndReach * 100,
             value => _countdownConfig = _countdownConfig with { EndReach = (float)value / 100f }, rebuild: true);
         geometry.Children.Add(TuningHelp("Thickness and inset follow the HUD geometry section."));
 
@@ -105,8 +109,15 @@ public sealed partial class HudPage
         fade.Children.Add(TuningHelp("Same fade units as Sweep mask. The fade scales with the wedge opening."));
         AddFloatRow(fade, "Edge fade (turns)", 0, 1, 0.005, _countdownConfig.EdgeFadeTurns,
             value => _countdownConfig = _countdownConfig with { EdgeFadeTurns = (float)value }, rebuild: true);
+        // The two ramps meet mid-wedge once each reaches half the opening at
+        // End reach (PaintArcMaskSurface rescales them), about 0.21 turn at
+        // 100 % and 0.23 at 200 % on a 272 × 78 HUD.
+        fade.Children.Add(TuningHelp(
+            "Above about 0.2 turn, the fade stops growing because both soft edges already meet in the middle."));
         AddFloatRow(fade, "Fade curve", 0.5, 10, 0.1, _countdownConfig.FadeCurve,
             value => _countdownConfig = _countdownConfig with { FadeCurve = (float)value }, rebuild: true);
+        fade.Children.Add(TuningHelp(
+            "At 1, the soft edge brightens evenly. Higher values keep it dark longer, then brighten it sharply."));
 
         AddCountdownPreviewSection();
     }
@@ -147,12 +158,7 @@ public sealed partial class HudPage
             _countdownTuning.Progress = 0;
             _setCountdownPosition?.Invoke(0);
             if (!ViewModel.IsPlaying) ViewModel.IsPlaying = true;
-            if (_rebuildPending)
-            {
-                _rebuildDebounce.Stop();
-                _rebuildPending = false;
-                ApplyTarget();
-            }
+            FlushPendingRebuild();
             bool animations = SettingsService.Instance.Current.Overlay.Animations;
             _utteranceCountdownPreview?.Replay(_countdownTuning.DurationSeconds, animations);
             if (animations)
@@ -169,6 +175,10 @@ public sealed partial class HudPage
         var resume = new Button { Content = "Resume speech" };
         resume.Click += (_, _) =>
         {
+            // Rebuild first so the retreat runs on a visual that carries the
+            // latest knobs. ApplyTarget snapshots the replay clock, so the new
+            // visual starts where the gauge stands and retreats from there.
+            FlushPendingRebuild();
             _countdownReplayClock.Reset();
             _countdownTuning.Progress = 0;
             _setCountdownPosition?.Invoke(0);
@@ -178,5 +188,15 @@ public sealed partial class HudPage
         transport.Children.Add(replay);
         transport.Children.Add(resume);
         simulation.Children.Add(transport);
+    }
+
+    // A knob moved within the debounce window would otherwise rebuild the
+    // preview after the transport action, on top of it.
+    private void FlushPendingRebuild()
+    {
+        if (!_rebuildPending) return;
+        _rebuildDebounce.Stop();
+        _rebuildPending = false;
+        ApplyTarget();
     }
 }
