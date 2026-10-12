@@ -29,7 +29,7 @@ public static class SettingsSearch
     public static IReadOnlyList<SettingSearchEntry> Entries { get; } =
     [
         new() { LabelKey = "AmbientEnabledCard", Keywords = ["ambilight", "bias lighting", "backlight"] },
-        new() { LabelKey = "AmbientModeCard", Keywords = ["preset", "game", "movie", "custom"] },
+        new() { LabelKey = "AmbientPresetCard", Keywords = ["mode", "game", "vivid", "movie", "custom"] },
         new() { LabelKey = "AmbientZonesGroup", Keywords = ["multi light", "zones", "edges", "border", "depth", "band", "per light", "lamp", "identify"] },
         new() { LabelKey = "AmbientBrightnessCurveCard", Keywords = ["curve", "bezier", "response", "shadows"] },
         new() { LabelKey = "AmbientMinBrightnessGroup", Keywords = ["minimum brightness", "floor", "dark scenes"] },

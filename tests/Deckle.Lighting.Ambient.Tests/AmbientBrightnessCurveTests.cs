@@ -92,19 +92,6 @@ public sealed class AmbientBrightnessCurveTests
         Assert.Equal(LightColor.Black, tuned.Quantize());
     }
 
-    [Fact]
-    public void AmbientPresetAppliesBezierCurveCoordinates()
-    {
-        var settings = new AmbientSettings();
-
-        AmbientModePresets.Apply(AmbientMode.Ambient, settings);
-
-        Assert.Equal(0.18, settings.BrightnessCurveX1);
-        Assert.Equal(0.55, settings.BrightnessCurveY1);
-        Assert.Equal(0.40, settings.BrightnessCurveX2);
-        Assert.Equal(0.90, settings.BrightnessCurveY2);
-    }
-
     private static SrgbColor Encoded(byte r, byte g, byte b)
         => new(r / 255f, g / 255f, b / 255f);
 }

@@ -71,8 +71,11 @@ public partial class WhisperViewModel : ObservableObject
 
         // The cut preset family reads and writes the eight hangover values
         // through this VM's own setters, so applying a preset persists like a
-        // hand edit. The seed selection is Balanced (the shipped defaults).
-        _cutPresets = new PresetFamily<CutCurveValues>(CutPresets.All, ReadCutValues, WriteCutValues);
+        // hand edit. This first family is bound to a throwaway segmenter (the
+        // page composes the selector before Load() runs, and only needs the
+        // options); it derives Balanced from the seeds above, and nothing of
+        // it reaches the settings file. Load() builds the real one.
+        _cutPresets = BuildCutPresets(() => segmenter, () => { });
         CutPreset = _cutPresets.Selection;
 
         // Dictation-experience seeds from the shell POCO initializers (the single
@@ -157,7 +160,13 @@ public partial class WhisperViewModel : ObservableObject
             RecordAudioCorpus = t.RecordAudioCorpus;
             AudioCorpusContentIndex = (int)t.AudioCorpusContent;
 
-            // Last: the selection derives from the hangover values read above.
+            // Last: the real preset family, over the persisted segmenter. It is
+            // built only now because, for a file written before the selection
+            // existed, it derives the selection from the hangover values read
+            // above and stores it in the settings.
+            _cutPresets = BuildCutPresets(
+                () => TranscriptionSettingsService.Instance.Current.Streaming.Segmenter,
+                TranscriptionSettingsService.Instance.Save);
             CutPreset = _cutPresets.Selection;
         }
         finally

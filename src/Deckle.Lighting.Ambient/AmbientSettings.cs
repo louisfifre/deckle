@@ -73,20 +73,28 @@ public sealed class AmbientSettings
     /// this field existed load the default.</summary>
     public int CaptureFrameRateHz { get; set; } = AmbientCaptureRate.Default;
 
-    // ── Mode selection (J6 scaffolding) ────────────────────────────
+    // ── Preset selection (Deckle.Presets) ──────────────────────────
     //
-    // The enum and the property are pre-wired so a new behaviour lands
-    // as a patch with no settings migration. Ambient is the default —
-    // the smooth, low-saturation restitution of the scene's light, the
-    // one that reads as room lighting rather than as an effect.
+    // The presets fix the eight tuning values below (AmbientTuning); the
+    // family on AmbientSettingsService.Presets selects, applies and keeps
+    // the Custom values. Ambient is the default — the smooth,
+    // low-saturation restitution of the scene's light, the one that
+    // reads as room lighting rather than as an effect — and its values
+    // are the initializers of the eight tuning properties.
+    //
+    // Files written before 2026-10-12 hold an integer "mode" instead;
+    // it is ignored and the selection is derived once from the values
+    // (the preset they equal, else Custom with those values kept).
 
-    /// <summary>Active mode preset. Defaults to <see cref="AmbientMode.Ambient"/>.
-    /// Switching the mode (from the Settings page)
-    /// invokes <see cref="AmbientSettingsService.ApplyPreset(AmbientMode)"/>
-    /// which copies the preset's tuning snapshot onto the other knobs.
-    /// Touching any tuning slider in the Settings page silently switches
-    /// the mode to <see cref="AmbientMode.Custom"/>.</summary>
-    public AmbientMode Mode { get; set; } = AmbientMode.Ambient;
+    /// <summary>The stored selection: a preset id from
+    /// <see cref="AmbientPresets"/>, or <c>"custom"</c>. Null until the
+    /// family derives it from the values, on the first load of an older
+    /// file.</summary>
+    public string? Preset { get; set; }
+
+    /// <summary>The user's own tuning, kept while a preset is selected so
+    /// picking Custom brings it back. Null until the first hand edit.</summary>
+    public AmbientTuning? CustomTuning { get; set; }
 
     // ── Multi-light zones (J4) ─────────────────────────────────────
     //
@@ -170,12 +178,20 @@ public sealed class AmbientSettings
     /// bands eat the whole frame.</summary>
     public int BorderCells { get; set; } = 8;
 
-    // ── HDR tuning ─────────────────────────────────────────────────
+    // ── Tuning ─────────────────────────────────────────────────────
     //
     // User-tunable colour-grading controls (exposure / saturation /
-    // lift / response curve). The detailed sliders live in the
-    // Settings AmbientPage; AmbientEngine reads the settings on every tick so
-    // changes apply live without restarting the pipeline.
+    // floor / response curve) and motion controls (reaction speed /
+    // change threshold). The sliders live in the Settings AmbientPage
+    // and the Playground Ambient tab; AmbientEngine reads the settings
+    // on every tick so changes apply live without restarting the
+    // pipeline. They apply to SDR and HDR alike: HDR is tone-mapped to
+    // 8 bits before this stage.
+    //
+    // The initializers of the eight preset-covered values (everything
+    // but the floor) ARE the Ambient preset, which AmbientPresets reads
+    // from a fresh instance: one source for a fresh install, the per-card
+    // reset and the page reset.
     //
     // Why these four :
     //   - Exposure compensates for scRGB content peaking well below
@@ -202,16 +218,18 @@ public sealed class AmbientSettings
     //     so xy chromaticity stays invariant — only bri moves.
 
     /// <summary>Exposure compensation in EV (stops of light) applied
-    /// in linear-light before the tone-map. 0 = no change (default),
-    /// +1 doubles brightness, -1 halves it. Range of practical
-    /// interest [-2, +2]. Tuned in AmbientPage.</summary>
-    public double ExposureEv { get; set; } = 0.0;
+    /// in linear-light before the tone-map. 0 = no change, +1 doubles
+    /// brightness, -1 halves it. Range of practical interest [-2, +2].
+    /// Default -0.5 (the Ambient preset): the room sits a little under
+    /// the screen.</summary>
+    public double ExposureEv { get; set; } = -0.5;
 
     /// <summary>Chroma multiplier applied to each sampled colour
-    /// before push. 1.0 = no change (default), 2.0 = double
-    /// saturation, 0.0 = greyscale. Range of practical interest
-    /// [0, 2]. Applied in HSV-S to keep hue stable.</summary>
-    public double SaturationBoost { get; set; } = 1.0;
+    /// before push. 1.0 = no change, 2.0 = double saturation, 0.0 =
+    /// greyscale. Range of practical interest [0, 2]. Applied in OKLCh
+    /// to keep hue stable. Default 0.7 (the Ambient preset): muted,
+    /// so the lights never compete with the content.</summary>
+    public double SaturationBoost { get; set; } = 0.7;
 
     /// <summary>Whether <see cref="MinBrightness"/> is applied to the
     /// derived Hue <c>bri</c>. False lets black / near-black scenes go
@@ -232,19 +250,22 @@ public sealed class AmbientSettings
     /// <summary>First cubic-Bézier control point X coordinate in [0, 1].
     /// The anchors are fixed at (0,0) and (1,1), so the four stored
     /// values are directly equivalent to CSS <c>cubic-bezier()</c>.
-    /// The shipping default keeps the previous gamma-like feel :
-    /// shadows are held low while highlights still reach full output.</summary>
-    public double BrightnessCurveX1 { get; set; } = 0.42;
+    /// The default curve (0.18, 0.55, 0.40, 0.90) is the Ambient
+    /// preset's: it lifts dark scenes so a dim room still reads as lit.
+    /// The Game and Vivid presets use the identity curve, Movie a
+    /// gentle S; AmbientNearBlackTests keeps the former gamma-like
+    /// default (0.42, 0, 1, 1) as its reference.</summary>
+    public double BrightnessCurveX1 { get; set; } = 0.18;
 
     /// <summary>First cubic-Bézier control point Y coordinate in [0, 1].
     /// Lower values squash dim scenes ; higher values lift them.</summary>
-    public double BrightnessCurveY1 { get; set; } = 0.00;
+    public double BrightnessCurveY1 { get; set; } = 0.55;
 
     /// <summary>Second cubic-Bézier control point X coordinate in [0, 1].</summary>
-    public double BrightnessCurveX2 { get; set; } = 1.00;
+    public double BrightnessCurveX2 { get; set; } = 0.40;
 
     /// <summary>Second cubic-Bézier control point Y coordinate in [0, 1].</summary>
-    public double BrightnessCurveY2 { get; set; } = 1.00;
+    public double BrightnessCurveY2 { get; set; } = 0.90;
 
     /// <summary>Sum-of-absolute-channel-deltas threshold that gates
     /// pushes — if the new tuned-and-smoothed colour differs from the
@@ -253,10 +274,11 @@ public sealed class AmbientSettings
     /// push, a continuous one (Hue Entertainment) gets the previous
     /// colour again. A change to exact black always goes out
     /// (AmbientPushGate). 0 disables the gate, useful when smoothing
-    /// already does the heavy lifting. Default 6 (raised from the
-    /// legacy 3) damps the residual quantisation noise without
-    /// killing perceptible motion. Tuned in Settings.</summary>
-    public int ChangeThreshold { get; set; } = 6;
+    /// already does the heavy lifting. Default 10 (the Ambient preset)
+    /// holds the lights steady on still scenes; Game and Vivid use 6,
+    /// Movie 8. On a slow fade a threshold shows as small steps; 0
+    /// follows every change. Tuned in Settings.</summary>
+    public int ChangeThreshold { get; set; } = 10;
 
     /// <summary>Exponential moving average factor applied to the colour
     /// pushed to each light, in [0, 1]. 1.0 disables the filter
@@ -264,44 +286,15 @@ public sealed class AmbientSettings
     /// reactivity for stability. The value is defined per push tick at
     /// the 15 Hz reference rate and adapted to the measured time
     /// between push ticks (AmbientPushCadence.AdaptSmoothingAlpha); it does not
-    /// depend on the capture rate. 0.30 (the default) damps over
-    /// roughly 3-5 reference ticks (200-330 ms), which is enough to swallow the
-    /// jitter of small moving reflections in a globally dark scene
-    /// without dulling real scene changes. Below ~0.10 the lamp lags
-    /// perceptibly during fast cuts. Applied per-light in multi
-    /// mode, on the single group colour in group mode. Range of
+    /// depend on the capture rate. 0.30 damps over roughly 3-5 reference
+    /// ticks (200-330 ms), enough to swallow the jitter of small moving
+    /// reflections in a globally dark scene without dulling real scene
+    /// changes; below ~0.10 the lamp lags perceptibly during fast cuts.
+    /// Default 0.08 (the Ambient preset): a slow glide, wanted for room
+    /// lighting; Game and Vivid use 0.40, Movie 0.15. Applied per-light
+    /// in multi mode, on the single group colour in group mode. Range of
     /// practical interest [0.05, 1.0]. Tuned in Settings.</summary>
-    public double SmoothingAlpha { get; set; } = 0.30;
-}
-
-/// <summary>How <see cref="AmbientEngine"/> derives the colour pushed
-/// to the lights. The active value lives in <see cref="AmbientSettings.Mode"/>.
-/// Game / Movie / Ambient carry preset tunings ; Custom is the
-/// implicit mode the user lands on as soon as they move a slider in
-/// the Settings page, signalling "I'm tuning my own thing — don't
-/// overwrite my values when a preset changes".</summary>
-public enum AmbientMode
-{
-    /// <summary>Game / Ambilight — direct mapping with vivid saturation
-    /// and quick response. Default for desktop play sessions.</summary>
-    Game,
-
-    /// <summary>Movie — softened saturation, longer smoothing, slight
-    /// negative EV. Reads as ambient mood lighting for cinematic
-    /// content where fast colour changes would distract.</summary>
-    Movie,
-
-    /// <summary>Ambient — heavy smoothing, low saturation, dark-friendly
-    /// curve. Tuned for general-purpose room lighting that follows
-    /// the screen without ever feeling like it competes with the
-    /// content.</summary>
-    Ambient,
-
-    /// <summary>Custom — every tuning knob lives where the user put it.
-    /// AmbientViewModel sets this implicitly the moment any slider is
-    /// touched, so a preset switch never silently overwrites a hand-
-    /// calibrated setup.</summary>
-    Custom,
+    public double SmoothingAlpha { get; set; } = 0.08;
 }
 
 /// <summary>How the zone-sampling band thickness is expressed in

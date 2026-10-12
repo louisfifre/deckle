@@ -117,10 +117,11 @@
   </resheader>
 
   <!-- AmbientPage strings consumed via x:Uid. Master state +
-       Behaviour (Mode) + HDR tuning (Exposure / Saturation /
-       Min brightness / Brightness curve) + Configuration (Hue
-       bridge pairing). The live preview and the per-light rows
-       (zone, brightness, Identify) follow further down. -->
+       Behaviour (Preset, colour per zone) + Fine tuning (Brightness
+       curve / floor / Reaction speed / Change threshold / Exposure /
+       Saturation) + Configuration (display, capture rate, Hue bridge
+       pairing). The live preview and the per-light rows (zone,
+       brightness, Identify) follow further down. -->
   <data name="AmbientPageTitleLabel.Text" xml:space="preserve">
     <value>Ambient Light</value>
   </data>
@@ -141,7 +142,7 @@
     <value>Reset all settings?</value>
   </data>
   <data name="Settings_ResetAmbientDialog_Content" xml:space="preserve">
-    <value>This will restore the mode, the fine tuning, the colour per zone with its edge band, and the capture rate to their default values. Your Hue bridge pairing, light group, display, per-light zones and brightness, and whether Ambient Light is on stay as they are.</value>
+    <value>This will restore the preset, the fine tuning, the colour per zone with its edge band, and the capture rate to their default values. Your Hue bridge pairing, light group, display, per-light zones and brightness, your Custom values, and whether Ambient Light is on stay as they are.</value>
   </data>
 
   <!-- ── State ─────────────────────────────────────────────── -->
@@ -168,23 +169,27 @@
   <data name="AmbientBehaviourSectionHeader.Text" xml:space="preserve">
     <value>Behaviour</value>
   </data>
-  <data name="AmbientModeCard.Header" xml:space="preserve">
-    <value>Mode</value>
+  <data name="AmbientPresetCard.Header" xml:space="preserve">
+    <value>Preset</value>
   </data>
-  <data name="AmbientModeCard.Description" xml:space="preserve">
-    <value>Game is vivid and quick. Movie smooths colour changes for cinematic content. Ambient stays soft and slow as room mood lighting. Changing a fine-tuning setting below switches to Custom.</value>
+  <data name="AmbientPresetCard.Description" xml:space="preserve">
+    <value>Game follows the screen quickly and keeps its colours as they are. Vivid adds a touch of saturation. Movie smooths colour changes for cinematic content. Ambient stays soft and slow as room mood lighting. Changing a fine-tuning setting below switches to Custom, which keeps your own values.</value>
   </data>
-  <!-- Mode options: composed (Setting.Choice), read as "<key>.Content". -->
-  <data name="AmbientModeGame.Content" xml:space="preserve">
+  <!-- Preset options: composed (Setting.Choice) from AmbientPresets, read as
+       "<key>.Content". The key is the preset's LabelKey. -->
+  <data name="AmbientPresetGame.Content" xml:space="preserve">
     <value>Game</value>
   </data>
-  <data name="AmbientModeMovie.Content" xml:space="preserve">
+  <data name="AmbientPresetVivid.Content" xml:space="preserve">
+    <value>Vivid</value>
+  </data>
+  <data name="AmbientPresetMovie.Content" xml:space="preserve">
     <value>Movie</value>
   </data>
-  <data name="AmbientModeAmbient.Content" xml:space="preserve">
+  <data name="AmbientPresetAmbient.Content" xml:space="preserve">
     <value>Ambient</value>
   </data>
-  <data name="AmbientModeCustom.Content" xml:space="preserve">
+  <data name="AmbientPresetCustom.Content" xml:space="preserve">
     <value>Custom</value>
   </data>
   <data name="AmbientZonesGroup.Header" xml:space="preserve">

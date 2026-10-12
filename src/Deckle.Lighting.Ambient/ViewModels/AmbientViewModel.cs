@@ -1,4 +1,5 @@
 using CommunityToolkit.Mvvm.ComponentModel;
+using Deckle.Presets;
 
 namespace Deckle.Lighting.Ambient;
 
@@ -8,16 +9,19 @@ namespace Deckle.Lighting.Ambient;
 // (MVVMTK0045 AOT-safe), _isSyncing guard around Load(), auto-save through
 // AmbientSettingsService.Save() on each property change.
 //
-// Owned by this module so the Settings AmbientPage can compose its cards
-// from the manifests in AmbientViewModel.Settings.cs. Persistence lands
-// in <UserDataRoot>/modules/ambient/settings.json via AmbientSettingsService
+// Owned by this module so the Settings AmbientPage composes its cards from
+// the manifests in AmbientViewModel.Settings.cs and the Playground Ambient tab
+// binds the same surface. Persistence lands in
+// <UserDataRoot>/modules/ambient/settings.json via AmbientSettingsService
 // — the same store the App-side AmbientEngine reads, so a slider drag applies
 // live on the next push tick.
 //
-// Touching a tuning value implicitly switches Mode to Custom (the user is
-// shaping their own thing, presets should not silently overwrite). The mode
-// flip happens inside each property's partial change method below ; Save() is
-// called once per change so the file write is debounced by JsonSettingsStore.
+// Presets (Deckle.Presets, the family on AmbientSettingsService.Presets): a
+// hand edit of one of the eight tuning values reports itself to the family,
+// which keeps the values as Custom and turns the selection to Custom;
+// picking a preset writes its values; picking Custom brings the hand-made
+// values back. The floor, the zones, the capture rate and the pipeline
+// shape are outside the presets and never touch the selection.
 //
 // Runtime state owned by a page (capture service, frame sampler, Hue REST
 // output, preview cells, light-zone rects) is NOT here — its lifetime is tied
@@ -26,19 +30,13 @@ public partial class AmbientViewModel : ObservableObject
 {
     private bool _isSyncing;
 
-    // ── HDR tuning ───────────────────────────────────────────────────────────
+    // ── Tuning (the eight values a preset fixes) ────────────────────────────
 
     [ObservableProperty]
     public partial double ExposureEv { get; set; }
 
     [ObservableProperty]
     public partial double SaturationBoost { get; set; }
-
-    [ObservableProperty]
-    public partial int MinBrightness { get; set; }
-
-    [ObservableProperty]
-    public partial bool MinBrightnessEnabled { get; set; }
 
     [ObservableProperty]
     public partial double BrightnessCurveX1 { get; set; }
@@ -58,11 +56,19 @@ public partial class AmbientViewModel : ObservableObject
     [ObservableProperty]
     public partial double SmoothingAlpha { get; set; }
 
+    // ── Brightness floor (outside the presets) ──────────────────────────────
+
+    [ObservableProperty]
+    public partial int MinBrightness { get; set; }
+
+    [ObservableProperty]
+    public partial bool MinBrightnessEnabled { get; set; }
+
     // Zone-sampling band thickness. Sits alongside UseMultiLight
-    // rather than the HDR tuning knobs : it's a structural setup
+    // rather than the tuning knobs : it's a structural setup
     // value (room/lamp layout, how much of the frame each lamp
-    // summarises) not a per-scene content tuning, so it never flips
-    // Mode to Custom. The mode picker swaps the active scale on the
+    // summarises) not a per-scene content tuning, so it never touches
+    // the preset selection. The mode picker swaps the active scale on the
     // engine ; both BorderDepth (share) and BorderCells (count) keep
     // their last user-set value across mode flips so a round-trip
     // back to a previous mode lands on the same setting.
@@ -84,10 +90,12 @@ public partial class AmbientViewModel : ObservableObject
     [ObservableProperty]
     public partial int BorderCells { get; set; }
 
-    // ── Mode & pipeline ──────────────────────────────────────────────────────
+    // ── Preset & pipeline ────────────────────────────────────────────────────
 
+    // The stored selection: a preset id from AmbientPresets, or
+    // PresetFamily.Custom. Mirrors AmbientSettingsService.Presets.Selection.
     [ObservableProperty]
-    public partial AmbientMode Mode { get; set; }
+    public partial string Preset { get; set; }
 
     [ObservableProperty]
     public partial bool UseMultiLight { get; set; }
@@ -96,40 +104,40 @@ public partial class AmbientViewModel : ObservableObject
     public partial bool Enabled { get; set; }
 
     // Screen-capture rate in Hz, one of AmbientCaptureRate.Allowed. A
-    // structural value like UseMultiLight: it never flips Mode to Custom, and
-    // the app restarts a running engine when it changes.
+    // structural value like UseMultiLight: it never touches the preset
+    // selection, and the app restarts a running engine when it changes.
     [ObservableProperty]
     public partial int CaptureFrameRateHz { get; set; }
 
     // ── Command-enable flag ──────────────────────────────────────────────────
     //
-    // Enabled only when the tuning surface (HDR + zone sampling + mode +
-    // per-zone colours + capture rate) differs from the shipping defaults —
-    // drives the Reset all button in the page's title row. Recomputed on every Load(), and every live-save edit
-    // round-trips through Load() via the AmbientSettingsService.Changed observer,
-    // so the button greys out the moment the surface is back at defaults.
+    // Enabled only when the tuning surface (preset selection, the eight tuning
+    // values, floor, zone sampling, pipeline shape, capture rate) differs from
+    // the shipping defaults — drives the Reset all button in the page's title
+    // row. Recomputed on every Load(), and every live-save edit round-trips
+    // through Load() via the AmbientSettingsService.Changed observer, so the
+    // button greys out the moment the surface is back at defaults.
     [ObservableProperty]
     public partial bool CanReset { get; set; }
 
     // ── Setter side-effects ──────────────────────────────────────────────────
     //
-    // Tuning sliders implicitly switch the mode to Custom — that's the
-    // "stop overwriting my values" contract. Pipeline-shape changes
-    // (UseMultiLight, Mode itself) don't transit through Custom because
-    // they ARE the high-level intent the user is expressing.
+    // The eight tuning setters write the store, report the edit to the preset
+    // family (MarkEdited) and save. Pipeline-shape changes (UseMultiLight, the
+    // floor, the capture rate) write and save only.
     //
-    // Mode = preset request : we go through ApplyPreset which copies the
-    // preset's tunings onto the same AmbientSettings instance and saves.
-    // Then Load() re-reads everything so the VM observes the new values
-    // (the OnXxxChanged side-effects are suppressed by _isSyncing during
-    // Load).
+    // Preset = selection request : the family writes the preset's values (or
+    // the kept Custom values) onto the same AmbientSettings instance, then we
+    // save. The store's Changed event re-fires Load() on the page so the VM
+    // observes the new values (the OnXxxChanged side-effects are suppressed
+    // by _isSyncing during Load).
 
     partial void OnExposureEvChanged(double value)
     {
         if (_isSyncing) return;
         DeckleAmbientSource.Log.TuningChanged("Exposure", $"{value:F2} EV");
         AmbientSettingsService.Instance.Current.ExposureEv = value;
-        FlipToCustomMode();
+        MarkEdited();
         AmbientSettingsService.Instance.Save();
     }
 
@@ -138,7 +146,7 @@ public partial class AmbientViewModel : ObservableObject
         if (_isSyncing) return;
         DeckleAmbientSource.Log.TuningChanged("Saturation", $"{value * 100.0:F0} %");
         AmbientSettingsService.Instance.Current.SaturationBoost = value;
-        FlipToCustomMode();
+        MarkEdited();
         AmbientSettingsService.Instance.Save();
     }
 
@@ -147,7 +155,6 @@ public partial class AmbientViewModel : ObservableObject
         if (_isSyncing) return;
         DeckleAmbientSource.Log.TuningChanged("MinBrightness", value.ToString());
         AmbientSettingsService.Instance.Current.MinBrightness = value;
-        FlipToCustomMode();
         AmbientSettingsService.Instance.Save();
     }
 
@@ -156,7 +163,6 @@ public partial class AmbientViewModel : ObservableObject
         if (_isSyncing) return;
         DeckleAmbientSource.Log.TuningChanged("MinBrightnessEnabled", value ? "on" : "off");
         AmbientSettingsService.Instance.Current.MinBrightnessEnabled = value;
-        FlipToCustomMode();
         AmbientSettingsService.Instance.Save();
     }
 
@@ -165,7 +171,7 @@ public partial class AmbientViewModel : ObservableObject
         if (_isSyncing) return;
         DeckleAmbientSource.Log.TuningChanged("BrightnessCurveX1", value.ToString("F2"));
         AmbientSettingsService.Instance.Current.BrightnessCurveX1 = value;
-        FlipToCustomMode();
+        MarkEdited();
         AmbientSettingsService.Instance.Save();
     }
 
@@ -174,7 +180,7 @@ public partial class AmbientViewModel : ObservableObject
         if (_isSyncing) return;
         DeckleAmbientSource.Log.TuningChanged("BrightnessCurveY1", value.ToString("F2"));
         AmbientSettingsService.Instance.Current.BrightnessCurveY1 = value;
-        FlipToCustomMode();
+        MarkEdited();
         AmbientSettingsService.Instance.Save();
     }
 
@@ -183,7 +189,7 @@ public partial class AmbientViewModel : ObservableObject
         if (_isSyncing) return;
         DeckleAmbientSource.Log.TuningChanged("BrightnessCurveX2", value.ToString("F2"));
         AmbientSettingsService.Instance.Current.BrightnessCurveX2 = value;
-        FlipToCustomMode();
+        MarkEdited();
         AmbientSettingsService.Instance.Save();
     }
 
@@ -192,7 +198,7 @@ public partial class AmbientViewModel : ObservableObject
         if (_isSyncing) return;
         DeckleAmbientSource.Log.TuningChanged("BrightnessCurveY2", value.ToString("F2"));
         AmbientSettingsService.Instance.Current.BrightnessCurveY2 = value;
-        FlipToCustomMode();
+        MarkEdited();
         AmbientSettingsService.Instance.Save();
     }
 
@@ -201,7 +207,7 @@ public partial class AmbientViewModel : ObservableObject
         if (_isSyncing) return;
         DeckleAmbientSource.Log.TuningChanged("ChangeThreshold", value.ToString());
         AmbientSettingsService.Instance.Current.ChangeThreshold = value;
-        FlipToCustomMode();
+        MarkEdited();
         AmbientSettingsService.Instance.Save();
     }
 
@@ -210,7 +216,7 @@ public partial class AmbientViewModel : ObservableObject
         if (_isSyncing) return;
         DeckleAmbientSource.Log.TuningChanged("SmoothingAlpha", value.ToString("F2"));
         AmbientSettingsService.Instance.Current.SmoothingAlpha = value;
-        FlipToCustomMode();
+        MarkEdited();
         AmbientSettingsService.Instance.Save();
     }
 
@@ -227,7 +233,6 @@ public partial class AmbientViewModel : ObservableObject
         if (_isSyncing) return;
         DeckleAmbientSource.Log.TuningChanged("BorderDepth", $"{value * 100.0:F0} %");
         AmbientSettingsService.Instance.Current.BorderDepth = value;
-        // No FlipToCustomMode — see the property doc above.
         AmbientSettingsService.Instance.Save();
     }
 
@@ -274,34 +279,31 @@ public partial class AmbientViewModel : ObservableObject
         AmbientSettingsService.Instance.Save();
     }
 
-    partial void OnModeChanged(AmbientMode value)
+    partial void OnPresetChanged(string value)
     {
         if (_isSyncing) return;
-        // ApplyPreset copies the preset's tuning snapshot onto every other
-        // knob (saturation, exposure, Bézier curve, etc.) and saves. Custom is a
-        // no-op there — the preset code-path is a "snap back to a named
-        // tuning", not "snap back to whatever the user had".
-        AmbientSettingsService.Instance.ApplyPreset(value);
-        // The store's Changed event will re-fire Load() on the page —
-        // we don't need to re-read here.
+        var service = AmbientSettingsService.Instance;
+        // Select writes the preset's eight values (or the kept Custom values)
+        // onto the store and the selection with them; an unknown id writes
+        // nothing. Save raises Changed, which reloads every surface.
+        if (!service.Presets.Select(value)) return;
+        DeckleAmbientSource.Log.TuningChanged("Preset", value);
+        service.Save();
     }
 
-    // Helper that switches Mode to Custom without invoking ApplyPreset
-    // (which would clobber the slider value the user just moved). Guarded
-    // against re-entrancy so OnModeChanged doesn't fire ApplyPreset on
-    // this synthetic transition.
-    private void FlipToCustomMode()
+    // Reports a hand edit of a tuning value to the preset family (which keeps
+    // the live values as Custom and turns the selection to Custom) and mirrors
+    // the selection into the VM under _isSyncing so OnPresetChanged does not
+    // apply it again. The caller saves right after.
+    private void MarkEdited()
     {
-        var current = AmbientSettingsService.Instance.Current;
-        if (current.Mode == AmbientMode.Custom && Mode == AmbientMode.Custom) return;
+        var presets = AmbientSettingsService.Instance.Presets;
+        presets.NotifyEdited();
+        if (Preset == presets.Selection) return;
 
-        current.Mode = AmbientMode.Custom;
-        // Mirror into the VM under _isSyncing so OnModeChanged doesn't
-        // re-trigger ApplyPreset. We deliberately don't call Save() here ;
-        // the caller does its own Save() right after.
         bool prev = _isSyncing;
         _isSyncing = true;
-        try   { Mode = AmbientMode.Custom; }
+        try   { Preset = presets.Selection; }
         finally { _isSyncing = prev; }
     }
 
@@ -311,23 +313,26 @@ public partial class AmbientViewModel : ObservableObject
     {
         _isSyncing = true;
 
-        ExposureEv                      = 0.0;
-        SaturationBoost                 = 1.0;
-        MinBrightness          = 180;
-        MinBrightnessEnabled   = true;
-        BrightnessCurveX1      = 0.42;
-        BrightnessCurveY1      = 0.00;
-        BrightnessCurveX2      = 1.00;
-        BrightnessCurveY2      = 1.00;
-        ChangeThreshold        = 6;
-        SmoothingAlpha         = 0.30;
-        BorderMode             = BorderThicknessMode.Share;
-        BorderDepth            = 0.33;
-        BorderCells            = 8;
-        Mode                   = AmbientMode.Game;
-        UseMultiLight          = false;
-        Enabled                = false;
-        CaptureFrameRateHz     = AmbientCaptureRate.Default;
+        // Seeds from the POCO initializers, the single source of the defaults;
+        // overwritten by Load().
+        var d = new AmbientSettings();
+        ExposureEv             = d.ExposureEv;
+        SaturationBoost        = d.SaturationBoost;
+        MinBrightness          = d.MinBrightness;
+        MinBrightnessEnabled   = d.MinBrightnessEnabled;
+        BrightnessCurveX1      = d.BrightnessCurveX1;
+        BrightnessCurveY1      = d.BrightnessCurveY1;
+        BrightnessCurveX2      = d.BrightnessCurveX2;
+        BrightnessCurveY2      = d.BrightnessCurveY2;
+        ChangeThreshold        = d.ChangeThreshold;
+        SmoothingAlpha         = d.SmoothingAlpha;
+        BorderMode             = d.BorderMode;
+        BorderDepth            = d.BorderDepth;
+        BorderCells            = d.BorderCells;
+        Preset                 = AmbientPresets.Default;
+        UseMultiLight          = d.UseMultiLight;
+        Enabled                = d.Enabled;
+        CaptureFrameRateHz     = d.CaptureFrameRateHz;
 
         // _isSyncing stays true — Load() flips it to false.
     }
@@ -337,9 +342,10 @@ public partial class AmbientViewModel : ObservableObject
         _isSyncing = true;
         try
         {
-            var s = AmbientSettingsService.Instance.Current;
-            ExposureEv                      = s.ExposureEv;
-            SaturationBoost                 = s.SaturationBoost;
+            var service = AmbientSettingsService.Instance;
+            var s = service.Current;
+            ExposureEv            = s.ExposureEv;
+            SaturationBoost       = s.SaturationBoost;
             MinBrightness         = s.MinBrightness;
             MinBrightnessEnabled  = s.MinBrightnessEnabled;
             BrightnessCurveX1     = s.BrightnessCurveX1;
@@ -351,7 +357,7 @@ public partial class AmbientViewModel : ObservableObject
             BorderMode            = s.BorderMode;
             BorderDepth           = s.BorderDepth;
             BorderCells           = s.BorderCells;
-            Mode                  = s.Mode;
+            Preset                = service.Presets.Selection;
             UseMultiLight         = s.UseMultiLight;
             Enabled               = s.Enabled;
             CaptureFrameRateHz    = AmbientCaptureRate.Snap(s.CaptureFrameRateHz);
@@ -365,35 +371,64 @@ public partial class AmbientViewModel : ObservableObject
 
     // ── Reset to defaults ────────────────────────────────────────────────────
     //
-    // Snaps the tuning surface — HDR grading, zone-sampling band, the Mode
-    // preset, per-zone colours and the capture rate — back to the
-    // AmbientSettings shipping defaults. Connection state (bridge pairing,
-    // last group, monitor), the per-light rows (LightZones, LightBrightness)
-    // and the pipeline on/off flag are deliberately preserved : a reset
-    // shouldn't unpair the lights, forget a per-light setup the user built
-    // light by light, or kill a running pipeline. Mode goes back to its POCO
-    // default together with the POCO tuning values, not the preset's own
-    // values (pre-existing; settled by the presets migration). We write straight onto the store and Save() once (rather
-    // than going through the VM setters, which would fire a Save per field and
-    // flip Mode to Custom on each) ; Save() raises Changed, the page's observer
+    // Snaps the tuning surface back to the shipping defaults: the default
+    // preset (which writes the eight tuning values and the selection), the
+    // floor, the zone-sampling band, the pipeline shape and the capture rate.
+    // Connection state (bridge pairing, last group, monitor), the per-light
+    // rows (LightZones, LightBrightness), the pipeline on/off flag and the kept
+    // Custom values are deliberately preserved : a reset shouldn't unpair the
+    // lights, forget a per-light setup the user built light by light, kill a
+    // running pipeline, or lose the values the user can still pick as Custom.
+    // We write straight onto the store and Save() once (rather than going
+    // through the VM setters, which would fire a Save per field and report
+    // each as a hand edit) ; Save() raises Changed, the page's observer
     // reloads the VM and repaints every slider.
     public void ResetDefaults()
     {
+        var service = AmbientSettingsService.Instance;
         var d   = new AmbientSettings();
-        var cur = AmbientSettingsService.Instance.Current;
+        var cur = service.Current;
 
-        ApplyHdrDefaults(cur, d);
+        service.Presets.Select(service.Presets.Default.Id);
+        cur.MinBrightnessEnabled = d.MinBrightnessEnabled;
+        cur.MinBrightness        = d.MinBrightness;
         ApplyZoneSamplingDefaults(cur, d);
         cur.UseMultiLight      = d.UseMultiLight;
         cur.CaptureFrameRateHz = d.CaptureFrameRateHz;
 
-        AmbientSettingsService.Instance.Save();
+        service.Save();
+    }
+
+    // Per-section resets for the Playground Ambient tab's card headers. Each
+    // writes its section's defaults onto the store and saves once; the Changed
+    // observer reloads every surface. The tuning section is the default preset
+    // plus the floor; the zone section is the band shape and depth.
+    public void ResetTuningSection()
+    {
+        var service = AmbientSettingsService.Instance;
+        var d   = new AmbientSettings();
+        var cur = service.Current;
+
+        service.Presets.Select(service.Presets.Default.Id);
+        cur.MinBrightnessEnabled = d.MinBrightnessEnabled;
+        cur.MinBrightness        = d.MinBrightness;
+        DeckleAmbientSource.Log.TuningChanged("TuningSection", "default");
+        service.Save();
+    }
+
+    public void ResetZoneSamplingSection()
+    {
+        var service = AmbientSettingsService.Instance;
+        ApplyZoneSamplingDefaults(service.Current, new AmbientSettings());
+        DeckleAmbientSource.Log.TuningChanged("ZoneSampling", "default");
+        service.Save();
     }
 
     // The brightness curve's own reset (the Settings curve card). The four
     // control points go back to the POCO defaults in one write and one Save(),
-    // so the engine never sees a half-reset curve. Like any tuning edit it
-    // switches Mode to Custom: the user moved away from the preset's curve.
+    // so the engine never sees a half-reset curve. Like any tuning edit it is
+    // reported to the preset family: the user moved away from the preset's
+    // curve.
     public void ResetBrightnessCurve()
     {
         var d   = new AmbientSettings();
@@ -403,7 +438,7 @@ public partial class AmbientViewModel : ObservableObject
         cur.BrightnessCurveX2 = d.BrightnessCurveX2;
         cur.BrightnessCurveY2 = d.BrightnessCurveY2;
         DeckleAmbientSource.Log.TuningChanged("BrightnessCurve", "default");
-        FlipToCustomMode();
+        MarkEdited();
         AmbientSettingsService.Instance.Save();
     }
 
@@ -418,23 +453,6 @@ public partial class AmbientViewModel : ObservableObject
             || BrightnessCurveY2 != d.BrightnessCurveY2;
     }
 
-    // The HDR grading surface + the Mode preset (Mode lives on the HDR card and
-    // selects a whole tuning, so it resets with the grading it drives).
-    private static void ApplyHdrDefaults(AmbientSettings cur, AmbientSettings d)
-    {
-        cur.ExposureEv            = d.ExposureEv;
-        cur.SaturationBoost       = d.SaturationBoost;
-        cur.MinBrightnessEnabled  = d.MinBrightnessEnabled;
-        cur.MinBrightness         = d.MinBrightness;
-        cur.BrightnessCurveX1     = d.BrightnessCurveX1;
-        cur.BrightnessCurveY1     = d.BrightnessCurveY1;
-        cur.BrightnessCurveX2     = d.BrightnessCurveX2;
-        cur.BrightnessCurveY2     = d.BrightnessCurveY2;
-        cur.ChangeThreshold       = d.ChangeThreshold;
-        cur.SmoothingAlpha        = d.SmoothingAlpha;
-        cur.Mode                  = d.Mode;
-    }
-
     private static void ApplyZoneSamplingDefaults(AmbientSettings cur, AmbientSettings d)
     {
         cur.BorderMode  = d.BorderMode;
@@ -445,26 +463,21 @@ public partial class AmbientViewModel : ObservableObject
     // Compares the persisted tuning surface against a fresh AmbientSettings
     // (the compiled defaults). Exact equality is fine : the sliders snap to
     // discrete steps and the defaults are literals, so any user edit lands a
-    // value the default never holds.
+    // value the default never holds. The selection counts on its own: a
+    // stored preset whose values drifted still reads as "not default".
     private void RecomputeCanReset()
     {
+        var service = AmbientSettingsService.Instance;
         var d = new AmbientSettings();
-        var s = AmbientSettingsService.Instance.Current;
+        var s = service.Current;
         CanReset =
-            s.ExposureEv            != d.ExposureEv ||
-            s.SaturationBoost       != d.SaturationBoost ||
+            service.Presets.Selection != AmbientPresets.Default ||
+            AmbientTuning.From(s)   != AmbientTuning.From(d) ||
             s.MinBrightnessEnabled  != d.MinBrightnessEnabled ||
             s.MinBrightness         != d.MinBrightness ||
-            s.BrightnessCurveX1     != d.BrightnessCurveX1 ||
-            s.BrightnessCurveY1     != d.BrightnessCurveY1 ||
-            s.BrightnessCurveX2     != d.BrightnessCurveX2 ||
-            s.BrightnessCurveY2     != d.BrightnessCurveY2 ||
-            s.ChangeThreshold       != d.ChangeThreshold ||
-            s.SmoothingAlpha        != d.SmoothingAlpha ||
             s.BorderMode            != d.BorderMode ||
             s.BorderDepth           != d.BorderDepth ||
             s.BorderCells           != d.BorderCells ||
-            s.Mode                  != d.Mode ||
             s.UseMultiLight         != d.UseMultiLight ||
             AmbientCaptureRate.Snap(s.CaptureFrameRateHz) != d.CaptureFrameRateHz;
     }

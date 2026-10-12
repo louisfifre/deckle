@@ -23,9 +23,9 @@ namespace Deckle.Vision;
 //      pyramid in hardware, microseconds on modern adapters.
 //   4. CopySubresourceRegion the target mip into a small staging
 //      texture (CPU-readable, USAGE_STAGING + CPU_ACCESS_READ).
-//      Readback bus traffic ≈ 1 KB at 30×17×4 bytes (BGRA8) or
-//      ≈ 2 KB at 30×17×8 bytes (FP16). Sub-millisecond.
-//   5. Map the staging, iterate the ~510 pixels, compute the
+//      Readback bus traffic ≈ 8 KB at 60×33×4 bytes (BGRA8) or
+//      ≈ 16 KB at 60×33×8 bytes (FP16). Sub-millisecond.
+//   5. Map the staging, iterate the ~2 000 cells, compute the
 //      gamma-correct RGB average (via SrgbToLinear8Lut) + fill the
 //      per-cell Color[] grid.
 //   6. If the source format is FP16 (HDR), tone-map scRGB → 8-bit sRGB
@@ -65,9 +65,9 @@ public sealed partial class FrameSampler : IAsyncDisposable
     private readonly int _sourceWidth;
     private readonly int _sourceHeight;
 
-    // Mip level we sample. Chosen at construction so the resulting grid
-    // is as close as possible to the target shape (30 × 17 for 16:9
-    // sources, adjusted for other aspect ratios).
+    // Mip level we sample. Chosen at construction as the smallest grid
+    // that still holds at least 30 × 17 cells: 60 × 33 on a 16:9 source
+    // (4K and 1080p alike), 40 × 22 on 2560 × 1440. See ComputeTargetMip.
     private readonly int _targetMip;
     private readonly int _gridCols;
     private readonly int _gridRows;
@@ -240,11 +240,12 @@ public sealed partial class FrameSampler : IAsyncDisposable
     }
 
     // Pick the mip level whose dimensions land closest to (targetCols,
-    // targetRows) without going below. Halves the source size at each
-    // step ; stops when the next halving would undershoot the target.
-    // 3840×2160 with target 30×17 → mip 7 (30×17). 1920×1080 → mip 6
-    // (30×17). 2560×1440 → mip 6 (40×22). Aspect ratio of the source
-    // is preserved in the resulting grid.
+    // targetRows) without going below on either axis. Halves the source
+    // size at each step ; stops when the next halving would undershoot
+    // the target on one axis. 3840×2160 with target 30×17 → mip 6 (60×33 :
+    // the next step gives 30×16, one row short). 1920×1080 → mip 5
+    // (60×33, same reason). 2560×1440 → mip 6 (40×22). Aspect ratio of
+    // the source is preserved in the resulting grid.
     private static (int mip, int cols, int rows) ComputeTargetMip(
         int width, int height, int targetCols, int targetRows)
     {

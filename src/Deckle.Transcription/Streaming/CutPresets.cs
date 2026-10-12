@@ -6,14 +6,20 @@ namespace Deckle.Transcription;
 // pause. The values are starting points, to be tuned by testing.
 //
 // The shipped defaults ARE Balanced (read from the POCO initializers, never
-// copied literals), so a fresh install shows a preset rather than Custom. A
-// customized stored curve matches nothing and reads as Custom, untouched:
-// that is the intended migration (none).
+// copied literals), so a fresh install shows a preset rather than Custom.
+// Custom is a stored selection, not a derived one (Deckle.Presets v2). The
+// derivation happens once: on the first load of a file written before the
+// selection existed, the family compares the stored curve to the presets, then
+// stores the preset it equals, or Custom with those values kept. After that
+// the stored selection is the truth.
 public static class CutPresets
 {
     public const string Patient = "patient";
     public const string Balanced = "balanced";
     public const string Quick = "quick";
+
+    /// <summary>The preset a reset returns to: the shipped defaults.</summary>
+    public const string Default = Balanced;
 
     public static readonly IReadOnlyList<Preset<CutCurveValues>> All =
     [
