@@ -5,8 +5,8 @@ namespace Deckle.Hud;
 // The proximity fade curve shared by the HUD surfaces: cursor distance to a
 // window rect mapped to a layered-window alpha through smoothstep. Kept pure
 // so every surface fades with the same curve and the curve is testable
-// without a window. The endpoint alphas are parameters because the HUD fades
-// down as the cursor approaches while the transcript panel fades up.
+// without a window. The endpoint alphas are parameters so each surface sets
+// its own floor and ceiling.
 internal static class ProximityFade
 {
     // Euclidean distance from the cursor to the nearest point of the rect,
