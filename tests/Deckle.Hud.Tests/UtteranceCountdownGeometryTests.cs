@@ -52,6 +52,48 @@ public sealed class UtteranceCountdownGeometryTests
             Assert.InRange(MathF.Abs(Ratio(Image(boundary, transform)) - corner), 0f, Tolerance);
     }
 
+    private static bool IsFinite(Matrix3x2 m)
+        => float.IsFinite(m.M11) && float.IsFinite(m.M12) && float.IsFinite(m.M21)
+        && float.IsFinite(m.M22) && float.IsFinite(m.M31) && float.IsFinite(m.M32);
+
+    // A negative start reach delays the opening: the wedge stays at its
+    // smallest spread until the lerped reach crosses zero, then grows.
+    [Fact]
+    public void NegativeStartReachWaitsClosedUntilTheCrossover()
+    {
+        var hud = new Vector2(272, 78);
+        float startReach = -0.5f, endReach = 1f;
+        float crossover = -startReach / (endReach - startReach);
+
+        float RatioAt(float progress)
+        {
+            var transform = HudComposition.GetUtteranceCountdownTransform(Centre, hud, startReach, endReach, progress);
+            Assert.True(IsFinite(transform), $"Transform at progress {progress} is not finite.");
+            return Ratio(Image(FirstBoundary, transform));
+        }
+
+        float closed = RatioAt(0f);
+        Assert.False(float.IsNaN(closed));
+        Assert.InRange(MathF.Abs(RatioAt(crossover * 0.9f) - closed), 0f, Tolerance);
+        Assert.InRange(MathF.Abs(RatioAt(crossover) - closed), 0f, Tolerance);
+        Assert.True(RatioAt((crossover + 1f) / 2f) > closed, "The wedge must open after the crossover.");
+    }
+
+    // An end reach above 1 runs the boundary rays past the frame corners.
+    [Fact]
+    public void EndReachAboveOneRunsPastTheCorners()
+    {
+        var hud = new Vector2(272, 78);
+        var atCorners = HudComposition.GetUtteranceCountdownTransform(Centre, hud, 0f, 1f, 1f);
+        var pastCorners = HudComposition.GetUtteranceCountdownTransform(Centre, hud, 0f, 2f, 1f);
+
+        Assert.True(IsFinite(pastCorners));
+        float corner = Ratio(Image(FirstBoundary, atCorners));
+        float wider = Ratio(Image(FirstBoundary, pastCorners));
+        Assert.True(wider > corner, $"Reach 2 ratio {wider} must exceed the corner ratio {corner}.");
+        Assert.InRange(MathF.Abs(wider - 2f * corner), 0f, Tolerance);
+    }
+
     [Theory]
     [InlineData(0.3f)]
     [InlineData(1f)]
