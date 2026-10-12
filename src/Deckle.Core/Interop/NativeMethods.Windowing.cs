@@ -43,6 +43,21 @@ public static partial class NativeMethods
     [DllImport("user32.dll")]
     public static extern bool SetForegroundWindow(IntPtr hWnd);
 
+    // ── Activation ───────────────────────────────────────────────────────────
+    // WM_ACTIVATE reaches a window when it gains or loses activation. On
+    // WA_INACTIVE, lParam is the window being activated (zero when none), so
+    // an owner can tell whether activation left for one of its own popup
+    // windows or for somewhere else.
+    public const uint WM_ACTIVATE = 0x0006;
+    public const int  WA_INACTIVE = 0;
+
+    // GetWindow(hWnd, GW_OWNER): the owner of a top-level window, zero when
+    // it has none.
+    public const uint GW_OWNER = 4;
+
+    [DllImport("user32.dll", SetLastError = true)]
+    public static extern IntPtr GetWindow(IntPtr hWnd, uint uCmd);
+
     // ── Window Identification / Keyboard Focus (debug) ───────────────────────
 
     [DllImport("user32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
