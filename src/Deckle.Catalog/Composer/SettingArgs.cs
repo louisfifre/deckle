@@ -52,7 +52,7 @@ public sealed record NumberArgs(
 // Bounds and unit for a Magnitude setting — a Slider fused with an editable
 // NumberBox. Deliberately smaller than SliderArgs: there is no StepFrequency,
 // because a magnitude derives its "nice" 1-2-5 grain from the range itself
-// (SettingsComposer.NiceStep), so the caller states only where the value lives
+// (MagnitudeGrain.StepFor), so the caller states only where the value lives
 // and what it measures. Unit is the optional suffix beside the field ("ms", "x",
 // "dBFS"); null when dimensionless. Like every *Args these describe the CONTROL —
 // the value type (double) is fixed by the kind.

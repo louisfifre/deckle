@@ -69,7 +69,8 @@ public sealed partial class SettingsComposer
             // it stays truthful; only the write-back to the model is suppressed.
             valueText.Text = FormatValue(e.NewValue, args.StepFrequency);
             if (_syncingFromModel) return;
-            s.SetValue(e.NewValue);
+            // Same dust as BuildMagnitude: store the value the readout shows.
+            s.SetValue(MagnitudeGrain.Snap(e.NewValue, MagnitudeGrain.DecimalsFor(args.StepFrequency)));
         };
 
         (FrameworkElement cardContent, Action? updateReset) = WrapWithReset(card, content, s);
@@ -142,7 +143,7 @@ public sealed partial class SettingsComposer
     // slider move writes the box, a box edit moves the thumb) through an internal
     // `coordinating` guard, distinct from _syncingFromModel (which guards the
     // model→UI direction). Unlike BuildSlider the caller gives no StepFrequency: the
-    // grain is derived as a "nice" 1-2-5 number from the range (NiceStep), so a
+    // grain is derived as a "nice" 1-2-5 number from the range (MagnitudeGrain.StepFor), so a
     // magnitude declares only its bounds and unit. The box holds the exact value;
     // the slider thumb approximates it to the nearest detent, which is the point of
     // the pairing — gesture for reach, field for precision. A future wide-range
@@ -154,8 +155,8 @@ public sealed partial class SettingsComposer
         // is a manifest bug, not a runtime input, hence the hard cast.
         var args = (MagnitudeArgs)s.Args!;
 
-        double step = NiceStep(args.Minimum, args.Maximum);
-        int decimals = DecimalsFor(step);
+        double step = MagnitudeGrain.StepFor(args.Minimum, args.Maximum);
+        int decimals = MagnitudeGrain.DecimalsFor(step);
 
         var slider = new Slider
         {
@@ -180,12 +181,21 @@ public sealed partial class SettingsComposer
             VerticalAlignment = VerticalAlignment.Center,
             // Fixed precision (fraction digits tracking the nice step) and no
             // grouping separators, so the readout matches the slider's grain and a
-            // four-digit figure reads "1200", not "1,200".
+            // four-digit figure reads "1200", not "1,200". FractionDigits is only a
+            // minimum, so the rounder is what caps the readout at the grain: a
+            // value stored with binary dust (0.15000000000000002) still shows
+            // "0.15". It affects display only; a settings.json written before this
+            // fix keeps its dust until the next edit.
             NumberFormatter = new Windows.Globalization.NumberFormatting.DecimalFormatter
             {
                 IntegerDigits = 1,
                 FractionDigits = decimals,
                 IsGrouped = false,
+                NumberRounder = new Windows.Globalization.NumberFormatting.IncrementNumberRounder
+                {
+                    Increment = Math.Pow(10, -decimals),
+                    RoundingAlgorithm = Windows.Globalization.NumberFormatting.RoundingAlgorithm.RoundHalfUp,
+                },
             },
             Value = AsDouble(s.GetValue()),
         };
@@ -201,11 +211,15 @@ public sealed partial class SettingsComposer
         slider.ValueChanged += (_, e) =>
         {
             if (coordinating) return;
+            // Slider detents are sums like 0.05 + 2 * 0.05 (0.15000000000000002):
+            // snap to the display grain before the value reaches the field, the
+            // model, the preset match and settings.json.
+            double snapped = MagnitudeGrain.Snap(e.NewValue, decimals);
             coordinating = true;
-            try { if (box.Value != e.NewValue) box.Value = e.NewValue; }
+            try { if (box.Value != snapped) box.Value = snapped; }
             finally { coordinating = false; }
             if (_syncingFromModel) return;
-            s.SetValue(e.NewValue);
+            s.SetValue(snapped);
         };
 
         box.ValueChanged += (_, _) =>
@@ -214,11 +228,20 @@ public sealed partial class SettingsComposer
             // A cleared field surfaces as NaN; swallow it so it never persists or
             // moves the thumb, the same guard BuildNumber applies.
             if (double.IsNaN(box.Value)) return;
+            // A figure typed finer than the grain (0.1534 on a 0.01 grain) would
+            // display rounded while the model kept the longer value, so what is
+            // stored and compared would differ from what is read. Store the
+            // displayed value instead.
+            double snapped = MagnitudeGrain.Snap(box.Value, decimals);
             coordinating = true;
-            try { if (slider.Value != box.Value) slider.Value = box.Value; }
+            try
+            {
+                if (box.Value != snapped) box.Value = snapped;
+                if (slider.Value != snapped) slider.Value = snapped;
+            }
             finally { coordinating = false; }
             if (_syncingFromModel) return;
-            s.SetValue(box.Value);
+            s.SetValue(snapped);
         };
 
         var content = new StackPanel
@@ -260,43 +283,12 @@ public sealed partial class SettingsComposer
         });
     }
 
-    // The "nice" 1-2-5 step for a magnitude slider, derived from its range so a
-    // magnitude declares only bounds. Aims for ~40 detents across the span, then
-    // rounds that raw step UP to the nearest 1, 2 or 5 times a power of ten — the
-    // classic axis-tick niceness — so the grain reads as a round number (0.05, 1,
-    // 50) rather than an arbitrary fraction. The editable field still takes any
-    // exact value; this only sets how coarsely the thumb detents.
-    private static double NiceStep(double minimum, double maximum)
-    {
-        double span = Math.Abs(maximum - minimum);
-        if (span <= 0) return 1;
-
-        double raw = span / 40.0;
-        double magnitude = Math.Pow(10, Math.Floor(Math.Log10(raw)));
-        double normalized = raw / magnitude; // in [1, 10)
-        double nice = normalized <= 1 ? 1 : normalized <= 2 ? 2 : normalized <= 5 ? 5 : 10;
-        return nice * magnitude;
-    }
-
     // Renders a slider's value with invariant formatting. The displayed
     // precision follows StepFrequency so binary-float dust never reaches the UI.
     private static string FormatValue(double value, double stepFrequency)
     {
-        int decimals = DecimalsFor(stepFrequency);
+        int decimals = MagnitudeGrain.DecimalsFor(stepFrequency);
         return Math.Round(value, decimals)
             .ToString("F" + decimals.ToString(CultureInfo.InvariantCulture), CultureInfo.InvariantCulture);
-    }
-
-    private static int DecimalsFor(double stepFrequency)
-    {
-        if (stepFrequency <= 0) return 0;
-        int decimals = 0;
-        double step = stepFrequency;
-        while (decimals < 6 && Math.Abs(step - Math.Round(step)) > 1e-9)
-        {
-            step *= 10;
-            decimals++;
-        }
-        return decimals;
     }
 }

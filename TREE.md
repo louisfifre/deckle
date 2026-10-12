@@ -881,6 +881,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   ├── HotkeyChordText.cs
 │   │   │   ├── HotkeyKeyNames.cs
 │   │   │   ├── IPathControl.cs
+│   │   │   ├── MagnitudeGrain.cs
 │   │   │   ├── Setting.cs
 │   │   │   ├── SettingArgs.cs
 │   │   │   ├── SettingDescriptor.cs
@@ -2016,6 +2017,8 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── Deckle.Catalog.Tests.csproj
 │   │   ├── HotkeyChordTests.cs
 │   │   ├── HotkeyChordTextTests.cs
+│   │   ├── MagnitudeGrainBugNotes.md
+│   │   ├── MagnitudeGrainTests.cs
 │   │   └── SettingFactoryTests.cs
 │   ├── Deckle.Chrono.Tests/
 │   │   ├── ChronoFormatterTests.cs
