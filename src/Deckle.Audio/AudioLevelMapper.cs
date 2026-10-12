@@ -10,8 +10,9 @@ namespace Deckle.Audio;
 // `RmsToPerceptualLevel` and consumes the [0, 1] result however it
 // wants.
 //
-// The four public statics double as Playground tunables — the Playground
-// slider page mutates them live to explore the curve shape. Atomic float
+// The public statics are written live by the Recording settings sliders,
+// by the App at boot and by engine-side auto-calibration; the Playground
+// reads them through its preview and never writes them. Atomic float
 // reads: the audio thread reads RmsToPerceptualLevel concurrently with
 // the UI thread writing the statics. Single-precision float writes are
 // atomic on all .NET platforms; no lock needed.
@@ -58,8 +59,8 @@ public static class AudioLevelMapper
         float t = (dbfs - MinDbfs) / (MaxDbfs - MinDbfs);
         t = Math.Clamp(t, 0f, 1f);
         // Power-curve response. p = 1 is linear; p > 1 compresses the
-        // low end and expands the high end. Guarded against p ≤ 0 so
-        // the playground can't nuke the mapping by dragging to 0.
+        // low end and expands the high end. Guarded against p ≤ 0 so a
+        // zero exponent in the settings file cannot nuke the mapping.
         float p = DbfsCurveExponent;
         if (p <= 0f) return t;
         return MathF.Pow(t, p);
