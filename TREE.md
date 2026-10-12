@@ -242,6 +242,8 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── taskbar-probes/
 │   │   │   ├── explorer-restart.ps1
 │   │   │   ├── feature-flags.ps1
+│   │   │   ├── late-inject-repro.ps1
+│   │   │   ├── logon-capture.ps1
 │   │   │   ├── native-test.ps1
 │   │   │   ├── pe-keys2.ps1
 │   │   │   ├── README.md

@@ -11,6 +11,8 @@ Scripts d'exploration écrits le 2026-10-08 pour la fiche `../research--taskbar-
 | `native-test.ps1` | Le test de la route A une fois les drapeaux actifs : pose `TaskbarLocation=0` et `TaskbarSize=0`, arme les sondes tray et horloge, redémarre explorer, mesure, puis restaure les sondes. | Oui, dans HKCU |
 | `explorer-restart.ps1` | Redémarre explorer et mesure. | Non, hors redémarrage |
 | `taskbar-strings.ps1` | Extrait des binaires de la barre les noms de valeurs de registre `Taskbar*`. | Non |
+| `logon-capture.ps1` | À lancer juste après l'ouverture de session, avant de toucher à quoi que ce soit : ajoute dans `%LOCALAPPDATA%\deckle-taskbar-logon.log` des instantanés UIA des boutons de la barre à 0, 10, 20, 40, 60 et 120 s, avec l'heure de démarrage d'explorer et de Windhawk. Sert à dater le moment où les épinglés décrochent des lancés. | Non, hors le fichier journal |
+| `late-inject-repro.ps1` | Reproduit l'injection tardive sans fermer la session : arrête Windhawk, mesure la barre d'origine, relance Windhawk en `-tray-only` dans l'explorer déjà construit, mesure. Le 2026-10-12 ce scénario n'a pas reproduit le défaut des épinglés. | Oui, arrête et relance Windhawk |
 | `pe-keys2.ps1` | Calcule la clé `TimeDateStamp-SizeOfImage` des binaires et vérifie leur présence dans le cache de symboles de Windhawk. | Non |
 
 Les identifiants de drapeaux utilisés : 59213768 (celui que teste le mod taskbar-vertical), 61161244, 61754985, 62353331, 62762248 (cités par la presse pour la position native), 29785184 (icônes dynamiques, déjà actif ici).
