@@ -8,7 +8,7 @@ type: skill
 
 ## Intent
 
-Land the right commit grain and apply the handful of deviations from the universal convention. The universal Conventional Commits mechanics — format, type table, staging, safety — live in `git-commit`; this carries only what Deckle adds on top.
+Land the right commit grain and apply the handful of deviations from the universal convention. The universal convention lives in `personal-conventions/references/git.md`; this carries only what Deckle adds on top.
 
 ## How
 
