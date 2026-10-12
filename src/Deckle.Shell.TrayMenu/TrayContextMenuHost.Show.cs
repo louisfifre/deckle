@@ -46,9 +46,9 @@ public sealed partial class TrayContextMenuHost
         //
         // Trade-off (MS docs + 2026-05-31 repro): Full also stretches the
         // presenter to fill the carrier window. The visible menu size is
-        // therefore dictated by MeasureFlyout; the 8 DIP FlyoutFrameMargin we
-        // added showed up as a Mica gap at the bottom (stretched presenter not
-        // consuming it as padding). See module CLAUDE.md / JOURNAL.
+        // therefore dictated by MeasureFlyout: too large shows an empty Mica
+        // band at the bottom, too small scrolls. See TrayMenuSizing and the
+        // module JOURNAL.
         _flyout.ShowAt(_carrier.Frame, new FlyoutShowOptions
         {
             ShowMode = FlyoutShowMode.Transient,

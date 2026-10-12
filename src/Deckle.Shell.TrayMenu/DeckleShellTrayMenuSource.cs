@@ -73,6 +73,9 @@ public sealed class DeckleShellTrayMenuSource : DeckleEventSource
     public const int EvtPanelActionClickedDetail  = 31;
     public const int EvtPanelPrimed               = 32;
     public const int EvtPanelPrimedDetail         = 33;
+    // Context menu size check, 34 onward.
+    public const int EvtPresenterSizeRejected       = 34;
+    public const int EvtPresenterSizeRejectedDetail = 35;
 
     // ── Lifecycle ─────────────────────────────────────────────────────────────
 
@@ -195,11 +198,38 @@ public sealed class DeckleShellTrayMenuSource : DeckleEventSource
     [Event(EvtFlyoutMeasured,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "flyout measured | dip_w={0:F1} dip_h={1:F1} physical={2}x{3} scale={4:F2}")]
-    public void FlyoutMeasured(double dip_w, double dip_h, int physical_w, int physical_h, double scale)
+           Message = "flyout measured | dip_w={0:F1} dip_h={1:F1} physical={2}x{3} scale={4:F2} size_source={5}")]
+    public void FlyoutMeasured(
+        double dip_w, double dip_h, int physical_w, int physical_h, double scale, string size_source)
+    {
+        // size_source: "presenter" (captured presenter, holds every item),
+        // "items" (item extent + fallback frame margin).
+        if (IsDetailEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Lifecycle))
+            WriteEvent(EvtFlyoutMeasured, dip_w, dip_h, physical_w, physical_h, scale, size_source);
+    }
+
+    // A captured presenter smaller than its items is the anomaly behind the
+    // "menu one item tall" bug: the milestone stays visible whatever the
+    // Windowing verbosity, the detail follows it.
+    [Event(EvtPresenterSizeRejected,
+           Level = EventLevel.Warning,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Message = "The menu measured smaller than its items — sized from the items instead")]
+    public void PresenterSizeRejected()
+    {
+        if (IsEnabled()) WriteEvent(EvtPresenterSizeRejected);
+    }
+
+    // phase: "prime" (startup prime cycle), "opened" (after a real open).
+    [Event(EvtPresenterSizeRejectedDetail,
+           Level = EventLevel.Verbose,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Message = "presenter size rejected | phase={0} presenter_w={1:F1} presenter_h={2:F1} items_w={3:F1} items_h={4:F1}")]
+    public void PresenterSizeRejectedDetail(
+        string phase, double presenter_w, double presenter_h, double items_w, double items_h)
     {
         if (IsDetailEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Lifecycle))
-            WriteEvent(EvtFlyoutMeasured, dip_w, dip_h, physical_w, physical_h, scale);
+            WriteEvent(EvtPresenterSizeRejectedDetail, phase, presenter_w, presenter_h, items_w, items_h);
     }
 
     // Constant placement (FlyoutPlacementMode.Full, FlyoutShowMode.Transient) is

@@ -23,4 +23,9 @@
     <ProjectReference Include="..\Deckle.Diagnostics\Deckle.Diagnostics.csproj" />
     <ProjectReference Include="..\Deckle.Shell\Deckle.Shell.csproj" />
   </ItemGroup>
+
+  <ItemGroup>
+    <!-- TrayMenuSizing (internal) is unit-tested through this. -->
+    <InternalsVisibleTo Include="Deckle.Shell.TrayMenu.Tests" />
+  </ItemGroup>
 </Project>

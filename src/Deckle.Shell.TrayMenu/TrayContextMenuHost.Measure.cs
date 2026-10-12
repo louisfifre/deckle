@@ -1,20 +1,16 @@
-// TrayContextMenuHost — prime cycle, flyout measurement, presenter capture.
+// TrayContextMenuHost — prime cycle, size capture, flyout measurement.
 
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.Tracing;
-using Deckle.Catalog;
-using Deckle.Core;
+using System.Linq;
 using Deckle.Diagnostics;
-using Deckle.Shell.TrayMenu;
-using Microsoft.UI;
 using Microsoft.UI.Dispatching;
-using Microsoft.UI.Windowing;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Controls.Primitives;
 using Microsoft.UI.Xaml.Media;
-using WinRT.Interop;
 
 namespace Deckle.Shell.TrayMenu;
 
@@ -35,6 +31,9 @@ public sealed partial class TrayContextMenuHost
     // process lifetime.
     private void PrimeFlyout()
     {
+        // A real Show() already opened the menu: Opened captures the sizes.
+        if (_isVisible) return;
+
         bool traceWindowing = DeckleShellTrayMenuSource.IsDetailEnabled(
             EventLevel.Verbose, (EventKeywords)Keywords.Lifecycle);
         var sw = traceWindowing ? Stopwatch.StartNew() : null;
@@ -42,54 +41,11 @@ public sealed partial class TrayContextMenuHost
 
         _carrier.Frame.DispatcherQueue.TryEnqueue(DispatcherQueuePriority.Low, () =>
         {
-            // Capture DesiredSize for items attached to the popup visual tree,
-            // after forcing NarrowPadding state on each item. The framework
-            // switches to NarrowPadding anyway as soon as a mouse/pen/keyboard
-            // pointer interacts with the menu (see PaddingSizeStates
-            // VisualState in DefaultMenuFlyoutItemStyle, WindowsAppSDK
-            // generic.xaml line 24058); we accelerate that switch during the
-            // prime cycle so the cache reflects the final size (≈ 32 DIP/item)
-            // rather than the initial DefaultPadding size (≈ 40). Without this
-            // force, the carrier window was sized to the initial size while the
-            // internal popup (following NarrowPadding state) rendered more
-            // compact, creating a visible Mica gap at the bottom.
-            if (_flyout is not null)
-            {
-                foreach (var item in _flyout.Items)
-                {
-                    if (item is MenuFlyoutItem mfi)
-                        VisualStateManager.GoToState(mfi, "NarrowPadding", useTransitions: false);
-                }
-                // Force a layout pass so the new Padding values applied by the
-                // VisualState Storyboard are effective in the DesiredSize we
-                // are about to capture.
-                _carrier.Frame.UpdateLayout();
+            CaptureSizes("prime");
 
-                _primedSizes.Clear();
-                foreach (var item in _flyout.Items)
-                    _primedSizes[item] = item.DesiredSize;
+            // Do not close a menu the user opened meanwhile.
+            if (!_isVisible) _flyout?.Hide();
 
-                // Capture the real presenter size (walking up from the first
-                // VISIBLE item, attached at this point — a collapsed item may
-                // never mount into the popup tree and would dead-end the walk).
-                // Its DesiredSize includes its padding + border, so it exactly
-                // reflects the visible card; in contrast, the item sum ignores
-                // those and we compensated with an imprecise flat margin.
-                _primedPresenterSize = null;
-                var firstVisible = _flyout.Items
-                    .FirstOrDefault(i => i.Visibility == Visibility.Visible);
-                if (firstVisible is not null)
-                {
-                    var presenter = FindAncestorPresenter(firstVisible);
-                    if (presenter is not null)
-                    {
-                        presenter.UpdateLayout();
-                        _primedPresenterSize = presenter.DesiredSize;
-                    }
-                }
-            }
-
-            _flyout?.Hide();
             if (sw is not null)
             {
                 sw.Stop();
@@ -97,6 +53,75 @@ public sealed partial class TrayContextMenuHost
                 DeckleShellTrayMenuSource.Log.PrimeCycleCompletedDetail(sw.Elapsed.TotalMilliseconds);
             }
         });
+    }
+
+    // ── Size capture ──────────────────────────────────────────────────────────
+
+    // Captures the item sizes and the real presenter size with the items
+    // attached to the popup tree. Runs after the prime cycle's layout pass,
+    // and again after every real open (OnFlyoutOpened), so a bad value from
+    // one capture heals on the next open instead of sticking for the process
+    // lifetime.
+    //
+    // NarrowPadding is forced first. The framework switches to it anyway as
+    // soon as a mouse/pen/keyboard pointer interacts with the menu
+    // (PaddingSizeStates in DefaultMenuFlyoutItemStyle, WindowsAppSDK
+    // generic.xaml); forcing it here makes the capture reflect the final size
+    // (≈ 32 DIP/item) rather than the initial DefaultPadding size (≈ 40).
+    //
+    // phase: "prime" or "opened", traced when a capture is rejected.
+    private void CaptureSizes(string phase)
+    {
+        if (_flyout is null) return;
+
+        foreach (var item in _flyout.Items)
+        {
+            if (item is MenuFlyoutItem mfi)
+                VisualStateManager.GoToState(mfi, "NarrowPadding", useTransitions: false);
+        }
+        // Force a layout pass so the padding set by the VisualState is in the
+        // DesiredSize values read below.
+        _carrier.Frame.UpdateLayout();
+
+        // Item sizes: kept only when every visible item measured a height.
+        // A capture taken before the items were laid out reads zeros (the
+        // 2026-05-25 observation); it must not replace an earlier good one.
+        // Without them the presenter size cannot be checked either.
+        bool itemsLaidOut = _flyout.Items
+            .Where(i => i.Visibility == Visibility.Visible)
+            .All(i => i.DesiredSize.Height > 0);
+        if (!itemsLaidOut) return;
+
+        _primedSizes.Clear();
+        foreach (var item in _flyout.Items)
+            _primedSizes[item] = item.DesiredSize;
+
+        // Presenter size, walking up from the first VISIBLE item (a collapsed
+        // item may never mount into the popup tree and would dead-end the
+        // walk). Its DesiredSize includes the presenter's padding and border,
+        // so it matches the visible card; the item sum ignores them.
+        var firstVisible = _flyout.Items
+            .FirstOrDefault(i => i.Visibility == Visibility.Visible);
+        if (firstVisible is null) return;
+        var presenter = FindAncestorPresenter(firstVisible);
+        if (presenter is null) return;
+        presenter.UpdateLayout();
+        var captured = (presenter.DesiredSize.Width, presenter.DesiredSize.Height);
+
+        var items = CurrentItemSizes(traceWindowing: false);
+        if (TrayMenuSizing.HoldsItems(captured, items))
+        {
+            _primedPresenterSize = captured;
+            return;
+        }
+
+        // A presenter smaller than its items was measured clipped or before
+        // its items were laid out (it then reports its MinHeight, one item
+        // tall). Keep whatever was there; MeasureFlyout re-checks it anyway.
+        var (itemsW, itemsH) = TrayMenuSizing.ItemExtent(items);
+        DeckleShellTrayMenuSource.Log.PresenterSizeRejected();
+        DeckleShellTrayMenuSource.Log.PresenterSizeRejectedDetail(
+            phase, captured.Width, captured.Height, itemsW, itemsH);
     }
 
     // Walks up the visual tree from a descendant to the MenuFlyoutPresenter
@@ -114,35 +139,16 @@ public sealed partial class TrayContextMenuHost
         return null;
     }
 
-    // ── Measure ───────────────────────────────────────────────────────────────
-    //
-    // Sizes the carrier window to the real MenuFlyoutPresenter DesiredSize,
-    // captured during the prime cycle (_primedPresenterSize). This size
-    // includes the presenter's own padding and border, so it exactly matches
-    // the card painted by the popup. Because Full stretches the presenter to
-    // the carrier window, sizing the window to this value makes stretching
-    // neutral: no Mica gap (oversize), no scroll (undersize).
-    //
-    // The loop below remains for per-item diagnostics (ItemAttachmentChecked /
-    // ItemMeasured events in JSONL) and to feed the fallback. DesiredSize
-    // values are read from the _primedSizes cache (items attached during the
-    // prime cycle) rather than through detached item.Measure(), which returns
-    // unstable values (see module JOURNAL.md).
-    //
-    // Fallback (presenter not captured during prime, or prime not yet run):
-    // sum of item heights + FlyoutFrameMargin × 2. Historical, imprecise path
-    // (the 8 DIP flat margin overestimated the presenter's real chrome
-    // ≈ 4-6 DIP, causing the gap); kept as a guard against zero-size popup.
-
-    private (int width, int height) MeasureFlyout(double scale)
+    // The size of every item, from the attached capture when there is one.
+    // Without a capture (the prime cycle has not run yet), the item is
+    // measured detached, accepted for lack of a better option: detached
+    // measures are unstable (see module JOURNAL.md).
+    private List<(double Width, double Height)> CurrentItemSizes(bool traceWindowing)
     {
-        if (_flyout is null) return (0, 0);
+        var sizes = new List<(double Width, double Height)>();
+        if (_flyout is null) return sizes;
 
-        double width = 0;
-        double height = 0;
         int idx = 0;
-        bool traceWindowing = DeckleShellTrayMenuSource.IsDetailEnabled(
-            EventLevel.Verbose, (EventKeywords)Keywords.Lifecycle);
         foreach (var item in _flyout.Items)
         {
             Windows.Foundation.Size desired;
@@ -152,15 +158,10 @@ public sealed partial class TrayContextMenuHost
             }
             else
             {
-                // Safety fallback: the prime cycle has not populated the cache
-                // yet. Detached measurement is accepted for lack of a better
-                // option; at worst the popup displays the native compressed
-                // height.
                 item.Measure(new Windows.Foundation.Size(10_000, 10_000));
                 desired = item.DesiredSize;
             }
-            width = Math.Max(width, desired.Width);
-            height += desired.Height;
+            sizes.Add((desired.Width, desired.Height));
 
             if (traceWindowing)
             {
@@ -176,31 +177,39 @@ public sealed partial class TrayContextMenuHost
             }
             idx++;
         }
+        return sizes;
+    }
 
-        double dipW;
-        double dipH;
-        if (_primedPresenterSize is { } presenterSize
-            && presenterSize.Width > 0 && presenterSize.Height > 0)
-        {
-            // Exact size of the real presenter; Full has nothing left to stretch.
-            dipW = presenterSize.Width;
-            dipH = presenterSize.Height;
-        }
-        else
-        {
-            // Imprecise fallback: item sum + flat margin.
-            dipW = width + FlyoutFrameMargin * 2;
-            dipH = height + FlyoutFrameMargin * 2;
-        }
+    // ── Measure ───────────────────────────────────────────────────────────────
+    //
+    // Placement Full stretches the presenter to the carrier window, so the
+    // carrier size IS the visible card. TrayMenuSizing.Decide picks it: the
+    // captured presenter size when it holds every item, else the item extent
+    // plus a frame margin. Returns physical pixels at the anchor monitor's
+    // scale.
+
+    private (int width, int height) MeasureFlyout(double scale)
+    {
+        if (_flyout is null) return (0, 0);
+
+        bool traceWindowing = DeckleShellTrayMenuSource.IsDetailEnabled(
+            EventLevel.Verbose, (EventKeywords)Keywords.Lifecycle);
+
+        var items = CurrentItemSizes(traceWindowing);
+        var size = TrayMenuSizing.Decide(_primedPresenterSize, items);
 
         // Ceiling rather than truncation: prefer a possible sub-pixel gap
         // (invisible) over a one-pixel undersize that would reactivate
         // presenter scrolling.
-        int physW = (int)Math.Ceiling(dipW * scale);
-        int physH = (int)Math.Ceiling(dipH * scale);
+        int physW = (int)Math.Ceiling(size.Width * scale);
+        int physH = (int)Math.Ceiling(size.Height * scale);
 
         if (traceWindowing)
-            DeckleShellTrayMenuSource.Log.FlyoutMeasured(dipW, dipH, physW, physH, scale);
+        {
+            DeckleShellTrayMenuSource.Log.FlyoutMeasured(
+                size.Width, size.Height, physW, physH, scale,
+                size.Source == TrayMenuSizing.SizeSource.Presenter ? "presenter" : "items");
+        }
 
         return (physW, physH);
     }
