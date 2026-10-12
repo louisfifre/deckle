@@ -34,6 +34,8 @@
     <x:String x:Key="Icon.Autocorrect">&#xF87B;</x:String>
     <!-- Segoe Fluent "Game" (E7FC) — the apps and games registry. -->
     <x:String x:Key="Icon.Games">&#xE7FC;</x:String>
+    <!-- Segoe Fluent "DockBottom" (E90E) — the taskbar cover. -->
+    <x:String x:Key="Icon.Taskbar">&#xE90E;</x:String>
     <x:String x:Key="Icon.Diagnostics">&#xE9D9;</x:String>
     <x:String x:Key="Icon.Logs">&#xEC7A;</x:String>
 
