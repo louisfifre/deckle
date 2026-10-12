@@ -25,7 +25,7 @@ public sealed class HudViewModelTests
     [InlineData(HudTarget.Charging)]
     [InlineData(HudTarget.Recording,
         HudTuningSection.Geometry, HudTuningSection.Palette, HudTuningSection.Recording,
-        HudTuningSection.AudioMapping, HudTuningSection.SimulatedRms)]
+        HudTuningSection.SimulatedRms)]
     [InlineData(HudTarget.Transcribing,
         HudTuningSection.Geometry, HudTuningSection.Palette, HudTuningSection.ConicFade,
         HudTuningSection.HueRotation, HudTuningSection.ArcRotation, HudTuningSection.Transcribing,

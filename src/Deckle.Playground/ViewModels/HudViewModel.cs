@@ -43,7 +43,6 @@ public enum HudTuningSection
     Recording,
     Transcribing,
     Rewriting,
-    AudioMapping,
     SimulatedRms,
     ClonePlacement,
     UtteranceCountdown,
@@ -186,7 +185,6 @@ public partial class HudViewModel : ObservableObject
                     HudTuningSection.Geometry,
                     HudTuningSection.Palette,
                     HudTuningSection.Recording,
-                    HudTuningSection.AudioMapping,
                     HudTuningSection.SimulatedRms,
                 },
             // Transcribing: CreateProcessingStroke spins the arc mask with the

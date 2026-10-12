@@ -6,7 +6,6 @@ using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Hosting;
 using Microsoft.UI.Xaml.Navigation;
-using Deckle.Audio;
 using Deckle.Hud;
 using Deckle.Composition;
 using Deckle.Playground;
@@ -507,10 +506,6 @@ public sealed partial class HudPage : Page
         // Conic clone placement resets with the fresh TuningModel above,
         // whose fields read the shipping struct's defaults.
 
-        // Audio mapping statics stay aligned with ResetAudioMapping.
-        AudioLevelMapper.Apply(new LevelWindowSettings());
-        AudioLevelMapper.EmaAlpha = 0.25f;
-
         BuildTuningPanel();
         ApplyTarget();
     }
@@ -562,7 +557,6 @@ public sealed partial class HudPage : Page
                 case HudTuningSection.Recording:     AddRecordingExpander();      break;
                 case HudTuningSection.Transcribing:  AddTranscribingExpander();   break;
                 case HudTuningSection.Rewriting:     AddRewritingExpander();      break;
-                case HudTuningSection.AudioMapping:  AddAudioMappingExpander();   break;
                 case HudTuningSection.SimulatedRms:  AddSimulatedRmsExpander();   break;
                 case HudTuningSection.UtteranceCountdown: AddUtteranceCountdownExpander(); break;
                 case HudTuningSection.ClonePlacement: AddClonePlacementExpander(); break;

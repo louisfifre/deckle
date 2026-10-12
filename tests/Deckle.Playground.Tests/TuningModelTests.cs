@@ -114,4 +114,19 @@ public class TuningModelTests
 
         Assert.True(entries.Count == 0, "Static HUD config entries: " + string.Join(", ", entries));
     }
+
+    // The live HUD maps every audio sample through AudioLevelMapper's statics.
+    // The HUD tab used to write them from its Audio mapping section and from
+    // Reset all. The Playground now touches no Deckle.Audio type at all, so
+    // the compiled assembly carries no reference to that assembly.
+    [Fact]
+    [Trait("Category", "regression")]
+    public void ThePlaygroundTouchesNoAudioType()
+    {
+        var references = typeof(HudViewModel).Assembly
+            .GetReferencedAssemblies()
+            .Select(reference => reference.Name);
+
+        Assert.DoesNotContain("Deckle.Audio", references);
+    }
 }
