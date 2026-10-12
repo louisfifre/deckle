@@ -84,10 +84,15 @@ public sealed partial class HudPage
         });
         geometry.Children.Add(TuningHelp(
             "Uses the Transcribing material tuned in Cone and Transcribing."));
-        geometry.Children.Add(TuningHelp("Reach is the share of the top and bottom edges lit from their centre: 0 % is the edge centre, 100 % the corners."));
-        AddFloatRow(geometry, "Start reach (%)", 0, 100, 1, _countdownConfig.StartReach * 100,
+        geometry.Children.Add(TuningHelp(
+            "Reach is how far the light runs along the top and bottom edges, from their centre. " +
+            "0 % is the centre and 100 % the corners. Above 100 %, the light runs past the corners. " +
+            "Below 0 %, the gauge waits before it opens."));
+        // Wider than the useful range on purpose, for testing: the renderer
+        // lerps reach freely and clamps the spread to its minimum.
+        AddFloatRow(geometry, "Start reach (%)", -50, 100, 1, _countdownConfig.StartReach * 100,
             value => _countdownConfig = _countdownConfig with { StartReach = (float)value / 100f }, rebuild: true);
-        AddFloatRow(geometry, "End reach (%)", 0, 100, 1, _countdownConfig.EndReach * 100,
+        AddFloatRow(geometry, "End reach (%)", 0, 200, 1, _countdownConfig.EndReach * 100,
             value => _countdownConfig = _countdownConfig with { EndReach = (float)value / 100f }, rebuild: true);
         geometry.Children.Add(TuningHelp("Thickness and inset follow the HUD geometry section."));
 
