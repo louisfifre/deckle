@@ -1057,7 +1057,6 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   ├── HudChrono.Reveal.cs
 │   │   │   ├── HudChrono.RevealMask.cs
 │   │   │   ├── HudChrono.Stroke.cs
-│   │   │   ├── HudChrono.Tuning.cs
 │   │   │   ├── HudChrono.UtteranceCountdown.cs
 │   │   │   ├── HudChrono.xaml
 │   │   │   ├── HudChrono.xaml.cs
@@ -1090,14 +1089,10 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── CLAUDE.md
 │   │   ├── Deckle.Hud.csproj
 │   │   ├── DeckleHudSource.cs
-│   │   ├── HudGeometryTuning.cs
-│   │   ├── HudMaterialTuning.cs
 │   │   ├── HudMessage.xaml
 │   │   ├── HudMessage.xaml.cs
-│   │   ├── HudStrokeTuning.cs
 │   │   ├── JOURNAL.md  — [module-journal] Diagnosis notes, render doctrine, and deferred work for Deckle.Hud — read on de…
-│   │   ├── ProximityRollupAggregator.cs
-│   │   └── UtteranceCountdownTuning.cs
+│   │   └── ProximityRollupAggregator.cs
 │   ├── Deckle.Inference.Onnx/
 │   │   ├── AGENTS.md  — [agent-instructions] ONNX Runtime CPU inference behind a plain-array Run.
 │   │   ├── CLAUDE.md
@@ -2063,9 +2058,6 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── AnimationGateTests.cs
 │   │   ├── Deckle.Hud.Tests.csproj
 │   │   ├── DeckleHudSourceTests.cs
-│   │   ├── HudGeometryTuningTests.cs
-│   │   ├── HudMaterialTuningTests.cs
-│   │   ├── HudStrokeTuningTests.cs
 │   │   ├── ProximityFadeTests.cs
 │   │   ├── ProximityRollupAggregatorTests.cs
 │   │   ├── TranscriptHistoryTests.cs

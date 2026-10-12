@@ -28,6 +28,7 @@ Manual WinUI validation is still required for both visual issues: enter the page
 - **Invariant:** one material source, independent mask geometry, and controls grouped by what they actually affect.
 - **Fix:** share palette, hue rotation and Transcribing grading through HudMaterialTuning; expose countdown geometry/fade and preview-only inspection separately. Sweep mask has no color variant.
 - **Regression coverage:** HudTargetControlsTests; shared-material isolation is covered by HudMaterialTuningTests in Deckle.Hud.Tests. Actual GPU rotation and inspection remain manual checks.
+- Superseded 2026-10-12: HudMaterialTuning and its tests are deleted. The countdown preview takes its material from the HUD tab's own TuningModel; the live countdown uses the compiled defaults.
 
 ## Countdown onset was attenuated and could start outside the visible sides
 
@@ -58,3 +59,4 @@ Manual WinUI validation is still required for both visual issues: enter the page
 - **Fix:** carry StrokeThickness and InsetDip through the production config and a process-local geometry source observed by the real HUD; both update together rather than relying on a mutable inset read only when the next stroke is created.
 - **Regression coverage:** HudGeometryTuningTests.SharedThicknessPreservesMaterialMasksAndCountdownGeometry. Visual thickness changes require a manual HUD check.
 - 2026-10-08: the countdown contour now reads the same thickness and inset as the base stroke; its own thickness knob is gone.
+- Superseded 2026-10-12: HudGeometryTuning and its tests are deleted. StrokeThickness and InsetDip stay in the production config; the live HUD reads their compiled defaults, the Playground tunes them in its previews only.

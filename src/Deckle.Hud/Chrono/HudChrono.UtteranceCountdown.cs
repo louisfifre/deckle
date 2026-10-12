@@ -9,7 +9,7 @@ namespace Deckle.Hud;
 public sealed partial class HudChrono
 {
     // Capture only writes this immutable mailbox. All visual work stays on the
-    // UI rendering loop, including live tuning and resource disposal.
+    // UI rendering loop, including resource disposal.
     private sealed record CountdownSample(bool Active, float Progress, int Completed);
     private CountdownSample? _latestCountdown;
     private CountdownSample? _consumedCountdown;
@@ -62,12 +62,6 @@ public sealed partial class HudChrono
         _renderedCountdownValue = value;
     }
 
-    private void OnCountdownTuningChanged()
-    {
-        if (DispatcherQueue.HasThreadAccess) RebuildCountdownVisual();
-        else DispatcherQueue.TryEnqueue(RebuildCountdownVisual);
-    }
-
     private void RebuildCountdownVisual()
     {
         DetachCountdownVisual();
@@ -77,13 +71,14 @@ public sealed partial class HudChrono
         float width = (float)CountdownSurfaceHost.ActualWidth;
         float height = (float)CountdownSurfaceHost.ActualHeight;
         if (width <= 0 || height <= 0) return;
-        var style = UtteranceCountdownTuning.Current;
         var size = new Vector2(width, height);
         var compositor = ElementCompositionPreview.GetElementVisual(CountdownSurfaceHost).Compositor;
+        // Compiled defaults only: the Playground tunes its own preview, never
+        // this visual.
         _countdownVisual = HudComposition.CreateUtteranceCountdownVisual(
-            compositor, size, size, HudGeometryTuning.ApplyTo(HudMaterialTuning.Current),
+            compositor, size, size, new HudComposition.ConicArcStrokeConfig(),
             ChronoRoot.ActualTheme == ElementTheme.Dark,
-            style, materialOpacity: 0f, animationsEnabled: _animationsEnabled);
+            new UtteranceCountdownConfig(), materialOpacity: 0f, animationsEnabled: _animationsEnabled);
         _renderedCountdownValue = _countdownState.ValueAt(Stopwatch.GetElapsedTime(_countdownStarted));
         _countdownVisual.SetProgress(_renderedCountdownValue);
         ElementCompositionPreview.SetElementChildVisual(CountdownSurfaceHost, _countdownVisual.Container);

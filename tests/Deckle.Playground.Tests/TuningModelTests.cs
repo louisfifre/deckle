@@ -87,4 +87,31 @@ public class TuningModelTests
         Assert.NotEqual(shipping, edited.ToConfig());
         Assert.Equal(shipping, new TuningModel().ToConfig());
     }
+
+    // The live HUD is a single process-wide instance, so the only way the
+    // Playground could reach it with a HUD config is a static entry point.
+    // There must be none: no static method that accepts a config without
+    // returning a visual, no static settable property or field of a config type.
+    [Fact]
+    [Trait("Category", "regression")]
+    public void TheLiveHudOffersNoProcessWideEntryForAHudConfig()
+    {
+        Type[] configs = [typeof(ConicArcStrokeConfig), typeof(Deckle.Composition.UtteranceCountdownConfig)];
+        var flags = BindingFlags.Public | BindingFlags.Static;
+        var entries = new[] { typeof(Deckle.Hud.HudChrono).Assembly, typeof(ConicArcStrokeConfig).Assembly }
+            .SelectMany(assembly => assembly.GetExportedTypes())
+            .SelectMany(type => type.GetMethods(flags)
+                    .Where(m => m.ReturnType == typeof(void)
+                        && m.GetParameters().Any(p => configs.Contains(p.ParameterType)))
+                    .Select(m => $"{type.Name}.{m.Name}")
+                .Concat(type.GetProperties(flags)
+                    .Where(p => configs.Contains(p.PropertyType) && p.SetMethod is { IsPublic: true })
+                    .Select(p => $"{type.Name}.{p.Name}"))
+                .Concat(type.GetFields(flags)
+                    .Where(f => configs.Contains(f.FieldType) && !f.IsInitOnly)
+                    .Select(f => $"{type.Name}.{f.Name}")))
+            .ToList();
+
+        Assert.True(entries.Count == 0, "Static HUD config entries: " + string.Join(", ", entries));
+    }
 }
