@@ -236,7 +236,14 @@ public sealed partial class TranscriptPanelWindow : Window
         EnsureLineHeight();
         TranscriptText.Text = _history.Text;
 
-        TranscriptText.Measure(new Size(PANEL_WIDTH_DIP - HORIZONTAL_PADDING_DIP, double.PositiveInfinity));
+        // The text column width, set on the TextBlock so the layout wraps at
+        // exactly the width the line count below is measured at. Redundant
+        // with HorizontalScrollBarVisibility="Disabled" (same width) on
+        // purpose: the window height must not depend on that ScrollViewer
+        // rule alone.
+        const int TEXT_WIDTH_DIP = PANEL_WIDTH_DIP - HORIZONTAL_PADDING_DIP;
+        TranscriptText.Width = TEXT_WIDTH_DIP;
+        TranscriptText.Measure(new Size(TEXT_WIDTH_DIP, double.PositiveInfinity));
         int contentLines = (int)Math.Round(TranscriptText.DesiredSize.Height / _lineHeightDip);
 
         var workArea = DisplayArea.Primary.WorkArea;

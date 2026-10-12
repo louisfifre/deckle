@@ -2069,6 +2069,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── ProximityFadeTests.cs
 │   │   ├── ProximityRollupAggregatorTests.cs
 │   │   ├── TranscriptHistoryTests.cs
+│   │   ├── TranscriptPanelBugNotes.md
 │   │   ├── TranscriptPanelLayoutTests.cs
 │   │   ├── UtteranceCountdownGeometryTests.cs
 │   │   └── UtteranceCountdownStateTests.cs

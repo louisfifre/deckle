@@ -29,7 +29,7 @@
                           VerticalScrollMode="Enabled"
                           HorizontalScrollMode="Disabled"
                           VerticalScrollBarVisibility="Hidden"
-                          HorizontalScrollBarVisibility="Hidden"
+                          HorizontalScrollBarVisibility="Disabled"
                           ZoomMode="Disabled">
                 <TextBlock x:Name="TranscriptText"
                            Style="{StaticResource BodyTextBlockStyle}"
