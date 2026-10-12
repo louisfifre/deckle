@@ -11,13 +11,19 @@ namespace Deckle.Shell;
 // Event flow:
 //   Shell32 → WM_TRAY (WM_USER+1) sent to the main HWND
 //   SubclassCallback intercepte WM_TRAY
-//   → left click  → LeftClickRequested raised, subscriber renders the panel
-//   → right click → RightClickRequested raised, subscriber renders the menu
+//   → left click   → LeftClickRequested raised, subscriber renders the panel
+//   → double click → DoubleClickRequested raised, subscriber opens Settings
+//   → right click  → RightClickRequested raised, subscriber renders the menu
 //
 // Both surfaces live in the sibling Deckle.Shell.TrayMenu module: the
 // quick-actions panel (TrayQuickActionsHost) on left click, the context menu
 // (TrayContextMenuHost) on right click. This module stays Win32-pure: it does
 // not know what either surface contains.
+//
+// A double click is delivered by the shell as WM_LBUTTONUP, WM_LBUTTONDBLCLK,
+// WM_LBUTTONUP: the single-click subscriber runs first, then the double-click
+// one, then a trailing left click. Each subscriber copes with that order
+// itself; the manager does not delay the single click to tell them apart.
 
 public sealed class TrayIconManager : IDisposable
 {
@@ -39,6 +45,13 @@ public sealed class TrayIconManager : IDisposable
     /// HWND; marshaling elsewhere is the subscriber's responsibility.
     /// </summary>
     public event Action? LeftClickRequested;
+
+    /// <summary>
+    /// Raised on a left double-click of the tray icon, after the first
+    /// click's <see cref="LeftClickRequested"/> and before a trailing one
+    /// (see the class header). Raised on the message pump thread.
+    /// </summary>
+    public event Action? DoubleClickRequested;
 
     /// <summary>
     /// Raised on right-click of the tray icon. The subscriber renders the
@@ -150,6 +163,12 @@ public sealed class TrayIconManager : IDisposable
                 // Left click = the quick-actions panel (Record, module
                 // switches). Logs and Settings go through right click.
                 LeftClickRequested?.Invoke();
+                return IntPtr.Zero;
+            }
+
+            if (mouseEvent == NativeMethods.WM_LBUTTONDBLCLK)
+            {
+                DoubleClickRequested?.Invoke();
                 return IntPtr.Zero;
             }
         }
