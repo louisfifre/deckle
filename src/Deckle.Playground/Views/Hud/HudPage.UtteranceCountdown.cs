@@ -36,15 +36,14 @@ public sealed partial class HudPage
         public double DurationSeconds = 3;
     }
 
-    private void LoadCountdownTuning() => _countdownConfig = UtteranceCountdownTuning.Current;
-    private void PublishCountdownTuning() => UtteranceCountdownTuning.Apply(_countdownConfig);
-
     private void AttachUtteranceCountdownPreview()
     {
         var compositor = ElementCompositionPreview.GetElementVisual(NakedPreviewHost).Compositor;
         bool isDark = ActualTheme != ElementTheme.Light;
         bool animations = SettingsService.Instance.Current.Overlay.Animations;
-        var material = HudGeometryTuning.ApplyTo(HudMaterialTuning.Current);
+        // The page's own model: the material and geometry tuned on the other
+        // targets. Nothing here is read by the live HUD.
+        var material = _tuning.ToConfig();
         if (ViewModel.CurrentTarget == HudTarget.CountdownMaterial)
         {
             _nakedPreview = HudComposition.CreateNakedMaskPreview(
@@ -84,7 +83,7 @@ public sealed partial class HudPage
             RebuildTuningPanel();
         });
         geometry.Children.Add(TuningHelp(
-            "Uses the shared Transcribing material. These settings update the live HUD."));
+            "Uses the Transcribing material tuned in Cone and Transcribing."));
         geometry.Children.Add(TuningHelp("Reach is the share of the top and bottom edges lit from their centre: 0 % is the edge centre, 100 % the corners."));
         AddFloatRow(geometry, "Start reach (%)", 0, 100, 1, _countdownConfig.StartReach * 100,
             value => _countdownConfig = _countdownConfig with { StartReach = (float)value / 100f }, rebuild: true);

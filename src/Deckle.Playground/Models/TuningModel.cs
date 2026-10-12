@@ -3,7 +3,6 @@
 // would only import the outer HudComposition class, not its nested
 // types — C# nested-type resolution stops at the containing class.
 using static Deckle.Composition.HudComposition;
-using Deckle.Hud;
 
 namespace Deckle.Playground;
 
@@ -29,12 +28,12 @@ internal sealed class TuningModel
     // Single source of the defaults below: the shipping struct itself.
     private static readonly ConicArcStrokeConfig Defaults = new();
 
-    // ── HUD geometry (shared by the live stroke and the countdown) ──────
+    // ── HUD geometry (shared by the stroke and the countdown previews) ──
     public float StrokeThickness = Defaults.StrokeThickness;
     public float InsetDip        = Defaults.InsetDip;
 
-    // Reloads the geometry fields from a config (the shared live tuning
-    // on page open, the shipping struct on reset).
+    // Reloads the geometry fields from a config (the shipping struct on
+    // reset).
     public void LoadGeometry(ConicArcStrokeConfig source)
     {
         StrokeThickness = source.StrokeThickness;
@@ -129,95 +128,6 @@ internal sealed class TuningModel
     public float  RecordingExposureLight   = Defaults.RecordingExposureLight;
     public double RecordingBlendSeconds    = Defaults.RecordingBlendSeconds;
     public double RecordingHuePeriodSeconds = Defaults.RecordingHuePeriodSeconds;
-
-    public void LoadMaterial(ConicArcStrokeConfig source)
-    {
-        OklchLightness = source.OklchLightness;
-        OklchChroma = source.OklchChroma;
-        HueStart = source.HueStart;
-        HueRange = source.HueRange;
-        WedgeCount = source.WedgeCount;
-        HuePeriodSeconds = source.HuePeriodSeconds;
-        HueDirection = source.HueDirection;
-        HuePhaseTurns = source.HuePhaseTurns;
-        HueEaseP1X = source.HueEaseP1X;
-        HueEaseP1Y = source.HueEaseP1Y;
-        HueEaseP2X = source.HueEaseP2X;
-        HueEaseP2Y = source.HueEaseP2Y;
-        HueMinSpeedFraction = source.HueMinSpeedFraction;
-        TranscribingSaturationDark = source.TranscribingSaturationDark;
-        TranscribingSaturationLight = source.TranscribingSaturationLight;
-        TranscribingHueShiftTurns = source.TranscribingHueShiftTurns;
-        TranscribingExposureDark = source.TranscribingExposureDark;
-        TranscribingExposureLight = source.TranscribingExposureLight;
-        TranscribingOpacity = source.TranscribingOpacity;
-        TranscribingBlendSeconds = source.TranscribingBlendSeconds;
-    }
-
-    // Fields carried by HudStrokeTuning: sweep mask, arc rotation, clone,
-    // Rewriting and Recording.
-    public void LoadStroke(ConicArcStrokeConfig source)
-    {
-        ConicSpanTurns = source.ConicSpanTurns;
-        ConicLeadFadeTurns = source.ConicLeadFadeTurns;
-        ConicTailFadeTurns = source.ConicTailFadeTurns;
-        ConicFadeCurve = source.ConicFadeCurve;
-        ArcMirror = source.ArcMirror;
-        ArcPeriodSeconds = source.ArcPeriodSeconds;
-        ArcDirection = source.ArcDirection;
-        ArcPhaseTurns = source.ArcPhaseTurns;
-        ArcEaseP1X = source.ArcEaseP1X;
-        ArcEaseP1Y = source.ArcEaseP1Y;
-        ArcEaseP2X = source.ArcEaseP2X;
-        ArcEaseP2Y = source.ArcEaseP2Y;
-        ArcMinSpeedFraction = source.ArcMinSpeedFraction;
-        CloneCentreXFraction = source.CloneCentreXFraction;
-        CloneCentreYFraction = source.CloneCentreYFraction;
-        CloneOklchLightness = source.CloneOklchLightness;
-        CloneOklchChroma = source.CloneOklchChroma;
-        CloneHuePeriodSeconds = source.CloneHuePeriodSeconds;
-        CloneHueDirection = source.CloneHueDirection;
-        CloneArcPeriodSeconds = source.CloneArcPeriodSeconds;
-        CloneArcDirection = source.CloneArcDirection;
-        RewritingSaturation = source.RewritingSaturation;
-        RewritingHueShiftTurns = source.RewritingHueShiftTurns;
-        RewritingExposure = source.RewritingExposure;
-        RewritingOpacity = source.RewritingOpacity;
-        RewritingBlendSeconds = source.RewritingBlendSeconds;
-        RecordingConicSpanTurns = source.RecordingConicSpanTurns;
-        RecordingConicLeadFadeTurns = source.RecordingConicLeadFadeTurns;
-        RecordingConicTailFadeTurns = source.RecordingConicTailFadeTurns;
-        RecordingConicFadeCurve = source.RecordingConicFadeCurve;
-        RecordingArcMirror = source.RecordingArcMirror;
-        RecordingArcPhaseTurns = source.RecordingArcPhaseTurns;
-        RecordingSaturationDark = source.RecordingSaturationDark;
-        RecordingSaturationLight = source.RecordingSaturationLight;
-        RecordingHueShiftTurns = source.RecordingHueShiftTurns;
-        RecordingExposureDark = source.RecordingExposureDark;
-        RecordingExposureLight = source.RecordingExposureLight;
-        RecordingBlendSeconds = source.RecordingBlendSeconds;
-        RecordingHuePeriodSeconds = source.RecordingHuePeriodSeconds;
-    }
-
-    // Reads the live HUD's tuning, so a reopened Playground resumes where
-    // it left the live HUD.
-    public void LoadLive()
-    {
-        LoadMaterial(HudMaterialTuning.Current);
-        LoadGeometry(HudGeometryTuning.Current);
-        LoadStroke(HudStrokeTuning.Current);
-    }
-
-    // Hands every field to the live HUD's three process-local sources.
-    // Memory only: nothing is saved, and a new process starts the live
-    // HUD on the shipping defaults again.
-    public void PublishLive()
-    {
-        var config = ToConfig();
-        HudMaterialTuning.Apply(config);
-        HudGeometryTuning.Apply(config);
-        HudStrokeTuning.Apply(config);
-    }
 
     // Projects the current field values into a fresh ConicArcStrokeConfig
     // so HudChrono.RebuildStroke can bake a new stroke. Called on every
