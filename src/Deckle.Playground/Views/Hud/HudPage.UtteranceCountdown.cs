@@ -151,12 +151,7 @@ public sealed partial class HudPage
             _countdownTuning.Progress = 0;
             _setCountdownPosition?.Invoke(0);
             if (!ViewModel.IsPlaying) ViewModel.IsPlaying = true;
-            if (_rebuildPending)
-            {
-                _rebuildDebounce.Stop();
-                _rebuildPending = false;
-                ApplyTarget();
-            }
+            FlushPendingRebuild();
             bool animations = SettingsService.Instance.Current.Overlay.Animations;
             _utteranceCountdownPreview?.Replay(_countdownTuning.DurationSeconds, animations);
             if (animations)
@@ -173,6 +168,10 @@ public sealed partial class HudPage
         var resume = new Button { Content = "Resume speech" };
         resume.Click += (_, _) =>
         {
+            // Rebuild first so the retreat runs on a visual that carries the
+            // latest knobs. ApplyTarget snapshots the replay clock, so the new
+            // visual starts where the gauge stands and retreats from there.
+            FlushPendingRebuild();
             _countdownReplayClock.Reset();
             _countdownTuning.Progress = 0;
             _setCountdownPosition?.Invoke(0);
@@ -182,5 +181,15 @@ public sealed partial class HudPage
         transport.Children.Add(replay);
         transport.Children.Add(resume);
         simulation.Children.Add(transport);
+    }
+
+    // A knob moved within the debounce window would otherwise rebuild the
+    // preview after the transport action, on top of it.
+    private void FlushPendingRebuild()
+    {
+        if (!_rebuildPending) return;
+        _rebuildDebounce.Stop();
+        _rebuildPending = false;
+        ApplyTarget();
     }
 }
