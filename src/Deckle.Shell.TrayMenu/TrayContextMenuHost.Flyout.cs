@@ -71,6 +71,12 @@ public sealed partial class TrayContextMenuHost
     // can actually apply the state. Aligned with the native Win11 desktop
     // pattern: Sound, Defender, Date/Time, Network all render their tray menu
     // in narrow density.
+    //
+    // A real open then re-captures the sizes once laid out, for the next open:
+    // a show that ran on the fallback size (prime not done yet) gets the real
+    // presenter size, and a bad capture does not stick for the process
+    // lifetime. The prime cycle's own open is excluded (_isVisible is false):
+    // it captures in its own callback.
     private void OnFlyoutOpened(object? sender, object e)
     {
         if (_flyout is null) return;
@@ -79,6 +85,12 @@ public sealed partial class TrayContextMenuHost
             if (item is MenuFlyoutItem mfi)
                 VisualStateManager.GoToState(mfi, "NarrowPadding", useTransitions: false);
         }
+
+        if (!_isVisible) return;
+        _carrier.Frame.DispatcherQueue.TryEnqueue(DispatcherQueuePriority.Low, () =>
+        {
+            if (_isVisible && _flyout is { IsOpen: true }) CaptureSizes("opened");
+        });
     }
 
     private MenuFlyoutItem CreateItem(string text, Action action)

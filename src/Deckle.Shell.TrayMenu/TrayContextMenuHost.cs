@@ -25,13 +25,6 @@ namespace Deckle.Shell.TrayMenu;
 
 public sealed partial class TrayContextMenuHost : IDisposable
 {
-    // Flat margin for the MeasureFlyout fallback path (presenter not captured
-    // during the prime cycle). 4 px per side. Imprecise by nature; it
-    // overestimated the presenter's real chrome (≈ 4-6 DIP), creating the Mica
-    // gap when it drove measurement. The nominal path now reads the real
-    // presenter's DesiredSize (_primedPresenterSize).
-    private const double FlyoutFrameMargin = 4.0;
-
     private readonly TrayCarrierWindow _carrier;
 
     private MenuFlyout? _flyout;
@@ -45,22 +38,20 @@ public sealed partial class TrayContextMenuHost : IDisposable
     private long _lastShowTickMs;
     private int _showCount;
 
-    // Cache of DesiredSize values captured during the prime cycle, with items
-    // attached to the internal popup visual tree. MeasureFlyout() reads this
-    // cache instead of calling detached item.Measure(), which returns unstable
-    // values (see module JOURNAL.md: 40 → 32 switch on native items after a
-    // variable number of opens because the native template falls to MinHeight
-    // when measured detached).
+    // Cache of DesiredSize values captured with items attached to the popup
+    // visual tree (prime cycle, then every real open). MeasureFlyout() reads
+    // this cache instead of calling detached item.Measure(), which returns
+    // unstable values (see module JOURNAL.md: 40 → 32 switch on native items
+    // after a variable number of opens because the native template falls to
+    // MinHeight when measured detached).
     private readonly System.Collections.Generic.Dictionary<MenuFlyoutItemBase, Windows.Foundation.Size> _primedSizes = new();
 
-    // DesiredSize of the real MenuFlyoutPresenter, captured during the prime
-    // cycle. Includes the presenter's own padding and border: this is the exact
-    // size occupied by the visible popup. MeasureFlyout() prefers it over item
-    // sum + flat margin: because Full stretches the presenter to the carrier
-    // window, sizing the window to this value cancels stretching and removes
-    // the Mica gap (see CLAUDE.md, Placement section). Null until the prime
-    // cycle has run, or if the presenter could not be found.
-    private Windows.Foundation.Size? _primedPresenterSize;
+    // DesiredSize of the real MenuFlyoutPresenter, captured with the items
+    // attached. Includes the presenter's own padding and border: the exact
+    // size of the visible card. Stored only when it holds every item
+    // (TrayMenuSizing.HoldsItems), and checked again at each measure. Null
+    // until a capture succeeds.
+    private (double Width, double Height)? _primedPresenterSize;
 
     public Action? OnShowLogs        { get; set; }
     public Action? OnShowSettings    { get; set; }
