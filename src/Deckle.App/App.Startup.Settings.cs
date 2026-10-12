@@ -172,6 +172,10 @@ public partial class App
         // Apps and games is not a presence module: nothing to provision, so it
         // is always registered, like precision scrolling.
         RegisterSettingsModule(Orchestration.OrchestrationSettingsModule.Describe(order: 560), Orchestration.SettingsSearch.Entries);
+        // Taskbar cover is always composed (App.TaskbarCover.cs), so its page is
+        // always registered. Its place in the rail is provisional until the
+        // navigation tree is decided.
+        RegisterSettingsModule(Shell.TaskbarCover.TaskbarCoverSettingsModule.Describe(order: 580), Shell.TaskbarCover.SettingsSearch.Entries);
         // Diagnostics is shell-level observability, not a presence module —
         // always registered.
         RegisterSettingsModule(Diagnostics.Logging.DiagnosticsSettingsModule.Describe(order: 600), Diagnostics.Logging.SettingsSearch.Entries);
