@@ -1686,6 +1686,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── TrayContextMenuHost.Flyout.cs
 │   │   ├── TrayContextMenuHost.Measure.cs
 │   │   ├── TrayContextMenuHost.Show.cs
+│   │   ├── TrayMenuSizing.cs
 │   │   ├── TrayQuickActionsHost.Build.cs
 │   │   ├── TrayQuickActionsHost.cs
 │   │   ├── TrayQuickActionsHost.Show.cs
@@ -2072,6 +2073,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── ProximityFadeTests.cs
 │   │   ├── ProximityRollupAggregatorTests.cs
 │   │   ├── TranscriptHistoryTests.cs
+│   │   ├── TranscriptPanelBugNotes.md
 │   │   ├── TranscriptPanelLayoutTests.cs
 │   │   ├── UtteranceCountdownGeometryTests.cs
 │   │   └── UtteranceCountdownStateTests.cs
@@ -2203,6 +2205,10 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── DispatcherQueueExtensionsTests.cs
 │   │   ├── GlobalHotkeyBindingsTests.cs
 │   │   └── ResizeGestureTests.cs
+│   ├── Deckle.Shell.TrayMenu.Tests/
+│   │   ├── Deckle.Shell.TrayMenu.Tests.csproj
+│   │   ├── TrayMenuBugNotes.md
+│   │   └── TrayMenuSizingTests.cs
 │   ├── Deckle.Speech.Tests/
 │   │   ├── Deckle.Speech.Tests.csproj
 │   │   ├── SpeechEngineTests.cs

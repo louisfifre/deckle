@@ -46,7 +46,7 @@
 | LevelWindow.MaxDbfs | setting | migrated | Slider (child of Group) | new LevelWindowSettings().MaxDbfs (-32f) |  |  |
 | LevelWindow.DbfsCurveExponent | setting | migrated | Slider (child of Group) | new LevelWindowSettings().DbfsCurveExponent (1.0f) |  |  |
 | AudioInputDeviceId | setting | hand-authored | ComboBox | -1 (WAVE_MAPPER system default) |  |  |
-| MaxRecordingDurationSeconds | setting | n/a | n/a | new CaptureSettings().MaxRecordingDurationSeconds (20 * 60 = 1200) |  |  |
+| MaxRecordingDurationSeconds | setting | hand-authored | Choice | new CaptureSettings().MaxRecordingDurationSeconds (0 = no limit; a stored 1200 is migrated once, SchemaVersion) |  | Settings > Recording > Maximum recording length |
 
 **Gestes destructifs :** Reset Recording (section link) _(none)_ · Microphone device selection (ComboBox change) _(none)_ · Preprocessing toggle on/off _(none)_ · Level window manual/auto toggle _(none)_
 
@@ -179,7 +179,7 @@
 | Voice Level Ceiling (Max dBFS) | setting | migrated | LevelWindowSettings.MaxDbfs | LevelWindowSettings.MaxDbfs initializer (-32.0) |  |  |
 | Voice Level Curve Exponent | setting | migrated | LevelWindowSettings.DbfsCurveExponent | LevelWindowSettings.DbfsCurveExponent initializer (1.0) |  |  |
 | Microphone Input Device | setting | hand-authored | CaptureSettings.AudioInputDeviceId | CaptureSettings.AudioInputDeviceId initializer (-1, WAVE_MAPPER) |  |  |
-| Max Recording Duration | setting | hand-authored | CaptureSettings.MaxRecordingDurationSeconds | CaptureSettings.MaxRecordingDurationSeconds initializer (1200, 20 min) | • |  |
+| Max Recording Duration | setting | hand-authored | CaptureSettings.MaxRecordingDurationSeconds | CaptureSettings.MaxRecordingDurationSeconds initializer (0, no limit) | • |  |
 | High-Pass Filter Enabled | setting | hand-authored | PreprocessingSettings.HighPassEnabled | PreprocessingSettings.HighPassEnabled initializer (true) | • |  |
 | High-Pass Frequency | setting | hand-authored | PreprocessingSettings.HighPassHz | PreprocessingSettings.HighPassHz initializer (90f Hz) | • |  |
 | Noise Gate Enabled | setting | hand-authored | PreprocessingSettings.GateEnabled | PreprocessingSettings.GateEnabled initializer (false) | • |  |
@@ -268,7 +268,7 @@
 | AutoPasteEnabled | setting | migrated | Toggle | PasteSettings initializer: false |  | Settings > General > Behaviour |
 | AutostartEnabled | setting | migrated | Toggle | AutostartService.DefaultEnabled: false |  | Settings > General > Startup |
 | AudioInputDeviceId | setting | hand-authored | Choice (runtime waveIn enumeration) | CaptureSettings initializer: -1 (system default) |  | Settings > Recording > Microphone selection |
-| MaxRecordingDurationSeconds | setting | hand-authored | Number | CaptureSettings initializer: 1200 (20 min) |  | Playground / Not exposed in Settings |
+| MaxRecordingDurationSeconds | setting | hand-authored | Choice (No limit, 10, 20, 30 min, 1 h, 2 h) | CaptureSettings initializer: 0 (no limit) |  | Settings > Recording > Maximum recording length |
 | LevelWindowMinDbfs | setting | migrated | Slider (-90 to -10 dBFS) | LevelWindowSettings initializer: -55.0f |  | Settings > Recording > Voice level window |
 | LevelWindowMaxDbfs | setting | migrated | Slider (-60 to -10 dBFS) | LevelWindowSettings initializer: -32.0f |  | Settings > Recording > Voice level window |
 | LevelWindowExponent | setting | migrated | Slider (0.3 to 3.0) | LevelWindowSettings initializer: 1.0f |  | Settings > Recording > Voice level window |
