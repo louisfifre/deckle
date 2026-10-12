@@ -21,7 +21,9 @@ public sealed partial class TrayQuickActionsHost
     //
     // The Record button reads Record or Stop recording, two widths, so each
     // recording state keeps its own captured size and the fallback runs only
-    // before the first capture of that state.
+    // before the first capture of that state. Stored only when the presenter
+    // holds the content (TrayMenuSizing.HoldsItems): a degenerate measure
+    // reports the presenter's minimum size, the menu's 2026-10-12 bug.
     private Windows.Foundation.Size? _presenterSizeIdle;
     private Windows.Foundation.Size? _presenterSizeRecording;
     private bool _syncedIsRecording;
@@ -49,9 +51,9 @@ public sealed partial class TrayQuickActionsHost
             return;
         }
 
-        if (_lastDeactivatedHideTick != 0)
+        if (_lastDismissTick != 0)
         {
-            long sinceDismiss = Environment.TickCount64 - _lastDeactivatedHideTick;
+            long sinceDismiss = Environment.TickCount64 - _lastDismissTick;
             if (sinceDismiss < ReopenGuardMs)
             {
                 DeckleShellTrayMenuSource.Log.PanelShowIgnored();
@@ -91,6 +93,16 @@ public sealed partial class TrayQuickActionsHost
             Placement = FlyoutPlacementMode.Full,
         });
 
+        // Hidden before the open completed: the carrier lost activation or
+        // the flyout closed by itself during ShowAt. The user saw nothing;
+        // the warning says so whatever the Windowing verbosity.
+        if (!_isVisible)
+        {
+            DeckleShellTrayMenuSource.Log.PanelDismissedWhileOpening();
+            DeckleShellTrayMenuSource.Log.PanelDismissedWhileOpeningDetail(_lastHideReason);
+            return;
+        }
+
         DeckleShellTrayMenuSource.Log.PanelShown();
         DeckleShellTrayMenuSource.Log.PanelShownDetail(
             _rows.Count, isRecording, dipW, dipH, physW, physH, usedScale, sizeSource);
@@ -107,6 +119,7 @@ public sealed partial class TrayQuickActionsHost
     {
         if (!_isVisible) return;
         _isVisible = false;
+        _lastHideReason = reason;
         DeckleShellTrayMenuSource.Log.PanelHidden();
         DeckleShellTrayMenuSource.Log.PanelHiddenDetail(reason);
         _flyout.Hide();
@@ -134,7 +147,7 @@ public sealed partial class TrayQuickActionsHost
 
         _carrier.Frame.DispatcherQueue.TryEnqueue(DispatcherQueuePriority.Low, () =>
         {
-            CapturePresenterSize();
+            CapturePresenterSize("prime");
             // Do not close a panel the user opened meanwhile.
             if (!_isVisible) _flyout.Hide();
 
@@ -147,24 +160,40 @@ public sealed partial class TrayQuickActionsHost
         });
     }
 
-    // A show that ran on the fallback size (prime not done yet, or content
-    // rebuilt) captures the real presenter once laid out, for the next show.
+    // Every real open re-captures the presenter once laid out, as the context
+    // menu does, so a bad value from one capture heals on the next open
+    // instead of sticking for the process lifetime.
     private void OnFlyoutOpened(object? sender, object e)
     {
-        if (PresenterSizeFor(_syncedIsRecording) is not null) return;
         _carrier.Frame.DispatcherQueue.TryEnqueue(
-            DispatcherQueuePriority.Low, CapturePresenterSize);
+            DispatcherQueuePriority.Low, () => CapturePresenterSize("opened"));
     }
 
-    private void CapturePresenterSize()
+    // Keeps the presenter size only when it holds the content measured in the
+    // same layout: a presenter measured clipped, or before its content was
+    // laid out, reports its minimum size, which is positive and would size
+    // the carrier to a card too small for the rows. phase: "prime", "opened".
+    private void CapturePresenterSize(string phase)
     {
         if (_content is null) return;
         var presenter = FindAncestorPresenter(_content);
         if (presenter is null) return;
         presenter.UpdateLayout();
-        var size = presenter.DesiredSize;
-        if (size.Width > 0 && size.Height > 0)
-            PresenterSizeFor(_syncedIsRecording) = size;
+
+        var content = (_content.DesiredSize.Width, _content.DesiredSize.Height);
+        // Content not laid out yet: nothing to check against, keep what was there.
+        if (content.Height <= 0) return;
+
+        var captured = (presenter.DesiredSize.Width, presenter.DesiredSize.Height);
+        if (TrayMenuSizing.HoldsItems(captured, [content]))
+        {
+            PresenterSizeFor(_syncedIsRecording) = presenter.DesiredSize;
+            return;
+        }
+
+        DeckleShellTrayMenuSource.Log.PanelSizeRejected();
+        DeckleShellTrayMenuSource.Log.PanelSizeRejectedDetail(
+            phase, captured.Width, captured.Height, content.Width, content.Height);
     }
 
     // Walks up from the content root to the FlyoutPresenter hosting it. Null

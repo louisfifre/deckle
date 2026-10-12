@@ -1685,7 +1685,8 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── TrayQuickActionsHost.Build.cs
 │   │   ├── TrayQuickActionsHost.cs
 │   │   ├── TrayQuickActionsHost.Show.cs
-│   │   └── TrayToggle.cs
+│   │   ├── TrayToggle.cs
+│   │   └── TrayWindowOwnership.cs
 │   ├── Deckle.Shell.WindowChrome/
 │   │   ├── AGENTS.md  — [agent-instructions] Window-chrome workarounds for WinAppSDK bugs, deleted when fixed upstream.
 │   │   ├── CaptionInsetCorrection.cs
@@ -2200,7 +2201,8 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   ├── Deckle.Shell.TrayMenu.Tests/
 │   │   ├── Deckle.Shell.TrayMenu.Tests.csproj
 │   │   ├── TrayMenuBugNotes.md
-│   │   └── TrayMenuSizingTests.cs
+│   │   ├── TrayMenuSizingTests.cs
+│   │   └── TrayWindowOwnershipTests.cs
 │   ├── Deckle.Speech.Tests/
 │   │   ├── Deckle.Speech.Tests.csproj
 │   │   ├── SpeechEngineTests.cs

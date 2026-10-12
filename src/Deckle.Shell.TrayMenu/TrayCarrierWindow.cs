@@ -25,6 +25,12 @@ namespace Deckle.Shell.TrayMenu;
 // visible. No WS_EX_TRANSPARENT: the window must keep focus so click-outside
 // dismiss works through Activated → Deactivated.
 //
+// A flyout shown in Standard mode moves keyboard focus into that popup, a
+// top-level window this carrier owns, and Windows then deactivates the
+// carrier toward it. That is not a dismiss: a WM_ACTIVATE subclass keeps the
+// window activation went to, and Deactivated is raised only when that window
+// is not owned by the carrier (TrayWindowOwnership).
+//
 // Observability: positioning events (anchor, monitor, popup position,
 // move-and-resize) go through WindowingProbe on the cross-cutting
 // DeckleWindowingSource sub-provider; the carrier lifecycle (Frame.Loaded,
@@ -49,6 +55,15 @@ public sealed class TrayCarrierWindow : IDisposable
     private bool _loaded;
     private bool _disposed;
 
+    // WM_ACTIVATE subclass: the delegate lives in a field so the GC keeps it
+    // while native code holds its pointer (same rule as TrayIconManager).
+    private readonly NativeMethods.SubclassProc _subclassProc;
+    private static readonly UIntPtr SubclassId = new(0x5452_4143); // "TRAC"
+
+    // The window activation last left for (WM_ACTIVATE lParam on WA_INACTIVE),
+    // read once by the Deactivated that follows. Zero when Windows named none.
+    private IntPtr _activationTarget;
+
     /// <summary>The carrier WinUI window. Invisible (layered alpha 0).</summary>
     public Window Window { get; }
 
@@ -72,8 +87,10 @@ public sealed class TrayCarrierWindow : IDisposable
     public event Action? Loaded;
 
     /// <summary>
-    /// Raised when the carrier loses activation while visible (click outside,
-    /// global focus loss). The host hides its flyout in response.
+    /// Raised when the carrier loses activation while visible to a window it
+    /// does not own (click outside, global focus loss). The host hides its
+    /// flyout in response. Activation moving into the flyout's own popup
+    /// window is not reported.
     /// </summary>
     public event Action? Deactivated;
 
@@ -133,6 +150,23 @@ public sealed class TrayCarrierWindow : IDisposable
 
         Window.Activated += OnWindowActivated;
         Frame.Loaded += OnFrameLoaded;
+
+        // Installed before WinUI handles WM_ACTIVATE, so the activation
+        // target is known when Window.Activated reports the deactivation.
+        _subclassProc = OnSubclassMessage;
+        NativeMethods.SetWindowSubclass(Hwnd, _subclassProc, SubclassId, IntPtr.Zero);
+    }
+
+    private IntPtr OnSubclassMessage(
+        IntPtr hWnd, uint uMsg, IntPtr wParam, IntPtr lParam,
+        UIntPtr uIdSubclass, IntPtr dwRefData)
+    {
+        if (uMsg == NativeMethods.WM_ACTIVATE
+            && (wParam.ToInt64() & 0xFFFF) == NativeMethods.WA_INACTIVE)
+        {
+            _activationTarget = lParam;
+        }
+        return NativeMethods.DefSubclassProc(hWnd, uMsg, wParam, lParam);
     }
 
     // ── Show ──────────────────────────────────────────────────────────────────
@@ -277,9 +311,22 @@ public sealed class TrayCarrierWindow : IDisposable
         DeckleShellTrayMenuSource.Log.WindowActivated(
             args.WindowActivationState.ToString(), IsVisible);
 
-        if (args.WindowActivationState == WindowActivationState.Deactivated && IsVisible)
-            Deactivated?.Invoke();
+        if (args.WindowActivationState != WindowActivationState.Deactivated || !IsVisible)
+            return;
+
+        IntPtr target = _activationTarget;
+        _activationTarget = IntPtr.Zero;
+        if (TrayWindowOwnership.IsOwnedBy(target, Hwnd, GetOwner))
+        {
+            DeckleShellTrayMenuSource.Log.ActivationMovedToOwnedPopup(target.ToInt64());
+            return;
+        }
+
+        Deactivated?.Invoke();
     }
+
+    private static IntPtr GetOwner(IntPtr hwnd)
+        => NativeMethods.GetWindow(hwnd, NativeMethods.GW_OWNER);
 
     // ── Dispose ───────────────────────────────────────────────────────────────
 
@@ -290,6 +337,7 @@ public sealed class TrayCarrierWindow : IDisposable
 
         Window.Activated -= OnWindowActivated;
         Frame.Loaded -= OnFrameLoaded;
+        NativeMethods.RemoveWindowSubclass(Hwnd, _subclassProc, SubclassId);
         Window.Close();
     }
 }

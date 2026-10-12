@@ -7,6 +7,18 @@ type: module-journal
 
 Dated notes on the tray-menu workstream — the why behind a fix the code no longer shows. Most recent on top.
 
+## 2026-10-12 — The quick-actions panel opened nothing; the carrier now tells its own popup from a dismiss
+
+Reported: Louis never saw the panel. A left click on the icon "does nothing" on v0.39.0, the panel's first release, which no one had run on screen before. His 2026-10-12 session logged no `Deckle-TrayMenu` event: the provider is Verbose behind the Windowing activity, off.
+
+Read in the code: the panel's open path differs from the working menu's in two places. `FlyoutShowMode.Standard` moves keyboard focus into the flyout's popup, a top-level window the carrier owns; the menu is `Transient` and takes no focus. If focusing the popup activates it, Windows deactivates the carrier toward it and `OnCarrierDeactivated` hid the panel inside `Show()`, which reads as nothing happening. The presenter capture also kept any positive size, the `> 0` check the menu bug below fixed. Neither cause is confirmed; nothing ran.
+
+Chose: the carrier subclasses `WM_ACTIVATE` to keep the window activation left for, and raises `Deactivated` only when that window is not owned by the carrier (`TrayWindowOwnership`). A light dismiss of the flyout arms the reopen guard like a deactivation, so a click on the icon still closes the panel when its popup held focus. The capture keeps the presenter size only when it holds the content (`TrayMenuSizing.HoldsItems`) and re-captures after every open. Two warnings are logged whatever the Windowing verbosity: `PanelDismissedWhileOpening` and `PanelSizeRejected`. `ShowMode` stays `Standard`, keyboard use of the panel being the reason for it.
+
+Also: a double click on the icon opens Settings (`DoubleClickRequested`). The shell sends the first click's `WM_LBUTTONUP` before `WM_LBUTTONDBLCLK`, so the panel opens, Settings takes activation and hides it, and the trailing `WM_LBUTTONUP` falls inside the reopen guard.
+
+To verify on screen: a left click opens the panel and it stays; a switch flips without closing it; a click outside, Esc and a second icon click each close it; a double click opens Settings. With the Windowing activity on, an `activation moved to an owned popup` line right after `Quick actions shown` says the focus hypothesis was the cause.
+
 ## 2026-10-12 — A captured presenter size is checked against its items
 
 Found: `DefaultMenuFlyoutPresenterStyle` sets `MinHeight` to `MenuFlyoutThemeMinHeight`, 32 DIP (WindowsAppSDK 1.8 generic.xaml), the height of one narrow item. A presenter measured clipped or before its items are laid out reports that height, which is positive: the old `> 0` check let it size the carrier, and the menu opened one item tall and scrolled.

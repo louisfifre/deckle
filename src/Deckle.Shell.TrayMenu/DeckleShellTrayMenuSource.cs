@@ -76,6 +76,12 @@ public sealed class DeckleShellTrayMenuSource : DeckleEventSource
     // Context menu size check, 34 onward.
     public const int EvtPresenterSizeRejected       = 34;
     public const int EvtPresenterSizeRejectedDetail = 35;
+    // Carrier activation and the quick-actions panel's own checks, 36 onward.
+    public const int EvtActivationMovedToOwnedPopup      = 36;
+    public const int EvtPanelSizeRejected                = 37;
+    public const int EvtPanelSizeRejectedDetail          = 38;
+    public const int EvtPanelDismissedWhileOpening       = 39;
+    public const int EvtPanelDismissedWhileOpeningDetail = 40;
 
     // ── Lifecycle ─────────────────────────────────────────────────────────────
 
@@ -286,6 +292,18 @@ public sealed class DeckleShellTrayMenuSource : DeckleEventSource
             WriteEvent(EvtFlyoutClosed, is_visible);
     }
 
+    // The carrier lost activation to a window it owns (the flyout's popup took
+    // focus): not a dismiss, the surface stays open.
+    [Event(EvtActivationMovedToOwnedPopup,
+           Level = EventLevel.Verbose,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Message = "activation moved to an owned popup | target_hwnd=0x{0:X}")]
+    public void ActivationMovedToOwnedPopup(long target_hwnd)
+    {
+        if (IsDetailEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Lifecycle))
+            WriteEvent(EvtActivationMovedToOwnedPopup, target_hwnd);
+    }
+
     [Event(EvtItemClicked,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Lifecycle,
@@ -433,5 +451,53 @@ public sealed class DeckleShellTrayMenuSource : DeckleEventSource
     {
         if (IsDetailEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Lifecycle))
             WriteEvent(EvtPanelActionClickedDetail, action, was_recording);
+    }
+
+    // A captured presenter smaller than the panel content is the same anomaly
+    // as the menu's: the milestone stays visible whatever the Windowing
+    // verbosity, the detail follows it.
+    [Event(EvtPanelSizeRejected,
+           Level = EventLevel.Warning,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Message = "The quick-actions panel measured smaller than its content — sized from the content instead")]
+    public void PanelSizeRejected()
+    {
+        if (IsEnabled()) WriteEvent(EvtPanelSizeRejected);
+    }
+
+    // phase: "prime" (startup prime cycle), "opened" (after a real open).
+    [Event(EvtPanelSizeRejectedDetail,
+           Level = EventLevel.Verbose,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Message = "panel size rejected | phase={0} presenter_w={1:F1} presenter_h={2:F1} content_w={3:F1} content_h={4:F1}")]
+    public void PanelSizeRejectedDetail(
+        string phase, double presenter_w, double presenter_h, double content_w, double content_h)
+    {
+        if (IsDetailEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Lifecycle))
+            WriteEvent(EvtPanelSizeRejectedDetail, phase, presenter_w, presenter_h, content_w, content_h);
+    }
+
+    // The panel was hidden before Show() returned: a click that opens nothing.
+    // Visible whatever the Windowing verbosity, so a silent left click leaves
+    // a trace in the journal.
+    [Event(EvtPanelDismissedWhileOpening,
+           Level = EventLevel.Warning,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Message = "The quick-actions panel was dismissed while it was opening")]
+    public void PanelDismissedWhileOpening()
+    {
+        if (IsEnabled()) WriteEvent(EvtPanelDismissedWhileOpening);
+    }
+
+    // reason: the hide reason recorded by the host ("deactivated",
+    // "flyout_closed", ...).
+    [Event(EvtPanelDismissedWhileOpeningDetail,
+           Level = EventLevel.Verbose,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Message = "panel dismissed while opening | reason={0}")]
+    public void PanelDismissedWhileOpeningDetail(string reason)
+    {
+        if (IsDetailEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Lifecycle))
+            WriteEvent(EvtPanelDismissedWhileOpeningDetail, reason);
     }
 }

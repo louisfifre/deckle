@@ -72,4 +72,19 @@ public class TrayMenuSizingTests
         Assert.Equal(ItemExtent.Width + TrayMenuSizing.FallbackFrameMargin * 2, size.Width);
         Assert.Equal(ItemExtent.Height + TrayMenuSizing.FallbackFrameMargin * 2, size.Height);
     }
+
+    // Regression: the quick-actions panel has one content element, not items.
+    // Its capture used to accept any positive presenter size, the same "> 0"
+    // check that let the menu open one item tall.
+    [Fact]
+    [Trait("Category", "regression")]
+    public void APresenterSmallerThanThePanelContentIsNotTrusted()
+    {
+        var content = (Width: 220.0, Height: 296.0);
+        var presenterAtItsMinimum = (96.0, 40.0);
+        var presenterAroundTheContent = (content.Width + 24, content.Height + 24);
+
+        Assert.False(TrayMenuSizing.HoldsItems(presenterAtItsMinimum, [content]));
+        Assert.True(TrayMenuSizing.HoldsItems(presenterAroundTheContent, [content]));
+    }
 }

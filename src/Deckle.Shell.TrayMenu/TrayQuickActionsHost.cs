@@ -22,18 +22,19 @@ namespace Deckle.Shell.TrayMenu;
 //
 // Dismiss, as Windows quick settings: click outside or focus loss (carrier
 // Deactivated), Esc (Flyout light dismiss → Closed), and a second left click
-// on the icon. That click deactivates the carrier first (the taskbar takes
-// activation), which hides the panel, and only then does WM_LBUTTONUP reach
-// Show(); a Show() within ReopenGuardMs of a "deactivated" hide is therefore
+// on the icon. That click dismisses the panel first (the taskbar takes
+// activation, which deactivates the carrier or, when the panel's popup held
+// focus, light-dismisses the flyout), and only then does WM_LBUTTONUP reach
+// Show(); a Show() within ReopenGuardMs of such a dismiss is therefore
 // ignored, so the click closes the panel instead of reopening it.
 
 public sealed partial class TrayQuickActionsHost : IDisposable
 {
-    // Window between a "deactivated" hide and a Show() call during which the
-    // Show() is read as the same click on the icon that caused the dismiss.
-    // A tray click's WM_LBUTTONUP follows the deactivation by a few
-    // milliseconds; 250 ms leaves room for a loaded UI thread while staying
-    // well under a deliberate second click.
+    // Window between a dismiss (deactivation or light dismiss) and a Show()
+    // call during which the Show() is read as the same click on the icon that
+    // caused the dismiss. A tray click's WM_LBUTTONUP follows the dismiss by
+    // a few milliseconds; 250 ms leaves room for a loaded UI thread while
+    // staying well under a deliberate second click.
     private const long ReopenGuardMs = 250;
 
     private readonly TrayCarrierWindow _carrier;
@@ -45,9 +46,12 @@ public sealed partial class TrayQuickActionsHost : IDisposable
     private bool _isVisible;
     private bool _primed;
     private bool _disposed;
-    // TickCount64 of the last "deactivated" hide; 0 = none yet (TickCount64
-    // counts from boot, so a real tick is never 0).
-    private long _lastDeactivatedHideTick;
+    // TickCount64 of the last dismiss the user caused outside Show() (carrier
+    // deactivated, flyout light-dismissed); 0 = none yet (TickCount64 counts
+    // from boot, so a real tick is never 0).
+    private long _lastDismissTick;
+    // Reason of the last Hide, for the "dismissed while opening" trace.
+    private string _lastHideReason = "";
 
     /// <summary>
     /// Starts or stops a dictation, as the transcription hotkey does.
@@ -129,14 +133,19 @@ public sealed partial class TrayQuickActionsHost : IDisposable
     private void OnCarrierDeactivated()
     {
         if (!_isVisible) return;
-        _lastDeactivatedHideTick = Environment.TickCount64;
+        _lastDismissTick = Environment.TickCount64;
         Hide("deactivated");
     }
 
+    // The flyout closed on its own (Esc, or a click outside while its popup
+    // held activation): a dismiss the user caused, so the reopen guard
+    // applies to it as to a deactivation.
     private void OnFlyoutClosed(object? sender, object e)
     {
         DeckleShellTrayMenuSource.Log.FlyoutClosed(_isVisible);
-        if (_isVisible) Hide("flyout_closed");
+        if (!_isVisible) return;
+        _lastDismissTick = Environment.TickCount64;
+        Hide("flyout_closed");
     }
 
     // ── Dispose ───────────────────────────────────────────────────────────────

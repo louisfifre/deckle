@@ -1,5 +1,16 @@
 # Tray menu bug notes
 
+## Quick-actions panel shows nothing on left click
+
+- **Trigger:** A left click on the tray icon, on v0.39.0, the panel's first release (built and merged without a run on screen). Louis, 2026-10-12: "au clic gauche, il se passe rien".
+- **Observed symptom:** No panel appears. The diagnostics logs of his 2026-10-12 session (11:53 to 14:05) hold no `Deckle-TrayMenu` event at all: the provider is Verbose and gated by the Windowing activity, off, so neither the prime cycle nor a `Show()` left a trace.
+- **Cause:** Not established. The panel's open path differs from the context menu's, which works, in two places, ranked:
+  1. `FlyoutShowMode.Standard`: the panel takes keyboard focus, the menu (`Transient`) does not. A WinUI flyout renders in a popup window the carrier owns; if moving focus into it activates that popup, Windows deactivates the carrier toward its own popup, and `OnCarrierDeactivated` hid the panel before `Show()` returned. Not confirmed on screen nor in documentation; fits "nothing happens" exactly.
+  2. The presenter capture kept any positive `FlyoutPresenter.DesiredSize` from the prime cycle, the `> 0` check the menu note below describes. A degenerate capture would open a card at the presenter's minimum size rather than nothing; a weaker fit.
+- **Violated invariant:** A click on the tray icon opens its surface, and the surface closes only on a dismiss the user caused.
+- **Recurrence cue:** a flyout opened in `Standard` mode on a carrier that hides on `Deactivated`; a new tray surface whose carrier size comes from a captured presenter without a check against what it holds; a session whose journal shows no non-gated line for a silent open (the `PanelDismissedWhileOpening` and `PanelSizeRejected` warnings now cover both).
+- **Regression coverage:** `TrayWindowOwnershipTests.ADeactivationTowardTheCarriersOwnPopupIsNotADismiss` drives `TrayWindowOwnership.IsOwnedBy`, the rule the carrier applies before raising `Deactivated`; `TrayMenuSizingTests.APresenterSmallerThanThePanelContentIsNotTrusted` drives the check the panel's capture applies. Whether a `Standard` flyout activates its popup stays a manual check: the `ActivationMovedToOwnedPopup` Verbose event (Windowing activity on) says so when it happens.
+
 ## Context menu opens one item tall and scrolls
 
 - **Trigger:** Unknown precisely. Louis reported the right-click tray menu opening one line tall, scrollable, over several months: a few times, then on every open for a while, recently once and briefly. "Every open" fits a bad size kept until the process restarts.

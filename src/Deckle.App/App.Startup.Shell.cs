@@ -225,6 +225,12 @@ public partial class App
         _trayPanel.FooterToggles = trayFooterToggles;
         _tray.LeftClickRequested += () => _trayPanel.Show();
 
+        // Double click opens Settings. The shell delivers the first click's
+        // WM_LBUTTONUP before WM_LBUTTONDBLCLK, so the panel opens, then the
+        // Settings window takes activation and the panel hides; the trailing
+        // WM_LBUTTONUP lands inside the panel's reopen guard and is ignored.
+        _tray.DoubleClickRequested += () => ShowSettingsWindowLazy();
+
         _tray.Register(_messageHost.Hwnd);
 
         // Global hotkeys (App.Hotkeys.Actions.cs). Presence gates the actions
