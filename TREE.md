@@ -1654,12 +1654,22 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   ├── Deckle.Shell.TaskbarCover/
 │   │   ├── Interop/
 │   │   │   └── TaskbarCoverNativeMethods.cs
+│   │   ├── Strings/
+│   │   │   └── en-US/
+│   │   │       └── Resources.resw
+│   │   ├── Ui/
+│   │   │   ├── TaskbarCoverPage.xaml
+│   │   │   └── TaskbarCoverPage.xaml.cs
+│   │   ├── ViewModels/
+│   │   │   ├── TaskbarCoverViewModel.cs
+│   │   │   └── TaskbarCoverViewModel.Settings.cs
 │   │   ├── AGENTS.md  — [agent-instructions] Taskbar cover module — an opaque topmost band over the taskbar that fades as th…
 │   │   ├── CLAUDE.md
 │   │   ├── CoverGeometry.cs
 │   │   ├── CoverSuppression.cs
 │   │   ├── Deckle.Shell.TaskbarCover.csproj
 │   │   ├── DeckleShellTaskbarCoverSource.cs
+│   │   ├── SettingsSearch.cs
 │   │   ├── TaskbarCoverHost.Approach.cs
 │   │   ├── TaskbarCoverHost.CallbacksAndMessagePump.cs
 │   │   ├── TaskbarCoverHost.cs
@@ -1667,6 +1677,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── TaskbarCoverHost.LifecycleAndWindow.cs
 │   │   ├── TaskbarCoverHost.Visibility.cs
 │   │   ├── TaskbarCoverSettings.cs
+│   │   ├── TaskbarCoverSettingsModule.cs
 │   │   └── TaskbarCoverSettingsService.cs
 │   ├── Deckle.Shell.TrayMenu/
 │   │   ├── Interop/
