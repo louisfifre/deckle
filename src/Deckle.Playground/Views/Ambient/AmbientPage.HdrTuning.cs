@@ -132,12 +132,9 @@ public sealed partial class AmbientPage
         PlaygroundMinBrightnessSlider.Value    = ViewModel.MinBrightness;
         PlaygroundMinBrightnessToggle.IsOn     = ViewModel.MinBrightnessEnabled;
 
-        PlaygroundBrightnessCurveCanvas.X1 = ViewModel.BrightnessCurveX1;
-        PlaygroundBrightnessCurveCanvas.Y1 = ViewModel.BrightnessCurveY1;
-        PlaygroundBrightnessCurveCanvas.X2 = ViewModel.BrightnessCurveX2;
-        PlaygroundBrightnessCurveCanvas.Y2 = ViewModel.BrightnessCurveY2;
-        PlaygroundBrightnessCurveCanvas.MinBrightnessEnabled = ViewModel.MinBrightnessEnabled;
-        PlaygroundBrightnessCurveCanvas.MinBrightness = ViewModel.MinBrightness;
+        // The curve's four points ride the two-way binds; only the floor guide
+        // is pushed by hand.
+        UpdatePlaygroundCurveFloor();
 
         SelectAmbientModeInCombo(ViewModel.Preset);
 
@@ -157,7 +154,6 @@ public sealed partial class AmbientPage
         UpdatePlaygroundSaturationText();
         UpdatePlaygroundMinBrightnessText();
         UpdatePlaygroundMinBrightnessUi();
-        UpdatePlaygroundBrightnessCurveText();
         UpdatePlaygroundSmoothingText();
         UpdatePlaygroundChangeThresholdText();
         UpdatePlaygroundBorderDepthText();
@@ -190,7 +186,9 @@ public sealed partial class AmbientPage
     private void OnPlaygroundMinBrightnessSliderChanged(object sender, RangeBaseValueChangedEventArgs e)
     {
         UpdatePlaygroundMinBrightnessText();
-        PlaygroundBrightnessCurveCanvas.MinBrightness = (int)Math.Round(PlaygroundMinBrightnessSlider.Value);
+        PlaygroundBrightnessCurve.Floor = PlaygroundMinBrightnessToggle.IsOn
+            ? Math.Round(PlaygroundMinBrightnessSlider.Value) / 254.0
+            : null;
         if (_initializing) return;
         ViewModel.MinBrightness = (int)Math.Round(PlaygroundMinBrightnessSlider.Value);
     }
@@ -277,29 +275,22 @@ public sealed partial class AmbientPage
     {
         switch (e.PropertyName)
         {
-            case nameof(AmbientViewModel.BrightnessCurveX1):
-            case nameof(AmbientViewModel.BrightnessCurveY1):
-            case nameof(AmbientViewModel.BrightnessCurveX2):
-            case nameof(AmbientViewModel.BrightnessCurveY2):
-                if (PlaygroundBrightnessCurveText is not null)
-                    UpdatePlaygroundBrightnessCurveText();
-                break;
             case nameof(AmbientViewModel.MinBrightnessEnabled):
             case nameof(AmbientViewModel.MinBrightness):
-                if (PlaygroundBrightnessCurveCanvas is not null)
-                {
-                    PlaygroundBrightnessCurveCanvas.MinBrightnessEnabled = ViewModel.MinBrightnessEnabled;
-                    PlaygroundBrightnessCurveCanvas.MinBrightness = ViewModel.MinBrightness;
-                }
+                if (PlaygroundBrightnessCurve is not null)
+                    UpdatePlaygroundCurveFloor();
                 break;
         }
     }
 
     // ── Value-text formatters ───────────────────────────────────────────────
 
-    private void UpdatePlaygroundBrightnessCurveText()
-        => PlaygroundBrightnessCurveText.Text =
-            $"cubic-bezier({ViewModel.BrightnessCurveX1:0.00}, {ViewModel.BrightnessCurveY1:0.00}, {ViewModel.BrightnessCurveX2:0.00}, {ViewModel.BrightnessCurveY2:0.00})";
+    // The floor guide on the curve: the minimum brightness as a share of the
+    // Hue range, or no guide while the floor is off.
+    private void UpdatePlaygroundCurveFloor()
+        => PlaygroundBrightnessCurve.Floor = ViewModel.MinBrightnessEnabled
+            ? ViewModel.MinBrightness / 254.0
+            : null;
 
     private void UpdatePlaygroundMinBrightnessUi()
     {
@@ -310,7 +301,9 @@ public sealed partial class AmbientPage
         PlaygroundMinBrightnessCaption.Text = enabled
             ? "Keeps bulb brightness at or above the selected floor, even on black scenes."
             : "Allows brightness to fall below the selected floor, including to black.";
-        PlaygroundBrightnessCurveCanvas.MinBrightnessEnabled = enabled;
+        PlaygroundBrightnessCurve.Floor = enabled
+            ? Math.Round(PlaygroundMinBrightnessSlider.Value) / 254.0
+            : null;
     }
 
     private void UpdatePlaygroundExposureText()

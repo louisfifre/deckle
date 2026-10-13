@@ -840,6 +840,8 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   └── StaleWorkProbeCommand.cs
 │   ├── Deckle.Catalog/
 │   │   ├── Composer/
+│   │   │   ├── CubicBezier.cs
+│   │   │   ├── CurveEditor.cs
 │   │   │   ├── DefaultValueText.cs
 │   │   │   ├── GestureHold.cs
 │   │   │   ├── HotkeyChordText.cs
@@ -852,6 +854,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   ├── SettingKind.cs
 │   │   │   ├── SettingsComposer.Chrome.cs
 │   │   │   ├── SettingsComposer.cs
+│   │   │   ├── SettingsComposer.Curve.cs
 │   │   │   ├── SettingsComposer.Folds.cs
 │   │   │   ├── SettingsComposer.Hotkey.cs
 │   │   │   ├── SettingsComposer.Inputs.cs
@@ -1232,7 +1235,6 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   │   ├── AmbientPreviewCard.xaml
 │   │   │   │   ├── AmbientPreviewCard.xaml.cs
 │   │   │   │   ├── BrightnessCurveCanvas.xaml
-│   │   │   │   ├── BrightnessCurveCanvas.xaml.cs
 │   │   │   │   ├── LightZonesCard.xaml
 │   │   │   │   └── LightZonesCard.xaml.cs
 │   │   │   ├── AmbientPage.Hue.cs
@@ -1617,6 +1619,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── TrayContextMenuHost.Flyout.cs
 │   │   ├── TrayContextMenuHost.Measure.cs
 │   │   ├── TrayContextMenuHost.Show.cs
+│   │   ├── TrayIslandSizing.cs
 │   │   ├── TrayMenuSizing.cs
 │   │   ├── TrayQuickActionsHost.Build.cs
 │   │   ├── TrayQuickActionsHost.cs
@@ -1704,8 +1707,12 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── DeckleWhispSource.Transcribe.cs
 │   │   ├── DeckleWhispSource.Ui.cs
 │   │   ├── DeckleWhispSource.WarmupModel.cs
+│   │   ├── DecodingPage.xaml
+│   │   ├── DecodingPage.xaml.cs
 │   │   ├── ITranscriptionEngineHost.cs
 │   │   ├── SettingsSearch.cs
+│   │   ├── StreamingPage.xaml
+│   │   ├── StreamingPage.xaml.cs
 │   │   ├── TranscriptionSettings.cs
 │   │   ├── TranscriptionSettingsService.cs
 │   │   ├── WhisperPage.xaml
@@ -1933,6 +1940,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── VerifiedCaretSentenceTests.cs
 │   │   └── WordBoundariesTests.cs
 │   ├── Deckle.Catalog.Tests/
+│   │   ├── CubicBezierTests.cs
 │   │   ├── Deckle.Catalog.Tests.csproj
 │   │   ├── DefaultValueTextTests.cs
 │   │   ├── GestureHoldTests.cs
@@ -1986,6 +1994,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   └── HomeTypedToolCatalogTests.cs
 │   ├── Deckle.Hud.Tests/
 │   │   ├── AnimationGateTests.cs
+│   │   ├── ConicPaletteTests.cs
 │   │   ├── Deckle.Hud.Tests.csproj
 │   │   ├── DeckleHudSourceTests.cs
 │   │   ├── ProximityFadeTests.cs
@@ -2127,6 +2136,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   └── ResizeGestureTests.cs
 │   ├── Deckle.Shell.TrayMenu.Tests/
 │   │   ├── Deckle.Shell.TrayMenu.Tests.csproj
+│   │   ├── TrayIslandSizingTests.cs
 │   │   ├── TrayMenuBugNotes.md
 │   │   ├── TrayMenuSizingTests.cs
 │   │   └── TrayWindowOwnershipTests.cs

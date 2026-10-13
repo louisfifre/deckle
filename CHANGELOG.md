@@ -134,6 +134,10 @@ doctrine). This file is generated from the Conventional-Commit history by
 - **hud:** Smooth the countdown rise with the outline's level alpha
 - **playground:** Show the Recording rows under the countdown views
 - **settings:** Add the section block
+- **composer:** Add the mode fold
+- **composition:** Move the countdown gauge with one named fast motion
+- **transcription:** Split the settings into General, Decoding and Streaming
+- **composer:** Add the curve block
 
 ### Changed
 
@@ -158,7 +162,13 @@ doctrine). This file is generated from the Conventional-Commit history by
 - **ambient:** Compose the border cards as magnitudes
 - **audio:** Compose the voice level cards as magnitudes
 - **settings:** Open every page with the shared header block
+- **settings:** Put the preset selectors in the header of their fold
 - **settings:** Open every section with the shared block
+- **settings:** Draw every curve with the shared curve block
+
+### Removed
+
+- **hud:** Take the outline's alpha back out of the countdown
 
 ### Fixed
 
@@ -205,6 +215,9 @@ doctrine). This file is generated from the Conventional-Commit history by
 - **presets:** Write the selection before the values
 - **ambient:** Default the brightness floor to 40
 - **playground:** Drop the hand-typed cadence from the Pipeline card
+- **tray-menu:** Open a tray flyout once its carrier reports its size
+- **tray-menu:** Give the quick-actions panel a popup window of its own
+- **composition:** Map the conic palette into the sRGB gamut by chroma
 
 ## [0.35.0](https://github.com/louisfifre/deckle/compare/v0.31.6...v0.35.0) — 2026-08-13
 

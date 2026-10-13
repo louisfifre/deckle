@@ -172,6 +172,7 @@
                 </StackPanel>
                 </catalog:SettingsSection>
 
+<<<<<<< HEAD
                 <!-- ── Speech filtering ────────────────────────────────────── -->
                 <!-- Hidden as a whole while streaming is off: the title, the caption
                      and the VAD fold all depend on it. -->
@@ -209,6 +210,11 @@
                     <StackPanel x:Name="StreamingHost"
                                 Spacing="{StaticResource SettingsCardSpacing}" />
                 </catalog:SettingsSection>
+=======
+                <!-- The decoding parameters and the streaming pipeline live on their
+                     own pages, DecodingPage and StreamingPage, nested under this
+                     module in the rail (settings design system, decision 16). -->
+>>>>>>> main
 
                 <!-- ── Diagnostics ─────────────────────────────────────────────
                      No section reset: these observability opt-ins carry no

@@ -18,12 +18,18 @@
     <PackageReference Include="Microsoft.Windows.SDK.BuildTools" />
     <!-- MVVM Toolkit — [ObservableProperty] in WhisperViewModel. -->
     <PackageReference Include="CommunityToolkit.Mvvm" />
-    <!-- SettingsCard / SettingsExpander — WhisperPage canonical layout. -->
+    <!-- SettingsCard / SettingsExpander — WhisperPage canonical layout. The cut
+         curve is drawn by the Catalog's shared CurveEditor in XAML shapes, so
+         Win2D stays confined to Deckle.Composition (settings design system,
+         decision 3). -->
     <PackageReference Include="CommunityToolkit.WinUI.Controls.SettingsControls" />
+<<<<<<< HEAD
     <!-- Win2D: Direct2D-backed CanvasControl for HangoverCurveCanvas — the
          segmenter's hangover plot is drawn in immediate mode (a single Draw per
          Invalidate) instead of recreating a XAML Shapes tree on every resize. -->
     <PackageReference Include="Microsoft.Graphics.Win2D" />
+=======
+>>>>>>> main
   </ItemGroup>
 
   <ItemGroup>

@@ -15,12 +15,24 @@ namespace Deckle.Audio;
 public static class AudioLevelMapper
 {
     // EMA smoothing factor applied AFTER the dBFS remap, per 50 ms sample:
+<<<<<<< HEAD
     // next = previous · EmaAlpha + sample · (1 − EmaAlpha), so the time
     // constant is τ = −T / ln(EmaAlpha) ≈ 36 ms, under one sample. It irons
     // the sample grid into a continuous ramp and leaves word-scale intonation
     // intact; the 50 ms key-frame in ProcessingStroke.UpdateLevel does the rest
     // of the visible smoothing. The utterance countdown rises through this same
     // alpha, so the gauge and the outline it replaces settle at one pace.
+=======
+    // next = previous · EmaAlpha + sample · (1 − EmaAlpha). 0.25 keeps a
+    // quarter of the previous value, so the time constant is
+    // τ = −T / ln(EmaAlpha) ≈ 0.05 / 1.386 ≈ 36 ms — under one sample.
+    // (An earlier comment read 0.15 s; that would need EmaAlpha ≈ 0.72.)
+    // It irons the sample grid into a continuous ramp and leaves every
+    // word-scale intonation (200–500 ms) intact; the 50 ms key-frame in
+    // ProcessingStroke.UpdateLevel does the rest of the visible smoothing.
+    // The consumer owns the smoother state (the EMA value to feed back)
+    // since per-window state shouldn't be a global.
+>>>>>>> main
     public static float EmaAlpha = 0.25f;
 
     // Linear RMS is folded through the dBFS window [MinDbfs, MaxDbfs] into a

@@ -100,7 +100,12 @@ public partial class App
         if (context.TranscriptionPresent)
         {
             RegisterSettingsModule(Audio.RecordingSettingsModule.Describe(order: 50), Audio.SettingsSearch.Entries);
+            // One module, three rail entries: the module's page (General under the
+            // node) then Decoding and Streaming nested under it, each registered on
+            // its own so the search index resolves page coordinates per page.
             RegisterSettingsModule(Transcription.WhisperSettingsModule.Describe(order: 100), Transcription.SettingsSearch.Entries);
+            RegisterSettingsModule(Transcription.WhisperSettingsModule.DescribeDecoding(order: 110), Transcription.SettingsSearch.DecodingEntries);
+            RegisterSettingsModule(Transcription.WhisperSettingsModule.DescribeStreaming(order: 120), Transcription.SettingsSearch.StreamingEntries);
         }
         if (context.RewritePresent)
             RegisterSettingsModule(Llm.Rewrite.LlmSettingsModule.Describe(order: 200), Llm.Rewrite.SettingsSearch.Entries);

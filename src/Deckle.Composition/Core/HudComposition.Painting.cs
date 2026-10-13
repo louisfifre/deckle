@@ -35,7 +35,11 @@ public static partial class HudComposition
         {
             float centreTurns = (i + 0.5f) / wedges;
             float hue = cfg.HueStart + centreTurns * cfg.HueRange;
-            var c = ColorSpace.OklchToRgb(cfg.OklchLightness, cfg.OklchChroma, hue);
+            // In gamut: the chroma is a ceiling and each hue gets what sRGB
+            // can show at this lightness, so the wheel keeps one lightness
+            // and desaturates to one grey. The clamping conversion did not —
+            // see ColorSpace.OklchToRgbInGamut.
+            var c = ColorSpace.OklchToRgbInGamut(cfg.OklchLightness, cfg.OklchChroma, hue);
             int p = i * 3;
             palette[p + 0] = c.B;
             palette[p + 1] = c.G;

@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using Deckle.Catalog;
 using Deckle.Core;
@@ -134,15 +135,30 @@ public partial class WhisperViewModel
     // to CutPresets.Default, which equals the shipped EnergySegmenterSettings
     // defaults.
     //
+<<<<<<< HEAD
     // The switch's default reads the VM's projection of the segmenter Strategy off
     // a fresh StreamingSettings, so the shipped Strategy stays the single source.
     public IReadOnlyList<SettingDescriptor> StreamingSettings =>
+=======
+    // The switch's default mirrors the VM's own projection of the segmenter Strategy
+    // onto the bool (Load/Push: StreamingEnabled = Strategy == Streaming), read off a
+    // fresh StreamingSettings so the shipped default Strategy (Monolithic → false)
+    // is the single source — no hand-copied bool.
+    public IReadOnlyList<SettingDescriptor> StreamingSwitch =>
+>>>>>>> main
     [
         Setting.Toggle("WhisperStreamingEnabledCard",
             () => StreamingEnabled,
             value => StreamingEnabled = value,
             glyph: Glyphs.Tuning,
             defaultValue: () => new StreamingSettings().Strategy == PipelineStrategyKind.Streaming),
+    ];
+
+    // The segmentation cards of the Streaming page, under the switch and the
+    // speech-filtering fold (decision 16): the threshold, the cut mode fold, the
+    // margin and the minimum utterance.
+    public IReadOnlyList<SettingDescriptor> SegmentationSettings =>
+    [
         Setting.Magnitude("WhisperSegThresholdCard",
             () => SegThresholdDbfs,
             value => SegThresholdDbfs = value,
@@ -178,13 +194,28 @@ public partial class WhisperViewModel
                     new MagnitudeArgs(30000, 900000, Slider: false, Integer: true),
                     visibleWhen: () => CutPreset == PresetFamily.Custom,
                     defaultValue: () => new EnergySegmenterSettings().HangoverRampEndMs),
+<<<<<<< HEAD
                 // The instrument last and full width.
                 Setting.Editor<CutCurveValues>("WhisperCutCurveCard",
                     ReadCutValues,
                     WriteCutValues,
                     new EditorArgs(() => new CutCurveEditor(this)),
+=======
+                // The instrument last and full width (decision 12): the shared
+                // curve block (decision 21) over the four control points, drawn in
+                // the frame the four anchor cards above set, with the sentence that
+                // says what the curve does as its description.
+                Setting.Curve("WhisperCutCurveCard",
+                    () => new CurvePoints(SegCurveX1, SegCurveY1, SegCurveX2, SegCurveY2),
+                    p => { SegCurveX1 = p.X1; SegCurveY1 = p.Y1; SegCurveX2 = p.X2; SegCurveY2 = p.Y2; },
+                    new CurveArgs(Frame: CutCurveFrame, Describe: _ => CutCurveSentence()),
+>>>>>>> main
                     visibleWhen: () => CutPreset == PresetFamily.Custom,
-                    defaultValue: () => CutCurveValues.From(new EnergySegmenterSettings())),
+                    defaultValue: () =>
+                    {
+                        var d = new EnergySegmenterSettings();
+                        return new CurvePoints(d.HangoverCurveX1, d.HangoverCurveY1, d.HangoverCurveX2, d.HangoverCurveY2);
+                    }),
             ],
             glyph: Glyphs.Tuning,
             visibleWhen: () => StreamingEnabled,
@@ -203,8 +234,50 @@ public partial class WhisperViewModel
             defaultValue: () => new EnergySegmenterSettings().MinUtteranceMs),
     ];
 
+<<<<<<< HEAD
     // The composed TextBox has no x:Uid of its own, so the SuppressRegex
     // placeholder is resolved here through Loc.GetFromOptional.
+=======
+    // The frame of the cut curve: X is the open-utterance length in seconds, from
+    // 0 to a little past the ramp end; Y is the decision delay in seconds, from 0
+    // to the maximum hangover. The unit square runs from (ramp start, max) down
+    // to (ramp end, min), the decay the segmenter eases between. The view model
+    // keeps the anchors in milliseconds, the plot reads seconds.
+    private CurveFrame CutCurveFrame()
+    {
+        double max = Math.Max(SegHangoverMaxMs / 1000.0, 1e-3);
+        double min = Math.Min(SegHangoverMinMs / 1000.0, max);
+        double start = Math.Max(0, SegHangoverRampStartMs / 1000.0);
+        double end = Math.Max(start, SegHangoverRampEndMs / 1000.0);
+        double xMax = end + Math.Max((end - start) * 0.15, 5.0);
+        return new CurveFrame(start, max, end, min, xMax, max, Axes: true, XUnit: "s", YUnit: "s");
+    }
+
+    // The plain-language reading of the envelope the curve eases, the Playground
+    // Segmentation page's sentence.
+    private string CutCurveSentence()
+    {
+        double start = SegHangoverRampStartMs / 1000.0;
+        double end = Math.Max(start, SegHangoverRampEndMs / 1000.0);
+        return $"Waits {SegHangoverMaxMs / 1000.0:F1} s of silence for utterances up to {start:F0} s, " +
+               $"then tightens to {SegHangoverMinMs / 1000.0:F1} s by {end:F0} s.";
+    }
+
+    // Output filters — the three flat cards under the "Output filters" section
+    // header. No master toggle and no group: this section was hand-authored as a
+    // run of independent SettingsCards under a section TextBlock, so it composes as
+    // a FLAT list of leaf descriptors into a host panel — the composer renders each
+    // as a top-level card, exactly the shape it had. The header/description keys are
+    // the same x:Uid the hand-authored cards carried (the composer resolves them
+    // from this module's .resw), so the existing copy is reused verbatim.
+    //
+    // SuppressRegex is a one-line free-text field; its placeholder reuses the
+    // WhisperSuppressRegexBox.PlaceholderText the hand-authored TextBox carried —
+    // resolved here through Loc.GetFromOptional against this module's .resw, since the
+    // composed TextBox has no x:Uid of its own to auto-resolve it. Defaults read the
+    // OutputFilterSettings POCO initializer, the single source SettingsService
+    // persists, so each card's reset goes active exactly when the value leaves it.
+>>>>>>> main
     public IReadOnlyList<SettingDescriptor> OutputFilterSettingsManifest =>
     [
         Setting.Toggle("WhisperSuppressNstCard",

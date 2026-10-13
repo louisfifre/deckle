@@ -54,6 +54,7 @@ public static partial class HudComposition
     // Every visual that claims to be the Recording outline paints from this
     // one mapping instead of restating it.
     //
+<<<<<<< HEAD
     // `hueRotates`: whether the cone spins or stays frozen at HuePhaseTurns.
     // Frozen matters even at Saturation 0: the cone is baked from OKLCh at a
     // chroma no sRGB hue carries at that lightness, OklchToRgb clamps each
@@ -61,6 +62,17 @@ public static partial class HudComposition
     // band darkest. At phase 0 that dark band sits at 3 o'clock, inside the
     // lobes' fade-out; a spinning cone carries it through 12 and 6 o'clock,
     // where the lobes are brightest, and reads as a hole walking the outline.
+=======
+    // `hueRotates` — whether the cone spins (RecordingHuePeriodSeconds > 0)
+    // or stays frozen at HuePhaseTurns. The countdown follows this decision
+    // so it is the outline's cone in the outline's pose. Frozen was also the
+    // first fix for a dark band (2026-10-13): the wheel was then baked by a
+    // conversion that clipped out-of-gamut channels, so its greys ran from
+    // about 0.24 (red) to 0.69 (cyan) and a spinning cone walked that band
+    // through the lit lobes. The band itself is gone since the palette is
+    // gamut-mapped by chroma (ColorSpace.OklchToRgbInGamut): every hue keeps
+    // one lightness, so one grey.
+>>>>>>> main
     public static ConicArcStrokeConfig BuildRecordingPaintConfig(
         ConicArcStrokeConfig defaults, out bool hueRotates)
     {

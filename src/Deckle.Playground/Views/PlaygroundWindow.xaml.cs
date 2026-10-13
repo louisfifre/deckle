@@ -32,12 +32,14 @@ public sealed partial class PlaygroundWindow : Window
 
     private HudPage? _hudPage;
     private AmbientPage? _ambientPage;
-    private SegmentationPage? _segmentationPage;
     private CorrectionApplicationPage? _correctionApplicationPage;
     private PlaygroundWindowActivation _windowActivation;
 
+<<<<<<< HEAD
     private ResizeCoalescer? _resizeCoalescer;
 
+=======
+>>>>>>> main
     public PlaygroundWindow()
     {
         InitializeComponent();
@@ -113,6 +115,7 @@ public sealed partial class PlaygroundWindow : Window
 
         this.Closed += OnWindowClosed;
 
+<<<<<<< HEAD
         // While a sizing border is dragged, the Segmentation curve would redo
         // its label layout on every WM_SIZE; the coalescer suspends that and
         // repaints once the size settles. Until that page is visited the calls
@@ -124,6 +127,15 @@ public sealed partial class PlaygroundWindow : Window
         _resizeCoalescer.Register();
 
         // Traces theme switches, so a preview glitch can be matched to one.
+=======
+        // Theme: wires ActualThemeChanged on the XAML root. Playground is
+        // singleton-hidden (lives for the whole app session once opened), so it
+        // sees all theme switches through ThemeRequestSourceProbe ("settings"
+        // from user ThemeCombo, "system" from colorPrevalence) or direct ones
+        // (the root follows the system when no RequestedTheme is set). Useful
+        // trace to correlate a sliders / live preview glitch with a theme
+        // switch while the window was active.
+>>>>>>> main
         if (Content is FrameworkElement root)
         {
             _lastTheme = root.ActualTheme;
@@ -206,11 +218,19 @@ public sealed partial class PlaygroundWindow : Window
         try { _ambientPage?.DisposeResources(); } catch { /* best effort */ }
         try { _correctionApplicationPage?.DisposeResources(); } catch { /* best effort */ }
 
+<<<<<<< HEAD
         // Remove the HWND subclass before the window is gone.
         _resizeCoalescer?.Dispose();
 
         // So a stale page cannot route into a destroyed window. ReferenceEquals,
         // not ==, avoids the CS0252 warning on an object-to-Window comparison.
+=======
+        // Drop the shell's nav callback so a stale page reference can't
+        // route into a destroyed window. ReferenceEquals (not ==) because
+        // Window inherits the default object equality and the compiler
+        // can't prove no derived operator== was added — explicit identity
+        // check sidesteps the CS0252 warning.
+>>>>>>> main
         if (PlaygroundShell.NavigateTo is not null
             && ReferenceEquals(PlaygroundShell.NavigateTo.Target, this))
         {
@@ -264,9 +284,6 @@ public sealed partial class PlaygroundWindow : Window
                     break;
                 case AmbientPage amb:
                     _ambientPage = amb;
-                    break;
-                case SegmentationPage seg:
-                    _segmentationPage = seg;
                     break;
                 case CorrectionApplicationPage correction:
                     _correctionApplicationPage = correction;

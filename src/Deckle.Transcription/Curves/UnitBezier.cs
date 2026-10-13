@@ -14,11 +14,17 @@ namespace Deckle.Transcription;
 // uses for the CSS timing functions. A handful of iterations land within 1e-6,
 // so Solve is cheap enough to call per frame.
 //
+<<<<<<< HEAD
 // Used in two places, one model:
 //   • EnergySegmenter.RequiredHangoverFrames — the runtime decision delay decay.
 //   • HangoverCurveCanvas — the plot of that same decay (Settings cut-curve
 //     editor and Playground).
 // Sharing this one type is why neither has to hand-mirror the curve math.
+=======
+// Used by EnergySegmenter.RequiredHangoverFrames, the runtime decision delay
+// decay. The settings plot of that same decay is the Catalog's shared
+// CurveEditor, whose CubicBezier carries the same arithmetic.
+>>>>>>> main
 internal readonly struct UnitBezier
 {
     // Polynomial coefficients of x(t) and y(t) expanded from the control points :

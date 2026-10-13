@@ -80,31 +80,37 @@ public sealed partial class TrayQuickActionsHost
             physW = (int)Math.Ceiling(dipW * scale);
             physH = (int)Math.Ceiling(dipH * scale);
             return (physW, physH);
-        });
-
-        // Placement Full: the panel opens exactly on the carrier, which
-        // CalculatePopupWindowPosition already placed tangent to the icon.
-        // ShowMode Standard (not Transient): the panel takes keyboard focus,
-        // so Tab and Space work on its controls and Esc closes it.
-        _flyout.ShowAt(_carrier.Frame, new FlyoutShowOptions
+        }, () =>
         {
-            ShowMode = FlyoutShowMode.Standard,
-            Placement = FlyoutPlacementMode.Full,
+            // The carrier runs this once its XAML island reports the size it
+            // was just given, or after its grace period: Full reads that size
+            // at ShowAt (see TrayCarrierWindow). A Hide meanwhile cancels it.
+            if (_disposed || !_isVisible) return;
+
+            // Placement Full: the panel opens exactly on the carrier, which
+            // CalculatePopupWindowPosition already placed tangent to the icon.
+            // ShowMode Standard (not Transient): the panel takes keyboard
+            // focus, so Tab and Space work on its controls and Esc closes it.
+            _flyout.ShowAt(_carrier.Frame, new FlyoutShowOptions
+            {
+                ShowMode = FlyoutShowMode.Standard,
+                Placement = FlyoutPlacementMode.Full,
+            });
+
+            // Hidden before the open completed: the carrier lost activation
+            // or the flyout closed by itself during ShowAt. The user saw
+            // nothing; the warning says so whatever the Windowing verbosity.
+            if (!_isVisible)
+            {
+                DeckleShellTrayMenuSource.Log.PanelDismissedWhileOpening();
+                DeckleShellTrayMenuSource.Log.PanelDismissedWhileOpeningDetail(_lastHideReason);
+                return;
+            }
+
+            DeckleShellTrayMenuSource.Log.PanelShown();
+            DeckleShellTrayMenuSource.Log.PanelShownDetail(
+                _rows.Count, isRecording, dipW, dipH, physW, physH, usedScale, sizeSource);
         });
-
-        // Hidden before the open completed: the carrier lost activation or
-        // the flyout closed by itself during ShowAt. The user saw nothing;
-        // the warning says so whatever the Windowing verbosity.
-        if (!_isVisible)
-        {
-            DeckleShellTrayMenuSource.Log.PanelDismissedWhileOpening();
-            DeckleShellTrayMenuSource.Log.PanelDismissedWhileOpeningDetail(_lastHideReason);
-            return;
-        }
-
-        DeckleShellTrayMenuSource.Log.PanelShown();
-        DeckleShellTrayMenuSource.Log.PanelShownDetail(
-            _rows.Count, isRecording, dipW, dipH, physW, physH, usedScale, sizeSource);
     }
 
     // ── Hide ──────────────────────────────────────────────────────────────────

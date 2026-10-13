@@ -417,35 +417,6 @@ public partial class AmbientViewModel : ObservableObject
         service.Save();
     }
 
-    // The brightness curve's own reset (the Settings curve card). The four
-    // control points go back to the POCO defaults in one write and one Save(),
-    // so the engine never sees a half-reset curve. Like any tuning edit it is
-    // reported to the preset family: the user moved away from the preset's
-    // curve.
-    public void ResetBrightnessCurve()
-    {
-        var d   = new AmbientSettings();
-        var cur = AmbientSettingsService.Instance.Current;
-        cur.BrightnessCurveX1 = d.BrightnessCurveX1;
-        cur.BrightnessCurveY1 = d.BrightnessCurveY1;
-        cur.BrightnessCurveX2 = d.BrightnessCurveX2;
-        cur.BrightnessCurveY2 = d.BrightnessCurveY2;
-        DeckleAmbientSource.Log.TuningChanged("BrightnessCurve", "default");
-        MarkEdited();
-        AmbientSettingsService.Instance.Save();
-    }
-
-    // True when the curve differs from the POCO default — gates the curve
-    // card's reset, read from the same `new AmbientSettings()` the reset writes.
-    public bool IsBrightnessCurveDirty()
-    {
-        var d = new AmbientSettings();
-        return BrightnessCurveX1 != d.BrightnessCurveX1
-            || BrightnessCurveY1 != d.BrightnessCurveY1
-            || BrightnessCurveX2 != d.BrightnessCurveX2
-            || BrightnessCurveY2 != d.BrightnessCurveY2;
-    }
-
     private static void ApplyZoneSamplingDefaults(AmbientSettings cur, AmbientSettings d)
     {
         cur.BorderMode  = d.BorderMode;

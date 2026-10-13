@@ -1,8 +1,10 @@
 // TrayCarrierWindow — the invisible WinUI window a tray flyout anchors on.
 
 using System;
+using System.Diagnostics;
 using Deckle.Core;
 using Deckle.Diagnostics;
+using Microsoft.UI.Dispatching;
 using Microsoft.UI.Windowing;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
@@ -15,7 +17,26 @@ namespace Deckle.Shell.TrayMenu;
 //
 // A WinUI flyout cannot anchor to a message-only HWND or to a Shell_NotifyIcon
 // icon: it needs a XamlRoot, hence a WinUI Window. This class owns that window
+<<<<<<< HEAD
 // and nothing else; the flyout it carries belongs to the host that uses it.
+=======
+// and nothing else: build it invisible, finalize its style once the HWND is
+// ready, place it tangent to the tray icon at a requested physical size, show
+// and hide it. The flyout it carries (MenuFlyout for the context menu, Flyout
+// for the quick-actions panel) belongs to the host that uses it.
+//
+// The window is invisible: WS_EX_LAYERED + SetLayeredWindowAttributes with
+// alpha=0. The flyout stays visible only because it renders in a popup window
+// of its own: a flyout constrained to its XAML root draws inside this HWND and
+// inherits its alpha. A MenuFlyout is unconstrained by default, a Flyout is
+// constrained by default, so each host makes sure of it (see
+// TrayQuickActionsHost). No WS_EX_TRANSPARENT: the window must keep focus so
+// click-outside dismiss works through Activated → Deactivated.
+//
+// The host's flyout opens through ShowAt's callback, not right after it:
+// Placement Full sizes the presenter from the XAML island's size at ShowAt,
+// which lags behind the HWND rect just set (see the deferred open below).
+>>>>>>> main
 //
 // A flyout shown in Standard mode moves keyboard focus into that popup, a
 // top-level window this carrier owns, and Windows then deactivates the
@@ -155,11 +176,17 @@ public sealed class TrayCarrierWindow : IDisposable
     /// <param name="measure">Returns the physical size the carrier must take,
     /// given the scale (DPI / 96) of the monitor under the anchor. The host
     /// owns the flyout, so it owns its measurement.</param>
+    /// <param name="open">Opens the host's flyout on the carrier. Runs at once
+    /// when the carrier's XAML island already reports the requested size,
+    /// otherwise as soon as it does (bounded wait, see the deferred open
+    /// below), and never after a <see cref="Hide"/>.</param>
     public void ShowAt(
         Func<NativeMethods.RECT?>? getIconRect,
-        Func<double, (int Width, int Height)> measure)
+        Func<double, (int Width, int Height)> measure,
+        Action open)
     {
         if (_disposed) return;
+        CancelPendingOpen();
 
         // Anchor on the real tray icon rect (Shell_NotifyIconGetRect), never
         // the click point, so placement is right for any taskbar orientation.
@@ -231,6 +258,113 @@ public sealed class TrayCarrierWindow : IDisposable
         WindowingProbe.EmitPopupAnchored(
             Hwnd, _windowName,
             parentRectX, parentRectY, parentRectW, parentRectH);
+
+        OpenWhenIslandSized((width, height), open);
+    }
+
+    // ── Deferred open ─────────────────────────────────────────────────────────
+    //
+    // Under FlyoutPlacementMode.Full, FlyoutBase sizes its presenter from the
+    // XAML island's size as reported at the moment of ShowAt, and never again
+    // (FlyoutBase_partial.cpp: Open sets the presenter's Width and Height to 1,
+    // PerformPlacement replaces them with the rect CalculateAvailableWindowRect
+    // reads from CXamlIslandRoot::GetSize). That is the island's size, not the
+    // HWND rect MoveAndResize has just set: on the first open after launch the
+    // island of a window never shown still reports no size, the presenter keeps
+    // its minimum (one menu item, 32 DIP) and its scroll viewer takes the rest;
+    // the second open finds the island at the size of the first and is right
+    // (the one-item-tall menu, 2026-10-12). So the host's flyout opens only once
+    // XamlRoot reports the requested size, and XamlRoot.Changed says when. The
+    // wait is bounded: an island that never answers would otherwise leave the
+    // click silent, which is worse than a short card.
+
+    // Upper bound on the wait for the island, in milliseconds. The resize
+    // normally lands within a frame; 250 ms leaves room for a loaded UI thread
+    // while staying under what a user reads as a missed click.
+    private const int IslandSizeGraceMs = 250;
+
+    private Action? _pendingOpen;
+    private (int Width, int Height) _pendingRequestPx;
+    private Stopwatch? _pendingSince;
+    private DispatcherQueueTimer? _pendingTimer;
+
+    private void OpenWhenIslandSized((int Width, int Height) requestedPx, Action open)
+    {
+        XamlRoot? xamlRoot = Frame.XamlRoot;
+        if (xamlRoot is null || IslandMatches(xamlRoot, requestedPx))
+        {
+            open();
+            return;
+        }
+
+        _pendingOpen = open;
+        _pendingRequestPx = requestedPx;
+        _pendingSince = Stopwatch.StartNew();
+        DeckleShellTrayMenuSource.Log.CarrierOpenDeferred();
+        DeckleShellTrayMenuSource.Log.CarrierOpenDeferredDetail(
+            _windowName, requestedPx.Width, requestedPx.Height,
+            xamlRoot.Size.Width, xamlRoot.Size.Height, xamlRoot.RasterizationScale);
+
+        xamlRoot.Changed += OnXamlRootChanged;
+        _pendingTimer ??= CreateGraceTimer();
+        _pendingTimer.Start();
+    }
+
+    private DispatcherQueueTimer CreateGraceTimer()
+    {
+        var timer = Window.DispatcherQueue.CreateTimer();
+        timer.Interval = TimeSpan.FromMilliseconds(IslandSizeGraceMs);
+        timer.IsRepeating = false;
+        timer.Tick += OnIslandSizeGraceElapsed;
+        return timer;
+    }
+
+    private static bool IslandMatches(XamlRoot xamlRoot, (int Width, int Height) requestedPx)
+        => TrayIslandSizing.MatchesRequest(
+            requestedPx, (xamlRoot.Size.Width, xamlRoot.Size.Height), xamlRoot.RasterizationScale);
+
+    private void OnXamlRootChanged(XamlRoot sender, XamlRootChangedEventArgs args)
+    {
+        if (_pendingOpen is null || !IslandMatches(sender, _pendingRequestPx)) return;
+
+        DeckleShellTrayMenuSource.Log.CarrierIslandSizedDetail(
+            _windowName, _pendingSince?.Elapsed.TotalMilliseconds ?? 0,
+            sender.Size.Width, sender.Size.Height);
+        CompletePendingOpen();
+    }
+
+    // The island did not report the requested size in time: open anyway (the
+    // card may show one item tall) and say so whatever the Windowing verbosity.
+    private void OnIslandSizeGraceElapsed(DispatcherQueueTimer sender, object args)
+    {
+        if (_pendingOpen is null) return;
+
+        XamlRoot? xamlRoot = Frame.XamlRoot;
+        DeckleShellTrayMenuSource.Log.CarrierOpenedUnsized();
+        DeckleShellTrayMenuSource.Log.CarrierOpenedUnsizedDetail(
+            _windowName, _pendingRequestPx.Width, _pendingRequestPx.Height,
+            xamlRoot?.Size.Width ?? 0, xamlRoot?.Size.Height ?? 0,
+            xamlRoot?.RasterizationScale ?? 0,
+            _pendingSince?.Elapsed.TotalMilliseconds ?? 0);
+        CompletePendingOpen();
+    }
+
+    private void CompletePendingOpen()
+    {
+        Action? open = _pendingOpen;
+        CancelPendingOpen();
+        open?.Invoke();
+    }
+
+    // A Hide while the open is pending drops it: the click that hid the carrier
+    // must not reopen the flyout a moment later.
+    private void CancelPendingOpen()
+    {
+        if (_pendingOpen is null) return;
+        _pendingOpen = null;
+        _pendingSince = null;
+        _pendingTimer?.Stop();
+        if (Frame.XamlRoot is { } xamlRoot) xamlRoot.Changed -= OnXamlRootChanged;
     }
 
     // ── Hide ──────────────────────────────────────────────────────────────────
@@ -238,6 +372,7 @@ public sealed class TrayCarrierWindow : IDisposable
     /// <summary>The host closes its flyout first.</summary>
     public void Hide()
     {
+        CancelPendingOpen();
         IsVisible = false;
         if (Hwnd != IntPtr.Zero)
             NativeMethods.ShowWindow(Hwnd, NativeMethods.SW_HIDE);
@@ -302,6 +437,7 @@ public sealed class TrayCarrierWindow : IDisposable
         if (_disposed) return;
         _disposed = true;
 
+        CancelPendingOpen();
         Window.Activated -= OnWindowActivated;
         Frame.Loaded -= OnFrameLoaded;
         NativeMethods.RemoveWindowSubclass(Hwnd, _subclassProc, SubclassId);

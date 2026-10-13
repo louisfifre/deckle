@@ -21,6 +21,7 @@ public static partial class HudComposition
     // rebuild.
     //
     // ── Lexicon — vocabulary shared across the struct fields below ──────
+<<<<<<< HEAD
     //   OklchLightness OKLab lightness, 0 = black, 1 = white.
     //   OklchChroma    OKLab chroma, 0 = grey. Values outside the sRGB gamut
     //                  are clamped per channel, which flattens those hues.
@@ -43,6 +44,89 @@ public static partial class HudComposition
     //   Exposure       EV stops. ExposureEffect accepts [-2, +2].
     //   Opacity        SpriteVisual.Opacity, dims the whole stroke.
     //   BlendSeconds   duration of the blend into this variant.
+=======
+    //
+    // Paint-time (OKLCh conic palette baked once into a surface).
+    // OKLCh is a perceptually uniform cylindrical colour space: at
+    // constant L and C, all hues have the same perceived lightness
+    // and saturation. HSV — which this used to use — does not: a
+    // full-saturation HSV rainbow reads with yellow much brighter
+    // than blue, which was visible as a top/bottom luminance
+    // asymmetry on the conic wheel. OKLCh removes that asymmetry.
+    //   OklchLightness 0 = black, 1 = white. 0.75 is bright-but-not-
+    //                  blinding, comparable to a vivid mid-tone.
+    //   OklchChroma    saturation ceiling in OKLab space. 0 = greyscale,
+    //                  ~0.15 = vivid pastel. sRGB cannot show every hue
+    //                  at one chroma: at L=0.75 yellows and blues run
+    //                  out around 0.18, reds and greens further. The
+    //                  painter lowers the chroma per hue until the
+    //                  colour fits and keeps L (ColorSpace.
+    //                  OklchToRgbInGamut), so a high ceiling means "as
+    //                  vivid as each hue can be", never a clipped
+    //                  channel — and the wheel desaturates to one grey.
+    //   HueStart       rotates hue 0 on the wheel (0 = red at 3 o'clock).
+    //   HueRange       wheel slice. 1 = full rainbow, 0.5 = half, 0 = mono.
+    //   WedgeCount     pie wedges. 360 = smooth ring, 12/24 = retro steps.
+    //
+    // Arc mask shape (white pie slice composited with the conic via
+    // AlphaMaskEffect, with alpha ramps at both ends):
+    //   Span           arc length in turns. 0.5 mirrored = half-circle
+    //                  each; smaller = more "off" space between.
+    //   LeadFade/Tail  fade extents in turns at each end (head fade-in /
+    //                  tail fade-out). If Lead+Tail > Span they scale to
+    //                  meet at the arc mid (pure bell, no flat core).
+    //   FadeCurve      pow(t, curve) shape. 1 = linear ribbon,
+    //                  2 = quadratic soft fade, 3+ = crisp comet bell,
+    //                  <1 = near hard-edged solid.
+    //   Mirror         paint a second arc at +π for a symmetric double
+    //                  comet (Span clamps to 0.5 in mirror mode).
+    //
+    // Rotation (applied independently to the conic and the arc mask —
+    // rational period ratios like 2:1 or 3:2 close cleanly every LCM):
+    //   PeriodSeconds  seconds per full turn. Lower = faster.
+    //   Direction      +1 CW, -1 CCW.
+    //   PhaseTurns     start offset in turns (0..1).
+    //   EaseP1/P2        cubic-bezier control points. (0,0,1,1) = linear,
+    //                    (0.42,0,0.58,1) = standard ease-in-out, sharper
+    //                    curves give bigger speed contrast.
+    //   MinSpeedFraction fraction of the mean angular velocity
+    //                    (ω_mean = 2π/period) guaranteed at every instant
+    //                    of the cycle. 0 = pure easing (may visibly freeze
+    //                    on the bezier plateaus). 0.3 = never below 30% of
+    //                    mean. 1 = strictly constant rotation at the mean
+    //                    (no pulsation). Raising the floor compresses the
+    //                    peak in the same stroke — the eye reads it as
+    //                    "calmer, more continuous", not "faster". See
+    //                    StartRotation header for the closed-form
+    //                    ω_min / ω_max expressions.
+    //
+    // Runtime variant knobs (live properties on the SINGLE kept-alive
+    // stroke — SaturationEffect, HueRotationEffect, ExposureEffect on the
+    // colour pipeline, plus SpriteVisual.Opacity — animated by
+    // ApplyVariant. Switching variants is a property animation on the
+    // same GPU resources — no surface rebuild, no GC, no lag):
+    //   Saturation     multiplier on the baked conic. 0 = greyscale,
+    //                  1 = baseline colour. Combines with OklchChroma.
+    //   HueShiftTurns  runtime rotation of the colour wheel.
+    //                  0 = no shift, 0.5 = red↔cyan swap, 1 = no change.
+    //                  Negatives shift the other way.
+    //   Exposure       EV stops. 0 = no change, +1 ≈ 2× brighter,
+    //                  -1 ≈ half. Typical range [-2, +2]. Split
+    //                  Dark / Light for Transcribing so the greyscale
+    //                  stays readable against both substrates.
+    //   Opacity        SpriteVisual.Opacity in [0..1]. Dims the whole
+    //                  stroke including the silhouette; 0.6-0.8 reads
+    //                  as a subtle calm variant.
+    //   BlendSeconds   duration of the blend from the previous variant.
+    //                  0.2-0.4 = snappy, 0.6-1.0 = breathing. Per-variant
+    //                  so entering Transcribing can be slower than the
+    //                  return to Rewriting.
+    //
+    // No base stroke layer — the permanent HUD outline is the DWM frame
+    // (DWMWA_BORDER_COLOR = DWMWA_COLOR_DEFAULT in HudWindow), 1-dip and
+    // theme/accent-aware. Rotating arcs composite on top; transparent
+    // regions between arcs expose the DWM stroke.
+>>>>>>> main
 
     // The explicit parameterless constructor is what makes the property
     // initialisers run on `new ConicArcStrokeConfig { ... }`; C# requires one

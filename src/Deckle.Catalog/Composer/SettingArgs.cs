@@ -116,3 +116,19 @@ public sealed record SectionArgs(IReadOnlyList<SettingDescriptor> Children) : Se
 public sealed record ModeArgs(
     IReadOnlyList<ChoiceOption> Options,
     IReadOnlyList<SettingDescriptor> Children) : SettingArgs;
+
+// ── CurveArgs ─────────────────────────────────────────────────────────────────
+//
+// Shape of a Curve setting's editor, the one curve component of the settings
+// design system (decision 21). Frame is read at compose time and on every
+// refresh, so the plot follows the bounds the sibling cards set (the hangover
+// anchors); null draws the unit square alone. Describe turns the points into the
+// sentence the card shows as its description, re-read on every refresh; null
+// keeps the .resw description. Floor is an optional horizontal guide in data y
+// (the Ambient brightness floor). AllowOutside lets a handle's Y leave [0,1] by
+// a quarter, for a curve that overshoots.
+public sealed record CurveArgs(
+    Func<CurveFrame>? Frame = null,
+    Func<CurvePoints, string?>? Describe = null,
+    Func<double?>? Floor = null,
+    bool AllowOutside = false) : SettingArgs;

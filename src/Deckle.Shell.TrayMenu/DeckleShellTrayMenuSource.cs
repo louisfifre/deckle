@@ -62,6 +62,12 @@ public sealed class DeckleShellTrayMenuSource : DeckleEventSource
     public const int EvtPanelSizeRejectedDetail          = 38;
     public const int EvtPanelDismissedWhileOpening       = 39;
     public const int EvtPanelDismissedWhileOpeningDetail = 40;
+    // Carrier deferred open (Placement Full reads the island size), 41 onward.
+    public const int EvtCarrierOpenDeferred              = 41;
+    public const int EvtCarrierOpenDeferredDetail        = 42;
+    public const int EvtCarrierIslandSizedDetail         = 43;
+    public const int EvtCarrierOpenedUnsized             = 44;
+    public const int EvtCarrierOpenedUnsizedDetail       = 45;
 
     // ── Lifecycle ─────────────────────────────────────────────────────────────
 
@@ -475,5 +481,68 @@ public sealed class DeckleShellTrayMenuSource : DeckleEventSource
     {
         if (IsDetailEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Lifecycle))
             WriteEvent(EvtPanelDismissedWhileOpeningDetail, reason);
+    }
+
+    // ── Carrier deferred open ─────────────────────────────────────────────────
+    //
+    // Placement Full sizes a flyout from its carrier's XAML island at ShowAt, so
+    // the carrier opens the flyout only once that island reports the requested
+    // size (TrayCarrierWindow). window: "tray-popup", "tray-panel" (the
+    // Windowing vocabulary). Sizes: requested in physical pixels, island in DIP.
+
+    [Event(EvtCarrierOpenDeferred,
+           Level = EventLevel.Verbose,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Message = "Waiting for the carrier window to take its size")]
+    public void CarrierOpenDeferred()
+    {
+        if (IsDetailEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Lifecycle))
+            WriteEvent(EvtCarrierOpenDeferred);
+    }
+
+    [Event(EvtCarrierOpenDeferredDetail,
+           Level = EventLevel.Verbose,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Message = "carrier open deferred | window={0} requested_px={1}x{2} island_dip={3:F1}x{4:F1} scale={5:F2}")]
+    public void CarrierOpenDeferredDetail(
+        string window, int requested_w, int requested_h, double island_w, double island_h, double scale)
+    {
+        if (IsDetailEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Lifecycle))
+            WriteEvent(EvtCarrierOpenDeferredDetail, window, requested_w, requested_h, island_w, island_h, scale);
+    }
+
+    [Event(EvtCarrierIslandSizedDetail,
+           Level = EventLevel.Verbose,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Message = "carrier island sized | window={0} wait_ms={1:F1} island_dip={2:F1}x{3:F1}")]
+    public void CarrierIslandSizedDetail(string window, double wait_ms, double island_w, double island_h)
+    {
+        if (IsDetailEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Lifecycle))
+            WriteEvent(EvtCarrierIslandSizedDetail, window, wait_ms, island_w, island_h);
+    }
+
+    // The island never reported the requested size within the grace period:
+    // the flyout opened on whatever size it had, so the card may be one item
+    // tall. Visible whatever the Windowing verbosity; the detail follows it.
+    [Event(EvtCarrierOpenedUnsized,
+           Level = EventLevel.Warning,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Message = "A tray surface opened before its window had taken its size")]
+    public void CarrierOpenedUnsized()
+    {
+        if (IsEnabled()) WriteEvent(EvtCarrierOpenedUnsized);
+    }
+
+    [Event(EvtCarrierOpenedUnsizedDetail,
+           Level = EventLevel.Verbose,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Message = "carrier opened unsized | window={0} requested_px={1}x{2} island_dip={3:F1}x{4:F1} scale={5:F2} waited_ms={6:F1}")]
+    public void CarrierOpenedUnsizedDetail(
+        string window, int requested_w, int requested_h,
+        double island_w, double island_h, double scale, double waited_ms)
+    {
+        if (IsDetailEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Lifecycle))
+            WriteEvent(EvtCarrierOpenedUnsizedDetail,
+                window, requested_w, requested_h, island_w, island_h, scale, waited_ms);
     }
 }

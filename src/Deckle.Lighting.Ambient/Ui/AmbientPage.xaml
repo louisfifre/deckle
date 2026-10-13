@@ -7,6 +7,7 @@
     xmlns:ambientControls="using:Deckle.Lighting.Ambient"
     xmlns:catalog="using:Deckle.Catalog">
 
+<<<<<<< HEAD
     <Page.Resources>
         <!-- Per-card reset for the bespoke curve card, matching the composed
              cards' reset; code-behind reveals it on hover. -->
@@ -21,6 +22,13 @@
         </Style>
     </Page.Resources>
 
+=======
+    <!-- Canonical Microsoft Learn pattern (SettingsExpander sample
+         "Settings page example"): StackPanel max 1000 in a Grid,
+         Spacing=4 between cards (SettingsCardSpacing, from App.xaml). Each
+         section is the shared SettingsSection block. Exact layer of
+         GeneralPage / WhisperPage. -->
+>>>>>>> main
     <ScrollViewer Padding="32,24,32,24"
                   VerticalScrollBarVisibility="Auto"
                   HorizontalScrollBarVisibility="Disabled">
@@ -80,6 +88,7 @@
 
                 <!-- ── Fine tuning ────────────────────────────────────────── -->
                 <catalog:SettingsSection x:Uid="AmbientPageTuningSection">
+<<<<<<< HEAD
                     <StackPanel Spacing="{StaticResource SettingsCardSpacing}">
 
                         <!-- bespoke: a curve is a shape, edited by dragging its two
@@ -108,6 +117,14 @@
                         <StackPanel x:Name="TuningHost"
                                     Spacing="{StaticResource SettingsCardSpacing}" />
                     </StackPanel>
+=======
+                    <!-- Composed: the preset fold, with the brightness floor,
+                         smoothing, change threshold, exposure, saturation and the
+                         brightness curve as its children
+                         (AmbientViewModel.TuningSettings). -->
+                    <StackPanel x:Name="TuningHost"
+                                Spacing="{StaticResource SettingsCardSpacing}" />
+>>>>>>> main
                 </catalog:SettingsSection>
 
                 <!-- ── Configuration ──────────────────────────────────────── -->

@@ -15,12 +15,12 @@ namespace Deckle.Lighting.Ambient;
 //
 // Surface : most cards are composed by SettingsComposer from the manifests in
 // AmbientViewModel.Settings.cs, one composer per host panel (StateHost,
-// BehaviourHost, TuningHost, CaptureHost). Six parts stay hand-authored
+// BehaviourHost, TuningHost, CaptureHost). Five parts stay hand-authored
 // because the composer cannot express them, each marked "bespoke" in the
 // XAML: the NotPaired InfoBar, the live preview (AmbientPreviewCard), the
-// per-light rows (LightZonesCard), the
-// brightness-curve editor, the display picker (runtime labels) and the Hue
-// bridge expander (AmbientPage.Hue.cs).
+// per-light rows (LightZonesCard), the display picker (runtime labels) and
+// the Hue bridge expander (AmbientPage.Hue.cs). The brightness curve is a
+// composed Curve card inside the preset fold.
 //
 // Sync : the view model writes every edit straight to AmbientSettingsService
 // and saves. The page observes AmbientSettingsService.Changed and reloads the
@@ -55,13 +55,7 @@ public sealed partial class AmbientPage : Page
         ComposeRegion(TuningHost, ViewModel.TuningSettings);
         ComposeRegion(CaptureHost, ViewModel.CaptureSettings);
 
-        // The curve card's hand-authored reset: shown on hover like the
-        // composed resets, enabled only while the curve is off its default.
-        BrightnessCurveCard.PointerEntered += (_, _) => BrightnessCurveReset.Opacity = 1;
-        BrightnessCurveCard.PointerExited += (_, _) => BrightnessCurveReset.Opacity = 0;
-        ToolTipService.SetToolTip(BrightnessCurveReset, Loc.Get("SettingsComposer_ResetToDefault"));
         ViewModel.PropertyChanged += OnViewModelPropertyChanged;
-        UpdateBrightnessCurveReset();
         Header.IsResetAllEnabled = ViewModel.CanReset;
 
         Loaded   += AmbientPage_Loaded;
@@ -141,31 +135,15 @@ public sealed partial class AmbientPage : Page
             rejectSource: "AMBIENT", rejectWhat: "settings reload");
     }
 
-    // ── Brightness curve (bespoke) ─────────────────────────────────────
+    // ── Reset all gate ─────────────────────────────────────────────────
 
     private void OnViewModelPropertyChanged(object? sender, PropertyChangedEventArgs e)
     {
-        switch (e.PropertyName)
-        {
-            case nameof(AmbientViewModel.BrightnessCurveX1):
-            case nameof(AmbientViewModel.BrightnessCurveY1):
-            case nameof(AmbientViewModel.BrightnessCurveX2):
-            case nameof(AmbientViewModel.BrightnessCurveY2):
-                UpdateBrightnessCurveReset();
-                break;
-            // Reset all is active only while the page is off its defaults; the
-            // view model recomputes CanReset after every Load and edit.
-            case nameof(AmbientViewModel.CanReset):
-                Header.IsResetAllEnabled = ViewModel.CanReset;
-                break;
-        }
+        // Reset all is active only while the page is off its defaults; the
+        // view model recomputes CanReset after every Load and edit.
+        if (e.PropertyName == nameof(AmbientViewModel.CanReset))
+            Header.IsResetAllEnabled = ViewModel.CanReset;
     }
-
-    private void UpdateBrightnessCurveReset()
-        => BrightnessCurveReset.IsEnabled = ViewModel.IsBrightnessCurveDirty();
-
-    private void BrightnessCurveReset_Click(object sender, RoutedEventArgs e)
-        => ViewModel.ResetBrightnessCurve();
 
     // ── Reset all ──────────────────────────────────────────────────────
     //
