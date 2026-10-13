@@ -45,11 +45,14 @@ The following third-party packages are referenced across the projects under `src
 - `Microsoft.Graphics.Win2D` — MIT — Microsoft.
 - `CommunityToolkit.Mvvm` — MIT — Microsoft / .NET Foundation.
 - `CommunityToolkit.WinUI.Controls.SettingsControls` — MIT — .NET Foundation / Microsoft.
-- `Microsoft.ML.OnnxRuntime` — MIT — Microsoft. Runs the external Silero VAD on the CPU execution provider.
+- `Microsoft.ML.OnnxRuntime.DirectML` — MIT — Microsoft. Runs the external Silero VAD on the CPU execution provider of this build.
 - `Microsoft.ML.OnnxRuntimeGenAI.DirectML` — MIT — Microsoft. Runs the local closed-candidate sentence judge through ONNX Runtime GenAI, using DirectML or CPU as selected.
 - `Microsoft.ML.Tokenizers` — MIT — Microsoft. Tokenizes text for the CamemBERT masked-language-model probe.
 - `System.Security.Cryptography.ProtectedData` — MIT — .NET Foundation / Microsoft. Protects local autocorrect observation data with Windows DPAPI.
 - `BouncyCastle.Cryptography` — Bouncy Castle License (MIT X Consortium-based) — Legion of the Bouncy Castle. Provides the DTLS-PSK transport used for Philips Hue Entertainment.
+- `ModelContextProtocol.AspNetCore` — Apache-2.0 — ModelContextProtocol. Serves the MCP HTTP endpoint of `Deckle.Anytype.Mcp`.
+- `JsonSchema.Net` — Open Source Maintenance Fee EULA (nuspec license file `OSMFEULA.txt`, which states the source is MIT) — Greg Dennis. Builds the JSON Schema contract of the MCP surface in `Deckle.Anytype.Mcp`.
+- `System.Management` — MIT — Microsoft. Watches process starts through WMI in `Deckle.Orchestration`.
 
 ## Bundled assets
 
@@ -68,6 +71,7 @@ The autocorrect module (`Deckle.Autocorrect`) ships compact derived lexicons und
 - Project : http://www.lexique.org — New, Pallier, Brysbaert et al.
 - License : CC BY-SA 4.0 (the data).
 - Used as : source of French inflected forms and frequencies, reduced to the derived `lexicon-fr.tsv.gz` (form + occurrences per million). The derived file remains under CC BY-SA 4.0 with this attribution.
+- Also used as : source of `verbs-fr.tsv.gz` (form, lemma, inflection codes, verb-only flag), derived from Lexique's verb morphology by the same build-data gesture. The derived file stays under CC BY-SA 4.0.
 
 ### Morphalou 3.1
 
