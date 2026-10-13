@@ -10,9 +10,11 @@ namespace Deckle.Anytype;
 // (complete and archive) live on QueryGestures.
 //
 // Subtask round-trip: the body markdown returned by the API is Anytype's raw
-// export form. GFM checklist lines (`- [ ]` / `- [x]`) are NOT among the
-// characters Anytype escapes on export (only _ * ` |), so contains-matching on
-// the label is reliable and a full-replacement PATCH preserves the rest verbatim.
+// export form. The checklist markers (`- [ ]` / `- [x]`) are not escaped, so a
+// full-replacement PATCH preserves the rest verbatim. Labels are not safe:
+// Anytype re-escapes _, *, backtick and | on each write, so a label holding
+// one drifts after repeated writes, the literal contains-match misses it, and
+// the verb then appends a duplicate.
 
 public sealed class TaskGestures(AnytypeApiClient api, NameResolver resolver)
 {

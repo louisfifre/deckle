@@ -308,9 +308,11 @@ public sealed partial class WhisperBackend
     // function pointer indefinitely — clearing it would have to coordinate
     // with any other libwhisper consumer in the process.
 
-    // ── Init-phase timing ─────────────────────────────────────────────────────
+    // ── Init timing ───────────────────────────────────────────────────────────
     //
-    // Wall-clock for whisper.cpp's pre-decode setup: started just before
-    // whisper_full and stopped when it returns. Surfaced as whisper_init_ms.
+    // Meant to time whisper.cpp's pre-decode setup, but it starts just before
+    // whisper_full and stops only when it returns, so it spans the whole call.
+    // Both timers are degenerate: whisper_init_ms is about the total and
+    // whisper_ms (total minus init) is about 0. Neither is a phase breakdown.
     private Stopwatch? _whisperInitSw;
 }

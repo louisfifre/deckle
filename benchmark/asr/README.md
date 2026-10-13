@@ -10,13 +10,12 @@ Workspace for ASR-specific benchmark material: private corpus loaders, speech so
 
 ## What lives here
 
-Whisper (whisper.cpp) is Deckle's shipped transcription path; this workspace is where alternatives get measured against it. The live, ASR-specific harness — `lib/` (corpus loader, transcription sources, ASR judges, ASR metrics), `prompts/`, and `build_corpus.py` — stays here. Shared viewers and infrastructure live at `benchmark/`; completed or abandoned model spikes are frozen under [`studies/`](studies/), with their findings in [`JOURNAL.md`](JOURNAL.md).
+Whisper (whisper.cpp) is Deckle's shipped transcription path; this workspace is where alternatives get measured against it. The live, ASR-specific harness — `lib/` (corpus loader, transcription sources, ASR judges, ASR metrics), `prompts/`, and `build_corpus.py` — stays here. Shared viewers and infrastructure live at `benchmark/`; completed or abandoned model spikes are frozen under [`studies/`](studies/).
 
 ## Layout
 
 ```
 benchmark/asr/
-├── JOURNAL.md       findings and decisions of the ASR studies
 ├── README.md        this file
 ├── build_corpus.py  Deckle telemetry -> ASR corpus
 ├── lib/             ASR corpus loader, sources, judges, metrics

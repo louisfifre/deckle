@@ -88,8 +88,8 @@ public sealed partial class TranscriptPanelWindow : Window
         AppWindow.SetPresenter(presenter);
 
         // DWM: rounded silhouette, the system 1-dip frame stroke the HUD cards
-        // wear, no Mica/Acrylic. DWMWA_NCRENDERING_POLICY is left alone: per the
-        // HUD journal (2026-06-13) disabling it also kills the frame stroke.
+        // wear, no Mica/Acrylic. DWMWA_NCRENDERING_POLICY is left alone:
+        // disabling it also kills the frame stroke.
         uint cornerPref = NativeMethods.DWMWCP_ROUND;
         NativeMethods.DwmSetWindowAttribute(
             _hwnd, NativeMethods.DWMWA_WINDOW_CORNER_PREFERENCE,

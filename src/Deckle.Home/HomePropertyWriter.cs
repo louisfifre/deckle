@@ -80,6 +80,8 @@ internal sealed class HomePropertyWriter(
             aliases.UnionWith(HomeSchema.OptionAliases(property.Key, matches[0]));
 
         IReadOnlyList<SchemaTagInfo> liveTags = await ReadTagsAsync(property, ct).ConfigureAwait(false);
+        // Anytype derives a live tag key from its label, so the seed key may
+        // not survive creation; match by key or by name.
         SchemaTagInfo[] candidates = liveTags.Where(tag => aliases.Contains(tag.Key) || aliases.Contains(tag.Name))
             .DistinctBy(tag => tag.Id).ToArray();
         if (candidates.Length == 1 && candidates[0].Id.Length > 0) return candidates[0].Id;

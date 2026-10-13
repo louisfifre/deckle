@@ -3,9 +3,9 @@ using Deckle.Diagnostics;
 
 namespace Deckle.Speech;
 
-// Speech (read-aloud / TTS) module provider. Covers the read-aloud gesture
-// (clipboard → synthesis → speaker output), the backend synthesis path, and
-// module settings persistence.
+// Speech (read-aloud / TTS) module provider. Covers the read-aloud request
+// (synthesis → speaker output), the backend synthesis path, and module
+// settings persistence.
 //
 // Provider Name = "Deckle-Speech": the LogWindow tag reads [SPEECH]. Mirrors
 // the DeckleAmbientSource / DeckleAudioSource shape — milestones at

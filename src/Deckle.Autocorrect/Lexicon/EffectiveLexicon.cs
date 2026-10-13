@@ -20,10 +20,8 @@ namespace Deckle.Autocorrect;
 // behaves as though the word did not exist — it is neither a correction target
 // nor a protected literal. That is the whole of the precedence chain taken
 // literally, and it is also the only exclusion the engine can honour reliably:
-// candidate generation is spread across the stages and several of them
-// (the diacritics sole-candidate path, the morphological accent branches, the
-// elision split) apply a candidate with no frequency test at all, so demoting a
-// form instead of removing it would leave it reachable.
+// several candidate paths apply a form with no frequency floor, so demoting it,
+// even to zero, would leave it reachable.
 public static class EffectiveLexicon
 {
     // Fuses the base lexicon with the active packs, then subtracts the user's

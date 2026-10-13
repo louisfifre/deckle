@@ -50,6 +50,9 @@ public sealed partial class OnnxSentenceScorer
         var scores = new SentenceCandidateScore[candidates.Count];
         try
         {
+            // Two order-normalized passes: label-only judging has a strong position bias.
+            // Each scores from the first divergence between candidates to the end, because
+            // whole-sentence likelihood picked the wrong side on `il a dit` / `il à dit`.
             CandidateScore[] combinedScores;
             if (orderMode == OnnxSentenceScoringOrderMode.ReverseOnly)
             {
@@ -373,6 +376,10 @@ public sealed partial class OnnxSentenceScorer
         }
     }
 
+    // Reads one vocabulary-wide logits row, upcast to float. The logits come back
+    // float32 from a CPU export but float16 from a DirectML one (a `-e dml` build
+    // forces FLOAT16 io; there is no FP32 DML path), so the row is read in its own
+    // element type.
     private float[] LogitsRow(Tensor logits, int position)
     {
         int offset = position * _vocabSize;

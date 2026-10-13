@@ -40,10 +40,10 @@ public sealed partial class TrayContextMenuHost : IDisposable
 
     // Cache of DesiredSize values captured with items attached to the popup
     // visual tree (prime cycle, then every real open). MeasureFlyout() reads
-    // this cache instead of calling detached item.Measure(), which returns
-    // unstable values (see module JOURNAL.md: 40 → 32 switch on native items
-    // after a variable number of opens because the native template falls to
-    // MinHeight when measured detached).
+    // this cache instead of calling detached item.Measure(), which can collapse
+    // toward the item's MinHeight. Item height follows the padding rule: items
+    // start at 40 DIP and the framework narrows them to 32 only after the first
+    // pointer interaction, so ApplyNarrowPadding sets the narrow padding at build.
     private readonly System.Collections.Generic.Dictionary<MenuFlyoutItemBase, Windows.Foundation.Size> _primedSizes = new();
 
     // DesiredSize of the real MenuFlyoutPresenter, captured with the items

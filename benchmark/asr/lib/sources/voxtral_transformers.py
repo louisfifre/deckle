@@ -1,7 +1,7 @@
 """Source Voxtral Mini 3B BF16 via Transformers + torch ROCm Windows.
 
-Voie d'inférence safetensors-native ouverte par le pivot du
-2026-05-27 — voir entrée correspondante dans ``benchmark/asr/JOURNAL.md``.
+Voie d'inférence safetensors-native en BF16, la voie haute précision que
+la doctrine « pas de Q4 » désigne.
 Charge le modèle une seule fois dans le constructeur (coût ~8s, VRAM
 ~8.7 GiB sur RX 7900 XT en BF16), puis réutilise pour chaque appel à
 ``transcribe()``.

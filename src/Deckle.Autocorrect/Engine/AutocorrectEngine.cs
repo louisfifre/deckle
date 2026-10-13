@@ -11,9 +11,9 @@ namespace Deckle.Autocorrect;
 // input thread; Start/Stop are the only cross-thread entries.
 //
 // A correction is taken back only through the correction inlay (CONTEXT.md
-// § Correction undo) — Backspace is always a plain Backspace. The earlier
-// implicit-Backspace revert was retired after its misfires (a deleted comma
-// read as an undo) wrote false suppressions (JOURNAL 2026-07-02).
+// § Correction undo) — Backspace is always a plain Backspace, because reading
+// it as an undo misfires (a deleted comma read as an undo) and writes false
+// suppressions.
 //
 // Gate order is doctrine: injected events are filtered first (our
 // own repairs must never feed the tracker), the password gate cuts BEFORE

@@ -123,7 +123,7 @@ public class TypedWordTrackerTests
         Assert.Equal("l'", rec.Commits[1].PreviousWord);
     }
 
-    // Régression injection (JOURNAL 2026-07-02). L'apostrophe d'élision vit
+    // Régression injection. L'apostrophe d'élision vit
     // DANS le mot (« j' ») et ne s'affiche jamais comme frontière séparée. La
     // 1re backspace après un commit d'élision a déjà rongé cette apostrophe à
     // l'écran ; le buffer réouvert la laisse tomber aussi pour rester collé à

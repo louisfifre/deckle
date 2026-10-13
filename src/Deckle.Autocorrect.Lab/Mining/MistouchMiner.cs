@@ -30,7 +30,7 @@ namespace Deckle.Autocorrect.Lab;
 // distinct days (the adoption discipline's recurrence signal), ambiguity share.
 // The miner DISCOVERS and MEASURES; it activates nothing — thresholds are
 // calibrated on the data and the first batch is maintainer-reviewed before any
-// automation (frozen in the module JOURNAL, 2026-07-14).
+// automation.
 public static class MistouchMiner
 {
     // One observed occurrence: the faulty form, the repair that reads it, where

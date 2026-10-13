@@ -302,6 +302,8 @@
                     <StaticResource x:Key="ScrollBarTrackFillDisabled" ResourceKey="LayerFillColorDefaultBrush" />
                     <StaticResource x:Key="ScrollViewerScrollBarSeparatorBackground" ResourceKey="LayerFillColorDefaultBrush" />
                 </ListView.Resources>
+                <!-- Empty on purpose: the default item transitions flash on
+                     row insertion. Do not remove. -->
                 <ListView.ItemContainerTransitions />
                 <ListView.KeyboardAccelerators>
                     <KeyboardAccelerator Key="C"

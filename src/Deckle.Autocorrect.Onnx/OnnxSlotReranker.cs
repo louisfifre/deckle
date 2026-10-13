@@ -10,10 +10,12 @@ namespace Deckle.Autocorrect.Onnx;
 //
 // The judge is a full-sentence forced-decoding scorer whose speed follows the
 // execution provider it loads onto: seconds per slot on CPU int4 (offline-only),
-// ~0.6 s on the GPU via DirectML — live-viable behind the engine's background
-// rerank lane, which keeps inference off the input thread, holds one request in
-// flight and drops stale verdicts by epoch. The offline replay drives the same
-// class, so live and replay inherit one behavior.
+// close to a second per whole-sentence verdict on the resident DirectML model.
+// That is too slow to answer directly at the sentence-ending punctuation, so the
+// judge runs behind the engine's background rerank lane, which keeps inference
+// off the input thread, holds one request in flight and drops stale verdicts by
+// epoch. The offline replay drives the same class, so live and replay inherit
+// one behavior.
 public sealed class OnnxSlotReranker : ISentenceReranker, IWholeSentenceReranker, IDisposable
 {
     // Context floor: the judge is unreliable on short sentences. Replayed over the

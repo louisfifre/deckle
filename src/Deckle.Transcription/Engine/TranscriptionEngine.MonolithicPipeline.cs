@@ -111,8 +111,7 @@ public sealed partial class TranscriptionEngine
         }
 
         // Stop the pre-backend overhead stopwatch the moment we hand off to the
-        // backend. The backend's TranscriptionResult.InitDurationMs covers the
-        // pre-VAD phase inside the inference call itself.
+        // backend.
         if (_stopToPipelineSw is { IsRunning: true }) _stopToPipelineSw.Stop();
 
         // Transcription pre-processing DSP — terminal float[]→float[] stage,

@@ -287,10 +287,7 @@ public sealed partial class TranscriptionEngine : IDisposable
     //                           Record() return.
     //   _stopToPipelineSw     — entry of RequestToggle (Stop branch) → just
     //                           before backend.TranscribeAsync. Captures the
-    //                           drain + the orchestrator overhead. Add the
-    //                           backend's TranscriptionResult.InitDurationMs
-    //                           to get the equivalent of the legacy
-    //                           "stop to first whisper_vad" measurement.
+    //                           drain + the orchestrator overhead.
     private System.Diagnostics.Stopwatch? _hotkeySw;
     private System.TimeSpan _recordDrainDuration;
     private System.Diagnostics.Stopwatch? _stopToPipelineSw;

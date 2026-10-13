@@ -81,6 +81,8 @@ internal sealed class TravelPropertyWriter(
                     + string.Join(", ", vocabulary.Values));
             normalized = matches[0].Key;
             string expectedName = matches[0].Value;
+            // Anytype derives a live tag key from its label, so the seed key
+            // may not survive creation; match by key or by name.
             SchemaTagInfo? live = schema.TagsFor(property.Key).Values.Distinct().FirstOrDefault(tag =>
                 string.Equals(tag.Key, normalized, StringComparison.OrdinalIgnoreCase)
                 || string.Equals(tag.Name, expectedName, StringComparison.OrdinalIgnoreCase));

@@ -15,6 +15,12 @@ namespace Deckle.Input;
 // RIDEV_DEVNOTIFY (presence is irrelevant here — we observe transitions,
 // not which device produced them).
 //
+// The keyboard stays on Raw Input, never on WH_KEYBOARD_LL: a low-level hook adds
+// system-wide latency to every keystroke and Windows silently removes it on
+// timeout. The mouse hook exists only because Raw Input cannot see the clicks
+// Windows synthesizes for a Precision Touchpad or suppress the wheel; keys need
+// neither.
+//
 // The mouse is a single Raw Input resource per process — only one window
 // may receive it (the last one registered wins), so this host is the sole
 // owner and the app shares one instance across consumers: autocorrect

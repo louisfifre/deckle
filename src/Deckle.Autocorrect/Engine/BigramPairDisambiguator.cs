@@ -253,9 +253,9 @@ public sealed class BigramPairDisambiguator : IPairDisambiguator
 }
 
 // Tuning for the context decision. Defaults are the measured optimum of the
-// 2026-06-13 eval matrix (see the module JOURNAL): margin is the lever that
-// kills wrong-variant picks (342→116 from 3× to 10× for −0.6 pt of recall);
-// the evidence floor barely moves anything past 5.
+// eval matrix: margin is the lever that kills wrong-variant picks (342→116
+// from 3× to 10× for −0.6 pt of recall); the evidence floor barely moves
+// anything past 5.
 public sealed record DisambiguatorOptions
 {
     // The winner's smoothed score must beat the runner-up's by this factor.

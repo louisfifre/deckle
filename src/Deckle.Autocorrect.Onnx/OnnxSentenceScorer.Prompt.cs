@@ -84,12 +84,6 @@ public sealed partial class OnnxSentenceScorer
         return tokens[1..];
     }
 
-    // Reads one vocabulary-wide logits row, upcast to float. The judge's logits come
-    // back float32 from the CPU int4 export but float16 from the DirectML export — a
-    // `-e dml` build forces a FLOAT16 io dtype (there is no FP32 DML path) — so the
-    // row is read in its own element type. The per-row allocation is dwarfed by the
-    // forward pass it follows.
-
     private sealed record ChatTemplateMessage(
         [property: JsonPropertyName("role")] string Role,
         [property: JsonPropertyName("content")] string Content);

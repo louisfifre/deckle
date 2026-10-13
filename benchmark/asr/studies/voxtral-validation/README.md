@@ -7,7 +7,7 @@ description: "Étude Q4 archivée : smoke fonctionnel et comparaison historique,
 
 Étude historique de Voxtral 24B Q4_K_M (via `llama-mtmd-cli` Vulkan) sur le corpus `voxtral-val-30`. Elle mesure WER, word_count_ratio et axes paralinguistiques du judge Gemini multimodal, mais Q4 est désormais classé **smoke fonctionnel uniquement** : ces résultats ne peuvent pas valider une qualité de livraison.
 
-> **Statut — étude archivée (abandonnée 2026-06).** Whisper streaming couvre le besoin ; l'évaluation Voxtral est abandonnée. Conservé pour le smoke de la stack, la ground truth Gemini et `word_count_ratio`, pas comme preuve qualité de Q4. Voir [`../../README.md`](../../README.md) et [`../../JOURNAL.md`](../../JOURNAL.md).
+> **Statut — étude archivée (abandonnée 2026-06).** Whisper streaming couvre le besoin ; l'évaluation Voxtral est abandonnée. Conservé pour le smoke de la stack, la ground truth Gemini et `word_count_ratio`, pas comme preuve qualité de Q4. Voir [`../../README.md`](../../README.md).
 
 ## Pourquoi ce bench
 

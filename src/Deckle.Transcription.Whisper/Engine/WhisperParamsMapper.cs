@@ -71,6 +71,8 @@ public static class WhisperParamsMapper
             (byte)(whisp.Engine.CarryInitialPrompt && prompt.Length > 0 ? 1 : 0);
 
         // ── Confidence Thresholds ─────────────────────────────────────────
+        // Decoder guards that drive the fallback and skip decisions on a decoded
+        // segment, not voice-activity detection (whisper's own VAD is off below).
         wparams.entropy_thold = (float)whisp.Confidence.EntropyThreshold;
         wparams.logprob_thold = (float)whisp.Confidence.LogprobThreshold;
         wparams.no_speech_thold = (float)whisp.Confidence.NoSpeechThreshold;

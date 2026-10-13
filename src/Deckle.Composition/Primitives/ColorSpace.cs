@@ -51,7 +51,7 @@ public static class ColorSpace
     // the forward Björn Ottosson matrix → cube root → OKLab via the
     // forward matrix → polar (C, h) in the a-b plane.
     //
-    // Used by AmbientEngine.ApplySaturationBoost to scale chroma at
+    // Used by AmbientColorPipeline.ApplySaturationBoost to scale chroma at
     // constant L : HSV-S boosting drags yellows brighter and blues
     // darker because HSV's V is not perceptually uniform (the same
     // asymmetry that drove the conic stroke onto OKLCh — see the file

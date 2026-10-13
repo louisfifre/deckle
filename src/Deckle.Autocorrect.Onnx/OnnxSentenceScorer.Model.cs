@@ -47,16 +47,16 @@ public sealed partial class OnnxSentenceScorer
     }
 
     // Builds the config and the model, with one bounded retry. The provider is
-    // chosen in code, not read from the export's genai_config.json, so one CPU
-    // int4 export can be driven onto the GPU (DirectML) without a re-export:
-    // clear the config's providers and append the chosen one. "cpu" leaves the
-    // list empty → the built-in CPU EP. Model construction enumerates the DML
-    // devices, and that enumeration fails transiently — measured on the test
-    // host (2026-07-14): "Specified provider is not supported" on one run,
-    // clean on the next, same binary and machine. One retry absorbs the flake
-    // for every consumer (live composition, probe, replay); a second failure
-    // is a real one and propagates. The config is rebuilt per attempt rather
-    // than reused across a failed native construction.
+    // chosen in code, not read from the export's genai_config.json: clear the
+    // config's providers and append the chosen one. "cpu" leaves the list empty →
+    // the built-in CPU EP. The export must still suit the provider: a CPU int4
+    // export's MatMulNBits nodes do not partition to DirectML, so a GPU run needs
+    // a dedicated `-e dml` export. Model construction enumerates the DML devices,
+    // and that enumeration fails transiently — "Specified provider is not
+    // supported" on one run, clean on the next, same binary and machine. One retry
+    // absorbs the flake for every consumer (live composition, probe, replay); a
+    // second failure is a real one and propagates. The config is rebuilt per
+    // attempt rather than reused across a failed native construction.
     private static (Config Config, Model Model) CreateModel(string modelDir, string executionProvider)
     {
         for (int attempt = 0; ; attempt++)

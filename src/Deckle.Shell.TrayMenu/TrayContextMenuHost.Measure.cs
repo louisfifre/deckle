@@ -142,7 +142,7 @@ public sealed partial class TrayContextMenuHost
     // The size of every item, from the attached capture when there is one.
     // Without a capture (the prime cycle has not run yet), the item is
     // measured detached, accepted for lack of a better option: detached
-    // measures are unstable (see module JOURNAL.md).
+    // measures are unstable (they can collapse toward MinHeight).
     private List<(double Width, double Height)> CurrentItemSizes(bool traceWindowing)
     {
         var sizes = new List<(double Width, double Height)>();

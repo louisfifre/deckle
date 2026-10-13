@@ -8,7 +8,7 @@ module: benchmark/asr/studies/tts-audition
 
 A by-ear comparison of **ONNX-local** French text-to-speech engines, all speaking the same sentence set so timbre and prosody can be judged side by side. On-doctrine throughout: no online inference, no `transformers` at inference, weights pulled once and run on plain ONNX Runtime.
 
-> **Status — completed spike (verdict in [`../../JOURNAL.md`](../../JOURNAL.md), 2026-06-14).** Kept: **Chatterbox-Multilingual** (natural French via a reference voice clip, expressivity driven by sampling **temperature**). Also validated: **Supertonic** M1 (male) voice. Dropped: **Orpheus FR** (output stayed incoherent). F5 and the sherpa bundles remain as also-ran baselines. The scripts stay runnable for re-auditioning.
+> **Status — completed spike.** Kept: **Chatterbox-Multilingual** (natural French via a reference voice clip, expressivity driven by sampling **temperature**). Also validated: **Supertonic** M1 (male) voice. Dropped: **Orpheus FR** (output stayed incoherent). F5 and the sherpa bundles remain as also-ran baselines. The scripts stay runnable for re-auditioning.
 
 ## Engines
 

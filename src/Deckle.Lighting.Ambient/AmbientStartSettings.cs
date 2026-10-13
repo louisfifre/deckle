@@ -4,7 +4,9 @@ namespace Deckle.Lighting.Ambient;
 /// The settings <see cref="AmbientEngine"/> reads only when it starts: the
 /// capture monitor, the pipeline shape and the capture rate. The app keeps
 /// the values a running engine started with and restarts it when one of
-/// them changes, so every setting acts without a manual off and on.
+/// them changes, so every setting acts without a manual off and on. The Hue
+/// bridge fields and the group are also read only at start, but they are not
+/// part of this set: changing them does not restart a running engine.
 /// </summary>
 public readonly record struct AmbientStartSettings(
     string? SelectedMonitorDeviceName,
