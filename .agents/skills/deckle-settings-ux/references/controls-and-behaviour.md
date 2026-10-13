@@ -7,7 +7,7 @@ A companion to the deckle-settings-ux skill: the control catalogue and the finer
 By the value's nature:
 - on/off → a switch; its state shown on the control itself (a shape legible in black-and-white), its label fixed and naming what it governs.
 - one of a few mutually exclusive options → radio buttons, every option laid flat and visible; more than a few → a dropdown.
-- a numeric magnitude → one paired control (see below).
+- a numeric magnitude → one control, a field with an optional slider (see below).
 - a relationship or shape — a curve, an envelope → a dedicated editor, never a row of raw numbers.
 - free text → one shared input; multi-line only when the value wraps.
 - a path or folder → one normalized picker (see below).
