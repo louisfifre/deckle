@@ -7,15 +7,6 @@
     xmlns:catalog="using:Deckle.Catalog">
 
     <Page.Resources>
-        <x:Double x:Key="SettingsCardSpacing">4</x:Double>
-        <Style x:Key="SettingsSectionHeaderTextBlockStyle"
-               BasedOn="{StaticResource BodyStrongTextBlockStyle}"
-               TargetType="TextBlock">
-            <Style.Setters>
-                <Setter Property="Margin" Value="1,30,0,6" />
-            </Style.Setters>
-        </Style>
-
         <!-- Compact slider for bounded continuous values: Windows 11 Settings
              pattern (mouse sensitivity, volume, etc.). No spinner, no layout
              shift, value shown on the right through ValueTextBlock. -->
@@ -87,25 +78,14 @@
                 <!-- ── Overlay and pasting ──────────────────────────────────────
                      The dictation experience — the on-screen HUD and auto-paste,
                      relocated from General. Composed from WhisperViewModel.BehaviourSettings
-                     into the host below; its own section "Reset" gates active-when-dirty. -->
-                <Grid>
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="*" />
-                        <ColumnDefinition Width="Auto" />
-                    </Grid.ColumnDefinitions>
-                    <TextBlock x:Uid="WhisperPageBehaviourHeaderLabel"
-                               Grid.Column="0"
-                               Style="{StaticResource SettingsSectionHeaderTextBlockStyle}" />
-                    <HyperlinkButton x:Name="BehaviourResetLink"
-                                     x:Uid="Settings_SectionResetLink"
-                                     Grid.Column="1"
-                                     VerticalAlignment="Bottom"
-                                     Margin="0,0,0,2"
-                                     Click="ResetBehaviour_Click" />
-                </Grid>
-
-                <StackPanel x:Name="BehaviourHost"
-                            Spacing="{StaticResource SettingsCardSpacing}" />
+                     into the host below; its own section reset gates active-when-dirty. -->
+                <catalog:SettingsSection x:Name="BehaviourSection"
+                                         x:Uid="WhisperPageBehaviourSection"
+                                         HasReset="True"
+                                         ResetRequested="ResetBehaviour_Click">
+                    <StackPanel x:Name="BehaviourHost"
+                                Spacing="{StaticResource SettingsCardSpacing}" />
+                </catalog:SettingsSection>
 
                 <!-- ── Transcription ───────────────────────────────────────── -->
                 <!--
@@ -114,9 +94,13 @@
                     a restart and (b) it owns the storage location for
                     downloaded weights, surfaced as an inline child of the
                     SettingsExpander rather than a separate "Storage" section.
+                    No section reset: Model / Language / InitialPrompt are
+                    bespoke cards with per-card resets, and GPU / models
+                    directory sit in two separate composers, so no single
+                    dirtiness could gate one.
                 -->
-                <TextBlock x:Uid="WhisperPageModelEngineHeaderLabel"
-                           Style="{StaticResource SettingsSectionHeaderTextBlockStyle}" />
+                <catalog:SettingsSection x:Uid="WhisperPageModelEngineSection">
+                <StackPanel Spacing="{StaticResource SettingsCardSpacing}">
 
                 <controls:SettingsCard x:Name="LanguageCard"
                                        x:Uid="WhisperLanguageCard"
@@ -212,52 +196,47 @@
                 <StackPanel x:Name="ModelsDirectoryHost"
                             Spacing="{StaticResource SettingsCardSpacing}" />
 
+                </StackPanel>
+                </catalog:SettingsSection>
+
                 <!-- ── Speech filtering ────────────────────────────────────── -->
-                <TextBlock x:Uid="WhisperPageSpeechFilteringHeaderLabel"
-                           Style="{StaticResource SettingsSectionHeaderTextBlockStyle}"
-                           Visibility="{x:Bind VisibleWhenStreaming(ViewModel.StreamingEnabled), Mode=OneWay}" />
-
-                <TextBlock x:Uid="WhisperPageSpeechFilteringBodyLabel"
-                           Style="{StaticResource BodyTextBlockStyle}"
-                           Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                           TextWrapping="Wrap"
-                           Margin="1,0,0,8"
-                           Visibility="{x:Bind VisibleWhenStreaming(ViewModel.StreamingEnabled), Mode=OneWay}" />
-
-                <!-- VAD fold — composed. The on/off toggle is the group master,
-                     the four Silero detection parameters its children; the whole
-                     expander collapses when streaming is off (the group's
-                     visibleWhen gates on StreamingEnabled, matching the former
-                     VisibleWhenStreaming bind). ComposeVadSection() builds it into
-                     this host; the section header + body above stay hand-authored
-                     (the composer governs cards, not section chrome). -->
-                <StackPanel x:Name="VadHost"
-                            Spacing="{StaticResource SettingsCardSpacing}" />
+                <!-- Hidden as a whole while streaming is off: the title, the caption
+                     and the VAD fold all depend on it. -->
+                <catalog:SettingsSection x:Uid="WhisperPageSpeechFilteringSection"
+                                         Visibility="{x:Bind VisibleWhenStreaming(ViewModel.StreamingEnabled), Mode=OneWay}">
+                    <!-- VAD fold — composed. The on/off toggle is the group master,
+                         the four Silero detection parameters its children; the whole
+                         expander collapses when streaming is off (the group's
+                         visibleWhen gates on StreamingEnabled, matching the former
+                         VisibleWhenStreaming bind). ComposeVadSection() builds it into
+                         this host; the section block around it carries the title and
+                         caption (the composer governs cards, not section chrome). -->
+                    <StackPanel x:Name="VadHost"
+                                Spacing="{StaticResource SettingsCardSpacing}" />
+                </catalog:SettingsSection>
 
                 <!-- ── Output filters ──────────────────────────────────────── -->
-                <TextBlock x:Uid="WhisperPageOutputFiltersHeaderLabel"
-                           Style="{StaticResource SettingsSectionHeaderTextBlockStyle}" />
-
-                <!-- Output filters — composed. The three cards (two toggles + the
-                     one-line regex field) are a FLAT run with no master toggle, so
-                     ComposeOutputFiltersSection() builds them as top-level composed
-                     cards into this host; the section header above stays
-                     hand-authored. Same host-only pattern as the VAD/Streaming folds,
-                     minus the group wrapper — the composer governs cards, not the
-                     section TextBlock. -->
-                <StackPanel x:Name="OutputFiltersHost"
-                            Spacing="{StaticResource SettingsCardSpacing}" />
+                <catalog:SettingsSection x:Uid="WhisperPageOutputFiltersSection">
+                    <!-- Output filters — composed. The three cards (two toggles + the
+                         one-line regex field) are a FLAT run with no master toggle, so
+                         ComposeOutputFiltersSection() builds them as top-level composed
+                         cards into this host; the section block around it carries the
+                         title. Same host-only pattern as the VAD/Streaming folds,
+                         minus the group wrapper — the composer governs cards, not the
+                         section chrome. -->
+                    <StackPanel x:Name="OutputFiltersHost"
+                                Spacing="{StaticResource SettingsCardSpacing}" />
+                </catalog:SettingsSection>
 
                 <!-- ── Context and segmentation ────────────────────────────── -->
-                <TextBlock x:Uid="WhisperPageContextSegmentationHeaderLabel"
-                           Style="{StaticResource SettingsSectionHeaderTextBlockStyle}" />
-
-                <!-- Context — composed. The UseContext toggle and the MaxTokens
-                     NumberBox are a flat pair (no master toggle), composed into this
-                     host by ComposeContextSection(); the section header stays
-                     hand-authored, as with the output filters above. -->
-                <StackPanel x:Name="ContextHost"
-                            Spacing="{StaticResource SettingsCardSpacing}" />
+                <catalog:SettingsSection x:Uid="WhisperPageContextSegmentationSection">
+                    <!-- Context — composed. The UseContext toggle and the MaxTokens
+                         NumberBox are a flat pair (no master toggle), composed into this
+                         host by ComposeContextSection(); the section block around it
+                         carries the title, as with the output filters above. -->
+                    <StackPanel x:Name="ContextHost"
+                                Spacing="{StaticResource SettingsCardSpacing}" />
+                </catalog:SettingsSection>
 
                 <!-- ── Decoding ────────────────────────────────────────────── -->
                 <!-- Decoding fold — composed. The hand-authored master-less
@@ -267,7 +246,8 @@
                      with UseBeamSearch / BeamSize / Temperature / TemperatureIncrement
                      as composed cards. The fallback warning rides along as the
                      TemperatureIncrement card's Advisory — a flat note row inside the
-                     fold, not a separate InfoBar. -->
+                     fold, not a separate InfoBar. It has no title of its own: the fold's
+                     own header names it, so it sits outside any SettingsSection. -->
                 <StackPanel x:Name="DecodingHost"
                             Spacing="{StaticResource SettingsCardSpacing}" />
 
@@ -276,40 +256,33 @@
                      three thresholds as a Section into this host; the slider bounds
                      that the code-behind set imperatively (to dodge the XAML-trimming
                      parser crash) now live in the manifest's MagnitudeArgs, so that
-                     workaround is gone. -->
+                     workaround is gone. Like the Decoding fold, it has no title of its
+                     own outside the fold's header. -->
                 <StackPanel x:Name="ConfidenceHost"
                             Spacing="{StaticResource SettingsCardSpacing}" />
 
                 <!-- ── Streaming pipeline (experimental) ───────────────────── -->
-                <TextBlock x:Uid="WhisperPageStreamingHeaderLabel"
-                           Style="{StaticResource SettingsSectionHeaderTextBlockStyle}" />
-
-                <TextBlock x:Uid="WhisperPageStreamingBodyLabel"
-                           Style="{StaticResource BodyTextBlockStyle}"
-                           Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                           TextWrapping="Wrap"
-                           Margin="1,0,0,8" />
-
-                <!-- Streaming fold — composed. The on/off toggle is the group
-                     master, the seven energy-segmenter parameters its Number-box
-                     children; the composer hides them while streaming is off.
-                     ComposeStreamingSection() builds it into this host; the section
-                     header + body above stay hand-authored. -->
-                <StackPanel x:Name="StreamingHost"
-                            Spacing="{StaticResource SettingsCardSpacing}" />
+                <catalog:SettingsSection x:Uid="WhisperPageStreamingSection">
+                    <!-- Streaming fold — composed. The on/off toggle is the group
+                         master, the seven energy-segmenter parameters its Number-box
+                         children; the composer hides them while streaming is off.
+                         ComposeStreamingSection() builds it into this host; the section
+                         block around it carries the title and caption. -->
+                    <StackPanel x:Name="StreamingHost"
+                                Spacing="{StaticResource SettingsCardSpacing}" />
+                </catalog:SettingsSection>
 
                 <!-- ── Diagnostics ─────────────────────────────────────────────
                      The dictation-scoped observability opt-ins relocated from the
                      shared Diagnostics page: the streaming-transcription log filter,
                      the latency telemetry toggle, and the audio-corpus consent fold.
                      Composed from WhisperViewModel.DiagnosticsSettings into the host
-                     below. No section "Reset" link — these observability opt-ins carry
+                     below. No section reset — these observability opt-ins carry
                      no resettable default (a privacy opt-in has no per-row reset). -->
-                <TextBlock x:Uid="WhisperPageDiagnosticsHeader"
-                           Style="{StaticResource SettingsSectionHeaderTextBlockStyle}" />
-
-                <StackPanel x:Name="DiagnosticsHost"
-                            Spacing="{StaticResource SettingsCardSpacing}" />
+                <catalog:SettingsSection x:Uid="WhisperPageDiagnosticsSection">
+                    <StackPanel x:Name="DiagnosticsHost"
+                                Spacing="{StaticResource SettingsCardSpacing}" />
+                </catalog:SettingsSection>
 
             </StackPanel>
             </Grid>

@@ -221,16 +221,6 @@
        button label flips between "Get started" (success path) and
        "Retry" (any failure path). -->
 
-  <!-- ─── Settings — common section actions ──────────────────────────
-       Per-section "Reset" hyperlink and its tooltip. Reused on every
-       Settings section header (Appearance, Startup, Recording, etc.). -->
-  <data name="Settings_SectionResetLink.Content" xml:space="preserve">
-    <value>Reset</value>
-  </data>
-  <data name="Settings_SectionResetLink.ToolTipService.ToolTip" xml:space="preserve">
-    <value>Reset this section to defaults</value>
-  </data>
-
   <!-- ─── GeneralPage ────────────────────────────────────────────────
        First page in the Settings nav. Page title, page subtitle, then
        sections in order: Shortcuts, Appearance, Startup, Recording,
@@ -250,7 +240,7 @@
   </data>
 
   <!-- LlmGeneralSection -->
-  <data name="LlmGeneralHeader.Text" xml:space="preserve">
+  <data name="LlmGeneralBlock.Title" xml:space="preserve">
     <value>General</value>
   </data>
   <data name="LlmEnableCard.Header" xml:space="preserve">
@@ -267,22 +257,22 @@
   </data>
 
   <!-- LlmModelsSection -->
-  <data name="LlmModelsHeader.Text" xml:space="preserve">
+  <data name="LlmModelsBlock.Title" xml:space="preserve">
     <value>Models</value>
   </data>
-  <data name="LlmModelsBody.Text" xml:space="preserve">
-    <value>Models available in your local Ollama instance. To add or remove models outside the app, use `ollama pull` / `ollama create` from your shell, then refresh.</value>
+  <data name="LlmModelsBlock.Caption" xml:space="preserve">
+    <value>Models in your local Ollama instance; add or remove them with `ollama pull` or `ollama create`, then refresh.</value>
   </data>
   <data name="LlmRefreshLabel.Text" xml:space="preserve">
     <value>Refresh</value>
   </data>
 
   <!-- LlmProfilesSection -->
-  <data name="LlmProfilesHeader.Text" xml:space="preserve">
+  <data name="LlmProfilesBlock.Title" xml:space="preserve">
     <value>Profiles</value>
   </data>
-  <data name="LlmProfilesBody.Text" xml:space="preserve">
-    <value>Each profile pairs an Ollama model with a system prompt tailored to a specific rewriting style. Expand a profile to edit its prompt.</value>
+  <data name="LlmProfilesBlock.Caption" xml:space="preserve">
+    <value>Each profile pairs an Ollama model with a system prompt; expand one to edit it.</value>
   </data>
   <data name="LlmProfile_NameBox.Header" xml:space="preserve">
     <value>Name</value>
@@ -340,7 +330,7 @@
   </data>
 
   <!-- LlmActiveProfileSection -->
-  <data name="LlmActiveProfileHeader.Text" xml:space="preserve">
+  <data name="LlmActiveProfileBlock.Title" xml:space="preserve">
     <value>Dictation</value>
   </data>
   <data name="LlmActiveProfileCard.Header" xml:space="preserve">

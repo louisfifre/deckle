@@ -128,12 +128,19 @@ public sealed partial class DiagnosticsPage : Page
     // Active-when-dirty gate: enabled while any composed section is dirty. Every
     // section composes now, so the gate follows the composers' DirtyChanged alone
     // (plus one settle after Load()).
+    //
+    // Each section's own reset wheel follows its composer the same way: the old text
+    // links were always enabled, the shared block's wheel is active-when-dirty.
     private void GateResetAll()
     {
-        Header.IsResetAllEnabled =
-            (_loggingComposer?.IsDirty() ?? false) ||
-            (_applicationLogComposer?.IsDirty() ?? false) ||
-            (_telemetryComposer?.IsDirty() ?? false);
+        bool logging = _loggingComposer?.IsDirty() ?? false;
+        bool applicationLog = _applicationLogComposer?.IsDirty() ?? false;
+        bool telemetry = _telemetryComposer?.IsDirty() ?? false;
+
+        LoggingSection.IsResetEnabled = logging;
+        ApplicationLogSection.IsResetEnabled = applicationLog;
+        TelemetrySection.IsResetEnabled = telemetry;
+        Header.IsResetAllEnabled = logging || applicationLog || telemetry;
     }
 
     // Whole-page reset. Clears the recorded consent (the Application-log opt-in)

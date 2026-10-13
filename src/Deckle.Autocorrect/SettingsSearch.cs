@@ -60,8 +60,8 @@ public static class SettingsSearch
         // The exclusion register — on this page, not on a child, because an
         // exclusion holds against every domain and every app at once. Bespoke: a
         // live list with add and undo gestures, no composer and no "/Header" key,
-        // its header a plain TextBlock under
-        // "AutocorrectPage_Section_Exclusions.Text" which the index does not probe,
+        // its title a SettingsSection under
+        // "AutocorrectPageExclusionsSection.Title" which the index does not probe,
         // so the label is supplied inline and the same key is stamped as the
         // section's Tag in XAML. The keywords carry what a user reaches for at the
         // moment of annoyance — a word they want left alone — since none of those

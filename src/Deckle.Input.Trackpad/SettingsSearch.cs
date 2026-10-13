@@ -12,7 +12,8 @@ namespace Deckle.Input.Trackpad;
 //
 // The list is DECLARED here, not derived from the page or the manifests, on
 // purpose. The composed cards live as instance properties on TrackpadViewModel
-// (TrackpadDragSettingsManifest, TrackpadDiagnosticsSettingsManifest) — reaching
+// (TrackpadEnabledSettingsManifest, TrackpadDragSettingsManifest,
+// TrackpadDiagnosticsSettingsManifest) — reaching
 // them means constructing a ViewModel, which the index must never do at boot. So
 // a card's identity travels as its bare LabelKey, the same string the manifest
 // already carries and the composer stamps onto the built card's Tag. Composed and
@@ -29,12 +30,14 @@ public static class SettingsSearch
 {
     public static IReadOnlyList<SettingSearchEntry> Entries { get; } =
     [
-        // "Three-finger drag" section — composed cards (TrackpadDragSettingsManifest).
+        // The module switch — composed card (TrackpadEnabledSettingsManifest).
         new SettingSearchEntry
         {
             LabelKey = "TrackpadPage_DragCard",
             Keywords = ["gesture", "magic trackpad", "pickup", "drop"],
         },
+
+        // "Three-finger drag" section — composed card (TrackpadDragSettingsManifest).
         new SettingSearchEntry
         {
             LabelKey = "TrackpadPage_SpeedCard",

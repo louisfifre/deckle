@@ -130,7 +130,7 @@ public sealed partial class RecordingPage : Page
             (_recordingLimitComposer?.IsDirty() ?? false) ||
             (_preprocessingComposer?.IsDirty() ?? false) ||
             (_voiceLevelComposer?.IsDirty() ?? false);
-        ResetRecordingLink.IsEnabled = dirty;
+        DefaultsSection.IsResetEnabled = dirty;
         Header.IsResetAllEnabled = dirty;
     }
 

@@ -9,8 +9,8 @@ namespace Deckle.Llm.Rewrite;
 // so the shell's search index can pull it at boot without composing the page.
 //
 // Why redeclared here rather than read off the composed manifest: the two composed
-// leaves (LlmEnableCard, LlmEndpointExpander) live in GeneralSettingsManifest, an
-// INSTANCE property on LlmGeneralViewModel — a live thing that owns the settings
+// leaves (LlmEnableCard, LlmEndpointExpander) live in ModuleSwitch and
+// GeneralSettingsManifest, INSTANCE properties on LlmGeneralViewModel — a live thing that owns the settings
 // values and their service, not constructible at boot without side effects. The
 // search index resolves display text from the module's PRI subtree by LabelKey
 // alone, so it needs the KEYS, not the VM. This list hands over exactly those keys,

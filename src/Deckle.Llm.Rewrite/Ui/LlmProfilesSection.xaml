@@ -4,6 +4,7 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:controls="using:CommunityToolkit.WinUI.Controls"
     xmlns:vm="using:Deckle.Llm.Rewrite"
+    xmlns:catalog="using:Deckle.Catalog"
     x:Name="Root">
 
     <UserControl.Resources>
@@ -11,28 +12,15 @@
         <vm:TempTooltipConverter x:Key="TempTooltipConverter" />
     </UserControl.Resources>
 
-    <StackPanel Tag="LlmProfilesSection"
-                Spacing="{StaticResource SettingsCardSpacing}">
-        <Grid>
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="*" />
-                <ColumnDefinition Width="Auto" />
-            </Grid.ColumnDefinitions>
-            <TextBlock x:Uid="LlmProfilesHeader"
-                       Grid.Column="0"
-                       Style="{StaticResource SettingsSectionHeaderTextBlockStyle}" />
-            <HyperlinkButton x:Uid="Settings_SectionResetLink"
-                             Grid.Column="1"
-                             VerticalAlignment="Bottom"
-                             Margin="0,0,0,2"
-                             Click="ResetSection_Click" />
-        </Grid>
-
-        <TextBlock x:Uid="LlmProfilesBody"
-                   Style="{StaticResource BodyTextBlockStyle}"
-                   Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                   TextWrapping="Wrap"
-                   Margin="1,0,0,8" />
+    <!-- Tag is the search index's scroll-to handle (LabelKey "LlmProfilesSection").
+         The reset is a command with its own confirmation, not a dirty-tracked
+         value, so the wheel stays enabled. -->
+    <catalog:SettingsSection x:Uid="LlmProfilesBlock"
+                             Tag="LlmProfilesSection"
+                             HasReset="True"
+                             IsResetEnabled="True"
+                             ResetRequested="ResetSection_Click">
+    <StackPanel Spacing="{StaticResource SettingsCardSpacing}">
 
         <ItemsRepeater ItemsSource="{x:Bind Profiles}">
             <ItemsRepeater.Layout>
@@ -168,4 +156,5 @@
                 Click="AddProfile_Click"
                 Margin="0,4,0,0" />
     </StackPanel>
+    </catalog:SettingsSection>
 </UserControl>
