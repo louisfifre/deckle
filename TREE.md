@@ -840,6 +840,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   └── StaleWorkProbeCommand.cs
 │   ├── Deckle.Catalog/
 │   │   ├── Composer/
+│   │   │   ├── DefaultValueText.cs
 │   │   │   ├── GestureHold.cs
 │   │   │   ├── HotkeyChordText.cs
 │   │   │   ├── HotkeyKeyNames.cs
@@ -1929,6 +1930,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   └── WordBoundariesTests.cs
 │   ├── Deckle.Catalog.Tests/
 │   │   ├── Deckle.Catalog.Tests.csproj
+│   │   ├── DefaultValueTextTests.cs
 │   │   ├── GestureHoldTests.cs
 │   │   ├── HotkeyChordTests.cs
 │   │   ├── HotkeyChordTextTests.cs

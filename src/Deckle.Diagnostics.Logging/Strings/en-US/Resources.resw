@@ -124,7 +124,7 @@
     <value>Admit Raw Input summaries and Trackpad gesture details. Device presence, lifecycle events, incidents, warnings, errors, and recoveries remain available.</value>
   </data>
   <data name="LoggingWindowingCard.Description" xml:space="preserve">
-    <value>Verbose lines from window placement across every Deckle window — positioning and DPI, overlay stacking, popup anchoring, z-order checks, resize frames, and first-open construction timings. Off by default; this provider emits nothing else, so leaving it off keeps these windows silent in the log.</value>
+    <value>Verbose lines from window placement across every Deckle window — positioning and DPI, overlay stacking, popup anchoring, z-order checks, resize frames, and first-open construction timings. This provider emits nothing else, so leaving it off keeps these windows silent in the log.</value>
   </data>
 
   <!-- Telemetry section (x:Uid header + composed card label keys). The General*

@@ -25,8 +25,14 @@ public sealed partial class SettingsComposer
     // the eye expects it on the trailing edge), reveals on hover/focus exactly like
     // TunableRow, and registers this row's dirty-check and reset-action into the
     // composer's reset surface.
+    //
+    // describeDefault gives the default in the words the tooltip shows ("Reset to
+    // 0.50"); each kind supplies its own form through DefaultValueText, and null,
+    // or a null result, falls back to the generic "Reset to default". It is only
+    // invoked when the descriptor carries a Default.
     private (FrameworkElement Content, Action? UpdateState) WrapWithReset(
-        SettingsCard card, FrameworkElement valueControl, SettingDescriptor s)
+        SettingsCard card, FrameworkElement valueControl, SettingDescriptor s,
+        Func<string?>? describeDefault = null)
     {
         if (s.Default is null) return (valueControl, null);
 
@@ -58,7 +64,7 @@ public sealed partial class SettingsComposer
 
         // The tooltip string is constant, but resolved once here (not per refresh)
         // so the dirty-driven refresher only flips IsEnabled, never re-hits Loc.
-        string tooltip = ResolveResetTooltip();
+        string tooltip = ResolveResetTooltip(describeDefault);
         void UpdateState()
         {
             reset.IsEnabled = Dirty();
@@ -100,10 +106,21 @@ public sealed partial class SettingsComposer
 
     // The reset tooltip is composer-OWNED and identical for every module, so it
     // resolves from the host app's ROOT map — not the module .resw. (Headers are
-    // module strings and resolve per-module; this one is not.) One source for the
-    // single string every composed reset shares, whatever module the card lives in.
-    private string ResolveResetTooltip()
-        => Loc.Get("SettingsComposer_ResetToDefault");
+    // module strings and resolve per-module; this one is not.) The value form
+    // ("Reset to 0.50") carries the default, which the description no longer
+    // states; the generic form serves a fold, whose reset restores several values,
+    // and any default with no readable form.
+    private string ResolveResetTooltip(Func<string?>? describeDefault = null)
+    {
+        string? value = describeDefault?.Invoke();
+        return value is null
+            ? Loc.Get("SettingsComposer_ResetToDefault")
+            : Loc.Format("SettingsComposer_ResetTo", value);
+    }
+
+    // The two words a ToggleSwitch prints for its states, for a toggle's tooltip.
+    private string DescribeToggleDefault(SettingDescriptor s)
+        => Loc.Get(AsBool(s.Default!()) ? "SettingsComposer_ValueOn" : "SettingsComposer_ValueOff");
 
     // Reactive enabled/visible: re-evaluated on every refresh. Null predicates
     // leave the framework defaults (enabled, visible) untouched.
