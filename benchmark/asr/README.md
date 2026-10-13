@@ -16,7 +16,7 @@ Whisper (whisper.cpp) is Deckle's shipped transcription path; this workspace is 
 
 ```
 benchmark/asr/
-├── CLAUDE.md        agent-facing ASR doctrine
+├── JOURNAL.md       findings and decisions of the ASR studies
 ├── README.md        this file
 ├── build_corpus.py  Deckle telemetry -> ASR corpus
 ├── lib/             ASR corpus loader, sources, judges, metrics

@@ -35,16 +35,16 @@ For each sample of the `corpora/voxtral-poc/` corpus and each prompt regime (`V1
 #    - *.wav (referenced in corpus.jsonl payload.audio_file)
 #    Corpora are not versioned — each user brings their own.
 
-# 3. Have the .venv-voxtral-dml venv ready (see benchmark/asr/CLAUDE.md).
+# 3. Have the .venv-voxtral-dml venv ready (the venv is the operator's own).
 
 # 4. Run:
-.venv-voxtral-dml\Scripts\python.exe benches\voxtral-poc\bench.py
+.venv-voxtral-dml\Scripts\python.exe benchmark\asr\studies\voxtral-poc\bench.py
 
 # Variants:
-.venv-voxtral-dml\Scripts\python.exe benches\voxtral-poc\bench.py --limit 3
-.venv-voxtral-dml\Scripts\python.exe benches\voxtral-poc\bench.py --regimes V1_raw
-.venv-voxtral-dml\Scripts\python.exe benches\voxtral-poc\bench.py --skip-judge
-.venv-voxtral-dml\Scripts\python.exe benches\voxtral-poc\bench.py --source whisper-cpp
+.venv-voxtral-dml\Scripts\python.exe benchmark\asr\studies\voxtral-poc\bench.py --limit 3
+.venv-voxtral-dml\Scripts\python.exe benchmark\asr\studies\voxtral-poc\bench.py --regimes V1_raw
+.venv-voxtral-dml\Scripts\python.exe benchmark\asr\studies\voxtral-poc\bench.py --skip-judge
+.venv-voxtral-dml\Scripts\python.exe benchmark\asr\studies\voxtral-poc\bench.py --source whisper-cpp
 ```
 
 ## Output
