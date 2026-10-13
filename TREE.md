@@ -1610,7 +1610,6 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   └── TrayMenuNativeMethods.cs
 │   │   ├── Deckle.Shell.TrayMenu.csproj
 │   │   ├── DeckleShellTrayMenuSource.cs
-│   │   ├── JOURNAL.md
 │   │   ├── TrayCarrierWindow.cs
 │   │   ├── TrayContextMenuHost.cs
 │   │   ├── TrayContextMenuHost.Flyout.cs

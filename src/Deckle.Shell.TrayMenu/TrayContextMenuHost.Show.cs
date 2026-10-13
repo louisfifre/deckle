@@ -44,11 +44,10 @@ public sealed partial class TrayContextMenuHost
         // positioned at the exact desired coordinate, Full neutralizes that
         // offset.
         //
-        // Trade-off (MS docs + 2026-05-31 repro): Full also stretches the
-        // presenter to fill the carrier window. The visible menu size is
-        // therefore dictated by MeasureFlyout: too large shows an empty Mica
-        // band at the bottom, too small scrolls. See TrayMenuSizing and the
-        // module JOURNAL.
+        // Trade-off (MS docs): Full also stretches the presenter to fill the
+        // carrier window. The visible menu size is therefore dictated by
+        // MeasureFlyout: too large shows an empty Mica band at the bottom, too
+        // small scrolls. See TrayMenuSizing.
         _flyout.ShowAt(_carrier.Frame, new FlyoutShowOptions
         {
             ShowMode = FlyoutShowMode.Transient,
