@@ -265,7 +265,7 @@ public sealed partial class HudPage
     // The preview maps the simulated RMS through the live AudioLevelMapper
     // calibration, which Settings > Recording and auto-calibration own. The
     // Playground reads it and never writes it: the HUD tab changes previews
-    // only (module AGENTS.md).
+    // only.
     private void AddSimulatedRmsExpander()
     {
         var stack = NewTuningSection("Simulated RMS (Recording only)", ResetSimulatedRms);

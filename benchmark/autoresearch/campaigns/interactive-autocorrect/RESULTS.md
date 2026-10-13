@@ -1,7 +1,6 @@
 ---
 name: interactive-autocorrect-results
 description: "Evidence synthesis and provisional Pareto frontier for the interactive autocorrect campaign."
-type: benchmark-report
 module: benchmark/autoresearch/campaigns/interactive-autocorrect
 ---
 

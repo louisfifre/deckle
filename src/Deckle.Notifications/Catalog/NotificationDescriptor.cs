@@ -16,7 +16,7 @@ public enum NotificationSeverity
 }
 
 // The kind of surface a notification prefers. Today only the toast exists;
-// InfoBar / dialog / HUD channels are deliberately deferred (see CLAUDE.md).
+// InfoBar / dialog / HUD channels are deliberately deferred.
 public enum NotificationChannel
 {
     Toast,
@@ -32,7 +32,7 @@ public sealed record NotificationDescriptor(
     // .resw key resolved via Deckle.Catalog.Loc by the channel. Loc reads the
     // root resource map only, so every key here must be mirrored into
     // Deckle.App's Resources.resw — an un-mirrored key renders as the [!key]
-    // marker (DEBUG) or blank (RELEASE). See CLAUDE.md.
+    // marker (DEBUG) or blank (RELEASE).
     string TitleKey,
     // .resw key; composite-format placeholders allowed, resolved with Loc.Format
     // when body arguments are supplied.

@@ -1,7 +1,6 @@
 ---
 name: context-deckle
 description: "System-wide Deckle vocabulary — terms that classify across modules and belong to none, today exposables and the Correction / Rewrite boundary. Module vocabularies live next to their code; see CONTEXT-MAP.md."
-type: agent-instructions
 ---
 
 # Deckle — Context

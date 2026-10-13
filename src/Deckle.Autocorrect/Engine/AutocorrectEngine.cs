@@ -15,7 +15,7 @@ namespace Deckle.Autocorrect;
 // implicit-Backspace revert was retired after its misfires (a deleted comma
 // read as an undo) wrote false suppressions (JOURNAL 2026-07-02).
 //
-// Gate order is doctrine (CLAUDE.md): injected events are filtered first (our
+// Gate order is doctrine: injected events are filtered first (our
 // own repairs must never feed the tracker), the password gate cuts BEFORE
 // decoding (keystrokes on a password surface are never even decoded), and the
 // enrollment/editability gates withhold actions without stopping observation

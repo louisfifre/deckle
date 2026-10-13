@@ -1,7 +1,6 @@
 ---
 name: context-deckle-transcription
 description: "Transcription vocabulary — the two entry points (dictation, file transcription), the T1 fidelity criteria, and the segmentation units (neural VAD vs energy segmenter, utterance vs segment). Read before touching the pipeline or judging output quality."
-type: agent-instructions
 ---
 
 # Deckle.Transcription — Context

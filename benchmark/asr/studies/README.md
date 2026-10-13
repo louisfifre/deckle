@@ -1,7 +1,6 @@
 ---
 name: readme-studies
 description: "Index of frozen benchmark studies — completed or abandoned ASR/TTS spikes kept for reference. Each subfolder has its own README; findings live in the benchmark JOURNAL."
-type: module-readme
 module: benchmark/asr/studies
 ---
 

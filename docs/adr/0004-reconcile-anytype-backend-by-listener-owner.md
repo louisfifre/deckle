@@ -1,6 +1,5 @@
 ---
 description: Deckle reconciles one externally versioned Anytype provider by proving which trusted process owns the REST listener.
-type: adr
 ---
 
 # ADR-0004 — Reconcile the Anytype backend by listener owner

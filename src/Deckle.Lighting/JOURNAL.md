@@ -1,6 +1,5 @@
 ---
 description: Color-science decisions and the Night Owl gamut bug for Deckle.Lighting — read on demand when touching HueColorMath or the ambient color path.
-type: module-journal
 ---
 
 # JOURNAL — Deckle.Lighting

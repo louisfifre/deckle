@@ -1,7 +1,6 @@
 ---
 name: context-deckle-autocorrect
 description: "Autocorrect vocabulary — where correction may act (surfaces, enrollment), the two correction stages, protection tiers, datasets, and the learning surfaces. Read before touching correction logic, consent, or learning."
-type: agent-instructions
 ---
 
 # Deckle.Autocorrect — Context

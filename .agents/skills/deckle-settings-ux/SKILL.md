@@ -1,7 +1,6 @@
 ---
 name: deckle-settings-ux
 description: What to expose in settings surfaces and how to organize it. Invoke before exposing a setting, organizing a page, or reworking a settings surface.
-type: skill
 ---
 
 # Deckle — Settings UX

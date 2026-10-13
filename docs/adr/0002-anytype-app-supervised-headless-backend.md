@@ -1,6 +1,5 @@
 ---
 description: Deckle supervises Anytype's headless backend from the resident app, in the interactive user context.
-type: adr
 ---
 
 # ADR-0002 — Supervise the Anytype headless backend from Deckle's resident app

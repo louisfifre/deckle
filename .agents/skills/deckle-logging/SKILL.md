@@ -1,7 +1,6 @@
 ---
 name: deckle-logging
 description: What to observe in code, and how to write it readable and actionable. Invoke before adding or changing an observation point.
-type: skill
 ---
 
 # Deckle — Observability
@@ -17,6 +16,8 @@ Every runtime observation goes through one central emission source — instrumen
 Two families never mix. Concise milestones — short sentences a human reads while following the flow ("Loading the model", "Cannot reach the service"), no key=value, no numbers. Structured verbose — measurements, identifiers, latencies, greppable, grouped a few lines per operation. Verbose precedes the milestone when it carries the parameters of a decision, follows it when it details what just happened.
 
 Instrument generously and sort well: expose every useful observable, not the minimum — re-instrumenting to chase a bug later is expensive. Ordinary observations enter the journals and can be filtered or condensed at read time without loss. Explicit verbosity controls are different: they are persistent admission policies for designated chatty `Verbose` streams and refuse those observations before every journal; they never silence milestones, warnings, or errors.
+
+A repeating degradation is one incident, not one warning per attempt: the raw attempts stay verbose, one visible incident opens once a threshold the operation sets is passed, and one visible recovery closes it.
 
 Observation sources, units, operation names are closed vocabularies — no ad hoc creation, no spelling variants. A genuinely new magnitude is added to the canonical vocabulary before first use, so filtering on a term finds the same thing everywhere.
 

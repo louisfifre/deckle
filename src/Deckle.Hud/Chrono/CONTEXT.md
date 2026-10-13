@@ -1,7 +1,6 @@
 ---
 name: context-deckle-hud-chrono
 description: "Chrono HUD element vocabulary — the face's eight elements, accent twins, and the animated / at-rest / dot distinctions."
-type: agent-instructions
 ---
 
 # Deckle.Hud — Chrono context

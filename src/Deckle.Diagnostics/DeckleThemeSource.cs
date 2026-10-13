@@ -72,7 +72,7 @@ public sealed class DeckleThemeSource : DeckleEventSource
     // change on a non-XAML surface (tray icon). Verbose because values carry
     // identifiers (theme name, surface name) and grep-ability goes through
     // typed parameters rather than level, per the "any event carrying an ID is
-    // Verbose" doctrine contract in Deckle.Diagnostics CLAUDE.md.
+    // Verbose" doctrine of the deckle-logging skill.
     [Event(EvtThemeChanged,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Theme,

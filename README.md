@@ -84,7 +84,7 @@ Smaller touches outside the module list: a **taskbar cover** that masks the task
 2. Run it and choose the modules you want.
 3. Deckle installs per user, fetches any missing assets those modules require, and starts in the tray.
 
-There is no administrator prompt. To start Deckle at login, enable **Settings → General → Launch at startup**.
+There is no administrator prompt. To start Deckle at login, enable **Settings → General → Start with Windows**.
 
 ## Build from source
 

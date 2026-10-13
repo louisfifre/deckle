@@ -1,6 +1,5 @@
 ---
 description: "Recherche vérifiée (2026-10-08) — remplacer Windhawk par un module Deckle pour la barre des tâches : inventaire exact des sept mods installés et de leurs réglages, mécanique de Windhawk (injection, hooks MinHook, symboles PDB avec cache local), position native de la barre livrée par Microsoft en septembre 2026 mais probablement inactive sur cette machine, trois routes pour Deckle, et les tâches de recherche du chantier."
-type: research-report
 ---
 
 # Barre des tâches sans Windhawk — ce que Windhawk fait, ce que Windows fait désormais seul, par où commencer

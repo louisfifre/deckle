@@ -1,6 +1,5 @@
 ---
 description: "Behavior and composition contracts of the reusable terminal launcher beneath Deckle Scripts: product, modules, input, views, discovery, preparation, execution, rendering, reuse."
-type: module-specification
 ---
 
 # Terminal interaction specification

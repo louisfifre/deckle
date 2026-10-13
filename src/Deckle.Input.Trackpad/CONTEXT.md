@@ -1,7 +1,6 @@
 ---
 name: context-deckle-input-trackpad
 description: "Trackpad gesture vocabulary — the recognizer as the state machine that owns gesture quality, and the three-finger drag as the one gesture Deckle owns. Read before touching gesture recognition."
-type: agent-instructions
 ---
 
 # Deckle.Input.Trackpad — Context

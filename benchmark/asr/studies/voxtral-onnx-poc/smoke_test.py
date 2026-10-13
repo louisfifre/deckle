@@ -23,7 +23,7 @@ ne fonctionne pas malgré le buffer reuse contourné par `.copy()`, cause
 non identifiée à ce stade.
 
 Tous les `.onnx` et `.onnx_data*` vivent sous D:\\models\\llm\\ pour
-ne pas dupliquer entre worktrees (cf. CLAUDE.md benchmark MODELS_DIR).
+ne pas dupliquer entre worktrees.
 """
 
 from __future__ import annotations

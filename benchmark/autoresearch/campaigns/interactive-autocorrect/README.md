@@ -1,7 +1,6 @@
 ---
 name: interactive-autocorrect-research
 description: "Reproducible campaign for safe, local, interactive whole-sentence autocorrection."
-type: benchmark-campaign
 module: benchmark/autoresearch/campaigns/interactive-autocorrect
 ---
 

@@ -11,7 +11,7 @@ namespace Deckle.Setup;
 // Provider Name = "Deckle-Setup" → [SETUP] tag through the bridge. Legacy used
 // LogSource.Setup (= "SETUP") for exactly this scope.
 //
-// Verbose/Info separation per Deckle.Diagnostics/CLAUDE.md: an Info/Warning is a
+// Verbose/Info separation per the deckle-logging skill: an Info/Warning is a
 // short Capital sentence with no IDs and no k=v; the technical detail (item id,
 // byte count, duration, sha256, error) lives in a Verbose mirror that FOLLOWS
 // it. The native runtime download keeps its own events (it has two failure

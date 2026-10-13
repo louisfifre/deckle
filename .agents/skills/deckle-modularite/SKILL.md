@@ -1,7 +1,6 @@
 ---
 name: deckle-modularite
 description: When and along which lines to separate code into modules and files. Invoke before growing a module, judging a new one, or splitting a file or surface.
-type: skill
 ---
 
 # Deckle — Modularity

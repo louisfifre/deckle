@@ -1,6 +1,5 @@
 ---
 description: Diagnosis notes, render doctrine, and deferred work for Deckle.Hud — read on demand, not on every visit.
-type: module-journal
 ---
 
 # JOURNAL — Deckle.Hud

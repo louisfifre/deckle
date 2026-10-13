@@ -1,6 +1,5 @@
 ---
 description: Dated decisions and findings for Deckle.Llm.Rewrite — engine seam, paragraph retaille, gate calibration, measurements.
-type: module-journal
 ---
 
 # JOURNAL — Deckle.Llm.Rewrite

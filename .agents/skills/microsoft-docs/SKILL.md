@@ -1,7 +1,6 @@
 ---
 name: microsoft-docs
 description: Find official Microsoft documentation and code samples. Use for Microsoft technologies; prefer Microsoft Learn, with official external docs for Aspire, VS Code, GitHub, and Agent Framework.
-type: skill
 ---
 
 # Microsoft Docs

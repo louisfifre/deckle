@@ -8,7 +8,7 @@ namespace Deckle.Shell.Foreground;
 // themselves are never logged — they arrive at drag cadence and only the
 // rare publish they cause carries diagnostic value.
 //
-// Verbose/Info separation per Deckle.Diagnostics/CLAUDE.md: an Info or a
+// Verbose/Info separation per the deckle-logging skill: an Info or a
 // Warning is a short Capital sentence with no IDs and no k=v; the technical
 // detail lives in a Verbose mirror that FOLLOWS it.
 [EventSource(Name = "Deckle-Foreground")]

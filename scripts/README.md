@@ -1,7 +1,6 @@
 ---
 name: readme-scripts
 description: "Dev workflows entry point for Deckle: the deckle.ps1 menu, the commands under commands/ and internal implementation under lib/, the TREE.md pre-commit hook, generated-docs automation, and the three native-runtime sourcing modes. Read before running, modifying, or extending a script under scripts/."
-type: module-readme
 module: scripts
 ---
 
@@ -130,6 +129,9 @@ The Run and Project commands sit at the root of `commands/`. The Release, Mainte
 | [`commands/update-readme-stats.ps1`](commands/update-readme-stats.ps1) | Regenerate the README `Development pulse` section from local Git history. `-Commit` creates a local README-only commit and refuses unrelated tracked changes; it never pushes. Also used without `-Commit` by the monthly GitHub Action. | `-Target <worktree>`, `-Pick`, `-ReadmePath <path>`, `-Commit` |
 | [`commands/changelog.ps1`](commands/changelog.ps1) | Generate `CHANGELOG.md` and release notes from Conventional Commits and the public-release boundaries in `release-history.json`. Default preserves an `[Unreleased]` accumulator since the latest public release; `-NotesFor X.Y.Z` emits that full release range for GitHub. | `-Target <worktree>`, `-Pick`, `-NotesFor X.Y.Z`, `-OutFile <path>` |
 | [`commands/release/publish-native-runtime.ps1`](commands/release/publish-native-runtime.ps1) | **Maintainer-only.** Validate and optionally publish the bundle pinned by `NativeRuntime.CurrentBundle`, auto-discovered under `artifacts/` or supplied with `-ArtifactPath`. When no current bundle exists, package a new one from an already-built local whisper.cpp tree and the paired MinGW runtime. Local and downloaded release assets are verified by size, archive contract, and SHA-256. No CMake or Deckle build is invoked. | `-ArtifactPath <zip>` or `-WhisperRepo <path>`; `-Target <Deckle repo>`, `-OutDir <path>`, `-Publish`, `-Version X.Y.Z`, `-Notes <path>` |
+| [`commands/release/publish-app.ps1`](commands/release/publish-app.ps1) | Prepare or publish the app release: build the installer stub and the self-contained app ZIP with its sha256 sidecar. Without `-Publish` both are built locally for inspection; with `-Publish` they are also uploaded as a GitHub Release under the version tag via `gh`. | `-Target <worktree>`, `-Pick`, `-OutDir <path>`, `-Publish`, `-Notes <file>` |
+| [`commands/fetch-autocorrect-data.ps1`](commands/fetch-autocorrect-data.ps1) | Stage 0 of the autocorrect pipeline: download the raw lexical sources (Lexique 3.83, Norvig counts, FranceTerme, a Wikipedia FR train/eval corpus) into `artifacts\autocorrect-data\raw\`. Acquires data only, idempotent, never versioned. | `-OutputRoot <path>`, `-TrainMB`, `-EvalMB`, `-IncludeKaikki`, `-Force` |
+| [`commands/maintenance/check-script-headers.ps1`](commands/maintenance/check-script-headers.ps1) | List the scripts the menu hides and the Headers that are voided. A voided, invalid or unparsable Header fails the check; a script without a Header stays hidden by choice and does not fail it. | `-Target <worktree>` |
 
 ## Adding a script — the Header
 
@@ -183,10 +185,21 @@ Nothing under `lib/` is a user command. It contains the shared process, inventor
 | [`lib/menu.psm1`](lib/menu.psm1) | Internal facade over the terminal primitives in `lib/menu/`. |
 | [`lib/script-discovery.psm1`](lib/script-discovery.psm1) | Script Discovery: reads Headers and folders into the menu catalog without executing a script; also the shared `key: value` reader behind Markdown front matter. |
 | [`lib/launcher/`](lib/launcher/) | Deckle-specific menu context, dispatch, results, and submenu definitions. |
+| [`lib/terminal-interaction.psm1`](lib/terminal-interaction.psm1) | Public facade for reusable terminal interactions; dot-sources the contracts, preparation, theme, layout, rendering, navigation, host and interaction parts from [`lib/terminal-interaction/`](lib/terminal-interaction/). |
+| [`lib/deckle-preview/`](lib/deckle-preview/) | Deckle-specific descriptors, flows and discovered-catalog projection for the parallel interaction preview (`deckle-preview.ps1`). |
+| [`lib/agent-state-maintenance.psm1`](lib/agent-state-maintenance.psm1) | Implementation behind `commands/maintenance/reset-agent-state.ps1`: resolves the agent state roots, sanitizes and cleans them (parts in [`lib/agent-state-maintenance/`](lib/agent-state-maintenance/), strings in `agent-state-maintenance.strings.psd1`). |
+| [`lib/native-runtime-release.psm1`](lib/native-runtime-release.psm1) | Reads and validates the native runtime artifact pinned by the app; app publication uses it as a fail-closed preflight. |
+| [`lib/release-validation.psm1`](lib/release-validation.psm1) | Release publication invariants shared by `publish-app.ps1` and its tests; every assertion fails closed. |
+| [`lib/context-inventory.psm1`](lib/context-inventory.psm1) | Context statistics: classifies tracked Markdown documents by loading mode and type. |
+| [`lib/resource-inventory.psm1`](lib/resource-inventory.psm1) | Static, read-only inventory of WinUI resource references and `.resw` maps. |
+| [`lib/source-metrics.psm1`](lib/source-metrics.psm1) | Source metrics (effective C# lines) shared by the repository inventory and its focused tests. |
+| [`lib/native-console.ps1`](lib/native-console.ps1) | Native process invocation that preserves each output line for launcher history. |
+| [`lib/script-output.ps1`](lib/script-output.ps1) | Semantic presentation for Deckle script output (roles and colours). |
+| [`lib/build-server-cleanup.ps1`](lib/build-server-cleanup.ps1) | .NET build server inspection and shutdown. |
 
 ## Tests — `tests/`
 
-PowerShell tests mirror the same boundaries under `tests/commands/`, `tests/lib/`, `tests/launcher/`, and `tests/menu/`.
+PowerShell tests mirror the same boundaries under `tests/commands/`, `tests/lib/`, `tests/launcher/`, and `tests/menu/`, plus [`tests/terminal-interaction/`](tests/terminal-interaction/) for the reusable terminal interaction framework and its bug notes, and [`tests/fixtures/`](tests/fixtures/) for the sample scripts the Script Discovery tests read.
 
 ## Git hooks — TREE.md and commit identity
 

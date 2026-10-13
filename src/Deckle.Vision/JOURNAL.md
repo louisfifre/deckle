@@ -1,6 +1,5 @@
 ---
 description: Dated diagnostics for Deckle.Vision — the DXGI capture freeze on an HDR toggle and its trail.
-type: module-journal
 ---
 
 # Journal — Deckle.Vision

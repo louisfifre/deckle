@@ -39,7 +39,7 @@ namespace Deckle.Audio;
 public static class TranscriptionPreprocessor
 {
     // The module captures at a single fixed format (16 kHz mono PCM16,
-    // see Deckle.Audio/AGENTS.md). The DSP time constants depend on it.
+    // as Whisper expects). The DSP time constants depend on it.
     public const double SampleRate = 16000.0;
 
     // Process one span (an utterance or a take). Returns the processed buffer plus the metrics worth

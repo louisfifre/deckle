@@ -9,7 +9,7 @@ namespace Deckle.Llm;
 // import (GgufImportDialog). Module settings persistence (LlmSettingsService)
 // goes through the four transitional Settings* events.
 //
-// Verbose/Info separation per Deckle.Diagnostics/CLAUDE.md: an Info/Warning/
+// Verbose/Info separation per the deckle-logging skill: an Info/Warning/
 // Error is a short Capital sentence with no IDs and no k=v; the technical detail
 // (exception type, model name, http status, durations, JSON preview) lives in a
 // Verbose mirror that FOLLOWS the milestone.

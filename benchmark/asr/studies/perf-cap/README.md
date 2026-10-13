@@ -1,7 +1,6 @@
 ---
 name: readme-study-perf-cap
 description: "Frozen Voxtral GGUF performance-characterization session (2026-05-26) over llama.cpp Vulkan on the RX 7900 XT. Reference scripts; findings live in the benchmark JOURNAL."
-type: study
 module: benchmark/asr/studies/perf-cap
 ---
 

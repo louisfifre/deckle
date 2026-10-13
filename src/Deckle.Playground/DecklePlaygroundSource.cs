@@ -12,7 +12,7 @@ namespace Deckle.Playground;
 // Provider Name = "Deckle-Playground" → [PLAYGROUND] tag through the legacy
 // bridge.
 //
-// Verbose/Info separation per Deckle.Diagnostics/CLAUDE.md: an Info/Warning is a
+// Verbose/Info separation per the deckle-logging skill: an Info/Warning is a
 // short Capital sentence with no IDs and no k=v; the technical detail (handles,
 // reasons, ids, exceptions) lives in a Verbose mirror that FOLLOWS it. The many
 // diagnostic interactions (Hue bridge calls, entertainment-area matching, zone

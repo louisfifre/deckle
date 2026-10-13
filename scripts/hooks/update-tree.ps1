@@ -28,19 +28,18 @@ Write-DeckleWorkflowMessage -Output $WorkflowOutput -Message "$($files.Count) tr
 # ── Frontmatter ───────────────────────────────────────────────────────────
 
 function Format-TreeSuffix {
-    param([string]$Name, [string]$Type, [string]$Description)
+    param([string]$Name, [string]$Description)
 
-    if (-not $Name -and -not $Type -and -not $Description) { return '' }
+    if (-not $Name -and -not $Description) { return '' }
 
     if ($Description -and $Description.Length -gt 80) {
         $Description = $Description.Substring(0, 79).TrimEnd() + '…'
     }
 
     $namePart = if ($Name) { $Name } else { '' }
-    $typePart = if ($Type) { "[$Type]" } else { '' }
     $descPart = if ($Description) { $Description } else { '' }
 
-    $parts = @($namePart, $typePart, $descPart) | Where-Object { $_ }
+    $parts = @($namePart, $descPart) | Where-Object { $_ }
     $tail = $parts -join ' '
     if (-not $tail) { return '' }
     return "  — $tail"
@@ -51,7 +50,7 @@ function Format-MarkdownSuffix {
 
     $fm = Get-DeckleMarkdownFrontMatter -Path $AbsolutePath
     if (-not $fm) { return '' }
-    return Format-TreeSuffix -Name $fm['name'] -Type $fm['type'] -Description $fm['description']
+    return Format-TreeSuffix -Name $fm['name'] -Description $fm['description']
 }
 
 # A script Header plays the role of front matter: its synopsis names the
@@ -62,7 +61,7 @@ function Format-ScriptSuffix {
     if (-not (Test-Path -LiteralPath $AbsolutePath -PathType Leaf)) { return '' }
     $header = Read-DeckleScriptHeader -Path $AbsolutePath
     if ($header.Status -ne 'Described') { return '' }
-    return Format-TreeSuffix -Name $header.Label -Type 'script' -Description $header.Description
+    return Format-TreeSuffix -Name $header.Label -Description $header.Description
 }
 
 # ── Construction de l'arbre ───────────────────────────────────────────────

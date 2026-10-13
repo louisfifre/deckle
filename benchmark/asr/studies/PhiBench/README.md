@@ -1,7 +1,6 @@
 ---
 name: readme-study-phibench
 description: "Suspended C# bench for Phi-4 multimodal audio via ONNX Runtime GenAI (OGA). Blocked upstream — OGA doesn't inject audio embeddings. Findings in the benchmark JOURNAL."
-type: study
 module: benchmark/asr/studies/PhiBench
 ---
 

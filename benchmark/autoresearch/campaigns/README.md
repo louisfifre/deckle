@@ -1,7 +1,6 @@
 ---
 name: readme-autoresearch-campaigns
 description: "How to store individual autoresearch campaign folders."
-type: module-readme
 module: benchmark/autoresearch/campaigns
 ---
 

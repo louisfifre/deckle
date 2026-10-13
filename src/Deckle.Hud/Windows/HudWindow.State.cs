@@ -143,8 +143,7 @@ public sealed partial class HudWindow : Window
         // conditions, but if the UI thread is blocked (composition glitch,
         // external deadlock), release the caller instead of hanging the
         // pipeline. Paste will be emitted without the Hide rendezvous, creating
-        // the race risk documented in src/Deckle.Transcription/CLAUDE.md
-        // (Paste section), accepted in pathological cases.
+        // a race risk, accepted in pathological cases.
         if (!done.Wait(TimeSpan.FromSeconds(5)))
         {
             DeckleHudSource.Log.HudWarning();

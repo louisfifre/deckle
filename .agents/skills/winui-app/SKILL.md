@@ -1,7 +1,6 @@
 ---
 name: winui-app
 description: Develop, review, troubleshoot, or bootstrap WinUI 3 and Windows App SDK C# apps. Use for XAML, controls, navigation, windowing, theming, accessibility, responsiveness, performance, or deployment.
-type: skill
 ---
 
 # WinUI App

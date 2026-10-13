@@ -1,6 +1,5 @@
 ---
 description: Dated findings for Deckle.Lighting.Ambient — how a light colour is derived from the sampled frame, and the near-black decisions.
-type: module-journal
 ---
 
 # Journal — Deckle.Lighting.Ambient

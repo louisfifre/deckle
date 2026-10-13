@@ -27,7 +27,7 @@ namespace Deckle.Setup;
 // Wording is keyed by module id from THIS module's resources (mirrored into
 // the root map for Loc), not from the described module's assembly: the
 // installer companion's end state must be able to name a module whose DLLs
-// are not on disk (see Deckle.Modules/AGENTS.md).
+// are not on disk.
 public sealed partial class ModulesPage : Page
 {
     private SetupWindow? _setup;

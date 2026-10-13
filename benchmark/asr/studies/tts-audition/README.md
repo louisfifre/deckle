@@ -1,7 +1,6 @@
 ---
 name: readme-bench-tts-audition
 description: "Local French TTS audition — a by-ear comparison of ONNX-local TTS engines on the same sentences. Completed spike; Chatterbox kept. Read before running or extending the audition."
-type: bench-scenario
 module: benchmark/asr/studies/tts-audition
 ---
 

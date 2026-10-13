@@ -20,7 +20,7 @@ namespace Deckle.Settings;
 // is a deliberate, rare action and keeps an Info milestone with a Verbose
 // mirror.
 //
-// Verbose/Info separation per Deckle.Diagnostics/CLAUDE.md: an Info / Warning /
+// Verbose/Info separation per the deckle-logging skill: an Info / Warning /
 // Error is a short Capital sentence with no IDs, paths, or k=v; the technical
 // detail (ids, paths, exception type+message, page/tag names) lives in a
 // Verbose mirror that FOLLOWS it. The mirrors added for that separation take

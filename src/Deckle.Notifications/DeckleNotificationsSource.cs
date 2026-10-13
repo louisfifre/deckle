@@ -9,7 +9,7 @@ namespace Deckle.Notifications;
 // prompt — plus the toast channel's two failure modes (elevated process,
 // registration failure).
 //
-// Verbose/Info separation per Deckle.Diagnostics/CLAUDE.md: an Info is a short
+// Verbose/Info separation per the deckle-logging skill: an Info is a short
 // Capital sentence with no IDs and no k=v; the technical detail (notification
 // id, channel, action) lives in a Verbose mirror that FOLLOWS the Info.
 // Notifications are outputs sent to the world, hence the transverse `Push`

@@ -14,8 +14,8 @@ référence Gemini) — méthodologiquement plus solide que WER contre la
 référence Whisper qui hallucine.
 
 Pourquoi un fichier séparé du juge alors que le SDK est le même : un
-fichier = un backend, c'est la convention de ``benchmark/asr/CLAUDE.md``
-(§ Concepts). Le juge a une intention différente (scoring contre schéma
+fichier = un backend, c'est la convention de ``lib/sources/``.
+Le juge a une intention différente (scoring contre schéma
 fermé) et un prompt système différent (axes 0-100). Mélanger les deux
 dans le même fichier serait du couplage gratuit.
 

@@ -1,7 +1,6 @@
 ---
 name: deckle-interface
 description: Render the visual interface at Microsoft first-party level — native primitives, theme resources, system materials. Invoke before touching any UI surface.
-type: skill
 ---
 
 # Deckle — Interface
@@ -19,6 +18,8 @@ Zero magic values. No hex colour, no numeric corner radius, no arbitrary thickne
 System-managed materials. Mica on long-lived windows, Acrylic on transients (popups, menus, dialogs, HUD, notifications); DWM owns the shadows and the rounded corners, not XAML.
 
 Linear animations by default. No custom easing unless explicitly asked — the default curve is linear, and curves are introduced deliberately, one validated at a time.
+
+One `x:Uid` serves one element type. MRT applies every property of the `.resw` entry to each element that carries the Uid, and a property the element does not have crashes the page at load.
 
 Respect deliberate design choices. An existing visual element — shadow, fade, stroke, padding, radius — is a deliberate asset, not a cost to optimize away. Find a solution that preserves it, never one that drops it because it "brings nothing".
 

@@ -1,7 +1,6 @@
 ---
 name: context-deckle-llm-rewrite
 description: "Rewrite service vocabulary — the single service every rewrite goes through, whoever asks. Read before touching rewrite plumbing or its inference engine. The Correction / Rewrite boundary itself lives in the root CONTEXT.md."
-type: agent-instructions
 ---
 
 # Deckle.Llm.Rewrite — Context

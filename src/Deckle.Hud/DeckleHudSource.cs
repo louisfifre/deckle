@@ -18,8 +18,7 @@ namespace Deckle.Hud;
 // message retract, and proximity rollup. This makes the HUD mechanics
 // diagnosable from the LogWindow and JSONL files instead of through ad hoc
 // File.AppendAllText calls. See `reference--eventsource-convention--1.2.md`
-// §*Under-instrumented internal HUD* (gap 1.1), which motivates the extension,
-// and the module CLAUDE.md §*Internal instrumentation* for the wiring doctrine.
+// §*Under-instrumented internal HUD* (gap 1.1), which motivates the extension.
 [EventSource(Name = "Deckle-Hud")]
 public sealed class DeckleHudSource : DeckleEventSource
 {
@@ -145,7 +144,7 @@ public sealed class DeckleHudSource : DeckleEventSource
     // with their own alpha animator: "hud" for HudWindow, "overlay" for
     // HudOverlayWindow — both now fade off the shared CursorMovementSignal
     // (Deckle.Shell). A future separate "message" surface (the retract hybrid
-    // bleed described in CLAUDE.md but not implemented) would be added here.
+    // bleed, not implemented) would be added here.
     [Event(EvtFadeInStarted,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Lifecycle,
@@ -160,7 +159,7 @@ public sealed class DeckleHudSource : DeckleEventSource
     //
     // Emitted at the start of the retract (hybrid bleed → standalone card).
     // There is no active call site in the current code: the retract mechanics
-    // are described in CLAUDE.md as the target architecture, but HudMessage is
+    // are the target architecture, but HudMessage is
     // currently fixed at 272×78. The event is declared to freeze the signature;
     // it will activate when the retract mechanics are wired.
     [Event(EvtMessageRetracted,

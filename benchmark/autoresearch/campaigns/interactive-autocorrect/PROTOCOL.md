@@ -1,7 +1,6 @@
 ---
 name: interactive-autocorrect-protocol
 description: "Metric, latency, integrity, and data contract for the interactive autocorrect campaign."
-type: benchmark-protocol
 module: benchmark/autoresearch/campaigns/interactive-autocorrect
 ---
 

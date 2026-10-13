@@ -1,6 +1,5 @@
 ---
 description: Root agent-instructions for Deckle — identity, hard rules, posture, and where the rest lives.
-type: agent-instructions
 ---
 
 # AGENTS.md — Deckle
@@ -19,9 +18,13 @@ Local validation is compile-only `dotnet build` with `/m:1`, Debug x64 by defaul
 
 Terminal-interface inspection uses deterministic `scripts/deckle-preview.ps1 -Snapshot ...` output. Agents MUST NOT start or drive the interactive `scripts/deckle.ps1` launcher or invoke its actions; that daily launcher may stop or relaunch the resident app by design.
 
-Every completed workstream advances the version. Before closing it, the agent proposes the appropriate bump and local version record.
-
 The commit ships under the maintainer's sole identity — no `Co-Authored-By: Claude` trailer, no `🤖 Generated with Claude Code` line.
+
+A context element that will come back into every later session (an `AGENTS.md`, a skill, an ADR, a memory) is written to disk only once the maintainer has agreed to it.
+
+Personal data read from an Anytype space (Home, Travel) is runtime data. It is never compiled into code, never copied into a fixture, a documentation example or a log, and never sent to a remote model or service: only local inference and the Anytype backend's own sync process it.
+
+Speech models, ASR and TTS alike, run in BF16 or FP16. A 4-bit quantization serves a smoke test only, never a shipping candidate: on French speech it loses a fidelity the automatic metrics barely register.
 
 ## Bug notes and regression tests
 
@@ -40,7 +43,7 @@ Before any non-trivial code, name the posture(s) framing the answer — engineer
 Everything specialized is discoverable, not pre-chewed here — orient, never recopy.
 
 - "How we do things" doctrines → `deckle-*` skills in `.agents/skills/`; their descriptions say when to invoke them, go look.
-- A module's local technical doctrine → the `AGENTS.md` at that module's root.
+- A module's own why, traps and constraints → the comments in its code, at the line they concern.
 - Repo structure (tree, headers, skills) → `TREE.md`, auto-generated.
 - Frozen decisions → `docs/adr/`.
 - WinUI/XAML and Windows APIs → Microsoft Learn MCP before local code.

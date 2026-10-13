@@ -19,8 +19,8 @@
 
   <PropertyGroup>
     <!-- EventSource [Event] parameters use snake_case so the ETW
-         payload keys land directly in the JSONL output. Convention
-         documented in ../Deckle.Diagnostics/CLAUDE.md. -->
+         payload keys land directly in the JSONL output and must
+         match the ETW manifest. -->
     <NoWarn>$(NoWarn);IDE1006</NoWarn>
   </PropertyGroup>
 </Project>
