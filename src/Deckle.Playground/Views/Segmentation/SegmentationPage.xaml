@@ -12,7 +12,7 @@
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:controls="using:Deckle.Settings.Controls"
-    xmlns:transcription="using:Deckle.Transcription">
+    xmlns:catalog="using:Deckle.Catalog">
 
     <Grid>
         <Grid.ColumnDefinitions>
@@ -77,28 +77,23 @@
                 </Grid>
             </Grid>
 
-            <!-- The hangover curve. Height is capped (width stays elastic) so the
-                 plot reads as a wide band ; the control captions its own axes. The
-                 anchor properties feed it one-way ; the four Bézier control points
-                 are bound two-way, so dragging a handle writes the view-model and
-                 typing in the boxes below moves the handle. -->
-            <transcription:HangoverCurveCanvas
+            <!-- The hangover curve: the shared curve block (settings design system,
+                 decision 21), the plot taking the column's width with the four
+                 fields beside it. The frame (the anchors, in seconds) is pushed
+                 from the code-behind whenever an anchor moves; the four Bézier
+                 control points are bound two-way, so a handle's release or a
+                 field's commit writes the view-model. -->
+            <catalog:CurveEditor
                 x:Name="HangoverCurve"
                 Grid.Row="1"
-                Height="280"
-                HangoverMaxSec="{x:Bind ViewModel.HangoverMaxSec, Mode=OneWay}"
-                HangoverMinSec="{x:Bind ViewModel.HangoverMinSec, Mode=OneWay}"
-                RampStartSec="{x:Bind ViewModel.RampStartSec, Mode=OneWay}"
-                RampEndSec="{x:Bind ViewModel.RampEndSec, Mode=OneWay}"
                 X1="{x:Bind ViewModel.CurveX1, Mode=TwoWay}"
                 Y1="{x:Bind ViewModel.CurveY1, Mode=TwoWay}"
                 X2="{x:Bind ViewModel.CurveX2, Mode=TwoWay}"
                 Y2="{x:Bind ViewModel.CurveY2, Mode=TwoWay}" />
 
             <!-- Below the plot : the plain-language readout and the curve-shape
-                 editor (cubic-bezier readout + manual entry of the four control
-                 points, with a section reset wheel). The handles on the plot and
-                 these boxes edit the same view-model values. -->
+                 section reset. The fields and the cubic-bezier readout live in
+                 the block itself. -->
             <StackPanel Grid.Row="2" Margin="0,16,0,0" Spacing="16">
                 <TextBlock x:Name="CurveReadoutText"
                            Style="{ThemeResource BodyTextBlockStyle}"
@@ -131,56 +126,6 @@
                                 <TextBlock Text="Reset section" />
                             </StackPanel>
                         </Button>
-                    </Grid>
-
-                    <TextBlock x:Name="CurveBezierText"
-                               FontFamily="Cascadia Mono, Consolas"
-                               Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                               IsTextSelectionEnabled="True" />
-
-                    <Grid ColumnSpacing="12">
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="*" />
-                            <ColumnDefinition Width="*" />
-                            <ColumnDefinition Width="*" />
-                            <ColumnDefinition Width="*" />
-                        </Grid.ColumnDefinitions>
-                        <StackPanel Grid.Column="0" Spacing="4">
-                            <TextBlock Text="x1" Style="{ThemeResource CaptionTextBlockStyle}"
-                                       Foreground="{ThemeResource TextFillColorTertiaryBrush}" />
-                            <NumberBox x:Name="CurveX1Box"
-                                       Minimum="0" Maximum="1" SmallChange="0.01" LargeChange="0.1"
-                                       SpinButtonPlacementMode="Compact"
-                                       ValidationMode="InvalidInputOverwritten"
-                                       Value="{x:Bind ViewModel.CurveX1, Mode=TwoWay}" />
-                        </StackPanel>
-                        <StackPanel Grid.Column="1" Spacing="4">
-                            <TextBlock Text="y1" Style="{ThemeResource CaptionTextBlockStyle}"
-                                       Foreground="{ThemeResource TextFillColorTertiaryBrush}" />
-                            <NumberBox x:Name="CurveY1Box"
-                                       Minimum="0" Maximum="1" SmallChange="0.01" LargeChange="0.1"
-                                       SpinButtonPlacementMode="Compact"
-                                       ValidationMode="InvalidInputOverwritten"
-                                       Value="{x:Bind ViewModel.CurveY1, Mode=TwoWay}" />
-                        </StackPanel>
-                        <StackPanel Grid.Column="2" Spacing="4">
-                            <TextBlock Text="x2" Style="{ThemeResource CaptionTextBlockStyle}"
-                                       Foreground="{ThemeResource TextFillColorTertiaryBrush}" />
-                            <NumberBox x:Name="CurveX2Box"
-                                       Minimum="0" Maximum="1" SmallChange="0.01" LargeChange="0.1"
-                                       SpinButtonPlacementMode="Compact"
-                                       ValidationMode="InvalidInputOverwritten"
-                                       Value="{x:Bind ViewModel.CurveX2, Mode=TwoWay}" />
-                        </StackPanel>
-                        <StackPanel Grid.Column="3" Spacing="4">
-                            <TextBlock Text="y2" Style="{ThemeResource CaptionTextBlockStyle}"
-                                       Foreground="{ThemeResource TextFillColorTertiaryBrush}" />
-                            <NumberBox x:Name="CurveY2Box"
-                                       Minimum="0" Maximum="1" SmallChange="0.01" LargeChange="0.1"
-                                       SpinButtonPlacementMode="Compact"
-                                       ValidationMode="InvalidInputOverwritten"
-                                       Value="{x:Bind ViewModel.CurveY2, Mode=TwoWay}" />
-                        </StackPanel>
                     </Grid>
 
                     <TextBlock Text="Drag the two handles on the plot or type the four control points. Pull a handle into a corner for a right-angle hold-then-drop ; line them up on the diagonal for a straight decline."

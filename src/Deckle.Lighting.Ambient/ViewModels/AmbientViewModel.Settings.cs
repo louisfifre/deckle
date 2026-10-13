@@ -124,6 +124,25 @@ public partial class AmbientViewModel
                     new MagnitudeArgs(0, 2, Unit: "×"),
                     glyph: Glyphs.Sparkle,
                     defaultValue: () => new AmbientSettings().SaturationBoost),
+                // The instrument last and full width (decision 12): the shared
+                // curve block (decision 21) over the brightness response, the unit
+                // square alone, with the brightness floor drawn as a guide while it
+                // is on.
+                Setting.Curve(
+                    "AmbientBrightnessCurveCard",
+                    () => new CurvePoints(BrightnessCurveX1, BrightnessCurveY1, BrightnessCurveX2, BrightnessCurveY2),
+                    p =>
+                    {
+                        BrightnessCurveX1 = p.X1; BrightnessCurveY1 = p.Y1;
+                        BrightnessCurveX2 = p.X2; BrightnessCurveY2 = p.Y2;
+                    },
+                    new CurveArgs(Floor: () => MinBrightnessEnabled ? MinBrightness / 254.0 : null),
+                    glyph: Glyphs.Tuning,
+                    defaultValue: () =>
+                    {
+                        var d = new AmbientSettings();
+                        return new CurvePoints(d.BrightnessCurveX1, d.BrightnessCurveY1, d.BrightnessCurveX2, d.BrightnessCurveY2);
+                    }),
             ],
             glyph: Glyphs.Theme,
             defaultValue: () => AmbientPresets.Default),

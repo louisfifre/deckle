@@ -12,22 +12,6 @@
          Spacing=4 between cards (SettingsCardSpacing, from App.xaml). Each
          section is the shared SettingsSection block. Exact layer of
          GeneralPage / WhisperPage. -->
-    <Page.Resources>
-        <!-- Per-card reset for the bespoke curve card, matching the composed
-             cards' reset: subtle, 32×32, hidden until the card is hovered
-             (code-behind flips Opacity), enabled only once the curve differs
-             from its default. -->
-        <Style x:Key="ResetButtonStyle"
-               BasedOn="{StaticResource SubtleButtonStyle}"
-               TargetType="Button">
-            <Setter Property="Opacity" Value="0" />
-            <Setter Property="Width" Value="32" />
-            <Setter Property="Height" Value="32" />
-            <Setter Property="Padding" Value="0" />
-            <Setter Property="VerticalAlignment" Value="Center" />
-        </Style>
-    </Page.Resources>
-
     <ScrollViewer Padding="32,24,32,24"
                   VerticalScrollBarVisibility="Auto"
                   HorizontalScrollBarVisibility="Disabled">
@@ -99,38 +83,12 @@
 
                 <!-- ── Fine tuning ────────────────────────────────────────── -->
                 <catalog:SettingsSection x:Uid="AmbientPageTuningSection">
-                    <StackPanel Spacing="{StaticResource SettingsCardSpacing}">
-
-                        <!-- bespoke: a curve is a shape, edited by dragging its two
-                             control points; the composer has no kind for a relationship
-                             between four values (and a row of raw numbers is not an
-                             editor). Bound two-way to the view model; the floor drawn on
-                             the plot follows the floor group below. -->
-                        <controls:SettingsCard x:Name="BrightnessCurveCard"
-                                               x:Uid="AmbientBrightnessCurveCard"
-                                               Tag="AmbientBrightnessCurveCard"
-                                               HeaderIcon="{ui:FontIcon Glyph={StaticResource Icon.Tuning}}">
-                            <StackPanel Orientation="Horizontal" Spacing="4">
-                                <Button x:Name="BrightnessCurveReset"
-                                        Style="{StaticResource ResetButtonStyle}"
-                                        Click="BrightnessCurveReset_Click">
-                                    <FontIcon Glyph="{StaticResource Icon.Refresh}" FontSize="14" />
-                                </Button>
-                                <ambientControls:BrightnessCurveCanvas
-                                    X1="{x:Bind ViewModel.BrightnessCurveX1, Mode=TwoWay}"
-                                    Y1="{x:Bind ViewModel.BrightnessCurveY1, Mode=TwoWay}"
-                                    X2="{x:Bind ViewModel.BrightnessCurveX2, Mode=TwoWay}"
-                                    Y2="{x:Bind ViewModel.BrightnessCurveY2, Mode=TwoWay}"
-                                    MinBrightnessEnabled="{x:Bind ViewModel.MinBrightnessEnabled, Mode=OneWay}"
-                                    MinBrightness="{x:Bind ViewModel.MinBrightness, Mode=OneWay}" />
-                            </StackPanel>
-                        </controls:SettingsCard>
-
-                        <!-- Composed: brightness floor, smoothing, change threshold,
-                             exposure, saturation (AmbientViewModel.TuningSettings). -->
-                        <StackPanel x:Name="TuningHost"
-                                    Spacing="{StaticResource SettingsCardSpacing}" />
-                    </StackPanel>
+                    <!-- Composed: the preset fold, with the brightness floor,
+                         smoothing, change threshold, exposure, saturation and the
+                         brightness curve as its children
+                         (AmbientViewModel.TuningSettings). -->
+                    <StackPanel x:Name="TuningHost"
+                                Spacing="{StaticResource SettingsCardSpacing}" />
                 </catalog:SettingsSection>
 
                 <!-- ── Configuration ──────────────────────────────────────── -->
