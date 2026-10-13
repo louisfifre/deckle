@@ -9,24 +9,17 @@ using Deckle.Lighting.Ambient;
 
 namespace Deckle.Playground;
 
-// ─── AmbientPage — light zones (J4) ─────────────────────────────────────────
+// ─── AmbientPage — light zones ──────────────────────────────────────────────
 //
-// Per-light zone-assignment UI : one row per fixture with Identify
-// button + DropDownButton-driven zone picker. Resolves the lights from
-// the selected Hue group, pre-fills suggestions from the matching
-// entertainment area when available, and writes the user's picks into
-// AmbientSettings.LightZones (persisted, consumed by the engine on the
-// next push tick).
+// Resolves the lights of the selected Hue group, pre-fills suggestions from
+// the matching entertainment area, and writes the user's picks into
+// AmbientSettings.LightZones, which the engine reads on its next push tick.
 
 public sealed partial class AmbientPage
 {
-    // Zone options exposed by every per-light DropDownButton +
-    // MenuFlyout pair. The set is static : five values, fixed shape,
-    // never changes at runtime. We tried ComboBox first (both
-    // Items.Add and ItemsSource) and both surfaced a "first click
-    // doesn't open / select" bug that tracks back to WinUI 3 ComboBox
-    // popup measure / focus quirks in code-behind construction.
-    // DropDownButton + MenuFlyoutItem is deterministic.
+    // DropDownButton + MenuFlyout, not ComboBox: a ComboBox built in
+    // code-behind (Items.Add or ItemsSource) misses its first click, a WinUI 3
+    // popup measure/focus quirk.
     private sealed record ZoneOption(LightZone Zone, string Label);
 
     private static readonly ZoneOption[] _zoneOptions =
@@ -38,18 +31,12 @@ public sealed partial class AmbientPage
         new ZoneOption(LightZone.Right,  "Right"),
     ];
 
-    // Carrier for everything OnZoneMenuItemClick needs : the lamp id
-    // (to route the assignment), the lamp display name (for the Info
-    // Capital log line), the zone the menu item represents, and the
-    // DropDownButton that should be re-labelled on selection. Sits on
-    // the MenuFlyoutItem.Tag so the handler is a plain delegate
-    // without per-row closure capture.
+    // Sits on MenuFlyoutItem.Tag so one handler serves every row without
+    // per-row closures.
     private sealed record ZoneMenuTag(string LightId, string LightName, LightZone Zone, DropDownButton Button);
 
-    // Total UX duration of an Identify flash. The bridge would happily
-    // run alert=lselect for 15 s ; we cap it at 3 s so the user spots
-    // the lamp without sitting through a strobe, then we send alert=
-    // none to cut the flash short.
+    // The bridge's alert=lselect flashes for 15 s; StopIdentifyAsync cuts it
+    // after this.
     private static readonly TimeSpan IdentifyFlashDuration = TimeSpan.FromSeconds(3);
 
     private async Task ResolveLightsAndBuildPlacementAsync(HueGroup group)
@@ -242,11 +229,6 @@ public sealed partial class AmbientPage
                     Spacing = 6,
                     Children =
                     {
-                        // Segoe Fluent E7E8 — lightbulb glyph, reads as
-                        // "tell me which lamp this is". Spelled as a
-                        // \uXXXX escape because the literal glyph char
-                        // sits in a private-use range that some editors
-                        // silently strip on save.
                         new FontIcon { Glyph = Glyphs.LightbulbFilled, FontSize = 14 },
                         new TextBlock { Text = "Identify" },
                     },
@@ -341,25 +323,16 @@ public sealed partial class AmbientPage
 
     private void LayoutLightZonesOverlayFromViewbox()
     {
-        // Native footprint = grid dims × cell size. Falls back to the
-        // typical 30×17 footprint while the sampler hasn't reported
-        // anything yet — same default the zones-card path used.
+        // Before the sampler reports, assume the typical 30×17 grid.
         int cols = _previewGridCols > 0 ? _previewGridCols : 30;
         int rows = _previewGridRows > 0 ? _previewGridRows : 17;
         double nativeW = cols * PreviewCellSize;
         double nativeH = rows * PreviewCellSize;
 
-        // Available area : the Viewbox's own ActualSize when it has
-        // content to measure against, otherwise its parent (the inner
-        // Grid hosting the preview surfaces). Stretch=Uniform on a
-        // Viewbox with an empty Grid as content measures to 0 dip — it
-        // can't stretch nothing — so on the zones-only path (page
-        // reopened with the engine off, lights resolved before any
-        // sample arrives) AmbientPreviewViewbox.ActualWidth stays at
-        // zero even when the Viewbox is Visible. Falling back to the
-        // parent's measured size lets the overlay anchor to the real
-        // displayed area in that case ; once cells arrive the parent
-        // and the Viewbox converge to the same value.
+        // A Stretch=Uniform Viewbox around an empty Grid measures to 0 dip,
+        // so on the zones-only path (lights resolved before any sample) its
+        // ActualWidth stays 0 while Visible. Fall back to the parent's size;
+        // once cells arrive the two converge.
         double availW = AmbientPreviewViewbox.ActualWidth;
         double availH = AmbientPreviewViewbox.ActualHeight;
         if ((availW <= 0 || availH <= 0)
@@ -370,10 +343,8 @@ public sealed partial class AmbientPage
         }
         if (availW <= 0 || availH <= 0) return;
 
-        // Replicates Viewbox Stretch=Uniform : the limiting axis sets
-        // the scale, the other axis gets letterboxed (centered by
-        // default — which is what HorizontalAlignment/VerticalAlignment
-        // Center on the Canvas matches).
+        // Replicates Viewbox Stretch=Uniform; the Canvas's Center alignment
+        // matches its letterboxing.
         double scale = Math.Min(availW / nativeW, availH / nativeH);
         double displayedW = nativeW * scale;
         double displayedH = nativeH * scale;
@@ -385,13 +356,8 @@ public sealed partial class AmbientPage
 
     private void LayoutLightZoneRects(double stageWidth, double stageHeight)
     {
-        // Pull the live thickness settings from the shared store so a
-        // slider drag in the Playground repaints the overlay on the
-        // next OnAmbientSettingsChanged tick. Share mode multiplies the
-        // fraction by the matching stage dimension ; Cells mode
-        // multiplies the cell count by the per-cell stage size derived
-        // from the grid. Both branches clamp to stay in lockstep with
-        // AmbientEngine.ResolveBandCells on a hand-edited settings.json.
+        // Both branches clamp to stay in lockstep with
+        // AmbientZoneSampler.ResolveBandCells on a hand-edited settings.json.
         var settings = AmbientSettingsService.Instance.Current;
         int cols = _previewGridCols > 0 ? _previewGridCols : 30;
         int rows = _previewGridRows > 0 ? _previewGridRows : 17;

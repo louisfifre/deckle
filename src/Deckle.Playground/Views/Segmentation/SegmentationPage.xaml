@@ -1,12 +1,6 @@
-<!-- Streaming segmentation tuning page. Two columns : the dynamic-hangover
-     curve stage on the left (action header + live plot + the curve-shape editor
-     under it), the segmenter knobs on the right in a scroll panel with a pinned
-     Save / Revert / Reset bar. Every knob is a TunableRow (slider + editable
-     NumberBox + per-parameter reset wheel) bound two-way to the view-model ;
-     each card and the curve editor carry a per-section reset wheel. Edits are
-     EPHEMERAL — held in SegmentationViewModel until Save writes them to the
-     transcription settings store (the Playground Save / Revert / Reset
-     contract), unlike the live-save AmbientPage. -->
+<!-- Streaming segmentation tuning page. Unlike the live-save AmbientPage,
+     edits stay in SegmentationViewModel until Save writes them to the
+     transcription settings store. -->
 <Page
     x:Class="Deckle.Playground.SegmentationPage"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
@@ -21,9 +15,8 @@
         </Grid.ColumnDefinitions>
 
         <!-- ── Col 0 — curve stage ─────────────────────────────────────── -->
-        <!-- Inner edge (right) at 12, not 24, so the central gutter between the
-             two columns reads as one 24 unit (12 here + 12 on Col 1's padding),
-             not a doubled 48. Outer edges stay 24. -->
+        <!-- Inner edge at 12, not 24: with Col 1's 12 padding the central
+             gutter reads as one 24 unit, not a doubled 48. -->
         <Grid Grid.Column="0" Margin="24,24,12,24">
             <Grid.RowDefinitions>
                 <RowDefinition Height="Auto" />
@@ -31,10 +24,6 @@
                 <RowDefinition Height="Auto" />
             </Grid.RowDefinitions>
 
-            <!-- Action header — the graph show/hide toggle on the left (the action,
-                 mirroring the Ambient / HUD toolbars), the legend and the
-                 "Utterance length" axis title on the right. Legend collapses with
-                 the graph ; the toggle stays. -->
             <Grid Grid.Row="0" Margin="0,0,0,12">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="Auto" />
@@ -77,11 +66,7 @@
                 </Grid>
             </Grid>
 
-            <!-- The hangover curve. Height is capped (width stays elastic) so the
-                 plot reads as a wide band ; the control captions its own axes. The
-                 anchor properties feed it one-way ; the four Bézier control points
-                 are bound two-way, so dragging a handle writes the view-model and
-                 typing in the boxes below moves the handle. -->
+            <!-- Height capped so the plot reads as a wide band. -->
             <transcription:HangoverCurveCanvas
                 x:Name="HangoverCurve"
                 Grid.Row="1"
@@ -95,10 +80,6 @@
                 X2="{x:Bind ViewModel.CurveX2, Mode=TwoWay}"
                 Y2="{x:Bind ViewModel.CurveY2, Mode=TwoWay}" />
 
-            <!-- Below the plot : the plain-language readout and the curve-shape
-                 editor (cubic-bezier readout + manual entry of the four control
-                 points, with a section reset wheel). The handles on the plot and
-                 these boxes edit the same view-model values. -->
             <StackPanel Grid.Row="2" Margin="0,16,0,0" Spacing="16">
                 <TextBlock x:Name="CurveReadoutText"
                            Style="{ThemeResource BodyTextBlockStyle}"
@@ -203,10 +184,6 @@
                           HorizontalScrollBarVisibility="Disabled">
                 <StackPanel Spacing="20">
 
-                    <!-- Page title block — TitleTextBlockStyle header + Body
-                         description, with Reset to defaults inline on the right
-                         (always there — snaps every knob to the shipping
-                         defaults). Save / Revert live in the floating bar below. -->
                     <Grid>
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="*" />
@@ -240,7 +217,6 @@
                                    Margin="0,4,0,0" />
                     </Grid>
 
-                    <!-- Hangover & ramp card. -->
                     <controls:TuningCard Title="Hangover &amp; ramp"
                         Description="The decision delay starts at the maximum and, once an utterance grows past the ramp start, shrinks toward the minimum by the ramp end. In seconds."
                         ResetClick="OnResetHangoverRampClick">
@@ -267,7 +243,6 @@
                         </StackPanel>
                     </controls:TuningCard>
 
-                    <!-- Detection card. -->
                     <controls:TuningCard Title="Detection"
                         Description="The voicing gate, the cut margin, and the noise-blip floor — the rest of the segmenter around the hangover curve."
                         ResetClick="OnResetDetectionClick">
@@ -289,22 +264,16 @@
                         </StackPanel>
                     </controls:TuningCard>
 
-                    <!-- Footer breathing room — only present while the floating
-                         save bar is up, so the last card's caption can scroll
-                         clear of it instead of sitting under it. Its height is
-                         kept in step with the bar's actual height in code-behind;
-                         toggled with the bar on IsDirty. -->
+                    <!-- Shown with the floating save bar so the last caption can
+                         scroll clear of it; code-behind keeps its height equal to
+                         the bar's. -->
                     <Border x:Name="UnsavedSpacer" Height="56" Visibility="Collapsed" />
                 </StackPanel>
             </ScrollViewer>
 
-            <!-- Floating save bar — overlays the bottom of the scroll, shown only
-                 while there are unsaved edits (toggled on IsDirty in code-behind).
-                 Revert discards back to the saved values, Save writes them to the
-                 segmenter store ; both clear the dirty state, so the bar dismisses
-                 itself. Rounded + inset + elevated so it reads as a floating card.
-                 The left margin is 0 (not 12) so it overhangs the cards by the
-                 same 12 on the left as it does on the right and bottom. -->
+            <!-- Shown only while there are unsaved edits. Left margin 0, not
+                 12, so it overhangs the cards by 12 on the left as on the right
+                 and bottom. -->
             <Border x:Name="UnsavedBar"
                     Visibility="Collapsed"
                     VerticalAlignment="Bottom"

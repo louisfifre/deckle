@@ -1,39 +1,24 @@
-// `using static` gives us unqualified access to HudComposition's nested
-// `ConicArcStrokeConfig` struct. A plain `using Deckle.Composition;`
-// would only import the outer HudComposition class, not its nested
-// types — C# nested-type resolution stops at the containing class.
 using static Deckle.Composition.HudComposition;
 
 namespace Deckle.Playground;
 
-// Mutable shadow of HudComposition.ConicArcStrokeConfig.
+// Mutable shadow of HudComposition.ConicArcStrokeConfig. The shipping config
+// is a readonly struct with init-only properties so a stroke's baked geometry
+// cannot change after creation; the playground mutates this class from its
+// sliders and projects it into a fresh config on every rebuild.
 //
-// The shipping config is a readonly struct with init-only properties,
-// designed so the shipping app can't accidentally mutate a stroke's
-// baked geometry after creation. The playground needs mutation on
-// slider.ValueChanged, so we hold a mutable class here and project it
-// into a fresh ConicArcStrokeConfig on every rebuild.
-//
-// Field defaults are read from a default-constructed shipping struct,
-// never restated here, so the playground opens on exactly the numbers
-// the shipping HUD renders and the two cannot drift apart. A value that
-// proves right in the playground is promoted to the struct's default;
-// it never becomes a playground-only default in this file.
-//
-// Field grouping matches the NavigationView section order in
-// PlaygroundWindow.xaml.cs so the reader can scan both files side by
-// side.
+// Field defaults are read from a default-constructed shipping struct, never
+// restated here, so the playground opens on exactly the numbers the shipping
+// HUD renders. A value that proves right in the playground is promoted to the
+// struct's default; it never becomes a playground-only default in this file.
 internal sealed class TuningModel
 {
-    // Single source of the defaults below: the shipping struct itself.
     private static readonly ConicArcStrokeConfig Defaults = new();
 
     // ── HUD geometry (shared by the stroke and the countdown previews) ──
     public float StrokeThickness = Defaults.StrokeThickness;
     public float InsetDip        = Defaults.InsetDip;
 
-    // Reloads the geometry fields from a config (the shipping struct on
-    // reset).
     public void LoadGeometry(ConicArcStrokeConfig source)
     {
         StrokeThickness = source.StrokeThickness;
@@ -51,9 +36,6 @@ internal sealed class TuningModel
     public double HuePeriodSeconds = Defaults.HuePeriodSeconds;
     public float  HueDirection     = Defaults.HueDirection;
     public float  HuePhaseTurns    = Defaults.HuePhaseTurns;
-    // Out-in (0.125, 0.375, 0.875, 0.625) — endpoint tangent slope 3.0
-    // on both sides → C¹-continuous seam when the keyframe loops. See
-    // HudComposition.StartRotation header for details.
     public float  HueEaseP1X       = Defaults.HueEaseP1X;
     public float  HueEaseP1Y       = Defaults.HueEaseP1Y;
     public float  HueEaseP2X       = Defaults.HueEaseP2X;
@@ -78,19 +60,15 @@ internal sealed class TuningModel
     public float  ArcMinSpeedFraction = Defaults.ArcMinSpeedFraction;
 
     // ── Clone-cone placement (digit reveal + ConicClone preview) ─────────
-    // Fraction of the host frame; (0.5, 0.5) = centred. See the matching
-    // ConicArcStrokeConfig block for the full geometry rationale.
+    // Fraction of the host frame; (0.5, 0.5) = centred.
     public float CloneCentreXFraction = Defaults.CloneCentreXFraction;
     public float CloneCentreYFraction = Defaults.CloneCentreYFraction;
 
-    // ── Clone-cone palette — reveal's own OKLCh lightness/chroma (the peps
-    //    knob), decoupled from the contour. See the matching ConicArcStrokeConfig
-    //    block. ─────────────────────────────────────────────────────────────────
+    // ── Clone-cone palette ──────────────────────────────────────────────
     public float CloneOklchLightness = Defaults.CloneOklchLightness;
     public float CloneOklchChroma    = Defaults.CloneOklchChroma;
 
-    // ── Clone-cone rotation — independent speeds/directions, default =
-    //    contour. See the matching ConicArcStrokeConfig block. ────────────
+    // ── Clone-cone rotation ─────────────────────────────────────────────
     public double CloneHuePeriodSeconds = Defaults.CloneHuePeriodSeconds;
     public float  CloneHueDirection     = Defaults.CloneHueDirection;
     public double CloneArcPeriodSeconds = Defaults.CloneArcPeriodSeconds;
@@ -129,11 +107,9 @@ internal sealed class TuningModel
     public double RecordingBlendSeconds    = Defaults.RecordingBlendSeconds;
     public double RecordingHuePeriodSeconds = Defaults.RecordingHuePeriodSeconds;
 
-    // Projects the current field values into a fresh ConicArcStrokeConfig
-    // so HudChrono.RebuildStroke can bake a new stroke. Called on every
-    // slider change that targets a stroke field. The projection is
-    // explicit field-by-field — no reflection, no codegen — so compile
-    // errors flag any drift between this file and the shipping struct.
+    // Explicit field-by-field, no reflection: a renamed or removed struct
+    // property breaks the build, and TuningModelTests catches a field left
+    // out of the projection.
     public ConicArcStrokeConfig ToConfig() => new()
     {
         StrokeThickness = StrokeThickness,

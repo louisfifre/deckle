@@ -62,9 +62,9 @@ public class TuningModelTests
     }
 
     // The Playground is a sandbox: an edit reaches the preview config of the
-    // model that made it and nothing else. The 2026-10-09 bridge published
-    // every edit to the live HUD and reloaded it into the next HUD tab, so a
-    // fresh model no longer opened on the compiled defaults.
+    // model that made it and nothing else. A bridge that publishes edits to
+    // the live HUD and reloads them into the next HUD tab breaks this: a
+    // fresh model then no longer opens on the compiled defaults.
     [Fact]
     [Trait("Category", "regression")]
     public void AnEditChangesItsOwnPreviewOnlyAndAFreshTabOpensOnTheShippingDefaults()
@@ -115,10 +115,9 @@ public class TuningModelTests
         Assert.True(entries.Count == 0, "Static HUD config entries: " + string.Join(", ", entries));
     }
 
-    // The live HUD maps every audio sample through AudioLevelMapper's statics.
-    // The HUD tab used to write them from its Audio mapping section and from
-    // Reset all. The Playground now touches no Deckle.Audio type at all, so
-    // the compiled assembly carries no reference to that assembly.
+    // The live HUD maps every audio sample through AudioLevelMapper's statics,
+    // which the Playground must never write: its assembly references no
+    // Deckle.Audio type at all.
     [Fact]
     [Trait("Category", "regression")]
     public void ThePlaygroundTouchesNoAudioType()

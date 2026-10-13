@@ -7,18 +7,9 @@ namespace Deckle.Playground;
 
 // ─── HudPage — row factories ────────────────────────────────────────────────
 //
-// Programmatic Slider + NumberBox composites used to build every tuning
-// row in the Expanders. Separated from the rest of the page so the
-// generic UI plumbing (paired-value sync guard, label formatting,
-// direction toggle, layout grid) lives in one place and the
-// section-specific methods (HudPage.Expanders.cs) stay focused on
-// what each knob means.
-//
-// Step frequencies are deliberately coarse so user-driven values land
-// on round numbers instead of float-precision artefacts (the original
-// playground used (max-min)/1000 which gave 0.2676 / 0.6783 / etc.).
-// Each call-site picks the right step for its range — see the comment
-// at the top of HudPage.Expanders.cs.
+// Step frequencies are deliberately coarse so dragged values land on round
+// numbers, not float artefacts. Each call site picks its step; the
+// convention is at the top of HudPage.Expanders.cs.
 
 public sealed partial class HudPage
 {
@@ -28,11 +19,9 @@ public sealed partial class HudPage
         Style = (Style)Resources["HudTuningHelpTextStyle"],
     };
 
-    // Section header hosts the title and an aligned-right "Reset
-    // section" button — icon + label, hidden until the section is hovered or the
-    // button is focused, the same Settings reveal as TuningCard's section reset.
-    // The button keeps its slot at rest, so the reveal
-    // never reflows the header.
+    // The "Reset section" button reveals on hover or focus, like TuningCard's
+    // section reset: instant, no animation. It hides through Opacity, keeping
+    // its slot, so the reveal never reflows the header.
     private StackPanel NewTuningSection(string title, Action resetAction)
     {
         var content = new StackPanel
@@ -84,9 +73,6 @@ public sealed partial class HudPage
             (_, _) => _sectionExpansion[title] = section.IsExpanded);
         section.Loaded += SettleInitialSectionState;
 
-        // Reveal the reset on hover / focus — instant, no animation, matching
-        // TuningCard. Hovering anywhere on the section (header or rows) shows it ;
-        // focusing the button keyboard-reveals it.
         bool pointerOver = false, focused = false;
         void UpdateReveal() => resetBtn.Opacity = pointerOver || focused ? 1 : 0;
         section.PointerEntered += (_, _) => { pointerOver = true;  UpdateReveal(); };
@@ -98,22 +84,14 @@ public sealed partial class HudPage
         return content;
     }
 
-    // Slider + NumberBox composite. Both share the same value source ;
-    // the `_syncing` guard prevents the ValueChanged feedback loop.
-    // Rebuild-triggering rows push through RequestRebuild so the
-    // CanvasDevice doesn't thrash mid-drag.
     private Action<double> AddFloatRow(
         StackPanel stack, string label,
         double min, double max, double step, double value,
         Action<double> setter,
         bool rebuild = false)
     {
-        // Clean up float→double promotion noise in the displayed
-        // default. TuningModel stores floats ; promoting to double for
-        // Slider.Value / NumberBox.Value exposes binary-precision
-        // artefacts (0.4f shows as 0.4000006, 0.013f as 0.01300027).
-        // Rounding to the step's decimal count strips the noise without
-        // altering semantics.
+        // TuningModel stores floats; promoted to double they show binary
+        // noise (0.4f as 0.4000006). Rounding to the step's decimals strips it.
         int digits = Math.Max(0, (int)Math.Ceiling(-Math.Log10(step)));
         double displayValue = Math.Round(value, digits);
 
@@ -166,7 +144,8 @@ public sealed partial class HudPage
         };
 
         stack.Children.Add(WrapRow(label, slider, numberBox));
-        // Transport updates preserve the actual controls, focus and layout.
+        // Lets the countdown transport move the row in place, keeping its
+        // controls, focus and layout.
         return next =>
         {
             bool previous = _syncing;
@@ -268,9 +247,8 @@ public sealed partial class HudPage
         stack.Children.Add(grid);
     }
 
-    // Rotation direction is semantically ±1. A slider would smuggle a
-    // hidden speed multiplier via fractional values. ToggleSwitch snaps
-    // strictly to -1 or +1.
+    // A toggle, not a slider: a fractional direction would smuggle in a
+    // hidden speed multiplier.
     private void AddDirectionRow(
         StackPanel stack, string label,
         float value, Action<float> setter)

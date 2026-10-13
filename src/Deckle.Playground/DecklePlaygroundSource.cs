@@ -4,41 +4,24 @@ using Deckle.Diagnostics;
 
 namespace Deckle.Playground;
 
-// Playground module provider. Covers the Playground shell (navigation), tuning
-// pages (HomePage / HudPage / AmbientPage) with their many diagnostic
-// interactions, and the host PlaygroundWindow itself. The AmbientViewModel the
-// Ambient tab binds logs its own edits on Deckle-Ambient.
-//
-// Provider Name = "Deckle-Playground" → [PLAYGROUND] tag through the legacy
-// bridge.
-//
-// Verbose/Info separation per the deckle-logging skill: an Info/Warning is a
-// short Capital sentence with no IDs and no k=v; the technical detail (handles,
-// reasons, ids, exceptions) lives in a Verbose mirror that FOLLOWS it. The many
-// diagnostic interactions (Hue bridge calls, entertainment-area matching, zone
-// suggestion/assignment) are typed per operation — a failed Hue call collapses
-// to one milestone + one Verbose detail keyed by the operation name rather than
-// a free-form string channel.
+// Playground provider: window navigation and page timing, plus the Ambient
+// tab's capture, Hue and zone interactions. The AmbientViewModel the Ambient
+// tab binds logs its own edits on Deckle-Ambient.
 [EventSource(Name = "Deckle-Playground")]
 public sealed class DecklePlaygroundSource : DeckleEventSource
 {
     public static readonly DecklePlaygroundSource Log = new();
 
-    // Single nav-start clock for the PlaygroundWindow — same role as the
-    // SettingsWindow one. Restarted in OnNavSelectionChanged at nav-start;
-    // feeds NavTiming (Navigate-return) and the page's first-Loaded PageReady,
-    // so both measures share ONE timestamp. Static: the page Loaded handlers
-    // (HudPage/AmbientPage/SegmentationPage) see the provider, not the window.
+    // Restarted once per navigation, so NavTiming and the page's PageReady
+    // share one timestamp. Static so the page Loaded handlers reach it
+    // without the window.
     public static readonly Stopwatch NavClock = new();
 
     private DecklePlaygroundSource() { }
 
     // ── Event IDs ─────────────────────────────────────────────────────────────
-    // Milestones keep their original id; the Verbose mirrors added for the typed
-    // rewrite take fresh ids 12-22 at the end of the sequence. 4/10/11 — the old
-    // generic SettingChangedDetail / AmbientVerbose / AmbientInfo channels split
-    // 1:many into typed events with no single successor; burned, never reused.
-    // IDs are public in the ETW manifest; never reuse an id after deleting an event.
+    // 4, 10 and 11 are retired. IDs are public in the ETW manifest; never
+    // reuse an id after deleting an event.
     public const int EvtNavigationRejected           = 1;
     public const int EvtNavigationFailed             = 2;
     public const int EvtTuningChanged                = 3;
@@ -104,9 +87,7 @@ public sealed class DecklePlaygroundSource : DeckleEventSource
             WriteEvent(EvtNavigationFailedDetail, page, reason, error);
     }
 
-    // (a) Navigate-return duration on the success path (the Playground success
-    // branch previously logged nothing). Mirrors whisper ModelLoadComplete:
-    // measured ms, typed field, Verbose. From NavClock (set once per nav).
+    // Navigate-return duration on the success path, from NavClock.
     [Event(EvtNavTiming,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Lifecycle,
@@ -117,9 +98,8 @@ public sealed class DecklePlaygroundSource : DeckleEventSource
             WriteEvent(EvtNavTiming, page, duration_ms);
     }
 
-    // (b) Time from nav-start (NavClock) to the page's first Loaded — captures
-    // the heavy work (ViewModel.Load, BuildTuningPanel, Win2D mount) that
-    // Navigate returns before. Verbose, ms.
+    // From nav-start to the page's Loaded: captures the heavy work
+    // (ViewModel.Load, BuildTuningPanel, Win2D mount) Navigate returns before.
     [Event(EvtPageReady,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Lifecycle,

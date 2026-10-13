@@ -3,13 +3,8 @@ using Deckle.Composition;
 
 namespace Deckle.Playground;
 
-// ─── HUD playground target enum ──────────────────────────────────────────────
-//
-// Four HUD states (Charging / Recording / Transcribing / Rewriting) and three
-// underlying primitives (Conic / ArcMask / Combined) the developer might want
-// to inspect in isolation. The DropDownButton in HudPage groups them under
-// two sub-menus ; persistence is in-memory only so the enum doesn't need to
-// be stable across releases.
+// The HUD states, then the primitives to inspect in isolation. Never
+// persisted, so the members need not stay stable across releases.
 public enum HudTarget
 {
     Charging,
@@ -28,11 +23,10 @@ public enum HudTarget
     MaskedCountdown,
 }
 
-// Logical groups of tuning expanders. The HUD tuning panel is rebuilt
-// every time the target changes, showing only the sections whose rows
-// reach the active target's preview. Parked follows them (collapsed by
-// default) so the developer can tweak transition-only defaults from any
-// target; it is skipped when the list is empty (Charging, no stroke).
+// Logical groups of tuning expanders. The panel shows only the sections whose
+// rows reach the active target's preview. Parked follows them so the
+// transition-only defaults stay reachable, except on the targets without a
+// stroke: Charging (empty list) and the countdown views.
 public enum HudTuningSection
 {
     Geometry,
@@ -49,27 +43,13 @@ public enum HudTuningSection
     Parked,
 }
 
-// ─── HUD playground ViewModel ────────────────────────────────────────────────
-//
-// Thin transport + target state. The actual stroke tuning lives in the
-// mutable TuningModel POCO directly mutated by the slider lambdas in
-// HudPage code-behind (60+ fields, programmatic Slider/NumberBox composite
-// — wrapping each one as [ObservableProperty] would add ~3× the code for
-// no x:Bind payoff since the panel itself is built programmatically).
-//
-// The ViewModel exposes only what HudPage.xaml actually binds : the
-// current target, the play state, and the computed enable-flags for the
-// Play / Pause / Stop transport buttons. Mirrors the GeneralViewModel
-// pattern (CommunityToolkit.Mvvm partial properties, _isSyncing guard
-// — here named _suppressTargetEvents for the same role) without the
-// PushToSettings step. HUD tuning is not persisted: a value that proves
-// right becomes a code default, never a second source of truth.
+// Transport and target state only. The stroke tuning lives in the mutable
+// TuningModel the slider lambdas in HudPage write directly: the panel is
+// built in code, so wrapping each field as [ObservableProperty] would buy no
+// x:Bind. HUD tuning is not persisted: a value that proves right becomes a
+// code default, never a second source of truth.
 public partial class HudViewModel : ObservableObject
 {
-    // Suppresses change side-effects when the page is programmatically
-    // setting the target during initialisation or during a card-click
-    // mutual-exclusion sweep. The page sets this true around any
-    // bulk-write block, mirrors the `_isSyncing` flag from GeneralViewModel.
     private bool _suppressTargetEvents;
 
     public bool SuppressTargetEvents
@@ -84,28 +64,19 @@ public partial class HudViewModel : ObservableObject
     [ObservableProperty]
     public partial bool IsPlaying { get; set; }
 
-    // Which state's grading the geometry-only previews (Conic / ArcMask /
-    // Combined / Conic clone) are shown in — Transcribing (greyscale) or
-    // Rewriting (full colour). Inert for the four HUD-state targets, which carry
-    // their own variant. Default Rewriting so a freshly-selected cone shows in
-    // colour (its placement is unreadable in flat grey).
+    // Grading of the geometry-only previews: Transcribing (greyscale) or
+    // Rewriting (full colour). The HUD-state targets carry their own variant.
+    // Default Rewriting: a cone's placement is unreadable in flat grey.
     [ObservableProperty]
     public partial ProcessingVariant PreviewVariant { get; set; }
 
     public HudViewModel()
     {
-        // Default target = Transcribing, mirrors the previous in-memory
-        // default that the original PlaygroundWindow seeded. Pause by
-        // default so the window opens to an empty preview, the user
-        // clicks Play to start.
         CurrentTarget  = HudTarget.Transcribing;
         IsPlaying      = false;
         PreviewVariant = ProcessingVariant.Rewriting;
     }
 
-    // The Transcribing/Rewriting grading toggle only makes sense for the
-    // geometry-only previews; the HUD-state targets already encode their own
-    // variant. HudPage binds the toggle's Visibility here.
     public bool IsVariantToggleVisible =>
         CurrentTarget is HudTarget.Conic
                       or HudTarget.Combined
@@ -114,21 +85,13 @@ public partial class HudViewModel : ObservableObject
     public bool IsCountdownTarget => CurrentTarget is HudTarget.UtteranceCountdown
         or HudTarget.CountdownMaterial or HudTarget.CountdownMasks or HudTarget.MaskedCountdown;
 
-    // Computed transport enable-flags. Derived from IsPlaying ; the
-    // partial change method below fires change notifications for these
-    // so x:Bind picks them up on the toolbar. Two-button transport
-    // (Play / Stop) ; Pause was retired in 2026-05-19 because freezing
-    // the Composition Forever animations would require new entry points
-    // in Deckle.Hud and Deckle.Composition, out of scope here.
-
+    // No Pause: freezing the Composition Forever animations would need new
+    // entry points in Deckle.Hud and Deckle.Composition.
     public bool IsPlayEnabled => !IsPlaying;
     public bool IsStopEnabled => IsPlaying;
 
-    // Human-readable label shown on the DropDownButton. Same case as the
-    // enum members — they read as proper UI labels by design ("Recording",
-    // "Conic"…).
-    // Friendly labels for the DropDownButton — the raw enum names read poorly
-    // for the primitives ("ArcMask"), and these match the MenuFlyout item text.
+    // The raw enum names read poorly for the primitives ("ArcMask"); these
+    // labels match the MenuFlyout item text in HudPage.xaml.
     public string CurrentTargetLabel => CurrentTarget switch
     {
         HudTarget.Conic      => "Cone",
@@ -154,22 +117,16 @@ public partial class HudViewModel : ObservableObject
         OnPropertyChanged(nameof(IsStopEnabled));
     }
 
-    // Forces the preview back to its idle, non-animated state — invoked
-    // by the Stop button and by PlaygroundWindow.ShowAndActivate so each
-    // window re-show lands on a known state regardless of where the user
-    // left it.
     public void ForceStop()
     {
         if (!IsPlaying) return;
         IsPlaying = false;
     }
 
-    // Returns the tuning sections whose rows reach the active target's
-    // preview. A generic section replaced by the target's own section is
-    // hidden; its rows stay reachable from another target because the
-    // page holds one shared TuningModel. HudPage's BuildTuningPanel
-    // creates the matching expanders, then Parked, unless the list is
-    // empty.
+    // The sections whose rows reach the active target's preview. A generic
+    // section replaced by the target's own section is hidden; its rows stay
+    // reachable from another target because the page holds one shared
+    // TuningModel.
     public IReadOnlyCollection<HudTuningSection> ActiveTuningSections =>
         CurrentTarget switch
         {

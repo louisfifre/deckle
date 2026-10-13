@@ -15,63 +15,27 @@ namespace Deckle.Playground;
 
 // ─── HUD tuning page ─────────────────────────────────────────────────────────
 //
-// Owns the HUD stroke preview composition + the programmatic tuning panel.
-// Extracted from the monolithic PlaygroundWindow.xaml.cs in 2026-05-19 ;
-// behaviour preserved verbatim except for the toolbar refonte (target
-// picker is a DropDownButton + flat MenuFlyout, transport is Play / Stop
-// with enable-bound state) and the tuning expander list filters by
-// HudViewModel.ActiveTuningSections so only knobs relevant to the active
-// target appear.
-//
-// Code is split across partial files :
-//   • HudPage.xaml.cs  — fields, ctor, lifecycle, VM observer, target /
-//                        transport handlers, ApplyTarget, RMS pump,
-//                        OnResetAllClick, BuildTuningPanel dispatcher.
-//   • HudPage.Expanders.cs    — one Add/Reset pair per logical knob
-//                               group (palette, hue rotation, recording
-//                               variant, etc.).
-//   • HudPage.RowFactories.cs — programmatic Slider+NumberBox composite
-//                               builders and the Expander header helper.
-//
-// State that survives navigation lives as Page fields here under
-// NavigationCacheMode.Required ; PlaygroundWindow disposes the runtime
-// composition + timers via DisposeResources at window-close so the
-// compositor never holds dangling Forever animations.
-//
-// Tuning is in-memory only — TuningModel is a mutable POCO captured by
-// the slider lambdas. RebuildTuningPanel re-creates the visuals after
-// a target switch or a Reset* action ; the captured `_tuning` reference
-// stays stable across rebuilds so a single field swap (in OnResetAllClick)
-// suffices to point every lambda at the new instance.
+// The page is cached (NavigationCacheMode.Required), so its state survives
+// navigation; PlaygroundWindow calls DisposeResources on close so the
+// compositor never keeps dangling Forever animations. Tuning lives in memory
+// only.
 public sealed partial class HudPage : Page
 {
     public HudViewModel ViewModel { get; } = new();
 
-    // ── Tuning state ─────────────────────────────────────────────────────────
-    //
-    // Not readonly : OnResetAllClick swaps the whole instance for a fresh
-    // `new TuningModel()` to snap fields back to compiled defaults. Every
-    // row-factory lambda captures `_tuning` by closure over `this`, so the
-    // lambdas see the swapped instance on the next edit — no need to
-    // rebuild the panel purely for the swap.
+    // Not readonly: OnResetAllClick swaps in a fresh TuningModel. The row
+    // lambdas read `_tuning` through `this`, so they write to the new instance.
     private TuningModel _tuning = new();
 
-    // Sim RMS defaults chosen to mimic the RMS distribution of normal
-    // conversational speech (50 ms window average) :
-    //   0.013 linear ≈ -38 dBFS — engine gate threshold, "breath".
-    //   0.100 linear ≈ -20 dBFS — normal conversational mid-range.
+    // Simulated conversational speech: 0.013 ≈ -38 dBFS, 0.100 ≈ -20 dBFS.
     private float _simRmsMin           = 0.013f;
     private float _simRmsMax           = 0.100f;
     private float _simRmsPeriodSeconds = 2.0f;
     private bool  _simManualOverride   = false;
     private float _simManualValue      = 0.012f;
 
-    // ── Rebuild debounce ────────────────────────────────────────────────
-    //
-    // Paint-time slider changes rebuild the Win2D surfaces from scratch —
-    // one rebuild per DispatcherQueue tick during a drag overloads the
-    // CanvasDevice. The debounce fires the actual rebuild 300 ms after
-    // the last slider movement.
+    // Paint-time changes rebuild the Win2D surfaces from scratch; one rebuild
+    // per tick during a drag overloads the CanvasDevice, hence the debounce.
     private readonly DispatcherTimer _rebuildDebounce = new()
         { Interval = TimeSpan.FromMilliseconds(300) };
     private bool _rebuildPending;
@@ -81,45 +45,23 @@ public sealed partial class HudPage : Page
         { Interval = TimeSpan.FromMilliseconds(50) };
     private readonly Stopwatch _rmsClock = new();
 
-    // ── Slider ↔ NumberBox sync guard ───────────────────────────────────
-    //
-    // A two-way composite (Slider + NumberBox sharing a value source)
-    // has to guard against feedback loops : setting Slider.Value fires
-    // ValueChanged which pushes into NumberBox.Value which fires its
-    // own ValueChanged which writes back to Slider. The flag short-
-    // circuits the paired event during every programmatic write.
-    // Read by row factories in HudPage.RowFactories.cs.
+    // Breaks the Slider ↔ NumberBox feedback loop in the row factories: each
+    // programmatic write fires the paired control's ValueChanged.
     private bool _syncing;
     private bool _tuningPanelInitialized;
 
-    // ── Naked preview bundle ────────────────────────────────────────────
-    //
-    // HudComposition.CreateNakedMaskPreview returns a disposable bundle
-    // that wraps the container visual + rotation property sets + brushes
-    // + surfaces. We MUST Dispose it before mounting a new one,
-    // otherwise every rebuild leaks two Forever ScalarKeyFrameAnimations
-    // on the compositor — after enough slider moves the compositor
-    // saturates and the rotation freezes mid-animation (the Conic
-    // preview regression that was reported). See NakedPreview class
-    // comment in HudComposition.
+    // Must be disposed before a new one is mounted: every rebuild otherwise
+    // leaks two Forever ScalarKeyFrameAnimations, and after enough slider
+    // moves the compositor saturates and the rotation freezes. See the
+    // NakedPreview class comment in HudComposition.
     private HudComposition.NakedPreview? _nakedPreview;
 
-    // Fixed natural footprint of the naked-mask preview bundle. 272×78
-    // is the HUD's actual stroke surface ; the bundle is centered
-    // inside a 300×300 host so the Conic primitive's outer radius
-    // (270 dip diameter) doesn't clip on the corners. Constants —
-    // never change at runtime.
+    // 272×78 is the HUD's stroke surface; the 300×300 host leaves room so the
+    // Conic primitive's outer radius doesn't clip at the corners.
     private static readonly Vector2 NakedHudSize = new(272f, 78f);
     private const           float   NakedHostDim = 300f;
 
-    // ── Conic clone preview ─────────────────────────────────────────────
-    //
-    // The ConicClone target's own disposable bundle (a second, freely-placed
-    // cone). Same lifetime discipline as _nakedPreview — disposed before a
-    // replacement is mounted and on window close. Its apex placement lives on
-    // the tuning config (CloneCentre*Fraction), set by the ClonePlacement
-    // expander and read by CreateConicClonePreview — the SAME value the live
-    // digit reveal reads, so preview and reveal stay in lock-step.
+    // Same disposal discipline as _nakedPreview.
     private HudComposition.ConicClonePreview? _conicClonePreview;
 
     public HudPage()
@@ -135,10 +77,6 @@ public sealed partial class HudPage : Page
             ApplyTarget();
         };
 
-        // VM observer : on target change → rebuild the tuning panel (the
-        // active section set changed) + re-mount the preview ; on play-
-        // state change → re-mount the preview (Pause / Play visual
-        // flips).
         ViewModel.PropertyChanged += OnViewModelPropertyChanged;
         SettingsService.Instance.OverlayAnimationsChanged += OnOverlayAnimationsChanged;
 
@@ -148,38 +86,24 @@ public sealed partial class HudPage : Page
         }
     }
 
-    // First-load initialisation : build the tuning panel from the active
-    // target's section list, project the initial preview. Loaded fires
-    // once for the cached Page instance ; subsequent navigations land
-    // in OnNavigatedTo, which doesn't rebuild the panel (nothing
-    // changed on the VM yet). The first user interaction on a slider
-    // or the target menu triggers the next rebuild path.
+    // Loaded re-fires on every return to the cached page: the panel is built
+    // once, the preview is re-projected each time.
     private void OnPageLoaded(object sender, RoutedEventArgs e)
     {
         if (!_tuningPanelInitialized) BuildTuningPanel();
         ApplyTarget();
-        // First Loaded = page ready after the heavy work above. Measured from
-        // the nav-start clock set in PlaygroundWindow.OnNavSelectionChanged.
         DecklePlaygroundSource.Log.PageReady(nameof(HudPage), DecklePlaygroundSource.NavClock.ElapsedMilliseconds);
     }
 
     // ── Public surface called by PlaygroundWindow ────────────────────────────
 
-    // Forces Play→Stop on every window re-show, so the user lands on a
-    // known state regardless of where they left the preview. Invoked by
-    // PlaygroundWindow.ShowAndActivate. (The window also destroys itself
-    // on close so this only matters during the lifetime of one window
-    // instance.)
+    // Stops the preview on every window re-show, so it lands on a known state.
     public void ForcePause()
     {
         if (!ViewModel.IsPlaying) return;
         ViewModel.IsPlaying = false;
-        // ApplyTarget runs through the VM observer below ; no need to
-        // call it twice.
     }
 
-    // Releases runtime composition + timers. Called by PlaygroundWindow
-    // on Closed.
     public void DisposeResources()
     {
         SettingsService.Instance.OverlayAnimationsChanged -= OnOverlayAnimationsChanged;
@@ -214,23 +138,15 @@ public sealed partial class HudPage : Page
         switch (e.PropertyName)
         {
             case nameof(HudViewModel.CurrentTarget):
-                // Target switch : the relevant tuning sections change so
-                // the panel is rebuilt to surface the right knobs. Then
-                // the preview is reprojected — ApplyTarget tears down
-                // the old visual and instantiates the new state.
                 RebuildTuningPanel();
                 ApplyTarget();
                 break;
 
             case nameof(HudViewModel.IsPlaying):
-                // Play / Stop flip : the preview re-projects. Tuning
-                // panel is unchanged.
                 ApplyTarget();
                 break;
 
             case nameof(HudViewModel.PreviewVariant):
-                // Transcribing ↔ Rewriting grading flip on a geometry-only
-                // preview : re-project so the cone re-grades (grey ↔ colour).
                 ApplyTarget();
                 break;
         }
@@ -244,16 +160,11 @@ public sealed partial class HudPage : Page
         if (item.Tag is not string tag) return;
         if (!Enum.TryParse<HudTarget>(tag, out var next)) return;
 
-        // ViewModel setter raises PropertyChanged → OnViewModelPropertyChanged
-        // → RebuildTuningPanel + ApplyTarget. No need to do anything
-        // else here ; the visual update flows through the observer.
         ViewModel.CurrentTarget = next;
     }
 
-    // Transcribing / Rewriting grading radios (toolbar). Only shown for the
-    // geometry-only previews; the click sets PreviewVariant, the VM observer
-    // re-projects. Fires once on load for the default-checked Rewriting radio —
-    // a no-op since the value already matches.
+    // Fires once on load for the default-checked Rewriting radio; a no-op,
+    // the value already matches.
     private void OnVariantRadioChecked(object sender, RoutedEventArgs e)
     {
         if (sender is not RadioButton rb || rb.Tag is not string tag) return;
@@ -278,7 +189,6 @@ public sealed partial class HudPage : Page
     private void ApplyTarget()
     {
         SnapshotCountdownReplay();
-        // Tear down everything first.
         ChronoPreview.ApplyState(HudState.Hidden);
         ElementCompositionPreview.SetElementChildVisual(NakedPreviewHost, null);
         _nakedPreview?.Dispose();
@@ -291,10 +201,7 @@ public sealed partial class HudPage : Page
 
         if (!ViewModel.IsPlaying)
         {
-            // Stop = truly empty preview. Neither the chrono silhouette
-            // nor the naked host should remain — no residual Charging-
-            // like card. The outer Border (substrate) stays so the user
-            // sees where the preview will reappear on Start.
+            // Stop leaves only the substrate: no residual Charging-like card.
             ChronoPreview.Visibility    = Visibility.Collapsed;
             NakedPreviewHost.Visibility = Visibility.Collapsed;
             VariantToggle.Visibility    = Visibility.Collapsed;
@@ -308,13 +215,10 @@ public sealed partial class HudPage : Page
                                      or HudTarget.ConicClone;
         ChronoPreview.Visibility    = isNaked ? Visibility.Collapsed : Visibility.Visible;
         NakedPreviewHost.Visibility = isNaked ? Visibility.Visible   : Visibility.Collapsed;
-        // The grading toggle rides with the geometry-only previews.
         VariantToggle.Visibility    = ViewModel.IsVariantToggleVisible ? Visibility.Visible : Visibility.Collapsed;
 
         if (isNaked)
         {
-            // The clone is its own factory (a placed cone), not one of the three
-            // raw NakedMaskParts — branch it out before the part mapping.
             if (ViewModel.IsCountdownTarget)
             {
                 AttachUtteranceCountdownPreview();
@@ -345,11 +249,8 @@ public sealed partial class HudPage : Page
             _                      => HudState.Rewriting,
         };
 
-        // Arm the tuning-config override BEFORE ApplyState so the
-        // single stroke creation inside AttachProcessingVisual picks
-        // it up — otherwise ApplyState would create one stroke with
-        // shipping defaults and we'd immediately dispose + recreate
-        // via RebuildStroke.
+        // Armed before ApplyState, whose single stroke creation consumes it.
+        // Armed after, ApplyState would first build a shipping-default stroke.
         if (currentTarget is HudTarget.Recording
                           or HudTarget.Transcribing
                           or HudTarget.Rewriting)
@@ -358,11 +259,8 @@ public sealed partial class HudPage : Page
         }
         ChronoPreview.ApplyState(state);
 
-        // Clock lifecycle is now separate from the paint (ApplyState only
-        // styles). Drive it explicitly so the preview behaves like the real
-        // HUD does through HudWindow.SetState: Charging parks at zero,
-        // Recording ticks, Transcribing / Rewriting freeze on the current
-        // value with the reveal running.
+        // ApplyState only styles; the clock is driven here, as HudWindow.SetState
+        // does for the live HUD.
         switch (state)
         {
             case HudState.Charging:     ChronoPreview.ResetClock(); break;
@@ -383,14 +281,9 @@ public sealed partial class HudPage : Page
 
         var compositor = ElementCompositionPreview.GetElementVisual(NakedPreviewHost).Compositor;
 
-        // Theme-aware arc fill : the arc mask surface is a solid colour
-        // + alpha ramp, and only the ArcMask rail (no Conic colour
-        // behind it) relies on that colour for visibility against the
-        // window's LayerFillColorDefaultBrush. Light theme → LayerFill
-        // is near-white so white-on-alpha vanishes ; invert to black.
-        // Dark theme keeps white. Combined goes through AlphaMaskEffect
-        // and ignores the arc RGB, so the colour choice is harmless
-        // there.
+        // Only the bare ArcMask shows the arc fill's colour, against a
+        // LayerFill that is near-white in light theme, so the fill turns black
+        // there. Combined goes through AlphaMaskEffect and ignores the arc RGB.
         bool isLightTheme =
             Content is FrameworkElement fe &&
             fe.ActualTheme == ElementTheme.Light;
@@ -424,8 +317,7 @@ public sealed partial class HudPage : Page
             ViewModel.PreviewVariant, isDark: !isLightTheme,
             animationsEnabled: SettingsService.Instance.Current.Overlay.Animations);
 
-        // Centre the 272×78 row frame inside the 300×300 host — same seat as the
-        // XAML reference border, so the clone sits where the live row would.
+        // Same seat as the XAML reference border, where the live row would sit.
         float insetX = (NakedHostDim - _conicClonePreview.Container.Size.X) / 2f;
         float insetY = (NakedHostDim - _conicClonePreview.Container.Size.Y) / 2f;
         _conicClonePreview.Container.Offset = new Vector3(insetX, insetY, 0f);
@@ -478,33 +370,21 @@ public sealed partial class HudPage : Page
 
     // ── Reset all ───────────────────────────────────────────────────────
     //
-    // The Playground has no persistence : tuning lives in memory for
-    // the current process and dies on app exit. "Reset all" is just a
-    // "snap back to compiled defaults" affordance — useful mid-session
-    // to start over without quitting the app. We go through the
-    // shipping-default objects directly instead of chaining the per-
-    // section Reset*() methods : those would call RebuildTuningPanel
-    // once each, here we want a single atomic transition.
+    // Resets the fields directly rather than chaining the per-section
+    // Reset*() methods, which would each rebuild the panel.
     private void OnResetAllClick(object sender, RoutedEventArgs e)
     {
-        // TuningModel : swap for a fresh instance — its field
-        // initialisers ARE the shipping defaults.
         _tuning = new TuningModel();
         _countdownReplayClock.Reset();
         _countdownTuning = new();
         _countdownConfig = new();
 
-        // Sim fields : keep aligned with the defaults documented at
-        // the field declarations above. Source of truth duplicated
-        // once here and in the field initialisers — acceptable for
-        // this playground scope.
+        // Keep in step with the field initialisers and ResetSimulatedRms.
         _simRmsMin             = 0.013f;
         _simRmsMax             = 0.100f;
         _simRmsPeriodSeconds   = 2.0f;
         _simManualOverride     = false;
         _simManualValue        = 0.012f;
-        // Conic clone placement resets with the fresh TuningModel above,
-        // whose fields read the shipping struct's defaults.
 
         BuildTuningPanel();
         ApplyTarget();
@@ -512,21 +392,14 @@ public sealed partial class HudPage : Page
 
     // ── Tuning panel dispatcher ─────────────────────────────────────────
     //
-    // Filters the expander list by ViewModel.ActiveTuningSections so
-    // only the knobs that affect the active target are rendered. Parked
-    // is appended (collapsed by default) for the transition-only knobs
-    // the developer still wants to tweak from any target, except when
-    // the list is empty (Charging): no stroke, so a placeholder line
-    // replaces the expanders. The per-section Add/Reset methods live in
-    // HudPage.Expanders.cs.
+    // Parked follows the active sections, except on the targets without a
+    // stroke: Charging (empty list, a placeholder line instead) and the
+    // countdown views.
 
     private void BuildTuningPanel()
     {
         _tuningPanelInitialized = true;
-        // Keep the static header (title + description + Reset all)
-        // from XAML, clear anything below it (in case this is ever
-        // invoked twice), then append only the expanders for the
-        // active target.
+        // Child 0 is the static XAML header; everything after it is rebuilt.
         while (TuningStack.Children.Count > 1)
             TuningStack.Children.RemoveAt(TuningStack.Children.Count - 1);
 
@@ -567,12 +440,8 @@ public sealed partial class HudPage : Page
             AddParkedExpander();
     }
 
-    // Rebuild the whole tuning panel from the current _tuning state.
-    // Used by every Reset*() and by the target switch path — the
-    // alternative (tracking per-row controls in a dictionary) would be
-    // more code for the same effect. The whole panel is only dozens of
-    // rows of UI, so a wholesale reconstruction is cheap and keeps the
-    // row factories tight.
+    // Rebuilt wholesale: tracking each row's controls would cost more code
+    // than rebuilding a few dozen rows.
     private void RebuildTuningPanel()
     {
         BuildTuningPanel();
