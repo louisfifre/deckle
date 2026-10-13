@@ -44,9 +44,9 @@ by one block, split across several, or empty.
 | One of a few options | Radio buttons, all visible | Composer `Choice` with `Radio` flag | Covered. Theme (three options) and overlay position (two) still render as dropdowns, *to check on screen*. |
 | One of many options, labels fixed | A dropdown | Composer `Choice` | Covered. |
 | One of a runtime list (microphone, monitor, Hue group, model file, profile, language) | A dropdown | None in the composer. Hand-drawn ComboBox or AutoSuggestBox on six pages. | **Empty row.** Options are not `.resw` keys, so `Choice` cannot carry them. |
-| Linear magnitude | One control: slider and number field, grain derived | Composer `Magnitude` with `MagnitudeGrain` | Decided 2026-10-13: one block. `Slider` (14 cards), `Number` (9 cards), `TunableRow` and the HUD row factories retire into `Magnitude`. The retained form keeps the field's arrows; the composer hides them today. |
+| Linear magnitude | One control: slider and number field, grain derived | Composer `Magnitude` with `MagnitudeGrain` | Decided 2026-10-13: one numeric block. `Magnitude` gains an option that hides the slider when a value has no gesture worth it; `Slider` (14 cards), `Number` (9 cards), `TunableRow` and the HUD row factories retire into it. The field shows its arrows on hover (`Compact`), as the Playground does; the composer hides them today. |
 | Geometric magnitude (stops that multiply: 1, 2, 4 … 256) | Slider over a stop list, field shows the value | None. Rewriting context size is a hand-drawn index slider. | **Empty row.** The composer comment says the log variant was deliberately not built. |
-| Curve or envelope | A dedicated editor | Composer `Editor` hosts a module element. Two editors: `HangoverCurveCanvas` (Win2D) and `BrightnessCurveCanvas` (XAML shapes), same two-handle interaction, one `CurveHandleStyle` copied in both. | Decided 2026-10-13: one editor, hosted only through the `Editor` card. Which renderer survives waits on the Win2D inventory (see Still open). |
+| Curve or envelope | A dedicated editor | Composer `Editor` hosts a module element. Two editors: `HangoverCurveCanvas` (Win2D) and `BrightnessCurveCanvas` (XAML shapes), same two-handle interaction, one `CurveHandleStyle` copied in both. | Decided 2026-10-13: one editor in XAML shapes, a composer block. It carries the control-point values, a computed sentence that says what the curve does with them (model: `SegmentationPage.xaml.cs:171`), and one form that adapts to a compact width, two forms only if one cannot. |
 | Free text, one line | One shared input | Composer `Text` | Covered. |
 | Free text, multi-line | Same input, wraps | `Text` has `Multiline`, no manifest uses it. Two hand-drawn TextBoxes (initial prompt, system prompt). | Dormant. |
 | Path or folder | One picker, affordances by ownership | Composer `Path` over `FolderPickerCard` (read-only, Change, Open) and `FolderPickerEditableCard` (typeable). `OpenOnly` mode exists, unused. | Covered for two of three affordances. The app-owned data folder and the diagnostic files folder are hand-drawn cards. |
@@ -70,28 +70,35 @@ cannot be brought to a block is discussed when it arises.
 
 From the doctrine, with the code facts that bear on each rule.
 
-- **Live by default.** A composed card writes on each change and re-syncs on
-  `PropertyChanged`. Louis's rule of 2026-10-12: any edit auto-saves and, under
-  a preset, switches it to Custom; picking a preset restores its values.
-- **On release when expensive.** A change that relaunches a measure or reloads
-  a model waits for the release of the gesture. *To decide*: which settings are
-  in this class; the code has no marker for it. Today a brightness-curve drag
-  writes the Ambient store and saves it to disk on every handle move, once per
-  coordinate (`AmbientViewModel.cs:169-176`).
+- **Live, written once at the end of the gesture.** Decided 2026-10-13: every
+  block writes when its gesture ends, the release of a slider or a curve
+  handle, the commit of a field, the click of a switch. Never per tick, and
+  the same on every page. Louis's rule of 2026-10-12 still holds: the write
+  auto-saves and, under a preset, switches it to Custom; picking a preset
+  restores its values. Today the composer slider and magnitude write on every
+  `ValueChanged` (`SettingsComposer.Numeric.cs:66,211`) and a brightness-curve
+  drag saves the Ambient store on every handle move, once per coordinate
+  (`AmbientViewModel.cs:169-176`).
+- **Confirmation and restart are parameters of the setting.** Decided
+  2026-10-13: they are carried by the descriptor, never behaviours of a block,
+  so every block applies them the same way. The marker names are still open.
 - **Held when hard to undo.** Section and surface resets, clearing a pairing,
   deleting on disk, overwriting live state are confirmed first; the safe button
   is the default. Eleven call sites use `ConfirmationService`; several resets
   still fire with no gate, listed in the June inventory (now in git history).
 - **Restart-required.** Whisper model and GPU use need a restart; the page
-  shows a footer. The doctrine does not name this case. *To decide*: held until
-  confirmed, or applied and announced.
+  shows a footer. The doctrine does not name this case. Decided 2026-10-13:
+  confirmed first, then the restart is offered as the next step.
 - **Hidden, not greyed.** A setting that does not apply is masked. Greying is
   only a transient busy signal.
 - **Reset at three levels** from one default source. The composer reads the
   default from the POCO initializer. Hand-drawn cards keep their own.
 - **One advisory channel.** An InfoBar inline, one severity.
 - **Playground.** Preview only; it never writes the live thing. The Ambient tab
-  still writes the live Ambient store, posed in Anytype, not decided.
+  still writes the live Ambient store, posed in Anytype, not decided. Decided
+  2026-10-13: the Playground and Settings share exactly the same blocks; the
+  Playground alone may host custom experiments and new forms on trial, and what
+  matures leaves it for Settings.
 
 ## What is dynamic today
 
@@ -116,47 +123,58 @@ From the doctrine, with the code facts that bear on each rule.
 
 Louis's answers to the first version's open points.
 
-1. **Magnitude is the one numeric block.** Every numeric setting is a slider
-   paired with a number field that keeps its arrows. `Slider` and `Number`
-   retire into `Magnitude`; the 23 cards, `TunableRow` and the HUD row
-   factories follow. Fact to carry: the composer hides the arrows today
-   (`SpinButtonPlacementMode.Hidden` in `SettingsComposer.Numeric.cs`), while
-   the Playground pages and `TunableRow` show them on hover (`Compact`). A
-   value with no natural bounds is the one case to settle when it arises.
+1. **Magnitude is the one numeric block.** A number field with its arrows on
+   hover (`Compact`), paired with a slider that an option hides when the value
+   has no gesture worth it. `Slider` and `Number` retire into `Magnitude`; the
+   23 cards, `TunableRow` and the HUD row factories follow. Fact to carry: the
+   composer hides the arrows today (`SpinButtonPlacementMode.Hidden` in
+   `SettingsComposer.Numeric.cs`), while the Playground pages and `TunableRow`
+   show them on hover.
 2. **Preset is a row of its own.** The selector sits above the group it
    governs. `Deckle.Presets` stays a separate module: `Deckle.Lighting.Ambient`
    and `Deckle.Transcription` reference it and own the families;
    `Deckle.Settings` does not. The save and revert gesture is decided once
    for the whole application, not here.
-3. **One curve editor**, hosted only through the composer `Editor` card. Which
-   renderer survives waits on the Win2D inventory: what the HUD still needs
-   once its animations are redone and the blur possibly dropped.
+3. **One curve editor, in XAML shapes, as a composer block.** It shows the
+   control-point values, a sentence computed from them that says what the
+   curve does (the Segmentation page of the Playground is the model), and one
+   form that adapts to a compact width, two forms only if one cannot. Win2D
+   stays confined to `Deckle.Composition` for as long as the HUD's graded
+   conic ring exists; that is a HUD decision, not a settings one. The
+   inventory behind this is at the end of the section.
 4. **Every surface takes a form the application knows.** Runtime-list choice,
    command, diagnostic readout, editable collection, page header, preview and
    reset each become a block. Geometric magnitude follows the doctrine, a
    slider over a stop list. A case that cannot be brought to a block is
    discussed when it arises.
-5. **docs/ is cleaned as a side task.** The sweep script and the exposables
-   inventory stay.
+5. **docs/ is cleaned.** Nine files removed on 2026-10-13 (commit 5607b4d7).
+   The ADRs, the sweep script, the exposables inventory, the audio-chain note
+   and the taskbar research stay.
+6. **The Playground and Settings share the same blocks.** The Playground alone
+   may host custom experiments and new forms on trial; what matures leaves it.
+7. **One write rule everywhere.** Every block writes once, when its gesture
+   ends. Confirmation and restart are parameters of the setting, carried by
+   the descriptor, never behaviours of a block.
+
+Inventory behind decision 3, 2026-10-13: `HangoverCurveCanvas` is the only
+`CanvasControl` in `src`. The HUD uses Win2D for static surfaces painted once
+(the conic wheel, the arc mask) and for the effect graphs (alpha mask,
+saturation, hue, exposure) that Composition animates on the compositor thread;
+Composition cannot describe those effects without Win2D's classes. No blur
+exists anywhere in the code. The window and proximity fades are layered-window
+alpha driven by timers, with no Win2D. The Transcription project took Win2D to
+avoid rebuilding a shapes tree on resize (`Deckle.Transcription.csproj:28-32`);
+the new editor updates its shapes in place instead. Leads from the same pass,
+not re-read: the two editors duplicate the Bézier solver (`UnitBezier`,
+`AmbientBrightnessCurve.Solve`), flip the y axis, and neither has keyboard
+nudge, tooltip or automation name.
 
 ## Still open
 
-- Which settings apply on release and which need a restart, and the marker
-  for each.
-- The save and revert gesture, for presets and everywhere else a draft exists.
-- Win2D or XAML shapes for the curve editor. Inventory of 2026-10-13:
-  `HangoverCurveCanvas` is the only `CanvasControl` in `src`. The HUD uses
-  Win2D for static surfaces painted once (the conic wheel, the arc mask) and
-  for the effect graphs (alpha mask, saturation, hue, exposure) that
-  Composition animates on the compositor thread; no blur exists anywhere in
-  the code. The Transcription project took Win2D to avoid rebuilding a shapes
-  tree on resize (`Deckle.Transcription.csproj:28-32`), not for the HUD.
-  Proposal, Louis's call: the surviving editor is XAML shapes, built as a
-  composer block that updates its shapes in place instead of rebuilding them;
-  Win2D stays confined to `Deckle.Composition` for as long as the graded conic
-  ring exists. Leads from the same pass, not re-read: the two editors
-  duplicate the Bézier solver (`UnitBezier`, `AmbientBrightnessCurve.Solve`),
-  flip the y axis, and neither has keyboard nudge, tooltip or automation name.
+- The descriptor markers for confirmation and restart: their names, and which
+  settings carry them.
+- The preset save interaction beyond the switch to Custom: save as a new
+  preset, overwrite, revert. Louis's application-wide question.
 - The preview contract and the meter's explicit-gesture rule.
 
 ## Annex A: blocks in the code, 2026-10-13
