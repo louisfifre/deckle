@@ -249,20 +249,11 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   ├── taskbar-probe.ps1
 │   │   │   ├── taskbar-strings.ps1
 │   │   │   └── tray-uia.ps1
-│   │   ├── 2026-06-12--notifications-catalogue.md
-│   │   ├── 2026-06-15--mouse-wheel-to-virtual-touchpad-spec.md
-│   │   ├── research--anytype-backlog-audit--2026-07-27.html
-│   │   ├── research--correcteur-evaluation--2026-07-02.md  — [research-report] Recherche vérifiée (deep-research, 2026-07-02) — comment mesurer un correcteur…
-│   │   ├── research--globish-seed-sources--2026-07-02.md  — [research-report] Recherche vérifiée (deep-research, 2026-07-02) — d'où tirer le lexique globish…
-│   │   ├── research--onnx-judge-runtime--2026-07-02.md  — [research-report] Recherche vérifiée (deep-research, 2026-07-02) — faisabilité du juge ONNX de l'…
-│   │   ├── research--system-autocorrect--2026-06-12.md
 │   │   └── research--taskbar-sans-windhawk--2026-10-08.md  — [research-report] Recherche vérifiée (2026-10-08) — remplacer Windhawk par un module Deckle pour…
 │   ├── inventaire-exposables.csv
 │   ├── inventaire-exposables.md
-│   ├── inventaire-settings.md
 │   ├── settings-design-system.md
-│   ├── transcription-audio-chain.md  — [architecture-note] How a dictation travels from the hotkey to the pasted text — vocabulary, three…
-│   └── transcription-live-verification.md  — [verification-protocol] Maintainer verification protocol for live microphone transcription.
+│   └── transcription-audio-chain.md  — [architecture-note] How a dictation travels from the hotkey to the pasted text — vocabulary, three…
 ├── logo/
 │   ├── primary.png
 │   ├── primary.svg

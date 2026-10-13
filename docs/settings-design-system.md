@@ -81,7 +81,7 @@ From the doctrine, with the code facts that bear on each rule.
 - **Held when hard to undo.** Section and surface resets, clearing a pairing,
   deleting on disk, overwriting live state are confirmed first; the safe button
   is the default. Eleven call sites use `ConfirmationService`; several resets
-  still fire with no gate, listed in the June inventory.
+  still fire with no gate, listed in the June inventory (now in git history).
 - **Restart-required.** Whisper model and GPU use need a restart; the page
   shows a footer. The doctrine does not name this case. *To decide*: held until
   confirmed, or applied and announced.
@@ -216,9 +216,10 @@ referenced (sweep).
 What exists: `scripts/commands/maintenance/sweep-exposables.ps1`, a text sweep
 of tracked `.cs` and `.json` files that lists every value someone could act on,
 classified by persistence, one JSON line each with file and line. The arbitrated
-layers (`docs/inventaire-exposables.md` and `.csv`, July 2026; `docs/inventaire-settings.md`,
-June 2026) were produced once by agent workflows and patched by hand since; the
-CSV's verdict and comment columns are empty on all 693 rows.
+layer (`docs/inventaire-exposables.md` and `.csv`, July 2026) was produced once
+by an agent workflow and patched by hand since; the CSV's verdict and comment
+columns are empty on all 693 rows. The June 2026 page inventory
+(`inventaire-settings.md`) was removed on 2026-10-13 and lives in git history.
 
 What the code already declares, and a sweep could read without any new marker:
 the composer manifests (kind, default, visibility, advisory, consent) give the
