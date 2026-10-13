@@ -6,15 +6,6 @@
     xmlns:controls="using:CommunityToolkit.WinUI.Controls"
     xmlns:ui="using:CommunityToolkit.WinUI">
 
-    <!-- Same layout pattern as GeneralPage / WhisperPage: Grid wrapper +
-         StackPanel MaxWidth=1000 + SettingsCardSpacing=4 + section
-         headers in BodyStrong + Margin 1,30,0,6. Page extracted from
-         GeneralPage in slice S2 ; J4 polish added the Logging section
-         to host runtime emission filters (Verbose toggle today, more
-         per-source filters / minimum-level overrides to come), so the
-         page now reads as two parallel groups : Logging on top
-         (controls what's emitted) and Telemetry below (controls what's
-         persisted to disk). -->
     <Page.Resources>
         <x:Double x:Key="SettingsCardSpacing">4</x:Double>
         <Style x:Key="SettingsSectionHeaderTextBlockStyle"
@@ -34,8 +25,7 @@
                         HorizontalAlignment="Stretch"
                         Spacing="{StaticResource SettingsCardSpacing}">
 
-                <!-- Page title + whole-page "Reset all" (active-when-dirty; confirms
-                     because it clears recorded consents), mirroring WhisperPage. -->
+                <!-- "Reset all" confirms because it clears recorded consents. -->
                 <Grid Margin="0,0,0,8">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="*" />
@@ -65,11 +55,11 @@
                            Margin="0,0,0,12" />
 
                 <!-- ── Logging ─────────────────────────────────────────────────
-                     Runtime emission gates. They stop selected noisy streams
-                     before every sink, independently from the LogWindow display
-                     lens and the future app.jsonl persistence lens. Module-owned
-                     gates stay on their module pages; only the transverse
-                     Windowing gate belongs on Diagnostics. -->
+                     Admission gates, one per activity: they stop selected noisy
+                     streams at the producer, before every sink, independently
+                     from the LogWindow view filter. This page is the only editor
+                     of these gates, the application log and the telemetry storage
+                     below; module pages and the LogWindow never duplicate them. -->
                 <Grid>
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="*" />
@@ -85,11 +75,10 @@
                                      Click="ResetLogging_Click" />
                 </Grid>
 
-                <!-- Composed admission controls for operational detail. -->
                 <StackPanel x:Name="LoggingHost"
                             Spacing="{StaticResource SettingsCardSpacing}" />
 
-                <!-- ── Telemetry ───────────────────────────────────────────── -->
+                <!-- ── Application log ─────────────────────────────────────── -->
                 <Grid>
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="*" />
@@ -105,12 +94,6 @@
                                      Click="ResetApplicationLog_Click" />
                 </Grid>
 
-                <!-- Composed region — the application-log opt-in. It carries
-                     an off→on consent dialog, declared in DiagnosticsViewModel.ApplicationLogSettings
-                     via a confirmOnEnable gate the composer runs before persisting the
-                     enable. ComposeApplicationLogSection() hands it to the composer, which
-                     builds the SettingsCard into this host. Dataset-specific opt-ins
-                     remain on the pages of the modules they observe. -->
                 <StackPanel x:Name="ApplicationLogHost"
                             Spacing="{StaticResource SettingsCardSpacing}" />
 
@@ -129,18 +112,13 @@
                                      Click="ResetTelemetry_Click" />
                 </Grid>
 
-                <!-- Composed region — the wheel-capture opt-in and telemetry
-                     storage-folder path declared by DiagnosticsViewModel.TelemetrySettings.
-                     The shared composer resolves the toggle and FolderPickerCard. -->
                 <StackPanel x:Name="TelemetryHost"
                             Spacing="{StaticResource SettingsCardSpacing}" />
 
                 <!-- ── Diagnostic files ──────────────────────────────────────
-                     Always-on local logs (setup, errors), distinct from the
-                     optional application log above: recorded unconditionally and kept
-                     on this device, never transmitted. No toggle — they exist
-                     so a first-run or crash always leaves a trace; the only
-                     affordance is opening the folder. -->
+                     Always-on local logs (setup, errors), kept on this device and
+                     never transmitted. No toggle, so a first run or a crash always
+                     leaves a trace. -->
                 <TextBlock x:Uid="DiagnosticsPageFilesHeaderLabel"
                            Style="{StaticResource SettingsSectionHeaderTextBlockStyle}" />
 

@@ -5,23 +5,17 @@ using Deckle.Core;
 
 namespace Deckle.Diagnostics.Logging;
 
-// ── LoggingSettingsService ──────────────────────────────────────────────────
-//
-// Module-local persistence for LoggingSettings. Successor of the legacy
-// Deckle.Logging.LoggingSettingsService removed in sub-wave 6g: same
-// JsonSettingsStore<T>, same lazy singleton, and above all the same on-disk
-// path (<UserDataRoot>/modules/logging/settings.json) to preserve existing user
-// settings through the switch.
+// Module-local persistence for LoggingSettings. The on-disk path
+// (<UserDataRoot>/modules/logging/settings.json) is where existing user
+// settings live; changing it loses them.
 //
 // Main consumer: producer-side OperationalLogAdmission, wired at boot by App.
-// Uncached
-// read: flipping the toggle in Settings takes effect on the next emission.
-// JsonSettingsStore keeps an in-memory snapshot, so access cost is negligible.
+// Uncached read: flipping the toggle in Settings takes effect on the next
+// emission. JsonSettingsStore keeps an in-memory snapshot, so access cost is
+// negligible.
 //
-// Internal store logs. Like TelemetrySettingsService, log callbacks remain null
-// in 6g to stay decoupled from the observability pipeline: no consumable
-// EventSource provider without a dependency cycle toward Settings. The store
-// will be silent; a critical load error will become a reset to defaults.
+// The store's log callbacks are left unwired: it is silent, and a load error
+// resets to defaults without a trace.
 public sealed class LoggingSettingsService
 {
     private static readonly Lazy<LoggingSettingsService> _instance =

@@ -4,39 +4,23 @@ namespace Deckle.Diagnostics;
 
 // Abstract base for every Deckle.* EventSource. Each emitting module
 // derives one concrete provider (DeckleAudioSource, DeckleWhispSource,
-// …) and declares its [Event(...)] methods directly. This class
-// carries the things that must be uniform across providers — the
-// session id stamped on every event, a IsEnabled fast-path helper, and
-// a couple of conventions that any consumer (EventListener or
-// dotnet-trace user) can rely on.
+// …) and declares its [Event(...)] methods directly. Deckle.Diagnostics
+// itself hosts only cross-cutting sub-providers: non-business platform
+// wiring that two or more modules use with the same parameters.
 //
-// Why a class rather than a static helper. EventSource is itself a
-// class with one instance per provider, and the BCL pattern is to
-// derive from it for each provider. Holding the shared session id at
-// this layer is the only place that survives all subclasses without
-// duplication.
+// No Log() catch-all method: every distinct call site becomes its own
+// [Event(...)] method on the concrete provider. A generic
+// Log(string, EventLevel) here would be the escape hatch that rots the
+// typed discipline; a trivial event is a parameterless [Event] method.
 //
-// Why no Log() catch-all method. The doctrine is strict-typed: every
-// distinct call site becomes its own [Event(...)] method on the
-// concrete provider. A generic Log(string, EventLevel) here would be
-// the escape hatch that the legacy LogService offered, and it would
-// rot the discipline. If a trivial event needs no payload, the
-// concrete provider exposes it as a parameterless [Event] method
-// (e.g. `WarmingUp()`); that stays typed.
-//
-// Session id. Generated lazily on first read (cheap, lock-free after
-// init) and shared by every provider derived from this class. The
-// format is "YYYY-MM-DD-XXXX" with XXXX a 4-hex random suffix so
-// benchmark tooling can group rows by process session.
+// Session id. Shared by every provider for the life of the process and
+// stamped on every JSONL row, so rows group by process run without piping
+// the id through every event signature.
 public abstract class DeckleEventSource : EventSource
 {
     private static string? _sessionId;
     private static readonly object _sessionLock = new();
 
-    // Process-local session id. Stays identical across every provider
-    // for the life of the process. Consumers that need to stamp the
-    // session on a JSONL row read this property — no need to pipe it
-    // through every event signature.
     public static string SessionId
     {
         get
@@ -56,11 +40,9 @@ public abstract class DeckleEventSource : EventSource
         }
     }
 
-    // Subclasses pass settings: EventSourceSettings.EtwSelfDescribingEventFormat.
     // The self-describing format embeds payload names and types in the
-    // event itself, so a generic EventListener can rehydrate the
-    // payload without a manifest. That's what lets the JSONL listener
-    // serialise events from any provider without per-provider code.
+    // event itself, so the dispatcher rebuilds any provider's payload
+    // without a manifest or per-provider code.
     protected DeckleEventSource()
         : base(EventSourceSettings.EtwSelfDescribingEventFormat)
     {

@@ -5,11 +5,6 @@ using Xunit;
 
 namespace Deckle.Diagnostics.Tests;
 
-// Cross-cutting sub-provider: native resource lifecycle.
-// `Acquired` and `Released` are Verbose on the Resource keyword;
-// `LeakSuspect` is Warning on the same keyword (anomaly that must surface even
-// when Verbose is not listened to). Exercise all three to freeze the contract,
-// including the Warning that no site emits today but whose signature is frozen.
 [Trait("Category", "observability")]
 public class DeckleResourceSourceTests
 {

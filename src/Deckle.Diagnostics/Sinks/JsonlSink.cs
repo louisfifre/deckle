@@ -3,14 +3,14 @@ using System.Globalization;
 namespace Deckle.Diagnostics;
 
 // Persists one selected event stream to a fixed JSONL destination. Write only
-// performs a bounded in-memory hand-off; one dedicated worker serializes and
-// appends entries in acceptance order. When the queue reaches its fixed cap,
+// performs a bounded in-memory hand-off; one worker serializes and appends
+// entries in acceptance order. When the queue reaches its fixed cap,
 // producers wait instead of losing rows or allowing memory to grow without
 // bound. Flush is the explicit clean-shutdown boundary.
 //
-// The worker keeps the active stream open and reuses its JSON buffer. A normal
-// line is still flushed to the OS before the next item, preserving the former
-// process-crash posture without making the EventSource emitter perform disk I/O.
+// The worker keeps the active stream open. Each line is flushed to the OS
+// before the next item, so a process crash keeps every written line, and the
+// EventSource emitter never performs disk I/O.
 public sealed class JsonlSink : IFlushableLogSink
 {
     private const int DefaultQueueCapacity = 1024;

@@ -9,16 +9,9 @@ using Deckle.Diagnostics;
 
 namespace Deckle.Diagnostics.Logging;
 
-// ── DiagnosticsPage ─────────────────────────────────────────────────────────
-//
-// Extracted from GeneralPage in slice S2. Hosts the cross-cutting telemetry
-// opt-ins (Application log, Storage folder) that don't belong to a single
-// module. The dictation-scoped opt-ins — Latency and the Corpus + Audio-corpus
-// fold — moved to the Dictation (Whisper) page, and the Autocorrect capture
-// opt-ins moved to the Autocorrect module's own page (both observe their own
-// pipeline). Same NavigationCacheMode.Required pattern as GeneralPage; every
-// section is now composed from the ViewModel's manifests — no hand-authored
-// toggle remains, so the page carries no consent re-entry guard of its own.
+// Hosts the diagnostics settings that belong to no single module. Every
+// toggle is composed from the ViewModel's manifests, so the page carries no
+// consent re-entry guard of its own.
 public sealed partial class DiagnosticsPage : Page
 {
     public DiagnosticsViewModel ViewModel { get; } = new();
@@ -31,8 +24,6 @@ public sealed partial class DiagnosticsPage : Page
         ComposeApplicationLogSection();
         ComposeTelemetrySection();
 
-        // The page-level "Reset all" gate spans every composed section; re-gate on
-        // any composer's DirtyChanged.
         foreach (var composer in new[]
                  { _loggingComposer, _applicationLogComposer, _telemetryComposer })
             composer!.DirtyChanged += (_, _) => GateResetAll();
@@ -40,14 +31,8 @@ public sealed partial class DiagnosticsPage : Page
         LoadAndSync();
     }
 
-    // ── Composed Logging section ──────────────────────────────────────────────
-    //
-    // The page only hosts: it hands the host panel and the ViewModel's settings
-    // manifest (declared beside the VM in DiagnosticsViewModel.Settings.cs) to
-    // the composer, which builds the SettingsCards. The composer subscribes to
-    // the ViewModel so the toggles reflect Load() and the section "Reset" without
-    // any per-toggle binding here. Composed before LoadAndSync so the
-    // subscription catches Load()'s PropertyChanged. Held in a field so the
+    // Each section is composed before LoadAndSync so the composer's
+    // PropertyChanged subscription catches Load(), and held in a field so the
     // subscription lives as long as the (cached) page.
     private SettingsComposer? _loggingComposer;
 
@@ -57,14 +42,6 @@ public sealed partial class DiagnosticsPage : Page
         _loggingComposer.Compose(ViewModel.LoggingSettings);
     }
 
-    // ── Composed Telemetry section ────────────────────────────────────────────
-    //
-    // Same host-only pattern as the Logging section. One composable row now: the
-    // Application log consent opt-in (its off→on dialog carried by a confirmOnEnable
-    // gate the composer runs). Dataset-specific opt-ins live on their module
-    // pages; the storage-folder path composes into its own host below. Composed before
-    // LoadAndSync so the composer's PropertyChanged subscription catches Load(); held
-    // in a field so the subscription lives as long as the (cached) page.
     private SettingsComposer? _applicationLogComposer;
 
     private void ComposeApplicationLogSection()
@@ -73,16 +50,6 @@ public sealed partial class DiagnosticsPage : Page
         _applicationLogComposer.Compose(ViewModel.ApplicationLogSettings);
     }
 
-    // ── Composed Storage-folder card ──────────────────────────────────────────
-    //
-    // The telemetry storage-folder path, a Path descriptor composed through the
-    // shared FolderPickerCard (resolved by the composer's PathControlFactory). Its
-    // own host keeps the path row structurally separate from consent toggles.
-    // The picker's empty-value
-    // DefaultPath (<UserDataRoot>\telemetry\) now travels in the descriptor's
-    // PathArgs, so the old SyncFolderPickerDefault code-behind push is gone. Composed
-    // before LoadAndSync so its PropertyChanged subscription catches Load(); held in
-    // a field so the subscription lives as long as the (cached) page.
     private SettingsComposer? _telemetryComposer;
 
     private void ComposeTelemetrySection()
@@ -105,8 +72,6 @@ public sealed partial class DiagnosticsPage : Page
         GateResetAll();
     }
 
-    // Telemetry now owns only the dataset storage path on this page. Resetting
-    // it is reversible; dataset consent remains on each producing module's page.
     private void ResetTelemetry_Click(object sender, RoutedEventArgs e)
         => ViewModel.ResetTelemetryDefaults();
 
@@ -120,11 +85,6 @@ public sealed partial class DiagnosticsPage : Page
         ViewModel.ResetApplicationLogDefaults();
     }
 
-    // ── Whole-page "Reset all" ────────────────────────────────────────────────
-    //
-    // Active-when-dirty gate: enabled while any composed section is dirty. Every
-    // section composes now, so the gate follows the composers' DirtyChanged alone
-    // (plus one settle after Load()).
     private void GateResetAll()
     {
         ResetAllButton.IsEnabled =
@@ -133,11 +93,8 @@ public sealed partial class DiagnosticsPage : Page
             (_telemetryComposer?.IsDirty() ?? false);
     }
 
-    // Whole-page reset. Clears the recorded consent (the Application-log opt-in)
-    // and the storage override, so it goes through the destructive-confirm gate
-    // (Close is the default button). ResetTelemetryDefaults covers the telemetry
-    // rows; ResetLoggingDefaults the emission filters. The composers re-sync off the
-    // resulting PropertyChanged.
+    // Clears the recorded Application-log consent and the storage override, so
+    // it goes through the destructive-confirm gate.
     private async void ResetAllDiagnostics_Click(object sender, RoutedEventArgs e)
     {
         bool confirmed = await ConfirmationService.RequestAsync(
@@ -154,11 +111,7 @@ public sealed partial class DiagnosticsPage : Page
         ViewModel.ResetTelemetryDefaults();
     }
 
-    // Opens the always-on local diagnostics folder (setup + error logs) in
-    // Explorer. Same best-effort posture as FolderPickerCard's Open button:
-    // ensure the folder exists, shell-execute it, and log a failure rather
-    // than surface it — the folder is created eagerly at boot, so this guard
-    // is belt-and-braces.
+    // Best effort: a failure is logged, not surfaced.
     private void OpenDiagnosticsFolder_Click(object sender, RoutedEventArgs e)
     {
         try

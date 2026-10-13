@@ -6,8 +6,8 @@ using System.Text.Json;
 namespace Deckle.Diagnostics;
 
 // Shared JSONL encoding for fixed and routed sinks. The writer thread reuses
-// one ArrayBufferWriter, avoiding the former MemoryStream + ToArray allocation
-// for every observation while still serializing a complete line before I/O.
+// one ArrayBufferWriter, so the returned memory is valid only until the next
+// Serialize call; a complete line is serialized before any I/O.
 internal sealed class JsonlLineSerializer
 {
     private readonly ArrayBufferWriter<byte> _buffer = new(512);

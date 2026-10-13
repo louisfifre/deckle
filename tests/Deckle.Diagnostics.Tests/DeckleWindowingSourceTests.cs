@@ -5,12 +5,6 @@ using Xunit;
 
 namespace Deckle.Diagnostics.Tests;
 
-// Cross-cutting sub-provider: window positioning and sizing.
-// Trois events : WindowPositioned (tronc commun), OverlaySlotAssigned
-// (stacking specialization), PopupAnchored (parent anchoring specialization).
-// Freeze the contract of all three: pos/size serialized in absolute screen
-// pixels, hmon as long to match GetWindowRect/MonitorFromWindow on the call
-// site side.
 [Trait("Category", "observability")]
 [Collection(OperationalLogAdmissionCollection.Name)]
 public class DeckleWindowingSourceTests

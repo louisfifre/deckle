@@ -2,10 +2,8 @@
   <PropertyGroup>
     <RootNamespace>Deckle.Diagnostics</RootNamespace>
     <!--
-      EventSource conventions adopt snake_case parameter names so the
-      ETW payload keys land directly in the JSONL output. Suppress the
-      naming-style warning that flags non-PascalCase parameters; the
-      convention is explicit and deliberate.
+      EventSource parameters are snake_case so the ETW payload keys land
+      directly in the JSONL output; IDE1006 would flag them.
     -->
     <NoWarn>$(NoWarn);IDE1006</NoWarn>
   </PropertyGroup>

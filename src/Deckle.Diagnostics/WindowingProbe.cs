@@ -4,51 +4,30 @@ using System.Text;
 
 namespace Deckle.Diagnostics;
 
-// Internal helper for the Diagnostics module: factors the Win32 P/Invokes
-// (`GetWindowRect`, `GetDpiForWindow`, `MonitorFromWindow`) consumed by the
-// seven window-positioning sites wired to `DeckleWindowingSource`. Without this
-// helper, each site would duplicate the four P/Invoke lines + parameter
-// construction; seven sites would multiply the instrumentation debt by seven.
+// Factors the Win32 reads every window-positioning site needs for
+// `DeckleWindowingSource`.
 //
 // **No dependency on `Deckle.Core`.** The Diagnostics module sits beneath every
-// other technical brick (by design); the required P/Invokes are
-// redeclared locally (private) instead of introducing a hard dependency on
-// `Deckle.Core.NativeMethods`. No symbol overlap: P/Invoke
-// declarations are local to this file, and `Deckle.Core` keeps its own
-// declarations for the rest of the app.
+// other technical brick, so the required P/Invokes are redeclared locally
+// (private) instead of referencing `Deckle.Core.NativeMethods`.
 //
-// **Strict gate before any cost.** Each `Emit*` method tests
-// `IsEnabled(Verbose, Windowing)` at the top: when no listener is attached, the
-// instrumentation has zero net cost (one ETW test + return). P/Invokes are
-// never called if the gate is closed.
+// **Strict gate before any cost.** Each `Emit*` method checks the Windowing
+// admission and the listener before any P/Invoke.
 //
-// **Absolute screen pixel convention.** `GetWindowRect` already returns
-// absolute screen pixels (unlike `AppWindow.Position`/`Size`, which stay in
-// pixels but are tied to the post-Move `AppWindow`). Reading the
-// post-positioning rect directly guarantees we capture the effective DWM-side
-// state, not the pre-Move intent.
+// Reading `GetWindowRect` after positioning captures the effective DWM-side
+// state, not the requested one.
 public static class WindowingProbe
 {
     // ── Private P/Invokes ───────────────────────────────────────────────
 
-    // Window rect in absolute screen pixels; includes the non-client area
-    // (frame, title). For Deckle windows that remove the NC area through
-    // WM_NCCALCSIZE (HUD, HudOverlay), it is equivalent to the client rect.
-    // For classic app windows (Settings, Log, Setup), the NC gap is marginal
-    // (standard frame ~1 dip + caption).
+    // Includes the non-client frame; it equals the client rect only for windows
+    // that erase it through WM_NCCALCSIZE (HUD, HudOverlay).
     [DllImport("user32.dll", SetLastError = true)]
     private static extern bool GetWindowRect(IntPtr hwnd, out RECT rect);
 
-    // Logical window DPI (96 = 100%, 120 = 125%, 144 = 150%...).
-    // Per-monitor DPI aware: follows the monitor the window is on, changes at
-    // runtime on cross-monitor drag.
     [DllImport("user32.dll")]
     private static extern uint GetDpiForWindow(IntPtr hwnd);
 
-    // Monitor handle for the monitor the window is on. `dwFlags=2`
-    // (MONITOR_DEFAULTTONEAREST) guarantees a monitor is always returned even
-    // if the window is partially off-screen (runtime case after resolution
-    // change or display disconnect).
     [DllImport("user32.dll")]
     private static extern IntPtr MonitorFromWindow(IntPtr hwnd, uint dwFlags);
 
@@ -122,11 +101,7 @@ public static class WindowingProbe
 
     // ── Emission Helpers ────────────────────────────────────────────────
 
-    // Emits the `WindowPositioned` common trunk for every site that positions
-    // or resizes a window whose HWND is owned by the app. `window` is a short
-    // logical name from the closed vocabulary (see
-    // `DeckleWindowingSource.WindowPositioned` docs), and `anchor` describes
-    // the code-side placement intent.
+    // For windows whose HWND the app owns.
     public static void EmitWindowPositioned(IntPtr hwnd, string window, string anchor)
     {
         if (!OperationalLogAdmission.IsEnabled(OperationalLogActivity.Windowing)) return;
@@ -144,11 +119,6 @@ public static class WindowingProbe
             rect.right - rect.left, rect.bottom - rect.top);
     }
 
-    // Emits `OverlaySlotAssigned` (stacking specialization) in addition to the
-    // common trunk already emitted by EmitWindowPositioned. Deckle overlays
-    // (`HudOverlayWindow`) each have a 0..N-1 slot assigned by
-    // `HudOverlayManager.Recompact`: slot 0 = closest to the main HUD, slot
-    // N-1 = farthest away.
     public static void EmitOverlaySlotAssigned(IntPtr hwnd, int slot)
     {
         if (!OperationalLogAdmission.IsEnabled(OperationalLogActivity.Windowing)) return;
@@ -165,14 +135,9 @@ public static class WindowingProbe
             rect.right - rect.left, rect.bottom - rect.top);
     }
 
-    // Emits `PopupAnchored` (parent anchoring specialization) in addition to
-    // the common trunk. `popup` is a short logical name ("tray-popup",
-    // "folder-picker"), and `parent_rect_x/y/w/h` describe the anchored
-    // control rect (tray icon, picker button) in absolute screen pixels. For
-    // popups whose HWND is not owned by the app (native TrackPopupMenu menu,
-    // system FolderPicker dialog), pass `IntPtr.Zero` as hwnd; effective
-    // position/size is then emitted as zero and only the intent (parent_rect)
-    // is traced.
+    // For a popup whose HWND the app does not own (system FolderPicker
+    // dialog), pass `IntPtr.Zero`: position and size are then emitted as zero
+    // and only the anchoring intent (parent_rect) is traced.
     public static void EmitPopupAnchored(
         IntPtr hwnd, string popup,
         int parent_rect_x, int parent_rect_y,

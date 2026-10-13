@@ -5,10 +5,8 @@ using Xunit;
 
 namespace Deckle.Diagnostics.Tests;
 
-// Cross-cutting sub-provider: application cancellations. The event is on the
-// Lifecycle keyword (not a dedicated Cancellation keyword: the "cancellation"
-// nature is carried by the provider name itself). The test freezes the keyword
-// so any future migration to a dedicated keyword is deliberate and traced.
+// Pins the Lifecycle keyword: moving cancellations to a dedicated keyword must
+// be a deliberate change.
 [Trait("Category", "observability")]
 public class DeckleCancellationSourceTests
 {

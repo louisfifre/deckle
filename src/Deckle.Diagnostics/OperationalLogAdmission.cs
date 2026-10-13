@@ -56,11 +56,8 @@ public static class OperationalLogAdmission
     public static bool AllowsScopedDetail(OperationalLogActivity activity)
         => !IsActive(activity) || IsEnabled(activity);
 
-    // Supporting provider detail belongs to an activity only while that
-    // workflow is active. Outside the scope, the provider retains its normal
-    // diagnostics. This combines policy and listener admission in one query so
-    // callers cannot accidentally pay log-only costs for an event that will be
-    // rejected later.
+    // Combines scoped policy and listener admission in one query so callers
+    // cannot pay log-only costs for an event that will be rejected later.
     public static bool IsScopedDetailEnabled(
         OperationalLogActivity activity,
         EventSource provider,

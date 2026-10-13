@@ -6,11 +6,8 @@ namespace Deckle.Diagnostics;
 // by domain across modules without knowing each provider's local
 // taxonomy. Bits 0..9 are reserved here for transverse concerns shared
 // across modules; bits 10..63 belong to the individual providers and
-// stay local to each module's EventSource.
-//
-// The flags are [Flags] with explicit hexadecimal values so a future
-// reader sees the bit layout at a glance — ETW keywords are a 64-bit
-// bitmask and a missing bit is silently OK, so the layout is the
+// stay local to each module's EventSource. ETW reports no clash between
+// a provider bit and a reserved one, so the explicit layout is the
 // contract.
 [System.Flags]
 public enum Keywords : long
@@ -26,5 +23,4 @@ public enum Keywords : long
     Theme     = 0x80,   // bit 7 — theme changes (light/dark/HC), accent color, ActualTheme
     Resource  = 0x100,  // bit 8 — native resource acquire/release (textures, visuals, handles)
     Network   = 0x200,  // bit 9 — network status transitions, NIC, profile
-    // Bits 0x400+ are reserved for per-provider use.
 }

@@ -3,9 +3,7 @@ using System.Globalization;
 namespace Deckle.Diagnostics;
 
 // Canonical live-journal rendering shared by the LogWindow and the
-// app.jsonl writer. Keeping the source tag and line format here avoids
-// the historical drift where the window was readable but the file only
-// carried an opaque payload blob.
+// app.jsonl writer, so the window and the file never diverge.
 public static class LogLineFormatter
 {
     public static LogLineParts GetParts(EventEntry entry)

@@ -4,9 +4,9 @@ using System.ComponentModel;
 
 namespace Deckle.Diagnostics.Logging.Ui.Collections;
 
-// ObservableCollection has no bulk replacement API. Rebuilding a 5000-row log
-// projection item by item otherwise sends 5001 layout notifications to WinUI.
-// This collection mutates its backing list under one Reset notification.
+// ObservableCollection has no bulk replacement API: rebuilding the log
+// projection item by item would send WinUI one notification per row. This
+// collection mutates its backing list under one Reset notification.
 public sealed class RangeObservableCollection<T> : ObservableCollection<T>
 {
     public void ReplaceAll(IEnumerable<T> items)

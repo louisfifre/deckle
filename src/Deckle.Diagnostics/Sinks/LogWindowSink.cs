@@ -9,12 +9,11 @@ namespace Deckle.Diagnostics;
 // surface. Wants rejects datasets at the projection boundary; user filtering
 // then happens on the UI side, over the operational stream only.
 //
-// Buffer for lazy LogWindow. The LogWindow is created lazily on first user
-// open; events emitted during boot must be visible as soon as it opens. The
-// sink keeps a fixed-capacity ring (5000) and replays it in full when a UI sink
-// attaches through `AttachSink`. Buffering starts the moment this sink is
-// registered with the dispatcher, so the history covers from boot to first
-// open.
+// Buffer for lazy LogWindow. The LogWindow is created on first user open;
+// events emitted during boot must be visible as soon as it opens. The sink
+// keeps a fixed-capacity ring and replays it in full when a UI sink attaches
+// through `AttachSink`. Buffering starts the moment this sink is registered
+// with the dispatcher, so the history covers from boot to first open.
 //
 // Threading. The dispatcher invokes Write on the emitting thread. The
 // ILogWindowSink implementation marshals to the UI thread if it needs to (e.g.
@@ -46,8 +45,6 @@ public sealed class LogWindowSink : ILogSink
             }
             else
             {
-                // The write replaced the oldest slot; advance the logical
-                // start so replay remains chronological.
                 _bufferStart = (_bufferStart + 1) % BufferCapacity;
             }
 

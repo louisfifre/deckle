@@ -4,17 +4,12 @@ namespace Deckle.Diagnostics;
 
 // Cross-cutting sub-provider: machine network state transitions. Capturing
 // connectivity (presence / absence, profile, NIC counts) allows correlating
-// cross-cutting HTTP failures (Hue REST, Ollama, future LLM services or WLED
-// drivers) with an OS-level outage or profile switch instead of looking for the
-// cause in the relevant business provider. The primitive is strictly
-// non-business and consumed by every module that talks to the network:
-// promotion to cross-cutting sub-provider under the two-clause criterion in
-// `reference--eventsource-convention--1.2.md`
-// §*Cross-cutting sub-providers*.
+// HTTP failures in any module (Hue REST, Ollama) with an OS-level outage or
+// profile switch instead of looking for the cause in the business provider.
 //
-// A single emitter subscribed to `NetworkInformation.NetworkStatusChanged` at
-// App boot is enough: the Windows Runtime API already broadcasts to the whole
-// process, duplicating the subscription would only duplicate events.
+// Deckle.App's NetworkStatusEmitter is the single emitter: the Windows Runtime
+// event already broadcasts to the whole process, so a second subscription
+// would only duplicate events.
 [EventSource(Name = "Deckle-Network")]
 public sealed class DeckleNetworkSource : DeckleEventSource
 {
@@ -25,9 +20,8 @@ public sealed class DeckleNetworkSource : DeckleEventSource
     // ── EventIds ────────────────────────────────────────────────────────
     public const int EvtNetworkStatusChanged = 1;
 
-    // Network state transition. Emitted once at boot to capture the initial
-    // state, then on each NetworkStatusChanged broadcast by Windows.
-    // Parameters are flattened and primitive (EventSource constraint):
+    // Emitted once at boot to capture the initial state, then on each
+    // NetworkStatusChanged broadcast by Windows.
     //   - connected : true if profile.ConnectivityLevel >= InternetAccess.
     //   - profile   : profile name ("Wi-Fi …", "Ethernet …", "(none)" if no
     //                 active profile).
