@@ -3,14 +3,8 @@ using Deckle.Diagnostics;
 
 namespace Deckle.Speech;
 
-// Speech (read-aloud / TTS) module provider. Covers the read-aloud request
-// (synthesis → speaker output), the backend synthesis path, and module
-// settings persistence.
-//
-// Provider Name = "Deckle-Speech": the LogWindow tag reads [SPEECH]. Mirrors
-// the DeckleAmbientSource / DeckleAudioSource shape — milestones at
-// Informational, structured detail at Verbose. snake_case [Event] parameter
-// names become JSON keys in the JSONL payload.
+// Speech (read-aloud / TTS) module provider: the read-aloud request, the
+// backend synthesis path and module settings persistence.
 [EventSource(Name = "Deckle-Speech")]
 public sealed class DeckleSpeechSource : DeckleEventSource
 {
@@ -118,11 +112,9 @@ public sealed class DeckleSpeechSource : DeckleEventSource
     }
 
     // ── Completion ──────────────────────────────────────────────────────
-    // Terminal milestone closing the read-aloud bracket: a clip was synthesized
-    // and played to the speaker without interruption. ReadAloudRequested →
-    // ReadAloudComplete makes the happy path legible at Informational level —
-    // the user sees the flow ran AND finished, not just that it started. The
-    // sibling transcription path brackets its takes the same way.
+    // Terminal milestone closing the bracket ReadAloudRequested opened: a clip
+    // was synthesized and played without interruption, so the happy path
+    // reads as finished at Informational level, not only started.
 
     [Event(EvtReadAloudComplete,
            Level = EventLevel.Informational,
@@ -144,9 +136,8 @@ public sealed class DeckleSpeechSource : DeckleEventSource
     }
 
     // ── Module settings persistence ─────────────────────────────────────
-    // Same shape as DeckleAudioSource: the JsonSettingsStore<T> delegates are
-    // Action<string>, so these are typed by level/keyword rather than per
-    // operation. The caller prefixes "[speech]".
+    // The JsonSettingsStore<T> delegates are Action<string>, so these are typed
+    // by level rather than per operation. The caller prefixes "[speech]".
 
     [Event(EvtSettingsLoaded,
            Level = EventLevel.Informational,

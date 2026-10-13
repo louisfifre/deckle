@@ -4,18 +4,16 @@ using Deckle.Audio;
 
 namespace Deckle.Speech;
 
-// Read-aloud orchestrator — the synthesis-side counterpart of
-// TranscriptionEngine. Turns a piece of text into spoken audio on the default
-// render device.
+// Read-aloud orchestrator, the synthesis-side counterpart of
+// TranscriptionEngine.
 //
 //   • Speak(text) returns immediately; synthesis + playback run on a
 //     background task, so a caller on the UI thread is never blocked.
-//   • A new request interrupts the one in flight: the current read stops and
-//     the new one starts. No queue.
+//   • A new request interrupts the one in flight. No queue.
 //
-// Output is fixed at 24 kHz mono — Chatterbox's S3Gen rate. Voice and
-// temperature are read per call from SpeechSettingsService; no host-bridge is
-// needed yet because the engine only reads its own module's settings.
+// Output is fixed at 24 kHz mono, Chatterbox's S3Gen rate. Voice and
+// temperature are read per call from SpeechSettingsService: the engine reads
+// only its own module's settings, so it needs no host bridge.
 public sealed class SpeechEngine : IDisposable
 {
     private const int OutputSampleRate = 24000;
@@ -30,8 +28,6 @@ public sealed class SpeechEngine : IDisposable
         _backend = backend;
     }
 
-    // Fire-and-forget read of `text`. Empty/whitespace is a no-op. Any previous
-    // read is cancelled first.
     public void Speak(string? text)
     {
         if (_disposed || string.IsNullOrWhiteSpace(text)) return;
@@ -97,8 +93,6 @@ public sealed class SpeechEngine : IDisposable
             return;
         }
 
-        // Close the read-aloud bracket: ReadAloudRequested → ReadAloudComplete
-        // makes the happy path legible at Informational level.
         long durationMs = samples.Length * 1000L / OutputSampleRate;
         DeckleSpeechSource.Log.ReadAloudComplete();
         DeckleSpeechSource.Log.ReadAloudCompleteDetail(samples.Length, durationMs, OutputSampleRate);

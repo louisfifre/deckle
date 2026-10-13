@@ -7,10 +7,9 @@ using Xunit;
 
 namespace Deckle.Speech.Tests;
 
-// Covers the SpeechSettings contract: the shipped defaults, and that the POCO
-// survives a save/reload through the JsonSettingsStore the service uses (with
-// the same serializer options). The store is exercised on a temp file so the
-// test never touches the real %LOCALAPPDATA% location or the singleton.
+// Options() mirrors SpeechSettingsService's serializer options. The store runs
+// on a temp file so the test never touches the real settings file or the
+// singleton.
 public class SpeechSettingsTests
 {
     private static JsonSerializerOptions Options() => new()
