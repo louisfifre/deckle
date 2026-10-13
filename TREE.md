@@ -1614,15 +1614,11 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── Deckle.Shell.TrayMenu.csproj
 │   │   ├── DeckleShellTrayMenuSource.cs
 │   │   ├── TrayCarrierWindow.cs
-│   │   ├── TrayContextMenuHost.cs
-│   │   ├── TrayContextMenuHost.Flyout.cs
-│   │   ├── TrayContextMenuHost.Measure.cs
-│   │   ├── TrayContextMenuHost.Show.cs
-│   │   ├── TrayIslandSizing.cs
-│   │   ├── TrayMenuSizing.cs
-│   │   ├── TrayQuickActionsHost.Build.cs
-│   │   ├── TrayQuickActionsHost.cs
-│   │   ├── TrayQuickActionsHost.Show.cs
+│   │   ├── TrayMenuEntry.cs
+│   │   ├── TrayMenuHost.cs
+│   │   ├── TrayMenuHost.Items.cs
+│   │   ├── TrayMenuHost.Show.cs
+│   │   ├── TrayMenuPlacement.cs
 │   │   ├── TrayToggle.cs
 │   │   └── TrayWindowOwnership.cs
 │   ├── Deckle.Shell.WindowChrome/
@@ -2129,9 +2125,8 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   └── ResizeGestureTests.cs
 │   ├── Deckle.Shell.TrayMenu.Tests/
 │   │   ├── Deckle.Shell.TrayMenu.Tests.csproj
-│   │   ├── TrayIslandSizingTests.cs
 │   │   ├── TrayMenuBugNotes.md
-│   │   ├── TrayMenuSizingTests.cs
+│   │   ├── TrayMenuPlacementTests.cs
 │   │   └── TrayWindowOwnershipTests.cs
 │   ├── Deckle.Speech.Tests/
 │   │   ├── Deckle.Speech.Tests.csproj

@@ -1,3 +1,4 @@
+using Deckle.Catalog;
 using Deckle.Core;
 using Deckle.Diagnostics;
 using Deckle.Diagnostics.Logging;
@@ -178,57 +179,71 @@ public partial class App
             AmbientSettingsService.Instance.Changed += OnAmbientSettingsChanged;
         }
 
-        // Tray context menu — WinUI 3 SecondWindow pattern. The host needs
-        // the message-only HWND as its owner so its popup inherits the tray's
-        // z-order / activation stack. Right-click on the tray icon raises
-        // RightClickRequested, which the menu host translates into a popup
-        // shown at the cursor with a Win11-native MenuFlyout.
-        _trayMenu = new TrayContextMenuHost(_messageHost.Hwnd)
-        {
-            OnShowLogs       = () => ShowLogWindowLazy(),
-            OnShowSettings   = () => ShowSettingsWindowLazy(),
-            OnShowPlayground = () => ShowPlaygroundLazy(),
-            OnRestart        = () => RestartAppFromTray(),
-            OnQuit           = () => QuitApp(),
-            // Tray icon screen rect — the menu host uses it as the
-            // CalculatePopupWindowPosition exclude rect so the popup anchors
-            // tangent to the icon regardless of taskbar orientation.
-            GetIconRect      = () => _tray.GetIconRect(),
-        };
-
-        _tray.RightClickRequested += () => _trayMenu.Show();
-
-        // Tray quick-actions panel — left click. Same carrier pattern and
-        // owner as the menu. Every entry follows module presence: an absent
-        // module has no Record button, no file action, no switch.
-        _trayPanel = new TrayQuickActionsHost(_messageHost.Hwnd)
+        // Tray menus — two native MenuFlyouts, each on an invisible anchor
+        // window placed on the tray icon and owned by the message-only HWND
+        // (TrayMenuHost). The App composes their entries here; the module
+        // renders them and knows no label and no module. Right click: the rare
+        // items, the window-opening commands then the lifecycle commands.
+        _trayMenu = new TrayMenuHost(_messageHost.Hwnd, "tray-popup")
         {
             GetIconRect = () => _tray.GetIconRect(),
-            IsRecording = () => _engine?.IsRecording ?? false,
+            Entries =
+            [
+                new TrayMenuCommand("logs",       () => Loc.Get("TrayMenu_Logs"),       () => ShowLogWindowLazy()),
+                new TrayMenuCommand("settings",   () => Loc.Get("TrayMenu_Settings"),   () => ShowSettingsWindowLazy()),
+                new TrayMenuCommand("playground", () => Loc.Get("TrayMenu_Playground"), () => ShowPlaygroundLazy()),
+                new TrayMenuSeparator(),
+                new TrayMenuCommand("restart",    () => Loc.Get("TrayMenu_Restart"),    () => RestartAppFromTray()),
+                new TrayMenuCommand("quit",       () => Loc.Get("TrayMenu_Quit"),       () => QuitApp()),
+            ],
         };
+        _tray.RightClickRequested += () => _trayMenu.Show();
+
+        // Left click: the quick actions, then the module switches as checkable
+        // items, grouped by use (TR-03): the rarely changed ones first, Ambient
+        // Light last, each group behind a separator. A click flips a module and
+        // closes the menu, like any menu item. Every entry follows module
+        // presence: an absent module has no Record item, no file action, no
+        // switch.
+        var actions = new List<TrayMenuEntry>();
         if (context.TranscriptionPresent)
         {
-            // Record runs the exact path of the transcription hotkey; the
-            // panel closes first so the paste at Stop reaches the window the
-            // user was in. File transcription opens the system file picker
-            // and runs each file through the dictation pipeline (see
-            // App.FileTranscription.cs).
-            _trayPanel.OnRecord = () => OnHotkey(RecordHotkeyId);
-            _trayPanel.OnTranscribeFiles = () => TranscribeFilesFromTray();
+            // Record runs the exact path of the transcription hotkey; the menu
+            // closes first so the paste at Stop reaches the window the user
+            // was in. Its label follows the engine state at each open. File
+            // transcription opens the system file picker and runs each file
+            // through the dictation pipeline (see App.FileTranscription.cs).
+            actions.Add(new TrayMenuCommand(
+                "record",
+                () => Loc.Get(_engine?.IsRecording == true ? "TrayPanel_StopRecording" : "TrayPanel_Record"),
+                () => OnHotkey(RecordHotkeyId)));
+            actions.Add(new TrayMenuCommand(
+                "transcribe-files",
+                () => Loc.Get("TrayMenu_TranscribeFile"),
+                () => TranscribeFilesFromTray()));
         }
-        // Module switches (App.TrayToggles.cs); Ambient Light in the footer.
-        // Built once: the hotkey actions below derive from the same lists, so
-        // a toggle's hotkey runs exactly what its panel switch runs.
+        // Module switches (App.TrayToggles.cs). Built once: the hotkey actions
+        // below derive from the same lists, so a toggle's hotkey runs exactly
+        // what its menu item runs.
         IReadOnlyList<TrayToggle> trayToggles = BuildTrayToggles(context);
         IReadOnlyList<TrayToggle> trayFooterToggles = BuildTrayFooterToggles(context);
-        _trayPanel.Toggles = trayToggles;
-        _trayPanel.FooterToggles = trayFooterToggles;
-        _tray.LeftClickRequested += () => _trayPanel.Show();
+        foreach (IReadOnlyList<TrayToggle> group in new[] { trayToggles, trayFooterToggles })
+        {
+            if (group.Count == 0) continue;
+            if (actions.Count > 0) actions.Add(new TrayMenuSeparator());
+            actions.AddRange(group);
+        }
+        _trayActions = new TrayMenuHost(_messageHost.Hwnd, "tray-actions")
+        {
+            GetIconRect = () => _tray.GetIconRect(),
+            Entries = actions,
+        };
+        _tray.LeftClickRequested += () => _trayActions.Show();
 
         // Double click opens Settings. The shell delivers the first click's
-        // WM_LBUTTONUP before WM_LBUTTONDBLCLK, so the panel opens, then the
-        // Settings window takes activation and the panel hides; the trailing
-        // WM_LBUTTONUP lands inside the panel's reopen guard and is ignored.
+        // WM_LBUTTONUP before WM_LBUTTONDBLCLK, so the menu opens, then the
+        // Settings window takes activation and the menu hides; the trailing
+        // WM_LBUTTONUP lands inside the menu's reopen guard and is ignored.
         _tray.DoubleClickRequested += () => ShowSettingsWindowLazy();
 
         _tray.Register(_messageHost.Hwnd);
