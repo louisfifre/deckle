@@ -4,23 +4,11 @@ namespace Deckle.TestSupport;
 
 // ── TestEventListener ─────────────────────────────────────────────────────────
 //
-// EventListener instrumented for observability tests. Collects
-// EventWrittenEventArgs emitted by the targeted provider, without
-// listener-side filtering; the test then asserts on the collected sequence.
+// Collects every event of the targeted provider, at every level and keyword;
+// the test then asserts on the collected sequence.
 //
-// Native EventListener limitation to know: OnEventSourceCreated is called for
-// pre-existing sources during the base class constructor, BEFORE derived class
-// fields are assigned. The explicit re-scan through EventSource.GetSources()
-// after name assignment covers this case. OnEventSourceCreated remains useful
-// for sources created AFTER listener instantiation.
-//
-// Typical use in a test:
-//   using var listener = new TestEventListener("Deckle-Chrono");
-//   DeckleChronoSource.Log.PilotEmitted();
-//   Assert.Single(listener.Events);
-//
-// The `using` is important: Dispose unregisters the listener, otherwise it
-// keeps capturing emissions from following tests.
+// Dispose it (`using`): Dispose unregisters the listener, otherwise it keeps
+// capturing emissions from following tests.
 public sealed class TestEventListener : EventListener
 {
     private readonly string _providerName;
@@ -56,9 +44,8 @@ public sealed class TestEventListener : EventListener
 
     protected override void OnEventSourceCreated(EventSource eventSource)
     {
-        // Sources created AFTER listener instantiation: _providerName is now
-        // assigned. The null-check protects the pre-existing case (pre-existing
-        // sources are handled in the constructor).
+        // The null-check covers the calls made during base(), before
+        // _providerName is assigned; the constructor registers those sources.
         if (_providerName is not null && eventSource.Name == _providerName)
         {
             EnableEvents(eventSource, EventLevel.LogAlways, EventKeywords.All);
