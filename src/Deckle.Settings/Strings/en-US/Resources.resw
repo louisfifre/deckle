@@ -295,8 +295,18 @@
   <data name="SettingsTitleBar.Title" xml:space="preserve">
     <value>Deckle Settings</value>
   </data>
+  <data name="SettingsNavHome.Content" xml:space="preserve">
+    <value>Home</value>
+  </data>
   <data name="SettingsNavGeneral.Content" xml:space="preserve">
     <value>General</value>
+  </data>
+  <!-- The Home page: empty until it earns content (decision 15). -->
+  <data name="HomePageHeader.Title" xml:space="preserve">
+    <value>Home</value>
+  </data>
+  <data name="HomePageHeader.Description" xml:space="preserve">
+    <value>An overview of Deckle will live here.</value>
   </data>
   <!-- The module pages' nav labels (Recording, Transcription, Rewriting,
        Autocorrect, Ambient Light, Trackpad, Diagnostics) moved to each owning
@@ -345,15 +355,6 @@
     <value>Reset this section to defaults</value>
   </data>
 
-  <!-- Whole-page "Reset all" button on GeneralPage (title row, trailing edge).
-       Same affordance as WhisperPage / LlmPage; active-when-dirty. General's has
-       no dialog (reversible preferences). -->
-  <data name="GeneralPage_ResetAll.ToolTipService.ToolTip" xml:space="preserve">
-    <value>Reset this page to defaults</value>
-  </data>
-  <data name="GeneralPageResetAllLabel.Text" xml:space="preserve">
-    <value>Reset all</value>
-  </data>
 
   <!-- ─── GeneralPage ────────────────────────────────────────────────
        First page in the Settings nav. Page title, page subtitle, then
@@ -531,10 +532,10 @@
        Page titles, subtitles, and section headers rendered as plain
        TextBlocks (not Cards). x:Uid resolves <Uid>.Text automatically.
        Values mirror the raw Surface_Purpose entries for code-behind. -->
-  <data name="GeneralPageTitleLabel.Text" xml:space="preserve">
+  <data name="GeneralPageHeader.Title" xml:space="preserve">
     <value>General</value>
   </data>
-  <data name="GeneralPageSubtitleLabel.Text" xml:space="preserve">
+  <data name="GeneralPageHeader.Description" xml:space="preserve">
     <value>Hotkeys, appearance, behaviour, startup, backups and application data.</value>
   </data>
   <data name="GeneralPageShortcutsHeaderLabel.Text" xml:space="preserve">

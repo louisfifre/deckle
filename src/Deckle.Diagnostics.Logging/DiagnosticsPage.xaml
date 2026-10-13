@@ -4,7 +4,8 @@
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:controls="using:CommunityToolkit.WinUI.Controls"
-    xmlns:ui="using:CommunityToolkit.WinUI">
+    xmlns:ui="using:CommunityToolkit.WinUI"
+    xmlns:catalog="using:Deckle.Catalog">
 
     <!-- Same layout pattern as GeneralPage / WhisperPage: Grid wrapper +
          StackPanel MaxWidth=1000 + SettingsCardSpacing=4 + section
@@ -34,35 +35,14 @@
                         HorizontalAlignment="Stretch"
                         Spacing="{StaticResource SettingsCardSpacing}">
 
-                <!-- Page title + whole-page "Reset all" (active-when-dirty; confirms
-                     because it clears recorded consents), mirroring WhisperPage. -->
-                <Grid Margin="0,0,0,8">
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="*" />
-                        <ColumnDefinition Width="Auto" />
-                    </Grid.ColumnDefinitions>
-                    <TextBlock x:Uid="DiagnosticsPageTitleLabel"
-                               Grid.Column="0"
-                               Style="{StaticResource TitleTextBlockStyle}"
-                               VerticalAlignment="Center" />
-                    <Button x:Name="ResetAllButton"
-                            x:Uid="DiagnosticsPage_ResetAll"
-                            Grid.Column="1"
-                            VerticalAlignment="Center"
-                            Style="{StaticResource SubtleButtonStyle}"
-                            Click="ResetAllDiagnostics_Click">
-                        <StackPanel Orientation="Horizontal" Spacing="8">
-                            <FontIcon Glyph="{StaticResource Icon.Reset}" FontSize="14" />
-                            <TextBlock x:Uid="DiagnosticsPageResetAllLabel" />
-                        </StackPanel>
-                    </Button>
-                </Grid>
-
-                <TextBlock x:Uid="DiagnosticsPageSubtitleLabel"
-                           Style="{StaticResource BodyTextBlockStyle}"
-                           Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                           TextWrapping="Wrap"
-                           Margin="0,0,0,12" />
+                <!-- The shared header block: breadcrumb, one line of description,
+                     Reset all on the trailing edge (active-when-dirty). The page
+                     asks with its own dialog (it clears recorded consents), so the
+                     header's generic one is off (ConfirmsReset, set in the
+                     constructor). -->
+                <catalog:SettingsPageHeader x:Name="Header"
+                                            x:Uid="DiagnosticsPageHeader"
+                                            ResetAllRequested="ResetAllDiagnostics_Click" />
 
                 <!-- ── Logging ─────────────────────────────────────────────────
                      Runtime emission gates. They stop selected noisy streams

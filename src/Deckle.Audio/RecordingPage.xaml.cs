@@ -119,12 +119,19 @@ public sealed partial class RecordingPage : Page
     // is deliberately NOT folded in — it is hardware enumeration, not a defaulted
     // setting, so it never gates this link (a greyed link on a clean section, with a
     // non-default device, is the accepted outcome).
+    //
+    // The header's page-level "Reset all" shares this gate: the page has a single
+    // resettable section, so Reset all and the section "Reset" cover the same values.
+    // The telemetry opt-in is left out of both on purpose (a privacy opt-in is never
+    // reset from here).
     private void GateResetLink()
     {
-        ResetRecordingLink.IsEnabled =
+        bool dirty =
             (_recordingLimitComposer?.IsDirty() ?? false) ||
             (_preprocessingComposer?.IsDirty() ?? false) ||
             (_voiceLevelComposer?.IsDirty() ?? false);
+        ResetRecordingLink.IsEnabled = dirty;
+        Header.IsResetAllEnabled = dirty;
     }
 
     protected override void OnNavigatedTo(NavigationEventArgs e)
@@ -225,4 +232,9 @@ public sealed partial class RecordingPage : Page
         DeckleSettingsUxSource.Log.SectionReset();
         DeckleSettingsUxSource.Log.SectionResetDetail("Recording");
     }
+
+    // Page-level "Reset all" (the header confirms by itself, with the generic wording):
+    // the page's one resettable section, so it is the same gesture as the section link.
+    private void ResetAll_Click(object sender, RoutedEventArgs e) =>
+        ResetRecording_Click(sender, e);
 }

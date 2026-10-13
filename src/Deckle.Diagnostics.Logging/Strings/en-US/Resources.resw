@@ -79,17 +79,11 @@
   </data>
 
   <!-- DiagnosticsPage — page chrome (x:Uid) -->
-  <data name="DiagnosticsPageTitleLabel.Text" xml:space="preserve">
+  <data name="DiagnosticsPageHeader.Title" xml:space="preserve">
     <value>Diagnostics</value>
   </data>
-  <data name="DiagnosticsPageSubtitleLabel.Text" xml:space="preserve">
+  <data name="DiagnosticsPageHeader.Description" xml:space="preserve">
     <value>Choose which operational details Deckle admits, whether to keep an application log, and where purpose-specific telemetry datasets are stored.</value>
-  </data>
-  <data name="DiagnosticsPage_ResetAll.ToolTipService.ToolTip" xml:space="preserve">
-    <value>Reset this page to defaults</value>
-  </data>
-  <data name="DiagnosticsPageResetAllLabel.Text" xml:space="preserve">
-    <value>Reset all</value>
   </data>
 
   <!-- Logging section (x:Uid header + composed card label key) -->

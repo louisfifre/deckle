@@ -20,6 +20,8 @@ namespace Deckle.Catalog;
 public static class Glyphs
 {
     // Navigation / Section headers
+    // Segoe Fluent "Setting" (E713) — the General node of the rail.
+    public const string Settings = "";
     public const string Home = "";
     public const string Microphone = "";
     public const string Speech = "";

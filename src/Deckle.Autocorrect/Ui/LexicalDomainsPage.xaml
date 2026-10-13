@@ -4,7 +4,8 @@
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:controls="using:CommunityToolkit.WinUI.Controls"
-    xmlns:vm="using:Deckle.Autocorrect">
+    xmlns:vm="using:Deckle.Autocorrect"
+    xmlns:catalog="using:Deckle.Catalog">
 
     <!-- Child page of the Autocorrect family: the domains that add a field's
          vocabulary to the effective lexicon, and nothing else. Same canonical
@@ -27,15 +28,12 @@
                         HorizontalAlignment="Stretch"
                         Spacing="{StaticResource SettingsCardSpacing}">
 
-                <TextBlock x:Uid="LexicalDomainsPage_Title"
-                           Style="{StaticResource TitleTextBlockStyle}"
-                           Margin="0,0,0,8" />
-
-                <TextBlock x:Uid="LexicalDomainsPage_Subtitle"
-                           Style="{StaticResource BodyTextBlockStyle}"
-                           Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                           TextWrapping="Wrap"
-                           Margin="0,0,0,12" />
+                <!-- The shared header block. No Reset all: the page holds no
+                     composed setting, only per-language switches over a shipped
+                     catalogue, so there is no page-level default to return to. -->
+                <catalog:SettingsPageHeader x:Name="Header"
+                                            x:Uid="LexicalDomainsPageHeader"
+                                            HasResetAll="False" />
 
                 <!-- Shown in place of the whole section while autocorrect is off:
                      one inline channel, the wording carries the tone. -->

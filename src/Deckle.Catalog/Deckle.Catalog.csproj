@@ -4,8 +4,9 @@
     <!-- UseWinUI compiles Themes/Icons.xaml as a XAML resource so the
          host App.xaml can merge it via
          ms-appx:///Deckle.Catalog/Themes/Icons.xaml. The module hosts
-         no Page or UserControl — only the icon ResourceDictionary plus
-         Loc.cs / Glyphs.cs facades. -->
+         no XAML page: its controls (the composer's cards, the page
+         header) are built in code, beside the icon ResourceDictionary
+         and the Loc.cs / Glyphs.cs facades. -->
     <UseWinUI>true</UseWinUI>
     <EnableMsixTooling>true</EnableMsixTooling>
   </PropertyGroup>

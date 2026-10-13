@@ -130,10 +130,10 @@
   </data>
 
   <!-- RecordingPage — page chrome (x:Uid) -->
-  <data name="RecordingPageTitleLabel.Text" xml:space="preserve">
+  <data name="RecordingPageHeader.Title" xml:space="preserve">
     <value>Recording</value>
   </data>
-  <data name="RecordingPageSubtitleLabel.Text" xml:space="preserve">
+  <data name="RecordingPageHeader.Description" xml:space="preserve">
     <value>Microphone selection, maximum recording length, signal pre-processing with a listening test, and voice level window calibration.</value>
   </data>
   <data name="RecordingPageSectionHeaderLabel.Text" xml:space="preserve">

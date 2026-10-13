@@ -4,7 +4,8 @@
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:controls="using:CommunityToolkit.WinUI.Controls"
-    xmlns:vm="using:Deckle.Autocorrect">
+    xmlns:vm="using:Deckle.Autocorrect"
+    xmlns:catalog="using:Deckle.Catalog">
 
     <!-- Child page of the Autocorrect family: where correction is allowed to
          run, app by app. Same canonical Settings layout as its parent and its
@@ -32,15 +33,11 @@
                         HorizontalAlignment="Stretch"
                         Spacing="{StaticResource SettingsCardSpacing}">
 
-                <TextBlock x:Uid="AppsEnrolledPage_Title"
-                           Style="{StaticResource TitleTextBlockStyle}"
-                           Margin="0,0,0,8" />
-
-                <TextBlock x:Uid="AppsEnrolledPage_Subtitle"
-                           Style="{StaticResource BodyTextBlockStyle}"
-                           Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                           TextWrapping="Wrap"
-                           Margin="0,0,0,12" />
+                <!-- The shared header block. No Reset all: the page is a list the
+                     user authors through their answers, with nothing to restore. -->
+                <catalog:SettingsPageHeader x:Name="Header"
+                                            x:Uid="AppsEnrolledPageHeader"
+                                            HasResetAll="False" />
 
                 <!-- Shown in place of the whole section while autocorrect is off:
                      one inline channel, the wording carries the tone. -->

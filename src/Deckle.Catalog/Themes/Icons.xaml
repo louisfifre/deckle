@@ -22,6 +22,8 @@
 
     <!-- ─── Navigation / Section headers ─────────────────────────── -->
     <x:String x:Key="Icon.Home">&#xE80F;</x:String>
+    <!-- Segoe Fluent "Setting" (E713) — the General node of the rail. -->
+    <x:String x:Key="Icon.Settings">&#xE713;</x:String>
     <x:String x:Key="Icon.Microphone">&#xE720;</x:String>
     <x:String x:Key="Icon.Speech">&#xF61F;</x:String>
     <x:String x:Key="Icon.Sparkle">&#xF6C7;</x:String>

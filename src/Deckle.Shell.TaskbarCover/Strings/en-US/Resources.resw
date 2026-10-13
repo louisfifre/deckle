@@ -60,10 +60,10 @@
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
 
-  <data name="TaskbarCoverPage_Title.Text" xml:space="preserve">
+  <data name="TaskbarCoverPageHeader.Title" xml:space="preserve">
     <value>Taskbar cover</value>
   </data>
-  <data name="TaskbarCoverPage_Subtitle.Text" xml:space="preserve">
+  <data name="TaskbarCoverPageHeader.Description" xml:space="preserve">
     <value>Hide the taskbar behind a black band, and reveal it as the mouse comes near.</value>
   </data>
   <data name="TaskbarCoverPage_Group.Header" xml:space="preserve">

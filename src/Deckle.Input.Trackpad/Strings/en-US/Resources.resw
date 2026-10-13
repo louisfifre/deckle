@@ -123,10 +123,10 @@
        (plain TextBlocks bind .Text); code-behind flip-labels use the
        Surface_Purpose form resolved via Loc.Get — those three are
        mirrored in Deckle.App's resw (Loc-mirror-pattern). -->
-  <data name="TrackpadPage_Title.Text" xml:space="preserve">
+  <data name="TrackpadPageHeader.Title" xml:space="preserve">
     <value>Trackpad</value>
   </data>
-  <data name="TrackpadPage_Subtitle.Text" xml:space="preserve">
+  <data name="TrackpadPageHeader.Description" xml:space="preserve">
     <value>Drag with three fingers on a Magic Trackpad 2 — no click needed: move three fingers to pick something up, lift them to drop it.</value>
   </data>
 

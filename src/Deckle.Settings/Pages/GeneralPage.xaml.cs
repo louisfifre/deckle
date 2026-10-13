@@ -180,12 +180,11 @@ public sealed partial class GeneralPage : Page
     // ResetAll() each section link fires, folded into one gesture on the title row.
     // Active-when-dirty (the Playground model): enabled only while some composed value
     // differs from its default, re-gated off every composer's DirtyChanged and once
-    // after Load(). No confirmation — these are reversible preference defaults
-    // (appearance, behaviour, startup, backup location), nothing user-authored is
-    // lost, matching RecordingPage's section reset.
+    // after Load(). The header block asks before firing ResetAllRequested (the
+    // generic wording: nothing user-authored is lost here).
     private void GateResetAll()
     {
-        ResetAllButton.IsEnabled =
+        Header.IsResetAllEnabled =
             (_hotkeysComposer?.IsDirty() ?? false) ||
             (_appearanceComposer?.IsDirty() ?? false) ||
             (_startupComposer?.IsDirty() ?? false) ||
