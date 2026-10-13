@@ -6,13 +6,11 @@ using Deckle.Install;
 
 namespace Deckle.Installer;
 
-// ── InstallFlow ───────────────────────────────────────────────────────────────
-//
 // The silent stub: resolve the latest GitHub release, download the app payload
 // into a unique temp folder, verify its SHA-256, extract it there, then launch the
 // WinUI first-run wizard from that folder and exit. Nothing is asked and nothing is
 // integrated here — folder choice, module selection, the Start Menu shortcut, the
-// Installed-apps entry, DECKLE_DATA_ROOT and the binary copy all moved into the
+// Installed-apps entry, DECKLE_DATA_ROOT and the binary copy all belong to the
 // wizard. This is the web-installer half of a VS Code / Discord style setup.
 //
 // The wizard is handed two things it can't otherwise know: --stub, this running
@@ -103,9 +101,6 @@ internal static class InstallFlow
 
             ct.ThrowIfCancellationRequested();
 
-            // Hand off to the wizard living inside the payload. It runs from the
-            // extracted folder; --stub lets it register this exe as the uninstaller,
-            // and --cleanup lets it delete the whole temp root when it is finished.
             var psi = new ProcessStartInfo(appExe)
             {
                 UseShellExecute = false,
@@ -132,7 +127,6 @@ internal static class InstallFlow
         }
     }
 
-    // The status line under the bar — "Downloading Deckle 0.4.0…  (52 MB of 300 MB)".
     private static string DownloadStatus(string version, long done, long? total)
     {
         static double Mb(long bytes) => bytes / (1024.0 * 1024.0);
@@ -148,8 +142,8 @@ internal static class InstallFlow
         _ => "Deckle Setup could not complete:\n\n" + ex.Message,
     };
 
-    // Locates Deckle.exe in the extracted tree — flat at the root for today's zip,
-    // but tolerant of a single wrapping folder by taking the shallowest match.
+    // Locates Deckle.exe in the extracted tree — flat at the root, but tolerant
+    // of a wrapping folder by taking the shallowest match.
     private static string? FindDeckleExe(string root)
     {
         string direct = Path.Combine(root, "Deckle.exe");

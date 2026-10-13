@@ -35,12 +35,10 @@
 
     <!-- No third-party packages. Registry, COM source-generated interop
          (System.Runtime.InteropServices.Marshalling) and XML/HTTP all ship in the
-         net10.0-windows framework — conforms to the zero-dependency doctrine. -->
+         net10.0-windows framework. -->
   </PropertyGroup>
 
   <ItemGroup>
-    <!-- The Windows-integration primitives shared with the install-mode wizard
-         (Deckle.Setup). AOT-safe by that module's own contract. -->
     <ProjectReference Include="..\Deckle.Install\Deckle.Install.csproj" />
   </ItemGroup>
 
