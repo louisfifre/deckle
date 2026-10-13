@@ -30,6 +30,17 @@ public sealed partial class LlmPage : Page
     public LlmPage()
     {
         InitializeComponent();
+
+        // The page asks with its own wording (it says what the reset wipes), so
+        // the header does not add its generic confirmation on top.
+        Header.ConfirmsReset = false;
+
+        // The reset spans profiles, rules and slots that no composer models, so a
+        // dirty check cannot be computed from the page's composers (the only one
+        // lives inside LlmGeneralSection and covers two values). Reset all stays
+        // enabled, as it was before the shared header.
+        Header.IsResetAllEnabled = true;
+
         IsTabStop = true;
         NavigationCacheMode = NavigationCacheMode.Required;
 

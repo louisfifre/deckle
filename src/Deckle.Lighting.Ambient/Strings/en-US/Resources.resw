@@ -122,19 +122,17 @@
        Saturation) + Configuration (display, capture rate, Hue bridge
        pairing). The live preview and the per-light rows (zone,
        brightness, Identify) follow further down. -->
-  <data name="AmbientPageTitleLabel.Text" xml:space="preserve">
+  <data name="AmbientPageHeader.Title" xml:space="preserve">
     <value>Ambient Light</value>
   </data>
-  <data name="AmbientPageSubtitleLabel.Text" xml:space="preserve">
+  <data name="AmbientPageHeader.Description" xml:space="preserve">
     <value>Mirror your screen to your Philips Hue lights. Works best with HDR content.</value>
   </data>
 
-  <!-- Page-level Reset all (title row) and its confirmation dialog.
-       The dialog keys are read by Loc.Get in AmbientPage.xaml.cs and
-       mirrored in src/Deckle.App/Strings/en-US/Resources.resw. -->
-  <data name="AmbientPage_ResetAll.ToolTipService.ToolTip" xml:space="preserve">
-    <value>Reset all Ambient Light settings to defaults</value>
-  </data>
+  <!-- The page's own Reset all confirmation dialog. The keys are read by
+       Loc.Get in AmbientPage.xaml.cs (AmbientPageResetAllLabel.Text is the
+       dialog's primary button) and mirrored in
+       src/Deckle.App/Strings/en-US/Resources.resw. -->
   <data name="AmbientPageResetAllLabel.Text" xml:space="preserve">
     <value>Reset all</value>
   </data>
@@ -146,7 +144,7 @@
   </data>
 
   <!-- ── State ─────────────────────────────────────────────── -->
-  <data name="AmbientStateSectionHeader.Text" xml:space="preserve">
+  <data name="AmbientPageStateSection.Title" xml:space="preserve">
     <value>State</value>
   </data>
   <data name="AmbientEnabledCard.Header" xml:space="preserve">
@@ -166,7 +164,7 @@
   </data>
 
   <!-- ── Behaviour ─────────────────────────────────────────── -->
-  <data name="AmbientBehaviourSectionHeader.Text" xml:space="preserve">
+  <data name="AmbientPageBehaviourSection.Title" xml:space="preserve">
     <value>Behaviour</value>
   </data>
   <data name="AmbientPresetCard.Header" xml:space="preserve">
@@ -224,7 +222,7 @@
   </data>
 
   <!-- ── Fine tuning ───────────────────────────────────────── -->
-  <data name="AmbientTuningSectionHeader.Text" xml:space="preserve">
+  <data name="AmbientPageTuningSection.Title" xml:space="preserve">
     <value>Fine tuning</value>
   </data>
   <data name="AmbientBrightnessCurveCard.Header" xml:space="preserve">
@@ -271,7 +269,7 @@
   </data>
 
   <!-- ── Configuration : capture and Hue bridge pairing ────── -->
-  <data name="AmbientConfigSectionHeader.Text" xml:space="preserve">
+  <data name="AmbientPageConfigSection.Title" xml:space="preserve">
     <value>Configuration</value>
   </data>
   <data name="AmbientMonitorCard.Header" xml:space="preserve">

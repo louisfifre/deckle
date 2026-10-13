@@ -127,6 +127,12 @@ doctrine). This file is generated from the Conventional-Commit history by
 - **playground:** Bring back the Ambient tab
 - **catalog:** Make Magnitude the one numeric block
 - **catalog:** Retire the Slider and Number kinds
+- **composer:** Name the default in a card's reset tooltip
+- **settings:** Add the page header block and the Home, General rail
+- **composition:** Shape the utterance countdown as the Recording outline
+- **composition:** Open the utterance countdown later and past the corners
+- **hud:** Smooth the countdown rise with the outline's level alpha
+- **playground:** Show the Recording rows under the countdown views
 
 ### Changed
 
@@ -150,6 +156,7 @@ doctrine). This file is generated from the Conventional-Commit history by
 - **transcription:** Compose the numeric cards as magnitudes
 - **ambient:** Compose the border cards as magnitudes
 - **audio:** Compose the voice level cards as magnitudes
+- **settings:** Open every page with the shared header block
 
 ### Fixed
 

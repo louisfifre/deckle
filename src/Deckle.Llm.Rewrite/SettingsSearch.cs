@@ -8,11 +8,13 @@ namespace Deckle.Llm.Rewrite;
 // One SettingSearchEntry per findable card on the Rewriting page, flat and static
 // so the shell's search index can pull it at boot without composing the page.
 //
-// Redeclared here rather than read off the composed manifest: the two composed
-// leaves (LlmEnableCard, LlmEndpointExpander) live in GeneralSettingsManifest, an
-// INSTANCE property on LlmGeneralViewModel, which owns live settings and cannot be
-// built at boot without side effects. The index resolves display text from the
-// module's PRI subtree by LabelKey alone, so the keys are all it needs.
+// Why redeclared here rather than read off the composed manifest: the two composed
+// leaves (LlmEnableCard, LlmEndpointExpander) live in ModuleSwitch and
+// GeneralSettingsManifest, INSTANCE properties on LlmGeneralViewModel — a live thing that owns the settings
+// values and their service, not constructible at boot without side effects. The
+// search index resolves display text from the module's PRI subtree by LabelKey
+// alone, so it needs the KEYS, not the VM. This list hands over exactly those keys,
+// declaratively, and never touches the ViewModel.
 //
 // Coverage is hybrid, because the page is:
 //   • composed leaves — LabelKey only; the index resolves "<key>/Header" and

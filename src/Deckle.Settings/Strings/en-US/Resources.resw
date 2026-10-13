@@ -295,8 +295,18 @@
   <data name="SettingsTitleBar.Title" xml:space="preserve">
     <value>Deckle Settings</value>
   </data>
+  <data name="SettingsNavHome.Content" xml:space="preserve">
+    <value>Home</value>
+  </data>
   <data name="SettingsNavGeneral.Content" xml:space="preserve">
     <value>General</value>
+  </data>
+  <!-- The Home page: empty until it earns content (decision 15). -->
+  <data name="HomePageHeader.Title" xml:space="preserve">
+    <value>Home</value>
+  </data>
+  <data name="HomePageHeader.Description" xml:space="preserve">
+    <value>An overview of Deckle will live here.</value>
   </data>
   <!-- The module pages' nav labels (Recording, Transcription, Rewriting,
        Autocorrect, Ambient Light, Trackpad, Diagnostics) moved to each owning
@@ -335,25 +345,7 @@
     <value>+{0} more — refine your search</value>
   </data>
 
-  <!-- ─── Settings — common section actions ──────────────────────────
-       Per-section "Reset" hyperlink and its tooltip. Reused on every
-       Settings section header (Appearance, Startup, Recording, etc.). -->
-  <data name="Settings_SectionResetLink.Content" xml:space="preserve">
-    <value>Reset</value>
-  </data>
-  <data name="Settings_SectionResetLink.ToolTipService.ToolTip" xml:space="preserve">
-    <value>Reset this section to defaults</value>
-  </data>
 
-  <!-- Whole-page "Reset all" button on GeneralPage (title row, trailing edge).
-       Same affordance as WhisperPage / LlmPage; active-when-dirty. General's has
-       no dialog (reversible preferences). -->
-  <data name="GeneralPage_ResetAll.ToolTipService.ToolTip" xml:space="preserve">
-    <value>Reset this page to defaults</value>
-  </data>
-  <data name="GeneralPageResetAllLabel.Text" xml:space="preserve">
-    <value>Reset all</value>
-  </data>
 
   <!-- ─── GeneralPage ────────────────────────────────────────────────
        First page in the Settings nav. Page title, page subtitle, then
@@ -429,7 +421,7 @@
   <data name="GeneralAutostartCard.Description" xml:space="preserve">
     <value>Launch Deckle automatically when you sign in.</value>
   </data>
-  <data name="GeneralPageUpdatesHeaderLabel.Text" xml:space="preserve">
+  <data name="GeneralPageUpdatesSection.Title" xml:space="preserve">
     <value>Updates</value>
   </data>
   <data name="GeneralUpdateAutoCheckCard.Header" xml:space="preserve">
@@ -531,19 +523,19 @@
        Page titles, subtitles, and section headers rendered as plain
        TextBlocks (not Cards). x:Uid resolves <Uid>.Text automatically.
        Values mirror the raw Surface_Purpose entries for code-behind. -->
-  <data name="GeneralPageTitleLabel.Text" xml:space="preserve">
+  <data name="GeneralPageHeader.Title" xml:space="preserve">
     <value>General</value>
   </data>
-  <data name="GeneralPageSubtitleLabel.Text" xml:space="preserve">
+  <data name="GeneralPageHeader.Description" xml:space="preserve">
     <value>Hotkeys, appearance, behaviour, startup, backups and application data.</value>
   </data>
-  <data name="GeneralPageShortcutsHeaderLabel.Text" xml:space="preserve">
+  <data name="GeneralPageHotkeysSection.Title" xml:space="preserve">
     <value>Hotkeys</value>
   </data>
-  <data name="GeneralPageAppearanceHeaderLabel.Text" xml:space="preserve">
+  <data name="GeneralPageAppearanceSection.Title" xml:space="preserve">
     <value>Appearance</value>
   </data>
-  <data name="GeneralPageStartupHeaderLabel.Text" xml:space="preserve">
+  <data name="GeneralPageStartupSection.Title" xml:space="preserve">
     <value>Startup</value>
   </data>
   <!-- ─── RecordingPage ───────────────────────────────────────────────
@@ -553,7 +545,7 @@
        GeneralOverlay*) reused as-is — General* prefix is a historical
        naming artifact, renaming would touch every translation file. -->
 
-  <data name="GeneralPageApplicationDataHeaderLabel.Text" xml:space="preserve">
+  <data name="GeneralPageApplicationDataSection.Title" xml:space="preserve">
     <value>Application data</value>
   </data>
 

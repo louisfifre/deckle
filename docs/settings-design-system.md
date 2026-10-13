@@ -74,24 +74,24 @@ by one block, split across several, or empty.
 | One of a runtime list (microphone, monitor, Hue group, model file, profile, language) | A dropdown | None in the composer. Hand-drawn ComboBox or AutoSuggestBox on six pages. | **Empty row.** Options are not `.resw` keys, so `Choice` cannot carry them. |
 | Linear magnitude | One control: slider and number field, grain derived | Composer `Magnitude` with `MagnitudeGrain` | Done 2026-10-13 (feat/magnitude-block): one numeric block. `Magnitude` hides its slider by option and declares a count; `Slider` (14 cards) and `Number` (9 cards) retired into it, arrows on hover (`Compact`), written at the release. `TunableRow` and the HUD row factories still stand in the Playground, for the Playground pass. |
 | Geometric magnitude (stops that multiply: 1, 2, 4 … 256) | Slider over a stop list, field shows the value | None. Rewriting context size is a hand-drawn index slider. | **Empty row.** The composer comment says the log variant was deliberately not built. |
-| Curve or envelope | A dedicated editor | Composer `Editor` hosts a module element. Two editors: `HangoverCurveCanvas` (Win2D) and `BrightnessCurveCanvas` (XAML shapes), same two-handle interaction, one `CurveHandleStyle` copied in both. | Decided 2026-10-13, second round: one drawing control in XAML shapes, a two-point Bézier with fixed ends, that shows and never writes. The point values and the bounds are magnitude cards above it; the drawing is the last card of its fold, full width, its caption the computed sentence (model: `SegmentationPage.xaml.cs:171`). Two layouts, wide with axes and bounds, square without. The handles go. |
+| Curve or envelope | A dedicated editor | Composer `Editor` hosts a module element. Two editors: `HangoverCurveCanvas` (Win2D) and `BrightnessCurveCanvas` (XAML shapes), same two-handle interaction, one `CurveHandleStyle` copied in both. | Decided 2026-10-13, third round (provisional, see decision 21): one drawing control in XAML shapes, a two-point Bézier with fixed ends, the Playground Segmentation form. The handles stay and write at their release; the four values are fields in a two-by-two grid beside the drawing, which takes the block's width; the computed sentence is its caption (model: `SegmentationPage.xaml.cs:171`); an option lets a handle leave the bounds. The second round's handle-less form is superseded. |
 | Free text, one line | One shared input | Composer `Text` | Covered. |
 | Free text, multi-line | Same input, wraps | `Text` has `Multiline`, no manifest uses it. Two hand-drawn TextBoxes (initial prompt, system prompt). | Dormant. |
 | Path or folder | One picker, affordances by ownership | Composer `Path` over `FolderPickerCard` (read-only, Change, Open) and `FolderPickerEditableCard` (typeable). `OpenOnly` mode exists, unused. | Covered for two of three affordances. The app-owned data folder and the diagnostic files folder are hand-drawn cards. |
 | Hotkey chord | (Deckle-specific) | Composer `Hotkey` | Covered. |
 | Fine configuration of something activatable | A fold under a master switch, hidden when off | Composer `Group` (SettingsExpander) | Covered. Folds never nest. |
-| Related settings, no master | A fold without master | Composer `Section` (SettingsExpander) | Covered when collapsible. Decided 2026-10-13: a flat section is a block, title, optional one-line caption, cards (the PowerToys `SettingsGroup` form); the header style copied on nine pages goes into it. |
+| Related settings, no master | A fold without master | Composer `Section` (SettingsExpander) when collapsible; `SettingsSection` (Catalog, built in code) for the flat block on every page | Done 2026-10-13 (feat/section-block): a flat section is a block, title, optional one-line caption, cards (the PowerToys `SettingsGroup` form), with the section-level reset as a hover wheel enabled when a value differs from its default; the header style and the always-visible "Reset" links copied on nine pages are gone. |
 | Preset (a named set of values for a group, plus Custom) | Not named in the doctrine | `Choice` fed by `PresetFamily.SelectorOptions()`; the Playground rebuilds the same combo by hand | Decided 2026-10-13: a row of its own. Second round: the selector sits in the header of the fold it governs, a mode fold. The save and revert gesture is an application-wide question, not settled here. |
 | Command (an action now) | A button, confirmation by reversibility | None. Hand-placed SettingsCard and Button on every page; `ConfirmationService` is the only shared piece. | **Empty row.** The composer drives values, not buttons. |
 | Diagnostic readout (version, status, live reading) | Consulted, not configured | None. Hand-drawn: version card, status dots, frame rate, mic-check InfoBars. | **Empty row.** |
-| Preview or instrument (a scene, a meter) | Opt-in for a live microphone meter | `AmbientPreviewCard` (Ambient only). No meter control exists anywhere in `src`. | Module-specific. Decided 2026-10-13: an instrument shows and never writes; the values it draws are cards beside it; it is the last card of its fold, full width. A shared preview component and a meter are open tasks in Anytype. |
+| Preview or instrument (a scene, a meter) | Opt-in for a live microphone meter | `AmbientPreviewCard` (Ambient only). No meter control exists anywhere in `src`. | Decided 2026-10-13: an instrument shows and never writes; the values it draws are cards beside it; it is the last card of its fold, full width. Third round (provisional, decisions 17 and 18): one preview component on every surface, a stage with commands above and readouts below, in its card and in a floating copy opened on hover; never a side pane. A meter is an open task in Anytype. |
 | Editable collection (profiles, excluded words, per-app decisions, per-light rows) | Not named in the doctrine | Hand templates per page; `LightZonesCard` rows rebuilt in the Playground | **Empty row.** |
 | Advisory next to a value | One inline channel, tone in the wording | Composer `WrapWithAdvisory` (InfoBar, one severity) | Covered. |
 | Reset of a value, a group, the surface | Hover reveal, one default source | Composer reset chrome on every composed card and fold | Covered by the composer; five hand forms of the per-value reset and five of the section reset remain, with two glyphs and some English tooltips. |
-| Page header (title, subtitle, Reset all) | Not named | Hand markup on all thirteen pages | Decided 2026-10-13: one block on every page: breadcrumb or title, one line of description, an optional link, Reset all at the right, active once something changed and confirmed. No image. Two resources (`SettingsCardSpacing`, section header style) are redefined locally on nine to twelve pages today. |
-| Module switch (a module that can be off) | A switch | Masters in manifests (Autocorrect, Ambient state, the Streaming group, the Rewriting enable), placed differently on each page | Decided 2026-10-13: one plain card, first on the module's first page, icon and toggle, never a fold that nests the rest. |
+| Page header (title, subtitle, Reset all) | Not named | `SettingsPageHeader` (Catalog, built in code) on all thirteen pages and Home | Done 2026-10-13 (feat/page-frame): one block on every page: breadcrumb or title, one line of description, an optional link, Reset all at the right, active once something changed and confirmed (the block asks with a generic wording, or the page asks with its own when it says what the reset keeps). No image. Pages that hold only lists the user authors carry no Reset all. Two resources (`SettingsCardSpacing`, section header style) are still redefined locally on nine to twelve pages. |
+| Module switch (a module that can be off) | A switch | A composed Toggle in its own host, first after the header: Autocorrect, Ambient, Rewriting, Trackpad, Taskbar cover; the Streaming switch follows in the mode-fold pass | Done 2026-10-13 (feat/section-block): one plain card, first on the module's first page, icon and toggle, never a fold that nests the rest; a section reset never flips it. |
 | Mode (a choice that decides which settings exist) | Not named in the doctrine | `Choice` plus `visibleWhen` on its siblings (the cut preset and its Custom-only cards) | Decided 2026-10-13: a fold whose header carries the choice; each child names the mode that shows it; an information card when the mode has nothing to set; the instrument last. In the composer, a Group whose master may be a Choice. |
-| Navigation (rail, breadcrumb) | Three levels, a child page a destination | Rail from `SettingsModuleRegistry`; `ParentId` children expanded under a parent that is also a page; a hand title on each page | Decided 2026-10-13: Home, General, separator, modules; a split module is a node that expands, its pages at one level starting with General; a breadcrumb replaces the title. |
+| Navigation (rail, breadcrumb) | Three levels, a child page a destination | Rail from `SettingsModuleRegistry`: Home, General, a separator, the modules; a module with `ParentId` children is a node that expands without navigating, its own page its first child named General; the breadcrumb is resolved by the shell (`SettingsNavigation.BreadcrumbFor`) | Done 2026-10-13 (feat/page-frame): Home (empty), General, separator, modules; a split module is a node that expands, its pages at one level starting with General; a breadcrumb replaces the title and its module segment leads to General. |
 
 Louis's rule of 2026-10-13: every surface takes a form the application knows.
 An empty row is a block to build, not a licence to hand-draw. A case that
@@ -109,7 +109,8 @@ From the doctrine, with the code facts that bear on each rule.
   composer magnitude writes at the release since feat/magnitude-block
   (`GestureHold`, pure state, tested apart from the control). The
   brightness-curve drag that saved the Ambient store on every handle move
-  (`AmbientViewModel.cs:169-176`) goes with the handles (decision 14).
+  (`AmbientViewModel.cs:169-176`) becomes one write at the handle's release
+  (decision 21, which brought the handles back).
 - **Confirmation and restart are parameters of the setting.** Decided
   2026-10-13: they are carried by the descriptor, never behaviours of a block,
   so every block applies them the same way. The marker names are still open.
@@ -224,10 +225,12 @@ level), and says to disable rather than hide, which Louis declined.
     may be a Choice. The preset selector moves into the header of the fold it
     governs, which refines decision 2.
 13. **A description says the effect in one sentence, or is absent. Never the
-    default.** The reset tooltip carries the value (`Reset to 0.50`), so the
+    default.** (The one-sentence limit is lifted by decision 20.) The reset tooltip carries the value (`Reset to 0.50`), so the
     default keeps one source and gains one place to be seen. About thirty
     descriptions end with `Default: …` today, twenty-six in Transcription.
-14. **Instruments show, fields write.** The curve editor loses its handles:
+14. **Instruments show, fields write.** (Superseded for the curve by decision
+    21, which keeps the handles; it still holds for previews and meters.) The
+    curve editor loses its handles:
     the control-point values and the bounds are magnitude cards, the drawing
     is the last card of the fold, full width, with the computed sentence as
     its caption. One drawing control, a two-point Bézier with fixed ends, two
@@ -257,13 +260,49 @@ not re-read: the two editors duplicate the Bézier solver (`UnitBezier`,
 `AmbientBrightnessCurve.Solve`), flip the y axis, and neither has keyboard
 nudge, tooltip or automation name.
 
+## Decisions, 2026-10-13, third round — PROVISIONAL
+
+**Louis decided these at the end of a long day and asked that they be marked
+as the first thing to revisit if a problem shows.** Each one is binding until
+revisited, but a difficulty met while building against 17 to 22 is a reason to
+reopen the decision, not to work around it. The brief they answer is
+`docs/research/research--settings-ux--2026-10-13.md`.
+
+17. **No right pane.** A preview is a block of its page, only on the pages
+    that use one, and scrolls with its section. A button shown on hover opens
+    a floating copy of it, a picture-in-picture window. The right pane
+    survives as one idea only, a logs pane detachable into a window; it is
+    not asked for.
+18. **One preview component**, everywhere: a stage, commands above (Play,
+    Pause), readouts below. It hosts the Ambient capture, the HUD and later
+    scenes. The same component in its card and in its floating copy. This
+    closes the "module-specific" state of the preview row.
+19. **A module's tuning is a page of its own** once it overflows General
+    (rung 2 of the ladder), with room to explain each value.
+20. **A description is as long as understanding needs, never the default.**
+    Decision 13 loses its one-sentence limit. Reference values (1.0 instant,
+    0.3 moderate, 0.1 cinematic) are a legend beside the instrument, never a
+    description. The legend's block is to design; decision 11 (no body
+    paragraphs) holds.
+21. **The curve keeps its handles.** The Playground Segmentation Bézier is the
+    model: the drawing takes the block's width, the four values are fields in
+    a two-by-two grid beside it, the computed sentence stays as caption, an
+    option lets a handle leave the bounds. One component on every surface.
+    A handle writes at its release, like every gesture, and moves by keyboard
+    too. This reverses decision 14 for the curve alone; previews and meters
+    still show and never write.
+22. **Presets follow the Windows model, taken as the default, not Louis's
+    call.** Built-in presets are read-only; Save as creates a named copy;
+    Revert returns to the selected preset's values; a changed value switches
+    the selector to Custom, unchanged.
+
 ## Still open
 
 - The descriptor markers for confirmation and restart: their names, and which
   settings carry them.
-- The preset save interaction beyond the switch to Custom: save as a new
-  preset, overwrite, revert. Louis's application-wide question.
-- The preview contract and the meter's explicit-gesture rule.
+- The legend block (decision 20): its form and where it sits.
+- The floating preview copy (decision 17): its window, its size, its lifetime.
+- Decision 22, once Louis has an opinion on it.
 - Whether a General page also carries tiles to its sibling pages.
 - What clicking a module node does besides expanding (PowerToys only expands).
 - The Home page content, later.

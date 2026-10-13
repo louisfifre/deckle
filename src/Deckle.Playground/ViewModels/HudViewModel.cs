@@ -188,11 +188,14 @@ public partial class HudViewModel : ObservableObject
                     HudTuningSection.ConicFade,
                     HudTuningSection.ArcRotation,
                 },
-            // Countdown views: the gauge reads the shared geometry and its own
-            // tuning; no stroke palette or rotation reaches the preview.
+            // Countdown views: the gauge's own reach rows, then the Recording
+            // rows it shares — fades, hue period, grading (span, mirror and
+            // arc phase in that section do not reach it: the two wedges
+            // follow the pause). Palette and geometry stay tuned under
+            // Recording and Cone.
             HudTarget.UtteranceCountdown or HudTarget.CountdownMaterial
                 or HudTarget.CountdownMasks or HudTarget.MaskedCountdown =>
-                new[] { HudTuningSection.UtteranceCountdown },
+                new[] { HudTuningSection.UtteranceCountdown, HudTuningSection.Recording },
             // ConicClone: CreateConicClonePreview ignores InsetDip and replaces
             // Lightness/Chroma and the hue period/direction with the Clone* fields.
             HudTarget.ConicClone =>

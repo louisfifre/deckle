@@ -2,11 +2,8 @@
 <Page
     x:Class="Deckle.Shell.TaskbarCover.TaskbarCoverPage"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
-
-    <Page.Resources>
-        <x:Double x:Key="SettingsCardSpacing">4</x:Double>
-    </Page.Resources>
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:catalog="using:Deckle.Catalog">
 
     <ScrollViewer Padding="32,24,32,24"
                   VerticalScrollBarVisibility="Auto"
@@ -15,15 +12,12 @@
             <StackPanel MaxWidth="1000"
                         HorizontalAlignment="Stretch"
                         Spacing="{StaticResource SettingsCardSpacing}">
-                <TextBlock x:Uid="TaskbarCoverPage_Title"
-                           Style="{StaticResource TitleTextBlockStyle}"
-                           Margin="0,0,0,8" />
-
-                <TextBlock x:Uid="TaskbarCoverPage_Subtitle"
-                           Style="{StaticResource BodyTextBlockStyle}"
-                           Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                           TextWrapping="Wrap"
-                           Margin="0,0,0,12" />
+                <!-- The shared header block: breadcrumb, one line of description,
+                     Reset all on the trailing edge (active-when-dirty, confirmed
+                     by the block itself). -->
+                <catalog:SettingsPageHeader x:Name="Header"
+                                            x:Uid="TaskbarCoverPageHeader"
+                                            ResetAllRequested="ResetAll_Click" />
 
                 <StackPanel x:Name="SettingsHost"
                             Spacing="{StaticResource SettingsCardSpacing}" />

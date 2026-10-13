@@ -3,15 +3,28 @@ using Deckle.Catalog;
 
 namespace Deckle.Input.Trackpad;
 
-// The declarative half of TrackpadPage's persisted settings. Each entry declares
-// one setting — its kind, its localization key in this module's .resw, its glyph,
-// and typed selectors onto this VM's own properties — and SettingsComposer turns
-// the list into SettingsCards.
+// ── TrackpadViewModel — settings manifest ─────────────────────────────────────
 //
-// Two flat manifests, one per page section — NOT a master-child group: each
-// setting is an independent leaf, so the drag-speed card stays live while the
-// master (Enabled) is off. "Diagnostics" holds the raw-frame recording, which
-// captures with the recognizer off.
+// The declarative half of TrackpadPage's persisted settings, kept beside the
+// ViewModel that owns the values rather than in the page code-behind. Each entry
+// declares one setting — its kind, its localization key (the SAME x:Uid the
+// hand-authored card carried, so the composer resolves the identical Header and
+// Description from this module's .resw), its glyph, and typed selectors onto this
+// VM's own properties — and SettingsComposer turns the list into SettingsCards.
+//
+// Three flat manifests, one per page region — NOT a master-child group. The
+// hand-authored page greyed the drag-speed card while the master (Enabled) was
+// off; the composer drops that coupling by decision, composing each setting as an
+// independent leaf. The master is the module's on/off switch, which sits first on
+// the page, alone, outside any section (settings design system, decision 10), so
+// it has its own list; "Three-finger drag" holds the speed, "Diagnostics" holds
+// the raw-frame recording — always independent of the master (it captures with
+// the recognizer off). Each region is hosted by its own composer so the on-screen
+// order is preserved.
+//
+// Only the persisted settings live here. The Windows-integration acts (neutralize
+// / repair / start elevated) stay hand-authored on the page — they are imperative
+// commands with their own success reporting, not settable values.
 //
 // Every descriptor's default reads the POCO initializer (new TrackpadSettings()
 // .<Field>) — the same literal TrackpadSettingsService persists — so each card
@@ -19,14 +32,19 @@ namespace Deckle.Input.Trackpad;
 // default.
 public partial class TrackpadViewModel
 {
-    public IReadOnlyList<SettingDescriptor> TrackpadDragSettingsManifest =>
+    // The module switch — the master toggle, first on the page and outside any section.
+    public IReadOnlyList<SettingDescriptor> TrackpadEnabledSettingsManifest =>
     [
         Setting.Toggle("TrackpadPage_DragCard",
             () => Enabled,
             value => Enabled = value,
             glyph: Glyphs.Trackpad,
             defaultValue: () => new TrackpadSettings().Enabled),
+    ];
 
+    // "Three-finger drag" section — the drag-speed slider.
+    public IReadOnlyList<SettingDescriptor> TrackpadDragSettingsManifest =>
+    [
         Setting.Magnitude("TrackpadPage_SpeedCard",
             () => DragSpeed,
             value => DragSpeed = value,
@@ -35,6 +53,7 @@ public partial class TrackpadViewModel
             defaultValue: () => new TrackpadSettings().DragSpeed),
     ];
 
+    // "Diagnostics" section — raw-frame recording, independent of the master.
     public IReadOnlyList<SettingDescriptor> TrackpadDiagnosticsSettingsManifest =>
     [
         Setting.Toggle("TrackpadPage_RecordFramesCard",

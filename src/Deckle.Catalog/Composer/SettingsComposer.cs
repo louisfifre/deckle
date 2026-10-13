@@ -274,7 +274,8 @@ public sealed partial class SettingsComposer
         var toggle = new ToggleSwitch { IsOn = AsBool(s.GetValue()) };
         WireToggle(toggle, s);
 
-        (FrameworkElement content, Action? updateReset) = WrapWithReset(card, toggle, s);
+        (FrameworkElement content, Action? updateReset) =
+            WrapWithReset(card, toggle, s, () => DescribeToggleDefault(s));
         card.Content = content;
 
         _refreshers.Add(() =>

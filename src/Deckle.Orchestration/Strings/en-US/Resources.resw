@@ -63,13 +63,13 @@
   <data name="SettingsModuleNavLabel" xml:space="preserve">
     <value>Apps and games</value>
   </data>
-  <data name="OrchestrationPage_Title.Text" xml:space="preserve">
+  <data name="OrchestrationPageHeader.Title" xml:space="preserve">
     <value>Apps and games</value>
   </data>
-  <data name="OrchestrationPage_Subtitle.Text" xml:space="preserve">
+  <data name="OrchestrationPageHeader.Description" xml:space="preserve">
     <value>Add the apps and games Deckle should recognize when they run.</value>
   </data>
-  <data name="OrchestrationPage_Section_Apps.Text" xml:space="preserve">
+  <data name="OrchestrationPageAppsSection.Title" xml:space="preserve">
     <value>Your apps and games</value>
   </data>
   <data name="OrchestrationPage_AddAppButton.Content" xml:space="preserve">

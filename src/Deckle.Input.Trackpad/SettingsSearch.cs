@@ -3,16 +3,24 @@ using Deckle.Catalog;
 
 namespace Deckle.Input.Trackpad;
 
+// ── SettingsSearch ────────────────────────────────────────────────────────────
+//
 // The trackpad page's contribution to the shell's cross-page search index: one
 // SettingSearchEntry per findable card. The composition root registers this list
 // at boot alongside the module's nav descriptor, and the index resolves each
 // entry's text from this module's own PRI subtree without composing the page.
 //
-// The list is DECLARED here, not derived from the manifests: they are instance
-// properties on TrackpadViewModel, and the index must never construct a
-// ViewModel at boot. A card's identity is its bare LabelKey, the string the
-// composer stamps onto the built card's Tag; composed and hand-authored cards
-// alike resolve "/Header" and "/Description" from Resources.resw.
+// The list is DECLARED here, not derived from the page or the manifests, on
+// purpose. The composed cards live as instance properties on TrackpadViewModel
+// (TrackpadEnabledSettingsManifest, TrackpadDragSettingsManifest,
+// TrackpadDiagnosticsSettingsManifest) — reaching
+// them means constructing a ViewModel, which the index must never do at boot. So
+// a card's identity travels as its bare LabelKey, the same string the manifest
+// already carries and the composer stamps onto the built card's Tag. Composed and
+// bespoke cards therefore declare identically: a LabelKey, whose "/Header" and
+// "/Description" resolve from Resources.resw for both — the three Windows-
+// integration cards carry .resw entries under their x:Uid just like the composed
+// ones, so none needs a LiteralLabel.
 //
 // Maintenance contract: one card on the page, one entry here. Add a card (composed
 // or hand-authored) and it stays invisible to search until it gets a line below;
@@ -22,12 +30,14 @@ public static class SettingsSearch
 {
     public static IReadOnlyList<SettingSearchEntry> Entries { get; } =
     [
-        // "Three-finger drag" section — composed cards (TrackpadDragSettingsManifest).
+        // The module switch — composed card (TrackpadEnabledSettingsManifest).
         new SettingSearchEntry
         {
             LabelKey = "TrackpadPage_DragCard",
             Keywords = ["gesture", "magic trackpad", "pickup", "drop"],
         },
+
+        // "Three-finger drag" section — composed card (TrackpadDragSettingsManifest).
         new SettingSearchEntry
         {
             LabelKey = "TrackpadPage_SpeedCard",

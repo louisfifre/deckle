@@ -73,13 +73,13 @@
        (AppsEnrolledPage_*, LexicalDomainsPage_*) further down.
        x:Uid keys follow <Page>_<Element>(.<Property>) — plain TextBlocks bind
        .Text, SettingsCards bind .Header / .Description. -->
-  <data name="AutocorrectPage_Title.Text" xml:space="preserve">
+  <data name="AutocorrectPageHeader.Title" xml:space="preserve">
     <value>Autocorrect</value>
   </data>
   <!-- Says what the feature does, and stops there. Where correction runs belongs
        to the Apps enrolled page, whose own subtitle states it — each surface
        describes what it holds, so the sentence is written once. -->
-  <data name="AutocorrectPage_Subtitle.Text" xml:space="preserve">
+  <data name="AutocorrectPageHeader.Description" xml:space="preserve">
     <value>Restore French accents and fix typos as you type.</value>
   </data>
 
@@ -108,16 +108,16 @@
 
   <!-- Excluded words — the settings mirror of the exclusion register. It sits on
        this page rather than on a child because an exclusion holds against every
-       domain and every app at once. The body states both halves of what an
+       domain and every app at once. The caption states both halves of what an
        exclusion does, because the second half is the surprising one: the word
        stops being a correction target AND stops being protected. Precedence is
        exclusions &gt; domains &gt; base lexicon, so the wording says "whatever it came
        from" rather than naming a source. -->
-  <data name="AutocorrectPage_Section_Exclusions.Text" xml:space="preserve">
+  <data name="AutocorrectPageExclusionsSection.Title" xml:space="preserve">
     <value>Excluded words</value>
   </data>
-  <data name="AutocorrectPage_Exclusions_Body.Text" xml:space="preserve">
-    <value>Stop Deckle treating something as a word. It will no longer correct anything into that word, and no longer leave the word alone when you type it. Use this when a word keeps taking corrections you wanted elsewhere.</value>
+  <data name="AutocorrectPageExclusionsSection.Caption" xml:space="preserve">
+    <value>A word listed here is no longer corrected into, nor left alone when you type it.</value>
   </data>
   <data name="AutocorrectPage_ExcludeCard.Header" xml:space="preserve">
     <value>Exclude a word</value>
@@ -139,17 +139,17 @@
   </data>
 
   <!-- ── Apps enrolled (child page) ───────────────────────────────────────── -->
-  <data name="AppsEnrolledPage_Title.Text" xml:space="preserve">
+  <data name="AppsEnrolledPageHeader.Title" xml:space="preserve">
     <value>Apps enrolled</value>
   </data>
-  <data name="AppsEnrolledPage_Subtitle.Text" xml:space="preserve">
+  <data name="AppsEnrolledPageHeader.Description" xml:space="preserve">
     <value>Autocorrect runs only where you've allowed it. Deckle offers to enable it the first time a correction could help in a new app.</value>
   </data>
-  <data name="AppsEnrolledPage_Section_Apps.Text" xml:space="preserve">
+  <data name="AppsEnrolledPageAppsSection.Title" xml:space="preserve">
     <value>Apps</value>
   </data>
-  <data name="AppsEnrolledPage_Apps_Body.Text" xml:space="preserve">
-    <value>The apps you've answered for. Turn correction on or off for each, or forget an app to be asked again the next time a correction could help there.</value>
+  <data name="AppsEnrolledPageAppsSection.Caption" xml:space="preserve">
+    <value>Turn correction on or off for each app, or forget one to be asked again.</value>
   </data>
   <data name="AppsEnrolledPage_Empty.Text" xml:space="preserve">
     <value>No apps yet. Deckle will offer to turn autocorrect on the first time a correction could help in an app — your choices show up here.</value>
@@ -168,10 +168,10 @@
   <!-- A domain is a field of writing whose vocabulary the corrector can be
        taught; a row inside it is one language of that domain. The word "pack"
        (the code's term for the intersection) never surfaces here. -->
-  <data name="LexicalDomainsPage_Title.Text" xml:space="preserve">
+  <data name="LexicalDomainsPageHeader.Title" xml:space="preserve">
     <value>Lexical domains</value>
   </data>
-  <data name="LexicalDomainsPage_Subtitle.Text" xml:space="preserve">
+  <data name="LexicalDomainsPageHeader.Description" xml:space="preserve">
     <value>Specialized vocabularies that extend correction to the fields you write about. Pick a domain, then enable the languages you write in.</value>
   </data>
 
@@ -209,7 +209,7 @@
        Decisions and text are independent disk-persistence opt-ins.
        Keys are flat SettingsCards composed by the SettingsComposer, so they bind
        .Header / .Description. -->
-  <data name="AutocorrectPageDiagnosticsHeader.Text" xml:space="preserve">
+  <data name="AutocorrectPageDiagnosticsSection.Title" xml:space="preserve">
     <value>Diagnostics</value>
   </data>
   <data name="AutocorrectDecisionsCard.Header" xml:space="preserve">

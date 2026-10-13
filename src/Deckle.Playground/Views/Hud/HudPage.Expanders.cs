@@ -156,6 +156,10 @@ public sealed partial class HudPage
     private void AddRecordingExpander()
     {
         var stack = NewTuningSection("Recording", ResetRecording);
+        if (ViewModel.IsCountdownTarget)
+            stack.Children.Add(TuningHelp(
+                "The countdown reads the fades, the hue period and the grading. " +
+                "Span, mirror and arc phase change nothing there: the two wedges follow the pause."));
         AddFloatRow(stack, "RecordingConicSpanTurns", 0.05, 1, 0.05, _tuning.RecordingConicSpanTurns,
             v => _tuning.RecordingConicSpanTurns = (float)v, rebuild: true);
         AddFloatRow(stack, "RecordingConicLeadFadeTurns", 0, 1, 0.05, _tuning.RecordingConicLeadFadeTurns,

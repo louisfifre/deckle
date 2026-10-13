@@ -1,0 +1,164 @@
+using Microsoft.UI.Xaml;
+using Microsoft.UI.Xaml.Controls;
+using Microsoft.UI.Xaml.Markup;
+using Microsoft.UI.Xaml.Media;
+
+namespace Deckle.Catalog;
+
+// ── SettingsSection ───────────────────────────────────────────────────────────
+//
+// The flat section block of a settings page (settings design system, decision
+// 11): a title, at most one line of caption, then the cards — the PowerToys
+// SettingsGroup form, with the title 32 px under what precedes it and the cards
+// 8 px under the title. No body paragraph: what a section has to say fits its
+// caption, or belongs to a card's description.
+//
+// A section that holds resettable values carries the section-level reset of the
+// doctrine's three (the value, its group, the surface): the same wheel a card
+// shows, revealed on hover at the title's trailing edge, enabled only while a
+// value in the section differs from its default. The page wires it like a
+// card's: it sets IsResetEnabled from its composer's dirtiness and answers
+// ResetRequested. HasReset false (the default) hides the wheel for a section of
+// commands, readouts or lists.
+//
+// Built in code like the page header and the composer's cards, on the Catalog
+// floor every settings-bearing module references. Body is the content property,
+// so a page writes the cards (or a composer's host panel) directly inside the
+// element.
+[ContentProperty(Name = nameof(Body))]
+public sealed partial class SettingsSection : UserControl
+{
+    private readonly TextBlock _title;
+    private readonly TextBlock _caption;
+    private readonly Button _reset;
+    private readonly Border _bodySlot;
+
+    public event RoutedEventHandler? ResetRequested;
+
+    public SettingsSection()
+    {
+        _title = new TextBlock
+        {
+            Style = Application.Current.Resources["BodyStrongTextBlockStyle"] as Style,
+            VerticalAlignment = VerticalAlignment.Bottom,
+            Margin = new Thickness(1, 0, 0, 0),
+        };
+
+        // The reset wheel in the form every card uses: subtle, 32×32, invisible
+        // at rest. The title row is 32 px tall so the wheel adds no height.
+        _reset = new Button
+        {
+            Style = Application.Current.Resources["SubtleButtonStyle"] as Style,
+            Width = 32,
+            Height = 32,
+            Padding = new Thickness(0),
+            VerticalAlignment = VerticalAlignment.Center,
+            Opacity = 0,
+            Visibility = Visibility.Collapsed,
+            IsEnabled = false,
+            Content = new FontIcon { Glyph = Glyphs.Refresh, FontSize = 14 },
+        };
+        ToolTipService.SetToolTip(_reset, Loc.Get("SettingsSection_ResetTooltip"));
+        _reset.Click += (_, e) => ResetRequested?.Invoke(this, e);
+
+        var titleRow = new Grid { MinHeight = 32 };
+        titleRow.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+        titleRow.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+        Grid.SetColumn(_title, 0);
+        Grid.SetColumn(_reset, 1);
+        titleRow.Children.Add(_title);
+        titleRow.Children.Add(_reset);
+
+        _caption = new TextBlock
+        {
+            Style = Application.Current.Resources["CaptionTextBlockStyle"] as Style,
+            Foreground = Application.Current.Resources["TextFillColorSecondaryBrush"] as Brush,
+            TextWrapping = TextWrapping.Wrap,
+            Margin = new Thickness(1, 0, 0, 0),
+            Visibility = Visibility.Collapsed,
+        };
+
+        _bodySlot = new Border { Margin = new Thickness(0, 8, 0, 0) };
+
+        // 28 px above plus the page's 4 px card spacing makes the 32 px gap.
+        var root = new StackPanel { Margin = new Thickness(0, 28, 0, 0) };
+        root.Children.Add(titleRow);
+        root.Children.Add(_caption);
+        root.Children.Add(_bodySlot);
+        Content = root;
+
+        // Reveal on the section's hover and the wheel's keyboard focus, like a
+        // card's reset: either keeps it shown.
+        bool pointerOver = false, focused = false;
+        void Update() => _reset.Opacity = pointerOver || focused ? 1 : 0;
+        PointerEntered += (_, _) => { pointerOver = true; Update(); };
+        PointerExited += (_, _) => { pointerOver = false; Update(); };
+        _reset.GotFocus += (_, _) => { focused = true; Update(); };
+        _reset.LostFocus += (_, _) => { focused = false; Update(); };
+    }
+
+    // ── Properties (dependency properties so x:Uid can set them from .resw) ──
+
+    public static readonly DependencyProperty TitleProperty = DependencyProperty.Register(
+        nameof(Title), typeof(string), typeof(SettingsSection),
+        new PropertyMetadata(string.Empty, (d, e) => ((SettingsSection)d)._title.Text = (string?)e.NewValue ?? string.Empty));
+
+    // The question the section answers, in a few words.
+    public string Title
+    {
+        get => (string)GetValue(TitleProperty);
+        set => SetValue(TitleProperty, value);
+    }
+
+    public static readonly DependencyProperty CaptionProperty = DependencyProperty.Register(
+        nameof(Caption), typeof(string), typeof(SettingsSection),
+        new PropertyMetadata(string.Empty, (d, e) => ((SettingsSection)d).ApplyCaption((string?)e.NewValue)));
+
+    // One line under the title, when the title alone does not say enough. Empty
+    // hides the row.
+    public string Caption
+    {
+        get => (string)GetValue(CaptionProperty);
+        set => SetValue(CaptionProperty, value);
+    }
+
+    public static readonly DependencyProperty BodyProperty = DependencyProperty.Register(
+        nameof(Body), typeof(UIElement), typeof(SettingsSection),
+        new PropertyMetadata(null, (d, e) => ((SettingsSection)d)._bodySlot.Child = (UIElement?)e.NewValue));
+
+    // The cards, or the panel a composer fills with them.
+    public UIElement? Body
+    {
+        get => (UIElement?)GetValue(BodyProperty);
+        set => SetValue(BodyProperty, value);
+    }
+
+    public static readonly DependencyProperty HasResetProperty = DependencyProperty.Register(
+        nameof(HasReset), typeof(bool), typeof(SettingsSection),
+        new PropertyMetadata(false, (d, e) => ((SettingsSection)d)._reset.Visibility =
+            (bool)e.NewValue ? Visibility.Visible : Visibility.Collapsed));
+
+    // True on a section whose values can be reset together.
+    public bool HasReset
+    {
+        get => (bool)GetValue(HasResetProperty);
+        set => SetValue(HasResetProperty, value);
+    }
+
+    public static readonly DependencyProperty IsResetEnabledProperty = DependencyProperty.Register(
+        nameof(IsResetEnabled), typeof(bool), typeof(SettingsSection),
+        new PropertyMetadata(false, (d, e) => ((SettingsSection)d)._reset.IsEnabled = (bool)e.NewValue));
+
+    // Active-when-dirty: the page sets it from its composer's IsDirty().
+    public bool IsResetEnabled
+    {
+        get => (bool)GetValue(IsResetEnabledProperty);
+        set => SetValue(IsResetEnabledProperty, value);
+    }
+
+    private void ApplyCaption(string? text)
+    {
+        _caption.Text = text ?? string.Empty;
+        _caption.Visibility = string.IsNullOrEmpty(text) ? Visibility.Collapsed : Visibility.Visible;
+    }
+}

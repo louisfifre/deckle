@@ -840,6 +840,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   └── StaleWorkProbeCommand.cs
 │   ├── Deckle.Catalog/
 │   │   ├── Composer/
+│   │   │   ├── DefaultValueText.cs
 │   │   │   ├── GestureHold.cs
 │   │   │   ├── HotkeyChordText.cs
 │   │   │   ├── HotkeyKeyNames.cs
@@ -854,7 +855,9 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   ├── SettingsComposer.Folds.cs
 │   │   │   ├── SettingsComposer.Hotkey.cs
 │   │   │   ├── SettingsComposer.Inputs.cs
-│   │   │   └── SettingsComposer.Numeric.cs
+│   │   │   ├── SettingsComposer.Numeric.cs
+│   │   │   ├── SettingsPageHeader.cs
+│   │   │   └── SettingsSection.cs
 │   │   ├── Hotkeys/
 │   │   │   ├── HotkeyChord.cs
 │   │   │   └── HotkeyModifiers.cs
@@ -1480,7 +1483,9 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   └── SettingsModuleRegistry.cs
 │   │   ├── Pages/
 │   │   │   ├── GeneralPage.xaml
-│   │   │   └── GeneralPage.xaml.cs
+│   │   │   ├── GeneralPage.xaml.cs
+│   │   │   ├── HomePage.xaml
+│   │   │   └── HomePage.xaml.cs
 │   │   ├── Persistence/
 │   │   │   ├── AppSettings.cs
 │   │   │   ├── SettingsBackupService.cs
@@ -1929,6 +1934,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   └── WordBoundariesTests.cs
 │   ├── Deckle.Catalog.Tests/
 │   │   ├── Deckle.Catalog.Tests.csproj
+│   │   ├── DefaultValueTextTests.cs
 │   │   ├── GestureHoldTests.cs
 │   │   ├── HotkeyChordTests.cs
 │   │   ├── HotkeyChordTextTests.cs
@@ -1987,6 +1993,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── TranscriptHistoryTests.cs
 │   │   ├── TranscriptPanelBugNotes.md
 │   │   ├── TranscriptPanelLayoutTests.cs
+│   │   ├── UtteranceCountdownBugNotes.md
 │   │   ├── UtteranceCountdownGeometryTests.cs
 │   │   └── UtteranceCountdownStateTests.cs
 │   ├── Deckle.Input.PrecisionScroll.Tests/

@@ -62,16 +62,6 @@
   <!-- Nav label — module-owned. The Settings shell reads this bare key straight
        into the module's NavigationViewItem.Content (SettingsModuleDescriptor.LabelKey). -->
 
-  <!-- Shared section-reset link. Copied here (each WinUI assembly resolves x:Uid
-       against its own PRI subtree); the same key also lives in the Settings shell
-       for the pages that stayed there. -->
-  <data name="Settings_SectionResetLink.Content" xml:space="preserve">
-    <value>Reset</value>
-  </data>
-  <data name="Settings_SectionResetLink.ToolTipService.ToolTip" xml:space="preserve">
-    <value>Reset this section to defaults</value>
-  </data>
-
   <!-- Shared folder-picker Open button. Copied here for the same reason; the key
        also lives in the Settings shell for the two FolderPicker UserControls. -->
   <data name="FolderPickerCard_OpenButton.Content" xml:space="preserve">
@@ -79,21 +69,15 @@
   </data>
 
   <!-- DiagnosticsPage — page chrome (x:Uid) -->
-  <data name="DiagnosticsPageTitleLabel.Text" xml:space="preserve">
+  <data name="DiagnosticsPageHeader.Title" xml:space="preserve">
     <value>Diagnostics</value>
   </data>
-  <data name="DiagnosticsPageSubtitleLabel.Text" xml:space="preserve">
+  <data name="DiagnosticsPageHeader.Description" xml:space="preserve">
     <value>Choose which operational details Deckle admits, whether to keep an application log, and where purpose-specific telemetry datasets are stored.</value>
-  </data>
-  <data name="DiagnosticsPage_ResetAll.ToolTipService.ToolTip" xml:space="preserve">
-    <value>Reset this page to defaults</value>
-  </data>
-  <data name="DiagnosticsPageResetAllLabel.Text" xml:space="preserve">
-    <value>Reset all</value>
   </data>
 
   <!-- Logging section (x:Uid header + composed card label key) -->
-  <data name="DiagnosticsPageLoggingHeaderLabel.Text" xml:space="preserve">
+  <data name="DiagnosticsPageLoggingSection.Title" xml:space="preserve">
     <value>Logging details</value>
   </data>
   <data name="LoggingAmbientCard.Header" xml:space="preserve">
@@ -124,16 +108,16 @@
     <value>Admit Raw Input summaries and Trackpad gesture details. Device presence, lifecycle events, incidents, warnings, errors, and recoveries remain available.</value>
   </data>
   <data name="LoggingWindowingCard.Description" xml:space="preserve">
-    <value>Verbose lines from window placement across every Deckle window — positioning and DPI, overlay stacking, popup anchoring, z-order checks, resize frames, and first-open construction timings. Off by default; this provider emits nothing else, so leaving it off keeps these windows silent in the log.</value>
+    <value>Verbose lines from window placement across every Deckle window — positioning and DPI, overlay stacking, popup anchoring, z-order checks, resize frames, and first-open construction timings. This provider emits nothing else, so leaving it off keeps these windows silent in the log.</value>
   </data>
 
   <!-- Telemetry section (x:Uid header + composed card label keys). The General*
        prefix on the card keys is a historical naming artifact carried over from
        the shell, not a page binding. -->
-  <data name="DiagnosticsPageTelemetryHeaderLabel.Text" xml:space="preserve">
+  <data name="DiagnosticsPageTelemetrySection.Title" xml:space="preserve">
     <value>Telemetry</value>
   </data>
-  <data name="DiagnosticsPageApplicationLogHeaderLabel.Text" xml:space="preserve">
+  <data name="DiagnosticsPageApplicationLogSection.Title" xml:space="preserve">
     <value>Application log</value>
   </data>
   <data name="GeneralAppLogCard.Header" xml:space="preserve">
@@ -156,7 +140,7 @@
   </data>
 
   <!-- Diagnostic files section (x:Uid) -->
-  <data name="DiagnosticsPageFilesHeaderLabel.Text" xml:space="preserve">
+  <data name="DiagnosticsPageFilesSection.Title" xml:space="preserve">
     <value>Diagnostic files</value>
   </data>
   <data name="DiagnosticsFilesCard.Header" xml:space="preserve">

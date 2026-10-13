@@ -128,11 +128,44 @@
   <data name="Common_Reset" xml:space="preserve">
     <value>Reset</value>
   </data>
-  <!-- Tooltip on the composer's per-card / per-group reset wheel. Composer-owned
-       and module-agnostic: resolved from this root map by SettingsComposer, so
-       every composed page across every module shares this one string. -->
+  <!-- Tooltips on the composer's reset wheels. Composer-owned and module-agnostic:
+       resolved from this root map by SettingsComposer, so every composed page
+       across every module shares them. A card's reset names the default it
+       restores ("Reset to 0.50"), since the description no longer states it; a
+       fold's reset, which restores several values, keeps the generic form. -->
   <data name="SettingsComposer_ResetToDefault" xml:space="preserve">
     <value>Reset to default</value>
+  </data>
+  <data name="SettingsComposer_ResetTo" xml:space="preserve">
+    <value>Reset to {0}</value>
+  </data>
+  <!-- The two states of a toggle as the switch itself prints them, for its
+       reset tooltip ("Reset to On"). -->
+  <data name="SettingsComposer_ValueOn" xml:space="preserve">
+    <value>On</value>
+  </data>
+  <data name="SettingsComposer_ValueOff" xml:space="preserve">
+    <value>Off</value>
+  </data>
+  <!-- The page header block (SettingsPageHeader, Catalog): the Reset all
+       command every page carries, its tooltip and its generic confirmation.
+       Composer-owned and module-agnostic, resolved from this root map. -->
+  <data name="SettingsPageHeader_ResetAll" xml:space="preserve">
+    <value>Reset all</value>
+  </data>
+  <data name="SettingsPageHeader_ResetAllTooltip" xml:space="preserve">
+    <value>Reset this page to defaults</value>
+  </data>
+  <data name="SettingsPageHeader_ResetAllDialogTitle" xml:space="preserve">
+    <value>Reset this page?</value>
+  </data>
+  <data name="SettingsPageHeader_ResetAllDialogBody" xml:space="preserve">
+    <value>Every setting on this page goes back to its default value.</value>
+  </data>
+  <!-- The section block (SettingsSection, Catalog): the tooltip of its reset
+       wheel. Same ownership as the page header's strings. -->
+  <data name="SettingsSection_ResetTooltip" xml:space="preserve">
+    <value>Reset this section to defaults</value>
   </data>
   <!-- The composer's Hotkey kind: the four modifier toggle buttons, the key
        capture button (its listening and unbound states), the Clear button and
