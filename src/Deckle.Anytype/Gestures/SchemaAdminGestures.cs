@@ -313,10 +313,8 @@ public sealed partial class SchemaAdminGestures(AnytypeApiClient api, AnytypeSpa
             : "Schéma appliqué :\n" + string.Join("\n", applied.Select(a => "- " + a));
     }
 
-    // Live built-in collection objects, read only when the manifest declares
-    // sections. The exhaustive empty-query listing (ObjectListing pages the
-    // search to the end); the type filter keeps collection-LAYOUT domain types
-    // (floor…) out, and the type-key check below re-asserts it on each hit.
+    // The type filter keeps collection-LAYOUT domain types (floor…) out, and
+    // the type-key check below re-asserts it on each hit.
     private async Task<IReadOnlyList<SchemaCollectionObjectInfo>> ReadSectionCollectionsAsync(
         string spaceId, SchemaManifest manifest, CancellationToken ct)
     {

@@ -63,9 +63,8 @@ public sealed class McpHttpHost : IAsyncDisposable
 
     public string BaseUrl => $"http://127.0.0.1:{_port}{EndpointPath}";
 
-    // Keep the app composition contract synchronous for now. Kestrel is fully
-    // started before true is returned, so external clients never observe a URL
-    // that Deckle has announced but not yet bound.
+    // Kestrel is fully started before true is returned, so external clients
+    // never observe a URL that Deckle has announced but not yet bound.
     public bool Start()
     {
         lock (_stateGate)

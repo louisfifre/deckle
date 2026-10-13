@@ -4,18 +4,11 @@ using Deckle.Install;
 
 namespace Deckle.Anytype;
 
-// ── BackendInstallation ──────────────────────────────────────────────────────
-//
 // Where the headless anytype-cli lives on this machine, the pinned bundle the
 // wizard downloads, and the serve spec that runs it. This is the concrete half
 // of the BackendProcessSpec seam: everything downstream — the supervisor's
 // spawn, the wizard's predicates and install step — asks this class rather
 // than re-deriving paths or the pin.
-//
-// The location follows the executable/data split but is intentionally not
-// nested in Deckle's replaceable payload: providers live under the shared
-// per-user Programs provider root, while data and credentials remain under
-// %LOCALAPPDATA%\Deckle (or its configured data root).
 public static class BackendInstallation
 {
     // Provider executables deliberately live beside, not inside, the replaceable
@@ -25,9 +18,9 @@ public static class BackendInstallation
 
     public static string InstallDirectory { get; } = Path.Combine(ProvidersDirectory, "Anytype");
 
-    // Transitional path used by releases up to 0.31.10. Updates preserve this
-    // directory only while its executable is still running; reconciliation may
-    // adopt that PID, while every new spawn resolves the activated external copy.
+    // The legacy in-payload provider path. Updates preserve this directory only
+    // while its executable is still running; reconciliation may adopt that PID,
+    // while every new spawn resolves the activated external copy.
     public static string LegacyInstallDirectory { get; } = InstallPaths.LegacyAnytypeProviderDir;
 
     private static BackendProviderStore Store { get; } =
@@ -51,9 +44,7 @@ public static class BackendInstallation
     // account and API key are a separate, interactive provisioning act.
     //
     // 0.4.0's official Windows asset links msvcrt and dies with 0xC0000374 at
-    // account open, so a fresh provisioning would install a binary known to
-    // die. The pin stays until the install path for a self-built provider is
-    // decided.
+    // account open, so a fresh provisioning installs a binary known to die.
     public static BackendBundle CurrentBundle { get; } = new(
         Version:     "0.4.0",
         Url:         "https://github.com/anyproto/anytype-cli/releases/download/v0.4.0/anytype-cli-v0.4.0-windows-amd64.zip",
@@ -61,16 +52,13 @@ public static class BackendInstallation
         SizeBytes:   49_686_030L,
         DisplayName: "Anytype backend (anytype-cli)");
 
-    // The provisioning predicate: is the pinned version installed and activated?
     // False means the module stays dormant — never a boot failure — and the
-    // wizard downloads the pin. An older active version does not count.
+    // wizard downloads the pin.
     public static bool IsInstalled() => Store.IsInstalled(CurrentBundle.Version);
 
-    // Extracts a downloaded (and already checksum-verified) bundle zip into the
-    // install folder. The asset's internal layout is not contractual, so when
-    // the exe lands one folder down, its folder's contents are lifted to the
-    // root — ExecutablePath is the contract, not the zip shape. Returns true
-    // when the exe is in place at the end.
+    // The zip must already be checksum-verified. Its internal layout is not
+    // contractual: the folder holding the exe is what gets installed, wherever
+    // it sits in the archive.
     public static Task<bool> InstallFromZipAsync(string zipPath, CancellationToken ct) =>
         Store.InstallFromZipAsync(zipPath, CurrentBundle.Version, ct);
 
@@ -104,10 +92,9 @@ public static class BackendInstallation
         }
     }
 
-    // The serve invocation the supervisor spawns. --no-update-check because
-    // the version pin is Deckle's (known-good + signal newer, never
-    // auto-update); the CLI must not self-nag or self-move. No embedded
-    // paths, so no quoting concerns in the arguments.
+    // The serve arguments carry --no-update-check because the version pin is
+    // Deckle's (known-good, never auto-update); the CLI must not self-nag or
+    // self-move.
     public static BackendProcessSpec? ServeSpec() => Store.ResolveActiveSpec();
 
     internal static IBackendProviderCatalog ProviderCatalog => Store;

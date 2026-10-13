@@ -4,8 +4,8 @@ using Deckle.Anytype;
 namespace Deckle.Anytype.Mcp;
 
 // Small cross-space Anytype mutations that are useful to several bounded MCPs.
-// They stay outside SchemaAdminToolCatalog so future installer selection can
-// mount them independently from schema provisioning.
+// They stay outside SchemaAdminToolCatalog so they can be mounted independently
+// from schema provisioning.
 public static class AnytypeUtilityToolCatalog
 {
     public static IReadOnlyList<ToolDescriptor> Build(

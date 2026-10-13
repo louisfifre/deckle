@@ -5,11 +5,6 @@ using Xunit;
 
 namespace Deckle.Anytype.Mcp.Tests;
 
-// Unit tests for ToolCatalog.Build. The gestures wrap a real AnytypeApiClient
-// built from dummy credentials, but Build only constructs descriptors (the
-// handlers are lazy lambdas) so no HTTP call is ever made here. These pin the
-// advertised surface: exactly the 17 base named tools, each with a well-formed
-// object input schema that forbids extra properties.
 [Trait("Category", "unit")]
 public class ToolCatalogTests
 {
@@ -22,9 +17,8 @@ public class ToolCatalogTests
 
     static IReadOnlyList<ToolDescriptor> BuildCatalog()
     {
-        // Dummy credentials: the client constructor only sets up HttpClient state
-        // (base address + headers); it makes no request. ToolCatalog.Build does no
-        // I/O either, so the catalog materializes without touching the network.
+        // Dummy credentials suffice: the client constructor makes no request and
+        // Build only constructs descriptors whose handlers are lazy lambdas.
         var credentials = new AnytypeCredentials(
             "http://localhost:31009", "2025-11-08", "dummy-key", "dummy-space");
         var client = new AnytypeApiClient(credentials);
@@ -78,7 +72,7 @@ public class ToolCatalogTests
     public void BuildDoesNotExposeAnyDestructiveTool()
     {
         // delete lives only in the supervised ManagementToolCatalog; the base
-        // surface must never carry it. task_done was folded into complete.
+        // surface must never carry it. complete covers task_done.
         var names = BuildCatalog().Select(t => t.Name).ToArray();
 
         Assert.DoesNotContain("delete", names);
@@ -103,7 +97,6 @@ public class ToolCatalogTests
         {
             JsonObject schema = tool.InputSchema;
             Assert.Equal("object", schema["type"]!.GetValue<string>());
-            // additionalProperties:false is the guard against unadvertised args.
             Assert.False(schema["additionalProperties"]!.GetValue<bool>(),
                 $"Tool '{tool.Name}' schema must forbid additional properties.");
         }

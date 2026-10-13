@@ -74,17 +74,13 @@ public sealed class NameResolver(AnytypeApiClient api)
 {
     readonly AnytypeApiClient _api = api;
 
-    // Resolves a selector (name or id) to an object id, restricting the search
-    // to typeKeys when given (null → any type). Exact case-insensitive name
-    // match wins; a single fuzzy hit is taken; several throw AmbiguousName; none
-    // throws NotFound.
     public async Task<string> ResolveAsync(
         string selector, IReadOnlyList<string>? typeKeys, CancellationToken ct = default)
         => await ResolveAsync(_api.SpaceId, selector, typeKeys, ct).ConfigureAwait(false);
 
-    // Cross-space utilities resolve inside an allow-listed space alias while the
-    // legacy project-management gestures keep using the credentials' default
-    // space through the overload above.
+    // Cross-space utilities resolve inside an allow-listed space alias; the
+    // project-management gestures use the credentials' default space through
+    // the overload above.
     public async Task<string> ResolveAsync(
         string spaceId,
         string selector,

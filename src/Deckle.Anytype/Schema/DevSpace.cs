@@ -13,13 +13,10 @@ public readonly record struct TagOption(string Key, string Name);
 // Options is non-null only for select / multi_select.
 public sealed record PropertyDef(string Key, string Label, string Format, TagOption[]? Options = null);
 
-// ─── DevSpace — frozen schema map ────────────────────────────────────────────
-//
-// Freezes the live structure of Louis's project-management space (« Dev »),
+// Freezes the live structure of the project-management space (« Dev »),
 // discovered against the running Anytype REST API. This file is the single
 // source of truth for every type key, property key and tag-option key the
-// gestures send over the wire. Everything here is measured fact, not
-// interpretation — indicative mood, no conditional.
+// gestures send over the wire.
 //
 // The keys are transcribed VERBATIM, including the malformed ones the space
 // actually carries. Three traps are real, not typos to fix here — fixing them
@@ -51,9 +48,8 @@ public static class DevSpace
     //
     // The REST API does NOT apply a type's default template on creation: POST
     // /objects builds a bare object unless the body carries `template_id`, which
-    // copies the template's block/view structure. Measured live 2026-08-11 on the
-    // Dev space: epic, project and task carry a template (idee and rapport have
-    // none), so their creations pass the corresponding id.
+    // copies the template's block/view structure. Epic, project and task carry a
+    // template (idee and rapport have none), so their creations pass its id.
     public static class Templates
     {
         public const string Epic    = "bafyreiebxtbakbgodx2demmj4ukohifxxguowaiiofrn7uvibxy24tx76m";
@@ -63,7 +59,7 @@ public static class DevSpace
 
     // ── Type keys ────────────────────────────────────────────────────────────
     //
-    // Layout in parentheses is the Anytype object layout backing the type.
+    // A trailing `layout:` note names the Anytype object layout backing the type.
     // The « session » type exists in the space but is dormant and unused — it
     // is deliberately absent here so nothing references it.
     public static class Types
@@ -79,16 +75,14 @@ public static class DevSpace
 
     // ── Property keys (flat — properties are space-global) ────────────────────
     //
-    // Display name → key. Format of each property is stated in PropertyDef
-    // tables below; gestures build payloads off these keys, never off names.
+    // Gestures build payloads off these keys, never off display names.
     public static class Props
     {
         public const string Etat              = "etat";                     // select
         public const string Priorite          = "67c6d714341c1628147d7b1d"; // select — OPAQUE id
         // « tag » is Anytype's auto-transversal multi_select: it re-attaches itself
         // to every object and resists deletion. It is deliberately NOT mapped onto
-        // any type table below — unused, left out of every digest — so the key only
-        // survives here to document the residue.
+        // any type table below, so it stays out of every digest.
         public const string Tag               = "tag";                      // multi_select — auto-transversal, unmapped
         public const string Archive           = "archive";                  // checkbox
         public const string Description       = "description";              // text
@@ -96,33 +90,27 @@ public static class DevSpace
         public const string Version           = "version";                  // text
         public const string DueDate           = "due_date";                 // date
 
-        // Built-in action-layout completion checkbox. Measured live 2026-06-12 on
-        // tasks, then adopted for project chantiers when Project moved to the
-        // action layout on 2026-07-27: completion carries `done [checkbox] = True`.
+        // Built-in action-layout completion checkbox; task and project both use
+        // the action layout.
         public const string Done              = "done";                     // checkbox
 
-        // Budget / charge — on epic and project.
         public const string BudgetEstime      = "budget_estime";          // number
         public const string BudgetReel        = "budget_reel_(";          // number — TRUNCATED key, real
         public const string ChargeEstimee     = "charge_estimee";         // number
         public const string ChargeReelle      = "charge_estimee_(jours)"; // number — MISLEADING key, real
 
-        // Project-only.
         public const string PhaseProjet       = "phase_projet"; // select
         public const string DependDe          = "depend_de";    // objects
 
-        // Task-only.
         public const string RelationProjet    = "relation_projet";   // objects (Projet(s) lié(s))
         public const string ContactLie        = "contact_lie";       // objects
         public const string FichiersLies      = "fichier(s)_lie(s)"; // files
         public const string TypeDeTache       = "type_de_tache";     // select
         public const string Livrables         = "livrable(s)";       // multi_select
 
-        // Rapport-only.
         public const string DateDuJournal     = "date_du_journal";    // date
         public const string TachesLiees       = "tache(s)_liee(s)";   // objects — Tâche(s) liée(s), MALFORMED key
 
-        // Document-only.
         public const string TypeDeDocument    = "type_de_document"; // select
         public const string DocumentSysteme   = "document_systeme"; // checkbox
     }
@@ -148,9 +136,7 @@ public static class DevSpace
 
     // ── Priorité (select on Props.Priorite) ──────────────────────────────────
     //
-    // Levels 0 and 4 carry opaque ids; 1,2,3,5 are bare integer strings. Name
-    // here is the integer-as-string label the space shows. Array position IS
-    // the priority level (0..5).
+    // Array position IS the priority level (0..5).
     public static class Priority
     {
         public static readonly TagOption[] All =
@@ -163,8 +149,8 @@ public static class DevSpace
             new("5", "5"),
         ];
 
-        // Level (0-5) → wire key. Out-of-range throws: a caller asking for a
-        // priority the space does not define is a programming error, not data.
+        // Out-of-range throws: a caller asking for a priority the space does not
+        // define is a programming error, not data.
         public static string KeyFor(int level)
         {
             if (level < 0 || level >= All.Length)
@@ -173,7 +159,6 @@ public static class DevSpace
             return All[level].Key;
         }
 
-        // Wire key → level (0-5), or null if the key is unknown.
         public static int? LevelFor(string key)
         {
             for (int i = 0; i < All.Length; i++)
@@ -182,9 +167,8 @@ public static class DevSpace
             return null;
         }
 
-        // Resolve a user string to the wire key, accepting: a wire key, the
-        // integer-string label (« 0 ».. « 5 »), or the bare level digit (which
-        // also catches « 03 » / surrounding spaces). Null when nothing matches.
+        // Accepts a wire key, the integer-string label (« 0 ».. « 5 »), or the
+        // bare level digit (which also catches « 03 » / surrounding spaces).
         public static string? Resolve(string nameOrKey)
         {
             string? direct = ResolveOption(All, nameOrKey);
@@ -261,8 +245,7 @@ public static class DevSpace
 
     // ── Per-type property tables ──────────────────────────────────────────────
     //
-    // The mapped properties each type carries, in digest order. The derived
-    // lookups below read these tables so there is a single data source.
+    // Row order is digest order.
     static readonly PropertyDef[] EpicProps =
     [
         new(Props.Etat, "État", "select", Etat.All),
@@ -340,7 +323,6 @@ public static class DevSpace
 
     static readonly PropertyDef[] NoProps = [];
 
-    // The type's mapped properties in digest order, or empty for an unknown type.
     public static IReadOnlyList<PropertyDef> PropertiesFor(string typeKey) => typeKey switch
     {
         Types.Epic     => EpicProps,
@@ -353,8 +335,6 @@ public static class DevSpace
         _              => NoProps,
     };
 
-    // Resolves a property name-or-key on a given type to its wire key + format.
-    // Key match is exact; name match is case-insensitive against the label.
     public static bool TryResolveProperty(string typeKey, string nameOrKey, out string key, out string format)
     {
         foreach (PropertyDef def in PropertiesFor(typeKey))
@@ -373,7 +353,6 @@ public static class DevSpace
         return false;
     }
 
-    // Display label of a property key across every type, or null if unknown.
     public static string? PropertyLabel(string key)
     {
         foreach (PropertyDef def in AllProps())
@@ -382,7 +361,6 @@ public static class DevSpace
         return null;
     }
 
-    // Display name of a tag key across every vocabulary, or null if unknown.
     public static string? TagName(string tagKey)
     {
         foreach (PropertyDef def in AllProps())
@@ -394,22 +372,12 @@ public static class DevSpace
         return null;
     }
 
-    // Resolve a tag value (key or display name) against a property's FROZEN
-    // vocabulary. PUBLIC: gestures call this when building select/multi_select
-    // payloads for a property whose options are pinned in this map.
+    // A miss throws ArgumentException listing the valid options — that error
+    // text is the model-facing affordance, not a failure to hide.
     //
-    // Returns the wire key on a match. Throws ArgumentException listing the valid
-    // options on a miss — that error text is the model-facing affordance, not a
-    // failure to hide.
-    //
-    // Calling this on a property with NO frozen vocabulary (e.g. « tag », a free
-    // multi_select the space manages) is a programming error: such properties have
-    // no enumerable options here, so their values must be resolved against the
-    // live space, not this map. The gesture checks HasFrozenVocabulary first and
-    // routes free-vocabulary properties to the live resolver; reaching this method
-    // for one would silently let an unknown option through, the very hole the
-    // owner forbids. So it throws InvalidOperationException rather than passing the
-    // value on.
+    // A property with NO frozen vocabulary (e.g. « tag ») is a programming
+    // error here: passing its value on would let an unknown option reach the
+    // wire. Gestures route those through HasFrozenVocabulary to LiveTagResolver.
     public static string ResolveTag(string propKey, string nameOrKey)
     {
         TagOption[]? options = OptionsForProperty(propKey);
@@ -427,10 +395,6 @@ public static class DevSpace
             nameof(nameOrKey));
     }
 
-    // Whether the property carries a frozen vocabulary in this map. False for a
-    // free select/multi_select the space manages live (e.g. « tag »): the gesture
-    // resolves those against the live space instead of ResolveTag. This is the
-    // fork that keeps an unknown free-vocabulary option from ever reaching the wire.
     public static bool HasFrozenVocabulary(string propKey) =>
         OptionsForProperty(propKey) is not null;
 
@@ -448,8 +412,6 @@ public static class DevSpace
                     yield return def;
     }
 
-    // The vocabulary backing a select/multi_select property key, or null when the
-    // property is not a known-vocabulary select.
     static TagOption[]? OptionsForProperty(string propKey)
     {
         foreach (PropertyDef def in AllProps())
@@ -458,7 +420,6 @@ public static class DevSpace
         return null;
     }
 
-    // Name-or-key matcher for a vocabulary (key exact, name case-insensitive).
     static string? ResolveOption(TagOption[] options, string nameOrKey)
     {
         if (string.IsNullOrWhiteSpace(nameOrKey)) return null;

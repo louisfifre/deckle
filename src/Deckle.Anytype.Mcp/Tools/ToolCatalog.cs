@@ -4,9 +4,7 @@ using Deckle.Anytype;
 
 namespace Deckle.Anytype.Mcp;
 
-// ─── Tool catalog ─────────────────────────────────────────────────────────────
-//
-// Builds the 17 base MCP tools over the gesture classes. Each descriptor pairs a
+// Builds the base MCP tools over the gesture classes. Each descriptor pairs a
 // JSON Schema (2020-12, additionalProperties:false) with a handler that reads and
 // type-checks the arguments before invoking the gesture.
 //
@@ -253,10 +251,6 @@ public static class ToolCatalog
     }
 
     // ── Schema construction ───────────────────────────────────────────────────
-    //
-    // Each Build entry declares its required/optional properties; Schema folds them
-    // into the 2020-12 object schema the host advertises (additionalProperties:false,
-    // required listing only the mandatory ones). No-arg tools never reach here.
 
     static JsonObject Schema(IReadOnlyList<(string Name, JsonObject Schema)>? required = null,
                              IReadOnlyList<(string Name, JsonObject Schema)>? optional = null)
@@ -323,10 +317,6 @@ public static class ToolCatalog
         (name, new JsonObject { ["type"] = "object", ["description"] = description });
 
     // ── Argument reading ──────────────────────────────────────────────────────
-    //
-    // Read-and-check accessors over the raw arguments object. Each throws
-    // ArgumentException naming the argument when it is missing (required forms) or
-    // mistyped — the host renders that as the model-facing isError text.
 
     static string Str(JsonObject? args, string name)
     {
@@ -400,15 +390,12 @@ public static class ToolCatalog
         return (JsonObject)obj.DeepClone();
     }
 
-    // Optional twin of Obj: returns null when the argument is absent instead of
-    // throwing, so a tool can carry an object arg that the caller may omit.
     static JsonObject? ObjOpt(JsonObject? args, string name)
     {
         if (args is null || !args.TryGetPropertyValue(name, out var node) || node is null)
             return null;
         if (node is not JsonObject obj)
             throw new ArgumentException($"Argument '{name}' must be an object.", name);
-        // Detach from the parent document so the gesture owns a free-standing node.
         return (JsonObject)obj.DeepClone();
     }
 }

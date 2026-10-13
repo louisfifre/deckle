@@ -10,10 +10,6 @@ namespace Deckle.Anytype;
 // to it, and link further tasks to the open report. Anchoring is done from the
 // report side — the rapport carries journal date + the linked task(s) in its
 // « Tâche(s) liée(s) » property; its project is derived through those tasks.
-//
-// All schema keys go through Deckle.Anytype.DevSpace — the single source
-// of truth for the wire keys, including the trap keys (the malformed
-// « tache(s)_liee(s) », the opaque Priorité id).
 public sealed class SessionGestures(AnytypeApiClient api, NameResolver resolver)
 {
     readonly AnytypeApiClient _api = api;
@@ -28,14 +24,10 @@ public sealed class SessionGestures(AnytypeApiClient api, NameResolver resolver)
         string taskId = await _resolver.ResolveAsync(task, new[] { DevSpace.Types.Task }, ct);
         JsonObject taskObj = await _api.GetObjectAsync(taskId, ct);
 
-        // Body first line is the title (note layout has no name). Keep it terse —
-        // the journal date is its own line so the digest reads it back cheaply.
+        // Body first line is the title (note layout has no name).
         string today = Today();
         string body = $"# Journal {today}";
 
-        // The link lives on the report side: the rapport carries the anchor task in
-        // « Tâche(s) liée(s) » (it can link several), and its project is derived
-        // through those tasks — the report itself has no project property.
         var reportPayload = new JsonObject
         {
             ["type_key"] = DevSpace.Types.Rapport,
@@ -72,15 +64,12 @@ public sealed class SessionGestures(AnytypeApiClient api, NameResolver resolver)
         JsonObject report = await _api.GetObjectAsync(reportId, ct);
         string current = report["markdown"]?.GetValue<string>() ?? "";
 
-        // Body markdown PATCH is a full replacement at the API level — append
-        // locally then write the whole document back.
-        //
         // Anytype consumes the creation body's first line as the note's title:
         // right after session_start the report's markdown reads back EMPTY (the
-        // « # Journal … » heading is not in it — measured live 2026-08-10). A
-        // first entry written alone would become the note's first line, hence
-        // its display name. Re-seed the heading so the title survives the
-        // first append and later entries stay sibling bullets under it.
+        // « # Journal … » heading is not in it). A first entry written alone
+        // would become the note's first line, hence its display name. Re-seed
+        // the heading so the title survives the first append and later entries
+        // stay sibling bullets under it.
         string entry = $"- {line.Trim()}";
         string updated = current.Length == 0
             ? $"# Journal {JournalDate(report)}\n{entry}"
@@ -112,9 +101,8 @@ public sealed class SessionGestures(AnytypeApiClient api, NameResolver resolver)
 
     // ── anchoring ────────────────────────────────────────────────────────────
 
-    // Appends taskId to the report's « Tâche(s) liée(s) ». The objects array is
-    // replaced wholesale by the PATCH, so read the report's current ids first;
-    // idempotent when the task is already linked.
+    // The PATCH replaces the objects array wholesale, so the report's current
+    // ids are read first.
     async Task AppendTaskToReportAsync(string reportId, string taskId, CancellationToken ct)
     {
         using var _ = await _api.AcquireWriteScopeAsync("session_touch", reportId, ct);
@@ -133,8 +121,6 @@ public sealed class SessionGestures(AnytypeApiClient api, NameResolver resolver)
 
     // ── digest ───────────────────────────────────────────────────────────────
 
-    // Task header + body checklist + the last 3 linked reports (journal date +
-    // full body — reports are 3-5 lines). Terse, French, no banner lines.
     async Task<string> BuildStartDigestAsync(JsonObject taskObj, CancellationToken ct)
     {
         var sb = new StringBuilder();
@@ -159,9 +145,7 @@ public sealed class SessionGestures(AnytypeApiClient api, NameResolver resolver)
             sb.Append(checklist);
         }
 
-        // Reports of this task: the link lives on the report side now, so query
-        // reports and keep those whose « Tâche(s) liée(s) » contains this task id,
-        // then fetch each for its full body (search hits carry no markdown).
+        // Search hits carry no markdown, so each report is fetched for its body.
         string taskId = taskObj["id"]?.GetValue<string>() ?? "";
         foreach (JsonObject hit in (await ReportsForTaskAsync(taskId, ct)).Take(3))
         {
@@ -176,9 +160,6 @@ public sealed class SessionGestures(AnytypeApiClient api, NameResolver resolver)
         return sb.ToString();
     }
 
-    // Reports linking this task, most-recent journal date first. The link lives on
-    // the report side (« Tâche(s) liée(s) »); every report is read (ObjectListing
-    // pages the search to the end) and filtered client-side, as ProjectGestures does.
     async Task<List<JsonObject>> ReportsForTaskAsync(string taskId, CancellationToken ct)
     {
         if (taskId.Length == 0) return [];
@@ -290,9 +271,7 @@ public sealed class SessionGestures(AnytypeApiClient api, NameResolver resolver)
 
     // ── misc ─────────────────────────────────────────────────────────────────
 
-    // The heading date for a re-seeded journal title: the report's own
-    // « Date du journal » (the API may return it with a time suffix), falling
-    // back to today only when the property is absent.
+    // The API may return « Date du journal » with a time suffix.
     static string JournalDate(JsonObject report)
     {
         string? iso = ReadDate(report, DevSpace.Props.DateDuJournal);

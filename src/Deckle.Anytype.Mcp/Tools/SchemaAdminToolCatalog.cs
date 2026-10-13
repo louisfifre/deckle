@@ -127,8 +127,6 @@ public static class SchemaAdminToolCatalog
         ["additionalProperties"] = false,
     };
 
-    // A section is a pinned sidebar folder: one collection object (built-in
-    // type key "collection") whose members are the section's TYPE objects.
     static JsonObject SectionSpecSchema() => new()
     {
         ["type"] = "object",

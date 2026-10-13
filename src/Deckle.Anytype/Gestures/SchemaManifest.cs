@@ -70,8 +70,8 @@ internal sealed record SchemaManifest(
 // manifest names the collection and lists the member type keys; actual sidebar
 // pinning has no API endpoint and stays an in-app gesture. Section icons are
 // emoji-only: the API refuses named icons on OBJECT creation (400 "icon name
-// and color are not supported for object", verified live 2026-08-10) — the
-// named-icon grammar belongs to types.
+// and color are not supported for object") — the named-icon grammar belongs to
+// types.
 internal sealed record SectionSpec(
     string Name,
     TypeIconSpec? Icon,

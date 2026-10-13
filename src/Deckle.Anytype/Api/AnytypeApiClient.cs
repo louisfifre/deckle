@@ -22,12 +22,10 @@ namespace Deckle.Anytype;
 //     replay, honoring Retry-After when present. A create may have committed
 //     before a 5xx and must surface that ambiguity instead of duplicating.
 //
-// Wire facts (verified against the live API 2026-06-12 and the vendor JS
-// reference): base http://localhost:31009; headers Anytype-Version +
-// Authorization: Bearer on every call; single object is wrapped in {object:…};
-// search/list roots carry {data, pagination}; list-add answers a bare JSON
-// string ("Objects added successfully"), not an object. The Bearer token is
-// held only in the Authorization header and never logged.
+// Wire facts: headers Anytype-Version + Authorization: Bearer on every call;
+// a single object is wrapped in {object:…}; search/list roots carry
+// {data, pagination}. The Bearer token is held only in the Authorization
+// header and never logged.
 public sealed partial class AnytypeApiClient : IDisposable
 {
     private enum RequestReplaySafety { Unsafe, Safe }
@@ -38,9 +36,8 @@ public sealed partial class AnytypeApiClient : IDisposable
     private readonly SpaceWriteLock _writeLock;
     private readonly IBackendEndpointTrust? _endpointTrust;
 
-    // One bounded retry when the endpoint's replay contract allows it. Backoff
-    // falls back to this when the response omits Retry-After; small because the
-    // gate already paces traffic.
+    // DefaultBackoff applies when the response omits Retry-After; small because
+    // the gate already paces traffic.
     private const int MaxRetries = 1;
     private static readonly TimeSpan DefaultBackoff = TimeSpan.FromSeconds(1);
 
@@ -51,10 +48,9 @@ public sealed partial class AnytypeApiClient : IDisposable
     {
     }
 
-    // The resident gateway re-proves ownership for the supervised headless
-    // listener before putting its bearer on the wire. The legacy Desktop
-    // pairing remains outside provider supervision until that compatibility
-    // path is retired; ordinary constructors also serve explicit test endpoints.
+    // The resident gateway re-proves ownership of the supervised headless
+    // listener (31012) before putting its bearer on the wire. The legacy Desktop
+    // pairing and explicit test endpoints stay outside provider supervision.
     public static AnytypeApiClient CreateForResidentGateway(AnytypeCredentials credentials)
     {
         ArgumentNullException.ThrowIfNull(credentials);
@@ -88,15 +84,12 @@ public sealed partial class AnytypeApiClient : IDisposable
     // Exclusive write access to the space across every host process. A mutating
     // gesture wraps its whole read-modify-write in this scope so a concurrent
     // session cannot land a clobbering PATCH between its GET and its own PATCH.
-    // operation/target name the pending write for the contention log.
     public Task<IDisposable> AcquireWriteScopeAsync(
         string operation, string target, CancellationToken ct = default)
         => _writeLock.AcquireAsync(operation, target, ct);
 
     // ── Public API ──────────────────────────────────────────────────────
 
-    // GET object → returns the inner "object" node (the API wraps it as
-    // {object:{…}}).
     public Task<JsonObject> GetObjectAsync(string id, CancellationToken ct = default) =>
         GetObjectAsync(SpaceId, id, ct);
 
@@ -113,13 +106,10 @@ public sealed partial class AnytypeApiClient : IDisposable
         return Inner(root, "object");
     }
 
-    // POST search → returns the root node ({data, pagination}). typeKeys null
-    // → no type filter. Sort is the API default, last-modified desc.
-    //
-    // offset/limit ride in the query string: the request body has no paging
-    // field, so a body `limit` is silently dropped and the server pages by its
-    // default of 100 (measured 2026-09-10 on the 2025-11-08 OpenAPI). The API
-    // caps limit at SearchPageMax; an exhaustive read walks pagination.has_more.
+    // Sort is the API default, last-modified desc. offset/limit ride in the
+    // query string: the request body has no paging field, so a body `limit` is
+    // silently dropped and the server pages by its default of 100. An
+    // exhaustive read walks pagination.has_more.
     public Task<JsonObject> SearchAsync(
         string query,
         IReadOnlyList<string>? typeKeys = null,
@@ -158,9 +148,8 @@ public sealed partial class AnytypeApiClient : IDisposable
     // The largest page the search endpoint serves — its documented maximum.
     public const int SearchPageMax = 1000;
 
-    // GET all objects for one space page. Home uses this exhaustive path for
-    // room-registry and code-uniqueness checks: free-text search is deliberately
-    // not treated as an inventory index.
+    // The exhaustive path for registry and uniqueness checks: free-text search
+    // is deliberately not treated as an inventory index.
     public async Task<JsonObject> ListObjectsAsync(
         string spaceId,
         int offset = 0,
@@ -176,8 +165,6 @@ public sealed partial class AnytypeApiClient : IDisposable
             HttpMethod.Get, path, null, ct, replaySafety: RequestReplaySafety.Safe).ConfigureAwait(false);
     }
 
-    // POST object → returns the inner "object" node. payload carries type_key
-    // plus name/body/properties per the vendor wire shape (createObject).
     public Task<JsonObject> CreateObjectAsync(JsonObject payload, CancellationToken ct = default) =>
         CreateObjectAsync(SpaceId, payload, ct);
 
@@ -192,8 +179,8 @@ public sealed partial class AnytypeApiClient : IDisposable
         return Inner(root, "object");
     }
 
-    // PATCH object → returns the inner "object" node. The markdown field is a
-    // FULL REPLACEMENT of the body, never an append (API-level constraint).
+    // The markdown field is a FULL REPLACEMENT of the body, never an append
+    // (API-level constraint).
     public Task<JsonObject> UpdateObjectAsync(
         string id, JsonObject payload, CancellationToken ct = default) =>
         UpdateObjectAsync(SpaceId, id, payload, ct);
@@ -211,9 +198,8 @@ public sealed partial class AnytypeApiClient : IDisposable
         return Inner(root, "object");
     }
 
-    // DELETE object → moves it to Anytype's restorable bin (the native trash),
-    // NOT a hard delete. Returns the inner "object" node when the API echoes the
-    // archived object, and tolerates an empty body by returning the bare root.
+    // DELETE moves the object to Anytype's restorable bin (the native trash),
+    // NOT a hard delete. The answer may echo the archived object or be empty.
     public Task<JsonObject> DeleteObjectAsync(string id, CancellationToken ct = default) =>
         DeleteObjectAsync(SpaceId, id, ct);
 
@@ -228,10 +214,6 @@ public sealed partial class AnytypeApiClient : IDisposable
         return root["object"] as JsonObject ?? root;
     }
 
-    // GET the space's properties (one page) → returns the root node
-    // ({data, pagination}). Each item is {object, id, key, name, format}. The
-    // property's ID — not its key — is what the tag-options endpoint addresses, so
-    // a caller resolving a free-vocabulary select first reads this to map key→id.
     public async Task<JsonObject> ListPropertiesAsync(
         int offset = 0, int limit = 100, CancellationToken ct = default)
     {
@@ -240,10 +222,8 @@ public sealed partial class AnytypeApiClient : IDisposable
             HttpMethod.Get, path, null, ct, replaySafety: RequestReplaySafety.Safe).ConfigureAwait(false);
     }
 
-    // GET a property's existing tag options (one page) → returns the root node
-    // ({data, pagination}). Each item is {object, id, key, name, color}. The path
-    // takes the property ID (the key form 404s, verified against the live API);
-    // resolve the key to an id through ListPropertiesAsync first.
+    // The path takes the property ID; the key form 404s. Resolve the key to an
+    // id through ListPropertiesAsync first.
     public async Task<JsonObject> ListPropertyTagsAsync(
         string propertyId, int offset = 0, int limit = 100, CancellationToken ct = default)
     {
@@ -253,9 +233,8 @@ public sealed partial class AnytypeApiClient : IDisposable
             HttpMethod.Get, path, null, ct, replaySafety: RequestReplaySafety.Safe).ConfigureAwait(false);
     }
 
-    // POST list members. A collection IS a list: members are added through
-    // /lists/{id}/objects with body {objects:[ids]} (vendor addToCollection).
-    // The success body is a bare JSON string, not an object — skip parsing it.
+    // A collection IS a list in the API. The success body is a bare JSON
+    // string, not an object, so it is not parsed.
     public Task AddToCollectionAsync(
         string collectionId,
         IReadOnlyList<string> objectIds,
@@ -290,8 +269,7 @@ public sealed partial class AnytypeApiClient : IDisposable
             parseBody: false).ConfigureAwait(false);
     }
 
-    // DELETE one list member without touching the object itself. Collection
-    // membership is provider structure, separate from an objects relation.
+    // Removes list membership only; the object itself is untouched.
     public async Task RemoveFromCollectionAsync(
         string spaceId,
         string collectionId,
@@ -312,7 +290,6 @@ public sealed partial class AnytypeApiClient : IDisposable
 
     // ── Transport core ──────────────────────────────────────────────────
 
-    // JSON-bodied send. Everything below goes through SendContentAsync.
     private Task<JsonObject> SendAsync(
         HttpMethod method,
         string path,
@@ -330,12 +307,6 @@ public sealed partial class AnytypeApiClient : IDisposable
             parseBody,
             replaySafety);
 
-    // Serialized send with one transient retry. Returns the parsed root object
-    // (empty JsonObject when the body is empty). parseBody:false skips parsing
-    // entirely, for endpoints whose success body is not a JSON object — list-add
-    // answers a bare string. Throws HttpRequestException on a non-retryable or
-    // retry-exhausted failure, after emitting ApiRequestFailed.
-    //
     // The body arrives as a FACTORY, not a built HttpContent: an HttpContent is
     // single-use, so the retry attempt needs a fresh one. That is also what lets
     // multipart uploads share this transport instead of bypassing the gate.
@@ -400,8 +371,8 @@ public sealed partial class AnytypeApiClient : IDisposable
                     continue;
                 }
 
-                // Terminal failure. Surface the server message (it is API error
-                // text, never key material) and throw.
+                // The server message is API error text, never key material, so
+                // it may be logged.
                 string errorBody = await response.Content.ReadAsStringAsync(ct).ConfigureAwait(false);
                 DeckleAnytypeSource.Log.ApiRequestFailed();
                 DeckleAnytypeSource.Log.ApiRequestFailedDetail(method.Method, path, status, Excerpt(errorBody));
@@ -423,9 +394,6 @@ public sealed partial class AnytypeApiClient : IDisposable
         code == HttpStatusCode.TooManyRequests
         || (replaySafety == RequestReplaySafety.Safe && (int)code >= 500);
 
-    // Retry-After is seconds (delta) or an HTTP-date. HttpClient parses both
-    // into RetryConditionHeaderValue; Delta wins when present, otherwise the
-    // date is turned into a delay from now (never negative).
     private static TimeSpan? RetryAfter(HttpResponseMessage response)
     {
         RetryConditionHeaderValue? header = response.Headers.RetryAfter;

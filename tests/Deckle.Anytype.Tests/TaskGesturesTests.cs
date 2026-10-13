@@ -8,16 +8,13 @@ using Xunit;
 
 namespace Deckle.Anytype.Tests;
 
-// Integration tests for TaskGestures over a loopback HttpListener fake (no
-// existing HTTP test helper in tests/, so FakeAnytypeServer is the minimal local
-// one — see its file). These assert the WIRE EFFECT of a gesture: the exact
-// payload the API receives, not the digest string. The task selector is always a
-// bafy* id so the resolver short-circuits and no /search route is needed.
+// Integration tests for TaskGestures over FakeAnytypeServer (below). These
+// assert the WIRE EFFECT of a gesture: the exact payload the API receives, not
+// the digest string. Selectors are always bafy* ids so the resolver
+// short-circuits and no /search route is needed.
 [Trait("Category", "integration")]
 public class TaskGesturesTests
 {
-    // A plausible Anytype object id: >40 chars and "bafy"-prefixed so the resolver
-    // treats it as an id directly instead of searching.
     const string TaskId = "bafyreiTaskaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
     static CancellationToken Ct => TestContext.Current.CancellationToken;
 
@@ -27,7 +24,6 @@ public class TaskGesturesTests
         return new TaskGestures(client, new NameResolver(client));
     }
 
-    // GET response for the anchor task carrying the given markdown body.
     static JsonObject TaskObject(string markdown) => new()
     {
         ["object"] = new JsonObject
@@ -41,7 +37,6 @@ public class TaskGesturesTests
 
     // ── CreateAsync ─────────────────────────────────────────────────────────────
 
-    // A bafy* project id so the resolver short-circuits (no /search route needed).
     const string ProjectId = "bafyreiprojectaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
 
     [Fact]
@@ -52,8 +47,6 @@ public class TaskGesturesTests
 
         await NewGestures(server).CreateAsync(ProjectId, "Ma tâche", type: "production", ct: Ct);
 
-        // The API ignores the default template unless template_id is named; the
-        // creation POST must carry the task type's frozen template id.
         JsonObject created = server.LastBodyFor("POST");
         Assert.Equal(DevSpace.Templates.Task, created["template_id"]!.GetValue<string>());
     }
@@ -70,8 +63,6 @@ public class TaskGesturesTests
 
         await NewGestures(server).SubtaskAsync(TaskId, "nouvelle étape", done: false, ct: Ct);
 
-        // The PATCH rewrites the whole markdown: original body preserved verbatim,
-        // a new "- [ ] label" line tacked on at the end.
         JsonObject patched = server.LastBodyFor("PATCH");
         string next = patched["markdown"]!.GetValue<string>();
         Assert.Equal("# Notes\n\n- [ ] déjà là\n- [ ] nouvelle étape", next);
@@ -91,7 +82,6 @@ public class TaskGesturesTests
 
         JsonObject patched = server.LastBodyFor("PATCH");
         string next = patched["markdown"]!.GetValue<string>();
-        // First line toggled to [x]; the second line is untouched.
         Assert.Equal("- [x] Rédiger le BRIEF\n- [ ] relire", next);
     }
 
@@ -107,7 +97,6 @@ public class TaskGesturesTests
 
         JsonObject patched = server.LastBodyFor("PATCH");
         string next = patched["markdown"]!.GetValue<string>();
-        // Idempotent: the checked item stays checked, the rest is verbatim.
         Assert.Equal("- [x] terminé\n- [ ] reste", next);
     }
 
@@ -169,25 +158,21 @@ public class TaskGesturesTests
 
         JsonObject patched = server.LastBodyFor("PATCH");
         string next = patched["markdown"]!.GetValue<string>();
-        // Only the checkbox glyph changes; every other line is identical.
         Assert.Equal("# Titre\nUn paragraphe libre.\n\n- [x] une étape\nUne note finale.", next);
     }
 
 }
 
-// ─── FakeAnytypeServer ─────────────────────────────────────────────────────────
-//
-// Minimal loopback HTTP server standing in for the local Anytype REST API. No
-// HttpListener helper existed in tests/, so this is the minimal local one the
-// integration tests share (TaskGesturesTests + SessionGesturesTests). It:
-//   • binds an HttpListener on a free loopback port,
-//   • routes a request to the first matching canned (method, path) response,
-//   • records every received request (method, path, parsed JSON body) so a test
+// Minimal loopback HTTP server standing in for the local Anytype REST API,
+// shared by the integration tests. It:
+//   • listens on a loopback port leased from LoopbackHttpListenerLease,
+//   • answers the n-th request to a (method, path) with the n-th canned
+//     response registered for it, repeating the last one,
+//   • records every received request (method, path, query, body) so a test
 //     can assert on the exact payload the gesture sent.
 //
-// Routing is registration-order; OnGetObject/OnPostObject/etc. register the
-// canned responses a given test needs. An unmatched request gets 404 — a test
-// hitting an unexpected route fails loudly rather than hanging.
+// An unmatched request gets 404 — a test hitting an unexpected route fails
+// loudly rather than hanging.
 internal sealed class FakeAnytypeServer : IDisposable
 {
     // Fixed space id so the path prefix is deterministic in assertions.
@@ -261,13 +246,11 @@ internal sealed class FakeAnytypeServer : IDisposable
     public void OnPostListObjects(string listId, string rawJson) =>
         _routes.Add(new("POST", $"{SpacePath}/lists/{listId}/objects", 200, rawJson));
 
-    // GET .../properties — the space's property list (key→id map source). The
-    // serve loop routes on AbsolutePath, so the ?offset&limit query is ignored.
+    // The serve loop routes on AbsolutePath, so the ?offset&limit query is
+    // ignored.
     public void OnListProperties(JsonObject response) =>
         _routes.Add(new("GET", $"{SpacePath}/properties", 200, response.ToJsonString()));
 
-    // GET .../properties/{id}/tags — a property's existing options. Same path-only
-    // routing; the query string is dropped before the match.
     public void OnListPropertyTags(string propertyId, JsonObject response) =>
         _routes.Add(new("GET", $"{SpacePath}/properties/{propertyId}/tags", 200, response.ToJsonString()));
 
@@ -276,8 +259,7 @@ internal sealed class FakeAnytypeServer : IDisposable
 
     // ── Request introspection ─────────────────────────────────────────────────
 
-    // The parsed JSON body of the last request with the given method. Throws if
-    // no such request was recorded — a missing call is a test failure, not null.
+    // A missing call is a test failure, not null.
     public JsonObject LastBodyFor(string method)
     {
         Received last = _received.Where(r => r.Method == method).LastOrDefault();

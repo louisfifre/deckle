@@ -2,10 +2,9 @@ using Deckle.Anytype;
 
 namespace Deckle.Anytype.Mcp;
 
-// The composition seam Program.cs used to own: from an API client and a
-// per-client profile, it builds the tool set and descriptor for one stateless
-// request. The gesture graph is rebuilt on every call, so concurrent requests
-// never share mutable gesture state.
+// From an API client and a tool profile, builds the tool set and descriptor for
+// one stateless request. The gesture graph is rebuilt on every call, so
+// concurrent requests never share mutable gesture state.
 public static class McpToolset
 {
     public static McpSurfaceBinding Build(

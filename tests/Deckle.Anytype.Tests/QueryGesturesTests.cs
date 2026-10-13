@@ -4,12 +4,11 @@ using Xunit;
 
 namespace Deckle.Anytype.Tests;
 
-// Integration tests for QueryGestures.UpdateAsync over the shared
-// FakeAnytypeServer. They pin two guarantees: a select value must resolve to an
-// EXISTING option (frozen vocabularies in DevSpace, an unknown value throwing
-// before any PATCH), and the now-unmapped « tag » property is refused outright.
-// The free-vocabulary live-resolution path itself is exercised directly in
-// LiveTagResolverTests (no mapped property routes there since « tag » was dropped).
+// Integration tests for QueryGestures over the shared FakeAnytypeServer. A select
+// value must resolve to an EXISTING option (frozen vocabularies in DevSpace, an
+// unknown value throwing before any PATCH), and the unmapped « tag » property is
+// refused outright. The free-vocabulary live-resolution path is exercised in
+// LiveTagResolverTests, since no mapped property routes there.
 //
 // Selector is a bafy* id so the resolver short-circuits (no /search route).
 [Trait("Category", "integration")]
@@ -26,8 +25,6 @@ public class QueryGesturesTests
         return new QueryGestures(client, new NameResolver(client));
     }
 
-    // GET response for the task the update targets — a task so « tag » (free) and
-    // « etat » (frozen) both apply.
     static JsonObject TaskObject() => new()
     {
         ["object"] = new JsonObject
@@ -39,8 +36,6 @@ public class QueryGesturesTests
         },
     };
 
-    // A task object carrying a markdown body — the surface replace_section reads,
-    // splices, and reads back.
     static JsonObject BodyObject(string markdown) => new()
     {
         ["object"] = new JsonObject
@@ -79,10 +74,9 @@ public class QueryGesturesTests
 
     // ── GetAsync ─────────────────────────────────────────────────────────────
 
-    // The live GET leaves an unticked checkbox out of `properties` (observed
-    // 2026-09-10): a task never archived carries no « archive » entry at all.
-    // Absence is a value for a binary, so the read must say « non » rather
-    // than stay silent — silence let an archived object pass for a live one.
+    // The live GET leaves an unticked checkbox out of `properties`: a task never
+    // archived carries no « archive » entry at all. Absence is a value for a
+    // binary, so the read must say « non » rather than stay silent.
     [Fact]
     public async Task GetReadsAnUnsetCheckboxAsUnticked()
     {
@@ -319,10 +313,8 @@ public class QueryGesturesTests
         ["text"] = value,
     };
 
-    // « tag » is intentionally mapped onto no type (Anytype's auto-transversal
-    // residue, unused). update must therefore REFUSE it before any write — both a
-    // regression guard on the schema decision and the reason the live-resolution
-    // path is no longer reached through update.
+    // « tag » is intentionally mapped onto no type, so update must REFUSE it
+    // before any write.
     [Fact]
     public async Task UpdateRefusesTheUnmappedTagPropertyAndSendsNoPatch()
     {
@@ -338,8 +330,6 @@ public class QueryGesturesTests
         Assert.DoesNotContain(server.Requests, r => r.Method == "PATCH");
     }
 
-    // Frozen-vocabulary behavior is unchanged: « etat » resolves in memory, no
-    // live lookup, and an unknown value still throws with no PATCH.
     [Fact]
     public async Task UpdateOnFrozenVocabularyResolvesInMemoryWithoutALiveLookup()
     {
@@ -358,7 +348,6 @@ public class QueryGesturesTests
         Assert.Equal(DevSpace.Props.Etat, entry["key"]!.GetValue<string>());
         Assert.Equal("en_cours", entry["select"]!.GetValue<string>());
 
-        // No live-options endpoint was hit — frozen path stays in memory.
         Assert.DoesNotContain(server.Requests, r => r.Path.Contains("/properties"));
     }
 
@@ -378,8 +367,6 @@ public class QueryGesturesTests
 
     // ── UpdateAsync — rename ──────────────────────────────────────────────────
 
-    // A name-only update PATCHes the new title at the payload ROOT (mirroring
-    // create) and carries no `properties` array — nothing else was asked.
     [Fact]
     public async Task UpdateWithNameOnlyPatchesTheTitleAtTheRootWithoutProperties()
     {
@@ -394,8 +381,6 @@ public class QueryGesturesTests
         Assert.False(patched.ContainsKey("properties"));
     }
 
-    // Name AND properties land in ONE PATCH: the title at the root, the resolved
-    // property entries under `properties` — never two round-trips.
     [Fact]
     public async Task UpdateWithNameAndPropertiesComposesASinglePatch()
     {
@@ -406,7 +391,6 @@ public class QueryGesturesTests
         var props = new JsonObject { ["etat"] = "En cours" };
         await NewGestures(server).UpdateAsync(TaskId, "Nouveau titre", props, Ct);
 
-        // Exactly one PATCH carried both the root name and the property entries.
         Assert.Equal(1, server.Requests.Count(r => r.Method == "PATCH"));
         JsonObject patched = server.LastBodyFor("PATCH");
         Assert.Equal("Nouveau titre", patched["name"]!.GetValue<string>());
@@ -415,7 +399,6 @@ public class QueryGesturesTests
         Assert.Equal("en_cours", entry["select"]!.GetValue<string>());
     }
 
-    // A blank name is a shape error refused before any write.
     [Fact]
     public async Task UpdateWithABlankNameThrowsAndSendsNoPatch()
     {
@@ -428,8 +411,6 @@ public class QueryGesturesTests
         Assert.DoesNotContain(server.Requests, r => r.Method == "PATCH");
     }
 
-    // Neither name nor properties is a shape error refused before any write — and
-    // before any GET, since the request is empty on its face.
     [Fact]
     public async Task UpdateWithNeitherNameNorPropertiesThrowsAndSendsNoPatch()
     {
@@ -455,8 +436,6 @@ public class QueryGesturesTests
         Assert.Empty(server.Requests);
     }
 
-    // rapport is body-titled (title = first line of its body), so a rename on it is
-    // refused before any write, pointing the model at replace_section.
     [Fact]
     public async Task UpdateRenamingARapportIsRefusedAndSendsNoPatch()
     {
@@ -501,8 +480,6 @@ public class QueryGesturesTests
         Assert.False(entry["checkbox"]!.GetValue<bool>());
     }
 
-    // A rapport carries no « Archivé » checkbox (it stays searchable on purpose):
-    // archive refuses it before any write, naming the checkbox in the message.
     [Fact]
     public async Task ArchiveOnARapportIsRefusedAndSendsNoPatch()
     {
@@ -539,8 +516,7 @@ public class QueryGesturesTests
 
     // ── ReplaceSectionAsync ─────────────────────────────────────────────────────
 
-    // The headline path: the targeted section is spliced (siblings copied
-    // verbatim), the PATCH echoes Anytype's re-rendered body — underscore escaped,
+    // The PATCH echoes Anytype's re-rendered body — underscore escaped,
     // hard-break trailing spaces — and verification still confirms the intent
     // through that normalization, so no second GET is needed.
     [Fact]
@@ -554,8 +530,6 @@ public class QueryGesturesTests
         string digest = await NewGestures(server)
             .ReplaceSectionAsync(TaskId, "État", "En cours sur module_X.", Ct);
 
-        // The PATCH carried the spliced document: the target body replaced, the
-        // « Notes » section copied byte-for-byte.
         JsonObject patched = server.LastBodyFor("PATCH");
         Assert.Equal(
             "# Tâche\n\n## État\nEn cours sur module_X.\n\n## Notes\nrien",
@@ -575,7 +549,6 @@ public class QueryGesturesTests
         InvalidOperationException ex = await Assert.ThrowsAsync<InvalidOperationException>(
             () => NewGestures(server).ReplaceSectionAsync(TaskId, "Absent", "x", Ct));
 
-        // Strict, and helpful: the message names the present headings to retry with.
         Assert.Contains("introuvable", ex.Message);
         Assert.Contains("Présent", ex.Message);
         Assert.DoesNotContain(server.Requests, r => r.Method == "PATCH");

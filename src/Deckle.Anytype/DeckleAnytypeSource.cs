@@ -3,13 +3,10 @@ using Deckle.Diagnostics;
 
 namespace Deckle.Anytype;
 
-// Anytype module provider. Covers the HTTP transport to the local Anytype REST
-// API (AnytypeApiClient) and the project-management gestures layered on top
-// (SessionGestures, TaskGestures, ProjectGestures, QueryGestures,
-// DocumentGestures). HTTP
-// request lifecycle uses the transverse Network keyword so an OS-level outage
-// (DeckleNetworkSource) correlates with API failures across modules; gesture
-// and session events carry a module-local keyword.
+// Anytype module provider. HTTP request lifecycle uses the transverse Network
+// keyword so an OS-level outage (DeckleNetworkSource) correlates with API
+// failures across modules; gesture, session and backend events carry
+// module-local keywords.
 [EventSource(Name = "Deckle-Anytype")]
 public sealed class DeckleAnytypeSource : DeckleEventSource
 {
@@ -18,15 +15,14 @@ public sealed class DeckleAnytypeSource : DeckleEventSource
     private DeckleAnytypeSource() { }
 
     // Module-local keyword bits (transverse bits 0..9 reserved in Keywords;
-    // 0x400+ belongs to the provider). Gesture/session activity that is not
-    // raw network traffic; Lifecycle covers the headless backend's scheduled-task
-    // start/health supervision, a distinct observable family from the API calls.
+    // 0x400+ belongs to the provider). Gesture covers gesture/session activity
+    // that is not raw network traffic; Lifecycle covers the headless backend's
+    // supervision, a distinct observable family from the API calls.
     private const EventKeywords Gesture   = (EventKeywords)0x400;
     private const EventKeywords Lifecycle = (EventKeywords)0x800;
 
     // Retired ids, never to be reused: 15 (BackendTaskRegistered), 17-18
-    // (BackendTaskOperationFailed/Detail) — the scheduled-task hosting they
-    // observed was replaced by in-process supervision (2026-07-02).
+    // (BackendTaskOperationFailed/Detail).
 
     // ── EventIds ─────────────────────────────────────────────────────────
     public const int EvtApiRequestStarted         = 1;
@@ -36,11 +32,9 @@ public sealed class DeckleAnytypeSource : DeckleEventSource
     public const int EvtSessionReportCreated      = 5;
     public const int EvtSessionStarted            = 6;
     public const int EvtApiRequestFailed          = 7;
-    // Verbose mirrors added for the Verbose/Info separation (ids 8-9).
     public const int EvtApiRequestRetriedDetail   = 8;
     public const int EvtApiRequestFailedDetail    = 9;
     public const int EvtSpaceWriteContended       = 10;
-    // Backend lifecycle (ids 11-24; 15/17/18 retired, see above).
     public const int EvtBackendStarting               = 11;
     public const int EvtBackendReady                  = 12;
     public const int EvtBackendStartTimedOut          = 13;
@@ -154,10 +148,8 @@ public sealed class DeckleAnytypeSource : DeckleEventSource
         if (IsEnabled()) WriteEvent(EvtSessionReportCreated, report_id);
     }
 
-    // A mutating gesture had to wait for the cross-process write lock: another
-    // session held it. Verbose+structured — two waiters naming the same target are
-    // a real concurrent edit, visible by grepping target. waited_ms is the time
-    // spent blocked before the lock was granted.
+    // Two waiters naming the same target are a real concurrent edit, visible by
+    // grepping target.
     [Event(EvtSpaceWriteContended,
            Level = EventLevel.Verbose,
            Keywords = Gesture,

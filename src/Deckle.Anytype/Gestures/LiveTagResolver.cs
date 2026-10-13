@@ -7,19 +7,12 @@ namespace Deckle.Anytype;
 // property's LIVE options in the space, for properties that carry NO frozen
 // vocabulary in DevSpace (e.g. « tag », a free multi_select the space manages).
 //
-// Why it exists — the owner's guarantee: the library must be UNABLE to create a
-// new tag option. Applying an existing option is the whole point; minting one is
+// The library must be UNABLE to create a new tag option: minting one is
 // reserved to the owner, by hand, in Anytype. For a frozen vocabulary DevSpace
-// enforces this in memory. For a free vocabulary there is nothing to match in
-// memory, so this fetches the property's existing options and resolves against
-// them; a value that matches none THROWS (listing the valid options) and never
-// reaches the wire. The value is therefore guaranteed to name an option that
-// already exists — the API is never asked to auto-create one.
-//
-// Endpoints (verified against the live API): the option list lives at
-// GET /v1/spaces/{space}/properties/{property_id}/tags and takes the property
-// ID, not its key — so the resolver maps key→id through GET .../properties
-// first. Both are paginated ({data, pagination.has_more}).
+// enforces this in memory. For a free vocabulary this fetches the property's
+// existing options; a value that matches none THROWS (listing the valid
+// options) and never reaches the wire, so the API is never asked to
+// auto-create one.
 //
 // Lifetime: one instance per gesture instance, not shared across threads. The
 // key→id map is cached for the instance (a single update may touch several
@@ -29,14 +22,11 @@ public sealed class LiveTagResolver(AnytypeApiClient api)
 {
     readonly AnytypeApiClient _api = api;
 
-    // key → property id, filled lazily on first need and reused for the instance.
     Dictionary<string, string>? _propertyIds;
 
-    // Resolves nameOrKey to the wire key of an EXISTING option on propKey.
-    // Throws ArgumentException (listing the valid options) when nothing matches —
-    // the same model-facing shape as DevSpace.ResolveTag, so a free-vocabulary
-    // miss reads identically to a frozen-vocabulary miss. The unresolved value is
-    // never returned, so it can never reach a POST/PATCH.
+    // A miss throws the same model-facing ArgumentException as
+    // DevSpace.ResolveTag, so a free-vocabulary miss reads identically to a
+    // frozen-vocabulary miss.
     public async Task<string> ResolveAsync(string propKey, string nameOrKey, CancellationToken ct = default)
     {
         string propertyId = await ResolvePropertyIdAsync(propKey, ct).ConfigureAwait(false);
@@ -58,9 +48,6 @@ public sealed class LiveTagResolver(AnytypeApiClient api)
 
     // ── Internals ─────────────────────────────────────────────────────────────
 
-    // The property's id for the given key, from the space's property list.
-    // Throws when the key names no property — a schema/space mismatch, surfaced
-    // rather than silently skipped.
     async Task<string> ResolvePropertyIdAsync(string propKey, CancellationToken ct)
     {
         _propertyIds ??= await LoadPropertyIdsAsync(ct).ConfigureAwait(false);
@@ -72,7 +59,6 @@ public sealed class LiveTagResolver(AnytypeApiClient api)
             $"Propriété « {propKey} » introuvable dans l'espace : ses options ne peuvent être résolues.");
     }
 
-    // Walks the paginated property list once, building key→id.
     async Task<Dictionary<string, string>> LoadPropertyIdsAsync(CancellationToken ct)
     {
         var map = new Dictionary<string, string>(StringComparer.Ordinal);
@@ -96,7 +82,6 @@ public sealed class LiveTagResolver(AnytypeApiClient api)
         return map;
     }
 
-    // The property's existing options as (key, name) pairs, across all pages.
     async Task<IReadOnlyList<(string Key, string Name)>> ListOptionsAsync(
         string propertyId, CancellationToken ct)
     {

@@ -1160,7 +1160,6 @@ public class SchemaAdminGesturesTests
         ["format"] = "text",
     };
 
-    // A manifest that lists two properties on the type, in this order.
     static JsonObject OrderedManifest() => new()
     {
         ["properties"] = new JsonArray

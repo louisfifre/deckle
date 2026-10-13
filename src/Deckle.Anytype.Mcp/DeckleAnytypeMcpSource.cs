@@ -4,7 +4,7 @@ using Deckle.Diagnostics;
 namespace Deckle.Anytype.Mcp;
 
 // MCP host provider. Covers the resident streamable-HTTP host that serves the
-// Anytype toolset to Claude Code and Codex: the listener's lifecycle and the
+// Anytype toolsets to external clients: the listener's lifecycle and the
 // requests it fields. Milestones (Info/Warning, no args) read as a
 // narrative of the host's life; the Verbose mirrors carry the greppable detail.
 //
@@ -26,8 +26,8 @@ public sealed class DeckleAnytypeMcpSource : DeckleEventSource
     public const int EvtHostStartedDetail     = 2;
     public const int EvtHostStopped           = 3;
     public const int EvtHostNotProvisioned    = 4;
-    // Event ids 5 and 6 belonged to the removed stateful session transport and
-    // stay reserved so an old trace can never be misread as a new event.
+    // Event ids 5 and 6 are retired and stay reserved so an old trace can never
+    // be misread as a new event.
     public const int EvtRequestRejected       = 7;
     public const int EvtRequestRejectedDetail = 8;
 
@@ -60,8 +60,9 @@ public sealed class DeckleAnytypeMcpSource : DeckleEventSource
         if (IsEnabled()) WriteEvent(EvtHostStopped);
     }
 
-    // Warning: the host cannot listen because the vault holds no credentials —
-    // a state the user must act on before any client can connect.
+    // Warning: the host cannot listen because the Anytype credentials or the
+    // token vault are unavailable — a state the user must act on before any
+    // client can connect.
     [Event(EvtHostNotProvisioned,
            Level = EventLevel.Warning,
            Keywords = Lifecycle,
@@ -73,8 +74,9 @@ public sealed class DeckleAnytypeMcpSource : DeckleEventSource
 
     // ── Requests ──────────────────────────────────────────────────────────
 
-    // Warning: a request the host refused before dispatch (bad auth, Origin or
-    // method) — a degradation a human would want to notice.
+    // Warning: a request the host refused before dispatch (bad auth or Origin,
+    // oversized body, rate limit) or a failed bind — a degradation a human would
+    // want to notice.
     [Event(EvtRequestRejected,
            Level = EventLevel.Warning,
            Keywords = Lifecycle,
