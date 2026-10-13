@@ -110,4 +110,28 @@ public sealed class UtteranceCountdownGeometryTests
             Assert.InRange(MathF.Abs(Ratio(bottom) - Ratio(top)), 0f, Tolerance);
         }
     }
+
+    // The gauge is the Recording outline opened by the pause: its two wedges
+    // carry the outline's fades in proportion to the span, with the outline's
+    // curve, and are always mirrored — whatever the outline's own mirror.
+    [Fact]
+    public void MaskFadesKeepTheRecordingOutlinesProportion()
+    {
+        var config = new HudComposition.ConicArcStrokeConfig
+        {
+            RecordingConicSpanTurns = 0.5f,
+            RecordingConicLeadFadeTurns = 0.1f,
+            RecordingConicTailFadeTurns = 0.2f,
+            RecordingConicFadeCurve = 3f,
+            RecordingArcMirror = false,
+        };
+
+        var mask = HudComposition.GetUtteranceCountdownMaskConfig(config);
+
+        float scale = mask.ConicSpanTurns / config.RecordingConicSpanTurns;
+        Assert.True(mask.ArcMirror);
+        Assert.InRange(MathF.Abs(mask.ConicLeadFadeTurns - config.RecordingConicLeadFadeTurns * scale), 0f, Tolerance);
+        Assert.InRange(MathF.Abs(mask.ConicTailFadeTurns - config.RecordingConicTailFadeTurns * scale), 0f, Tolerance);
+        Assert.Equal(config.RecordingConicFadeCurve, mask.ConicFadeCurve);
+    }
 }

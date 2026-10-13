@@ -46,10 +46,13 @@ public sealed partial class HudPage
         var material = _tuning.ToConfig();
         if (ViewModel.CurrentTarget == HudTarget.CountdownMaterial)
         {
+            // The cone the gauge samples: the Recording outline's, in its pose.
+            var recording = HudComposition.BuildRecordingPaintConfig(material, out bool hueRotates);
             _nakedPreview = HudComposition.CreateNakedMaskPreview(
-                compositor, NakedHudSize, material, HudComposition.NakedMaskPart.Conic,
+                compositor, NakedHudSize, recording, HudComposition.NakedMaskPart.Conic,
                 isDark ? Microsoft.UI.Colors.White : Microsoft.UI.Colors.Black,
-                ProcessingVariant.Transcribing, isDark, animations);
+                ProcessingVariant.Recording, isDark, animations,
+                freezeHueRotation: !hueRotates);
             float inset = (NakedHostDim - _nakedPreview.Container.Size.X) / 2f;
             _nakedPreview.Container.Offset = new Vector3(inset, inset, 0);
             ElementCompositionPreview.SetElementChildVisual(NakedPreviewHost, _nakedPreview.Container);
@@ -83,7 +86,8 @@ public sealed partial class HudPage
             RebuildTuningPanel();
         });
         geometry.Children.Add(TuningHelp(
-            "Uses the Transcribing material tuned in Cone and Transcribing."));
+            "The gauge is the Recording outline opened by the pause. " +
+            "Its fade, hue period and grading are the Recording section's; its palette is tuned in Cone."));
         geometry.Children.Add(TuningHelp(
             "Reach is how far the light runs along the top and bottom edges, from their centre. " +
             "0 % is the centre and 100 % the corners. Above 100 %, the light runs past the corners. " +
@@ -96,29 +100,6 @@ public sealed partial class HudPage
             value => _countdownConfig = _countdownConfig with { EndReach = (float)value / 100f }, rebuild: true);
         geometry.Children.Add(TuningHelp("Thickness and inset follow the HUD geometry section."));
 
-        var fade = NewTuningSection("Countdown fade", () =>
-        {
-            var defaults = new UtteranceCountdownConfig();
-            _countdownConfig = _countdownConfig with
-            {
-                EdgeFadeTurns = defaults.EdgeFadeTurns,
-                FadeCurve = defaults.FadeCurve,
-            };
-            RebuildTuningPanel();
-        });
-        fade.Children.Add(TuningHelp("Same fade units as Sweep mask. The fade scales with the wedge opening."));
-        AddFloatRow(fade, "Edge fade (turns)", 0, 1, 0.005, _countdownConfig.EdgeFadeTurns,
-            value => _countdownConfig = _countdownConfig with { EdgeFadeTurns = (float)value }, rebuild: true);
-        // The two ramps meet mid-wedge once each reaches half the opening at
-        // End reach (PaintArcMaskSurface rescales them), about 0.21 turn at
-        // 100 % and 0.23 at 200 % on a 272 × 78 HUD.
-        fade.Children.Add(TuningHelp(
-            "Above about 0.2 turn, the fade stops growing because both soft edges already meet in the middle."));
-        AddFloatRow(fade, "Fade curve", 0.5, 10, 0.1, _countdownConfig.FadeCurve,
-            value => _countdownConfig = _countdownConfig with { FadeCurve = (float)value }, rebuild: true);
-        fade.Children.Add(TuningHelp(
-            "At 1, the soft edge brightens evenly. Higher values keep it dark longer, then brighten it sharply."));
-
         AddCountdownPreviewSection();
     }
 
@@ -130,7 +111,7 @@ public sealed partial class HudPage
             _countdownTuning = new();
             RebuildTuningPanel();
         });
-        preview.Children.Add(TuningHelp("The shared palette and its rotation are adjusted in Cone; grayscale grading is adjusted in Transcribing."));
+        preview.Children.Add(TuningHelp("The palette is adjusted in Cone. The cone's pose, fade and grayscale grading are the Recording section's."));
         if (ViewModel.CurrentTarget == HudTarget.CountdownMaterial) return;
         preview.Children.Add(TuningHelp("Simulation does not affect dictation. Choose another inspection view in Target."));
 

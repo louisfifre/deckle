@@ -36,8 +36,9 @@ public static partial class HudComposition
     // ConicArcStrokeConfig (see the struct section above). This factory
     // reads a default-constructed config and maps the Recording* paint-
     // time fields into the generic paint-time slots that
-    // CreateConicArcStroke consumes — tweak the defaults on the struct
-    // itself to iterate, just like the Transcribing*/Rewriting* knobs.
+    // CreateConicArcStroke consumes, through BuildRecordingPaintConfig
+    // below — tweak the defaults on the struct itself to iterate, just
+    // like the Transcribing*/Rewriting* knobs.
     //
     // ── Arc span + fades (from RecordingConic* defaults) ────────────────
     // Span 0.5 with Mirror = full 360° coverage split into two 180° arcs
@@ -70,19 +71,45 @@ public static partial class HudComposition
         ConicArcStrokeConfig? configOverride = null,
         bool animationsEnabled = true)
     {
-        // `with` copies the caller's (default) config and overrides the
-        // generic paint-time slots consumed by CreateConicArcStroke with
-        // the Recording* paint-time values. All other fields inherit
-        // their defaults — the Recording* runtime fields come through
-        // unchanged and are read by ApplyVariant and by the initialVariant
-        // seed path below.
-        //
         // HudPlayground passes a pre-customized config via configOverride
         // so its Recording* sliders land on the live struct before the
-        // `with` copy bakes them into the generic slots.
-        var defaults = configOverride ?? new ConicArcStrokeConfig();
-        bool hueRotates = defaults.RecordingHuePeriodSeconds > 0;
-        var cfg = defaults with
+        // mapping bakes them into the generic slots.
+        var cfg = BuildRecordingPaintConfig(
+            configOverride ?? new ConicArcStrokeConfig(), out bool hueRotates);
+        return CreateConicArcStroke(
+            compositor, hostSize, cfg,
+            freezeHueRotation: !hueRotates,
+            freezeArcRotation: true,
+            initialOpacity:    animationsEnabled ? 0f : 1f,
+            initialVariant:    ProcessingVariant.Recording,
+            animationsEnabled: animationsEnabled);
+    }
+
+    // Copies the config and overrides the generic paint-time slots consumed
+    // by CreateConicArcStroke and PaintArcMaskSurface with the Recording*
+    // values. All other fields come through unchanged — the Recording*
+    // runtime fields are still read by ApplyVariant and by the
+    // initialVariant seed. Shared by the Recording stroke, the utterance
+    // countdown and the Playground's countdown material view, so every
+    // visual that claims to be the Recording outline paints from one
+    // mapping instead of restating it.
+    //
+    // `hueRotates` — whether the cone spins (RecordingHuePeriodSeconds > 0)
+    // or stays frozen at HuePhaseTurns. Frozen matters even at Saturation 0:
+    // the cone is baked from OKLCh at a chroma no sRGB hue carries at that
+    // lightness, ColorSpace.OklchToRgb clamps each channel, and the clamped
+    // colours no longer share one luminance. Desaturated, the default wheel
+    // (L 0.75, C 0.3) runs from a grey near 0.24 around red to near 0.69
+    // around cyan (computed 2026-10-13 with Rec. 709 luma weights; the
+    // ordering holds for any luma formula, the red band has almost no
+    // green). At phase 0 that dark band sits at 3 o'clock, inside the
+    // lobes' fade-out. A spinning cone carries it through 12 and 6 o'clock,
+    // where the lobes are brightest, and reads as a hole walking the outline.
+    public static ConicArcStrokeConfig BuildRecordingPaintConfig(
+        ConicArcStrokeConfig defaults, out bool hueRotates)
+    {
+        hueRotates = defaults.RecordingHuePeriodSeconds > 0;
+        return defaults with
         {
             ConicSpanTurns     = defaults.RecordingConicSpanTurns,
             ConicLeadFadeTurns = defaults.RecordingConicLeadFadeTurns,
@@ -92,18 +119,11 @@ public static partial class HudComposition
             ArcPhaseTurns      = defaults.RecordingArcPhaseTurns,
             // Only override the generic hue period when Recording wants
             // live hue motion. Otherwise the value is ignored anyway
-            // (freezeHueRotation = true below).
+            // (the caller freezes the rotation).
             HuePeriodSeconds   = hueRotates
                 ? defaults.RecordingHuePeriodSeconds
                 : defaults.HuePeriodSeconds,
         };
-        return CreateConicArcStroke(
-            compositor, hostSize, cfg,
-            freezeHueRotation: !hueRotates,
-            freezeArcRotation: true,
-            initialOpacity:    animationsEnabled ? 0f : 1f,
-            initialVariant:    ProcessingVariant.Recording,
-            animationsEnabled: animationsEnabled);
     }
 
     // Implementation of the double-comet pipeline driven by
