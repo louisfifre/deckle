@@ -7,9 +7,9 @@ namespace Deckle.Orchestration;
 // <UserDataRoot>/modules/orchestration/settings.json, and the only writer of it.
 //
 // Every mutation builds a NEW list and assigns it to Current.Entries under one
-// write lock. The runtime (a later step) reads Entries from thread-pool
-// threads without the lock; swapping the reference means it only ever sees a
-// complete old or new list, never one being edited.
+// write lock. The runtime reads Entries from thread-pool threads without the
+// lock; swapping the reference means it only ever sees a complete old or new
+// list, never one being edited.
 public sealed class OrchestrationSettingsService
 {
     private const string ModuleId = "orchestration";
@@ -26,8 +26,8 @@ public sealed class OrchestrationSettingsService
     private readonly JsonSettingsStore<OrchestrationSettings> _store;
 
     // Serializes read-copy-write of the lists. The page writes from the UI
-    // thread; the scan (a later step) writes from a worker. Without the lock
-    // two writers would each copy the old list and one addition would be lost.
+    // thread; the scan writes from a worker. Without the lock two writers
+    // would each copy the old list and one addition would be lost.
     private readonly object _writeLock = new();
 
     private event Action? _changed;

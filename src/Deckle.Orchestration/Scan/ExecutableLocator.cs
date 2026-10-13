@@ -59,7 +59,6 @@ public static class ExecutableLocator
         return Largest(kept);
     }
 
-    // True for an installer, uninstaller, redistributable or crash reporter.
     public static bool IsExcluded(string stem) =>
         ExcludedPatterns.Any(pattern => WildcardMatch(stem, pattern));
 

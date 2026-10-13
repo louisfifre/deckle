@@ -2,7 +2,7 @@ using System.Text.Json.Serialization;
 
 namespace Deckle.Orchestration;
 
-// What Deckle changes while an entry runs. Only HDR per monitor for now.
+// What Deckle changes while an entry runs.
 public sealed class AppRules : IJsonOnDeserialized
 {
     // GDI device name ("\\.\DISPLAY1") → rule. A monitor absent from the map is

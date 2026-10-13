@@ -6,10 +6,9 @@
     xmlns:controls="using:CommunityToolkit.WinUI.Controls"
     xmlns:local="using:Deckle.Orchestration">
 
-    <!-- The registry of apps and games. Canonical Settings layout (ScrollViewer
-         Padding 32,24, StackPanel max 1000, Spacing 4, BodyStrong section
-         headers). The list is bespoke, not composed: a live collection of
-         expanders with add, change and remove gestures. -->
+    <!-- The registry of apps and games, in the canonical Settings layout. The
+         list is bespoke, not composed: a live collection of expanders with
+         add, change and remove gestures. -->
     <Page.Resources>
         <x:Double x:Key="SettingsCardSpacing">4</x:Double>
         <Style x:Key="SettingsSectionHeaderTextBlockStyle"
@@ -20,9 +19,6 @@
             </Style.Setters>
         </Style>
 
-        <!-- The cards inside an entry's expander. They go through ItemsSource
-             because the monitor cards come and go with the monitors; the
-             expander takes static Items or an ItemsSource, not both. -->
         <local:EntryItemTemplateSelector x:Key="EntryItemTemplateSelector">
             <local:EntryItemTemplateSelector.KindTemplate>
                 <DataTemplate x:DataType="local:EntryKindItem">
@@ -44,8 +40,6 @@
                     </controls:SettingsCard>
                 </DataTemplate>
             </local:EntryItemTemplateSelector.ExecutableTemplate>
-            <!-- One per HDR-capable monitor: the monitor's name, and what to
-                 do with its HDR while the app runs. -->
             <local:EntryItemTemplateSelector.MonitorHdrTemplate>
                 <DataTemplate x:DataType="local:MonitorHdrRow">
                     <controls:SettingsCard x:Uid="OrchestrationPage_MonitorHdrCard"
@@ -90,11 +84,12 @@
                     <TextBlock x:Uid="OrchestrationPage_Section_Apps"
                                Style="{StaticResource SettingsSectionHeaderTextBlockStyle}" />
 
-                    <!-- Unelevated, and until a foreground service is plugged
-                         in, a listed app is noticed only when the list changes,
-                         not when it starts. Shown from code-behind while entries
-                         exist and neither source runs; not closable, because it
-                         describes a state, not an event. -->
+                    <!-- Without WMI start events (unelevated) and without a
+                         foreground monitor, a listed app is noticed only when
+                         the list changes, not when it starts. Shown from
+                         code-behind while entries exist and neither source runs;
+                         not closable, because it describes a state, not an
+                         event. -->
                     <InfoBar x:Name="ElevationAdvisory"
                              x:Uid="OrchestrationPage_ElevationAdvisory"
                              Severity="Warning"
@@ -124,7 +119,7 @@
                              IsOpen="False" />
 
                     <!-- The scan is silent; this line is its only outcome when
-                         nothing was added. Hidden again when the next scan starts. -->
+                         nothing was added. -->
                     <TextBlock x:Name="NothingNew"
                                x:Uid="OrchestrationPage_NothingNew"
                                Style="{StaticResource BodyTextBlockStyle}"
@@ -133,10 +128,10 @@
                                Margin="0,0,0,8"
                                Visibility="Collapsed" />
 
-                    <!-- Folders the scan walks besides Steam. "Add folder…" sits
-                         on the header, as in Windows Settings' excluded-folders
-                         list, so it is reachable without expanding. Tag is the
-                         search index's scroll-to handle. -->
+                    <!-- "Add folder…" sits on the header, as in Windows
+                         Settings' excluded-folders list, so it is reachable
+                         without expanding. Tag is the search index's scroll-to
+                         handle. -->
                     <controls:SettingsExpander x:Name="FoldersExpander"
                                                x:Uid="OrchestrationPage_FoldersExpander"
                                                Tag="OrchestrationPage_FoldersExpander"

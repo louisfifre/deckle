@@ -31,12 +31,10 @@ public sealed class ScanOnDiskTests
             File.WriteAllBytes(Path.Combine(games, "tool.exe"), []);
             Directory.CreateDirectory(Path.Combine(games, "Empty"));
 
-            // Steam libraries
             var manifest = Assert.Single(SteamLibrary.ScanLibraries([steam]));
             Assert.Equal("480", manifest.AppId);
             Assert.Equal(spacewar, manifest.InstallDirectory);
 
-            // Steam entries
             var steamEntry = Assert.Single(RegistryScan.CollectSteam(steam));
             Assert.Equal(AppSource.Steam, steamEntry.Source);
             Assert.Equal(AppKind.Game, steamEntry.Kind);
@@ -68,7 +66,6 @@ public sealed class ScanOnDiskTests
             // A missing chosen folder is skipped, not fatal
             Assert.Equal(2, RegistryScan.CollectFolders([games, Path.Combine(root, "Gone")]).Count);
 
-            // Merging: the first scan adds all three, a second adds nothing
             var first = AppMatcher.SelectNew([], [.. RegistryScan.CollectSteam(steam), .. RegistryScan.CollectFolders([games])]);
             Assert.Equal(3, first.Count);
             var second = AppMatcher.SelectNew(first, [.. RegistryScan.CollectSteam(steam), .. RegistryScan.CollectFolders([games])]);

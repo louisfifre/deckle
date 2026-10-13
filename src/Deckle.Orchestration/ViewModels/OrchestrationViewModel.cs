@@ -66,7 +66,6 @@ public sealed class OrchestrationViewModel
     private void SaveFolders() =>
         Service.SetScanFolders(ScanFolders.Select(f => f.Path).ToList());
 
-    // The entries as they are now, for filtering the running-app dialog.
     public IReadOnlyList<AppEntry> Snapshot() => Service.Current.Entries;
 
     /// <summary>Add an executable picked by the user. False when it is already listed.</summary>
