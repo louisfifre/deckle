@@ -154,12 +154,20 @@ public static class SettingsSearch
             Keywords = ["entropy", "logprob", "hallucination"],
         },
 
-        // "Streaming pipeline" — the streaming group (the seven energy-segmenter
-        // parameters ride under it; children hide while streaming is off).
+        // "Streaming pipeline" — the streaming switch (the energy-segmenter cards
+        // under it hide while streaming is off).
         new SettingSearchEntry
         {
             LabelKey = "WhisperStreamingEnabledCard",
-            Keywords = ["realtime", "live", "segmenter", "hangover", "utterance"],
+            Keywords = ["realtime", "live", "segmenter", "utterance"],
+        },
+
+        // "Pause before cutting" — the cut mode fold: the preset in its header,
+        // the hangover anchors and the curve under Custom.
+        new SettingSearchEntry
+        {
+            LabelKey = "WhisperCutPresetCard",
+            Keywords = ["preset", "patient", "balanced", "quick", "custom", "hangover", "curve"],
         },
 
         // Latency telemetry (composed toggle).

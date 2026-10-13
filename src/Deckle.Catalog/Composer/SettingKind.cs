@@ -64,4 +64,14 @@ public enum SettingKind
     // VisibleWhen, and the section node itself is valueless. Like Group, folds
     // never nest, so a section's children are leaf kinds.
     Section,
+
+    // A choice that decides which settings exist, rendered as a SettingsExpander
+    // whose header carries the choice (a ComboBox) instead of a toggle — the mode
+    // fold of the settings design system (decision 12). The descriptor's own value
+    // is the chosen mode; the children in ModeArgs are the settings of the modes,
+    // each naming the mode that shows it through its VisibleWhen, and the fold
+    // shows one information card when the chosen mode has nothing to set. A
+    // preset selector is a mode fold too: Custom is the mode that reveals the
+    // hand values. Like the other folds it never nests.
+    Mode,
 }

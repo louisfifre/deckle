@@ -168,54 +168,51 @@ public partial class WhisperViewModel
             defaultValue: () => new SpeechTrimSettings().Enabled),
     ];
 
-    // Streaming pipeline — the energy-segmenter fold. The master is StreamingEnabled
-    // (the user-facing on/off projected onto PipelineStrategyKind); its children
-    // are hidden by the composer while streaming is off. In order: the silence
-    // threshold, the cut-preset selector, the curve editor, the four hangover
-    // anchors, then the cut margin and the minimum utterance. The numeric cards
-    // are field-only magnitudes (exact figures typed, not swept), their bounds
-    // copied verbatim from the hand-authored NumberBoxes; the grain derives from
-    // each range.
+    // Streaming pipeline — the energy segmenter. The switch is StreamingEnabled
+    // (the user-facing on/off projected onto PipelineStrategyKind), a plain card
+    // first and alone (settings design system, decision 10); everything under it
+    // hides while streaming is off. In order: the silence threshold, the cut mode
+    // fold, then the cut margin and the minimum utterance. The numeric cards are
+    // field-only magnitudes (exact figures typed, not swept), their bounds copied
+    // verbatim from the hand-authored NumberBoxes; the grain derives from each
+    // range.
     //
-    // A cut preset (Patient / Balanced / Quick, see CutPresets) carries the eight
-    // hangover values: the four anchors (max, min, ramp start, ramp end) and the
-    // four curve control points. It does not carry the threshold (mic-dependent)
-    // nor the margin and minimum utterance (blip rules). The selection is stored
+    // The cut mode fold (decision 12) carries the preset selector in its header
+    // and the hand values as its Custom-only children. A cut preset (Patient /
+    // Balanced / Quick, see CutPresets) carries the eight hangover values: the
+    // four anchors (max, min, ramp start, ramp end) and the four curve control
+    // points. It does not carry the threshold (mic-dependent) nor the margin and
+    // minimum utterance (blip rules). The selection is stored
     // (EnergySegmenterSettings.CutPreset), and so are the user's own values
     // (CutCustomValues): any hand edit of the eight values switches the selector
     // to Custom, and choosing Custom again writes those kept values back. Custom
-    // also reveals the curve editor and the four anchor cards (masked otherwise).
-    // The selector's reset returns to CutPresets.Default (Balanced), which equals
-    // the shipped EnergySegmenterSettings defaults; the editor's reset writes those
-    // same defaults back through WriteCutValues, which counts as a hand edit and
-    // so leaves the selector on Custom.
+    // alone reveals the four anchor cards and the curve editor; the other modes
+    // show the fold's information card. The fold's reset writes the children's
+    // defaults first, then returns the selector to CutPresets.Default (Balanced),
+    // which equals the shipped EnergySegmenterSettings defaults.
     //
-    // The master's default mirrors the VM's own projection of the segmenter Strategy
+    // The switch's default mirrors the VM's own projection of the segmenter Strategy
     // onto the bool (Load/Push: StreamingEnabled = Strategy == Streaming), read off a
     // fresh StreamingSettings so the shipped default Strategy (Monolithic → false)
     // is the single source — no hand-copied bool.
     public IReadOnlyList<SettingDescriptor> StreamingSettings =>
     [
-        Setting.Group("WhisperStreamingEnabledCard",
+        Setting.Toggle("WhisperStreamingEnabledCard",
             () => StreamingEnabled,
             value => StreamingEnabled = value,
+            glyph: Glyphs.Tuning,
+            defaultValue: () => new StreamingSettings().Strategy == PipelineStrategyKind.Streaming),
+        Setting.Magnitude("WhisperSegThresholdCard",
+            () => SegThresholdDbfs,
+            value => SegThresholdDbfs = value,
+            new MagnitudeArgs(-90, 0, Slider: false),
+            visibleWhen: () => StreamingEnabled,
+            defaultValue: () => new EnergySegmenterSettings().ThresholdDbfs),
+        Setting.Mode<string>("WhisperCutPresetCard",
+            () => CutPreset,
+            value => CutPreset = value,
+            _cutPresets.SelectorOptions("WhisperCutPresetCustom"),
             [
-                Setting.Magnitude("WhisperSegThresholdCard",
-                    () => SegThresholdDbfs,
-                    value => SegThresholdDbfs = value,
-                    new MagnitudeArgs(-90, 0, Slider: false),
-                    defaultValue: () => new EnergySegmenterSettings().ThresholdDbfs),
-                Setting.Choice<string>("WhisperCutPresetCard",
-                    () => CutPreset,
-                    value => CutPreset = value,
-                    _cutPresets.SelectorOptions("WhisperCutPresetCustom"),
-                    defaultValue: () => CutPresets.Default),
-                Setting.Editor<CutCurveValues>("WhisperCutCurveCard",
-                    ReadCutValues,
-                    WriteCutValues,
-                    new EditorArgs(() => new CutCurveEditor(this)),
-                    visibleWhen: () => CutPreset == PresetFamily.Custom,
-                    defaultValue: () => CutCurveValues.From(new EnergySegmenterSettings())),
                 Setting.Magnitude("WhisperSegHangoverMaxCard",
                     () => SegHangoverMaxMs,
                     value => SegHangoverMaxMs = value,
@@ -240,19 +237,29 @@ public partial class WhisperViewModel
                     new MagnitudeArgs(30000, 900000, Slider: false, Integer: true),
                     visibleWhen: () => CutPreset == PresetFamily.Custom,
                     defaultValue: () => new EnergySegmenterSettings().HangoverRampEndMs),
-                Setting.Magnitude("WhisperSegMarginCard",
-                    () => SegMarginMs,
-                    value => SegMarginMs = value,
-                    new MagnitudeArgs(0, 1000, Slider: false, Integer: true),
-                    defaultValue: () => new EnergySegmenterSettings().MarginMs),
-                Setting.Magnitude("WhisperSegMinUtteranceCard",
-                    () => SegMinUtteranceMs,
-                    value => SegMinUtteranceMs = value,
-                    new MagnitudeArgs(0, 2000, Slider: false, Integer: true),
-                    defaultValue: () => new EnergySegmenterSettings().MinUtteranceMs),
+                // The instrument last and full width (decision 12).
+                Setting.Editor<CutCurveValues>("WhisperCutCurveCard",
+                    ReadCutValues,
+                    WriteCutValues,
+                    new EditorArgs(() => new CutCurveEditor(this)),
+                    visibleWhen: () => CutPreset == PresetFamily.Custom,
+                    defaultValue: () => CutCurveValues.From(new EnergySegmenterSettings())),
             ],
             glyph: Glyphs.Tuning,
-            defaultValue: () => new StreamingSettings().Strategy == PipelineStrategyKind.Streaming),
+            visibleWhen: () => StreamingEnabled,
+            defaultValue: () => CutPresets.Default),
+        Setting.Magnitude("WhisperSegMarginCard",
+            () => SegMarginMs,
+            value => SegMarginMs = value,
+            new MagnitudeArgs(0, 1000, Slider: false, Integer: true),
+            visibleWhen: () => StreamingEnabled,
+            defaultValue: () => new EnergySegmenterSettings().MarginMs),
+        Setting.Magnitude("WhisperSegMinUtteranceCard",
+            () => SegMinUtteranceMs,
+            value => SegMinUtteranceMs = value,
+            new MagnitudeArgs(0, 2000, Slider: false, Integer: true),
+            visibleWhen: () => StreamingEnabled,
+            defaultValue: () => new EnergySegmenterSettings().MinUtteranceMs),
     ];
 
     // Output filters — the three flat cards under the "Output filters" section
