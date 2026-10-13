@@ -3,15 +3,9 @@ using Deckle.Diagnostics;
 
 namespace Deckle.Lighting;
 
-// Lighting module provider. Covers Hue bridge discovery (cloud endpoint), CLIP
-// v1 pairing (link-button), group listing, entertainment configuration listing
-// (CLIP v2), lights by group listing, color sending (REST PUT /state or
-// /action), and visual identification operations (alert flash).
-//
-// The module will eventually abstract several drivers (WLED, DMX, HomeAssist).
-// For V0 only Hue is implemented; the provider is unique for the whole module,
-// and future drivers will add their events under the same provider instead of
-// creating a child Deckle.Lighting.* provider.
+// Lighting module provider, the Hue driver's events. The provider is unique
+// for the whole module: another driver (WLED, DMX, Home Assistant) adds its
+// events here instead of creating a child Deckle.Lighting.* provider.
 [EventSource(Name = "Deckle-Lighting")]
 public sealed partial class DeckleLightingSource : DeckleEventSource
 {
@@ -20,8 +14,7 @@ public sealed partial class DeckleLightingSource : DeckleEventSource
     private DeckleLightingSource() { }
 
     // IDs are public in the ETW manifest; never reuse an id after deleting an
-    // event. Milestones keep their original id; the Verbose mirrors added for the
-    // Verbose/Info separation take fresh ids 41-51 appended after the sequence.
+    // event. A new event takes the next free id.
 
     // ── EventIds — discovery ────────────────────────────────────────────
     public const int EvtDiscoveryStarted          = 1;
@@ -79,9 +72,7 @@ public sealed partial class DeckleLightingSource : DeckleEventSource
     public const int EvtEventStreamReconnecting   = 39;
     public const int EvtEventStreamStopped        = 40;
 
-    // ── EventIds — Verbose mirrors (Verbose/Info separation) ────────────
-    // Fresh ids appended after the milestone sequence; each mirrors a milestone
-    // whose IDs / k=v detail moved out of the Capital Info message.
+    // ── EventIds — appended ─────────────────────────────────────────────
     public const int EvtDiscoveryFoundDetail        = 41;
     public const int EvtDiscoveryFailedDetail       = 42;
     public const int EvtBridgePairedDetail2         = 43;

@@ -5,13 +5,9 @@ namespace Deckle.Lighting;
 public sealed partial class HueBridgeClient
 {
     /// <summary>
-    /// Polls the bridge for a successful pairing, expecting the user
-    /// to physically press the link button on top of the bridge within
-    /// the given timeout. Returns the credentials on success, throws
-    /// TimeoutException if the timeout elapses with no press, throws
-    /// for any other bridge-side failure. Pairing is retried every
-    /// <see cref="pollInterval"/> ; the loop is bounded by
-    /// <see cref="overallTimeout"/>.
+    /// Polls until the user presses the link button on the bridge.
+    /// Throws <see cref="TimeoutException"/> when no press comes within
+    /// <paramref name="overallTimeout"/>.
     /// </summary>
     public async Task<HueCredentials> PairAsync(
         TimeSpan overallTimeout,
@@ -43,7 +39,6 @@ public sealed partial class HueBridgeClient
                     return _credentials;
 
                 case PairOutcome.LinkButtonNotPressed:
-                    // Verbose only: expected while the user has not pressed the button yet.
                     DeckleLightingSource.Log.PairingWaiting((int)interval.TotalMilliseconds);
                     break;
 

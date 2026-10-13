@@ -7,10 +7,8 @@ using System.Text.Json.Serialization;
 
 namespace Deckle.Lighting;
 
-// Per-bridge REST client. One instance is bound to one HueBridge for
-// the entire pairing + control lifecycle ; consumers that need to
-// talk to several bridges (rare on a home network) instantiate one
-// client per bridge.
+// Per-bridge client. One instance is bound to one HueBridge for the
+// entire pairing + control lifecycle.
 //
 // The Hue bridge serves HTTPS on port 443 with a self-signed
 // certificate rooted on its own private CA. We accept any certificate
@@ -20,16 +18,12 @@ namespace Deckle.Lighting;
 // is bounded by construction : the constructor rejects any bridge IP
 // outside the private LAN ranges (see IsPrivateBridgeIp), so the
 // trusted certificate can only ever come from an RFC1918 / APIPA host,
-// never a public address. The remaining alternative (importing the
-// bridge CA into the system store, or pinning the SubjectPublicKeyInfo
-// at first pair) is a polish item for a later milestone.
+// never a public address.
 //
-// All endpoints used at J2 are CLIP v1 — the older REST surface that
-// still works on every v2 bridge, takes the username in the URL path,
-// and is simpler to drive than CLIP v2's resource graph. Migration to
-// CLIP v2 (request via `hue-application-key` header, resource-oriented
-// `/clip/v2/resource/*` paths) can land later behind the same
-// HueBridgeClient API.
+// Pairing, groups, lights, colour pushes and identify use CLIP v1 (the
+// username in the URL path). The Entertainment catalog and streaming
+// switch, the EventStream and the v1 ↔ v2 id maps use CLIP v2 (the
+// `hue-application-key` header).
 public sealed partial class HueBridgeClient : IDisposable, IHueEntertainmentBridgeClient
 {
     // Hue caps the `devicetype` string at 40 chars total. "deckle#" is
@@ -51,25 +45,16 @@ public sealed partial class HueBridgeClient : IDisposable, IHueEntertainmentBrid
 
     internal HueBridgeClient(HueBridge bridge, HttpClient http)
     {
-        // The bridge is a LAN-only device. Reject any address outside
-        // the private ranges before we build the HttpClient (and before
-        // the accept-all TLS callback can ever fire) so no caller —
-        // manual entry, cloud discovery, a tampered settings.json — can
-        // point this client at an attacker-controlled host on the
-        // internet (SSRF / data exfil through the PUT-state payload).
         ValidateBridge(bridge);
         _bridge = bridge;
         _http = http;
     }
 
     /// <summary>
-    /// Restores a previously-paired client from persisted credentials.
-    /// Used at app start to skip the link-button dance when the user has
-    /// already paired in a previous session — the bridge keeps the
-    /// username valid until manually revoked from the Hue app. The
-    /// ClientKey can be empty when restoring legacy pairings: the REST
-    /// CLIP v1 path only uses Username. Hue Entertainment v2 requires
-    /// the PSK, so callers that want streaming restore it from the
+    /// Restores a paired client from persisted credentials, with no new
+    /// link-button press: the bridge keeps the username valid until it is
+    /// revoked from the Hue app. ClientKey may be empty, since only
+    /// Entertainment streaming needs it; callers restore it from the
     /// secret vault when available.
     /// </summary>
     public HueBridgeClient(HueBridge bridge, HueCredentials credentials)
@@ -84,15 +69,11 @@ public sealed partial class HueBridgeClient : IDisposable, IHueEntertainmentBrid
         _credentials = credentials;
     }
 
-    /// <summary>The bridge this client targets.</summary>
     public HueBridge Bridge => _bridge;
 
-    /// <summary>Credentials obtained from a successful pairing, or
-    /// null if pairing has not run yet (or has failed).</summary>
+    /// <summary>Null until a pairing succeeds or credentials are restored.</summary>
     public HueCredentials? Credentials => _credentials;
 
-    /// <summary>True once pairing has succeeded and the bridge accepts
-    /// authenticated calls.</summary>
     public bool IsPaired => _credentials is not null;
 
     private static void ValidateBridge(HueBridge bridge)
@@ -107,14 +88,6 @@ public sealed partial class HueBridgeClient : IDisposable, IHueEntertainmentBrid
         }
     }
 
-    /// <summary>
-    /// Fetches the list of groups (rooms, zones, entertainment areas)
-    /// configured on the bridge. The CLIP v1 endpoint returns a flat
-    /// dictionary keyed by group id ; we project it to a list of
-    /// public <see cref="HueGroup"/> records so the caller doesn't see
-    /// the wire DTO. Pairing must have completed first ;
-    /// <see cref="InvalidOperationException"/> is thrown otherwise.
-    /// </summary>
     public async Task<IReadOnlyList<HueGroup>> ListGroupsAsync(CancellationToken ct = default)
     {
         ObjectDisposedException.ThrowIf(_disposed, this);
@@ -147,25 +120,17 @@ public sealed partial class HueBridgeClient : IDisposable, IHueEntertainmentBrid
         return groups;
     }
 
-    // Hue's `transitiontime` is the fade duration the bridge interpolates
-    // toward the new state, expressed in deciseconds (1/10 s). The
-    // factory default is 4 (= 400 ms), which feels sluggish on a fast
-    // dark→light transition (the lamp lags visibly behind the screen).
-    // For an ambient-light driver we want near-instant push and let the
-    // smoothing happen client-side (J5). 1 (= 100 ms) is a sweet spot for
-    // V0 : fast enough to feel responsive, slow enough that the per-tick
-    // 15 Hz updates don't read as strobing on the lamp.
+    // Hue's `transitiontime` is the bridge-side fade toward the new state,
+    // in deciseconds. The factory default makes the lamp lag the screen.
+    // Smoothing happens client-side, so the shortest non-zero fade keeps
+    // the lamp responsive while successive push ticks still blend instead
+    // of reading as strobing.
     private const int AmbientTransitionDeciseconds = 1;
 
     /// <summary>
-    /// Pushes a single sRGB colour to the given group. RGB is
-    /// converted to Hue's xy + brightness representation in-house
-    /// (see <see cref="HueColorMath"/>) ; pure black is mapped to
-    /// `on:false` so the lamp goes off instead of jumping to the
-    /// nearest in-gamut colour. The bridge `transitiontime` is forced
-    /// to <see cref="AmbientTransitionDeciseconds"/> so the lamp
-    /// doesn't lag the screen by the 400 ms factory default. Pairing
-    /// must have completed.
+    /// Pairing must have completed. Pure black is sent as <c>on:false</c>
+    /// so the lamp goes off instead of jumping to the nearest in-gamut
+    /// colour.
     /// </summary>
     public Task SetGroupColorAsync(string groupId, LightColor color, CancellationToken ct = default)
         => PutStateAsync(
@@ -174,14 +139,6 @@ public sealed partial class HueBridgeClient : IDisposable, IHueEntertainmentBrid
             target: $"group_id={groupId}",
             ct);
 
-    /// <summary>
-    /// Pushes a single sRGB colour to one individual light. Same
-    /// conversion + <c>transitiontime</c> semantics as
-    /// <see cref="SetGroupColorAsync"/> ; the difference is the endpoint
-    /// (<c>/lights/{id}/state</c> vs. <c>/groups/{id}/action</c>) and
-    /// the addressing granularity. Used by the multi-light pipeline
-    /// where each light gets its own colour derived from a screen zone.
-    /// </summary>
     public Task SetLightColorAsync(string lightId, LightColor color, CancellationToken ct = default)
         => PutStateAsync(
             $"api/{_credentials!.Username}/lights/{lightId}/state",
@@ -189,11 +146,6 @@ public sealed partial class HueBridgeClient : IDisposable, IHueEntertainmentBrid
             target: $"light_id={lightId}",
             ct);
 
-    // Shared body for the two PUT-state endpoints. CLIP v1 accepts the
-    // exact same payload shape on /groups/{id}/action and
-    // /lights/{id}/state — `on`, `bri`, `xy`, `transitiontime` — so the
-    // conversion + body building + log line live here and the public
-    // entry points just pick the URL and a log-friendly target tag.
     private async Task PutStateAsync(string url, LightColor color, string target, CancellationToken ct)
     {
         ObjectDisposedException.ThrowIf(_disposed, this);
@@ -207,10 +159,8 @@ public sealed partial class HueBridgeClient : IDisposable, IHueEntertainmentBrid
 
         if (bri == 0)
         {
-            // Black → turn the light off. Sending on:false alone is
-            // enough ; xy and bri are ignored by the bridge when
-            // on:false is present. transitiontime still applies and
-            // gives a 100 ms fade-out instead of a hard cut.
+            // The bridge ignores xy and bri alongside on:false;
+            // transitiontime still applies, so the light fades out.
             body.On = false;
         }
         else
@@ -242,26 +192,17 @@ public sealed partial class HueBridgeClient : IDisposable, IHueEntertainmentBrid
     }
 
     /// <summary>
-    /// Asks the bridge to flash the addressed light so the user can
-    /// spot it physically among other fixtures in the room. CLIP v1
-    /// exposes the operation through the same /state endpoint with
-    /// the <c>alert</c> field set to <c>lselect</c> (loop select :
-    /// the bulb breathes / pulses for ~15 s and then auto-restores
-    /// its previous state — we don't need to clean up). The bridge
-    /// ACKs the PUT immediately, the visible flash continues in the
-    /// background. Pair with <see cref="StopIdentifyAsync"/> when the
-    /// caller wants to cut the flash short (typical : ~3 s in the
-    /// Playground UI so the user isn't subjected to a 15 s strobe).
+    /// Flashes the light so the user can spot it. <c>alert=lselect</c>
+    /// pulses for about 15 s, then the bridge restores the previous state
+    /// itself; the PUT is acknowledged at once. <see cref="StopIdentifyAsync"/>
+    /// cuts the flash short.
     /// </summary>
     public Task IdentifyLightAsync(string lightId, CancellationToken ct = default)
         => SendAlertAsync(lightId, "lselect", "start", ct);
 
     /// <summary>
-    /// Stops an ongoing identify flash on the addressed light by
-    /// setting <c>alert=none</c>. Idempotent — calling on a light
-    /// that isn't currently flashing is harmless ; the bridge just
-    /// acknowledges. The bridge restores the light's pre-flash state
-    /// with a soft transition.
+    /// Sends <c>alert=none</c>. Harmless on a light that is not flashing;
+    /// the bridge restores the pre-flash state.
     /// </summary>
     public Task StopIdentifyAsync(string lightId, CancellationToken ct = default)
         => SendAlertAsync(lightId, "none", "stop", ct);
@@ -288,13 +229,9 @@ public sealed partial class HueBridgeClient : IDisposable, IHueEntertainmentBrid
     }
 
     /// <summary>
-    /// Lists the lights that belong to the given group, in the bridge's
-    /// own order. CLIP v1 doesn't return light metadata on the group
-    /// endpoint — only the array of light ids — so we issue two GETs :
-    /// one for the group (to get the id list) and one for <c>/lights</c>
-    /// (to map each id to its human name + reachability flag). Two
-    /// round-trips at "open settings" time is fine ; the multi-light
-    /// push loop caches the result and doesn't re-query per tick.
+    /// Lists the group's lights in the bridge's own order. The CLIP v1
+    /// group endpoint returns only light ids, so a second GET on
+    /// <c>/lights</c> maps each id to its name and reachability.
     /// </summary>
     public async Task<IReadOnlyList<HueLight>> ListLightsInGroupAsync(string groupId, CancellationToken ct = default)
     {
@@ -338,11 +275,8 @@ public sealed partial class HueBridgeClient : IDisposable, IHueEntertainmentBrid
             }
             else
             {
-                // The group references a light id that isn't in the
-                // /lights dictionary — shouldn't happen in practice
-                // (the bridge maintains the invariant), but we keep
-                // the entry with a synthetic name rather than dropping
-                // it silently so the UI surfaces the discrepancy.
+                // A group id missing from /lights is kept with a synthetic
+                // name, unreachable, so the UI surfaces the discrepancy.
                 result.Add(new HueLight(id, $"Light {id}", "", false));
             }
         }
@@ -366,18 +300,14 @@ public sealed partial class HueBridgeClient : IDisposable, IHueEntertainmentBrid
 
     // ── Helpers ─────────────────────────────────────────────────────
 
-    // RFC1918 + APIPA validation for a Hue bridge address. The bridge
-    // is a LAN-only device ; accepting an arbitrary IP would let any
-    // untrusted source (manual entry, cloud discovery, a corrupted or
-    // tampered settings.json) point a client at an attacker-controlled
-    // server on the internet (SSRF / data exfil through the PUT-state
-    // payload). The single home for this rule — the constructor calls
-    // it before building the HttpClient, and the ambient push loop
-    // re-checks the persisted IP through the same method for an early,
-    // friendly message. V0 accepts only IPv4 in the canonical private
-    // ranges and 169.254/16 link-local. IPv6 + hostnames are out of
-    // scope for V0 ; revisit when a user requests it with a justified
-    // setup.
+    // RFC1918 + APIPA validation for a Hue bridge address, the single home
+    // for this rule. The bridge is a LAN-only device ; accepting an
+    // arbitrary IP would let any untrusted source (manual entry, cloud
+    // discovery, a corrupted or tampered settings.json) point a client at
+    // an attacker-controlled server on the internet (SSRF / data exfil
+    // through the PUT-state payload). Both constructors call it before any
+    // network call; the ambient engine re-checks the persisted IP at start
+    // for an early, friendly message.
     public static bool IsPrivateBridgeIp(string? s)
     {
         if (string.IsNullOrWhiteSpace(s)) return false;
@@ -392,28 +322,20 @@ public sealed partial class HueBridgeClient : IDisposable, IHueEntertainmentBrid
          || (b[0] == 169 && b[1] == 254);                       // 169.254.0.0/16 APIPA link-local
     }
 
-    // Internal so HueEventStreamClient can reuse the exact same TLS
-    // handling (self-signed cert callback) instead of duplicating the
-    // setup. The SSE consumer needs its own HttpClient because it sets
-    // Timeout to InfiniteTimeSpan (a streaming GET would otherwise be
-    // cut off after 10 s), so we just hand it the factory.
     internal static HttpClient CreateBridgeHttpClient(string ip, int port, TimeSpan? timeout = null)
     {
         var handler = new SocketsHttpHandler
         {
             SslOptions = new SslClientAuthenticationOptions
             {
-                // Bridge presents a self-signed cert ; we trust whoever
-                // answers at the IP we explicitly chose. See class
-                // header for the trade-off rationale.
+                // Self-signed bridge certificate: see the class header for
+                // why accept-all stays bounded to private LAN addresses.
                 RemoteCertificateValidationCallback = (_, _, _, _) => true,
             },
         };
 
-        // Default port for the bridge is 443. The discovery endpoint
-        // returns 443 explicitly ; older bridges that still expose
-        // plain HTTP on 80 are out of scope for J2 (v2 firmware
-        // forces HTTPS).
+        // HTTPS only: v2 bridge firmware forces it, and bridges that still
+        // serve plain HTTP on port 80 are not supported.
         return new HttpClient(handler)
         {
             BaseAddress = new Uri($"https://{ip}:{port}/"),
@@ -423,9 +345,7 @@ public sealed partial class HueBridgeClient : IDisposable, IHueEntertainmentBrid
 
     private static string BuildDeviceType(string machineName)
     {
-        // Sanitize : Hue rejects spaces and many punctuation chars in
-        // the suffix. Keep alphanumeric + dash, fold the rest to dash,
-        // cap at 33 chars to fit the 40-char total limit.
+        // Hue rejects spaces and many punctuation chars in the suffix.
         Span<char> buffer = stackalloc char[DeviceTypeMaxSuffixLength];
         int length = 0;
         foreach (char c in machineName)
@@ -453,8 +373,7 @@ public sealed partial class HueBridgeClient : IDisposable, IHueEntertainmentBrid
 }
 
 // Bridge-side rejection of a pairing attempt for a reason other than
-// "link button not pressed". Wraps the bridge's own error type code
-// so callers can branch on known cases (e.g. type 7 = invalid value).
+// "link button not pressed".
 public sealed class HuePairingException : Exception
 {
     public HuePairingException(string message) : base(message) { }

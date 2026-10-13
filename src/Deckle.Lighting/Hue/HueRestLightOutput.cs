@@ -1,37 +1,17 @@
 namespace Deckle.Lighting;
 
-// ILightOutput / IMultiLightOutput implementation on top of a paired
-// HueBridgeClient. Binds the abstraction to a specific group on a
-// specific bridge ; constructing one is cheap (just wraps the client +
-// a group id), the network work happens at ConnectAsync /
-// SetColorAsync / SetLightColorsAsync time.
+// ILightOutput / IMultiLightOutput over CLIP v1 REST, bound to one group
+// on a paired HueBridgeClient.
 //
-// Ownership. The HueBridgeClient is passed in from outside (typically
-// the Playground or, later, AmbientEngine) and is NOT disposed by the
-// HueRestLightOutput. The caller is the one who paired the bridge in
-// the first place ; it knows when the credentials should be released.
-// Multiple HueRestLightOutput instances pointed at different groups
-// can share a single HueBridgeClient without contention — Hue's REST
-// API tolerates concurrent writes per group, and the HttpClient
+// Ownership. The HueBridgeClient comes from outside and is NOT disposed
+// here: the caller paired the bridge and knows when the credentials should
+// be released. Several outputs can share one client; the HttpClient
 // underneath is thread-safe for parallel requests.
 //
-// Lifecycle.
-//   - Construct with a paired client + group id. If the client isn't
-//     paired yet, ConnectAsync throws InvalidOperationException — we
-//     refuse to "lazy pair" because the link-button UX is interactive
-//     and shouldn't surface through this abstraction.
-//   - ConnectAsync is a cheap re-check + a no-op for now (no per-
-//     output session to open). It's where future Entertainment v2
-//     would start the DTLS handshake transparently.
-//   - SetColorAsync delegates straight to the bridge client
-//     (/groups/{id}/action).
-//   - ListLightsAsync caches the bridge response for the lifetime of
-//     the connection (caller reconnects to refresh).
-//   - SetLightColorsAsync fans out one PUT /lights/{id}/state per
-//     entry via Task.WhenAll. Hue's REST stack tolerates parallel
-//     writes per light ; we cap effective per-tick traffic via the
-//     consumer-side cadence + the dictionary size.
-//   - DisposeAsync is a no-op for ownership reasons (see above).
+// ConnectAsync refuses an unpaired client rather than pairing lazily: the
+// link-button flow is interactive and does not belong behind this
+// abstraction. ListLightsAsync caches the bridge response until the next
+// ConnectAsync.
 public sealed class HueRestLightOutput : IMultiLightOutput
 {
     private readonly HueBridgeClient _client;
@@ -56,8 +36,6 @@ public sealed class HueRestLightOutput : IMultiLightOutput
                 "HueBridgeClient is not paired ; pair it before constructing a HueRestLightOutput.");
         }
         _connected = true;
-        // Clear any cached list from a previous connection cycle — a
-        // fresh ConnectAsync semantically restarts the session.
         _cachedLights = null;
         return Task.CompletedTask;
     }
@@ -77,9 +55,6 @@ public sealed class HueRestLightOutput : IMultiLightOutput
 
         var hueLights = await _client.ListLightsInGroupAsync(_groupId, ct).ConfigureAwait(false);
 
-        // Project Hue-specific light records onto the driver-neutral
-        // LightDescriptor. The Id stays as-is (Hue's integer-as-string)
-        // since AmbientEngine and the placement layer treat it opaquely.
         var descriptors = new LightDescriptor[hueLights.Count];
         for (int i = 0; i < hueLights.Count; i++)
         {
@@ -99,11 +74,6 @@ public sealed class HueRestLightOutput : IMultiLightOutput
         }
         if (colorsByLightId.Count == 0) return Task.CompletedTask;
 
-        // Fan out per-light pushes. HueBridgeClient.SetLightColorAsync
-        // returns a Task that completes on the bridge's 200 response ;
-        // Task.WhenAll surfaces the first exception via AggregateException
-        // (we let AmbientEngine catch + log it as a transient warning,
-        // same policy as the single-colour path).
         var tasks = new Task[colorsByLightId.Count];
         int i = 0;
         foreach (var (lightId, color) in colorsByLightId)
