@@ -52,12 +52,18 @@ public sealed partial class AutocorrectPage : Page
         ComposeSettings();
         ComposeDiagnostics();
 
+        // The page-level "Reset all" gate spans both composers; re-gate it
+        // whenever either goes dirty.
+        _settingsComposer!.DirtyChanged += (_, _) => GateResetAll();
+        _diagnosticsComposer!.DirtyChanged += (_, _) => GateResetAll();
+
         ViewModel.ExcludedWords.CollectionChanged += OnExclusionsChanged;
         // The master switch gates the exclusion section (mask-never-grey), so
         // re-run the visibility pass whenever Enabled changes — the composer's
         // setter raises PropertyChanged, which routes here.
         ViewModel.PropertyChanged += OnViewModelChanged;
         RefreshExclusionsVisibility();
+        GateResetAll();
     }
 
     // Host-only, like TrackpadPage: the page hands the host panel and the
@@ -91,6 +97,29 @@ public sealed partial class AutocorrectPage : Page
         // reflects the live model.
         ViewModel.Load();
         RefreshExclusionsVisibility();
+        // Load() may raise no PropertyChanged when nothing moved, so no composer
+        // DirtyChanged would fire: settle the page-reset gate off the fresh values.
+        GateResetAll();
+    }
+
+    // ── Whole-page "Reset all" ────────────────────────────────────────────────
+    //
+    // Drives the master switch and the Diagnostics opt-ins back to their defaults
+    // in one gesture. Active-when-dirty: enabled only while a composed value
+    // differs from its default. The excluded-words register is not touched — it
+    // is a list the user authors, not a setting with a default. The header block
+    // asks before firing ResetAllRequested (the generic wording).
+    private void GateResetAll()
+    {
+        Header.IsResetAllEnabled =
+            (_settingsComposer?.IsDirty() ?? false) ||
+            (_diagnosticsComposer?.IsDirty() ?? false);
+    }
+
+    private void ResetAll_Click(object sender, RoutedEventArgs e)
+    {
+        _settingsComposer?.ResetAll();
+        _diagnosticsComposer?.ResetAll();
     }
 
     private void OnExclusionsChanged(object? sender, NotifyCollectionChangedEventArgs e)

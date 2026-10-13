@@ -26,6 +26,9 @@ public sealed partial class DiagnosticsPage : Page
     public DiagnosticsPage()
     {
         InitializeComponent();
+        // The page asks with its own wording (it says what the reset clears), so the
+        // header's generic confirmation stays off.
+        Header.ConfirmsReset = false;
         NavigationCacheMode = NavigationCacheMode.Required;
         ComposeLoggingSection();
         ComposeApplicationLogSection();
@@ -127,7 +130,7 @@ public sealed partial class DiagnosticsPage : Page
     // (plus one settle after Load()).
     private void GateResetAll()
     {
-        ResetAllButton.IsEnabled =
+        Header.IsResetAllEnabled =
             (_loggingComposer?.IsDirty() ?? false) ||
             (_applicationLogComposer?.IsDirty() ?? false) ||
             (_telemetryComposer?.IsDirty() ?? false);

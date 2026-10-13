@@ -4,7 +4,8 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:controls="using:CommunityToolkit.WinUI.Controls"
     xmlns:ui="using:CommunityToolkit.WinUI"
-    xmlns:ambientControls="using:Deckle.Lighting.Ambient">
+    xmlns:ambientControls="using:Deckle.Lighting.Ambient"
+    xmlns:catalog="using:Deckle.Catalog">
 
     <!-- Canonical Microsoft Learn pattern (SettingsExpander sample
          "Settings page example"): StackPanel max 1000 in a Grid,
@@ -43,35 +44,14 @@
                         HorizontalAlignment="Stretch"
                         Spacing="{StaticResource SettingsCardSpacing}">
 
-                <!-- Title row with the page-level reset (the third reset
-                     level after the per-card and per-group ones). Enabled
-                     only while the page is off its defaults; confirmed in
-                     code-behind before it writes. Same shape as WhisperPage. -->
-                <Grid Margin="0,0,0,8">
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="*" />
-                        <ColumnDefinition Width="Auto" />
-                    </Grid.ColumnDefinitions>
-                    <TextBlock x:Uid="AmbientPageTitleLabel"
-                               Style="{StaticResource TitleTextBlockStyle}" />
-                    <Button x:Uid="AmbientPage_ResetAll"
-                            Grid.Column="1"
-                            VerticalAlignment="Center"
-                            Style="{StaticResource SubtleButtonStyle}"
-                            IsEnabled="{x:Bind ViewModel.CanReset, Mode=OneWay}"
-                            Click="ResetAll_Click">
-                        <StackPanel Orientation="Horizontal" Spacing="8">
-                            <FontIcon Glyph="{StaticResource Icon.Reset}" FontSize="14" />
-                            <TextBlock x:Uid="AmbientPageResetAllLabel" />
-                        </StackPanel>
-                    </Button>
-                </Grid>
-
-                <TextBlock x:Uid="AmbientPageSubtitleLabel"
-                           Style="{StaticResource BodyTextBlockStyle}"
-                           Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                           TextWrapping="Wrap"
-                           Margin="0,0,0,12" />
+                <!-- The shared header block, with the page-level reset (the
+                     third reset level after the per-card and per-group ones).
+                     Enabled only while the page is off its defaults (code-behind
+                     mirrors ViewModel.CanReset); the page confirms with its own
+                     dialog, which says what the reset keeps. -->
+                <catalog:SettingsPageHeader x:Name="Header"
+                                            x:Uid="AmbientPageHeader"
+                                            ResetAllRequested="ResetAll_Click" />
 
                 <!-- ── State ──────────────────────────────────────────────── -->
                 <TextBlock x:Uid="AmbientStateSectionHeader"

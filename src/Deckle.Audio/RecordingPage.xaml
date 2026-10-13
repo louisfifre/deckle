@@ -5,7 +5,8 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:controls="using:CommunityToolkit.WinUI.Controls"
     xmlns:ui="using:CommunityToolkit.WinUI"
-    xmlns:vm="using:Deckle.Audio">
+    xmlns:vm="using:Deckle.Audio"
+    xmlns:catalog="using:Deckle.Catalog">
 
     <!-- Same canvas pattern as GeneralPage / DiagnosticsPage / WhisperPage:
          Grid wrapper + StackPanel MaxWidth=1000 + SettingsCardSpacing=4 +
@@ -39,15 +40,12 @@
                         HorizontalAlignment="Stretch"
                         Spacing="{StaticResource SettingsCardSpacing}">
 
-                <TextBlock x:Uid="RecordingPageTitleLabel"
-                           Style="{StaticResource TitleTextBlockStyle}"
-                           Margin="0,0,0,8" />
-
-                <TextBlock x:Uid="RecordingPageSubtitleLabel"
-                           Style="{StaticResource BodyTextBlockStyle}"
-                           Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                           TextWrapping="Wrap"
-                           Margin="0,0,0,12" />
+                <!-- The shared header block: breadcrumb, one line of description,
+                     Reset all on the trailing edge (active-when-dirty, confirmed
+                     by the block itself). -->
+                <catalog:SettingsPageHeader x:Name="Header"
+                                            x:Uid="RecordingPageHeader"
+                                            ResetAllRequested="ResetAll_Click" />
 
                 <Grid>
                     <Grid.ColumnDefinitions>

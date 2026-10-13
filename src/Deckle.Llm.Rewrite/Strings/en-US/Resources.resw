@@ -245,9 +245,6 @@
        Third page in the Settings nav. Hosts four sections rendered as
        UserControls (General, ActiveProfile, Profiles, Models).
        The Ollama InfoBar is inline on the page. -->
-  <data name="LlmPage_ResetAll.ToolTipService.ToolTip" xml:space="preserve">
-    <value>Reset all rewriting settings to defaults</value>
-  </data>
   <data name="LlmPage_OllamaStatusBar.Title" xml:space="preserve">
     <value>Ollama is not reachable</value>
   </data>
@@ -357,12 +354,14 @@
        Page titles, subtitles, and section headers rendered as plain
        TextBlocks (not Cards). x:Uid resolves <Uid>.Text automatically.
        Values mirror the raw Surface_Purpose entries for code-behind. -->
-  <data name="LlmPageTitleLabel.Text" xml:space="preserve">
+  <data name="LlmPageHeader.Title" xml:space="preserve">
     <value>Rewriting</value>
   </data>
-  <data name="LlmPageSubtitleLabel.Text" xml:space="preserve">
+  <data name="LlmPageHeader.Description" xml:space="preserve">
     <value>Clean up and restructure your transcriptions through a local language model via Ollama. Configure rewrite profiles with different models and prompts, then choose the one applied to every dictation.</value>
   </data>
+  <!-- No longer an x:Uid: ResetAll_Click reads it with Loc.Get for the
+       confirmation dialog's primary button. -->
   <data name="LlmPageResetAllLabel.Text" xml:space="preserve">
     <value>Reset all</value>
   </data>

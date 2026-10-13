@@ -64,6 +64,10 @@ public sealed partial class WhisperPage : Page
             throw;
         }
 
+        // The page asks with its own wording (it says what the reset keeps), so the
+        // header's generic confirmation stays off.
+        Header.ConfirmsReset = false;
+
         // Make the Page focusable so clicking on the background can
         // steal focus from the active control (triggering LostFocus →
         // binding update → auto-save).
@@ -161,10 +165,21 @@ public sealed partial class WhisperPage : Page
     {
         var composer = new SettingsComposer(host, ViewModel);
         configure?.Invoke(composer);
+        // Subscribed before Compose so its closing RefreshAll lands the first gate.
+        composer.DirtyChanged += (_, _) => GateResetAll();
         composer.Compose(settings);
         _composers.Add(composer);
         return composer;
     }
+
+    // The page-level "Reset all" is active-when-dirty: enabled only while some
+    // composed value differs from its default. Re-gated off every composer's
+    // DirtyChanged and once after Load() (OnNavigatedTo) — Load() raises no
+    // PropertyChanged on a clean profile, so no DirtyChanged would settle it.
+    // The bespoke Model / Language / InitialPrompt cards have no composer, so they
+    // do not feed this gate.
+    private void GateResetAll() =>
+        Header.IsResetAllEnabled = _composers.Any(c => c.IsDirty());
 
     // NavigationCacheMode.Required reuses the page instance. On every navigation
     // we reload settings from the POCO via the VM; constructor-time hover wiring
@@ -179,6 +194,7 @@ public sealed partial class WhisperPage : Page
         _startupModel = ViewModel.Model;
         _startupUseGpu = ViewModel.UseGpu;
         _initializing = false;
+        GateResetAll();
 
         // Speech isn't provisioned until the runtime + model are on disk. When
         // they aren't, surface a call-to-action that reopens the setup wizard

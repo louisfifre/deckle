@@ -70,6 +70,12 @@ public sealed partial class TrackpadPage : Page
 
         _diagnosticsComposer = new SettingsComposer(DiagnosticsHost, ViewModel);
         _diagnosticsComposer.Compose(ViewModel.TrackpadDiagnosticsSettingsManifest);
+
+        // The page-level "Reset all" gate spans both composers; re-gate it
+        // whenever either goes dirty.
+        _dragComposer.DirtyChanged += (_, _) => GateResetAll();
+        _diagnosticsComposer.DirtyChanged += (_, _) => GateResetAll();
+        GateResetAll();
     }
 
     protected override void OnNavigatedTo(NavigationEventArgs e)
@@ -79,6 +85,29 @@ public sealed partial class TrackpadPage : Page
         // could have happened elsewhere while the page was cached.
         ViewModel.Load();
         SyncImperativeControls();
+        // Load() may raise no PropertyChanged on a clean profile, so no composer
+        // DirtyChanged would fire — settle the gate off the freshly-loaded values.
+        GateResetAll();
+    }
+
+    // ── Whole-page "Reset all" ───────────────────────────────────────────────
+    //
+    // Drives both composers back to their defaults at once, from the shared
+    // header. Active-when-dirty: enabled only while some composed value differs
+    // from its default. The header asks before firing (generic wording: nothing
+    // user-authored is lost). The Windows-integration acts are commands, not
+    // settings, so Reset all leaves them alone.
+    private void GateResetAll()
+    {
+        Header.IsResetAllEnabled =
+            (_dragComposer?.IsDirty() ?? false) ||
+            (_diagnosticsComposer?.IsDirty() ?? false);
+    }
+
+    private void ResetAll_Click(object sender, RoutedEventArgs e)
+    {
+        _dragComposer?.ResetAll();
+        _diagnosticsComposer?.ResetAll();
     }
 
     // Refreshes the two controls whose state is owned by a service rather

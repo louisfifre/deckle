@@ -73,13 +73,13 @@
        (AppsEnrolledPage_*, LexicalDomainsPage_*) further down.
        x:Uid keys follow <Page>_<Element>(.<Property>) — plain TextBlocks bind
        .Text, SettingsCards bind .Header / .Description. -->
-  <data name="AutocorrectPage_Title.Text" xml:space="preserve">
+  <data name="AutocorrectPageHeader.Title" xml:space="preserve">
     <value>Autocorrect</value>
   </data>
   <!-- Says what the feature does, and stops there. Where correction runs belongs
        to the Apps enrolled page, whose own subtitle states it — each surface
        describes what it holds, so the sentence is written once. -->
-  <data name="AutocorrectPage_Subtitle.Text" xml:space="preserve">
+  <data name="AutocorrectPageHeader.Description" xml:space="preserve">
     <value>Restore French accents and fix typos as you type.</value>
   </data>
 
@@ -139,10 +139,10 @@
   </data>
 
   <!-- ── Apps enrolled (child page) ───────────────────────────────────────── -->
-  <data name="AppsEnrolledPage_Title.Text" xml:space="preserve">
+  <data name="AppsEnrolledPageHeader.Title" xml:space="preserve">
     <value>Apps enrolled</value>
   </data>
-  <data name="AppsEnrolledPage_Subtitle.Text" xml:space="preserve">
+  <data name="AppsEnrolledPageHeader.Description" xml:space="preserve">
     <value>Autocorrect runs only where you've allowed it. Deckle offers to enable it the first time a correction could help in a new app.</value>
   </data>
   <data name="AppsEnrolledPage_Section_Apps.Text" xml:space="preserve">
@@ -168,10 +168,10 @@
   <!-- A domain is a field of writing whose vocabulary the corrector can be
        taught; a row inside it is one language of that domain. The word "pack"
        (the code's term for the intersection) never surfaces here. -->
-  <data name="LexicalDomainsPage_Title.Text" xml:space="preserve">
+  <data name="LexicalDomainsPageHeader.Title" xml:space="preserve">
     <value>Lexical domains</value>
   </data>
-  <data name="LexicalDomainsPage_Subtitle.Text" xml:space="preserve">
+  <data name="LexicalDomainsPageHeader.Description" xml:space="preserve">
     <value>Specialized vocabularies that extend correction to the fields you write about. Pick a domain, then enable the languages you write in.</value>
   </data>
 

@@ -3,7 +3,8 @@
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:controls="using:CommunityToolkit.WinUI.Controls"
-    xmlns:ui="using:CommunityToolkit.WinUI">
+    xmlns:ui="using:CommunityToolkit.WinUI"
+    xmlns:catalog="using:Deckle.Catalog">
 
     <Page.Resources>
         <x:Double x:Key="SettingsCardSpacing">4</x:Double>
@@ -64,6 +65,14 @@
                             HorizontalAlignment="Stretch"
                             Spacing="{StaticResource SettingsCardSpacing}">
 
+                <!-- The shared header block: breadcrumb, one line of description,
+                     Reset all on the trailing edge (active-when-dirty). This page
+                     asks with its own dialog, so the header's generic one is off
+                     (ConfirmsReset, set in the constructor). -->
+                <catalog:SettingsPageHeader x:Name="Header"
+                                            x:Uid="WhisperPageHeader"
+                                            ResetAllRequested="ResetAll_Click" />
+
                 <InfoBar x:Name="SetupInfoBar"
                          x:Uid="WhisperSetupInfoBar"
                          IsClosable="False"
@@ -74,31 +83,6 @@
                                 Click="OnSetupClick" />
                     </InfoBar.ActionButton>
                 </InfoBar>
-
-                <Grid Margin="0,0,0,8">
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="*" />
-                        <ColumnDefinition Width="Auto" />
-                    </Grid.ColumnDefinitions>
-                    <TextBlock x:Uid="WhisperPageTitleLabel"
-                               Style="{StaticResource TitleTextBlockStyle}" />
-                    <Button x:Uid="WhisperPage_ResetAll"
-                            Grid.Column="1"
-                            VerticalAlignment="Center"
-                            Style="{StaticResource SubtleButtonStyle}"
-                            Click="ResetAll_Click">
-                        <StackPanel Orientation="Horizontal" Spacing="8">
-                            <FontIcon Glyph="{StaticResource Icon.Reset}" FontSize="14" />
-                            <TextBlock x:Uid="WhisperPageResetAllLabel" />
-                        </StackPanel>
-                    </Button>
-                </Grid>
-
-                <TextBlock x:Uid="WhisperPageSubtitleLabel"
-                           Style="{StaticResource BodyTextBlockStyle}"
-                           Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                           TextWrapping="Wrap"
-                           Margin="0,0,0,12" />
 
                 <!-- ── Overlay and pasting ──────────────────────────────────────
                      The dictation experience — the on-screen HUD and auto-paste,

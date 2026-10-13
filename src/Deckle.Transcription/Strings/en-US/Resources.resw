@@ -422,9 +422,6 @@
   <data name="WhisperSetupButton.Content" xml:space="preserve">
     <value>Set up</value>
   </data>
-  <data name="WhisperPage_ResetAll.ToolTipService.ToolTip" xml:space="preserve">
-    <value>Reset all transcription settings to defaults</value>
-  </data>
   <data name="WhisperModelCard.Header" xml:space="preserve">
     <value>Whisper model (requires restart)</value>
   </data>
@@ -585,10 +582,10 @@
        Page titles, subtitles, and section headers rendered as plain
        TextBlocks (not Cards). x:Uid resolves <Uid>.Text automatically.
        Values mirror the raw Surface_Purpose entries for code-behind. -->
-  <data name="WhisperPageTitleLabel.Text" xml:space="preserve">
+  <data name="WhisperPageHeader.Title" xml:space="preserve">
     <value>Transcription</value>
   </data>
-  <data name="WhisperPageSubtitleLabel.Text" xml:space="preserve">
+  <data name="WhisperPageHeader.Description" xml:space="preserve">
     <value>Control how Deckle turns your voice into text. Start with the model and language — then use Speech filtering to fight hallucinations on silences and background noise.</value>
   </data>
   <data name="WhisperPageModelEngineHeaderLabel.Text" xml:space="preserve">

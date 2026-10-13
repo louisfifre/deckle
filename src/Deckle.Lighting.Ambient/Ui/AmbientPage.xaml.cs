@@ -44,6 +44,10 @@ public sealed partial class AmbientPage : Page
     {
         InitializeComponent();
 
+        // The page asks with its own wording (it says what the reset keeps), so
+        // the header does not add its generic confirmation on top.
+        Header.ConfirmsReset = false;
+
         // Load before composing so every composed card starts on the stored
         // value rather than the view model's constructor seed.
         ViewModel.Load();
@@ -59,6 +63,7 @@ public sealed partial class AmbientPage : Page
         ToolTipService.SetToolTip(BrightnessCurveReset, Loc.Get("SettingsComposer_ResetToDefault"));
         ViewModel.PropertyChanged += OnViewModelPropertyChanged;
         UpdateBrightnessCurveReset();
+        Header.IsResetAllEnabled = ViewModel.CanReset;
 
         Loaded   += AmbientPage_Loaded;
         Unloaded += AmbientPage_Unloaded;
@@ -150,6 +155,11 @@ public sealed partial class AmbientPage : Page
             case nameof(AmbientViewModel.BrightnessCurveX2):
             case nameof(AmbientViewModel.BrightnessCurveY2):
                 UpdateBrightnessCurveReset();
+                break;
+            // Reset all is active only while the page is off its defaults; the
+            // view model recomputes CanReset after every Load and edit.
+            case nameof(AmbientViewModel.CanReset):
+                Header.IsResetAllEnabled = ViewModel.CanReset;
                 break;
         }
     }
