@@ -21,12 +21,6 @@ public sealed partial class WhisperPage : Page
 {
     public WhisperViewModel ViewModel { get; } = new();
 
-    // Settings-UX doctrine: an option that only makes sense in a context is hidden
-    // when inapplicable, not greyed. The segmenter parameter cards appear only
-    // when the streaming pipeline is on.
-    private Visibility VisibleWhenStreaming(bool on) =>
-        on ? Visibility.Visible : Visibility.Collapsed;
-
     // Guards the Language combo's SelectionChanged and the model
     // AutoSuggestBox's SuggestionChosen during initial sync — these handlers
     // set VM properties which would trigger PushToSettings() needlessly.
@@ -149,13 +143,9 @@ public sealed partial class WhisperPage : Page
 
         ComposeRegion(UseGpuHost, ViewModel.UseGpuSettingsManifest);
         ComposeRegion(ModelsDirectoryHost, ViewModel.ModelsDirectorySettingsManifest);
-        ComposeRegion(VadHost, ViewModel.VadSettings);
-        ComposeRegion(StreamingHost, ViewModel.StreamingSettings);
-        ComposeRegion(OutputFiltersHost, ViewModel.OutputFilterSettingsManifest);
-        ComposeRegion(ContextHost, ViewModel.ContextSettingsManifest);
-        ComposeRegion(DecodingHost, ViewModel.DecodingSettingsManifest);
-        ComposeRegion(ConfidenceHost, ViewModel.ConfidenceSettingsManifest);
         ComposeRegion(DiagnosticsHost, ViewModel.DiagnosticsSettings);
+        // The decoding and streaming manifests compose on DecodingPage and
+        // StreamingPage, this module's other two pages.
     }
 
     private SettingsComposer ComposeRegion(

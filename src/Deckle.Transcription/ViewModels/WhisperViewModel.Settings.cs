@@ -195,13 +195,20 @@ public partial class WhisperViewModel
     // onto the bool (Load/Push: StreamingEnabled = Strategy == Streaming), read off a
     // fresh StreamingSettings so the shipped default Strategy (Monolithic → false)
     // is the single source — no hand-copied bool.
-    public IReadOnlyList<SettingDescriptor> StreamingSettings =>
+    public IReadOnlyList<SettingDescriptor> StreamingSwitch =>
     [
         Setting.Toggle("WhisperStreamingEnabledCard",
             () => StreamingEnabled,
             value => StreamingEnabled = value,
             glyph: Glyphs.Tuning,
             defaultValue: () => new StreamingSettings().Strategy == PipelineStrategyKind.Streaming),
+    ];
+
+    // The segmentation cards of the Streaming page, under the switch and the
+    // speech-filtering fold (decision 16): the threshold, the cut mode fold, the
+    // margin and the minimum utterance.
+    public IReadOnlyList<SettingDescriptor> SegmentationSettings =>
+    [
         Setting.Magnitude("WhisperSegThresholdCard",
             () => SegThresholdDbfs,
             value => SegThresholdDbfs = value,

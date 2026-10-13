@@ -1,0 +1,57 @@
+<Page
+    x:Class="Deckle.Transcription.StreamingPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:catalog="using:Deckle.Catalog">
+
+    <!-- The Streaming page of the Transcription module (settings design system,
+         decision 16): the pipeline switch alone at the top, then speech
+         filtering, then segmentation with the cut mode fold. Everything under
+         the switch hides while streaming is off (mask, never grey): the cards
+         through their own VisibleWhen, the section titles through the binds
+         below. Every card is composed from WhisperViewModel's manifests. -->
+    <ScrollViewer Padding="32,24,32,24"
+                  VerticalScrollBarVisibility="Auto"
+                  HorizontalScrollBarVisibility="Disabled">
+        <Grid>
+            <StackPanel MaxWidth="1000"
+                        HorizontalAlignment="Stretch"
+                        Spacing="{StaticResource SettingsCardSpacing}">
+
+                <!-- The shared header block: breadcrumb (Transcription › Streaming),
+                     one line of description, Reset all (active-when-dirty, confirmed
+                     by the block). -->
+                <catalog:SettingsPageHeader x:Name="Header"
+                                            x:Uid="StreamingPageHeader"
+                                            ResetAllRequested="ResetAll_Click" />
+
+                <!-- The pipeline switch, first and alone (decision 10). Composed:
+                     WhisperViewModel.StreamingSwitch. -->
+                <StackPanel x:Name="SwitchHost"
+                            Spacing="{StaticResource SettingsCardSpacing}" />
+
+                <!-- ── Speech filtering ────────────────────────────────────── -->
+                <catalog:SettingsSection x:Uid="WhisperPageSpeechFilteringSection"
+                                         Visibility="{x:Bind VisibleWhenStreaming(ViewModel.StreamingEnabled), Mode=OneWay}">
+                    <!-- The VAD fold: the on/off toggle is the group master, the four
+                         Silero detection parameters its children
+                         (WhisperViewModel.VadSettings). -->
+                    <StackPanel x:Name="VadHost"
+                                Spacing="{StaticResource SettingsCardSpacing}" />
+                </catalog:SettingsSection>
+
+                <!-- ── Segmentation ────────────────────────────────────────── -->
+                <catalog:SettingsSection x:Uid="StreamingPageSegmentationSection"
+                                         Visibility="{x:Bind VisibleWhenStreaming(ViewModel.StreamingEnabled), Mode=OneWay}">
+                    <!-- The silence threshold, the cut mode fold (the preset in its
+                         header, the anchors and the curve under Custom), then the cut
+                         margin and the minimum utterance
+                         (WhisperViewModel.SegmentationSettings). -->
+                    <StackPanel x:Name="SegmentationHost"
+                                Spacing="{StaticResource SettingsCardSpacing}" />
+                </catalog:SettingsSection>
+
+            </StackPanel>
+        </Grid>
+    </ScrollViewer>
+</Page>

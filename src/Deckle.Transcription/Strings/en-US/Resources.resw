@@ -576,7 +576,26 @@
     <value>Transcription</value>
   </data>
   <data name="WhisperPageHeader.Description" xml:space="preserve">
-    <value>Control how Deckle turns your voice into text. Start with the model and language — then use Speech filtering to fight hallucinations on silences and background noise.</value>
+    <value>How Deckle turns your voice into text: the on-screen overlay and pasting, the model and the engine, and what the module records.</value>
+  </data>
+  <!-- The module's two other pages, nested under it in the rail. -->
+  <data name="DecodingPageHeader.Title" xml:space="preserve">
+    <value>Decoding</value>
+  </data>
+  <data name="DecodingPageHeader.Description" xml:space="preserve">
+    <value>The Whisper parameters that shape the text in both pipelines: what is filtered out, how much context carries over, how the decoder searches and when it doubts itself.</value>
+  </data>
+  <data name="DecodingPageDecodingSection.Title" xml:space="preserve">
+    <value>Decoding and confidence</value>
+  </data>
+  <data name="StreamingPageHeader.Title" xml:space="preserve">
+    <value>Streaming</value>
+  </data>
+  <data name="StreamingPageHeader.Description" xml:space="preserve">
+    <value>Transcribe as you speak: cut the live recording into utterances on silence instead of one pass at Stop, and tune how speech is filtered and where the cuts fall.</value>
+  </data>
+  <data name="StreamingPageSegmentationSection.Title" xml:space="preserve">
+    <value>Segmentation</value>
   </data>
   <data name="WhisperPageModelEngineSection.Title" xml:space="preserve">
     <value>Model &amp; engine</value>
@@ -591,7 +610,7 @@
     <value>Output filters</value>
   </data>
   <data name="WhisperPageContextSegmentationSection.Title" xml:space="preserve">
-    <value>Context and segmentation</value>
+    <value>Context</value>
   </data>
   <data name="WhisperDecodingExpander.Header" xml:space="preserve">
     <value>Decoding</value>
@@ -642,12 +661,6 @@
 
   <!-- ─── WhisperPage — Streaming pipeline (experimental) ─────────────
        Strategy selector + energy-segmenter parameters. -->
-  <data name="WhisperPageStreamingSection.Title" xml:space="preserve">
-    <value>Streaming pipeline (experimental)</value>
-  </data>
-  <data name="WhisperPageStreamingSection.Caption" xml:space="preserve">
-    <value>Cut the live recording into utterances on silence and transcribe each as you speak, instead of in one pass at Stop.</value>
-  </data>
   <data name="WhisperStreamingEnabledCard.Header" xml:space="preserve">
     <value>Use the streaming pipeline</value>
   </data>
@@ -752,5 +765,11 @@
   </data>
   <data name="SettingsModuleNavLabel" xml:space="preserve">
     <value>Transcription</value>
+  </data>
+  <data name="SettingsModuleNavLabel_Decoding" xml:space="preserve">
+    <value>Decoding</value>
+  </data>
+  <data name="SettingsModuleNavLabel_Streaming" xml:space="preserve">
+    <value>Streaming</value>
   </data>
 </root>

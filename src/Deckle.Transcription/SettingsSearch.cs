@@ -42,6 +42,7 @@ namespace Deckle.Transcription;
 // can scroll to it.
 public static class SettingsSearch
 {
+    // The module's General page: overlay and pasting, model and engine, diagnostics.
     public static IReadOnlyList<SettingSearchEntry> Entries { get; } =
     [
         // "Overlay and pasting" — the overlay group (fade / animations / position /
@@ -95,14 +96,25 @@ public static class SettingsSearch
             Keywords = ["directory", "path", "storage"],
         },
 
-        // "Speech filtering" — the VAD group (the four Silero parameters ride under
-        // it; the whole fold hides while streaming is off).
+        // Latency telemetry (composed toggle).
         new SettingSearchEntry
         {
-            LabelKey = "WhisperVadEnabledCard",
-            Keywords = ["vad", "silero", "silence", "trim"],
+            LabelKey = "GeneralLatencyCard",
+            Keywords = ["timing", "performance", "benchmark"],
         },
 
+        // "Corpus" — the audio-corpus consent group (the WAV opt-in and its content
+        // radio ride under it as composed children).
+        new SettingSearchEntry
+        {
+            LabelKey = "GeneralCorpusExpander",
+            Keywords = ["dataset", "recording", "training", "audio"],
+        },
+    ];
+
+    // The Decoding page: the Whisper parameters that apply in both pipelines.
+    public static IReadOnlyList<SettingSearchEntry> DecodingEntries { get; } =
+    [
         // Suppress non-speech tokens (composed toggle).
         new SettingSearchEntry
         {
@@ -154,12 +166,25 @@ public static class SettingsSearch
             Keywords = ["entropy", "logprob", "hallucination"],
         },
 
-        // "Streaming pipeline" — the streaming switch (the energy-segmenter cards
-        // under it hide while streaming is off).
+    ];
+
+    // The Streaming page: the pipeline switch, speech filtering, segmentation.
+    public static IReadOnlyList<SettingSearchEntry> StreamingEntries { get; } =
+    [
+        // "Streaming pipeline" — the switch, first and alone (the cards under it
+        // hide while streaming is off).
         new SettingSearchEntry
         {
             LabelKey = "WhisperStreamingEnabledCard",
             Keywords = ["realtime", "live", "segmenter", "utterance"],
+        },
+
+        // "Speech filtering" — the VAD group (the four Silero parameters ride under
+        // it; the whole fold hides while streaming is off).
+        new SettingSearchEntry
+        {
+            LabelKey = "WhisperVadEnabledCard",
+            Keywords = ["vad", "silero", "silence", "trim"],
         },
 
         // "Pause before cutting" — the cut mode fold: the preset in its header,
@@ -168,21 +193,6 @@ public static class SettingsSearch
         {
             LabelKey = "WhisperCutPresetCard",
             Keywords = ["preset", "patient", "balanced", "quick", "custom", "hangover", "curve"],
-        },
-
-        // Latency telemetry (composed toggle).
-        new SettingSearchEntry
-        {
-            LabelKey = "GeneralLatencyCard",
-            Keywords = ["timing", "performance", "benchmark"],
-        },
-
-        // "Corpus" — the audio-corpus consent group (the WAV opt-in and its content
-        // radio ride under it as composed children).
-        new SettingSearchEntry
-        {
-            LabelKey = "GeneralCorpusExpander",
-            Keywords = ["dataset", "recording", "training", "audio"],
         },
     ];
 }

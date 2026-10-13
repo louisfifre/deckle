@@ -1,0 +1,58 @@
+<Page
+    x:Class="Deckle.Transcription.DecodingPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:catalog="using:Deckle.Catalog">
+
+    <!-- The Decoding page of the Transcription module (settings design system,
+         decision 16): the Whisper parameters that apply in both pipelines —
+         output filters, context, decoding, confidence. Every card is composed
+         from WhisperViewModel's manifests into a host; the page only hosts. -->
+    <ScrollViewer Padding="32,24,32,24"
+                  VerticalScrollBarVisibility="Auto"
+                  HorizontalScrollBarVisibility="Disabled">
+        <Grid>
+            <StackPanel MaxWidth="1000"
+                        HorizontalAlignment="Stretch"
+                        Spacing="{StaticResource SettingsCardSpacing}">
+
+                <!-- The shared header block: breadcrumb (Transcription › Decoding),
+                     one line of description, Reset all (active-when-dirty, confirmed
+                     by the block). -->
+                <catalog:SettingsPageHeader x:Name="Header"
+                                            x:Uid="DecodingPageHeader"
+                                            ResetAllRequested="ResetAll_Click" />
+
+                <!-- ── Output filters ──────────────────────────────────────── -->
+                <catalog:SettingsSection x:Uid="WhisperPageOutputFiltersSection">
+                    <!-- Two toggles and the one-line regex field, a flat run with no
+                         master (WhisperViewModel.OutputFilterSettingsManifest). -->
+                    <StackPanel x:Name="OutputFiltersHost"
+                                Spacing="{StaticResource SettingsCardSpacing}" />
+                </catalog:SettingsSection>
+
+                <!-- ── Context ─────────────────────────────────────────────── -->
+                <catalog:SettingsSection x:Uid="WhisperPageContextSegmentationSection">
+                    <!-- The UseContext toggle and the MaxTokens field
+                         (WhisperViewModel.ContextSettingsManifest). -->
+                    <StackPanel x:Name="ContextHost"
+                                Spacing="{StaticResource SettingsCardSpacing}" />
+                </catalog:SettingsSection>
+
+                <!-- ── Decoding and confidence ─────────────────────────────── -->
+                <!-- Two composer folds (Section kind): beam search and temperature,
+                     then the three confidence thresholds. Each fold's own header
+                     names it, so they sit under one section block. -->
+                <catalog:SettingsSection x:Uid="DecodingPageDecodingSection">
+                    <StackPanel Spacing="{StaticResource SettingsCardSpacing}">
+                        <StackPanel x:Name="DecodingHost"
+                                    Spacing="{StaticResource SettingsCardSpacing}" />
+                        <StackPanel x:Name="ConfidenceHost"
+                                    Spacing="{StaticResource SettingsCardSpacing}" />
+                    </StackPanel>
+                </catalog:SettingsSection>
+
+            </StackPanel>
+        </Grid>
+    </ScrollViewer>
+</Page>
