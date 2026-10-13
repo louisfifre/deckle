@@ -1617,6 +1617,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── TrayContextMenuHost.Flyout.cs
 │   │   ├── TrayContextMenuHost.Measure.cs
 │   │   ├── TrayContextMenuHost.Show.cs
+│   │   ├── TrayIslandSizing.cs
 │   │   ├── TrayMenuSizing.cs
 │   │   ├── TrayQuickActionsHost.Build.cs
 │   │   ├── TrayQuickActionsHost.cs
@@ -2127,6 +2128,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   └── ResizeGestureTests.cs
 │   ├── Deckle.Shell.TrayMenu.Tests/
 │   │   ├── Deckle.Shell.TrayMenu.Tests.csproj
+│   │   ├── TrayIslandSizingTests.cs
 │   │   ├── TrayMenuBugNotes.md
 │   │   ├── TrayMenuSizingTests.cs
 │   │   └── TrayWindowOwnershipTests.cs
