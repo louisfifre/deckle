@@ -7,28 +7,11 @@
     xmlns:ambientControls="using:Deckle.Lighting.Ambient"
     xmlns:catalog="using:Deckle.Catalog">
 
-<<<<<<< HEAD
-    <Page.Resources>
-        <!-- Per-card reset for the bespoke curve card, matching the composed
-             cards' reset; code-behind reveals it on hover. -->
-        <Style x:Key="ResetButtonStyle"
-               BasedOn="{StaticResource SubtleButtonStyle}"
-               TargetType="Button">
-            <Setter Property="Opacity" Value="0" />
-            <Setter Property="Width" Value="32" />
-            <Setter Property="Height" Value="32" />
-            <Setter Property="Padding" Value="0" />
-            <Setter Property="VerticalAlignment" Value="Center" />
-        </Style>
-    </Page.Resources>
-
-=======
     <!-- Canonical Microsoft Learn pattern (SettingsExpander sample
          "Settings page example"): StackPanel max 1000 in a Grid,
          Spacing=4 between cards (SettingsCardSpacing, from App.xaml). Each
          section is the shared SettingsSection block. Exact layer of
          GeneralPage / WhisperPage. -->
->>>>>>> main
     <ScrollViewer Padding="32,24,32,24"
                   VerticalScrollBarVisibility="Auto"
                   HorizontalScrollBarVisibility="Disabled">
@@ -37,15 +20,18 @@
                         HorizontalAlignment="Stretch"
                         Spacing="{StaticResource SettingsCardSpacing}">
 
-                <!-- Reset all is gated on ViewModel.CanReset in code-behind; the
-                     page confirms with its own dialog, which says what the reset
-                     keeps. -->
+                <!-- The shared header block, with the page-level reset (the
+                     third reset level after the per-card and per-group ones).
+                     Enabled only while the page is off its defaults (code-behind
+                     mirrors ViewModel.CanReset); the page confirms with its own
+                     dialog, which says what the reset keeps. -->
                 <catalog:SettingsPageHeader x:Name="Header"
                                             x:Uid="AmbientPageHeader"
                                             ResetAllRequested="ResetAll_Click" />
 
-                <!-- The module switch comes first on the page, alone and outside
-                     any section. -->
+                <!-- The module switch: the on/off card comes first on the page,
+                     alone and outside any section (settings design system,
+                     decision 10). Composed: Enabled (AmbientViewModel.StateSettings). -->
                 <StackPanel x:Name="StateHost"
                             Spacing="{StaticResource SettingsCardSpacing}" />
 
@@ -53,7 +39,9 @@
                 <catalog:SettingsSection x:Uid="AmbientPageStateSection">
                     <StackPanel Spacing="{StaticResource SettingsCardSpacing}">
 
-                        <!-- bespoke: a state banner, not a setting. -->
+                        <!-- bespoke: a state banner, not a setting. It opens while the
+                             persisted Hue bridge state is incomplete (no IP / username /
+                             group) and its action opens the Hue bridge expander below. -->
                         <InfoBar x:Name="NotPairedInfoBar"
                                  x:Uid="AmbientNotPairedInfoBar"
                                  IsClosable="False"
@@ -67,8 +55,10 @@
                             </InfoBar.ActionButton>
                         </InfoBar>
 
-                        <!-- bespoke: a live instrument, not a setting, refreshed only
-                             while open. -->
+                        <!-- bespoke: a live instrument, not a setting — the sampled
+                             grid at the display's exact ratio, the colour each light
+                             receives and the zone bands. Shown while the engine runs,
+                             opened by the user, refreshed only while open. -->
                         <ambientControls:AmbientPreviewCard />
                     </StackPanel>
                 </catalog:SettingsSection>
@@ -77,54 +67,28 @@
                 <catalog:SettingsSection x:Uid="AmbientPageBehaviourSection">
                     <StackPanel Spacing="{StaticResource SettingsCardSpacing}">
 
+                        <!-- Composed: Mode, per-zone colours with the band shape
+                             (AmbientViewModel.BehaviourSettings). -->
                         <StackPanel x:Name="BehaviourHost"
                                     Spacing="{StaticResource SettingsCardSpacing}" />
 
-                        <!-- bespoke: one row per light of the selected Hue group, a
-                             set only known at runtime, from the bridge. -->
+                        <!-- bespoke: one row per light of the selected Hue group
+                             (zone, brightness, Identify) — the set of lights is only
+                             known at runtime, from the bridge. Shown under the
+                             per-zone group, only while it is on and a group is
+                             selected in the Hue bridge expander below. -->
                         <ambientControls:LightZonesCard />
                     </StackPanel>
                 </catalog:SettingsSection>
 
                 <!-- ── Fine tuning ────────────────────────────────────────── -->
                 <catalog:SettingsSection x:Uid="AmbientPageTuningSection">
-<<<<<<< HEAD
-                    <StackPanel Spacing="{StaticResource SettingsCardSpacing}">
-
-                        <!-- bespoke: a curve is a shape, edited by dragging its two
-                             control points; the composer has no kind for a relationship
-                             between four values. -->
-                        <controls:SettingsCard x:Name="BrightnessCurveCard"
-                                               x:Uid="AmbientBrightnessCurveCard"
-                                               Tag="AmbientBrightnessCurveCard"
-                                               HeaderIcon="{ui:FontIcon Glyph={StaticResource Icon.Tuning}}">
-                            <StackPanel Orientation="Horizontal" Spacing="4">
-                                <Button x:Name="BrightnessCurveReset"
-                                        Style="{StaticResource ResetButtonStyle}"
-                                        Click="BrightnessCurveReset_Click">
-                                    <FontIcon Glyph="{StaticResource Icon.Refresh}" FontSize="14" />
-                                </Button>
-                                <ambientControls:BrightnessCurveCanvas
-                                    X1="{x:Bind ViewModel.BrightnessCurveX1, Mode=TwoWay}"
-                                    Y1="{x:Bind ViewModel.BrightnessCurveY1, Mode=TwoWay}"
-                                    X2="{x:Bind ViewModel.BrightnessCurveX2, Mode=TwoWay}"
-                                    Y2="{x:Bind ViewModel.BrightnessCurveY2, Mode=TwoWay}"
-                                    MinBrightnessEnabled="{x:Bind ViewModel.MinBrightnessEnabled, Mode=OneWay}"
-                                    MinBrightness="{x:Bind ViewModel.MinBrightness, Mode=OneWay}" />
-                            </StackPanel>
-                        </controls:SettingsCard>
-
-                        <StackPanel x:Name="TuningHost"
-                                    Spacing="{StaticResource SettingsCardSpacing}" />
-                    </StackPanel>
-=======
                     <!-- Composed: the preset fold, with the brightness floor,
                          smoothing, change threshold, exposure, saturation and the
                          brightness curve as its children
                          (AmbientViewModel.TuningSettings). -->
                     <StackPanel x:Name="TuningHost"
                                 Spacing="{StaticResource SettingsCardSpacing}" />
->>>>>>> main
                 </catalog:SettingsSection>
 
                 <!-- ── Configuration ──────────────────────────────────────── -->
@@ -132,8 +96,8 @@
                     <StackPanel Spacing="{StaticResource SettingsCardSpacing}">
 
                         <!-- bespoke: the options are the displays connected right now,
-                             labelled at runtime; the composer's choices are fixed .resw
-                             keys. -->
+                             labelled at runtime (number, resolution, primary); the
+                             composer's choices are fixed .resw keys. -->
                         <controls:SettingsCard x:Uid="AmbientMonitorCard"
                                                Tag="AmbientMonitorCard"
                                                HeaderIcon="{ui:FontIcon Glyph={StaticResource Icon.Window}}">
@@ -142,17 +106,23 @@
                                       SelectionChanged="MonitorCombo_SelectionChanged" />
                         </controls:SettingsCard>
 
+                        <!-- Composed: capture rate (AmbientViewModel.CaptureSettings). -->
                         <StackPanel x:Name="CaptureHost"
                                     Spacing="{StaticResource SettingsCardSpacing}" />
 
-                        <!-- bespoke: a multi-step pairing flow, commands and live
-                             status rather than stored values. The bridge state is owned
-                             by the process-wide HuePairingService, so a re-pair or
-                             forget from anywhere takes effect everywhere. -->
+                        <!-- bespoke: a multi-step pairing flow (discover, pair with the
+                             link-button countdown, load rooms, forget behind a
+                             confirmation), commands and live status rather than stored
+                             values. The bridge state is owned by the process-wide
+                             HuePairingService, so a re-pair or forget from anywhere takes
+                             effect everywhere. -->
                         <controls:SettingsExpander x:Uid="HueBridgeExpander"
                                                    x:Name="HueBridgeExpander"
                                                    Tag="HueBridgeExpander"
                                                    HeaderIcon="{ui:FontIcon Glyph={StaticResource Icon.Bridge}}">
+                            <!-- Header right-side : compact status text + dot. The
+                                 expander shows / hides the per-section cards below
+                                 on click. -->
                             <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
                                 <Ellipse x:Name="HueBridgeStatusDot"
                                          Width="10" Height="10"
@@ -164,11 +134,17 @@
                                            Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
                             </StackPanel>
                             <controls:SettingsExpander.Items>
-                                <!-- Find bridge uses local DNS-SD; online
-                                     discovery is revealed only after a local
-                                     search finds no bridge. Transient status
-                                     lives in the footer so the card stays
-                                     clean. -->
+                                <!-- Bridge address row. SettingsCard default
+                                     layout : Header on the left, content on the
+                                     right, mirrors the HDR tuning cards above.
+                                     Find bridge uses local DNS-SD and autofills
+                                     the textbox. Manual entry remains available,
+                                     and online discovery is revealed only after
+                                     a local result with no bridge. Pair
+                                     launches the 30 s link-button countdown via
+                                     HuePairingService.PairAsync. Transient
+                                     status text lives below the card (separate
+                                     TextBlock) so the card itself stays clean. -->
                                 <controls:SettingsCard x:Uid="HueBridgeAddressCard"
                                                        Tag="HueBridgeAddressCard">
                                     <StackPanel Orientation="Horizontal" Spacing="8">
@@ -187,6 +163,7 @@
                                     </StackPanel>
                                 </controls:SettingsCard>
 
+                                <!-- Entertainment group / room. -->
                                 <controls:SettingsCard x:Uid="HueBridgeGroupCard"
                                                        Tag="HueBridgeGroupCard">
                                     <StackPanel Orientation="Horizontal" Spacing="8">
@@ -201,9 +178,12 @@
                                     </StackPanel>
                                 </controls:SettingsCard>
 
-                                <!-- Default button style, no custom red: the
-                                     confirmation dialog carries the destructive
-                                     signal, as in Windows Settings. -->
+                                <!-- Forget : DefaultButtonStyle (no custom red).
+                                     The destructive signal is carried by the
+                                     ContentDialog confirmation that opens at
+                                     click, following Microsoft's official
+                                     Settings pattern (confirm-then-act, not
+                                     red-button-then-act). -->
                                 <controls:SettingsCard x:Uid="HueBridgeForgetCard"
                                                        Tag="HueBridgeForgetCard">
                                     <Button x:Name="HueForgetButton"
@@ -214,8 +194,10 @@
                             </controls:SettingsExpander.Items>
                             <controls:SettingsExpander.ItemsFooter>
                                 <StackPanel>
-                                    <!-- In the footer because Items is reserved for
-                                         SettingsCard controls. -->
+                                    <!-- Transient pair status (countdown / errors /
+                                         paired confirmation). The footer accepts
+                                         free-form content while the Items collection
+                                         remains reserved for SettingsCard controls. -->
                                     <TextBlock x:Name="HuePairStatusText"
                                                Text=""
                                                Visibility="Collapsed"
