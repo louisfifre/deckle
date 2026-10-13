@@ -3,10 +3,6 @@ using Xunit;
 
 namespace Deckle.Chrono.Tests;
 
-// Pure unit tests on ChronoFormatter. Deterministic functions without external
-// dependency: the ideal net for the project's first test layer. Covers
-// decomposition of a TimeSpan into (minutes, seconds, centiseconds), wrapping
-// minutes at 100, cap behavior, and MM:SS.cc format.
 [Trait("Category", "unit")]
 public class ChronoFormatterTests
 {
@@ -37,8 +33,7 @@ public class ChronoFormatterTests
     [Fact]
     public void DecomposeWrapsMinutesPastOneHundred()
     {
-        // 105 min wrapped via % 100 → 5 min. Keeps the two-digit slot stable
-        // for long sessions without changing HUD visual width.
+        // Keeps the two-digit slot, and the HUD's width, stable for long sessions.
         var elapsed = TimeSpan.FromMinutes(105);
 
         var d = ChronoFormatter.Decompose(elapsed);
@@ -49,7 +44,6 @@ public class ChronoFormatterTests
     [Fact]
     public void DecomposeWithCapZeroAppliesNoCap()
     {
-        // capSeconds = 0 → no cap, elapsed is returned as-is.
         var elapsed = TimeSpan.FromSeconds(120);
 
         var d = ChronoFormatter.Decompose(elapsed, capSeconds: 0);
@@ -61,7 +55,6 @@ public class ChronoFormatterTests
     [Fact]
     public void DecomposeClampsElapsedWhenAboveCap()
     {
-        // elapsed = 120s, cap = 60s → truncated to 60s = 1min 00s.
         var elapsed = TimeSpan.FromSeconds(120);
 
         var d = ChronoFormatter.Decompose(elapsed, capSeconds: 60);
@@ -73,7 +66,6 @@ public class ChronoFormatterTests
     [Fact]
     public void DecomposeLeavesElapsedUnchangedWhenBelowCap()
     {
-        // elapsed = 30s, cap = 60s → identical to the no-cap case.
         var elapsed = TimeSpan.FromSeconds(30);
 
         var d = ChronoFormatter.Decompose(elapsed, capSeconds: 60);
@@ -85,7 +77,6 @@ public class ChronoFormatterTests
     [Fact]
     public void FormatMmSsCsPadsAllComponentsToTwoDigits()
     {
-        // 3min 4s 50ms → "03:04.05" — chaque champ padding D2.
         var elapsed = new TimeSpan(0, 0, 3, 4, 50);
 
         Assert.Equal("03:04.05", ChronoFormatter.FormatMmSsCs(elapsed));

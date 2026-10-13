@@ -3,15 +3,8 @@ using Deckle.Diagnostics;
 
 namespace Deckle.Chrono;
 
-// Pilot EventSource to exercise all upstream plumbing: shared SessionId,
-// EventListener dynamically discovering the provider, JSONL serialization,
-// LogWindow feeding.
-//
-// Events here carry simple milestone semantics: no structured payload, no
-// aggregated heartbeat. When an application call site actually needs to
-// instrument the chronometer (for example when the surface wave redesigns the
-// HUD), this will be extended with additional [Event] entries while respecting
-// the brief's doctrine: one [Event] per distinct operation.
+// Pilot provider: its events carry no chronometer data and serve as the test
+// target for the EventSource chain.
 [EventSource(Name = "Deckle-Chrono")]
 public sealed class DeckleChronoSource : DeckleEventSource
 {
@@ -20,18 +13,11 @@ public sealed class DeckleChronoSource : DeckleEventSource
     private DeckleChronoSource() { }
 
     // ── EventIds ────────────────────────────────────────────────────────
-    // Sequential numbering from 1. IDs are public in the ETW manifest; do not
-    // reuse an ID after deleting an event (a historical consumer may still need
-    // it to decode a dump). For Deckle we start fresh at wave 1, so there is no
-    // history to preserve.
-    // The Verbose mirror added for the Verbose/Info separation takes the fresh
-    // id 2 at the end of the sequence.
+    // IDs are public in the ETW manifest: never reuse one after deleting an
+    // event, a consumer may still need it to decode a dump.
     public const int EvtPilotEmitted       = 1;
     public const int EvtPilotEmittedDetail = 2;
 
-    // Boot validation event. Emitted once at App startup to exercise
-    // EventSource → DispatchEventListener → JsonlSink → app.jsonl and →
-    // LogWindowSink → LogWindow.
     [Event(EvtPilotEmitted,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Lifecycle,

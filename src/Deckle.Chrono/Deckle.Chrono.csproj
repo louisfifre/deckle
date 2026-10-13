@@ -1,10 +1,8 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <RootNamespace>Deckle.Chrono</RootNamespace>
-    <!-- EventSource [Event] parameters intentionally use snake_case
-         so the ETW payload keys land directly in the JSONL output.
-         Suppress the naming-style warning — the keys must
-         match the ETW manifest. -->
+    <!-- EventSource [Event] parameters use snake_case so the ETW payload
+         keys land as-is in the JSONL output; IDE1006 would flag them. -->
     <NoWarn>$(NoWarn);IDE1006</NoWarn>
   </PropertyGroup>
 
@@ -12,9 +10,7 @@
     <ProjectReference Include="..\Deckle.Diagnostics\Deckle.Diagnostics.csproj" />
   </ItemGroup>
 
-  <!-- Pure timer module — Stopwatch wrapper + formatter, reusable by
-       any module that wants a "time since trigger" reading without
-       pulling the visual UserControl. No XAML, no WindowsAppSDK,
-       no Composition — just System.Diagnostics.Stopwatch.
-       Depends on Deckle.Diagnostics to expose its EventSource. -->
+  <!-- No XAML, no WindowsAppSDK, no Composition, so any module can take a
+       "time since trigger" reading without pulling the HUD visual.
+       Deckle.Diagnostics is referenced only for the EventSource. -->
 </Project>
