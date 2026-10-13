@@ -345,15 +345,6 @@
     <value>+{0} more — refine your search</value>
   </data>
 
-  <!-- ─── Settings — common section actions ──────────────────────────
-       Per-section "Reset" hyperlink and its tooltip. Reused on every
-       Settings section header (Appearance, Startup, Recording, etc.). -->
-  <data name="Settings_SectionResetLink.Content" xml:space="preserve">
-    <value>Reset</value>
-  </data>
-  <data name="Settings_SectionResetLink.ToolTipService.ToolTip" xml:space="preserve">
-    <value>Reset this section to defaults</value>
-  </data>
 
 
   <!-- ─── GeneralPage ────────────────────────────────────────────────
@@ -430,7 +421,7 @@
   <data name="GeneralAutostartCard.Description" xml:space="preserve">
     <value>Launch Deckle automatically when you sign in.</value>
   </data>
-  <data name="GeneralPageUpdatesHeaderLabel.Text" xml:space="preserve">
+  <data name="GeneralPageUpdatesSection.Title" xml:space="preserve">
     <value>Updates</value>
   </data>
   <data name="GeneralUpdateAutoCheckCard.Header" xml:space="preserve">
@@ -538,13 +529,13 @@
   <data name="GeneralPageHeader.Description" xml:space="preserve">
     <value>Hotkeys, appearance, behaviour, startup, backups and application data.</value>
   </data>
-  <data name="GeneralPageShortcutsHeaderLabel.Text" xml:space="preserve">
+  <data name="GeneralPageHotkeysSection.Title" xml:space="preserve">
     <value>Hotkeys</value>
   </data>
-  <data name="GeneralPageAppearanceHeaderLabel.Text" xml:space="preserve">
+  <data name="GeneralPageAppearanceSection.Title" xml:space="preserve">
     <value>Appearance</value>
   </data>
-  <data name="GeneralPageStartupHeaderLabel.Text" xml:space="preserve">
+  <data name="GeneralPageStartupSection.Title" xml:space="preserve">
     <value>Startup</value>
   </data>
   <!-- ─── RecordingPage ───────────────────────────────────────────────
@@ -554,7 +545,7 @@
        GeneralOverlay*) reused as-is — General* prefix is a historical
        naming artifact, renaming would touch every translation file. -->
 
-  <data name="GeneralPageApplicationDataHeaderLabel.Text" xml:space="preserve">
+  <data name="GeneralPageApplicationDataSection.Title" xml:space="preserve">
     <value>Application data</value>
   </data>
 

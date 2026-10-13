@@ -162,6 +162,11 @@
   <data name="SettingsPageHeader_ResetAllDialogBody" xml:space="preserve">
     <value>Every setting on this page goes back to its default value.</value>
   </data>
+  <!-- The section block (SettingsSection, Catalog): the tooltip of its reset
+       wheel. Same ownership as the page header's strings. -->
+  <data name="SettingsSection_ResetTooltip" xml:space="preserve">
+    <value>Reset this section to defaults</value>
+  </data>
   <!-- The composer's Hotkey kind: the four modifier toggle buttons, the key
        capture button (its listening and unbound states), the Clear button and
        the advisory shown when a captured key has no modifier yet. Composer-owned,

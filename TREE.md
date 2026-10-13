@@ -856,7 +856,8 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   ├── SettingsComposer.Hotkey.cs
 │   │   │   ├── SettingsComposer.Inputs.cs
 │   │   │   ├── SettingsComposer.Numeric.cs
-│   │   │   └── SettingsPageHeader.cs
+│   │   │   ├── SettingsPageHeader.cs
+│   │   │   └── SettingsSection.cs
 │   │   ├── Hotkeys/
 │   │   │   ├── HotkeyChord.cs
 │   │   │   └── HotkeyModifiers.cs
