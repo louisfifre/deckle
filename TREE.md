@@ -1195,7 +1195,6 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── DeckleLightingSource.InventoryAndEventStream.cs
 │   │   ├── DeckleLightingSource.Pairing.cs
 │   │   ├── ILightOutput.cs
-│   │   ├── JOURNAL.md
 │   │   ├── LightColor.cs
 │   │   └── LightDescriptor.cs
 │   ├── Deckle.Lighting.Ambient/
