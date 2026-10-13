@@ -1634,7 +1634,6 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── Deckle.Speech.csproj
 │   │   ├── DeckleSpeechSource.cs
 │   │   ├── ISpeechBackend.cs
-│   │   ├── JOURNAL.md
 │   │   ├── SpeechEngine.cs
 │   │   ├── SpeechSettings.cs
 │   │   └── SpeechSettingsService.cs

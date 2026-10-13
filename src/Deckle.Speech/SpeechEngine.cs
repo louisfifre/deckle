@@ -6,17 +6,16 @@ namespace Deckle.Speech;
 
 // Read-aloud orchestrator — the synthesis-side counterpart of
 // TranscriptionEngine. Turns a piece of text into spoken audio on the default
-// render device. Kept deliberately minimal for the skeleton:
+// render device.
 //
 //   • Speak(text) returns immediately; synthesis + playback run on a
-//     background task (the hotkey callback that calls it is on the UI thread).
-//   • A new request interrupts the one in flight — pressing the hotkey again
-//     stops the current read and starts the new one. No queue.
+//     background task, so a caller on the UI thread is never blocked.
+//   • A new request interrupts the one in flight: the current read stops and
+//     the new one starts. No queue.
 //
-// Output is fixed at 24 kHz mono — Chatterbox's S3Gen rate. The backend (and
-// later its voice/temperature settings) are read per call from
-// SpeechSettingsService; no host-bridge is needed yet because the engine only
-// reads its own module's settings.
+// Output is fixed at 24 kHz mono — Chatterbox's S3Gen rate. Voice and
+// temperature are read per call from SpeechSettingsService; no host-bridge is
+// needed yet because the engine only reads its own module's settings.
 public sealed class SpeechEngine : IDisposable
 {
     private const int OutputSampleRate = 24000;
