@@ -11,24 +11,14 @@ namespace Deckle.Settings;
 // settings.json layout and dispatches each module section into its own
 // modules/<id>/settings.json file.
 //
-// Why a separate static rather than a hook inside SettingsService.Load?
-// Because the migration must complete before any module's
-// JsonSettingsStore opens its file: the module store would otherwise
-// see no file → write defaults → and on the next launch we'd have
-// already-defaulted module files that the legacy dispatch would skip
-// (the file exists). Doing the dispatch in App.OnLaunched as the very
-// first step keeps the ordering bullet-proof: the legacy file is
-// drained and the module files are populated before any module
-// singleton has a chance to open them.
+// A separate static rather than a hook inside SettingsService.Load, because
+// the migration must complete before any module's JsonSettingsStore opens its
+// file: a store that finds no file writes its defaults, and the dispatch then
+// skips that already-populated target and loses the legacy section.
 //
-// The migration is idempotent: on subsequent launches the legacy file
-// no longer carries module sections (they were stripped on first run)
-// so DispatchSection finds nothing and returns early.
-//
-// Only writes module files when they do NOT exist. If a user already
-// has a populated modules/<id>/settings.json from a previous launch,
-// the legacy section is dropped without overwriting (preserves the
-// per-module file as source of truth).
+// Idempotent: the dispatched sections are stripped from the legacy file, and
+// a module file that already exists is never overwritten (it is the source of
+// truth); its legacy section is dropped.
 public static class SettingsBootstrap
 {
     private static bool _migrated;
@@ -39,27 +29,18 @@ public static class SettingsBootstrap
         PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
     };
 
-    /// <summary>
-    /// Runs the legacy → per-module dispatch once per process. Idempotent
-    /// across launches via a check on each module's target file.
-    /// </summary>
     public static void MigrateLegacyToPerModule()
     {
         if (_migrated) return;
         _migrated = true;
 
-        // Per-module folder rename: modules/capture/ → modules/audio/
-        // (2026-05-15 module rename from the false-generic Deckle.Capture
-        // to the honest Deckle.Audio). Runs first so that users who were
-        // already on the per-module layout get their settings file
-        // relocated without loss, regardless of whether the legacy
-        // combined file still exists.
+        // Before the legacy-file check, so a user already on the per-module
+        // layout gets the folder relocated even without a legacy file.
         MigrateModuleFolder("capture", "audio");
 
-        // app.jsonl changed authority from Telemetry to Logging. Move the
-        // existing consent before either settings singleton opens its file;
-        // otherwise Logging would load its off-by-default value and silently
-        // forget a user's prior choice.
+        // The application-log consent belongs to Logging, not Telemetry. Move
+        // it before either settings singleton opens its file; otherwise
+        // Logging loads its off-by-default value and forgets the user's choice.
         MoveModuleSetting("telemetry", "logging", "applicationLogToDisk");
         RenameModuleSetting(
             "logging",
@@ -69,8 +50,6 @@ public static class SettingsBootstrap
         string legacyPath = AppPaths.SettingsFilePath;
         if (!File.Exists(legacyPath))
         {
-            // Fresh install — no legacy file to drain. Per-module files
-            // get created with defaults by their respective services.
             return;
         }
 
@@ -83,9 +62,7 @@ public static class SettingsBootstrap
             bool mutated = false;
 
             // Pre-dispatch root-level renames so the dispatcher finds the
-            // current key names. Both renames are old (April–May 2026) so
-            // most users won't carry the legacy keys, but the migration
-            // stays for safety.
+            // current key names.
             mutated |= RenameRootKey(root, "recording", "capture");
             mutated |= MigrateCorpusLoggingToTelemetry(root);
 
@@ -94,22 +71,16 @@ public static class SettingsBootstrap
             if (root["llm"] is JsonObject llm)
                 mutated |= MigrateLlmLegacyKeys(llm);
 
-            // Each module's legacy section dispatched to modules/<id>/settings.json.
-            // The JSON key "capture" dispatches to module id "audio" — the
-            // legacy combined file still carries the historic "capture" key
-            // name, but the module directory follows the post-2026-05-15
-            // rename (Deckle.Capture → Deckle.Audio).
+            // The legacy JSON key is "capture"; the module directory id is
+            // "audio".
             mutated |= DispatchSection(root, "whisp",     "whisp");
             mutated |= DispatchSection(root, "llm",       "llm");
             mutated |= DispatchSection(root, "capture",   "audio");
             mutated |= DispatchSection(root, "telemetry", "telemetry");
 
-            // ModelsDirectory: the legacy paths.modelsDirectory key migrated
-            // to TranscriptionSettings.modelsDirectory in 2026-05-02 (it's a
-            // Whisper-engine concern). Read the legacy value, inject it
-            // into the dispatched whisp file (which we just wrote above
-            // OR which already existed from a partial migration), then
-            // strip the key from paths.
+            // The legacy paths.modelsDirectory belongs to the whisp module:
+            // inject it into the whisp file (just dispatched above, or
+            // pre-existing from a partial migration), then strip it from paths.
             if (root["paths"] is JsonObject paths
                 && paths["modelsDirectory"] is JsonValue modelsDirNode
                 && modelsDirNode.TryGetValue<string>(out string? modelsDir)
@@ -123,7 +94,6 @@ public static class SettingsBootstrap
             else if (root["paths"] is JsonObject pathsB
                      && pathsB["modelsDirectory"] is not null)
             {
-                // The key exists but is empty — just strip it.
                 pathsB.Remove("modelsDirectory");
                 mutated = true;
             }
@@ -141,9 +111,6 @@ public static class SettingsBootstrap
         }
     }
 
-    // Move root[jsonKey] into <UserDataRoot>/modules/<moduleId>/settings.json.
-    // Returns true if the legacy key was present (mutates root either way:
-    // strips the key whether or not the target file already existed).
     private static bool DispatchSection(JsonObject root, string jsonKey, string moduleId)
     {
         if (root[jsonKey] is not JsonNode section) return false;
@@ -152,9 +119,8 @@ public static class SettingsBootstrap
 
         if (File.Exists(targetPath))
         {
-            // Target already populated by a previous launch (or by a partial
-            // migration that crashed midway). Don't overwrite — the per-
-            // module file is canonical now. Just strip the legacy key.
+            // A populated target (a previous launch, or a partial migration
+            // that crashed midway) is canonical: only strip the legacy key.
             root.Remove(jsonKey);
             DeckleSettingsSource.Log.MigrationDispatchSkipped(jsonKey, targetPath);
             return true;
@@ -168,11 +134,7 @@ public static class SettingsBootstrap
         return true;
     }
 
-    // Inject `value` under `key` into modules/<moduleId>/settings.json.
-    // Used by the ModelsDirectory migration: at this point the dispatch
-    // step above has either just created the whisp file from the legacy
-    // section (so we add the new key), or the file pre-existed (we still
-    // add the key if it's missing — preserves existing module data).
+    // Adds the key only when missing, so existing module data wins.
     private static void InjectIntoModuleFile(string moduleId, string key, JsonNode value)
     {
         string targetPath = ModuleSettingsFilePath(moduleId);
@@ -271,13 +233,9 @@ public static class SettingsBootstrap
         }
     }
 
-    // Move <UserDataRoot>/modules/<oldId>/ to <UserDataRoot>/modules/<newId>/
-    // for module renames that change the per-module directory id.
-    // No-op if the source doesn't exist (fresh install or already
-    // migrated) or if the target already exists (per-module file at the
-    // new location is canonical, old one is left orphaned and can be
-    // cleaned up manually if desired). Errors are logged as warnings,
-    // not thrown — settings loss is preferable to a boot failure.
+    // An existing target is canonical; the old folder is then left orphaned.
+    // Errors are logged, not thrown: settings loss is preferable to a boot
+    // failure.
     private static void MigrateModuleFolder(string oldId, string newId)
     {
         string oldDir = System.IO.Path.Combine(AppPaths.UserDataRoot, "modules", oldId);
@@ -298,12 +256,6 @@ public static class SettingsBootstrap
         }
     }
 
-    // recording → capture (capture module extraction, 2026-05-02). The
-    // settings shape stayed identical; only the JSON key changed when
-    // RecordingSettings moved from Deckle.Transcription to Deckle.Audio and was
-    // renamed CaptureSettings to align with its owning module. Silently
-    // rebind the legacy key so existing settings.json files keep their
-    // custom AudioInputDeviceId / LevelWindow values.
     private static bool RenameRootKey(JsonObject root, string oldKey, string newKey)
     {
         if (root[oldKey] is not JsonNode legacy || root[newKey] is not null) return false;
@@ -314,12 +266,6 @@ public static class SettingsBootstrap
         return true;
     }
 
-    // corpusLogging → telemetry (telemetry unification, 2026-04-21).
-    // Field shape transforms: `enabled` becomes `corpusEnabled` (the
-    // corpus is one of two opt-in streams now; the other is
-    // `latencyEnabled`, which defaults to off and stays off through this
-    // migration). `dataDirectory` becomes `storageDirectory`, reused as
-    // the common root for all three files.
     private static bool MigrateCorpusLoggingToTelemetry(JsonObject root)
     {
         if (root["corpusLogging"] is not JsonObject legacyCorpus
@@ -339,11 +285,8 @@ public static class SettingsBootstrap
         return true;
     }
 
-    // Llm-internal legacy key renames. All three are old (April 2026) so
-    // most users won't carry the legacy keys, but they stay for safety.
-    //   • manualProfileName  → slotAProfileName            (V1 slots)
-    //   • slotAProfileName   → primaryRewriteProfileName   (primary/secondary rename)
-    //   • slotBProfileName   → secondaryRewriteProfileName (primary/secondary rename)
+    // The renames chain (manualProfileName → slotAProfileName →
+    // primaryRewriteProfileName), so their order matters.
     private static bool MigrateLlmLegacyKeys(JsonObject llm)
     {
         bool mutated = false;

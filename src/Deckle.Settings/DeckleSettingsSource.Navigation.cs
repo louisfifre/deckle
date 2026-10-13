@@ -7,7 +7,6 @@ public sealed partial class DeckleSettingsSource
 {
     // ── General page (setup wizard) ─────────────────────────────────────
 
-    // Pure status sentence, no params; cleaned and recapitalized in place.
     [Event(EvtSetupWizardHookNotWired,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Lifecycle,
@@ -17,7 +16,6 @@ public sealed partial class DeckleSettingsSource
         if (IsEnabled()) WriteEvent(EvtSetupWizardHookNotWired);
     }
 
-    // Pure status sentence, no params; cleaned and recapitalized in place.
     [Event(EvtSetupWindowOpenedFromSettings,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Lifecycle,
@@ -182,9 +180,6 @@ public sealed partial class DeckleSettingsSource
         if (IsEnabled()) WriteEvent(EvtNavCompletedDetail, page_name);
     }
 
-    // (a) Navigate-return duration, from NavClock. Mirrors whisper's
-    // ModelLoadComplete(load_ms, backend): a measured ms as a typed field on a
-    // Verbose event. Pairs with the NavStarted milestone above.
     [Event(EvtNavTiming,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Lifecycle,
@@ -194,9 +189,8 @@ public sealed partial class DeckleSettingsSource
         if (IsEnabled()) WriteEvent(EvtNavTiming, page_name, duration_ms);
     }
 
-    // (b) Time from nav-start (NavClock) to the destination page's first
-    // Loaded — captures the heavy work (ViewModel.Load + control sync) that
-    // Navigate returns BEFORE. Verbose, ms.
+    // Time from nav-start (NavClock) to the destination page's first Loaded,
+    // which covers the work (ViewModel.Load + control sync) Navigate returns before.
     [Event(EvtPageReady,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Lifecycle,
@@ -224,9 +218,8 @@ public sealed partial class DeckleSettingsSource
         if (IsEnabled()) WriteEvent(EvtNavFailedThrewDetail, page_name, ex_type, message);
     }
 
-    // Demoted from Error to Verbose: a raw stack trace is opaque internal
-    // detail with no standalone milestone value. It follows the NavFailedThrew
-    // milestone (and its …Detail mirror) as the deep-dive line.
+    // Verbose: a raw stack trace is opaque detail with no milestone value. It
+    // follows the NavFailedThrew milestone and its …Detail mirror.
     [Event(EvtNavStackTrace,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Lifecycle,

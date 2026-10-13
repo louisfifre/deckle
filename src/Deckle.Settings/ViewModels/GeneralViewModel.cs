@@ -8,14 +8,8 @@ using Deckle.Diagnostics;
 
 namespace Deckle.Settings;
 
-// ViewModel for GeneralPage — bridges shell-level AppSettings sections
-// (Appearance, Startup, Backup) to the XAML via x:Bind. Recording was
-// extracted in slice S3 to RecordingViewModel ; Telemetry in slice S2 to
-// DiagnosticsViewModel ; the Behaviour section (auto-paste + overlay) moved
-// to the Dictation page in the settings reorg.
-//
-// Pattern: Load() pulls from the POCO, property changes push back via
-// PushToSettings(). The _isSyncing flag prevents re-saving during Load().
+// Load() pulls from the POCO, property changes push back via PushToSettings().
+// The _isSyncing flag prevents re-saving during Load().
 //
 // Partial properties (not fields) for WinRT/AOT compatibility (MVVMTK0045).
 public partial class GeneralViewModel : ObservableObject
@@ -86,8 +80,8 @@ public partial class GeneralViewModel : ObservableObject
     // scheduled task). It means "Deckle starts at logon", whichever vehicle
     // carries it, so it goes through StartupService rather than a single vehicle:
     // Load() probes both, the setter starts the default vehicle or stops every
-    // vehicle. If the write fails (GPO/ACL, declined UAC on the elevated task),
-    // we revert the UI state so the toggle stays consistent with reality.
+    // vehicle. A refused write (GPO/ACL, missing ProcessPath, declined UAC on the
+    // elevated task) reverts the toggle so it matches what starts at logon.
     [ObservableProperty]
     public partial bool AutostartEnabled { get; set; }
 
@@ -101,8 +95,6 @@ public partial class GeneralViewModel : ObservableObject
             return;
         }
 
-        // Write refused (GPO, ACL, missing ProcessPath, declined UAC…) — revert
-        // the toggle so what the user sees matches what actually starts at logon.
         _isSyncing = true;
         try { AutostartEnabled = !value; }
         finally { _isSyncing = false; }
@@ -124,10 +116,6 @@ public partial class GeneralViewModel : ObservableObject
     //
     // BackupDirectory is the user override for where snapshots live (empty =
     // AppPaths.SettingsBackupDirectory, see SettingsService.ResolveBackupDirectory).
-    // Backups is the live list refilled by RefreshBackups() — called on Load,
-    // after CreateBackup, and any time BackupDirectory changes. The PowerToys-
-    // style UI only surfaces the latest snapshot (file name + created at);
-    // older snapshots remain on disk for manual access via the folder picker.
 
     [ObservableProperty]
     public partial string BackupDirectory { get; set; }
@@ -172,11 +160,9 @@ public partial class GeneralViewModel : ObservableObject
     {
         _isSyncing = true;
 
-        // Seed from the POCO initializers — the single source of truth for defaults,
-        // shared with the composed manifest's reset selectors. No literal default
-        // is spelled here; change a default in AppSettings and both the seed and the
-        // per-card reset follow. Load() overwrites these with persisted values; this
-        // only covers the gap before the first Load.
+        // Seed from the POCO initializers, the single source of truth for defaults
+        // shared with the manifest's reset selectors: no literal default is spelled
+        // here. Load() overwrites these; this only covers the gap before it.
         var appearance = new AppearanceSettings();
         var paths = new PathsSettings();
         var updates = new UpdatesSettings();
@@ -209,8 +195,6 @@ public partial class GeneralViewModel : ObservableObject
             _isSyncing = false;
         }
 
-        // Refresh outside the _isSyncing guard so any future logic in
-        // RefreshBackups that touches observable state behaves normally.
         RefreshBackups();
     }
 
@@ -240,11 +224,4 @@ public partial class GeneralViewModel : ObservableObject
         RewriteHotkey = hotkeys.Rewrite;
         TrackpadHotkey = hotkeys.Trackpad;
     }
-
-    // Section resets moved out of the VM in the composer-reset slice: the composed
-    // manifest carries each setting's default (read from the POCO), and the page's
-    // section "Reset" links call the matching SettingsComposer.ResetAll(), which
-    // drives every value back through its own setter. The old ResetXxxDefaults
-    // methods were a second copy of the defaults and the seed above a third — both
-    // now read new XxxSettings(), so the literal defaults live in one place.
 }

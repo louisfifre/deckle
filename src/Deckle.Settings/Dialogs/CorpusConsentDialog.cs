@@ -9,16 +9,9 @@ namespace Deckle.Settings;
 
 // ─── CorpusConsentDialog ──────────────────────────────────────────────────
 //
-// Opt-in consent for corpus logging. Shown the first time the user flips
-// the toggle from off to on. Cancelling reverts the toggle.
-//
-// This is a consent prompt, not a warning: no "Don't show again", no
-// severity icon. The user is explicitly authorizing data capture to their
-// own filesystem.
-//
-// Wording: all user-facing strings are loaded from Resources.resw via
-// Loc.Get. The corpus.jsonl path (`where`) stays hardcoded — it's a
-// filesystem path, not copy.
+// Opt-in consent for corpus logging. This is a consent prompt, not a warning:
+// no "Don't show again", no severity icon. The user is explicitly authorizing
+// data capture to their own filesystem.
 
 internal static class CorpusConsentDialog
 {

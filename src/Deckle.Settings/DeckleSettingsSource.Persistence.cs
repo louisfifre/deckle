@@ -5,7 +5,7 @@ namespace Deckle.Settings;
 
 public sealed partial class DeckleSettingsSource
 {
-    // ── Settings persistence (transitoire) ──────────────────────────────
+    // ── Settings persistence (transitional) ─────────────────────────────
 
     [Event(EvtSettingsLoaded,
            Level = EventLevel.Informational,

@@ -9,14 +9,9 @@ namespace Deckle.Settings;
 
 // ─── AutocorrectDecisionsConsentDialog ─────────────────────────────────────
 //
-// Opt-in consent for the per-word autocorrect decision dataset
-// (autocorrect.decisions.jsonl). Shown the first time the user flips the toggle
-// from off to on. Cancelling reverts the toggle.
-//
-// Same pattern as ApplicationLogConsentDialog — no "Don't show again", no
-// severity icon. This one captures the words the user types on enrolled apps in
-// clear text, so the wording is explicit about it. Strings via Loc.Get /
-// Resources.resw; the where path is the actual file and stays hardcoded.
+// Opt-in consent for the per-word autocorrect decision dataset. It captures the
+// words the user types on enrolled apps in clear text, so the wording is
+// explicit about it. Same consent form as CorpusConsentDialog.
 
 internal static class AutocorrectDecisionsConsentDialog
 {

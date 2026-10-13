@@ -8,17 +8,8 @@ namespace Deckle.Settings;
 
 // ─── MicrophoneTelemetryConsentDialog ──────────────────────────────────────
 //
-// Opt-in consent for the per-Recording microphone telemetry stream. Shown
-// the first time the user flips the toggle from off to on. Cancelling
-// reverts the toggle.
-//
-// Same pattern as ApplicationLogConsentDialog / CorpusConsentDialog — no
-// "Don't show again", no severity icon. The user is explicitly authorizing
-// a diagnostic capture to their own filesystem.
-//
-// Wording: all strings via Loc.Get / Resources.resw. The where path stays
-// hardcoded with the literal microphone.jsonl filename — both are
-// filesystem identifiers, not copy.
+// Opt-in consent for the per-Recording microphone telemetry stream, in the
+// same consent form as CorpusConsentDialog.
 
 internal static class MicrophoneTelemetryConsentDialog
 {

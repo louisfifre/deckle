@@ -8,16 +8,8 @@ namespace Deckle.Settings;
 
 // ─── ApplicationLogConsentDialog ──────────────────────────────────────────
 //
-// Opt-in consent for writing the full application log to disk. Shown the
-// first time the user flips the toggle from off to on. Cancelling reverts
-// the toggle.
-//
-// Same pattern as CorpusConsentDialog and AudioCorpusConsentDialog — no
-// "Don't show again", no severity icon. The user is explicitly authorizing
-// a diagnostic capture to their own filesystem.
-//
-// Wording: all strings via Loc.Get / Resources.resw. The where path stays
-// hardcoded — it's a filesystem path, not copy.
+// Opt-in consent for writing the full application log to disk, in the same
+// consent form as CorpusConsentDialog.
 
 internal static class ApplicationLogConsentDialog
 {

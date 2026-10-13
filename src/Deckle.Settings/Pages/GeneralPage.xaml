@@ -6,9 +6,8 @@
     xmlns:ui="using:CommunityToolkit.WinUI"
     xmlns:vm="using:Deckle.Settings">
 
-    <!-- Canonical Microsoft Learn pattern (SettingsExpander sample "Settings page
-         example"): StackPanel max 1000 in a Grid, Spacing=4 between cards,
-         Margin="1,30,0,6" on section headers. -->
+    <!-- Card spacing, header margin and the 1000 max width follow the Microsoft
+         Learn SettingsExpander sample "Settings page example". -->
     <Page.Resources>
         <x:Double x:Key="SettingsCardSpacing">4</x:Double>
         <Style x:Key="SettingsSectionHeaderTextBlockStyle"
@@ -28,10 +27,8 @@
                         HorizontalAlignment="Stretch"
                         Spacing="{StaticResource SettingsCardSpacing}">
 
-                <!-- Page title + whole-page "Reset all". Win11 Settings pattern:
-                     the H1 lives in the Page (not the window chrome), with the
-                     page-level reset on its trailing edge (active-when-dirty),
-                     mirroring WhisperPage / LlmPage. -->
+                <!-- The H1 lives in the Page, not the window chrome (Windows 11
+                     Settings), with the page-level reset on its trailing edge. -->
                 <Grid Margin="0,0,0,8">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="*" />
@@ -77,9 +74,6 @@
                                      Click="ResetHotkeys_Click" />
                 </Grid>
 
-                <!-- Composed: one hotkey card per action the App built
-                     (GeneralViewModel.HotkeySettings); an absent module's card
-                     is hidden. -->
                 <StackPanel x:Name="HotkeysHost"
                             Spacing="{StaticResource SettingsCardSpacing}" />
 
@@ -100,11 +94,6 @@
                                      Click="ResetAppearance_Click" />
                 </Grid>
 
-                <!-- Composed: the theme picker — the Appearance section's lone
-                     value-backed card. GeneralViewModel.AppearanceSettings declares
-                     it as a Choice descriptor (3 options) and the composer builds the
-                     ComboBox into this host, where the card stood. The section header
-                     and Reset link above stay hand-authored. -->
                 <StackPanel x:Name="AppearanceHost"
                             Spacing="{StaticResource SettingsCardSpacing}" />
 
@@ -125,11 +114,6 @@
                                      Click="ResetStartup_Click" />
                 </Grid>
 
-                <!-- Composed: the "start with Windows" toggle — the Startup
-                     section's lone card. Its registry write and revert-on-refusal
-                     live in the VM setter (OnAutostartEnabledChanged), so the
-                     composer hosts it like any toggle: GeneralViewModel.StartupSettings
-                     declares it and the composer builds the card into this host. -->
                 <StackPanel x:Name="StartupHost"
                             Spacing="{StaticResource SettingsCardSpacing}" />
 
@@ -150,16 +134,11 @@
                                      Click="ResetUpdates_Click" />
                 </Grid>
 
-                <!-- Composed: the silent-check opt-out — the section's lone
-                     settable value (GeneralViewModel.UpdatesSettings). -->
                 <StackPanel x:Name="UpdatesHost"
                             Spacing="{StaticResource SettingsCardSpacing}" />
 
                 <!-- Bespoke: the version readout is a live status projection,
-                     and "Install now" is an action — neither composes. The
-                     description carries the running version (code-behind);
-                     the content pair appears only while the silent check has
-                     a newer release parked. -->
+                     and "Install now" is an action — neither composes. -->
                 <controls:SettingsCard x:Name="VersionCard"
                                        x:Uid="GeneralVersionCard"
                                        Tag="GeneralVersionCard"
@@ -219,9 +198,6 @@
                     </Grid>
                 </controls:SettingsCard>
 
-                <!-- Pre-flight outcomes of a data move that never left this
-                     page: same target, invalid target, not enough space. The
-                     move itself runs in the dedicated relocate process. -->
                 <InfoBar x:Name="DataMoveInfoBar"
                          IsOpen="False"
                          IsClosable="True" />
@@ -241,20 +217,12 @@
                                 IsEnabled="{x:Bind ViewModel.HasBackup, Mode=OneWay}" />
                     </StackPanel>
                     <controls:SettingsExpander.Items>
-                        <!-- Composed: the backup-location folder picker — a Path
-                             descriptor (GeneralViewModel.ApplicationDataSettings). The
-                             composer builds the FolderPickerCard into this host, where
-                             the hand-authored GeneralBackupLocationCard stood; its
-                             DefaultPath and per-card reset now ride the descriptor's
-                             PathArgs/Default instead of the code-behind. A StackPanel
-                             host (not a bare SettingsCard) because the composer needs a
-                             Panel; it holds the single composed card, rendering the same
-                             row inside the expander's Items. -->
+                        <!-- A StackPanel host, not a bare SettingsCard, because the
+                             composer needs a Panel. -->
                         <StackPanel x:Name="BackupLocationHost"
                                     Spacing="{StaticResource SettingsCardSpacing}" />
 
-                        <!-- Bespoke: the "latest backup" readout is a live status
-                             projection (file name + created at), not a settable value. -->
+                        <!-- Bespoke: a live status readout, not a settable value. -->
                         <controls:SettingsCard x:Uid="GeneralBackupInfoCard"
                                                Tag="GeneralBackupInfoCard"
                                                ContentAlignment="Vertical">

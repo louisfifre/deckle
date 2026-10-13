@@ -7,52 +7,37 @@ namespace Deckle.Settings;
 
 // ── SettingsSearchIndex ───────────────────────────────────────────────────────
 //
-// The shell's in-memory index of every searchable card across every settings page —
-// the seam that lets a single search box reach a setting on any page without the box
-// knowing the pages. A page (via the App composition root at boot) registers its
-// SettingSearchEntry list; the index resolves each entry's display text ONCE, folds
-// in the page's coordinates, and thereafter answers queries over the resolved set.
-//
-// Same lib-exposes-a-static / host-populates-it shape as SettingsModuleRegistry
-// beside it: Deckle.Settings owns the index, the composition root fills it, the shell
-// stays a pure aggregator with no literal page references. The crucial difference
-// from a compose-time index: text is resolved from each module's PRI subtree via
-// Loc.GetFrom — exactly as BuildModuleNavItems resolves a nav label — so a card is
+// The shell's in-memory index of every searchable card across every settings page,
+// so a single search box reaches a setting on any page without knowing the pages.
+// Text is resolved from each module's PRI subtree via Loc.GetFrom, so a card is
 // indexed WITHOUT its page ever being composed. Pages compose lazily (only on first
 // navigation, NavigationCacheMode.Required), so an index that waited for composition
-// would be blind to every unvisited page; resolving from the manifest sidesteps that.
+// would be blind to every unvisited page.
 //
 // Registration is tolerant by construction. An entry whose header key does not
 // resolve is a wiring gap, not a boot-stopper: it is skipped with a Verbose trail and
 // the rest of the page still indexes. Nothing here ever throws at boot.
 public static class SettingsSearchIndex
 {
-    // Guards the resolved set against a Register racing a Search read. Every access
-    // takes it; Search snapshots under it, then ranks the copy outside the lock.
+    // Register can race a Search read; Search snapshots under the lock, then ranks
+    // the copy outside it.
     private static readonly object _gate = new();
     private static readonly List<SettingSearchHit> _entries = new();
 
-    // Register a module page's searchable cards, deriving the page coordinates every
-    // card shares from its nav descriptor: PageTag to navigate to, Glyph to show, and
-    // the breadcrumb label resolved from the module's own subtree exactly as
-    // BuildModuleNavItems resolves the nav item's text.
     public static void Register(SettingsModuleDescriptor page, IReadOnlyList<SettingSearchEntry> entries)
     {
         string pageLabel = Loc.GetFrom(page.OwningAssembly, page.LabelKey);
         RegisterPage(page.PageTag, page.OwningAssembly, page.Glyph, pageLabel, entries);
     }
 
-    // Register a STATIC shell page's cards — General and its kin have no module
-    // descriptor (they are fixed XAML anchors, not registry entries), so the caller
-    // supplies the coordinates directly: the page's Type.GetType tag, the assembly its
-    // cards' .resw keys live under, its glyph, and its already-resolved nav label.
+    // For the static General page, which has no module descriptor: the caller
+    // supplies the coordinates directly.
     public static void RegisterPage(
         string pageTag, string owningAssembly, string glyph, string pageLabel,
         IReadOnlyList<SettingSearchEntry> entries)
     {
-        // Resolve outside the lock — Loc touches no shared state here — then commit the
-        // batch under it. Re-registering a page replaces its cards rather than doubling
-        // them, so a second boot pass (or a reopened window) cannot duplicate hits.
+        // Re-registering a page replaces its cards rather than doubling them, so a
+        // second boot pass cannot duplicate hits.
         var resolved = new List<SettingSearchHit>(entries.Count);
         foreach (SettingSearchEntry entry in entries)
         {
@@ -68,8 +53,6 @@ public static class SettingsSearchIndex
                 continue;
             }
 
-            // Description is optional on both paths: inline for a bespoke card, otherwise
-            // the optional "<LabelKey>/Description" entry (a card may have none).
             string? description = entry.LiteralDescription
                 ?? Loc.GetFromOptional(owningAssembly, $"{entry.LabelKey}/Description");
 
@@ -92,12 +75,8 @@ public static class SettingsSearchIndex
         }
     }
 
-    // Query the index. Returns the top `max` hits in rank order plus the TOTAL number
-    // of matches (so the UI can offer a "+N more — refine" hint when total exceeds what
-    // it shows). All query tokens are required and matched case-insensitively; an empty
-    // query or a non-positive cap matches nothing. Pure over the in-memory set — no
-    // allocation beyond the transient score list, so it is cheap to call on each
-    // (debounced) keystroke.
+    // Returns the top `max` hits in rank order plus the TOTAL number of matches, for
+    // the "+N more — refine" hint. Every query token is required.
     public static (IReadOnlyList<SettingSearchHit> Hits, int Total) Search(string query, int max)
     {
         string[] tokens = query?.Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries) ?? [];

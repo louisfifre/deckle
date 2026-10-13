@@ -28,8 +28,6 @@ public sealed partial class GeneralPage : Page
         ComposeUpdatesSection();
         ComposeApplicationDataSection();
 
-        // The page-level "Reset all" gate spans every section composer; re-gate it
-        // whenever any goes dirty (each section link keeps its own gating too).
         foreach (var composer in new[]
                  { _hotkeysComposer, _appearanceComposer, _startupComposer, _updatesComposer, _applicationDataComposer })
             composer!.DirtyChanged += (_, _) => GateResetAll();
@@ -39,9 +37,7 @@ public sealed partial class GeneralPage : Page
 
     // ── Composed Hotkeys section ──────────────────────────────────────────────
     //
-    // Same host-only pattern as Appearance: one Hotkey card per action, each
-    // hidden when the App did not build that action. The App rebinds the
-    // global hotkeys itself when the saved settings change.
+    // The App rebinds the global hotkeys itself when the saved settings change.
     private SettingsComposer? _hotkeysComposer;
 
     private void ComposeHotkeysSection()
@@ -54,33 +50,22 @@ public sealed partial class GeneralPage : Page
 
     // ── Composed Appearance section ───────────────────────────────────────────
     //
-    // Host-only, like the Behaviour section below: the page hands the host panel
-    // and the ViewModel's Appearance manifest to the composer, which builds the
-    // theme ComboBox (a Choice descriptor). The composer subscribes to the
-    // ViewModel, so the picker reflects Load() and the section "Reset" with no
-    // SyncThemeCombo pass here — the old hand-wired ThemeCombo handler and its
-    // sync method are gone. Composed before LoadAndSync so the subscription
-    // catches Load()'s PropertyChanged; held in a field so it lives as long as
-    // the (cached) page.
+    // Every section composer is built before LoadAndSync so its subscription
+    // catches Load()'s PropertyChanged, and held in a field so it lives as long
+    // as the (cached) page.
     private SettingsComposer? _appearanceComposer;
 
     private void ComposeAppearanceSection()
     {
         _appearanceComposer = new SettingsComposer(AppearanceHost, ViewModel);
-        // Gate the section "Reset" link on the composer's dirtiness, re-evaluated
-        // each time it raises DirtyChanged (after every RefreshAll). Subscribed
-        // before Compose so its closing RefreshAll lands the initial gate too.
+        // Subscribed before Compose so its closing RefreshAll lands the initial
+        // gate too.
         _appearanceComposer.DirtyChanged += (_, _) =>
             AppearanceResetLink.IsEnabled = _appearanceComposer.IsDirty();
         _appearanceComposer.Compose(ViewModel.AppearanceSettings);
     }
 
     // ── Composed Startup section ──────────────────────────────────────────────
-    //
-    // Same host-only pattern: the "start with Windows" toggle, whose registry
-    // write and revert-on-refusal live in the VM setter, composes like any toggle.
-    // No code-behind sync for it — the composer's subscription reflects Load(),
-    // the section Reset, and the setter's own revert via PropertyChanged.
     private SettingsComposer? _startupComposer;
 
     private void ComposeStartupSection()
@@ -92,10 +77,6 @@ public sealed partial class GeneralPage : Page
     }
 
     // ── Composed Updates section ──────────────────────────────────────────────
-    //
-    // Same host-only pattern: the silent-check opt-out toggle. The version
-    // readout below it stays hand-authored (a status projection plus an
-    // action button, refreshed by LoadAndSync through the SettingsHost hooks).
     private SettingsComposer? _updatesComposer;
 
     private void ComposeUpdatesSection()
@@ -108,13 +89,8 @@ public sealed partial class GeneralPage : Page
 
     // ── Composed backup-location card ─────────────────────────────────────────
     //
-    // Same host-only pattern for the one settable value under "Application data":
-    // the backup-location folder picker, a Path descriptor whose DefaultPath (the
-    // AppPaths fallback the code-behind used to push) now rides its PathArgs. The
-    // composer's per-card reset replaces the old code-behind SyncFolderPickerDefaults
-    // wiring; the picker reflects Load() through the composer's subscription. The
-    // "Application data" section has no hand-authored section-reset link, so there is
-    // no DirtyChanged gating here — the composed card carries its own inline reset.
+    // "Application data" has no section-reset link, so no DirtyChanged gating
+    // here; the composed card carries its own inline reset.
     private SettingsComposer? _applicationDataComposer;
 
     private void ComposeApplicationDataSection()
@@ -133,17 +109,12 @@ public sealed partial class GeneralPage : Page
         LoadAndSync();
     }
 
-    // Refills the VM from settings and refreshes the page's few hand-authored
-    // readouts. The composed sections (Appearance, Startup) need no
-    // sync pass: each composer subscribes to the VM, so Load()'s PropertyChanged
-    // re-syncs their controls. The old _initializing guard (and its deferred
-    // DispatcherQueue release) is gone with the last hand-wired combo handler.
+    // The composed sections need no sync pass: each composer subscribes to the
+    // VM, so Load()'s PropertyChanged re-syncs their controls.
     private void LoadAndSync()
     {
         ViewModel.Load();
         DataFolderPathText.Text = AppPaths.UserDataRoot;
-        // The move rides the App's relocate hook; unwired (tests, partial
-        // hosts) the affordance simply isn't there.
         MoveDataFolderButton.Visibility = SettingsHost.RelocateDataRoot is null
             ? Visibility.Collapsed : Visibility.Visible;
         RefreshVersionCard();
@@ -152,10 +123,6 @@ public sealed partial class GeneralPage : Page
         GateResetAll();
     }
 
-    // The version row reads through the SettingsHost hooks: the running build's
-    // version as the card description, and — when the silent check has parked a
-    // newer release — the offer text plus the "Install now" action. Unwired
-    // hooks (tests, partial hosts) leave a bare version row.
     private void RefreshVersionCard()
     {
         VersionCard.Description = SettingsHost.GetAppVersion?.Invoke() ?? "";
@@ -176,13 +143,8 @@ public sealed partial class GeneralPage : Page
 
     // ── Whole-page "Reset all" ────────────────────────────────────────────────
     //
-    // Drives every section's composer back to its defaults at once — the same
-    // ResetAll() each section link fires, folded into one gesture on the title row.
-    // Active-when-dirty (the Playground model): enabled only while some composed value
-    // differs from its default, re-gated off every composer's DirtyChanged and once
-    // after Load(). No confirmation — these are reversible preference defaults
-    // (appearance, behaviour, startup, backup location), nothing user-authored is
-    // lost, matching RecordingPage's section reset.
+    // No confirmation: these are reversible preference defaults, nothing
+    // user-authored is lost.
     private void GateResetAll()
     {
         ResetAllButton.IsEnabled =
@@ -206,13 +168,9 @@ public sealed partial class GeneralPage : Page
 
     // ── Reset per section ───────────────────────────────────────────────────
     //
-    // Each section "Reset" link drives its composer's ResetAll(): every defaulted
-    // card and group goes back to its POCO default through its own setter, which
-    // raises PropertyChanged and re-syncs the surface (and re-gates the link via
-    // DirtyChanged). The value-setting side effects ride the setters — Appearance's
-    // ApplyTheme in OnThemeChanged, Startup's registry write in
-    // OnAutostartEnabledChanged — so the handler only triggers the reset and keeps
-    // the section-reset log line the VM methods used to emit.
+    // The side effects ride the VM setters (ApplyTheme in OnThemeChanged, the
+    // startup write in OnAutostartEnabledChanged), so a handler only triggers the
+    // composer's ResetAll() and logs.
 
     private void ResetHotkeys_Click(object sender, RoutedEventArgs e)
     {
@@ -230,9 +188,6 @@ public sealed partial class GeneralPage : Page
 
     private void ResetStartup_Click(object sender, RoutedEventArgs e)
     {
-        // The autostart toggle's default is off; ResetAll() sets it off, whose
-        // setter calls StartupService.StopStartup() — the vehicle removal rides
-        // along, exactly as a manual toggle would, so no direct call here anymore.
         _startupComposer?.ResetAll();
         DeckleSettingsUxSource.Log.SectionReset();
         DeckleSettingsUxSource.Log.SectionResetDetail("Startup");
@@ -245,8 +200,6 @@ public sealed partial class GeneralPage : Page
         DeckleSettingsUxSource.Log.SectionResetDetail("Updates");
     }
 
-    // Opens the UserDataRoot in File Explorer — entry point for users who
-    // want to inspect, back up, or wipe everything mutable the app stores.
     private void OpenDataFolderButton_Click(object sender, RoutedEventArgs e)
     {
         string path = AppPaths.UserDataRoot;
@@ -269,13 +222,10 @@ public sealed partial class GeneralPage : Page
 
     // ── Data-root move ──────────────────────────────────────────────────────
     //
-    // The page owns the pre-flight only: pick a target, normalize it (a
-    // non-empty pick lands in a Deckle subfolder, so the later cleanup never
-    // entangles foreign files), refuse nesting and same-target, gate on the
-    // target drive's free space, then confirm — the restart makes this a
-    // held-until-confirmed action. The actual move runs in the dedicated
-    // relocate process behind SettingsHost.RelocateDataRoot, which re-checks
-    // space authoritatively before copying.
+    // The page owns the pre-flight only; the move itself runs in the relocate
+    // process behind SettingsHost.RelocateDataRoot, which re-checks space before
+    // copying. A non-empty pick lands in a Deckle subfolder, so the later cleanup
+    // never entangles foreign files.
 
     private async void MoveDataFolderButton_Click(object sender, RoutedEventArgs e)
     {
@@ -294,8 +244,6 @@ public sealed partial class GeneralPage : Page
             var result = await picker.PickSingleFolderAsync();
             if (result is null) return;
 
-            // Transient busy while the size scan runs — a data root can hold
-            // gigabytes across thousands of files.
             MoveDataFolderButton.IsEnabled = false;
             try { await BeginDataMoveAsync(result.Path); }
             finally { MoveDataFolderButton.IsEnabled = true; }
@@ -385,17 +333,10 @@ public sealed partial class GeneralPage : Page
         return $"{bytes / 1024.0 / 1024.0 / 1024.0:F2} GB";
     }
 
-    // Re-opens the first-run wizard on demand. Used to swap the Whisper
-    // model (Browse + download) or replace the native runtime without
-    // wiping <UserDataRoot>. The wizard runs detached from the Settings
-    // window — Settings stays open behind it.
     private void ReRunSetupButton_Click(object sender, RoutedEventArgs e)
     {
         try
         {
-            // The first-run wizard lives in the standalone Deckle.Setup
-            // module. Going through the SettingsHost hook keeps
-            // Deckle.Settings free of a back-reference to Deckle.exe.
             if (SettingsHost.OpenSetupWizard is null)
             {
                 DeckleSettingsSource.Log.SetupWizardHookNotWired();
@@ -413,13 +354,8 @@ public sealed partial class GeneralPage : Page
 
     // ── Backup ──────────────────────────────────────────────────────────────
     //
-    // PowerToys-style: a single SettingsExpander, two header actions
-    // (Back up / Restore), and a folder picker for the location. Restore
-    // targets the latest snapshot — older ones live in the folder and are
-    // restorable by hand if ever needed. The location folder picker is now the
-    // composed Path card (ComposeApplicationDataSection); its DefaultPath and
-    // per-card reset ride the descriptor's PathArgs/Default. The Create/Restore
-    // handlers below stay hand-authored — they are actions, not settings.
+    // Restore targets the latest snapshot; older ones stay in the folder,
+    // restorable by hand.
 
     private void CreateBackupButton_Click(object sender, RoutedEventArgs e)
     {
@@ -439,8 +375,7 @@ public sealed partial class GeneralPage : Page
 
         // Restoring overwrites the live settings.json with the snapshot — an
         // irreversible swap, so it goes through the shared destructive-confirm
-        // gate (Close is the default button; Enter does nothing). Same three
-        // restore strings as before; the service owns only the Cancel verb.
+        // gate (Close is the default button; Enter does nothing).
         bool confirmed = await ConfirmationService.RequestAsync(
             this.XamlRoot,
             new ConfirmationRequest(
@@ -453,18 +388,10 @@ public sealed partial class GeneralPage : Page
         bool ok = SettingsBackupService.RestoreFromBackup(latest.Path);
         if (!ok) return;
 
-        // Settings have been replaced and SettingsService.Reload has fired
-        // Changed. Refill the VM from the new in-memory snapshot. Other
-        // pages (RecordingPage, DiagnosticsPage, WhisperPage) will refill
-        // their own VMs on next OnNavigatedTo via NavigationCacheMode.
         ViewModel.Load();
 
-        // The Appearance composer re-selects the theme ComboBox off the Load()
-        // PropertyChanged; we still apply the theme side-effect explicitly,
-        // since Load() runs under the VM's sync guard which suppresses it.
-        // Apply theme side-effect beyond the VM — RecordingViewModel
-        // owns the level-window mapper push so we don't touch it from
-        // here anymore.
+        // Load() runs under the VM's sync guard, which suppresses the theme
+        // side effect, so apply it explicitly.
         SettingsHost.ApplyTheme?.Invoke(ViewModel.Theme);
     }
 }

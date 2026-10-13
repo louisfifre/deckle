@@ -11,23 +11,11 @@ namespace Deckle.Settings;
 // The declarative half of the page, kept beside the ViewModel that owns the
 // values rather than in the page code-behind. Each entry declares one setting —
 // its kind, its localization key, its glyph, and typed selectors onto this VM's
-// own properties — and SettingsComposer turns the list into SettingsCards.
-//
-// The Appearance and Startup sections are composed from here — the theme picker and
-// the registry-backed autostart toggle (the Behaviour section's overlay + auto-paste
-// moved to the Dictation page in the settings reorg). Each descriptor carries its reset default,
-// read from the matching AppSettings POCO initializer so the literal defaults live
-// in one place. GeneralPage's remaining controls stay hand-authored: the version row
-// and the command/diagnostic cards under Application data. The
-// composer drives only what it cleanly can.
+// own properties — and SettingsComposer turns the list into SettingsCards. Each
+// reset default reads the matching AppSettings POCO initializer, so the literal
+// defaults live in one place.
 public partial class GeneralViewModel
 {
-    // Appearance section — the theme picker. A Choice over the theme string the VM
-    // already owns ("System"/"Light"/"Dark"), the values the ComboBoxItem Tags
-    // carried; the option labels resolve from the page's .resw "<key>.Content"
-    // entries. The change handler (OnThemeChanged → PushToSettings + ApplyTheme)
-    // is unchanged: the composer drives the setter, the side effect rides along —
-    // which is exactly why a card whose effect lives in the VM setter composes.
     public IReadOnlyList<SettingDescriptor> AppearanceSettings =>
     [
         Setting.Choice<string>("GeneralAppThemeCard",
@@ -39,17 +27,12 @@ public partial class GeneralViewModel
                 ("Dark", "GeneralThemeDark"),
             ],
             glyph: Glyphs.Theme,
-            // The default is the POCO initializer, the one source of truth — the VM
-            // no longer carries its own copy. ("System".)
             defaultValue: () => new AppearanceSettings().Theme),
     ];
 
-    // Hotkeys section — one card per hotkey action: Record, then one per module
-    // switch of the tray panel, in the panel's order. Each card is hidden when
-    // the App did not build its action (module absent). Record may not be
-    // cleared, it is the dictation's keyboard entry point; a toggle may. The
-    // defaults are the HotkeysSettings initializers (Record = Win + the key
-    // left of 1, toggles unbound).
+    // Record, then one card per module switch of the tray panel, in the panel's
+    // order. Record may not be cleared, it is the dictation's keyboard entry
+    // point; a toggle may.
     public IReadOnlyList<SettingDescriptor> HotkeySettings =>
     [
         Hotkey("record", "GeneralHotkeyRecordCard", () => RecordHotkey, v => RecordHotkey = v,
@@ -112,31 +95,21 @@ public partial class GeneralViewModel
         return null;
     }
 
-    // Startup section — "start with Windows". A plain TwoWay toggle, but its
-    // OnAutostartEnabledChanged drives StartupService across both logon vehicles
-    // and, when the write is refused (GPO/ACL, declined UAC), reverts the property
-    // under the sync guard. That revert composes: the composer drives the setter,
-    // and the reverted value rides back to the toggle on PropertyChanged — the
-    // same path Load() and the section Reset use. The textbook "side effect in the
-    // VM setter" card, migrated now that the theme picker proved that path carries
-    // the effect through unchanged.
+    // Side effects live in the VM setters, so the composer can drive them. The
+    // autostart setter drives StartupService and, when the write is refused,
+    // reverts the property under the sync guard; the reverted value rides back to
+    // the toggle on PropertyChanged, the same path Load() and the section Reset use.
     public IReadOnlyList<SettingDescriptor> StartupSettings =>
     [
         Setting.Toggle("GeneralAutostartCard",
             () => AutostartEnabled,
             value => AutostartEnabled = value,
             glyph: Glyphs.Launch,
-            // The OS is the source of truth; "no vehicle registered" is the default
-            // (StartupService.DefaultEnabled, false). Resetting drives the toggle
-            // off, whose setter calls StartupService.StopStartup() — the vehicle
-            // removal rides the setter exactly like the theme/overlay side effects.
             defaultValue: () => StartupService.DefaultEnabled),
     ];
 
-    // Updates section — the silent-check opt-out. A plain TwoWay toggle over the
-    // AppSettings POCO; the check itself runs App-side (UpdateService), which
-    // reads the persisted value on each tick, so flipping the toggle needs no
-    // side effect here beyond PushToSettings.
+    // The App-side update loop reads the persisted value on each tick, so the
+    // toggle needs no side effect beyond PushToSettings.
     public IReadOnlyList<SettingDescriptor> UpdatesSettings =>
     [
         Setting.Toggle("GeneralUpdateAutoCheckCard",
@@ -146,16 +119,6 @@ public partial class GeneralViewModel
             defaultValue: () => new UpdatesSettings().AutoCheckEnabled),
     ];
 
-    // Application data section — the backup-location folder picker. A Path
-    // descriptor (FolderPickerMode.Configure: read-only readout with Change + Open)
-    // over the BackupDirectory string the VM already owns; its OnBackupDirectoryChanged
-    // (PushToSettings + RefreshBackups) rides the setter unchanged, exactly as the
-    // theme/overlay side effects do. DefaultPath is the deferred AppPaths lookup the
-    // code-behind used to push into the picker (the empty-value fallback, computed at
-    // compose time), moved here into PathArgs so the manifest carries it. The reset
-    // default is the POCO initializer (empty → "empty means AppPaths"), the one source
-    // of truth. The Create/Restore actions and the latest-backup readout stay hand-
-    // authored on the page (they are commands/readouts, not settable values).
     public IReadOnlyList<SettingDescriptor> ApplicationDataSettings =>
     [
         Setting.Path("GeneralBackupLocationCard",

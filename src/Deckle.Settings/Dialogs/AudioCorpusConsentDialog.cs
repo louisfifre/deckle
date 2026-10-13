@@ -12,14 +12,11 @@ namespace Deckle.Settings;
 // Opt-in consent for the WAV-audio side of corpus logging. Audio capture is
 // a stronger privacy posture than text (voice is biometric-adjacent), so it
 // has its own dialog rather than being folded into the text-corpus prompt —
-// the user consents to each data class explicitly.
+// the user consents to each data class explicitly. Same consent form as
+// CorpusConsentDialog.
 //
-// Cancelling reverts the toggle. Same pattern as CorpusConsentDialog, just
-// different copy.
-//
-// Wording: all strings via Loc.Get / Resources.resw. The where path stays
-// hardcoded — it's a filesystem path with a literal <profile> placeholder
-// for the user, not copy that should ever be translated.
+// The <profile> segment of the where path is a literal placeholder for the
+// user, never translated.
 
 internal static class AudioCorpusConsentDialog
 {

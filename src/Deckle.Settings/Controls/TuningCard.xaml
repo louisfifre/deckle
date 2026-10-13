@@ -4,14 +4,6 @@
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
 
-    <!-- One tuning section : a titled, described card hosting an arbitrary stack of
-         knobs, with a per-section reset that stays hidden until the card is hovered
-         or its reset is focused — the Windows 11 Settings reveal pattern. The card
-         chrome (Card brushes, ControlCornerRadius, 24 padding) is the same the
-         pages drew by hand ; folding it into one control removes the repetition and
-         makes "every section carries a Reset section" structural rather than
-         per-page discipline. The page wires OnResetClick to snap that section back
-         to its defaults. Children placed between the tags fill the body. -->
     <Border x:Name="CardRoot"
             Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
             BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
@@ -22,9 +14,8 @@
             PointerExited="OnPointerExited">
 
         <VisualStateManager.VisualStateGroups>
-            <!-- Reveal the reset on hover / focus — instant, no animation. The
-                 button keeps its slot at rest so the reveal never reflows the
-                 header. -->
+            <!-- Opacity, not Visibility: the button keeps its slot so the reveal
+                 never reflows the header. -->
             <VisualStateGroup x:Name="RevealStates">
                 <VisualState x:Name="Rest">
                     <VisualState.Setters>
@@ -56,10 +47,8 @@
                                Visibility="Collapsed" />
                 </StackPanel>
 
-                <!-- Reset section — icon + label, hidden (Opacity 0) until reveal.
-                     SubtleButton so it reads as a quiet header affordance ; GotFocus
-                     reveals it so a keyboard user sees it the moment it is tabbed
-                     to, not only on hover. -->
+                <!-- GotFocus reveals it so a keyboard user sees it when tabbing
+                     to it, not only on hover. -->
                 <Button x:Name="ResetButton" Grid.Column="1"
                         Style="{ThemeResource SubtleButtonStyle}"
                         VerticalAlignment="Top"

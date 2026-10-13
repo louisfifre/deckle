@@ -17,7 +17,6 @@ namespace Deckle.Settings;
 
 // ─── Settings Window ──────────────────────────────────────────────────────────
 //
-// Mica + system theme, native TitleBar (icon + title + hamburger + Logs).
 // NavigationView in PaneDisplayMode=Auto manages the Left / LeftCompact /
 // LeftMinimal switch; its own pane toggle is off — the TitleBar carries the
 // hamburger and relays through PaneToggleRequested.
@@ -36,13 +35,8 @@ public sealed partial class SettingsWindow : Window
     private BitmapImage? _iconIdle;
     private string? _iconIdlePath;
 
-    // Callback injected by App to open the shared LogWindow from the TitleBar
-    // "Logs" command. Left null = the button has no effect.
     public Action? OnShowLogsRequested { get; set; }
 
-    // The module nav items this window inserted from SettingsModuleRegistry,
-    // tracked so a live registry change (a module installed / removed while the
-    // window is open) can remove the old band before rebuilding it.
     private readonly List<NavigationViewItem> _moduleNavItems = new();
 
     public SettingsWindow()
@@ -50,7 +44,6 @@ public sealed partial class SettingsWindow : Window
         InitializeComponent();
         _hwnd = WindowNative.GetWindowHandle(this);
 
-        // App icon, shared with tray / LogWindow.
         _iconIdlePath = IconAssets.ResolvePath(recording: false);
         if (_iconIdlePath is not null)
         {
@@ -59,9 +52,7 @@ public sealed partial class SettingsWindow : Window
             AppWindow.SetIcon(_iconIdlePath);
         }
 
-        // Native title bar: height/drag/caption are managed by the control.
-        // Tall gives the bar room for the interactive content it now carries
-        // (Logs command, and the search box added later).
+        // Tall gives the bar room for its interactive content (search box, Logs).
         ExtendsContentIntoTitleBar = true;
         SetTitleBar(AppTitleBar);
         AppWindow.TitleBar.PreferredHeightOption = TitleBarHeightOption.Tall;
@@ -72,20 +63,13 @@ public sealed partial class SettingsWindow : Window
 
         SystemBackdrop = new MicaBackdrop();
 
-        // Cross-page search in the TitleBar: wire the responsive collapse.
         InitializeSearch();
 
-        // Keep the pane's open state aligned with the display mode as the
-        // window is resized across the Auto breakpoints.
         Nav.DisplayModeChanged += OnNavDisplayModeChanged;
-
-        // Same sync once the template is up, for the initial mode.
         Nav.Loaded += (_, _) => SyncNavigationPane(Nav);
 
-        // Materialise the module-owned pages from the registry into the nav
-        // (between Recording and Diagnostics) before the initial selection, so
-        // the first item is present and selectable. Rebuild on registry change so
-        // an install / uninstall while the window is open reflects live.
+        // Before the initial selection, so the module items are present and
+        // selectable.
         BuildModuleNavItems();
         SettingsModuleRegistry.Changed += OnModulesChanged;
         this.Closed += (_, _) => SettingsModuleRegistry.Changed -= OnModulesChanged;
@@ -118,12 +102,8 @@ public sealed partial class SettingsWindow : Window
         presenter.PreferredMinimumHeight = (int)(400 * dpiScale);
         AppWindow.SetPresenter(presenter);
 
-        // Theme: wire ActualThemeChanged on the XAML root to trace
-        // light/dark/HC transitions. SettingsWindow is the UI-side trigger for
-        // any "user" switch (Appearance combo in GeneralPage, pushed through
-        // SettingsHost.ApplyTheme → App.ApplyTheme), so this event is
-        // especially useful here to confirm that the switch was actually
-        // received by the window that triggered it.
+        // Traces light/dark/HC transitions. A user theme switch starts in this
+        // window, so the trace confirms it reached the window that triggered it.
         if (Content is FrameworkElement root)
         {
             _lastTheme = root.ActualTheme;
@@ -146,24 +126,17 @@ public sealed partial class SettingsWindow : Window
 
     // ── Module nav band ──────────────────────────────────────────────────────
     //
-    // Builds one NavigationViewItem per registered module and routes it into the
-    // band its Tier names: Header at the top of the primary menu, Main appended after
-    // the General anchor, Footer into the footer menu. Within a band, the registry
-    // already hands them back in (Tier, Order) order. Idempotent: any items a previous
-    // call inserted are removed from both menus first, so a live registry change
-    // rebuilds the band rather than duplicating it. Labels resolve from the OWNING
-    // module's PRI subtree (Loc.GetFrom) — the module ships its own nav wording — and
-    // the glyph is a Glyphs.* character built straight into a FontIcon, the same
-    // code-side path the composer uses.
+    // Idempotent: the items a previous call inserted are removed first, so a live
+    // registry change rebuilds the band rather than duplicating it. Labels resolve
+    // from the OWNING module's PRI subtree (Loc.GetFrom): the module ships its own
+    // nav wording.
     //
-    // Two passes, because a child must find its parent already built: parents first,
-    // indexed by Id, then children into parent.MenuItems. A child renders icon-less
-    // and its parent starts expanded — the WinUI hierarchical-navigation sample's
-    // shape, where indentation under a named parent carries the relation and a second
-    // icon column would only add noise. Only the top-level items are tracked in
-    // _moduleNavItems: removing a parent takes its children with it, and the registry
-    // hands children back after their parents anyway, so a dangling child is a wiring
-    // gap — traced and skipped, never a boot-stopper.
+    // Two passes, because a child must find its parent already built. A child
+    // renders icon-less under an expanded parent — the WinUI hierarchical-navigation
+    // sample's shape, where indentation carries the relation. Only the top-level
+    // items are tracked in _moduleNavItems: removing a parent takes its children
+    // with it. A child whose parent is missing is a wiring gap, traced and skipped,
+    // never a boot-stopper.
     private void BuildModuleNavItems()
     {
         foreach (NavigationViewItem old in _moduleNavItems)
@@ -173,9 +146,8 @@ public sealed partial class SettingsWindow : Window
         }
         _moduleNavItems.Clear();
 
-        // Main items append after General, the sole remaining static anchor (its
-        // count is the current end of the primary menu). Header items go to the very
-        // top and push the Main insertion point down as they are inserted.
+        // Main items append after the static General anchor. Header items go to the
+        // very top and push the Main insertion point down as they are inserted.
         int mainInsertAt = Nav.MenuItems.Count;
         int headerInsertAt = 0;
         var parents = new Dictionary<string, NavigationViewItem>();
@@ -230,9 +202,8 @@ public sealed partial class SettingsWindow : Window
         }
     }
 
-    // Registry changed (a module installed / removed) — rebuild the band. Register
-    // / Unregister may be called from any thread, so marshal onto the UI thread
-    // before touching the NavigationView.
+    // Register / Unregister may be called from any thread, so marshal onto the UI
+    // thread before touching the NavigationView.
     private void OnModulesChanged()
     {
         DispatcherQueue.TryEnqueueObserved(
@@ -249,8 +220,6 @@ public sealed partial class SettingsWindow : Window
             op.Restore();
         }
 
-        // If a page tag is requested, select the corresponding nav item. The
-        // selection triggers OnNavSelectionChanged → Frame navigation.
         if (pageTag is not null)
             SelectPage(pageTag);
 
@@ -258,22 +227,15 @@ public sealed partial class SettingsWindow : Window
         this.Activate();
         NativeMethods.SetForegroundWindow(_hwnd);
 
-        // Windowing: emitted post-Show to capture the effective rect after DWM
-        // has positioned the window. The anchor is "Center": SettingsWindow
-        // only does an AppWindow.Resize (960×1440) in the ctor; initial
-        // centering is done by Windows. Emitted on every ShowAndActivate
-        // because a user drag between two openings changes the rect; the last
-        // trace remains the current truth.
+        // After Show, on every call: the trace carries the effective rect once
+        // DWM has placed the window, and a user drag between openings moves it.
         WindowingProbe.EmitWindowPositioned(_hwnd, "settings", "Center");
     }
 
-    // Selects the rail item for a page tag, wherever it sits — the primary menu, a
-    // parent's children, or the footer. Selection is what navigates (it drives
-    // OnNavSelectionChanged → Frame.Navigate), so this is the one gesture every
-    // caller shares: the taskbar/tray deep link through ShowAndActivate, a search
-    // hit, and a page's own drill-in card through SettingsNavigation.GoToPage.
-    // A tag with no rail item is silently ignored — a module withdrawn while the
-    // window is open has nowhere to go, and that is not an error worth a dialog.
+    // Selection is what navigates (it drives OnNavSelectionChanged →
+    // Frame.Navigate), so every deep link goes through here. A tag with no rail
+    // item is silently ignored: a module withdrawn while the window is open has
+    // nowhere to go, and that is not an error worth a dialog.
     public void SelectPage(string pageTag)
     {
         NavigationViewItem? item = FindNavItem(pageTag);
@@ -294,18 +256,15 @@ public sealed partial class SettingsWindow : Window
 
     // ── TitleBar pane toggle ─────────────────────────────────────────────
     //
-    // The hamburger lives on the TitleBar; NavigationView.IsPaneToggleButtonVisible
-    // is False. Relay the request to the pane. SyncNavigationPane is deliberately
-    // NOT called here — it forces IsPaneOpen from the display mode, which would
-    // immediately re-close a pane the user just opened in a compact mode.
+    // SyncNavigationPane is deliberately NOT called here — it forces IsPaneOpen
+    // from the display mode, which would immediately re-close a pane the user
+    // just opened in a compact mode.
 
     private void OnTitleBarPaneToggleRequested(TitleBar sender, object args)
     {
         Nav.IsPaneOpen = !Nav.IsPaneOpen;
     }
 
-    // Logs command in the TitleBar: delegate to App, which opens the shared
-    // LogWindow. The OnShowLogsRequested field (wired by App) is unchanged.
     private void OnLogsButtonClick(object sender, RoutedEventArgs e)
     {
         DeckleSettingsSource.Log.OpenLogsFromFooter();
@@ -313,9 +272,6 @@ public sealed partial class SettingsWindow : Window
     }
 
     // ── NavigationView: pane sync by DisplayMode ─────────────────────────
-    //
-    // The pane toggle no longer renders inside the content area (it lives on
-    // the TitleBar), so no Frame margin compensation is needed in Minimal mode.
 
     private void OnNavDisplayModeChanged(NavigationView sender, NavigationViewDisplayModeChangedEventArgs args)
     {
@@ -323,11 +279,6 @@ public sealed partial class SettingsWindow : Window
     }
 
     // ── NavigationView: page swap ────────────────────────────────────────────
-    //
-    // Canonical Microsoft Learn pattern (sample §"Code example"): the item's Tag
-    // carries the full Page type name, resolved by Type.GetType.
-    // Keeps CurrentSourcePageType != pageType to avoid redundant re-Navigate
-    // on initial setup.
 
     private void OnNavSelectionChanged(NavigationView sender, NavigationViewSelectionChangedEventArgs args)
     {
@@ -361,8 +312,6 @@ public sealed partial class SettingsWindow : Window
 
         DeckleSettingsSource.Log.NavStarted();
         DeckleSettingsSource.Log.NavStartedDetail(pageType.Name);
-        // One nav-start timestamp for BOTH measures: this restart feeds the
-        // Navigate-return NavTiming below and the page's first-Loaded PageReady.
         DeckleSettingsSource.NavClock.Restart();
         try
         {

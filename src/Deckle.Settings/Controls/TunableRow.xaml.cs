@@ -7,29 +7,17 @@ using Windows.Globalization.NumberFormatting;
 namespace Deckle.Settings.Controls;
 
 // One reusable tuning row : a labelled slider + editable NumberBox sharing a
-// single Value, with a per-parameter "reset to default" wheel. Mirrors the HUD
-// tuning page's Slider+NumberBox composite (same sync guard, same step-aligned
-// increments, same Compact spin / overwrite-invalid NumberBox), packaged as a
-// control so the Segmentation cards can declare a knob in one line and the
-// pairing logic lives in exactly one place.
-//
-// Bind Value two-way to a view-model property ; Minimum / Maximum / Step / Default
-// configure the range and the reset target. The reset wheel is enabled only while
-// Value differs from Default.
+// single Value (bind it two-way), with a per-parameter reset to Default.
 public sealed partial class TunableRow : UserControl
 {
     // Guards the slider ↔ box ↔ Value round-trip against feedback loops : a write
     // to any one of the three would otherwise echo back through the other two.
     private bool _syncing;
 
-    // The controls are configured once, on Loaded, when every range parameter is
-    // in place — never per-DP during XAML parse. The range DPs (Minimum / Maximum
-    // / Step) are set one at a time by the XBF loader ; reconfiguring on each would
-    // run Configure against a half-applied range (e.g. Minimum already 30 while
-    // Maximum is still the 1.0 default), a transient inverted / degenerate range a
-    // WinRT RangeBase setter rejects with E_INVALIDARG — surfaced by the loader as
-    // "Failed to assign to property Minimum". This gate defers all control writes
-    // until the parameters are coherent.
+    // Control writes wait for Loaded, never per-DP during XAML parse: the XBF
+    // loader sets Minimum / Maximum / Step one at a time, and a half-applied range
+    // (Minimum already 30, Maximum still the 1.0 default) makes the WinRT RangeBase
+    // setter throw E_INVALIDARG, surfaced as "Failed to assign to property Minimum".
     private bool _loaded;
 
     public TunableRow()
@@ -134,12 +122,9 @@ public sealed partial class TunableRow : UserControl
     // ── Sync ─────────────────────────────────────────────────────────────────
 
     // Number of decimals implied by the step, so float-precision noise (0.3 shown
-    // as 0.30000004) is rounded away before display — mirrors the HUD row factory.
+    // as 0.30000004) is rounded away before display.
     private int Digits => Math.Max(0, (int)Math.Ceiling(-Math.Log10(Step <= 0 ? 1 : Step)));
 
-    // Apply the range and increments to both controls. Only ever called from
-    // OnLoaded (and post-load Value pushes), so Minimum / Maximum / Step are all
-    // their final, mutually-consistent values — no half-applied transient range.
     private void Configure()
     {
         if (!_loaded || ValueSlider is null) return;
@@ -147,10 +132,9 @@ public sealed partial class TunableRow : UserControl
 
         // Setting Slider.Minimum while the slider still holds its default 0 makes
         // RangeBase clamp the value UP to the new minimum and raise ValueChanged.
-        // Outside this guard OnSliderChanged would catch that spurious change and
-        // overwrite Value (and, via the TwoWay bind, the view-model) with the row
-        // minimum — so a stored 10 s would silently become 0.5 s on open. The guard
-        // makes the range setup inert ; PushValueToControls reposts the real value.
+        // Unguarded, OnSliderChanged would write that minimum back into Value and,
+        // through the TwoWay bind, the view-model. PushValueToControls reposts the
+        // real value.
         bool prev = _syncing;
         _syncing = true;
         try
@@ -166,18 +150,15 @@ public sealed partial class TunableRow : UserControl
             ValueBox.SmallChange = step;
             ValueBox.LargeChange = step * 10;
 
-            // Explicit formatter : without it the NumberBox prints the double's full
-            // precision (0.1 shows as 0.1000000015). FractionDigits alone is only a
-            // MINIMUM — it doesn't round — so a NumberRounder is what actually trims
-            // the noise. Together they pin the display to a round number.
+            // Without an explicit formatter the NumberBox prints the double's full
+            // precision (0.1 shows as 0.1000000015). FractionDigits is only a
+            // MINIMUM and does not round, so the NumberRounder trims the noise.
             //
             // The rounder snaps to the step's DECIMAL GRID (10^-Digits), not to the
             // step itself : IncrementNumberRounder.Increment only accepts an integer
             // or an exact 1/n, and a markup Step like "0.1" arrives float-promoted to
-            // 0.10000000149… — neither — so the rounder rejects it and the rejection,
-            // swallowed while the NumberBox formats, leaves the box blank. A power of
-            // ten is always an exact 1/n, so it is valid for any step ; the value is
-            // already step-aligned upstream, so this only trims display noise.
+            // 0.10000000149…, which the rounder rejects silently and the box shows
+            // blank. A power of ten is always an exact 1/n.
             ValueBox.NumberFormatter = new DecimalFormatter
             {
                 IntegerDigits  = 1,      // keep a leading "0" before the point
@@ -228,8 +209,6 @@ public sealed partial class TunableRow : UserControl
 
     // ── Reveal ───────────────────────────────────────────────────────────────
 
-    // Either pointer or keyboard focus keeps the reset wheel shown ; track both so
-    // leaving one while the other still holds doesn't hide it prematurely.
     private bool _pointerOver;
     private bool _resetFocused;
 

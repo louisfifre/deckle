@@ -2,12 +2,9 @@ namespace Deckle.Settings;
 
 // ── TelemetryConsentWiring ────────────────────────────────────────────────────
 //
-// Fills the Catalog.TelemetryConsent registry with the shell's consent dialogs.
-// Called once by the App at boot. This shim is the only public surface that
-// crosses the assembly boundary — the ContentDialog classes themselves stay
-// internal to Deckle.Settings; module settings pages reach their consent through
-// the Catalog delegate slots, never the dialog types.
-//
+// Fills the Catalog.TelemetryConsent slots with the consent dialogs. The dialog
+// classes stay internal to Deckle.Settings: module settings pages reach consent
+// through the Catalog slots, never the dialog types.
 public static class TelemetryConsentWiring
 {
     public static void Wire()
