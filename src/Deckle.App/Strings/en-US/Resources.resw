@@ -162,6 +162,11 @@
   <data name="SettingsPageHeader_ResetAllDialogBody" xml:space="preserve">
     <value>Every setting on this page goes back to its default value.</value>
   </data>
+  <!-- The composer's Mode fold: the one information card shown when the chosen
+       mode has nothing to set. Composer-owned, resolved from this root map. -->
+  <data name="SettingsComposer_ModeNothingToSet" xml:space="preserve">
+    <value>Nothing to set for this choice.</value>
+  </data>
   <!-- The composer's Hotkey kind: the four modifier toggle buttons, the key
        capture button (its listening and unbound states), the Clear button and
        the advisory shown when a captured key has no modifier yet. Composer-owned,

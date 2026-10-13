@@ -178,6 +178,7 @@ public sealed partial class SettingsComposer
     {
         if (s.Kind == SettingKind.Group) return BuildGroup(s);
         if (s.Kind == SettingKind.Section) return BuildSection(s);
+        if (s.Kind == SettingKind.Mode) return BuildMode(s);
 
         SettingsCard card = BuildCard(s);
         return HasAdvisory(s) ? WrapWithAdvisory(card, s) : card;
