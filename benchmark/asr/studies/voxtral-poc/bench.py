@@ -1,30 +1,12 @@
 """Bench voxtral-poc — valider que Voxtral DML peut remplacer Whisper.
 
-Pour chaque (sample, source, régime) :
-  1. transcrit via la source choisie
-  2. calcule WER + CER (vs référence Whisper du corpus)
-  3. calcule looping + hallucination patterns
-  4. si --judge claude : appelle Claude Haiku per-row (axes : fidélité,
-     propreté, hallucinations, respect régime, verdict, suspect ref)
-  5. écrit une row JSON par expérience dans runs/<run-id>/results.jsonl
+``_parse_args`` shows the first line above as the CLI description.
 
-Pourquoi ce bench existe :
-  - Voxtral via stack canonique Mistral (apply_transcription_request)
-    produit des transcriptions fidèles. Validé en smoke Phase 3, mais
-    pas encore quantifié sur l'ensemble du corpus × 5 régimes ni jugé
-    de manière fiable (le juge Ollama de Phase 1/2 manquait d'audio et
-    pénalisait les verbatims fidèles).
-  - On veut comparer V1 brut vs V2 lissé vs V3 verbatim vs V4 annoté
-    vs V5 anglais pour voir lequel pourrait remplacer Whisper + Ollama
-    rewrite dans Deckle.
-
-Usage typique :
-    python bench.py                              # all 5 regimes, judge Claude
-    python bench.py --regimes V1_raw,V3_fidele   # subset
-    python bench.py --skip-judge                 # quick metrics only
-    python bench.py --limit 3                    # 3 premiers samples par durée
-
-Référence : POC évaluation Voxtral.
+For each (sample, regime) of the chosen source: transcribe, score WER and
+CER against the corpus's Whisper reference, detect looping and
+hallucinations, run the per-row judge (Gemini by default) unless
+``--skip-judge``, and write one JSON row to ``results.jsonl``. The question
+is which regime could replace Whisper plus the Ollama rewrite in Deckle.
 """
 
 from __future__ import annotations
@@ -41,8 +23,8 @@ from dataclasses import asdict
 from datetime import datetime
 from pathlib import Path
 
-# Ajoute benchmark/ au sys.path pour importer la lib transversale et
-# `asr.lib.*` sans installation. Les benches restent des scripts standalone.
+# benchmark/ goes on sys.path so `lib` and `asr.lib` import without an
+# install; benches stay standalone scripts.
 BENCH_DIR = Path(__file__).resolve().parent
 BENCHMARK_ROOT = BENCH_DIR.parent.parent
 BENCHMARK_DIR = BENCHMARK_ROOT.parent
@@ -61,14 +43,11 @@ MONITOR_SCRIPT = BENCHMARK_ROOT.parent / "lib" / "monitor" / "gpu_monitor.ps1"
 
 
 DEFAULT_CORPUS_SLUG = "voxtral-poc"
-# Un prompt par juge sous prompts/judges/<judge>_per_row.md. Le nom du
-# fichier est dérivé du nom du juge (claude → claude_per_row.md, etc.).
 JUDGE_PROMPTS_DIR = BENCHMARK_ROOT / "prompts" / "judges"
 
-# Mapping source → fichier de régimes par défaut. Chaque source a son
-# propre fichier parce que les régimes valides dépendent du mode (un
-# régime "traduit EN" n'a aucun effet en mode transcription canonique
-# qui ignore le prompt).
+# One regime file per source, because valid regimes depend on the mode: a
+# "translate to English" regime does nothing in canonical transcription,
+# which ignores the prompt.
 REGIMES_BY_SOURCE: dict[str, Path] = {
     "voxtral-transcribe": BENCHMARK_ROOT / "prompts" / "transcription" / "voxtral_transcribe.toml",
     "voxtral-chat":       BENCHMARK_ROOT / "prompts" / "transcription" / "voxtral_chat.toml",
@@ -105,9 +84,9 @@ def main() -> int:
           f"{f' ({args.row_model})' if (args.row_model and not args.skip_judge) else ''}")
 
     # ── Judge ──────────────────────────────────────────────────────────
-    # Construit avant la source parce qu'il ne pèse rien (juste un client
-    # HTTP) ; ça permet d'isoler le chargement du modèle ASR plus bas,
-    # encadré par les events model_load_{start,end} pour la mesure VRAM.
+    # Built before the source because it is only an HTTP client, so the ASR
+    # model load below stands alone between the model_load_{start,end}
+    # events that the VRAM measurement brackets.
     judge = None
     if not args.skip_judge:
         judge = _build_judge(args)
@@ -115,9 +94,6 @@ def main() -> int:
             print(f"  judge ready  : {judge.label} model={judge.row_model}")
 
     # ── Run dir ────────────────────────────────────────────────────────
-    # Nommage canonique `<modèle>-<phase>-<NNNN>` (cf. lib/paths.py). Run dir
-    # vit sous %LOCALAPPDATA%\Deckle\benchmark\runs\ pour survivre aux
-    # worktrees. Override via --run-name si besoin d'un nom custom.
     if args.run_name:
         run_dir = paths.RUNS_DIR / args.run_name
         run_dir.mkdir(parents=True, exist_ok=True)
@@ -128,7 +104,7 @@ def main() -> int:
     monitor_path = run_dir / "monitor.jsonl"
     print(f"  run_dir : {run_dir}")
 
-    # ── Monitor PowerShell auto ────────────────────────────────────────
+    # ── PowerShell monitor ─────────────────────────────────────────────
     monitor_proc = _start_monitor(monitor_path) if not args.skip_monitor else None
     if monitor_proc:
         print(f"  monitor : pwsh PID {monitor_proc.pid} → {monitor_path.name}")
@@ -140,13 +116,10 @@ def main() -> int:
               dtype=args.dtype, regimes=list(regimes.keys()),
               n_samples=len(samples), max_new_tokens=args.max_new_tokens)
 
-    # ── Source (chargement modèle, instrumenté pour mesure VRAM) ───────
-    # Pauses larges pour que le monitor PowerShell (Get-Counter à 500 ms,
-    # ~1-2 s de latence au démarrage) capte des échantillons stables sur
-    # chaque phase. Sans ces marges les peaks par phase étaient noyés
-    # dans le bruit de transition (cf. mini-run : 1-3 samples par row,
-    # peak idle inexistant). 10 s = ~18-20 samples par phase de pause,
-    # largement suffisant pour un baseline propre.
+    # ── Source (model load, bracketed for the VRAM measurement) ───────
+    # The monitor starts slowly and samples about once a second; this pause
+    # gives it an idle baseline before the model loads, so phase peaks do
+    # not drown in transition noise.
     if monitor_proc:
         time.sleep(10.0)
     log.event("model_load_start", source=args.source, dtype=args.dtype)
@@ -154,15 +127,14 @@ def main() -> int:
     log.event("model_load_end", source=args.source, source_label=source.label,
               n_params=getattr(source, "n_params", None))
     print(f"  source ready : {source.label}")
-    # Settle post-load : laisse DirectML stabiliser sa VRAM après l'alloc
-    # initiale, et donne au monitor une fenêtre propre pour mesurer la
-    # baseline post-load (avant que la 1re row ne déclenche les buffers
-    # de génération qui inflent les peaks).
+    # Let DirectML VRAM settle after the load and give the monitor a
+    # post-load baseline before the first row's generation buffers inflate
+    # the peaks.
     if monitor_proc:
         time.sleep(10.0)
 
     # ── Loop ───────────────────────────────────────────────────────────
-    # Import lazy : cleanup_gpu n'a de sens que pour les sources Voxtral.
+    # Imported here: cleanup_gpu only serves the Voxtral sources.
     from asr.lib.sources._voxtral_common import cleanup_gpu
 
     total = 0
@@ -191,14 +163,12 @@ def main() -> int:
                     regime_cfg=regime_cfg,
                     trans=trans,
                 )
-                # Métriques objectives (toujours)
                 row["metrics"] = _compute_metrics(
                     hypothesis=trans.text,
                     reference=sample.reference_text,
                 )
-                # Juge (si actif et trans OK).
-                # audio_path passé systématiquement : les juges textuels
-                # l'ignorent, les juges multimodaux (Gemini) l'écoutent.
+                # audio_path always goes along: text judges ignore it, the
+                # multimodal Gemini judge listens to it.
                 row["judge"] = None
                 if judge is not None and trans.ok and trans.text:
                     try:
@@ -225,8 +195,8 @@ def main() -> int:
                           ok=trans.ok, elapsed_s=dt_row,
                           wer=row["metrics"].get("wer"),
                           new_tokens=trans.generated_tokens)
-                # Mini-cleanup entre rows pour aider DirectML à libérer la
-                # VRAM avant la suivante (pas d'OOM espéré, mais c'est cheap).
+                # A cheap cleanup between rows helps DirectML release VRAM
+                # before the next one.
                 if args.source.startswith("voxtral-"):
                     cleanup_gpu(sleep_s=args.inter_row_sleep, on_event=log.event)
 
@@ -242,12 +212,9 @@ def main() -> int:
     if monitor_proc:
         print(f"  monitor : {monitor_path}")
 
-    # ── Enrichissement system ──────────────────────────────────────────
-    # Joint events.jsonl × monitor.jsonl post-mortem : ajoute une clé
-    # ``system`` à chaque row de results.jsonl (peaks dans la fenêtre
-    # [row_start, row_end]) et appose un event ``bench_summary`` à la
-    # fin de events.jsonl avec les phase peaks (idle / model_load /
-    # global_run). Idempotent et silencieux si le monitor n'a pas tourné.
+    # ── System enrichment ──────────────────────────────────────────────
+    # Adds the per-row and per-phase system peaks; writes nothing when the
+    # monitor did not run.
     from lib.monitor.joiner import enrich_run, format_summary_console
     summary = enrich_run(run_dir)
     if summary.get("samples_count", 0) > 0:
@@ -299,9 +266,7 @@ def _parse_args() -> argparse.Namespace:
 
 
 def _start_monitor(out_path: Path) -> subprocess.Popen | None:
-    """Lance le script PowerShell GPU/RAM monitor en background, écrit
-    JSONL sample par 500ms. Retourne le Popen handle pour kill ultérieur,
-    ou None si pwsh est introuvable."""
+    """None when the script or pwsh is missing."""
     if not MONITOR_SCRIPT.exists():
         print(f"  ⚠ monitor script absent : {MONITOR_SCRIPT}", file=sys.stderr)
         return None
@@ -312,7 +277,7 @@ def _start_monitor(out_path: Path) -> subprocess.Popen | None:
             stdout=subprocess.DEVNULL,
             stderr=subprocess.DEVNULL,
         )
-        # Sécurité : kill du monitor si le bench crash sans cleanup propre.
+        # Stops the monitor even when the bench crashes before its cleanup.
         atexit.register(_stop_monitor, proc)
         return proc
     except FileNotFoundError:
@@ -362,9 +327,8 @@ def _build_source(args: argparse.Namespace):
 
 
 def _build_judge(args: argparse.Namespace):
-    """Instancie le juge selon ``args.judge``. Retourne None si la clé
-    API correspondante est absente — bench continue sans juge avec un
-    warning."""
+    """None when the judge's prompt or API key is missing: the bench then
+    runs without a judge."""
     import os
     judge_name = args.judge
     prompt_path = JUDGE_PROMPTS_DIR / f"{judge_name}_per_row.md"
@@ -375,8 +339,6 @@ def _build_judge(args: argparse.Namespace):
         )
         return None
 
-    # Kwargs communs : on ne passe row_model que s'il a été explicitement
-    # fourni, sinon on laisse le default du juge s'appliquer.
     kwargs: dict[str, Any] = {
         "row_system_prompt": prompt_path.read_text(encoding="utf-8"),
     }

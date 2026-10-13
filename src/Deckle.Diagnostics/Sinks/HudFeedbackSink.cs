@@ -1,11 +1,7 @@
 namespace Deckle.Diagnostics;
 
-// Flashes the canonical UserFeedback emission on the HUD. A passive ILogSink:
-// the single DispatchEventListener builds the EventEntry, then offers it here.
-// Before the dispatch refonte this was its own EventListener subscribing to the
-// whole Deckle-* family just to watch one event name; folding it into a sink
-// removes that extra subscription and leaves the dispatcher as the sole
-// listener.
+// Flashes the canonical UserFeedback emission on the HUD. A passive ILogSink,
+// never its own EventListener: the dispatcher stays the sole listener.
 //
 // A single well-known event name — "UserFeedbackEmitted" — drives this sink;
 // any provider that wants to flash a message on the HUD declares that event
@@ -21,18 +17,13 @@ namespace Deckle.Diagnostics;
 //         if (IsEnabled()) WriteEvent(<id>, severity, title, body, role);
 //     }
 //
-// The payload reaches this sink as a name-keyed dictionary on the EventEntry
-// (the dispatcher builds it from the [Event] parameter names), so the fields
-// are read by their snake_case keys — severity / title / body / role — not by
-// positional index. Severity / Role pass as int because EventSource cannot
-// serialise arbitrary user enums; the host app maps the integers back to its
-// UserFeedback enums (severity 0/1/2 = Info/Warning/Error, role 0/1 =
-// Replacement/Overlay).
+// The payload is keyed by the [Event] parameter names, so the fields are read
+// by name, not by positional index. Severity / Role pass as int because
+// EventSource cannot serialise arbitrary user enums; the host reads them as
+// severity 0/1/2 = Info/Warning/Error and role 0/1 = Replacement/Overlay.
 //
-// Events with any other name are ignored (Wants returns false) — this sink
-// never sees a milestone ("RecordingStarted", etc.) because the application
-// code emits UserFeedbackEmitted *in addition* to its milestone when it wants
-// the HUD to react.
+// A producer that wants the HUD to react emits UserFeedbackEmitted in addition
+// to its milestone; this sink ignores every other event.
 public sealed class HudFeedbackSink : ILogSink
 {
     public const string CanonicalEventName = "UserFeedbackEmitted";

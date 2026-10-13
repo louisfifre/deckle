@@ -40,10 +40,8 @@ public class ManagementGesturesTests
 
         string digest = await NewGestures(server).DeleteAsync(ObjId, ct: Ct);
 
-        // The preview spells out the id (the confirmation handle) and the recall.
         Assert.Contains(ObjId, digest);
         Assert.Contains("confirm", digest);
-        // Nothing was trashed: no DELETE left the gesture.
         Assert.DoesNotContain(server.Requests, r => r.Method == "DELETE");
     }
 

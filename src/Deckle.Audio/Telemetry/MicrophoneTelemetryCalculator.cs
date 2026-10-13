@@ -2,22 +2,11 @@ using Deckle.Audio;
 
 namespace Deckle.Audio;
 
-// Pure compute: distribution payload + Tail-600 ms diagnostic from a
-// per-recording RMS series (50 ms sub-window cadence, ~20 Hz). No side
-// effects, no logging — the orchestrator (TranscriptionEngine) is responsible
-// for emitting both the user-facing tail headline and the structured
-// MicrophoneTelemetryPayload via EventSource.
-//
-// Linear RMS → dBFS via 20·log10(rms); guarded against rms ≤ 0
-// (returns -120 dBFS, the conventional "digital silence" floor — the
-// -96.7 dBFS we used to see corresponded to a single-LSB residual
-// from a zero-initialised buffer, indistinguishable from true silence
-// and historically misleading).
+// Pure compute over a recording's RMS series, one value per sub-window:
+// the tail diagnostic and the distribution payload. Callers emit the events:
+// MicrophoneCapture for the raw signal, TranscriptionEngine for the DSP output.
 public static class MicrophoneTelemetryCalculator
 {
-    // Result of the Tail-600 ms diagnostic. The orchestrator consumes the
-    // TailRms / TailDbfs flow into the MicrophoneTelemetryPayload. The optional
-    // operational headline is constructed separately, after admission.
     public readonly record struct TailDiagnostic(
         double TailRms,
         double TailDbfs,
@@ -25,8 +14,6 @@ public static class MicrophoneTelemetryCalculator
         bool   TailActive,
         string TailState);
 
-    // Compute the Tail-600 ms diagnostic from the RMS series. Returns null
-    // when the series is empty — the caller may emit admitted technical detail.
     public static TailDiagnostic? ComputeTail(System.Collections.Generic.IReadOnlyList<float> rmsLog)
     {
         int n = rmsLog.Count;
@@ -34,13 +21,11 @@ public static class MicrophoneTelemetryCalculator
 
         // ── Tail-600 ms diagnostic (always on) ─────────────────────────────
         //
-        // Root-mean-square of the last 12 sub-windows. Sums the sub-window
-        // squared RMS values and re-roots, which is the mathematically
-        // correct way to combine RMS samples (NOT a plain mean of RMS).
-        // -50 dBFS keeps the active/silent threshold from the previous
-        // diagnostic so existing log readers stay calibrated.
+        // Root-mean-square of the last 12 sub-windows: sums the squared
+        // sub-window RMS values and re-roots, the correct way to combine RMS
+        // samples (NOT a plain mean of RMS).
         //
-        // The optional operational sentence is built separately so this
+        // The operational sentence (DescribeTail) is built separately so this
         // functional telemetry calculation never allocates it before admission.
         int tailCount = System.Math.Min(12, n);
         double tailSumSq = 0;
@@ -62,18 +47,6 @@ public static class MicrophoneTelemetryCalculator
             ? "You were still speaking at Stop — the last words may be clipped."
             : "You stopped after a silence — capture ends cleanly.";
 
-    // Build the full distribution payload (percentiles + mean + tail) from
-    // the RMS series. Returns null when the series is empty. The caller
-    // should pair this with ComputeTail() to surface the user-facing
-    // headline + dBFS log.
-    //
-    // The percentile computation uses nearest-rank, clamped to [0, n-1] —
-    // good enough for human-readable telemetry; we're not feeding a stats
-    // engine.
-    //
-    // MeanDbfs is derived from the linear mean RMS (log of the mean), NOT
-    // the arithmetic mean of dBFS values — the latter gets pulled too low
-    // by the silence floor.
     public static MicrophoneTelemetryPayload? Compute(
         System.Collections.Generic.IReadOnlyList<float> rmsLog,
         TailDiagnostic                                  tail)
@@ -83,16 +56,14 @@ public static class MicrophoneTelemetryCalculator
 
         // ── Distribution payload (always computed) ─────────────────────────
         //
-        // Builds the per-Recording percentile + mean payload regardless of
-        // the log/disk toggles, because auto-calibration consumes it
-        // independently. Computing this is cheap — sort of ~few thousand
-        // floats — so we don't gate it.
+        // Computed regardless of the log toggles: auto-calibration consumes it
+        // too, and sorting a few thousand floats is cheap.
         var sorted = new float[n];
         for (int i = 0; i < n; i++) sorted[i] = rmsLog[i];
         System.Array.Sort(sorted);
 
-        // Percentile picker: nearest-rank, clamped to [0, n-1]. Good enough
-        // for human-readable telemetry; we're not feeding a stats engine.
+        // Nearest-rank is good enough for human-readable telemetry; no stats
+        // engine reads these.
         float Pick(double frac) => sorted[System.Math.Clamp((int)(n * frac), 0, n - 1)];
 
         float min = sorted[0];
@@ -100,9 +71,8 @@ public static class MicrophoneTelemetryCalculator
         float p10 = Pick(0.10), p25 = Pick(0.25), p50 = Pick(0.50);
         float p75 = Pick(0.75), p90 = Pick(0.90);
 
-        // Mean of linear RMS — the number to compare against MaxDbfs window
-        // when calibrating the HUD response. NOT the mean of dBFS values
-        // (logs of small numbers skew that mean).
+        // MeanDbfs is the log of the linear mean, NOT the mean of dBFS values,
+        // which the silence floor drags too low.
         double meanLinear = 0;
         for (int i = 0; i < n; i++) meanLinear += sorted[i];
         meanLinear /= n;
@@ -127,16 +97,14 @@ public static class MicrophoneTelemetryCalculator
             TailState:       tail.TailState);
     }
 
-    // The live capture emits one RMS sub-window every 50 ms — the cadence the
-    // distribution math above assumes (durSec = n * 0.05). A post-hoc series
-    // rebuilt from a finished buffer (e.g. the DSP output, to mirror the raw mic
-    // distribution on the processed signal) must use the same window so the two
+    // The live capture emits one RMS value per sub-window of this size, the
+    // cadence Compute assumes (durSec = n * 0.05). A series rebuilt from a
+    // finished buffer (the DSP output) must use the same window so the two
     // payloads stay comparable.
     public const int SubWindowSamples = 800; // 50 ms @ 16 kHz
 
-    // Re-derive the 50 ms-window RMS series from a PCM buffer. A trailing partial
-    // window (< windowSamples) is dropped, matching the live path which only ever
-    // emits whole sub-windows. Pure, single allocation.
+    // A trailing partial window is dropped, matching the live path, which only
+    // emits whole sub-windows.
     public static System.Collections.Generic.IReadOnlyList<float> RmsSeries(
         System.ReadOnlySpan<float> pcm, int windowSamples)
     {

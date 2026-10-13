@@ -22,7 +22,6 @@ public sealed class TrackpadSettings
     /// </summary>
     public bool RecordFrames { get; set; } = false;
 
-    // The tuning knobs (grace delay, start threshold) were frozen into
-    // TrackpadEngine constants on 2026-06-12 after hands-on calibration —
-    // a stale "Tuning" object in an existing settings.json is ignored.
+    // Grace delay and start threshold are TrackpadEngine constants, not
+    // settings; a legacy "Tuning" object in an existing settings.json is ignored.
 }

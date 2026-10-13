@@ -6,7 +6,6 @@ namespace Deckle.Lighting.Ambient;
 // quantised.
 internal enum AmbientPushDecision
 {
-    // Send the new colour.
     PushNew,
 
     // Send the previous pushed colour again : the change is under the
@@ -58,7 +57,6 @@ internal static class AmbientPushGate
             : AmbientPushDecision.Drop;
     }
 
-    // The colour a hold re-sends.
     public static LightColor PreviousColor((int R, int G, int B) previous)
         => new((byte)previous.R, (byte)previous.G, (byte)previous.B);
 }

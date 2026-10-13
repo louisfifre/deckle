@@ -5,8 +5,6 @@ namespace Deckle.App;
 
 public sealed partial class DeckleAppSource
 {
-    // ── Shutdown / Restart ──────────────────────────────────────────────
-
     [Event(EvtShutdownRequested,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Lifecycle,

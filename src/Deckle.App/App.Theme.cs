@@ -2,22 +2,15 @@ namespace Deckle.App;
 
 public partial class App
 {
-    // Current theme + caption button theme, kept in sync by ApplyTheme.
-    // Lazy windows read these to apply the right palette at creation.
+    // Lazy windows read these at creation.
     private static Microsoft.UI.Xaml.ElementTheme _currentTheme =
         Microsoft.UI.Xaml.ElementTheme.Default;
     private static Microsoft.UI.Windowing.TitleBarTheme _currentTitleBarTheme =
         Microsoft.UI.Windowing.TitleBarTheme.UseDefaultAppMode;
 
-    // Distinguishes the boot ApplyTheme call from user-triggered changes for
-    // ThemeRequestSourceProbe labelling.
     private static bool _firstThemeApplyDone;
 
-    // Boot-time and engine-side (auto-calibration) entry point for pushing the
-    // level window into AudioLevelMapper. The Recording settings sliders no longer
-    // go through here — they call AudioLevelMapper.Apply directly now that the page
-    // lives in Deckle.Audio, so the former SettingsHost.ApplyLevelWindow shell hop
-    // is gone.
+    // Entry point for the boot and the engine's auto-calibration.
     public static void ApplyLevelWindow(Audio.LevelWindowSettings cfg)
         => Audio.AudioLevelMapper.Apply(cfg);
 

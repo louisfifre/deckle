@@ -15,15 +15,14 @@ public sealed partial class TrayQuickActionsHost
     // DesiredSize of the real FlyoutPresenter (content + its padding and
     // border), captured with the content attached to the popup tree. With
     // Placement Full the presenter stretches to the carrier, so sizing the
-    // carrier to this value is what makes the visible card exactly fit: no
-    // empty acrylic band, no inner scroll. Null until captured, or after the
+    // carrier to this value makes the visible card fit exactly: no empty
+    // acrylic band, no inner scroll. Null until captured, or after the
     // content was rebuilt.
     //
     // The Record button reads Record or Stop recording, two widths, so each
-    // recording state keeps its own captured size and the fallback runs only
-    // before the first capture of that state. Stored only when the presenter
-    // holds the content (TrayMenuSizing.HoldsItems): a degenerate measure
-    // reports the presenter's minimum size, the menu's 2026-10-12 bug.
+    // recording state keeps its own captured size. Stored only when the
+    // presenter holds the content (TrayMenuSizing.HoldsItems): a degenerate
+    // measure reports the presenter's minimum size.
     private Windows.Foundation.Size? _presenterSizeIdle;
     private Windows.Foundation.Size? _presenterSizeRecording;
     private bool _syncedIsRecording;
@@ -116,11 +115,8 @@ public sealed partial class TrayQuickActionsHost
 
     // ── Hide ──────────────────────────────────────────────────────────────────
 
-    /// <summary>Closes the panel, if open.</summary>
     public void Hide() => Hide("api");
 
-    // reason: "deactivated", "flyout_closed", "icon_click", "action:<id>",
-    // "api". Traced so the close paths can be told apart in the journal.
     private void Hide(string reason)
     {
         if (!_isVisible) return;
@@ -134,11 +130,10 @@ public sealed partial class TrayQuickActionsHost
 
     // ── Prime cycle ───────────────────────────────────────────────────────────
 
-    // Same reason as the context menu: the presenter's size is only right once
-    // the content has been laid out inside the popup. An invisible ShowAt
-    // while the carrier is still hidden, then a Hide deferred at Low priority
-    // (after the layout pass), captures it once; the tree stays warm for the
-    // process lifetime. Runs from the carrier's one-shot Loaded.
+    // The presenter's size is only right once the content has been laid out
+    // inside the popup. An invisible ShowAt while the carrier is still hidden,
+    // then a Hide deferred at Low priority (after the layout pass), captures
+    // it; the tree stays warm for the process lifetime.
     private void PrimeFlyout()
     {
         // A real Show() already opened the panel: Opened captures the size.
@@ -202,8 +197,6 @@ public sealed partial class TrayQuickActionsHost
             phase, captured.Width, captured.Height, content.Width, content.Height);
     }
 
-    // Walks up from the content root to the FlyoutPresenter hosting it. Null
-    // when the content is not mounted in the popup tree.
     private static FlyoutPresenter? FindAncestorPresenter(DependencyObject start)
     {
         DependencyObject? current = VisualTreeHelper.GetParent(start);

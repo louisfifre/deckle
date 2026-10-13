@@ -3,23 +3,14 @@ using Deckle.Catalog;
 
 namespace Deckle.Diagnostics.Logging;
 
-// ── SettingsSearch ────────────────────────────────────────────────────────────
-//
 // The diagnostics page's contribution to the shell's cross-page search index: one
-// SettingSearchEntry per findable card. The composition root registers this list
-// at boot alongside the module's nav descriptor, and the index resolves each
-// entry's text from this module's own PRI subtree without composing the page.
+// SettingSearchEntry per findable card, resolved from this module's own PRI
+// subtree without composing the page.
 //
-// The list is DECLARED here, not derived from the page or the manifest, on
-// purpose. The composed cards live as instance properties on DiagnosticsViewModel
-// (LoggingSettings, ApplicationLogSettings, TelemetrySettings) — reaching them means
-// constructing a ViewModel, which the index must never do at boot. So a card's
-// identity travels as its bare LabelKey, the same string the manifest already
-// carries and the composer stamps onto the built card's Tag. Composed and bespoke
-// cards therefore declare identically: a LabelKey, whose "/Header" and
-// "/Description" resolve from Resources.resw for both — the bespoke Diagnostic-files
-// card carries .resw entries under its x:Uid just like the composed ones, so none
-// needs a LiteralLabel.
+// The list is declared, not derived from the manifest: the composed cards are
+// instance properties of DiagnosticsViewModel, and the index must never construct
+// a ViewModel at boot. A card's identity is its bare LabelKey, the string the
+// composer stamps onto the built card's Tag.
 //
 // Maintenance contract: one card on the page, one entry here. Add a card (composed
 // or hand-authored) and it stays invisible to search until it gets a line below; a

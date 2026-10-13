@@ -3,12 +3,6 @@ using Deckle.Core;
 
 namespace Deckle.Shell.TaskbarCover;
 
-// Module-local persistence for TaskbarCoverSettings — the standard
-// JsonSettingsStore<T> lazy singleton at
-// <UserDataRoot>/modules/taskbar-cover/settings.json, same shape as
-// TrackpadSettingsService. Store logging callbacks stay null for the
-// same reason as the other module services: no EventSource dependency
-// from the persistence layer.
 public sealed class TaskbarCoverSettingsService
 {
     private static readonly Lazy<TaskbarCoverSettingsService> _instance =

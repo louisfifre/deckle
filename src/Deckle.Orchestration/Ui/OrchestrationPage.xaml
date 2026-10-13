@@ -7,10 +7,8 @@
     xmlns:local="using:Deckle.Orchestration"
     xmlns:catalog="using:Deckle.Catalog">
 
-    <!-- The registry of apps and games. Canonical Settings layout (ScrollViewer
-         Padding 32,24, StackPanel max 1000, Spacing 4, the section the shared
-         SettingsSection block). The list is bespoke, not composed: a live
-         collection of expanders with add, change and remove gestures. -->
+    <!-- The registry of apps and games. The list is bespoke, not composed: a
+         live collection of expanders with add, change and remove gestures. -->
     <Page.Resources>
         <!-- The cards inside an entry's expander. They go through ItemsSource
              because the monitor cards come and go with the monitors; the
@@ -36,8 +34,6 @@
                     </controls:SettingsCard>
                 </DataTemplate>
             </local:EntryItemTemplateSelector.ExecutableTemplate>
-            <!-- One per HDR-capable monitor: the monitor's name, and what to
-                 do with its HDR while the app runs. -->
             <local:EntryItemTemplateSelector.MonitorHdrTemplate>
                 <DataTemplate x:DataType="local:MonitorHdrRow">
                     <controls:SettingsCard x:Uid="OrchestrationPage_MonitorHdrCard"
@@ -63,8 +59,8 @@
                         HorizontalAlignment="Stretch"
                         Spacing="{StaticResource SettingsCardSpacing}">
 
-                <!-- The shared header block. No Reset all: the page is a registry
-                     the user authors, with nothing to restore. -->
+                <!-- No Reset all: the page is a registry the user authors, with
+                     nothing to restore. -->
                 <catalog:SettingsPageHeader x:Name="Header"
                                             x:Uid="OrchestrationPageHeader"
                                             HasResetAll="False" />
@@ -76,10 +72,9 @@
                                          Tag="OrchestrationPage_Section_Apps">
                     <StackPanel Spacing="{StaticResource SettingsCardSpacing}">
 
-                        <!-- Unelevated, and until a foreground service is plugged
-                             in, a listed app is noticed only when the list changes,
-                             not when it starts. Shown from code-behind while entries
-                             exist and neither source runs; not closable, because it
+                        <!-- Without the process trace (elevation) or a foreground
+                             monitor, a listed app is noticed only when the list
+                             changes, not when it starts. Not closable, because it
                              describes a state, not an event. -->
                         <InfoBar x:Name="ElevationAdvisory"
                                  x:Uid="OrchestrationPage_ElevationAdvisory"

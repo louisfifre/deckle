@@ -6,12 +6,12 @@ using Xunit;
 
 namespace Deckle.Autocorrect.Tests;
 
-// The maintainer's ventilation gesture: fold the collected typed-sentence corpus
-// into per-surface profiles, write the markdown report next to it, and refresh
-// the live artifact the pause pass consumes (surface-profiles.json under the
-// module root — qualified surfaces only, measured, never edited by hand).
-// Read-only over the corpus, no model, seconds — a silent skip when no corpus
-// is collected yet (CI, a fresh clone).
+// The ventilation gesture: fold the collected typed-sentence corpus into
+// per-surface profiles, write the markdown report next to it, and refresh the
+// live artifact the pause pass consumes (surface-profiles.json under the module
+// root — qualified surfaces only, measured, never edited by hand). Read-only
+// over the corpus, no model — a silent skip when no corpus is collected yet
+// (CI, a fresh clone).
 [Trait("Category", "maintenance")]
 public sealed class SurfaceProfileMaintenanceTests
 {

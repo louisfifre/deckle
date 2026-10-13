@@ -2,20 +2,15 @@ namespace Deckle.Catalog;
 
 // ─── Glyphs ───────────────────────────────────────────────────────
 //
-// C# mirror of Themes/Icons.xaml. Code-behind that sets FontIcon.Glyph
-// programmatically uses these constants instead of literal "\uXXXX"
-// strings. Any time a key is added here, the matching entry must be
-// added to Icons.xaml (and vice-versa) — the two artefacts are kept
-// in sync by hand.
+// C# mirror of Themes/Icons.xaml, for code that sets FontIcon.Glyph.
+// Any key added here must be added to Icons.xaml too, and vice versa:
+// the two are kept in sync by hand.
 //
-// Nested static classes mirror the dotted naming used in the XAML
-// keys (Icon.Badge.Success → Glyphs.Badge.Success).
+// Nested static classes mirror the dotted XAML keys
+// (Icon.Badge.Success → Glyphs.Badge.Success).
 //
-// Constants hold the actual Fluent Icons character (one per glyph).
-// To look up the hex code (e.g. when matching a Figma spec), check
-// the matching key in Themes/Icons.xaml which uses the explicit
-// &#xE…; notation. In editors without the Fluent Icons font the
-// characters render as boxes — that's expected.
+// Constants hold the Fluent Icons character itself, which renders as a
+// box in editors without the font; Icons.xaml shows the hex code.
 
 public static class Glyphs
 {
@@ -90,9 +85,8 @@ public static class Glyphs
     public const string Link = "";
     public const string List = "";
 
-    // Lightbulb variant — same code-point as Launch but a clearer name
-    // when the lightbulb metaphor is the design intent (Hue Identify
-    // button in the Playground, etc.).
+    // Same code point as Launch, named for sites where the lightbulb
+    // itself is the intent.
     public const string LightbulbFilled = "";
 
     public static class Transport

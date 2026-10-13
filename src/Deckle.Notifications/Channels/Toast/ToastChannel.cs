@@ -8,19 +8,17 @@ using Microsoft.Windows.AppNotifications.Builder;
 
 namespace Deckle.Notifications;
 
-// INotificationChannel for NotificationChannel.Toast. Builds a Windows toast
-// from a descriptor, shows it through the AppNotificationManager, and completes
-// when the user answers — correlated by the per-show nonce held in
-// ToastActivation.
+// Builds a Windows toast from a descriptor, shows it through the
+// AppNotificationManager, and completes when the user answers, correlated by
+// the per-show nonce held in ToastActivation.
 //
 // Availability has three gates. (1) Registration must have succeeded. (2) The
 // process must not be elevated: Windows silently drops toasts raised from an
 // elevated app, so an elevated Deckle reports the channel unavailable and the
-// dispatcher routes around it. The elevation check runs once at construction;
-// the Warning is emitted once when detected. (3) The platform setting must be
-// AppNotificationSetting.Enabled — read live, because the user can toggle
-// notifications off at runtime, and Windows would then make Show succeed
-// silently with nothing presented.
+// dispatcher routes around it. (3) The platform setting must be
+// AppNotificationSetting.Enabled, read live: the user can toggle notifications
+// off at runtime, and Windows would then make Show succeed silently with
+// nothing presented.
 public sealed class ToastChannel : INotificationChannel
 {
     // How long a shown prompt stays live before it settles itself as unanswered.
@@ -42,9 +40,6 @@ public sealed class ToastChannel : INotificationChannel
 
     public NotificationChannel Channel => NotificationChannel.Toast;
 
-    // Registration succeeded AND the process is not elevated AND notifications
-    // are enabled in Windows. The setting is read live (not cached) so a
-    // runtime toggle is honored on the next prompt.
     public bool IsAvailable
         => _activation.RegistrationSucceeded
            && !_isElevated
@@ -65,13 +60,10 @@ public sealed class ToastChannel : INotificationChannel
             ? Loc.Format(descriptor.BodyKey, bodyArgs)
             : Loc.Get(descriptor.BodyKey);
 
-        // Per-show correlation token. A toast carries only its baked-in
-        // arguments, so the nonce is how the activation finds this exact show.
         var nonce = Guid.NewGuid().ToString("n");
 
         var builder = new AppNotificationBuilder()
-            // Body click → BodyActionId. Every element also carries the nonce so
-            // any activation routes back to this show.
+            // Every element carries the nonce, or its activation is an orphan.
             .AddArgument("action", NotificationResponse.BodyActionId)
             .AddArgument("nonce", nonce)
             .AddText(title)
@@ -91,10 +83,8 @@ public sealed class ToastChannel : INotificationChannel
                 .AddArgument("action", action.Id)
                 .AddArgument("nonce", nonce);
 
-            // v1 simplification: when the descriptor has an inline text box, we
-            // pin it beside the FIRST action's button only (the Windows
-            // inline-reply pattern). A richer mapping — choosing which button
-            // owns the input — is deferred.
+            // The inline text box pins beside the FIRST action's button only
+            // (the Windows inline-reply pattern).
             if (descriptor.TextInput is { } ti && i == 0)
             {
                 button.SetInputId(ti.Id);
@@ -116,10 +106,9 @@ public sealed class ToastChannel : INotificationChannel
         // show still finds its target.
         _activation.RegisterPending(nonce, tcs);
 
-        // Cancellation drops the pending entry and cancels the awaiter. The
-        // already-shown toast stays in the Notification Center but its
-        // activation will be an orphan (no pending entry) and is ignored.
-        // The registration is disposed once the task settles, so a long-lived
+        // The already-shown toast stays in the Notification Center, but its
+        // activation will be an orphan (no pending entry) and is ignored. The
+        // registration is disposed once the task settles, so a long-lived
         // token does not retain the closure past the prompt's life.
         if (ct.CanBeCanceled)
         {
@@ -137,13 +126,11 @@ public sealed class ToastChannel : INotificationChannel
         }
 
         // The prompt MUST always settle. AppNotificationManager raises
-        // NotificationInvoked only on user interaction — there is no dismiss,
-        // expiry, or timeout event — so a toast nobody clicks would leave this
-        // await and its pending entry hanging for process life. We settle it
-        // ourselves: a CTS fired after PromptLifetime drops the pending entry
-        // and completes the prompt as unanswered (null). Disposed via a
-        // continuation when the task settles, mirroring the ct registration
-        // above, so nothing outlives the prompt.
+        // NotificationInvoked only on user interaction (no dismiss, expiry or
+        // timeout event), so a toast nobody clicks would leave this await and
+        // its pending entry hanging for process life. A CTS fired after
+        // PromptLifetime drops the pending entry and completes the prompt as
+        // unanswered (null); it is disposed when the task settles.
         var expiry = new CancellationTokenSource(PromptLifetime);
         expiry.Token.Register(() =>
         {
@@ -162,7 +149,6 @@ public sealed class ToastChannel : INotificationChannel
         return tcs.Task;
     }
 
-    // WindowsIdentity/WindowsPrincipal admin-role check, matching the spike.
     private static bool DetectElevated()
     {
         using var identity = WindowsIdentity.GetCurrent();

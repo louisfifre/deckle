@@ -125,7 +125,8 @@ internal static class McpSurfaceProtocolAdapter
         catch (Exception ex)
         {
             // Catalog validation and execution errors are model-correctable tool
-            // results. Only an absent tool name is a JSON-RPC InvalidParams error.
+            // results. Only a missing or unknown tool name is a JSON-RPC
+            // InvalidParams error.
             return ToolResult(new ToolOutput(ex.Message), isError: true);
         }
     }

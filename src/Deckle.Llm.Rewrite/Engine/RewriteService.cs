@@ -5,24 +5,17 @@ namespace Deckle.Llm.Rewrite;
 
 // ─── Rewrite service ─────────────────────────────────────────────────────────
 //
-// The single service every rewrite goes through, whoever asks (module
-// CONTEXT.md). Owns what sits above the engine seam: the profile-driven
-// request, the hard deadline, and the human-facing outcome of a failure —
-// the overlay feedback belongs to the service, not to whichever engine
-// happened to run. The engine behind IRewriteEngine (Ollama today, ONNX as
-// the decided target) is swappable without the clients noticing.
+// Owns what sits above the engine seam: the profile-driven request, the hard
+// deadline, and the human-facing outcome of a failure. The overlay feedback
+// belongs to the service, not to whichever engine happened to run.
 //
-// Designed to be called from a background thread — the engines block, and
+// Call it from a background thread: the engines block, and
 // .GetAwaiter().GetResult() inside them is safe there (no synchronization
 // context on those threads).
 
-// Result returned by Rewrite — pairs the rewritten text with the structured
-// metrics the engine reports. Wrapping them avoids losing the timings to the
-// Verbose log line when the caller wants them in a payload (LatencyPayload,
-// benchmark exports). Every numeric field is in ms / tokens to stay aligned
-// with the logging inventory vocabulary. All zeros when Rewrite
-// short-circuits (no model configured, timeout, exception) — the caller is
-// expected to check Text != null before reading metrics.
+// Text is null when Rewrite short-circuits (no model configured, timeout,
+// exception). The engine metrics are then zero, and only TotalMs may carry the
+// elapsed wait, so check Text before reading them.
 public readonly record struct RewriteResult(
     string?      Text,
     long         TotalMs,
@@ -41,18 +34,15 @@ public interface IRewriteService
 
 public class RewriteService : IRewriteService
 {
-    // Hard cap on a single Rewrite call. Generous: leaves room for slow CPU-only
-    // Ollama setups on big transcripts (20 min audio, 16 K context), but still
-    // guards against a stuck worker. Internal: the Ollama busy-poll log line
-    // quotes it as context next to the elapsed wait.
+    // Generous enough for slow CPU-only Ollama setups on long transcripts, but
+    // still guards against a stuck worker. Internal because the Ollama
+    // busy-poll log line quotes it next to the elapsed wait.
     internal static readonly TimeSpan REWRITE_HARD_CAP = TimeSpan.FromMinutes(15);
 
     readonly IRewriteEngine _engine;
 
     public RewriteService() : this(new OllamaEngine()) { }
 
-    /// <summary>The engine seam: hand in an OnnxEngine (or a test double)
-    /// and every client of the service switches with it.</summary>
     public RewriteService(IRewriteEngine engine) => _engine = engine;
 
     public RewriteResult Rewrite(string text, string endpoint, RewriteProfile profile)
@@ -83,8 +73,6 @@ public class RewriteService : IRewriteService
         catch (OperationCanceledException) when (cts.IsCancellationRequested)
         {
             sw.Stop();
-            // Cross-cutting Cancellation sub-provider: REWRITE_HARD_CAP fired,
-            // this is a hard timeout.
             DeckleCancellationSource.Log.OperationCancelled(
                 "llm-rewrite", "timeout", (int)sw.ElapsedMilliseconds);
             DeckleLlmSource.Log.RewriteTimeout();
@@ -127,9 +115,8 @@ public class RewriteService : IRewriteService
         }
         catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
         {
-            // A cancellation is either the interactive deadline or, much more
-            // often, a keystroke that made the request stale. Both are the
-            // expected precision-first path and produce no user-facing noise.
+            // The interactive deadline or a keystroke that made the request
+            // stale: both are expected, so not even logged.
             return default;
         }
         catch (Exception ex)

@@ -14,9 +14,9 @@ namespace Deckle.Anytype;
 // and are replaced with it. The heading line is kept — only the body under it is
 // replaced.
 //
-// Round-trip facts this is built against (measured live): Anytype
-// destroys-and-recreates blocks on every PATCH then re-exports markdown, so the
-// read-back is a NORMALIZED render, not the bytes sent. Heading text and level
+// Round-trip facts this is built against: Anytype destroys-and-recreates
+// blocks on every PATCH then re-exports markdown, so the read-back is a
+// NORMALIZED render, not the bytes sent. Heading text and level
 // survive intact (hence "find by title" is sound), but a literal _ * ` | comes
 // back backslash-escaped and lines carry GFM hard-break trailing spaces. Matching
 // and verification therefore compare a normalized form — unescape those four,
@@ -63,10 +63,6 @@ public static class MarkdownBody
         while (contentEnd - 1 > matchLine && lines[contentEnd - 1].Trim().Length == 0)
             contentEnd--;
 
-        // Splice: head lines (through the heading) + new content + tail (the kept
-        // separator and everything from the next same-or-higher heading on). Head
-        // and tail are copied verbatim, so every other section returns to Anytype
-        // byte-for-byte as it arrived.
         var rebuilt = new List<string>(lines.Length);
         rebuilt.AddRange(lines[..(matchLine + 1)]);
         if (content.Length > 0) rebuilt.AddRange(content.Split('\n'));
@@ -75,9 +71,7 @@ public static class MarkdownBody
         return new(EditStatus.Replaced, string.Join('\n', rebuilt), 1);
     }
 
-    // Read-after-write "intent" check: the re-read body still carries the section
-    // and its normalized content equals the normalized intent. Absent heading or
-    // any content drift → false.
+    // Read-after-write "intent" check against the re-read body.
     public static bool SectionContentMatches(string body, string heading, string intendedContent)
     {
         if (!TryReadSection(body, heading, out string actual)) return false;
@@ -97,7 +91,6 @@ public static class MarkdownBody
 
     // ── internals ─────────────────────────────────────────────────────────────
 
-    // Content under the first heading matching `heading`, or false when absent.
     static bool TryReadSection(string body, string heading, out string content)
     {
         content = "";
@@ -120,8 +113,6 @@ public static class MarkdownBody
         return true;
     }
 
-    // First line after `headingLine` that is a heading of level ≤ `level`
-    // (exclusive end of the section), or the end of the document.
     static int SectionEnd(string[] lines, int headingLine, int level)
     {
         for (int i = headingLine + 1; i < lines.Length; i++)
@@ -129,9 +120,7 @@ public static class MarkdownBody
         return lines.Length;
     }
 
-    // Recognizes an ATX heading: up to 3 leading spaces, 1-6 '#', then a space or
-    // end of line. level = '#' count, text = the trimmed remainder. "#text" (no
-    // space) is not a heading.
+    // A CommonMark ATX heading; "#text" (no space) is not a heading.
     static bool TryHeading(string line, out int level, out string text)
     {
         level = 0; text = "";
@@ -149,14 +138,8 @@ public static class MarkdownBody
         return true;
     }
 
-    // Heading-text normalization for matching: unescape the four escaped literals
-    // and trim. A heading carries no blank-line structure, so this is per-string.
     static string NormalizeHeading(string s) => Unescape(s).Trim();
 
-    // Block normalization for content comparison: unescape, drop each line's
-    // trailing whitespace, and drop blank lines — so Anytype's hard-break and
-    // blank-line reflow does not read as content drift. Order and the non-empty
-    // text are what the intent check is about.
     static string NormalizeBlock(string s)
     {
         var kept = new List<string>();
@@ -168,8 +151,6 @@ public static class MarkdownBody
         return string.Join('\n', kept);
     }
 
-    // Undo Anytype's export escaping of the literal _ * ` | (and the backslash
-    // itself). A backslash before one of those drops; every other backslash stays.
     static string Unescape(string s)
     {
         if (s.IndexOf('\\') < 0) return s;

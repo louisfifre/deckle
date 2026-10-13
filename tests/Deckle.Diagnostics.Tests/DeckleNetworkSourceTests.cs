@@ -5,12 +5,8 @@ using Xunit;
 
 namespace Deckle.Diagnostics.Tests;
 
-// Cross-cutting sub-provider: network state transitions. Sentinel test that
-// verifies the provider's canonical event comes out with its four parameters in
-// declared order (connected, profile, ipv4_count, ipv6_count) and the right
-// EventId / Level / Keyword. This test at this grain protects against a silent
-// schema regression (reordering, retyping a parameter) that would only be seen
-// when a listener consumed it.
+// Pins the parameter order and types: a reordered or retyped parameter would
+// otherwise only show when a listener consumed it.
 [Trait("Category", "observability")]
 public class DeckleNetworkSourceTests
 {

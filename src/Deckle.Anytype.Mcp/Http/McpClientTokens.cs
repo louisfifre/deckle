@@ -78,10 +78,8 @@ public sealed class McpClientTokens
         }
     }
 
-    // Resolve a presented bearer to the client it authenticates, or null when it
-    // matches none. A blank bearer is rejected outright. Every candidate is compared
-    // in constant time: the length pre-check short-circuits an obvious mismatch, but
-    // two equal-length values still go through FixedTimeEquals so timing never
+    // The length pre-check short-circuits an obvious mismatch, but two
+    // equal-length values still go through FixedTimeEquals so timing never
     // betrays how far the comparison got. The presented token is never logged.
     public McpClientProfile? Authenticate(string? bearer)
     {

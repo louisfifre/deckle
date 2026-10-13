@@ -1,12 +1,6 @@
-<!-- HUD playground page. Two columns : preview on the left (target
-     picker + transport toolbar + Win2D composition surface), tuning
-     expanders on the right. The tuning panel is built programmatically
-     in code-behind from the active target's section list (see
-     HudViewModel.ActiveTuningSections), so the user only sees the
-     knobs that actually affect the current preview ; the "Parked"
-     expander is appended (collapsed by default) so transition-only
-     defaults stay reachable for tweaking, except on a target with no
-     section (Charging), which shows a placeholder line instead. -->
+<!-- HUD playground page. The tuning panel is built in code-behind from
+     HudViewModel.ActiveTuningSections, so only the knobs that affect the
+     current preview show. -->
 <Page
     x:Class="Deckle.Playground.HudPage"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
@@ -25,41 +19,19 @@
 
     <Grid>
         <Grid.ColumnDefinitions>
-            <!-- Col 0 absorbs slack ; min 320 keeps the preview
-                 substrate visible even when the window narrows to
-                 1280 (NavView strip + tuning column already eats
-                 ~960). -->
+            <!-- MinWidth 320 keeps the preview visible at the window's
+                 1280 minimum width. -->
             <ColumnDefinition Width="*" MinWidth="320" />
-            <!-- Col 1 sized by the inner ScrollViewer (480-920). -->
             <ColumnDefinition Width="Auto" />
         </Grid.ColumnDefinitions>
 
         <!-- ── Col 0 — preview ────────────────────────────────────── -->
         <Grid Grid.Column="0">
             <Grid.RowDefinitions>
-                <!-- Row 0 : toolbar (target + transport). -->
                 <RowDefinition Height="Auto" />
-                <!-- Row 1 : preview substrate. -->
                 <RowDefinition Height="*" />
             </Grid.RowDefinitions>
 
-            <!-- Toolbar : DropDownButton target picker on the left, a
-                 spacer in the middle (lets the transport stay right-
-                 anchored when the toolbar grows wider), transport
-                 buttons on the right. Replaces the previous flat
-                 ItemsRepeater + Play/Pause single toggle. The
-                 DropDownButton MenuFlyout groups the 7 targets under
-                 two subitems (States × 4, Primitives × 3) — same
-                 semantic grouping as the previous two-row picker,
-                 collapsed into one always-visible affordance.
-
-                 Transport pattern : three explicit buttons (Play /
-                 Pause / Stop), each enable-bound to a derived flag
-                 on the ViewModel (IsPlayEnabled / IsPauseEnabled /
-                 IsStopEnabled). The user sees the action they can
-                 take at any moment without the icon swapping under
-                 the cursor. Stop forces the preview back to its idle
-                 frame regardless of where the play state was. -->
             <Grid Margin="24,24,12,12">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="Auto" />
@@ -86,21 +58,12 @@
                         </StackPanel>
                     </DropDownButton.Content>
 
-                    <!-- Flat MenuFlyout : every target is one click away
-                         (the prior sub-menu shape made switching from
-                         Transcribing to Conic a two-hop trip). The
-                         MenuFlyoutSeparator marks the semantic seam
-                         between HUD states and underlying primitives ;
-                         WinUI 3 has no native section-header in
-                         MenuFlyout and going custom for this isn't
-                         worth the maintenance cost. -->
-                    <!-- Three groups, separated: HUD states · sweep
-                         primitives · the placeable clone. Primitives renamed
-                         to read as what they show (the raw cone, the rotating
-                         sweep mask, the cone seen through that mask) rather
-                         than the internal type names. MinHeight + separator
-                         margins give the items room — the default flyout reads
-                         cramped against the seams. -->
+                    <!-- Flat, so every target is one click away. Separators
+                         mark the groups (HUD states, sweep primitives, then
+                         the clone and the countdown views): MenuFlyout has no
+                         native section header. Labels name what each target
+                         shows, not the HudTarget member; the Tag carries the
+                         member. -->
                     <DropDownButton.Flyout>
                         <MenuFlyout Placement="BottomEdgeAlignedLeft">
                             <MenuFlyoutItem Text="Charging"
@@ -145,12 +108,9 @@
                     </DropDownButton.Flyout>
                 </DropDownButton>
 
-                    <!-- Variant grading toggle — only meaningful for the
-                         geometry-only previews (Cone / Sweep mask / Masked
-                         cone / Cone clone), which carry no intrinsic state.
-                         ApplyTarget shows it when one of those is active and
-                         drives the preview's grading (Transcribing = grey,
-                         Rewriting = colour). -->
+                    <!-- Grading for the geometry-only previews, which carry
+                         no HUD state; ApplyTarget shows it per
+                         HudViewModel.IsVariantToggleVisible. -->
                     <StackPanel x:Name="VariantToggle"
                                 Orientation="Horizontal"
                                 Spacing="8"
@@ -168,13 +128,8 @@
                     </StackPanel>
                 </StackPanel>
 
-                <!-- Transport : Start / Stop with icon + label. Same
-                     wording as the rest of the app (Settings + tray
-                     menu use Start / Stop for the recording verb).
-                     IsEnabled bound to the VM flags so the inactive
-                     side reads as greyed out instead of hidden ; the
-                     user always sees both affordances. Glyphs Segoe
-                     Fluent : E768 Play, E71A Stop. -->
+                <!-- Both buttons always show; the inactive one greys out
+                     instead of hiding. -->
                 <StackPanel Grid.Column="2"
                             Orientation="Horizontal"
                             Spacing="6"
@@ -202,11 +157,8 @@
                 </StackPanel>
             </Grid>
 
-            <!-- Preview substrate : Layer fill + ControlCornerRadius,
-                 stretches to fill the column. HudChrono 272×78 and
-                 the naked 300×300 host live centered inside ;
-                 ApplyTarget collapses both on Pause so the substrate
-                 reads as empty. -->
+            <!-- ApplyTarget collapses both previews on Stop, leaving the
+                 substrate empty. -->
             <Border Grid.Row="1"
                     Background="{ThemeResource LayerFillColorDefaultBrush}"
                     CornerRadius="{ThemeResource ControlCornerRadius}"
@@ -239,12 +191,9 @@
                       MaxWidth="600">
             <StackPanel x:Name="TuningStack" Spacing="6">
 
-                <!-- Header : "Tunables" title + description, with Reset to defaults
-                     inline on the right. HUD tuning is memory-only (nothing
-                     persists ; a restart returns to the compiled defaults), so the
-                     reset is the only action — it snaps every section back to those
-                     defaults mid-session. BuildTuningPanel relies on this header
-                     staying child[0] of TuningStack. -->
+                <!-- HUD tuning is memory-only, so Reset all is the only
+                     action. BuildTuningPanel relies on this header staying
+                     child 0 of TuningStack. -->
                 <Grid Margin="0,0,0,8">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="*" />
@@ -278,8 +227,6 @@
                                MaxWidth="400"
                                Margin="0,4,0,0" />
                 </Grid>
-                <!-- Expanders appended programmatically below the
-                     header by BuildTuningPanel(). -->
             </StackPanel>
         </ScrollViewer>
     </Grid>

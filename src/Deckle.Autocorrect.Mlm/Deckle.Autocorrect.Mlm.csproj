@@ -5,12 +5,9 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Deckle.Core\Deckle.Core.csproj" />
-    <!-- The autocorrect engine: AccentVariant / ISentenceReranker the probe and
-         the reranker build against. -->
     <ProjectReference Include="..\Deckle.Autocorrect\Deckle.Autocorrect.csproj" />
     <!-- ONNX inference (CPU) for the CamemBERT masked-LM session. -->
     <ProjectReference Include="..\Deckle.Inference.Onnx\Deckle.Inference.Onnx.csproj" />
-    <!-- Managed SentencePiece/BPE tokenizer to segment text for the reranker. -->
     <PackageReference Include="Microsoft.ML.Tokenizers" />
   </ItemGroup>
 </Project>

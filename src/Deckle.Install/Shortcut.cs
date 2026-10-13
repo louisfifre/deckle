@@ -3,8 +3,6 @@ using System.Runtime.InteropServices.Marshalling;
 
 namespace Deckle.Install;
 
-// ── Shortcut ──────────────────────────────────────────────────────────────────
-//
 // Writes the per-user Start Menu .lnk pointing at the installed Deckle.exe. A .lnk is
 // intrinsically a COM artefact (IShellLink + IPersistFile), so there's no pure
 // Win32 shortcut. The AOT-safe way to consume that COM is source-generated interop

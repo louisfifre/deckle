@@ -5,8 +5,6 @@ namespace Deckle.App;
 
 public sealed partial class DeckleAppSource
 {
-    // ── Command-line ────────────────────────────────────────────────────
-
     [Event(EvtCmdLineSettingsFlag,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Lifecycle,

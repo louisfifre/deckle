@@ -2,11 +2,11 @@ namespace Deckle.Autocorrect;
 
 // ── LexicalDomain ───────────────────────────────────────────────────────────
 //
-// A field of writing whose vocabulary the corrector can be taught — computing,
-// and whatever fabrication delivers next. The domain is the thing the user
-// picks; the language is the thing the user turns on inside it. One DomainPack
-// is the intersection of the two, so this type carries no artifact and no
-// activation state: only the identity and the key its wording resolves under.
+// A field of writing whose vocabulary the corrector can be taught, such as
+// computing. The domain is the thing the user picks; the language is the thing
+// the user turns on inside it. One DomainPack is the intersection of the two,
+// so this type carries no artifact and no activation state: only the identity
+// and the key its wording resolves under.
 //
 // The id names the field in full ("computing"), never an abbreviation that could
 // read as a BCP-47 tag beside the language tags it travels with. Nothing persists

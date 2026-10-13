@@ -134,12 +134,6 @@ public sealed partial class DeckleAmbientSource
         WriteEvent(EvtEchoIgnored, v1_id, resource_type, age_ms);
     }
 
-    // Per-light configuration dump: emitted in a loop, one line per light, with
-    // ids and k=v — Verbose by nature, never a single human milestone. Demoted
-    // from Info to Verbose for the Verbose/Info separation. The call site emits
-    // it right after PipelineStarted, BEFORE AmbientCaptureGate opens, so the
-    // line still passes the LogWindow drop filter (the gate is closed at that
-    // point) — demotion costs no visibility there.
     [Event(EvtPipelinePerLightConfig,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Lifecycle,
@@ -150,11 +144,9 @@ public sealed partial class DeckleAmbientSource
         WriteEvent(EvtPipelinePerLightConfig, id, name, zone, brightness, controlled);
     }
 
-    // Consumer-side confirmation that the FrameSampler was rebuilt to match
-    // a capture surface the service renegotiated mid-session (HDR↔SDR toggle
-    // or resolution change). Info milestone — pairs with the Vision-side
-    // CaptureFormatRenegotiated so the live window shows the full chain :
-    // capture renegotiates → sampler rebuilt. mode = "HDR" | "SDR".
+    // Pairs with the Vision-side CaptureFormatRenegotiated so the log shows
+    // the full chain: capture renegotiates (HDR↔SDR toggle or resolution
+    // change), then the sampler is rebuilt.
     [Event(EvtSamplerRebuilt,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Lifecycle,

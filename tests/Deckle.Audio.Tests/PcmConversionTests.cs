@@ -4,9 +4,8 @@ using Xunit;
 namespace Deckle.Audio.Tests;
 
 // FloatToPcm16 is the render-side conversion every spoken clip passes through
-// before waveOut. Pure and load-bearing, so it's pinned here. The inverse
-// (PcmToFloat) is exercised by the capture path; the round-trip below covers
-// both directions agreeing within 16-bit quantization.
+// before waveOut; the round-trip checks PcmToFloat agrees with it within 16-bit
+// quantization.
 public class PcmConversionTests
 {
     [Fact]

@@ -6,12 +6,8 @@ namespace Deckle.Llm.Rewrite;
 
 // ── bool → Visibility ────────────────────────────────────────────────────────
 //
-// true → Visible, false → Collapsed. Drives the mask-not-grey gating of the
-// LLM page: when rewriting is off, the dependent sections (endpoint, shortcut
-// slots, rules, profiles, models) collapse out of the layout entirely instead
-// of greying. No local BoolToVisibility converter exists app-wide, and the
-// project idiom is a plain IValueConverter instantiated as a StaticResource, so
-// it lives here alongside the page that needs it.
+// Drives the mask-not-grey gating of the LLM page: when rewriting is off, the
+// dependent sections collapse out of the layout instead of greying.
 public sealed class BoolToVisibilityConverter : IValueConverter
 {
     public object Convert(object value, Type targetType, object parameter, string language)

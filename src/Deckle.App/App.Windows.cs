@@ -76,7 +76,6 @@ public partial class App
             SecondaryWindowPlacement.Restore(window, SecondaryWindowPlacement.Playground);
             window.AppWindow.Closing += (_, _) =>
                 SecondaryWindowPlacement.Save(window, SecondaryWindowPlacement.Playground);
-            // Playground owns heavy runtime resources, so close destroys it.
             window.Closed += (_, _) =>
             {
                 if (ReferenceEquals(_playgroundWindow, window)) _playgroundWindow = null;

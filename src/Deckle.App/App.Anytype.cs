@@ -31,8 +31,6 @@ public partial class App
 
         try
         {
-            // A legacy provider is copied and atomically activated outside the
-            // application payload without disturbing the already-running image.
             await BackendInstallation.PrepareAsync(ct).ConfigureAwait(false);
 
             supervisor = new BackendSupervisor(new BackendHealthProbe());

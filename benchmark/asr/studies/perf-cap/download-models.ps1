@@ -1,13 +1,11 @@
-# Télécharge les GGUF de la caractérisation perf Voxtral (session 2026-05-26).
+# Download the GGUFs of the Voxtral perf characterization.
 #
-# Approche : curl.exe avec --continue-at - pour reprendre un download
-# interrompu. Skip si le fichier local existe et fait la taille attendue.
-# Séquentiel — un seul download à la fois pour ne pas saturer le lien ni
-# déclencher de rate-limit HuggingFace.
+# curl.exe --continue-at - resumes an interrupted download; a file already
+# at its expected size is skipped. One download at a time, so the link is
+# not saturated and Hugging Face does not rate-limit.
 #
-# Sources : toutes chez bartowski, sélectionné pour la cohérence de la
-# scheme de quantization à travers les trois familles de modèles.
-# Identification : agent web 2026-05-26.
+# Every file comes from bartowski, for one quantization scheme across the
+# model families.
 
 [CmdletBinding()]
 param(
@@ -17,10 +15,8 @@ param(
 
 $ErrorActionPreference = 'Stop'
 
-# Catalogue des 9 GGUF à télécharger. Chaque entrée porte sa taille
-# attendue en octets — sert de check d'intégrité minimal après download.
+# Size is the expected byte count, a minimal integrity check after download.
 $catalogue = @(
-    # Session 2026-05-25/26 : variants déjà téléchargés (skip si présents).
     [pscustomobject]@{
         Slug = 'voxtral-3b-q8_0'
         File = 'Voxtral-Mini-3B-2507-Q8_0.gguf'
@@ -64,11 +60,10 @@ $catalogue = @(
         Size = 11474615232
     }
 
-    # Session 2026-05-27 (overnight bench) : K_M et K_L variants.
-    # Tailles bartowski (GB décimaux affichés sur HF). La tolérance de 5 %
-    # dans le check de taille compense l'absence de HEAD requests précis.
+    # From here, sizes are the decimal GB the Hugging Face page shows, not
+    # exact bytes.
 
-    # --- Voxtral Mini 3B, K_M et K_L (Q4_K_M déjà présent) ---
+    # --- Voxtral Mini 3B, K_M and K_L ---
     [pscustomobject]@{
         Slug = 'voxtral-3b-q3_k_l'
         File = 'Voxtral-Mini-3B-2507-Q3_K_L.gguf'
@@ -94,7 +89,7 @@ $catalogue = @(
         Size = 3120000000
     }
 
-    # --- Voxtral Small 24B, K_M et K_L (Q3_K_M déjà présent) ---
+    # --- Voxtral Small 24B, K_M and K_L ---
     [pscustomobject]@{
         Slug = 'voxtral-24b-q3_k_l'
         File = 'Voxtral-Small-24B-2507-Q3_K_L.gguf'
@@ -126,8 +121,8 @@ $catalogue = @(
         Size = 17180000000
     }
 
-    # --- Mistral Small 3.1 24B Instruct (base archi de Voxtral 24B) ---
-    # Contrôle archi : Mistral Small isole l'archi du modèle des extras Voxtral.
+    # --- Mistral Small 3.1 24B Instruct, the base of Voxtral 24B ---
+    # A control that separates the base architecture from Voxtral's extras.
     [pscustomobject]@{
         Slug = 'mistral-small-24b-q4_k_m'
         File = 'Mistral-Small-3.1-24B-Instruct-2503-Q4_K_M.gguf'
@@ -160,22 +155,15 @@ foreach ($entry in $catalogue) {
     $dest = Join-Path $DestDir $entry.File
     $expected = $entry.Size
 
-    # Tailles attendues : pour les entrées de la session 2026-05-25/26, HEAD
-    # X-Linked-Size précises à l'octet. Pour les ajouts overnight 2026-05-27,
-    # approximation depuis la page HF en GB décimaux. Tolérance ±5 % couvre
-    # les deux cas. Le check magic 'GGUF' attrape les faux positifs (404
-    # HTML, fichier vide).
+    # ±5 % covers the sizes read off the Hugging Face page.
     $sizeOk = {
         param($actual, $expected)
         $actual -gt 0 -and [Math]::Abs($actual - $expected) -lt (0.05 * $expected)
     }
 
-    # Magic check : un GGUF valide commence par les 4 octets 'GGUF'.
-    # Un placeholder HTTP 404 ("Entry not found") ou un fichier corrompu
-    # par un curl --continue-at - qui aurait appendu à un placeholder se
-    # détecte ici. Sans ce check, le resume reprenait sur des bytes
-    # garbage et donnait un fichier qui semble taille correcte mais qui
-    # plante au load llama.cpp.
+    # A valid GGUF starts with the 4 bytes 'GGUF'. This catches a 404
+    # placeholder that curl --continue-at - would otherwise extend into a
+    # file of plausible size that llama.cpp fails to load.
     $hasValidMagic = {
         param($path)
         if (-not (Test-Path $path)) { return $false }
@@ -212,10 +200,7 @@ foreach ($entry in $catalogue) {
         Write-Host ("[start] {0} ({1:N2} GB)" -f $entry.File, ($expected / 1GB))
     }
 
-    # curl --continue-at - reprend là où le fichier local s'arrête.
-    # --location suit les redirects HF (lfs.huggingface.co).
-    # --silent désactive la barre de progression bavarde, --show-error
-    # garde les erreurs visibles, --progress-bar donne une barre simple.
+    # --location follows Hugging Face's redirect to its LFS host.
     & $Curl `
         --location `
         --continue-at - `

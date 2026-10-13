@@ -17,55 +17,37 @@ namespace Deckle.Playground;
 
 // ─── Ambient lighting tuning page ────────────────────────────────────────────
 //
-// Owns the screen-capture preview, the Hue pairing surface, the per-light
-// zone assignments, and the live tuning sandbox. Extracted from the
-// monolithic PlaygroundWindow.xaml.cs in 2026-05-19 and split across
-// partial files in the same pass to keep each concern readable :
+// Unlike the HUD tab's sandbox, this page reads and writes the live
+// AmbientSettingsService through AmbientViewModel: the scene it tunes is the
+// lamps themselves.
 //
-//   • AmbientPage.xaml.cs       — fields, lifecycle, observers, VM sync,
-//                                 OnShowZoneOverlaysToggled, theme brush.
-//   • AmbientPage.ScreenCapture.cs — local Screen capture toggle + FPS counter.
-//   • AmbientPage.Hue.cs        — discover / pair / list groups / test colours.
-//   • AmbientPage.LightZones.cs — per-light zone assignment UI + Identify.
-//   • AmbientPage.Preview.cs    — sampled-pixel grid + swatch strip + zone
-//                                 overlay rendering + idle blanking.
-//   • AmbientPage.HdrTuning.cs  — pipeline toggle + Preset / Bézier brightness
-//                                 response / Smoothing / Change threshold /
-//                                 Exposure / Saturation / Min brightness.
-//
-// Lifetime contract :
-//   • Page instance is cached (NavigationCacheMode.Required).
-//   • Runtime resources (capture service, frame sampler, Hue light
-//     output, preview cells, light-zone rects) outlive a single page
-//     navigation — they survive in the cached instance until
-//     PlaygroundWindow disposes them on Closed via DisposeResources.
-//   • Preview timer starts in OnNavigatedTo and stops in OnNavigatingFrom
-//     so off-screen pages don't pump unused UI updates.
-//   • The AmbientSettingsService.Changed and HuePairingService.BridgeChanged
-//     observers are wired once in the constructor and torn down in
-//     DisposeResources — cross-window edits (Settings AmbientPage)
-//     reflect here without re-subscribing on every navigate.
+// Lifetime contract:
+//   • The page is cached (NavigationCacheMode.Required), so its runtime
+//     resources (capture service, frame sampler, Hue light output, preview
+//     cells) outlive a navigation until PlaygroundWindow calls
+//     DisposeResources on Closed.
+//   • The preview timer stops in OnNavigatingFrom, so an off-screen page
+//     pumps no UI updates.
+//   • The service observers are wired once in the constructor and torn down
+//     in DisposeResources; edits from the Settings AmbientPage reflect here
+//     without re-subscribing on every navigation.
 public sealed partial class AmbientPage : Page
 {
     public AmbientViewModel ViewModel { get; } = new();
 
-    // Guards programmatic Slider / ComboBox writes during ViewModel sync
-    // so the *Changed handlers don't re-fire PushToSettings — same role
-    // as `_isSyncing` in GeneralViewModel, mirrored at the page level
-    // because the sliders use code-behind event handlers (not x:Bind)
-    // due to their custom rescaling (saturation /100, min-brightness
-    // int round).
+    // Guards programmatic control writes during a ViewModel sync so the
+    // Changed handlers don't write back through the VM. Page-level because
+    // these sliders use code-behind handlers (not x:Bind) for their rescaling.
     private bool _initializing;
 
-    // ── Screen capture (J1) — see AmbientPage.ScreenCapture.cs ──────────────
+    // ── Screen capture — see AmbientPage.ScreenCapture.cs ───────────────────
     private ScreenCaptureService? _screenCapture;
     private readonly DispatcherTimer _screenCaptureFpsTimer = new()
         { Interval = TimeSpan.FromMilliseconds(1000) };
     private long _screenCaptureLastSampledFrames;
     private long _screenCaptureLastSampleTimestamp;
 
-
-    // ── Hue REST driver (J2) — see AmbientPage.Hue.cs ───────────────────────
+    // ── Hue REST driver — see AmbientPage.Hue.cs ────────────────────────────
     private CancellationTokenSource? _huePairCts;
     private HueBridge? _hueDiscoveredBridge;
     private bool _hueIsPairing;
@@ -76,7 +58,7 @@ public sealed partial class AmbientPage : Page
     private bool _hueGroupsFetchInFlight;
     private AmbientEngine? _observedEngine;
 
-    // ── Preview grid + sampler (J3) — see AmbientPage.Preview.cs ────────────
+    // ── Preview grid + sampler — see AmbientPage.Preview.cs ─────────────────
     private FrameSampler? _frameSampler;
     private bool _pipelineStartedCapture;
     private DispatcherTimer? _previewTimer;
@@ -84,25 +66,17 @@ public sealed partial class AmbientPage : Page
     private int _previewGridCols;
     private int _previewGridRows;
 
-    // Native dip size of one downsampled cell in the preview grid. The
-    // whole stage lives in a coordinate space of GridCols × CellSize by
-    // GridRows × CellSize ; the Viewbox above it scales uniformly.
+    // Native dip size of one preview cell; the Viewbox scales the whole grid
+    // uniformly.
     private const double PreviewCellSize = 16;
 
-    // Cached swatch chip per light id (or "group" sentinel in single-
-    // colour mode). The chip is just a coloured Rectangle — no labels
-    // under it (the Lights dropdown carries the names). The brush is
-    // mutated in place each tick to avoid rebuilding visuals every
-    // frame.
+    // Keyed by light id, or "group" in single-colour mode. Brushes are
+    // mutated in place each tick rather than rebuilt.
     private readonly Dictionary<string, (Microsoft.UI.Xaml.Shapes.Rectangle Container, SolidColorBrush Fill, string DisplayName)> _swatchByLight = new();
 
-    // Per-zone fill brush for the overlay rectangles on the preview.
-    // Brushes carry the live emitted colour the engine sends to
-    // whichever light is assigned to that zone, at reduced opacity so
-    // the underlying preview cells stay visible.
     private readonly Dictionary<LightZone, SolidColorBrush> _zoneFillBrushes = new();
 
-    // ── Light zones (J4) — see AmbientPage.LightZones.cs ────────────────────
+    // ── Light zones — see AmbientPage.LightZones.cs ─────────────────────────
     private List<LightDescriptor>? _placementLights;
     private Dictionary<string, LightZone>? _suggestedZones;
 
@@ -111,31 +85,20 @@ public sealed partial class AmbientPage : Page
         InitializeComponent();
         NavigationCacheMode = NavigationCacheMode.Required;
 
-        // Zone-sampling sliders — Minimum lives here because the WinUI 3
-        // release parser throws on Minimum > default Value (Slider's
-        // default Value = 0 ; XAML Minimum > 0 would fail before this
-        // ctor body runs). Maximum / Steps stay in XAML where they're
-        // safe. The real Value is assigned later by PushViewModelToControls.
+        // Minimum is set here, not in XAML: the WinUI 3 release parser throws
+        // on a XAML Minimum above the default Value of 0.
         PlaygroundBorderDepthSlider.Minimum = 5;
         PlaygroundBorderCellsSlider.Minimum = 4;
 
-        // Preset options come from the module's preset family, so the
-        // ComboBox items are built here rather than listed in XAML.
         BuildAmbientModeComboItems();
 
         _screenCaptureFpsTimer.Tick += OnScreenCaptureFpsTick;
 
-        // Re-align the LightZonesOverlay Canvas (sibling of the
-        // Viewbox) with the displayed footprint of the scaled preview
-        // grid whenever the Viewbox resizes — keeps the overlay
-        // rectangles tracking the visible pixels at any window size,
-        // and keeps the stroke thickness in real DIP space (no scaling
-        // artefacts on wide / narrow windows).
+        // The overlay Canvas is a sibling of the Viewbox, not inside it, so
+        // its rectangles stay in real DIPs; re-fit it to the scaled grid on
+        // every resize.
         AmbientPreviewViewbox.SizeChanged += (_, _) => LayoutLightZonesOverlayFromViewbox();
 
-        // Cross-window observers wired once for the lifetime of the
-        // page instance. DisposeResources tears them down on Window
-        // close.
         HuePairingService.Instance.BridgeChanged += OnHueBridgeChanged;
         AmbientSettingsService.Instance.Changed  += OnAmbientSettingsChanged;
         ViewModel.PropertyChanged += OnViewModelPropertyChanged;
@@ -153,10 +116,6 @@ public sealed partial class AmbientPage : Page
 
     private void OnPageLoaded(object sender, RoutedEventArgs e)
     {
-        // First-load initialisation. Loaded fires once for the cached
-        // Page instance ; subsequent OnNavigatedTo calls do a lighter
-        // re-sync (ViewModel.Load + push to sliders) without re-running
-        // the wiring below.
         _initializing = true;
         try
         {
@@ -174,8 +133,6 @@ public sealed partial class AmbientPage : Page
                 rejectSource: "PLAYGROUND", rejectWhat: "init flag",
                 priority: DispatcherQueuePriority.Low);
         }
-        // First Loaded = page ready after ViewModel.Load + control sync above.
-        // Measured from the nav-start clock set in PlaygroundWindow.
         DecklePlaygroundSource.Log.PageReady(nameof(AmbientPage), DecklePlaygroundSource.NavClock.ElapsedMilliseconds);
     }
 
@@ -183,10 +140,6 @@ public sealed partial class AmbientPage : Page
     {
         base.OnNavigatedTo(e);
 
-        // Re-load the VM in case settings changed from another surface
-        // (Settings AmbientPage) while we were on another Playground
-        // page. The Loaded handler above does a similar pass on first
-        // navigation ; here we just refresh, no wiring.
         bool prev = _initializing;
         _initializing = true;
         try
@@ -201,26 +154,16 @@ public sealed partial class AmbientPage : Page
             _initializing = prev;
         }
 
-        // Only start the preview timer if there's actually something
-        // to display — otherwise the page sits idle without burning
-        // a 5 Hz tick on the dispatcher (a noticeable cause of window-
-        // drag lag on the Playground when the user wasn't running the
-        // pipeline anyway).
         EvaluatePreviewTimerState();
     }
 
     protected override void OnNavigatingFrom(NavigatingCancelEventArgs e)
     {
         base.OnNavigatingFrom(e);
-        // Off-screen page : stop pumping UI updates for cells that
-        // aren't visible. The canonical AmbientEngine keeps pushing
-        // to Hue.
+        // Only the preview stops; the AmbientEngine keeps pushing to Hue.
         _previewTimer?.Stop();
     }
 
-    // Called by PlaygroundWindow on Closed — tears down runtime
-    // resources that outlive the page instance under
-    // NavigationCacheMode.Required.
     public void DisposeResources()
     {
         _previewTimer?.Stop();
@@ -275,9 +218,8 @@ public sealed partial class AmbientPage : Page
                     PushViewModelToControls();
                     SyncPipelineUiFromViewModel();
                     ApplyPipelineReadiness();
-                    // BorderDepth landed in the store — repaint the zone
-                    // overlay rectangles so a slider drag in the Settings
-                    // AmbientPage shows here without a window resize.
+                    // Repaints the zone bands, so a band edit made in
+                    // Settings shows here without a window resize.
                     LayoutLightZonesOverlayFromViewbox();
                 }
                 finally
@@ -290,13 +232,7 @@ public sealed partial class AmbientPage : Page
 
     private void OnAmbientEngineStateChanged(AmbientEngineState state)
     {
-        // Re-evaluate the preview timer + visibility when the engine
-        // starts or stops so an idle Playground page doesn't keep
-        // pumping the dispatcher at 5 Hz, and so the "Capture preview"
-        // empty state comes back on engine stop (cells stay allocated
-        // by the cached Page but the HasLiveSource gate now folds
-        // visibility into EvaluatePreviewTimerState). StateChanged can
-        // fire from any thread — marshal before touching UI.
+        // StateChanged can fire from any thread.
         if (DispatcherQueue.HasThreadAccess)
         {
             EvaluatePreviewTimerState();
@@ -312,12 +248,6 @@ public sealed partial class AmbientPage : Page
 
     // ── Toolbar handlers ─────────────────────────────────────────────────────
 
-    // "Zones" ToggleButton on the preview options row. Hides / shows
-    // the LightZonesOverlay Canvas (the rectangles drawn over the
-    // sampled grid). Also re-evaluates the preview / placeholder
-    // visibility — when the user unchecks zones while the engine is
-    // off, the empty-state takes the stage (visibility contract in
-    // UpdatePreviewViewboxVisibility).
     private void OnShowZoneOverlaysToggled(object sender, RoutedEventArgs e)
     {
         if (LightZonesOverlay is null) return;
@@ -329,16 +259,11 @@ public sealed partial class AmbientPage : Page
 
     // ── Action bar ───────────────────────────────────────────────────────────
 
-    // Reset to defaults : the VM snaps the tuning surface back to the shipping
-    // defaults and saves ; the AmbientSettingsService.Changed observer
-    // (OnAmbientSettingsChanged) reloads the VM and repaints every slider, so
-    // there's nothing to push from here.
+    // The resets save to the store; OnAmbientSettingsChanged then reloads the
+    // VM and repaints the sliders, so nothing is pushed from here.
     private void OnAmbientResetDefaultsClick(object sender, RoutedEventArgs e)
         => ViewModel.ResetDefaults();
 
-    // Per-section resets from the TuningCard headers. Each writes the section's
-    // defaults onto the store and Save()s ; the Changed observer reloads the VM
-    // and PushViewModelToControls repaints the affected sliders.
     private void OnResetTuningClick(object sender, RoutedEventArgs e)
         => ViewModel.ResetTuningSection();
 
@@ -347,11 +272,8 @@ public sealed partial class AmbientPage : Page
 
     // ── Theme resource helper ───────────────────────────────────────────────
     //
-    // Looking up a system fill colour brush from code-behind requires
-    // going through Application.Current.Resources (the ThemeResource
-    // markup extension only resolves in XAML). Returns the resolved
-    // Brush ; the cast is safe because the SystemFillColor* entries in
-    // the WinUI theme dictionary are SolidColorBrush.
+    // The ThemeResource markup extension only resolves in XAML; code-behind
+    // reads the brush from Application.Current.Resources.
     private static Brush GetThemeBrush(string key)
         => (Brush)Application.Current.Resources[key];
 }

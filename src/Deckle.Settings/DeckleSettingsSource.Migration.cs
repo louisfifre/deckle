@@ -34,9 +34,8 @@ public sealed partial class DeckleSettingsSource
         if (IsEnabled()) WriteEvent(EvtMigrationDispatchSkipped, json_key, target_path);
     }
 
-    // Constant migration (paths.modelsDirectory → modules/whisp/modelsDirectory,
-    // both compile-time keys) documented here; the milestone carries no detail,
-    // so no Verbose mirror is needed.
+    // Both keys are compile-time constants, so the milestone needs no Verbose
+    // mirror.
     [Event(EvtMigrationModelsDirectoryDispatched,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Lifecycle,
@@ -136,10 +135,8 @@ public sealed partial class DeckleSettingsSource
         if (IsEnabled()) WriteEvent(EvtModuleFolderRenameFailedDetail, old_id, new_id, ex_type, message);
     }
 
-    // Mirror for the reworded ModuleFolderRenameFailed milestone. A `…Detail`
-    // (id 10) already carried the full error tuple; this `…Detail2` carries the
-    // ids alone so the milestone and its mirror stay a clean pair. Both keep the
-    // same Keywords as the milestone.
+    // Ids-only mirror of ModuleFolderRenameFailed; `…Detail` (id 10) carries the
+    // full error tuple.
     [Event(EvtModuleFolderRenameFailedDetail2,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Lifecycle,
@@ -167,8 +164,7 @@ public sealed partial class DeckleSettingsSource
         if (IsEnabled()) WriteEvent(EvtRenamedRootKeyDetail, old_key, new_key);
     }
 
-    // Constant migration (corpusLogging → telemetry, both compile-time keys)
-    // documented here; the milestone carries no detail, no Verbose mirror.
+    // Compile-time keys only, so no Verbose mirror.
     [Event(EvtMigratedCorpusToTelemetry,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Lifecycle,
@@ -178,8 +174,7 @@ public sealed partial class DeckleSettingsSource
         if (IsEnabled()) WriteEvent(EvtMigratedCorpusToTelemetry);
     }
 
-    // Constant migration (llm.manualProfileName → llm.slotAProfileName, both
-    // compile-time keys); milestone carries no detail, no Verbose mirror.
+    // Compile-time keys only, so no Verbose mirror.
     [Event(EvtMigratedLlmManualToSlotA,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Lifecycle,
@@ -189,8 +184,7 @@ public sealed partial class DeckleSettingsSource
         if (IsEnabled()) WriteEvent(EvtMigratedLlmManualToSlotA);
     }
 
-    // Constant migration (llm.slotAProfileName → llm.primaryRewriteProfileName,
-    // both compile-time keys); milestone carries no detail, no Verbose mirror.
+    // Compile-time keys only, so no Verbose mirror.
     [Event(EvtMigratedLlmSlotAToPrimary,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Lifecycle,
@@ -200,8 +194,7 @@ public sealed partial class DeckleSettingsSource
         if (IsEnabled()) WriteEvent(EvtMigratedLlmSlotAToPrimary);
     }
 
-    // Constant migration (llm.slotBProfileName → llm.secondaryRewriteProfileName,
-    // both compile-time keys); milestone carries no detail, no Verbose mirror.
+    // Compile-time keys only, so no Verbose mirror.
     [Event(EvtMigratedLlmSlotBToSecondary,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Lifecycle,

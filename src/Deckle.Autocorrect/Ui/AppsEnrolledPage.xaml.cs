@@ -8,12 +8,6 @@ namespace Deckle.Autocorrect;
 // Child page of the Autocorrect family — the per-app decision map. Resolved by
 // the Settings NavigationView via the item Tag
 // "Deckle.Autocorrect.AppsEnrolledPage, Deckle.Autocorrect".
-//
-// The list is BESPOKE — a live, runtime-enumerated collection of cards with
-// enable/decline/forget gestures that no composer kind models. Its presentation
-// is owned here in code-behind: the whole section's visibility gated on the
-// master switch (mask-never-grey), and within it the empty-state swap (list vs
-// "nothing yet" line) off Apps.CollectionChanged.
 public sealed partial class AppsEnrolledPage : Page
 {
     public AppsEnrolledViewModel ViewModel { get; } = new();

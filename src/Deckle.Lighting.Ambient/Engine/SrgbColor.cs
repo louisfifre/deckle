@@ -6,9 +6,9 @@ namespace Deckle.Lighting.Ambient;
 // The colour the ambient path works on between the sampler and the push :
 // three sRGB-encoded channels in [0, 1], kept in float so no stage rounds
 // to 8 bits. Encoded (not linear) because the brightness curve, the floor
-// and the smoothing are defined on encoded values, as they were on bytes
-// (an encoded 1.0 is the byte 255). Quantize is the single rounding to
-// the 8-bit LightColor the transports take.
+// and the smoothing are defined on encoded values (an encoded 1.0 is the
+// byte 255). Quantize is the single rounding to the 8-bit LightColor the
+// transports take.
 internal readonly record struct SrgbColor(float R, float G, float B)
 {
     public static SrgbColor Black => default;

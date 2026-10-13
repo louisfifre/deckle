@@ -16,8 +16,6 @@ public sealed partial class DeckleWhispSource
         if (IsEnabled()) WriteEvent(EvtHotkeyToggleIgnored, state);
     }
 
-    // In-place clean (no params, no placeholders): the milestone is entirely a
-    // human sentence; the lowercase phrasing and arrow shorthand were dropped.
     [Event(EvtHotkeyStartingCASLost,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Capture,
@@ -90,8 +88,6 @@ public sealed partial class DeckleWhispSource
         if (IsEnabled()) WriteEvent(EvtMicrophoneRecovered);
     }
 
-    // In-place clean (no params, no placeholders): lowercase implementation
-    // phrasing recapitalized into a human sentence.
     [Event(EvtRecordingLowAudio,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Capture,

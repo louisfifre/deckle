@@ -3,12 +3,10 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using Microsoft.UI.Xaml.Data;
 namespace Deckle.Llm.Rewrite;
 
-// ViewModel for a single rewrite profile — used inside an ItemsRepeater
-// DataTemplate in LlmProfilesSection. Auto-saves on every change, aligning
-// with WhisperViewModel. No Save/Cancel surface.
+// Auto-saves on every change; there is no Save/Cancel surface.
 //
-// Temperature and CtxIndex are doubles (Slider.Value type).
-// TopP and RepeatPenalty use NaN to represent "not set" (null in POCO).
+// Temperature and CtxIndex are doubles (Slider.Value type). TopP and
+// RepeatPenalty use NaN for "not set" (null in the POCO), as NumberBox does.
 public partial class ProfileViewModel : ObservableObject
 {
     internal static readonly int[] CtxKSteps = { 1, 2, 4, 8, 16, 32, 64, 128, 256 };
@@ -17,7 +15,6 @@ public partial class ProfileViewModel : ObservableObject
 
     private bool _isSyncing;
 
-    // Index in the Profiles list for write-back.
     public int ProfileIndex { get; set; }
 
     // ── Editable properties ──────────────────────────────────────────────────
@@ -49,9 +46,8 @@ public partial class ProfileViewModel : ObservableObject
 
     // ── State ────────────────────────────────────────────────────────────────
 
-    // Drives IsExpanded on the SettingsExpander so a freshly added profile
-    // opens automatically. Never reset — cheap signal, no behavioral impact
-    // once true.
+    // Drives IsExpanded so a freshly added profile opens. Never reset: once
+    // the expander is open, it no longer matters.
     [ObservableProperty]
     public partial bool IsNew { get; set; }
 
@@ -127,9 +123,8 @@ public partial class ProfileViewModel : ObservableObject
 
     // ── Write-back ───────────────────────────────────────────────────────────
 
-    // Trim of Name and Model applied at write time only — keeps the live
-    // VM value stable during typing (trimming the bound property would
-    // fight the cursor). The POCO stays clean.
+    // Name and Model are trimmed at write time only: trimming the bound
+    // property would fight the cursor during typing.
     private void PushToSettings()
     {
         var profiles = LlmSettingsService.Instance.Current.Profiles;
@@ -149,10 +144,9 @@ public partial class ProfileViewModel : ObservableObject
 
 // ── Converters for slider tooltips ──────────────────────────────────────────
 //
-// Defined here (not as inner classes) so they can be instantiated in XAML
-// as StaticResources inside the DataTemplate.
+// Top-level, not nested classes, so XAML can instantiate them as
+// StaticResources.
 
-// Context slider value (0..8 index) → display string (1K..256K).
 public sealed class CtxTooltipConverter : IValueConverter
 {
     public object Convert(object value, Type targetType, object parameter, string language)
@@ -167,7 +161,7 @@ public sealed class CtxTooltipConverter : IValueConverter
         => throw new NotImplementedException();
 }
 
-// Temperature slider value → 2-decimal string (avoids "0.15000000001").
+// Two decimals, so the slider's doubles never show as "0.15000000001".
 public sealed class TempTooltipConverter : IValueConverter
 {
     public object Convert(object value, Type targetType, object parameter, string language)

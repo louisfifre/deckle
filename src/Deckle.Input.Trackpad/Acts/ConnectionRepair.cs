@@ -6,8 +6,6 @@ using Deckle.Core;
 
 namespace Deckle.Input.Trackpad;
 
-// ── ConnectionRepair ─────────────────────────────────────────────────────────
-//
 // The Apple Magic Trackpad 2 driver (appleprecisiontrackpadbluetooth.inf,
 // signed, v6.1.8000.6) has a documented bug: pairing does not hold while the
 // driver sits in the driver store — the System event log shows "successfully
@@ -51,16 +49,12 @@ public static class ConnectionRepair
         }
         catch (Exception ex)
         {
-            // Win32Exception with NativeErrorCode 1223 == user declined UAC.
-            // Treated the same as any other launch failure: log + false.
             DeckleTrackpadSource.Log.RepairLaunchFailed();
             DeckleTrackpadSource.Log.RepairLaunchFailedDetail(ex.GetType().Name, ex.Message);
             return false;
         }
     }
 
-    // Writes the embedded script to the trackpad module dir, overwriting any
-    // previous copy so a Deckle update always ships the latest procedure.
     private static string ExtractScript()
     {
         string scriptPath =

@@ -40,11 +40,10 @@ public sealed partial class AmbientPage
     }
 
     // Project HuePairingService state into the Hue expander visuals.
-    // Idempotent : called on Loaded, on every BridgeChanged, and after
-    // every local pair / forget operation. The pair status text (e.g.
-    // "Waiting (30 s)") is owned by the individual handlers — this
-    // method only touches the steady-state "Paired" / "Not paired"
-    // label so it doesn't stomp transient UI mid-pair.
+    // Idempotent : called on Loaded and on every BridgeChanged. The pair
+    // status text is owned by the individual handlers — this method only
+    // touches the steady-state "Paired" / "Not paired" label so it doesn't
+    // stomp transient UI mid-pair.
     private void SyncHueBridgeUi()
     {
         var paired = HuePairingService.Instance.PairedBridge;
@@ -281,8 +280,8 @@ public sealed partial class AmbientPage
     {
         // Clearing the pairing goes through the shared destructive-confirm gate
         // (Close is the default button; the verb must be reached on purpose).
-        // Wording lives in Strings/en-US/Resources.resw under the
-        // AmbientHue_ForgetDialog_* keys; the service owns the Cancel verb.
+        // The AmbientHue_ForgetDialog_* wording is mirrored in Deckle.App; the
+        // service owns the Cancel verb.
         bool confirmed = await ConfirmationService.RequestAsync(
             this.XamlRoot,
             new ConfirmationRequest(

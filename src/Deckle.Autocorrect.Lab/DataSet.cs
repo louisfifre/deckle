@@ -3,11 +3,6 @@ using Deckle.Autocorrect;
 
 namespace Deckle.Autocorrect.Lab;
 
-// The derived artifacts the engine reads, loaded from a Data/ directory:
-// the French lexicon + its accent index (mandatory), the English guard
-// lexicon (optional), and the context pair model (optional, present only
-// after train-pairs). The static names mirror what build-data / train-pairs
-// write, so the host and the artifacts agree by convention, not config.
 internal sealed class DataSet
 {
     public const string FrenchFile = "lexicon-fr.tsv.gz";
@@ -25,11 +20,6 @@ internal sealed class DataSet
     public static string PairPath(string dataDir) => Path.Combine(dataDir, PairFile);
     public static string VerbsPath(string dataDir) => Path.Combine(dataDir, VerbsFile);
 
-    // Loads the dataset. English and the pair model are pulled only when their
-    // files exist and the caller asks for them. The pair model carries the
-    // caller's disambiguator tuning (margin, evidence, bias); null leaves the
-    // record defaults. Returns null (after printing a pointer to build-data)
-    // when the mandatory French artifact is missing.
     public static DataSet? Load(
         string dataDir,
         bool wantEnglish,

@@ -5,32 +5,17 @@ namespace Deckle.Llm.Rewrite;
 
 // ── LlmGeneralViewModel — settings manifests ──────────────────────────────────
 //
-// The declarative half of the Rewriting page's General block, kept beside the
-// ViewModel that owns the values. Only the two cleanly-composable leaves of the
-// whole page compose here, in two lists because they sit in two places on the
-// page (settings design system, decision 10: the module switch comes first on
-// the page, alone, outside any section):
+// The declarative half of the Rewriting page's General block. Only two leaves
+// compose, in two lists because they sit in two places: the module switch comes
+// first on the page, alone, outside any section; the endpoint sits in the
+// General section. The active profile, the profiles and the Ollama-model list
+// are dynamic runtime collections no composer kind models, so they keep their
+// own hand-authored sections.
 //
-//   • ModuleSwitch — Enabled, the master toggle. When off, the page MASKS
-//     (collapses) every dependent section (endpoint, shortcut slots, rules,
-//     profiles, models), driven from LlmGeneralSection off this VM's Enabled
-//     PropertyChanged — the composed toggle writes the same property, so the
-//     gating still fires. Composed into the MasterHost above the General section.
-//   • GeneralSettingsManifest — OllamaEndpoint, the local Ollama URL, a free-form
-//     string (Setting.Text, single-line — a URL, not a folder path).
-//     VisibleWhen(() => Enabled) so it collapses with the rest of the page when
-//     rewriting is off (mask-not-grey). Composed into the General section.
-//
-// Everything else on the page stays BESPOKE: the profiles, the auto-rules, the
-// Ollama-model list, and the shortcut slots are dynamic runtime collections with
-// add/remove/edit gestures no composer kind models. They keep their own sections.
-//
-// Each descriptor's default reads the POCO initializer (new LlmSettings().<Field>)
-// — the same literal LlmSettingsService persists — so each card gets a per-card
-// reset that goes active exactly when the value leaves that default. The two
-// cards reuse the SAME x:Uid the hand-authored controls carried (LlmEnableCard,
-// LlmEndpointExpander), so the composer resolves the identical Header and
-// Description from this module's .resw.
+// Each descriptor's default reads the POCO initializer (new LlmSettings().<Field>),
+// so each card's inline reset goes active exactly when the value leaves that
+// default. The keys (LlmEnableCard, LlmEndpointExpander) are the Tags
+// SettingsSearch targets.
 public partial class LlmGeneralViewModel
 {
     public IReadOnlyList<SettingDescriptor> ModuleSwitch =>
@@ -50,7 +35,7 @@ public partial class LlmGeneralViewModel
             new TextArgs(Placeholder: "http://localhost:11434/api/generate"),
             glyph: Glyphs.Endpoint,
             // Mask-not-grey: the endpoint hides with the rest of the page when
-            // rewriting is off (Louis's decision), rather than greying.
+            // rewriting is off, rather than greying.
             visibleWhen: () => Enabled,
             defaultValue: () => new LlmSettings().OllamaEndpoint),
     ];

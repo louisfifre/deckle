@@ -8,18 +8,9 @@ namespace Deckle.Catalog;
 
 public sealed partial class SettingsComposer
 {
-    // The one numeric block: an editable NumberBox over a double, with a Slider
-    // beside it when the value earns a gesture (MagnitudeArgs.Slider). Sweep the
-    // slider for a fast approximation, type the box or nudge its arrows for an
-    // exact figure, both driving one value. The two are kept in lockstep (a slider
-    // move writes the box, a box edit moves the thumb) through an internal
-    // `coordinating` guard, distinct from _syncingFromModel (which guards the
-    // model→UI direction). The caller gives no step: the grain is derived as a
-    // "nice" 1-2-5 number from the range (MagnitudeGrain.StepFor), floored at one
-    // for a count (MagnitudeArgs.Integer), so a magnitude declares only its bounds,
-    // unit and shape. The box holds the exact value; the slider thumb approximates
-    // it to the nearest detent, which is the point of the pairing — gesture for
-    // reach, field for precision.
+    // An editable NumberBox, with a Slider beside it when the value earns a
+    // gesture. The box holds the exact value; the thumb approximates it to the
+    // nearest detent.
     //
     // Writes follow the doctrine's gesture rule: once, when the gesture ends. The
     // box commits on Enter, on focus loss or on an arrow click, so its ValueChanged
@@ -28,14 +19,8 @@ public sealed partial class SettingsComposer
     // press to the release and writes it then; a keyboard or wheel step has no
     // press, so it writes at once. The box tracks the thumb live throughout, as
     // the readout.
-    //
-    // Same sync discipline as BuildToggle: seed Value before subscribing so the
-    // initial assignment does not fire ValueChanged, and a NaN-guard so a CLEARED
-    // field (NumberBox.Value goes NaN) never reaches the setter.
     private void BuildMagnitude(SettingsCard card, SettingDescriptor s)
     {
-        // Required by Setting.Magnitude, so the cast is safe; a wrong-kind args here
-        // is a manifest bug, not a runtime input, hence the hard cast.
         var args = (MagnitudeArgs)s.Args!;
 
         double step = MagnitudeGrain.StepFor(args.Minimum, args.Maximum, args.Integer);
@@ -47,18 +32,14 @@ public sealed partial class SettingsComposer
             Maximum = args.Maximum,
             SmallChange = step,
             LargeChange = step * 5,
-            // Arrows on hover and focus, in a flyout that pushes no layout — the
-            // form the Playground rows already use, kept identical here.
+            // Arrows on hover and focus, in a flyout that pushes no layout.
             SpinButtonPlacementMode = NumberBoxSpinButtonPlacementMode.Compact,
             MinWidth = 96,
             VerticalAlignment = VerticalAlignment.Center,
-            // Fixed precision (fraction digits tracking the nice step) and no
-            // grouping separators, so the readout matches the grain and a
-            // four-digit figure reads "1200", not "1,200". FractionDigits is only a
-            // minimum, so the rounder is what caps the readout at the grain: a
-            // value stored with binary dust (0.15000000000000002) still shows
-            // "0.15". It affects display only; a settings.json written before this
-            // fix keeps its dust until the next edit.
+            // No grouping, so a four-digit figure reads "1200", not "1,200".
+            // FractionDigits is only a minimum, so the rounder is what caps the
+            // readout at the grain: a value stored with binary dust
+            // (0.15000000000000002) still shows "0.15".
             NumberFormatter = new Windows.Globalization.NumberFormatting.DecimalFormatter
             {
                 IntegerDigits = 1,
@@ -87,11 +68,10 @@ public sealed partial class SettingsComposer
             }
             : null;
 
-        // Internal lockstep guard: a programmatic Value set on either control fires
-        // its ValueChanged, which would write the other and bounce back. This flag
-        // makes the second write a no-op, so one user gesture updates both once. It
-        // is separate from _syncingFromModel: that guards model→UI (the refresher),
-        // this guards slider↔box regardless of direction.
+        // A programmatic Value set on either control fires its ValueChanged, which
+        // would write the other and bounce back; this flag makes the echo a no-op.
+        // Separate from _syncingFromModel, which guards model→UI: this guards
+        // slider↔box in either direction.
         bool coordinating = false;
 
         if (slider is not null)
@@ -131,7 +111,7 @@ public sealed partial class SettingsComposer
         {
             if (coordinating) return;
             // A cleared field surfaces as NaN; swallow it so it never persists or
-            // moves the thumb, the same guard the VM's own NaN checks apply.
+            // moves the thumb.
             if (double.IsNaN(box.Value)) return;
             // A figure typed finer than the grain (0.1534 on a 0.01 grain) would
             // display rounded while the model kept the longer value, so what is

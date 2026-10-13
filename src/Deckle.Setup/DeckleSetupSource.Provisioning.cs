@@ -5,7 +5,7 @@ namespace Deckle.Setup;
 
 public sealed partial class DeckleSetupSource
 {
-    // ── Native runtime download (InstallingPage) ──────────────────────────────
+    // ── Native runtime download ───────────────────────────────────────────────
 
     [Event(EvtNativeInstalled,
            Level = EventLevel.Informational,
@@ -97,7 +97,7 @@ public sealed partial class DeckleSetupSource
             WriteEvent(EvtNativeCancelled);
     }
 
-    // ── Model item download (InstallingPage) ──────────────────────────────────
+    // ── Install items (InstallingPage) ────────────────────────────────────────
 
     [Event(EvtItemInstalled,
            Level = EventLevel.Informational,

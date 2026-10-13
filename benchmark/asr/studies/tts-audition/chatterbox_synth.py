@@ -10,8 +10,8 @@ TemplateProcessing post-processor reproduces exactly the id stream the original
 HF AutoTokenizer emits (<EXAGGERATION> <s> ...text... </s> <START_SPEECH>
 <START_SPEECH>), so we stay off `transformers` with no behavioural drift.
 
-The autoregressive LM is the fp16 export (NOT q4 — project no-Q4 ASR/TTS
-doctrine; fp16 is the high-precision variant, not a 4-bit quantization).
+The autoregressive LM is the fp16 export, not q4: speech models run in BF16 or
+FP16, and a 4-bit quantization serves smoke tests only.
 Execution provider is per-session via DECKLE_TTS_EP (cpu|dml): the three
 transformer/encoder graphs ride DirectML when asked, but the conditional_decoder
 is ConvTranspose-heavy and is ALWAYS pinned to CPU (the AMD DML 80070057 wall has
@@ -26,7 +26,7 @@ from onnx-community/chatterbox-multilingual-ONNX. Outputs land in the gitignored
 run dir. The Perth watermark is deliberately dropped (audition, not distribution).
 
 Run with the dedicated venv:
-    benchmark\\.venv-chatterbox\\Scripts\\python.exe benchmark\\benches\\tts-audition\\chatterbox_synth.py
+    benchmark\\.venv-chatterbox\\Scripts\\python.exe benchmark\\asr\\studies\\tts-audition\\chatterbox_synth.py
 """
 
 from __future__ import annotations
@@ -66,11 +66,9 @@ NUM_KV_HEADS = 16
 HEAD_DIM = 64
 LANG = "fr"
 
-# Decode recipe — resemble-ai PRODUCTION defaults (sampled), not the onnx-community
-# DEMO (greedy argmax, 256 cap). The demo caused the dual failure we heard: long
-# sentences hit the 256 ceiling (trailing silence) while short ones argmax'd onto
-# STOP too early (clipped). Sampling + a ~1000-token budget fixes both.
-REPETITION_PENALTY = 1.4  # research #355: pre-arm against stutter on long text (was 1.2)
+# resemble-ai's production decode defaults; see the module docstring for why
+# not the onnx-community demo.
+REPETITION_PENALTY = 1.4  # issue #355: guards long text against stutter
 MAX_NEW_TOKENS = 1000
 TEMPERATURE = 0.8
 TOP_P = 0.95
@@ -79,13 +77,9 @@ SEED = 9527  # reproducible sampled decode
 
 DEFAULT_EXAGGERATION = 0.5
 
-# ── Quality refinement (post-listen) ───────────────────────────────────────
-# Louis kept the FR-referenced Chatterbox (Pierre/Jessica). Research (issue
-# #355): on the MULTILINGUAL model `exaggeration` is near-inert (emotion_adv_fc
-# crushed by RMSNorm) — so FIX it at 0.5 and sweep TEMPERATURE, the real
-# flatness/naturalness lever (0.5 flat … 0.7 livelier; below 0.5 → robotic).
-# References are silence-trimmed at load. The Piper clip is a synthetic-timbre
-# ceiling; a real human FR clip would be the upper bound (open question for Louis).
+# On the multilingual model `exaggeration` is near-inert (issue #355: RMSNorm
+# crushes emotion_adv_fc), so it stays fixed and temperature is the
+# naturalness lever.
 EXAGGERATION = 0.5
 REF_PIERRE = OUT / "onnx_piper_upmc_s1_01_neutre.wav"
 REF_JESSICA = OUT / "onnx_piper_upmc_s0_01_neutre.wav"
@@ -118,10 +112,8 @@ def repetition_penalty(generated: np.ndarray, scores: np.ndarray, penalty: float
 def sample_token(logits: np.ndarray, rng: np.random.Generator, *, temperature: float) -> int:
     """Temperature + top-k + top-p (nucleus) sampling over one step's logits.
 
-    `logits` is the 1-D, already-repetition-penalized score vector. This replaces
-    greedy argmax — the production decode that stops the long-sentence runaway
-    and the short-sentence premature STOP. `temperature` is per-call so a "flat
-    voice" pass can lower it without touching the module default.
+    `logits` is the 1-D, already-repetition-penalized score vector.
+    `temperature` is per call so a sweep can vary it.
     """
     z = logits.astype(np.float64) / temperature
     if TOP_K and TOP_K < z.size:
@@ -146,7 +138,7 @@ def build_sessions() -> dict[str, ort.InferenceSession]:
     transformer/encoder graphs can ride DirectML; conditional_decoder is
     ConvTranspose-bearing and is force-pinned to CPU (AMD DML wall)."""
     so = ort.SessionOptions()
-    so.intra_op_num_threads = 0  # let ORT pick; CPU-bound, real-time-ish
+    so.intra_op_num_threads = 0  # 0 lets ORT pick
     non_ct = _harness.providers(convtranspose=False)
     ct = _harness.providers(convtranspose=True)
     sess = {
@@ -170,7 +162,7 @@ def encode_reference(sess: dict, ref_wav: Path):
       speaker_features [1,F,80]  -> decoder `speaker_features`
     """
     audio, _ = librosa.load(str(ref_wav), sr=S3GEN_SR)
-    audio, _ = librosa.effects.trim(audio, top_db=30)  # drop leading/trailing silence
+    audio, _ = librosa.effects.trim(audio, top_db=30)
     audio = audio[np.newaxis, :].astype(np.float32)
     cond_emb, prompt_token, speaker_embeddings, speaker_features = sess["speech_encoder"].run(
         None, {"audio_values": audio})
@@ -256,8 +248,8 @@ def main() -> int:
     log(f"Output: {OUT}\nModel dir: {MODEL_DIR}")
     tokenizer = Tokenizer.from_file(str(MODEL_DIR / "tokenizer.json"))
 
-    # Texts read at runtime (public + private corpus). We render a small fixed
-    # comparison set across several reference voices to isolate the ACCENT.
+    # A small fixed comparison set across several reference voices isolates
+    # the accent.
     texts = {**_harness.PUBLIC_SENTENCES, **_harness.corpus_sentences()}
     comparison = [(sid, texts[sid]) for sid in COMPARISON_SIDS if sid in texts]
     missing = [sid for sid in COMPARISON_SIDS if sid not in texts]
@@ -271,10 +263,7 @@ def main() -> int:
     setup_s = time.perf_counter() - t0
     log(f"  sessions ready in {setup_s:.1f}s")
 
-    # Temperature sweep on the two FR refs Louis liked (Pierre, Jessica). Refs are
-    # silence-trimmed and encoded once, then reused across temperatures.
-    # exaggeration is INERT on the multilingual model (#355) -> fixed; flatness
-    # comes from TEMPERATURE.
+    # Each reference is encoded once, then reused across temperatures.
     encoded: dict[Path, tuple] = {}
     tot_comp = tot_aud = 0.0
     tot_n = 0

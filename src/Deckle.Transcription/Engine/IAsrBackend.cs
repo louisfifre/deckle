@@ -6,72 +6,48 @@ namespace Deckle.Transcription;
 
 // ── IAsrBackend ──────────────────────────────────────────────────────────────
 //
-// Contract for an interchangeable ASR inference engine. Implementations live
-// in child modules (Deckle.Transcription.Whisper today; Deckle.Transcription
-// .Voxtral planned). The orchestrator (TranscriptionEngine in this module)
-// holds one IAsrBackend instance, never touches a backend's internals, and
-// drives it through the four method signatures below.
+// Contract for an interchangeable ASR inference engine, implemented in child
+// modules (Deckle.Transcription.Whisper). The orchestrator holds one instance
+// and never touches its P/Invoke, native callbacks or C structs. "Backend" is
+// the ML sense (llama.cpp, whisper.cpp): the swappable inference
+// implementation, not a generic service or provider abstraction.
 //
-// "Backend" is borrowed from the established ML/AI vocabulary (llama.cpp,
-// whisper.cpp, transformers all call swappable inference implementations
-// "backends"). It names the interchangeable inference boundary; it is
-// not a generic service or provider abstraction.
-//
-// Threading. Every method may be called from a non-UI thread. LoadModelAsync
-// is called once per session (lazy, on first hotkey); UnloadModel can fire
-// from a Timer; TranscribeAsync is called from the recording worker. The
-// implementation owns its internal serialization — the orchestrator does
-// not lock around the backend calls (lifetime aside).
+// Threading. Every method may be called from a non-UI thread: LoadModelAsync
+// from a thread-pool prime, UnloadModel from the idle timer, TranscribeAsync
+// from the worker or a thread-pool task. The implementation owns its internal
+// serialization; the orchestrator does not lock around backend calls
+// (lifetime aside).
 public interface IAsrBackend : IDisposable
 {
-    // Stable identifier for telemetry and logs ("whisper", "voxtral", ...).
-    // Not a display name — the Settings UI labels backends from its own
-    // catalog.
+    // Stable identifier for telemetry and logs ("whisper", ...). Not a display
+    // name: the Settings UI labels backends from its own catalog.
     string Name { get; }
 
-    // True once a model is loaded in memory and ready to transcribe. False
-    // before the first LoadModelAsync and after each UnloadModel. Reading
-    // this is the cheapest path the orchestrator has to decide whether to
-    // pay the cold-load cost on the next hotkey.
     bool IsModelLoaded { get; }
 
-    // Compute device that ended up serving the loaded model. Set by
-    // LoadModelAsync; null when no model is loaded. The vocabulary is
-    // backend-defined ("CPU", "Vulkan", "CUDA", "Metal", "ROCm", ...).
-    // Surfaced in telemetry and the LogWindow header line.
+    // Backend-defined vocabulary ("CPU", "Vulkan", "CUDA", ...); null when no
+    // model is loaded.
     string? DetectedAccelerator { get; }
 
-    // Loads the model file referenced by the host's TranscriptionSettings.
-    // Synchronous wall time is captured in the result for the latency payload.
-    // Failure paths return ModelLoadResult.Success=false with a stable
-    // ErrorReason ("file_not_found", "init_failed", ...) — exceptions are
-    // reserved for invariant breaches.
+    // Failure returns Success=false with a stable ErrorReason
+    // ("file_not_found", "init_failed", ...); exceptions are reserved for
+    // invariant breaches.
     Task<ModelLoadResult> LoadModelAsync(CancellationToken ct);
 
-    // Frees the model and any GPU memory it holds. Idempotent — calling on
-    // an already-unloaded backend is a no-op. Called by the idle timer and
-    // by Dispose.
+    // Idempotent. Called by the idle timer and by Dispose.
     void UnloadModel();
 
-    // Runs inference on a 16-kHz mono float PCM buffer and returns the
-    // transcribed segments. Behaviour notes:
+    // Runs inference on a 16 kHz mono float PCM buffer.
     //
-    //   • Segments stream through `segmentSink` as they are produced. The
-    //     callback fires synchronously on the backend's inference thread —
-    //     subscribers are responsible for marshaling. The same segments
-    //     also appear in the final TranscriptionResult; the sink channel
-    //     is for live UI/log updates, not for the consumer of the result.
-    //   • `ct` cancels mid-inference; the backend wires it to whatever
-    //     native abort hook it provides. Cancellation is observable as
-    //     TranscriptionResult.Aborted=true rather than an exception, so
-    //     the orchestrator can still claim partial segments already emitted.
-    //   • Returns the full assembled text + per-segment metrics + wall-clock
-    //     phase timings the orchestrator forwards to the latency payload.
-    //   • `context` (optional) supplies model-agnostic priming for this call —
-    //     used by the streaming socle to carry continuity across separate
-    //     per-utterance calls. Null (the default) means "no priming beyond the
-    //     backend's own configured settings", so the monolithic path and any
-    //     existing caller are unaffected.
+    //   • `segmentSink` fires synchronously on the backend's inference thread,
+    //     so subscribers marshal. The same segments also appear in the final
+    //     TranscriptionResult; the sink is for live UI/log updates.
+    //   • `ct` cancels mid-inference through the backend's native abort hook.
+    //     Cancellation shows as TranscriptionResult.Aborted=true, not as an
+    //     exception, so the caller can still keep the partial segments.
+    //   • `context` carries per-call priming, used by the streaming pipeline
+    //     to keep continuity across per-utterance calls. Null means no priming
+    //     beyond the backend's configured settings.
     Task<TranscriptionResult> TranscribeAsync(
         ReadOnlyMemory<float> pcmSamples,
         Action<TranscriptionSegment>? segmentSink,
@@ -81,29 +57,22 @@ public interface IAsrBackend : IDisposable
 
 // ── TranscriptionContext ─────────────────────────────────────────────────────
 //
-// Optional per-call priming, model-agnostic by design so the contract outlives
-// Whisper. The streaming pipeline builds it to carry continuity across the
-// separate backend calls of consecutive utterances (Whisper has no cross-call
-// context — carry_initial_prompt and no_context both stay WITHIN one call).
+// Optional per-call priming, model-agnostic so the contract outlives Whisper.
+// The streaming pipeline builds it to carry continuity across the separate
+// backend calls of consecutive utterances (Whisper has no cross-call context:
+// carry_initial_prompt and no_context both stay within one call).
 //
-//   • PrimingText — prior text to prime the decoder with. The Whisper backend
-//     maps it onto initial_prompt (overriding the configured stylistic prompt
-//     for that call); a future backend may treat it as conversation history or
-//     ignore it. Null keeps the configured prompt; empty explicitly suppresses
-//     priming for an independent file.
-//   • EmitPreamble — whether this call logs its one-time configuration preamble
-//     (the "Transcribing" milestone, the resolved params, the prompt). True for
-//     a standalone call (monolithic) and for the FIRST utterance of a streaming
-//     take; false for the rest, so a long streaming dictation logs the
-//     params/prompt once instead of once per utterance (the values are identical
-//     across the take). Pure observability — it changes nothing the backend
-//     computes. Defaults true so the monolithic path and any existing caller are
-//     unaffected.
-//   • TimelineOffsetSec — where this call's audio sits on the whole recording's
-//     timeline. The backend adds it to the per-segment t0/t1 it logs, so a
-//     streaming segment reads its true position in the take ("12.4→17.2 s")
-//     instead of restarting from zero each utterance. Defaults 0 → a standalone
-//     call logs absolute-from-start times exactly as before.
+//   • PrimingText — the Whisper backend maps it onto initial_prompt,
+//     overriding the configured stylistic prompt for that call. Null keeps the
+//     configured prompt; empty explicitly suppresses priming for an
+//     independent file.
+//   • EmitPreamble — whether this call logs its configuration preamble (the
+//     "Transcribing" milestone, the resolved params, the prompt). False for
+//     every streaming utterance after the first, so a take logs them once.
+//     Observability only; it changes nothing the backend computes.
+//   • TimelineOffsetSec — where this call's audio sits on the whole
+//     recording's timeline. The backend adds it to the segment t0/t1 it logs,
+//     so a streaming segment reads its true position in the take.
 public sealed record TranscriptionContext(
     string? PrimingText,
     bool EmitPreamble = true,
@@ -111,11 +80,8 @@ public sealed record TranscriptionContext(
 
 // ── ModelLoadResult ──────────────────────────────────────────────────────────
 //
-// Outcome of LoadModelAsync. Success carries the wall-clock load time so the
-// orchestrator can populate the cold-load field in the latency payload; the
-// detected accelerator surfaces in logs. Failure carries a stable reason
-// string the orchestrator maps to a localized user message — the backend
-// stays free of UI vocabulary.
+// Failure carries a stable reason string the orchestrator maps to a localized
+// user message, so the backend stays free of UI vocabulary.
 public sealed record ModelLoadResult(
     bool Success,
     long LoadDurationMs,
@@ -124,19 +90,14 @@ public sealed record ModelLoadResult(
 
 // ── TranscriptionResult ──────────────────────────────────────────────────────
 //
-// Final payload of a TranscribeAsync call. Carries the assembled segments
-// (same instances streamed via segmentProgress), the joined full text the
-// pipeline pushes to clipboard, and the wall-clock breakdown the latency
-// payload needs.
-//
+//   • Segments are the same segments streamed through segmentSink.
 //   • TotalDurationMs covers the entire backend call (setup + inference).
 //   • InitDurationMs is the pre-inference setup window (mel computation,
 //     GPU upload, etc.) — 0 when the backend cannot distinguish phases.
 //   • Aborted=true means cancellation or backend-internal abort (e.g. a
 //     repetition guard) fired; the segments already produced are still
 //     usable, the consumer decides whether to keep them.
-//   • ResultCode is a backend-specific status surfaced for telemetry only.
-//     0 means success; non-zero is interpretation-free here.
+//   • ResultCode is a backend-specific status; 0 means success.
 public sealed record TranscriptionResult(
     IReadOnlyList<TranscriptionSegment> Segments,
     string FullText,

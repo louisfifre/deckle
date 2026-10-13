@@ -94,9 +94,8 @@ public sealed partial class OrchestrationPage : Page
         }
     }
 
-    // Scan Steam and the chosen folders. The button greys while the scan runs
-    // so a second click cannot start a parallel one; the outcome is the list
-    // itself, or the "Nothing new found" line when nothing was added.
+    // The button greys while the scan runs so a second click cannot start a
+    // parallel one.
     private async void OnScanClick(object sender, RoutedEventArgs e)
     {
         ScanButton.IsEnabled = false;

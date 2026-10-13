@@ -7,20 +7,17 @@ namespace Deckle.Audio;
 // Speaker render primitive — the symmetric counterpart of MicrophoneCapture.
 // Plays a finished mono float [-1, 1] clip to the default render device via the
 // Win32 winmm waveOut API (the same MME family the capture path uses for
-// waveIn). No managed audio library is pulled in; the WAVEFORMATEX / WAVEHDR
-// structs and the waveOut* P/Invokes are shared from Deckle.Core.
+// waveIn).
 //
 // Single-clip, blocking: Play opens the device, writes one buffer, and blocks
 // until the driver signals WHDR_DONE — or the cancellation token fires, in
 // which case waveOutReset aborts the in-flight clip. The caller runs Play on a
-// background thread and serializes calls (SpeechEngine cancels the previous
-// play before starting a new one).
+// background thread and cancels the previous play before starting a new one.
 //
 // Returns true when a clip was handed to the driver (played to completion or
 // cancelled mid-flight), false when the render device could not be opened —
 // the caller cannot otherwise tell a silent device-open failure from success,
-// since both leave no sound. The open failure is also logged here under
-// [AUDIO]; the bool lets the speech narrative surface it under [SPEECH].
+// since both leave no sound.
 //
 // Format is carried per call: TTS output is 24 kHz, NOT the 16 kHz the capture
 // stack is fixed to.
@@ -92,7 +89,6 @@ public static class SpeakerOutput
         {
             // Order matters: reset flushes any still-playing buffer so the
             // driver no longer owns the header, THEN we unprepare and free it.
-            // reset → unprepare → close device → free memory → close event.
             NativeMethods.waveOutReset(hWaveOut);
             if (prepared)
                 NativeMethods.waveOutUnprepareHeader(hWaveOut, hdrPtr, hdrSize);

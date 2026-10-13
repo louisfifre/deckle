@@ -3,8 +3,6 @@ using System.Net.Http;
 
 namespace Deckle.Anytype;
 
-// ── BackendHealthProbe ───────────────────────────────────────────────────────
-//
 // Answers one question: is the Anytype backend's REST listener up? The health
 // signal is `GET /docs/openapi.json` returning 200 — unauthenticated, and chosen
 // over a port ping or a PID check because the listener only binds after the
@@ -24,8 +22,8 @@ internal interface IBackendHealthProbe : IDisposable
 
 public sealed class BackendHealthProbe : IBackendHealthProbe
 {
-    // The headless backend's fixed loopback address (frozen 2026-06-18). Desktop
-    // Anytype uses 31007-31009; the headless REST default is 31012.
+    // The headless backend's fixed loopback address. Desktop Anytype uses
+    // 31007-31009; the headless REST default is 31012.
     public const string DefaultBaseUrl = "http://127.0.0.1:31012";
 
     private const string HealthPath = "/docs/openapi.json";
@@ -45,9 +43,8 @@ public sealed class BackendHealthProbe : IBackendHealthProbe
         };
     }
 
-    // True when the backend answers 200 on the health endpoint. Any failure —
-    // connection refused, timeout, non-200 — means "not (yet) up" and returns
-    // false; the probe never throws.
+    // Any failure — connection refused, timeout, non-200 — means "not (yet) up"
+    // and returns false; only the caller's cancellation propagates.
     public async Task<bool> IsHealthyAsync(CancellationToken ct = default)
     {
         long startTicks = Stopwatch.GetTimestamp();
@@ -63,8 +60,7 @@ public sealed class BackendHealthProbe : IBackendHealthProbe
         }
         catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException && !ct.IsCancellationRequested)
         {
-            // Connection refused (backend down) or our own probe timeout (backend
-            // not yet bound). Status 0 marks "no HTTP response".
+            // Status 0 marks "no HTTP response".
             double elapsedMs = Stopwatch.GetElapsedTime(startTicks).TotalMilliseconds;
             DeckleAnytypeSource.Log.BackendHealthProbed(false, 0, elapsedMs);
             return false;

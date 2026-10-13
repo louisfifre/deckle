@@ -34,8 +34,6 @@ public sealed partial class DeckleLightingSource
         if (IsEnabled()) WriteEvent(EvtBridgePaired);
     }
 
-    // A …Detail already exists (the pair-result mirror with username), so this
-    // milestone mirror is named …Detail2 per the Verbose/Info separation rule.
     [Event(EvtBridgePairedDetail2,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Lifecycle,

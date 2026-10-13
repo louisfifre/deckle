@@ -5,8 +5,8 @@ namespace Deckle.Diagnostics.Logging;
 
 // A filter is an inclusion lens over EventEntry. Empty dimensions accept every
 // value; values inside one dimension are OR-ed, while active dimensions are
-// AND-ed. The type is UI-agnostic so the live viewer and app.jsonl settings can
-// own independent instances without sharing state or persistence policy.
+// AND-ed. The type is UI-agnostic so each consumer owns an independent
+// instance without sharing state or persistence policy.
 public sealed class LogFilterSelection
 {
     private readonly HashSet<EventLevel> _severities = [];

@@ -12,11 +12,10 @@ public sealed record McpClientProfile(
     string TokenSecretName,
     string TokenEnvVar);
 
-// The legacy claude/codex surfaces still mirror what the stdio era served. New
-// schema-admin rides the same authenticated-bearer routing without widening
-// either legacy contract. Custom clients are declared by their own MCP adapter
-// and composed by Deckle.App. Environment-variable names are wire contracts
-// because external clients read them directly.
+// Schema administration is its own surface so the claude and codex contracts
+// stay unchanged. Custom clients are declared by their own MCP adapter and
+// composed by Deckle.App. Environment-variable names are wire contracts because
+// external clients read them directly.
 public static class McpClients
 {
     private static readonly McpSurface ProjectManagementSurface = new(

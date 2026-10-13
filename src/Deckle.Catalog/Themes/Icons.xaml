@@ -92,8 +92,8 @@
     <x:String x:Key="Icon.List">&#xE71D;</x:String>
 
     <!-- ─── Lightbulb variants ──────────────────────────────────── -->
-    <!-- E7E8 is Lightbulb (filled) ; used as autostart card glyph
-         (Icon.Launch alias) and as the Hue "Identify lamp" button. -->
+    <!-- E7E8, the filled lightbulb, also backs Icon.Launch; this key is for
+         sites where the lightbulb itself is the intent. -->
     <x:String x:Key="Icon.LightbulbFilled">&#xE7E8;</x:String>
 
     <!-- ─── Transport cluster (Playground HUD page) ──────────────── -->

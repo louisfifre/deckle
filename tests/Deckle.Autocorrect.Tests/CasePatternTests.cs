@@ -36,7 +36,6 @@ public class CasePatternTests
     [Fact]
     public void MixedCasePassesThroughAsIs()
     {
-        // An irregular shape is left to the lowercase form — conservative.
         Assert.Equal("français", CasePattern.Apply("fRaNcAis", "français"));
     }
 

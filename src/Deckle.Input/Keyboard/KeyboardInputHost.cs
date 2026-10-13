@@ -12,8 +12,7 @@ namespace Deckle.Input;
 // RIDEV_INPUTSINK (events regardless of focus), plus a WH_MOUSE_LL hook for
 // button and wheel messages that Windows may synthesize from Precision Touchpad
 // interactions instead of surfacing as raw mouse reports. No
-// RIDEV_DEVNOTIFY (presence is irrelevant here — we observe transitions,
-// not which device produced them).
+// RIDEV_DEVNOTIFY: device arrival and removal are irrelevant here.
 //
 // The keyboard stays on Raw Input, never on WH_KEYBOARD_LL: a low-level hook adds
 // system-wide latency to every keystroke and Windows silently removes it on
@@ -35,10 +34,8 @@ namespace Deckle.Input;
 // Separate from RawInputHost by design: that host carries the touchpad
 // contact stream at report cadence feeding an injection path; this one
 // observes keyboard, pointer and wheel activity. Mixing them on one window
-// would couple two unrelated lifecycles. The structure (HWND_MESSAGE
-// window, WndProc rooted in a field, dedicated thread, startup handshake)
-// mirrors RawInputHost exactly; it reuses RawInputHost.NowMs so every event
-// in the module shares one host clock.
+// would couple two unrelated lifecycles. It reuses RawInputHost.NowMs so
+// every event in the module shares one host clock.
 //
 // Focus signals come from two WinEvent hooks installed on this same
 // thread (SetWinEventHook is WINEVENT_OUTOFCONTEXT, so its callbacks ride
@@ -103,19 +100,14 @@ public sealed partial class KeyboardInputHost : IDisposable, IKeyboardInputHost
             PublishWheelInteraction);
     }
 
-    /// <summary>Raised on the input thread for every non-overrun keyboard transition.</summary>
     public event Action<KeyboardKeyEvent>? KeyReceived;
 
-    /// <summary>Raised on the input thread when any mouse or touchpad button transitions to down.</summary>
     public event Action? PointerInteraction;
 
-    /// <summary>Raised on the input thread for every mouse-wheel transition (vertical or horizontal).</summary>
     public event Action<MouseWheelEvent>? WheelObserved;
 
-    /// <summary>Raised on the input thread when the foreground window or focused element changes.</summary>
     public event Action? FocusChanged;
 
-    /// <summary>Raised on the input thread when a drain request reaches the pump (see <see cref="RequestDrain"/>).</summary>
     public event Action? DrainRequested;
 
     public void SetWheelInterceptor(IWheelInterceptor? interceptor) =>

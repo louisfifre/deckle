@@ -7,12 +7,12 @@ using Xunit;
 
 namespace Deckle.Autocorrect.Tests;
 
-// The maintainer's mining gesture: mine mistouch families off the collected
-// typed-sentence corpus and write the review artifacts next to it — the markdown
-// the maintainer reads (the one-time review gate before family adoption turns
-// automatic) and the JSON the routing wiring will consume once reviewed. Wires
-// the REAL lexicons like the replay gesture; read-only over the corpus, no
-// model, seconds. A silent skip when corpus or lexicon is absent.
+// The mining gesture: mine mistouch families off the collected typed-sentence
+// corpus and write the review artifacts next to it — the markdown a reviewer
+// reads and the mined JSON. The live engine reads only the approved families of
+// MistouchFamilyStore, never these artifacts. Wires the REAL lexicons like the
+// replay gesture; read-only over the corpus, no model. A silent skip when corpus
+// or lexicon is absent.
 [Trait("Category", "maintenance")]
 public sealed class MistouchMiningMaintenanceTests
 {

@@ -41,10 +41,8 @@ public sealed class VadService : IDisposable
 
         if (File.Exists(modelPath))
         {
-            // Time the hash verify + ONNX session construction together: both run
-            // at most once per service, on the first streaming take's critical path.
-            // Pure observability — the timer wraps the existing operations and does
-            // not reorder File.Exists / FileMatchesExpectedSha / new SileroVad.
+            // Hash verify and session construction run at most once per service,
+            // on the first streaming take's critical path; timed together.
             var sw = Stopwatch.StartNew();
             if (FileMatchesExpectedSha(modelPath))
             {
@@ -78,8 +76,6 @@ public sealed class VadService : IDisposable
             try { File.Delete(modelPath); } catch { /* best effort */ }
         }
 
-        // Model absent — provision it once in the background; this take runs
-        // untrimmed, a later take picks the model up.
         if (!_downloadKicked)
         {
             _downloadKicked = true;
@@ -121,9 +117,8 @@ public sealed class VadService : IDisposable
         }
     }
 
-    // True when the on-disk file hashes to the pinned SHA-256. Reading + hashing a
-    // ~2 MB file is milliseconds and happens at most once per service (the loaded
-    // session is cached), so it is cheap insurance that the file on disk is exactly
+    // Runs at most once per service (the loaded session is cached), so hashing a
+    // file of a couple of MB is cheap insurance that the file on disk is exactly
     // the build we expect — not an older version or a corrupt copy.
     private static bool FileMatchesExpectedSha(string modelPath)
     {

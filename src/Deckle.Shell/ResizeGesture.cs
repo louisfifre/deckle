@@ -1,25 +1,21 @@
 namespace Deckle.Shell;
 
-// Pure, Win32-free state machine behind ResizeCoalescer. Folded out so the one
+// Pure, Win32-free state machine behind ResizeCoalescer, folded out so the one
 // decision it makes — when a resize has "settled" and a recompute is due — is
-// unit testable without a real HWND or message pump (same split as HudWindow's
-// ProximityRollupAggregator). ResizeCoalescer feeds it the raw window messages
-// and turns a non-null settlement into the recompute callback plus the trace.
+// unit testable without a real HWND or message pump.
 //
-// The model in one paragraph: a user drag is bracketed by WM_ENTERSIZEMOVE …
-// WM_EXITSIZEMOVE, with a burst of WM_SIZE in between. While that gesture is in
-// flight IsResizing is true and every WM_SIZE is swallowed — that is the
-// per-frame recompute the window would otherwise pay — counted only so the
-// trace can report how many frames were coalesced. The single settlement is
-// emitted on EXIT. A WM_SIZE arriving with no gesture in flight (maximize, snap,
-// programmatic SetWindowPos — none of which enter the modal loop) is the safety
-// net: it settles immediately, since no EXIT will ever come to close it.
+// A user drag is bracketed by WM_ENTERSIZEMOVE … WM_EXITSIZEMOVE, with a burst
+// of WM_SIZE in between. While that gesture is in flight IsResizing is true and
+// every WM_SIZE is swallowed, counted only so the trace can report how many
+// frames were coalesced; the single settlement is emitted on EXIT. A WM_SIZE
+// arriving with no gesture in flight (maximize, snap, programmatic SetWindowPos
+// — none of which enter the modal loop) settles immediately, since no EXIT
+// will ever come to close it.
 internal sealed class ResizeGesture
 {
     public bool IsResizing { get; private set; }
 
-    // Coalesced WM_SIZE count for the gesture in flight. Read by ResizeCoalescer
-    // to index the per-frame Verbose trace; the settled rollup reads it too.
+    // Coalesced WM_SIZE count for the gesture in flight.
     public int Frames => _frames;
 
     private bool _sizedDuringGesture;
@@ -46,10 +42,7 @@ internal sealed class ResizeGesture
         return new ResizeSettlement(ResizeTrigger.Gesture, _frames);
     }
 
-    // A WM_SIZE landed (the caller has already filtered out the minimize case).
-    // Inside a gesture: swallow and count — the recompute is deferred to EXIT.
-    // Outside a gesture: settle now as "direct" (the safety net for maximize,
-    // snap and programmatic resizes that never enter the modal loop).
+    // The caller has already filtered out the minimize case.
     public ResizeSettlement? Size()
     {
         if (IsResizing)

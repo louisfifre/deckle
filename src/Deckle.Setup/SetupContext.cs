@@ -6,25 +6,12 @@ using Deckle.Transcription;
 
 namespace Deckle.Setup;
 
-// ── SetupContext ─────────────────────────────────────────────────────────────
-//
-// State shared across the wizard's pages. Each page reads its initial
-// state from here, mutates user choices, and (in the install page) writes
-// back the per-item results. The Window observes this object to enable/
-// disable Next, format the summary on the final page, etc.
-//
-// Lives in Deckle.Setup itself — the wizard module owns its own runtime
-// state. SetupContext used to sit in Deckle.Transcription but the
-// only consumers are the wizard pages here, and keeping it in the
-// transcription module forced parent ↔ child cycles once Whisper-specific
-// catalogs (SpeechModels) migrated to Deckle.Transcription.Whisper.
-//
-// Plain POCO — no Action delegates for navigation. Pages call
-// `Frame.Navigate(typeof(NextPage), context)` directly, which keeps the
-// setup classes free of UI types.
+// State shared across the wizard's pages: the user's choices and the per-item
+// install results. A plain POCO with no UI types and no navigation delegates;
+// pages navigate the window's frame themselves.
 public sealed class SetupContext
 {
-    // Where the data root lives. In the normal in-app wizard this is whatever
+    // Where the data root lives. In the in-app wizard this is whatever
     // AppPaths resolved at start-up (LOCALAPPDATA or env-var override) and
     // never changes. In install mode the Folders page overwrites it with the
     // user's data-folder choice, so the Choices recap shows the real target.
@@ -74,40 +61,28 @@ public sealed class SetupContext
     // ── Relocate mode (the wizard as data mover) ────────────────────────────
     //
     // True in the dedicated `--relocate-data` process, which runs RelocatePage
-    // alone: copy the live data root into DataDirectory (reused as the target),
-    // flip DECKLE_DATA_ROOT, relaunch plain with the old root's cleanup. The
-    // copy cannot run inside the normal app — its sinks and engines hold files
-    // open under the very root being moved.
+    // alone; DataDirectory is reused as the move's target.
     public bool RelocateMode { get; init; }
 
-    // The two folders the Folders page collects. App = binaries (per user),
-    // Data = models/settings/logs, relocatable off a saturated C:.
     public string InstallDirectory { get; set; } = Deckle.Install.InstallPaths.DefaultInstallDir;
     public string DataDirectory { get; set; } = Deckle.Install.InstallPaths.DefaultDataDir;
 
-    // The module selection the install plan is built from. Seeded by
-    // SetupWindow from the recorded presence choice (or the full catalogue
-    // when none is recorded), then overwritten by the Modules page when the
-    // user commits a new selection.
+    // The module selection the install plan is built from. Seeded by the
+    // wizard host from the recorded presence choice (or the full catalogue
+    // when none is recorded), then overwritten by the Modules page.
     public IReadOnlySet<string> SelectedModules { get; set; } =
         new HashSet<string>(StringComparer.Ordinal);
 
-    // Speech model the user picked in the Choices page. Null until the
-    // wizard page initializes it from the active backend's catalog —
-    // SetupContext itself does not couple to any specific backend, so it
-    // never holds a hard reference to a Whisper or Voxtral default.
+    // Null until the wizard host seeds it: SetupContext stays backend-agnostic
+    // and holds no ASR catalog default.
     public ModelEntry? SelectedModel { get; set; }
 
-    // True after the user has clicked Install on the Choices page — gates
-    // the transition to the Installing page.
     public bool ChoicesConfirmed { get; set; }
 
-    // Per-item results captured by the Installing page, displayed on the
-    // Summary page. Populated in the install plan's order.
+    // Per-item results captured by the Installing page, in the install plan's
+    // order.
     public List<InstallResult> Results { get; } = new();
 
-    // True when every Results entry is Success — drives the Summary page's
-    // success vs error rendering.
     public bool AllSucceeded
     {
         get
@@ -118,12 +93,8 @@ public sealed class SetupContext
     }
 }
 
-// ── InstallResult ────────────────────────────────────────────────────────────
-//
-// One row on the Summary page. Captures what the wizard tried, whether
-// it worked, and (on failure) the human-readable reason. Bytes is the
-// installed size after success — null for native runtime entries that
-// only count files.
+// One row on the Summary page. Bytes is the installed size after success, null
+// when the item reports no size.
 public sealed record InstallResult(
     string ItemId,
     string DisplayName,

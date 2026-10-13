@@ -4,23 +4,16 @@ namespace Deckle.Autocorrect;
 
 // ── AutocorrectSettingsModule ─────────────────────────────────────────────────
 //
-// The autocorrect module's own nav identity for the Settings shell. The module
-// declares its pages, their icons and their label keys here; the composition root
-// supplies only the Order. Registered from App.OnLaunched via SettingsModuleRegistry.
+// The autocorrect module's nav identity for the Settings shell: its pages, their
+// icons and label keys. The composition root supplies only the Order.
 //
-// Three pages, one family: the Autocorrect page itself, plus two children nested
-// under it in the rail — Lexical domains and Apps enrolled, each a surface too
-// large to fold into the parent page. The page tags are constants because they are
-// used twice: here, to name the destination in the rail, and on AutocorrectPage's
-// navigation cards, which drill in through SettingsNavigation.GoToPage.
-//
-// The module's PRI subtree name lives here too — this is where the module states
-// its identity to the shell, and the descriptors below already declare it. Any
-// code resolving a module string through Loc.GetFrom reads it from here rather
-// than repeating the literal or borrowing a constant off a passing view-model.
+// Three pages, one family: the Autocorrect page, plus Lexical domains and Apps
+// enrolled nested under it in the rail. The page tags are constants because
+// AutocorrectPage's navigation cards also drill in to them.
 public static class AutocorrectSettingsModule
 {
-    // This module's PRI subtree — the .resw carrying the module's page strings.
+    // This module's PRI subtree. Code resolving a module string through
+    // Loc.GetFrom reads it from here, never from a repeated literal.
     public const string ResourceLibrary = "Deckle.Autocorrect";
 
     public const string PageTag = "Deckle.Autocorrect.AutocorrectPage, Deckle.Autocorrect";

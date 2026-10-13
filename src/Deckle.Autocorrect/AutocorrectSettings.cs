@@ -3,16 +3,12 @@ using System.Text.Json.Serialization;
 
 namespace Deckle.Autocorrect;
 
-// Module settings. Enablement is per app (CONTEXT.md § Autocorrect — the
-// activation gate): an app the user has never met is never corrected, but a
-// would-be correction there can offer enrollment; an app set to false is
-// declined and left entirely alone; true means corrections run there.
 public sealed class AutocorrectSettings : IJsonOnDeserialized
 {
     public bool Enabled { get; set; } = true;
 
     // Process name (no extension, matched case-insensitively) → corrections on.
-    //   absent = never encountered — a candidate for the enrollment prompt.
+    //   absent = never met: never corrected, a candidate for the enrollment prompt.
     //   true   = enabled here.   false = declined (never prompt, never correct).
     public Dictionary<string, bool> Apps { get; set; } =
         new(StringComparer.OrdinalIgnoreCase) { ["notepad"] = true };
@@ -30,8 +26,8 @@ public sealed class AutocorrectSettings : IJsonOnDeserialized
     // and NFC) so an entry matches the lexicon keys it removes.
     public List<string> ExcludedWords { get; set; } = new();
 
-    // Legacy v1 allow-list. Read once and folded into Apps, then never written
-    // again — the one-way migration off the flat list.
+    // Legacy allow-list, still found in old settings files. Read once and folded
+    // into Apps, then never written again.
     [JsonPropertyName("enrolledProcesses")]
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public List<string>? EnrolledProcesses { get; set; }
@@ -58,11 +54,9 @@ public sealed class AutocorrectSettings : IJsonOnDeserialized
             .ToList();
     }
 
-    // The one spelling of an excluded word, applied on every path in: the
-    // settings page, and the settings file itself on load, which a hand edit
-    // may have left in any case. Returns null for anything that cannot name a
-    // single lexicon form — the lexicon is keyed by one lowercased word, so a
-    // phrase or a blank has nothing to remove.
+    // The one spelling of an excluded word, applied on every path in, the
+    // hand-editable file included. Null for anything that cannot name a single
+    // lexicon form: the lexicon is keyed by one lowercased word.
     public static string? NormalizeExcludedWord(string? word)
     {
         string trimmed = word?.Trim() ?? string.Empty;

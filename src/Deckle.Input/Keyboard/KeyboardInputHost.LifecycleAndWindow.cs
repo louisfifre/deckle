@@ -96,11 +96,6 @@ public sealed partial class KeyboardInputHost
 
     public void Dispose() => Stop();
 
-    /// <summary>
-    /// Posts a drain request to the input thread. Safe from any thread — PostThreadMessage is
-    /// the documented cross-thread primitive. A no-op before the pump's thread id is known or
-    /// after the thread has quit (the message is simply never retrieved).
-    /// </summary>
     public void RequestDrain()
     {
         uint threadId = _threadId;
@@ -238,7 +233,6 @@ public sealed partial class KeyboardInputHost
             RawInputInterop.DispatchMessage(ref msg);
         }
 
-        // WM_QUIT — unwind everything this thread owns.
         TearDownInputThread();
     }
 

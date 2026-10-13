@@ -22,7 +22,6 @@ public class DevSpaceTests
     [InlineData(5)]
     public void PriorityKeyForLevelForRoundTripsEveryLevel(int level)
     {
-        // KeyFor(level) → wire key → LevelFor → level, for all six levels.
         // Covers the opaque-id levels (0 and 4) alongside the bare-integer ones.
         string key = DevSpace.Priority.KeyFor(level);
 
@@ -55,8 +54,6 @@ public class DevSpaceTests
     [Fact]
     public void TypeDeTacheResolveAcceptsCaseInsensitiveDisplayName()
     {
-        // "Produire" is the French display label of the production key; matching
-        // is case-insensitive on the name.
         Assert.Equal("production", DevSpace.TypeDeTache.Resolve("Produire"));
         Assert.Equal("production", DevSpace.TypeDeTache.Resolve("produire"));
     }
@@ -74,9 +71,7 @@ public class DevSpaceTests
     [Fact]
     public void ResolveTagOnClosedVocabularyThrowsListingValidOptions()
     {
-        // A closed select (état) rejects an unknown value with an ArgumentException
-        // whose message enumerates the valid options — that text is the
-        // model-facing affordance, so assert the options are present.
+        // The listed options are the model-facing affordance.
         var ex = Assert.Throws<ArgumentException>(
             () => DevSpace.ResolveTag(DevSpace.Props.Etat, "inexistant"));
 
@@ -87,10 +82,9 @@ public class DevSpaceTests
     [Fact]
     public void ResolveTagOnFreeVocabularyThrowsRatherThanPassingThrough()
     {
-        // « tag » is a free multi_select with no frozen vocabulary. ResolveTag must
-        // NOT pass an arbitrary value through (the old hole that could let the API
-        // auto-create an option): reaching it for a free vocabulary is a routing
-        // error, so it throws. The gesture resolves such properties live instead.
+        // « tag » is a free multi_select with no frozen vocabulary. Passing an
+        // arbitrary value through could let the API auto-create an option, so
+        // reaching ResolveTag for it is a routing error.
         Assert.Throws<InvalidOperationException>(
             () => DevSpace.ResolveTag(DevSpace.Props.Tag, "anything-goes"));
     }
@@ -98,8 +92,6 @@ public class DevSpaceTests
     [Fact]
     public void HasFrozenVocabularyDistinguishesClosedFromFreeProperties()
     {
-        // The fork the gesture branches on: closed vocabularies resolve in memory,
-        // free ones go to the live resolver.
         Assert.True(DevSpace.HasFrozenVocabulary(DevSpace.Props.Etat));
         Assert.True(DevSpace.HasFrozenVocabulary(DevSpace.Props.TypeDeTache));
         Assert.False(DevSpace.HasFrozenVocabulary(DevSpace.Props.Tag));
@@ -108,8 +100,6 @@ public class DevSpaceTests
     [Fact]
     public void ResolveTagOnClosedVocabularyResolvesADisplayName()
     {
-        // The success path of a closed vocabulary: a display name resolves to its
-        // wire key.
         Assert.Equal("production", DevSpace.ResolveTag(DevSpace.Props.TypeDeTache, "Produire"));
     }
 

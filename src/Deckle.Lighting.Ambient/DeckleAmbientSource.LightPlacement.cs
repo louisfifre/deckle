@@ -6,10 +6,6 @@ namespace Deckle.Lighting.Ambient;
 public sealed partial class DeckleAmbientSource
 {
     // ── Per-light placement (LightPlacementResolver + LightZonesCard) ───
-    //
-    // Resolving the selected group's lights, matching an entertainment area,
-    // suggesting a zone per light, and the user's per-light edits. Milestones
-    // are short sentences; ids, names and values sit in the Verbose mirrors.
 
     [Event(EvtLightCallFailed,
            Level = EventLevel.Warning,

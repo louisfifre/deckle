@@ -3,22 +3,13 @@ using Deckle.Modules;
 
 namespace Deckle.App;
 
-// ── AppModules ────────────────────────────────────────────────────────────────
-//
-// The presence catalogue's content: the user-facing modules this build of
-// Deckle carries, declared by the composition root. Descriptors live HERE and
-// not in the modules they name (the deliberate inverse of the settings nav
-// registry) because the installer companion's end state is a catalogue that can
-// describe a module whose DLLs are not on disk yet — see Deckle.Modules.
-//
-// The id vocabulary lives in Deckle.Modules (ModuleIds) — the wizard's
-// selector speaks it too. Support assemblies (Core, Audio, Vad, Vision,
-// Lighting, …) are not modules — they are the floor the modules stand on and
-// never appear here.
+// Descriptors live here, not in the modules they name, so the catalogue can
+// describe a module whose DLLs are not on disk. Support assemblies (Core, Audio,
+// Vision, Lighting...) are not modules and never appear here.
 internal static class AppModules
 {
-    // Fills the catalogue. Called once from OnLaunched, before anything reads
-    // ModulePresence, so the selector and the gates see the same set.
+    // Before anything reads ModulePresence, so the selector and the gates see
+    // the same set.
     public static void RegisterAll()
     {
         ModuleRegistry.Register(new ModuleDescriptor

@@ -6,12 +6,11 @@ namespace Deckle.Core;
 
 public static partial class NativeMethods
 {
-    // ── Message-only window (tray + hotkey host) ─────────────────────────────
+    // ── Message-only window ──────────────────────────────────────────────────
     //
     // A message-only window has HWND_MESSAGE as its parent. It is invisible,
     // has no z-order, cannot be enumerated, receives no broadcast messages,
-    // and simply dispatches messages sent to it. Canonical Win32 pattern for
-    // hosting tray callbacks and RegisterHotKey targets without a UI window.
+    // and simply dispatches messages sent to it.
 
     public static readonly IntPtr HWND_MESSAGE = new(-3);
 

@@ -18,10 +18,11 @@ public static partial class LexiconBuilder
     // Not zero, on purpose: a zero runner-up would break the dominance gate
     // (which requires the runner-up > 0), so a Morphalou form folded next to a
     // real one would silently suppress a valid restoration. Epsilon keeps the
-    // dominance maths intact while sitting far below MinDominantFrequency, so a
-    // Morphalou-only form never wins a contested slot on its own — it only ever
-    // restores when it is the SOLE candidate of a fold (the lexical gate fires
-    // on a single candidate regardless of frequency).
+    // dominance maths intact while sitting far below
+    // MinDominantFrequencyPerMillion, so a Morphalou-only form never wins a
+    // contested slot on its own: it only ever restores when it is the SOLE
+    // candidate of a fold (the lexical gate fires on a single candidate
+    // regardless of frequency).
     private const double MorphalouEpsilonPerMillion = 0.001;
 
     private static readonly HashSet<string> GlobishStopWords = new(StringComparer.Ordinal)
@@ -31,12 +32,6 @@ public static partial class LexiconBuilder
         "with",
     };
 
-    // Builds the lexicons. The caller supplies the resolved directories — rawDir
-    // holds the fetched sources (Lexique383.tsv, count_1w.txt, optionally
-    // Morphalou3.1_CSV.csv and FranceTerme.xml), outDir is where the gzip
-    // TSV artifacts are written.
-    // withMorphalou folds in the inflected-form coverage when its source is
-    // present. Returns 0 on success.
     public static int Run(string rawDir, string outDir, bool withMorphalou = false)
     {
         Directory.CreateDirectory(outDir);
@@ -50,9 +45,6 @@ public static partial class LexiconBuilder
         Console.WriteLine($"Out  : {outDir}");
         Console.WriteLine();
 
-        // Morphalou overlay is opt-in: the default lexicon is Lexique-only and
-        // byte-deterministic. withMorphalou folds in the inflected-form coverage
-        // once the source has been fetched (see fetch-autocorrect-data.ps1).
         string morphalouSource = withMorphalou
             ? Path.Combine(rawDir, "Morphalou3.1_CSV.csv")
             : "";

@@ -19,12 +19,12 @@ namespace Deckle.Input;
 // per event:
 //   {"t":12.3,"dev":0,"src":"raw","axis":"v","d":120,"gap":45.6,"inj":0}
 // `t` is milliseconds since the first recorded event (host monotonic clock,
-// 0.1 ms precision); `axis` is "v" (vertical) or "h" (horizontal); `d` is the
-// signed detent from RAWMOUSE.usButtonData; `gap` is milliseconds since the
-// previous event of the SAME device — the cadence the gesture model reads,
-// 0 for the first event of a device; `inj` marks source-less synthetic input.
-// Burst grouping is left to the offline
-// analysis, which can sweep thresholds the capture must not pre-decide.
+// 0.1 ms precision); `src` is "raw" (Raw Input) or "hook" (low-level hook);
+// `axis` is "v" (vertical) or "h" (horizontal); `d` is the signed wheel delta;
+// `gap` is milliseconds since the previous event of the SAME device — the
+// cadence the gesture model reads, 0 for the first event of a device; `inj`
+// marks synthetic input. Burst grouping is left to the offline analysis,
+// which can sweep thresholds the capture must not pre-decide.
 //
 // Start/Stop come from the settings toggle (UI thread), OnWheel from the
 // input thread — every entry point takes the lock.
@@ -58,7 +58,6 @@ public sealed class WheelEventRecorder : IDisposable
         }
     }
 
-    /// <summary>Appends one wheel event. Called on the input thread.</summary>
     public void OnWheel(MouseWheelEvent e)
     {
         lock (_lock)
@@ -108,7 +107,6 @@ public sealed class WheelEventRecorder : IDisposable
         }
     }
 
-    /// <summary>Flushes and closes the current session file.</summary>
     public void Stop()
     {
         lock (_lock)
@@ -182,9 +180,7 @@ public sealed class WheelEventRecorder : IDisposable
         }
     }
 
-    // First sight of a device: assign a stable short index, resolve its HID
-    // name, parse the vid/pid out of it, and write the `device` line so the
-    // file is self-describing. Caller holds _lock.
+    // Caller holds _lock.
     private DeviceSlot ResolveDevice(IntPtr handle)
     {
         if (_devices.TryGetValue(handle, out var existing)) return existing;
@@ -213,8 +209,6 @@ public sealed class WheelEventRecorder : IDisposable
         _armed = false;
     }
 
-    // RIDI_DEVICENAME, the same two-call pattern the touchpad path uses: a
-    // sizing call, then the read into a sized buffer.
     private static string? TryGetDeviceName(IntPtr handle)
     {
         uint chars = 0;

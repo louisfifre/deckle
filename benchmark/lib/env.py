@@ -1,18 +1,9 @@
-"""Chargement d'un fichier ``.env`` de benchmark sans dépendance python-dotenv.
+"""Load a benchmark ``.env`` file without a python-dotenv dependency.
 
-Format ``KEY=value`` ligne par ligne, ``#`` pour les commentaires, lignes
-vides ignorées. Pas de quotes interprétées (la valeur est prise telle
-quelle). C'est volontairement minimaliste — 30 lignes plutôt qu'une
-dépendance externe.
-
-Appelée typiquement au début d'un bench :
-
-    from lib.env import load_dotenv
-    load_dotenv()        # charge benchmark/.env si présent
-
-Les variables déjà set dans l'environnement ne sont PAS écrasées (le
-shell wins). Comme ça si tu exportes ANTHROPIC_API_KEY dans la session,
-ça reste prioritaire sur le .env.
+One ``KEY=value`` per line; ``#`` lines and blank lines are skipped, and one
+level of matching single or double quotes is stripped from the value.
+A variable already set in the environment wins over the file unless
+``override`` is true, so a key exported in the shell takes precedence.
 """
 
 from __future__ import annotations
@@ -26,11 +17,9 @@ DEFAULT_ENV_PATH = BENCHMARK_DIR / ".env"
 
 
 def load_dotenv(path: Path | None = None, *, override: bool = False) -> dict[str, str]:
-    """Charge un fichier .env dans os.environ. Retourne les paires lues.
-
-    Si ``path`` est None, cherche ``benchmark/.env``. Si le fichier
-    n'existe pas, retourne dict vide sans erreur (le bench peut s'en
-    passer si la clé est déjà exportée dans le shell)."""
+    """Load ``path`` (default ``benchmark/.env``) into ``os.environ`` and
+    return the pairs read. A missing file is not an error: the key may
+    already be exported in the shell."""
     p = path or DEFAULT_ENV_PATH
     if not p.exists():
         return {}
@@ -45,7 +34,6 @@ def load_dotenv(path: Path | None = None, *, override: bool = False) -> dict[str
         key, _, value = line.partition("=")
         key = key.strip()
         value = value.strip()
-        # Strip 1 niveau de quotes simples ou doubles (commodité)
         if len(value) >= 2 and value[0] == value[-1] and value[0] in ("'", '"'):
             value = value[1:-1]
         pairs[key] = value

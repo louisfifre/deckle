@@ -1,11 +1,8 @@
 namespace Deckle.Audio;
 
-// Contract injected by the orchestrator (TranscriptionEngine, future Ask-Ollama)
-// to expose its live capture-related settings to MicrophoneCapture without
-// the latter depending on the host's full settings shape.
-//
-// Concrete adapters live in the host project (e.g. RecordingHostAdapter
-// inside TranscriptionEngine). Each property is read on every Record() entry —
+// Contract injected by the orchestrator to expose its live capture-related
+// settings to MicrophoneCapture without the latter depending on the host's
+// full settings shape. Each property is read during every Record() call, so
 // the host is free to forward to a settings service that may have changed
 // since the previous call.
 public interface IAudioRecordingHost
@@ -17,7 +14,7 @@ public interface IAudioRecordingHost
     // the start of each recording. 0 = no cap.
     int MaxRecordingDurationSeconds { get; }
 
-    // Settings ▸ Telemetry ▸ Log microphone toggle. Gates the emission of
+    // The Recording page's microphone-telemetry opt-in. Gates the emission of
     // the per-recording MicrophoneTelemetryPayload EventSource event.
     // The payload is always *computed* (auto-calibration depends on it);
     // this flag only decides whether it's broadcast.

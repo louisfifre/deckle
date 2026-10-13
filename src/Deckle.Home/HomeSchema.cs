@@ -145,15 +145,15 @@ public static class HomeSchema
     }
 
     // Inventory types whose identity is an immutable code in the `code`
-    // property. The point type absorbs the ten former wall-point types; its
-    // nature is the frozen `category` select, derived from the code.
+    // property. A point's nature is the frozen `category` select, derived
+    // from its code.
     public static readonly IReadOnlyList<string> CodedTypes =
     [Types.Room, Types.Point, Types.Circuit, Types.Panel];
 
-    // Equipment family: a Système aggregates, an Appareil stands alone, a
-    // Composant only exists through its mandatory part_of, an Ustensile de
-    // cuisine (2026-08-12 grill) holds kitchen gear and may join a Système
-    // like an Appareil. The composant gate lives in the gestures, not here —
+    // Equipment family: a system aggregates, a device stands alone and may
+    // join a system through part_of, a component exists only through its
+    // mandatory part_of, a utensil holds kitchen gear and may join a system
+    // like a device. The component gate lives in the gestures because the
     // schema cannot express it.
     public static readonly IReadOnlyList<string> EquipmentTypes =
     [Types.System, Types.Device, Types.Component, Types.Utensil];
@@ -327,11 +327,8 @@ public static class HomeSchema
         return new HomeSchemaRuntime(snapshot, FloorTypeKey(snapshot));
     }
 
-    // The floor type is created in the app (the API refuses collection
-    // layouts), so its key is a live discovery, not a compiled constant: the
-    // nominal key first, else the collection-layout type named Zone. Absent
-    // type = floor features refuse with guidance instead of failing the
-    // whole schema closed.
+    // An absent Zone type returns null: floor features then refuse with
+    // guidance instead of failing the whole schema closed.
     internal static string? FloorTypeKey(SchemaSnapshot snapshot)
     {
         if (snapshot.Types.TryGetValue(Types.Floor, out SchemaTypeInfo? nominal))

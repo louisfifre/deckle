@@ -36,10 +36,8 @@ public sealed class SpaceWriteLock
         _path = Path.Combine(moduleDirectory, FileName);
     }
 
-    // Acquires exclusive write access to the space, retrying until granted or
-    // cancelled. operation/target name the pending write so a contended wait — two
-    // sessions reaching for the same object — surfaces in the log. Dispose the
-    // returned scope to release.
+    // operation/target name the pending write so a contended wait — two sessions
+    // reaching for the same object — surfaces in the log.
     public async Task<IDisposable> AcquireAsync(
         string operation, string target, CancellationToken ct = default)
     {
@@ -53,8 +51,6 @@ public sealed class SpaceWriteLock
 
             try
             {
-                // FileShare.None: the OS denies any second open — another process,
-                // or another thread here — until this handle closes.
                 var handle = new FileStream(
                     _path, FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.None);
 
@@ -66,8 +62,7 @@ public sealed class SpaceWriteLock
             }
             catch (IOException)
             {
-                // Held by another writer (sharing violation). Wait and retry; the
-                // holder releases on dispose, or on process exit if it crashed.
+                // Held by another writer (sharing violation).
                 waited = true;
                 await Task.Delay(backoff, ct).ConfigureAwait(false);
                 backoff = TimeSpan.FromMilliseconds(

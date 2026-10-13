@@ -2,7 +2,7 @@ namespace Deckle.Autocorrect;
 
 // Supplies one surface-only gender alternative to the whole-sentence judge:
 // terminal e added or removed, only when both endpoints are valid primary-
-// language words. It never enters the legacy slot-local path. The literal and
+// language words. It never enters the slot-local probe. The literal and
 // every one-edit sentence compete together, so un/une and seul/seule cannot be
 // decided as independent cascading repairs.
 public sealed class GenderVariantProbe : IAmbiguityProbe

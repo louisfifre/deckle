@@ -14,17 +14,12 @@ using Deckle.Vad;
 
 namespace Deckle.Setup;
 
-// ── InstallPlan ───────────────────────────────────────────────────────────────
-//
-// Maps the wizard's module selection to the install items those modules need:
-// Dictation brings the whisper.cpp native runtime, the chosen speech model and
-// the Silero VAD model; Autocorrect brings the CamemBERT reranker (checked in
-// with the module by decision — the contextual correction is part of what
-// "installing Autocorrect" means, not an option); Anytype brings the pinned
-// anytype-cli binary (the bot account and API key are a later, interactive
-// provisioning act). The provisioning primitives stay in the modules they
-// serve — this plan only composes them, the same posture as the rest of the
-// wizard.
+// Maps the wizard's module selection to the install items those modules need.
+// Autocorrect brings the CamemBERT reranker by decision: the contextual
+// correction is part of what installing Autocorrect means, not an option.
+// Anytype brings the pinned anytype-cli binary; the bot account and API key are
+// a later, interactive provisioning step. Each module owns its provisioning
+// gesture; this plan only composes them.
 public static class InstallPlan
 {
     public const string NativeRuntimeItemId = "native-runtime";
@@ -32,10 +27,8 @@ public static class InstallPlan
     public const string CamembertItemId     = "camembert-base";
     public const string AnytypeItemId       = "anytype-cli";
 
-    // The one question the App's install-continuation branch asks before
-    // opening the wizard on the provisioning step: is there anything left to
-    // put on disk for this selection? The plan itself (items, sizes) stays
-    // internal — only the wizard pages consume it.
+    // The one question the App asks before opening the wizard on the
+    // provisioning step. The plan itself stays internal to the wizard pages.
     public static bool HasPendingWork(SetupContext context)
     {
         foreach (InstallItem item in Build(context))
@@ -45,9 +38,8 @@ public static class InstallPlan
         return false;
     }
 
-    // The download weight still ahead of the user: the plan's items not yet
-    // on disk, summed. Both estimate bars (module selector and Choices recap)
-    // read this, so they can never disagree with what the install step runs.
+    // Every estimate in the wizard (module selector, Folders, Choices) reads
+    // this, so none can disagree with what the install step runs.
     internal static long PendingBytes(SetupContext context)
     {
         long pending = 0;
@@ -65,8 +57,8 @@ public static class InstallPlan
         if (context.SelectedModules.Contains(ModuleIds.Transcription))
         {
             items.Add(NativeRuntimeItem());
-            // SelectedModel is initialized by SetupWindow construction; the
-            // guard only protects a wizard host that bypassed it.
+            // The wizard host seeds SelectedModel; the guard covers a host
+            // that did not.
             if (context.SelectedModel is { } model) items.Add(WhisperModelItem(model));
             items.Add(SileroItem());
         }

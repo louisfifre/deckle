@@ -16,24 +16,10 @@ using Deckle.Transcription.Whisper;
 
 namespace Deckle.Setup;
 
-// ── SummaryPage ──────────────────────────────────────────────────────────────
-//
-// Final wizard step. Renders the per-item Results captured by InstallingPage,
-// surfaces success or failure as an InfoBar at the top, and configures the
-// shell footer to either complete the wizard ("Get started") or offer a
-// retry on the install step ("Retry" + "Quit").
-//
-// Retry path navigates back to InstallingPage with a fresh Results list —
-// the user gets another shot at the failed download(s) without re-doing
-// the choices step.
-//
-// Manual recovery: a failed row also carries a "Download manually" link to
-// the asset URL and an import affordance (a folder for the native runtime, a
-// file for a model). A blocked or filtered network — the download server the
-// installer can't reach — therefore doesn't dead-end the first run: the user
-// fetches the file by hand and imports it. A successful import flips the row
-// to done in place and, once every row succeeds, the footer offers "Get
-// started" without a re-run.
+// Manual recovery: a failed row carries a "Download manually" link and, where a
+// local pick can satisfy the item, an import. A blocked or filtered network
+// therefore doesn't dead-end the install: the user fetches the file by hand
+// and imports it, and the footer offers "Get started" without a re-run.
 public sealed partial class SummaryPage : Page
 {
     private SetupWindow? _setup;
@@ -63,9 +49,8 @@ public sealed partial class SummaryPage : Page
         if (_setup is not null) _setup.NextRequested -= OnNextRequested;
     }
 
-    // Header, footer, result InfoBar and rows — recomputed from the current
-    // Results. Called on entry and again after a manual import changes a row,
-    // so the whole page reflects the new success/failure balance in one place.
+    // Recomputes the whole page from Results; called on entry and after each
+    // manual import.
     private void ApplyState()
     {
         if (_setup is null || _context is null) return;
@@ -88,8 +73,8 @@ public sealed partial class SummaryPage : Page
             : Loc.Format("Setup_Result_FailedCount_Format", CountFailed(_context), _context.Results.Count);
 
         // On failure, surface the always-on local diagnostics folder so a user
-        // stuck at first run — who can't reach Settings yet — can still find
-        // the setup/error logs to report the problem. Hidden on success.
+        // stuck in the installer, who can't reach Settings yet, can still find
+        // the setup and error logs.
         OpenDiagnosticsLink.Content    = Loc.Get("Setup_OpenDiagnosticsFolder");
         OpenDiagnosticsLink.Visibility = ok ? Visibility.Collapsed : Visibility.Visible;
 
@@ -106,16 +91,12 @@ public sealed partial class SummaryPage : Page
             return;
         }
 
-        // Retry: clear previous results and re-enter the install step.
         _context.Results.Clear();
         _setup.Body.Navigate(typeof(InstallingPage), _setup);
     }
 
-    // Opens the always-on local diagnostics folder (setup + error logs) in
-    // Explorer. Best-effort: opening Explorer is a trivial user action and its
-    // failure is self-evident on screen, so it is swallowed — the Setup
-    // provider has no folder-open event and its frozen id set must not grow
-    // for this.
+    // Best-effort: a failure to open Explorer is self-evident on screen, so it
+    // is swallowed rather than logged.
     private void OnOpenDiagnosticsClick(object sender, RoutedEventArgs e)
     {
         try
@@ -129,7 +110,6 @@ public sealed partial class SummaryPage : Page
         }
         catch
         {
-            // see method comment — best-effort, nothing actionable to surface.
         }
     }
 
@@ -180,8 +160,6 @@ public sealed partial class SummaryPage : Page
             TextWrapping = TextWrapping.Wrap,
         });
 
-        // Failed row → manual-recovery affordances: a link to the asset and a
-        // local import that satisfies the item without the auto-download.
         if (!r.Success)
             stack.Children.Add(BuildRecoveryRow(r));
 
@@ -191,11 +169,10 @@ public sealed partial class SummaryPage : Page
         return grid;
     }
 
-    // The recovery row for one failed item. The item id resolves the asset URL
-    // and the import kind through the catalogs: a model entry means a single
-    // file, the native runtime a folder of DLLs. The plan's other items
-    // (VAD model, CamemBERT set, anytype-cli) get the manual-download link
-    // only — their import path is a wizard re-run (Retry), not a local pick.
+    // The item id resolves the asset URL and the import kind through the
+    // catalogs: a model entry imports a single checksum-verified file, the
+    // native runtime a folder of DLLs. Other items get at most the
+    // manual-download link; their recovery is Retry, not a local pick.
     private FrameworkElement BuildRecoveryRow(InstallResult r)
     {
         ModelEntry? model = SpeechModels.WhisperModels.FirstOrDefault(m => m.Id == r.ItemId);
@@ -224,9 +201,6 @@ public sealed partial class SummaryPage : Page
             });
         }
 
-        // Local import exists only where a picked file/folder can satisfy the
-        // item in place: a catalog model (single checksum-verified file) or
-        // the native runtime (folder of DLLs).
         if (model is not null || isNativeRuntime)
         {
             var importButton = new Button
@@ -249,11 +223,6 @@ public sealed partial class SummaryPage : Page
         return row;
     }
 
-    // Picks a local copy of the failed asset and installs it in place: a folder
-    // of DLLs for the native runtime, a single file (checksum-verified against
-    // the catalog) for a model. On success the row is marked done and the whole
-    // page re-derives its state; on a wrong file the user is told, and the row
-    // stays failed.
     private async Task OnImportAsync(
         InstallResult r,
         ModelEntry? model,
@@ -327,8 +296,6 @@ public sealed partial class SummaryPage : Page
                 MarkImported(r.ItemId, r.DisplayName, null);
             }
 
-            // Row satisfied — re-derive the whole page (footer flips to "Get
-            // started" once nothing is left failing).
             ApplyState();
         }
         catch (Exception ex)
@@ -338,8 +305,6 @@ public sealed partial class SummaryPage : Page
         }
     }
 
-    // Replaces the matching result with a successful one, in place, so the
-    // AllSucceeded gate and the rendered rows both reflect the import.
     private void MarkImported(string itemId, string displayName, long? bytes)
     {
         if (_context is null) return;

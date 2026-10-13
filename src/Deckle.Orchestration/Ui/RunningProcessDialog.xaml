@@ -9,9 +9,6 @@
     DefaultButton="Primary"
     IsPrimaryButtonEnabled="False">
 
-    <!-- Lists the apps that have a window open right now, read once when the
-         dialog opens. The list fills from a worker thread; the ring shows
-         until it does. -->
     <StackPanel Spacing="12" MinWidth="400">
         <TextBlock x:Uid="RunningProcessDialog_Body"
                    Style="{StaticResource BodyTextBlockStyle}"

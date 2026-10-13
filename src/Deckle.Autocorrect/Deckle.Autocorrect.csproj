@@ -1,11 +1,8 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <RootNamespace>Deckle.Autocorrect</RootNamespace>
-    <!-- WinUI XAML compilation : the module ships its own Settings page
-         (AutocorrectPage.xaml), following the "each module carries its own
-         settings page" doctrine. Same lib-with-PRI pattern as
-         Deckle.Input.Trackpad / Deckle.Transcription. The live engine itself
-         depends on none of this — only the page does. -->
+    <!-- WinUI XAML compilation for the module's own Settings pages, as a
+         library with its own PRI. The live engine depends on none of this. -->
     <UseWinUI>true</UseWinUI>
     <DefaultLanguage>en-US</DefaultLanguage>
     <EnableMsixTooling>true</EnableMsixTooling>
@@ -14,24 +11,18 @@
   <ItemGroup>
     <PackageReference Include="Microsoft.WindowsAppSDK" />
     <PackageReference Include="Microsoft.Windows.SDK.BuildTools" />
-    <!-- MVVM Toolkit — [ObservableProperty] / [RelayCommand] in the page
-         view-models (AutocorrectViewModel, AutocorrectAppRow). -->
     <PackageReference Include="CommunityToolkit.Mvvm" />
-    <!-- SettingsCard — AutocorrectPage canonical layout. -->
     <PackageReference Include="CommunityToolkit.WinUI.Controls.SettingsControls" />
   </ItemGroup>
 
   <ItemGroup>
-    <!-- Support layer: raw keyboard stream, injection interop. -->
     <ProjectReference Include="..\Deckle.Input\Deckle.Input.csproj" />
     <ProjectReference Include="..\Deckle.Core\Deckle.Core.csproj" />
-    <!-- Icons catalog + shared styles (SubtleButtonStyle) for the page. -->
     <ProjectReference Include="..\Deckle.Catalog\Deckle.Catalog.csproj" />
     <ProjectReference Include="..\Deckle.Diagnostics\Deckle.Diagnostics.csproj" />
-    <!-- The page's Diagnostics section reads/writes the observability opt-ins
-         that live in these two stores: the log-activity toggle (LoggingSettings)
-         and the two telemetry opt-ins (TelemetrySettings). Neither store
-         references a module, so these refs add no cycle. -->
+    <!-- The page's Diagnostics section reads and writes the two telemetry
+         opt-ins (TelemetrySettings). Neither Diagnostics project references
+         Deckle.Autocorrect, so these refs add no cycle. -->
     <ProjectReference Include="..\Deckle.Diagnostics.Logging\Deckle.Diagnostics.Logging.csproj" />
     <ProjectReference Include="..\Deckle.Diagnostics.Telemetry\Deckle.Diagnostics.Telemetry.csproj" />
   </ItemGroup>
@@ -46,10 +37,10 @@
 
   <ItemGroup>
     <!-- Derived lexical artifacts (build-data output) ride next to the binary.
-         Note: this Content lands flat under "Data\" in THIS project's own output,
-         but does NOT transit flat into a consuming app — the SDK prefixes it with
-         the project name there. Deckle.App flattens it back with a post-build
-         target (FlattenAutocorrectLexicons) so the engine finds it beside the exe. -->
+         This Content lands flat under "Data\" in THIS project's own output, but
+         a consuming app gets it prefixed with the project name. Deckle.App
+         flattens it back with its FlattenAutocorrectLexicons target so the
+         engine finds it beside the exe. -->
     <Content Include="Data\**" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 

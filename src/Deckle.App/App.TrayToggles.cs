@@ -9,11 +9,9 @@ using Deckle.Shell.TrayMenu;
 
 namespace Deckle.App;
 
-// Module switches of the tray quick-actions panel. Each switch flips the
-// module's persisted Enabled flag and saves; the module's own settings
-// observer does the actual start or stop, exactly as when the flag changes
-// from its Settings page. Presence-gated: an absent module has no switch.
-// Ids name the switch in logs and stay stable.
+// Each switch only flips and saves the module's Enabled flag; the module's own
+// settings observer starts or stops it, exactly as from its Settings page. Ids
+// name the switch in logs and stay stable.
 public partial class App
 {
     private static IReadOnlyList<TrayToggle> BuildTrayToggles(StartupContext context)
@@ -35,7 +33,6 @@ public partial class App
 
         if (context.TrackpadPresent)
         {
-            // ReconcileTrackpad (App.Trackpad.cs) reacts to the save.
             toggles.Add(new(
                 "trackpad",
                 Loc.Get("TrayMenu_Trackpad"),
@@ -48,8 +45,6 @@ public partial class App
                 }));
         }
 
-        // The cover host start/stop reacts via the observer wired in
-        // InitializeTaskbarCover.
         toggles.Add(new(
             "taskbar-cover",
             Loc.Get("TrayMenu_TaskbarCover"),
@@ -93,9 +88,7 @@ public partial class App
     }
 
     // Ambient Light last, after a divider: the most frequent switch, nearest
-    // the icon since the panel opens upward from the taskbar. The engine
-    // start/stop reacts through the AmbientSettingsService.Changed observer
-    // wired in InitializeStartupShell.
+    // the icon since the panel opens upward from the taskbar.
     private static IReadOnlyList<TrayToggle> BuildTrayFooterToggles(StartupContext context)
     {
         if (!context.AmbientPresent)

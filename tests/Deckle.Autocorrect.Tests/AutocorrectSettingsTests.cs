@@ -31,7 +31,7 @@ public sealed class AutocorrectSettingsTests
 
         var s = JsonSerializer.Deserialize<AutocorrectSettings>(json, Options)!;
 
-        Assert.True(s.Apps["Claude"]);       // case-insensitive lookup survives deserialization
+        Assert.True(s.Apps["Claude"]);
         Assert.False(s.Apps["SIGNAL"]);
         Assert.False(s.Apps.ContainsKey("chrome")); // absent = undecided
     }

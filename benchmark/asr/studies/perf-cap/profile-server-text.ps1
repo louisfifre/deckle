@@ -1,16 +1,10 @@
-# Profile une config GGUF LM-only via llama-server, pour les modèles
-# qui n'ont pas de mmproj audio (Mistral Small 24B base, contrôle archi
-# de Voxtral Small 24B).
+# Profile a text-only GGUF through llama-server, for a model with no audio
+# mmproj (Mistral Small 24B, the architecture control for Voxtral Small 24B).
 #
-# Différent de profile-config.ps1 :
-#   - llama-server au lieu de llama-mtmd-cli (pas de --mmproj).
-#   - Capture les Vulkan timings via GGML_VK_PERF_LOGGER sur stderr du
-#     server (même format que mtmd-cli, le parser existant marche).
-#   - Pas d'audio prefill, juste un text prompt qui génère ~30 tokens.
-#
-# Le serveur tourne en background pendant la requête, puis est tué.
-# Le log accumulé contient warmup + prefill + gen blocks comme avec
-# mtmd-cli, classifiables par le parser.
+# The server's stderr carries the same Vulkan timings format as
+# llama-mtmd-cli, so parse_vulkan_log.py reads this log too. No audio
+# prefill: one text prompt. The server runs for the one request, then is
+# killed.
 
 [CmdletBinding()]
 param(
@@ -63,13 +57,10 @@ Write-Host "  Layers : $NGpuLayers / Ctx : $CtxSize / MaxTok : $MaxTokens / Port
 Write-Host "  Log    : $logPath"
 Write-Host ""
 
-# Lance llama-server en background. GGML_VK_PERF_LOGGER=1 force la
-# capture des Vulkan timings sur stderr (où Tee-Object envoie aussi).
+# GGML_VK_PERF_LOGGER=1 prints per-op Vulkan timings on the server's
+# stderr, which Start-Process redirects into the log.
 $env:GGML_VK_PERF_LOGGER = '1'
 
-# On capture stderr+stdout dans le log via 2>&1 et redirection PowerShell.
-# Le processus tourne sans interaction utilisateur — pas de --host
-# externe, juste loopback.
 $serverArgs = @(
     '--model',         $Model,
     '--n-gpu-layers',  $NGpuLayers,
@@ -77,7 +68,7 @@ $serverArgs = @(
     '--host',          '127.0.0.1',
     '--port',          $Port,
     '--no-webui',
-    '--log-disable'    # désactive le formatage HTTP des logs pour garder Vulkan timings propres
+    '--log-disable'    # keeps the server's own log lines out of the Vulkan timings
 )
 
 $serverProc = Start-Process -FilePath $LlamaServer -ArgumentList $serverArgs `
@@ -87,8 +78,7 @@ $serverProc = Start-Process -FilePath $LlamaServer -ArgumentList $serverArgs `
 
 Write-Host "  Server PID : $($serverProc.Id)"
 
-# Poll /health jusqu'à ce que le serveur soit prêt (max 90 s pour
-# accommoder le chargement d'un 16 GB GGUF depuis NVMe).
+# 90 s leaves time to load a 16 GB GGUF.
 $ready = $false
 $deadline = (Get-Date).AddSeconds(90)
 while ((Get-Date) -lt $deadline) {
@@ -96,7 +86,7 @@ while ((Get-Date) -lt $deadline) {
         $health = Invoke-RestMethod -Uri "http://127.0.0.1:$Port/health" -TimeoutSec 2 -ErrorAction Stop
         if ($health.status -eq 'ok') { $ready = $true; break }
     } catch {
-        # serveur pas encore prêt
+        # server not ready yet
     }
     Start-Sleep -Milliseconds 1000
 }
@@ -109,9 +99,8 @@ if (-not $ready) {
 
 Write-Host "  Serveur prêt, envoi requête text completion..."
 
-# Requête /v1/completions (raw, pas chat) pour éviter le chat template
-# qui ajoute du wrapping autour du prompt. On veut juste mesurer le
-# throughput de gen sur n tokens.
+# The raw /completion endpoint, not chat, so no chat template wraps the
+# prompt.
 $body = @{
     prompt      = $Prompt
     n_predict   = $MaxTokens
@@ -136,11 +125,10 @@ if ($resp.tokens_predicted) {
     Write-Host "  Tokens gen (rapporté par server) : $($resp.tokens_predicted)"
 }
 
-# Stop le serveur proprement (Stop-Process flushe les buffers en sortie).
+# Kill the server, then give the redirected log a moment to finish writing.
 Stop-Process -Id $serverProc.Id -Force
 Start-Sleep -Milliseconds 500
 
-# Sanity check : le log doit contenir des blocs Vulkan Timings.
 $content = Get-Content $logPath -Raw
 $blockCount = ([regex]::Matches($content, 'Vulkan Timings:')).Count
 $totalCount = ([regex]::Matches($content, 'Total time:')).Count

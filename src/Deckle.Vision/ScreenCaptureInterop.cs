@@ -4,34 +4,12 @@ using WinRT;
 
 namespace Deckle.Vision;
 
-// Interop helpers for the capture pipeline (DXGI Output Duplication
-// since the WGC-to-DXGI migration — see ScreenCaptureService class
-// header for the rationale).
+// Raw interop for the capture pipeline: monitor resolution, the D3D11
+// device and its WinRT wrapper, DXGI adapter / output walks, HDR detection
+// and Output Duplication.
 //
-// What lives here :
-//   1. CreateDirect3DDevice — wraps a fresh ID3D11Device as the WinRT
-//      IDirect3DDevice the FrameSampler holds. Accepts an optional
-//      adapter pointer (mandatory for the DXGI Duplication path, where
-//      the D3D11 device must be created on the adapter driving the
-//      target output).
-//   2. EnumerateMonitors / FindMonitorByDeviceName / GetPrimaryMonitor
-//      — HMONITOR resolution helpers shared by capture and the
-//      monitor-selector UI.
-//   3. GetD3D11Device / GetD3D11Texture — IDirect3DDxgiInterfaceAccess
-//      QI bridge to recover the native COM objects behind WinRT
-//      wrappers (used at FrameSampler init).
-//   4. DetectHdrState / FindDxgiOutputForMonitor — DXGI walk that
-//      matches an HMONITOR to its IDXGIAdapter + IDXGIOutput5 +
-//      reported HDR state.
-//   5. DXGI Output Duplication primitives (DuplicateOutput1,
-//      AcquireNextFrame, ReleaseFrame, GetDuplicationDesc) and the
-//      backing structs / vtable indices.
-//   6. D3D11 vtable indices + textur-related structs used by
-//      FrameSampler's GPU downsample path.
-//
-// Errors from PreserveSig=false P/Invoke surface as Marshal-thrown
-// COMException with the HRESULT preserved. ScreenCaptureService
-// catches and logs.
+// PreserveSig=false P/Invokes throw COMException with the HRESULT kept;
+// ScreenCaptureService catches and logs.
 internal static partial class ScreenCaptureInterop
 {
     // ── HMONITOR ─────────────────────────────────────────────────────────────
@@ -52,10 +30,8 @@ internal static partial class ScreenCaptureInterop
         public int Bottom;
     }
 
-    // MONITORINFOEXW — 32-byte fixed header + 32-char device name buffer.
-    // LayoutKind.Sequential + CharSet.Unicode + fixed-size buffer matches
-    // the C struct exactly. CbSize must be filled with sizeof(MONITORINFOEXW)
-    // before the call (108 bytes including the 64-byte device-name buffer).
+    // CbSize must hold the struct size before the call: GetMonitorInfoW
+    // reads it to tell MONITORINFOEXW from MONITORINFO.
     [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
     private unsafe struct MONITORINFOEXW
     {
@@ -84,21 +60,16 @@ internal static partial class ScreenCaptureInterop
 
     public static nint GetPrimaryMonitor()
     {
-        // (0,0) + MONITOR_DEFAULTTOPRIMARY canonically returns the primary
-        // monitor regardless of taskbar orientation or workspace layout.
+        // The primary monitor's origin is always (0,0) on the virtual
+        // desktop, whatever the layout.
         return MonitorFromPoint(new POINT { X = 0, Y = 0 }, MONITOR_DEFAULTTOPRIMARY);
     }
 
-    /// <summary>Describes one monitor returned by <see cref="EnumerateMonitors"/>.</summary>
-    /// <param name="Handle">HMONITOR (opaque to callers — pass back to capture).</param>
     /// <param name="DeviceName">Win32 device name, e.g. "\\\\.\\DISPLAY1". Stable
-    /// across reboots for a given physical port + GPU. Persisted in
-    /// <c>AmbientSettings.SelectedMonitorDeviceName</c>.</param>
-    /// <param name="IsPrimary">True when this is the user's primary monitor.</param>
+    /// across reboots for a given physical port + GPU, which is why it is the
+    /// persisted key.</param>
     /// <param name="X">Virtual-desktop x-origin in pixels.</param>
     /// <param name="Y">Virtual-desktop y-origin in pixels.</param>
-    /// <param name="Width">Pixel width of the monitor.</param>
-    /// <param name="Height">Pixel height of the monitor.</param>
     public sealed record MonitorInfo(
         nint    Handle,
         string  DeviceName,
@@ -109,12 +80,8 @@ internal static partial class ScreenCaptureInterop
         int     Height);
 
     /// <summary>
-    /// Enumerates every monitor attached to the current desktop, in the
-    /// order Windows reports them (typically primary first, then by
-    /// GPU output index). The list is a snapshot — call again after
-    /// a display configuration change to refresh. The public capture
-    /// service projects this internal, handle-bearing record to a
-    /// handle-free descriptor for settings UI.
+    /// A snapshot in the order Windows reports the monitors; call again
+    /// after a display configuration change.
     /// </summary>
     public static IReadOnlyList<MonitorInfo> EnumerateMonitors()
     {
@@ -125,9 +92,6 @@ internal static partial class ScreenCaptureInterop
             var info = new MONITORINFOEXW { CbSize = Marshal.SizeOf<MONITORINFOEXW>() };
             if (!GetMonitorInfoW(hMon, ref info))
             {
-                // Monitor enumerated but info call failed (rare ;
-                // typically a driver hiccup). Skip ; the rest of the
-                // enumeration continues.
                 return true;
             }
 
@@ -150,10 +114,8 @@ internal static partial class ScreenCaptureInterop
     }
 
     /// <summary>
-    /// Resolves a monitor by its Win32 device name (the same string
-    /// <see cref="MonitorInfo.DeviceName"/> exposes). Returns 0 if no
-    /// monitor with that name is currently attached — the caller is
-    /// expected to fall back to <see cref="GetPrimaryMonitor"/>.
+    /// Returns 0 when no attached monitor has that device name; the caller
+    /// falls back to <see cref="GetPrimaryMonitor"/>.
     /// </summary>
     public static nint FindMonitorByDeviceName(string deviceName)
     {

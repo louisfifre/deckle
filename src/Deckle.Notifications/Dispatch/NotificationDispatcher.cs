@@ -18,8 +18,8 @@ public sealed class NotificationDispatcher
 {
     private readonly IReadOnlyDictionary<NotificationChannel, INotificationChannel> _channels;
 
-    // Set by Initialize, read through Instance. The composition-root idiom: one
-    // dispatcher per process, established at boot before any call site asks.
+    // One dispatcher per process, set by Initialize at boot before any call
+    // site asks.
     public static NotificationDispatcher? Instance { get; private set; }
 
     public NotificationCatalog Catalog { get; } = new();
@@ -57,8 +57,6 @@ public sealed class NotificationDispatcher
         return dispatcher;
     }
 
-    // Shows a registered notification and awaits the user's answer.
-    //
     // Returns null for two distinct no-answer cases the narrative tells apart:
     // the notification could not be shown (no channel for the requested kind, or
     // the channel is unavailable → dropped), or it was shown but never answered
@@ -101,9 +99,8 @@ public sealed class NotificationDispatcher
         {
             var response = await channel.PromptAsync(descriptor, bodyArgs, ct).ConfigureAwait(false);
 
-            // Null means the prompt ended without an answer (e.g. the toast
-            // expired unseen). The step still closes at Info, mirrored Verbose
-            // carries the id/channel.
+            // No answer (e.g. the toast expired unseen): the step still closes
+            // at Info.
             if (response is null)
             {
                 DeckleNotificationsSource.Log.NotificationUnanswered();
@@ -126,9 +123,8 @@ public sealed class NotificationDispatcher
         }
         catch (OperationCanceledException)
         {
-            // Closing Info for the step NotificationShown opened — cancellation
-            // is caller-initiated and benign, so Info, not Warning. The Verbose
-            // mirror follows.
+            // Closing Info for the step NotificationShown opened: cancellation
+            // is caller-initiated and benign, so Info, not Warning.
             DeckleNotificationsSource.Log.NotificationCancelled();
             if (DeckleNotificationsSource.Log.IsEnabled())
             {
@@ -138,9 +134,8 @@ public sealed class NotificationDispatcher
         }
         catch (Exception ex)
         {
-            // A channel threw while delivering. Without this catch the exception
-            // escapes with NotificationShown as the last trace and the step never
-            // closes. Warning closes it; the Verbose mirror carries the error.
+            // Without this catch the exception escapes with NotificationShown as
+            // the last trace and the step never closes.
             DeckleNotificationsSource.Log.NotificationFailed();
             if (DeckleNotificationsSource.Log.IsEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Push))
             {

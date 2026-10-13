@@ -2,12 +2,10 @@ using System.Runtime.InteropServices;
 
 namespace Deckle.Installer;
 
-// ── ProgressWindow ────────────────────────────────────────────────────────────
-//
 // The whole visible surface of the silent stub: a small fixed, centred window —
 // title bar with a close button only, no resize / minimise / maximise — carrying
-// one line of status text over a msctls_progress32 bar. It replaces the old console
-// entirely; under WinExe there is no console to print to.
+// one line of status text over a msctls_progress32 bar. Under WinExe there is no
+// console to print to.
 //
 // Threading is the load-bearing part. Win32 requires that a window be serviced on
 // the thread that created it, so the message loop runs on the main thread (the
@@ -27,11 +25,8 @@ namespace Deckle.Installer;
 // instance rather than threading a GCHandle through GWLP_USERDATA.
 internal sealed partial class ProgressWindow
 {
-    // The live window the static WndProc dispatches to. One per process run.
     private static ProgressWindow? s_instance;
 
-    // The window class is registered process-wide once; a second construction (never
-    // happens today) would reuse it.
     private const string ClassName = "DeckleSetupProgress";
     private static bool s_classRegistered;
 
@@ -133,7 +128,6 @@ internal sealed partial class ProgressWindow
         SendMessageW(_progressBar, PBM_SETRANGE32, 0, 100);
     }
 
-    // Shows and raises the window. Called on the main thread before the loop.
     public void Show()
     {
         ShowWindow(_hwnd, SW_SHOWNORMAL);
@@ -259,7 +253,6 @@ internal sealed partial class ProgressWindow
     private const uint WS_VISIBLE = 0x10000000;
     private const uint WS_CAPTION = 0x00C00000;
     private const uint WS_SYSMENU = 0x00080000;
-    // Caption + system menu only: a close button, no resize / minimise / maximise.
     private const uint WindowStyle = WS_CAPTION | WS_SYSMENU;
     private const uint SS_LEFT = 0x00000000;
 

@@ -1,22 +1,12 @@
-<!-- Playground window shell. Native TitleBar (icon + title), Mica
-     backdrop, compact NavigationView with menu items, Frame holding
-     the active Page. Each NavigationViewItem.Tag carries the
-     fully-qualified type name of the Page to navigate to ; the
-     code-behind resolves it via Type.GetType and calls
-     PageFrame.Navigate. Same pattern as SettingsWindow. -->
 <Window
     x:Class="Deckle.Playground.PlaygroundWindow"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     Title="Deckle Playground">
 
-    <!-- RootGrid is hit-testable (Background="Transparent") + focusable
-         (IsTabStop) so a tap on empty space can dismiss the focus from a
-         NumberBox. Focused input controls in WinUI 3 don't release on
-         background click unless something else takes focus — handler
-         wired in code-behind, filtered on OriginalSource==RootGrid to
-         avoid stealing focus from inside buttons / dropdowns / combo
-         flyouts during their first click. -->
+    <!-- Hit-testable and focusable so a tap on empty space can take focus
+         from a NumberBox: a focused WinUI 3 input keeps it on a background
+         click unless something else takes it. -->
     <Grid x:Name="RootGrid"
           Background="Transparent"
           IsTabStop="True">
@@ -25,9 +15,6 @@
             <RowDefinition Height="*" />
         </Grid.RowDefinitions>
 
-        <!-- Native TitleBar : icon + title. Rebuilt wholesale on
-             SetRecordingState() so the recording-state icon swap
-             propagates to the TitleBar visual. -->
         <TitleBar Grid.Row="0"
                   x:Name="AppTitleBar"
                   x:Uid="PlaygroundTitleBar">
@@ -36,10 +23,9 @@
             </TitleBar.IconSource>
         </TitleBar>
 
-        <!-- NavigationView Auto : compact rail at the 1280 dip minimum,
-             expanded pane on genuinely wide Playground windows. Tag =
-             fully-qualified Page type name, resolved by Type.GetType
-             in OnNavSelectionChanged. -->
+        <!-- Each Tag is the fully-qualified Page type name, resolved by
+             Type.GetType in OnNavSelectionChanged; PlaygroundWindow.NavigateTo
+             maps the short tags onto these. -->
         <NavigationView Grid.Row="1"
                         x:Name="Nav"
                         IsBackButtonVisible="Collapsed"

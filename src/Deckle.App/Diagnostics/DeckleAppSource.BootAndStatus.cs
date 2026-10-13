@@ -5,8 +5,6 @@ namespace Deckle.App;
 
 public sealed partial class DeckleAppSource
 {
-    // ── Boot ────────────────────────────────────────────────────────────
-
     [Event(EvtPathsInitialized,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Lifecycle,
@@ -33,11 +31,6 @@ public sealed partial class DeckleAppSource
     {
         if (IsEnabled()) WriteEvent(EvtStartupMilestones, milestones_text);
     }
-
-    // ── Status ──────────────────────────────────────────────────────────
-    //
-    // StatusChanged stays on the App provider: LogWindow displays it under
-    // [APP], consistent with the one-provider-per-module doctrine.
 
     [Event(EvtStatusChanged,
            Level = EventLevel.Informational,

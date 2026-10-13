@@ -1,20 +1,14 @@
 namespace Deckle.Lighting.Ambient;
 
 // Bridge that lets AmbientEngine read its settings without touching
-// the App's SettingsService. Same posture as ITranscriptionEngineHost — the
-// App-side implementation forwards each access to
-// AmbientSettingsService.Instance.Current so live edits made in the
-// AmbientPage (or in any other surface) take effect on the next read
-// without any event subscription.
+// the App's SettingsService. The App-side implementation forwards each
+// access to AmbientSettingsService.Instance.Current so live edits take
+// effect on the next read without any event subscription.
 //
-// The engine reads its settings on every tick : the HDR tuning
-// controls (ExposureEv, SaturationBoost, Bézier brightness response,
-// MinBrightnessEnabled / MinBrightness), the zone
-// assignments and the per-light brightness, the multi-light master
-// flag, and the Hue bridge credentials. The engine doesn't write
-// back yet — a SaveSettings() method will be added here when the
-// LightZoneSuggester (or another engine-side consumer) starts
-// pre-populating LightZones at first connection.
+// The engine reads the tuning, the zone assignments and the per-light
+// brightness on every tick; the monitor, the multi-light flag, the
+// capture rate and the Hue bridge fields only at start. It never writes
+// back.
 public interface IAmbientEngineHost
 {
     AmbientSettings Ambient { get; }

@@ -43,8 +43,7 @@ import sys
 sys.path.insert(0, str(BENCHMARK_CODE_DIR))
 from lib import paths  # noqa: E402
 
-# Ordre canonique des tiers Deckle (cf. benchmark/asr/build_corpus.py).
-# Tout tier inconnu tombe à la fin, ordre alphabétique.
+# Display order of the corpus tiers; an unknown tier sorts last, alphabetically.
 TIER_ORDER = ["very-short", "short", "medium", "long", "very-long-edge", "edge"]
 
 
@@ -62,12 +61,10 @@ def parse_args() -> argparse.Namespace:
 
 
 def load_corpus(path: Path) -> tuple[dict[str, dict], list[str]]:
-    """Charge le corpus.jsonl, retourne ({audio_id → row}, [reference_keys_découvertes]).
-
-    Une clé est gardée comme référence si elle commence par ``reference_text_``
-    et a au moins une valeur non-vide dans le corpus."""
+    """A payload key counts as a reference when it is ``text`` or starts with
+    ``reference_text_``, and holds a non-empty value somewhere in the corpus."""
     by_id: dict[str, dict] = {}
-    ref_keys_seen: dict[str, bool] = {}  # ordre d'insertion + has_value
+    ref_keys_seen: dict[str, bool] = {}  # insertion order + has a value
     with path.open(encoding="utf-8") as f:
         for line in f:
             line = line.strip()
@@ -81,10 +78,8 @@ def load_corpus(path: Path) -> tuple[dict[str, dict], list[str]]:
                 "duration_s": float(p.get("duration_seconds", 0)),
                 "payload": p,
             }
-            # Convention Deckle telemetry : `text` est la transcription
-            # embarquée (Whisper large-v3 dans le pipeline actuel). Les
-            # `reference_text_*` sont les références ajoutées par les
-            # passes ground-truth. Les deux sont affichées comme références.
+            # `text` is Deckle's own Whisper transcript; `reference_text_*`
+            # keys come from ground-truth passes.
             for k in p:
                 if k != "text" and not k.startswith("reference_text_"):
                     continue
@@ -93,8 +88,6 @@ def load_corpus(path: Path) -> tuple[dict[str, dict], list[str]]:
                 if has_val:
                     ref_keys_seen[k] = True
     refs_with_value = [k for k, v in ref_keys_seen.items() if v]
-    # Ordre : gemini ground truth d'abord, puis text Deckle (Whisper),
-    # puis les autres reference_text_* par ordre alpha
     def _ref_sort_key(k: str) -> tuple[int, str]:
         if "gemini" in k:
             return (0, k)
@@ -106,7 +99,7 @@ def load_corpus(path: Path) -> tuple[dict[str, dict], list[str]]:
 
 
 def load_results(path: Path) -> tuple[dict[tuple[str, str], dict], list[str]]:
-    """Charge results.jsonl, retourne ({(audio_id, regime) → row}, [regimes dans l'ordre d'apparition])."""
+    """Regimes come back in order of first appearance."""
     out: dict[tuple[str, str], dict] = {}
     regimes_order: list[str] = []
     seen = set()
@@ -125,15 +118,10 @@ def load_results(path: Path) -> tuple[dict[tuple[str, str], dict], list[str]]:
 
 
 def resolve_corpus_path(results_path: Path, results: dict, by_id: dict | None) -> Path | None:
-    """Si --corpus pas fourni, tente de deviner via paths.corpus_dir et
-    le 1er audio_id du run. Renvoie None si introuvable."""
+    """Without --corpus, the first corpus under CORPORA_DIR whose
+    corpus.jsonl mentions one of the run's audio ids."""
     if not results:
         return None
-    # On essaie d'abord par convention : tous les runs Deckle pointent un
-    # corpus connu par son slug, qu'on peut tenter de retrouver via le
-    # nom du run ou via les valeurs des champs `source_label` / `corpus`.
-    # Pour l'instant on tente une heuristique simple : on scanne CORPORA_DIR
-    # pour trouver un corpus.jsonl qui contienne au moins un des audio_id.
     sample_ids = list({k[0] for k in results.keys()})[:5]
     if not paths.CORPORA_DIR.exists():
         return None
@@ -174,7 +162,6 @@ def render_transcriptions_table(
     ref_labels: dict[str, str],
     regime_labels: dict[str, str],
 ) -> str:
-    """Table principale : 1 ligne par référence du corpus + 1 ligne par régime du bench."""
     rows = []
     payload = corpus_row.get("payload", {})
     for ref_key in references:
@@ -202,8 +189,6 @@ def render_judge_block(
     regimes: list[str],
     regime_labels: dict[str, str],
 ) -> str:
-    """Collapsible verdicts judge — affiche tous les axes présents."""
-    # Découvre dynamiquement les axes utilisés
     axes_seen: list[str] = []
     seen = set()
     for r in results_for_audio.values():
@@ -286,7 +271,6 @@ def main() -> None:
 
     results, regimes = load_results(args.results)
 
-    # Localise le corpus
     corpus_path = args.corpus
     if not corpus_path:
         corpus_path = resolve_corpus_path(args.results, results, None)
@@ -298,7 +282,6 @@ def main() -> None:
     corpus, references = load_corpus(corpus_path)
     audio_dir = corpus_path.parent.resolve()
 
-    # Labels — overrides optionnels
     regime_labels: dict[str, str] = {}
     ref_labels: dict[str, str] = {}
     if args.labels and args.labels.exists():
@@ -306,12 +289,11 @@ def main() -> None:
         regime_labels = dict(cfg.get("regimes", {}))
         ref_labels = dict(cfg.get("references", {}))
 
-    # Path audio : on utilise un path absolu file:/// — le HTML peut alors
-    # vivre n'importe où sans casser les liens audio.
+    # Absolute file:/// URLs, so the HTML can live anywhere without
+    # breaking its audio links.
     def audio_url(audio_file: str) -> str:
         return (audio_dir / audio_file).resolve().as_uri()
 
-    # Regroupe par tier dans l'ordre canonique
     by_tier: dict[str, list[str]] = defaultdict(list)
     for aid, row in corpus.items():
         by_tier[row["tier"]].append(aid)

@@ -3,42 +3,25 @@ using Microsoft.Win32;
 
 namespace Deckle.Shell;
 
-// ── AutostartService ─────────────────────────────────────────────────────────
+// Autostart through the HKCU\Software\Microsoft\Windows\CurrentVersion\Run\Deckle
+// value, pointing at the current exe. The Run key rather than a scheduled task:
+// HKCU needs no UAC prompt, while a /RL HIGHEST task needs elevation to create,
+// and the Run key is what Windows 11 Settings > Startup apps shows the user.
 //
-// Registers the HKCU\Software\Microsoft\Windows\CurrentVersion\Run\Deckle
-// value pointing to the current exe. Windows starts the exe at the next logon.
+// The value name is fixed, so only one install (dev or published) can own
+// autostart. IsEnabled reports ON only for the install the value points at,
+// Disable deletes only its own entry, and Enable always takes over.
 //
-// Why the Run key rather than schtasks.exe:
-//
-//   - No UAC prompt: HKCU (current user) is accessible as a standard user.
-//     Task Scheduler with /RL HIGHEST requires elevation because the task runs
-//     elevated.
-//   - Deckle has no need for elevation: tray + global hotkey + local
-//     transcription. Unnecessary elevation reduces security (BlueHat reports,
-//     privilege sprawl).
-//   - This is the primitive Windows 11 Settings → "Startup apps" exposes to
-//     the user. Toggle aligned with the system mental model.
-//
-// Multi-install coexistence (dev + publish on the same machine): the Run key
-// has a fixed `Deckle` name, so only one install can be in autostart at a time.
-// `IsEnabled` compares the stored value with `Environment.ProcessPath`: each
-// install only sees ON if it is the one pointed to by the registry. `Disable`
-// deletes only if the value belongs to the current exe, to avoid one install
-// disabling another. `Enable` always overwrites; enabling from one install
-// takes over from the other. Two simultaneous instances would collide on
-// RegisterHotKey anyway (err 1409).
-//
-// All registry calls are wrapped in try/catch: on refusal (machine GPO,
-// corrupted profile), log + return false/current state without propagating;
-// the Settings toggle must never crash the UI.
+// Registry refusals (machine GPO, corrupted profile) are logged and reported
+// as false, never thrown: the Settings toggle must not crash the UI.
 public static class AutostartService
 {
     private const string RunKeyPath = @"Software\Microsoft\Windows\CurrentVersion\Run";
     private const string ValueName  = "Deckle";
 
-    // The registry is the source of truth for autostart, so the conceptual default
-    // is "not registered" — off. Exposed so the composed Startup toggle resets to
-    // the same fact a fresh profile starts from, without a literal duplicated here.
+    // The registry is the source of truth, so the default is "not registered":
+    // off. Exposed so the Startup toggle resets to the state a fresh profile
+    // starts from.
     public static bool DefaultEnabled => false;
 
     public static bool IsEnabled()
@@ -99,12 +82,10 @@ public static class AutostartService
             using var key = Registry.CurrentUser.OpenSubKey(RunKeyPath, writable: true);
             if (key is null)
             {
-                // No key means no entry — treat as already disabled.
                 return true;
             }
             if (key.GetValue(ValueName) is string s && !IsOwnedByCurrentExe(s))
             {
-                // Entry belongs to another install of Deckle — leave it alone.
                 DeckleShellSource.Log.AutostartDisableSkipped();
                 return true;
             }
@@ -120,9 +101,8 @@ public static class AutostartService
         }
     }
 
-    // The Run value is stored as `"C:\path\to\exe.exe"` (quoted). An older
-    // entry without quotes is also tolerated. Anything after the exe path
-    // (arguments) is ignored for ownership comparison.
+    // Enable writes a quoted path; an unquoted value is tolerated too, and any
+    // arguments are ignored for the ownership comparison.
     private static string? ExtractExePath(string command)
     {
         if (string.IsNullOrWhiteSpace(command)) return null;

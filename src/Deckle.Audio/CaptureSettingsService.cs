@@ -8,14 +8,8 @@ namespace Deckle.Audio;
 // Module-local persistence for CaptureSettings. Twin of
 // TranscriptionSettingsService — see that file's comment for the design rationale.
 //
-// Backing file: <UserDataRoot>/modules/audio/settings.json. Migration
-// from the legacy combined settings.json and from the previous
-// modules/capture/ per-module layout is handled by
-// SettingsBootstrap.MigrateLegacyToPerModule(). Two historical renames
-// converge on the current `audio` id: `recording` → `capture`
-// (2026-05-02 module extraction from Deckle.Transcription) and `capture` →
-// `audio` (2026-05-15 module rename when the false-generic `Capture`
-// name was retired in favour of an honest audio-domain name).
+// SettingsBootstrap.MigrateLegacyToPerModule() migrates the legacy layouts
+// (the combined settings.json, the modules/capture/ folder) into this file.
 public sealed class CaptureSettingsService
 {
     private static readonly Lazy<CaptureSettingsService> _instance = new(() => new CaptureSettingsService());
@@ -49,19 +43,13 @@ public sealed class CaptureSettingsService
             path:        path,
             mutexName:   $"{AppPaths.AppFolderName}-Settings-Audio-Save",
             jsonOptions: _jsonOptions,
-            // EventSource switch. The "[audio]" label that prefixed legacy
-            // messages disappears because the source tag on the LogWindow side
-            // now comes from the provider name ("Deckle-Audio" → AUDIO), no
-            // longer LogSource.Settings. Delegates remain Action<string> to
-            // avoid touching the JsonSettingsStore<T> contract before the wave
-            // 4 SettingsHost redesign.
             logWarning:  msg => DeckleAudioSource.Log.SettingsLoadWarning(msg),
             logError:    msg => DeckleAudioSource.Log.SettingsLoadError(msg),
             postLoadMigration: ApplyPostLoadMigrations);
     }
 
-    // The recording limit's default before 2026-10. A stored value equal to it
-    // means the user never chose a limit.
+    // The recording limit's former default. In a file older than schema
+    // version 1, a stored value equal to it means the user never chose a limit.
     internal const int LegacyDefaultMaxRecordingDurationSeconds = 20 * 60;
 
     // Runs on every load (and on fresh defaults) through the store's hook,

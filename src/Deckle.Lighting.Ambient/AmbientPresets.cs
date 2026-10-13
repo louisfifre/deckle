@@ -6,13 +6,6 @@ namespace Deckle.Lighting.Ambient;
 // settings.json (AmbientSettings.Preset), so they never change once shipped;
 // the labels resolve from this module's .resw as "<LabelKey>.Content".
 //
-// The values are starting points. Louis (2026-10-12): Game at saturation
-// 1.0 and exposure 0, "a low threshold and a really quite high reaction
-// speed" (no figures yet, so Game keeps 6 and 0.40); Vivid is Game with
-// saturation 1.10, made for Hades; Movie is to be settled before Ambient.
-// He tunes in front of the scene and the figures land here, one edit per
-// preset.
-//
 // Ambient is the default and reads the POCO initializers, so a fresh
 // install, the per-card reset and the page reset agree on one source.
 public static class AmbientPresets

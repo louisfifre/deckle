@@ -35,8 +35,7 @@ function Read-DeckleKeyValueLines {
             $key = $Matches[1].ToLowerInvariant()
             $value = $Matches[2].Trim()
 
-            # A YAML block scalar folds every following line until the next key,
-            # the same tolerance the TREE.md front matter reader always had.
+            # A YAML block scalar folds every following line until the next key.
             if ($value -match '^[|>][+-]?$') {
                 $blockLines = [System.Collections.Generic.List[string]]::new()
                 $index++

@@ -10,43 +10,17 @@ namespace Deckle.Composition;
 public static partial class HudComposition
 {
     // ╔════════════════════════════════════════════════════════════════════╗
-    // ║  Conic clone preview (HudPlayground only)                          ║
+    // ║  Conic clone preview (Playground only)                             ║
     // ╚════════════════════════════════════════════════════════════════════╝
-    // A SECOND, fully independent DOUBLE comet — its own conic + arc-mask
-    // surfaces, brushes and rotations — painted from the SAME
-    // ConicArcStrokeConfig as the contour (same OKLCh palette, same arc shape),
-    // but placed freely and spun at the CLONE periods. It is the Playground
-    // preview of EXACTLY what the pinned reveal shows behind the digits: the contour's
-    // visible material (conic ⊗ arc comet), graded per state, posable + timable
-    // on its own.
+    // An independent double comet (own conic and arc surfaces, brushes and
+    // rotations) built from the same config fields as the digit reveal: clone
+    // placement, clone periods, clone palette. The sprite clips to the row
+    // frame, so it shows exactly the slice the digit row samples. The grading
+    // is a static seed for the chosen variant; toggling the variant rebuilds
+    // the preview.
     //
-    // Why a clone rather than sampling the contour's own surfaces: to place the
-    // cone's apex freely (centre vs corner) AND spin it independently of the
-    // contour, it needs its own surfaces + rotations. Placement comes from
-    // cfg.CloneCentre*Fraction, speeds from cfg.CloneHue/CloneArcPeriodSeconds —
-    // the SAME config the live reveal reads, so the preview and the reveal stay
-    // in lock-step.
-    //
-    // Geometry. The sprite is the row frame (hudSize, e.g. 272×78); both surfaces
-    // are a square auto-sized (CoverageSquareSide) so their inscribed circle
-    // reaches every corner of the frame from the placed apex (Stretch.None keeps
-    // the 1:1 footprint and overhangs the frame). The placement transform lands
-    // the cone's centre at the apex and spins it around itself — apex = hudSize/2
-    // reproduces the contour's centred cone, (0,0) radiates from the top-left.
-    // Because the sprite clips to hudSize, what shows IS exactly the slice the
-    // digit row would sample at that placement.
-    //
-    // Grading. Like the contour, through the Saturation / Hue / Exposure chain,
-    // seeded at the chosen variant's resting values (Transcribing ⇒ greyscale,
-    // Rewriting ⇒ colour). The arc mask carries the visible motion in greyscale —
-    // see the DigitReveal header on why the naked cone alone shows none. Toggling
-    // the variant rebuilds the preview (the seed is static — no live blend in a
-    // preview).
-    //
-    // Returns a disposable bundle the caller MUST hold and Dispose before
-    // mounting a replacement — Forever-animation-leak hazard (four
-    // ScalarKeyFrameAnimations: Linear/Eased × hue/arc). See NakedPreview's
-    // class comment for the full why.
+    // The caller holds the bundle and Disposes it before mounting a
+    // replacement: it carries four Forever animations (see NakedPreview).
     public sealed class ConicClonePreview : IDisposable
     {
         public ContainerVisual Container { get; }
@@ -110,13 +84,6 @@ public static partial class HudComposition
         }
     }
 
-    // Build a clone cone for the playground. `hudSize` is the row frame the
-    // sprite clips to; the cone-centre placement is read from the SHARED config
-    // fraction (cfg.CloneCentre*Fraction · hudSize) — the SAME value the live
-    // digit reveal reads, so a placement slider drives both in lock-step
-    // ((0.5,0.5) = centred, reproducing the contour; (0,0) = top-left).
-    // `gradeVariant` + `isDark` pick the resting grading (Transcribing ⇒ grey,
-    // Rewriting ⇒ colour) so the preview reads as the digits do in that state.
     public static ConicClonePreview CreateConicClonePreview(
         Compositor compositor, Vector2 hudSize,
         ConicArcStrokeConfig cfg,
@@ -127,16 +94,6 @@ public static partial class HudComposition
             cfg.CloneCentreXFraction * hudSize.X,
             cfg.CloneCentreYFraction * hudSize.Y);
 
-        // Auto-scale the cone to the placement: its inscribed radius (pxSquare/2)
-        // is pinned to the apex's FARTHEST corner of the row frame, so a digit
-        // anywhere in the row samples a live hue instead of falling off the
-        // painted surface (out-of-bounds = transparent). Apex centred ⇒ radius =
-        // half-diagonal (pxSquare = the row diagonal); apex in a corner ⇒ radius
-        // = full diagonal (pxSquare doubles). The cone is a pure ANGULAR gradient
-        // (hue = angle), invariant under radial scaling, so growing the surface
-        // only extends coverage — it never distorts the look. No scale knob: the
-        // value is always the tight optimum for the placement. Shared with the
-        // live reveal via CoverageSquareSide so the two can't drift.
         int pxSquare = CoverageSquareSide(hudSize, coneCentre);
 
         var canvasDevice = CanvasDevice.GetSharedDevice();
@@ -144,19 +101,14 @@ public static partial class HudComposition
         var graphicsDevice = CanvasComposition.CreateCompositionGraphicsDevice(
             compositor, canvasDevice);
 
-        // Same decoupled clone palette as the live reveal (CloneOklch* lightness/
-        // chroma) so the preview shows the digits' real surface, not the contour's.
         var conicSurface = PaintConicSurface(canvasDevice, graphicsDevice, pxSquare,
             CloneSurfaceConfig(cfg));
         var arcSurface   = PaintArcMaskSurface(
             canvasDevice, graphicsDevice, pxSquare, cfg, Microsoft.UI.Colors.White);
 
-        // Stretch.None keeps each surface at its oversized pxSquare footprint,
-        // centred on the sprite (alignment ratio 0.5) — placed centre at
-        // hudSize/2. The placement transform then parks that centre at
-        // `coneCentre` and spins around it. The conic and arc spin at the CLONE
-        // periods (independent of the contour); both share the apex so the comet
-        // stays concentric with the cone.
+        // Stretch.None keeps each oversized surface centred on the sprite
+        // (hudSize / 2); the placement transform then parks that centre at
+        // coneCentre and spins around it.
         var conicBrush = compositor.CreateSurfaceBrush(conicSurface);
         conicBrush.Stretch = CompositionStretch.None;
         var hueRotationProps = StartRotation(
@@ -183,9 +135,6 @@ public static partial class HudComposition
             placement: coneCentre,
             animationsEnabled: animationsEnabled);
 
-        // Graded cone ⊗ arc comet — output = (graded.RGB, graded.A · Arc.A).
-        // Same masking stage as the contour and the live reveal, minus the
-        // silhouette. Grading is a static seed for the chosen variant.
         var gradedGraph = BuildVariantGrading(
             new CompositionEffectSourceParameter("Conic"), cfg, gradeVariant, isDark);
         var maskedGraph = new AlphaMaskEffect
@@ -211,13 +160,8 @@ public static partial class HudComposition
             conicSurface, arcSurface, hueRotationProps, arcRotationProps);
     }
 
-    // Wraps a conic source in the Saturation → Hue → Exposure chain the contour
-    // runs, seeded at the variant's resting values (Transcribing and Recording
-    // split Dark/Light, Rewriting unified). Shared by the clone, naked and
-    // countdown visuals so a graded preview reads identically to the live
-    // stroke in that state — greyscale for Transcribing and Recording
-    // (Saturation 0), full colour for Rewriting. Static (no PropertySet
-    // binding): previews don't blend between states.
+    // The contour's Saturation → Hue → Exposure chain, seeded at a variant's
+    // resting values. Static: previews do not blend between states.
     private static IGraphicsEffect BuildVariantGrading(
         IGraphicsEffectSource conicSource,
         ConicArcStrokeConfig cfg, ProcessingVariant variant, bool isDark)

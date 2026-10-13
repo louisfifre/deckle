@@ -4,9 +4,7 @@
 
 # A running Deckle.exe holds its executable and every loaded assembly open, so
 # a build writing into the directory it was launched from cannot replace the
-# outputs that changed. Returns the running Deckle processes whose executable
-# lives in -Directory or below it; an empty array means the build is free to
-# write there. A process whose path cannot be read is not reported.
+# outputs that changed. A process whose path cannot be read is not reported.
 function Get-DeckleProcessInDirectory {
     [CmdletBinding()]
     param(

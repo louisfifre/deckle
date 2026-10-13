@@ -11,11 +11,12 @@ namespace Deckle.Orchestration;
 // enumeration is a one-shot per settings change, never periodic: there is no
 // timer anywhere in detection.
 //
-// One instance, owned by the App. Settings changes arrive on the UI thread
-// (synchronously inside the registry's write lock); the reconcile they ask for
-// runs on the thread pool, because connecting to WMI and enumerating processes
-// must not block the UI. Sessions start and end on thread-pool or WMI threads,
-// in order, through AppSessionTracker.
+// One instance, owned by the App. Settings changes arrive on the writer's
+// thread (the UI thread, or the scan's worker), synchronously inside the
+// registry's write lock; the reconcile they ask for runs on the thread pool,
+// because connecting to WMI and enumerating processes must not block the UI.
+// Sessions start and end on thread-pool or WMI threads, in order, through
+// AppSessionTracker; Stop ends the remaining ones on its caller's thread.
 //
 // Each session start applies the entry's rules through ProfileTransaction;
 // its end, and Stop, restore them. Stop restores every active profile, so a

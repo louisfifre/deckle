@@ -43,8 +43,7 @@ public sealed class OllamaService
     /// Checks that Ollama is reachable (short timeout). Opt-in retry through
     /// <paramref name="maxAttempts"/> > 1: covers the classic PC boot race
     /// where Deckle starts before Ollama has finished listening on 11434.
-    /// Default = 1 to stay fast for UI uses (Settings page); engine warmup
-    /// explicitly requests maxAttempts=3.
+    /// Default = 1 to stay fast for UI uses (Settings page).
     /// </summary>
     /// <param name="maxAttempts">Number of attempts. >= 1.</param>
     /// <param name="retryDelay">Pause between attempts. Ignored if maxAttempts=1.</param>
@@ -81,9 +80,9 @@ public sealed class OllamaService
 
     /// <summary>
     /// Lists all local models. The caller provides a CancellationToken to bound
-    /// the request; the shared HttpClient has a 30 min timeout, unsuitable for
+    /// the request; the shared HttpClient has a 2 min timeout, unsuitable for
     /// fast calls like list/show. Without a token, the call can hang up to
-    /// 30 min if Ollama is saturated (e.g. concurrent GPU benchmark).
+    /// 2 min if Ollama is saturated (e.g. concurrent GPU benchmark).
     /// HTTP errors and cancellation propagate to the caller. JsonException is
     /// trapped locally and returns an empty list: compromised Ollama or a
     /// reverse proxy returning error HTML must not break the UI.
@@ -139,7 +138,7 @@ public sealed class OllamaService
     /// <summary>
     /// Deletes a local model. See ListModelsAsync for the CancellationToken
     /// note: deletion can be slow on large models, so the caller provides a
-    /// generous timeout (10-30 s).
+    /// generous timeout.
     /// </summary>
     public async Task DeleteModelAsync(string name, CancellationToken ct = default)
     {
@@ -202,7 +201,6 @@ public sealed class OllamaService
         }
     }
 
-    // Options for endpoints that serialize typed DTOs (list, show, delete).
     static readonly JsonSerializerOptions _jsonOpts = new()
     {
         PropertyNamingPolicy = JsonNamingPolicy.SnakeCaseLower,
@@ -212,7 +210,6 @@ public sealed class OllamaService
 
 // ── DTOs ─────────────────────────────────────────────────────────────────────
 
-// Generic request with "model" field (current Ollama API).
 public sealed class OllamaModelRequest
 {
     public string Model { get; set; } = "";

@@ -148,7 +148,6 @@ def reaches_graph_output(
     consumers: dict[str, list[onnx.NodeProto]],
     graph_outputs: set[str],
 ) -> bool:
-    """Prove that a tensor participates in a live path to a declared graph output."""
     pending = [tensor_name]
     visited: set[str] = set()
     while pending:

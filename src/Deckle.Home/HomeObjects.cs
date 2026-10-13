@@ -46,9 +46,8 @@ internal static class HomeObjectJson
         return null;
     }
 
-    // Since 2026-08-10 the title is the human name and the immutable identity
-    // code lives in the `code` property — the inversion of the original
-    // doctrine. An object without a code property simply has no code.
+    // The title is the human name; the immutable identity code lives only in
+    // the `code` property, never in the title.
     public static string Code(JsonObject value)
     {
         JsonObject? property = Property(value, HomeSchema.Properties.Code);
@@ -59,8 +58,8 @@ internal static class HomeObjectJson
     }
 
     // Anytype's own objects-format properties: the link graph and the audit
-    // trail. They are not domain relations — a reference scan that counts
-    // them makes a tâche and its chantier hold each other undeletable
+    // trail. They are not domain relations: a reference scan that counts
+    // them makes a todo and its worksite hold each other undeletable
     // through links/backlinks.
     private static readonly IReadOnlyCollection<string> SystemObjectProperties =
         new HashSet<string>(StringComparer.Ordinal)

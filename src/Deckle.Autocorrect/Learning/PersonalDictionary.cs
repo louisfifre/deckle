@@ -43,8 +43,8 @@ public sealed class PersonalDictionary : IPersonalLexicon, IDisposable
             postLoadMigration: MigrateAndRevalidate);
     }
 
-    // Older schemas either predate the corruption purge or cannot express the new
-    // clean-day contract. Do not infer: restart the learning surface cleanly.
+    // An older schema cannot express the clean-day contract. Do not infer:
+    // restart the learning surface cleanly.
     private bool MigrateAndRevalidate(PersonalDictionaryData data)
     {
         bool mutated = false;
@@ -68,8 +68,6 @@ public sealed class PersonalDictionary : IPersonalLexicon, IDisposable
     }
 
     private PersonalDictionaryData Data => _store.Current;
-
-    // ── Engine-facing reads (IPersonalLexicon) ────────────────────────────────
 
     public bool IsAdopted(string word)
     {
@@ -100,8 +98,6 @@ public sealed class PersonalDictionary : IPersonalLexicon, IDisposable
                 .Select(e => e.Word)
                 .ToList();
     }
-
-    // ── Learning signals ──────────────────────────────────────────────────────
 
     public bool RecordCommit(string word)
     {
@@ -170,8 +166,6 @@ public sealed class PersonalDictionary : IPersonalLexicon, IDisposable
         _store.Save();
     }
 
-    // ── Maintenance (CLI) ──────────────────────────────────────────────────────
-
     public IReadOnlyList<(string Word, double EffectiveWeight, bool Adopted)> SnapshotWords()
     {
         lock (_lock)
@@ -220,8 +214,6 @@ public sealed class PersonalDictionary : IPersonalLexicon, IDisposable
     public void Flush() => _store.Flush();
 
     public void Dispose() => Flush();
-
-    // ── Internals ──────────────────────────────────────────────────────────────
 
     private static bool IsAdoptedEntry(WordEntry e) =>
         e.CleanOccurrences >= RequiredCleanOccurrences

@@ -80,7 +80,6 @@ function ConvertTo-DecklePreviewDiscoveredView {
         $sections.Add((New-TerminalSection -Label $catalogSection.Label -Items $items))
     }
 
-    # Accesses come last as one untitled group; Quit closes the root menu.
     $closingItems = [System.Collections.Generic.List[object]]::new()
     foreach ($access in $Level.Accesses) { $closingItems.Add((New-DecklePreviewDiscoveredAccessTarget -Level $access)) }
     if ($IsRoot) { $closingItems.Add((New-DecklePreviewQuitTarget)) }

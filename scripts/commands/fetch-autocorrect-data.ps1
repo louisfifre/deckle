@@ -7,23 +7,6 @@
 #
 # OutputRoot lives under artifacts\ (gitignored) — these are large,
 # regenerable inputs, never versioned.
-#
-# Sources:
-#   1. Lexique 3.83 (Lexique383.tsv) — French inflected forms with film /
-#      book frequencies. CC BY-SA 4.0. The frequency-ranked French ortho
-#      column is the backbone of the accented-form dictionary.
-#   2. Norvig count_1w.txt — English unigram counts. Used to detect words
-#      that are English (leave untouched) vs French (candidates for
-#      re-accenting).
-#   3. FranceTerme.xml — the official French terminology export. Its English
-#      equivalents seed the restricted global-English protected lexicon.
-#   4. Wikipedia FR plaintext — a real-prose corpus for evaluating the
-#      autocorrect end to end. Split disjointly by article into a train
-#      set and a held-out eval set.
-#
-# Idempotent: a target already present with a plausible size is skipped
-# unless -Force. The Wikipedia corpus is rebuilt only when the existing
-# train/eval files are below their MB targets.
 
 [CmdletBinding()]
 param(
@@ -55,9 +38,6 @@ $ScriptDir = $PSScriptRoot
 $LibDir = Join-Path (Split-Path -Parent $ScriptDir) 'lib'
 . (Join-Path $LibDir 'action-summary.ps1')
 
-# Repo root — two levels up: scripts/commands -> scripts -> repo root. Never
-# hardcode the worktree path; this resolves relative to where the script
-# physically lives.
 $Repo = Split-Path -Parent (Split-Path -Parent $PSScriptRoot)
 
 if (-not $OutputRoot) {
@@ -89,9 +69,8 @@ trap {
 
 function Get-SizeMB($path) { [math]::Round((Get-Item $path).Length / 1MB, 2) }
 
-# Idempotent download via curl.exe (built into Win10/11, native progress
-# bar, fast on large files). $expectedMinBytes is a coarse "present and
-# roughly complete" gate — same pattern as setup-assets.ps1.
+# curl.exe ships with Windows and is fast on large files. $expectedMinBytes is
+# a coarse "present and roughly complete" gate.
 function Download($url, $dst, $expectedMinBytes) {
     $name = Split-Path $dst -Leaf
     if (-not $Force -and (Test-Path $dst) -and ((Get-Item $dst).Length -ge $expectedMinBytes)) {
@@ -105,10 +84,9 @@ function Download($url, $dst, $expectedMinBytes) {
     return $true
 }
 
-# UTF-8 *without BOM* writer. The next pipeline stage and most line-oriented
-# tooling choke on a leading BOM, so we never emit one. Set-Content's utf8
-# encoding writes a BOM on Windows PowerShell; using the .NET encoding object
-# explicitly avoids that across PS versions.
+# The next pipeline stage and most line-oriented tooling choke on a leading
+# BOM. Set-Content's utf8 writes one on Windows PowerShell; the explicit .NET
+# encoding avoids it on every PowerShell version.
 $Utf8NoBom = New-Object System.Text.UTF8Encoding($false)
 
 $swTotal = [System.Diagnostics.Stopwatch]::StartNew()
@@ -121,12 +99,11 @@ if (-not (Test-Path $RawDir)) {
     Write-DeckleWorkflowMessage -Output $WorkflowOutput -Message "exists  $RawDir"
 }
 
-# =============================================================================
-# 1. Lexique 3.83
-# =============================================================================
-# Primary host is lexique.org over http (the server only speaks http and
-# serves the TSV as application/octet-stream). Fallback is the openlexicon
-# GitHub mirror, which serves the same dataset over https raw.
+# Lexique 3.83, CC BY-SA 4.0: its frequency-ranked French ortho column is the
+# backbone of the accented-form dictionary. Primary host is lexique.org over
+# http (the server only speaks http and serves the TSV as
+# application/octet-stream). Fallback is the openlexicon GitHub mirror, which
+# serves the same dataset over https raw.
 Write-DeckleWorkflowStep -Output $WorkflowOutput -Message 'Lexique 3.83 (French inflected forms + frequencies)'
 $lexiqueDst = Join-Path $RawDir 'Lexique383.tsv'
 $lexiquePrimary  = 'http://www.lexique.org/databases/Lexique383/Lexique383.tsv'
@@ -149,28 +126,23 @@ if ($Force -or -not (Test-Path $lexiqueDst) -or ((Get-Item $lexiqueDst).Length -
     Write-DeckleWorkflowMessage -Output $WorkflowOutput -Message "already present Lexique383.tsv ($(Get-SizeMB $lexiqueDst) MB)"
 }
 
-# Verify shape: first line must be a TSV header carrying ortho + a freq
-# column. Report the header columns and the data row count.
 $lexiqueHeader = (Get-Content $lexiqueDst -First 1)
 $lexiqueCols   = $lexiqueHeader -split "`t"
 if ($lexiqueCols -notcontains 'ortho' -or -not ($lexiqueCols -match 'freq')) {
     Write-DeckleWorkflowMessage -Output $WorkflowOutput -Message "header does not look like Lexique (no 'ortho' / 'freq' column) — got: $lexiqueHeader" -Role Warning
 }
-# Total lines minus the header. Measure-Object streams the file rather than
-# loading it whole.
+# Measure-Object streams the file rather than loading it whole.
 $lexiqueLines = (Get-Content $lexiqueDst | Measure-Object -Line).Lines
 $lexiqueRows  = $lexiqueLines - 1
 Write-DeckleWorkflowMessage -Output $WorkflowOutput -Message "header columns ($($lexiqueCols.Count)): $($lexiqueCols -join ', ')"
 Write-DeckleWorkflowMessage -Output $WorkflowOutput -Message "data rows: $lexiqueRows"
 
-# =============================================================================
-# 1b. Morphalou 3.1 (French inflected forms — coverage beyond Lexique)
-# =============================================================================
-# Closes the conjugation / vocabulary gap Lexique leaves (captes, renommes…):
-# build-data overlays these forms at an epsilon frequency. The "tout en un"
-# CSV lives behind an ORTOLANG content URL (the market page is JS-only; the
-# content API serves the zip directly). We keep only the CSV from the archive
-# — the bundled HTML conjugation tree is dead weight. LGPL-LR (see NOTICE.md).
+# Morphalou 3.1 closes the conjugation / vocabulary gap Lexique leaves
+# (captes, renommes…): build-data overlays these forms at an epsilon frequency.
+# The "tout en un" CSV lives behind an ORTOLANG content URL (the market page is
+# JS-only; the content API serves the zip directly). Only the CSV is kept from
+# the archive — the bundled HTML conjugation tree is dead weight. LGPL-LR (see
+# NOTICE.md).
 Write-DeckleWorkflowStep -Output $WorkflowOutput -Message 'Morphalou 3.1 (French inflected-form coverage)'
 $morphalouCsv = Join-Path $RawDir 'Morphalou3.1_CSV.csv'
 $morphalouUrl = 'https://repository.ortolang.fr/api/content/morphalou/3/Morphalou3.1_formatCSV_toutEnUn.zip'
@@ -198,17 +170,14 @@ if ($Force -or -not (Test-Path $morphalouCsv) -or ((Get-Item $morphalouCsv).Leng
     Write-DeckleWorkflowMessage -Output $WorkflowOutput -Message "already present Morphalou3.1_CSV.csv ($(Get-SizeMB $morphalouCsv) MB)"
 }
 
-# =============================================================================
-# 2. Norvig count_1w.txt
-# =============================================================================
+# Norvig's English unigram counts tell English words (left untouched) from
+# French ones (re-accenting candidates).
 Write-DeckleWorkflowStep -Output $WorkflowOutput -Message 'Norvig count_1w.txt (English word counts)'
 $norvigDst = Join-Path $RawDir 'count_1w.txt'
 $norvigUrl = 'https://norvig.com/ngrams/count_1w.txt'
 # The file is ~4.7 MB / ~333k lines; 3 MB is a safe completeness floor.
 Download $norvigUrl $norvigDst 3MB | Out-Null
 
-# Verify line shape: each line is "word<TAB>count". Sample the head rather
-# than parsing all 333k lines.
 $norvigSample = Get-Content $norvigDst -First 3
 $norvigShapeOk = ($norvigSample | Where-Object { $_ -match '^\S+\t\d+$' }).Count -eq $norvigSample.Count
 if (-not $norvigShapeOk) {
@@ -218,9 +187,6 @@ $norvigRows = (Get-Content $norvigDst | Measure-Object -Line).Lines
 Write-DeckleWorkflowMessage -Output $WorkflowOutput -Message "shape ok: $norvigShapeOk (sample: $($norvigSample[0]))"
 Write-DeckleWorkflowMessage -Output $WorkflowOutput -Message "rows: $norvigRows"
 
-# =============================================================================
-# 2b. FranceTerme (French official terminology — English equivalents)
-# =============================================================================
 # The restricted globish seed is built from the <Equivalent langue="en"> entries
 # of the official FranceTerme export. The canonical XML lives on the
 # culture.gouv.fr public export — the remote resource the data.gouv.fr dataset
@@ -232,20 +198,15 @@ $franceTermeUrl = 'http://www.franceterme.culture.gouv.fr/public/FranceTerme.xml
 # The export is ~8.9 MB; 4 MB is a safe "looks complete" floor.
 Download $franceTermeUrl $franceTermeDst 4MB | Out-Null
 
-# Verify shape: the payload must be an XML document (the builder reads its
-# <Equivalent langue="en"> entries).
 $franceTermeHead = (Get-Content $franceTermeDst -First 1)
 if ($franceTermeHead -notmatch '<\?xml') {
     Write-DeckleWorkflowMessage -Output $WorkflowOutput -Message "FranceTerme.xml does not begin with an XML declaration — got: $franceTermeHead" -Role Warning
 }
 
-# =============================================================================
-# 2c. Kaikki wiktionary raw extractions (domain-pack sources, opt-in)
-# =============================================================================
-# The wiktextract JSONL dumps — the surface-form deposits the domain packs are
-# fabricated from (entries carry their topical categories and their inline
-# inflections). The topic-subset JSONLs kaikki once served are deprecated; the
-# pack builder streams these raw dumps instead. One entry per pack language:
+# The kaikki wiktextract JSONL dumps — the surface-form deposits the domain
+# packs are fabricated from (entries carry their topical categories and their
+# inline inflections). kaikki's topic-subset JSONLs are deprecated, so the pack
+# builder streams these raw dumps. One entry per pack language:
 # the URLs are not templatable, kaikki serves the English hub under /dictionary/
 # and every other language under its own /<lang>wiktionary/ path. Dual-licensed
 # CC BY-SA / GFDL (see NOTICE.md).
@@ -269,9 +230,8 @@ if ($IncludeKaikki) {
     }
 }
 
-# =============================================================================
-# 3. Wikipedia FR plaintext corpus (train + eval, disjoint by article)
-# =============================================================================
+# Wikipedia FR plaintext is a real-prose corpus for evaluating the
+# autocorrect end to end.
 Write-DeckleWorkflowStep -Output $WorkflowOutput -Message 'Wikipedia FR plaintext corpus (train + eval)'
 $trainDst = Join-Path $RawDir 'wiki-fr-train.txt'
 $evalDst  = Join-Path $RawDir 'wiki-fr-eval.txt'
@@ -294,9 +254,8 @@ if (-not $Force -and $trainOk -and $evalOk) {
         'Catégorie:Bon article'
     )
 
-    # Politeness wrapper: descriptive UA, maxlag, one retry on transient
-    # failure, throttled to <= 2 req/s by the caller's Start-Sleep. Returns
-    # parsed JSON or throws on the second failure.
+    # Wikimedia API etiquette: descriptive UA, maxlag, one retry on transient
+    # failure, and the callers sleep between requests.
     function Invoke-WikiApi($query) {
         $url = "$apiBase`?$query&format=json&formatversion=2&maxlag=5"
         for ($attempt = 1; $attempt -le 2; $attempt++) {
@@ -310,9 +269,6 @@ if (-not $Force -and $trainOk -and $evalOk) {
         }
     }
 
-    # Enumerate article titles across the quality categories, following the
-    # cmcontinue token. Yields a flat de-duplicated title list, lazily — the
-    # caller stops requesting more once both corpus targets are met.
     function Get-CategoryTitles {
         $seen = @{}
         foreach ($cat in $categories) {
@@ -333,20 +289,17 @@ if (-not $Force -and $trainOk -and $evalOk) {
         }
     }
 
-    # Fetch one article's plaintext extract. explaintext gives section
-    # headings as "== Titre ==" lines — strip those, collapse blank runs.
+    # explaintext renders section headings as "== Titre ==" lines.
     function Get-ArticleText($title) {
         $q = "action=query&prop=extracts&explaintext=1&titles=$([uri]::EscapeDataString($title))"
         $j = Invoke-WikiApi $q
         $page = $j.query.pages[0]
         if ($null -eq $page -or $page.missing -or -not $page.extract) { return $null }
         $lines = $page.extract -split "`r?`n" | Where-Object {
-            # Drop pure section-heading markers like "== Histoire ==".
             $_ -notmatch '^\s*=+\s.*\s=+\s*$'
         }
         $text = ($lines -join "`n")
-        # Collapse runs of 3+ newlines (left by stripped headings) to a
-        # single blank line.
+        # Stripped headings leave runs of blank lines; collapse them to one.
         $text = $text -replace "(`n\s*){3,}", "`n`n"
         return $text.Trim()
     }
@@ -355,10 +308,6 @@ if (-not $Force -and $trainOk -and $evalOk) {
     $allTitles = @(Get-CategoryTitles)
     Write-DeckleWorkflowMessage -Output $WorkflowOutput -Message "candidate titles: $($allTitles.Count)"
 
-    # Build a target. Streams articles into a StreamWriter (UTF-8 no BOM),
-    # one article per paragraph block separated by a blank line. Skips any
-    # title already in $seenSet so train and eval stay disjoint. Returns the
-    # set of titles consumed.
     function Build-Corpus($titles, $dst, $targetBytes, $label, [hashtable]$seenSet) {
         $writer = New-Object System.IO.StreamWriter($dst, $false, $Utf8NoBom)
         $count = 0
@@ -387,8 +336,8 @@ if (-not $Force -and $trainOk -and $evalOk) {
         return $count
     }
 
-    # Shared seen-set guarantees the split is disjoint by article. Train is
-    # filled first, eval second from whatever titles remain.
+    # The shared seen-set keeps train and the held-out eval disjoint by
+    # article. Train is filled first, eval second from whatever titles remain.
     $seen = @{}
     Write-DeckleWorkflowMessage -Output $WorkflowOutput -Message "building train corpus (target $TrainMB MB) ..."
     $trainCount = Build-Corpus $allTitles $trainDst ($TrainMB * 1MB) 'train' $seen
@@ -406,9 +355,6 @@ if (-not $Force -and $trainOk -and $evalOk) {
     }
 }
 
-# =============================================================================
-# Summary
-# =============================================================================
 $swTotal.Stop()
 Write-DeckleWorkflowStep -Output $WorkflowOutput -Message 'done'
 $expectedFiles = @('Lexique383.tsv', 'Morphalou3.1_CSV.csv', 'count_1w.txt', 'FranceTerme.xml', 'wiki-fr-train.txt', 'wiki-fr-eval.txt')

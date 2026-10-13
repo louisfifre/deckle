@@ -3,11 +3,6 @@ using Xunit;
 
 namespace Deckle.Transcription.Tests;
 
-// Write() against a real temporary file system — the pure name resolution is
-// covered by TranscriptFileWriterTests; these pin the disk-facing contract the
-// engine relies on: the transcript lands beside its source, the content round-
-// trips as UTF-8 without BOM, and a re-run of the same audio lands next to the
-// earlier transcript instead of overwriting it.
 [Trait("Category", "integration")]
 public sealed class TranscriptFileWriterDiskTests
 {

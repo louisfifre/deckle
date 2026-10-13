@@ -154,7 +154,6 @@ public sealed class VerbMorphology
         return new VerbMorphology(byForm, ambiguous, synth, skipped);
     }
 
-    // The shipped artifact is gzip-compressed; decompress on the way in.
     public static VerbMorphology LoadTsvGz(string path)
     {
         using var file = File.OpenRead(path);
@@ -186,6 +185,4 @@ public sealed class VerbMorphology
 // infinitive), and the mode/tense/person-number it realises.
 public readonly record struct VerbReading(string Lemma, string Mode, string Tense, string PersonNumber);
 
-// A reverse-synthesis key: the cell a lemma's paradigm fills at a mode/tense/
-// person-number.
 internal readonly record struct ConjugationSlot(string Lemma, string Mode, string Tense, string PersonNumber);

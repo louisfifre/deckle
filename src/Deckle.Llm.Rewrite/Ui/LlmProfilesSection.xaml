@@ -33,7 +33,6 @@
                         Description="{x:Bind Summary, Mode=OneWay}"
                         IsExpanded="{x:Bind IsNew, Mode=OneWay}">
 
-                        <!-- Delete button in the header area -->
                         <Button Tag="{x:Bind}"
                                 Click="DeleteProfile_Click">
                             <StackPanel Orientation="Horizontal" Spacing="6">
@@ -78,7 +77,6 @@
                                                TextWrapping="Wrap"
                                                Margin="0,-4,0,0" />
 
-                                    <!-- Temperature -->
                                     <StackPanel Orientation="Horizontal"
                                                 Spacing="12"
                                                 VerticalAlignment="Bottom">
@@ -102,7 +100,6 @@
                                                TextWrapping="Wrap"
                                                Margin="0,-4,0,0" />
 
-                                    <!-- Context size -->
                                     <StackPanel Orientation="Horizontal"
                                                 Spacing="12"
                                                 VerticalAlignment="Bottom">
@@ -125,7 +122,6 @@
                                                TextWrapping="Wrap"
                                                Margin="0,-4,0,0" />
 
-                                    <!-- Advanced parameters -->
                                     <Expander x:Uid="LlmProfile_AdvancedExpander"
                                               HorizontalAlignment="Stretch"
                                               HorizontalContentAlignment="Stretch">

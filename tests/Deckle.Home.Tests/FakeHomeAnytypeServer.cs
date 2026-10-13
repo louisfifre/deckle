@@ -78,8 +78,8 @@ internal sealed class FakeHomeAnytypeServer : IDisposable
         _schemaManifest["properties"]!.AsArray().OfType<JsonObject>()
             .Single(property => property["key"]!.GetValue<string>() == key)["format"] = format;
 
-    // Seeds a live option on an open select — the space-grown options the
-    // compiled manifest deliberately no longer carries (supplier & co).
+    // Seeds a live option on an open select: a space-grown option the
+    // compiled manifest does not carry.
     public void AddSchemaTag(string propertyKey, string key, string name)
     {
         JsonObject property = ((JsonArray)_schemaManifest["properties"]!).OfType<JsonObject>()

@@ -13,18 +13,15 @@ namespace Deckle.Shell.TrayMenu;
 // without a XAML tree.
 //
 // Rule: the captured MenuFlyoutPresenter size is preferred, because it carries
-// the presenter's real padding and border (the 2026-05-31 Mica gap fix). It is
-// trusted only when it holds every item: a presenter measured clipped, or
-// before its items were laid out, reports its MinHeight, which is positive and
-// passed the old "> 0" check. Otherwise the carrier takes the item extent plus
-// a fixed frame margin.
+// the presenter's real padding and border. It is trusted only when it holds
+// every item: a presenter measured clipped, or before its items were laid out,
+// reports its MinHeight, which is positive. Otherwise the carrier takes the
+// item extent plus a fixed frame margin.
 internal static class TrayMenuSizing
 {
     // Margin per side added to the item extent when the presenter size is not
-    // trusted. Deliberately above the presenter's real chrome (about 1 DIP
-    // horizontally and 3 DIP vertically per side, from the 2026-07-16 log:
-    // presenter 179.5 x 268 for items 177.5 x 262): a card a few DIP too large
-    // shows a thin empty band, a card too small scrolls.
+    // trusted. Deliberately above the presenter's real chrome: a card a few
+    // DIP too large shows a thin empty band, a card too small scrolls.
     internal const double FallbackFrameMargin = 4.0;
 
     internal enum SizeSource
@@ -62,10 +59,6 @@ internal static class TrayMenuSizing
             SizeSource.Items);
     }
 
-    /// <summary>
-    /// True when a captured presenter size is positive and at least as large
-    /// as the items it hosts.
-    /// </summary>
     internal static bool HoldsItems(
         (double Width, double Height) presenter,
         IReadOnlyList<(double Width, double Height)> items)
@@ -81,7 +74,6 @@ internal static class TrayMenuSizing
             && presenter.Width >= itemsWidth
             && presenter.Height >= itemsHeight;
 
-    // Items stack vertically: the widest item sets the width, the heights add.
     internal static (double Width, double Height) ItemExtent(
         IReadOnlyList<(double Width, double Height)> items)
     {

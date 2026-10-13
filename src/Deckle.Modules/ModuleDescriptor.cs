@@ -3,18 +3,16 @@ namespace Deckle.Modules;
 // ── ModuleDescriptor ──────────────────────────────────────────────────────────
 //
 // One user-facing Deckle module as the presence catalogue knows it: a stable id,
-// its place in the selector, the modules it needs, and how to tell whether its
-// heavy assets are on disk. Presence — the user chose to have the module
-// installed — is one axis; runtime activation (a module's own Enabled toggle)
-// is another, below it: an unchecked module is GONE (engine not composed,
-// settings pages not registered), a disabled one is still installed.
+// its place in the selector, and the modules it needs. Presence (the user chose
+// to have the module installed) is one axis; runtime activation (a module's own
+// Enabled toggle) is another, below it: an unchecked module is GONE (engine not
+// composed, settings pages not registered), a disabled one is still installed.
 //
-// Deliberately lean, and deliberately NOT self-described by the module it names,
-// unlike SettingsModuleDescriptor: the end state of the installer companion is a
-// catalogue that can describe a module whose DLLs are not on disk yet, so the
-// descriptor (and the selector's wording, keyed by Id in the selector's own
-// resources) must live with the catalogue's owner — the composition root — not
-// inside the module assembly it describes.
+// Deliberately NOT self-described by the module it names, unlike
+// SettingsModuleDescriptor: the catalogue must be able to describe a module
+// whose DLLs are not on disk yet, so the descriptor (and the selector's wording,
+// keyed by Id in the selector's own resources) lives with the catalogue's owner,
+// the composition root, not inside the module assembly it describes.
 public sealed record ModuleDescriptor
 {
     // Stable identity, unique within the registry. Convention: lowercase ASCII,

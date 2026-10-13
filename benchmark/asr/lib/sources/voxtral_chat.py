@@ -1,30 +1,9 @@
-"""Source Voxtral en mode chat (Audio QA / instruct).
+"""Voxtral in chat mode: the audio plus a free text instruction (translate,
+transcribe verbatim, annotate, summarize).
 
-Utilise ``processor.apply_chat_template(conversation)`` avec un message
-multimodal mixant un bloc audio et un bloc texte. C'est ce mode qui
-permet de **donner des instructions libres** à Voxtral :
-
-  - Traduction directe (« Translate this French audio to English. »)
-  - Transcription verbatim avec hésitations (qualité variable)
-  - Annotations paralinguistiques [pause], [rire], [inaudible]
-  - Résumé, Q&A, classification, etc. (Voxtral est un LLM, pas qu'un ASR)
-
-Format canonique du message (cf. model card officiel) :
-
-    [{
-        "role": "user",
-        "content": [
-            {"type": "audio", "path": "/abs/path/to/audio.wav"},
-            {"type": "text",  "text": "Your instruction here."},
-        ],
-    }]
-
-Important :
-  - **System prompts pas supportés à date.** Toute instruction passe en
-    ``role: user``, à côté du bloc audio (cf. model card Mistral).
-  - Sortie qualité : pour la **transcription pure**, préférer
-    ``VoxtralTranscribeSource`` qui utilise le format canonique. Le mode
-    chat peut paraphraser, résumer, traduire — c'est selon l'instruction.
+Voxtral takes no system prompt, so the instruction travels as ``role: user``
+beside the audio block. For plain transcription prefer
+``VoxtralTranscribeSource``: chat mode may paraphrase.
 """
 
 from __future__ import annotations
@@ -45,8 +24,6 @@ OOM_RETRY_SLEEP_S = 10.0
 
 
 class VoxtralChatSource(Source):
-    """Voxtral en mode chat / instruct (apply_chat_template)."""
-
     name = "voxtral-chat"
     label = "Voxtral Mini 3B — chat audio QA (DirectML)"
 
@@ -59,9 +36,8 @@ class VoxtralChatSource(Source):
         cpu: bool = False,
         model_id: str = "mistralai/Voxtral-Mini-3B-2507",
     ) -> None:
-        """Si ``backend`` est passé, on le réutilise (utile si tu veux
-        instancier les deux sources Voxtral côte à côte sans recharger
-        le modèle). Sinon on charge le modèle ici."""
+        """Pass ``backend`` to share one loaded model between both Voxtral
+        sources."""
         self._backend = backend or load_voxtral(
             dtype=dtype, device_index=device_index, cpu=cpu, model_id=model_id,
         )
@@ -70,26 +46,19 @@ class VoxtralChatSource(Source):
     def backend(self) -> VoxtralBackend:
         return self._backend
 
-    # ── Interface Source ───────────────────────────────────────────────
+    # ── Source interface ───────────────────────────────────────────────
 
     def transcribe(
         self,
         *,
         audio_path:     Path,
-        prompt:         str,         # = instruction utilisateur ; obligatoire ici
+        prompt:         str,         # the instruction sent beside the audio
         max_new_tokens: int | None = None,
         on_event:       Callable[[str, dict], None] | None = None,
     ) -> Transcription:
-        """Invoque Voxtral en mode chat avec audio + instruction texte.
-
-        Si ``prompt`` est vide, on injecte « Transcrit cet audio. » par
-        défaut — plus prévisible côté bench que de laisser le modèle se
-        demander quoi faire.
-
-        ``max_new_tokens=None`` → adaptive selon ``audio_s``.
-
-        En cas d'OOM : cleanup_gpu(sleep=10s), retry une fois avec un
-        plafond plus tendu.
+        """An empty ``prompt`` falls back to a fixed instruction, more
+        predictable than leaving the model to guess. On OOM, free VRAM and
+        retry once with half the token cap.
         """
         audio_s = wav_duration_seconds(audio_path)
         instruction = prompt.strip() or "Transcrit cet audio."
@@ -108,8 +77,8 @@ class VoxtralChatSource(Source):
                     max_new_tokens=current_tokens,
                     attempt=attempts,
                 )
-                # Cleanup VRAM systématique après chaque row réussie.
-                # Cf. justif dans voxtral_transcribe.py._run_with_retry.
+                # Free VRAM after every row: DirectML accumulates
+                # allocations across rows.
                 cleanup_gpu(sleep_s=0.0, on_event=on_event)
                 return result
             except Exception as e:
@@ -159,10 +128,9 @@ class VoxtralChatSource(Source):
         dt_prep = time.perf_counter() - t_prep
 
         t_gen = time.perf_counter()
-        # ``no_grad`` (pas ``inference_mode`` qui plante l'audio encoder)
-        # + ``num_beams=1`` explicite pour éviter d'hériter d'un beam
-        # search du generation_config qui multiplierait le KV-cache.
-        # Cf. justif détaillée dans voxtral_transcribe.py._run_once.
+        # ``no_grad``, not ``inference_mode``, which breaks the audio
+        # encoder; explicit ``num_beams=1`` so a beam setting inherited from
+        # the generation config cannot multiply the KV cache.
         with b.torch.no_grad():
             generated_ids = b.model.generate(
                 **inputs,

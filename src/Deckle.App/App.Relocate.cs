@@ -5,20 +5,14 @@ using Deckle.Setup;
 
 namespace Deckle.App;
 
-// ── Relocate mode ────────────────────────────────────────────────────────────
-//
-// The data-root move's App-side pieces, third sibling of App.Install.cs and
-// App.Update.cs. The running app cannot copy its own live root — sinks and
-// engines hold files open under it — so Settings' validated target restarts
-// the process into --relocate-data, whose only job is RelocatePage: copy,
-// flip DECKLE_DATA_ROOT, relaunch plain. The relaunched process, running on
-// the NEW root, removes the origin (HandleDataRootCleanup) — the last step of
-// the transaction runs only once nothing holds the old tree.
+// The running app cannot copy its own live root (sinks and engines hold files
+// open under it), so Settings restarts the process into --relocate-data, which
+// copies, flips DECKLE_DATA_ROOT and relaunches plain. The relaunched process,
+// on the new root, removes the origin once nothing holds the old tree.
 public partial class App
 {
-    // Settings → restart into the relocate process. The child inherits this
-    // process's environment, so its AppPaths still resolves the OLD root —
-    // exactly what it must copy from.
+    // The child inherits this process's environment, so its AppPaths still
+    // resolves the old root: exactly what it must copy from.
     private void StartDataRelocation(string target)
     {
         string exe = Environment.ProcessPath!;
@@ -34,7 +28,6 @@ public partial class App
         QuitApp();
     }
 
-    // The dedicated process: normal boot short-circuited, RelocatePage alone.
     private async Task RunDataRelocationAsync(string[] args)
     {
         AppDiagnosticsBootstrap.InitializeLocalSinks(AppPaths.DiagnosticsDirectory);
@@ -86,11 +79,8 @@ public partial class App
         return true;
     }
 
-    // Plain boot, on the NEW root: remove the origin a relocation left behind.
-    // Guarded three ways — never the live root, only an existing folder, and
-    // only one that carries a data root's shape — so a mangled argument can
-    // never delete something else. Failure-only logging, same posture as the
-    // install continuation's temp cleanup.
+    // Guarded three ways (never the live root, only an existing folder, only one
+    // shaped like a data root) so a mangled argument can never delete anything else.
     private static void HandleDataRootCleanup(string[] cliArgs)
     {
         int idx = Array.IndexOf(cliArgs, "--cleanup-data");

@@ -10,100 +10,48 @@ using Deckle.Diagnostics;
 
 namespace Deckle.Vision;
 
-// FrameSampler — GPU downsample + CPU readback for the ambient-lighting
-// pixel analysis path (J3 step 2).
+// FrameSampler — GPU downsample + CPU readback for ambient-lighting pixel
+// analysis. Each frame is copied into mip 0 of an intermediate texture,
+// GenerateMips builds the pyramid on the GPU, and only the small target mip
+// reaches a staging texture the CPU reads, never the full-size source.
 //
-// Per-frame flow (runs on the capture service's worker thread,
-// serialised via _lock) :
-//   1. Read CapturedFrame.TexturePtr — already an ID3D11Texture2D
-//      pointer, borrowed for the handler scope by the capture service.
-//   2. CopyResource into our intermediate texture (allocated at source
-//      resolution with mip levels enabled and MISC_GENERATE_MIPS).
-//   3. GenerateMips on the intermediate SRV — the GPU walks the
-//      pyramid in hardware, microseconds on modern adapters.
-//   4. CopySubresourceRegion the target mip into a small staging
-//      texture (CPU-readable, USAGE_STAGING + CPU_ACCESS_READ).
-//      Readback bus traffic ≈ 8 KB at 60×33×4 bytes (BGRA8) or
-//      ≈ 16 KB at 60×33×8 bytes (FP16). Sub-millisecond.
-//   5. Map the staging, iterate the ~2 000 cells, compute the
-//      gamma-correct RGB average (via SrgbToLinear8Lut) + fill the
-//      per-cell Color[] grid.
-//   6. If the source format is FP16 (HDR), tone-map scRGB → 8-bit sRGB
-//      via ColorSpace.ScRgbToSrgb against the display's reported
-//      peak luminance.
-//   7. Unmap and atomically publish the new SampledFrame via
-//      Volatile.Write on _latestSample.
+// The per-cell grid stays in sRGB bytes; AmbientZoneSampler.SampleZone
+// re-linearises it on its own.
 //
-// Averaging is gamma-correct : per-pixel sRGB bytes go through
-// ColorSpace.SrgbToLinear8Lut before summing, the mean is computed in
-// linear light, then re-encoded via LinearToSrgb on the way out. The
-// per-cell grid stays in sRGB bytes for the downstream consumers
-// (Playground preview, AmbientEngine.SampleZone which re-linearises on
-// its own).
+// Ownership: the IDirect3DDevice is borrowed. The native device and
+// immediate context pulled from it are AddRef'd and released in
+// DisposeAsync; the WinRT wrapper is never closed here.
 //
-// What we don't do (out of scope J3 step 2) :
-//   - Black-border detection (J4).
-//   - Zone weighting / multi-region extraction (J4).
-//   - Spring-damper smoothing (J5).
-//
-// Ownership :
-//   - The IDirect3DDevice is borrowed (passed in the constructor). We
-//     extract the native ID3D11Device + immediate context (AddRef'd
-//     pointers we Release in DisposeAsync) but never close the
-//     WinRT wrapper.
-//   - The intermediate texture, intermediate SRV, and staging texture
-//     are owned ; allocated at construction, released on dispose.
-//
-// Threading :
-//   - Process() may be called from any thread (typically the frame
-//     pool's worker). Serialised by _lock — successive frames don't
-//     interleave their Map / Unmap.
-//   - LatestSample is read by the engine push loop and the Playground
-//     preview timer ; both via volatile read.
+// Threading: Process() is serialised by _lock so successive frames never
+// interleave their Map / Unmap. LatestSample is published and read with
+// volatile accesses.
 public sealed partial class FrameSampler : IAsyncDisposable
 {
     private readonly int _sourceWidth;
     private readonly int _sourceHeight;
 
-    // Mip level we sample. Chosen at construction as the smallest grid
-    // that still holds at least 30 × 17 cells: 60 × 33 on a 16:9 source
-    // (4K and 1080p alike), 40 × 22 on 2560 × 1440. See ComputeTargetMip.
     private readonly int _targetMip;
     private readonly int _gridCols;
     private readonly int _gridRows;
 
-    // DXGI format of the pool and our textures. Decides whether we read
-    // BGRA8 bytes or FP16 floats, and whether to tone-map.
     private readonly uint _dxgiFormat;
     private readonly bool _isHdr;
     private readonly float _peakLuminance;
 
-    // Hard ceiling on the rolling content peak, in scRGB units (=
-    // display peak nits / 80). Caps the rolling max so a transient
-    // sun-glint pixel cannot crush the rest of the scene below it.
-    // Floored at 1.0 even in non-HDR sessions where the field is
-    // unused.
+    // Ceiling on the rolling content peak, in scRGB units (1.0 = 80 nits),
+    // so one freak bright pixel cannot crush the rest of the scene.
     private readonly float _displayPeakScRgb;
 
-    // Rolling max of the recent frames' max-channel scRGB values,
-    // consumed by ColorSpace.ScRgbToSrgb as the normalisation peak.
-    // Updated at the end of each ReadGridFP16 ; consumed at the start
-    // of the next frame's tone-map, so the tone-map lags by one frame
-    // at the capture rate (~16 ms at 60 Hz). Asymmetric attack / release :
-    //   - attack instant (rises with the first bright frame)
-    //   - release exponential in time — ContentPeakRetentionPerSecond,
-    //     applied over the measured interval between processed frames
-    //     so the release speed does not depend on the capture rate.
+    // Rolling peak of recent frames' max-channel scRGB values: the
+    // normalisation peak ColorSpace.ScRgbToSrgb tone-maps against.
     private float _contentPeak = 1.0f;
 
     // Share of the gap between the rolling peak and the current frame's
-    // peak that survives one second of release: 0.97^15 ≈ 0.633, a
-    // half-life of about 1.5 s. Kept equal to the former 0.97 per frame
-    // at the original 15 Hz capture.
+    // peak that survives one second of release: about 0.633, a half-life
+    // of about 1.5 s (0.97 per frame at 15 Hz).
     internal static readonly double ContentPeakRetentionPerSecond = Math.Pow(0.97, 15);
 
-    // Stopwatch timestamp of the previous processed frame, 0 before the
-    // first one. Feeds the release interval; guarded by _lock.
+    // Guarded by _lock; 0 before the first processed frame.
     private long _lastProcessedTicks;
 
     /// <summary>Share of the content-peak release gap kept after
@@ -114,12 +62,8 @@ public sealed partial class FrameSampler : IAsyncDisposable
             ? 1f
             : (float)Math.Pow(ContentPeakRetentionPerSecond, elapsedSeconds);
 
-    // Live-reloaded by the engine before each tick when the user
-    // moves the AmbientPage Exposure slider. Applied as a linear-
-    // light EV bias inside ColorSpace.ScRgbToSrgb.
     private double _exposureEv = 0.0;
 
-    // Native COM pointers. AddRef'd ; Released in DisposeAsync.
     private nint _d3dDevice;
     private nint _d3dContext;
     private nint _intermediateTex;
@@ -130,25 +74,20 @@ public sealed partial class FrameSampler : IAsyncDisposable
     private readonly object _lock = new();
     private bool _disposed;
 
-    // Acquire timestamps for the sampler's persistent textures: read by
-    // DisposeAsync to compute age_ms on the DeckleResourceSource side. Each
-    // texture is created once in the ctor and released once on dispose.
+    // Stamped only when the Resource acquire event was emitted; 0 tells
+    // DisposeAsync to skip the matching release event.
     private long _intermediateTexAcquiredTicks;
     private long _stagingTexAcquiredTicks;
 
-    // Most recent snapshot — volatile read so consumers see the latest
-    // value published by Process.
     public SampledFrame? LatestSample => Volatile.Read(ref _latestSample);
 
     public int GridCols => _gridCols;
     public int GridRows => _gridRows;
     public bool IsHdr   => _isHdr;
 
-    /// <summary>Rolling content-peak in scRGB units that the tone-map
-    /// is currently normalising against. Exposed for tuning surfaces
-    /// such as the Playground preview (shows whether the
-    /// auto-exposure is biting). Always ≥ 1.0 (SDR floor). On a non-
-    /// HDR session the value is pinned at 1.0.</summary>
+    /// <summary>Rolling content peak in scRGB units that the tone-map
+    /// normalises against. Never below 1.0; stays at 1.0 on an SDR
+    /// session.</summary>
     public float ContentPeak => _contentPeak;
 
     /// <summary>Live-reload entry point for ambient exposure tuning.
@@ -171,17 +110,11 @@ public sealed partial class FrameSampler : IAsyncDisposable
             ? ScreenCaptureInterop.DXGI_FORMAT_R16G16B16A16_FLOAT
             : ScreenCaptureInterop.DXGI_FORMAT_B8G8R8A8_UNORM;
 
-        // Display peak in scRGB units (80 nits = 1.0 by scRGB
-        // convention). Floored at 1.0 so non-HDR sessions and
-        // pathological 0-nit reports still produce a sensible
-        // ceiling.
         _displayPeakScRgb = _isHdr ? MathF.Max(_peakLuminance / 80f, 1f) : 1f;
 
         (_targetMip, _gridCols, _gridRows) =
             ComputeTargetMip(_sourceWidth, _sourceHeight, targetCols: 30, targetRows: 17);
 
-        // Extract the native ID3D11Device (AddRef'd) and its immediate
-        // context. Both are released in DisposeAsync.
         _d3dDevice = ScreenCaptureInterop.GetD3D11Device(device);
 
         unsafe
@@ -201,11 +134,8 @@ public sealed partial class FrameSampler : IAsyncDisposable
             EventLevel.Verbose,
             (EventKeywords)Keywords.Resource);
         _intermediateTexAcquiredTicks = resourceDetailOpen ? Stopwatch.GetTimestamp() : 0;
-        // Cross-cutting Resource sub-provider: acquire the sampler's three
-        // persistent textures. owner="frame-sampler" to distinguish them from
-        // per-frame textures of "capture-loop". size_bytes approximates memory
-        // allocation (full mip chain for the intermediate ≈ 4/3 of mip 0; we
-        // simplify to mip 0 to stay readable).
+        // size_bytes counts mip 0 only; the full mip chain is about 4/3 of
+        // that.
         if (resourceDetailOpen)
         {
             int bytesPerPixel = _isHdr ? 8 : 4;
@@ -215,9 +145,7 @@ public sealed partial class FrameSampler : IAsyncDisposable
         }
 
         _intermediateSrv = CreateIntermediateSrv();
-        // SRV: no own memory, it is a view. Trace it as generic
-        // "dxgi-resource" with size_bytes=0 to make the handle visible in the
-        // trace.
+        // An SRV is a view with no memory of its own: size_bytes 0.
         if (resourceDetailOpen)
         {
             DeckleResourceSource.Log.ResourceAcquired(
@@ -239,13 +167,9 @@ public sealed partial class FrameSampler : IAsyncDisposable
             _isHdr ? "scrgb_to_srgb" : "none", _peakLuminance);
     }
 
-    // Pick the mip level whose dimensions land closest to (targetCols,
-    // targetRows) without going below on either axis. Halves the source
-    // size at each step ; stops when the next halving would undershoot
-    // the target on one axis. 3840×2160 with target 30×17 → mip 6 (60×33 :
-    // the next step gives 30×16, one row short). 1920×1080 → mip 5
-    // (60×33, same reason). 2560×1440 → mip 6 (40×22). Aspect ratio of
-    // the source is preserved in the resulting grid.
+    // Stops before the halving that would drop below the target on either
+    // axis, so the grid keeps the source aspect ratio. A 16:9 source lands
+    // on 60×33, not 30×17: the next step gives 30×16, one row short.
     private static (int mip, int cols, int rows) ComputeTargetMip(
         int width, int height, int targetCols, int targetRows)
     {

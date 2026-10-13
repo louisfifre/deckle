@@ -47,8 +47,6 @@ public sealed partial class HueBridgeClient
     {
         // Nullable on purpose: only the fields we set get serialised,
         // thanks to JsonIgnoreCondition.WhenWritingNull in _jsonOptions.
-        // For black we send {"on":false,"transitiontime":1}, for a
-        // colour {"on":true,"bri":...,"xy":[...],"transitiontime":1}.
         [JsonPropertyName("on")]             public bool?     On             { get; set; }
         [JsonPropertyName("bri")]            public byte?     Brightness     { get; set; }
         [JsonPropertyName("xy")]             public double[]? Xy             { get; set; }
@@ -64,22 +62,17 @@ public sealed partial class HueBridgeClient
 
     private sealed class HueLightStateDto
     {
-        // The bridge returns many fields here (on, bri, xy, ct, alert, ...).
-        // We only project the reachability flag for now; the colour
-        // pipeline pushes state, it doesn't read it back.
         [JsonPropertyName("reachable")] public bool? Reachable { get; set; }
     }
 
     private sealed class HueAlertRequest
     {
-        // Hue CLIP v1 alert values: "none" (clear), "select" (one
-        // breathe cycle), "lselect" (loop for ~15 s then auto-revert).
-        // We only ever send "lselect" for the Identify pattern.
+        // CLIP v1 alert values: "none" (clear), "select" (one breathe
+        // cycle), "lselect" (loop for about 15 s, then auto-revert).
         [JsonPropertyName("alert")] public string Alert { get; set; } = "lselect";
     }
 
     // CLIP v2 wraps every collection response in {"data":[...], "errors":[...]}.
-    // We only project the fields we consume here.
     private interface IHueV2Response
     {
         List<HueV2ErrorDto>? Errors { get; }

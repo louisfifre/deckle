@@ -1,12 +1,8 @@
-# Orchestrateur perf-cap : boucle profile-config + parse_vulkan_log sur
-# toutes les configs présentes dans models-cache.
+# Run profile-config then parse_vulkan_log for every config whose GGUF and
+# mmproj are present in models-cache; a missing file skips its config.
 #
-# Une config = un GGUF de modèle texte + un mmproj associé. La table
-# locale lie chaque slug à ses chemins ; on skip les configs dont le
-# GGUF manque (download en cours, fichier corrompu, etc.).
-#
-# Sortie : un log brut par config dans runs/perf-cap/<slug>.log, et un
-# row JSONL par config dans runs/perf-cap/aggregated.jsonl.
+# Output: one raw log per config in runs/perf-cap/<slug>.log, and one JSONL
+# row per config in runs/perf-cap/aggregated.jsonl.
 
 [CmdletBinding()]
 param(
@@ -22,17 +18,10 @@ param(
 
 $ErrorActionPreference = 'Stop'
 
-# Mapping slug → (modèle, mmproj, n_gpu_layers). Le mmproj est le même
-# pour toutes les variantes de quantization du même modèle. Quand le
-# fichier dépasse la VRAM totale (Q6_K 24B à 19.35 GB sur 19.65 GB), on
-# laisse quelques layers en CPU (-1 layer ou plus selon marge).
-# Chaque entrée porte ses propres dimensionnements VRAM. Convention :
-# - Layers = 99 par défaut (tout sur GPU).
-# - MmprojOnCpu = $true quand le modèle prend > 16 GB sur 19.65 GB de VRAM,
-#   pour épargner les 1.29 GB du mmproj 24B et laisser de la marge KV.
-# - Ctx = 8192 par défaut, réduit à 2048 pour les modèles très tight.
+# One mmproj serves every quantization of a model. Layers = 99 puts every
+# layer on the GPU. Past 16 GB of model on a 20 GB card, MmprojOnCpu moves
+# the 24B mmproj off the GPU and Ctx shrinks, to leave room for the KV cache.
 $configs = @(
-    # --- Session 2026-05-25/26 (déjà profilés, skip si log présent) ---
     @{ Slug='voxtral-3b-q4_k_m';  Model='Voxtral-Mini-3B-2507-Q4_K_M.gguf';  Mmproj='mmproj-Voxtral-Mini-3B-2507-Q8_0.gguf';  Layers=99; Ctx=8192 }
     @{ Slug='voxtral-3b-q8_0';    Model='Voxtral-Mini-3B-2507-Q8_0.gguf';    Mmproj='mmproj-Voxtral-Mini-3B-2507-Q8_0.gguf';  Layers=99; Ctx=8192 }
     @{ Slug='voxtral-3b-bf16';    Model='Voxtral-Mini-3B-2507-bf16.gguf';    Mmproj='mmproj-Voxtral-Mini-3B-2507-Q8_0.gguf';  Layers=99; Ctx=8192 }
@@ -42,7 +31,6 @@ $configs = @(
     @{ Slug='voxtral-24b-q3_k_m'; Model='Voxtral-Small-24B-2507-Q3_K_M.gguf'; Mmproj='mmproj-Voxtral-Small-24B-2507.gguf';    Layers=99; Ctx=8192 }
     @{ Slug='voxtral-24b-q6_k';   Model='Voxtral-Small-24B-2507-Q6_K.gguf';   Mmproj='mmproj-Voxtral-Small-24B-2507.gguf';    Layers=99; Ctx=2048; MmprojOnCpu=$true }
 
-    # --- Session 2026-05-27 (overnight) — K_M et K_L variants ---
     @{ Slug='voxtral-3b-q3_k_l';  Model='Voxtral-Mini-3B-2507-Q3_K_L.gguf';  Mmproj='mmproj-Voxtral-Mini-3B-2507-Q8_0.gguf';  Layers=99; Ctx=8192 }
     @{ Slug='voxtral-3b-q4_k_l';  Model='Voxtral-Mini-3B-2507-Q4_K_L.gguf';  Mmproj='mmproj-Voxtral-Mini-3B-2507-Q8_0.gguf';  Layers=99; Ctx=8192 }
     @{ Slug='voxtral-3b-q5_k_m';  Model='Voxtral-Mini-3B-2507-Q5_K_M.gguf';  Mmproj='mmproj-Voxtral-Mini-3B-2507-Q8_0.gguf';  Layers=99; Ctx=8192 }
@@ -93,7 +81,6 @@ foreach ($c in $configs) {
         continue
     }
 
-    # Phase 1 : profilage. Génère le log brut dans OutputDir.
     $profileArgs = @{
         ConfigName  = $c.Slug
         Model       = $modelPath
@@ -115,7 +102,6 @@ foreach ($c in $configs) {
         continue
     }
 
-    # Phase 2 : parse. Append un row au JSONL.
     $logPath = Join-Path $OutputDir "$($c.Slug).log"
     $modelSize = (Get-Item $modelPath).Length
 

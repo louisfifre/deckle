@@ -12,9 +12,6 @@ namespace Deckle.Anytype;
 // per fact, no banner, no markdown decoration beyond what carries meaning.
 public sealed class ProjectGestures(AnytypeApiClient api, NameResolver resolver)
 {
-    // Project header digest + the project's tasks + its last 3 reports. Reports
-    // are joined through the tasks — the link lives on the report side now, the
-    // project itself has no report link.
     public async Task<string> OverviewAsync(string project, CancellationToken ct = default)
     {
         var started = DateTime.UtcNow;
@@ -36,8 +33,6 @@ public sealed class ProjectGestures(AnytypeApiClient api, NameResolver resolver)
         return sb.ToString().TrimEnd();
     }
 
-    // state: état tag key or display name (resolved either way). null → every
-    // non-archived project, grouped by état in the canonical état order.
     public async Task<string> ListAsync(string? state = null, CancellationToken ct = default)
     {
         var started = DateTime.UtcNow;
@@ -49,7 +44,6 @@ public sealed class ProjectGestures(AnytypeApiClient api, NameResolver resolver)
             : DevSpace.Etat.Resolve(state)
                 ?? throw new ArgumentException($"État inconnu « {state} ».", nameof(state));
 
-        // Group projects by their état key; keep insertion order per group.
         var byEtat = new Dictionary<string, List<JsonObject>>(StringComparer.Ordinal);
         foreach (JsonObject p in hits)
         {
@@ -74,7 +68,6 @@ public sealed class ProjectGestures(AnytypeApiClient api, NameResolver resolver)
             foreach (JsonObject p in projects) AppendProjectLine(sb, p);
         }
 
-        // Projects whose état is unset or unknown land in a trailing bucket.
         if (wantedEtat is null)
             foreach (var (etat, projects) in byEtat)
                 if (DevSpace.Etat.NameFor(etat) is null)
@@ -90,9 +83,6 @@ public sealed class ProjectGestures(AnytypeApiClient api, NameResolver resolver)
         return digest;
     }
 
-    // Creates the permanent epic container at the top of the planning model.
-    // The REST API does not apply the type's default template implicitly, so the
-    // measured Epic template id must be sent to copy its properties and views.
     public async Task<string> CreateEpicAsync(
         string name, string? state = null, CancellationToken ct = default)
     {
@@ -120,9 +110,7 @@ public sealed class ProjectGestures(AnytypeApiClient api, NameResolver resolver)
         return $"Epic créé : {PropReader.Name(created)} ({DevSpace.Etat.NameFor(etatKey) ?? etatKey})";
     }
 
-    // Creates the project (état tag from state or en_attente by default), then,
-    // if an epic is given, resolves the epic collection and adds the project to
-    // it (epic↔project is collection membership, not a property link).
+    // Epic↔project is collection membership, not a property link.
     public async Task<string> CreateAsync(string name, string? epic = null, string? state = null, CancellationToken ct = default)
     {
         var started = DateTime.UtcNow;
@@ -136,8 +124,6 @@ public sealed class ProjectGestures(AnytypeApiClient api, NameResolver resolver)
         {
             ["type_key"] = DevSpace.Types.Project,
             ["name"] = name,
-            // The API ignores the type's default template unless we name it; pass
-            // it so the project is born with the template's blocks and views.
             ["template_id"] = DevSpace.Templates.Project,
             ["properties"] = new JsonArray
             {
@@ -165,8 +151,6 @@ public sealed class ProjectGestures(AnytypeApiClient api, NameResolver resolver)
 
     // ── Digest building ───────────────────────────────────────────────────
 
-    // Header facts, one per line, only when present. Priorité is stored as a
-    // tag key; surface its numeric level.
     static void AppendHeaderFacts(StringBuilder sb, JsonObject project)
     {
         AppendFact(sb, "État", DevSpace.Etat.NameFor(PropReader.Select(project, DevSpace.Props.Etat)));
@@ -179,12 +163,8 @@ public sealed class ProjectGestures(AnytypeApiClient api, NameResolver resolver)
         AppendFact(sb, "Définition de fini", PropReader.Text(project, DevSpace.Props.DefinitionDeFini));
     }
 
-    // Appends the project's active task lines and returns every related task id
-    // for the report join. Archiving a task removes that task from the active
-    // view, but does not archive the separate reports linked to it.
-    // Every task of the space is read (ObjectListing pages the search to the
-    // end) then filtered client-side on relation_projet containing this project
-    // id: one page would drop the least recently modified tasks past its size.
+    // Returns every related task id for the report join, archived tasks
+    // included: archiving a task does not archive the reports linked to it.
     async Task<IReadOnlyList<string>> AppendTasksAsync(StringBuilder sb, string projectId, CancellationToken ct)
     {
         IReadOnlyList<JsonObject> hits = await ObjectListing.AllOfTypesAsync(api, api.SpaceId, [DevSpace.Types.Task], ct);
@@ -205,10 +185,8 @@ public sealed class ProjectGestures(AnytypeApiClient api, NameResolver resolver)
         return taskIds;
     }
 
-    // Reports of the project = reports linked to any of the project's tasks (the
-    // link lives on the report side, « Tâche(s) liée(s) »; the project itself has
-    // no report link). Read every report (ObjectListing pages the search to the
-    // end), keep those touching a project task, most recent journal date first.
+    // Reports are joined through the tasks: the link lives on the report side
+    // (« Tâche(s) liée(s) »), the project itself has no report link.
     async Task AppendRecentReportsAsync(StringBuilder sb, IReadOnlyList<string> taskIds, int reportCount, bool fullBody, CancellationToken ct)
     {
         if (taskIds.Count == 0) return;
@@ -253,7 +231,6 @@ public sealed class ProjectGestures(AnytypeApiClient api, NameResolver resolver)
 
     static void AppendTaskLine(StringBuilder sb, JsonObject t)
     {
-        // PropReader.Done centralizes the action-layout completion convention.
         sb.Append(PropReader.Done(t) ? "[x] " : "[ ] ");
         sb.Append(PropReader.Name(t));
 
@@ -326,8 +303,7 @@ file static class PropReader
         return ids;
     }
 
-    // Done on the action layout: Anytype's built-in action checkbox, key
-    // DevSpace.Props.Done. Read-only here; TaskGestures owns writing it.
+    // Read-only here; QueryGestures.CompleteAsync owns writing it.
     public static bool Done(JsonObject obj) => Checkbox(obj, DevSpace.Props.Done);
 
     static JsonObject? Prop(JsonObject obj, string key)

@@ -45,8 +45,8 @@ public readonly record struct HomeElementCode(
     }
 }
 
-// Retained category vocabulary from the accepted target manifest. Some entries
-// await the assembly/network review; recognition is not a classification rule.
+// Category vocabulary read from the target manifest. Recognizing a code is not
+// a classification rule.
 public static class HomeCategories
 {
     private static readonly IReadOnlyList<string> Codes =

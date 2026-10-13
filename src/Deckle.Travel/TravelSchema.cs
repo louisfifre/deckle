@@ -244,6 +244,8 @@ public static class TravelSchema
         {
             snapshot.TagsByProperty.TryGetValue(propertyKey, out var tags);
             tags ??= new Dictionary<string, SchemaTagInfo>(StringComparer.Ordinal);
+            // Anytype derives a live tag key from its label, so the seed key may
+            // not survive creation; match by key or by name.
             foreach ((string key, string name) in vocabulary)
                 if (!tags.Values.Distinct().Any(tag =>
                         string.Equals(tag.Key, key, StringComparison.OrdinalIgnoreCase)

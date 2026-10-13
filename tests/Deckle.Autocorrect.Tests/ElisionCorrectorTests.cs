@@ -8,8 +8,7 @@ namespace Deckle.Autocorrect.Tests;
 // The elision corrector: restore a dropped apostrophe in a glued proclitic
 // ("cest" → "c'est"). As with the other stages, conservativity is the product —
 // the load-bearing guard is that a glued elision is never itself a valid word,
-// so the bulk of these assert a real word is LEFT ALONE while the few splits are
-// the ones that earned it.
+// so the bulk of these assert a real word is LEFT ALONE.
 [Trait("Category", "unit")]
 public class ElisionCorrectorTests
 {
@@ -45,7 +44,7 @@ public class ElisionCorrectorTests
     [InlineData("leau", "l'eau")]
     [InlineData("nest", "n'est")]
     [InlineData("sil", "s'il")]
-    [InlineData("léglise", "l'église")] // accented tail kept, apostrophe restored
+    [InlineData("léglise", "l'église")]
     public void RestoresDroppedElision(string typed, string expected)
     {
         var d = Corrector().Evaluate(typed, []);
@@ -58,8 +57,7 @@ public class ElisionCorrectorTests
     [Fact]
     public void CarriesSentenceInitialCapital()
     {
-        // No left context: a capitalised glued elision is split and the capital
-        // carried onto the proclitic head ("Cest" → "C'est").
+        // No left context means sentence-initial, so the capital is not a name.
         var d = Corrector().Evaluate("Cest", []);
 
         Assert.Equal("C'est", d!.Replacement);
@@ -73,7 +71,7 @@ public class ElisionCorrectorTests
     [InlineData("quelle")]  // a real word, not qu'elle
     [InlineData("tas")]     // a real word, not t'as
     [InlineData("ces")]     // a real word, not c'es
-    [InlineData("sur")]     // a real word
+    [InlineData("sur")]
     public void ValidFrenchWordIsNeverSplit(string word)
     {
         Assert.Null(Corrector().Evaluate(word, []));
@@ -120,7 +118,6 @@ public class ElisionCorrectorTests
     [Fact]
     public void TailThatIsNotAWordIsLeftAlone()
     {
-        // "lxyz": "l" + "xyz", but "xyz" is no French word — not an elision.
         Assert.Null(Corrector().Evaluate("lxyz", []));
     }
 
@@ -134,15 +131,13 @@ public class ElisionCorrectorTests
     [Fact]
     public void NonProcliticLeadingLetterIsLeftAlone()
     {
-        // "best" starts with no proclitic — "b" does not elide — so it is left
-        // for the typo corrector, not split.
+        // "b" does not elide, so "best" is left for the typo corrector.
         Assert.Null(Corrector().Evaluate("best", []));
     }
 
     [Fact]
     public void AdoptedWordShieldsItself()
     {
-        // The user adopted the glued form as their own — never split it.
         var personal = new StubPersonal(adopted: new() { "cest" });
         Assert.Null(Corrector(personal: personal).Evaluate("cest", []));
     }

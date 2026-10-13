@@ -7,11 +7,11 @@ namespace Deckle.Transcription;
 // they are detection rules, and the threshold depends on the microphone.
 //
 // A sealed record class, as Deckle.Presets requires (it holds "no Custom values
-// yet" as null). Value equality is still what the family relies on when it
-// derives a selection from the stored values, and what the tests compare. The
-// positional parameters double as the JSON shape: the record is persisted as
-// EnergySegmenterSettings.CutCustomValues, and System.Text.Json builds it
-// through its constructor, matching each parameter to its JSON property by name.
+// yet" as null). The family relies on value equality when it derives a
+// selection from the stored values. The positional parameters double as the
+// JSON shape: the record is persisted as EnergySegmenterSettings.CutCustomValues,
+// and System.Text.Json builds it through its constructor, matching each
+// parameter to its JSON property by name.
 public sealed record CutCurveValues(
     int HangoverMaxMs,
     int HangoverMinMs,

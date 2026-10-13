@@ -4,20 +4,13 @@ using System.Text;
 
 namespace Deckle.Autocorrect.Lab;
 
-// One row of the calibration curve: at a given confidence margin, how many
-// ambiguous slots the sentence stage would APPLY (the judge's top form cleared
-// the bar), how many of those match what the sentence actually ended with
-// (Agreed), how many it would HOLD instead, and the two rates the maintainer
-// reads off — precision (agreed / applied, the trust) and coverage (applied /
-// all ambiguous slots, the reach).
 public readonly record struct CalibrationRow(
     double Threshold, int Applied, int Agreed, int Held, double Precision, double Coverage);
 
-// Sweeps a margin threshold over replay results collected at margin 0 (the judge
-// returns its raw argmax and the top-vs-second gap for every slot, never
-// abstaining on the margin) and reports the precision/coverage tradeoff at each
-// bar. This is what picks the sentence stage's operating margin against real
-// typing, offline — the calibration the live engine cannot do on itself.
+// Sweeps a margin threshold over replay results collected at margin 0, where the
+// judge returns its argmax and top-vs-second gap for every slot without
+// abstaining, and reports the precision/coverage tradeoff at each bar. It picks
+// the sentence stage's operating margin offline, against real typing.
 public static class MarginCalibration
 {
     public static IReadOnlyList<CalibrationRow> Sweep(
@@ -47,9 +40,6 @@ public static class MarginCalibration
         return rows;
     }
 
-    // A self-reading markdown report: the corpus counts, then the curve. The
-    // maintainer reads down the rows for the margin where precision is high
-    // enough to trust and coverage still worth having.
     public static string Render(ReplaySummary summary, IReadOnlyList<CalibrationRow> rows)
     {
         var sb = new StringBuilder();
@@ -58,9 +48,6 @@ public static class MarginCalibration
         return sb.ToString();
     }
 
-    // The same report, with the corpus-intake block between the header and the curve:
-    // how many records were replayed vs repaired vs skipped (the guard against silent
-    // degradation), the closure mix, and how many slots were truth-overlaid.
     public static string Render(
         ReplaySummary summary, CorpusIntake intake, IReadOnlyList<CalibrationRow> rows)
     {

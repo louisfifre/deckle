@@ -1,8 +1,5 @@
-<!-- Landing page : SettingsCards routing to the Playground experiments.
-     Pattern mirrors Dev Home / Settings hub : a centred,
-     readable column with an H1 and a stack of cards. Routing goes
-     through PlaygroundShell.NavigateTo so the page doesn't hold a
-     reference to the parent Window's NavigationView. -->
+<!-- Landing page. Routing goes through PlaygroundShell.NavigateTo so the
+     page holds no reference to the window's NavigationView. -->
 <Page
     x:Class="Deckle.Playground.HomePage"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
@@ -18,10 +15,8 @@
               Margin="32,32,32,32">
             <StackPanel Spacing="32">
 
-                <!-- Header block : H1 + one-line description. TitleTextBlockStyle
-                     (not TitleLarge) is the shared Playground header convention —
-                     the HUD page sets the reference, every page aligns to it so
-                     no surface reads oversized. -->
+                <!-- TitleTextBlockStyle, not TitleLarge: every Playground page
+                     header uses it, so no surface reads oversized. -->
                 <StackPanel Spacing="8">
                     <TextBlock x:Uid="PlaygroundHomeHeader"
                                Style="{ThemeResource TitleTextBlockStyle}" />
@@ -31,13 +26,8 @@
                                TextWrapping="Wrap" />
                 </StackPanel>
 
-                <!-- Routing cards. IsClickEnabled + Click handler
-                     follows the SettingsCard "actionable row" pattern :
-                     the whole card is a hit target, the chevron glyph
-                     on the right is added automatically. Glyphs match
-                     the NavigationView item icons in PlaygroundWindow
-                     so the user reads "this card goes to the HUD nav
-                     item" without further explanation. -->
+                <!-- Each card's glyph matches its NavigationView item icon in
+                     PlaygroundWindow. -->
                 <StackPanel Spacing="8">
                     <controls:SettingsCard x:Name="HomeHudCard"
                                            x:Uid="PlaygroundHomeHudCard"
@@ -61,12 +51,7 @@
                                            Click="OnCorrectionCardClick" />
                 </StackPanel>
 
-                <!-- Notifications test surface. Manual probe for the toast
-                     channel : fires the Playground TestPrompt descriptor
-                     through the dispatcher and reports the answer. Section
-                     header uses BodyStrongTextBlockStyle, the Win11 settings
-                     section-title convention, so it reads as a distinct group
-                     below the routing cards without competing with the H1. -->
+                <!-- Manual probe for the toast channel. -->
                 <StackPanel Spacing="8">
                     <TextBlock x:Uid="PlaygroundHomeNotificationsHeader"
                                Style="{ThemeResource BodyStrongTextBlockStyle}" />

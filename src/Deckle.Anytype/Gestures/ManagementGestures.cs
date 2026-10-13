@@ -6,8 +6,7 @@ namespace Deckle.Anytype;
 // Management gestures: the destructive operations the base catalog withholds.
 // One responsibility — taking objects out of the space — served only to a
 // supervised consumer (the host mounts this only on the client surface that
-// opts in). For now the single capability is delete; the batch variant is
-// deferred.
+// opts in).
 //
 // delete moves an object to Anytype's RESTORABLE bin, not a hard delete. The
 // danger is therefore not irreversibility but hitting the wrong target, since
@@ -52,9 +51,8 @@ public sealed class ManagementGestures(AnytypeApiClient api, NameResolver resolv
         return $"Mis en corbeille : {name} ({type}). Restaurable depuis la corbeille Anytype.";
     }
 
-    // The preview the first call returns: enough identity to confirm the target is
-    // the right one, and the exact recall to commit. The id is spelled out so the
-    // model copies it verbatim into the confirming call.
+    // The id is spelled out so the model copies it verbatim into the confirming
+    // call.
     static string Preview(string id, string name, string type, JsonObject obj)
     {
         var sb = new System.Text.StringBuilder();

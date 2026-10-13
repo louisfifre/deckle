@@ -2,8 +2,7 @@ namespace Deckle.Autocorrect;
 
 // The permanent restricted-English protection tier. The generated FranceTerme
 // seed supplies broad technical terminology; this small reviewed overlay covers
-// the everyday developer literals repeatedly observed in Deckle's local
-// correction telemetry. Several deliberately collide with plausible French
+// everyday developer literals. Several deliberately collide with plausible French
 // neighbours (docs/dos, repo/repos, model/modèle): that is exactly why they need
 // an explicit literal grant instead of being inferred from spelling distance.
 public sealed class GlobalEnglishLexicon : IFrequencyLexicon

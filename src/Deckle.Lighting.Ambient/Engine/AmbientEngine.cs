@@ -11,45 +11,34 @@ namespace Deckle.Lighting.Ambient;
 // stitches an upstream ScreenCaptureService to a downstream
 // ILightOutput via a FrameSampler that runs the analysis on the GPU.
 // At each tick the engine reads the sampler's most recent
-// SampledFrame and pushes colour(s) to the output — with per-channel
-// early-exit thresholds so a static screen doesn't spam the bridge.
+// SampledFrame and pushes colour(s) to the output, through a change
+// gate (AmbientPushGate) so a static screen doesn't spam the bridge.
 //
 // Two pipeline shapes, selected at Start time.
 //
 //   - Group mode (default). One sRGB average over the whole frame, one
 //     push to the connected group via <see cref="ILightOutput.SetColorAsync"/>.
 //     Every driver supports this path. REST runs at 15 Hz; a streaming
-//     driver can advertise its preferred rate (Hue Entertainment: 50 Hz).
+//     driver can advertise its preferred rate.
 //
 //   - Multi-light mode. One sRGB sample per screen-border zone (top /
 //     bottom / left / right), broadcast to every light assigned to
 //     that zone via <see cref="LightZone"/>, pushed in a single batch
 //     via <see cref="IMultiLightOutput.SetLightColorsAsync"/>. Only
-//     enabled when the driver implements <see cref="IMultiLightOutput"/>
-//     AND the caller passes a non-empty zone assignment dictionary AND
-//     `useMultiLight=true`. REST cadence is throttled to 10 Hz to keep
-//     total per-second PUT count within the Hue REST CLIP v1 comfort zone
-//     for a typical 3-5 light setup (3 lights × 10 Hz = 30 PUT/s).
-//     A batch streaming driver can override that transport constraint.
-//     The four zones are sampled once per tick from a band of
-//     <see cref="AmbientSettings.BorderDepth"/> on every edge — this
-//     mirrors HyperHDR's <c>horizontalDepth</c> / <c>verticalDepth</c>
-//     concept, collapsed to a single user-tunable value (V0 shipped
-//     asymmetric 0.33 / 0.40 hardcoded ; V1 lets the user pick one
-//     fraction that fits their room).
+//     enabled when UseMultiLight is set, the driver implements
+//     <see cref="IMultiLightOutput"/> AND it reports at least one light.
+//     REST cadence is throttled to 10 Hz to keep the per-second PUT
+//     count within the Hue REST CLIP v1 comfort zone (3 lights × 10 Hz
+//     = 30 PUT/s). A batch streaming driver can override that transport
+//     constraint. The four zones are sampled once per tick from a border
+//     band (AmbientSettings.BorderMode / BorderDepth / BorderCells),
+//     HyperHDR's <c>horizontalDepth</c> / <c>verticalDepth</c> collapsed
+//     to one user value.
 //
 // If multi-light is requested but the driver doesn't expose the
 // capability, the engine logs a warning and falls back to group mode
 // transparently — the user still gets ambient lighting, just not the
 // zoned variant.
-//
-// Why an engine at all (vs. wiring the events directly in the
-// AmbientPage code-behind) : we want a single
-// well-tested object that owns the lifecycle (start, stop, dispose),
-// the cadence (throttle pushes to a sane Hz against the bridge),
-// and the error surface (one Warning when a push fails, never spam
-// the LogWindow). The Settings master toggle and the AmbientPage
-// tuning controls route through the same engine.
 //
 // Ownership.
 //   - The ScreenCaptureService is owned. The engine constructs it in
@@ -61,74 +50,26 @@ namespace Deckle.Lighting.Ambient;
 //     is running, rebuilt in place when a mid-session recreate
 //     renegotiates the capture surface (OnCaptureFormatChanged), and
 //     disposed in the Stop cleanup.
-//   - The ILightOutput is owned. ConnectAsync on Start ; DisposeAsync
-//     (or Dispose) in the Stop cleanup.
+//   - The ILightOutput is owned and disposed in the Stop cleanup.
 //   - The HueBridgeClient is borrowed from HuePairingService, the
 //     process-wide singleton owner shared with the
 //     Settings AmbientPage. The engine releases the reference on Stop
 //     but never disposes it.
-//   - The engine owns its CancellationTokenSource and the push
-//     loop ; both are released on Stop / DisposeAsync.
-//
-// Lifecycle.
-//   - Construct cheap, no I/O.
-//   - StartAsync : ConnectAsync the output (idempotent), pick the
-//     pipeline shape based on capability + placements, ensure capture
-//     is running, kick the push loop. Returns once both are up —
-//     exceptions surface from there.
-//   - Stop : cancels the loop. Doesn't await the loop's finally —
-//     the cancellation token is enough.
-//   - DisposeAsync : Stop + dispose CTS. Idempotent.
 public sealed partial class AmbientEngine : IAsyncDisposable
 {
 
-    // Early-exit threshold — if |ΔR| + |ΔG| + |ΔB| < this, the push
-    // is skipped. Now sourced from AmbientSettings.ChangeThreshold
-    // (default 6), refreshed at the top of each tick. Effective
-    // value seen by GroupTickAsync / MultiLightTickAsync via the
-    // _changeThreshold field below.
-
     // Black gate — a light is sent black only when its source is exactly
     // black : the frame's linear average (group) or the zone's linear
-    // mean (multi) is exactly (0, 0, 0). A dark but non-black frame goes
-    // through the tuning like any other. With the brightness floor off,
+    // mean (multi) is exactly (0, 0, 0). With the brightness floor off,
     // HueColorMath maps a pushed (0, 0, 0) to on:false ; with the floor
     // on, AmbientColorPipeline lifts black to the neutral floor instead.
-    // The colour stays in float until one quantisation before the push.
 
-    // Zone-sampling band thickness. V0 hardcoded an asymmetric pair
-    // (lateral 0.33, vertical 0.40) tuned for a 3-lamp Top + Left + Right
-    // setup ; V1 exposes the thickness to the user via two scales :
-    //   - Share — fraction of the matching screen dimension, same number
-    //     on every edge. The top / bottom bands end up thinner in pixels
-    //     than the lateral bands on a 16:9 screen.
-    //   - Cells — fixed sampler-cell thickness, same count on every
-    //     edge. The top band reads at the same number of cells as
-    //     the lateral bands regardless of aspect ratio.
-    // Both values + the mode selector are persisted on AmbientSettings
-    // and snapshotted at the top of every tick (same live-reload
-    // pattern as the HDR sliders below). The engine converts the user
-    // value into a per-axis cell count before calling SampleZone.
-
-    // Heartbeat cadence for the push-loop telemetry. The per-tick
-    // "push" log used to fire 10-15 times a second on a steady
-    // screen, flooding the LogWindow with identical lines. We now
-    // log a per-tick line only on an actual colour change, and roll
-    // up the rest into a single heartbeat every N seconds so the
-    // pipeline still reports it's alive without producing 300 lines
-    // for a 30-second session.
+    // Steady ticks roll up into one heartbeat per interval instead of one
+    // log line per tick.
     private const int HeartbeatIntervalMs = 5000;
 
     private readonly IAmbientEngineHost _host;
 
-    // Three deps are owned by the engine — instantiated in StartAsync,
-    // disposed in Stop. Null when the engine is idle. The
-    // ScreenCaptureService is created fresh on every start so the
-    // monitor selection + HDR negotiation are picked up from the
-    // current Windows state rather than a stale snapshot. The bridge
-    // client is borrowed from HuePairingService (singleton owner,
-    // shared with the Settings AmbientPage) — never
-    // disposed here, the reference is simply released on Stop.
     private ScreenCaptureService? _capture;
     private HueBridgeClient? _bridgeClient;
     private ILightOutput? _output;
@@ -144,12 +85,9 @@ public sealed partial class AmbientEngine : IAsyncDisposable
     private bool _frameProcessingIncidentOpen;
     private int _frameProcessingStopRequested;
 
-    // Resolved at StartAsync from _host.Ambient.UseMultiLight. The
-    // multi-light pipeline shape is locked for the session : changing
-    // UseMultiLight live mid-run would force a Stop + Start to reshape
-    // the loop and the per-light state, so we snapshot at start and
-    // ignore later host mutations until the next start. The app does
-    // that Stop + Start when the value changes (AmbientStartSettings).
+    // Snapshotted at StartAsync : the loop shape and the per-light state
+    // are built there, so a live change waits for the next start. The app
+    // restarts the engine when the value changes (AmbientStartSettings).
     private bool _useMultiLightRequested;
 
     private CancellationTokenSource? _cts;
@@ -158,12 +96,10 @@ public sealed partial class AmbientEngine : IAsyncDisposable
     private long _startTimestamp;
     private bool _disposed;
 
-    // Reason tag read by Stop() when emitting PipelineStopDetail. Set
-    // by the internal-trigger paths (OnCaptureStopped → "capture_lost",
-    // OnResourceUpdate → "external") before they post Stop() to the
-    // thread pool ; otherwise stays at the "user" default for the toggle
-    // path. Reset to "user" at the top of StartAsync so a previous
-    // internal stop doesn't leak into the next session's user-stop log.
+    // Reason tag read by Stop() when emitting PipelineStopDetail. Internal
+    // triggers set it before they post Stop() to the thread pool ; the
+    // toggle path leaves "user". StartAsync resets it so an internal stop
+    // doesn't leak into the next session's log.
     private string _stopReason = "user";
     private string? _startAbortReason;
     private int _stopRequested;
@@ -195,21 +131,14 @@ public sealed partial class AmbientEngine : IAsyncDisposable
     // Null when no cleanup is in flight (cold-start state).
     private Task? _stopCleanupTask;
 
-    // Group-mode state — last colour we actually pushed to the bridge.
-    // Compared with the sampler's most recent average to decide whether
-    // to push or suppress. Default to (-1, -1, -1) so the first tick
-    // always pushes.
+    // Last colour pushed in group mode ; (-1, -1, -1) means none yet, so
+    // the first tick always pushes.
     private int _lastR = -1, _lastG = -1, _lastB = -1;
 
-    // Multi-light-mode state — last colour pushed per light id. The
-    // dictionary lives for the engine session ; cleared on Stop.
     private Dictionary<string, (int R, int G, int B)>? _multiLastPushed;
 
-    // Resolved multi-light fixture list (driver-reported) at Start time.
-    // Null when group mode is active.
     private IReadOnlyList<LightDescriptor>? _multiLights;
 
-    // Active pipeline shape. Set in StartAsync, read by the loop.
     private bool _multiLightActive;
     private int _pushRateHz = 15;
     private int _pushIntervalMs = 1000 / 15;
@@ -223,11 +152,9 @@ public sealed partial class AmbientEngine : IAsyncDisposable
     private string _pushFailureType = "none";
     private string _pushFailureMessage = "none";
 
-    // Heartbeat accumulators — counted by the push loop between log
-    // emissions and reset every HeartbeatIntervalMs. Distinct from
-    // the cumulative session counters above (which feed the stop
-    // summary) so a heartbeat shows recent activity, not the whole
-    // session-to-date.
+    // Heartbeat accumulators, reset every HeartbeatIntervalMs. Distinct
+    // from the cumulative session counters above (which feed the stop
+    // summary) so a heartbeat shows recent activity.
     private readonly AmbientHeartbeatWindow _heartbeatWindow = new();
     private int  _hbTicks;
     private int  _hbPushed;
@@ -235,32 +162,16 @@ public sealed partial class AmbientEngine : IAsyncDisposable
     private int  _hbUnmappedLights;
     private long _hbSkippedSlots;
 
-    // Per-push duration buffer for the heartbeat. Reset every
-    // HeartbeatIntervalMs. Captures the wall-clock cost of the
-    // await on _output.SetColorAsync / IMultiLightOutput.SetLight-
-    // ColorsAsync — REST includes the bridge HTTP round-trip,
-    // Entertainment covers the DTLS/UDP send path plus any local
-    // back-pressure. One pushed value per tick — drops are not counted.
+    // Wall-clock cost of each push await, for the heartbeat : REST includes
+    // the bridge HTTP round-trip, Entertainment the DTLS/UDP send plus any
+    // local back-pressure. Drops are not counted.
     private List<double>? _hbPushDurationsMs;
 
-    // HDR tuning snapshot, refreshed at the top of each tick from
-    // _host.Ambient. Live-reload — settings changes apply on the next
-    // tick without restarting the pipeline. See
-    // AmbientSettings.ExposureEv / SaturationBoost / MinBrightness /
-    // BrightnessCurveX1..Y2 for the user-facing semantics. The snapshot
-    // avoids re-reading the host on every pixel inside the helpers.
-    //   - Exposure is forwarded to FrameSampler (applied in linear
-    //     light before the tone-map, mathematically correct).
-    //   - Saturation boost is applied here on the sRGB output (OKLCh
-    //     chroma amplification to keep hue stable and perceived
-    //     luminance constant across the hue wheel).
-    //   - Brightness curve is applied here on the sRGB output as a
-    //     uniform RGB scale (xy chromaticity invariant — only the bri
-    //     derived from max(R,G,B) moves).
-    //   - Min brightness is applied last on the sRGB output (raises
-    //     the max channel to the floor while preserving chromaticity).
-    //     Comes after the curve so the effective floor matches the
-    //     value the user set, not the curve-attenuated version of it.
+    // Tuning snapshot, refreshed at the top of each tick from _host.Ambient
+    // so a settings change applies on the next tick without a restart.
+    // Exposure goes to the FrameSampler (linear light, before the tone-map) ;
+    // saturation, curve and floor run in AmbientColorPipeline, the floor last
+    // so it matches the value the user set, not a curve-attenuated one.
     private double _saturationBoost       = 1.0;
     private double _brightnessCurveX1     = 0.42;
     private double _brightnessCurveY1     = 0.00;
@@ -269,20 +180,13 @@ public sealed partial class AmbientEngine : IAsyncDisposable
     private bool   _minBrightnessEnabled  = true;
     private int    _minBrightness         = 0;
     private int    _changeThreshold       = 6;
-    // Zone-sampling band thickness snapshot. See the field-doc block
-    // above and AmbientSettings.BorderMode / .BorderDepth / .BorderCells
-    // for the user-facing semantics.
     private BorderThicknessMode _borderMode   = BorderThicknessMode.Share;
     private double              _borderDepth  = 0.33;
     private int                 _borderCells  = 8;
-    // EMA factor snapshot at the 15 Hz reference cadence. 1.0 = pass-through
-    // (no temporal smoothing). AmbientPushCadence adapts it to the measured
-    // tick interval so 50 Hz streaming adds intermediate steps without making
-    // the preset converge faster in wall-clock time. Refreshed at the top of
-    // each tick from _host.Ambient.SmoothingAlpha.
-    // The lamp jitter observed in dark scenes with small moving
-    // reflections was attributed to the absence of temporal damping ;
-    // this knob plus the per-tick state below close that gap.
+    // EMA step at the 15 Hz reference cadence ; 1.0 = no smoothing.
+    // AmbientPushCadence adapts it to the measured tick interval so a
+    // faster stream adds intermediate steps without converging faster in
+    // wall-clock time.
     private double _smoothingAlpha       = 1.0;
 
     // EMA state, keyed "group" in group mode and by fixture id in multi
@@ -301,13 +205,7 @@ public sealed partial class AmbientEngine : IAsyncDisposable
     private long _lastTickTimestamp;
     private double _tickDtSeconds;
 
-    // Most-recent "intent" colour after tuning + smoothing, even when
-    // the ChangeThreshold delta check drops the actual push. The
-    // AmbientPreviewCard reads these via SnapshotEmittedColors() to
-    // visualise the colour the engine wants to send right now — what
-    // the user would see if the lamp were faster than the delta gate.
-    // Key "group" in group mode, fixture id in multi mode. The lock
-    // covers cross-thread reads from the UI poll timer.
+    // The lock covers reads from the UI preview timer (SnapshotEmittedColors).
     private readonly Dictionary<string, LightColor> _emittedColors = new();
     private readonly object _emittedLock = new();
 
@@ -329,18 +227,11 @@ public sealed partial class AmbientEngine : IAsyncDisposable
     /// dispatch onto the UI queue before touching XAML.</summary>
     public event Action? EmittedColorsChanged;
 
-    // Last-constructed engine, exposed for the AmbientPage that lives
-    // in Deckle.Lighting.Ambient and cannot reference App (circular).
-    // V0 assumes a single engine for the whole process ; multi-instance
-    // scenarios (tests) get the most recent. Set by the ctor below.
+    // Last-constructed engine, for the Ambient UI that cannot reference
+    // App (circular). One engine per process ; with several (tests), the
+    // most recent wins.
     public static AmbientEngine? Current { get; private set; }
 
-    // ctor : the engine is glued to a host that exposes the live
-    // AmbientSettings snapshot. The capture, the Hue bridge client,
-    // the light output and the frame sampler are all owned — created
-    // in StartAsync from the host's settings and disposed in Stop.
-    // Construct is cheap (no I/O, no allocations beyond the empty
-    // accumulator buffers above).
     public AmbientEngine(IAmbientEngineHost host)
     {
         _host = host;
@@ -352,7 +243,7 @@ public sealed partial class AmbientEngine : IAsyncDisposable
     public bool IsRunning { get; private set; }
 
     /// <summary>True when the engine resolved to multi-light mode at
-    /// Start. Useful for the UI to display the active pipeline shape.</summary>
+    /// Start.</summary>
     public bool IsMultiLightActive => _multiLightActive;
 
     /// <summary>Lights resolved from the driver when multi-light mode is
@@ -360,10 +251,9 @@ public sealed partial class AmbientEngine : IAsyncDisposable
     /// active.</summary>
     public IReadOnlyList<LightDescriptor>? MultiLights => _multiLights;
 
-    // Preview accessors — forwarded from the owned FrameSampler. Null /
-    // zero / 1.0 when the engine is idle ; consumers (AmbientPreviewCard,
-    // AmbientPage tuning panel) should treat the absence
-    // of a sample as "engine not running" and render an empty state.
+    // Preview accessors, forwarded from the owned FrameSampler. Null /
+    // zero / 1.0 when the engine is idle ; consumers treat a missing
+    // sample as "engine not running".
     public SampledFrame? LatestSample => _sampler?.LatestSample;
     public int   GridCols     => _sampler?.GridCols ?? 0;
     public int   GridRows     => _sampler?.GridRows ?? 0;
@@ -377,15 +267,8 @@ public sealed partial class AmbientEngine : IAsyncDisposable
     public Windows.Graphics.SizeInt32? SourceSize
         => _capture is { IsRunning: true } capture ? capture.ContentSize : null;
 
-    // State machine fired on every transition. Consumers (App tray
-    // tooltip + log, AmbientPage ProgressRing / InfoBar / ModeCombo
-    // gating) subscribe to surface the live
-    // status and distinguish a transient "Starting" / "Stopping" from
-    // a settled "Off" / "Running". Error is a transient blip — the
-    // engine immediately collapses to Off after raising it, so the
-    // subscriber gets two consecutive callbacks (Error then Off) and
-    // is expected to flash a brief error indicator before returning
-    // to the Off rendering.
+    // Error is a transient blip : the engine raises Off right after it,
+    // so a subscriber gets two consecutive callbacks (Error then Off).
     private AmbientEngineState _state = AmbientEngineState.Off;
     public  AmbientEngineState State => _state;
     public event Action<AmbientEngineState>? StateChanged;

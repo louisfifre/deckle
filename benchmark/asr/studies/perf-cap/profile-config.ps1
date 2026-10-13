@@ -1,13 +1,9 @@
-# Profile une config GGUF en mode transcription via llama-mtmd-cli avec
-# capture des Vulkan timings (GGML_VK_PERF_LOGGER=1). Sortie : un log
-# texte brut dans runs/perf-cap/<config>.log, parsable ensuite par
-# parse-vulkan-log.py.
+# Profile one GGUF config transcribing through llama-mtmd-cli, with Vulkan
+# timings captured (GGML_VK_PERF_LOGGER=1). Output: a raw log in
+# runs/perf-cap/<config>.log for parse_vulkan_log.py. run-all.ps1 calls it
+# once per config.
 #
-# Une invocation = une manche de caractérisation. Run-all.ps1 boucle
-# sur la liste des 9 configs.
-#
-# Resume-safe : si le log existe et est non-vide, skip (force avec
-# -Force pour ré-exécuter).
+# A non-empty log already there skips the run; -Force runs it again.
 
 [CmdletBinding()]
 param(
@@ -32,9 +28,8 @@ param(
     [int]$CtxSize    = 8192,
     [int]$MaxTokens  = 256,
 
-    # Mettre mmproj sur CPU pour épargner la VRAM. Utile pour les 24B
-    # K_L et Q6_K (modèle 17-19 GB sur 19.65 GB de VRAM) — le mmproj
-    # tourne en prefill une seule fois, l'overhead CPU y est acceptable.
+    # Keep the mmproj on the CPU to spare VRAM for the largest 24B models.
+    # It runs once, at prefill, so the CPU cost is acceptable.
     [switch]$MmprojOnCpu,
 
     [switch]$Force
@@ -42,8 +37,8 @@ param(
 
 $ErrorActionPreference = 'Stop'
 
-# Validation des chemins. On veut planter tôt si quelque chose manque
-# plutôt que partir sur une commande qui produira un log de 5 octets.
+# Fail early on a missing path rather than run a command that writes a
+# near-empty log.
 foreach ($p in @($LlamaMtmdCli, $Model, $Mmproj, $AudioPath)) {
     if (-not (Test-Path $p)) {
         Write-Error "Chemin introuvable : $p"
@@ -66,8 +61,8 @@ if ((Test-Path $logPath) -and -not $Force) {
     }
 }
 
-# GGML_VK_PERF_LOGGER=1 active la capture des Vulkan timings par op
-# dans la sortie stderr. C'est la matière première du parser.
+# GGML_VK_PERF_LOGGER=1 prints per-op Vulkan timings on stderr, the
+# parser's input.
 $env:GGML_VK_PERF_LOGGER = '1'
 
 $args = @(
@@ -96,9 +91,7 @@ Write-Host ""
 
 $t0 = Get-Date
 
-# 2>&1 fusionne stderr (où vivent les Vulkan timings et la plupart des
-# traces llama.cpp) dans stdout, qu'on capture intégralement dans le log.
-# Tee-Object permet de voir la progression en console tout en écrivant.
+# The Vulkan timings and most llama.cpp traces go to stderr, hence 2>&1.
 & $LlamaMtmdCli @args 2>&1 | Tee-Object -FilePath $logPath
 
 $exit = $LASTEXITCODE
@@ -112,9 +105,8 @@ if ($exit -ne 0) {
     exit $exit
 }
 
-# Sanity check : un log de caractérisation gen-time doit contenir
-# plusieurs blocs "Vulkan Timings:" et le marqueur "Total time:". Si
-# absent, la capture des timings a échoué (GGML_VK_PERF_LOGGER ignoré ?).
+# A generation log holds many "Vulkan Timings:" blocks; a handful means
+# the perf logger did not run.
 $content = Get-Content $logPath -Raw
 $blockCount = ([regex]::Matches($content, 'Vulkan Timings:')).Count
 $totalCount = ([regex]::Matches($content, 'Total time:')).Count

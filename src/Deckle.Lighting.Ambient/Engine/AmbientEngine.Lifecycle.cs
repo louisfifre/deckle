@@ -9,10 +9,10 @@ namespace Deckle.Lighting.Ambient;
 public sealed partial class AmbientEngine
 {
     /// <summary>
-    /// Builds the owned deps (capture, bridge client, output, sampler)
-    /// from the host's AmbientSettings, connects the output, picks the
-    /// pipeline shape (group vs multi-light), and launches the push
-    /// loop. Idempotent — calling on a running engine is a no-op.
+    /// Builds the owned deps (capture, output, sampler) from the host's
+    /// AmbientSettings, borrows the bridge client, connects the output,
+    /// picks the pipeline shape (group vs multi-light), and launches the
+    /// push loop. Idempotent — calling on a running engine is a no-op.
     /// Throws <see cref="InvalidOperationException"/> when the bridge
     /// isn't paired, when the persisted IP is not a LAN address, or
     /// when no group is selected ; throws other exceptions for
@@ -41,10 +41,8 @@ public sealed partial class AmbientEngine
             _stopCleanupTask = null;
         }
 
-        // Defensive : the cleanup above always nulls the owned deps,
-        // but the cold-start path (no prior Stop) lands here with
-        // _capture / _sampler / _output already null and skips the
-        // body. Idempotent.
+        // Defensive and idempotent : a no-op after the cleanup above and
+        // on a cold start.
         await DisposeOwnedDepsAsync().ConfigureAwait(false);
 
         // _pushLoopTask was already awaited inside _stopCleanupTask ;
@@ -87,10 +85,6 @@ public sealed partial class AmbientEngine
             throw;
         }
 
-        // Snapshot the multi-light flag for this run. Live changes
-        // via the AmbientPage (or anywhere else) only take effect at
-        // the next Start because the loop shape and per-light state
-        // dict are baked in here.
         _useMultiLightRequested = ambient.UseMultiLight;
         _startAbortReason = null;
         Interlocked.Exchange(ref _stopRequested, 0);
@@ -98,16 +92,11 @@ public sealed partial class AmbientEngine
         try
         {
             // ── Wire owned deps ───────────────────────────────────
-            // The bridge client is owned by HuePairingService — a
-            // process-wide singleton that auto-restores from settings
-            // on first access (and is shared with the Settings
-            // AmbientPage and LightZonesCard so re-pairing from one
-            // surface takes effect everywhere without an engine restart). The
-            // engine borrows the reference, never disposes it.
-            // Verify the cached LAN endpoint before allocating capture
-            // resources. A DHCP move is repaired through one local
-            // discovery pass while the healthy fast path stays one cheap
-            // bridge-identity request.
+            // The bridge client is borrowed from HuePairingService, never
+            // disposed here. Verify the cached LAN endpoint before
+            // allocating capture resources : a DHCP move is repaired through
+            // one local discovery pass, while the healthy fast path stays
+            // one cheap bridge-identity request.
             _bridgeClient = await HuePairingService.Instance
                 .GetAvailableBridgeAsync(ct)
                 .ConfigureAwait(false);
@@ -224,13 +213,12 @@ public sealed partial class AmbientEngine
             }
             ThrowIfStartAbortRequested();
 
-            // Per-light config dump — surfaces unmapped lights (LightZone.None)
-            // and zero-brightness lights at engine start. Both states cause
-            // the push loop to silently skip the light forever. Without
-            // this log the user would think "ambient doesn't drive that
-            // lamp" when it's actually been opted out by configuration.
-            // The per-light dump is governed detail; computing zone and
-            // brightness solely for the log must disappear when it is off.
+            // Per-light config dump at engine start : an unmapped light
+            // (LightZone.None) is skipped and a zero-brightness one is held
+            // off, so without this log the user would think "ambient doesn't
+            // drive that lamp" when configuration opted it out. The dump is
+            // governed detail ; computing zone and brightness solely for the
+            // log must disappear when it is off.
             if (_multiLightActive && _multiLights is not null)
             {
                 bool lightConfigDetailEnabled = OperationalLogAdmission.IsDetailEnabled(
@@ -271,14 +259,10 @@ public sealed partial class AmbientEngine
             _stopReason = "user";
             lock (_emittedLock) _emittedColors.Clear();
 
-            // Open the capture-active window AFTER the started
-            // milestones (Info + Verbose mirror above) have flushed,
-            // so they remain admitted even with
-            // LogAmbientCaptureActivity off. From here on, Verbose
-            // AMBIENT / SCREEN / HUE inside the loop are candidates
-            // for producer-side admission. The activity scope combines with
-            // the user toggle at each producer. The window closes at the top of
-            // Stop() so stop milestones pass too.
+            // Open the capture-active window. From here on, each producer
+            // admits Verbose AMBIENT / SCREEN / HUE detail from this activity
+            // scope plus the LogAmbientCaptureActivity toggle ; the start and
+            // stop milestones do not consult it. Stop()'s cleanup closes it.
             AmbientCaptureGate.SetActive(true);
 
             _pushLoopTask = Task.Run(() => PushLoopAsync(_cts.Token), _cts.Token);
@@ -419,7 +403,7 @@ public sealed partial class AmbientEngine
         // loop's exit first (cancellation already triggered above),
         // then DisposeOwnedDepsAsync which releases the DXGI duplication
         // held by the capture — freeing the output for any other
-        // other ScreenCaptureService that wants to call DuplicateOutput1 on the same
+        // ScreenCaptureService that wants to call DuplicateOutput1 on the same
         // monitor right after.
         var pushTask = _pushLoopTask;
         _stopCleanupTask = Task.Run(async () =>

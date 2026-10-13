@@ -23,11 +23,10 @@ namespace Deckle.Lighting.Ambient;
 // Dispose() is for shutdown — the service itself is a process
 // singleton so it rarely fires in production code paths.
 //
-// Threading. Pair / Restore / Forget mutate _bridgeClient under a
-// lock so concurrent UI clicks from AmbientPage + LightZonesCard don't
-// produce torn state. The Bridge property reads outside the lock
-// (snapshot of an immutable reference) — readers see a consistent
-// HueBridgeClient or null, never a half-constructed instance.
+// Threading. Pair, Restore, Forget and endpoint recovery swap
+// _bridgeClient under _gate, and the readers take the same lock, so
+// concurrent UI clicks from AmbientPage + LightZonesCard don't produce
+// torn state. Network work runs outside the lock.
 public sealed class HuePairingService : IDisposable
 {
     internal const string ManualBridgeId = "manual";
@@ -42,21 +41,16 @@ public sealed class HuePairingService : IDisposable
     private HueBridge?       _pairedBridge;
     private bool _disposed;
 
-    // Default pairing window — matches the visible countdown the
-    // AmbientPage shows. Callers can override per-call if they need
-    // a shorter window for testing.
+    // Matches the 30 seconds the pairing prompt announces
+    // (AmbientHue_PairStatus_PressLink).
     public static TimeSpan DefaultPairingTimeout => TimeSpan.FromSeconds(30);
     public static TimeSpan DefaultPollInterval   => TimeSpan.FromSeconds(2);
 
-    // Lazy singleton init runs RestoreFromSettings as a side-effect on
-    // first access so any caller (AmbientPage, LightZonesCard, AmbientEngine)
-    // sees a restored Bridge without having to coordinate a boot-time
-    // call. RestoreFromSettings is idempotent — calling it again later
-    // (e.g. from a UI Refresh) re-builds the client from the current
-    // persisted state, which is what the user expects after editing
-    // settings.json by hand. The BridgeChanged event fires here but
-    // typically has no subscribers yet — UI surfaces subscribe later
-    // and re-read Bridge on their own when they open.
+    // Lazy singleton init runs RestoreFromSettings on first access so any
+    // caller (AmbientPage, LightZonesCard, AmbientEngine) sees a restored
+    // Bridge without coordinating a boot-time call. The BridgeChanged
+    // event fires here with no subscribers yet : UI surfaces re-read
+    // Bridge on their own when they open.
     private HuePairingService()
     {
         try
@@ -81,8 +75,7 @@ public sealed class HuePairingService : IDisposable
     }
 
     /// <summary>Identification triple of the paired bridge (ip/id/port)
-    /// without exposing the credentials. Null when not paired. Useful
-    /// for the UI to display "Paired (192.168.1.5)".</summary>
+    /// without exposing the credentials. Null when not paired.</summary>
     public HueBridge? PairedBridge
     {
         get { lock (_gate) { return _pairedBridge; } }
@@ -165,12 +158,11 @@ public sealed class HuePairingService : IDisposable
 
     /// <summary>
     /// Rebuilds the active bridge client from values already persisted
-    /// in <see cref="AmbientSettings"/> (ip / id / username). Called
-    /// once at app start so the user doesn't have to re-press the link
-    /// button on every boot. No-op if any of the three fields are
-    /// missing or empty (treated as "not paired yet"). Fires
-    /// <see cref="BridgeChanged"/> on success so any UI surface
-    /// subscribed since process boot picks up the restored state.
+    /// in <see cref="AmbientSettings"/> (ip / id / username), so the user
+    /// doesn't have to re-press the link button on every boot. Runs on
+    /// the first access to <see cref="Instance"/>. No-op if any of the
+    /// three fields are missing or empty (treated as "not paired yet").
+    /// Fires <see cref="BridgeChanged"/> on success.
     /// </summary>
     public void RestoreFromSettings()
     {
@@ -190,10 +182,8 @@ public sealed class HuePairingService : IDisposable
                 return;
             }
 
-            // Default port 443 — every bridge currently in the field
-            // (Hue Bridge v2, firmware-versioned 1948086000+) listens on
-            // 443. v1 bridges that needed port 80 are out of scope ;
-            // discovery never returns them in the cloud lookup any more.
+            // Port 443 : Hue Bridge v2 (firmware 1948086000+) listens
+            // there. v1 bridges on port 80 are out of scope.
             bridge = new HueBridge(settings.HueBridgeId!, settings.HueBridgeIp!, 443);
             var clientKey = HueClientKeyStore.TryGetClientKey(
                 settings.HueBridgeId!, settings.HueUsername!) ?? "";
@@ -318,10 +308,7 @@ public sealed class HuePairingService : IDisposable
     /// the persisted credentials from AmbientSettings, fires
     /// <see cref="BridgeChanged"/>. The username on the bridge itself
     /// is NOT revoked — the bridge keeps it valid until the user
-    /// explicitly removes it from the Hue mobile app. This is a local
-    /// "forget" — pairing again later still works without a re-press
-    /// of the link button if the user does it before the bridge times
-    /// the username out.
+    /// explicitly removes it from the Hue mobile app.
     /// </summary>
     public void Forget()
     {

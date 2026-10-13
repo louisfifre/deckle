@@ -33,8 +33,7 @@ internal sealed record TypeIconSpec(
 
     public SchemaTypeIconInfo ToInfo() => new(Format, Name, Color, Emoji, null);
 
-    // The icon already on the type is the one asked for. A file icon never
-    // matches: a manifest cannot express one.
+    // A file icon never matches: a manifest cannot express one.
     public bool Matches(SchemaTypeIconInfo existing) =>
         string.Equals(existing.Format, Format, StringComparison.Ordinal)
         && string.Equals(existing.Name, Name, StringComparison.Ordinal)

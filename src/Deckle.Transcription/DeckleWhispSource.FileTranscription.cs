@@ -99,8 +99,6 @@ public sealed partial class DeckleWhispSource
         WriteEvent(EvtFileTranscriptionSavedDetail, path, chars);
     }
 
-    // Verbose, like HotkeyToggleIgnored: a file request refused because the engine
-    // was busy. The user already saw the busy overlay; this is the diagnostic line.
     [Event(EvtFileTranscriptionIgnored,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Capture,

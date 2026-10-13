@@ -2,12 +2,11 @@ namespace Deckle.Autocorrect;
 
 // ── EffectiveLexicon ────────────────────────────────────────────────────────
 //
-// The single merged table the correctors consult (CONTEXT.md § Lexicon
-// composition). All active sources — the base lexicon, the active domain packs
-// — fuse once at load; on a form both carry, the highest frequency wins. That
-// makes the merge commutative and idempotent, so activation order can never
-// change what the engine sees, and the engine itself never faces a stack of
-// dictionaries: it takes one FrequencyLexicon, exactly as before packs existed.
+// The single merged table the correctors consult. All active sources — the base
+// lexicon, the active domain packs — fuse once at load; on a form both carry,
+// the highest frequency wins. That makes the merge commutative and idempotent,
+// so activation order can never change what the engine sees, and the engine
+// itself never faces a stack of dictionaries: it takes one FrequencyLexicon.
 //
 // Conflicts are handled at pack fabrication, not here — a form whose masking
 // cost would smother a base correction never reaches the artifact. This merge
@@ -15,8 +14,8 @@ namespace Deckle.Autocorrect;
 // free of per-pack logic.
 //
 // Above both sources sit the user's word exclusions: precedence is exclusions >
-// packs > base lexicon (CONTEXT.md § Word exclusion), applied last, so an
-// excluded form leaves the table whichever source supplied it. The engine then
+// packs > base lexicon, applied last, so an excluded form leaves the table
+// whichever source supplied it. The engine then
 // behaves as though the word did not exist — it is neither a correction target
 // nor a protected literal. That is the whole of the precedence chain taken
 // literally, and it is also the only exclusion the engine can honour reliably:
@@ -24,9 +23,8 @@ namespace Deckle.Autocorrect;
 // even to zero, would leave it reachable.
 public static class EffectiveLexicon
 {
-    // Fuses the base lexicon with the active packs, then subtracts the user's
-    // exclusions. With no pack and no exclusion the base lexicon is returned
-    // as-is — no copy, no allocation, the pre-pack path unchanged.
+    // With no pack and no exclusion the base lexicon is returned as-is: no copy,
+    // no allocation.
     public static FrequencyLexicon Compose(
         FrequencyLexicon baseLexicon,
         IReadOnlyList<FrequencyLexicon> packs,
@@ -44,18 +42,13 @@ public static class EffectiveLexicon
         {
             foreach (var (form, frequency) in pack.Entries)
             {
-                // Max wins. A pack form the base already carries keeps the
-                // higher of the two: the pack never demotes a base word, and a
-                // promoted pack frequency never loses to the base's.
                 if (!merged.TryGetValue(form, out double prior) || frequency > prior)
                     merged[form] = frequency;
             }
         }
 
-        // Last, and therefore highest precedence: a word the user excluded
-        // leaves the table no matter which source put it there. Excluding a
-        // word Deckle never knew is a no-op, not an error — the register is the
-        // user's, and it may name anything.
+        // Excluding a word Deckle never knew is a no-op, not an error: the
+        // register is the user's, and it may name anything.
         if (hasExclusions)
             foreach (string word in exclusions!)
                 merged.Remove(word);

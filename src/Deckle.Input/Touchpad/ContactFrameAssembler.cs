@@ -7,10 +7,8 @@ namespace Deckle.Input;
 // scan time. A frame is complete when the declared number of contacts
 // has been gathered.
 //
-// Most frames fit in a single report (slots ≥ contacts) and pass through
-// untouched; the accumulation path only engages when the device actually
-// fragments. Valid contacts occupy the leading slots of a report, so the
-// assembler takes from the front and ignores trailing padding slots.
+// Valid contacts occupy the leading slots of a report, so the assembler
+// takes from the front and ignores trailing padding slots.
 //
 // Anomalies (an orphan continuation, a frame opened before the previous
 // one completed, a scan-time mismatch inside a frame) are dropped or
@@ -47,7 +45,6 @@ public sealed class ContactFrameAssembler
 
             if (report.Contacts.Length >= report.ContactCount)
             {
-                // Whole frame in one report — the nominal path.
                 return new ContactFrame(
                     Take(report.Contacts, report.ContactCount),
                     report.ContactCount,
@@ -65,7 +62,6 @@ public sealed class ContactFrameAssembler
             return null;
         }
 
-        // Continuation (count == 0) — only meaningful inside a frame.
         if (_pendingTarget == 0)
         {
             OrphanContinuations++;
@@ -74,7 +70,6 @@ public sealed class ContactFrameAssembler
 
         if (report.ScanTime != _pendingScanTime)
         {
-            // Not the same frame after all — the opened frame is lost.
             ScanTimeMismatches++;
             Reset();
             return null;

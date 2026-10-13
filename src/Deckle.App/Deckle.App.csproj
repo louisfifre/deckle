@@ -2,17 +2,13 @@
   <PropertyGroup>
     <OutputType>WinExe</OutputType>
     <RootNamespace>Deckle.App</RootNamespace>
-    <!-- AssemblyName explicitly pinned to "Deckle" so the produced executable
-         stays Deckle.exe even though the project is now Deckle.App.csproj.
-         Keeps autostart entries, tray tooltip, taskbar label, and shell
-         filters that target "Deckle.exe" working without migration. -->
+    <!-- Pinned so the executable stays Deckle.exe: autostart entries, the tray
+         tooltip, the taskbar label and shell filters target that name. -->
     <AssemblyName>Deckle</AssemblyName>
     <ApplicationManifest>app.manifest</ApplicationManifest>
-    <!-- Neutral language for the MRT/PRI resource resolver. Without
-         this, Strings/en-US/Resources.resw is found at runtime but no
-         language is declared as fallback, which can leave x:Uid
-         lookups empty when the system display language doesn't match
-         en-US. See the localization reference under docs/. -->
+    <!-- Neutral language for the MRT/PRI resource resolver. Without it no
+         fallback language is declared, which can leave x:Uid lookups empty when
+         the system display language is not en-US. -->
     <DefaultLanguage>en-US</DefaultLanguage>
     <UseWinUI>true</UseWinUI>
     <WindowsPackageType>None</WindowsPackageType>
@@ -29,34 +25,22 @@
     <EnableMsixTooling>true</EnableMsixTooling>
   </PropertyGroup>
 
-  <!-- Publish-only options. Gated on _IsPublishing (MSBuild-internal flag
-       set exclusively by the Publish target) so a plain `dotnet build` in
-       Release doesn't pay self-contained costs at every iteration.
+  <!-- Publish-only options, gated on _IsPublishing (set only by the Publish
+       target) so a plain Release build does not pay self-contained costs.
 
-       SelfContained bundles the .NET runtime so the distribution runs with no
-       system-wide .NET install. Paired with WindowsAppSDKSelfContained above,
-       the publish output is a self-sufficient folder — Deckle.exe + runtime +
-       Windows App SDK + Deckle.pri + assets — that xcopy-deploys as-is.
+       SelfContained with WindowsAppSDKSelfContained makes the publish output a
+       self-sufficient folder that xcopy-deploys as-is.
 
-       Folder, NOT single-file. PublishSingleFile for unpackaged WinUI 3
-       requires IncludeAllContentForSelfExtract=true, which makes the exe
-       re-extract its whole payload to %TEMP% (a C: path) on each version's
-       first launch. Deckle installs into a permanent, user-chosen folder, so
-       the self-extracting exe buys nothing and instead pollutes C: — the very
-       thing the install-location choice exists to avoid. The folder runs in
-       place from wherever it lands. The ZIP is produced by
-       scripts/commands/release/publish-app.ps1.
+       Folder, not single-file: unpackaged WinUI 3 single-file needs
+       IncludeAllContentForSelfExtract=true, which re-extracts the payload to
+       %TEMP% on each version's first launch and pollutes C:, the very thing the
+       install-location choice exists to avoid.
 
-       Native DLLs (libwhisper + ggml backends + MinGW runtime) and Whisper
-       models are NOT shipped — they live under the user data root (native\,
-       models\), populated by the first-run wizard on a per-user basis.
+       Native DLLs and Whisper models are not shipped: they live under the user
+       data root (native\, models\), provisioned per user.
 
-       PublishTrimmed is NOT enabled: WinUI 3 + XAML compilation + x:Bind
-       generated code rely on reflection paths the IL linker can't prove
-       safe. We already hit one trimming crash in the wild (Slider with a
-       range excluding 0 — see project_winui3_slider_bug.md). Trimming stays
-       off until there's a concrete size/perf motive AND a runtime test
-       matrix proves it safe. -->
+       PublishTrimmed stays off: WinUI 3, XAML compilation and x:Bind generated
+       code rely on reflection paths the IL linker cannot prove safe. -->
   <PropertyGroup Condition="'$(_IsPublishing)' == 'true'">
     <SelfContained>true</SelfContained>
   </PropertyGroup>
@@ -64,16 +48,11 @@
   <ItemGroup>
     <PackageReference Include="Microsoft.WindowsAppSDK" />
     <PackageReference Include="Microsoft.Windows.SDK.BuildTools" />
-    <!-- MVVM Toolkit — source generators [ObservableProperty], ObservableObject, [RelayCommand].
-         Eliminates INotifyPropertyChanged boilerplate in ViewModels. -->
     <PackageReference Include="CommunityToolkit.Mvvm" />
-    <!-- SettingsCard / SettingsExpander — canonical Windows 11 pattern for settings pages
-         (spacing, section headers, animations documented on Microsoft Learn). -->
     <PackageReference Include="CommunityToolkit.WinUI.Controls.SettingsControls" />
-    <!-- Win2D — Direct2D-backed drawing on CompositionDrawingSurface. Used by the HUD
-         Rewriting stroke to paint a true angular-gradient rainbow; CompositionLinearGradientBrush
-         only supports bbox-linear mapping, so a rotating gradient around a rounded rect
-         perimeter requires Win2D + a surface brush. -->
+    <!-- The HUD Rewriting stroke needs a true angular gradient around a rounded
+         rect; CompositionLinearGradientBrush only maps bbox-linear, so Win2D
+         paints it on a surface brush. -->
     <PackageReference Include="Microsoft.Graphics.Win2D" />
   </ItemGroup>
 
@@ -91,14 +70,9 @@
     <ProjectReference Include="..\Deckle.Diagnostics.Logging\Deckle.Diagnostics.Logging.csproj" />
     <ProjectReference Include="..\Deckle.Diagnostics.Telemetry\Deckle.Diagnostics.Telemetry.csproj" />
     <ProjectReference Include="..\Deckle.Hud\Deckle.Hud.csproj" />
-    <!-- Windows-integration primitives shared with the download stub — the
-         install-mode branches (App.Install.cs) prefill folders from the
-         Installed-apps entry and the DECKLE_DATA_ROOT variable. -->
     <ProjectReference Include="..\Deckle.Install\Deckle.Install.csproj" />
     <ProjectReference Include="..\Deckle.Input\Deckle.Input.csproj" />
     <ProjectReference Include="..\Deckle.Autocorrect\Deckle.Autocorrect.csproj" />
-    <!-- ONNX Runtime GenAI sentence judge (Qwen3 on DirectML) — the only model
-         satisfying the production whole-sentence decision contract. -->
     <ProjectReference Include="..\Deckle.Autocorrect.Onnx\Deckle.Autocorrect.Onnx.csproj" />
     <ProjectReference Include="..\Deckle.Input.Trackpad\Deckle.Input.Trackpad.csproj" />
     <ProjectReference Include="..\Deckle.Input.PrecisionScroll\Deckle.Input.PrecisionScroll.csproj" />
@@ -119,22 +93,18 @@
     <ProjectReference Include="..\Deckle.Shell.WindowChrome\Deckle.Shell.WindowChrome.csproj" />
     <ProjectReference Include="..\Deckle.Speech\Deckle.Speech.csproj" />
     <ProjectReference Include="..\Deckle.Transcription\Deckle.Transcription.csproj" />
-    <!-- Whisper ASR backend (IAsrBackend implementation). App composition
-         root instantiates WhisperBackend and injects it into the engine. -->
     <ProjectReference Include="..\Deckle.Transcription.Whisper\Deckle.Transcription.Whisper.csproj" />
     <ProjectReference Include="..\Deckle.Vision\Deckle.Vision.csproj" />
   </ItemGroup>
 
   <ItemGroup>
-    <!-- Tray icons -->
     <Content Include="Assets\Icons\**\*">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
-    <!-- Fonts (Bitcount Single, etc.) -->
     <Content Include="Assets\Fonts\**\*.ttf">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
-    <!-- Warm-up audio (PCM 16-bit mono 16 kHz, lu par TranscriptionEngine.Warmup) -->
+    <!-- Warm-up audio: the engine's loader accepts only PCM 16-bit mono 16 kHz. -->
     <Content Include="Assets\Sounds\**\*.wav">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>

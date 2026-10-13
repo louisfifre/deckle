@@ -3,14 +3,11 @@ using Deckle.Install;
 
 namespace Deckle.Installer;
 
-// ── Uninstaller ───────────────────────────────────────────────────────────────
-//
 // Reached when the installed copy is re-invoked with --uninstall (the
 // UninstallString registered in Installed apps). It runs from inside the install
 // folder, so the install location is simply this exe's directory.
 //
-// The stub kept this role even after the install flow moved into the WinUI wizard:
-// the wizard copies this exe into the install folder, and --uninstall reverses the
+// The wizard copies this exe into the install folder, and --uninstall reverses the
 // integration here — deregister the shortcut and the Installed-apps key, optionally
 // drop the data folder, then schedule the binaries (this running exe included) for
 // deletion. UX is two message boxes up front — remove, then keep-or-drop data —
@@ -118,8 +115,6 @@ internal static class Uninstaller
             return 1;
         }
 
-        // Last, with the window gone and this process about to exit: schedule the
-        // delete of the install folder, this exe included.
         ScheduleFolderDeletion(installDir);
         return 0;
     }
@@ -155,8 +150,6 @@ internal static class Uninstaller
         Process.Start(psi);
     }
 
-    // Characters cmd.exe treats specially on a /c command line (quotes plus the
-    // redirection/pipe/escape/expansion metacharacters).
     private static readonly char[] CmdMetacharacters = { '"', '&', '|', '<', '>', '^', '%' };
 
     private static void TryDeleteTree(string dir)

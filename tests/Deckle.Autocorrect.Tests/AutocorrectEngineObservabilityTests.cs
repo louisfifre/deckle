@@ -45,8 +45,7 @@ public sealed class AutocorrectEngineObservabilityTests
 
             var events = listener.Events;
             Assert.Contains(events, e => e.EventId == DeckleAutocorrectSource.EvtCorrectionApplied);
-            // The detail carries the correction reason and the form lengths — counts,
-            // never the words themselves (2 = len "ca" = len "ça").
+            // 2 = len "ca" = len "ça".
             Assert.Contains(events, e =>
                 e.EventId == DeckleAutocorrectSource.EvtCorrectionDetail
                 && PayloadValue(e, "reason") is "LexicalGate"

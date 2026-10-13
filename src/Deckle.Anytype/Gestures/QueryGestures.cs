@@ -9,12 +9,8 @@ namespace Deckle.Anytype;
 // gesture families, each returns a terse French plain-string digest.
 public sealed class QueryGestures(AnytypeApiClient api, NameResolver resolver)
 {
-    // Resolves free-vocabulary (space-managed) select/multi_select values against
-    // the live space. Frozen vocabularies are resolved in-memory by DevSpace; this
-    // covers the rest without ever letting an unknown option reach the wire.
     readonly LiveTagResolver _liveTags = new(api);
 
-    // Full read: header facts (known schema properties only) + the markdown body.
     public async Task<string> GetAsync(string selector, string? typeKey = null, CancellationToken ct = default)
     {
         var started = DateTime.UtcNow;
@@ -50,10 +46,6 @@ public sealed class QueryGestures(AnytypeApiClient api, NameResolver resolver)
         return sb.ToString().TrimEnd();
     }
 
-    // Compact by default: type, name and id. Context mode adds the concise
-    // framing properties for project/task hits, then up to five lines of
-    // Anytype's bounded body snippet. Name still falls back to the snippet's
-    // first line for nameless note-layout objects in either mode.
     public async Task<string> SearchAsync(
         string text,
         IReadOnlyList<string>? typeKeys = null,
@@ -103,9 +95,8 @@ public sealed class QueryGestures(AnytypeApiClient api, NameResolver resolver)
             sb.Append('\n').Append(label).Append(" : ").Append(value.Trim());
     }
 
-    // Sets the canonical action-layout completion checkbox on a finite chantier
-    // or an executable task. État remains planning state; completion is the
-    // built-in `done` signal for both object types.
+    // État remains planning state; completion is the built-in `done` signal for
+    // both chantier and task.
     public async Task<string> CompleteAsync(
         string selector, bool value = true, CancellationToken ct = default)
     {
@@ -144,24 +135,14 @@ public sealed class QueryGestures(AnytypeApiClient api, NameResolver resolver)
         };
     }
 
-    // Appends targets into the natural link property of the (source type, target
-    // type) pair. The API PATCH replaces a property's value wholesale, so this is
-    // a read-modify-write: union the current refs with the resolved target ids.
-    //
-    // Supported pairs (property written on the SOURCE unless noted):
-    //   task    → project   : relation_projet
-    //   rapport → task      : tache(s)_liee(s)
-    //   project → project   : depend_de
-    //   project → epic      : collection membership, written on the epic list
+    // The API PATCH replaces a property's value wholesale, so this is a
+    // read-modify-write: union the current refs with the resolved target ids.
     public async Task<string> LinkAsync(string source, IReadOnlyList<string> targets, CancellationToken ct = default)
     {
         var started = DateTime.UtcNow;
 
         string sourceId = await resolver.ResolveAsync(source, typeKeys: null, ct);
 
-        // Hold the space's write lock across the whole read-modify-write: the union
-        // is computed from a GET that must not be raced by another session's PATCH
-        // before our own lands.
         using var _ = await api.AcquireWriteScopeAsync("link", sourceId, ct);
         JsonObject sourceObj = await api.GetObjectAsync(sourceId, ct);
         string sourceType = QueryProp.TypeKey(sourceObj) ?? "";
@@ -188,8 +169,6 @@ public sealed class QueryGestures(AnytypeApiClient api, NameResolver resolver)
                 (collectionAdds.TryGetValue(targetId, out var list) ? list : collectionAdds[targetId] = []).Add(sourceId);
         }
 
-        // Per property: union the new ids with the existing refs (PATCH replaces a
-        // property's value wholesale, so the full set must be re-sent).
         var entries = new JsonArray();
         int added = 0;
         foreach ((string propKey, List<string> ids) in byProp)
@@ -222,18 +201,11 @@ public sealed class QueryGestures(AnytypeApiClient api, NameResolver resolver)
         return $"Lié : {QueryProp.Name(sourceObj)} → {targets.Count} cible(s), {added} ajout(s){collectionSuffix}.";
     }
 
-    // Renames an object and/or sets its properties in ONE PATCH. The name (when
-    // given) rides at the payload root, mirroring create; the properties map each
-    // display-name-or-key to a schema property key and build the format-typed entry
-    // (select/multi_select values resolved name-or-key). At least one of the two
-    // must be present, and a blank name is refused — both are shape errors thrown
-    // before any network call, ahead of the GET.
     public async Task<string> UpdateAsync(string selector, string? name, JsonObject? properties, CancellationToken ct = default)
     {
         var started = DateTime.UtcNow;
 
-        // Shape refusals first — no GET needed to know the request is empty or the
-        // name is blank, so refuse before resolving the selector or hitting the wire.
+        // Shape refusals come before any network call.
         bool hasName = name is not null;
         if (hasName && string.IsNullOrWhiteSpace(name))
             throw new ArgumentException("Le nom ne peut pas être vide.", nameof(name));
@@ -252,10 +224,8 @@ public sealed class QueryGestures(AnytypeApiClient api, NameResolver resolver)
         string objType = QueryProp.TypeKey(obj) ?? "";
 
         // rapport and idee are body-titled (empty `name`, title = first line of the
-        // body): they have no own name to rewrite. Refuse a rename on them and point
-        // at replace_section, the body-editing gesture. Type-key detection — the GET
-        // carries no `layout` field, and these are exactly the two types the module
-        // already treats as body-titled.
+        // body): they have no own name to rewrite. Detection goes by type key
+        // because the GET carries no `layout` field.
         if (hasName && (objType == DevSpace.Types.Rapport || objType == DevSpace.Types.Idee))
             throw new InvalidOperationException(
                 $"Le type {objType} tire son titre de la première ligne de son corps — " +
@@ -275,8 +245,6 @@ public sealed class QueryGestures(AnytypeApiClient api, NameResolver resolver)
                 applied.Add(DevSpace.PropertyLabel(key) ?? key);
             }
 
-        // One composed PATCH: name at the root (as create writes it), the resolved
-        // property entries when any exist — never two round-trips.
         var payload = new JsonObject();
         if (hasName) payload["name"] = name;
         if (entries.Count > 0) payload["properties"] = entries;
@@ -284,8 +252,8 @@ public sealed class QueryGestures(AnytypeApiClient api, NameResolver resolver)
 
         DeckleAnytypeSource.Log.GestureCompleted("update", Elapsed(started));
 
-        // QueryProp.Name(obj) is the pre-PATCH title (the GET ran before the rename);
-        // that frames « object X was updated », and the new title is shown explicitly.
+        // QueryProp.Name(obj) is the pre-PATCH title; the new one is shown
+        // explicitly.
         if (hasName)
         {
             string suffix = applied.Count > 0 ? ", " + string.Join(", ", applied) : "";
@@ -294,12 +262,9 @@ public sealed class QueryGestures(AnytypeApiClient api, NameResolver resolver)
         return $"Mis à jour : {QueryProp.Name(obj)} ({string.Join(", ", applied)}).";
     }
 
-    // Sets the transversal « Archivé » checkbox to take an object out of the views
-    // (value true) or bring it back (false). A lifecycle verb kept distinct from
-    // update for the small model's sake, though update can write the same checkbox.
-    // The checkbox lives on almost every type but NOT on rapport (a report is never
-    // archived — it stays searchable); a type that does not carry it is refused with
-    // the schema-true message rather than sending a no-op PATCH.
+    // A lifecycle verb kept distinct from update for the small model's sake,
+    // though update can write the same checkbox. Rapport carries no « Archivé »:
+    // a report is never archived, it stays searchable.
     public async Task<string> ArchiveAsync(string selector, bool value = true, CancellationToken ct = default)
     {
         var started = DateTime.UtcNow;
@@ -330,14 +295,10 @@ public sealed class QueryGestures(AnytypeApiClient api, NameResolver resolver)
         return value ? $"Archivé : {name}" : $"Désarchivé : {name}";
     }
 
-    // Replaces the body under a markdown heading and verifies the write landed.
-    // The body PATCH is a full replacement (Anytype has no block-level REST edit),
-    // so this reads the current body, splices the one targeted section
-    // (MarkdownBody keeps every other section verbatim), PATCHes the whole
-    // document, then reads it back to confirm the intent: the section now carries
-    // the new content (compared normalized, since Anytype re-escapes and reflows on
-    // export) and no other heading was dropped. Strict — an absent or ambiguous
-    // heading throws before any write, the model-facing error channel.
+    // Splices one section (MarkdownBody), PATCHes the whole document, then reads
+    // it back to confirm the intent and that no other heading was dropped. An
+    // absent or ambiguous heading throws before any write, the model-facing
+    // error channel.
     public async Task<string> ReplaceSectionAsync(
         string selector, string heading, string content, CancellationToken ct = default)
     {
@@ -362,9 +323,8 @@ public sealed class QueryGestures(AnytypeApiClient api, NameResolver resolver)
         JsonObject patched = await api.UpdateObjectAsync(
             id, new JsonObject { ["markdown"] = edit.Body }, ct);
 
-        // Read-after-write. The PATCH response already carries the re-rendered body
-        // when Anytype echoes it (free); otherwise read once more. Either way the
-        // read-back is normalized, never the bytes we sent.
+        // The PATCH response carries the re-rendered body when Anytype echoes it;
+        // otherwise read once more.
         string reread = QueryProp.Markdown(patched);
         if (reread.Length == 0)
             reread = QueryProp.Markdown(await api.GetObjectAsync(id, ct));
@@ -389,8 +349,6 @@ public sealed class QueryGestures(AnytypeApiClient api, NameResolver resolver)
         return $"Section « {heading} » écrite dans {name}, mais vérification en échec : {why}.";
     }
 
-    // Captures a quick idea. Short content (≤80 chars) becomes the name; longer
-    // content keeps its first words as the name and the full text as the body.
     public async Task<string> CreateIdeaAsync(string content, CancellationToken ct = default)
     {
         var started = DateTime.UtcNow;
@@ -414,8 +372,7 @@ public sealed class QueryGestures(AnytypeApiClient api, NameResolver resolver)
 
     // ── Internals ─────────────────────────────────────────────────────────
 
-    // The natural link property for a (source, target) type pair, or null if the
-    // pair is unsupported. Matrix is exhaustive — see the brief.
+    // A null PropertyKey routes to collection membership on the target.
     sealed record LinkRoute(string? PropertyKey);
 
     static LinkRoute? LinkRouteFor(string sourceType, string targetType)
@@ -439,8 +396,6 @@ public sealed class QueryGestures(AnytypeApiClient api, NameResolver resolver)
         return headings.Count > 0 ? string.Join(", ", headings.Select(h => $"« {h} »")) : "(aucun)";
     }
 
-    // select/multi_select are async because a free (space-managed) vocabulary is
-    // resolved against the live space; every other format is built in-memory.
     async Task<JsonObject> BuildEntryAsync(string key, string format, JsonNode? value, CancellationToken ct) => format switch
     {
         "number"       => new JsonObject { ["key"] = key, ["number"] = AsNumber(value) },
@@ -462,10 +417,9 @@ public sealed class QueryGestures(AnytypeApiClient api, NameResolver resolver)
         return arr;
     }
 
-    // A select/multi_select value resolves to an EXISTING option's wire key, never
-    // a fresh one: a frozen vocabulary matches in DevSpace, a free (space-managed)
-    // one against the live options. Either way an unknown value throws (listing the
-    // valid options) before any PATCH — the library cannot mint a tag option.
+    // The library cannot mint a tag option: a frozen vocabulary matches in
+    // DevSpace, a free (space-managed) one against the live options, and an
+    // unknown value throws before any PATCH.
     Task<string> ResolveTagAsync(string key, string value, CancellationToken ct) =>
         DevSpace.HasFrozenVocabulary(key)
             ? Task.FromResult(DevSpace.ResolveTag(key, value))
@@ -534,7 +488,6 @@ file static class QueryProp
     public static string Snippet(JsonObject obj) =>
         FirstLines(obj["snippet"]?.GetValue<string>(), 5);
 
-    // The object's type key. The API nests it as {type:{key,...}}.
     public static string? TypeKey(JsonObject obj) => obj["type"]?["key"]?.GetValue<string>();
 
     public static IReadOnlyList<string> ObjectRefs(JsonObject obj, string key)
@@ -546,8 +499,6 @@ file static class QueryProp
         return ids;
     }
 
-    // Human-readable rendering of any mapped property value, format-agnostic, for
-    // the GetAsync digest. Returns null when the object carries no value.
     public static string? Render(JsonObject obj, string key)
     {
         JsonObject? p = Prop(obj, key);

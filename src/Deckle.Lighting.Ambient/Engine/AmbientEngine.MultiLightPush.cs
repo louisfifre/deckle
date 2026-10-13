@@ -21,16 +21,11 @@ public sealed partial class AmbientEngine
         var zoneAssignments = _host.Ambient.LightZones;
         var lightBrightness = _host.Ambient.LightBrightness;
 
-        // Sample the four border zones once per tick — cheap (each
-        // averages ~50-100 cells of a 30×17 grid) and one set of
-        // numbers shared across all lights that map to the same zone.
-        // Zones with no assigned light are still computed for the
-        // overlay UI but their result isn't pushed anywhere.
-        // Resolve the band thickness in cells for each axis. The top /
-        // bottom bands slice the rows axis, the left / right bands slice
-        // the cols axis ; in Share mode the same fraction yields fewer
-        // rows than cols on a 16:9 grid, in Cells mode the same count
-        // applies on every edge.
+        // Sample the four border zones once per tick ; lights on the same
+        // zone share the result. The top / bottom bands slice the rows
+        // axis, the left / right bands the cols axis ; in Share mode the
+        // same fraction yields fewer rows than cols on a 16:9 grid, in
+        // Cells mode the same count applies on every edge.
         int bandRows = AmbientZoneSampler.ResolveBandCells(_borderMode, _borderDepth, _borderCells, sample.Rows);
         int bandCols = AmbientZoneSampler.ResolveBandCells(_borderMode, _borderDepth, _borderCells, sample.Cols);
 
@@ -40,9 +35,7 @@ public sealed partial class AmbientEngine
         var rightLinear  = AmbientZoneSampler.SampleZone(sample, LightZone.Right,  bandCols);
 
         // Per-light fan-out + per-light change gate (AmbientPushGate).
-        // We build a dictionary of (lightId → colour) for lights whose
-        // colour goes out this tick, new or held ; lights mapped
-        // to <see cref="LightZone.None"/> (or unmapped entirely) are
+        // Lights mapped to LightZone.None (or unmapped entirely) are
         // skipped without counting as dropped — they're explicit
         // opt-outs, not throttled pushes.
         var toPush = new Dictionary<string, LightColor>(_multiLights.Count);
@@ -77,12 +70,9 @@ public sealed partial class AmbientEngine
                 _                => (0f, 0f, 0f),
             };
 
-            // Apply the per-light brightness multiplier in [0, 1] to the
-            // encoded channels. Scaling them here halves Hue's derived
-            // `bri` (max-channel based, see HueColorMath) so the lamp
-            // shows the same chromaticity at the requested intensity.
-            // The multiplier defaults to 1.0 when the user hasn't
-            // touched the slider yet.
+            // Scaling the encoded channels scales Hue's derived `bri`
+            // (max-channel based, see HueColorMath), so the lamp shows the
+            // same chromaticity at the requested intensity.
             double bri = 1.0;
             if (lightBrightness is not null && lightBrightness.TryGetValue(light.Id, out var b))
                 bri = Math.Clamp(b, 0.0, 1.0);
@@ -93,9 +83,8 @@ public sealed partial class AmbientEngine
             // black while the rest is lit, and the user can pin a single
             // lamp to "off" by sliding its brightness to 0. The explicit
             // off skips the floor ; screen-derived black goes through it.
-            // Apply HDR tuning (saturation boost + min brightness)
-            // per light, same rationale as GroupTick : the early-exit
-            // compares on tuned values so a slider move always pushes.
+            // Tuning runs before the gate, as in GroupTick, so a slider
+            // move always pushes.
             bool zoneIsBlack = AmbientColorPipeline.IsBlackSource(zoneLinear);
             SrgbColor target = lightExplicitlyOff
                 ? SrgbColor.Black
@@ -140,9 +129,6 @@ public sealed partial class AmbientEngine
                 : targetColor;
         }
 
-        // Track per-tick lights-with-no-zone count so the heartbeat
-        // surfaces the user's "lights assigned to None" backlog
-        // without us logging it every tick.
         if (heartbeatDetailEnabled) _hbUnmappedLights += unmappedThisTick;
 
         // Fire the observable event once per tick. Even when toPush is

@@ -12,18 +12,13 @@ namespace Deckle.Notifications;
 // it. Registration is fail-fast: a malformed or duplicate Id throws at boot
 // rather than surfacing as a silent no-op at show time.
 //
-// Thread-safe via a single lock. Registration happens at boot and lookups are
-// rare relative to that, so a plain lock is simpler than a concurrent
-// dictionary and carries no measurable cost.
+// A plain lock rather than a concurrent dictionary: registration happens at
+// boot and lookups are rare.
 public sealed class NotificationCatalog
 {
     private readonly object _gate = new();
     private readonly Dictionary<string, NotificationDescriptor> _byId = new(StringComparer.Ordinal);
 
-    // Registers a batch of descriptors atomically. Validates each Id is
-    // non-empty and unique across ALL previously-registered descriptors;
-    // throws InvalidOperationException on the first violation. Emits the
-    // Verbose audit event once for the accepted batch.
     public void Register(IReadOnlyList<NotificationDescriptor> descriptors)
     {
         ArgumentNullException.ThrowIfNull(descriptors);
@@ -49,7 +44,6 @@ public sealed class NotificationCatalog
                 }
             }
 
-            // Guard against duplicates within the batch itself.
             var seen = new HashSet<string>(StringComparer.Ordinal);
             foreach (var descriptor in descriptors)
             {

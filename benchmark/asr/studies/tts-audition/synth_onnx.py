@@ -1,6 +1,6 @@
 """Synthesize French TTS samples LOCALLY via pure ONNX Runtime (sherpa-onnx).
 
-This is the on-doctrine path: no online inference, no `transformers` — weights are
+Local only: no online inference, no `transformers`. Weights are
 downloaded from the sherpa-onnx model releases (prebuilt .onnx bundles) and run
 through sherpa-onnx's ONNX Runtime pipeline on the CPU EP. The VOICE is identical
 to any other runtime; CPU vs DirectML only changes latency, which is the separate
@@ -12,7 +12,7 @@ inner filenames. Weights live under D:\\models\\tts\\ (outside the repo, like th
 ASR ONNX models under D:\\models\\llm\\). Outputs land in the gitignored run dir.
 
 Run with the dedicated venv:
-    benchmark\\.venv-tts-onnx\\Scripts\\python.exe benchmark\\benches\\tts-audition\\synth_onnx.py
+    benchmark\\.venv-tts-onnx\\Scripts\\python.exe benchmark\\asr\\studies\\tts-audition\\synth_onnx.py
 """
 
 from __future__ import annotations
@@ -42,10 +42,8 @@ OUT = _harness.RUN_DIR
 MODELS = Path(r"D:\models\tts")
 RELEASE = "https://github.com/k2-fsa/sherpa-onnx/releases/download/tts-models"
 
-# Keeper voices only — Louis validated Piper UPMC (jessica=s0, pierre=s1). siwis,
-# tom and Meta MMS were dropped from the audition as noise. Sherpa-onnx is the
-# pure-ONNX path (CPU EP; VITS is tiny and already far faster than real-time, so
-# DirectML buys nothing here).
+# Piper UPMC only (jessica=s0, pierre=s1). CPU EP: VITS is tiny and already
+# faster than real time, so DirectML buys nothing.
 MODELS_REGISTRY = [
     {"key": "piper_upmc", "label": "Piper FR upmc (VITS, 2 voix)",
      "tar": "vits-piper-fr_FR-upmc-medium.tar.bz2", "sids": [0, 1]},

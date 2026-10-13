@@ -5,23 +5,11 @@ using Deckle.Diagnostics.Telemetry;
 
 namespace Deckle.Diagnostics.Logging;
 
-// ── DiagnosticsViewModel — settings manifest ──────────────────────────────────
-//
-// The declarative half of the page, kept beside the ViewModel that owns the
-// values rather than in the page code-behind. Each entry declares one setting —
-// its kind, its localization key, its glyph, and typed selectors onto this VM's
-// own properties — and SettingsComposer turns the list into SettingsCards.
-//
-// This is the "declare near the code, the surface composes itself" shape: the
-// declaration lives with the values (same class, separate file — the per-module
-// manifest), and the page only hosts. Adding or moving a setting is editing this
-// list, never hand-authoring a card in XAML.
+// The page's settings manifest, kept beside the ViewModel that owns the
+// values. SettingsComposer turns each list into SettingsCards; adding or
+// moving a setting edits this list, never a card in XAML.
 public partial class DiagnosticsViewModel
 {
-    // Runtime emission filters (the "Logging" section). Plain toggles today; the
-    // manifest grows with the section. Selectors point straight at this VM's
-    // properties — the change handlers (OnXChanged → PushLoggingToSettings) and
-    // persistence are unchanged, the composer only drives the UI.
     public IReadOnlyList<SettingDescriptor> LoggingSettings =>
     [
         Setting.Toggle("LoggingAmbientCard",
@@ -47,18 +35,13 @@ public partial class DiagnosticsViewModel
             glyph: Glyphs.Window),
     ];
 
-    // Application-log opt-in. The toggle carries a confirmOnEnable gate so the composer holds its
-    // OFF→ON write behind the consent dialog. Now that the page lives in its own
-    // module, that dialog is reached through the Catalog registry
-    // (TelemetryConsent.RequestApplicationLog, a method group the App wires at boot)
-    // rather than the shell's dialog class directly — so the module gates its enable
-    // behind consent without referencing Deckle.Settings. Dataset-specific opt-ins
-    // live on the pages of the modules they observe. Application log is this page's
-    // one composable telemetry toggle.
+    // The confirmOnEnable gate holds the OFF→ON write behind the consent
+    // dialog, reached through the Catalog registry
+    // (TelemetryConsent.RequestApplicationLog, wired by the App at boot) so this
+    // module does not reference Deckle.Settings.
     //
-    // No defaultValue on the consent toggle: a privacy opt-in has no "resettable
-    // default" affordance per row (the section "Reset" clears it), so the composer
-    // renders no per-card reset wheel for it — which is correct.
+    // No defaultValue: a privacy opt-in gets no per-card reset; the section
+    // "Reset" clears it.
     public IReadOnlyList<SettingDescriptor> ApplicationLogSettings =>
     [
         Setting.Toggle("GeneralAppLogCard",
@@ -68,19 +51,11 @@ public partial class DiagnosticsViewModel
             confirmOnEnable: TelemetryConsent.RequestApplicationLog),
     ];
 
-    // Telemetry settings — the mouse-wheel dataset opt-in and the shared JSONL
-    // root for every telemetry stream. The Path
-    // descriptor (FolderPickerMode.Configure: read-only readout with Change + Open)
-    // over the TelemetryStorageDirectory string the VM owns; its
-    // OnTelemetryStorageDirectoryChanged (PushTelemetryToSettings) rides the setter
-    // unchanged, exactly as the General backup-location Path does. DefaultPath is
-    // the deferred AppPaths lookup the code-behind used to push into the picker (the
-    // empty-value fallback = <UserDataRoot>\telemetry\), moved here into PathArgs so
-    // the manifest carries it. The reset default is the POCO initializer (empty →
-    // "empty means AppPaths"), the one source of truth.
-    //
-    // This manifest composes into a dedicated host because dataset capture and its
-    // storage location belong together, separately from the application-log consent.
+    // The mouse-wheel dataset opt-in and the shared JSONL root for every
+    // telemetry stream, in their own host: dataset capture and its storage
+    // location belong together, apart from the application-log consent. The
+    // path's reset default is the POCO initializer (empty means
+    // AppPaths.TelemetryDirectory).
     public IReadOnlyList<SettingDescriptor> TelemetrySettings =>
     [
         Setting.Toggle("TelemetryMouseWheelCard",

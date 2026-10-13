@@ -3,15 +3,9 @@ using Xunit;
 
 namespace Deckle.Anytype.Mcp.Tests;
 
-// Unit tests for McpClientTokens against a FakeSecretVault: minting, idempotence,
-// the base64url shape, and the constant-time Authenticate that maps a bearer back
-// to its own client and no other. No environment variables and no network — the
-// vault is entirely in memory.
-//
-// MaterializeEnvironmentVariables is deliberately NOT tested: it writes real User
+// MaterializeEnvironmentVariables stays untested on purpose: it writes real User
 // environment variables and broadcasts WM_SETTINGCHANGE to every top-level window,
-// so exercising it would mutate the developer's machine. A unit test must not do
-// that; its behaviour is left to manual/integration verification.
+// so exercising it would mutate the developer's machine.
 [Trait("Category", "unit")]
 public class McpClientTokensTests
 {
@@ -22,8 +16,6 @@ public class McpClientTokensTests
         tokens.EnsureMinted();
         return (tokens, vault);
     }
-
-    // ── minting ───────────────────────────────────────────────────────────────
 
     [Fact]
     public void EnsureMintedMintsOneTokenPerClient()
@@ -42,8 +34,7 @@ public class McpClientTokensTests
     {
         var (tokens, vault) = Minted();
 
-        // Snapshot the first mint, run provisioning again, and prove nothing moved:
-        // a boot that finds the tokens present must not rotate them.
+        // A boot that finds the tokens present must not rotate them.
         var before = McpClients.All.ToDictionary(
             c => c.TokenSecretName,
             c => { vault.TryGet(c.TokenSecretName, out string? t); return t; });
@@ -73,8 +64,6 @@ public class McpClientTokensTests
         }
     }
 
-    // ── authentication ──────────────────────────────────────────────────────────
-
     [Fact]
     public void AuthenticateResolvesEachClientsOwnToken()
     {
@@ -95,8 +84,7 @@ public class McpClientTokensTests
     {
         var (tokens, vault) = Minted();
 
-        // Each bearer must authenticate as its own client and nothing else. This is the whole security model —
-        // the token IS the identity.
+        // The token is the identity: a bearer must never authenticate as another client.
         vault.TryGet(McpClients.Claude.TokenSecretName, out string? claudeToken);
         vault.TryGet(McpClients.Codex.TokenSecretName, out string? codexToken);
         vault.TryGet(McpClients.SchemaAdmin.TokenSecretName, out string? schemaToken);

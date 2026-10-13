@@ -13,28 +13,11 @@
     action: Publish app release | -Publish | danger | Publishes a public GitHub Release of the app.
 #>
 
-# Release artefacts:
-#
-#   1. The installer stub — Deckle-Setup-v<X.Y.Z>-win-x64.exe — the HEADLINE
-#      asset, the file an end user downloads and runs. A small NativeAOT exe
-#      (src/Deckle.Installer) that resolves the latest release, pulls the app ZIP
-#      below, verifies its sha256, extracts it per-user, and registers Deckle.
-#   2. The self-contained app payload — Deckle-v<X.Y.Z>.zip + .sha256 — NOT a
-#      user-facing download but the soute the installer fetches: the whole
-#      publish folder (Deckle.exe + .NET runtime + Windows App SDK + Deckle.pri +
-#      assets), run in place, xcopy deployment (folder, NOT single-file:
-#      rationale in the _IsPublishing PropertyGroup of Deckle.App.csproj).
-#
-# GitHub auto-attaches the source-code archives — nothing to do for those.
-#
-# What it does NOT ship: the whisper.cpp native runtime and the Whisper models.
-# Those are provisioned per-user by the app's first-run wizard (the native
-# bundle has its own publish-native-runtime.ps1 / native-vX.Y.Z release cycle).
-#
-# `publish` is the maintainer's act.
-#
-# Pendant to publish-native-runtime.ps1 — same shared workflow presentation and
-# zip + sha256 + paste-ready-summary + optional -Publish shape.
+# The app payload is the publish folder, not a single file: the rationale sits
+# in the _IsPublishing PropertyGroup of Deckle.App.csproj. The whisper.cpp
+# native runtime and the Whisper models are not shipped: the setup wizard
+# provisions them per user, and the native bundle has its own release cycle
+# (publish-native-runtime.ps1, native-vX.Y.Z tags).
 
 [CmdletBinding()]
 param(
@@ -101,7 +84,6 @@ trap {
     throw
 }
 
-# ── RepoRoot resolution (mirrors build-run.ps1) ──────────────────────────────
 if ($Pick) {
     Import-Module (Join-Path $LibDir 'menu.psm1') -Force
     $RepoRoot = Select-Worktree -ContextDir $ScriptDir
@@ -118,7 +100,7 @@ $ProjectDir = Join-Path $RepoRoot 'src\Deckle.App'
 $Csproj     = Join-Path $ProjectDir 'Deckle.App.csproj'
 if (-not (Test-Path $Csproj)) { throw "csproj not found at $Csproj — is '$RepoRoot' a Deckle repo?" }
 
-# ── Read <Version> — single source of truth is the csproj ────────────────────
+# The csproj <Version> is the single source of truth.
 $Version  = $null
 $verMatch = Select-String -Path $Csproj -Pattern '<Version>([^<]+)</Version>' | Select-Object -First 1
 if ($verMatch) { $Version = $verMatch.Matches[0].Groups[1].Value.Trim() }
@@ -132,17 +114,14 @@ $ZipName   = "Deckle-v$Version.zip"
 $ShaName   = "$ZipName.sha256"
 $SetupName = "Deckle-Setup-v$Version-win-x64.exe"
 
-# ── Resolve owner/repo from the git remote ───────────────────────────────────
 $OwnerRepo = '<owner>/deckle'
 $remoteUrl = & git -C $RepoRoot remote get-url origin 2>$null
 if ($LASTEXITCODE -eq 0 -and $remoteUrl) {
     if ($remoteUrl -match 'github\.com[:/]([^/]+/[^/.]+)') { $OwnerRepo = $Matches[1] }
 }
 
-# A public release is immutable input to remote machines. Prove its source
-# before stopping Deckle or spending minutes in NativeAOT: clean main (including
-# untracked files), synchronized origin/main, a strictly newer version, a
-# non-conflicting tag, and working GitHub authentication for the exact repo.
+# A public release is immutable input to remote machines: prove its source
+# before stopping Deckle or spending minutes in NativeAOT.
 if ($Publish) {
     $publishedTags = @(Get-PublishedReleaseTags -RepoRoot $RepoRoot)
     if (-not $publishedTags.Count) { throw 'release-history.json has no public release' }
@@ -247,10 +226,9 @@ if ($Publish) {
         return
     }
 
-    # The app payload deliberately excludes whisper.cpp. Prove the separately
-    # versioned bundle is publicly downloadable and byte-for-byte identical to
-    # the metadata compiled into Deckle before releasing an installer that
-    # depends on it during first run.
+    # The setup wizard downloads the separately versioned whisper.cpp bundle:
+    # prove it is publicly downloadable and byte-for-byte identical to the
+    # metadata compiled into Deckle before releasing an installer that needs it.
     Write-DeckleWorkflowStep -Output $WorkflowOutput -Message 'Verify native runtime release'
     $nativeSource = Join-Path $RepoRoot 'src\Deckle.Transcription.Whisper\Setup\NativeRuntime.cs'
     $nativeBundle = Get-DeckleNativeRuntimeBundle -SourcePath $nativeSource
@@ -268,11 +246,7 @@ if ($Publish) {
     }
 }
 
-# ── Output layout ────────────────────────────────────────────────────────────
 if (-not $OutDir) {
-    # Folder name = the ZIP stem (Deckle-v<X.Y.Z>) so the artefact layout is
-    # coherent end to end: artifacts\Deckle-v0.4.0\Deckle-v0.4.0.zip, matching
-    # the release tag v<X.Y.Z> and the asset download URL.
     $OutDir = Join-Path $RepoRoot "artifacts\Deckle-v$Version"
 }
 if (Test-Path $OutDir) {
@@ -285,8 +259,6 @@ $PublishDir = Join-Path $OutDir 'publish'
 $ZipPath    = Join-Path $OutDir $ZipName
 $ShaPath    = Join-Path $OutDir $ShaName
 
-# Headline asset: the installer stub, named the OSS-classic way (version + arch)
-# so it reads as "the thing to download" among the release files.
 $SetupPath       = Join-Path $OutDir $SetupName
 $InstallerCsproj = Join-Path $RepoRoot 'src\Deckle.Installer\Deckle.Installer.csproj'
 $InstallerPubDir = Join-Path $OutDir 'installer'
@@ -304,15 +276,14 @@ if ($Publish) {
     }
 }
 
-# Publishing rebuilds the app payload. A running Release instance keeps the
-# current app DLLs locked and makes MSBuild retry for a minute before failing.
+# A running Release instance keeps the app DLLs locked, and the publish below
+# would retry the copy until it fails.
 Write-DeckleWorkflowStep -Output $WorkflowOutput -Message 'Stop running Deckle instance'
 Stop-DeckleProcess -WriteEvent {
     param([string]$Role, [string]$Message)
     Write-DeckleWorkflowMessage -Output $WorkflowOutput -Message $Message -Role $Role
 }
 
-# ── Publish: self-contained, unpackaged, folder (no PublishSingleFile) ───────
 # win-x64 via RuntimeIdentifierOverride, NOT `-r win-x64`. A plain RID
 # propagates to the ProjectReferences, landing each generated .pri under a
 # per-RID bin subfolder (bin\...\win-x64\). The head project's PRI merge then
@@ -320,7 +291,7 @@ Stop-DeckleProcess -WriteEvent {
 # WindowsAppSDK issue #3337. RuntimeIdentifierOverride is Microsoft's
 # documented workaround: it sets the RID without the path-splitting
 # propagation. SelfContained is forced (a RID no longer implies it since
-# .NET 6); the app is x64-only (<Platforms>x64</Platforms>). Restore implicit.
+# .NET 6); the app is x64-only (<Platforms>x64</Platforms>).
 Write-DeckleWorkflowStep -Output $WorkflowOutput -Message 'dotnet publish (Release, win-x64, self-contained folder)'
 $publishExitCode = Invoke-DeckleConsoleProcess -FilePath 'dotnet' -ArgumentList @(
     'publish', $Csproj,
@@ -334,7 +305,7 @@ $publishExitCode = Invoke-DeckleConsoleProcess -FilePath 'dotnet' -ArgumentList 
 )
 if ($publishExitCode -ne 0) { throw "dotnet publish failed (code $publishExitCode)" }
 
-# ── Sanity: the two files a misconfigured publish silently drops ─────────────
+# A misconfigured publish drops these two files silently.
 $exe = Join-Path $PublishDir 'Deckle.exe'
 $pri = Join-Path $PublishDir 'Deckle.pri'
 if (-not (Test-Path $exe)) { throw "Deckle.exe missing from publish output — $exe" }
@@ -345,11 +316,10 @@ if (-not (Test-Path $pri)) { throw "Deckle.pri missing — windowless app. Check
 $fileCount = (Get-ChildItem $PublishDir -Recurse -File).Count
 Write-DeckleWorkflowMessage -Output $WorkflowOutput -Message "publish folder OK — $fileCount files (Deckle.exe + Deckle.pri present)"
 
-# ── Zip the folder + zip-level SHA256 ────────────────────────────────────────
-# CreateFromDirectory (streaming) rather than Compress-Archive: the publish
-# folder is ~300 MB across 100s of files, where Compress-Archive is slow and
-# memory-hungry. includeBaseDirectory:$false puts Deckle.exe at the zip root so
-# the installer extracts straight into the target folder.
+# CreateFromDirectory (streaming) rather than Compress-Archive, which is slow
+# and memory-hungry on a publish folder of hundreds of files.
+# includeBaseDirectory:$false puts Deckle.exe at the zip root so the installer
+# extracts straight into the target folder.
 Write-DeckleWorkflowStep -Output $WorkflowOutput -Message "Compress to $ZipName"
 Add-Type -AssemblyName System.IO.Compression.FileSystem
 [System.IO.Compression.ZipFile]::CreateFromDirectory(
@@ -372,15 +342,10 @@ Write-DeckleWorkflowMessage -Output $WorkflowOutput -Message "$ZipName ($ZipSize
 Set-Content -Path $ShaPath -Value ('{0} *{1}' -f $ZipSha256, $ZipName) -Encoding ascii
 Write-DeckleWorkflowMessage -Output $WorkflowOutput -Message "$ShaName written"
 
-# ── Build the installer stub (NativeAOT, win-x64) — the headline asset ───────
-# The file the end user downloads and runs. A standalone native exe (PublishAot
-# in src/Deckle.Installer): it resolves the latest GitHub Release, downloads the
-# app ZIP above, verifies it against the .sha256 sidecar, extracts it per-user,
-# and registers Deckle. NativeAOT links here at publish — it needs the VC++
-# linker on the maintainer's machine; a plain `dotnet build` only validates the
-# IL. `-r win-x64` is correct here: the installer has no PRI merge, so none of
-# the WinAppSDK RID quirk the app build dodges with RuntimeIdentifierOverride.
-# x64-only matches the app: the payload it fetches is x64-only too.
+# NativeAOT links the installer stub here at publish: it needs the VC++ linker
+# on the maintainer's machine; a plain `dotnet build` only validates the IL.
+# `-r win-x64` is correct here: the installer has no PRI merge, so none of the
+# WinAppSDK RID quirk the app build dodges with RuntimeIdentifierOverride.
 Write-DeckleWorkflowStep -Output $WorkflowOutput -Message 'dotnet publish installer (Release, win-x64, NativeAOT)'
 if (-not (Test-Path $InstallerCsproj)) { throw "Installer csproj not found at $InstallerCsproj" }
 $installerExitCode = Invoke-DeckleConsoleProcess -FilePath 'dotnet' -ArgumentList @(
@@ -393,10 +358,8 @@ $installerExitCode = Invoke-DeckleConsoleProcess -FilePath 'dotnet' -ArgumentLis
 )
 if ($installerExitCode -ne 0) { throw "dotnet publish (installer) failed (code $installerExitCode)" }
 
-# AssemblyName is Deckle-Installer → the linker emits Deckle-Installer.exe. Copy
-# it up to the version- and arch-tagged release name. The exe reads its own path
-# at runtime (it self-copies as the uninstaller), so the download name is free
-# to be descriptive.
+# The exe reads its own path at runtime (it copies itself as the uninstaller),
+# so the download name is free to carry the version and the arch.
 $InstallerBuilt = Join-Path $InstallerPubDir 'Deckle-Installer.exe'
 if (-not (Test-Path $InstallerBuilt)) { throw "Installer exe missing from publish output — $InstallerBuilt" }
 Copy-Item $InstallerBuilt $SetupPath -Force
@@ -405,7 +368,6 @@ $SetupSize  = [math]::Round($SetupBytes / 1MB, 2)
 $SetupSha256 = (Get-FileHash $SetupPath -Algorithm SHA256).Hash.ToLower()
 Write-DeckleWorkflowMessage -Output $WorkflowOutput -Message "$SetupName ($SetupSize MB) sha256=$SetupSha256"
 
-# ── Summary — release convention the installer / future updater consumes ─────
 Write-DeckleWorkflowStep -Output $WorkflowOutput -Message 'Done'
 Write-Host @"
 
@@ -423,15 +385,15 @@ Write-Host @"
 
 "@ -ForegroundColor Green
 
-# ── Optional: gh release create (maintainer act, never run by tooling) ───────
+# Publishing is the maintainer's act, never triggered by an agent.
 if ($Publish) {
     Write-DeckleWorkflowStep -Output $WorkflowOutput -Message "Publish GitHub Release v$Version"
     $tag    = "v$Version"
     $title  = "Deckle $tag"
-    # Asset order = upload order = display order on the release page: the
-    # installer exe first (the headline download), then the payload + its sha.
     $headSha = (& git -C $RepoRoot rev-parse HEAD).Trim()
     if ($LASTEXITCODE -ne 0) { throw "git rev-parse HEAD failed (code $LASTEXITCODE)" }
+    # Asset order = upload order = display order on the release page: the
+    # installer exe first (the headline download), then the payload + its sha.
     $ghArgs = @(
         'release', 'create', $tag, $SetupPath, $ZipPath, $ShaPath,
         '--repo', $OwnerRepo,

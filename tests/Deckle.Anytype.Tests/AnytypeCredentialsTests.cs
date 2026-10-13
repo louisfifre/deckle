@@ -25,8 +25,6 @@ public class AnytypeCredentialsTests
         var creds = AnytypeCredentials.Resolve(Dto(), "vault-key", CredentialsPath);
 
         Assert.Equal("vault-key", creds.ApiKey);
-        // The value the code uses: the probe's frozen headless base URL, not a
-        // re-typed literal.
         Assert.Equal(BackendHealthProbe.DefaultBaseUrl, creds.ApiUrl);
         Assert.Equal("2025-11-08", creds.ApiVersion);
         Assert.Equal("space-1", creds.SpaceId);

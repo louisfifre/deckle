@@ -5,12 +5,10 @@ using Deckle.Autocorrect;
 
 namespace Deckle.Autocorrect.Lab;
 
-// How one corpus record aligned back into slots — the outcome that lets the runner
-// count, and never silently degrade. Aligned: a modern record whose history overlay
-// gives the final side. RepairedFromFinal: a legacy record (history property absent)
-// whose final side was recovered by re-tokenizing the Final string. Unusable: the
-// record's slot indexing could not be trusted (a corrupted typed string, or a legacy
-// final that does not tokenize one-to-one) and it is skipped rather than mis-judged.
+// How one corpus record aligned back into slots. RepairedFromFinal: a record
+// without the history property, whose final side was recovered by re-tokenizing
+// the Final string. Unusable: the record's slot indexing could not be trusted, so
+// it is skipped rather than mis-judged.
 public enum AlignmentStatus { Aligned, RepairedFromFinal, Unusable }
 
 public readonly record struct AlignmentResult(
@@ -21,28 +19,22 @@ public readonly record struct AlignmentResult(
     public bool Usable => Status != AlignmentStatus.Unusable;
 }
 
-// Turns one corpus record back into the two slot-aligned word-lists the replay
-// core consumes: what was typed at each slot, and what the sentence ended with
-// there. The alignment is the inverse of SentenceCorpus.Flush.
+// Turns one corpus record back into the two slot-aligned word lists the replay
+// consumes: what was typed at each slot, and what the sentence ended with there.
+// The alignment is the inverse of SentenceCorpus.Flush.
 //
-// The typed side is re-tokenized with WordBoundaries.Tokenize — the SAME
-// tokenizer the live tracker used to cut the slots, so the split reproduces the
-// original slots exactly (the parity guarantee WordBoundariesTests pins).
+// The typed side is re-tokenized with WordBoundaries.Tokenize, the SAME tokenizer
+// the live tracker used to cut the slots, so the split reproduces the original
+// slots exactly (WordBoundariesTests pins the parity).
 //
 // The final side comes from one of two paths, never a silent copy of typed:
-//   • History present (modern record): overlay each changed slot's final form off
-//     the History field, whose « #index » entries are keyed to the same slots.
-//     Before trusting the indexing, verify each entry's first-typed form still
-//     equals the re-tokenized token at that index — a corrupted typed string (a
-//     User re-edit into an elided form drops the separator and fuses two slots,
-//     « deavoir ») shifts every later index by one, and such a record is dropped.
-//   • History property ABSENT (legacy record, pre-2026-07-02): the corrections
-//     cannot be read off a field that did not exist, so the final side is recovered
-//     by re-tokenizing the Final string — but only when it yields exactly as many
-//     tokens as the typed side (a strict one-to-one slot map). An elision-apostrophe
-//     re-split, or any other token-count drift, breaks the map and the record is
-//     dropped rather than judged against a fabricated final=typed (the silent
-//     fallback that once counted every legacy correction against the judge).
+//   • History present: overlay each changed slot's final form off the History
+//     field, whose « #index » entries are keyed to the same slots.
+//   • History property ABSENT (an older record): re-tokenize the Final string,
+//     but only when it yields exactly as many tokens as the typed side. An
+//     elision-apostrophe re-split, or any other token-count drift, breaks the
+//     slot map and the record is dropped rather than judged against a
+//     fabricated final = typed.
 public static class SentenceAlignment
 {
     public static AlignmentResult Align(CorpusEntry entry)
@@ -57,10 +49,10 @@ public static class SentenceAlignment
             var final = new List<string>(typed); // unchanged slots stay as typed
             foreach ((int index, string firstTyped, string form) in ParseHistoryEntries(record.History))
             {
-                // The slot indexing is only trustworthy while the history's
-                // first-typed form still matches the token re-tokenized at that
-                // index. A mismatch (or an out-of-range index) means the typed
-                // string is corrupted and every later index is off by one — skip.
+                // The slot indexing holds only while the history's first-typed form
+                // still matches the token at that index. A mismatch means a
+                // corrupted typed string (a user re-edit into an elided form fuses
+                // two slots, « deavoir ») and every later index is off by one.
                 if (index < 0 || index >= typed.Count ||
                     !string.Equals(typed[index], firstTyped, StringComparison.Ordinal))
                     return Unusable();
@@ -113,8 +105,6 @@ public static class SentenceAlignment
         }
     }
 
-    // The (index, finalForm) view, for callers that only overlay forms and do not
-    // check integrity. Kept as the narrow surface the pre-integrity replay used.
     internal static IEnumerable<(int Index, string Form)> ParseHistory(string history)
     {
         foreach ((int index, _, string form) in ParseHistoryEntries(history))

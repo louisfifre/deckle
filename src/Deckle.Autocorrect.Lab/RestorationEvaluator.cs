@@ -10,11 +10,6 @@ namespace Deckle.Autocorrect.Lab;
 // a correction policy exactly as the live engine would, and scores the output
 // against the original reference.
 //
-// It is the only way to answer the questions that calibrate the engine: does
-// the lexical gate alone restore the bulk of accents, does context cut into the
-// ambiguous residue, and — the one that matters most — how often does the
-// policy wreck a word the typist got right.
-//
 // Tokenization and sentence splitting MUST match the trainer (and through it
 // the live tracker): the previous word handed to the policy has to be the same
 // previous word the engine would see, or the eval measures a different model
@@ -31,12 +26,10 @@ public static class RestorationEvaluator
         var opts = options ?? new EvaluatorOptions();
         var report = new RestorationReport();
 
-        // Offender tallies, materialized to top-25 at the end.
         var missed = new Dictionary<string, long>(StringComparer.Ordinal);
         var wrongForm = new Dictionary<string, long>(StringComparer.Ordinal);
         var falseCorrections = new Dictionary<string, long>(StringComparer.Ordinal);
 
-        // Per-stage emitted-correction tally, keyed by the reason the policy gave.
         var byStage = new Dictionary<CorrectionReason, StageTally>();
 
         string? line;
@@ -92,12 +85,10 @@ public static class RestorationEvaluator
         return report;
     }
 
-    // Like Evaluate, but with a post-sentence reranker stage. The gate runs per
-    // word first, leaving ambiguous slots as literals; once the sentence is
-    // complete the reranker reconsiders each ambiguous slot with the FULL
-    // bidirectional context and may override the literal. Binning sees the final
-    // output. This is the offline measurement of the live two-stage design —
-    // no keyboard, no threading, no cursor: pure scoring against the reference.
+    // Like Evaluate, with the post-sentence reranker stage: the gate runs per word
+    // first, leaving ambiguous slots as literals; once the sentence is complete
+    // the reranker reconsiders each ambiguous slot with the FULL bidirectional
+    // context and may override the literal. Binning sees the final output.
     public static RestorationReport EvaluateReranked(
         TextReader reference,
         ICorrectionPolicy policy,
@@ -195,13 +186,10 @@ public static class RestorationEvaluator
         return report;
     }
 
-    // Runs the live policy (the gate) then the post-sentence reranker over a
-    // line of text AS TYPED — no accent-stripping unless asked, no scoring, no
-    // reference. This is the engine of the `dry-run` command: it answers "what
-    // would the engine do to this exact text?", word by word. Sentence
-    // splitting and tokenization match Evaluate and the live tracker, so the
-    // verdict is the one that would ship. `strip` simulates a typist from
-    // already-accented text (paste real French, see what we recover).
+    // Runs the gate then the post-sentence reranker over a line AS TYPED: no
+    // scoring, no reference. It answers "what would the engine do to this exact
+    // text?", word by word. `strip` simulates a typist from already-accented
+    // text.
     public static IReadOnlyList<WordOutcome> RestoreLine(
         string line,
         ICorrectionPolicy policy,
@@ -265,9 +253,7 @@ public static class RestorationEvaluator
         return outcomes;
     }
 
-    // Place one token in its class. The split hinges on whether the reference
-    // carried accents (token != typed) and on what the policy emitted. Output
-    // is compared to the reference ordinally — accents and case must match.
+    // Output is compared to the reference ordinally: accents and case must match.
     private static void Classify(
         RestorationReport report,
         string token, string typed, string output,
@@ -313,9 +299,6 @@ public static class RestorationEvaluator
         }
     }
 
-    // Credit one emitted correction to the stage that produced it. The three
-    // acted branches always carry a non-null decision (output != typed implies
-    // the policy returned one); the guard keeps it total regardless.
     private static void BumpStage(
         Dictionary<CorrectionReason, StageTally> byStage, CorrectionDecision? decision, bool correct)
     {
@@ -392,32 +375,24 @@ public static class RestorationEvaluator
             or CorrectionReason.FrequencyDominance
             or CorrectionReason.PersonalWord;
 
-    // The left context handed to the policy, most recent last: empty at sentence
-    // start, one word once there is a previous, two from the third word on.
+    // Most recent last, as the policy expects.
     private static IReadOnlyList<string> LeftContext(string? prev2, string? prev1) =>
         prev1 is null ? Array.Empty<string>()
         : prev2 is null ? new[] { prev1 }
         : new[] { prev2, prev1 };
 
-    // One word token's evaluation in the reranked pass: the reference form, the
-    // typist's stripped input, the current output, the decision behind it, and
-    // the closed candidate set when it is an ambiguous slot (else empty).
     private readonly record struct WordEval(
         string Reference, string Typed, string Output,
         CorrectionDecision? Decision, IReadOnlyList<AccentVariant> Candidates);
 }
 
-// Tuning for the eval. The only knob is a token cap for quick smoke runs.
 public sealed record EvaluatorOptions
 {
-    // Stop after this many scored tokens; 0 means no cap (the full reference).
+    // Scored tokens before stopping; 0 means no cap.
     public int MaxTokens { get; init; } = 0;
 }
 
-// One word's dry-run verdict (RestoreLine): the text as the policy saw it, the
-// final form after gate + rerank, the stage that acted (null = left untouched),
-// and whether it was an ambiguous slot the reranker was offered — true with a
-// SentenceReranker reason means it resolved it, true with no change means it
-// was offered the choice and abstained.
+// Reason null = left untouched. WasAmbiguous: the reranker was offered the slot;
+// with a SentenceReranker reason it resolved it, with no change it abstained.
 public readonly record struct WordOutcome(
     string Typed, string Output, CorrectionReason? Reason, bool WasAmbiguous);

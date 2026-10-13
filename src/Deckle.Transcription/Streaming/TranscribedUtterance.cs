@@ -5,6 +5,5 @@ namespace Deckle.Transcription;
 //   Text           — the trimmed, non-empty transcript of that utterance.
 //   EndedOnSilence — true when the speaker made a real pause after it: the
 //                    assembled text puts a paragraph break ("\n\n") before the
-//                    next utterance, a single space otherwise. This is exactly
-//                    the rule ConsumeUtterancesAsync applies.
+//                    next utterance, a single space otherwise.
 public sealed record TranscribedUtterance(int Index, string Text, bool EndedOnSilence);

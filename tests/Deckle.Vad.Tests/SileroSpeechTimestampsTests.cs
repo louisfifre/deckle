@@ -5,13 +5,6 @@ using Xunit;
 
 namespace Deckle.Vad.Tests;
 
-// SileroSpeechTimestamps is the pure, model-free half of the Silero VAD port —
-// the get_speech_timestamps hysteresis state machine. We drive it with synthetic
-// per-window probability sequences (no ONNX model involved) and assert the padded
-// [start,end) speech ranges it derives. Behaviour, not internals: these pin the
-// reference semantics (min-speech drop, min-silence bridge, hysteresis dead-band,
-// padding) so a refactor of the loop stays honest.
-//
 // Frame math at 16 kHz: window = 512 samples; min-speech 250 ms = 4000 samples
 // (> 7.8 windows), min-silence 100 ms = 1600 samples (>= 4 windows to close),
 // pad 30 ms = 480 samples.
@@ -102,12 +95,9 @@ public class SileroSpeechTimestampsTests
         Assert.True(segs[0].end <= segs[1].start);
     }
 
-    // ── Boundary cases ──────────────────────────────────────────────────────
-    //
-    // The tests above sit comfortably on each side of the decision edges; these
-    // pin the exact crossing window so an off-by-one in the silence countdown, the
-    // min-speech filter, the tail flush, or the hysteresis operators can't slip
-    // through. Frame step is 512 samples, so the diffs land just under / just over.
+    // Boundary cases: these pin the exact crossing window so an off-by-one in the
+    // silence countdown, the min-speech filter, the tail flush, or the hysteresis
+    // operators can't slip through.
 
     [Fact]
     public void FourWindowSilenceBridgesBelowMinSilence()

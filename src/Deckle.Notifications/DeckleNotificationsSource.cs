@@ -3,17 +3,13 @@ using Deckle.Diagnostics;
 
 namespace Deckle.Notifications;
 
-// EventSource provider for the Deckle.Notifications module. Observes the
-// notification lifecycle — dispatcher boot, catalogue registration, and the
-// show / responded / dropped / cancelled / unanswered / failed path of each
-// prompt — plus the toast channel's two failure modes (elevated process,
-// registration failure).
+// Observes the notification lifecycle (dispatcher boot, catalogue
+// registration, and the show / responded / dropped / cancelled / unanswered /
+// failed path of each prompt) plus the toast channel's two failure modes
+// (elevated process, registration failure).
 //
-// Verbose/Info separation per the deckle-logging skill: an Info is a short
-// Capital sentence with no IDs and no k=v; the technical detail (notification
-// id, channel, action) lives in a Verbose mirror that FOLLOWS the Info.
-// Notifications are outputs sent to the world, hence the transverse `Push`
-// keyword (bit 3) on every event.
+// Each Verbose mirror FOLLOWS its Info. Notifications are outputs sent to the
+// world, hence the transverse `Push` keyword on every event.
 [EventSource(Name = "Deckle-Notifications")]
 public sealed class DeckleNotificationsSource : DeckleEventSource
 {
@@ -22,8 +18,8 @@ public sealed class DeckleNotificationsSource : DeckleEventSource
     private DeckleNotificationsSource() { }
 
     // ── EventIds ────────────────────────────────────────────────────────
-    // Sequential from 1. IDs are public in the ETW manifest; do not reuse an
-    // ID after deleting an event.
+    // IDs are public in the ETW manifest; do not reuse an ID after deleting an
+    // event.
     public const int EvtDispatcherInitialized       = 1;
     public const int EvtDispatcherInitializedDetail = 2;
     public const int EvtCatalogRegistered           = 3;

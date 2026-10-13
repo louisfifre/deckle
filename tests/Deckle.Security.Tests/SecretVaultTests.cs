@@ -10,10 +10,8 @@ namespace Deckle.Security.Tests;
 // distinguishes a missing file (empty) from an unreadable one (anomaly). The
 // DPAPI path runs for real (the test process is the same Windows account that
 // wrote the file), so the sealing and persistence assertions exercise the
-// genuine encrypt/decrypt round-trip, not a stub.
-//
-// xUnit builds a fresh instance per test, so the constructor + Dispose give
-// each test its own throwaway file under the temp tree.
+// genuine encrypt/decrypt round-trip, not a stub. Each test gets its own
+// throwaway file under the temp tree.
 [Trait("Category", "unit")]
 public sealed class SecretVaultTests : IDisposable
 {

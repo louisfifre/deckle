@@ -7,41 +7,18 @@ using System.Xml;
 
 namespace Deckle.Shell;
 
-// ── ElevatedStartupService ───────────────────────────────────────────────────
+// Backs the "Start elevated" toggle. Some capabilities (the trackpad driver
+// dance, Raw Input from an elevated foreground app) need administrator rights
+// from logon. A Task Scheduler task with HighestAvailable run level starts
+// Deckle elevated at logon without a UAC prompt at every launch, the PowerToys
+// pattern; the single prompt comes when the task is created.
 //
-// Backs the "Start elevated" toggle. Some Deckle capabilities (the trackpad
-// driver dance, Raw Input from an elevated foreground app) need the process to
-// run with administrator rights from logon. The clean way to start elevated at
-// logon — without nagging the user with a UAC prompt at *every* launch — is a
-// Task Scheduler task with HighestAvailable run level: Windows starts it
-// elevated, silently, on logon. This is the PowerToys pattern. The single UAC
-// prompt happens once, at toggle activation, when the task is created.
+// The task and the HKCU\Run value (AutostartService) are two vehicles for the
+// same concern, and only one may start the app: enabling the task disables the
+// Run key, and Disable restores it, since elevated startup implies startup.
 //
-// Why this lives beside AutostartService and not inside it: it is the *same
-// concern* (start Deckle at logon) by a different vehicle (elevated task vs
-// HKCU\Run value). The two vehicles are mutually exclusive — only one should
-// start the app. So enabling the elevated task disables the Run key, and
-// disabling it restores the Run key. The "Start elevated" toggle therefore
-// *converts* the autostart vehicle rather than adding a second one (decided in
-// the framing session).
-//
-// "Elevated startup implies startup": enabling the task is also enabling
-// startup, and the General page's autostart toggle reflects that through
-// StartupService, which probes both vehicles. So this Disable() *converts* the
-// vehicle back to the Run key (the app still starts at logon), whereas
-// StartupService.StopStartup() removes the task outright via RemoveTask() (the
-// app stops starting at all) — the two callers want opposite things from a gone
-// task, which is why the raw removal is factored out below.
-//
-// Multi-install discipline mirrors AutostartService: the task name is the fixed
-// "Deckle", so IsEnabled compares the task's <Command> to this exe's path —
-// each install only reports ON for its own task.
-//
-// Probe (IsEnabled) runs unelevated via `schtasks /Query` — no UAC. Mutation
-// (Enable/Disable) needs elevation, so schtasks.exe is launched with the runas
-// verb; a brief console flash is unavoidable with runas. UAC refusal raises
-// Win32Exception 1223 and is treated as a logged failure. Nothing throws to the
-// UI.
+// The task name is fixed, so IsEnabled reports ON only when the task's
+// <Command> is this exe. Nothing throws to the UI.
 public static class ElevatedStartupService
 {
     private const string TaskName = "Deckle";
@@ -155,9 +132,7 @@ public static class ElevatedStartupService
 
     // Deletes the elevated task without restoring any other vehicle — the raw
     // removal both Disable() (which then restores the Run key) and
-    // StartupService.StopStartup() (which restores nothing) build on. Mutating a
-    // task needs elevation, so schtasks runs under the runas verb: one UAC
-    // prompt, a declined prompt surfacing as Win32Exception 1223 → logged false.
+    // StartupService.StopStartup() (which restores nothing) build on.
     internal static bool RemoveTask()
     {
         try
@@ -194,8 +169,6 @@ public static class ElevatedStartupService
         }
     }
 
-    // Compares the task's <Command> to this exe's path (case-insensitive,
-    // tolerant of surrounding quotes) so each install only sees its own task.
     private static bool TaskTargetsCurrentExe(string taskXml)
     {
         string? current = Environment.ProcessPath;
@@ -225,9 +198,7 @@ public static class ElevatedStartupService
         }
     }
 
-    // Task Scheduler XML: logon trigger for the current user, HighestAvailable
-    // run level (elevated), action launches the quoted exe. Battery clauses are
-    // off so a laptop on battery still starts Deckle.
+    // Battery clauses are off so a laptop on battery still starts Deckle.
     private static string BuildTaskXml(string exePath)
     {
         string userId  = WindowsIdentity.GetCurrent().Name;
@@ -281,7 +252,6 @@ public static class ElevatedStartupService
             """;
     }
 
-    // Minimal XML escaping for values injected into the task document.
     private static string SecurityElementEscape(string value) =>
         value.Replace("&", "&amp;")
              .Replace("<", "&lt;")

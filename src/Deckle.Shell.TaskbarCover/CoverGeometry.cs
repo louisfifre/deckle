@@ -22,18 +22,15 @@ public static class CoverGeometry
 {
     // Depth of the approach zone, as a multiple of the band thickness,
     // measured inward from the anchored screen edge with the band included.
-    // A constant, not a setting: the factor and the curve live here.
     public const int ApproachZoneFactor = 4;
 
-    // Band size perpendicular to its anchored edge.
     public static int Thickness(NativeMethods.RECT band, TaskbarEdge edge)
         => edge is TaskbarEdge.Left or TaskbarEdge.Right
             ? band.right - band.left
             : band.bottom - band.top;
 
-    // The approach zone spans the band's extent along the edge (a cursor
-    // near the same screen edge on another monitor stays out of it) and
-    // reaches ApproachZoneFactor × Thickness inward perpendicular to the edge.
+    // The approach zone spans only the band's extent along the edge: a cursor
+    // near the same screen edge on another monitor stays out of it.
     public static NativeMethods.RECT ApproachZone(NativeMethods.RECT band, TaskbarEdge edge)
     {
         int depth = ApproachZoneFactor * Thickness(band, edge);
@@ -62,10 +59,8 @@ public static class CoverGeometry
         return d < 0 ? 0 : d;
     }
 
-    // Band opacity for a cursor at p: 1 outside the approach zone, otherwise
-    // smoothstep of the distance to the band over the zone's span beyond the
-    // band — 0 on the band, 1 at the outer boundary. Same curve as the HUD's
-    // proximity fade, so both surfaces ease the same way.
+    // Smoothstep over the zone's span beyond the band, the same curve as the
+    // HUD's proximity fade, so both surfaces ease the same way.
     public static double Opacity(NativeMethods.RECT band, TaskbarEdge edge, POINT p)
     {
         if (!Contains(ApproachZone(band, edge), p)) return 1.0;

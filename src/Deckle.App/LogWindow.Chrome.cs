@@ -25,7 +25,6 @@ namespace Deckle.App;
 
 public sealed partial class LogWindow : Window, ILogWindowSink
 {
-    // ── Theme tracing ────────────────────────────────────────────────────────
     private Microsoft.UI.Xaml.ElementTheme _lastTheme;
 
     private void OnRootActualThemeChanged(FrameworkElement sender, object args)
@@ -41,16 +40,14 @@ public sealed partial class LogWindow : Window, ILogWindowSink
     private void ApplyRecordingState(bool isRecording)
     {
         _isRecording = isRecording;
-        // Mutating ImageSource in-place on the existing ImageIconSource does not
-        // propagate visually to TitleBar (no routed PropertyChanged). Fix:
-        // rebuild a complete ImageIconSource and reassign IconSource.
+        // Mutating ImageSource on the existing ImageIconSource never reaches the
+        // TitleBar; only a new ImageIconSource does.
         AppTitleBar.IconSource = new Microsoft.UI.Xaml.Controls.ImageIconSource
         {
             ImageSource = isRecording ? _iconRecording : _iconIdle,
         };
 
-        // Window icon (titlebar + taskbar + alt-tab): follows the same state.
-        // AppWindow.SetIcon expects an .ico file path on disk.
+        // AppWindow.SetIcon takes an .ico file path on disk.
         var path = isRecording ? _iconRecordingPath : _iconIdlePath;
         if (path is not null) AppWindow.SetIcon(path);
     }
@@ -77,8 +74,6 @@ public sealed partial class LogWindow : Window, ILogWindowSink
         }
     }
 
-    // ── TitleBar search: responsive collapse ──────────────────────────────────
-
     private void OnWindowSizeChanged(object sender, WindowSizeChangedEventArgs args)
     {
         bool narrow = args.Size.Width < SearchCollapseThreshold;
@@ -96,9 +91,7 @@ public sealed partial class LogWindow : Window, ILogWindowSink
 
     private void OnSearchBoxLostFocus(object sender, RoutedEventArgs e)
     {
-        // Only retract when window is narrow; in wide mode the SearchBox is
-        // permanently visible. Also retract only if the user didn't leave a
-        // non-empty filter behind, so the search remains reachable to clear it.
+        // A non-empty search stays visible so the user can still clear it.
         if (!_isSearchNarrow) return;
         if (!string.IsNullOrEmpty(SearchBox.Text)) return;
         ShowSearchIcon();

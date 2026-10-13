@@ -1,39 +1,13 @@
 """Construit un corpus ASR stratifié à partir de la télémétrie Deckle.
 
-Le corpus de validation par défaut prend 30 samples répartis sur cinq buckets
-de durée (very-short, short, medium, long, very-long-edge). Le but est de
-produire un corpus d'évaluation réutilisable pour plusieurs backends ASR, pas
-un corpus attaché à un modèle précis.
+``_parse_args`` shows the first line as the CLI description. The corpus
+serves every ASR backend, not one model. Its samples hold the user's own voice, so no audio
+is ever versioned: each machine builds its corpus from its own telemetry.
 
-Source : ``%LOCALAPPDATA%\\Deckle\\telemetry\\``. Aucun audio versionné
-côté Git — chaque machine apporte ses propres samples.
-
-Stratification choisie 6 / 8 / 9 / 6 / 1 :
-
-  | Bucket          | n     | range          | rationale                              |
-  |-----------------|-------|----------------|----------------------------------------|
-  | very-short      | 6/42  | < 5 s          | dictée note flash                      |
-  | short           | 8/67  | 5–15 s         | dictée note normale (usage médian)     |
-  | medium          | 9/164 | 15–60 s        | paragraphe ou idée structurée          |
-  | long            | 6/95  | 60–300 s       | monologue ou réflexion suivie          |
-  | very-long-edge  | 1/1   | 330 s          | unique sample > 300 s (edge case)      |
-
-Sélection ``equal-spacing`` à l'intérieur de chaque bucket : tri par
-durée croissante, pick aux indices ``round(len * i / N)`` pour
-``i ∈ [0, N)``. Donne une couverture diverse plutôt que les N premiers
-ou un échantillon aléatoire — reproductible, stable, et présente le
-biais voulu (pas de bagarre entre samples très proches en durée).
-
-Le ``corpus.jsonl`` produit suit la convention v2 du loader ``lib/corpus.py`` :
-top-level ``timestamp / kind / session / payload``. Le payload conserve les
-champs de télémétrie utiles : ``transcription_id``, ``audio_file``, ``text``,
-``duration_seconds``, ``tier``, ``text_words``.
-
-Usage::
-
-    python benchmark/asr/build_corpus.py
-    python benchmark/asr/build_corpus.py --corpus asr-val-30 --dry-run
-    python benchmark/asr/build_corpus.py --corpus voxtral-val-30 --force
+Duration buckets follow dictation lengths, from a quick note to a
+monologue, plus the rare clip past 300 s as an edge case. Each line of
+``corpus.jsonl`` keeps the telemetry entry whole, the shape
+``lib/corpus.py`` reads.
 """
 
 from __future__ import annotations
@@ -52,7 +26,7 @@ from lib._base_compat import _ensure_stdout_utf8
 from lib import paths
 
 
-# ── Sources télémétrie ────────────────────────────────────────────────
+# ── Telemetry sources ─────────────────────────────────────────────────
 
 DECKLE_TELEMETRY_DIR = paths.DECKLE_TELEMETRY_DIR
 AUDIO_DIR            = DECKLE_TELEMETRY_DIR / "audio"
@@ -61,14 +35,13 @@ CORPUS_RAW_DIR       = DECKLE_TELEMETRY_DIR / "corpus" / "raw"
 DEFAULT_CORPUS_SLUG = "asr-val-30"
 
 
-# ── Schéma de stratification ──────────────────────────────────────────
+# ── Stratification schema ─────────────────────────────────────────────
 
 @dataclass(frozen=True)
 class Bucket:
-    """Un seau de stratification ``durée → n samples à prendre``."""
-    name:     str           # nom interne (very-short / short / …)
-    pick_n:   int           # nombre de samples à prendre dans ce bucket
-    duration_predicate: callable    # fonction qui matche les samples du bucket
+    name:     str
+    pick_n:   int
+    duration_predicate: callable
 
 
 BUCKETS: list[Bucket] = [
@@ -78,7 +51,7 @@ BUCKETS: list[Bucket] = [
     Bucket("long",           6, lambda d: 60 <= d < 300),
     Bucket("very-long-edge", 1, lambda d: d >= 300),
 ]
-TARGET_TOTAL = sum(b.pick_n for b in BUCKETS)  # 30
+TARGET_TOTAL = sum(b.pick_n for b in BUCKETS)
 
 
 # ── Pipeline ──────────────────────────────────────────────────────────
@@ -132,13 +105,11 @@ def main() -> int:
     return 0
 
 
-# ── Lecture télémétrie ────────────────────────────────────────────────
+# ── Telemetry reading ─────────────────────────────────────────────────
 
 def _load_telemetry() -> list[dict]:
-    """Lit tous les ``corpus.jsonl`` du raw/<tier>/ et garde uniquement les
-    samples dont le WAV existe encore sur disque. Dédup par
-    ``transcription_id`` (au cas où un sample serait dans deux buckets,
-    ce qui ne devrait pas arriver mais qu'on ne fait pas exploser)."""
+    """Keep only samples whose WAV is still on disk, once per
+    ``transcription_id`` even if two tier folders list it."""
     seen: set[str] = set()
     out: list[dict] = []
     for jsonl in sorted(CORPUS_RAW_DIR.glob("*/corpus.jsonl")):
@@ -151,11 +122,9 @@ def _load_telemetry() -> list[dict]:
             tid = str(p["transcription_id"])
             if tid in seen:
                 continue
-            # Filtre robuste : ``audio_file`` peut être vide (transcription
-            # sans ``RecordAudioCorpus`` actif côté Deckle, la ligne JSONL
-            # existe mais aucun WAV associé). On exige donc explicitement
-            # un fichier — ``exists()`` seul retournerait True sur le
-            # dossier parent quand ``audio_file`` est "".
+            # ``audio_file`` is empty when Deckle recorded the line without
+            # its audio, and ``AUDIO_DIR / ""`` is the folder itself, which
+            # ``exists()`` would accept.
             audio_file = str(p.get("audio_file") or "").strip()
             if not audio_file:
                 continue
@@ -179,11 +148,10 @@ def _load_telemetry() -> list[dict]:
 # ── Stratification ────────────────────────────────────────────────────
 
 def _stratify(samples: list[dict]) -> dict[str, list[dict]]:
-    """Pour chaque bucket, tri les candidats par durée croissante puis
-    pick equal-spacing — indices ``round(len * i / N)`` pour
-    ``i ∈ [0, N)``. Si un bucket a moins de candidats que ``pick_n``,
-    on prend tout ce qu'il y a (perte silencieuse — affichée par la
-    fonction principale)."""
+    """Pick equally spaced samples across each bucket sorted by duration:
+    the whole range is covered and the pick is reproducible, where the
+    first N would cluster and a random pick would not repeat. A bucket
+    short of ``pick_n`` gives everything it has; ``main`` reports the gap."""
     out: dict[str, list[dict]] = {}
     for b in BUCKETS:
         candidates = [s for s in samples if b.duration_predicate(s["duration_s"])]
@@ -191,15 +159,10 @@ def _stratify(samples: list[dict]) -> dict[str, list[dict]]:
         if len(candidates) <= b.pick_n:
             out[b.name] = candidates
             continue
-        # Equal-spacing : tire N indices répartis sur [0, len-1].
-        # ``round(len * i / N)`` au lieu de ``i * (len // N)`` parce que
-        # c'est plus stable quand ``len`` n'est pas multiple de N (sinon
-        # on perd les derniers indices systématiquement).
+        # ``round(n * i / N)``, not ``i * (n // N)``: the latter never
+        # reaches the longest samples when n is not a multiple of N.
         n = len(candidates)
         picked_idx = [round(n * i / b.pick_n) for i in range(b.pick_n)]
-        # Sécurité : si la formule donne deux fois le même index sur de
-        # très petits N (improbable avec nos ratios mais soyons safe),
-        # on dédupe en préservant l'ordre.
         seen_idx: set[int] = set()
         unique_idx: list[int] = []
         for idx in picked_idx:
@@ -211,33 +174,22 @@ def _stratify(samples: list[dict]) -> dict[str, list[dict]]:
     return out
 
 
-# ── Écriture ──────────────────────────────────────────────────────────
+# ── Writing ───────────────────────────────────────────────────────────
 
 def _write_corpus(selection: dict[str, list[dict]], corpus_dir: Path) -> int:
-    """Copie les WAVs sélectionnés vers ``corpora/<slug>/`` et écrit le
-    ``corpus.jsonl`` consolidé. Chaque ligne JSONL réutilise l'entrée originale
-    de la télémétrie et ajoute un champ :
-
-      - ``payload.tier_validation`` : le bucket de stratification utilisé
-        ici (très-short / short / medium / long / very-long-edge). On ne
-        touche pas au ``payload.tier`` original qui reste l'info Deckle
-        word-count.
-    """
+    """``payload.tier_validation`` records the duration bucket; the original
+    ``payload.tier`` stays Deckle's word-count tier."""
     jsonl_path = corpus_dir / "corpus.jsonl"
     n = 0
     with jsonl_path.open("w", encoding="utf-8") as fout:
         for bucket_name in (b.name for b in BUCKETS):
             for s in selection.get(bucket_name, []):
-                # Copie WAV à plat. ``copyfile`` plutôt que ``copy2`` :
-                # ce dernier propage les permissions via ``os.stat`` sur
-                # le dossier source, ce qui plante sous sandbox restrict
-                # quand le dossier source est hors du worktree. On n'a
-                # pas besoin des métadonnées (mtime) pour un corpus de
-                # bench.
+                # ``copyfile``, not ``copy2``: copying metadata fails under a
+                # restricted sandbox when the source sits outside the
+                # worktree, and a corpus needs no mtime.
                 dst_wav = corpus_dir / s["audio_file"]
                 shutil.copyfile(s["audio_path"], dst_wav)
 
-                # Enrichit le payload original
                 entry = json.loads(json.dumps(s["raw_entry"]))   # deep-copy via JSON
                 entry["payload"]["tier_validation"] = bucket_name
 

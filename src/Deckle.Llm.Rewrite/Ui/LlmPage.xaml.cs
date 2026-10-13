@@ -13,29 +13,16 @@ namespace Deckle.Llm.Rewrite;
 
 // ─── LlmPage — thin host ───────────────────────────────────────────────────
 //
-// Stacks four sections as autonomous UserControls (General, ActiveProfile,
-// Profiles, Models) + the Ollama status InfoBar. All functional content
-// lives in Settings/Llm/. Only these remain here:
-//
-//  - orchestration (hydration + Ollama refresh)
-//  - shared Ollama state via LlmOllamaContext
-//  - inter-section events (EndpointChanged, ProfilesChanged, RefreshRequested)
-//    that retrigger either an Ollama refresh or a targeted Reload of dependent
-//    sections
-//  - global Reset all
-//
-// The Models section depends on Ollama and receives the context via
-// Initialize() + StateChanged. Others (General, Profiles, ActiveProfile)
-// reload directly from SettingsService.
+// The four sections are autonomous UserControls. The page owns only the
+// orchestration: hydration, the Ollama refresh, the shared Ollama state
+// (LlmOllamaContext), the inter-section events that retrigger a refresh or a
+// targeted Reload, and Reset all.
 
 public sealed partial class LlmPage : Page
 {
-    // Aggressive bound on Ollama admin calls (list, show). Without CTS, the
-    // shared OllamaService HttpClient has a 30 min timeout, appropriate for
-    // pushing a GGUF blob, fatal for a "quick" call expected to return almost
-    // instantly. If Ollama is saturated (concurrent GPU benchmark, crashing
-    // model), fall into "unavailable" state instead of freezing the Settings
-    // page.
+    // Without a token, the shared OllamaService HttpClient waits out its long
+    // timeout. If Ollama is saturated (concurrent GPU job, crashing model),
+    // the page falls into the "unavailable" state instead of freezing.
     private static readonly TimeSpan OllamaAdminTimeout = TimeSpan.FromSeconds(5);
 
     private readonly LlmOllamaContext _context = new();
@@ -59,10 +46,9 @@ public sealed partial class LlmPage : Page
 
         ModelsSection.Initialize(_context);
 
-        // Named handlers (not inline async lambdas) because an
-        // async (_, _) => await ... lambda is compiled as async void: any
-        // unhandled exception bubbles to the dispatcher. The named methods
-        // below carry their try/catch.
+        // Named handlers, not inline async lambdas: such a lambda compiles as
+        // async void and any unhandled exception bubbles to the dispatcher.
+        // The named methods below carry their try/catch.
         GeneralSection.EndpointChanged += OnEndpointChanged;
         ProfilesSection.ProfilesChanged += OnProfilesChanged;
         ModelsSection.RefreshRequested += OnRefreshRequested;
@@ -70,10 +56,9 @@ public sealed partial class LlmPage : Page
 
     protected override async void OnNavigatedTo(NavigationEventArgs e)
     {
-        // OnNavigatedTo must be async void (WinUI-imposed override signature).
-        // Global try/catch required: without this safety net, an unhandled
-        // exception during Hydrate()/RefreshOllamaStateAsync() bubbles to the
-        // dispatcher and can kill the app despite Application.UnhandledException.
+        // async void is imposed by the override signature, so the try/catch is
+        // required: an unhandled exception here bubbles to the dispatcher and
+        // can kill the app despite Application.UnhandledException.
         base.OnNavigatedTo(e);
         try
         {
@@ -109,9 +94,8 @@ public sealed partial class LlmPage : Page
 
     private void OnProfilesChanged(object? sender, EventArgs e)
     {
-        // Synchronous, no try/catch needed: Reload() only touches in-memory
-        // collections. If a Reload throws, it is a state bug elsewhere and the
-        // global UnhandledException captures it.
+        // No try/catch: Reload() is synchronous and touches only in-memory
+        // state, so a throw is a state bug for the global UnhandledException.
         ActiveProfileSection.Reload();
     }
 
@@ -129,11 +113,9 @@ public sealed partial class LlmPage : Page
         bool available = false;
         IReadOnlyList<OllamaModel> models = Array.Empty<OllamaModel>();
 
-        // Broad try/catch: IsAvailableAsync is already fail-soft (returns false
-        // on exception), but ListModelsAsync can throw (HttpRequest,
-        // TaskCanceled if CTS expires, JsonException if Ollama returns an HTML
-        // error). Falling into "unavailable" state covers every case without
-        // breaking the page.
+        // Broad catch: IsAvailableAsync is fail-soft, but ListModelsAsync can
+        // throw (HttpRequest, TaskCanceled when the token expires, JsonException
+        // when Ollama returns an HTML error). "Unavailable" covers every case.
         try
         {
             available = await service.IsAvailableAsync();
@@ -161,9 +143,6 @@ public sealed partial class LlmPage : Page
 
         _context.RaiseStateChanged();
 
-        // Update model ComboBoxes in profiles after Ollama responds.
-        // ObservableCollection on the section propagates to bound ItemsSources
-        // without needing to recreate the ProfileViewModels.
         var modelNames = new List<string>();
         foreach (var m in models) modelNames.Add(m.Name);
         ProfilesSection.SetAvailableModelNames(modelNames);
@@ -171,11 +150,10 @@ public sealed partial class LlmPage : Page
 
     private void OnBackgroundTapped(object sender, TappedRoutedEventArgs e)
     {
-        // Don't steal focus from a ComboBox — its Tapped bubbles up here
-        // and re-focusing the page would close the dropdown before it opens,
-        // forcing the user to click 2-3 times. Other interactive controls
-        // (TextBox, NumberBox, editable ComboBox) mark Tapped as handled
-        // internally so they don't reach this handler.
+        // A ComboBox's Tapped bubbles up here, and re-focusing the page would
+        // close its dropdown before it opens. Other interactive controls
+        // (TextBox, NumberBox) mark Tapped as handled and never reach this
+        // handler.
         if (e.OriginalSource is DependencyObject obj && IsInsideComboBox(obj))
             return;
         this.Focus(FocusState.Programmatic);
@@ -193,8 +171,8 @@ public sealed partial class LlmPage : Page
 
     private async void ResetAll_Click(object sender, RoutedEventArgs e)
     {
-        // async void event handler: try/catch required to prevent an exception
-        // (Save IO, UI hydration) from bubbling to the dispatcher.
+        // async void: the try/catch keeps an exception (Save IO, UI hydration)
+        // from bubbling to the dispatcher.
         try
         {
             bool confirmed = await ConfirmationService.RequestAsync(
@@ -207,10 +185,8 @@ public sealed partial class LlmPage : Page
             if (!confirmed)
                 return;
 
-            // Replace the live LlmSettings with a fresh defaults instance,
-            // then run profile-id reconciliation so the freshly-built default
-            // profiles get their stable 12-char Guid suffixes before any
-            // dependent rule/slot binds to them.
+            // Fresh defaults carry no profile ids: reconcile them before the
+            // instance goes live.
             var fresh = new LlmSettings();
             LlmSettingsMigrations.RepairProfileReferences(fresh);
             LlmSettingsService.Instance.Replace(fresh);

@@ -5,10 +5,9 @@ namespace Deckle.Transcription;
 
 // ── TranscriptionSettingsService ─────────────────────────────────────────────
 //
-// Module-local persistence for TranscriptionSettings. Each module that owns
-// settings has its own service backed by JsonSettingsStore<T>; the JSON
-// file lives at <UserDataRoot>/modules/transcription/settings.json so the
-// filesystem layout reflects the module boundary one-to-one.
+// Module-local persistence for TranscriptionSettings, backed by
+// JsonSettingsStore<T> at <UserDataRoot>/modules/transcription/settings.json so
+// the filesystem layout reflects the module boundary one-to-one.
 public sealed class TranscriptionSettingsService
 {
     private static readonly Lazy<TranscriptionSettingsService> _instance =
@@ -28,7 +27,7 @@ public sealed class TranscriptionSettingsService
     /// <summary>The on-disk JSON file backing this service. Diagnostic only.</summary>
     public string Path => _store.Path;
 
-    /// <summary>Raised after a successful disk write.</summary>
+    /// <summary>Raised after a successful disk write or a Reload.</summary>
     public event Action? Changed
     {
         add    => _store.Changed += value;
@@ -87,17 +86,13 @@ public sealed class TranscriptionSettingsService
     /// <summary>Synchronous flush. Use before process exit / restart.</summary>
     public void Flush() => _store.Flush();
 
-    /// <summary>Re-read from disk and replace the in-memory snapshot.</summary>
     public void Reload() => _store.Reload();
 
-    /// <summary>Replace the in-memory POCO entirely (Reset to defaults).</summary>
+    /// <summary>Replace the in-memory POCO and schedule a debounced save.</summary>
     public void Replace(TranscriptionSettings next) => _store.Replace(next);
 
-    // Resolves the directory containing speech model .bin files (Whisper +
-    // VAD Silero). User override wins; otherwise fall back to
-    // AppPaths.ModelsDirectory. Layered this way so the user override
-    // stays reachable from the Settings UI without leaking the resolution
-    // policy into AppPaths.
+    // The user override is resolved here, not in AppPaths, so the resolution
+    // policy stays with the module that owns the setting.
     public string ResolveModelsDirectory()
     {
         string user = Current.ModelsDirectory;

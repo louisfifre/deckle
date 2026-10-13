@@ -9,15 +9,16 @@ internal enum DragPhase
 }
 
 // The state machine that turns the contact-frame stream into drag
-// intentions (CONTEXT.md § Input). Pure logic — no injection, no
-// timers, no threads: time comes in on the frames and through Tick(),
-// effects go out as events. That is what makes the quality-defining
-// decisions testable frame by frame.
+// intentions. Pure logic — no injection, no timers, no threads: time
+// comes in on the frames and through Tick(), effects go out as events.
+// That is what makes the quality-defining decisions testable frame by
+// frame.
 //
-// The decisions it owns, per the framing session:
+// The decisions it owns:
 //   • finger lifts are read from the frames' tip switches, never
-//     inferred from inter-frame silence (the reference's 40 ms
-//     heuristic is the documented cause of its Magic Trackpad issues);
+//     inferred from inter-frame silence (the reference implementation's
+//     silence heuristic is the documented cause of its Magic Trackpad
+//     issues);
 //   • a three-finger tap is nothing — the drag only engages once travel
 //     crosses the start threshold, and the accumulated travel is
 //     replayed on start so the gesture feels anchored where the fingers

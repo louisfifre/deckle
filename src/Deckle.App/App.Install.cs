@@ -7,25 +7,16 @@ using Deckle.Transcription.Whisper;
 
 namespace Deckle.App;
 
-// ── Install mode ─────────────────────────────────────────────────────────────
-//
-// The wizard as installer — the web-installer pattern. The stub downloads the
-// app payload into a temp folder and launches it with --install; that temp
-// process runs the wizard's front half (Modules → Folders → Choices) and ends
-// in the Deploy step, which places the binaries, integrates, and spawns the
-// INSTALLED Deckle.exe with --install-continue. That second process runs the
-// provisioning half (Installing → Summary) with an AppPaths that resolved the
-// chosen data root — the whole reason for the two-phase split: AppPaths
-// freezes its root at first touch, so the temp process can never provision
-// into a custom root.
-//
-// Both phases skip the entire normal boot: no engines, no tray, no hotkeys —
-// diagnostics and the module catalogue only. The user's actual first run is
-// the plain launch at the end of the chain.
+// Install mode, the web-installer pattern. The stub launches the downloaded
+// payload from a temp folder with --install; that process runs the wizard's
+// front half, and its Deploy step places the binaries, integrates, and spawns
+// the installed Deckle.exe with --install-continue, which provisions. The split
+// exists because AppPaths freezes its data root at first touch: only the
+// installed process, launched with DECKLE_DATA_ROOT in its environment, can
+// provision into a custom root. Both phases skip the normal boot.
 public partial class App
 {
-    // Routes an installer-mode launch. Returns true when OnLaunched must stop
-    // here — one of the two phases owns the process.
+    // True when one of these modes owns the process and OnLaunched must stop.
     private bool TryEnterInstallMode()
     {
         string[] args = Environment.GetCommandLineArgs();
@@ -41,24 +32,24 @@ public partial class App
         }
         if (Array.IndexOf(args, "--update-apply") >= 0)
         {
-            // The in-app updater's second leg — the NEW payload placing itself
-            // over the live install. Lives in App.Update.cs beside the check.
+            // The updater's second leg: the new payload placing itself over the
+            // live install.
             _ = RunUpdateApplyAsync(args);
             return true;
         }
         if (Array.IndexOf(args, "--relocate-data") >= 0)
         {
-            // The data-root move — the app restarted into a process that can
-            // copy the root it no longer holds open. Lives in App.Relocate.cs.
+            // The data-root move: a restarted process can copy the root it no
+            // longer holds open.
             _ = RunDataRelocationAsync(args);
             return true;
         }
         return false;
     }
 
-    // Phase 1 — temp process. Known accepted edge: the probes behind the
-    // estimate bars touch AppPaths, which creates the default-root folders
-    // even when the user then picks a custom root. Cheap, empty, harmless.
+    // Phase 1, the temp process. Accepted edge: the probes behind the estimate
+    // bars touch AppPaths, which creates the default-root folders even when the
+    // user then picks a custom root. Cheap, empty, harmless.
     private async Task RunInstallWizardAsync(string[] args)
     {
         AppDiagnosticsBootstrap.InitializeLocalSinks(AppPaths.DiagnosticsDirectory);
@@ -69,11 +60,9 @@ public partial class App
         DeckleAppSource.Log.InstallModeEntered();
         DeckleAppSource.Log.InstallModeEnteredDetail("wizard", stub ?? "", cleanup ?? "", "");
 
-        // Prefill from a previous install when there is one — the same update
-        // ergonomics the console stub had: folders point at the live install,
-        // modules at the recorded choice. DECKLE_DATA_ROOT is a User variable,
-        // so this process (launched by the stub, which inherited the user
-        // environment) already resolves a custom root through AppPaths.
+        // Prefilled from a previous install when there is one. DECKLE_DATA_ROOT
+        // is a User variable, so this process, launched by the stub with the user
+        // environment, already resolves a custom root through AppPaths.
         UninstallEntry.ExistingInstall? existing = UninstallEntry.Read();
         string installDir = existing is not null && Directory.Exists(existing.InstallDir)
             ? existing.InstallDir
@@ -101,9 +90,7 @@ public partial class App
         Environment.Exit(0);
     }
 
-    // Phase 2 — installed process, spawned by Deploy with DECKLE_DATA_ROOT in
-    // its environment block. Runs provisioning (Installing → Summary) against
-    // the chosen root, cleans the stub's temp folder, then relaunches plain.
+    // Phase 2, the installed process spawned by Deploy.
     private async Task RunInstallContinuationAsync(string[] args)
     {
         AppDiagnosticsBootstrap.InitializeLocalSinks(AppPaths.DiagnosticsDirectory);
@@ -127,9 +114,8 @@ public partial class App
                 ?? ModuleRegistry.Modules.Select(m => m.Id).ToHashSet(StringComparer.Ordinal),
         };
 
-        // Nothing left to provision (asset-free selection, or a reinstall over
-        // a data root that already has everything) — skip straight to the
-        // first real run instead of opening a wizard with no work to show.
+        // Nothing left to provision skips straight to the first real run rather
+        // than opening a wizard with no work to show.
         bool ok = true;
         if (InstallPlan.HasPendingWork(context))
         {
@@ -139,9 +125,9 @@ public partial class App
             ok = await setup.Completion;
         }
 
-        // The extraction the temp process ran from — its wizard exited when it
-        // spawned us, so the tree is deletable now. Best-effort: a leftover
-        // temp folder is not worth failing an otherwise complete install.
+        // The temp process's extraction, deletable now that its wizard has
+        // exited. Best-effort: a leftover temp folder is not worth failing an
+        // otherwise complete install.
         if (cleanup is not null)
         {
             try { Directory.Delete(cleanup, recursive: true); }
@@ -158,8 +144,6 @@ public partial class App
         Environment.Exit(0);
     }
 
-    // `--flag value` argument extraction, null when the flag (or its value) is
-    // absent.
     private static string? ArgumentValue(string[] args, string flag)
     {
         int idx = Array.IndexOf(args, flag);

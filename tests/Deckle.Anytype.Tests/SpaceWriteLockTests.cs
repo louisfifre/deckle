@@ -42,7 +42,6 @@ public class SpaceWriteLockTests : IDisposable
 
         first.Dispose();
 
-        // Once released, it is granted within a couple of backoff cycles.
         IDisposable granted = await second.WaitAsync(TimeSpan.FromSeconds(5), Ct);
         Assert.NotNull(granted);
         granted.Dispose();

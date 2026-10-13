@@ -5,19 +5,10 @@ using Deckle.Diagnostics.Telemetry;
 
 namespace Deckle.Diagnostics.Logging;
 
-// ViewModel for DiagnosticsPage — bridges TelemetrySettings and
-// LoggingSettings to the XAML via x:Bind. Originally migrated from
-// GeneralViewModel in slice S2 (Telemetry only) ; J4 polish added the
-// Logging section to host runtime emission filters orthogonal to
-// disk persistence, which expanded the VM to cover two stores.
-//
-// Pattern : Load() pulls from each store, property changes push back
-// via the matching PushXxxToSettings(). The _isSyncing flag prevents
-// re-saving during Load(). The split between PushLoggingToSettings()
-// and PushTelemetryToSettings() lets a single toggle touch only its
-// own store — flipping Verbose logging doesn't rewrite the telemetry
-// JSON file, which matters because the two share neither schema nor
-// lifecycle.
+// Load() pulls from each store; property changes push back through the
+// matching PushXxxToSettings(), and _isSyncing prevents re-saving during
+// Load(). A toggle rewrites only its own store: the logging and telemetry
+// files share neither schema nor lifecycle.
 public partial class DiagnosticsViewModel : ObservableObject
 {
     private bool _isSyncing;
@@ -34,31 +25,18 @@ public partial class DiagnosticsViewModel : ObservableObject
     [ObservableProperty]
     public partial bool LogInputActivity { get; set; }
 
-    // ── Logging — runtime emission filters ──────────────────────────────────
-
-    // Windowing Verbose toggle: when off (default), the whole Deckle-Windowing
-    // firehose is dropped — placement, overlay slots, popup anchoring, z-order,
-    // resize frames, first-open timings. The provider emits Verbose only, so off
-    // means a fully silent channel; on surfaces everything for a placement /
-    // resize-lag dive. No capture window — the windows exist continuously.
     [ObservableProperty]
     public partial bool LogWindowingActivity { get; set; }
 
     // ── Telemetry — opt-in disk persistence ─────────────────────────────────
 
-    // Application log — mirrors every in-app log line to app.jsonl. Top of
-    // section by user request : the most asked-for diagnostic when
-    // troubleshooting an issue across restarts.
     [ObservableProperty]
     public partial bool ApplicationLogToDisk { get; set; }
 
     [ObservableProperty]
     public partial bool RecordWheelEvents { get; set; }
 
-    // Storage folder override — empty = AppPaths.TelemetryDirectory.
-    // FolderPickerCard.DefaultPath is wired to the resolved default in
-    // the page code-behind ; the picker shows it as a placeholder when
-    // the override is empty.
+    // Empty means AppPaths.TelemetryDirectory.
     [ObservableProperty]
     public partial string TelemetryStorageDirectory { get; set; }
 
@@ -124,18 +102,10 @@ public partial class DiagnosticsViewModel : ObservableObject
 
     public DiagnosticsViewModel()
     {
-        // Guard BEFORE any property assignment — same reason as GeneralViewModel.
+        // Guard before any property assignment, or each change handler would
+        // save these placeholders over the stored settings.
         _isSyncing = true;
 
-        // Logging defaults are "closed" by family : every per-loop
-        // capture toggle starts OFF because the routine cadence
-        // drowns out everything else. Non-Verbose levels and
-        // out-of-loop emissions are unaffected, so milestones,
-        // errors, and user actions stay visible — only the per-tick
-        // noise is suppressed. Telemetry defaults are also "closed"
-        // but for a different reason : disk-persistence streams stay
-        // off until the user explicitly opts in to where their data
-        // lands.
         LogAmbientCaptureActivity = false;
         LogTranscriptionActivity = false;
         LogAutocorrectActivity = false;

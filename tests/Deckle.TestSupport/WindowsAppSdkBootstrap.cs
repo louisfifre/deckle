@@ -13,16 +13,13 @@ namespace Deckle.TestSupport;
 // the unpackaged process until the package is resolved through the Dynamic
 // Dependency API.
 //
-// `WindowsAppSdkModuleInitializer` is linked into each test assembly through
-// `tests/Directory.Build.props`, then calls this method before any `[Fact]`
-// runs. `TryInitialize` is idempotent in the "returns false if already
-// initialized" sense; accept the bool without testing it because an init
-// failure will cause a clear throw at the first WinAppSDK test site, and that
-// is the right behavior.
+// `WindowsAppSdkModuleInitializer`, linked into each test assembly through
+// `tests/Directory.Build.props`, calls this before any `[Fact]` runs. The bool
+// from `TryInitialize` is ignored: an init failure throws clearly at the first
+// WinAppSDK test site.
 //
-// `majorMinorVersion = 0x00010008` corresponds to WinAppSDK 1.8, the version
-// aligned across the solution. Bump together with the cross-cutting package
-// bump.
+// `0x00010008` is WinAppSDK 1.8: bump it with the WindowsAppSDK package
+// version in Directory.Packages.props.
 public static class WindowsAppSdkBootstrap
 {
     public static void Initialize()

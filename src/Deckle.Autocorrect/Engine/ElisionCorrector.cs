@@ -1,12 +1,10 @@
 namespace Deckle.Autocorrect;
 
-// ── ElisionCorrector ─────────────────────────────────────────────────────────
-//
 // Restores a dropped elision apostrophe in a glued proclitic: "cest" → "c'est",
 // "jai" → "j'ai", "larrache" → "l'arrache", "quil" → "qu'il". French elides a
 // short proclitic (ce, de, je, le/la, me, ne, se, te, que) before a vowel or a
 // mute h; typing fast, the apostrophe is the first thing dropped. This splits the
-// glued form back apart — Louis's "taper à l'arrache et que ça réécrive".
+// glued form back apart.
 //
 // The load-bearing guard is that the glued token is NOT itself a French word:
 // "dune", "quelle", "tas", "ces" are real words and stay untouched, while "cest",
@@ -19,8 +17,7 @@ namespace Deckle.Autocorrect;
 // into "est" or "ces" before the apostrophe is ever considered.
 public sealed class ElisionCorrector : ICorrectionPolicy
 {
-    // The elidable proclitics, "qu" first so it wins over a bare "q"-less letter.
-    // A closed set — French has no other proclitics that drop a vowel here.
+    // A closed set: French has no other proclitics that drop a vowel here.
     private static readonly string[] Proclitics =
         { "qu", "c", "d", "j", "l", "m", "n", "s", "t" };
 
@@ -65,8 +62,6 @@ public sealed class ElisionCorrector : ICorrectionPolicy
 
         string lower = word.ToLowerInvariant();
 
-        // The defining guard: a glued elision is never itself a valid word.
-        // "dune", "quelle", "tas", "ces" are real and must pass through untouched.
         if (_french.Contains(lower))
             return Abstain(st, CorrectionTrace.Reasons.ValidFrench);
         if (_english?.Contains(lower) == true)
@@ -83,8 +78,6 @@ public sealed class ElisionCorrector : ICorrectionPolicy
 
             string tail = lower[proclitic.Length..];
 
-            // The tail must be a real French word that truly begins with a vowel
-            // or mute h — the very condition that makes an elision happen.
             if (!IsElisionVowel(tail[0]) || !_french.Contains(tail))
                 continue;
 
@@ -98,8 +91,6 @@ public sealed class ElisionCorrector : ICorrectionPolicy
         return Abstain(st, CorrectionTrace.Reasons.NoProclitic);
     }
 
-    // Records the abstain reason onto the stage trace (when present) and leaves
-    // the literal untouched.
     private static CorrectionDecision? Abstain(StageTrace? st, string reason)
     {
         st?.Abstain(reason);

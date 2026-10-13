@@ -12,22 +12,15 @@ namespace Deckle.Catalog;
 // never drift from the kind, and the boxing into the composer's object-typed
 // selectors happens here, once.
 //
-// The optional defaultValue selector follows the same front-door boxing as
-// get/set: a strongly-typed Func<T> from the call site, boxed into the object?
-// Default the composer reads to gate (and act on) its per-row reset. It stays
-// optional — a setting with no resettable default omits it and renders no reset
-// affordance. Point it at the POCO initializer (e.g. () => new XxxSettings().Prop)
-// so the default has exactly one source of truth.
-//
-// New kinds are added here alongside their case in SettingsComposer, when a real
-// setting needs them — we type a control the first time we meet it, not before.
+// The optional defaultValue drives the per-row reset; a setting without one
+// renders no reset. Point it at the POCO initializer (e.g. () => new
+// XxxSettings().Prop) so the default has exactly one source of truth.
 public static class Setting
 {
-    // confirmOnEnable, when supplied, gates the OFF→ON flip behind an async
-    // confirmation (its Task<bool> = "allow the enable?"); the composer holds the
-    // write until it resolves. It lives only on Toggle, not the other factories:
-    // confirmation is a property of an activation, and the only consumers are leaf
-    // consent toggles. Null — the default — leaves the toggle's write synchronous.
+    // confirmOnEnable gates the OFF→ON flip behind an async confirmation; the
+    // composer holds the write until it resolves true, so a consent toggle never
+    // switches its feature on even for a moment. Only Toggle and Group take it:
+    // confirmation belongs to an activation.
     public static SettingDescriptor Toggle(
         string labelKey,
         Func<bool> get,
@@ -53,14 +46,9 @@ public static class Setting
             Advisory = advisory,
         };
 
-    // The one numeric block: an editable NumberBox over a double, with a Slider
-    // beside it when the value earns a gesture — sweep to approximate, type or
-    // nudge to be exact. MagnitudeArgs carries the bounds, the unit and the shape
-    // (slider or field alone, count or not), required because a numeric control
-    // is meaningless without its bounds — unlike Toggle, args is not optional
-    // here. The composer derives the "nice" 1-2-5 grain from the range, so there
-    // is no step to pass. Same boxed selectors and optional default (for the
-    // per-card reset) as the other kinds.
+    // MagnitudeArgs is required: a numeric control is meaningless without its
+    // bounds. There is no step to pass: the composer derives the grain from the
+    // range.
     public static SettingDescriptor Magnitude(
         string labelKey,
         Func<double> get,
@@ -86,11 +74,7 @@ public static class Setting
             Advisory = advisory,
         };
 
-    // Free-form text as a string. TextArgs shapes the TextBox (placeholder,
-    // multiline, max length) and is optional — a bare single-line field needs no
-    // arguments, so unlike Magnitude it defaults to a plain TextArgs. Same
-    // boxed selectors and optional default as the other kinds; the default points
-    // at the POCO initializer so an empty/edited field can reset to it.
+    // TextArgs is optional: a bare single-line field needs none.
     public static SettingDescriptor Text(
         string labelKey,
         Func<string> get,
@@ -143,9 +127,7 @@ public static class Setting
             Advisory = advisory,
         };
 
-    // Folder path as a string. PathArgs carries the picker mode and the
-    // deferred default-path lookup; like Magnitude's args it is required, since a
-    // FolderPickerCard needs at minimum its mode.
+    // PathArgs is required: the picker needs at least its mode.
     public static SettingDescriptor Path(
         string labelKey,
         Func<string> get,
@@ -171,12 +153,9 @@ public static class Setting
             Advisory = advisory,
         };
 
-    // Choice among a small fixed set, over any value type T (the VM property's
-    // type — a string like the theme, a boxed int index, an enum). The options
-    // pair each value with its .resw label key; they go into ChoiceArgs so the
-    // composer can build the ComboBox and match the getter against them. Generic
-    // here, like the typed selectors, so the option values cannot drift from the
-    // property type; boxed into object once at this front door.
+    // Choice among a small fixed set, over the VM property's own type T. Each
+    // option pairs a value with its .resw label key; generic so the option values
+    // cannot drift from the property type.
     public static SettingDescriptor Choice<T>(
         string labelKey,
         Func<T> get,
@@ -191,14 +170,10 @@ public static class Setting
         => Choice(labelKey, get, set, options, radio: false,
             glyph, isAdvanced, enabledWhen, visibleWhen, defaultValue, advisory);
 
-    // Choice rendered as a flat RadioButtons group rather than a ComboBox — the
-    // doctrine's control for "a few" mutually-exclusive options, where showing
-    // every option at once reads clearer than a dropdown. Same value semantics as
-    // Choice<T> (the options carry the typed values, matched by equality), so a
-    // call site swaps Choice→Radio purely to change the rendering, nothing else.
-    // A separate factory rather than a flag on Choice so the manifest states the
-    // shape by name (Setting.Radio vs Setting.Choice), the way each kind already
-    // gets its own named front door.
+    // A Choice rendered as a RadioButtons group, the doctrine's control for a few
+    // options. Same value semantics as Choice<T>, so swapping one for the other
+    // changes only the rendering. A separate factory rather than a flag so the
+    // manifest names the shape.
     public static SettingDescriptor Radio<T>(
         string labelKey,
         Func<T> get,
@@ -213,10 +188,6 @@ public static class Setting
         => Choice(labelKey, get, set, options, radio: true,
             glyph, isAdvanced, enabledWhen, visibleWhen, defaultValue, advisory);
 
-    // Shared body of Choice/Radio — both are a SettingKind.Choice, differing only
-    // in the ChoiceArgs.Radio flag the composer dispatches the rendering on. Kept
-    // private so the two public factories stay the strongly-typed front door and
-    // the boxing of options/default happens once.
     private static SettingDescriptor Choice<T>(
         string labelKey,
         Func<T> get,
@@ -245,20 +216,15 @@ public static class Setting
             SetValue = value => set((T)value!),
             EnabledWhen = enabledWhen,
             VisibleWhen = visibleWhen,
-            // Box the typed default into object? — for a Choice the boxed value is
-            // what IndexOfValue/DefaultEquals match against the options, the same
-            // currency as GetValue.
+            // Boxed the same way as GetValue, so DefaultEquals compares like with like.
             Default = defaultValue is null ? null : () => defaultValue(),
             Advisory = advisory,
         };
     }
 
-    // A module-owned editor for a value with a shape (a curve, an envelope), over
-    // any value type T. EditorArgs carries the element builder; the get/set
-    // selectors are still declared so the composer can drive the per-card reset
-    // (dirty check against the Default, write-back of the Default) — the element
-    // itself binds to the model on its own. No advisory and no confirmOnEnable: an
-    // editor has no inline warning channel and nothing to enable.
+    // A module-owned editor for a value with a shape (a curve, an envelope). The
+    // element binds to the model on its own; get/set exist so the composer can
+    // drive the per-card reset.
     public static SettingDescriptor Editor<T>(
         string labelKey,
         Func<T> get,
@@ -282,16 +248,9 @@ public static class Setting
             Default = defaultValue is null ? null : () => defaultValue(),
         };
 
-    // A master toggle that reveals child settings. Like Toggle, the get/set
-    // selectors are the master's own bool — what the composer wires to the
-    // ToggleSwitch in the expander header; the children are the dependent
-    // settings the composer HIDES while the master is off. The children are
-    // declared with the same Setting.* factories, so the group is just "a Toggle
-    // that carries a payload of other settings".
-    //
-    // EnabledWhen/VisibleWhen here gate the GROUP itself (rare — a whole feature
-    // unavailable in some context); the per-child masking on the master toggle is
-    // implicit and applied by the composer.
+    // A master toggle that reveals child settings: get/set are the master's own
+    // bool, and the composer hides the children while it is off. enabledWhen and
+    // visibleWhen gate the whole group.
     public static SettingDescriptor Group(
         string labelKey,
         Func<bool> get,
@@ -313,35 +272,16 @@ public static class Setting
             SetValue = value => set((bool)value!),
             EnabledWhen = enabledWhen,
             VisibleWhen = visibleWhen,
-            // The master's own default. The group-header reset combines this (when
-            // present) with each child's Default; a master without a resettable
-            // default still resets its children.
+            // The master's own default. The group-header reset combines it with each
+            // child's Default; a master without one still resets its children.
             Default = defaultValue is null ? null : () => defaultValue(),
-            // Like a leaf Toggle, the master may gate its OFF→ON flip behind an async
-            // consent dialog — the composer holds the enable until it resolves true, so
-            // a consent fold (the Diagnostics corpus opt-in) never transiently switches
-            // its feature on. Null leaves the master's write synchronous.
             ConfirmOnEnable = confirmOnEnable,
         };
 
-    // A header-and-chevron grouping with NO master toggle — "Group minus the
-    // master". The section has no value of its own (it activates nothing), so
-    // unlike Group it carries no get/set/defaultValue: the children declared with
-    // the same Setting.* factories carry their own values and defaults, and the
-    // composer renders each as a card inside the section's SettingsExpander.
-    //
-    // GetValue/SetValue must still satisfy the descriptor's `required` selectors,
-    // but a valueless node has nothing to read or write — so GetValue returns null
-    // and SetValue is a no-op. Nothing dispatches on them for a Section (BuildSection
-    // never touches them, and the section registers no per-row dirty-check off its
-    // own value, only the section-level reset folded over its children), so the
-    // no-ops are never exercised; they exist purely to honour the contract. Default
-    // is left null for the same reason — the section has no resettable value, only
-    // its children do, and the section-header reset is built from those.
-    //
-    // EnabledWhen/VisibleWhen here gate the SECTION itself (the whole fold appears
-    // or not in some context); children stand on their own VisibleWhen, with no
-    // master to compose in.
+    // A fold with no master toggle. The section has no value, so it takes no
+    // get/set/defaultValue: its children carry their own. GetValue and SetValue
+    // only satisfy the descriptor's required members; nothing reads or writes them
+    // for a Section. visibleWhen gates the whole fold.
     public static SettingDescriptor Section(
         string labelKey,
         IReadOnlyList<SettingDescriptor> children,
@@ -354,7 +294,6 @@ public static class Setting
             Glyph = glyph,
             IsAdvanced = isAdvanced,
             Args = new SectionArgs(children),
-            // Valueless node: read nothing, write nothing. See the note above.
             GetValue = () => null,
             SetValue = _ => { },
             VisibleWhen = visibleWhen,

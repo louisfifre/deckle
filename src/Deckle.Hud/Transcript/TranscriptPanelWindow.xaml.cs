@@ -53,7 +53,8 @@ public sealed partial class TranscriptPanelWindow : Window
     private readonly TranscriptHistory _history = new(HISTORY_BUDGET_CHARS);
 
     // Cached window scale (DPI/96): seeded in the ctor, refreshed on show and
-    // from WM_DPICHANGED. Read by the ~125 Hz proximity handler. UI-thread only.
+    // from WM_DPICHANGED. Read by the proximity handler on every mouse move.
+    // UI-thread only.
     private double _dpiScale = 1.0;
 
     private NativeMethods.SubclassProc? _subclassDelegate;

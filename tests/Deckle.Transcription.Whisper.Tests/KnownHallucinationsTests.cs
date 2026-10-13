@@ -2,11 +2,6 @@ using Xunit;
 
 namespace Deckle.Transcription.Whisper.Tests;
 
-// KnownHallucinations is internal static in Deckle.Transcription.Whisper; the
-// test project reaches it through InternalsVisibleTo in that module's csproj. We
-// test the behaviour — does a whole-utterance artifact match, does a real
-// dictation that merely quotes the phrase stay clear — never the normalisation
-// internals, so the tests survive a refactor of the matching.
 [Trait("Category", "unit")]
 public class KnownHallucinationsTests
 {
@@ -29,9 +24,8 @@ public class KnownHallucinationsTests
     [Fact]
     public void ARealDictationQuotingThePhraseInContextDoesNotMatch()
     {
-        // Verbatim from the logged corpus (2026-06): a real dictation that names
-        // the artifact must survive. Whole-utterance matching is exactly what
-        // keeps the citation when the phrase is embedded in real speech.
+        // A real dictation that names the artifact must survive: whole-utterance
+        // matching keeps the citation when the phrase is embedded in real speech.
         Assert.False(KnownHallucinations.Matches(
             "Comment ça, la putain de filtre de merde, sous-titrage Radio-Canada, là, tu peux pas le mettre, là, enfoiré ?"));
         Assert.False(KnownHallucinations.Matches(

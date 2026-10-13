@@ -3,9 +3,6 @@ using Xunit;
 
 namespace Deckle.Transcription.Tests;
 
-// UnitBezier is the cubic-Bézier easing shared by the segmenter's hangover decay
-// and the Playground plot. internal, reached through InternalsVisibleTo. Pure
-// math : no state, no I/O — assert the curve contract directly.
 [Trait("Category", "unit")]
 public class UnitBezierTests
 {

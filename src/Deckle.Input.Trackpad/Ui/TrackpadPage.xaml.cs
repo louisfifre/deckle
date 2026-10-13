@@ -9,26 +9,14 @@ namespace Deckle.Input.Trackpad;
 
 // ── TrackpadPage ────────────────────────────────────────────────────────────
 //
-// Settings page for the Trackpad module — macOS-style three-finger drag on
-// the Magic Trackpad 2. Resolved by the Settings NavigationView via the item
-// Tag "Deckle.Input.Trackpad.TrackpadPage, Deckle.Input.Trackpad".
+// Settings page for the Trackpad module. Resolved by the Settings NavigationView
+// via the item Tag "Deckle.Input.Trackpad.TrackpadPage, Deckle.Input.Trackpad".
 //
-// Two kinds of surface, two persistence styles :
-//
-//   • Persisted settings (master switch, drag speed, raw-frame recording)
-//     bind through TrackpadViewModel — auto-save on every change, no
-//     OK/Cancel.
-//
-//   • Windows-integration acts (neutralize / restore gestures, repair the
-//     Bluetooth pairing bug, toggle elevated startup) are imperative commands
-//     driven from here. They can fail or be UAC-cancelled, so the page NEVER
-//     assumes success : each handler guards against exceptions, disables its
-//     control for the duration of the call, then re-reads the real state back
-//     into the UI. The two-state gesture button and the elevated toggle are
-//     refreshed from their service's actual state, not from the click.
-//
-// Same patterns as DiagnosticsPage / AmbientPage : NavigationCacheMode
-// Required, an _initializing guard around the initial control sync.
+// The Windows-integration acts (neutralize / restore gestures, repair the
+// Bluetooth pairing bug, toggle elevated startup) can fail or be UAC-cancelled,
+// so the page never assumes success: each handler guards against exceptions,
+// disables its control for the duration of the call, then re-reads the real
+// state back into the UI.
 public sealed partial class TrackpadPage : Page
 {
     public TrackpadViewModel ViewModel { get; } = new();
@@ -38,9 +26,8 @@ public sealed partial class TrackpadPage : Page
     // the revert would otherwise re-enter the handler.
     private bool _suppressElevatedToggle;
 
-    // Drive the three composed hosts (the module switch and the two sections). Held
-    // in fields so their subscriptions to the ViewModel live as long as the (cached)
-    // page — the same host-only pattern GeneralPage/DiagnosticsPage use.
+    // Held in fields so their subscriptions to the ViewModel live as long as the
+    // cached page.
     private SettingsComposer? _enabledComposer;
     private SettingsComposer? _dragComposer;
     private SettingsComposer? _diagnosticsComposer;
@@ -54,16 +41,6 @@ public sealed partial class TrackpadPage : Page
     }
 
     // ── Composed persisted settings ──────────────────────────────────────────
-    //
-    // Host-only, like GeneralPage's sections: the page hands each section's host
-    // panel and its manifest (declared in TrackpadViewModel.Settings.cs) to a
-    // composer — the module switch (master toggle, first on the page), the drag
-    // section (drag-speed slider) and the diagnostics section (raw-frame
-    // recording), one composer each so they keep their on-screen order. The
-    // composers subscribe to the ViewModel, so the controls reflect Load() (and
-    // each card's inline reset) with no code-behind sync — the change handlers
-    // still live in the VM's partial setters (Push + Save), which the composers
-    // drive through the descriptor setters.
     private void ComposeSettings()
     {
         _enabledComposer = new SettingsComposer(EnabledHost, ViewModel);
@@ -75,8 +52,6 @@ public sealed partial class TrackpadPage : Page
         _diagnosticsComposer = new SettingsComposer(DiagnosticsHost, ViewModel);
         _diagnosticsComposer.Compose(ViewModel.TrackpadDiagnosticsSettingsManifest);
 
-        // The page-level "Reset all" gate spans every composer; re-gate it
-        // whenever one goes dirty.
         _enabledComposer.DirtyChanged += (_, _) => GateResetAll();
         _dragComposer.DirtyChanged += (_, _) => GateResetAll();
         _diagnosticsComposer.DirtyChanged += (_, _) => GateResetAll();
@@ -90,18 +65,15 @@ public sealed partial class TrackpadPage : Page
         // could have happened elsewhere while the page was cached.
         ViewModel.Load();
         SyncImperativeControls();
-        // Load() may raise no PropertyChanged on a clean profile, so no composer
-        // DirtyChanged would fire — settle the gate off the freshly-loaded values.
+        // Load() raises no PropertyChanged on a clean profile, so no composer
+        // DirtyChanged fires and this call settles the gate.
         GateResetAll();
     }
 
     // ── Whole-page "Reset all" ───────────────────────────────────────────────
     //
-    // Drives every composer back to its defaults at once, from the shared
-    // header. Active-when-dirty: enabled only while some composed value differs
-    // from its default. The header asks before firing (generic wording: nothing
-    // user-authored is lost). The Windows-integration acts are commands, not
-    // settings, so Reset all leaves them alone.
+    // The Windows-integration acts are commands, not settings, so Reset all
+    // leaves them alone.
     private void GateResetAll()
     {
         Header.IsResetAllEnabled =
@@ -117,8 +89,7 @@ public sealed partial class TrackpadPage : Page
         _diagnosticsComposer?.ResetAll();
     }
 
-    // Refreshes the two controls whose state is owned by a service rather
-    // than by settings : the gesture button's label and the elevated toggle.
+    // These two controls' state is owned by a service rather than by settings.
     private void SyncImperativeControls()
     {
         RefreshGesturesLabel();
@@ -178,7 +149,6 @@ public sealed partial class TrackpadPage : Page
         }
         finally
         {
-            // Re-reads the real state and re-enables (or not) accordingly.
             RefreshGesturesLabel();
         }
     }
@@ -190,9 +160,8 @@ public sealed partial class TrackpadPage : Page
         RepairButton.IsEnabled = false;
         try
         {
-            // Launches the elevated repair script (UAC prompt + interactive
-            // console). Nothing to read back — the work happens in the
-            // separate console the user drives.
+            // Nothing to read back: the work happens in the separate elevated
+            // console the user drives.
             ConnectionRepair.TryLaunch();
         }
         catch
@@ -215,9 +184,6 @@ public sealed partial class TrackpadPage : Page
         ElevatedToggle.IsEnabled = false;
         try
         {
-            // Enable/Disable can fail or be UAC-cancelled — never assume the
-            // requested state took. Apply the request, then read the actual
-            // state back into the switch.
             if (ElevatedToggle.IsOn)
             {
                 ElevatedStartupService.Enable();

@@ -10,9 +10,8 @@ namespace Deckle.Modules;
 // returned one, holding no cascade logic of its own.
 public static class ModuleGraph
 {
-    // The selection with `id` checked, plus every module it transitively
-    // depends on. Dependency ids the catalogue does not know are skipped — a
-    // stale edge must not block the check.
+    // Dependency ids the catalogue does not know are skipped: a stale edge must
+    // not block the check.
     public static IReadOnlySet<string> WithDependencies(
         IReadOnlyList<ModuleDescriptor> catalog, IEnumerable<string> selection, string id)
     {
@@ -32,8 +31,6 @@ public static class ModuleGraph
         return result;
     }
 
-    // The selection with `id` unchecked, minus every module that transitively
-    // depends on it.
     public static IReadOnlySet<string> WithoutDependents(
         IReadOnlyList<ModuleDescriptor> catalog, IEnumerable<string> selection, string id)
     {

@@ -3,10 +3,8 @@ using CommunityToolkit.Mvvm.Input;
 
 namespace Deckle.Autocorrect;
 
-// One entry of the exclusion register on AutocorrectPage: a word the user
-// pulled out of correction's reach, and the gesture that puts it back. Same
-// discipline as the other rows — the row never persists anything, the undo
-// calls back into the view-model.
+// One entry of the exclusion register on AutocorrectPage. The row never
+// persists anything: the undo calls back into the view-model.
 //
 // The word is shown exactly as it is stored, lowercased: it names a lexicon
 // key, and dressing it up would suggest the exclusion is case-sensitive when it

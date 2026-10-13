@@ -5,19 +5,17 @@ namespace Deckle.Diagnostics;
 // Cross-cutting sub-provider: explicit application cancellations. Capturing
 // OperationCanceledException at sites where they are semantically interesting
 // (Whisper engine, Vision capture, Llm rewrite, Ollama polling) answers "why
-// did the operation stop" without guessing: user, timeout, shutdown, hotkey,
-// engine restart, upstream propagation. Without this cross-cutting event, an
-// OCE silently swallowed in a catch leaves no trace, and a chain of cascading
+// did the operation stop" without guessing. Without this event, an OCE
+// silently swallowed in a catch leaves no trace, and a chain of cascading
 // cancellations is impossible to reconstruct after the fact. The primitive is
-// strictly non-business and consumed by several modules with the same parameter
-// set: promotion to cross-cutting sub-provider under the two-clause criterion
-// in `reference--eventsource-convention--1.2.md`
-// §*Cross-cutting sub-providers*.
+// strictly non-business and consumed by several modules with the same
+// parameter set.
 //
 // Closed `operation` vocabulary (extend here if a new cancellation site
 // emerges; no ad hoc operation on the call-site side):
 //   "whisp-transcribe" — cancellation during transcription (warmup,
 //                        VAD, whisper_run)
+//   "file-transcription-batch" — cancellation of a file transcription batch
 //   "whisp-record"     — cancellation during audio capture
 //   "vision-capture"   — screen capture loop cancellation
 //   "vision-sample"    — frame sampler cancellation
@@ -41,10 +39,8 @@ namespace Deckle.Diagnostics;
 //   "upstream"       — the operation was cancelled because a previous step
 //                      requested it (ct propagation)
 //
-// `age_ms` is computed through Stopwatch.ElapsedMilliseconds between operation
-// start and OCE throw when a local Stopwatch is available at the call site.
-// When the age is not measurable (no Stopwatch in scope, operation without a
-// time anchor), pass -1: it is explicit and grep-able.
+// `age_ms` runs from operation start to the OCE; pass -1 when the call site
+// has no time anchor.
 [EventSource(Name = "Deckle-Cancellation")]
 public sealed class DeckleCancellationSource : DeckleEventSource
 {
@@ -55,15 +51,9 @@ public sealed class DeckleCancellationSource : DeckleEventSource
     // ── EventIds ────────────────────────────────────────────────────────
     public const int EvtOperationCancelled = 1;
 
-    // Emitted on every site that catches an OperationCanceledException (or
-    // TaskCanceledException, which inherits from it) on an application
-    // operation whose cancellation carries intent. Verbose because
-    // cancellations are frequent by nature (a typical user Stop will trigger
-    // several cascading OCEs on worker threads) and grep-ability goes through
-    // typed parameters rather than level. Keyword `Lifecycle` because there is
-    // no dedicated `Cancellation` keyword: the "cancellation" nature is
-    // carried by the provider itself (Deckle-Cancellation), not by
-    // an additional keyword bit.
+    // Verbose because one user Stop cascades into several OCEs on worker
+    // threads. Keyword `Lifecycle` because the provider itself carries the
+    // cancellation nature; no keyword bit is spent on it.
     [Event(EvtOperationCancelled,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Lifecycle,

@@ -5,16 +5,13 @@ namespace Deckle.Diagnostics;
 // Cross-cutting sub-provider: the settings-UX events every settings page emits,
 // wherever that page lives. A setting changed, a section reset, a folder picker
 // that failed — these are the same observation whichever module owns the page, so
-// per the "one source per kind, no variants" doctrine they land on ONE provider
-// rather than being duplicated into each module's own source. It lives in
-// Deckle.Diagnostics — the logging floor every module already references — so a
-// page relocated into its module (WhisperPage, RecordingPage, DiagnosticsPage…)
-// logs its setting-changes here without a reference back to the Settings shell.
+// they land on one provider rather than a copy in each module's own source.
+// Deckle.Diagnostics is referenced by every module, so a module's own page logs
+// here without a reference back to the Settings shell.
 //
-// This is deliberately NARROW: only the generic, page-agnostic settings events
-// belong here. The Settings shell keeps its own Deckle-Settings provider for what
-// is genuinely shell-scoped — navigation, backup, legacy migration, the module
-// nav registry — none of which a module page emits.
+// Only page-agnostic settings events belong here. The Settings shell keeps its
+// own Deckle-Settings provider for shell-scoped events — navigation, backup,
+// legacy migration, the module nav registry.
 [EventSource(Name = "Deckle-SettingsUx")]
 public sealed class DeckleSettingsUxSource : DeckleEventSource
 {
@@ -31,11 +28,8 @@ public sealed class DeckleSettingsUxSource : DeckleEventSource
 
     // ── Setting change ──────────────────────────────────────────────────
     //
-    // Property setters in settings ViewModels follow a homogeneous "a setting
-    // changed" pattern. One parameterized SettingChanged(setting, value) Verbose
-    // event carries them all — the setting name and value as structured fields —
-    // rather than one typed event per setting with no semantic gain. Per-setting
-    // changes are diagnostic detail, hence Verbose.
+    // One parameterized event carries every settings-ViewModel setter, rather
+    // than one typed event per setting with no semantic gain.
     [Event(EvtSettingChanged,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Lifecycle,
@@ -47,9 +41,6 @@ public sealed class DeckleSettingsUxSource : DeckleEventSource
     }
 
     // ── Section reset ───────────────────────────────────────────────────
-    //
-    // A deliberate, rare action — an Info milestone with a Verbose mirror carrying
-    // the section name.
     [Event(EvtSectionReset,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Lifecycle,
@@ -72,9 +63,8 @@ public sealed class DeckleSettingsUxSource : DeckleEventSource
 
     // ── Folder picker ───────────────────────────────────────────────────
     //
-    // The shared FolderPickerCard / FolderPickerEditableCard, and any page opening
-    // a folder in Explorer, report a failed pick here — an Error milestone with a
-    // Verbose mirror carrying the exception type and message.
+    // Reported by the shared folder picker cards and by any page that opens a
+    // folder in Explorer.
     [Event(EvtFolderPickerFailed,
            Level = EventLevel.Error,
            Keywords = (EventKeywords)Keywords.Lifecycle,

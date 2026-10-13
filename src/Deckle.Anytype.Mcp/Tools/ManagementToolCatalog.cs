@@ -3,11 +3,9 @@ using Deckle.Anytype;
 
 namespace Deckle.Anytype.Mcp;
 
-// ─── Management tool catalog ────────────────────────────────────────────────
-//
 // The destructive tools the base catalog withholds, mounted only on the client
 // surfaces that opt in (McpClients). Every other surface is served none of
-// these. For now the single tool is delete; the batch variant is deferred.
+// these.
 //
 // Same validation discipline as ToolCatalog: a handler throw becomes an
 // isError:true result the model can read and self-correct on.

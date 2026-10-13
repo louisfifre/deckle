@@ -18,8 +18,8 @@ public static partial class UIAutomation
         new("506A921A-FCC9-409F-B23B-37EB74106872");
 
     /// <summary>Reads a bounded span immediately before the active caret in the
-    /// focused text provider. This is a read-only diagnostic seam: it never
-    /// selects, scrolls, edits, or logs the returned text.</summary>
+    /// focused text provider. Read-only: it never selects, scrolls, edits, or
+    /// logs the returned text.</summary>
     public static bool TryReadFocusedTextBeforeCaret(
         int maxCharacters,
         out FocusedCaretText text,

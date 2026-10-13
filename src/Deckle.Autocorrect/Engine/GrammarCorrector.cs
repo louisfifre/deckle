@@ -1,7 +1,5 @@
 namespace Deckle.Autocorrect;
 
-// ── GrammarCorrector ──────────────────────────────────────────────────────────
-//
 // The grammar stage, after the diacritics gate, the elision corrector and the
 // typo corrector: it acts on a word those leave alone — a perfectly valid French
 // word that is the wrong inflection for its context. Its first rule is
@@ -21,8 +19,8 @@ namespace Deckle.Autocorrect;
 //     the literal is right);
 //   • the agreeing form must be UNIQUE — if synthesis is empty or ambiguous, the
 //     literal stands.
-// As with every stage, a misfire is taken back through the correction inlay,
-// whose undo writes the suppression — this proposes and never persists.
+// Like every stage, this one only proposes; the engine enforces learned
+// suppressions.
 public sealed class GrammarCorrector : ICorrectionPolicy
 {
     private readonly VerbMorphology _verbs;
@@ -77,7 +75,6 @@ public sealed class GrammarCorrector : ICorrectionPolicy
     {
         StageTrace? st = trace?.Open(CorrectionTrace.StageNames.Grammar);
 
-        // The agreement window: a subject pronoun must sit immediately before.
         if (!TryGetRequiredPerson(leftContext, out string required))
             return Abstain(st, CorrectionTrace.Reasons.NoSubjectPronoun);
 
@@ -87,17 +84,12 @@ public sealed class GrammarCorrector : ICorrectionPolicy
         if (readings.Count == 0)
             return Abstain(st, CorrectionTrace.Reasons.NotAVerb);
 
-        // A surface that also reads as a noun or adjective is never re-conjugated
-        // — the user may have meant the other word.
         if (_verbs.IsAmbiguous(lower))
             return Abstain(st, CorrectionTrace.Reasons.VerbAmbiguous);
 
-        // The user's own adopted words shield themselves.
         if (_personal?.IsAdopted(lower) == true)
             return Abstain(st, CorrectionTrace.Reasons.UserAdopted);
 
-        // Keep the person-bearing readings; if a reading already agrees, the
-        // literal is correct and we stand aside.
         var finite = new List<VerbReading>();
         foreach (VerbReading r in readings)
         {
@@ -110,9 +102,6 @@ public sealed class GrammarCorrector : ICorrectionPolicy
         if (finite.Count == 0)
             return Abstain(st, CorrectionTrace.Reasons.NotFinite);
 
-        // Synthesise the agreeing form for each disagreeing reading. The fix is
-        // safe only when they all resolve to one and the same surface: a missing
-        // slot or two rival targets is real ambiguity, so the literal stands.
         var targets = new HashSet<string>(StringComparer.Ordinal);
         bool missing = false;
         foreach (VerbReading r in finite)

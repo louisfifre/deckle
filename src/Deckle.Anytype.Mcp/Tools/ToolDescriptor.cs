@@ -2,8 +2,6 @@ using System.Text.Json.Nodes;
 
 namespace Deckle.Anytype.Mcp;
 
-// ─── Tool descriptor ──────────────────────────────────────────────────────────
-//
 // One entry per MCP tool: its advertised name, its description, the JSON Schema
 // for its arguments, and the handler that validates + invokes the gesture.
 //

@@ -9,18 +9,12 @@ using Deckle.Vision;
 
 namespace Deckle.Playground;
 
-// ─── AmbientPage — screen capture (J1) ──────────────────────────────────────
+// ─── AmbientPage — screen capture ───────────────────────────────────────────
 //
-// Local Screen capture toggle exposed in the Ambient page's Screen
-// capture card. Distinct from the canonical capture owned by the App-
-// side AmbientEngine — Louis can flip this on to sample frames + FPS
-// counter without engaging the full Hue pipeline. The FPS counter
-// ticks once a second, sampling FrameCount on the UI thread (no
-// per-frame DispatcherQueue marshalling).
-//
-// Pipeline lifecycle is independent : the canonical AmbientEngine
-// drives Hue through its own ScreenCaptureService when running, and
-// this local instance only matters for isolated sampler tests.
+// A local capture, distinct from the AmbientEngine's own ScreenCaptureService:
+// it samples frames and counts FPS without engaging the Hue pipeline. The
+// FPS counter reads FrameCount once a second on the UI thread, so no frame
+// is marshalled through the DispatcherQueue.
 
 public sealed partial class AmbientPage
 {
@@ -57,8 +51,6 @@ public sealed partial class AmbientPage
             ScreenCaptureFramesText.Text = "0";
             ScreenCaptureFpsText.Text = "—";
             _screenCaptureFpsTimer.Start();
-            // Now that a live source is up, the preview timer needs
-            // to tick to pump samples onto the cells.
             EvaluatePreviewTimerState();
             return true;
         }
@@ -90,19 +82,13 @@ public sealed partial class AmbientPage
             ScreenCaptureStatusText.Text = "Stopped";
             ScreenCaptureStatusDot.Fill = GetThemeBrush("SystemFillColorNeutralBrush");
         }
-        // Live source gone — re-evaluate the preview timer so the
-        // page goes idle (timer stopped, cells blanked) when the
-        // canonical AmbientEngine isn't also running.
         EvaluatePreviewTimerState();
     }
 
     private void OnScreenCaptureStopped()
     {
-        // Fires on the capture service's worker thread when the loop
-        // exits unexpectedly (sustained ACCESS_LOST recreate failure —
-        // display disconnected, signed-out, etc.). Marshal back to the
-        // UI thread to update the button + status, then run the same
-        // teardown as a user-driven Stop.
+        // Fires on the capture worker thread after a sustained failure to
+        // recreate the duplication.
         DispatcherQueue.TryEnqueueObserved(
             operation: "engine-state-sync", caller: "playground-ambient-page-capture",
             callback: () => StopScreenCaptureIfRunning(),

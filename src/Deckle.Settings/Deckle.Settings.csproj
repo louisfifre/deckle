@@ -1,61 +1,36 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <RootNamespace>Deckle.Settings</RootNamespace>
-    <!-- WinUI XAML compilation : Deckle.Settings ships the SettingsWindow
-         NavView shell + GeneralPage + the four ConsentDialogs + the
-         GeneralViewModel. WhisperPage and LlmPage moved out to
-         Deckle.Transcription / Deckle.Llm.Rewrite in slice C1 — Frame.Navigate resolves
-         them via assembly-qualified Tag strings on the NavigationViewItem
-         (e.g. "Deckle.Transcription.WhisperPage, Deckle.Transcription"), no compile-time
-         reference required. The plain SettingsService / AppSettings
-         POCOs and SettingsBootstrap live in the same assembly. -->
     <UseWinUI>true</UseWinUI>
     <!-- Neutral language for the lib's PRI. Without this, the lib's
          Strings/en-US/Resources.resw is found at runtime but no language is
          declared as fallback, which can leave x:Uid lookups empty when the
-         system display language doesn't match en-US. Mirrors Deckle.csproj. -->
+         system display language doesn't match en-US. -->
     <DefaultLanguage>en-US</DefaultLanguage>
-    <!-- Generates the lib's own .pri so x:Uid lookups in pages that ship
-         from this assembly (GeneralPage / WhisperPage / LlmPage / Llm
-         sections) resolve against the Deckle.Settings/Resources subtree,
-         which the build merges into the main resource map. The resw lives
-         under src/Deckle.Settings/Strings/en-US/Resources.resw — a copy of
-         the App's resw (each WinUI assembly with x:Uid needs its own resw,
-         see Microsoft Learn "Localize a class library" + PowerToys pattern,
-         + WindowsAppSDK#3451 for EnableMsixTooling). -->
+    <!-- Generates the lib's own .pri so x:Uid lookups in this assembly's pages
+         resolve against its Resources subtree, which the build merges into the
+         main resource map. Each WinUI assembly with x:Uid needs its own resw
+         (Microsoft Learn "Localize a class library"; WindowsAppSDK#3451 for
+         EnableMsixTooling). -->
     <EnableMsixTooling>true</EnableMsixTooling>
   </PropertyGroup>
 
   <ItemGroup>
-    <!-- Versions aligned on Deckle.csproj : single WinAppSDK runtime per
-         process, bump synchrone obligatoire. -->
     <PackageReference Include="Microsoft.WindowsAppSDK" />
     <PackageReference Include="Microsoft.Windows.SDK.BuildTools" />
-    <!-- MVVM Toolkit — [ObservableProperty] / [RelayCommand] sources gen
-         used by GeneralViewModel / WhisperViewModel / ProfileViewModel. -->
     <PackageReference Include="CommunityToolkit.Mvvm" />
-    <!-- SettingsCard / SettingsExpander — every page consumes them. -->
     <PackageReference Include="CommunityToolkit.WinUI.Controls.SettingsControls" />
   </ItemGroup>
 
   <ItemGroup>
-    <!-- Capture: GeneralPage + GeneralViewModel still read CaptureSettings
-         (microphone device, level window). Capture stays a direct ref. -->
     <ProjectReference Include="..\Deckle.Audio\Deckle.Audio.csproj" />
     <ProjectReference Include="..\Deckle.Core\Deckle.Core.csproj" />
     <ProjectReference Include="..\Deckle.Catalog\Deckle.Catalog.csproj" />
     <ProjectReference Include="..\Deckle.Diagnostics\Deckle.Diagnostics.csproj" />
-    <!-- Deckle.Diagnostics.Logging / Deckle.Diagnostics.Telemetry refs dropped when
-         DiagnosticsPage + DiagnosticsViewModel moved to Deckle.Diagnostics.Logging:
-         no remaining Settings source references either store's types. -->
-    <!-- Shell: AutostartService + SettingsWindow's IconAssets + native methods. -->
+    <!-- Shell: StartupService + SettingsWindow's IconAssets + native methods. -->
     <ProjectReference Include="..\Deckle.Shell\Deckle.Shell.csproj" />
     <!-- WindowChrome: shared TitleBar caption-inset correction. -->
     <ProjectReference Include="..\Deckle.Shell.WindowChrome\Deckle.Shell.WindowChrome.csproj" />
-    <!-- Deckle.Transcription and Deckle.Llm.Rewrite refs dropped in slice C1:
-         their pages moved out, and the Settings shell no longer references
-         their POCOs (each module owns its own JSON file via
-         TranscriptionSettingsService / LlmSettingsService since C2b). -->
   </ItemGroup>
 
   <PropertyGroup>

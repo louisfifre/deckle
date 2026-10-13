@@ -4,8 +4,6 @@ using System.Text.Json.Serialization;
 
 namespace Deckle.Install;
 
-// ── ReleaseResolver ───────────────────────────────────────────────────────────
-//
 // Finds the newest published Deckle release on GitHub. Shared by the two
 // consumers of the release convention: the download stub ("get me the newest
 // Deckle" — the decoupling that spares the stub a rebuild per release) and the
@@ -25,13 +23,11 @@ namespace Deckle.Install;
 public static class ReleaseResolver
 {
     // The stub is distributed standalone, so owner/repo is a constant here
-    // (unlike publish-app.ps1 which resolves it from the live git remote). Current
-    // owner after the PelopeeNoire → louisfifre rename.
+    // (unlike publish-app.ps1 which resolves it from the live git remote).
     private const string Repo = "louisfifre/deckle";
 
     private static readonly HttpClient s_http = CreateClient();
 
-    // Size is read from the exact ZIP asset and feeds the consent recap.
     public sealed record ResolvedRelease(string Tag, string ZipUrl, string Sha256Url, long ZipSize);
 
     public static async Task<ResolvedRelease> ResolveLatestAsync(CancellationToken ct)
@@ -141,9 +137,8 @@ internal sealed class GitHubAsset
     public long Size { get; set; } // bytes — feeds the consent recap's download size
 }
 
-// Source-generated (de)serialization — the AOT-safe path. Reflection-based
-// JsonSerializer is not trim/AOT-safe; the context wires concrete metadata at
-// build time instead.
+// Source-generated (de)serialization: reflection-based JsonSerializer is not
+// trim/AOT-safe.
 [JsonSourceGenerationOptions(PropertyNamingPolicy = JsonKnownNamingPolicy.SnakeCaseLower)]
 [JsonSerializable(typeof(GitHubRelease[]))]
 internal partial class ReleaseJsonContext : JsonSerializerContext;

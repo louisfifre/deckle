@@ -13,8 +13,6 @@ using Deckle.Modules;
 
 namespace Deckle.Setup;
 
-// ── DeployPage ───────────────────────────────────────────────────────────────
-//
 // Install mode's terminal step in the temp process: place the binaries and
 // integrate, then hand the rest of the wizard to the installed copy. The split
 // exists because AppPaths froze on the default data root the moment this
@@ -22,12 +20,8 @@ namespace Deckle.Setup;
 // whose AppPaths resolved the CHOSEN root, and that can only be the installed
 // Deckle.exe launched with DECKLE_DATA_ROOT in its environment.
 //
-// Sequence: gate on a running Deckle (binaries are locked while their image
-// runs) → copy the extracted payload into the app folder → integrate (Start
-// Menu shortcut, Installed-apps entry with the stub copied in as uninstaller,
-// DECKLE_DATA_ROOT set/cleared, presence.json written into the chosen data
-// root) → spawn `Deckle.exe --install-continue` → Complete. Failures stay on
-// this page with Retry — nothing before the spawn is irreversible.
+// Every step before the `--install-continue` spawn can run again, so a failure
+// stays on this page with Retry.
 public sealed partial class DeployPage : Page
 {
     private SetupWindow? _setup;
@@ -47,9 +41,6 @@ public sealed partial class DeployPage : Page
         _context    = setup.Context;
         _dispatcher = DispatcherQueue.GetForCurrentThread();
 
-        // Update mode reuses this page verbatim — same gate/copy/integrate —
-        // so only the narrative changes: the user asked for an update, not an
-        // install.
         setup.SetStepHeader(
             Loc.Get(setup.Context.UpdateMode ? "Setup_StepTitle_UpdateApply" : "Setup_StepTitle_Deploy"),
             Loc.Get(setup.Context.UpdateMode ? "Setup_StepSubtitle_UpdateApply" : "Setup_StepSubtitle_Deploy"));
@@ -147,12 +138,12 @@ public sealed partial class DeployPage : Page
     }
 
     // Empties a previous install before copying, so files a newer version
-    // renamed or dropped never linger beside the fresh payload — same guard as
-    // the console flow had: only a folder actually holding Deckle.exe is
-    // cleaned, which keeps a mistyped custom folder from being emptied. The
-    // registered uninstaller is spared: on an update run the stub that
-    // launched us IS that file (StubPath points at it), and Integrate copies
-    // from StubPath — deleting it here would delete the copy's source.
+    // renamed or dropped never linger beside the fresh payload. Only a folder
+    // actually holding Deckle.exe is cleaned, which keeps a mistyped custom
+    // folder from being emptied. The registered uninstaller is spared: on an
+    // update run the stub that launched us IS that file (StubPath points at
+    // it), and Integrate copies from StubPath — deleting it here would delete
+    // the copy's source.
     internal static long CopyPayload(SetupContext context, string preservedDirectory)
     {
         string source = Path.GetFullPath(context.SourceDirectory);

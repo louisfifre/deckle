@@ -3,13 +3,6 @@ using Xunit;
 
 namespace Deckle.Shell.Tests;
 
-// ── ResizeGestureTests ──────────────────────────────────────────────────────
-//
-// Exercises the Win32-free state machine behind ResizeCoalescer: the gesture
-// boundary (ENTER … EXIT), the per-frame coalescing of WM_SIZE, and the
-// safety net for a WM_SIZE that arrives outside any gesture (maximize / snap /
-// programmatic resize, none of which enter the modal move/size loop). The native
-// subclass shell is not under test here — only the decision it drives.
 [Trait("Category", "unit")]
 public class ResizeGestureTests
 {
@@ -30,7 +23,6 @@ public class ResizeGestureTests
         var g = new ResizeGesture();
         g.EnterSizeMove();
 
-        // Every WM_SIZE during the gesture is swallowed — no settlement yet.
         Assert.Null(g.Size());
         Assert.Null(g.Size());
         Assert.Null(g.Size());
@@ -59,9 +51,8 @@ public class ResizeGestureTests
     [Fact]
     public void SizeOutsideGesture_SettlesImmediatelyAsDirect()
     {
-        // The safety net: maximize / snap / programmatic SetWindowPos emit
-        // WM_SIZE without entering the modal loop, so there is no EXIT to wait
-        // for. It must settle on the spot and never flip IsResizing.
+        // Maximize, snap and programmatic SetWindowPos emit WM_SIZE without
+        // entering the modal loop, so no EXIT will come.
         var g = new ResizeGesture();
 
         var settled = g.Size();

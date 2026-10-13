@@ -4,28 +4,20 @@ using Deckle.Transcription;
 
 namespace Deckle.Playground;
 
-// ─── Streaming segmentation tuning ViewModel ─────────────────────────────────
+// Backs the Segmentation page: the energy segmenter's hangover curve and
+// detection knobs (EnergySegmenterSettings).
 //
-// Backs the Segmentation Playground page : the dynamic-hangover curve editor
-// plus the detection knobs of the energy segmenter (EnergySegmenterSettings).
+// Deliberately not AmbientViewModel's live-save model: edits stay in the VM
+// until Save. The VM holds the knobs in display units (seconds for the
+// hangover and ramp durations, dBFS and ms for the rest), the persisted
+// snapshot Revert returns to, and the compiled defaults Reset loads.
 //
-// DELIBERATELY NOT the AmbientViewModel live-save model. Ambient writes every
-// slider change straight into its store ; here edits stay EPHEMERAL in the VM
-// until the user presses Save (the Playground Save / Revert / Reset contract).
-// The VM holds the ten knobs in display units (seconds for the hangover / ramp
-// durations, dBFS / ms for the rest), a snapshot of what is currently persisted
-// (the baseline Revert returns to) and the compiled defaults (what Reset loads).
-// IsDirty / CanReset drive the footer buttons.
-//
-// Persistence lands in <UserDataRoot>/modules/transcription/settings.json via
-// TranscriptionSettingsService. The segmenter reads its settings fresh at each
-// streaming-session start, so a Save here applies on the next dictation without
-// restarting Deckle.
+// The segmenter reads its settings at each streaming-session start, so a Save
+// here applies on the next dictation without restarting Deckle.
 public partial class SegmentationViewModel : ObservableObject
 {
-    // Guards the bulk writes in Load / Revert / ResetDefaults so the per-property
-    // change hooks don't recompute the dirty flags mid-sync (we recompute once at
-    // the end). Mirrors the _isSyncing guard in AmbientViewModel.
+    // Guards the bulk writes in Apply so the per-property hooks don't
+    // recompute the dirty flags mid-sync; Apply recomputes once at the end.
     private bool _isSyncing;
 
     private Snapshot _saved;             // what is persisted — Revert target
@@ -44,9 +36,8 @@ public partial class SegmentationViewModel : ObservableObject
     [ObservableProperty] public partial double CurveY2 { get; set; }
 
     // ── Detection ────────────────────────────────────────────────────────────
-    // MarginMs / MinUtteranceMs are held as double (not int) so they bind to the
-    // TunableRow's double Value like every other knob ; WriteTo rounds them back
-    // to whole ms for the store.
+    // MarginMs / MinUtteranceMs are double so they bind to TunableRow's double
+    // Value; WriteTo rounds them back to whole ms for the store.
     [ObservableProperty] public partial double ThresholdDbfs  { get; set; }
     [ObservableProperty] public partial double MarginMs       { get; set; }
     [ObservableProperty] public partial double MinUtteranceMs { get; set; }
@@ -58,15 +49,11 @@ public partial class SegmentationViewModel : ObservableObject
     public SegmentationViewModel()
     {
         _defaults = Snapshot.FromSettings(new EnergySegmenterSettings());
-        // Load the persisted settings up front, so the two-way bindings evaluate
-        // against the real stored values from their very first read instead of the
-        // compiled defaults. Loading later (on the page's Loaded) left the rows
-        // showing defaults whenever the post-construction propagation didn't take.
+        // Load up front so the two-way bindings read the stored values on their
+        // first evaluation, not the compiled defaults.
         Load();
     }
 
-    // Every editable knob recomputes the dirty / reset flags on change. The flags
-    // themselves are not knobs, so they don't recurse.
     partial void OnHangoverMaxSecChanged(double value) => Recompute();
     partial void OnHangoverMinSecChanged(double value) => Recompute();
     partial void OnRampStartSecChanged(double value)   => Recompute();
@@ -89,16 +76,13 @@ public partial class SegmentationViewModel : ObservableObject
 
     // ── Public operations ────────────────────────────────────────────────────
 
-    // Pull the persisted segmenter settings into the editor and make them the
-    // baseline. Called once when the page first loads.
+    // Makes the persisted settings the editor's values and its baseline.
     public void Load()
     {
         _saved = Snapshot.FromSettings(TranscriptionSettingsService.Instance.Current.Streaming.Segmenter);
         Apply(_saved);
     }
 
-    // Push the current edits into the store and persist. The baseline becomes the
-    // just-saved state, so IsDirty drops to false.
     public void Save()
     {
         var seg = TranscriptionSettingsService.Instance.Current.Streaming.Segmenter;
@@ -112,9 +96,8 @@ public partial class SegmentationViewModel : ObservableObject
     public void Revert()        => Apply(_saved);
     public void ResetDefaults() => Apply(_defaults);
 
-    // Per-section reset to the shipping defaults — the section's reset wheel. Each
-    // sets only its own knobs, so the rest of the unsaved edits survive ; the
-    // per-property change hooks recompute the dirty flags.
+    // Per-section resets set only their own knobs, so the other unsaved edits
+    // survive.
     public void ResetHangoverRamp()
     {
         HangoverMaxSec = _defaults.HangoverMaxSec;
@@ -169,9 +152,8 @@ public partial class SegmentationViewModel : ObservableObject
         Recompute();
     }
 
-    // Value-equal struct snapshot of the ten knobs in display units, with the
-    // ms ↔ seconds conversions kept in one place. record struct gives us the
-    // field-wise equality the dirty check relies on.
+    // The knobs in display units, with the ms ↔ seconds conversions in one
+    // place. The dirty check relies on the record struct's field-wise equality.
     private readonly record struct Snapshot(
         double HangoverMaxSec, double HangoverMinSec, double RampStartSec, double RampEndSec,
         double CurveX1, double CurveY1, double CurveX2, double CurveY2,

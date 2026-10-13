@@ -8,12 +8,12 @@ namespace Deckle.Autocorrect;
 
 // The conductor: raw key events → decode → track → decide → inject, with the
 // learning signals around it. Every handler runs on the KeyboardInputHost
-// input thread; Start/Stop are the only cross-thread entries.
+// input thread; Start, Stop, Dispose and ReconcileTextTelemetry are the only
+// cross-thread entries.
 //
-// A correction is taken back only through the correction inlay (CONTEXT.md
-// § Correction undo) — Backspace is always a plain Backspace, because reading
-// it as an undo misfires (a deleted comma read as an undo) and writes false
-// suppressions.
+// Backspace is always a plain Backspace, never a correction undo: reading it
+// as an undo misfires (a deleted comma read as an undo) and writes false
+// suppressions. Undo belongs to the correction inlay.
 //
 // Gate order is doctrine: injected events are filtered first (our
 // own repairs must never feed the tracker), the password gate cuts BEFORE
@@ -42,37 +42,27 @@ public sealed partial class AutocorrectEngine : IDisposable
     private bool _started;
     private bool _disposed;
 
-    // The approved mistouch families' detector-generator (CONTEXT.md § Mistouch
-    // family) — null when no family is approved, and the engine runs untouched.
-    // Kinds are code, the records are the user's own data.
+    // Mistouch kinds are code; the family records are the user's own data.
     private readonly MistouchFamilyCorrector? _mistouch;
 
-    // Opt-in per-word decision telemetry. When this returns true, each evaluated
-    // word on an enrolled surface emits a structured trace (candidates, scores,
-    // margins, the guard that left it literal) to the autocorrect.decisions dataset.
-    // Null/false = the chain runs untouched, no trace allocated. Off by default.
+    // Opt-in per-word decision telemetry to the autocorrect.decisions dataset.
+    // Null or false allocates no trace.
     private readonly Func<bool>? _decisionTelemetry;
 
-    // Opt-in typed-sentence corpus. When this returns true, each committed word on
-    // an enrolled, editable, non-password surface feeds the accumulator. The same
-    // surface gate as correction keeps verbatim collection inside the scope the user
-    // explicitly approved. The accumulator emits the
-    // (typed, final) sentence pair to the autocorrect.text dataset. Null = no
-    // accumulator built. Off by default. The heaviest text capture — a verbatim
-    // record of typed input, so it stands behind its own dedicated consent toggle.
+    // Opt-in typed-sentence corpus, the heaviest text capture: a verbatim record
+    // of typed input, behind its own consent toggle. It uses the same surface
+    // gate as correction, so collection stays inside the scope the user approved.
     private readonly Func<bool>? _textTelemetry;
     private readonly SentenceCorpus? _corpus;
     private int _discardCorpusRequested;
 
-    // The typing stream (CONTEXT.md § Typing stream) rides the same consent
-    // envelope and the same enrolled-surface gate as the corpus. Fed the same decoded keystrokes
-    // the tracker consumes — a parallel verbatim capture, not a word model.
+    // The typing stream rides the same consent and enrolled-surface gate as the
+    // corpus. It is fed the decoded keystrokes the tracker consumes: a parallel
+    // verbatim capture, not a word model.
     private readonly TypingStream? _stream;
 
-    // The post-sentence contextual stage. Null only when no sentence reranker is
-    // wired; the reranker may be deterministic rules alone or rules delegating to
-    // an ONNX model. The lane owns the background inference thread; the
-    // coordinator owns the sentence model.
+    // The lane owns the background inference thread; the coordinator owns the
+    // sentence model.
     private readonly SentenceRerankCoordinator? _coordinator;
     private readonly IRerankLane? _lane;
 

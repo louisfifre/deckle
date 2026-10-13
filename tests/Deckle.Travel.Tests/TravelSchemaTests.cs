@@ -83,9 +83,8 @@ public class TravelSchemaTests
         Assert.Contains(TravelSchema.Properties.Stage, error.Message, StringComparison.Ordinal);
     }
 
-    // Decided twice and for the same reason: the Date is the state of an
-    // Activity, and a recorded Expense is a fact. A status property creeping
-    // back into the contract would undo both.
+    // The Date is the state of an Activity, and a recorded Expense is a fact.
+    // A status property in the contract would undo both.
     [Fact]
     public void TheContractCarriesNoStatusProperty()
     {

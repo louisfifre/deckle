@@ -19,8 +19,8 @@ public interface ISentenceReranker
 }
 
 // Optional capability implemented by judges that can arbitrate the complete
-// closed candidate set in one transaction. Legacy masked-LM implementations can
-// remain slot-based; the coordinator falls back only for candidate families that
+// closed candidate set in one transaction. Masked-LM implementations may stay
+// slot-based; the coordinator falls back only for candidate families that
 // already had slot-local rights.
 public interface IWholeSentenceReranker
 {
@@ -29,7 +29,7 @@ public interface IWholeSentenceReranker
 
 // The reranker's verdict for one slot, scores included. Chosen is the winning
 // surface form or null to leave the slot; Scores are every candidate's final
-// score (fill-mask logit plus frequency prior), highest = most favoured; Margin
+// score, highest = most favoured; Margin
 // is the top-vs-second gap and Threshold the bar it had to clear; AbstainReason
 // names why a null verdict happened.
 public readonly record struct RerankOutcome(
@@ -43,8 +43,6 @@ public readonly record struct RerankOutcome(
     // this identifies the one slot whose one-edit sentence won globally.
     public int? ChosenSlotIndex { get; init; }
 
-    // Convenience for the abstain paths that weigh nothing (e.g. a multi-token
-    // candidate the v1 reranker cannot score).
     public static RerankOutcome Abstained(string reason) =>
         new(null, System.Array.Empty<RerankCandidateScore>(), 0.0, 0.0, reason);
 

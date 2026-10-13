@@ -6,15 +6,11 @@ using Xunit;
 
 namespace Deckle.Speech.Tests;
 
-// Pins the read-aloud orchestrator's load-bearing behavior: interrupt-on-press
-// (a second Speak cancels the one in flight) and the whitespace no-op. The
-// backend is the injectable seam — a fake that parks inside SynthesizeAsync, so
-// the cancellation is observable without any real synthesis, waveOut, or UI.
+// The backend is the injectable seam: a fake that parks inside
+// SynthesizeAsync, so the cancellation is observable without any real
+// synthesis, waveOut, or UI.
 public class SpeechEngineTests
 {
-    // ISpeechBackend stub that blocks inside SynthesizeAsync until its token is
-    // cancelled, exposing the token it was handed so a test can assert a later
-    // Speak cancelled it.
     private sealed class BlockingBackend : ISpeechBackend
     {
         public readonly ManualResetEventSlim Entered = new(false);

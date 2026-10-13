@@ -2,13 +2,11 @@ using System.Diagnostics;
 
 namespace Deckle.Install;
 
-// ── RunningProcesses ──────────────────────────────────────────────────────────
-//
 // Detects processes executing from a given folder — the gate before overwriting
 // or deleting binaries Windows keeps locked while their image runs. Candidates
-// come from the folder's own top-level exe names (Deckle.exe today, whatever the
-// payload grows tomorrow), matched back to live processes by image path — so a
-// dev build running from a worktree never blocks an install into %LOCALAPPDATA%,
+// come from the exe names found under the folder, matched back to live
+// processes by image path — so a dev build running from a worktree never
+// blocks an install into %LOCALAPPDATA%,
 // and the current process (the installed stub running its own update) never
 // blocks its own run.
 public static class RunningProcesses

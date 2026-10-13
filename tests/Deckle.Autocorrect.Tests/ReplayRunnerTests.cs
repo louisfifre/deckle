@@ -17,7 +17,6 @@ public sealed class ReplayRunnerTests
 {
     private sealed class FakeProbe : IAmbiguityProbe
     {
-        // Only « a » folds; every other word is unambiguous and skipped.
         private static readonly AccentVariant[] Aà =
             { new("a", 100), new("à", 50) };
 
@@ -123,7 +122,6 @@ public sealed class ReplayRunnerTests
     {
         var corpus = new[] { Modern("il a dit.", "il a dit.", "") };
 
-        // Without a truth, the judge's « à » disagrees with the final « a ».
         ReplayReport plain = ReplayRunner.Run(corpus, new FakeProbe(), new AlwaysÀReranker());
         Assert.Equal(0, plain.Summary.AgreedWithFinal);
         TruthReviewRow row = Assert.Single(plain.TruthReview);
@@ -131,7 +129,6 @@ public sealed class ReplayRunnerTests
         Assert.Equal("a", row.FinalForm);
         Assert.Equal("à", row.JudgePick);
 
-        // The maintainer resolves that slot's truth to « à » — the judge was right.
         var truths = new Dictionary<string, string> { [row.Key] = "à" };
         ReplayReport overlaid = ReplayRunner.Run(corpus, new FakeProbe(), new AlwaysÀReranker(), resolvedTruths: truths);
 

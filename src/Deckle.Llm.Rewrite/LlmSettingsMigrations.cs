@@ -4,40 +4,20 @@ namespace Deckle.Llm.Rewrite;
 
 // ── LlmSettingsMigrations ─────────────────────────────────────────────────
 //
-// Profile-id reconciliation across the LlmSettings graph. Lives in
-// Deckle.Llm next to the POCO it operates on (moved from
-// Deckle.Settings.SettingsService when LlmSettings got its own per-module
-// JSON file in slice C2b).
-//
-// Three jobs:
-//
-//   1. Fill missing stable ids — each RewriteProfile gets a 12-char Guid
-//      suffix on first encounter (legacy configs, freshly-instantiated
-//      defaults).
-//   2. Move the legacy primary shortcut slot into the active profile when
-//      no active choice exists yet.
-//   3. Re-pair ProfileId/ProfileName on the active profile and legacy automatic
-//      rules when the live Profiles list still contains a match. The legacy
-//      lists are no longer executed or exposed, but remain deserializable so
-//      older settings files can be loaded without data loss. Three cases:
-//        - id resolves → sync the cached name in case the profile was
-//          renamed since the rule was last saved
-//        - id is empty but name resolves → fill id from name (post-
-//          migration of an older config that never had ids)
-//        - id is stale but name resolves → rewire id from name
+// Profile-id reconciliation across the LlmSettings graph: fill missing stable
+// ids (legacy configs, freshly built defaults), move the legacy primary slot
+// into the active profile when no active choice exists yet, and re-pair
+// ProfileId/ProfileName on the active profile and the legacy rules against
+// the live Profiles list (the id wins, then the name).
 //
 // **Never deletes a legacy rule and never clears the active profile.** Orphan
-// references (id+name both unresolvable) stay untouched. The active profile
-// remains user-repairable in the UI; legacy rules are preserved only for backward-compatible round trips.
+// references (id and name both unresolvable) stay untouched, so older settings
+// files round-trip without loss and the user can repair the active profile in
+// the UI. The delete-cascade lives in LlmProfilesSection.DeleteProfile_Click,
+// which clears references **before** the profile is removed.
 //
-// The delete-cascade for "remove a profile, drop its dependants" lives
-// in LlmProfilesSection.DeleteProfile_Click, which clears references
-// explicitly **before** the profile is removed.
-//
-// Returns true if anything was mutated. Used as the postLoadMigration
-// hook on LlmSettingsService's JsonSettingsStore so loads that need
-// repair flush the cleanup back to disk; also called explicitly by
-// page-level reset paths after building a fresh LlmSettings instance.
+// Returns true if anything was mutated: as the postLoadMigration hook of
+// LlmSettingsService's JsonSettingsStore, that flushes the repair to disk.
 public static class LlmSettingsMigrations
 {
     public static bool RepairProfileReferences(LlmSettings s)
@@ -64,10 +44,6 @@ public static class LlmSettingsMigrations
                 ? null
                 : s.Profiles.Find(p => p.Id == id)?.Name;
 
-        // Re-pair (id, name) against the live Profiles list. Mutates the
-        // ref arguments only when a live profile matches; leaves them
-        // untouched (orphan kept as-is) otherwise. Returns true if anything
-        // changed so the caller can flag the parent as mutated.
         bool RepairPair(ref string id, ref string name)
         {
             string? nameFromId = NameForId(id);
@@ -86,8 +62,6 @@ public static class LlmSettingsMigrations
                 return true;
             }
 
-            // Neither resolves — keep the orphan for a lossless settings
-            // round trip. Live slots can still be repaired in the UI.
             return false;
         }
 
@@ -115,15 +89,12 @@ public static class LlmSettingsMigrations
             }
         }
 
-        // Slots: same re-pair logic, but the storage uses nullable strings
-        // (null = "(None)"). A repair flips empty strings back to null so
-        // the JSON stays clean, and an orphan slot is left as-is — the user
-        // sees the stale name in the ComboBox and reassigns or clears it.
+        // The active profile stores nullable strings (null = "(None)"): a
+        // repair flips empty strings back to null so the JSON stays clean.
         bool RepairSlot(ref string? id, ref string? name)
         {
             string idVal = id ?? "";
             string nameVal = name ?? "";
-            // Nothing set: nothing to do.
             if (idVal.Length == 0 && nameVal.Length == 0) return false;
             if (RepairPair(ref idVal, ref nameVal))
             {

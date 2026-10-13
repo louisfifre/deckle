@@ -3,10 +3,6 @@ using Deckle.Core;
 
 namespace Deckle.Input;
 
-// Module-local persistence for MouseWheelSettings — the standard
-// JsonSettingsStore<T> lazy singleton at
-// <UserDataRoot>/modules/mousewheel/settings.json, same shape as
-// TrackpadSettingsService.
 public sealed class MouseWheelSettingsService
 {
     private static readonly Lazy<MouseWheelSettingsService> _instance =

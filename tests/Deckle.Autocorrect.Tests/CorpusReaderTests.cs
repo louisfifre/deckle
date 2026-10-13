@@ -9,8 +9,7 @@ namespace Deckle.Autocorrect.Tests;
 // Reads the typed-text corpus back off an autocorrect.text.jsonl line: the payload
 // round-trips into a SentenceRecord, closure and timing default when absent, the
 // history PROPERTY's presence is surfaced apart from its value, and malformed or
-// partial lines are skipped rather than fatal. No disk beyond a temp file for the
-// streaming case.
+// partial lines are skipped rather than fatal.
 [Trait("Category", "unit")]
 public sealed class CorpusReaderTests
 {
@@ -34,7 +33,7 @@ public sealed class CorpusReaderTests
     [InlineData("")]
     [InlineData("   ")]
     [InlineData("not json at all")]
-    [InlineData("""{"kind":"autocorrect_text"}""")]                       // no payload
+    [InlineData("""{"kind":"autocorrect_text"}""")]
     [InlineData("""{"payload":{"process":"x"}}""")]                        // neither typed nor final
     public void SkipsBlankMalformedAndPayloadlessLines(string line) =>
         Assert.False(CorpusReader.TryParse(line, out _));
@@ -49,10 +48,9 @@ public sealed class CorpusReaderTests
         Assert.Equal("enter", entry.Record.Closure);
     }
 
-    // A pre-2026-07-02 line lacks history/closure/timing entirely: closure defaults
-    // to a normal sentence close, timing to empty, and — crucially — the reader
-    // flags that the history PROPERTY was absent, which the alignment reads as « a
-    // writer that predated the field », not « a sentence with no corrections ».
+    // A legacy line lacks history/closure/timing entirely. The reader flags that
+    // the history PROPERTY was absent, which the alignment reads as « a writer that
+    // predated the field », not « a sentence with no corrections ».
     [Fact]
     public void LegacyLineDefaultsClosureAndFlagsHistoryAbsent()
     {
@@ -66,8 +64,6 @@ public sealed class CorpusReaderTests
         Assert.Equal("", entry.Record.Timing);
     }
 
-    // The property present but empty is a modern record that simply changed nothing —
-    // distinct from the legacy line above, and the flag tells them apart.
     [Fact]
     public void EmptyHistoryPropertyStillCountsAsPresent()
     {
@@ -86,8 +82,8 @@ public sealed class CorpusReaderTests
         File.WriteAllLines(path, new[]
         {
             WellFormed,
-            "",                                                            // blank
-            "{ truncated tail from a crash",                               // partial line
+            "",
+            "{ truncated tail from a crash",
             """{"payload":{"typed":"a.","final":"à."}}""",
         });
 

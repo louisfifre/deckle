@@ -14,8 +14,8 @@ namespace Deckle.Llm.Rewrite;
 // Apostrophes glue to the word ("s'arrête", "aujourd'hui" are one token) so
 // that an elision repair ("sarrete" → "s'arrête") reads as a single
 // replacement whose normalized forms are equal. Hyphens glue only between
-// letters ("peut-être") so a dash stays punctuation. Whitespace is dropped
-// entirely: the rewrite may reflow the paragraph freely.
+// word characters ("peut-être") so a dash stays punctuation. Whitespace is
+// dropped entirely: the rewrite may reflow the paragraph freely.
 //
 // Normalized form: lowercase, diacritics stripped, apostrophes and hyphens
 // removed. Two tokens with equal normalized forms are the same word as far as
@@ -65,11 +65,7 @@ public static class GateTokenizer
                 {
                     c = text[i];
                     if (IsWordChar(c)) { sb.Append(c); i++; continue; }
-                    // Apostrophe after a word char stays in the word — elision
-                    // ("j'", "s'arrête") and interior ("aujourd'hui") alike.
                     if (c is Apostrophe or CurlyApostrophe) { sb.Append(Apostrophe); i++; continue; }
-                    // Hyphen only bridges two letters ("peut-être"); a trailing
-                    // dash is punctuation.
                     if (c == '-' && i + 1 < n && IsWordChar(text[i + 1])) { sb.Append(c); i++; continue; }
                     break;
                 }
@@ -78,8 +74,6 @@ public static class GateTokenizer
                 continue;
             }
 
-            // Punctuation: a run of the same character is one token ("...",
-            // "!!"), distinct characters are distinct tokens.
             char punct = c;
             int start = i;
             while (i < n && text[i] == punct) i++;
@@ -92,8 +86,6 @@ public static class GateTokenizer
 
     static bool IsWordChar(char c) => char.IsLetterOrDigit(c);
 
-    /// <summary>Lowercase, diacritics stripped, apostrophes and hyphens
-    /// removed — the identity under which two forms are "the same word".</summary>
     public static string Normalize(string text)
     {
         string decomposed = text.ToLowerInvariant().Normalize(NormalizationForm.FormD);

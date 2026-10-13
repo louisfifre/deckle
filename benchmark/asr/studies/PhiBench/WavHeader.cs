@@ -2,8 +2,7 @@ namespace Deckle.Benchmark.PhiBench;
 
 /// <summary>
 /// Minimal WAV header reader to compute audio duration in seconds without
-/// pulling in NAudio. Handles standard PCM WAV files; falls back to a
-/// byte-rate-based estimate if the data chunk is unparseable.
+/// pulling in NAudio. Handles standard PCM WAV files.
 /// </summary>
 internal static class WavHeader
 {

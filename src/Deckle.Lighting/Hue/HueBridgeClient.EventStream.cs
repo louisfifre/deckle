@@ -5,12 +5,11 @@ namespace Deckle.Lighting;
 public sealed partial class HueBridgeClient
 {
     /// <summary>
-    /// Long-running consumer of the bridge's v2 EventStream (SSE). Yields
-    /// resource updates as they happen so callers can attribute bridge-side
-    /// state changes (Hue app, Home Assistant, physical Dimmer Switch, or
-    /// bridge echoes of our own calls).
-    /// The method reconnects with a 2 s backoff on any
-    /// network/parsing error ; only cancellation stops the loop.
+    /// Long-running consumer of the bridge's v2 EventStream (SSE), so
+    /// callers can attribute bridge-side state changes (Hue app, Home
+    /// Assistant, a physical switch, or echoes of our own calls).
+    /// Reconnects after any network or parsing error; only cancellation
+    /// stops the loop.
     /// </summary>
     /// <remarks>
     /// The bridge echoes our own REST PUTs back as events. Discrimination

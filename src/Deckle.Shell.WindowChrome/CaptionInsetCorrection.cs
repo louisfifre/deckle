@@ -12,7 +12,7 @@ namespace Deckle.Shell.WindowChrome;
 // TitleBar.cpp: GridLengthHelper::FromPixels(RightInset()), no scale division), so
 // at 150/200 % display scale the bar reserves 1.5–2× the room the caption buttons
 // actually take — RightHeader drifts far off the right edge and the central zone
-// starves. Measured on SettingsWindow at 200 %: 288 DIPs reserved where 144 suffice.
+// starves.
 //
 // Correction: re-stamp both columns in DIPs. The control only writes them in
 // OnApplyTemplate and on flow-direction change — never on resize (their TODO

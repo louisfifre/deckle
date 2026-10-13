@@ -22,9 +22,7 @@ namespace Deckle.Autocorrect.Lab;
 // a miss is tolerable (the user fixes it by hand — the status quo without the
 // tool). So the questions are "when the engine acts, is it right?" (precision,
 // the gate, target ~100%) and "of the accents that were needed, how many did it
-// restore?" (recall, the coverage objective, NOT a ~100% target). Word accuracy
-// blends the two and hides the cardinal sin under recall gains — kept only as a
-// demoted diagnostic, never the verdict.
+// restore?" (recall, the coverage objective, NOT a ~100% target).
 public sealed class RestorationReport
 {
     public long TotalTokens { get; set; }
@@ -40,16 +38,13 @@ public sealed class RestorationReport
     public long Untouched { get; set; }
     public long FalseCorrections { get; set; }
 
-    // Per-stage breakdown of every emitted correction, keyed by the reason the
-    // policy gave. This is how the eval sees ITSELF: without it, Restored and
-    // WrongForm conflate the deterministic gate, frequency dominance and the
-    // context model, so we cannot tell whether a number reflects the cheap path
-    // or the pair model — nor whether the context model is a net gain. Populated
-    // by the evaluator; one entry per reason that actually fired.
+    // Keyed by the reason the policy gave. Without it, Restored and WrongForm
+    // conflate the gate, frequency dominance and the context model, and nothing
+    // tells which path earned a number or whether the context model is a net
+    // gain.
     public IReadOnlyDictionary<CorrectionReason, StageTally> ByStage { get; set; } =
         new Dictionary<CorrectionReason, StageTally>();
 
-    // Top offenders by class — diagnosis fuel, not a metric. Populated to 25.
     public IReadOnlyList<(string Word, long Count)> TopMissed { get; set; } =
         Array.Empty<(string, long)>();
     public IReadOnlyList<(string Word, long Count)> TopWrongForm { get; set; } =
@@ -57,30 +52,22 @@ public sealed class RestorationReport
     public IReadOnlyList<(string Word, long Count)> TopFalseCorrections { get; set; } =
         Array.Empty<(string, long)>();
 
-    // Every token the policy acted on (output != typed): the wins plus both
-    // wrong classes. The denominator of precision.
     public long EmittedCorrections => Restored + WrongForm + FalseCorrections;
 
-    // Corruptions: emitted corrections that were wrong, whichever world they
-    // landed in. The numerator of "harm done by acting".
     public long Corruptions => WrongForm + FalseCorrections;
 
-    // THE headline. Of every correction the engine chose to emit, the share that
-    // was right. ~100% is the meaningful target — it means "the engine is never
-    // wrong when it acts". NaN when the engine emitted nothing (not 0%: there is
-    // nothing to be right or wrong about).
+    // NaN when the engine emitted nothing, not 0%: there is nothing to be right
+    // or wrong about.
     public double Precision =>
         EmittedCorrections == 0 ? double.NaN : (double)Restored / EmittedCorrections;
 
-    // Of the accents that were actually needed, the share put back correctly.
-    // The coverage objective — maximized UNDER the precision/FC ceiling, never
-    // chased to 100% on its own.
+    // Maximized UNDER the precision and false-correction ceiling, never chased
+    // to 100% on its own.
     public double RestorationRecall =>
         AccentedRef == 0 ? double.NaN : (double)Restored / AccentedRef;
 
-    // Of the correctly-typed bare words, the share the policy wrongly altered —
-    // the cardinal-sin rate, the one to drive toward zero. NaN when there were
-    // no bare words to wreck (an empty denominator is "not measured", not 0%).
+    // The cardinal-sin rate, the one to drive toward zero. NaN when there were
+    // no bare words to wreck: an empty denominator is "not measured", not 0%.
     public double FalseCorrectionRate =>
         BareRef == 0 ? double.NaN : (double)FalseCorrections / BareRef;
 
@@ -89,9 +76,6 @@ public sealed class RestorationReport
     public double WordAccuracy =>
         TotalTokens == 0 ? double.NaN : (double)(Restored + Untouched) / TotalTokens;
 
-    // A sober fixed-width table. Precision leads; recall and the false-correction
-    // rate follow as their own blocks; the per-stage breakdown exposes which path
-    // earned the numbers; word accuracy trails as a flagged diagnostic.
     public string FormatConsole()
     {
         var sb = new StringBuilder();
@@ -128,9 +112,6 @@ public sealed class RestorationReport
         return sb.ToString();
     }
 
-    // The per-stage table: for each reason that fired, how many corrections it
-    // emitted, how many were right, how many were corruptions. A stage whose
-    // wrong count rivals its correct count is buying recall with the cardinal sin.
     private void AppendStages(StringBuilder sb)
     {
         if (ByStage.Count == 0)
@@ -155,9 +136,7 @@ public sealed class RestorationReport
     }
 }
 
-// One stage's emitted-correction tally: total acted, of which correct (Restored)
-// and wrong (WrongForm + FalseCorrection). Mutable — the evaluator accumulates
-// into it during the pass, then hands the dictionary to the report.
+// Correct counts Restored; Wrong counts WrongForm and FalseCorrections.
 public sealed class StageTally
 {
     public long Acted { get; set; }

@@ -8,31 +8,26 @@ namespace Deckle.Llm.Rewrite;
 // One SettingSearchEntry per findable card on the Rewriting page, flat and static
 // so the shell's search index can pull it at boot without composing the page.
 //
-// Why redeclared here rather than read off the composed manifest: the two composed
-// leaves (LlmEnableCard, LlmEndpointExpander) live in ModuleSwitch and
-// GeneralSettingsManifest, INSTANCE properties on LlmGeneralViewModel — a live thing that owns the settings
-// values and their service, not constructible at boot without side effects. The
-// search index resolves display text from the module's PRI subtree by LabelKey
-// alone, so it needs the KEYS, not the VM. This list hands over exactly those keys,
-// declaratively, and never touches the ViewModel.
+// Redeclared here rather than read off the composed manifests: the two composed
+// leaves (LlmEnableCard, LlmEndpointExpander) live in instance properties of
+// LlmGeneralViewModel, which owns live settings and cannot be built at boot
+// without side effects. The index resolves display text from the module's PRI
+// subtree by LabelKey alone, so the keys are all it needs.
 //
 // Coverage is hybrid, because the page is:
-//   • composed leaves — LabelKey only; the index resolves "<key>/Header" and
-//     "/Description" from .resw. Their runtime Tag is stamped by the composer.
-//   • bespoke cards — LabelKey resolves from .resw the same way; their Tag is
-//     authored by hand in the section XAML (see the Tag="…" attributes).
-//   • runtime lists (profiles, models) — no per-item card to
-//     index; each is one section-level entry with a LiteralLabel taken from the
-//     section header, targeting the section host element (Tag on its root panel).
+//   • composed leaves — LabelKey only; their runtime Tag is stamped by the
+//     composer.
+//   • bespoke cards — their Tag is authored by hand in the section XAML.
+//   • runtime lists (profiles, models) — no per-item card to index; each is one
+//     section-level entry with a LiteralLabel, targeting the Tag on its section
+//     block.
 //
 // Maintenance contract: a card added to this page is a card added here. LabelKey
-// must equal the card's Tag (the composer's stamp, or the hand-authored Tag) — that
-// is the handle the post-navigation scroll-to walks the visual tree for.
+// must equal the card's Tag, the handle the post-navigation scroll-to looks for.
 public static class SettingsSearch
 {
     public static IReadOnlyList<SettingSearchEntry> Entries { get; } =
     [
-        // General — composed leaves. Tag stamped by the composer.
         new SettingSearchEntry
         {
             LabelKey = "LlmEnableCard",
@@ -44,14 +39,12 @@ public static class SettingsSearch
             Keywords = ["server", "host", "api", "address"],
         },
 
-        // Active profile — bespoke card. Tag hand-authored in LlmActiveProfileSection.
         new SettingSearchEntry
         {
             LabelKey = "LlmActiveProfileCard",
             Keywords = ["profile", "rewrite", "default"],
         },
 
-        // Profiles — runtime ItemsRepeater, one section entry.
         new SettingSearchEntry
         {
             LabelKey = "LlmProfilesSection",
@@ -59,7 +52,6 @@ public static class SettingsSearch
             Keywords = ["preset", "system prompt", "temperature", "persona"],
         },
 
-        // Models — code-behind-generated cards, one section entry.
         new SettingSearchEntry
         {
             LabelKey = "LlmModelsSection",

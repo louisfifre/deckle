@@ -1,47 +1,18 @@
-"""Source Voxtral via le binaire ``llama-mtmd-cli`` (stack Vulkan).
+"""Voxtral through ``llama-mtmd-cli`` (llama.cpp, Vulkan), a GGUF plus its
+audio ``mmproj``.
 
-Wrapper subprocess autour de ``llama-mtmd-cli.exe`` — le CLI multimodal
-de ``llama.cpp`` qui charge un GGUF Voxtral et son ``mmproj`` audio,
-puis traite un fichier audio + un prompt textuel pour produire une
-transcription. C'est la voie qui a été validée perf en session
-2026-05-26 (730 GB/s sur Q4_K_M 24B, 47 tok/s, RTF 0.05 sur sample 12s).
+A subprocess, because llama.cpp offers no stable multimodal Python binding
+for libmtmd; the CLI is the stable surface. The isolated process also lets
+the bench survive a Voxtral crash (OOM, Vulkan segfault) as an ``ok=False``
+row.
 
-Pourquoi un wrapper subprocess et pas la lib Python directe : ``llama.cpp``
-n'expose pas de binding Python multimodal stable (pas d'équivalent à
-``llama-cpp-python`` pour libmtmd à date). Le CLI est la surface stable.
-Side-effect appréciable : process isolé → si Voxtral plante (OOM,
-segfault Vulkan), le bench survit avec un row ``ok=False`` au lieu de
-mourir.
+The default GGUF is a Q4_K_M, for smoke tests of the llama.cpp/Vulkan stack
+only: Q4 is neither a quality validation nor a shipping candidate. A non-Q4
+model passed explicitly gets the source's normal identity.
 
-Le GGUF par défaut est le Q4_K_M réellement présent sur la machine. Il
-sert uniquement aux smoke tests de la stack llama.cpp/Vulkan : Q4 n'est
-pas une validation qualité ni un candidat de livraison. Un modèle non-Q4
-fourni explicitement reprend l'identité normale de la source.
-
-Le contrat ``Source`` est respecté. La méthode ``transcribe()`` accepte
-deux prompts via kwargs :
-  - ``prompt`` : l'instruction utilisateur transmise via ``--prompt``.
-  - ``system_prompt`` : système Mistral V7 transmis via
-    ``--system-prompt`` (optionnel ; ``None`` => pas de ``--system-prompt``
-    sur la ligne de commande). Ce param est documenté dans le contrat
-    ``Source`` comme kwarg optionnel — les sources qui ne le supportent
-    pas l'ignorent.
-
-Paramètres figés (cohérents avec ``perf-cap/session-2026-05-26-prompts.ps1``
-qui a validé la stack) : ``--n-gpu-layers 99`` (tous les layers sur GPU
-Vulkan), ``--ctx-size 4096`` (large marge vs les ~1320 tokens max
-attendus à 330s × 4), ``--temp 0.0`` (déterminisme pour reproductibilité
-bench). Le ``--n-predict`` est adaptatif : ``max(128, ceil(audio_s * 4))``
-pour absorber les longs sans tronquer.
-
-Extraction de la transcription : stdout pure (le CLI envoie ses logs
-sur stderr). Strip ANSI au passage. Le compte de tokens générés est
-extrait du stderr via parsing de la ligne ``eval time = ... ms / N
-tokens / ...`` si présente — sinon on retourne ``-1``.
-
-Référence :
-  - ``perf-cap/session-2026-05-26-prompts.ps1`` (régimes T1-T6 testés)
-  - Brief session 2026-05-26 (validation perf Q4_K_M)
+``system_prompt`` is an extra keyword the base ``Source`` lacks; ``None``
+leaves ``--system-prompt`` off the command line. ``--n-gpu-layers 99`` puts
+every layer on the GPU. The CLI logs on stderr, so stdout is the transcript.
 """
 
 from __future__ import annotations
@@ -57,12 +28,10 @@ from typing import Any, Callable
 from ._base import Source, Transcription
 
 
-# Markers de chemins Unix-y à retirer du PATH avant de lancer le binaire.
-# Sous git-bash/MinGW sur Windows, le PATH contient des dossiers qui
-# exposent des DLL ABI-incompatibles avec les binaires MSVC : le loader
-# Windows pioche dans l'une d'elles et le process se termine avec
-# ``STATUS_ENTRYPOINT_NOT_FOUND`` (0xC0000139) avant d'imprimer quoi
-# que ce soit. Même pathologie que ``whisper_cpp.py``.
+# Under git-bash or MinGW, PATH holds folders whose DLLs are ABI-incompatible
+# with MSVC binaries: the Windows loader picks one and the process dies with
+# ``STATUS_ENTRYPOINT_NOT_FOUND`` (0xC0000139) before printing anything.
+# These folders are dropped from PATH before the launch.
 _UNIX_PATH_MARKERS = (
     "\\mingw64\\", "\\mingw32\\", "\\msys64\\", "\\msys2\\",
     "\\usr\\bin", "\\usr\\local\\bin",
@@ -73,12 +42,9 @@ from lib import paths
 
 
 VOXTRAL_DIR = paths.MODELS_DIR / "voxtral"
-"""ASR-local convention for Voxtral GGUF + mmproj files."""
 
 
 class VoxtralLlamacppSource(Source):
-    """Voxtral via ``llama-mtmd-cli`` (Vulkan)."""
-
     name = "voxtral-llamacpp"
     label = "Voxtral via llama-mtmd-cli (Vulkan)"
 
@@ -94,9 +60,6 @@ class VoxtralLlamacppSource(Source):
         n_predict_floor: int = 128,
         n_predict_per_audio_s: float = 4.0,
     ) -> None:
-        # Paths centralisés via benchmark/lib/paths.py — les GGUF Voxtral
-        # vivent sous D:\models\llm\voxtral\ par défaut.
-        # Override par kwarg, sinon par env var, sinon défaut paths.
         self._binary = Path(binary or os.environ.get(
             "DECKLE_LLAMA_MTMD_CLI",
             r"D:\workspace\llama.cpp\build\bin\llama-mtmd-cli.exe"))
@@ -127,7 +90,7 @@ class VoxtralLlamacppSource(Source):
         self.n_predict_floor       = n_predict_floor
         self.n_predict_per_audio_s = n_predict_per_audio_s
 
-    # ── Interface Source ───────────────────────────────────────────────
+    # ── Source interface ───────────────────────────────────────────────
 
     def transcribe(
         self,
@@ -211,7 +174,7 @@ class VoxtralLlamacppSource(Source):
         )
 
 
-# ── Helpers libres ────────────────────────────────────────────────────
+# ── Helpers ───────────────────────────────────────────────────────────
 
 _ANSI_RE = re.compile(r"\x1B\[[0-?]*[ -/]*[@-~]")
 
@@ -226,10 +189,8 @@ def _strip_ansi(s: str) -> str:
     return _ANSI_RE.sub("", s)
 
 
-# llama.cpp imprime sur stderr une ligne du style :
+# llama.cpp prints on stderr a line such as
 # ``eval time =    1234.56 ms /   123 tokens (   10.04 ms per token,  99.5 tokens per second)``
-# On capture le compte de tokens ; si non trouvé, -1 (la source ne le
-# rapporte pas, conforme au contrat).
 _EVAL_TOKENS_RE = re.compile(
     r"eval time\s*=\s*[\d.]+\s*ms\s*/\s*(\d+)\s*tokens",
     re.IGNORECASE,
@@ -262,10 +223,6 @@ def _wav_duration_seconds(path: Path) -> float:
 
 
 def _clean_path_env() -> dict[str, str]:
-    """Retire les dossiers Unix-y du PATH avant de lancer le binaire,
-    pour qu'il charge les DLL MSVC et pas celles de MinGW. Pattern
-    identique à ``whisper_cpp._clean_path_env`` (qui résout la même
-    pathologie sur ``whisper-cli.exe``)."""
     env = dict(os.environ)
     path = env.get("PATH", "")
     cleaned = ";".join(

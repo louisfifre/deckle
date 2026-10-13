@@ -5,15 +5,14 @@ namespace Deckle.Audio;
 // ── Compressor ─────────────────────────────────────────────────────────────
 //
 // Feed-forward, soft-knee, log-domain compressor — the textbook design
-// (Reiss & McPherson, "Audio Effects"). One instance, fresh per take.
+// (Reiss & McPherson, "Audio Effects"). One instance, fresh per Process call.
 //
 // Role in the chain: shrink the intra-take dynamic range so a posed,
 // quiet passage and a raised sentence land closer together — the part of
 // the problem that absolute makeup gain alone can't fix. Deliberately
 // gentle (2:1 soft knee, not a broadcast 4:1): compressing hard lifts the
-// inter-word noise floor, and a raised floor is the documented fuel for
-// Whisper's silence hallucinations ("Subtitles made by the Amara.org
-// community", see research--whisper-dynamic-vad-distil-fr).
+// inter-word noise floor, and a raised floor feeds Whisper's silence
+// hallucinations ("Subtitles made by the Amara.org community").
 // The clean fix for silence is the upstream VAD, not aggressive
 // compression here.
 //
@@ -59,7 +58,7 @@ internal sealed class Compressor
         for (int i = 0; i < x.Length; i++)
         {
             double a = Math.Abs(x[i]);
-            // 20·log10(a) == (20/ln10)·ln(a); Log is ~3-5× cheaper than Log10.
+            // 20·log10(a) == (20/ln10)·ln(a); Log is cheaper than Log10.
             double levelDb = a > 1e-9 ? 8.685889638065035 * Math.Log(a) : -180.0;
 
             // Static gain-computer output (target gain reduction, ≤ 0).
@@ -70,7 +69,7 @@ internal sealed class Compressor
             double coef = target < _gainReductionDb ? _attackCoef : _releaseCoef;
             _gainReductionDb = coef * _gainReductionDb + (1.0 - coef) * target;
 
-            // 10^(x/20) == exp(x·ln10/20); Exp is ~3-5× cheaper than Pow.
+            // 10^(x/20) == exp(x·ln10/20); Exp is cheaper than Pow.
             float gain = (float)Math.Exp(_gainReductionDb * 0.11512925464970229);
             x[i] *= gain;
         }

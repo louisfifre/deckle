@@ -139,7 +139,6 @@ public static class KeyValuesReader
             throw Error(startLine, "a quoted string is not closed");
         }
 
-        // A bare token runs until whitespace, a quote or a brace.
         private Token ReadBare()
         {
             int start = _position;

@@ -20,8 +20,6 @@ public class MarkdownBodyTests
         MarkdownBody.SectionEdit edit = MarkdownBody.ReplaceSection(body, "État", "En cours.");
 
         Assert.Equal(MarkdownBody.EditStatus.Replaced, edit.Status);
-        // The heading line stays, its body becomes the new content, and the
-        // « Notes » section is untouched down to the byte.
         Assert.Equal("# Tâche\n\n## État\nEn cours.\n\n## Notes\nrien à signaler", edit.Body);
     }
 
@@ -38,8 +36,6 @@ public class MarkdownBodyTests
     [Fact]
     public void ReplaceSectionAbsorbsDeeperSubHeadingsButStopsAtSameLevel()
     {
-        // Replacing the level-2 « Groupe » must swallow its level-3 child and stop
-        // at the next level-2 heading.
         const string body = "## Groupe\n### enfant\ndétail\n## Suivant\nqueue";
 
         MarkdownBody.SectionEdit edit = MarkdownBody.ReplaceSection(body, "Groupe", "résumé");
@@ -69,7 +65,6 @@ public class MarkdownBodyTests
         MarkdownBody.SectionEdit edit = MarkdownBody.ReplaceSection(body, "ENTROPY_THOLD", "nouveau");
 
         Assert.Equal(MarkdownBody.EditStatus.Replaced, edit.Status);
-        // The escaped heading line is preserved verbatim — only its body changed.
         Assert.Equal("### entropy\\_thold   \nnouveau\n### autre\nz", edit.Body);
     }
 
@@ -101,7 +96,6 @@ public class MarkdownBodyTests
     [Fact]
     public void ReplaceSectionIgnoresNonHeadingHashes()
     {
-        // "#tag" (no space) is not a heading, so it is not a match target.
         const string body = "regular #tag line\n## Vrai\ncorps";
 
         MarkdownBody.SectionEdit edit = MarkdownBody.ReplaceSection(body, "tag", "x");

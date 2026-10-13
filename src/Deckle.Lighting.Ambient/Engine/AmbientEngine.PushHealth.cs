@@ -87,9 +87,6 @@ public sealed partial class AmbientEngine
         _pushFailureMessage = "none";
     }
 
-    // Format the per-light colour set as "id=R,G,B id=R,G,B …" for
-    // the push log. Short enough to fit on one line for 3-5 lamps ;
-    // longer setups will wrap but stay readable.
     private static string FormatPushedColors(Dictionary<string, LightColor> pushed)
     {
         var sb = new System.Text.StringBuilder(pushed.Count * 18);

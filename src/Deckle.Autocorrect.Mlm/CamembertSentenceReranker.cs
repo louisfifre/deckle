@@ -6,21 +6,18 @@ namespace Deckle.Autocorrect.Mlm;
 // builds the left/right context from the sentence's other word-forms, masks the
 // slot, and ranks the closed candidate set by fill-mask logit plus a frequency
 // prior. It returns a form only when the top candidate clears a confidence
-// margin over the runner-up — never a bare argmax, the same conservativity the
-// rest of the engine enforces.
+// margin over the runner-up, never a bare argmax.
 //
 // The frequency prior shifts each candidate's score down by its log-frequency
 // deficit against the most frequent candidate, scaled by freqPrior: the common
 // form sits at zero, a rarer one must out-logit it by more than the deficit to
-// win. This is "prefer the frequent form unless the model is really sure" — it
-// stops the model picking the archaic « çà » over the everyday « ça » on the
-// strength of a noisy context, the precision-first leak the real-prose eval
-// surfaced. freqPrior = 0 recovers the pure-logit behaviour.
+// win. It stops the model picking the archaic « çà » over the everyday « ça »
+// on the strength of a noisy context. freqPrior = 0 recovers the pure-logit
+// behaviour.
 //
-// v1 scope: candidates whose surface form is a SINGLE leading piece (the
-// high-frequency function-word ambiguities — a/à, ou/où, du/dû…). If any
-// candidate tokenizes to multiple pieces, the reranker abstains (returns null),
-// leaving that slot to the gate — a multi-token PLL path is a later refinement.
+// Only candidates whose surface form is a SINGLE leading piece are scored (the
+// function-word ambiguities: a/à, ou/où, du/dû…). If any candidate tokenizes to
+// several pieces, the reranker abstains and the slot stays with the gate.
 internal sealed class CamembertSentenceReranker : ISentenceReranker, IDisposable
 {
     // Frequency floor (ppm) so the log of a form absent from the lexicon stays
@@ -40,7 +37,6 @@ internal sealed class CamembertSentenceReranker : ISentenceReranker, IDisposable
 
     public RerankOutcome Rerank(IReadOnlyList<string> sentence, int slotIndex, IReadOnlyList<AccentVariant> candidates)
     {
-        // Each candidate must be a single leading piece, else abstain.
         var ids = new int[candidates.Count];
         for (int k = 0; k < candidates.Count; k++)
         {
@@ -56,8 +52,6 @@ internal sealed class CamembertSentenceReranker : ISentenceReranker, IDisposable
 
         float[] logits = _scorer.MaskLogits(left, right);
 
-        // The frequency prior is measured against the most frequent candidate,
-        // so that form carries no penalty and rarer ones are pulled down.
         double logFreqMax = double.NegativeInfinity;
         for (int k = 0; k < candidates.Count; k++)
             logFreqMax = Math.Max(logFreqMax, Math.Log(Math.Max(candidates[k].FrequencyPerMillion, FreqFloor)));

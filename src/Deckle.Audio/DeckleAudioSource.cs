@@ -3,29 +3,11 @@ using Deckle.Diagnostics;
 
 namespace Deckle.Audio;
 
-// Audio module provider. Covers microphone capture (waveIn loop, low-audio
-// detection, capture lag, duration cap), per-recording microphone telemetry
-// summary (14-field structured payload), and module settings persistence.
+// Audio module provider: microphone capture, speaker render, audio-file
+// decode, per-recording microphone telemetry and module settings persistence.
 //
-// Singleton statique, instanciation thread-safe via `static readonly`.
-// The ETW manifest is self-describing (inherited from DeckleEventSource);
 // snake_case parameter names directly become JSON keys in the payload emitted
 // by JsonlSink.
-//
-// Naming conventions for this provider:
-//   - Concise milestones (capitalized, Informational level) → past-tense verb
-//     suffix: RecordingStarted, RecordingCompleted.
-//   - Structured Verbose mirrors → mirrored -Started / -Completed suffix:
-//     CaptureStarted, CaptureCompleted.
-//   - Structured payload (heartbeat) → -Recorded suffix:
-//     MicrophoneTelemetryRecorded.
-//   - Anomalies → past-tense condition name:
-//     EmptyBufferReceived, LowAudioDetected, CaptureLagDetected,
-//     DurationCapReached, MicrophoneOpenFailed,
-//     MicrophoneTelemetryEmpty.
-//   - Module settings persistence → Settings- prefix:
-//     SettingsLoaded, SettingsLoadComplete, SettingsLoadWarning,
-//     SettingsLoadError.
 [EventSource(Name = "Deckle-Audio")]
 public sealed class DeckleAudioSource : DeckleEventSource
 {
@@ -33,7 +15,7 @@ public sealed class DeckleAudioSource : DeckleEventSource
 
     private DeckleAudioSource() { }
 
-    // ── EventIds: sequential from 1, never reused ───────────────────────
+    // ── EventIds: sequential from 1, never reused (public in the ETW manifest)
     public const int EvtRecordingStarted          = 1;
     public const int EvtCaptureStarted            = 2;
     public const int EvtEmptyBufferReceived       = 3;
@@ -50,9 +32,6 @@ public sealed class DeckleAudioSource : DeckleEventSource
     public const int EvtSettingsLoadComplete      = 14;
     public const int EvtSettingsLoadWarning       = 15;
     public const int EvtSettingsLoadError         = 16;
-    // Milestones keep their original id; the Verbose mirrors added for the
-    // Verbose/Info separation take fresh ids 17-23 appended at the end of the
-    // sequence. IDs are public in the ETW manifest; never reuse an id.
     public const int EvtRecordingCompletedDetail  = 17;
     public const int EvtEmptyBufferReceivedDetail = 18;
     public const int EvtLowAudioDetectedDetail    = 19;
@@ -60,12 +39,8 @@ public sealed class DeckleAudioSource : DeckleEventSource
     public const int EvtDurationCapReachedDetail  = 21;
     public const int EvtMicrophoneOpenFailedDetail = 22;
     public const int EvtRecordingTailSummaryDetail = 23;
-    // Speaker render (waveOut) — open-failure milestone + verbose mirror.
     public const int EvtSpeakerOpenFailed          = 24;
     public const int EvtSpeakerOpenFailedDetail    = 25;
-    // File transcription — Media Foundation decode of an audio file to 16 kHz
-    // mono float. Milestone + verbose mirror for both the success and the
-    // failure path.
     public const int EvtAudioFileDecoded           = 26;
     public const int EvtAudioFileDecodedDetail     = 27;
     public const int EvtAudioFileDecodeFailed      = 28;
@@ -309,9 +284,8 @@ public sealed class DeckleAudioSource : DeckleEventSource
             WriteEvent(EvtMicrophoneOpenFailedDetail, mmsys_err);
     }
 
-    // Speaker render — the waveOut device could not be opened (no render device,
-    // or an exclusive-mode conflict). Output path of the read-aloud feature;
-    // mirrors the microphone open-failure pair above.
+    // The waveOut device could not be opened (no render device, or an
+    // exclusive-mode conflict).
     [Event(EvtSpeakerOpenFailed,
            Level = EventLevel.Error,
            Keywords = (EventKeywords)(Keywords.Push | Keywords.Lifecycle),
@@ -332,12 +306,8 @@ public sealed class DeckleAudioSource : DeckleEventSource
 
     // ── Audio-file decode (file transcription) ──────────────────────────────
     //
-    // AudioFileDecoder decodes a picked audio file to 16 kHz mono float via
-    // Media Foundation, feeding the same pipeline dictation does. Success is a
-    // past-tense milestone with its Verbose mirror; failure follows
-    // MicrophoneOpenFailed's shape — a milestone plus a mirror carrying the
-    // status and raw HRESULT — but stays Warning, not Error, because a bad file
-    // is an expected user outcome, not a broken device.
+    // The failure milestone is Warning, not Error: a bad file is an expected
+    // user outcome, not a broken device.
 
     [Event(EvtAudioFileDecoded,
            Level = EventLevel.Informational,
@@ -397,10 +367,8 @@ public sealed class DeckleAudioSource : DeckleEventSource
 
     // ── Structured Heartbeat: Microphone Telemetry Payload ──────────────
     //
-    // Remplace TelemetryService.Microphone(MicrophoneTelemetryPayload).
-    // The 14 properties of the legacy POCO record become primitive typed
-    // parameters. EventSource does not accept complex types in signatures, so
-    // the payload is flattened.
+    // EventSource does not accept complex types in signatures, so the
+    // MicrophoneTelemetryPayload is flattened into primitive parameters.
 
     [Event(EvtMicrophoneTelemetryRecorded,
            Level = EventLevel.Verbose,
@@ -432,22 +400,11 @@ public sealed class DeckleAudioSource : DeckleEventSource
 
     // ── Module Settings Persistence ─────────────────────────────────────
     //
-    // The legacy pattern sent these lines through LogSource.Settings with an
-    // "[audio]" prefix written in the message. The new architecture brings
-    // them back to the provider that emits them (DeckleAudioSource is in
-    // Deckle.Audio, and so is SettingsService); the source label becomes AUDIO
-    // through the LogWindow bridge, no longer SETTINGS. The message prefix
-    // disappears because the tag already does the work.
-    //
-    // Exception to the "strict-typed per operation" doctrine. The
-    // JsonSettingsStore<T> delegates in Deckle.Core are Action<string> and call
-    // these 4 methods with a parameterized message; at the delegate call site,
-    // I cannot distinguish "Settings loaded" from "Settings initialized
-    // (defaults)" or "reloaded from disk". This area is therefore typed by
-    // level and keyword, not by operation. The clean redesign comes in wave 4
-    // when SettingsHost / JsonSettingsStore themselves move to a direct
-    // EventSource contract, and these 4 events will then be replaced by their
-    // per-operation equivalents.
+    // Exception to the "strict-typed per operation" doctrine: the
+    // JsonSettingsStore<T> delegates in Deckle.Core are Action<string>, so the
+    // call site cannot tell "Settings loaded" from "Settings initialized
+    // (defaults)" or "reloaded from disk". These 4 events are typed by level
+    // and keyword, not by operation.
 
     [Event(EvtSettingsLoaded,
            Level = EventLevel.Informational,

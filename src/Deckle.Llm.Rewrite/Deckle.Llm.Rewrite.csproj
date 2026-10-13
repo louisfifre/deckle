@@ -1,26 +1,18 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <RootNamespace>Deckle.Llm.Rewrite</RootNamespace>
-    <!-- WinUI XAML compilation : ships LlmPage + 5 sections,
-         LlmOllamaContext + ProfileViewModel (moved from Deckle.Settings
-         in slice C1), the RewriteService rewrite engine, and the LlmSettings
-         POCO + LlmSettingsService — all in the same assembly. -->
     <UseWinUI>true</UseWinUI>
     <!-- Neutral language for the lib's PRI fallback. Mirrors Deckle.App.csproj. -->
     <DefaultLanguage>en-US</DefaultLanguage>
     <!-- Generates the lib's own .pri so x:Uid lookups in LlmPage / sections
-         resolve against the Deckle.Llm.Rewrite/Resources subtree. Same
-         multi-assembly PRI pattern as Deckle.Settings + Deckle.Transcription. -->
+         resolve against the Deckle.Llm.Rewrite/Resources subtree. -->
     <EnableMsixTooling>true</EnableMsixTooling>
   </PropertyGroup>
 
   <ItemGroup>
-    <!-- Versions aligned on Deckle.App.csproj. -->
     <PackageReference Include="Microsoft.WindowsAppSDK" />
     <PackageReference Include="Microsoft.Windows.SDK.BuildTools" />
-    <!-- MVVM Toolkit — [ObservableProperty] in ProfileViewModel. -->
     <PackageReference Include="CommunityToolkit.Mvvm" />
-    <!-- SettingsCard / SettingsExpander — LlmPage and sections canonical layout. -->
     <PackageReference Include="CommunityToolkit.WinUI.Controls.SettingsControls" />
   </ItemGroup>
 

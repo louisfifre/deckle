@@ -7,34 +7,15 @@ namespace Deckle.Lighting;
 // bridge's edge-projection for out-of-gamut points. The brightness
 // part deliberately doesn't follow the developer guide.
 //
-// Why we don't use Y for brightness. The "natural" approach (Y * 254
-// from the same RGB→XYZ transform) is photometrically correct but
-// counter-intuitive in practice : pure blue (0,0,255) has a luminance
-// Y ≈ 0.047, so the bridge would receive bri=12 — barely above off.
-// Pure red is bri=72, pure green bri=170, pure white bri=254. The
-// user clicking a colour swatch expects "this colour at full power",
-// not "the physically faithful luminance of this colour at sRGB
-// 100 %". The brightness/colour decoupling is the right model :
-// chromaticity says what colour, brightness says how much of it.
-// For the ambient pipeline that follows, the brightness will come
-// from the source image's average luminance (computed upstream),
-// not from the colour push itself.
+// Why we don't use Y for brightness. Y * 254 from the same transform is
+// photometrically correct but sends pure blue at bri=12, barely above
+// off. Chromaticity says what colour, brightness says how much of it:
+// brightness is max(R, G, B), so a saturated colour reaches bri=254
+// whatever its hue.
 //
-// Pipeline.
-//   1. Normalise R/G/B from 0..255 to 0..1.
-//   2. Undo the sRGB gamma curve to get linear-light RGB.
-//   3. Multiply by the Wide Gamut RGB→XYZ matrix (D65 illuminant)
-//      published by Philips for the Hue colour space.
-//   4. Project (X, Y, Z) to (x, y) chromaticity via
-//      x = X / (X+Y+Z), y = Y / (X+Y+Z).
-//   5. Clip (x, y) to the lamp's Gamut C triangle via nearest-edge
-//      projection — see ClipToGamutC.
-//   6. Brightness = max(R, G, B) / 255 * 254, clamped to 1..254.
-//      Saturated colours map to bri=254 regardless of hue.
-//
-// Edge case : pure black (0, 0, 0) returns (0, 0) for xy and
-// brightness 0 so the caller knows to send `on:false` instead of
-// pushing a degenerate xy value.
+// Pure black (0, 0, 0) returns (0, 0) for xy and brightness 0 so the
+// caller knows to send `on:false` instead of pushing a degenerate xy
+// value.
 internal static class HueColorMath
 {
     public static (HueXy Xy, byte Brightness) RgbToHueXyBri(LightColor c)
@@ -63,10 +44,7 @@ internal static class HueColorMath
 
         HueXy clipped = ClipToGamutC(new HueXy(xc, yc));
 
-        // Brightness from the dominant sRGB channel — see class
-        // header for the rationale (Y-luminance would gimp the
-        // pure-colour swatches). Floor of 1 keeps the lamp lit ;
-        // pure black is handled by the early-out above.
+        // Floor of 1 keeps the lamp lit; pure black took the early-out above.
         int maxByte = Math.Max(c.R, Math.Max(c.G, c.B));
         byte brightness = (byte)Math.Clamp(
             (int)Math.Round(maxByte * 254.0 / 255.0), 1, 254);
@@ -81,26 +59,15 @@ internal static class HueColorMath
 
     // Gamut C corners (Philips Hue Play / Iris / E14 / Lightstrip Plus
     // gen 2+). Published in the Hue developer docs as the chromaticity
-    // primaries the lamp can physically reach. Points outside this
-    // triangle in xy CIE 1931 get projected by the bridge onto the
-    // nearest edge — for deep blues just outside the blue corner (VS
-    // Code Night Owl #011627 lands at xy ≈ 0.150, 0.203), the bridge's
-    // projection ends up on the B-G edge where x ≈ 0.15 mixes high
-    // green / low blue, rendered as turquoise. Doing the clip
-    // client-side via nearest-edge projection keeps the deep blue
-    // saturated at the blue corner instead.
-    //
-    // Alternative clips such as projection toward D65 or sigmoid hull
-    // compression were rejected because they desaturate the blue corner.
+    // primaries the lamp can physically reach. The bridge's own handling
+    // of a deep blue just outside the blue corner lands on the B-G edge
+    // and renders turquoise; the client-side nearest-edge clip keeps the
+    // blue saturated at the blue corner. Projection toward D65 or sigmoid
+    // hull compression would desaturate that corner.
     private const double GamutCRedX   = 0.6915, GamutCRedY   = 0.3083;
     private const double GamutCGreenX = 0.17,   GamutCGreenY = 0.7;
     private const double GamutCBlueX  = 0.1532, GamutCBlueY  = 0.0475;
 
-    // Nearest-point-on-triangle projection in xy CIE 1931. If the
-    // input lies inside the Gamut C triangle, identity. Otherwise
-    // project onto each of the three edges with parametric clamp
-    // t ∈ [0, 1] and return the closest of the three projections by
-    // euclidean distance squared.
     internal static HueXy ClipToGamutC(HueXy xy)
     {
         double px = xy.X, py = xy.Y;
@@ -121,11 +88,8 @@ internal static class HueColorMath
         return new HueXy(p3.x, p3.y);
     }
 
-    // Inside-triangle test via the sign of the three edge cross
-    // products. If the point sits on the same side of every edge
-    // (all signs ≥ 0 or all ≤ 0), it's inside. Edges and degenerate
-    // colinear points (sign == 0) are treated as inside, which is the
-    // identity-preserving choice on the boundary.
+    // A point on an edge (sign == 0) counts as inside, so the clip leaves
+    // boundary points unchanged.
     private static bool IsInsideGamutC(double px, double py)
     {
         double d1 = EdgeSign(px, py, GamutCRedX,   GamutCRedY,   GamutCGreenX, GamutCGreenY);
@@ -158,6 +122,4 @@ internal static class HueColorMath
     }
 }
 
-// CIE 1931 xy chromaticity coordinates. Internal-only — the Hue API
-// is the only consumer for now ; downstream drivers stick to sRGB.
 internal readonly record struct HueXy(double X, double Y);

@@ -21,10 +21,8 @@ public sealed record HistoricalSlotRerankRequest(
     VerifiedCaretSentence? VerifiedSentence = null)
     : RerankRequest(Epoch, VerifiedSentence);
 
-// The reranker's verdict for one slot: the full outcome (chosen form plus the
-// per-candidate scores and margin for the decision telemetry), tagged with the
-// buffer index and epoch it was computed against. The candidate set includes the
-// typed original when the slot came from a commit-stage diacritics correction.
+// Tagged with the epoch it was computed against. SlotIndex is window-relative,
+// and -1 for a whole-sentence verdict.
 public readonly record struct RerankResult(int SlotIndex, int Epoch, RerankOutcome Outcome);
 
 // The threading boundary between the input-thread coordinator and the heavy ONNX
@@ -38,8 +36,6 @@ public interface IRerankLane : IDisposable
     void Submit(RerankRequest request);
 }
 
-// ── SentenceRerankCoordinator ────────────────────────────────────────────────
-//
 // The live second stage, owning a rolling model of the sentence the user is
 // typing. Everything here runs on the engine's single input thread — the buffer,
 // the epoch, the in-flight flag — so it is lock-free by the same rule as the
@@ -94,9 +90,6 @@ public sealed class SentenceRerankCoordinator : IDisposable
     private readonly Func<string> _currentPartial;
     private readonly Action<string>? _realignLastCommitted;
     private readonly Action<CorrectionDecision, InjectionPlan>? _onApplied;
-    // Gate for the per-word decision telemetry: when it returns true the deferred
-    // reranker verdict is emitted to the autocorrect.decisions dataset (scores and
-    // margin included). Null or false = no rerank line, no rendering cost.
     private readonly Func<bool>? _decisionTelemetry;
 
     private readonly List<SlotEntry> _buffer = new();
@@ -137,8 +130,6 @@ public sealed class SentenceRerankCoordinator : IDisposable
         _decisionTelemetry = decisionTelemetry;
         _lane.ResultSink = ApplyResult;
     }
-
-    // ── Input-thread feed ────────────────────────────────────────────────────
 
     public void OnWordCommitted(string finalForm, char boundary, bool gateLeftLiteral, long wordId = 0) =>
         OnWordCommitted(finalForm, finalForm, boundary, sentenceMayEvaluate: gateLeftLiteral, wordId);
@@ -365,8 +356,6 @@ public sealed class SentenceRerankCoordinator : IDisposable
         _wholeSentenceAttempted = false;
     }
 
-    // ── Submit / apply (input thread) ────────────────────────────────────────
-
     private void TrySubmitNext()
     {
         if (_inFlight || _disposed) return;
@@ -397,7 +386,7 @@ public sealed class SentenceRerankCoordinator : IDisposable
             }
 
             // Global mode is one transaction or no transaction. An empty closed
-            // set cannot silently reopen the former per-slot cascade.
+            // set cannot silently fall back to the per-slot cascade.
             ResolveReadySlots();
             return;
         }
@@ -571,8 +560,6 @@ public sealed class SentenceRerankCoordinator : IDisposable
         string verdict;
         if (string.Equals(target, slot.Form, StringComparison.Ordinal))
         {
-            // Nothing to write: the model declined (abstain) or affirmed the typed
-            // form (equal). Either way the slot stays as the user left it.
             verdict = outcome.Chosen is null ? Outcome.Abstain : Outcome.Equal;
         }
         else
@@ -670,9 +657,6 @@ public sealed class SentenceRerankCoordinator : IDisposable
         EmitRerankDecision(slot.WordId, word, appliedVerdict, outcome);
     }
 
-    // The rerank line of the decision telemetry: the reranker's verdict for this
-    // slot with its per-candidate scores and margin, joined to the synchronous
-    // decision by the word id. Gated by the opt-in toggle — no rendering when off.
     private void EmitRerankDecision(long id, string word, string verdict, RerankOutcome outcome)
     {
         if (_decisionTelemetry?.Invoke() != true) return;
@@ -706,9 +690,7 @@ public sealed class SentenceRerankCoordinator : IDisposable
     // Rewrites one slot in place by the minimal keystroke diff. Reconstructs the
     // on-screen tail from the buffer's own forms and appends the live partial word
     // identically on both sides, so InjectionPlan preserves it and the backspace
-    // count is right even mid-word. Bounded by the tail length (a few words).
-    // Reports whether the rewrite reached the surface, expired its bounded tail,
-    // was a no-op, or met a refused (UIPI-blocked) send.
+    // count is right even mid-word. Bounded by MaxRewriteTailChars.
     private SlotRewriteResult ApplySlotRewrite(
         int slotIndex,
         string newForm,
@@ -804,8 +786,8 @@ public sealed class SentenceRerankCoordinator : IDisposable
         foreach (SlotEntry slot in slots)
         {
             // Curly apostrophes are screen-exact but the candidate lexicons are
-            // normalized to ASCII. Leave such tokens untouched in the first
-            // recovery version instead of silently changing typography.
+            // normalized to ASCII. Leave such tokens untouched rather than
+            // silently change typography.
             if (slot.Form.Contains('’')) continue;
             IReadOnlyList<AccentVariant> candidates =
                 _probe.SentenceCandidates(slot.Form, includeTypedLiteral: true);
@@ -844,10 +826,8 @@ public sealed class SentenceRerankCoordinator : IDisposable
         _lane.ResultSink = null;
     }
 
-    // ── Helpers ──────────────────────────────────────────────────────────────
-
     // The closed vocabulary for the rerank verdict log — one spelling, one place,
-    // so a grep on an outcome finds every occurrence (logging doctrine).
+    // so a grep on an outcome finds every occurrence.
     private static class Outcome
     {
         public const string Applied  = "applied";
@@ -873,8 +853,6 @@ public sealed class SentenceRerankCoordinator : IDisposable
         public bool Ready;
         public int ContextStart;
         public int ContextEnd;
-        // The engine's per-word id, carried so the deferred reranker verdict joins
-        // the synchronous decision record on the same id in the decision telemetry.
         public long WordId;
     }
 

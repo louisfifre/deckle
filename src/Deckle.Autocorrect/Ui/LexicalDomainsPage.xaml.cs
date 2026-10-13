@@ -8,12 +8,6 @@ namespace Deckle.Autocorrect;
 // Child page of the Autocorrect family — the lexical domains. Resolved by the
 // Settings NavigationView via the item Tag
 // "Deckle.Autocorrect.LexicalDomainsPage, Deckle.Autocorrect".
-//
-// One bespoke surface, a live catalogue no composer kind models: the domain tabs
-// with their language switches. This code-behind owns what presentation it needs
-// — filling the SelectorBar from the catalogue, mirroring its selection into the
-// ViewModel, and collapsing the whole section while the master switch is off
-// (mask-never-grey), with one line in its place.
 public sealed partial class LexicalDomainsPage : Page
 {
     public LexicalDomainsViewModel ViewModel { get; } = new();
@@ -27,13 +21,11 @@ public sealed partial class LexicalDomainsPage : Page
         RefreshGate();
     }
 
-    // The tabs are a runtime-enumerated catalogue (LexicalDomain.Shipped), so
-    // the items are built here rather than declared: SelectorBar has no
-    // ItemsSource. The first is selected on load, which is also what the
-    // control's selection-follows-focus behaviour expects — a bar with nothing
-    // selected would leave the page's whole domain block empty. Selecting it here
-    // is also what gives the ViewModel its first SelectedDomain: the bar owns the
-    // selection outright, so nothing seeds it from the other side.
+    // SelectorBar has no ItemsSource, so the tabs are built here from the
+    // catalogue. The first is selected on load: with the control's
+    // selection-follows-focus behaviour, a bar with nothing selected would leave
+    // the whole domain block empty. The bar owns the selection, so this is also
+    // what gives the ViewModel its first SelectedDomain.
     private void BuildDomainSelector()
     {
         foreach (LexicalDomainTab domain in ViewModel.Domains)

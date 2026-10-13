@@ -62,8 +62,7 @@ public sealed class OnnxModelSession : IDisposable
     // VAD calls this once per 512-sample window) hands in reused destination
     // buffers, so the run produces no per-window garbage: each output is read
     // straight from the runtime's DenseTensor buffer (no ToArray copy) and copied
-    // into destinations[i], for the shorter of the two lengths. OnnxRuntime types
-    // stay inside this module.
+    // into destinations[i], for the shorter of the two lengths.
     public void Run(IReadOnlyList<OnnxTensorInput> inputs, IReadOnlyList<float[]> destinations)
     {
         var values = new NamedOnnxValue[inputs.Count];

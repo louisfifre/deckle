@@ -3,24 +3,17 @@ using Deckle.Notifications;
 
 namespace Deckle.Playground;
 
-// Playground's slice of the notification catalogue. Each Deckle module owns
-// the descriptors for the user messages it can raise; the App indexes them
-// centrally at boot via NotificationDispatcher.Instance.Catalog.Register.
-// This is the Playground's manual test surface: one interactive descriptor
-// exercised by HomePage's "Send test prompt" button so the toast channel can
-// be validated by hand (buttons + reply box) before any business module
-// depends on it.
+// Playground's slice of the notification catalogue: one interactive
+// descriptor, fired by HomePage's "Send test prompt" button to check the
+// toast channel (buttons and reply box) by hand.
 //
-// The descriptor Id is a public contract from day one (point.snake_case,
-// stable across renames so user opt-outs and audit traces survive). The
+// The descriptor Id is a public contract: keep it stable across renames. The
 // Title/Body/label/placeholder strings are .resw keys, resolved by the
-// channel through Deckle.Catalog.Loc — never hardcoded here.
+// channel through Deckle.Catalog.Loc, never hardcoded here.
 public static class PlaygroundNotifications
 {
-    // Interactive enrollment-style prompt: two actions plus a free-text
-    // reply. Severity Info — it carries no failure, it's a manual probe.
-    // Channel Toast is a preference (the immediate need is native Windows 11
-    // interactive toasts), not a command; the dispatcher has the final say.
+    // Channel Toast is a preference, not a command; the dispatcher has the
+    // final say.
     public static readonly NotificationDescriptor TestPrompt = new(
         Id: "playground.test_prompt",
         Category: "playground",
@@ -35,8 +28,6 @@ public static class PlaygroundNotifications
         },
         TextInput: new NotificationTextInput("replyBox", "PlaygroundNotifications_TestPrompt_Placeholder"));
 
-    // The Playground's contribution to the central catalogue. App registers
-    // this list at boot; a future Settings "Notifications" page enumerates
-    // the global index built from every module's All.
+    // Registered by the App at boot.
     public static IReadOnlyList<NotificationDescriptor> All { get; } = new[] { TestPrompt };
 }

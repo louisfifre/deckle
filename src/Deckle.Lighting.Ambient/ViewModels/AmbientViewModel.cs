@@ -23,9 +23,8 @@ namespace Deckle.Lighting.Ambient;
 // values back. The floor, the zones, the capture rate and the pipeline
 // shape are outside the presets and never touch the selection.
 //
-// Runtime state owned by a page (capture service, frame sampler, Hue REST
-// output, preview cells, light-zone rects) is NOT here — its lifetime is tied
-// to the Page instance, not to the persisted settings.
+// Only persisted settings live here : runtime state belongs to the engine
+// and to the controls that draw it.
 public partial class AmbientViewModel : ObservableObject
 {
     private bool _isSyncing;
@@ -64,14 +63,10 @@ public partial class AmbientViewModel : ObservableObject
     [ObservableProperty]
     public partial bool MinBrightnessEnabled { get; set; }
 
-    // Zone-sampling band thickness. Sits alongside UseMultiLight
-    // rather than the tuning knobs : it's a structural setup
-    // value (room/lamp layout, how much of the frame each lamp
-    // summarises) not a per-scene content tuning, so it never touches
-    // the preset selection. The mode picker swaps the active scale on the
-    // engine ; both BorderDepth (share) and BorderCells (count) keep
-    // their last user-set value across mode flips so a round-trip
-    // back to a previous mode lands on the same setting.
+    // Zone-sampling band thickness : a structural setup value (room and lamp
+    // layout), not a per-scene tuning, so it never touches the preset
+    // selection. BorderDepth and BorderCells both keep their last value
+    // across mode flips, so a round-trip lands on the same setting.
     [ObservableProperty]
     public partial BorderThicknessMode BorderMode { get; set; }
 
@@ -379,10 +374,8 @@ public partial class AmbientViewModel : ObservableObject
     // Custom values are deliberately preserved : a reset shouldn't unpair the
     // lights, forget a per-light setup the user built light by light, kill a
     // running pipeline, or lose the values the user can still pick as Custom.
-    // We write straight onto the store and Save() once (rather than going
-    // through the VM setters, which would fire a Save per field and report
-    // each as a hand edit) ; Save() raises Changed, the page's observer
-    // reloads the VM and repaints every slider.
+    // It writes straight onto the store and saves once : the VM setters would
+    // save per field and report each as a hand edit.
     public void ResetDefaults()
     {
         var service = AmbientSettingsService.Instance;

@@ -1,6 +1,6 @@
 """Synthesize French TTS LOCALLY via Orpheus (ONNX-genai, DirectML) + SNAC (ONNX, CPU).
 
-On-doctrine: no online inference, no `transformers` at inference. The 3B Orpheus
+Local only: no online inference, no `transformers` at inference. The 3B Orpheus
 French finetune (canopylabs/3b-fr-ft-research_release) is exported once to
 onnxruntime-genai by the model builder (export-time torch/transformers allowed);
 here we drive it purely through `onnxruntime_genai` (LM on DirectML) and
@@ -70,7 +70,7 @@ CODE_OFFSET = 128266   # first SNAC speech-token id (= 128256 + 10)
 # convolutional context at each interior edge, edge-pad at the extremities.
 WIN_FRAMES = 12
 WIN_SAMPLES = 24576
-SAMPLES_PER_FRAME = WIN_SAMPLES // WIN_FRAMES  # 2048
+SAMPLES_PER_FRAME = WIN_SAMPLES // WIN_FRAMES
 KEEP_MARGIN = 1  # frames of context dropped at each interior window edge
 SR = 24000
 
@@ -81,8 +81,7 @@ VOICES = ["pierre", "amelie", "marie"]
 # voice can actually be judged.
 SIDS = ["01_neutre", "02_explication", "03_emotion", "05_question"]
 
-# Sampling — lower temperature than the 0.6 default for more coherent French
-# (the garbling/hesitation suggests the decode samples drift; tighten it).
+# Below the 0.6 default temperature, for more coherent French.
 TEMPERATURE = 0.4
 TOP_P = 0.9
 TOP_K = 50
@@ -181,8 +180,8 @@ def decode_codes(session: ort.InferenceSession, codes: list[int]) -> np.ndarray:
 
     Window = 12 frames, hop = 10, keep the centre [2048:22528] with a 1-frame
     margin of convolutional context discarded at each interior edge; the first
-    window keeps its real start, the last its real end. Decoding disjoint blocks
-    (the previous approach) lost edge context and garbled everything past ~1 s.
+    window keeps its real start, the last its real end. Disjoint blocks lose
+    the edge context and garble everything past the first window.
     """
     n_frames = len(codes) // 7
     if n_frames == 0:
@@ -193,7 +192,7 @@ def decode_codes(session: ort.InferenceSession, codes: list[int]) -> np.ndarray:
     if n_frames <= WIN_FRAMES:  # fits a single window
         return _decode_window(session, frames, 0, n_frames)[: n_frames * spf]
 
-    hop = WIN_FRAMES - 2 * KEEP_MARGIN  # 10
+    hop = WIN_FRAMES - 2 * KEEP_MARGIN
     out: list[np.ndarray] = []
     s = 0
     first = True

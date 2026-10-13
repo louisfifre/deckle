@@ -1,7 +1,7 @@
 namespace Deckle.Autocorrect;
 
 // Turns the closed-sentence scorer into the explicit KEEP-vs-proposal decision
-// the future sentence stage needs. The original is always candidate zero: a
+// a whole-sentence proposal needs. The original is always candidate zero: a
 // proposal is accepted only when the scorer chooses it past its own calibrated
 // margin. A plain top-1 mismatch is never enough to rewrite what the user typed.
 public sealed class SentenceProposalVerifier

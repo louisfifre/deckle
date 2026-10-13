@@ -3,15 +3,12 @@ using Deckle.Presets;
 namespace Deckle.Transcription;
 
 // The built-in cut presets, named by effect: how patient the cut is with a
-// pause. The values are starting points, to be tuned by testing.
+// pause.
 //
 // The shipped defaults ARE Balanced (read from the POCO initializers, never
 // copied literals), so a fresh install shows a preset rather than Custom.
-// Custom is a stored selection, not a derived one (Deckle.Presets v2). The
-// derivation happens once: on the first load of a file written before the
-// selection existed, the family compares the stored curve to the presets, then
-// stores the preset it equals, or Custom with those values kept. After that
-// the stored selection is the truth.
+// Custom is a stored selection, not a derived one: see
+// EnergySegmenterSettings.CutPreset for the one-time derivation.
 public static class CutPresets
 {
     public const string Patient = "patient";

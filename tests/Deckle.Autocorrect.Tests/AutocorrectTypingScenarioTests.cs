@@ -5,7 +5,7 @@ using Xunit;
 namespace Deckle.Autocorrect.Tests;
 
 // Whole-flow keyboard scenarios built from phrases and fault classes observed in
-// Louis's own correction telemetry. They drive physical keys through the real
+// real correction telemetry. They drive physical keys through the real
 // decoder/tracker/policy chain and assert the resulting text surface, so a test
 // fails on a wrong decision as well as on a malformed injection tail.
 [Trait("Category", "integration")]

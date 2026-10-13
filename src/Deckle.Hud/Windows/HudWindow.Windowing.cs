@@ -67,12 +67,8 @@ public sealed partial class HudWindow : Window
         EmitDelayedZOrderState("after_setwindowpos_topmost_50ms", 50, zOrderProbeGeneration, setposOk, setposError);
         EmitDelayedZOrderState("after_setwindowpos_topmost_250ms", 250, zOrderProbeGeneration, setposOk, setposError);
 
-        // Windowing: emitted after MoveAndResize + ShowWindow to capture the
-        // effective post-DWM rect. `anchor` reflects the
-        // Settings.Overlay.Position setting (BottomCenter default, TopCenter
-        // alternative); DPI/work area/horizontal centering wrapping lives in
-        // GetRectPx, but we capture the result rather than the intent to allow
-        // reversal through dpi.
+        // Emitted after the show so the probe captures the effective rect, not
+        // the intent.
         string position = Settings.SettingsService.Instance.Current.Overlay.Position ?? "";
         string anchor = position.StartsWith("Top") ? "TopCenter" : "BottomCenter";
         WindowingProbe.EmitWindowPositioned(_hwnd, "hud", anchor);

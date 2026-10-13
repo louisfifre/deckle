@@ -6,42 +6,17 @@ using Deckle.Core;
 
 namespace Deckle.Transcription.Whisper;
 
-// ── WhisperPInvoke ──────────────────────────────────────────────────────────
+// Whisper.cpp P/Invokes plus the DllImportResolver that loads libwhisper.dll
+// from <UserDataRoot>\native\, not from the application directory. Windows then
+// resolves the ggml-*.dll dependencies from that same directory (directory of
+// the loaded DLL first). The static constructor wires the resolver before any
+// [DllImport] in this class runs.
 //
-// Whisper.cpp P/Invokes plus a managed DllImportResolver that loads
-// libwhisper.dll from <UserDataRoot>\native\ rather than from the application
-// binary directory. Both pieces are Whisp-domain — they leave Deckle.Core
-// unburdened of Whisper-specific knowledge while keeping the resolver wired
-// to THIS assembly so the [DllImport("libwhisper")] attributes below resolve
-// correctly.
+// PInvokeKey MUST match the literal in every [DllImport("libwhisper")]: C#
+// requires a constant literal in the attribute.
 //
-// libwhisper.dll and its transitive ggml-*.dll dependencies live under
-// <UserDataRoot>\native\, NOT alongside the application binary. The
-// initializer wires a managed resolver that loads libwhisper from that
-// directory; Windows then resolves the ggml-*.dll dependencies from the same
-// directory automatically (DLL load order: directory of the loaded DLL first).
-//
-// Runs on first access to any WhisperPInvoke member, before any
-// [DllImport(PInvokeKey)] P/Invoke is executed — guaranteed by the CLR's
-// static-constructor contract.
-//
-// The PInvokeKey constant below MUST stay in sync with the literal in every
-// [DllImport("libwhisper")] attribute. C# requires a constant literal in the
-// attribute, so the duplication is unavoidable — keep PInvokeKey as the
-// documented match-target.
-//
-// Fails closed when NativeDirectory doesn't hold libwhisper.dll: the
-// resolver throws DllNotFoundException rather than returning IntPtr.Zero.
-// Returning Zero would hand control back to the CLR's default search
-// order, which probes the application base directory — silently widening
-// the load surface to a per-user-writable install dir (DLL-planting
-// exposure). The first-run wizard gates on NativeRuntime.IsInstalled()
-// before WhisperBackend is ever constructed, so this throw is a
-// defence-in-depth backstop, not an expected runtime path: by the time
-// any [DllImport("libwhisper")] fires, the entry DLL is guaranteed
-// present in NativeDirectory. The throw only surfaces if that invariant
-// is somehow violated (the gate bypassed) — and then it names the
-// expected path instead of loading an attacker-planted DLL.
+// Startup checks NativeRuntime.IsInstalled() before constructing WhisperBackend,
+// so the resolver's fail-closed throw is a backstop, not an expected path.
 public static class WhisperPInvoke
 {
     private const string PInvokeKey = "libwhisper";
@@ -54,10 +29,8 @@ public static class WhisperPInvoke
 
     private static IntPtr ResolveNativeLibrary(string libraryName, Assembly assembly, DllImportSearchPath? searchPath)
     {
-        // Non-libwhisper names are not ours: return Zero so the CLR resolves
-        // them through its normal search order. Today every [DllImport] in this
-        // assembly targets "libwhisper", so this branch is dead in practice —
-        // it keeps the contract correct for any future DllImport added here.
+        // Other names are not ours: Zero hands them back to the CLR's normal
+        // search order.
         if (libraryName != PInvokeKey) return IntPtr.Zero;
 
         // Fail closed: only ever load libwhisper by its absolute path under
@@ -80,8 +53,6 @@ public static class WhisperPInvoke
 
         return handle;
     }
-
-    // ── libwhisper.dll ────────────────────────────────────────────────────────
 
     [DllImport("libwhisper", CallingConvention = CallingConvention.Cdecl)]
     public static extern IntPtr whisper_context_default_params_by_ref();
@@ -135,15 +106,9 @@ public static class WhisperPInvoke
     [DllImport("libwhisper", CallingConvention = CallingConvention.Cdecl)]
     public static extern void whisper_free(IntPtr ctx);
 
-    // ── whisper_log_set: Global Callback For Internal Logs ───────────────────
-    //
-    // whisper.cpp continuously emits log lines (model loading, decoding start,
-    // GPU metrics, timings, etc.). By default they go to stderr where they are
-    // lost. By wiring a callback, redirect all of it to the LogWindow.
-    //
+    // Without a callback, whisper.cpp's log lines go to stderr and are lost.
     // C signature: void (*)(enum ggml_log_level level, const char *text, void *user_data)
     // ggml_log_level levels: 0=None, 1=Debug, 2=Info, 3=Warn, 4=Error, 5=Cont.
-
     [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
     public delegate void WhisperLogCallback(int level, IntPtr text, IntPtr user_data);
 

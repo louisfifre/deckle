@@ -2,8 +2,6 @@ using Microsoft.Win32;
 
 namespace Deckle.Install;
 
-// ── UninstallEntry ────────────────────────────────────────────────────────────
-//
 // The "Installed apps" / Add-Remove-Programs registration, written under HKCU so
 // it needs no admin — the per-user counterpart of the per-user install folder.
 // The UninstallString points back at the installer copied into the install folder,

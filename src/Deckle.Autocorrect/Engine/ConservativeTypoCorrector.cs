@@ -1,18 +1,14 @@
 namespace Deckle.Autocorrect;
 
-// ── ConservativeTypoCorrector ────────────────────────────────────────────────
-//
 // The physical-error stage: an Android-style spell-fix
 // for a just-committed word that is NOT a French word — a real keyboard typo
 // ("bonjuor" → "bonjour"). It never touches a valid form. Two tiers: a near tier resolves a word one
 // edit away when it is common and clearly dominates any rival; only when nothing
 // sits one edit away does the far tier reach two edits, for bigger faults, held to
 // a stricter length/frequency/dominance bar. Ambiguity, rarity, an identifier
-// shape or a mid-utterance proper noun still leave the literal alone. A wrong
-// correction is taken back through the correction inlay, whose undo writes a
-// permanent suppression (the engine enforces it; this policy only proposes) —
-// until the inlay ships, the only recourse is manual re-editing, so the bars
-// above carry the safety on their own.
+// shape or a mid-utterance proper noun still leave the literal alone. These bars
+// carry the safety on their own: this policy only proposes, and the engine
+// enforces learned suppressions.
 //
 // Candidates come from Norvig's generate-and-test against the French lexicon: a
 // deletion (an extra key), a transposition (two keys swapped), a keyboard-adjacent
@@ -115,7 +111,7 @@ public sealed partial class ConservativeTypoCorrector : ICorrectionPolicy, IAmbi
             return morphological;
 
         // The defining gate: this stage only ever acts on a NON-word. A valid
-        // French form is the diacritics gate's business and was already settled.
+        // French form is the diacritics gate's business.
         if (literalValid)
             return AbstainBoth(trace, morphology, CorrectionTrace.Reasons.ValidFrench);
 
@@ -125,7 +121,6 @@ public sealed partial class ConservativeTypoCorrector : ICorrectionPolicy, IAmbi
         if (!hasSubject)
             morphology?.Abstain(CorrectionTrace.Reasons.NoSubjectPronoun);
 
-        // Near tier: a single edit away — the high-confidence case.
         var near = ValidNeighbours(
             lower, twoEdits: false, CandidateSearchPath.Commit);
         if (near.Count > 0)
@@ -154,8 +149,6 @@ public sealed partial class ConservativeTypoCorrector : ICorrectionPolicy, IAmbi
                 typo, CorrectionTrace.Reasons.TypoNear);
         }
 
-        // Far tier: two edits away, for a bigger fault — only when nothing sits
-        // one edit away, on a long-enough word, and held to a stricter bar.
         if (_options.MaxEditDistance >= 2
             && lower.Length >= _options.Edits2MinWordLength
             && lower.Length <= Edits2MaxWordLength)
@@ -186,8 +179,6 @@ public sealed partial class ConservativeTypoCorrector : ICorrectionPolicy, IAmbi
             CorrectionTrace.Reasons.NoNeighbour);
     }
 
-    // Records the abstain reason onto the stage trace (when present) and leaves
-    // the literal untouched.
     private static CorrectionDecision? Abstain(StageTrace? st, string reason)
     {
         st?.Abstain(reason);
@@ -210,10 +201,6 @@ public sealed partial class ConservativeTypoCorrector : ICorrectionPolicy, IAmbi
 
     private readonly record struct Candidate(string Form, double Frequency);
 
-    // Applies a tier's frequency floor and dominance ratio to the ranked
-    // neighbours, returning the winning correction or null when the evidence is
-    // too weak (a rare best, or a close rival). Records the tier's candidate pool,
-    // its safety gauges and the exit reason onto the stage trace when present.
     private CorrectionDecision? Decide(
         string word, List<Candidate> candidates, double minFrequency, double dominanceRatio,
         StageTrace? st, string fireReason)
@@ -288,11 +275,9 @@ public sealed partial class ConservativeTypoCorrector : ICorrectionPolicy, IAmbi
           .Gauge("dominance_min", dominanceRatio);
     }
 
-    // Valid French words one edit away (twoEdits=false) or exactly two edits away
-    // (twoEdits=true, composed from two single edits), deduped and ranked
-    // frequency-desc. Each branch is a hashset membership test; the near tier is a
-    // few hundred lookups, the far tier its square — bounded by Edits2MaxWordLength
-    // and only ever run when the near tier came up empty.
+    // The far tier composes two single edits, so its cost is the square of the
+    // near tier's: bounded by Edits2MaxWordLength and run only when the near tier
+    // came up empty.
     private List<Candidate> ValidNeighbours(
         string w,
         bool twoEdits,
@@ -361,9 +346,6 @@ public sealed partial class ConservativeTypoCorrector : ICorrectionPolicy, IAmbi
         return found;
     }
 
-    // The single-edit neighbourhood of a token: a deletion, an adjacent
-    // transposition, a keyboard-adjacent substitution, or an a-z insertion.
-    // Yields raw strings — membership against the lexicon is the caller's test.
     private static IEnumerable<string> Edits1(string w)
     {
         int n = w.Length;

@@ -1,7 +1,5 @@
 namespace Deckle.Install;
 
-// ── UserEnvironment ───────────────────────────────────────────────────────────
-//
 // Persists the data-root choice as the user-level DECKLE_DATA_ROOT variable the
 // app already honours through AppPaths. Only written when the user picks a folder
 // other than the app's own default — otherwise the app's built-in default stands

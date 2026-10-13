@@ -11,29 +11,23 @@ namespace Deckle.Llm.Rewrite;
 
 // ─── Ollama engine (RAW mode) ────────────────────────────────────────────────
 //
-// Calls /api/generate with raw=true and a client-side pre-formatted prompt.
-// Completely bypasses Ollama's TEMPLATE system because models imported from
-// HuggingFace as GGUF often come with a generic Modelfile
-// (TEMPLATE {{ .Prompt }}), which silently breaks the input format expected
-// by the model — typical symptom: the model produces gibberish, echoes or
-// loops.
-//
-// The template is determined client-side from the model name (family
-// Mistral/Llama/Qwen/Gemma/Phi/ChatML), applied manually, and sent via
-// raw=true — Ollama doesn't touch the prompt.
+// Calls /api/generate with raw=true and a prompt PromptTemplates formats
+// client-side. This bypasses Ollama's TEMPLATE system because models imported
+// from HuggingFace as GGUF often come with a generic Modelfile
+// (TEMPLATE {{ .Prompt }}), which silently breaks the input format the model
+// expects: it then produces gibberish, echoes or loops.
 //
 // Transport only: the profile lookup, the hard cap, and the human-facing
-// failure outcomes (timeout overlay, unavailable overlay) live above the
-// seam in RewriteService. This engine throws and lets the caller decide.
+// failure outcomes live above the seam in RewriteService. This engine throws
+// and lets the caller decide.
 
 public sealed class OllamaEngine : IRewriteEngine
 {
-    // Default HttpClient.Timeout is 100 s — too short for large rewrites
-    // (long transcriptions, big context, CPU-only Ollama). We disable the
-    // built-in timeout; the caller's CancellationToken is the only deadline.
+    // HttpClient's default 100 s timeout is too short for large rewrites (long
+    // transcriptions, big context, CPU-only Ollama). The caller's
+    // CancellationToken is the only deadline.
     static readonly HttpClient _http = new() { Timeout = Timeout.InfiniteTimeSpan };
 
-    // /api/ps probe cadence while waiting for /api/generate to return.
     static readonly TimeSpan POLL_INTERVAL = TimeSpan.FromSeconds(60);
 
     static readonly JsonSerializerOptions _jsonOpts = new()
@@ -112,10 +106,6 @@ public sealed class OllamaEngine : IRewriteEngine
             DeckleLlmSource.Log.RewriteCompletedDetail(sw.ElapsedMilliseconds, request.UserText.Length, trimmed.Length, request.Label);
             DeckleLlmSource.Log.RewriteMetrics(FormatMetrics(doc.RootElement));
 
-            // Pull the same Ollama metrics the Verbose line above shows
-            // and lift them up to the caller in ms/tokens. Two lookups of
-            // each field would duplicate the JSON parse cost — done in
-            // ExtractMetrics in one pass.
             var m = ExtractMetrics(doc.RootElement);
             return new RewriteResult(
                 Text:         trimmed,
@@ -129,11 +119,8 @@ public sealed class OllamaEngine : IRewriteEngine
     }
 
     /// <summary>
-    /// Periodically probes Ollama's /api/ps while a /api/generate call is in
-    /// flight. This is admitted technical detail, not a visible incident: the
-    /// terminal RewriteTimeout / RewriteUnavailable events already carry the
-    /// human outcome. Stops cleanly when the request settles or admission is
-    /// disabled while it is running.
+    /// Admitted technical detail, not a visible incident: the terminal
+    /// RewriteTimeout / RewriteUnavailable events carry the human outcome.
     /// </summary>
     static async Task PollOllamaWhileBusy(string endpoint, System.Diagnostics.Stopwatch requestElapsed, CancellationToken ct)
     {
@@ -143,8 +130,8 @@ public sealed class OllamaEngine : IRewriteEngine
         {
             while (await timer.WaitForNextTickAsync(ct))
             {
-                // Admission is live. If the user disables details during a
-                // long rewrite, stop before the next HTTP request and parse.
+                // Admission is live: if the user disables details during a
+                // long rewrite, stop before the next HTTP request.
                 if (!IsProbeDetailEnabled()) return;
 
                 try
@@ -176,9 +163,8 @@ public sealed class OllamaEngine : IRewriteEngine
                     double vramGb = sizeVram / 1e9;
 
                     // `expires_at` is Ollama's keep_alive countdown for the
-                    // resident model. Rendered as "unloads in Xs" to keep it
-                    // distinct from the caller's own deadline — both are
-                    // durations but they mean different things.
+                    // resident model, rendered as "unloads in Xs" to keep it
+                    // distinct from the caller's own deadline.
                     string unloadSuffix = "";
                     if (first.TryGetProperty("expires_at", out var exp) &&
                         exp.ValueKind == JsonValueKind.String &&
@@ -203,9 +189,7 @@ public sealed class OllamaEngine : IRewriteEngine
         catch (OperationCanceledException)
         {
             // Expected: Generate cancels pollDone as soon as the main request
-            // settles. Cross-cutting Cancellation sub-provider: expected
-            // upstream propagation from the finally (`pollDone.Cancel()`).
-            // age_ms reflects elapsed request time when polling stops.
+            // settles.
             DeckleCancellationSource.Log.OperationCancelled(
                 "llm-warmup", "upstream", (int)requestElapsed.ElapsedMilliseconds);
         }
@@ -218,10 +202,6 @@ public sealed class OllamaEngine : IRewriteEngine
             EventLevel.Verbose,
             (EventKeywords)Keywords.Heartbeat);
 
-    /// <summary>
-    /// Derives the /api/ps URL from a /api/generate or /api/chat endpoint. If
-    /// the endpoint shape is unknown, treat it as the base and append /api/ps.
-    /// </summary>
     static string NormalizePsUrl(string endpoint)
     {
         if (string.IsNullOrWhiteSpace(endpoint)) return endpoint;
@@ -234,9 +214,8 @@ public sealed class OllamaEngine : IRewriteEngine
     }
 
     /// <summary>
-    /// Converts a configured endpoint (which may historically point to
-    /// /api/chat or already to /api/generate) to /api/generate. Any other
-    /// form is left as-is — the user may have an exotic reverse proxy.
+    /// A stored endpoint may point to /api/chat. Any other form is left as-is:
+    /// the user may run an exotic reverse proxy.
     /// </summary>
     static string NormalizeGenerateUrl(string endpoint)
     {
@@ -248,11 +227,6 @@ public sealed class OllamaEngine : IRewriteEngine
         return endpoint;
     }
 
-    /// <summary>
-    /// Human-readable format of generation options sent to Ollama. Returns a
-    /// string like "temp=0.15 ctx=32768 top_p=0.90 rep=1.10". Only non-null
-    /// options are displayed.
-    /// </summary>
     static string FormatOptions(Dictionary<string, object>? opts)
     {
         if (opts is null || opts.Count == 0) return "defaults";
@@ -274,14 +248,8 @@ public sealed class OllamaEngine : IRewriteEngine
     }
 
     /// <summary>
-    /// Extracts and formats metrics returned by Ollama in the /api/generate
-    /// response. Same semantics as /api/chat (fields in nanoseconds).
-    ///   - total_duration    : total server time
-    ///   - load_duration     : model load time (0 if already warm)
-    ///   - prompt_eval_count : prompt token count (input)
-    ///   - prompt_eval_duration : prompt evaluation time
-    ///   - eval_count        : generated token count (output)
-    ///   - eval_duration     : generation time (useful for tok/s)
+    /// Ollama reports every *_duration field in nanoseconds; load_duration is
+    /// 0 when the model is already warm.
     /// </summary>
     static string FormatMetrics(JsonElement root)
     {
@@ -312,12 +280,8 @@ public sealed class OllamaEngine : IRewriteEngine
         return 0;
     }
 
-    // Same Ollama fields as FormatMetrics, extracted in ms / token counts so
-    // the caller can stash them in a structured payload (LatencyPayload).
-    // Kept as a private struct to avoid leaking the internal field names.
-    // Nanoseconds → milliseconds: integer division to stay aligned with the
-    // ms-int convention of the logging inventory (no need for sub-ms precision
-    // on durations measured server-side over hundreds of ms).
+    // Nanoseconds to milliseconds by integer division: the logging inventory
+    // records durations as whole milliseconds.
     private readonly record struct OllamaMetrics(
         long LoadMs, long PromptEvalMs, long EvalMs, int PromptTokens, int EvalTokens);
 
@@ -337,9 +301,8 @@ public sealed class OllamaEngine : IRewriteEngine
     }
 
     /// <summary>
-    /// Builds the generation options dictionary from the request's nullable
-    /// fields. Family stops are always added to prevent the model from
-    /// continuing past its end-of-turn token.
+    /// Family stops are always sent so the model never continues past its
+    /// end-of-turn token.
     /// </summary>
     static Dictionary<string, object>? BuildOptions(RewriteEngineRequest request, string[] stops)
     {

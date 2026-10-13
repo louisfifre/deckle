@@ -17,23 +17,18 @@ public sealed partial class TranscriptionEngine
 
     // ── Hotkey toggle entry point ───────────────────────────────────────────
     //
-    // All hotkey-driven Start/Stop traffic flows through here. The earlier
-    // pattern read engine state from App and branched into StartRecording or
-    // StopRecording — that read-then-branch was the original double-press
-    // race (App.OnHotkey reading IsRecording, then calling Start, while a
-    // second press arrived between the read and the call). The current
-    // contract: the engine atomically CAS-transitions the state machine and
-    // returns the result; the caller only switches on the outcome to drive
-    // HUD and logs, never to decide what to do.
+    // All hotkey Start/Stop traffic flows through here. The engine
+    // CAS-transitions the state and returns the outcome; the caller switches on
+    // it only to drive HUD and logs, never to decide what to do. Reading state
+    // in the caller and then branching is the double-press race: a second
+    // press lands between the read and the call.
     //
     // The rewrite applied at finalize is the persisted active profile
     // (RewriteProfileSelection.ForDictation); a press carries no profile.
     public ToggleResult RequestToggle(bool shouldPaste)
     {
-        // _disposed is set before Dispose CAS's the state to Disposed, so it
-        // catches the moment between "Quit clicked" and "Dispose finished".
-        // Either guard reaching this branch means the engine is shutting
-        // down — silent no-op.
+        // _disposed is set before Dispose moves the state to Disposed, so it
+        // covers the moment between "Quit clicked" and "Dispose finished".
         if (_disposed) return ToggleResult.IgnoredDisposed;
 
         var current = (PipelineState)Volatile.Read(ref _state);
@@ -54,16 +49,14 @@ public sealed partial class TranscriptionEngine
                 return ToggleResult.IgnoredBusy;
             }
 
-            // Stop-to-pipeline latency starts here — closed by the
-            // whisper.cpp log hook on the first whisper_vad line. The CAS
-            // above guarantees this runs at most once per recording cycle,
-            // so we don't need the previous "if (_isRecording)" guard.
+            // Stopped by the strategy at the backend handoff (monolithic) or
+            // after the consumer drain (streaming). The CAS above makes this
+            // run at most once per recording.
             _stopToPipelineSw = System.Diagnostics.Stopwatch.StartNew();
 
-            // Signal the capture polling loop to drain and return. The CTS
-            // is created at the top of WorkerRun and disposed at its
-            // finally; Cancel() is safe even if Record() has already
-            // returned (the token is then unobserved).
+            // Signal the capture loop to drain and return. Cancel() is safe
+            // even if Record() has already returned (the token is then
+            // unobserved).
             try { _recordCts?.Cancel(); }
             catch (ObjectDisposedException) { /* worker raced our cancel */ }
             return ToggleResult.Stopped;
@@ -71,11 +64,9 @@ public sealed partial class TranscriptionEngine
 
         if (current != PipelineState.Idle)
         {
-            // Starting / Stopping / Transcribing — the previous pipeline is
-            // still in flight. Silent no-op, only a Verbose telemetry line
-            // for diagnosis when the user reports "I pressed but nothing
-            // happened". Decision: ignore (Settings Win11 voice-typing
-            // semantics).
+            // The previous pipeline is still in flight: ignore the press, as
+            // Windows 11 voice typing does. The Verbose line answers "I pressed
+            // but nothing happened".
             DeckleWhispSource.Log.HotkeyToggleIgnored(current.ToString());
             return ToggleResult.IgnoredBusy;
         }
@@ -198,17 +189,14 @@ public sealed partial class TranscriptionEngine
         }
     }
 
-    // Idle → Starting → Recording. Called only when RequestToggle has
-    // verified the engine is in Idle. CAS Idle → Starting up front so a second hotkey press
-    // arriving inside the warmup gate or the mic probe rebounds immediately.
-    // The entire Starting window is mutually exclusive with any other Start
-    // attempt, even one that fires while MicrophoneCapture.Probe() is
-    // blocked on the Win32 audio device (~1-2 ms typical, but can spike on
-    // contended hardware).
+    // Idle → Starting → Recording. CAS Idle → Starting up front so a second
+    // press arriving during the mic probe rebounds immediately: the whole
+    // Starting window excludes any other start, even while
+    // MicrophoneCapture.Probe() is blocked on the Win32 audio device.
     //
     // CRITICAL: every early-return path below MUST roll the state back to
-    // Idle and signal _idleEvent, otherwise the engine permanently locks
-    // out future hotkeys. The try/finally with `committed` ensures this.
+    // Idle, otherwise the engine permanently locks out future hotkeys. The
+    // try/finally with `committed` ensures this.
     private ToggleResult TryStartFromIdle(bool shouldPaste)
     {
         lock (_lifecycleLock)
@@ -237,22 +225,15 @@ public sealed partial class TranscriptionEngine
         bool committed = false;
         try
         {
-            // Reset per-run latency stage timers. _modelLoadMs is overwritten
-            // by LoadModel() if it runs (cold path); _hotkeySw is stopped
-            // after waveInStart via the MicrophoneCapture.CaptureStarted
-            // event; _recordDrainDuration is set from CaptureResult on
-            // Record() return; _stopToPipelineSw is stopped by the producing
-            // strategy at the backend handoff. The backend phase timings
-            // (init / VAD) now travel on PipelineProduction, not engine fields.
             _modelLoadMs = 0;
             _primeMs = 0;
             _hotkeySw = System.Diagnostics.Stopwatch.StartNew();
             _recordDrainDuration = System.TimeSpan.Zero;
             _stopToPipelineSw = null;
 
-            // Probe the audio device BEFORE firing StatusChanged("Recording").
-            // If the mic is absent/busy, short-circuit the entire pipeline:
-            // no HUD chrono, no worker thread, no Transcribe(empty).
+            // Probe the audio device BEFORE "Recording" can fire. If the mic is
+            // absent or busy, short-circuit the entire pipeline: no HUD chrono,
+            // no worker thread, no empty transcription.
             var probe = _capture.Probe(_host.Audio.AudioInputDeviceId);
             if (!probe.Ok)
             {
@@ -282,19 +263,14 @@ public sealed partial class TranscriptionEngine
                 return ToggleResult.IgnoredDisposed;
             }
 
-            // Spawn the worker thread. WorkerRun owns the Recording →
-            // Stopping → Transcribing → Idle transitions (and the Stopping
-            // → Transcribing CAS in particular — the cap-duration branch
-            // inside Record() does the Recording → Stopping CAS).
             // AboveNormal, not Normal: this thread runs the waveIn capture loop,
             // which only needs to be scheduled promptly when the buffer-done event
-            // fires (every 50 ms) — it sleeps the rest of the time. At Normal it
-            // loses its slot to the concurrent Whisper inference on the threadpool,
-            // and telemetry showed the WaitForSingleObject(100) returning at
-            // 200-480 ms instead of ~50 ms: past the 200 ms ring (4×50 ms) the
-            // driver has no free buffer and drops incoming audio. AboveNormal lets
-            // the producer win its slot; the thread is near-idle so this starves
-            // nothing. Highest is avoided — it would contend with the UI thread.
+            // fires (every 50 ms) and sleeps the rest of the time. At Normal it
+            // loses its slot to the concurrent Whisper inference on the thread
+            // pool; once a wait overruns the 200 ms ring (4 × 50 ms buffers) the
+            // driver has no free buffer and drops incoming audio. The thread is
+            // near-idle, so this starves nothing. Highest is avoided: it would
+            // contend with the UI thread.
             InitializeRunCancellation();
             _worker = new Thread(WorkerRun)
             {
@@ -331,10 +307,9 @@ public sealed partial class TranscriptionEngine
         _drainCts = null;
     }
 
-    // Resets the state machine to Idle from Starting (hotkey-thread early-
-    // return path). Worker-owned terminal Idle transitions live in
-    // WorkerRun's finally — they must NOT call this helper because they
-    // need to also emit "Ready" while skipping if Disposed has won.
+    // Rolls an uncommitted start back to Idle. The worker's terminal Idle
+    // transition (SettleWorkerToIdle) must NOT call this helper: it also emits
+    // "Ready" and must skip when Disposed has won.
     private void RollbackToIdle()
     {
         // Only roll back from Starting — never overwrite Recording (worker
@@ -347,19 +322,16 @@ public sealed partial class TranscriptionEngine
                 (int)PipelineState.Starting)
             != (int)PipelineState.Starting)
         {
-            // Dispose won — leave _state alone, just signal idle for any
-            // Dispose Wait that may be pending.
+            // Dispose won: leave _state alone.
             _idleEvent.Set();
             return;
         }
         _idleEvent.Set();
     }
 
-    // Worker thread body. Runs the full Record → Transcribe pipeline,
-    // performs the worker-owned state transitions, and is the ONLY site
-    // that emits "Ready" on the success path. Any RaiseStatus(Loc.Get("Status_Ready"))
-    // elsewhere in this file (UnloadModel, Transcribe early-returns) must
-    // also gate on _state == Idle to avoid clobbering this invariant.
+    // Dictation worker body: runs the selected strategy, then finalize. Its
+    // teardown (SettleWorkerToIdle) is the only site that emits "Ready" on the
+    // success path.
     private void WorkerRun()
     {
         using var activity = TranscriptionActivityScope.Open();
@@ -375,43 +347,21 @@ public sealed partial class TranscriptionEngine
 
         try
         {
-            // Kick the model prime off CONCURRENTLY with the capture below. On a
-            // cold worker — model not resident, i.e. the first hotkey of the
-            // session or the first after an idle unload — BeginPrime loads the
-            // model AND runs a dummy inference (GPU kernels compiled) on the thread
-            // pool, while Record already captures real audio. The chrono ticks from
-            // the first PCM, so the old "Charging" dead time is gone. A warm worker
-            // gets an already-completed gate. The prime rides the DRAIN token, so a
-            // Stop lets it finish warming the model for the take that follows; only
-            // Dispose aborts it. The first real backend call waits on this gate
-            // (AwaitPrime, inside the strategy), so the prime's dummy whisper_full
-            // and the real one never overlap.
+            // The prime runs CONCURRENTLY with the capture the strategy starts;
+            // the strategy crosses its gate (AwaitPrime) before the first
+            // backend call. See BeginPrime.
             primeTask = BeginPrime(drainCts.Token);
 
-            // The recording-duration stopwatch and the "Recording" status fire from
-            // OnCaptureStarted — the instant waveInStart confirms the mic is live —
-            // so the HUD chrono is glued to the first real PCM. Capture starts right
-            // away now (the prime runs alongside it), so on a cold worker the HUD
-            // leaves Charging for Recording at once instead of after the load. The
-            // invariant shifted: "Recording" MAY precede a warm model now, but the
-            // first BACKEND CALL may not — the gate holds it until the prime is done.
-
-            // One id per recording under the corpus join contract, shared by
-            // whichever strategy runs and consumed only in FinalizeTranscription.
             _transcriptionId = System.Guid.NewGuid().ToString("N");
             DeckleWhispSource.Log.TranscriptionCorrelation(_transcriptionId);
 
             // The selected strategy owns capture, the backend call(s), and every
-            // state transition through to Transcribing (cap-hit CAS, auto-
-            // calibrate, Stopping → Transcribing). It returns the raw text +
-            // audio + backend timings for the shared finalize, or null when it
-            // already handled an early exit (mic error, empty audio, backend
-            // failure, lost CAS, prime failure) and raised Finished itself.
+            // state transition through to Transcribing. It returns null when it
+            // already handled an early exit and raised Finished itself.
             //
-            // Strategy is read from the live settings snapshot, so the next
-            // recording picks up a Settings change with no restart. Both strategies
-            // take the prime gate; streaming also gets the drain token for its
-            // consumer, monolithic only the producer token.
+            // Read from the live settings, so the next recording picks up a
+            // Settings change with no restart. Streaming also gets the drain
+            // token for its consumer.
             bool streaming = _host.Transcription.Streaming.Strategy == PipelineStrategyKind.Streaming;
             PipelineProduction? produced =
                 (streaming
@@ -423,10 +373,6 @@ public sealed partial class TranscriptionEngine
             {
                 FinalizeTranscription(produced.Value, TranscriptionDelivery.Dictation);
             }
-            // The idle-unload timer is (re)armed in the finally below, which
-            // covers every exit that leaves the model resident — not only this
-            // success path. This is what closes the old "model loaded but no
-            // unload scheduled" gap (e.g. a prime followed by a mic error).
         }
         catch (Exception ex)
         {
@@ -444,48 +390,39 @@ public sealed partial class TranscriptionEngine
         }
     }
 
-    // Terminal teardown shared by the mic worker (WorkerRun) and the file worker
-    // (FileWorkerRun). Both converge on the exact same lockout-critical sequence,
-    // so it lives once here rather than being copied into each worker's finally —
-    // a divergence between the two would be the module's documented lockout
-    // hazard. Settles the prime, runs the worker-owned *→Idle CAS, arms the idle
-    // unload when the model is still resident, disposes the per-run cancellation
-    // tokens, then emits "Ready" — in that order.
+    // Terminal teardown shared by the mic worker and the file worker. The
+    // sequence is lockout-critical, so it lives once rather than in each
+    // worker's finally: settle the prime, CAS to Idle, arm the idle unload
+    // when the model is still resident, dispose the run's cancellation tokens,
+    // then emit "Ready", in that order.
     private void SettleWorkerToIdle(
         Task<bool> primeTask,
         CancellationTokenSource recordCts,
         CancellationTokenSource drainCts)
     {
-        // Settle the prime before any teardown. On the normal path the gate
-        // (AwaitPrime) already awaited it; this also covers the early-exit
-        // paths that bypass the gate (a mic error before the first backend
-        // call) and makes the _backend.IsModelLoaded check below reflect the
-        // load result. It MUST run before _drainCts is disposed: the prime's
-        // abort_callback polls that token, and touching a disposed CTS can
-        // throw across the native boundary. On Dispose, _drainCts is already
-        // cancelled, so the wait is bounded — the dummy inference aborts; a
-        // model load in flight is not cancellable but completes in a few
-        // seconds, well within the join timeout. The result is swallowed: a
-        // prime failure already surfaced its UserFeedback inside LoadModel.
+        // Settle the prime before any teardown. This covers the early exits
+        // that bypass the gate (a mic error before the first backend call) and
+        // makes the IsModelLoaded check below reflect the load result. It MUST
+        // run before the drain token is disposed: the prime's abort_callback
+        // polls it, and touching a disposed CTS can throw across the native
+        // boundary. On Dispose the token is already cancelled, so the dummy
+        // inference aborts; a model load in flight is not cancellable and runs
+        // to completion. A load failure already surfaced its UserFeedback.
         try { primeTask.GetAwaiter().GetResult(); }
         catch { /* prime failure already surfaced; nothing user-facing here */ }
 
-        // Terminal Idle transition — owned by the worker thread. The lifecycle
-        // lock keeps a new start out until the old worker reference and its exact
-        // cancellation channels are cleared. Status fires after that settlement,
-        // so a subscriber sees Idle when "Ready" arrives.
+        // The lifecycle lock keeps a new start out until the old worker
+        // reference and its exact cancellation channels are cleared. Status
+        // fires after that, so a subscriber sees Idle when "Ready" arrives.
         //
         // ★ THIS IS THE ONLY SITE THAT EMITS "Ready" ON THE SUCCESS PATH.
-        // UnloadModel mirrors it for the cold-load case but also gates
-        // on _state == Idle so the two never race.
+        // UnloadModel also emits it after an idle unload, gated on
+        // _state == Idle so the two never race.
         //
-        // CAS loop instead of Exchange so a concurrent Dispose
-        // transitioning *→Disposed wins cleanly: every CAS attempt re-
-        // reads _state, sees Disposed, and bails out. Disposed must
-        // persist past the worker's exit; a "Ready" emitted post-
-        // Dispose would re-arm the tray on a half-shut-down engine.
-        // The loop terminates in at most 2 iterations under contention
-        // (only Dispose can compete with the worker for _state writes).
+        // CAS loop instead of Exchange so a concurrent Dispose wins cleanly:
+        // every attempt re-reads _state, sees Disposed, and bails out.
+        // Disposed must persist past the worker's exit; a "Ready" emitted
+        // after Dispose would re-arm the tray on a half-shut-down engine.
         bool reachedIdle;
         lock (_lifecycleLock)
         {
@@ -530,19 +467,11 @@ public sealed partial class TranscriptionEngine
     }
 
     // Fired by MicrophoneCapture the instant waveInStart confirms the mic is
-    // live (the first real PCM is on its way). Everything that must be glued to
-    // the actual start of capture happens here, not before the strategy runs, so
-    // the HUD chrono no longer leads the audio by the device-open latency:
-    //  - close the hotkey→capture latency stopwatch;
-    //  - start the recording-duration stopwatch (read in FinalizeTranscription);
-    //  - raise "Recording", which flips the HUD Charging → Recording and starts
-    //    the on-screen chrono.
-    // Runs on the capture/worker thread, inside Record (the same thread that
-    // raised "Recording" here before). The old invariant ("Recording" cannot
-    // appear before the model is warm) is deliberately gone: capture and the
-    // prime now run concurrently, so on a cold worker "Recording" fires while the
-    // model is still loading. What replaces it is the gate (AwaitPrime) — the
-    // first backend call, not the chrono, is what waits for the warm model.
+    // live, on the worker thread inside Record. Everything glued to the actual
+    // start of capture happens here, so the HUD chrono does not lead the audio
+    // by the device-open latency. On a cold worker "Recording" fires while the
+    // model is still loading: the first backend call, not the chrono, waits
+    // for the warm model (AwaitPrime).
     private void OnCaptureStarted()
     {
         CloseMicrophoneIncident();

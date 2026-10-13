@@ -1,25 +1,11 @@
-"""Juge Gemini via le SDK ``google-genai`` (le nouveau, à ne pas
-confondre avec ``google-generativeai`` qui est déprécié).
+"""Gemini judge over the ``google-genai`` SDK, not the deprecated
+``google-generativeai``.
 
-Gemini est le juge multimodal du bench : contrairement à Claude API qui
-n'évalue qu'à partir du texte hypothèse + référence, Gemini reçoit le
-WAV brut en entrée et peut juger directement contre le signal audio.
-Cela règle le défaut méthodologique majeur du juge Claude (pas d'accès
-au signal réel) — un axe comme ``fidelite_signal`` devient une mesure
-contre le son entendu, pas une inférence par comparaison textuelle.
-
-Architecture symétrique à ``claude.py`` :
-  - SDK importé en lazy à l'instanciation pour qu'un bench qui n'utilise
-    pas Gemini ne paie pas le coût d'import.
-  - Réponse forcée en JSON strict via ``response_schema`` du SDK — plus
-    robuste qu'un parsing post-hoc de markdown.
-  - ``score_macro`` non implémenté (le mode macro attendra Gemini 3.5
-    Pro quand il sortira ; en attendant, score_row suffit pour le POC).
-
-Env requis :
-  - ``GEMINI_API_KEY`` set. Clé à générer sur
-    https://aistudio.google.com/apikey. Chargée via ``lib.env.load_dotenv``
-    à l'entrée du bench.
+The multimodal judge: Gemini hears the WAV, so ``fidelite_signal`` is
+measured against the audio rather than inferred by comparing texts, which
+the text-only Claude judge cannot do. ``response_schema`` forces strict
+JSON. The SDK is imported in the constructor, so a bench without Gemini
+never pays the import. ``score_macro`` is not implemented.
 """
 
 from __future__ import annotations
@@ -34,30 +20,19 @@ from typing import Any
 from ._base import Judge, JudgeScore
 
 
-# Fallback utilisé uniquement si l'API ne renvoie pas (ou si on n'arrive
-# pas à parser) un ``retryDelay`` exploitable — la voie primaire reste
-# toujours la valeur fournie dans le payload de l'erreur 429.
-# 12 s = 60/5, dimensionné sur le pire cas free tier (5 RPM constaté
-# historiquement sur gemini-3.5-flash). En billing tier 1 le quota est
-# bien plus large, donc ce fallback est sur-protecteur mais sûr — il
-# n'introduit pas de risque de hot-loop, juste un excédent de latence
-# rare quand le parsing structuré échoue.
+# Used only when a 429 carries no parsable ``retryDelay``. 12 s spaces calls
+# at 5 per minute, a free-tier quota, so it errs safe on a paid tier.
 _RATE_LIMIT_FALLBACK_DELAY_S = 12.0
 _RATE_LIMIT_MARGIN_S = 1.0
 _RATE_LIMIT_MAX_RETRIES = 3
 
 
-# Modèle par défaut. Snapshot daté plutôt que ``gemini-flash-latest``
-# pour reproductibilité bench. La famille 3.5 est la dernière disponible
-# en GA via le SDK google-genai à date — voir la grille de pricing sur
-# https://ai.google.dev/gemini-api/docs/pricing.
+# A pinned model rather than ``gemini-flash-latest``, so runs stay reproducible.
 DEFAULT_ROW_MODEL = "gemini-3.5-flash"
 
 
-# Schéma JSON Schema que Gemini doit respecter. Aligné sur les axes du
-# juge Claude pour permettre la comparaison croisée, à la différence que
-# ``fidelite_signal`` ici est mesuré contre l'audio écouté et non par
-# inférence hyp/ref.
+# Same axes as the Claude judge so the two compare, except that
+# ``fidelite_signal`` here is measured against the audio.
 _JUDGE_SCHEMA: dict[str, Any] = {
     "type": "object",
     "properties": {
@@ -88,8 +63,6 @@ _JUDGE_SCHEMA: dict[str, Any] = {
 
 
 class GeminiJudge(Judge):
-    """Juge Gemini multimodal."""
-
     name = "gemini"
     label = "Gemini API (Google AI Studio)"
 
@@ -124,16 +97,13 @@ class GeminiJudge(Judge):
         self._types = types
         self.row_system_prompt = row_system_prompt
         self.row_model = row_model
-        # 18 MB plutôt que le hard cap 20 MB Google : marge pour le
-        # texte qui s'ajoute à l'audio dans la même requête. Au-dessus
-        # de cette taille on lève — le code Files API n'est pas câblé
-        # (corpus actuel : 252 s × 16 kHz mono 16 bit ≈ 8 MB max).
+        # Google caps an inline request at 20 MB; 18 leaves room for the
+        # text sent with the audio. Larger audio raises, since the Files
+        # API path is not wired.
         self.max_audio_inline_mb = max_audio_inline_mb
-        # 512 suffit largement : le thinking est désactivé (cf.
-        # _call_with_retry) et l'output visible mesuré sur les rows OK
-        # tient en 98-115 tokens. La marge x4 absorbe les verdicts longs
-        # sans laisser de place à un dérapage si jamais le modèle
-        # halluciné des axes supplémentaires.
+        # Thinking is off (see _call_with_retry), so 512 covers the
+        # schema's JSON and a long verdict, with little room for runaway
+        # output.
         self.max_tokens_row = max_tokens_row
         self.temperature = temperature
 
@@ -180,12 +150,9 @@ class GeminiJudge(Judge):
             extras={"usage": _extract_usage(response)},
         )
 
-    # ── Macro (non câblé) ──────────────────────────────────────────────
+    # ── Macro (not wired) ──────────────────────────────────────────────
 
     def score_macro(self, *, run_summary, examples):
-        # Le mode macro attend Gemini 3.5 Pro (rollout juin 2026) — en
-        # attendant on reste sur le per-row, conforme à la doctrine
-        # _base.Judge qui prévoit explicitement cette absence.
         raise NotImplementedError(
             "GeminiJudge.score_macro pas câblé. À implémenter quand "
             "Gemini 3.5 Pro sera disponible, ou utiliser un juge gros "
@@ -195,19 +162,9 @@ class GeminiJudge(Judge):
     # ── Internals ──────────────────────────────────────────────────────
 
     def _call_with_retry(self, parts: list[Any]) -> Any:
-        """Appel ``generate_content`` avec retry sur 429 RESOURCE_EXHAUSTED.
-
-        Le SDK ``google-genai`` ne respecte pas tout seul le ``retryDelay``
-        renvoyé dans le payload d'erreur. On le parse et on sleep d'autant
-        — historiquement, sur free tier (5 RPM), les rows courtes
-        burnaient le quota en moins d'une minute et la moitié des juges
-        remontaient en erreur sans ce retry.
-
-        Stratégie : retryDelay extrait du payload + 1 s de marge. Si on ne
-        sait pas le parser, fallback dimensionné pour le pire cas free
-        tier (cf. ``_RATE_LIMIT_FALLBACK_DELAY_S``). Plafond de 3
-        tentatives — au-delà c'est probablement un problème de plan ou
-        de clé et on laisse remonter.
+        """The ``google-genai`` SDK does not honour the ``retryDelay`` a 429
+        returns, so this sleeps it plus a margin. Past three attempts the
+        cause is likely the plan or the key, so the error goes up.
         """
         last_exc: Exception | None = None
         for attempt in range(_RATE_LIMIT_MAX_RETRIES):
@@ -221,18 +178,11 @@ class GeminiJudge(Judge):
                         response_schema=_JUDGE_SCHEMA,
                         temperature=self.temperature,
                         max_output_tokens=self.max_tokens_row,
-                        # Thinking désactivé : la tâche du juge est très
-                        # contrainte par le response_schema (4 axes
-                        # numériques + 1 booléen + verdict court), donc
-                        # aucun chain-of-thought à dérouler. Mesuré sur
-                        # 6 rows : ~4 fois plus rapide et -23 % de tokens
-                        # totaux vs thinking on. Effet de bord observé
-                        # sur le drift : OFF score ~7 pts plus haut sur
-                        # fidelite_signal et ~3 pts plus haut sur
-                        # proprete, uniformément ; les axes binaires
-                        # absence_hallucination et regime_respecte sont
-                        # inchangés. Le drift est unidirectionnel donc
-                        # préserve l'ordre relatif entre régimes/sources.
+                        # Thinking off: the schema leaves nothing to reason
+                        # through, and calls run much faster. It lifts
+                        # fidelite_signal and proprete uniformly, so rankings
+                        # between regimes and sources hold, but scores do
+                        # not compare with a thinking-on run.
                         thinking_config=self._types.ThinkingConfig(thinking_budget=0),
                     ),
                 )
@@ -244,8 +194,7 @@ class GeminiJudge(Judge):
                     raise
                 delay = _extract_retry_delay(exc) or _RATE_LIMIT_FALLBACK_DELAY_S
                 time.sleep(delay + _RATE_LIMIT_MARGIN_S)
-        # Inatteignable : la boucle sort soit par return soit par raise.
-        # Mypy/Pyright voudraient un raise explicite ici.
+        # Unreachable; type checkers want an explicit exit.
         raise last_exc if last_exc is not None else RuntimeError("retry loop exited unexpectedly")
 
     def _build_parts(
@@ -258,10 +207,8 @@ class GeminiJudge(Judge):
         source_name:  str,
         audio_path:   Path | None,
     ) -> list[Any]:
-        """Construit la liste ``contents`` envoyée à Gemini. L'ordre
-        compte (audio d'abord, texte ensuite) — recommandé par la doc
-        Gemini pour que le modèle écoute avant de lire les jugements à
-        rendre."""
+        """Audio first, then text: the Gemini docs recommend that order so
+        the model hears the clip before it reads what to judge."""
         parts: list[Any] = []
 
         if audio_path is not None:
@@ -290,15 +237,12 @@ class GeminiJudge(Judge):
         return parts
 
 
-# ── Helpers libres ────────────────────────────────────────────────────
+# ── Helpers ───────────────────────────────────────────────────────────
 
 def _is_rate_limit_error(exc: Exception) -> bool:
-    """``True`` si l'exception est un 429 RESOURCE_EXHAUSTED de Gemini.
-
-    Le SDK google-genai expose le code HTTP via différents attributs selon
-    la version — on couvre les principaux et on fallback sur le texte de
-    l'exception. Un faux positif serait peu coûteux (sleep inutile) mais
-    pas une régression silencieuse."""
+    """The SDK exposes the HTTP code under different attributes across
+    versions, hence the fallback on the message text. A false positive
+    only costs a sleep."""
     code = getattr(exc, "code", None) or getattr(exc, "status_code", None)
     if code == 429:
         return True
@@ -314,14 +258,6 @@ _RETRY_DELAY_PATTERNS = (
 
 
 def _extract_retry_delay(exc: Exception) -> float | None:
-    """Extrait le ``retryDelay`` (en secondes) d'un 429 Gemini.
-
-    1. Essaie d'abord la voie structurée : ``exc.details`` est parfois une
-       liste de dicts incluant un bloc ``google.rpc.RetryInfo``.
-    2. Sinon parse la repr str() de l'exception qui contient typiquement
-       ``'retryDelay': '32s'``.
-    Retourne ``None`` si rien d'exploitable — le caller fallback alors
-    sur une valeur sûre."""
     details = getattr(exc, "details", None)
     if isinstance(details, list):
         for d in details:
@@ -339,8 +275,6 @@ def _extract_retry_delay(exc: Exception) -> float | None:
 
 
 def _mime_from_ext(ext: str) -> str:
-    """MIME type à passer à Gemini ``Part.from_bytes`` selon l'extension
-    du fichier audio. Defaulte à audio/wav vu le profil du corpus."""
     return {
         ".wav":  "audio/wav",
         ".mp3":  "audio/mpeg",
@@ -359,10 +293,8 @@ def _build_text_message_row(
     source_name:  str,
     has_audio:    bool,
 ) -> str:
-    """Construit le message texte qui accompagne l'audio. Format conçu
-    pour rester lisible quand on inspecte le payload côté Google AI
-    Studio. Le system prompt côté ``response_schema`` impose déjà le
-    JSON ; on n'a pas besoin de le rappeler ici."""
+    """No JSON reminder here, unlike the Claude judge: ``response_schema``
+    already enforces it."""
     parts = [
         f"Source       : {source_name}",
         f"Régime       : {regime_name} — {regime_label}",
@@ -382,14 +314,9 @@ def _build_text_message_row(
 
 
 def _parse_json(raw: str) -> dict[str, Any]:
-    """Parse la réponse JSON. Avec ``response_schema`` strict côté
-    Gemini, ``raw`` est toujours du JSON valide direct — pas besoin du
-    récup-bricolage que ``claude.py`` fait pour extraire un bloc
-    markdown.
-
-    Convention identique à claude.py : tout ce qui n'est pas un champ
-    verdict est traité comme un axe — laisse de la marge si on ajoute
-    des axes au schéma sans toucher au code."""
+    """``response_schema`` makes ``raw`` plain JSON, so no fence recovery
+    as in ``claude.py``. Every key that is not a verdict is an axis, as
+    there."""
     if not raw or not raw.strip():
         return {"axes": {}, "verdict": "", "parse_ok": False}
     try:
@@ -409,8 +336,6 @@ def _parse_json(raw: str) -> dict[str, Any]:
 
 
 def _extract_usage(response: Any) -> dict[str, int]:
-    """Extrait le compte de tokens d'une réponse Gemini. Optionnel,
-    silencieux en cas d'API qui change."""
     try:
         meta = response.usage_metadata
         return {

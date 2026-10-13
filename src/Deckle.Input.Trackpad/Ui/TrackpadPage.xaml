@@ -8,25 +8,6 @@
     xmlns:vm="using:Deckle.Input.Trackpad"
     xmlns:catalog="using:Deckle.Catalog">
 
-    <!-- Canonical Settings page layout, identical to DiagnosticsPage /
-         AmbientPage / GeneralPage : ScrollViewer Padding 32,24, a
-         StackPanel max 1000 inside a Grid, Spacing=4 between cards
-         (SettingsCardSpacing, from App.xaml), and each section is the
-         shared SettingsSection block.
-
-         The persisted settings (three-finger drag master, drag speed,
-         raw-frame recording) are no longer hand-authored here: they are
-         declared as SettingDescriptors in TrackpadViewModel.Settings.cs
-         and the SettingsComposer builds their SettingsCards into the host
-         panels below. The Windows-integration acts stay hand-authored —
-         they are imperative commands with their own success reporting, not
-         settable values the composer can drive.
-
-         A flat composition, no master-child group: the drag-speed card is
-         no longer greyed while the feature is off — by decision the three
-         persisted settings compose as independent leaves, each with its
-         own inline reset off the POCO default. -->
-
     <ScrollViewer Padding="32,24,32,24"
                   VerticalScrollBarVisibility="Auto"
                   HorizontalScrollBarVisibility="Disabled">
@@ -35,46 +16,33 @@
                         HorizontalAlignment="Stretch"
                         Spacing="{StaticResource SettingsCardSpacing}">
 
-                <!-- The shared header block: breadcrumb, one line of description,
-                     Reset all on the trailing edge (active-when-dirty, confirmed
-                     by the block itself). -->
                 <catalog:SettingsPageHeader x:Name="Header"
                                             x:Uid="TrackpadPageHeader"
                                             ResetAllRequested="ResetAll_Click" />
 
-                <!-- The module switch: the three-finger drag master is the module's
-                     on/off card, so it comes first on the page, alone and outside any
-                     section (settings design system, decision 10). Composed: the
-                     master toggle (TrackpadViewModel.TrackpadEnabledSettingsManifest). -->
+                <!-- The module switch comes first on the page, alone and outside
+                     any section. -->
                 <StackPanel x:Name="EnabledHost"
                             Spacing="{StaticResource SettingsCardSpacing}" />
 
                 <!-- ── Three-finger drag ────────────────────────────────────── -->
                 <catalog:SettingsSection x:Uid="TrackpadPageDragSection">
-                    <!-- Composed region — the drag-speed slider, declared in
-                         TrackpadViewModel.Settings.cs and built here by
-                         ComposeSettings(). A flat list (no master-child greying); the
-                         card carries its own inline reset off its POCO default. -->
                     <StackPanel x:Name="DragHost"
                                 Spacing="{StaticResource SettingsCardSpacing}" />
                 </catalog:SettingsSection>
 
                 <!-- ── Diagnostics ──────────────────────────────────────────── -->
                 <catalog:SettingsSection x:Uid="TrackpadPageDiagnosticsSection">
-                    <!-- Raw-frame recording — independent of the master, in its own
-                         composed section so it keeps its "Diagnostics" heading. -->
                     <StackPanel x:Name="DiagnosticsHost"
                                 Spacing="{StaticResource SettingsCardSpacing}" />
                 </catalog:SettingsSection>
 
                 <!-- ── Windows integration ──────────────────────────────────── -->
+                <!-- Hand-authored: imperative commands with their own success
+                     reporting, not settable values the composer can drive. -->
                 <catalog:SettingsSection x:Uid="TrackpadPageWindowsSection">
                     <StackPanel Spacing="{StaticResource SettingsCardSpacing}">
 
-                        <!-- Neutralize / Restore Windows' native three-finger
-                             gestures. The single button's label flips between the
-                             two states from AreNeutralized(), re-read after each
-                             click. -->
                         <controls:SettingsCard x:Uid="TrackpadPage_GesturesCard"
                                                Tag="TrackpadPage_GesturesCard"
                                                HeaderIcon="{ui:FontIcon Glyph={StaticResource Icon.Trackpad}}">
@@ -84,8 +52,6 @@
                             </Button>
                         </controls:SettingsCard>
 
-                        <!-- Repair the Apple driver pairing bug via the elevated
-                             script (UAC prompt + interactive console). -->
                         <controls:SettingsCard x:Uid="TrackpadPage_RepairCard"
                                                Tag="TrackpadPage_RepairCard"
                                                HeaderIcon="{ui:FontIcon Glyph={StaticResource Icon.Refresh}}">
@@ -94,10 +60,6 @@
                                     Click="RepairButton_Click" />
                         </controls:SettingsCard>
 
-                        <!-- Start elevated : reflects ElevatedStartupService.IsEnabled().
-                             The toggle never assumes success — Enable/Disable can fail
-                             or be UAC-cancelled, so the actual state is re-read back
-                             into the switch after the call. -->
                         <controls:SettingsCard x:Uid="TrackpadPage_ElevatedCard"
                                                Tag="TrackpadPage_ElevatedCard"
                                                HeaderIcon="{ui:FontIcon Glyph={StaticResource Icon.Lightning}}">

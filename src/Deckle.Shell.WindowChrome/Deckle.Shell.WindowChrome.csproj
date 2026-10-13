@@ -9,8 +9,6 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <!-- Strict alignment with Deckle.App.csproj: one WinAppSDK runtime per
-         process, synchronous bump obligatory across the whole solution. -->
     <PackageReference Include="Microsoft.WindowsAppSDK" />
     <PackageReference Include="Microsoft.Windows.SDK.BuildTools" />
   </ItemGroup>

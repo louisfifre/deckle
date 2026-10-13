@@ -45,7 +45,6 @@ public class FrequencyLexiconTests
     [Fact]
     public void CountsMalformedLines()
     {
-        // No tab, and a non-numeric frequency — both malformed, both counted.
         var lex = Load("école\t200\nnotabhere\nbad\tNaNN\n");
 
         Assert.Equal(1, lex.Count);

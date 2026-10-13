@@ -14,9 +14,8 @@ public static class SendInputInterop
     public const uint MOUSEEVENTF_LEFTDOWN = 0x0002;
     public const uint MOUSEEVENTF_LEFTUP   = 0x0004;
 
-    // Stamped into dwExtraInfo on every injected event so Deckle's own
-    // synthesis is identifiable downstream (GetMessageExtraInfo) if a
-    // feedback loop ever needs breaking.
+    // Stamped into dwExtraInfo on every injected event so a downstream
+    // observer can tell Deckle's own synthesis from foreign injected input.
     public static readonly IntPtr InjectionTag = new(0x00DECC1E);
 
     // Mouse-flattened INPUT: type, then the MOUSEINPUT union member.

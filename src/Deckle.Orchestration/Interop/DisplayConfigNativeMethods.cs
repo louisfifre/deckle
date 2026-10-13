@@ -5,7 +5,7 @@ namespace Deckle.Orchestration;
 // Win32 display configuration (CCD) the HDR rule needs: list the active
 // display paths, name their source (GDI device) and target (monitor), read and
 // set HDR. Layouts transcribed from wingdi.h (Windows SDK 10.0.26100) and
-// pinned by DisplayConfigLayoutTests. Module-local, like TaskbarCover's interop.
+// pinned by DisplayConfigLayoutTests.
 internal static class DisplayConfigNativeMethods
 {
     internal const int ERROR_SUCCESS = 0;

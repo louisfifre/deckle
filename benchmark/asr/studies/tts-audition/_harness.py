@@ -14,8 +14,7 @@ Two concerns the synth scripts all share, centralized so they stay consistent:
    ort.InferenceSession. Per the AMD DirectML ConvTranspose wall (vocoder/decoder
    graphs runtime-crash on DML with no auto-fallback), any ConvTranspose-bearing
    graph is pinned to CPU regardless of the toggle; only the big iterative
-   transformer/LM graphs ride DML. This is how every script becomes GPU-ready
-   while a single switch flips the whole audition between CPU and GPU.
+   transformer/LM graphs ride DML.
 """
 
 from __future__ import annotations
@@ -36,9 +35,7 @@ from lib.paths import corpus_dir, RUNS_DIR  # noqa: E402
 
 CORPUS_SLUG = "voxtral-val-30"
 
-# Clean run dir for the serial rebuild (the parallel-contaminated takes live in
-# tts-audition-poc-0001; we don't mix them). Every script and the player agree
-# on this one location.
+# Every synth script and the player share this one run dir.
 RUN_DIR = RUNS_DIR / "tts-audition-poc-0002"
 
 # ── Public sentences (hand-written — versionable, not private) ───────────────
@@ -132,10 +129,10 @@ def providers(*, convtranspose: bool) -> list[str]:
 def stats_record(model: str, voice: str, **fields) -> None:
     """Append one timestamped run record to <run>/_stats.jsonl.
 
-    The player reads this back into a stats panel — so every synthesis run
-    self-documents (when, which EP, how fast), and the timestamp tells Louis at
-    a glance whether what he's looking at is fresh. `fields` typically carries
-    ep, n (sentence count), compute_s, audio_s, rtf, load_s.
+    The player reads this back into a stats panel, so every synthesis run
+    self-documents (when, which EP, how fast) and the timestamp shows whether
+    a take is fresh. `fields` typically carries ep, n (sentence count),
+    compute_s, audio_s, rtf, load_s.
     """
     rec = {"model": model, "voice": voice,
            "ts": datetime.datetime.now().isoformat(timespec="seconds"), **fields}

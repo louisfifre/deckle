@@ -5,16 +5,11 @@ using Xunit;
 
 namespace Deckle.Chrono.Tests;
 
-// Tests de comportement sur ChronoTimer — le contrat du chronomètre, pas son
-// implémentation (il enveloppe un Stopwatch, mais on n'assert que ce qu'un
-// appelant observe : état marche/arrêt et valeur écoulée). Le découplage
-// chrono/peinture du HUD repose sur ce contrat, en particulier sur
-// `Start == Restart` : c'est lui qui garantit qu'une nouvelle session ne
-// reparte jamais du temps de la précédente, au niveau du timer.
+// The HUD clock relies on Start being Restart: a new session never starts from
+// the previous one's time.
 //
-// Les cas dépendants du temps réel utilisent un court Thread.Sleep pour rendre
-// l'écoulement mesurable ; les assertions sont relatives (avant/après) plutôt
-// que sur un seuil absolu, donc robustes au jitter de l'ordonnanceur.
+// Time-dependent cases sleep briefly and assert relative to an earlier reading,
+// not against an absolute threshold, so scheduler jitter cannot fail them.
 [Trait("Category", "unit")]
 public class ChronoTimerTests
 {
@@ -45,8 +40,6 @@ public class ChronoTimerTests
         t.Stop();
 
         Assert.False(t.IsRunning);
-        // Une fois arrêté, deux lectures successives donnent la même valeur —
-        // le chrono est gelé, il n'avance plus.
         var first = t.Elapsed;
         var second = t.Elapsed;
         Assert.Equal(first, second);
@@ -67,9 +60,6 @@ public class ChronoTimerTests
     [Fact]
     public void StartZeroesAnyPriorAccumulation()
     {
-        // Le contrat load-bearing du découplage : relancer le chrono efface
-        // le temps déjà accumulé (sémantique Restart), donc StartClock ne
-        // peut pas hériter de la valeur figée de la session précédente.
         var t = new ChronoTimer();
 
         t.Start();
@@ -78,7 +68,7 @@ public class ChronoTimerTests
         var afterAccumulation = t.Elapsed;
         Assert.True(afterAccumulation > TimeSpan.Zero);
 
-        t.Start();   // Restart : remet à zéro puis repart
+        t.Start();   // Restart: resets, then runs again
         t.Stop();
         var afterRestart = t.Elapsed;
 
@@ -90,8 +80,6 @@ public class ChronoTimerTests
     [Fact]
     public void ResumeContinuesFromTheCurrentValueWithoutZeroing()
     {
-        // Resume reprend sans reset — la valeur déjà accumulée reste un
-        // plancher. C'est la distinction qui sépare Resume de Start.
         var t = new ChronoTimer();
 
         t.Start();

@@ -40,7 +40,7 @@ public sealed partial class ConservativeTypoCorrector
         }
 
         // A determiner makes the most frequent direct accent restoration much
-        // stronger than a physical edit. Keep a 5x margin between folded rivals.
+        // stronger than a physical edit. Folded rivals still need the dominance ratio.
         if (!literalValid && Determiners.Contains(previous) && accents.Count > 0
             && (accents.Count == 1
                 || accents[0].FrequencyPerMillion

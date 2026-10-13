@@ -12,14 +12,9 @@ public sealed partial class ScreenCaptureService
         var pacer = new CapturePacer(_targetFrameRateHz, Stopwatch.Frequency);
         int invalidCallRecoveryAttempts = 0;
 
-        // Heartbeat rollup accumulators — reset every HeartbeatIntervalMs
-        // by EmitHeartbeatIfDue. Allocated lazily (capacity 320 covers a
-        // 5 s window of a 60 Hz desktop with margin; the lists grow on
-        // faster desktops, where more frames are acquired than delivered)
-        // and only populated
-        // when the Verbose|Heartbeat gate is open. The collection itself
-        // is bypassed when the gate is closed — zero alloc on the hot
-        // path of a typical session with no listener attached.
+        // Heartbeat accumulators, allocated lazily and filled only while the
+        // Verbose|Heartbeat gate is open, so a session with no listener
+        // allocates nothing. 320 covers a 5 s window at 60 Hz with margin.
         long heartbeatWindowStartTicks = Stopwatch.GetTimestamp();
         int hbAcquired = 0;
         int hbDropped = 0;
@@ -28,12 +23,9 @@ public sealed partial class ScreenCaptureService
 
         while (!ct.IsCancellationRequested)
         {
-            // AcquireNextFrame blocks up to AcquireTimeoutMs. The duplication
-            // pointer might be 0 transiently after a recovery handler released
-            // it (ACCESS_LOST / ACCESS_DENIED / SESSION_DISCONNECTED) — the
-            // recreate helper retries internally with backoff for as long as
-            // the engine is running, only returning when DuplicateOutput1
-            // succeeds or cancellation fires.
+            // 0 after a recovery branch released the duplication.
+            // TryRecreateDuplication retries with backoff and returns false
+            // only on cancellation or an abandoned recreate.
             if (_duplicationPtr == 0)
             {
                 bool recreated = TryRecreateDuplication(ct);
@@ -41,11 +33,6 @@ public sealed partial class ScreenCaptureService
                 if (!recreated) break;
             }
 
-            // Heartbeat gate evaluated once per iteration. When closed,
-            // skip the per-tick latency Stopwatch and all per-window
-            // collection — the only residual cost is the IsEnabled
-            // probe itself plus the throttle/timestamp arithmetic that
-            // the loop already does.
             bool heartbeatGateOpen = OperationalLogAdmission.IsScopedDetailEnabled(
                 OperationalLogActivity.Ambient,
                 DeckleVisionSource.Log,
@@ -62,8 +49,7 @@ public sealed partial class ScreenCaptureService
 
             if (hr == ScreenCaptureInterop.DXGI_ERROR_WAIT_TIMEOUT)
             {
-                // Static screen — no new frame in the window. Normal,
-                // not an error.
+                // Static screen: normal, not an error.
                 continue;
             }
 
@@ -71,8 +57,7 @@ public sealed partial class ScreenCaptureService
             {
                 invalidCallRecoveryAttempts = 0;
                 // Desktop switch, mode change, DWM on/off, fullscreen
-                // exclusive swap. Drop the duplication, recreate next
-                // iteration.
+                // exclusive swap.
                 DeckleVisionSource.Log.AccessLostRecovering();
                 ReleaseDuplicationForRecreate();
                 continue;
@@ -83,10 +68,8 @@ public sealed partial class ScreenCaptureService
             {
                 invalidCallRecoveryAttempts = 0;
                 // Secure desktop (UAC, Win+L, password screensaver) or
-                // session disconnect (RDP, "switch user"). Both are
-                // transient — drop the duplication, the next recreate
-                // attempt will succeed when the user returns to the
-                // interactive desktop.
+                // session disconnect (RDP, "switch user"): transient, the
+                // recreate succeeds once the interactive desktop is back.
                 DeckleVisionSource.Log.SecureDesktopRecovering(hr);
                 ReleaseDuplicationForRecreate();
                 continue;
@@ -95,13 +78,11 @@ public sealed partial class ScreenCaptureService
             if (hr == ScreenCaptureInterop.DXGI_ERROR_INVALID_CALL)
             {
                 invalidCallRecoveryAttempts++;
-                // Microsoft documents INVALID_CALL from AcquireNextFrame as
-                // "the previous frame is still owned". In the field this can
-                // otherwise wedge Ambient forever: Acquire keeps returning
-                // INVALID_CALL, the sampler receives no frames, and the push
-                // loop drops every tick. First close the leaked ownership; if
-                // DXGI says there was no frame to release, the duplication is
-                // internally inconsistent, so recreate it.
+                // AcquireNextFrame returns INVALID_CALL while the previous
+                // frame is still owned, and left alone it repeats forever with
+                // no frame reaching the sampler. Release the leaked frame; if
+                // DXGI says there was none, the duplication is internally
+                // inconsistent, so recreate it.
                 DeckleVisionSource.Log.AcquireFrameFailed(hr, ErrorBackoffMs);
                 if (invalidCallRecoveryAttempts >= MaxInvalidCallRecoveryAttempts)
                 {
@@ -128,9 +109,8 @@ public sealed partial class ScreenCaptureService
             if (hr == ScreenCaptureInterop.DXGI_ERROR_DEVICE_REMOVED ||
                 hr == ScreenCaptureInterop.DXGI_ERROR_DEVICE_HUNG)
             {
-                // Fatal — GPU gone or hung. Surface Stopped so the
-                // engine can clean up ; recovery would need a full
-                // D3D device rebuild that lives outside this loop.
+                // Fatal: the GPU is gone or hung. Stop and raise Stopped;
+                // rebuilding the device is the consumer's call.
                 DeckleVisionSource.Log.DeviceLostDetail(hr);
                 break;
             }
@@ -138,17 +118,12 @@ public sealed partial class ScreenCaptureService
             if (hr != 0)
             {
                 invalidCallRecoveryAttempts = 0;
-                // Verbose : the generic backoff path. Used to catch
-                // the 4-duplication NOT_CURRENTLY_AVAILABLE limit and the
-                // UNSUPPORTED corner case (mode change to 8bpp / DWM off).
-                // All transient — sleep 500 ms and retry.
+                // Any other error is treated as transient: back off, retry.
                 DeckleVisionSource.Log.AcquireFrameFailed(hr, ErrorBackoffMs);
                 if (desktopResourcePtr != 0) Marshal.Release(desktopResourcePtr);
                 try { Task.Delay(ErrorBackoffMs, ct).Wait(ct); }
                 catch (OperationCanceledException)
                 {
-                    // Stop() cancelled ct during transient backoff:
-                    // Cancellation sub-provider, age_ms relative to session.
                     long ageMs = _startTimestamp != 0
                         ? (Stopwatch.GetTimestamp() - _startTimestamp) * 1000 / Stopwatch.Frequency
                         : -1;
@@ -159,12 +134,8 @@ public sealed partial class ScreenCaptureService
                 continue;
             }
 
-            // Heartbeat — acquire path completed successfully. Track
-            // the frame regardless of whether it gets delivered to a
-            // sampler (throttle-skipped frames and consumer failures
-            // still count as "acquired" because the bridge round-trip
-            // happened). delivered=true marks the subset that ran the
-            // sample path.
+            // The heartbeat counts every acquired frame; delivered marks the
+            // ones the consumer processed without throwing.
             invalidCallRecoveryAttempts = 0;
             bool delivered = false;
             long sampleDurationUs = 0;
@@ -173,18 +144,14 @@ public sealed partial class ScreenCaptureService
                 long now = Stopwatch.GetTimestamp();
                 if (!pacer.TryAdmit(now))
                 {
-                    // Honour the cadence cap: release the GPU buffer
-                    // without copying it into the consumer's grid.
-                    // Counted as dropped in the heartbeat — frame was
-                    // acquired but not processed.
+                    // The finally releases the frame uncopied; the
+                    // heartbeat counts it as dropped.
                     continue;
                 }
 
-                // QI the desktop image to ID3D11Texture2D. AddRef'd;
-                // released in the inner finally. A QI failure here is
-                // unusual (the resource is guaranteed to back a texture
-                // by the duplication contract) but we wrap to avoid
-                // killing the loop on a one-off driver hiccup.
+                // The duplication contract says the resource backs a
+                // texture; a QI failure drops the frame instead of killing
+                // the loop.
                 nint texturePtr = 0;
                 try
                 {
@@ -205,14 +172,6 @@ public sealed partial class ScreenCaptureService
                     continue;
                 }
 
-                // Cross-cutting Resource sub-provider: frame texture acquire.
-                // High-frequency loop (target rate, 60 Hz by default) gated by
-                // IsEnabled(Verbose, Resource) on the provider side: zero alloc
-                // and zero WriteEvent when no listener is attached. Timestamp
-                // capture is done here because release is in the downstream
-                // finally; accept the double gate test (here + in release) to
-                // keep code linear without per-iteration local state.
-                // bytes_per_pixel = 4 (BGRA8) or 8 (FP16).
                 bool resourceDetailOpen = OperationalLogAdmission.IsScopedDetailEnabled(
                     OperationalLogActivity.Ambient,
                     DeckleResourceSource.Log,
@@ -322,9 +281,8 @@ public sealed partial class ScreenCaptureService
             }
         }
 
-        // Loop exited — surface Stopped if we didn't get there via a
-        // user-triggered Stop() call (which sets IsRunning=false before
-        // cancelling the token).
+        // Raise Stopped only when the loop ended on its own; Stop()
+        // cancels the token first.
         if (!ct.IsCancellationRequested)
         {
             IsRunning = false;
@@ -352,15 +310,8 @@ public sealed partial class ScreenCaptureService
         }
     }
 
-    // Rollup emitter — emits one DeckleVisionSource.Log.Heartbeat per
-    // HeartbeatIntervalMs window and resets the accumulators. Called at
-    // the tail of every loop iteration when the Verbose|Heartbeat gate
-    // is open ; the gate is re-checked here for safety but the bulk of
-    // the cost (sample collection) is already gated upstream. Sorts
-    // both duration buffers in place to pick percentiles — buffer
-    // size is the per-window acquired frame count (about 300 for a
-    // 60 Hz desktop over 5 s, more on faster desktops), so one sort
-    // every 5 s stays negligible.
+    // Sorts the duration buffers in place for the percentiles; one sort per
+    // window stays negligible.
     private static void EmitHeartbeatIfDue(
         ref long windowStartTicks,
         ref int acquired,

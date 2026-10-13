@@ -5,12 +5,8 @@ namespace Deckle.Transcription;
 
 public partial class WhisperViewModel
 {
-    // ── Voice activity detection ─────────────────────────────────────────────
-
-    // The "Voice activity detection" toggle and its four Silero detection
-    // parameters. All drive the external Silero ONNX VAD (Streaming.SpeechTrim) —
-    // the whisper-internal VAD they used to bind is unplugged. The parameters are
-    // double for the Slider; cast to the POCO's float/int on push.
+    // The Vad* values drive the Silero ONNX trim (Streaming.SpeechTrim), not
+    // whisper.cpp's own VAD.
     [ObservableProperty]
     public partial bool VadEnabled { get; set; }
 
@@ -56,14 +52,8 @@ public partial class WhisperViewModel
         PushToSettings();
     }
 
-    // ── Streaming pipeline ───────────────────────────────────────────────────
-    //
-    // StreamingEnabled is the user-facing on/off mapped onto the two-value
-    // PipelineStrategyKind (Streaming / Monolithic). The Seg* values are the
-    // energy-segmenter parameters, consulted only when streaming is on. The
-    // hangover is dynamic: HangoverMax at the start of an utterance, decaying
-    // along the configured Bézier curve to HangoverMin between RampStart and
-    // RampEnd lengths.
+    // The Seg* values tune the energy segmenter, consulted only when streaming is
+    // on.
 
     [ObservableProperty]
     public partial bool StreamingEnabled { get; set; }
@@ -83,8 +73,7 @@ public partial class WhisperViewModel
     [ObservableProperty]
     public partial double SegHangoverRampEndMs { get; set; }
 
-    // The two Bezier control points shaping the decay between RampStart and
-    // RampEnd (EnergySegmenterSettings.HangoverCurveX1..Y2), each in [0, 1].
+    // Control points of the hangover decay curve, each in [0, 1].
     [ObservableProperty]
     public partial double SegCurveX1 { get; set; }
 
@@ -171,22 +160,9 @@ public partial class WhisperViewModel
         NotifyCutValueEdited();
     }
 
-    // ── Cut preset ───────────────────────────────────────────────────────────
-    //
-    // CutPreset is what the selector shows: the STORED selection of the cut preset
-    // family (a preset id or PresetFamily.Custom), mirrored from the family and
-    // persisted in EnergySegmenterSettings.CutPreset. Picking a preset writes its
-    // eight values through the normal setters (each pushes to the settings);
-    // picking Custom writes back the user's own values the family kept. A hand
-    // edit of one of the eight values calls NotifyCutValueEdited, which switches
-    // the selection to Custom and keeps the edited values. While the family
-    // applies a preset it ignores those reports, so this view model needs no
-    // guard of its own for that.
-    //
-    // The family is rebuilt in Load() (see there), hence not readonly.
-
     private PresetFamily<CutCurveValues> _cutPresets;
 
+    // Mirrors the family's stored selection: a preset id or PresetFamily.Custom.
     [ObservableProperty]
     public partial string CutPreset { get; set; }
 
@@ -199,13 +175,10 @@ public partial class WhisperViewModel
     private PresetFamily<CutCurveValues> BuildCutPresets(Func<EnergySegmenterSettings> segmenter, Action save) =>
         new(CutPresets.All, CutPresets.Default, new CutPresetStore(this, segmenter, save));
 
-    // Called after each hand edit of one of the eight hangover values, once it
-    // is pushed to the settings. The family copies the live values into the
-    // Custom slot and stores Custom; the selector then follows. The mirror is
-    // skipped while a preset is being applied: the store has not written the
-    // new selection yet at that point, and mirroring would put the old one
-    // back on the selector. _isSyncing keeps OnCutPresetChanged from calling
-    // Select again for a change that came from the family.
+    // Skipped while a preset is being applied: the store has not written the new
+    // selection yet, and mirroring would put the old one back on the selector.
+    // _isSyncing keeps OnCutPresetChanged from calling Select again for a change
+    // that came from the family.
     private void NotifyCutValueEdited()
     {
         if (_isSyncing || _cutPresets.IsApplying) return;

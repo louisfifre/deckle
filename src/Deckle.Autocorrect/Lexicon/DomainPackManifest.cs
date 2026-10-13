@@ -7,12 +7,11 @@ namespace Deckle.Autocorrect;
 // ── DomainPackManifest ──────────────────────────────────────────────────────
 //
 // The dilution indicator of one pack, as fabrication measured it: what the pack
-// brings and what was refused to protect the base lexicon's own corrections
-// (CONTEXT.md § Pack sanitization). Sanitization happens at build, so these
-// numbers can only come from there — this is the machine-readable side of the
-// fabrication report, written by DomainPackBuilder next to the pack artifact and
-// shipped with it. The report stays the human record, with the per-form tables
-// and the judge's reasoning; the manifest is the handful of totals the settings
+// brings and what was refused to protect the base lexicon's own corrections.
+// Sanitization happens at build, so these numbers can only come from there —
+// this is the machine-readable side of the fabrication report, written by
+// DomainPackBuilder next to the pack artifact and shipped with it. The report
+// stays the human record; the manifest is the handful of totals the settings
 // page reads. Both are written in the same pass from the same counts.
 //
 // Read on the settings page, never on the correction path. A pack whose
@@ -30,11 +29,10 @@ public sealed record DomainPackManifest
     // The pack this describes, matching DomainPack.Id ("fr-it").
     public string Id { get; init; } = string.Empty;
 
-    // Forms the shipped artifact carries — what the pack brings.
     public int ShippedForms { get; init; }
 
-    // Of those, the ones the frequency overlay lifted off the flat floor
-    // because they are genuinely common (the IT bench's promotion call).
+    // Of the shipped forms, the ones the frequency overlay lifted off the flat
+    // floor because they are genuinely common.
     public int PromotedForms { get; init; }
 
     // Candidates whose masking cost sat above the exclusion threshold: keeping

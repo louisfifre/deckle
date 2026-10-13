@@ -13,7 +13,7 @@ We bypass the bundled Chinese convert_char_to_pinyin helper and feed French text
 directly: this is a character-level Latin vocab, so each character maps to an id.
 
 Run with the dedicated venv:
-    benchmark\\.venv-f5\\Scripts\\python.exe benchmark\\benches\\tts-audition\\f5_synth.py
+    benchmark\\.venv-f5\\Scripts\\python.exe benchmark\\asr\\studies\\tts-audition\\f5_synth.py
 """
 
 from __future__ import annotations
@@ -37,10 +37,6 @@ HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
 import _harness  # noqa: E402
 
-# Shared run dir under %LOCALAPPDATA% (survives worktrees), the single location
-# every audition script and the player agree on. Replaces the old worktree-local
-# `runs/tts-audition-poc-0001`, which both broke the code/data split and pointed
-# at the parallel-contaminated take.
 OUT = _harness.RUN_DIR
 
 MODEL_DIR = Path(r"D:\models\tts\f5-fr")
@@ -61,8 +57,6 @@ FUSE_NFE = 1
 SPEED = 1.0
 RANDOM_SEED = 9527
 
-# The five neutral audition sentences, shared with every other engine through
-# the harness (single source of truth — no per-script duplication).
 SENTENCES = _harness.PUBLIC_SENTENCES
 
 REF_TEXT = SENTENCES["01_neutre"]
@@ -112,7 +106,6 @@ def read_wav_mono_24k(path: Path) -> np.ndarray:
     if n_ch > 1:
         data = data.reshape(-1, n_ch).mean(axis=1)
     if sr != SAMPLE_RATE:
-        # Linear resample to 24 kHz.
         n_out = int(round(len(data) * SAMPLE_RATE / sr))
         x_old = np.linspace(0.0, 1.0, num=len(data), endpoint=False)
         x_new = np.linspace(0.0, 1.0, num=n_out, endpoint=False)
@@ -157,7 +150,6 @@ def main() -> int:
 
     pre_audio_dtype = sess_pre.get_inputs()[0].type  # tensor(float) or tensor(int16)
 
-    # Reference audio (voice to clone).
     ref = read_wav_mono_24k(REF_AUDIO)
     if "int16" in pre_audio_dtype:
         ref_arr = (ref * 32768.0).clip(-32768, 32767).astype(np.int16)

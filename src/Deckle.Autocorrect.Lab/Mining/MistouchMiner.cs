@@ -5,46 +5,23 @@ using Deckle.Autocorrect;
 
 namespace Deckle.Autocorrect.Lab;
 
-// Mines mistouch families off the typed-sentence corpus (CONTEXT.md § Mistouch
-// family): recurrent MECHANICAL keyboard slips — a wrong key hit near the
-// intended one, a dropped space after a comma — as opposed to spelling faults,
-// which stay the corrector's domain. Two evidence lanes feed one signature
-// space:
-//
-//   • Repaired lane — the corpus history's « user: » transitions, the errors
-//     the user backspaced into and retyped. Each (before, retyped) pair whose
-//     difference is ONE mechanical edit classifies into a signature; a pure
-//     diacritics fix (accent-folded equal) is the restorer's domain and never
-//     evidence; anything wider than one edit is a rewording and lands in the
-//     unclassified residue the report shows for eyeballing.
-//
-//   • Residue lane — non-word tokens still standing in the FINAL side (errors
-//     nobody fixed), tested against bounded mechanical hypotheses: one
-//     adjacent-key substitution or one un-doubling that lands in a lexicon
-//     tier, the boundary « ; » where an apostrophe reads as a valid elision,
-//     the missing space gluing two valid words behind a comma or period. A
-//     token several hypotheses can repair still evidences each signature, but
-//     flagged ambiguous — the routing doctrine's several-readings case.
-//
-// A family is a signature with its accumulated evidence: counts per lane,
-// distinct days (the adoption discipline's recurrence signal), ambiguity share.
-// The miner DISCOVERS and MEASURES; it activates nothing — thresholds are
-// calibrated on the data and the first batch is maintainer-reviewed before any
-// automation.
+// Mines mistouch families off the typed-sentence corpus: recurrent MECHANICAL
+// keyboard slips (a wrong key hit near the intended one, a dropped space after
+// a comma), as opposed to spelling faults, which stay the corrector's domain.
+// Two evidence lanes feed one signature space: the repaired lane (the errors the
+// user backspaced into and retyped) and the residue lane (non-words still
+// standing in the final text). A family is a signature with its accumulated
+// evidence; distinct days are its recurrence signal. The miner measures and
+// activates nothing: a reviewer approves a family before the engine uses it.
 public static class MistouchMiner
 {
-    // One observed occurrence: the faulty form, the repair that reads it, where
-    // and when it happened, and how it was obtained. FromIsWord says the faulty
-    // form is itself a valid lexicon form (a slip that produced a real word —
-    // undetectable by the commit stage's non-word trigger, sentence-stage
-    // territory); Ambiguous says several hypotheses repaired it.
+    // FromIsWord: the faulty form is itself a valid word, a slip the commit
+    // stage's non-word trigger cannot see. Ambiguous: several hypotheses
+    // repaired it.
     public readonly record struct MistouchEvidence(
         string From, string To, string Process, string Day,
         bool Repaired, bool FromIsWord, bool Ambiguous);
 
-    // One mined family: the deterministic signature ("sub ;→'", "dropped space
-    // after ,", "doubled l", …), its kind in a closed vocabulary (substitution /
-    // omission / doubling / extra / transposition), and the measured evidence.
     // FromWordCount is the review's word-choice alarm: evidence whose faulty
     // form is itself a valid word (« le→la ») smells of grammar or rewording,
     // not of a key slip.
@@ -61,9 +38,8 @@ public static class MistouchMiner
         public int Evidence => RepairedCount + ResidueCount;
     }
 
-    // The mining outcome: families ranked by evidence, plus the user repairs no
-    // mechanical signature could read — shown, never dropped, so the report says
-    // what mining missed.
+    // Unclassified keeps the user repairs no signature reads, so the report
+    // shows what mining missed.
     public sealed record MiningResult(
         IReadOnlyList<MistouchFamily> Families,
         IReadOnlyList<MistouchEvidence> Unclassified);
@@ -118,9 +94,8 @@ public static class MistouchMiner
     // ── Repaired lane ────────────────────────────────────────────────────
 
     // Yields (before, retyped) for every « user: » transition in a history
-    // string — the form as it stood before the user backed into it, paired with
-    // what they physically retyped. Later stage transitions on the same slot
-    // (the retype's own commit repair) are the corrector's work, not evidence.
+    // string. Later stage transitions on the same slot (the retype's own commit
+    // repair) are the corrector's work, not evidence.
     internal static IEnumerable<(string From, string To)> UserRepairs(string history)
     {
         if (string.IsNullOrEmpty(history))
@@ -148,16 +123,15 @@ public static class MistouchMiner
         }
     }
 
-    // Classifies a repair pair whose difference is exactly one mechanical edit;
-    // null for diacritics fixes (the restorer's domain) and anything wider (a
-    // rewording). Case is folded — the mechanics live on the key, not the shift.
+    // Null for a diacritics fix (the restorer's domain) and for anything wider
+    // than one edit (a rewording). Case is folded: the mechanics live on the
+    // key, not the shift.
     internal static (string Signature, string Kind)? ClassifySingleEdit(string from, string to)
     {
         string a = from.ToLowerInvariant(), b = to.ToLowerInvariant();
         if (a == b) return null;
         if (AccentFolding.Fold(a) == AccentFolding.Fold(b)) return null;
 
-        // Trim the common prefix and suffix; the middles are the edit.
         int prefix = 0;
         while (prefix < a.Length && prefix < b.Length && a[prefix] == b[prefix]) prefix++;
         int suffix = 0;
@@ -192,11 +166,10 @@ public static class MistouchMiner
 
     // ── Residue lane ─────────────────────────────────────────────────────
 
-    // Errors nobody fixed, still standing in the final side. Token-level: a
-    // letters-only non-word one bounded mechanical hypothesis makes valid.
-    // Boundary-level: the « ; »-for-apostrophe elision and the missing space
-    // behind a comma or period, which the tracker split across slots and no
-    // token-level view can see.
+    // Errors nobody fixed, still standing in the final text. The boundary
+    // patterns (the « ; »-for-apostrophe elision, the missing space behind a
+    // comma or period) are read off the raw string: the tracker split them
+    // across slots, where no token-level view can see them.
     private static void MineResidue(
         CorpusEntry entry,
         Func<string, bool> isWord,
@@ -213,8 +186,6 @@ public static class MistouchMiner
             if (lower.Length < 2 || !lower.All(char.IsAsciiLetter) || isWord(lower))
                 continue;
 
-            // Every adjacent-key substitution and every un-doubling that lands
-            // in a lexicon; several landings = several readings, each flagged.
             var repairs = new List<(string Signature, string Kind, string To)>();
             for (int i = 0; i < lower.Length; i++)
             {
@@ -237,7 +208,6 @@ public static class MistouchMiner
                 evidence.Add((signature, kind, Occurrence(lower, to, fromIsWord: false, ambiguous)));
         }
 
-        // Boundary patterns read off the raw string: letter-run PUNCT letter-run.
         for (int i = 1; i < final.Length - 1; i++)
         {
             char p = final[i];
@@ -249,14 +219,14 @@ public static class MistouchMiner
 
             if (p == ';' && WordBoundaries.IsElisionPrefix(left) && isWord(right))
             {
-                // « qu;il » — the key right of the apostrophe on QWERTY-US.
+                // « qu;il »: ';' is the key left of the apostrophe on QWERTY-US.
                 evidence.Add(("sub ;→'", "substitution",
                     Occurrence($"{left};{right}", $"{left}'{right}", fromIsWord: false, ambiguous: false)));
             }
             else if (p is ',' or '.' && isWord(left) && isWord(right))
             {
-                // « mot,mot » — both sides are words, the space never landed.
-                // A '.' between non-words (app.jsonl) never qualifies.
+                // Both sides must be words, so a file name such as app.jsonl
+                // never qualifies.
                 evidence.Add(($"dropped space after {p}", "omission",
                     Occurrence($"{left}{p}{right}", $"{left}{p} {right}", fromIsWord: false, ambiguous: false)));
             }

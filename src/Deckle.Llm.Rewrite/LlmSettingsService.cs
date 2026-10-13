@@ -5,20 +5,9 @@ namespace Deckle.Llm.Rewrite;
 
 // ── LlmSettingsService ────────────────────────────────────────────────────
 //
-// Module-local persistence for LlmSettings. Twin of TranscriptionSettingsService —
-// see that file's comment for the design rationale (cycle avoidance via
-// per-module ownership of settings + file).
-//
-// Backing file: <UserDataRoot>/modules/llm/settings.json. Migration from
-// the legacy combined settings.json is handled by
+// Module-local persistence for LlmSettings. The legacy combined settings.json
+// is migrated into this module's file by
 // SettingsBootstrap.MigrateLegacyToPerModule().
-//
-// Profile-id reconciliation (filling missing 12-char Guid suffixes,
-// re-pairing rules and slots against the live Profiles list) lives next
-// door in LlmSettingsMigrations.RepairProfileReferences, wired here as
-// the postLoadMigration callback so loads-from-disk are repaired in
-// place. Page-level reset paths call the helper explicitly before
-// Replace().
 public sealed class LlmSettingsService
 {
     private static readonly Lazy<LlmSettingsService> _instance = new(() => new LlmSettingsService());
@@ -54,8 +43,6 @@ public sealed class LlmSettingsService
             jsonOptions: _jsonOptions,
             logWarning:  msg => DeckleLlmSource.Log.SettingsLoadWarning(msg),
             logError:    msg => DeckleLlmSource.Log.SettingsLoadError(msg),
-            // Profile id reconciliation: fill missing 12-char Guid suffixes
-            // and re-pair rules/slots against the live Profiles list.
             postLoadMigration: LlmSettingsMigrations.RepairProfileReferences);
     }
 

@@ -58,16 +58,13 @@ public class ProjectGesturesTests
         // is the creation body (with an epic, the trailing POST is the list-add).
         await NewGestures(server).CreateAsync("Mon projet", ct: Ct);
 
-        // The API ignores the default template unless template_id is named; the
-        // creation POST must carry the project type's frozen template id.
         JsonObject created = server.LastBodyFor("POST");
         Assert.Equal(DevSpace.Templates.Project, created["template_id"]!.GetValue<string>());
     }
 
     // The live list-add endpoint answers 200 with a bare JSON string, not an
-    // object (measured 2026-06-12). Creating a project inside an epic must
-    // treat that as success — it used to throw "non-object JSON root" AFTER
-    // the membership was already posted.
+    // object. Creating a project inside an epic must treat that as success:
+    // the membership is already posted.
     [Fact]
     public async Task CreateInsideAnEpicSurvivesTheBareStringListAddResponse()
     {
@@ -84,10 +81,8 @@ public class ProjectGesturesTests
 
         string digest = await NewGestures(server).CreateAsync("Mon projet", epic: EpicId, ct: Ct);
 
-        // The gesture completes and reports the membership.
         Assert.Contains("Ajouté à l'epic Deckle", digest);
 
-        // The membership POST carried exactly the created project's id.
         JsonObject added = server.LastBodyFor("POST");
         var objects = Assert.IsType<JsonArray>(added["objects"]);
         string id = Assert.Single(objects)!.GetValue<string>();
@@ -125,11 +120,10 @@ public class ProjectGesturesTests
     }
 
     // The live search serves one page at a time (100 by default, 1000 at most,
-    // last-modified first). Once the space held more tasks than a page, a task
-    // untouched for a while never reached the overview although its
-    // relation_projet named the project (measured 2026-09-10). The overview
-    // must walk the pages to the end, and paging rides in the query string —
-    // the search body has no paging field.
+    // last-modified first), so a task untouched for a while falls off the first
+    // page although its relation_projet names the project. The overview must
+    // walk the pages to the end, and paging rides in the query string — the
+    // search body has no paging field.
     [Fact]
     [Trait("Category", "regression")]
     public async Task OverviewListsALinkedTaskBeyondTheFirstSearchPage()
@@ -154,7 +148,6 @@ public class ProjectGesturesTests
         var searches = server.Requests.Where(r => r.Method == "POST" && r.Path.EndsWith("/search")).ToList();
         Assert.Equal(3, searches.Count);
 
-        // Each page starts where the previous one ended, at the same size.
         (int offset1, int limit1) = Paging(searches[0].Query);
         (int offset2, int limit2) = Paging(searches[1].Query);
         Assert.Equal(0, offset1);
@@ -219,7 +212,6 @@ public class ProjectGesturesTests
         ["pagination"] = new JsonObject { ["has_more"] = hasMore },
     };
 
-    // (offset, limit) as the query string carries them.
     static (int Offset, int Limit) Paging(string query)
     {
         var parameters = query.TrimStart('?').Split('&', StringSplitOptions.RemoveEmptyEntries)

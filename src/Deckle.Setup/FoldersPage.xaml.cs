@@ -9,19 +9,9 @@ using Deckle.Modules;
 
 namespace Deckle.Setup;
 
-// ── FoldersPage ──────────────────────────────────────────────────────────────
-//
-// Install-mode only — the step between the module selector and the model
-// choice. Collects the two folders the installer doctrine revolves around:
-// the application folder (binaries, per user) and the data folder (models,
-// settings, logs — the heavy assets, relocatable off a saturated C: via
-// DECKLE_DATA_ROOT).
-//
-// The space recap is computed per drive: the app drive owes the payload's
-// size (the extracted tree this temp process runs from), the data drive owes
-// the install plan's pending downloads — both land on the same drive line
-// when the folders share one. A drive that can't take its share flips the
-// InfoBar to Error and gates Next.
+// Install mode only: collects the application folder (binaries, per user) and
+// the data folder (models, settings, logs), which DECKLE_DATA_ROOT can move off
+// a saturated C:.
 public sealed partial class FoldersPage : Page
 {
     private SetupWindow? _setup;
@@ -179,9 +169,8 @@ public sealed partial class FoldersPage : Page
     {
         if (_setup is null || _context is null) return;
 
-        // The data folder is now the wizard's declared location — the Choices
-        // recap displays Context.Location, which must be the chosen root, not
-        // the default AppPaths froze on in this temp process.
+        // The Choices recap displays Context.Location, which must be the chosen
+        // data root, not the default AppPaths froze on in this temp process.
         _context.Location = _context.DataDirectory;
 
         DeckleSetupSource.Log.FoldersChosen();

@@ -6,29 +6,20 @@ namespace Deckle.Playground;
 
 // ─── HudPage — tuning expanders ─────────────────────────────────────────────
 //
-// One Add*Expander method per logical knob group (palette, hue rotation,
-// arc rotation, recording variant, etc.) plus the matching Reset*
-// method that snaps the group back to compiled defaults. Filtered by
-// HudViewModel.ActiveTuningSections so only the expanders whose rows
-// reach the active target's preview are rendered ; Parked follows them
-// (collapsed by default) for the transition-only knobs, and is skipped
-// with them on Charging, which has no stroke.
+// One Add*Expander per knob group, each with a Reset* back to the compiled
+// defaults.
 //
-// Step-frequency convention (kept aligned with HudPage.RowFactories) :
+// Step-frequency convention:
 //   fractional [0..1, ease Y, saturation/opacity/hue]   → 0.05
 //   period seconds [0..60, 0.5..30]                     → 0.5
 //   short period (fade curve)                           → 0.1
 //   exposure [-2..2]                                    → 0.1
 //   blend seconds [0..5]                                → 0.1
-//   dBFS (MinDbfs / MaxDbfs)                            → 1
 //   sim RMS values [0..0.3]                             → 0.001
 //   WedgeCount (int)                                    → 1
 
 public sealed partial class HudPage
 {
-    // HUD geometry — dimensions of the stroke rect itself, independent
-    // of any conic/arc/recording variant. Paint-time changes rebuild the
-    // preview only.
     private void AddHudGeometryExpander()
     {
         var stack = NewTuningSection("HUD geometry", ResetHudGeometry);
@@ -273,10 +264,7 @@ public sealed partial class HudPage
     private void AddSimulatedRmsExpander()
     {
         var stack = NewTuningSection("Simulated RMS (Recording only)", ResetSimulatedRms);
-        // Step 0.001 (not 0.05/0.01) — the RMS range is 0..0.3 and the
-        // meaningful defaults (0.013 = engine gate at -38 dBFS, 0.100 =
-        // conversational mid -20 dBFS) need 3 decimals to display
-        // cleanly.
+        // Step 0.001: the defaults (0.013, 0.100) need three decimals.
         AddFloatRow(stack, "SimRmsMin", 0, 0.3, 0.001, _simRmsMin,
             v => _simRmsMin = (float)v);
         AddFloatRow(stack, "SimRmsMax", 0, 0.3, 0.001, _simRmsMax,
@@ -299,14 +287,10 @@ public sealed partial class HudPage
         RebuildTuningPanel();
     }
 
-    // Conic clone — placement + INDEPENDENT rotation of the cloned double comet
-    // (the material the pinned reveal shows behind the digits). Placement: where the
-    // cone's apex sits within the 272×78 row frame ((136,39) = centred, (0,0) =
-    // top-left). The X/Y sliders read in px against the preview frame but STORE a
-    // fraction (CloneCentre*Fraction). Rotation: the clone's own hue + arc speeds
-    // and directions — default = the contour's, so a fresh clone looks identical
-    // until you tune them apart. All of it drives the ConicClone preview and the
-    // digit reveal of the Transcribing / Rewriting previews — paint-time, debounced.
+    // The clone is the material the pinned reveal shows behind the digits; these
+    // knobs drive the ConicClone preview and the digit reveal of the
+    // Transcribing and Rewriting previews. The centre sliders read in px
+    // against the 272×78 frame but store a fraction (CloneCentre*Fraction).
     private void AddClonePlacementExpander()
     {
         var stack = NewTuningSection("Conic clone", ResetClonePlacement);
@@ -316,9 +300,9 @@ public sealed partial class HudPage
         AddFloatRow(stack, "Cone centre Y", 0, NakedHudSize.Y, 2,
             _tuning.CloneCentreYFraction * NakedHudSize.Y,
             v => _tuning.CloneCentreYFraction = (float)v / NakedHudSize.Y, rebuild: true);
-        // Peps knobs — the clone's own OKLCh lightness/chroma, decoupled from the
-        // contour's palette (exposure caps at +2 EV, too low). Lightness brightens
-        // the Transcribing greyscale sweep ; chroma feeds the Rewriting colour.
+        // The clone's own OKLCh lightness/chroma, decoupled from the contour's
+        // palette because exposure caps at +2 EV. Lightness brightens the
+        // Transcribing greyscale sweep; chroma feeds the Rewriting colour.
         AddFloatRow(stack, "Clone OKLCh lightness", 0, 1, 0.05, _tuning.CloneOklchLightness,
             v => _tuning.CloneOklchLightness = (float)v, rebuild: true);
         AddFloatRow(stack, "Clone OKLCh chroma", 0, 0.4, 0.05, _tuning.CloneOklchChroma,
@@ -348,11 +332,10 @@ public sealed partial class HudPage
         ApplyTarget();
     }
 
-    // Parked expander — phases are only observable at stroke creation, the
-    // blends only during a variant transition (visible in the preview only on
-    // Rewriting at each Start and on a live theme switch), which is why these
-    // rows stay parked on every target that has a stroke (the countdown views
-    // have none).
+    // Phases are only observable at stroke creation, the blends only during a
+    // variant transition (in the preview, on Rewriting at each Start and on a
+    // live theme switch), so these rows stay parked on every target that has a
+    // stroke.
     private void AddParkedExpander()
     {
         var stack = NewTuningSection("Transition and rotation defaults", ResetParked);

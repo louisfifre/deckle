@@ -9,10 +9,9 @@ namespace Deckle.Shell.TaskbarCover;
 public sealed partial class TaskbarCoverHost
 {
     // First layout and gate probes, off Start()'s critical path: the gated
-    // section (SetupWindow) makes local calls exclusively — the profile
-    // RawInputHost set — while SHAppBarMessage is a synchronous send to
-    // Explorer's tray window. Against a hung Explorer it blocks this thread
-    // only, never the caller of Start().
+    // section (SetupWindow) makes local calls only, while SHAppBarMessage is
+    // a synchronous send to Explorer's tray window. Against a hung Explorer
+    // it blocks this thread only, never the caller of Start().
     private void BootstrapState()
     {
         RebuildLayout("boot");

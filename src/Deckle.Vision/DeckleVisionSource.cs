@@ -3,15 +3,8 @@ using Deckle.Diagnostics;
 
 namespace Deckle.Vision;
 
-// Vision module provider. Covers screen capture (DXGI Output Duplication) and
-// frame sampling (FrameSampler: mip chain + staging + readback). Events cover
-// capture session lifecycle, acquisition loop anomalies (ACCESS_LOST,
-// DEVICE_REMOVED, timeout, backoff), and resilience (duplication recreate,
-// resize detected).
-//
-// The source label in LogWindow remains "SCREEN" through "Deckle-Vision" →
-// "VISION" derivation: slight display-side rename compared with legacy
-// `LogSource.Screen`, expected for the migration.
+// Vision module provider: screen capture (DXGI Output Duplication) and frame
+// sampling (FrameSampler).
 [EventSource(Name = "Deckle-Vision")]
 public sealed class DeckleVisionSource : DeckleEventSource
 {
@@ -46,11 +39,8 @@ public sealed class DeckleVisionSource : DeckleEventSource
     public const int EvtCaptureFormatRenegotiated       = 26;
     public const int EvtCaptureFormatRenegotiatedDetail = 27;
 
-    // ── Verbose mirrors (Verbose/Info separation) ───────────────────────
-    // Fresh ids appended after the milestone sequence; each mirrors a
-    // milestone whose IDs / k=v detail moved out of the Capital Info message.
-    // IDs are public in the ETW manifest; never reuse an id after deleting an
-    // event.
+    // Event ids are public in the ETW manifest: append new ones, never reuse
+    // an id after deleting an event.
     public const int EvtMonitorNotFoundDetail           = 28;
     public const int EvtDeviceLostDetail                = 29;
     public const int EvtTextureQueryFailedDetail        = 30;
@@ -357,11 +347,6 @@ public sealed class DeckleVisionSource : DeckleEventSource
             WriteEvent(EvtDuplicationRecreateAbandonedDetail, attempts, hr, ex_type, message);
     }
 
-    // Milestone — ungated by AmbientCaptureGate (Info always passes) so the
-    // HDR↔SDR toggle is visible at test time even with LogAmbientCaptureActivity
-    // off. This is the line that disambiguates the diagnosed silent freeze :
-    // if it fires on the toggle, the recreate funnel saw the format flip and
-    // signalled the consumer to rebuild. mode = "HDR" | "SDR".
     [Event(EvtCaptureFormatRenegotiated,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)(Keywords.Capture | Keywords.Lifecycle),
@@ -435,20 +420,13 @@ public sealed class DeckleVisionSource : DeckleEventSource
 
     // ── Heartbeat — rolling capture telemetry ──────────────────────────
     //
-    // Periodic rollup of the DXGI Output Duplication loop. One line per
-    // window (period_ms ≈ 1000) summarising frame throughput and intra-
-    // tick latency distribution. Acquire latency covers the AcquireNext-
-    // Frame → ReleaseFrame round-trip ; sample latency covers the
-    // FrameSampler downscale + map path. Both in microseconds because
-    // the acquire path is typically sub-millisecond — _us gives enough
-    // resolution to surface jitter that _ms would round away.
+    // One line per ScreenCaptureService heartbeat window. Acquire latency
+    // covers the AcquireNextFrame → ReleaseFrame round-trip; sample latency
+    // covers the FrameArrived handler. Microseconds because the acquire path
+    // is often sub-millisecond and _ms would round its jitter away.
     //
-    // Strictly Verbose | Keywords.Heartbeat gated so the per-sample
-    // collection itself collapses to a single IsEnabled check when no
-    // listener is attached. Caller responsibility : check IsEnabled
-    // before collecting samples (zero alloc on the rolling buffer when
-    // off), and emit through this method which gates a second time
-    // before WriteEvent.
+    // Callers check the Verbose | Heartbeat gate before collecting samples,
+    // so the loop allocates nothing when no listener is attached.
     [Event(EvtHeartbeat,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Heartbeat,

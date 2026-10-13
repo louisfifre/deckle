@@ -3,23 +3,6 @@ using Deckle.Diagnostics;
 
 namespace Deckle.Shell;
 
-// Shell module provider. Covers system shell capabilities: message-only Win32
-// host (tray callback + global hotkeys), the global cursor-movement signal
-// attached to it, HKCU\Run autostart, elevated startup (Task Scheduler
-// vehicle), hotkey management (registration + WM_INPUTLANGCHANGE).
-//
-// The "observation attaches to the module that contains the operation" doctrine
-// converges several legacy sources (`LogSource.Hotkey`, `LogSource.MsgHost`,
-// `LogSource.Settings` for the autostart branch) into a single `Deckle.Shell`
-// provider → SHELL tag in LogWindow. Slight UX-side renaming, expected for the
-// migration; keywords distinguish internal subdomains.
-//
-// The historical `DispatcherEnqueueRejected` event (formerly id 15 here) was
-// migrated to `DeckleThreadingSource` during the cross-cutting instrumentation
-// wave. It did not describe a shell operation; it described a dispatcher
-// rejection crossing any module that marshals to the UI thread. Id 15 remains
-// an intentional gap here to preserve stability for the remaining Shell event
-// ids (listeners filtering by id have nothing to update).
 [EventSource(Name = "Deckle-Shell")]
 public sealed class DeckleShellSource : DeckleEventSource
 {
@@ -41,17 +24,13 @@ public sealed class DeckleShellSource : DeckleEventSource
     public const int EvtHotkeyRegistered            = 12;
     public const int EvtHotkeyLayoutChange          = 13;
     public const int EvtHotkeyReregisterFailed      = 14;
-    // Id 15 (DispatcherEnqueueRejected) migrated to DeckleThreadingSource:
-    // intentional gap to avoid renumbering the remaining ids.
+    // Id 15 is retired; never reuse it.
     public const int EvtElevatedStartupEnabled      = 16;
     public const int EvtElevatedStartupEnableFailed  = 17;
     public const int EvtElevatedStartupDisabled     = 18;
     public const int EvtElevatedStartupDisableFailed = 19;
     public const int EvtElevatedStartupProbeFailed   = 20;
-    // Verbose mirrors appended for the Verbose/Info separation: each milestone
-    // above whose message carried an error / path / handle now emits a short
-    // Capital sentence, and the technical detail moves to one of these fresh
-    // ids. IDs are public in the ETW manifest; never reuse an id.
+    // IDs are public in the ETW manifest; never reuse an id.
     public const int EvtAutostartProbeFailedDetail        = 21;
     public const int EvtAutostartEnableFailedAclDetail    = 22;
     public const int EvtAutostartEnableFailedDetail       = 23;
@@ -125,8 +104,7 @@ public sealed class DeckleShellSource : DeckleEventSource
         if (IsEnabled()) WriteEvent(EvtAutostartProbeFailedDetail, ex_type, message);
     }
 
-    // Constant reason (Environment.ProcessPath empty) documented at the call
-    // site; the milestone carries no detail, so no Verbose mirror is needed.
+    // No Verbose mirror: the only cause is an empty Environment.ProcessPath.
     [Event(EvtAutostartEnableSkipped,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Lifecycle,
@@ -358,8 +336,4 @@ public sealed class DeckleShellSource : DeckleEventSource
     {
         if (IsEnabled()) WriteEvent(EvtHotkeyReregisterFailedDetail, failures);
     }
-
-    // DispatcherEnqueueRejected now lives on DeckleThreadingSource. Callers go
-    // through DispatcherQueueExtensions.TryEnqueueOrLog (which redirects
-    // internally) or directly through the Threading provider EventSource path.
 }

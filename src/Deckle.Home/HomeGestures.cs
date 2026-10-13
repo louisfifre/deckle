@@ -345,8 +345,6 @@ public sealed partial class HomeGestures
         return $"Mis à la corbeille : {HomeObjectIndex.Display(target)}.";
     }
 
-    // The component gate as a dedicated verb: the Système argument is the
-    // point — a composant without one is not a composant.
     public Task<string> CreateComponentAsync(
         string name,
         string system,
@@ -378,9 +376,9 @@ public sealed partial class HomeGestures
             ct);
     }
 
-    // Typed pilotage verbs. Creation stays deliberately loose (a name
-    // suffices, properties land when known) and a todo may live without a
-    // chantier: the chantier is for real works, not every chore.
+    // Creation stays deliberately loose (a name suffices, properties land
+    // when known) and a todo may live without a worksite: a worksite is for
+    // real works, not every chore.
     public Task<string> CreateWorksiteAsync(
         string name,
         JsonObject? properties,
@@ -407,9 +405,9 @@ public sealed partial class HomeGestures
             ct);
     }
 
-    // Completion is the record: done todos ARE the history of a chantier, so
-    // there is no separate intervention journal. done is Anytype's native
-    // action-layout checkbox, outside the Home property contract — its entry
+    // Completion is the record: done todos are a worksite's history, so there
+    // is no separate intervention journal. done is Anytype's native
+    // action-layout checkbox, outside the Home property contract, so its entry
     // is built directly rather than through the writer.
     public async Task<string> CompleteAsync(string selector, CancellationToken ct = default)
     {
@@ -604,12 +602,8 @@ public sealed partial class HomeGestures
         code ?? throw new ArgumentException(
             $"Le type {type} exige un code normatif.", nameof(code));
 
-    // A free-titled object carries no code: equipment, plants, errands,
-    // worksites and todos are titled by their free name. An idée is an Anytype
-    // note: it has no separate name, its whole text lives in body, and Home
-    // uses the returned snippet only as a compact display excerpt.
-    // Initial dictation text is available on every type; later body edits
-    // append or target one existing section under the shared write scope.
+    // An idea is an Anytype note: it has no name field, its whole text lives
+    // in body.
     private static (string Display, JsonObject Payload, IReadOnlyList<string> Collections) PrepareFreeTitledItem(
         string type,
         HomeCreateItem item,
@@ -677,8 +671,8 @@ public sealed partial class HomeGestures
         return properties;
     }
 
-    // The composant is defined by its relation, not its nature: no Système, no
-    // composant. Doubt goes to Appareil — retyping is cheap.
+    // A component is defined by its relation, not its nature: no system, no
+    // component. In doubt, create a device; retyping is cheap.
     private static void RequireComponentSystem(string type, JsonArray properties)
     {
         if (type != HomeSchema.Types.Component) return;
@@ -715,13 +709,9 @@ public sealed partial class HomeGestures
                 : "Le code se fournit par le champ « code » de l'item, pas dans les propriétés.");
     }
 
-    // Electricity grill of 2026-08-23: Existence left the schema — if a point
-    // is in the inventory it exists, a point taken off a wall is deleted (the
-    // bin keeps the trace), and no code-reallocation rule exists (Louis). The
-    // one guard left is the reference: a point another object points at
-    // (Commande, Commandé par, Alimenté par…) entered the house's graph and
-    // refuses to leave until those references are cleared — otherwise the
-    // graph would dangle.
+    // A point taken off a wall is deleted, not flagged; the bin keeps the
+    // trace. A point another object still references refuses to leave until
+    // those references are cleared, otherwise the graph would dangle.
     private static void RefusePointDelete(JsonObject value, HomeObjectIndex index)
     {
         if (HomeObjectJson.TypeKey(value) != HomeSchema.Types.Point) return;

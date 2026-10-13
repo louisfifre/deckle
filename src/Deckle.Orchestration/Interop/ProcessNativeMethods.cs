@@ -4,7 +4,7 @@ namespace Deckle.Orchestration;
 
 // Win32 process access the module needs: read a process's image path without
 // the rights Process.MainModule demands (which fails across bitness and on
-// elevated processes). SYNCHRONIZE is declared for the exit watch of a later step.
+// elevated processes).
 internal static class ProcessNativeMethods
 {
     internal const uint PROCESS_QUERY_LIMITED_INFORMATION = 0x1000;

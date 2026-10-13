@@ -3,10 +3,9 @@ using Xunit;
 
 namespace Deckle.Shell.TrayMenu.Tests;
 
-// Behaviour of TrayMenuSizing: under Placement Full the carrier size is the
-// visible menu card, so the carrier must never be smaller than the items it
-// shows. Item sizes are the narrow-density menu as logged on 2026-07-16:
-// five items of 32 DIP and one separator of 3 DIP.
+// Under Placement Full the carrier size is the visible menu card, so the
+// carrier must never be smaller than the items it shows. Item sizes are the
+// narrow-density menu: five items of 32 DIP and one separator of 3 DIP.
 public class TrayMenuSizingTests
 {
     private static readonly (double Width, double Height)[] Items =
@@ -22,10 +21,8 @@ public class TrayMenuSizingTests
     private static readonly (double Width, double Height) ItemExtent =
         TrayMenuSizing.ItemExtent(Items);
 
-    // Regression: a presenter measured clipped, or before its items were laid
-    // out, reports its MinHeight (one item, 32 DIP). The carrier used to
-    // accept any positive captured size, so the menu opened one item tall
-    // and scrolled until the process restarted.
+    // A presenter measured clipped, or before its items were laid out, reports
+    // its MinHeight (one item, 32 DIP): positive, yet one item tall.
     [Fact]
     [Trait("Category", "regression")]
     public void CapturedSizeSmallerThanItsItemsIsNeverUsed()
@@ -73,9 +70,8 @@ public class TrayMenuSizingTests
         Assert.Equal(ItemExtent.Height + TrayMenuSizing.FallbackFrameMargin * 2, size.Height);
     }
 
-    // Regression: the quick-actions panel has one content element, not items.
-    // Its capture used to accept any positive presenter size, the same "> 0"
-    // check that let the menu open one item tall.
+    // The quick-actions panel has one content element, not items, and goes
+    // through the same check.
     [Fact]
     [Trait("Category", "regression")]
     public void APresenterSmallerThanThePanelContentIsNotTrusted()

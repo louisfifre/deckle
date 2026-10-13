@@ -81,8 +81,8 @@ public class NotificationDispatcherTests
     [Fact]
     public async Task NoChannelForTheDescriptorPreferenceReturnsNull()
     {
-        // The only channel claims Toast; nothing is registered for the
-        // descriptor's preference, so the prompt drops to null.
+        // No channel is wired, so nothing serves the descriptor's preference
+        // and the prompt drops to null.
         var dispatcher = NotificationDispatcher.Initialize();
         var descriptor = Descriptors.Make("playground.no_channel");
         dispatcher.Catalog.Register(new[] { descriptor });
@@ -96,10 +96,8 @@ public class NotificationDispatcherTests
     [Fact]
     public async Task WhenTwoChannelsClaimTheSameKindTheLastWiredWins()
     {
-        // Both channels claim Toast; the dispatcher's wiring map keeps the last
-        // writer, so the prompt must route to the second and never touch the
-        // first. A distinct canned response per channel makes the winner visible
-        // in the returned value as well as in the recorded calls.
+        // A distinct canned response per channel makes the winner visible in
+        // the returned value as well as in the recorded calls.
         var first = new FakeNotificationChannel(
             cannedResponse: new NotificationResponse("first", null));
         var second = new FakeNotificationChannel(

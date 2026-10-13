@@ -4,16 +4,8 @@ using Deckle.Catalog;
 
 namespace Deckle.Shell;
 
-// ─── System notification area icon ────────────────────────────────────────────
-//
-// Implementation via Shell_NotifyIcon (Shell32), with no WinForms dependency.
-//
-// Event flow:
-//   Shell32 → WM_TRAY (WM_USER+1) sent to the main HWND
-//   SubclassCallback intercepte WM_TRAY
-//   → left click   → LeftClickRequested raised, subscriber renders the panel
-//   → double click → DoubleClickRequested raised, subscriber opens Settings
-//   → right click  → RightClickRequested raised, subscriber renders the menu
+// The notification-area icon, through Shell_NotifyIcon (Shell32) with no
+// WinForms dependency.
 //
 // Both surfaces live in the sibling Deckle.Shell.TrayMenu module: the
 // quick-actions panel (TrayQuickActionsHost) on left click, the context menu
@@ -24,7 +16,6 @@ namespace Deckle.Shell;
 // WM_LBUTTONUP: the single-click subscriber runs first, then the double-click
 // one, then a trailing left click. Each subscriber copes with that order
 // itself; the manager does not delay the single click to tell them apart.
-
 public sealed class TrayIconManager : IDisposable
 {
     private IntPtr _hwnd;
@@ -39,10 +30,8 @@ public sealed class TrayIconManager : IDisposable
     private static readonly UIntPtr SubclassId = new(0x5752_4159); // "WRAY"
 
     /// <summary>
-    /// Raised on left-click of the tray icon. The subscriber renders the
-    /// quick-actions panel (typically TrayQuickActionsHost from
-    /// Deckle.Shell.TrayMenu). Raised on the message pump thread of the host
-    /// HWND; marshaling elsewhere is the subscriber's responsibility.
+    /// Raised on left-click of the tray icon, on the message pump thread of
+    /// the host HWND; marshaling elsewhere is the subscriber's responsibility.
     /// </summary>
     public event Action? LeftClickRequested;
 
@@ -54,11 +43,8 @@ public sealed class TrayIconManager : IDisposable
     public event Action? DoubleClickRequested;
 
     /// <summary>
-    /// Raised on right-click of the tray icon. The subscriber renders the
-    /// context menu (typically TrayContextMenuHost from Deckle.Shell.TrayMenu).
-    /// No payload: the menu host reads the current cursor position itself
-    /// via GetCursorPos, since the cursor may move between WM_RBUTTONUP and
-    /// the actual menu display.
+    /// Raised on right-click of the tray icon. No payload: the menu host
+    /// anchors on <see cref="GetIconRect"/>, with the cursor as its fallback.
     /// </summary>
     public event Action? RightClickRequested;
 
@@ -70,11 +56,6 @@ public sealed class TrayIconManager : IDisposable
         (_hIconIdle,      _iconsOwned) = LoadIconFromFile(active: false);
         (_hIconRecording, _)           = LoadIconFromFile(active: true);
 
-        // Add the icon in the notification area.
-        // Neutral placeholder: UpdateStatus("Ready", false) from App.OnLaunched
-        // replaces this moments later. Keeping the string aligned with
-        // UpdateStatus avoids flashing a stale "loading" message since the
-        // model is lazy-loaded on first hotkey, not at boot.
         var data = BuildNotifyIconData(Loc.Format("Tray_Tooltip_Format", Loc.Get("Status_Ready")), _hIconIdle);
         bool ok = NativeMethods.Shell_NotifyIcon(NativeMethods.NIM_ADD, ref data);
         if (!ok)
@@ -82,7 +63,6 @@ public sealed class TrayIconManager : IDisposable
                 $"Shell_NotifyIcon(NIM_ADD) failed — hWnd={_hwnd}, hIcon={_hIconIdle}");
         _iconAdded = true;
 
-        // Subclass the HWND to intercept WM_TRAY.
         _subclassDelegate = SubclassCallback;
         if (!NativeMethods.SetWindowSubclass(
                 _hwnd, _subclassDelegate, SubclassId, IntPtr.Zero))
@@ -96,13 +76,11 @@ public sealed class TrayIconManager : IDisposable
 
     // ── Position rect ─────────────────────────────────────────────────────────
     //
-    // Returns the notification-area icon rect in physical pixels (screen
-    // coordinates), or null if the icon could not be located (not yet
-    // registered, hidden in overflow, or shell temporarily unavailable during
-    // explorer.exe restart). Consumed by TrayContextMenuHost to anchor its
-    // MenuFlyout tangent to the icon through CalculatePopupWindowPosition,
-    // which makes positioning automatically correct regardless of taskbar
-    // orientation (left, right, bottom, top) and independent of click point.
+    // The icon rect in physical pixels (screen coordinates), or null if the
+    // icon could not be located (not yet registered, hidden in overflow, or
+    // the shell unavailable during an explorer.exe restart). The tray surfaces
+    // anchor on it through CalculatePopupWindowPosition, which works for any
+    // taskbar orientation and any click point.
     public NativeMethods.RECT? GetIconRect()
     {
         if (!_iconAdded) return null;
@@ -120,12 +98,6 @@ public sealed class TrayIconManager : IDisposable
     }
 
     // ── Status update ───────────────────────────────────────────────────────
-    //
-    // Wired in App.OnLaunched as the unique sink of TranscriptionEngine.StatusChanged:
-    // every transition emitted by the engine (Loading model… → Ready →
-    // Recording… → Transcribing… → Rewriting (...)… → Ready) lands here and
-    // in DeckleAppSource.StatusChanged, so the tooltip stays in sync with
-    // the live pipeline state visible in the LogWindow / app.jsonl.
     //
     // Tip caps at 127 chars (Shell_NotifyIcon szTip limit). The host supplies
     // the semantic state separately: this shell primitive never interprets
@@ -160,8 +132,6 @@ public sealed class TrayIconManager : IDisposable
 
             if (mouseEvent == NativeMethods.WM_LBUTTONUP)
             {
-                // Left click = the quick-actions panel (Record, module
-                // switches). Logs and Settings go through right click.
                 LeftClickRequested?.Invoke();
                 return IntPtr.Zero;
             }
@@ -196,8 +166,6 @@ public sealed class TrayIconManager : IDisposable
 
     // Returns (hIcon, owned): owned=true if loaded from file (DestroyIcon
     // required), owned=false if shared system icon (DO NOT call DestroyIcon).
-    // The .ico path comes from IconAssets, the source of truth shared with
-    // LogWindow.
     private static (IntPtr hIcon, bool owned) LoadIconFromFile(bool active)
     {
         string? path = IconAssets.ResolvePath(recording: active);
@@ -212,9 +180,8 @@ public sealed class TrayIconManager : IDisposable
                 return (hIcon, owned: true);
         }
 
-        // Fallback: generic Windows icon (IDI_APPLICATION = 32512). LoadIcon
-        // returns a shared icon: DO NOT call DestroyIcon on it. Guarantees a
-        // visible tray item even if assets are not copied.
+        // The shared IDI_APPLICATION icon keeps the tray item visible when the
+        // assets were not copied.
         const nint IDI_APPLICATION = 32512;
         return (NativeMethods.LoadIcon(IntPtr.Zero, new IntPtr(IDI_APPLICATION)), owned: false);
     }
@@ -235,8 +202,6 @@ public sealed class TrayIconManager : IDisposable
             NativeMethods.Shell_NotifyIcon(NativeMethods.NIM_DELETE, ref data);
         }
 
-        // Free only icons loaded from file (owned). System icons (LoadIcon) are
-        // shared; DestroyIcon is forbidden.
         if (_iconsOwned)
         {
             if (_hIconIdle != IntPtr.Zero)      NativeMethods.DestroyIcon(_hIconIdle);

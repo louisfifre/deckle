@@ -14,16 +14,14 @@ public sealed partial class DeckleWhispSource
     // sinks reject these dataset-tagged events. The full payload is serialized
     // by EtwSelfDescribingEventFormat with snake_case names becoming JSON keys.
     //
-    // CorpusAsrRecorded captures ASR output (Whisper, later Voxtral). Routed
-    // to corpus/<bucket>/<tier>/corpus.jsonl (bucket=raw in word-for-word mode,
-    // bucket=voxtral-<instruction> when named-instruction Voxtral mode is
-    // wired). The five length tiers — very-short / short / medium / long /
-    // very-long — split the dataset by ASR load for analysis.
+    // CorpusAsrRecorded captures ASR output, routed to
+    // corpus/<bucket>/<tier>/corpus.jsonl (bucket=raw). The five length tiers
+    // (CorpusTier) split the dataset by ASR load for analysis.
     //
-    // CorpusRewriteRecorded captures LLM rewrite output. Routed to
-    // corpus/rewrite-<name>-<id>/corpus.jsonl (flat: no tier on rewrite, see
-    // the normalized corpus contract). rewrite_profile_id joins with the profile; prompt_template_hash
-    // invalidates analyses if the template changes without ID rename.
+    // CorpusRewriteRecorded captures LLM rewrite output, routed flat (no tier) to
+    // corpus/rewrite-<name>-<id>/corpus.jsonl. rewrite_profile_id joins with the
+    // profile; prompt_template_hash invalidates analyses if the template changes
+    // without ID rename.
     //
     // When a rewrite runs, both events leave with the same transcription_id:
     // this is the key joining lines to the WAV (audio/<transcription_id>.wav).

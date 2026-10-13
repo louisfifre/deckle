@@ -80,7 +80,6 @@ public sealed partial class SettingsComposer
                 : draftKey == 0 ? unbound
                 : HotkeyKeyNames.Get(draftKey);
 
-            // The tooltip reads the whole chord as Windows writes it.
             string? chordText = draftKey == 0 ? null
                 : HotkeyChordText.Format(new HotkeyChord(draftModifiers, draftKey));
             ToolTipService.SetToolTip(keyButton, chordText);
@@ -198,7 +197,6 @@ public sealed partial class SettingsComposer
             e.Handled = true;
         };
 
-        // Focus leaving the button (Tab, a click elsewhere) cancels a capture.
         keyButton.LostFocus += (_, _) => StopListening();
 
         if (clear is not null)

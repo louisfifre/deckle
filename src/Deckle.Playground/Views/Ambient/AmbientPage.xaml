@@ -1,9 +1,5 @@
-<!-- Ambient lighting playground page. Two columns : preview stage on
-     the left (toolbar + Viewbox-scaled sampled grid + zone overlay),
-     control cards on the right (Pipeline / Screen capture / Tuning
-     / Hue / Light zones). Persists every tunable into AmbientSettings
-     via AmbientViewModel ; live engine state mirrors through the
-     AmbientSettingsService.Changed observer wired in code-behind. -->
+<!-- Ambient lighting playground page. Every tunable persists into
+     AmbientSettings through AmbientViewModel. -->
 <Page
     x:Class="Deckle.Playground.AmbientPage"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
@@ -25,19 +21,15 @@
                 <RowDefinition Height="*" />
             </Grid.RowDefinitions>
 
-            <!-- Row 0 : preview-options toolbar. Lives outside the
-                 preview frame so the user can toggle zones / inspect
-                 swatches even when the pipeline is off. -->
+            <!-- Outside the preview frame so zones and swatches stay
+                 reachable while the pipeline is off. -->
             <StackPanel Grid.Row="0"
                         Orientation="Horizontal"
                         Spacing="8"
                         Margin="24,24,12,12"
                         VerticalAlignment="Center">
-                <!-- Zones default OFF — the preview area shows the
-                     placeholder until the user explicitly opts in.
-                     LightZonesOverlay below mirrors that default
-                     (Visibility=Collapsed) so the visuals match the
-                     toggle state without firing Checked on Loaded. -->
+                <!-- Off by default. LightZonesOverlay below starts
+                     Collapsed to match, since no Checked fires on load. -->
                 <ToggleButton x:Name="ShowZoneOverlaysToggle"
                               Content="Zones"
                               MinWidth="0"
@@ -51,10 +43,8 @@
                             VerticalAlignment="Center" />
             </StackPanel>
 
-            <!-- Preview cadre. LayerFill so it reads as a recessed
-                 stage. Empty-state shows until the pipeline runs ;
-                 AmbientPreviewGrid is populated in code-behind on
-                 the first frame. -->
+            <!-- AmbientPreviewGrid is built in code-behind on the first
+                 frame. -->
             <Border Grid.Row="1"
                     x:Name="AmbientPreviewBorder"
                     Background="{ThemeResource LayerFillColorDefaultBrush}"
@@ -104,7 +94,7 @@
             </Border>
         </Grid>
 
-        <!-- ── Col 1 — controls (Reset to defaults lives inline in the header) ─ -->
+        <!-- ── Col 1 — controls ───────────────────────────────────── -->
         <Grid Grid.Column="1">
 
             <ScrollViewer MinWidth="380"
@@ -114,13 +104,8 @@
                       HorizontalScrollBarVisibility="Disabled">
             <StackPanel Spacing="20">
 
-                <!-- Page title block — HUD-aligned : TitleTextBlockStyle header +
-                     Body description, with Reset to defaults inline on the right.
-                     Ambient is live-save, so the reset is the only action (no
-                     Save / Revert bar) ; it snaps the tuning, the floor, the
-                     zone sampling and the preset back to the shipping defaults, while
-                     pairing, the monitor source and the pipeline on/off state are
-                     preserved. -->
+                <!-- Ambient saves every edit live, so Reset all is the only
+                     action: no Save / Revert bar. -->
                 <Grid>
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="*" />
@@ -154,7 +139,6 @@
                                Margin="0,4,0,0" />
                 </Grid>
 
-                <!-- Pipeline card. -->
                 <Border Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
                         BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
                         BorderThickness="1"
@@ -206,7 +190,6 @@
                     </StackPanel>
                 </Border>
 
-                <!-- Screen capture card. -->
                 <Border Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
                         BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
                         BorderThickness="1"
@@ -275,9 +258,6 @@
                     </StackPanel>
                 </Border>
 
-                <!-- Tuning card. The knobs apply to SDR and HDR alike :
-                     HDR content is tone-mapped to 8 bits before this
-                     stage. -->
                 <controls:TuningCard Title="Tuning"
                     Description="Tune the ambient knobs live with the preview grid right next to you. Values persist and apply on the next push tick. Touch a preset value and the preset switches to Custom, which keeps your own values; the minimum brightness belongs to no preset."
                     ResetClick="OnResetTuningClick">
@@ -286,8 +266,7 @@
                         <StackPanel Spacing="6">
                             <TextBlock Text="Preset"
                                        Style="{ThemeResource BodyStrongTextBlockStyle}" />
-                            <!-- Items built in code-behind from the
-                                 module's preset family
+                            <!-- Items come from the module's preset family
                                  (BuildAmbientModeComboItems). -->
                             <ComboBox x:Name="PlaygroundAmbientModeCombo"
                                       HorizontalAlignment="Stretch"
@@ -474,7 +453,6 @@
                     </StackPanel>
                 </controls:TuningCard>
 
-                <!-- Hue (REST direct) card. -->
                 <Border Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
                         BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
                         BorderThickness="1"
@@ -620,25 +598,13 @@
                     </StackPanel>
                 </Border>
 
-                <!-- Zone sampling card. Structural sampler knob shared
-                     by every multi-light zone — how thick the sampled
-                     band is around each assigned edge. Lives alongside
-                     the Light zones card (the per-lamp edge picker)
-                     rather than the Tuning panel because it's a
-                     room/lamp-layout property, not a per-scene tuning.
-                     Engine snapshots BorderMode / BorderDepth /
-                     BorderCells on every push tick so a drag applies
-                     live ; the overlay rectangles in the preview
-                     repaint on AmbientSettingsService.Changed. -->
+                <!-- Next to Light zones, not in Tuning: the band thickness
+                     belongs to the lamp layout, not to a scene. -->
                 <controls:TuningCard Title="Zone sampling"
                     Description="How thick the sampled band is around each edge. By share keeps the same proportion top, bottom, and sides ; by cells keeps the same sampler-cell count on every edge — useful on widescreen displays where percentages make the top and bottom bands feel too thin."
                     ResetClick="OnResetZoneClick">
                     <StackPanel Spacing="12">
 
-                        <!-- Scale picker. RadioButtons mirrors the
-                             pipeline-mode pattern at the top of the
-                             page : two mutually exclusive options laid
-                             out horizontally with a discreet header. -->
                         <RadioButtons x:Name="PlaygroundBorderModeRadios"
                                       Header="Thickness"
                                       MaxColumns="2"
@@ -647,12 +613,9 @@
                             <RadioButton Content="By cells" Tag="Cells" />
                         </RadioButtons>
 
-                        <!-- Share slider — fraction of the matching grid
-                             dimension. Minimum + Value seeded in
-                             code-behind to avoid the WinUI 3 release
-                             parser bug (Minimum > default Value=0
-                             throws ; same workaround as
-                             EntropySlider on WhisperPage). -->
+                        <!-- Minimum and Value are set in code-behind: the
+                             WinUI 3 release parser throws on a Minimum
+                             above the default Value of 0. -->
                         <StackPanel x:Name="PlaygroundBorderShareRow" Spacing="6">
                             <Grid ColumnSpacing="12">
                                 <Grid.ColumnDefinitions>
@@ -676,9 +639,7 @@
                             </Grid>
                         </StackPanel>
 
-                        <!-- Cells slider — direct sampler-grid count.
-                             Minimum + Value seeded in code-behind for
-                             the same parser-bug reason. -->
+                        <!-- Same parser constraint as the share slider. -->
                         <StackPanel x:Name="PlaygroundBorderCellsRow" Spacing="6">
                             <Grid ColumnSpacing="12">
                                 <Grid.ColumnDefinitions>
@@ -704,7 +665,6 @@
                     </StackPanel>
                 </controls:TuningCard>
 
-                <!-- Light zones card. -->
                 <Border x:Name="LightZonesCard"
                         Visibility="Collapsed"
                         Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"

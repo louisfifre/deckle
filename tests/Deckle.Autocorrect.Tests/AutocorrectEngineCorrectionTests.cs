@@ -40,10 +40,10 @@ public sealed class AutocorrectEngineCorrectionTests
         h.Prober.Surface = AutocorrectEngineHarness.Editable();
         Assert.True(h.Start());
 
-        h.Type("ca "); // the space commits the word
+        h.Type("ca ");
 
         var call = Assert.Single(h.Injector.Calls);
-        Assert.Equal(("ca ", "ça "), call); // the boundary rides into the diff
+        Assert.Equal(("ca ", "ça "), call);
         var applied = Assert.Single(h.Applied);
         Assert.Equal("ca", applied.Original);
         Assert.Equal("ça", applied.Replacement);
@@ -58,7 +58,7 @@ public sealed class AutocorrectEngineCorrectionTests
         h.Prober.Surface = AutocorrectEngineHarness.Editable();
         h.Start();
 
-        h.Type("ca"); // no boundary yet
+        h.Type("ca");
 
         Assert.Empty(h.Injector.Calls);
         Assert.Empty(h.Applied);
@@ -67,7 +67,7 @@ public sealed class AutocorrectEngineCorrectionTests
     [Fact]
     public void AWordThePolicyLeavesAloneIsNeverInjected()
     {
-        using var h = new AutocorrectEngineHarness(); // NeverCorrects
+        using var h = new AutocorrectEngineHarness();
         h.Prober.Surface = AutocorrectEngineHarness.Editable();
         h.Start();
 
@@ -87,7 +87,6 @@ public sealed class AutocorrectEngineCorrectionTests
 
         h.Type("bonjour ca ");
 
-        // Two words committed; the second carried the first as its left context.
         Assert.Contains(("bonjour", (string?)null), policy.Calls);
         Assert.Contains(("ca", (string?)"bonjour"), policy.Calls);
     }
@@ -150,11 +149,8 @@ public sealed class AutocorrectEngineCorrectionTests
         Assert.Contains(("suivante", (string?)"qualité"), policy.Calls);
     }
 
-    // Regression: a correction firing on an elision commit
-    // must not double the apostrophe. The elision apostrophe lives INSIDE the
-    // committed form (« j' ») and never showed as a separate boundary char, so
-    // the diff carries no trailing boundary — before the fix the boundary was
-    // appended anyway, sending « j'' » → « J'' » with an eaten letter.
+    // The elision apostrophe lives INSIDE the committed form (« j' ») and is not
+    // a separate boundary char, so the diff carries no trailing boundary.
     [Fact]
     public void AnElisionCorrectionDoesNotDoubleTheApostrophe()
     {
@@ -162,10 +158,10 @@ public sealed class AutocorrectEngineCorrectionTests
         h.Prober.Surface = AutocorrectEngineHarness.Editable();
         h.Start();
 
-        h.Type("j'"); // the apostrophe closes the elision and commits « j' »
+        h.Type("j'");
 
         var call = Assert.Single(h.Injector.Calls);
-        Assert.Equal(("j'", "J'"), call); // no trailing boundary, no doubled apostrophe
+        Assert.Equal(("j'", "J'"), call);
         Assert.Equal("J'", h.VisibleText);
     }
 }

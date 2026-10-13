@@ -33,7 +33,6 @@ public sealed class FrequencyLexicon : IFrequencyLexicon
 
     public bool Contains(string lowerForm) => _map.ContainsKey(lowerForm);
 
-    // Frequency of a form, 0 when absent — absence is a zero, not an error.
     public double FrequencyOf(string lowerForm) =>
         _map.TryGetValue(lowerForm, out double f) ? f : 0.0;
 
@@ -70,7 +69,6 @@ public sealed class FrequencyLexicon : IFrequencyLexicon
                 continue;
             }
 
-            // Lowercase + NFC so lookups by lowercased literal always hit.
             string key = form.ToLowerInvariant().Normalize(NormalizationForm.FormC);
             map[key] = map.TryGetValue(key, out double prior) ? prior + freq : freq;
         }
@@ -86,7 +84,6 @@ public sealed class FrequencyLexicon : IFrequencyLexicon
     internal static FrequencyLexicon FromComposedEntries(Dictionary<string, double> map) =>
         new(map, skippedLines: 0);
 
-    // The shipped artifacts are gzip-compressed; decompress on the way in.
     public static FrequencyLexicon LoadTsvGz(string path)
     {
         using var file = File.OpenRead(path);

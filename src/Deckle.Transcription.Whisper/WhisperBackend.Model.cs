@@ -18,9 +18,8 @@ public sealed partial class WhisperBackend
 {
     public Task<ModelLoadResult> LoadModelAsync(CancellationToken ct)
     {
-        // whisper_init_from_file_with_params is a blocking native call. We
-        // expose an async signature for parity with backends that may have
-        // real asynchrony (HTTP, IPC) and wrap the sync result here.
+        // whisper_init_from_file_with_params blocks; the async signature is the
+        // IAsrBackend contract.
         ct.ThrowIfCancellationRequested();
         return Task.FromResult(LoadModelSync());
     }
@@ -31,8 +30,8 @@ public sealed partial class WhisperBackend
         {
             if (_ctx != IntPtr.Zero)
             {
-                // Already loaded — caller should have checked IsModelLoaded
-                // first; treat as success with 0 ms to keep the contract clean.
+                // Already loaded: success with a zero load time keeps the call
+                // idempotent.
                 return new ModelLoadResult(true, 0, _detectedBackend, null);
             }
 
@@ -54,11 +53,9 @@ public sealed partial class WhisperBackend
                 DeckleWhispSource.Log.ModelLoadStart(basename, fileMb);
             }
 
-            // Reset the backend detection before init so a re-load picks up
-            // the current backend rather than the one detected on a previous
-            // load. The log hook overwrites this field synchronously during
-            // init as soon as it sees a ggml_vulkan: / cuda / metal prefix;
-            // CPU stays as the fallback when no GPU backend initialises.
+            // Reset before init: the log hook overwrites this field
+            // synchronously during init when it sees a GPU backend prefix, and
+            // a re-load must not keep the previous load's backend.
             _detectedBackend = "CPU";
 
             var sw = Stopwatch.StartNew();
@@ -93,15 +90,13 @@ public sealed partial class WhisperBackend
         }
     }
 
-    // ── Model path resolution ────────────────────────────────────────────────
-
     // Order of precedence:
     //   1. DECKLE_MODEL_PATH env var if it points to an absolute existing path.
-    //   2. host.Whisp.Engine.Model (user setting), fallback to the
-    //      Whisper catalog's default, joined with host.ResolveModelsDirectory().
-    //   3. If that file is absent, the best catalog model actually installed —
-    //      an install carrying only large-v3 must survive the ggml-base default
-    //      bump without a 3 GB re-download or a dead engine.
+    //   2. Engine.Model (user setting), fallback to the Whisper catalog's
+    //      default, joined with host.ResolveModelsDirectory().
+    //   3. If that file is absent, the best catalog model actually installed,
+    //      so an install carrying only large-v3 keeps working without a 3 GB
+    //      re-download.
     private string ResolveModelPath()
     {
         string modelsDirectory = _host.ResolveModelsDirectory();
@@ -128,16 +123,13 @@ public sealed partial class WhisperBackend
         return resolution.Path;
     }
 
-    // ── Dispose ──────────────────────────────────────────────────────────────
-
     public void Dispose()
     {
         if (_disposed) return;
         _disposed = true;
         UnloadModel();
-        // Per-call callbacks can be released. The process-global log thunk stays
-        // statically rooted; its weak owner disappears naturally once this
-        // backend is no longer referenced.
+        // The process-global log thunk stays statically rooted; its weak owner
+        // disappears once this backend is no longer referenced.
         _segmentCallback = null;
         _abortCallback = null;
     }

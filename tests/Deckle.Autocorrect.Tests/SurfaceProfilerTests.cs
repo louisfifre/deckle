@@ -51,7 +51,6 @@ public class SurfaceProfilerTests
     [Fact]
     public void ReadsSlotCountsAndGapsOffTheTimingString()
     {
-        // Three slots, two measured gaps — the leading "0" is a placeholder.
         var profile = SurfaceProfiler.Profile(new[]
         {
             Entry("word.exe", timing: "0,300,900"),

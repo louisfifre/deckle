@@ -78,7 +78,6 @@ function Stop-OnError {
 
 # Parses `pnputil /enum-drivers` output into a list of entries, then returns the
 # published name (oemNN.inf) of the entry whose Original Name matches $InfOriginalName.
-# Returns $null when no matching entry is found.
 function Find-PublishedName {
     $output = & pnputil /enum-drivers 2>&1
     if ($LASTEXITCODE -ne 0) {
@@ -97,14 +96,11 @@ function Find-PublishedName {
             if ($current.Count -gt 0) { $entries += [pscustomobject]$current; $current = @{} }
             continue
         }
-        # Split on the first colon: "Label : value".
         $idx = $text.IndexOf(':')
         if ($idx -lt 0) { continue }
         $value = $text.Substring($idx + 1).Trim()
-        # Capture the two values we care about by their shape: oemNN.inf for the
-        # published name, and any *.inf for the original name. We key by line
-        # order: the first .inf in an entry is the published name (oemNN.inf),
-        # and we separately track any line whose value equals the target inf.
+        # Match by value shape: the first oemNN.inf value is the published name,
+        # and an entry is the target when any value equals the target INF.
         if ($value -match '^oem\d+\.inf$' -and -not $current.ContainsKey('Published')) {
             $current['Published'] = $value
         }
@@ -142,8 +138,6 @@ Write-Section 'Apple Magic Trackpad 2 — connection repair'
 Write-Info "Driver INF       : $InfOriginalName"
 Write-Info "Backup directory : $BackupDir"
 
-# ── Step a/b: locate the driver and (if present) back it up + remove it ───────
-
 Write-Section 'Step 1 — Locate and remove the driver from the store'
 
 $published = Find-PublishedName
@@ -164,8 +158,6 @@ if ($published) {
     Write-Ok 'Driver removed from the store.'
 }
 else {
-    # Step c: not in the store. If a backup with the inf already exists, the
-    # delete happened on a previous run — continue to the re-pair step.
     $backupInf = Find-BackupInf $BackupDir
     if ($backupInf) {
         Write-Warn 'Driver is not in the store, but a backup exists.'
@@ -180,8 +172,6 @@ else {
         exit 1
     }
 }
-
-# ── Step d: interactive re-pair ───────────────────────────────────────────────
 
 Write-Section 'Step 2 — Re-pair the trackpad (manual)'
 Write-Host ''
@@ -198,8 +188,6 @@ Write-Host '  │  the trackpad, switching it OFF then ON is ALWAYS enough.     
 Write-Host '  └────────────────────────────────────────────────────────────────┘' -ForegroundColor Red
 Write-Host ''
 Read-Host '  When the trackpad is paired and connected, press Enter to continue'
-
-# ── Step e: reinstall the driver ──────────────────────────────────────────────
 
 Write-Section 'Step 3 — Reinstall the driver onto the device'
 
@@ -218,8 +206,6 @@ Stop-OnError 'pnputil /add-driver'
 Write-Ok 'Driver reinstalled.'
 Write-Info 'The driver attaches to the paired BTHENUM device; the trackpad comes'
 Write-Info 'up as "Apple Bluetooth Precision Trackpad" (HIDClass).'
-
-# ── Step f: summary ───────────────────────────────────────────────────────────
 
 Write-Section 'Done'
 Write-Ok 'The trackpad should now pair persistently and expose full precision input.'

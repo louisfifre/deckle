@@ -90,19 +90,13 @@ public sealed partial class DeckleWhispSource
         if (IsEnabled()) WriteEvent(EvtWarmupComplete);
     }
 
-    // Structured measure for the concurrent prime (cold worker only): how long the
-    // prime's model-load + dummy inference took (prime_ms), how long the first real
-    // backend call waited for it at the gate (gate_wait_ms), and WHERE that wait
-    // sat (gate_phase, closed vocabulary). The wait's meaning depends on the phase,
-    // so the field always reads the same once filtered on it:
-    //   at_stop          (monolithic) — post-Stop latency the user actually
-    //                     perceived; ≈ 0 means the recording fully hid the cold
-    //                     cost, > 0 is the residual because the take was shorter
-    //                     than the prime.
-    //   during_recording (streaming)  — the consumer began waiting before the first
-    //                     utterance was ready, fully overlapped with capture and
-    //                     never perceived at Stop; a large value is hidden cost, not
-    //                     user-facing latency.
+    // Cold prime only: prime_ms is the model load plus dummy inference,
+    // gate_wait_ms how long the first real backend call waited for it, and
+    // gate_phase (closed vocabulary) where that wait sat, which sets its meaning:
+    //   at_stop          (monolithic) — post-Stop latency the user perceived;
+    //                     ≈ 0 means the recording hid the whole cold cost.
+    //   during_recording (segmented)  — the consumer waited while capture ran;
+    //                     a large value is hidden cost, not user-facing latency.
     [Event(EvtPrimeOverlap,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Lifecycle,
@@ -168,9 +162,6 @@ public sealed partial class DeckleWhispSource
         if (IsEnabled()) WriteEvent(EvtModelLoadFailed);
     }
 
-    // The `path` key carries the model path on the backend init-failure call
-    // site and the exception message on the engine catch call site; the key is
-    // frozen, so the pre-existing semantic overlap is preserved as-is.
     [Event(EvtModelLoadFailedDetail,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Lifecycle,
@@ -326,8 +317,6 @@ public sealed partial class DeckleWhispSource
         if (IsEnabled()) WriteEvent(EvtWhisperLogVerbose, message);
     }
 
-    // Native-log passthrough: the milestone names the source; the raw
-    // whisper.cpp line ({0}, native casing) is mirrored at Verbose.
     [Event(EvtWhisperLogWarning,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Pipeline,
@@ -385,8 +374,8 @@ public sealed partial class DeckleWhispSource
     // ── Whisper init-phase compaction ────────────────────────────────────
     //
     // Each event consolidates one phase of whisper.cpp's init flow that
-    // would otherwise spam 3 to 17 separate Verbose lines. The summary
-    // payload is built by WhisperBackend's log hook from the per-phase
+    // would otherwise spam several separate Verbose lines. The summary
+    // payload is built by WhisperNativeLogCompactor from the per-phase
     // lines as they arrive; flush happens on the first line of the next
     // phase (or on any non-phase line).
 

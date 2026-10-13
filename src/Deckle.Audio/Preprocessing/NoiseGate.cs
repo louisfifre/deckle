@@ -4,12 +4,11 @@ namespace Deckle.Audio;
 
 // ── NoiseGate ──────────────────────────────────────────────────────────────
 //
-// Soft downward expander below a threshold — one instance, fresh per take.
+// Soft downward expander below a threshold — one instance, fresh per Process
+// call.
 //
-// OFF by default in PreprocessingSettings, and that is the whole point of
-// the comment here: the gate is present so the Playground can experiment,
-// not because the chain needs it. Silence handling proper belongs to the
-// energy VAD upstream of the windowing workstream; a gate sitting in the
+// OFF by default in PreprocessingSettings: the chain does not need it.
+// Silence handling proper belongs to the upstream VAD; a gate sitting in the
 // signal path is blunt and an aggressive one eats the weak phonemes of a
 // quiet voice — exactly the signal we are trying to rescue. Kept soft
 // (ratio ~2:1) and shallow on purpose.

@@ -7,50 +7,22 @@ using Deckle.Diagnostics.Telemetry;
 
 namespace Deckle.App;
 
-// Boot-time wiring of the EventSource-based observability pipeline. Since the
-// dispatch refonte there is exactly ONE EventListener — the
-// DispatchEventListener owned here — and every consumer is a passive ILogSink
-// registered on it. The dispatcher builds each EventEntry once; sinks only
-// route and write. Admission already happened at the producer. See
-// Deckle.Diagnostics.ILogSink / DispatchEventListener.
-//
-// Two phases, with a deliberate order:
-//
-//   InitializeLocalSinks(diagnosticsDirectory) — called FIRST in
-//     App.OnLaunched, before settings migration. Creates the dispatcher and
-//     registers the always-on, ungated local sinks (setup.jsonl, errors.jsonl)
-//     under diagnostics/. They read no settings, so they can come before
-//     everything else — and must, because the dispatcher only receives events
-//     emitted AFTER it subscribes, so a failure in the very first boot step
-//     (e.g. a settings-migration error) is traced only if the dispatcher and
-//     these sinks already exist. Local only, never transmitted — distinct in
-//     purpose and folder from telemetry/.
-//
-//   InitializeOperationalSinks(diagnosticsDirectory) — called after settings
-//     migration. Registers diagnostics/app.jsonl and the LogWindow ring buffer.
-//
-//   InitializeTelemetry(telemetryDirectory) — registers only purpose-specific,
-//     consented datasets under telemetry/.
-//
-// The dispatcher and LogWindowSink are process-lifetime singletons. JSONL sinks
-// hand accepted entries to bounded writer queues, so the central ProcessExit
-// handler crosses the Flush barrier before termination.
+// Boot-time wiring of the one EventListener (DispatchEventListener); every
+// consumer is a passive ILogSink registered on it, and admission already
+// happened at the producer. Phase order is load-bearing: InitializeLocalSinks
+// runs before settings migration, the operational sinks after it, and telemetry
+// registers only consented datasets under telemetry/. JSONL sinks write through
+// bounded queues, so ProcessExit crosses the Flush barrier before termination.
 internal static class AppDiagnosticsBootstrap
 {
     private static DispatchEventListener? _dispatch;
     private static LogWindowSink? _logWindowSink;
     private static bool _hudAttached;
 
-    // App-owned crash detail/stack events (DeckleAppSource). The milestone/
-    // Verbose split puts them at Verbose, so a pure Error-level predicate would
-    // miss them — the error log allowlists them by name so a crash lands
-    // complete (milestone + exception + stack) in errors.jsonl.
-    //
-    // Matched by bare name, not (provider, name): safe because these names are
-    // Deckle-App-exclusive by the one-source-per-module nomenclature — no other
-    // Deckle-* provider declares them. If a future provider ever did, scope the
-    // companion check by provider (e.Provider == "Deckle-App") so a homonym
-    // can't leak into errors.jsonl.
+    // The crash detail and stack events are Verbose, so a level predicate alone
+    // would split a crash across files; errors.jsonl allowlists them by name.
+    // The bare name holds while no other Deckle-* provider declares these names;
+    // scope the check by provider if one ever does.
     private static readonly HashSet<string> _crashCompanions = new()
     {
         nameof(DeckleAppSource.CrashUnhandledDetail),
@@ -59,33 +31,22 @@ internal static class AppDiagnosticsBootstrap
         nameof(DeckleAppSource.CrashStackTrace),
     };
 
-    // Returns the process-lifetime dispatcher, creating it on first call. Both
-    // boot phases route through here so the single EventListener exists from the
-    // earliest registration regardless of call order.
     private static DispatchEventListener Dispatch => _dispatch ??= new DispatchEventListener();
 
-    // Always-on local sinks (setup.jsonl + errors.jsonl). Registered as the
-    // FIRST boot step so the riskiest, un-opted-in moments leave a local trace
-    // the user owns — see the class header for why ordering is load-bearing.
-    // JsonlSink's writer flushes each accepted line before advancing. Explicit
-    // exits additionally cross the Flush barrier below; a hard crash can still
-    // lose work that had not yet left the bounded queue.
+    // A hard crash can still lose entries that had not left the bounded writer
+    // queue; explicit exits cross the Flush barrier.
     public static void InitializeLocalSinks(string diagnosticsDirectory)
     {
-        // Idempotent: a second call is a no-op. The sinks are process-lifetime
-        // singletons; re-registering would double every write and desync the
+        // Returns once the dispatcher exists, so this must run before any other
+        // phase. Registering twice would double every write and desync the
         // per-instance rotation counters.
         if (_dispatch is not null) return;
 
         var dispatch = Dispatch;
 
-        // setup.jsonl — the full first-run setup narrative. Keeps EVERY
-        // Deckle-Setup event regardless of level, Verbose mirrors included, so
-        // the trace carries the whole story (which folder was picked, the exact
-        // failure string). Those Verbose mirrors can embed local file paths and
-        // the Windows account name (e.g. %LOCALAPPDATA%\Deckle) verbatim — that
-        // is intended: the path IS the diagnostic signal, and the file is
-        // local-only and user-owned.
+        // setup.jsonl keeps every Deckle-Setup event, Verbose mirrors included.
+        // Those can embed local paths and the Windows account name verbatim:
+        // intended, the path is the diagnostic signal and the file stays local.
         dispatch.AddSink(new JsonlSink(
             filePath:  Path.Combine(diagnosticsDirectory, "setup.jsonl"),
             kindLabel: "setup",
@@ -94,15 +55,8 @@ internal static class AppDiagnosticsBootstrap
             schema:    JsonlSchema.SelfDescribing,
             rotation:  new JsonlRotationPolicy(maxLines: 5000)));
 
-        // errors.jsonl — every critical error/crash. Keeps Error/Critical by
-        // level PLUS the four Verbose crash companions by name (the milestone/
-        // Verbose split demotes the crash detail/stack below Error, so a pure
-        // level predicate would split a crash across files). Note: an Error-
-        // level setup failure also lands here by the level clause, but WITHOUT
-        // its Verbose *Detail mirror (not a crash companion) — the cause string
-        // lives in setup.jsonl, which is always co-present (registered just
-        // above). errors.jsonl is the index of failures; the full setup story
-        // stays in setup.jsonl.
+        // An Error-level setup failure lands here without its Verbose detail
+        // mirror; the cause string lives in setup.jsonl.
         dispatch.AddSink(new JsonlSink(
             filePath:  Path.Combine(diagnosticsDirectory, "errors.jsonl"),
             kindLabel: "error",
@@ -121,9 +75,8 @@ internal static class AppDiagnosticsBootstrap
         var dispatch = Dispatch;
         dispatch.AddSink(new ApplicationLogSink(diagnosticsDirectory));
 
-        // LogWindow sink: starts buffering now. No UI sink is attached at this
-        // point; lazy LogWindow will attach via `AttachLogWindowSink` on first
-        // open, receive the buffered history as a replay, then stay live.
+        // Buffers from boot: the lazy LogWindow attaches on first open and
+        // receives the buffer as a replay.
         _logWindowSink = new LogWindowSink();
         dispatch.AddSink(_logWindowSink);
     }
@@ -136,14 +89,8 @@ internal static class AppDiagnosticsBootstrap
             validationSubdirectory: false);
     }
 
-    // Registers the HUD feedback sink once the HUD surfaces are available.
-    // Called from App.OnLaunched after the HudWindow and HudOverlayManager have
-    // been constructed — the sink can only route events to live UI objects, so
-    // deferring registration until they exist avoids a no-op early phase. Module
-    // providers that emit UserFeedbackEmitted before this call lose their
-    // feedback (no sink registered); in practice that doesn't happen because
-    // every UserFeedback emission is in a runtime path (hotkey, rewrite,
-    // pairing) that fires well after boot.
+    // UserFeedbackEmitted before this call is dropped: the sink needs the live
+    // HUD surfaces, so it registers once they exist.
     public static void AttachHudFeedbackSink(IHudFeedbackSink sink)
     {
         if (_hudAttached) return;
@@ -151,9 +98,6 @@ internal static class AppDiagnosticsBootstrap
         Dispatch.AddSink(new HudFeedbackSink(sink));
     }
 
-    // Attaches a LogWindow UI sink and replays the buffered history since boot.
-    // Called on first LogWindow open (lazy `App.ShowLogWindowLazy` path); the
-    // sink receives future events live until `DetachLogWindowSink`.
     public static void AttachLogWindowSink(ILogWindowSink sink)
     {
         _logWindowSink?.AttachSink(sink);
@@ -169,9 +113,7 @@ internal static class AppDiagnosticsBootstrap
         _logWindowSink?.ClearBuffer();
     }
 
-    // Final observability barrier. Every background JSONL writer drains entries
-    // accepted before this call. ProcessExit invokes it after emitting the final
-    // marker, which also covers install/update/relocation exits.
+    // Every background JSONL writer drains the entries accepted before this call.
     public static bool Flush() => _dispatch?.FlushSinks() ?? true;
 
 }

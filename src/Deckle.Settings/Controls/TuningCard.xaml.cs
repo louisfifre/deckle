@@ -5,16 +5,12 @@ using Microsoft.UI.Xaml.Markup;
 
 namespace Deckle.Settings.Controls;
 
-// A titled tuning section with a hover/focus-revealed per-section reset. Mirrors
-// TunableRow's shape (UserControl, DP-driven, theme resources only) one level up :
-// where TunableRow is a single knob, TuningCard is the card that groups several.
-// The body is whatever XAML sits between the tags — mapped to CardContent by the
-// ContentProperty attribute — so a section reads as one declarative block.
+// A titled tuning section grouping several knobs, with a hover/focus-revealed
+// per-section reset. The XAML between the tags fills CardContent through the
+// ContentProperty attribute.
 [ContentProperty(Name = nameof(CardContent))]
 public sealed partial class TuningCard : UserControl
 {
-    // Either pointer or keyboard focus keeps the reset shown ; track both so
-    // leaving one while the other still holds doesn't hide it prematurely.
     private bool _pointerOver;
     private bool _resetFocused;
 
@@ -54,8 +50,6 @@ public sealed partial class TuningCard : UserControl
             new PropertyMetadata("Reset this section to its defaults", OnResetTooltipChanged));
     public string ResetTooltip { get => (string)GetValue(ResetTooltipProperty); set => SetValue(ResetTooltipProperty, value); }
 
-    // Fired when the per-section reset is clicked ; the page restores that
-    // section's defaults.
     public event RoutedEventHandler? ResetClick;
 
     // ── DP plumbing ──────────────────────────────────────────────────────────

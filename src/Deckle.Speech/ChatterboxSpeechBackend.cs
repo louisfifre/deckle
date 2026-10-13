@@ -8,10 +8,9 @@ namespace Deckle.Speech;
 // ignores text / voice / temperature and returns a short 440 Hz tone at
 // 24 kHz — audible, asset-free, and unmistakably a stub.
 //
-// The real implementation ports the proven 4-graph pure-ONNX decode
-// (benchmark/asr/studies/tts-audition/chatterbox_synth.py): speech_encoder,
-// embed_tokens, language_model_fp16, conditional_decoder — and moves to its
-// own Deckle.Speech.Chatterbox module when it pulls Microsoft.ML.OnnxRuntime.
+// The real implementation ports the 4-graph pure-ONNX decode of
+// benchmark/asr/studies/tts-audition/chatterbox_synth.py: speech_encoder,
+// embed_tokens, language_model_fp16, conditional_decoder.
 public sealed class ChatterboxSpeechBackend : ISpeechBackend
 {
     private const int SampleRate = 24000; // Chatterbox S3Gen output rate
@@ -27,8 +26,7 @@ public sealed class ChatterboxSpeechBackend : ISpeechBackend
     public Task<float[]> SynthesizeAsync(string text, SpeechVoice voice, double temperature, CancellationToken ct)
     {
         // TODO(speech): replace with the real Chatterbox ONNX decode (the
-        // autoregressive T3 loop + S3Gen vocoder). For now, a fixed 440 Hz
-        // sine (~0.4 s) so the read-aloud path is audible end to end.
+        // autoregressive T3 loop + S3Gen vocoder).
         DeckleSpeechSource.Log.StubSynthesis();
 
         const double seconds = 0.4;

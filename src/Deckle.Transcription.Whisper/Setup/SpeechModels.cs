@@ -7,25 +7,19 @@ using Deckle.Transcription;
 
 namespace Deckle.Transcription.Whisper;
 
-// ── SpeechModels ─────────────────────────────────────────────────────────────
+// Single source of truth for the Whisper models the app understands: file
+// names, the default and the download URLs.
 //
-// **Single source of truth** for every speech model the app understands.
-// TranscriptionEngine, the wizard, Settings — they all read filenames, default
-// IDs, and download URLs from this catalog instead of hard-coding them.
-//
-// V1 catalog: two Whisper models (base, large-v3). Sha256 and SizeBytes come
-// from the HuggingFace LFS pointers of ggerganov/whisper.cpp (the `oid sha256:`
-// and `size` lines of https://huggingface.co/ggerganov/whisper.cpp/raw/main/<file>).
-// Upstream republishes the .bin files occasionally — re-read both together
-// when a download starts failing on checksum.
+// Sha256 and SizeBytes come from the HuggingFace LFS pointers of
+// ggerganov/whisper.cpp (the `oid sha256:` and `size` lines of
+// https://huggingface.co/ggerganov/whisper.cpp/raw/main/<file>). Upstream
+// republishes the .bin files occasionally — re-read both together when a
+// download starts failing on checksum.
 public static class SpeechModels
 {
-    // Default Whisper model the engine targets when no override is set.
-    // Single source of truth — TranscriptionEngine reads this rather than its
-    // own copy of the filename. Swap it here when bumping the default.
-    // base, not large-v3: the neophyte install path must not open on a 3 GB
-    // download. An install that already carries large-v3 keeps it through
-    // the installed-model fallback in WhisperBackend.ResolveModelPath.
+    // base, not large-v3: the first install must not open on a 3 GB download.
+    // An install that already carries large-v3 keeps it through the
+    // installed-model fallback in WhisperBackend.ResolveModelPath.
     public const string DefaultModelFileName = "ggml-base.bin";
 
     public static IReadOnlyList<ModelEntry> WhisperModels { get; } = new[]
@@ -46,8 +40,6 @@ public static class SpeechModels
             Sha256:      "64d182b440b98d5203c4f9bd541544d84c605196c4f7b845dfa11fb23594d1e2"),
     };
 
-    // Catalog handle for the engine's default model. The wizard surfaces
-    // this as the pre-selected radio in the Choices page.
     public static ModelEntry DefaultWhisperModel =>
         WhisperModels.First(m => m.FileName == DefaultModelFileName);
 
@@ -83,12 +75,9 @@ public static class SpeechModels
     // model, so an install carrying only large-v3 is fully provisioned.
     public static bool IsAnyModelInstalled() => WhisperModels.Any(IsInstalled);
 
-    // Best catalog model actually on disk in the given directory, largest
-    // first — quality tracks size in the Whisper family. Feeds the engine's
-    // installed-model fallback: an install whose settings target an absent
-    // file (a pre-ggml-base-default install that never wrote Engine.Model,
-    // a fresh install whose only download was the non-default choice) keeps
-    // transcribing with what it has instead of failing on a missing file.
+    // Largest first: quality tracks size in the Whisper family. Feeds the
+    // engine's installed-model fallback, so an install whose settings target an
+    // absent file keeps transcribing with what it has.
     public static string? BestInstalledFileName(string modelsDirectory)
     {
         try

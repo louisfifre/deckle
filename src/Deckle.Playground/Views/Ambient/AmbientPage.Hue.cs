@@ -8,21 +8,17 @@ using Deckle.Lighting.Ambient;
 
 namespace Deckle.Playground;
 
-// ─── AmbientPage — Hue REST handlers (J2) ───────────────────────────────────
+// ─── AmbientPage — Hue REST handlers ────────────────────────────────────────
 //
-// Pair / list groups / test colours / colour rotation. All the network-
-// touching work runs through HuePairingService.Instance ; the page
-// only owns the local cancellation tokens (so a window close cancels
-// in-flight pair / rotation) and the per-session HueRestLightOutput
-// pinned to the selected group.
+// All the network work runs through HuePairingService.Instance; the page
+// only owns the local cancellation tokens (so a window close cancels an
+// in-flight pair or rotation) and the HueRestLightOutput pinned to the
+// selected group.
 
 public sealed partial class AmbientPage
 {
-    // Sync the Hue pairing row visuals from HuePairingService state.
-    // The service auto-restores its bridge at first access, so by the
-    // time the page reaches us here the bridge is either paired-from-
-    // settings or absent. No network call here — first REST request
-    // happens when the user clicks List groups or selects a group.
+    // The service restores its bridge at first access, so here the bridge is
+    // either paired from settings or absent.
     private void SyncHueUiFromService()
     {
         var paired = HuePairingService.Instance.PairedBridge;
@@ -45,7 +41,6 @@ public sealed partial class AmbientPage
         HuePairStatusDot.Fill   = GetThemeBrush("SystemFillColorSuccessBrush");
         HueListGroupsButton.IsEnabled = true;
 
-        // Auto-populate the groups combo on page open / bridge change.
         if (HueGroupComboBox.Items.Count == 0)
         {
             _ = RefreshHueGroupsAsync();
@@ -319,12 +314,10 @@ public sealed partial class AmbientPage
 
     private void TeardownHueIfActive()
     {
-        // The canonical bridge is owned by HuePairingService — both
-        // the App-side AmbientEngine and the Settings AmbientPage
-        // point at the same instance. Tearing it down here would
-        // kill ambient lighting for the whole process — wrong.
-        // Forget is an explicit user action (Settings → Forget
-        // bridge), not a side-effect of closing a debug window.
+        // Leaves HuePairingService's bridge alone: the App's AmbientEngine and
+        // the Settings AmbientPage share it, so tearing it down would stop
+        // ambient lighting for the whole process. Forgetting a bridge is an
+        // explicit user action in Settings.
         if (_screenCapture is not null)
             _screenCapture.FrameArrived -= OnSamplerFrameArrived;
         if (_frameSampler is not null)

@@ -1,36 +1,9 @@
-"""Source Gemini multimodale pour la transcription ground-truth.
+"""Gemini as a transcriber, where ``lib/judges/gemini.py`` scores.
 
-Cette source utilise ``gemini-2.5-flash`` (ou successeur via param) pour
-**produire** une transcription à partir d'un audio. À distinguer du
-juge Gemini sous ``lib/judges/gemini.py`` qui **score** une transcription
-existante : ici Gemini est traité comme un transcripteur, pas un
-évaluateur.
-
-L'usage prévu : générer une référence ground-truth sur le corpus de
-validation, comparable à un humain qui écouterait et taperait ce qu'il
-entend. Le résultat alimente le champ ``payload.reference_text_gemini``
-du corpus.jsonl, puis le bench calcule WER(hypothèse Voxtral vs
-référence Gemini) — méthodologiquement plus solide que WER contre la
-référence Whisper qui hallucine.
-
-Pourquoi un fichier séparé du juge alors que le SDK est le même : un
-fichier = un backend, c'est la convention de ``lib/sources/``.
-Le juge a une intention différente (scoring contre schéma
-fermé) et un prompt système différent (axes 0-100). Mélanger les deux
-dans le même fichier serait du couplage gratuit.
-
-Limites :
-  - Inline data : max 18 MB (marge sous le hard cap 20 MB Google).
-    Couvre confortablement les 330s × 16 kHz mono 16 bit ≈ 10 MB du
-    corpus voxtral-val-30. Au-delà, il faudrait câbler Files API.
-  - Latence : 3-15 s par sample selon la longueur. Pour 30 samples
-    sériels c'est ~5-10 min — acceptable en pré-génération one-shot.
-  - Free tier : 5 RPM peut limiter ; le retry sur 429 absorbe les
-    bursts (réutilisation du pattern du judge gemini).
-
-Env requis :
-  - ``GEMINI_API_KEY`` set, via ``benchmark/.env``. Clé à générer sur
-    https://aistudio.google.com/apikey.
+It produces the ground-truth reference stored in
+``payload.reference_text_gemini``, a sounder WER baseline than the Whisper
+reference, which hallucinates. Audio goes inline only; the Files API is not
+wired.
 """
 
 from __future__ import annotations
@@ -44,32 +17,24 @@ from typing import Any, Callable
 from ._base import Source, Transcription
 
 
-# Modèle par défaut. ``flash`` plutôt que ``pro`` : la transcription
-# audio est une tâche déterministe qui ne profite pas du raisonnement
-# pro, et flash est ~10× moins cher avec une qualité audio comparable
-# sur le français (vérif empirique session perf-cap si on l'a faite,
-# sinon à valider en première passe). Snapshot daté plutôt que
-# ``latest`` pour reproductibilité bench.
+# Flash, not Pro: transcription gains nothing from Pro's reasoning. A pinned
+# model rather than ``latest``, so runs stay reproducible.
 DEFAULT_MODEL = "gemini-2.5-flash"
 
-# Cap inline 18 MB ; au-delà, Files API requise (non câblée ici).
+# Google caps an inline request at 20 MB; 18 leaves room for the prompt.
 DEFAULT_MAX_AUDIO_INLINE_MB = 18.0
 
-# 4096 : large marge vs ~1320 tokens (330s × 4). Trop bas tronquerait
-# les longs ; trop haut ne coûte rien (output billing à l'usage).
+# Output is billed by use, so a generous cap costs nothing and never
+# truncates a long clip.
 DEFAULT_MAX_OUTPUT_TOKENS = 4096
 
-# Pattern de retry 429 — identique à celui du judge gemini.py. Pas
-# d'extraction commune en helper transverse pour l'instant : deux
-# instances, factorisation prématurée.
+# Same 429 handling as lib/judges/gemini.py.
 _RATE_LIMIT_FALLBACK_DELAY_S = 12.0
 _RATE_LIMIT_MARGIN_S         = 1.0
 _RATE_LIMIT_MAX_RETRIES      = 3
 
 
 class GeminiAudioSource(Source):
-    """Gemini comme transcripteur ground-truth."""
-
     name = "gemini-audio"
     label = "Gemini API (audio multimodal)"
 
@@ -109,7 +74,7 @@ class GeminiAudioSource(Source):
         self.max_output_tokens   = max_output_tokens
         self.temperature         = temperature
 
-    # ── Interface Source ───────────────────────────────────────────────
+    # ── Source interface ───────────────────────────────────────────────
 
     def transcribe(
         self,
@@ -118,7 +83,7 @@ class GeminiAudioSource(Source):
         prompt:         str,
         max_new_tokens: int | None = None,
         on_event:       Callable[[str, dict], None] | None = None,
-        system_prompt:  str | None = None,         # ignoré : on l'a au ctor
+        system_prompt:  str | None = None,         # ignored: the constructor sets it
     ) -> Transcription:
         audio_s = _wav_duration_seconds(audio_path)
         t0 = time.perf_counter()
@@ -164,9 +129,8 @@ class GeminiAudioSource(Source):
     # ── Internals ──────────────────────────────────────────────────────
 
     def _build_parts(self, *, audio_path: Path, prompt: str) -> list[Any]:
-        """Construit la liste ``contents``. Ordre : audio d'abord, texte
-        ensuite — recommandé par la doc Gemini pour que le modèle écoute
-        avant de lire l'instruction."""
+        """Audio first, then text: the Gemini docs recommend that order so
+        the model hears the clip before it reads the instruction."""
         if not audio_path.exists():
             raise FileNotFoundError(f"audio_path inexistant : {audio_path}")
         size_mb = audio_path.stat().st_size / (1024.0 * 1024.0)
@@ -183,9 +147,8 @@ class GeminiAudioSource(Source):
         ]
 
     def _call_with_retry(self, parts: list[Any], max_tokens: int) -> Any:
-        """Wrapper retry 429. Pattern identique à
-        ``lib.judges.gemini._call_with_retry`` : le SDK google-genai
-        ne respecte pas tout seul le ``retryDelay`` du payload d'erreur."""
+        """The google-genai SDK does not honour the ``retryDelay`` a 429
+        returns, so this sleeps it."""
         last_exc: Exception | None = None
         for attempt in range(_RATE_LIMIT_MAX_RETRIES):
             try:
@@ -196,9 +159,8 @@ class GeminiAudioSource(Source):
                         system_instruction=self.system_prompt,
                         temperature=self.temperature,
                         max_output_tokens=max_tokens,
-                        # Thinking désactivé : la transcription est une
-                        # tâche directe, le chain-of-thought ajoute coût
-                        # et latence sans bénéfice qualitatif observable.
+                        # Thinking off: a transcription has nothing to
+                        # reason through, so it would only add cost.
                         thinking_config=self._types.ThinkingConfig(thinking_budget=0),
                     ),
                 )
@@ -213,7 +175,7 @@ class GeminiAudioSource(Source):
         raise last_exc if last_exc is not None else RuntimeError("retry loop exited")
 
 
-# ── Helpers libres ────────────────────────────────────────────────────
+# ── Helpers ───────────────────────────────────────────────────────────
 
 def _is_rate_limit_error(exc: Exception) -> bool:
     code = getattr(exc, "code", None) or getattr(exc, "status_code", None)

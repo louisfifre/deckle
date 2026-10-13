@@ -25,7 +25,6 @@ public sealed class MouseInjector
 
     public bool IsPressed => _pressed;
 
-    /// <summary>Win32 error of the last failed SendInput, 0 when none.</summary>
     public int LastError { get; private set; }
 
     public bool PressPrimary()

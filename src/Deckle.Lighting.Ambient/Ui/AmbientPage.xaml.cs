@@ -11,8 +11,7 @@ using Microsoft.UI.Xaml.Controls;
 namespace Deckle.Lighting.Ambient;
 
 // Settings page for the Ambient Light module. Resolved by the Settings
-// NavigationView from src/Deckle.Settings/SettingsWindow.xaml via the
-// item Tag "Deckle.Lighting.Ambient.AmbientPage, Deckle.Lighting.Ambient".
+// NavigationView through the PageTag declared in AmbientSettingsModule.
 //
 // Surface : most cards are composed by SettingsComposer from the manifests in
 // AmbientViewModel.Settings.cs, one composer per host panel (StateHost,
@@ -109,11 +108,9 @@ public sealed partial class AmbientPage : Page
 
             PopulateMonitorChoices(s.SelectedMonitorDeviceName);
 
-            // Pair completeness drives the NotPaired InfoBar. The
-            // criteria mirror AmbientEngine.StartAsync's validation
-            // so a user who toggles ON in this state sees the InfoBar
-            // BEFORE clicking (forewarned) and also AFTER the auto-
-            // revert (still incomplete).
+            // The criteria mirror AmbientEngine.StartAsync's validation,
+            // so the InfoBar shows before a toggle ON fails and after
+            // its auto-revert.
             bool paired = !string.IsNullOrEmpty(s.HueBridgeIp)
                        && !string.IsNullOrEmpty(s.HueBridgeId)
                        && !string.IsNullOrEmpty(s.HueUsername)
@@ -236,10 +233,6 @@ public sealed partial class AmbientPage : Page
 
     private void ConfigureBridgeButton_Click(object sender, RoutedEventArgs e)
     {
-        // Expand the Hue bridge expander and scroll it into view so the
-        // user lands on the pair flow without manual scrolling. The
-        // SettingsExpander.IsExpanded property is two-way bindable and
-        // immediately triggers the visual transition.
         HueBridgeExpander.IsExpanded = true;
         HueBridgeExpander.StartBringIntoView();
     }

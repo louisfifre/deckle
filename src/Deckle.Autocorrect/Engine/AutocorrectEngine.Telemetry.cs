@@ -18,10 +18,8 @@ public sealed partial class AutocorrectEngine
                 commit.PrecedingSeparators);
     }
 
-    // Emits one completed corpus sentence on the dedicated dataset, tagged with the
-    // current process, its closure (how the run ended) and its per-slot timing. Runs
-    // on the input thread (the accumulator is synchronous), so _surface is the live
-    // surface that produced the sentence.
+    // Runs on the input thread (the accumulator is synchronous), so _surface is
+    // still the surface that produced the sentence.
     private void EmitText(SentenceCorpus.SentenceRecord rec)
     {
         // Consent is live, not captured when the sentence starts. A reset can
@@ -34,8 +32,6 @@ public sealed partial class AutocorrectEngine
             _surface.ProcessName, rec.Typed, rec.Final, rec.History, rec.Closure, rec.Timing);
     }
 
-    // The typing stream records only where correction is live: an editable,
-    // non-password (cut upstream), master-on, enrolled surface with text consent.
     // Checked per stroke so a settings flip takes effect immediately; resets
     // (pointer, focus) bypass this gate so a span can never straddle surfaces.
     private bool ShouldFeedStream()
@@ -43,10 +39,8 @@ public sealed partial class AutocorrectEngine
         return _stream is not null && CanCollectText();
     }
 
-    // Emits one closed typing-stream run on the dedicated dataset, tagged with
-    // the producing process. Runs on the input thread; consent is re-checked at
-    // emission for the same reason as EmitText — a reset can close a span after
-    // the user switched collection off.
+    // Consent is re-checked at emission, as in EmitText: a reset can close a
+    // span after the user switched collection off.
     private void EmitStreamRun(TypingStream.RunRecord rec)
     {
         if (!CanCollectText())
@@ -56,10 +50,6 @@ public sealed partial class AutocorrectEngine
             _surface.ProcessName, rec.Text, rec.Erased, rec.Closure, rec.Timing);
     }
 
-    // The synchronous decision line of the per-word telemetry: the word, its left
-    // context, the outcome, the decisive stage/reason, that stage's candidate pool
-    // and safety gauges, and the full per-stage trail. The deferred reranker verdict
-    // (when the word becomes an ambiguous slot) joins it later on the same id.
     private static void EmitDecision(long id, string word, IReadOnlyList<string> leftContext, CorrectionTrace trace)
     {
         DeckleAutocorrectSource.Log.AutocorrectDecisionRecorded(
@@ -92,8 +82,6 @@ public sealed partial class AutocorrectEngine
     private static bool IsDecided(AutocorrectSettings settings, string processName)
         => processName.Length > 0 && settings.Apps.ContainsKey(processName);
 
-    // First would-be correction on a not-yet-decided app raises the enrollment
-    // offer; the per-run guard keeps it to a single prompt until the user answers.
     private void MaybeSuggestEnrollment(string processName)
     {
         if (processName.Length == 0 || !_suggested.Add(processName)) return;

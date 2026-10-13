@@ -17,13 +17,6 @@ namespace Deckle.Diagnostics;
 // producers before log-only work; the dispatcher is only the shared fan-out
 // boundary. Stream routing remains per-sink through EventEntry.Kind.
 //
-// Lifetime. Constructed once at App boot and kept alive for the whole process;
-// the EventListener registration is dropped implicitly at process exit. Sinks
-// are added as the boot sequence brings them online (the always-on local sinks
-// first, the opt-in telemetry sinks and the live-window sink later) — the
-// subscription exists from the first AddSink-bearing boot step, so coverage
-// starts as early as the earliest sink.
-//
 // Threading. OnEventWritten fires on the emitting thread. Sink mutations build
 // and publish an immutable array under a short lock; event dispatch only reads
 // that snapshot, with no lock or per-event array allocation. A sink marshals to
@@ -40,8 +33,8 @@ public sealed class DispatchEventListener : EventListener
 
     // EventListener's base constructor invokes OnEventSourceCreated for every
     // already-existing provider; that callback can fire before this derived
-    // constructor's body runs. We stash those early sources and enable them once
-    // the instance is ready — same guard the former per-sink listeners used.
+    // constructor's body runs. Those early sources are stashed and enabled once
+    // the instance is ready.
     private readonly List<EventSource> _earlySources = new();
     private bool _ready;
 
@@ -56,11 +49,9 @@ public sealed class DispatchEventListener : EventListener
         }
     }
 
-    // Registers a passive sink. Idempotent registration is the caller's
-    // concern; the dispatcher appends and snapshots, it does not dedupe. Added
-    // sinks receive events emitted AFTER registration — there is no retroactive
-    // replay here, by design. A sink that needs boot history (the live window)
-    // owns its own buffer and replays on attach.
+    // No dedupe: registering a sink twice is the caller's bug. A sink receives
+    // only events emitted after registration; one that needs boot history (the
+    // live window) owns its own buffer and replays on attach.
     public void AddSink(ILogSink sink)
     {
         if (sink is null) throw new ArgumentNullException(nameof(sink));
@@ -80,6 +71,8 @@ public sealed class DispatchEventListener : EventListener
         }
     }
 
+    // Providers are discovered by the `Deckle-` name prefix, never listed, so
+    // no inventory can drift; a provider named otherwise is never heard.
     protected override void OnEventSourceCreated(EventSource eventSource)
     {
         if (eventSource.Name is null) return;
@@ -114,10 +107,9 @@ public sealed class DispatchEventListener : EventListener
         }
     }
 
-    // Builds the single EventEntry shared by every sink. The dictionary keys are
-    // the [Event] parameter names (snake_case by Deckle convention); the
-    // formatted message is String.Format of the [Event(Message=…)] template with
-    // the payload, null when the provider declared no template.
+    // The payload keys are the [Event] parameter names (snake_case by Deckle
+    // convention); the formatted message is null when the provider declared no
+    // Message template.
     private static EventEntry BuildEntry(EventWrittenEventArgs e)
     {
         var names = e.PayloadNames;

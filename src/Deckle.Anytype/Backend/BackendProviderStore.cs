@@ -58,8 +58,6 @@ internal sealed class BackendProviderStore(
         return [.. paths];
     }
 
-    // The version recorded in active.json, or null when there is no valid
-    // activation (missing, malformed, or pointing at an incomplete version).
     internal string? ActiveVersion()
     {
         if (ResolveActiveExecutable() is null) return null;

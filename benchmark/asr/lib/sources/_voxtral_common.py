@@ -1,27 +1,10 @@
-"""Factorisation du chargement Voxtral + helpers communs aux deux modes
-(transcription canonique et chat). Inclut aussi la gestion VRAM
-défensive (cleanup_gpu, retry-on-OOM) parce que DirectML accumule
-des allocations entre rows et finit par OOM sur les longs.
+"""Voxtral loading and helpers shared by the transcription and chat sources.
 
-Voxtral expose deux modes d'invocation distincts côté transformers
-(cf. recherche doc Mistral 2026-05-24) :
-
-  - **Transcription mode** : ``processor.apply_transcription_request(audio,
-    model_id, language)`` produit le format prompt de transcription
-    canonique Mistral. Aucun prompt utilisateur libre — la sortie est
-    une transcription propre, fidèle, lissée par défaut.
-  - **Chat mode (Audio QA)** : ``processor.apply_chat_template(messages)``
-    avec un message multimodal mixant ``{"type": "audio"}`` + ``{"type":
-    "text"}`` permet d'instruire Voxtral (« translate to English »,
-    « transcribe verbatim with hesitations »). System prompts pas
-    supportés à date — l'instruction passe en ``role: user``.
-
-Les deux modes partagent le même modèle + processor + device. Pour ne
-pas charger Voxtral deux fois en VRAM si on instancie successivement
-les deux sources, ce module fournit le chargement factorisé.
-
-Pas de classe Source ici — c'est un détail d'implémentation des deux
-sources concrètes (``voxtral_transcribe.py``, ``voxtral_chat.py``).
+Both modes share one model, processor and device, so loading lives here and
+both sources can reuse one backend instead of holding Voxtral twice in VRAM.
+The defensive VRAM handling (cleanup_gpu, retry on OOM) exists because
+DirectML accumulates allocations across rows until a long clip runs out of
+memory.
 """
 
 from __future__ import annotations
@@ -40,13 +23,10 @@ DEFAULT_MODEL_ID = "mistralai/Voxtral-Mini-3B-2507"
 
 @dataclass(frozen=True)
 class VoxtralBackend:
-    """Bundle de tout ce qu'une source Voxtral a besoin pour invoquer le
-    modèle. Construit par ``load_voxtral`` et passé en arg du constructor
-    de chaque source concrète."""
-    torch:        Any       # module torch (lazy-imported)
-    device:       Any       # torch.device (DML ou CPU)
-    device_label: str       # ex. "dml:0 (AMD Radeon RX 7900 XT)"
-    dtype:        Any       # torch.float16 ou torch.float32
+    torch:        Any       # torch module, imported lazily
+    device:       Any       # torch.device (DML or CPU)
+    device_label: str       # e.g. "dml:0 (AMD Radeon RX 7900 XT)"
+    dtype:        Any       # torch.float16 or torch.float32
     dtype_label:  str
     processor:    Any       # transformers AutoProcessor
     model:        Any       # transformers VoxtralForConditionalGeneration
@@ -61,12 +41,8 @@ def load_voxtral(
     cpu: bool = False,
     model_id: str = DEFAULT_MODEL_ID,
 ) -> VoxtralBackend:
-    """Charge Voxtral sur le device cible. Coûteux (16-20 s cold start).
-
-    Lazy import torch / torch_directml / transformers pour qu'un script
-    qui n'instancie pas Voxtral (ex. bench Whisper-cpp seul) ne paie pas
-    le coût d'import (~1.3 s pour torch + ~2 s pour transformers).
-    """
+    """torch, torch_directml and transformers are imported here, so a
+    script that never loads Voxtral never pays for them."""
     _ensure_stdout_utf8()
 
     import torch
@@ -83,19 +59,15 @@ def load_voxtral(
                 "pour fallback, ou vérifier que le pilote AMD/Intel est à jour."
             )
         device = dml.device(device_index)
-        # dml.device_name() peut renvoyer une chaîne avec un null byte
-        # terminal (vu sur Radeon RX 7900 XT) ; on strip.
+        # dml.device_name() can end with a NUL byte.
         dev_name = dml.device_name(device_index).rstrip("\x00").strip()
         device_label = f"dml:{device_index} ({dev_name})"
 
     from transformers import AutoProcessor, VoxtralForConditionalGeneration
     processor = AutoProcessor.from_pretrained(model_id)
-    # Historiquement on passait ``torch_dtype=`` ; transformers récent émet
-    # un DeprecationWarning et ignore le kwarg, ce qui chargeait le modèle
-    # en fp32 (~19 GB en VRAM) au lieu du fp16 demandé (~9.4 GB). Le nom
-    # canonique est ``dtype=``. L'assert ci-dessous vérifie après load que
-    # la précision réelle est bien celle demandée — fail fast plutôt que
-    # de silencieusement saturer la VRAM en aval.
+    # ``dtype=``, not the deprecated ``torch_dtype=``: recent transformers
+    # ignores the old kwarg and silently loads fp32, doubling VRAM. The
+    # check below fails fast if the precision still differs.
     model = VoxtralForConditionalGeneration.from_pretrained(
         model_id,
         dtype=torch_dtype,
@@ -109,11 +81,6 @@ def load_voxtral(
             f"VoxtralForConditionalGeneration.from_pretrained."
         )
     model = model.to(device)
-    # Bascule en eval mode après transfert sur device. HuggingFace charge
-    # par défaut en mode train(), qui garde des tensors intermediaires
-    # pour le backward (BatchNorm running stats, dropout masks) — inutile
-    # en inférence pure et coûteux en VRAM sur un 3B + audio encoder.
-    # Un seul appel suffit, c'est idempotent.
     model.eval()
 
     return VoxtralBackend(
@@ -130,19 +97,10 @@ def load_voxtral(
 
 
 def cleanup_gpu(*, sleep_s: float = 0.0, on_event: Callable[[str, dict], None] | None = None) -> None:
-    """Cleanup VRAM best-effort. DirectML n'expose pas d'API ``empty_cache``
-    qui marche vraiment (``torch.xpu.synchronize`` plante "Torch not compiled
-    with XPU enabled" sur notre stack). On s'en remet à :
-
-      1. ``gc.collect()`` plusieurs passes pour casser les cycles de
-         références qui retiennent des tenseurs GPU.
-      2. ``torch.xpu.empty_cache()`` qui passe silencieusement sur DML
-         mais ne fait pas de mal.
-      3. Un ``sleep`` optionnel — empiriquement nécessaire après un OOM
-         pour laisser DirectML libérer effectivement la mémoire allouée.
-
-    Aucun retour de mesure VRAM ici (pas d'API DML pour ça). C'est le
-    monitor PowerShell qui fournit la vue système.
+    """Best effort: DirectML has no working ``empty_cache`` and no VRAM
+    query. Several gc passes break the reference cycles that hold GPU
+    tensors, ``torch.xpu.empty_cache()`` is a harmless no-op on DML, and
+    after an OOM a sleep gives DirectML time to actually release memory.
     """
     for _ in range(3):
         gc.collect()
@@ -159,9 +117,9 @@ def cleanup_gpu(*, sleep_s: float = 0.0, on_event: Callable[[str, dict], None] |
 
 
 def is_oom_error(exc: BaseException) -> bool:
-    """Heuristique : détecte une OOM côté DML / torch à partir du message.
-    DML lève ``RuntimeError("Could not allocate tensor with X bytes")``,
-    CUDA donnerait ``torch.cuda.OutOfMemoryError``. On reste large."""
+    """Match on the message: DML raises a plain
+    ``RuntimeError("Could not allocate tensor with X bytes")``, no
+    dedicated type."""
     msg = str(exc).lower()
     return (
         "could not allocate" in msg
@@ -172,22 +130,15 @@ def is_oom_error(exc: BaseException) -> bool:
 
 
 def adaptive_max_new_tokens(audio_s: float, *, floor: int = 256, ceiling: int = 1024) -> int:
-    """Estime un plafond de gen tokens à partir de la durée audio.
-
-    Empirique : ~4 mots/seconde en FR × ~1.3 token/mot (BPE Mistral) ≈ 5
-    tokens/s. Multiplicateur ×7 (marge raisonnable) borné [floor, ceiling].
-
-    Le ceiling 1024 est calibré pour ne pas saturer la VRAM DirectML
-    sur RX 7900 XT (20 GB) pour les audios ≥120 s — au-delà, l'OOM est
-    fréquent même avec retry. Les très longs (>200 s) seront tronqués
-    plutôt que de crasher — trade-off assumé.
+    """French speech yields about 5 tokens per second; 7 leaves margin.
+    The ceiling bounds the KV cache, so a very long clip is truncated
+    rather than running DirectML out of VRAM.
     """
     estimate = int(audio_s * 7)
     return max(floor, min(ceiling, estimate))
 
 
 def wav_duration_seconds(path: Path) -> float:
-    """Lit la durée d'un WAV sans charger les données audio."""
     import wave
     try:
         with wave.open(str(path), "rb") as wf:

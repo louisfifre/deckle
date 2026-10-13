@@ -5,11 +5,10 @@ using Deckle.Settings;
 
 namespace Deckle.Hud;
 
-// Window-level animators used by HudOverlayManager to slide and fade overlay
-// cards. Both run on a DispatcherQueueTimer ticking at ~60 fps, 150 ms total,
-// cubic ease-out (1 - (1-t)^3). Either can be cancelled mid-flight; re-calling
-// while an animation is in progress restarts from the current interpolated
-// value so transitions collapse instead of queueing.
+// Window-level slide and fade animators for the HUD's satellite windows. Either
+// can be cancelled mid-flight; re-calling while an animation is in progress
+// restarts from the current interpolated value so transitions collapse instead
+// of queueing.
 //
 // WindowSlideAnimator is functional HUD motion and follows
 // Settings.Overlay.Animations. LayeredAlphaAnimator is a simple fade and
@@ -145,9 +144,6 @@ internal sealed class WindowSlideAnimator
     }
 }
 
-// Ramps the layered alpha of a WS_EX_LAYERED window via
-// SetLayeredWindowAttributes(LWA_ALPHA). Used for overlay card fade-in on show
-// and fade-out just before ForceClose.
 internal sealed class LayeredAlphaAnimator
 {
     private const int FrameIntervalMs = 16;

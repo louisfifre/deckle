@@ -4,24 +4,11 @@ namespace Deckle.Audio;
 
 // ── MicrophoneTelemetryPayload ──────────────────────────────────────────────
 //
-// One row per Recording when the « Log microphone » consent toggle is on.
-// dBFS percentile sweep over the 50 ms sub-window RMS series, plus the
-// linear mean RMS (the value worth comparing against MaxDbfs window when
-// calibrating). MeanDbfs is derived from the linear mean — log of the
-// mean, not mean of the log, since arithmetic mean of dBFS values gets
-// pulled too low by the silence floor.
-//
-// Used as an intermediate POCO between `MicrophoneTelemetryCalculator`
-// (producer, pure compute) and `DeckleAudioSource.MicrophoneTelemetryRecorded`
-// (consumer, flat 14-arg EventSource event). The auto-calibration loop in
-// `TranscriptionEngine` also pins recent payloads to feed back into the HUD
-// thresholds, hence the public surface.
-//
-// Carry-over from wave 6: this POCO used to live in `Deckle.Logging` (with
-// `LatencyPayload`/`CorpusPayload`, which disappeared with the legacy module).
-// Relocated here because it is the only payload still instantiated after the
-// EventSource migration, and its natural producer is the Audio module
-// calculator.
+// One recording's dBFS distribution over its sub-window RMS series. Public
+// because TranscriptionEngine's auto-calibration keeps recent payloads. Emitted
+// only when microphone telemetry is on, flattened field for field into
+// DeckleAudioSource.MicrophoneTelemetryRecorded and
+// DeckleWhispSource.PreprocessedTelemetryRecorded: a new field goes there too.
 public sealed record MicrophoneTelemetryPayload(
     [property: JsonPropertyName("duration_seconds")] double DurationSeconds,
     [property: JsonPropertyName("samples")]          int    Samples,

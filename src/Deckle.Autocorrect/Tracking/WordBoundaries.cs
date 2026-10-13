@@ -4,8 +4,8 @@ using System.Text;
 namespace Deckle.Autocorrect;
 
 // The ONE canonical French tokenization, shared by the live TypedWordTracker
-// and the future offline trainer/eval so a word is split the same way wherever
-// it is seen. The rules it owns:
+// and the offline Lab trainers and evaluators so a word is split the same way
+// wherever it is seen. The rules it owns:
 //   • a word is letters (any script), digits, and the hyphen-minus — so
 //     « est-ce » and « rendez-vous » stay single tokens;
 //   • an apostrophe after a known elision prefix CLOSES the token with the
@@ -75,7 +75,6 @@ public static class WordBoundaries
                 continue;
             }
 
-            // Any other non-word char ends the token (without the terminator).
             if (sb.Length > 0)
             {
                 yield return sb.ToString();
@@ -87,7 +86,6 @@ public static class WordBoundaries
             yield return sb.ToString();
     }
 
-    // Lowercase + strip diacritics, for accent-insensitive prefix matching.
     private static string Fold(string s)
     {
         string lowered = s.ToLowerInvariant();

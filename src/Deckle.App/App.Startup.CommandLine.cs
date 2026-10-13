@@ -20,21 +20,13 @@ public partial class App
 {
     private void ApplyStartupPreferencesAndArguments(StartupContext context)
     {
-        // Apply saved theme (System/Light/Dark).
         ApplyTheme(Settings.SettingsService.Instance.Current.Appearance.Theme);
 
-        // Apply persisted level window (MinDbfs / MaxDbfs / DbfsCurveExponent)
-        // into AudioLevelMapper so the first Recording reflects the user's
-        // calibration without a restart-from-defaults round-trip.
+        // So the first recording reflects the user's calibration, not the defaults.
         ApplyLevelWindow(Audio.CaptureSettingsService.Instance.Current.LevelWindow);
 
-        // If launched with --settings (restart from Settings), automatically
-        // reopen the Settings window on the right page.
         var cliArgs = Environment.GetCommandLineArgs();
 
-        // A relocated data root leaves its origin behind for this process to
-        // remove — the transaction's last step, run only once the new root is
-        // live and nothing holds the old tree. Guarded in App.Relocate.cs.
         HandleDataRootCleanup(cliArgs);
 
         int settingsIdx = Array.IndexOf(cliArgs, "--settings");
@@ -44,15 +36,11 @@ public partial class App
                 ? cliArgs[settingsIdx + 1]
                 : null;
             DeckleAppSource.Log.CmdLineSettingsFlag(pageTag ?? "(default)");
-            // Lazy path: creates the window + shows it on the requested page.
-            // Indistinguishable from the tray path when the user opens
-            // Settings for the first time.
             ShowSettingsWindowLazy(pageTag);
         }
 
-        // Diagnostic-only repro path for the HUD z-order bug. It follows the
-        // same shape as the post-build workaround, but relaunches into a
-        // bounded self-test that triggers the first real HUD show, then quits.
+        // Diagnostic-only repro of the HUD z-order bug: relaunches like
+        // --post-build, into a bounded self-test that shows the HUD once, then quits.
         int postBuildHudZOrderSelfTestIdx = Array.IndexOf(cliArgs, "--post-build-hud-zorder-selftest");
         if (postBuildHudZOrderSelfTestIdx >= 0)
         {
@@ -95,13 +83,10 @@ public partial class App
             showTimer.Start();
         }
 
-        // If launched with --post-build (set by scripts/commands/build-run.ps1),
-        // schedule a one-shot self-restart via ShellExecute. The first
-        // launch right after MSBuild occasionally inherits a degraded
-        // foreground state that makes Windows defer WS_EX_TOPMOST on the
-        // HUD, so the first recording shows the HUD behind every other
-        // window. Relaunching ourselves through cmd /c start gives the
-        // new process a clean foreground state.
+        // Passed by scripts/commands/build-run.ps1. The first launch right after
+        // MSBuild can inherit a degraded foreground state that makes Windows
+        // defer WS_EX_TOPMOST on the HUD, so the first recording shows it behind
+        // every other window. A relaunch through ShellExecute starts clean.
         int postBuildIdx = Array.IndexOf(cliArgs, "--post-build");
         if (postBuildIdx >= 0)
         {

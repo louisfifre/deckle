@@ -8,8 +8,6 @@ using Deckle.Core;
 
 namespace Deckle.Input.Trackpad;
 
-// ── WindowsGestureNeutralizer ────────────────────────────────────────────────
-//
 // The Precision Touchpad stack reserves the native three-finger gestures
 // (swipe to switch apps / show desktop, three-finger tap). For Deckle's
 // macOS-style three-finger drag to exist, those native gestures must be
@@ -19,15 +17,11 @@ namespace Deckle.Input.Trackpad;
 // user setting, the contract is backup-before-write: the original values are
 // snapshotted to a JSON file before the first neutralize, and TryRestore puts
 // them back verbatim — a value that was absent is recorded as null and is
-// deleted on restore, never recreated. The backup is written once and never
-// overwritten, so a second neutralize over already-zeroed values cannot lose
-// the genuine originals.
+// deleted on restore, never recreated.
 //
-// Epistemic note: whether the Precision Touchpad driver picks up these registry
-// values *live* is unverified. It may require the device to reconnect or the
-// session to sign out for the change to take visible effect — the registry
-// write succeeds regardless, but the behavioral effect is not guaranteed
-// immediate.
+// Whether the Precision Touchpad driver picks up these values live is
+// unverified: the change may need a device reconnect or a sign-out to take
+// effect, even though the registry write succeeds.
 //
 // Every registry call is wrapped so the caller (a Settings toggle) never sees
 // an exception: failures log through DeckleTrackpadSource and surface as a
@@ -37,7 +31,6 @@ public static class WindowsGestureNeutralizer
     private const string KeyPath =
         @"Software\Microsoft\Windows\CurrentVersion\PrecisionTouchPad";
 
-    // The six DWORDs that, set to 0, silence the native three-finger gestures.
     private static readonly string[] ValueNames =
     {
         "ThreeFingerSlideEnabled",
@@ -50,9 +43,6 @@ public static class WindowsGestureNeutralizer
 
     private const string BackupFileName = "gesture-backup.json";
 
-    // Backup shape: one nullable DWORD per value name. null means the value
-    // was absent from the registry at backup time and must be deleted (not
-    // recreated) on restore.
     private sealed record GestureBackup(Dictionary<string, int?> Values);
 
     private static string BackupPath =>
@@ -132,7 +122,6 @@ public static class WindowsGestureNeutralizer
                     continue;
 
                 if (saved is null)
-                    // Value was absent originally — delete to match.
                     key.DeleteValue(name, throwOnMissingValue: false);
                 else
                     key.SetValue(name, saved.Value, RegistryValueKind.DWord);
@@ -152,7 +141,6 @@ public static class WindowsGestureNeutralizer
         }
     }
 
-    // True only when all six values exist and are 0. Never throws.
     public static bool AreNeutralized()
     {
         try
@@ -185,8 +173,6 @@ public static class WindowsGestureNeutralizer
         }
     }
 
-    // Snapshots the current registry values; an absent value is recorded as
-    // null so restore knows to delete rather than recreate it.
     private static GestureBackup ReadCurrentValues()
     {
         var values = new Dictionary<string, int?>(ValueNames.Length);
@@ -206,8 +192,6 @@ public static class WindowsGestureNeutralizer
         File.WriteAllText(BackupPath, json);
     }
 
-    // Compact k=v summary of what was backed up, for the Verbose mirror.
-    // Absent values render as "null" so the log distinguishes them from 0.
     private static string SummarizeBackup(GestureBackup backup)
     {
         var sb = new StringBuilder();

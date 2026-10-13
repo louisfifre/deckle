@@ -4,8 +4,6 @@ using Deckle.Input;
 
 namespace Deckle.Autocorrect;
 
-// ── BackgroundRerankLane ─────────────────────────────────────────────────────
-//
 // The production IRerankLane: one long-lived background thread owns the
 // reranker (and thus the ONNX session), so inference never touches the input
 // thread. Requests cross in through a capacity-1, drop-oldest queue — only the
@@ -53,8 +51,7 @@ public sealed class BackgroundRerankLane : IRerankLane
         _worker.Start();
     }
 
-    // Input thread. Replace any queued-but-not-yet-started request with the newest
-    // (drop-oldest), then enqueue — never blocks.
+    // Input thread; never blocks.
     public void Submit(RerankRequest request)
     {
         if (_disposed)

@@ -10,12 +10,10 @@ namespace Deckle.Autocorrect;
 // scancodes. The whole burst goes out in ONE SendInput call — atomicity is the
 // anti-interleave defense: nothing the user types can slip between our
 // keystrokes mid-correction. Every event is stamped with SendInputInterop's
-// InjectionTag in dwExtraInfo for downstream consumers; the keyboard host
-// actually filters our synthesis by the Raw Input hDevice==0 signature of
-// SendInput events — the tag is not read back on the receive side today.
+// InjectionTag in dwExtraInfo: the engine reads it back to tell its own
+// synthesis from a foreign injection.
 public sealed class TextInjector : ITextInjector
 {
-    // INPUT.type for a keyboard event (INPUT_KEYBOARD).
     private const uint INPUT_KEYBOARD = 1;
 
     // ki_dwFlags bits. UNICODE: ki_wScan carries the UTF-16 code unit, ki_wVk
@@ -29,10 +27,6 @@ public sealed class TextInjector : ITextInjector
 
     private static readonly int InputSize = Marshal.SizeOf<INPUT>();
 
-    // Corrects `current` into `target` by the minimal diff. No-op (identical, or
-    // pure prefix growth handled by TypeText callers) returns true without
-    // touching the input stream. Returns false only on a partial/failed
-    // SendInput.
     public bool Replace(string current, string target)
     {
         var plan = InjectionPlan.Compute(current, target);
@@ -57,8 +51,6 @@ public sealed class TextInjector : ITextInjector
         return Send(inputs);
     }
 
-    // Injects bare text (no preceding backspaces) — the CLI `inject` command.
-    // Same Unicode mechanics as Replace's suffix.
     public bool TypeText(string text)
     {
         if (string.IsNullOrEmpty(text)) return true;

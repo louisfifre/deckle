@@ -11,24 +11,17 @@ namespace Deckle.App;
 
 public partial class App
 {
-    // File transcription entry — the tray "Transcribe audio files…" command.
-    // Opens the system file picker for one or more audio files, then produces all
-    // selected paths as one immutable engine batch. Its decoder prepares the next
-    // file while the shared live consumer transcribes the current one; the engine
-    // returns to Idle only after the complete selection drains.
+    // The selection goes to the engine as one batch: it returns to Idle only
+    // after the whole selection drains.
     private async void TranscribeFilesFromTray()
     {
-        // async void: the tray click arrives on the UI thread with no awaiter,
-        // so the whole body is guarded — an unobserved exception here (picker
-        // COM failure, transient owner-window creation) must never bubble out
-        // and take the tray down with it.
+        // async void with no awaiter, so the whole body is guarded: an exception
+        // here must never bubble out and take the tray down with it.
         try
         {
             if (_engine is null)
             {
-                // Speech isn't provisioned (native runtime + model absent), so
-                // the engine was never composed. Same posture as OnHotkey: tell
-                // the user at the moment of intent and point them to setup.
+                // No engine means speech is not provisioned.
                 DeckleAppSource.Log.UserFeedbackEmitted(
                     0, // Info
                     "Dictation isn't set up yet",
@@ -37,13 +30,10 @@ public partial class App
                 return;
             }
 
-            // Owner HWND for the file picker. At tray-click time no visible
-            // window exists: the tray carrier window is already hidden (its
-            // click action runs after Hide), and the message-only host is a
-            // message-only HWND, not a valid dialog owner. So we spin a minimal
-            // WinUI Window purely to borrow its HWND — never Activate()d, so
-            // nothing flashes on screen — and Close() it in the finally once the
-            // picker has returned.
+            // The picker needs an owner HWND and none fits at tray-click time: the
+            // tray carrier is already hidden, and a message-only HWND is not a
+            // valid dialog owner. This Window only lends its HWND; it is never
+            // activated, so nothing flashes on screen.
             var ownerWindow = new Window();
             IReadOnlyList<StorageFile> files;
             try

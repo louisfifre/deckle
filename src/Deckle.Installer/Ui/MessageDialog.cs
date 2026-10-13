@@ -2,8 +2,6 @@ using System.Runtime.InteropServices;
 
 namespace Deckle.Installer;
 
-// ── MessageDialog ─────────────────────────────────────────────────────────────
-//
 // The stub's only other visible surface: a native MessageBox, for the terminal
 // errors the progress window can't express and for the two uninstall confirmations.
 // A plain MessageBoxW is enough — a TaskDialog would drag comctl32 activation-context
@@ -13,7 +11,6 @@ internal static partial class MessageDialog
     public static void Error(nint owner, string text) =>
         MessageBoxW(owner, text, "Deckle Setup", MB_OK | MB_ICONERROR);
 
-    // A yes/no question; true when the user chooses Yes.
     public static bool Confirm(nint owner, string text, string title) =>
         MessageBoxW(owner, text, title, MB_YESNO | MB_ICONQUESTION) == IDYES;
 

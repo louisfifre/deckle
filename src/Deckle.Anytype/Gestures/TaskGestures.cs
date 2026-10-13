@@ -18,12 +18,8 @@ namespace Deckle.Anytype;
 
 public sealed class TaskGestures(AnytypeApiClient api, NameResolver resolver)
 {
-    /// <summary>
-    /// Creates a task under <paramref name="project"/>.
-    /// </summary>
     /// <param name="type">type_de_tache tag KEY or display name (both accepted).</param>
     /// <param name="priority">0-5; null leaves it unset.</param>
-    /// <param name="body">Optional markdown body.</param>
     public async Task<string> CreateAsync(
         string project, string name, string type,
         int? priority = null, string? body = null, CancellationToken ct = default)
@@ -33,15 +29,12 @@ public sealed class TaskGestures(AnytypeApiClient api, NameResolver resolver)
         string projectId = await resolver.ResolveAsync(
             project, new[] { DevSpace.Types.Project }, ct);
 
-        // type accepts a tag key or a display name; resolve both to the wire key.
         string typeKey = DevSpace.TypeDeTache.Resolve(type)
             ?? throw new ArgumentException(
                 $"Type de tâche inconnu « {type} ».", nameof(type));
 
-        // The client is thin transport with no property normalization, so the
-        // exact API wire shape is built here: properties is an ARRAY of
-        // per-format objects ({key, objects|select|checkbox|...}), not a
-        // {key: value} map (see anytypeHelper.normalizeProperties).
+        // properties is an ARRAY of per-format objects ({key, <format>: value}),
+        // not a {key: value} map; the client does no normalization.
         var props = new JsonArray
         {
             ObjectsProp(DevSpace.Props.RelationProjet, projectId),
@@ -55,8 +48,6 @@ public sealed class TaskGestures(AnytypeApiClient api, NameResolver resolver)
         {
             ["type_key"] = DevSpace.Types.Task,
             ["name"] = name,
-            // The API ignores the type's default template unless we name it; pass
-            // it so the task is born with the template's blocks and views.
             ["template_id"] = DevSpace.Templates.Task,
             ["properties"] = props,
         };
@@ -76,11 +67,6 @@ public sealed class TaskGestures(AnytypeApiClient api, NameResolver resolver)
         return $"Tâche créée : {objName} ({DisplayType(typeKey)}{prioritySuffix})";
     }
 
-    /// <summary>
-    /// Sets a checklist item in the task body. One case-insensitive
-    /// contains-match on <paramref name="label"/> finds the line; multiple
-    /// matches are refused, and no match appends an item in the requested state.
-    /// </summary>
     public async Task<string> SubtaskAsync(
         string task, string label, bool done, CancellationToken ct = default)
     {
@@ -96,10 +82,6 @@ public sealed class TaskGestures(AnytypeApiClient api, NameResolver resolver)
 
         var (next, outcome) = ApplyChecklist(markdown, label, done);
 
-        // Full-replacement PATCH: the Anytype API has no append for body, so the
-        // whole markdown is rewritten (cheap — task bodies are short checklists).
-        // PATCH carries body under the top-level "markdown" field, not inside
-        // "properties" (vendor updateObject sends it at the request root).
         var payload = new JsonObject
         {
             ["markdown"] = next,
@@ -148,7 +130,6 @@ public sealed class TaskGestures(AnytypeApiClient api, NameResolver resolver)
         if (matches.Count == 1)
         {
             (int line, int boxIndex) = matches[0];
-            // boxIndex points at the char between the brackets.
             var sb = new StringBuilder(lines[line]);
             sb[boxIndex] = done ? 'x' : ' ';
             lines[line] = sb.ToString();
@@ -171,9 +152,6 @@ public sealed class TaskGestures(AnytypeApiClient api, NameResolver resolver)
         return label.Trim();
     }
 
-    // Recognizes "- [ ] text" / "- [x] text" (also '*'/'+' bullets, any leading
-    // whitespace, upper/lowercase X). On success, boxIndex is the position of the
-    // single char inside the brackets and label is the trimmed item text.
     static bool TryParseChecklistLine(string line, out int boxIndex, out string label)
     {
         boxIndex = -1;
@@ -201,8 +179,6 @@ public sealed class TaskGestures(AnytypeApiClient api, NameResolver resolver)
     }
 
     // ── Wire-shape property builders ─────────────────────────────────────────
-    // The API expects each property as {key, <format>: value}. The client does
-    // no normalization, so these are built explicitly per format.
 
     static JsonObject ObjectsProp(string key, string id)
         => new() { ["key"] = key, ["objects"] = new JsonArray(id) };
@@ -218,8 +194,6 @@ public sealed class TaskGestures(AnytypeApiClient api, NameResolver resolver)
         return string.IsNullOrEmpty(name) ? fallback : name;
     }
 
-    // Display name of a type_de_tache key for the confirmation line; falls back
-    // to the raw key if the option is unknown (should not happen post-resolve).
     static string DisplayType(string typeKey)
         => DevSpace.TypeDeTache.NameFor(typeKey) ?? typeKey;
 }

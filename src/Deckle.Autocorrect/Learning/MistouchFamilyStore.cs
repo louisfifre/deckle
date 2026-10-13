@@ -3,16 +3,14 @@ using System.Text.Json;
 
 namespace Deckle.Autocorrect;
 
-// One approved mistouch family, as the live engine consumes it (CONTEXT.md
-// § Mistouch family). The KINDS are code — universal keyboard mechanics the
-// corrector knows how to interpret; the INSTANCES are per-user data, mined
-// from that user's corpus and approved through the review gate. Nothing
-// user-specific is ever frozen in code: another user inherits the kinds,
-// never these records.
+// One approved mistouch family, as the live engine consumes it. The KINDS are
+// code — universal keyboard mechanics the corrector knows how to interpret; the
+// INSTANCES are per-user data, mined from that user's corpus and approved
+// through the review gate. Nothing user-specific is ever frozen in code: another
+// user inherits the kinds, never these records.
 //
-// Signature is the mined identity ("sub ;→'"), echoed in telemetry and in the
-// personal-dictionary suppression it writes on undo. Punctuation parameterizes
-// the kinds that need one (the glued boundary of a missing-space family).
+// Signature is the mined identity ("sub ;→'"). Punctuation parameterizes the
+// kinds that need one (the glued boundary of a missing-space family).
 public sealed record MistouchFamilyRecord(string Signature, string Kind, string Punctuation = "");
 
 // Closed vocabulary of the interpretable kinds — one spelling, one place.

@@ -4,12 +4,11 @@ using Xunit;
 
 namespace Deckle.Autocorrect.Tests;
 
-// Tests de comportement sur les transforms de la carte de décisions par app —
-// la grille d'activation que le moteur lit en vif sur son thread d'entrée. Deux
-// invariants comptent et se cassent facilement : chaque transform rend une
-// carte NEUVE (un lecteur concurrent ne voit jamais qu'une référence complète,
-// ancienne ou nouvelle, jamais à moitié bâtie), et la carte reste insensible à
-// la casse (le moteur matche les noms de process sans égard à la casse).
+// The per-app decision map is the activation grid the engine reads live on its
+// input thread. Two invariants break easily: each transform returns a NEW map,
+// so a concurrent reader only ever sees a complete reference, never a half-built
+// one; and the map stays case-insensitive, because the engine matches process
+// names regardless of case.
 [Trait("Category", "unit")]
 public class AutocorrectDecisionMapTests
 {

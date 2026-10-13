@@ -10,29 +10,11 @@ namespace Deckle.Settings;
 
 // ── FolderPickerEditableCard ────────────────────────────────────────────────
 //
-// Editable variant of FolderPickerCard. Replaces the read-only TextBlock
-// with a TextBox the user can type into, while keeping the Change + Show
-// buttons. Useful when the user might import a folder from another machine
-// (e.g. a pre-populated Whisper models directory) — the typing path is
-// faster than picking. Mirrors PowerToys AdvancedPaste model-path pattern.
-//
-// Exposes a RightContent slot for callers that need to attach extra
-// controls inline (Whisper's per-setting Reset button is the canonical
-// example; the slot keeps that affordance inside the card layout instead
-// of breaking it out into a sibling element).
-//
-// Designed to live inside a SettingsCard at the consumer site — same
-// architectural pattern as FolderPickerCard, see its file header for the
-// reason.
-//
-// Implements IPathControl so the floor composer can host this variant for a
-// Path setting whose Mode is Editable, exactly as it hosts FolderPickerCard for
-// Configure/OpenOnly. Path + PathChanged already carry the contract's value and
-// change signal; View below completes it, mirroring FolderPickerCard.
+// Editable variant of FolderPickerCard: a TextBox replaces the read-only
+// TextBlock, for a folder typed or pasted from another machine rather than
+// picked. Lives inside a SettingsCard for the same reason as FolderPickerCard.
 public sealed partial class FolderPickerEditableCard : UserControl, IPathControl
 {
-    // IPathControl: the floor composer hosts this control as a SettingsCard's
-    // content for a Path setting; Path and PathChanged below complete the contract.
     public FrameworkElement View => this;
 
     public static readonly DependencyProperty PathProperty =
@@ -88,10 +70,6 @@ public sealed partial class FolderPickerEditableCard : UserControl, IPathControl
             var window = SettingsHost.GetSettingsWindow?.Invoke()
                 ?? throw new InvalidOperationException("Settings window not initialized");
 
-            // Windowing: cf. doc in FolderPickerCard.PickButton_Click.
-            // Same constraints as the non-editable variant: dialog
-            // COM Win32 system-owned without accessible HWND; capture the
-            // intent through the trigger button rect.
             FolderPickerCard.EmitFolderPickerAnchor(sender as FrameworkElement, window);
 
             var picker = new Microsoft.Windows.Storage.Pickers.FolderPicker(window.AppWindow.Id)

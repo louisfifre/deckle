@@ -6,8 +6,6 @@ using Xunit;
 
 namespace Deckle.Hud.Tests;
 
-// Observability coverage grows with the workstream touching each event family:
-// rollup semantics and the Warning/Verbose split are pinned here.
 [Trait("Category", "observability")]
 public class DeckleHudSourceTests
 {

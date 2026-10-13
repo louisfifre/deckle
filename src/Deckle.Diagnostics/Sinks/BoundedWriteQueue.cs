@@ -4,9 +4,9 @@ using System.Threading.Channels;
 namespace Deckle.Diagnostics;
 
 // One bounded, ordered hand-off from EventSource emitter threads to a sink's
-// asynchronous writer. The normal path only enqueues. If producers outrun
-// disk, WriteAsync applies backpressure instead of dropping a row or growing
-// without bound. A flush marker is ordered with data, making Flush deterministic.
+// asynchronous writer. If producers outrun disk, WriteAsync applies
+// backpressure instead of dropping a row or growing without bound. A flush
+// marker is ordered with data, making Flush deterministic.
 //
 // Each sink owns a lightweight pending Task, not a dedicated OS thread. Actual
 // file writes use asynchronous I/O, so several dormant JSONL destinations do

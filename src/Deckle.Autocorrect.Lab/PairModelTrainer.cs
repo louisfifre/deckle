@@ -15,7 +15,8 @@ namespace Deckle.Autocorrect.Lab;
 //   variant = one realized surface form (the bare folded form is first-class —
 //             that is how "a" stays a candidate against "à").
 //   prev    = lowercased previous token in the same sentence, "" at sentence
-//             start AND for the per-slot unigram total (always present).
+//             start AND for the per-slot unigram total (always present), or
+//             "prevPrev prev" for a trigram row.
 //
 // The trainer must split words exactly like the live tracker: it tokenizes
 // with WordBoundaries.Tokenize, so the prev it learns is the prev the engine
@@ -28,8 +29,8 @@ public static class PairModelTrainer
     // (; :) that reset left context. Newlines are handled separately.
     private static readonly char[] SentenceBreaks = { '.', '!', '?', ';', ':', '…' };
 
-    // Train a model from a corpus reader against the gate's own lexicon and
-    // index — same notion of "ambiguous" as the runtime engine.
+    // Trains against the gate's own lexicon and index, so "ambiguous" means what
+    // it means to the runtime engine.
     public static PairModel Train(
         TextReader corpus,
         FrequencyLexicon french,
@@ -51,9 +52,6 @@ public static class PairModelTrainer
             foreach (string sentence in SplitSentences(line))
             {
                 sentences++;
-                // Two-deep left context, both null at sentence start. prev is the
-                // immediate previous token, prevPrev the one before it; together
-                // they form the trigram key "prevPrev prev".
                 string? prev = null;
                 string? prevPrev = null;
 
@@ -98,7 +96,6 @@ public static class PairModelTrainer
             new TrainerReport(sentences, tokens, ambiguousOccurrences, keptRows));
     }
 
-    // Train then write to a gz TSV in one call.
     public static TrainerReport TrainToFile(
         TextReader corpus,
         FrequencyLexicon french,
@@ -145,13 +142,10 @@ public static class PairModelTrainer
         byPrev[prev] = byPrev.TryGetValue(prev, out long c) ? c + 1 : 1;
     }
 
-    // Prune the context tail per order, so adding trigrams leaves the bigram
-    // model unchanged. Drop (folded,variant,ctx) rows below MinPairCount, then
-    // keep only the MaxPrevPerSlot heaviest contexts of each order — bigram keys
-    // (a bare prev) and trigram keys ("prevPrev prev", carrying a space) capped
-    // in separate buckets. The "" unigram row is never pruned — it is the
-    // fallback the disambiguator leans on. Returns the surviving row count
-    // (unigram rows included).
+    // Prunes the context tail per order, so adding trigrams leaves the bigram
+    // model unchanged: bigram keys (a bare prev) and trigram keys ("prevPrev
+    // prev", carrying a space) are capped in separate buckets. The "" unigram
+    // row is never pruned; it is the fallback the disambiguator leans on.
     private static long Prune(
         Dictionary<string, Dictionary<string, Dictionary<string, long>>> model,
         TrainerOptions opts)
@@ -161,7 +155,6 @@ public static class PairModelTrainer
         {
             foreach (var byPrev in byVariant.Values)
             {
-                // Drop low-count context rows (never the unigram total).
                 var toDrop = new List<string>();
                 foreach (var (ctx, count) in byPrev)
                     if (ctx.Length != 0 && count < opts.MinPairCount)
@@ -169,7 +162,6 @@ public static class PairModelTrainer
                 foreach (string ctx in toDrop)
                     byPrev.Remove(ctx);
 
-                // Cap each order independently, keeping the heaviest contexts.
                 CapBucket(byPrev, opts.MaxPrevPerSlot, trigram: false);
                 CapBucket(byPrev, opts.MaxPrevPerSlot, trigram: true);
 
@@ -179,8 +171,6 @@ public static class PairModelTrainer
         return kept;
     }
 
-    // Keep at most `cap` contexts of one order in a (folded,variant) slot — the
-    // bigram bucket (no space) or the trigram bucket (a space), heaviest kept.
     private static void CapBucket(Dictionary<string, long> byPrev, int cap, bool trigram)
     {
         var ranked = new List<KeyValuePair<string, long>>();
@@ -194,9 +184,6 @@ public static class PairModelTrainer
             byPrev.Remove(ranked[i].Key);
     }
 
-    // Split a line on the terse sentence breaks. The terminator is consumed;
-    // blank or whitespace-only fragments (e.g. the tail after the last period)
-    // are not sentences and yield nothing.
     private static IEnumerable<string> SplitSentences(string line)
     {
         int start = 0;
@@ -229,13 +216,12 @@ public static class PairModelTrainer
 // reject anyway.
 public sealed record TrainerOptions
 {
-    // Drop (folded,variant,prev) bigram rows seen fewer than this many times.
-    // The "" unigram rows are always kept regardless.
+    // Context rows (bigram and trigram) seen fewer times are dropped; the ""
+    // unigram rows always stay.
     public int MinPairCount { get; init; } = 3;
 
-    // Keep at most this many distinct prevs per (folded,variant) slot, the most
-    // frequent ones; prune the tail. Applied per order (bigram and trigram
-    // contexts are capped in separate buckets).
+    // Distinct contexts kept per (folded, variant) slot, heaviest first, capped
+    // per order (bigram and trigram contexts in separate buckets).
     public int MaxPrevPerSlot { get; init; } = 64;
 
     // The highest n-gram order to train: 2 = bigram only, 3 = also count the

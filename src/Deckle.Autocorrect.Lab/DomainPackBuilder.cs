@@ -7,41 +7,32 @@ using Deckle.Autocorrect;
 
 namespace Deckle.Autocorrect.Lab;
 
-// Fabricates a domain pack — an activatable set of surface forms that fully
-// extends the primary lexicon (valid forms AND correction targets) — from a
-// kaikki.org per-language wiktionary raw extraction. Conflicts with the base
+// Fabricates a domain pack (an activatable set of surface forms that fully
+// extends the primary lexicon, valid forms AND correction targets) from a
+// kaikki.org per-language Wiktionary raw extraction. Conflicts with the base
 // lexicon are resolved here, at fabrication, never at runtime: a candidate
 // whose masking cost (base-lexicon frequency mass within edit distance 1)
 // exceeds the exclusion threshold is refused, and the gray zone below it stays
 // withheld until an external LLM judge records a verdict in the pack's
 // judgments file.
-// The shipped pack is already clean; the fabrication report carries the
-// dilution indicator (what the pack brings, what was refused) and journals
-// the judge's verdicts.
 public static class DomainPackBuilder
 {
     // Frequency stamped on a shipped pack form the promotion overlay does not
     // carry. Out-of-Lexique sources have no frequency of their own, so forms
-    // start at a flat floor sitting well below the base lexicon's 1 opm tail.
-    // The IT bench showed the floor alone breaks the pack's own contract: a
-    // pack form at 0.2 loses the correction contest to any nearby base
-    // candidate (« hebergeur » was still corrected to « héberger »), so
-    // genuinely common terms are promoted at build through the versioned
-    // wordfreq overlay next to the judgments file — shipped frequency is
-    // max(floor, overlay).
+    // start at a flat floor below the base lexicon's tail. At the floor alone a
+    // pack form loses the correction contest to any nearby base candidate, so
+    // common terms are promoted at build through the versioned wordfreq overlay
+    // beside the judgments file: shipped frequency is max(floor, overlay).
     public const double FloorFrequencyPerMillion = 0.2;
 
     // Sanitization thresholds, in base-lexicon opm mass within edit distance 1.
-    // Provisional values pending the pilot-pack bench: above Exclusion the form
-    // is refused outright; between GrayZone and Exclusion it is withheld until
-    // judged; below GrayZone it ships.
     private const double MaskingExclusionPerMillion = 20.0;
     private const double MaskingGrayZonePerMillion = 1.0;
 
-    // The pilot pack: French computing vocabulary. Category names are the exact
-    // frwiktionary sense/entry categories (typographic apostrophe U+2019, as
-    // the dump spells them); a name matching nothing is inert, so the list can
-    // widen freely between rebuilds.
+    // French computing vocabulary. Category names are the exact frwiktionary
+    // sense/entry categories (typographic apostrophe U+2019, as the dump spells
+    // them); a name matching nothing is inert, so the list can widen freely
+    // between rebuilds.
     public static DomainPackDefinition FrItPack { get; } = new(
         "fr", "it",
         [
@@ -65,12 +56,7 @@ public static class DomainPackBuilder
             "en:Programming",
         ]);
 
-    // Builds one pack: streams the raw dump, harvests the surface forms of the
-    // matching entries (lemma + inline inflections), sanitizes them against the
-    // base lexicon, applies the journaled judge verdicts, then writes the gzip
-    // TSV artifact into outDir and the fabrication report + judge worksheet
-    // into reportDir. Deterministic over an unchanged dump + judgments file.
-    // Returns 0 on success.
+    // Deterministic over an unchanged dump, judgments file and overlay.
     public static int Run(
         string dumpPath, string baseLexiconPath, string outDir, string reportDir,
         DomainPackDefinition pack)
@@ -138,10 +124,9 @@ public static class DomainPackBuilder
 
         int pending = gray.Count(g => g.Verdict == "pending");
 
-        // The machine-readable half of the dilution indicator, shipped in
-        // outDir beside the forms it describes so the settings page can state
-        // what the pack brings and what was refused without parsing the report.
-        // Same counts as the report's Yield table, written in the same pass.
+        // The dilution indicator's machine-readable half, beside the forms it
+        // describes, so the settings page can state what the pack brings and
+        // what was refused without parsing the report.
         new DomainPackManifest
         {
             Id = pack.Id,
@@ -160,11 +145,8 @@ public static class DomainPackBuilder
         return 0;
     }
 
-    // Merges the base lexicon and a pack into one effective-lexicon TSV, the
-    // exact table the runtime will consult: on a duplicated form the highest
-    // frequency wins — commutative and idempotent, so activation order can
-    // never matter. Lab-side only for now; the runtime keeps its existing
-    // mechanics until the pilot pack has passed the bench.
+    // On a duplicated form the highest frequency wins: commutative and
+    // idempotent, so activation order can never matter.
     public static void MergeEffective(string baseLexiconPath, string packPath, string outPath)
     {
         var merged = new Dictionary<string, double>(StringComparer.Ordinal);
@@ -184,12 +166,9 @@ public static class DomainPackBuilder
         long ShapeRejected,
         long ArtifactRejected);
 
-    // Streams the gzip JSONL dump line by line. A cheap substring prefilter
-    // keeps JSON parsing off the millions of non-matching lines; the parsed
-    // check then requires the pack's language and an exact category match —
-    // categories live at sense level (entry level scanned too). Harvested forms
-    // are the entry word plus its inline inflections, minus the wiktextract
-    // table artifacts.
+    // The parsed check requires the pack's language and an exact category
+    // match; the dump carries categories at sense level (entry level scanned
+    // too).
     private static HarvestResult HarvestForms(
         string dumpPath, DomainPackDefinition pack, FrequencyLexicon baseLexicon)
     {
@@ -237,12 +216,11 @@ public static class DomainPackBuilder
             candidates, matched, alreadyInBase, shapeRejected, artifactRejected);
     }
 
-    // The cheap gate that keeps JsonDocument.Parse off the lines that cannot
-    // match: a line carrying none of the pack's category names carries none of
-    // its entries. Derived from the perimeter rather than anchored on a literal
-    // prefix, so widening the category list can never leave the prefilter
-    // behind. Assumes the dump spells category names as literal UTF-8, which is
-    // what the parsed exact match already relies on.
+    // Keeps JsonDocument.Parse off the lines that cannot match: a line carrying
+    // none of the pack's category names carries none of its entries. Derived
+    // from the category list, so widening it never leaves the prefilter behind.
+    // Assumes the dump spells category names as literal UTF-8, which the parsed
+    // exact match relies on too.
     private static bool Prefilter(string line, DomainPackDefinition pack)
     {
         foreach (string category in pack.Categories)
@@ -371,10 +349,8 @@ public static class DomainPackBuilder
     }
 
     // Masking cost of a candidate form: the total base-lexicon frequency mass
-    // (opm) within Damerau-Levenshtein distance 1 — every base word a typo of
-    // which could be captured or shielded by the new form. Computed by
-    // enumerating the candidate's distance-1 neighbourhood against the base
-    // map: deletions, transpositions, substitutions and insertions.
+    // (opm) within Damerau-Levenshtein distance 1, every base word a typo of
+    // which the new form could capture or shield.
     private static double MaskingCost(string form, FrequencyLexicon baseLexicon, char[] alphabet)
     {
         var seen = new HashSet<string>(StringComparer.Ordinal) { form };
@@ -413,9 +389,9 @@ public static class DomainPackBuilder
     // ── Judge verdicts ─────────────────────────────────────────────────────
 
     // The judgments file is the machine-readable side of the external LLM
-    // arbitration: `form<TAB>admit|exclude<TAB>note` lines, versioned next to
-    // the report. The builder never writes it — verdicts are recorded by the
-    // maintainer's judge campaign and applied on the next build.
+    // arbitration: `form<TAB>admit|exclude<TAB>note` lines, versioned beside
+    // the report. The builder never writes it; verdicts recorded there apply
+    // on the next build.
     private static Dictionary<string, (bool Admit, string Note)> LoadJudgments(string path)
     {
         var verdicts = new Dictionary<string, (bool, string)>(StringComparer.Ordinal);
@@ -434,11 +410,9 @@ public static class DomainPackBuilder
         return verdicts;
     }
 
-    // The promotion overlay is the machine-readable outcome of the bench's
-    // floor-vs-promotion call: `form<TAB>opm` lines (wordfreq-derived, simple
-    // single-token forms only), versioned next to the judgments file. Curated
-    // by the maintainer's promotion gesture, never written by the builder;
-    // a shipped form absent from the overlay stays at the floor.
+    // The promotion overlay: `form<TAB>opm` lines (wordfreq-derived, single-token
+    // forms only), versioned beside the judgments file and never written by the
+    // builder. A shipped form absent from the overlay stays at the floor.
     private static Dictionary<string, double> LoadPromotions(string path)
     {
         var promotions = new Dictionary<string, double>(StringComparer.Ordinal);
@@ -461,10 +435,7 @@ public static class DomainPackBuilder
 
     // ── Report ─────────────────────────────────────────────────────────────
 
-    // The fabrication report: yield of every stage, the dilution indicator the
-    // pack UI will surface, the full refusal list, and the gray-zone worksheet
-    // the judge campaign reads and whose verdicts it journals. All lists are
-    // complete and sorted — no silent caps, byte-deterministic.
+    // All lists are complete and sorted: no silent caps, byte-deterministic.
     private static void WriteReport(
         string path, DomainPackDefinition pack, HarvestResult harvest,
         int shippedCount, int promotedCount,
@@ -527,11 +498,9 @@ public static class DomainPackBuilder
     }
 }
 
-// One buildable domain pack: the language of the entries it mines, its domain
-// key, and the wiktionary categories that define its perimeter. Every file name
-// derives from Id — the same string the runtime's DomainPack carries — so the
-// artifacts, their report and the pack the app loads agree by construction
-// rather than by two interpolations happening to match.
+// Every file name derives from Id, the same string the runtime's DomainPack
+// carries. DomainPack interpolates its own names from that Id, so these
+// patterns must match its patterns, or the app never finds the artifacts.
 public sealed record DomainPackDefinition(
     string Language, string Key, IReadOnlyList<string> Categories)
 {

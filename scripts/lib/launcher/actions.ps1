@@ -100,8 +100,7 @@ function Invoke-ResetAgentState {
     }
 }
 
-# The patch/minor/major picker with next-version previews, shared by the
-# standalone bump and the publish flow. Returns @{ Seg; Target } or $null on Esc.
+# Returns { Seg; Target }, or $null on Esc.
 function Select-VersionBump {
     param(
         [Parameter(Mandatory)][string]$Current,

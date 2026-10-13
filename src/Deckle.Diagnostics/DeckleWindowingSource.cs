@@ -4,33 +4,22 @@ namespace Deckle.Diagnostics;
 
 // Cross-cutting sub-provider: positioning and sizing of every WinUI 3 or Win32
 // app window (HUD, HudOverlay, tray popup, SettingsWindow, LogWindow,
-// SetupWindow, FolderPicker). Without this cross-cutting event, a DPI or
-// multi-monitor placement bug leaves no trace; instrumentation would be done
-// manually with `File.AppendAllText` at the exact site, the parallel path the
-// centralization doctrine wants to avoid. The primitive is strictly
-// non-business (platform wiring) and consumed by several modules with exactly
-// the same parameter set: promotion to cross-cutting sub-provider under the
-// two-clause criterion in `reference--eventsource-convention--1.2.md`
-// §*Cross-cutting sub-providers*.
+// SetupWindow, FolderPicker). Without this event, a DPI or multi-monitor
+// placement bug leaves no trace. The primitive is strictly non-business
+// (platform wiring) and consumed by several modules with exactly the same
+// parameter set.
 //
 // Coordinate convention: absolute screen pixels everywhere. Internal
 // calculations may start from DIPs, but events always carry pixels to allow
 // reversal through `dpi`. Consistent with what `GetCursorPos`, `GetWindowRect`,
-// and `GetMonitorInfo` return. See 1.2 §*Class 6 — Windowing* for the
-// canonical parameter set.
+// and `GetMonitorInfo` return.
 //
-// "Common trunk + specialized events" pattern. `WindowPositioned` is the trunk
-// emitted by every site that positions or resizes a window. Stacked overlays
-// ALSO emit `OverlaySlotAssigned` (the slot would not make sense on app
-// windows). Popups anchored to a parent control ALSO emit `PopupAnchored` (with
-// the anchored control rect serialized as string "x,y,w,h" to fit in 6
-// EventSource parameters). Topmost/no-activate surfaces may ALSO emit
-// `WindowZOrderState` to capture the native result of a z-order transition. A
-// resizable window whose recompute is coalesced emits `WindowResizeSettled` once
-// per settled resize — standalone, not a trunk specialization, since a coalescer
-// rather than a positioning site raises it. Alongside it, `WindowResizeFrame`
-// traces each coalesced WM_SIZE frame (size, cadence, WinUI relayout cost) for
-// resize-latency diagnosis — deliberately chatty, Verbose-gated, off by default.
+// `WindowPositioned` is the common trunk emitted by every site that positions
+// or resizes a window. Stacked overlays ALSO emit `OverlaySlotAssigned`, popups
+// anchored to a parent control ALSO emit `PopupAnchored`, and topmost
+// no-activate surfaces may ALSO emit `WindowZOrderState`. `WindowResizeSettled`
+// and its per-frame companion `WindowResizeFrame` stand alone: a resize
+// coalescer, not a positioning site, raises them.
 //
 // Closed `window` vocabulary (short logical name for the common trunk):
 //   "hud"           — main HudWindow (bottom-center)
@@ -47,8 +36,8 @@ namespace Deckle.Diagnostics;
 // emission, to preserve listener-side grep-ability.
 //
 // Closed `anchor` vocabulary (code-side placement intent, not a measurement):
-//   "BottomCenter"    — HUD en mode BottomCenter (default)
-//   "TopCenter"       — HUD en mode TopCenter
+//   "BottomCenter"    — HUD in BottomCenter mode (default)
+//   "TopCenter"       — HUD in TopCenter mode
 //   "Center"          — window centered on the work area (Settings, Log,
 //                       Setup)
 //   "CursorRelative"  — placement relative to the cursor (tray popup)
@@ -76,12 +65,8 @@ public sealed class DeckleWindowingSource : DeckleEventSource
     public const int EvtWindowResizeFrame    = 6;
     public const int EvtWindowLoadComplete   = 7;
 
-    // Common trunk: emitted by every site that positions or resizes a window.
-    // `window` is a short logical name (see closed vocabulary above). `hmon`
-    // is the monitor handle returned by `MonitorFromWindow`, `dpi` comes from
-    // `GetDpiForWindow`, `anchor` describes the code-side chosen anchor, and
-    // `pos`/`size` are in absolute screen pixels. Overlays and popups emit THIS
-    // event in addition to their specialized event.
+    // Common trunk. `hmon` comes from `MonitorFromWindow`, `dpi` from
+    // `GetDpiForWindow`.
     [Event(EvtWindowPositioned,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Windowing,
@@ -94,11 +79,9 @@ public sealed class DeckleWindowingSource : DeckleEventSource
         WriteEvent(EvtWindowPositioned, window, hmon, dpi, anchor, pos_x, pos_y, size_w, size_h);
     }
 
-    // Stacked overlay specialization: `slot=0` for the closest to the main
-    // HUD, `slot=1` for the next one, etc. `WindowPositioned` is also emitted
-    // with window="hud-overlay" to preserve common trunk determinism and allow
-    // a listener subscribing only to `OverlaySlotAssigned` to avoid noise from
-    // non-overlay app windows.
+    // Stacked overlay specialization: `slot=0` is the closest to the main HUD.
+    // `WindowPositioned` is also emitted with window="hud-overlay", so the
+    // trunk stays complete while a listener can follow overlays alone.
     [Event(EvtOverlaySlotAssigned,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Windowing,
@@ -114,11 +97,8 @@ public sealed class DeckleWindowingSource : DeckleEventSource
     // Anchored popup specialization: `parent_rect` is the anchored control's
     // rectangle (e.g. tray icon, FolderPicker button) in absolute screen
     // pixels, serialized as string "x,y,w,h" to fit in 6 EventSource
-    // parameters. `WindowPositioned` is also emitted with window="tray-popup"
-    // or "folder-picker" for the common trunk when the popup is a window owned
-    // by the app; popups whose HWND the app does not own (native
-    // TrackPopupMenu menu, system FolderPicker dialog) only emit
-    // `PopupAnchored` with what is known about the code-side trigger.
+    // parameters. A popup whose HWND the app does not own (system FolderPicker
+    // dialog) emits only this event, without the common trunk.
     [Event(EvtPopupAnchored,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Windowing,
@@ -133,10 +113,10 @@ public sealed class DeckleWindowingSource : DeckleEventSource
 
     // Z-order specialization: captures native state around a ShowWindow /
     // SetWindowPos topmost operation. `visible_above_count` remains raw
-    // z-order: a Win32-visible window can be cloaked, outside the HUD
+    // z-order: a Win32-visible window can be cloaked, outside the target
     // rectangle, or a Shell/IME helper without real occlusion.
-    // `occluding_above_count` is the useful signal for the visual bug: visible,
-    // non-cloaked, non-empty rect, and geometric intersection with the HUD.
+    // `occluding_above_count` is the real occlusion signal: visible,
+    // non-cloaked, non-empty rect, and geometric intersection with the target.
     // `setpos_ok/last_error` reflect the SetWindowPos call when the stage
     // follows that call, otherwise true/0.
     [Event(EvtWindowZOrderState,
@@ -177,15 +157,13 @@ public sealed class DeckleWindowingSource : DeckleEventSource
             setpos_ok, last_error);
     }
 
-    // Resize-coalescing specialization: one rolled-up event per *settled* resize,
-    // emitted by ResizeCoalescer at the boundary where the window does its single
-    // deferred recompute — never one per WM_SIZE frame. `trigger` is a closed
-    // 2-value vocabulary: "gesture" (a user drag bracketed by WM_ENTERSIZEMOVE /
-    // WM_EXITSIZEMOVE, `frames` = the WM_SIZE frames coalesced into the one
-    // recompute, `duration_ms` = the gesture wall-clock) or "direct" (a WM_SIZE
-    // outside any gesture — maximize / snap / programmatic SetWindowPos — with
-    // `frames`=1 and `duration_ms`=0, the safety net). `window` reuses the closed
-    // logical-name vocabulary of the common trunk above.
+    // One rolled-up event per *settled* resize, emitted by ResizeCoalescer at
+    // the boundary where the window does its single deferred recompute.
+    // `trigger` is a closed 2-value vocabulary: "gesture" (a user drag
+    // bracketed by WM_ENTERSIZEMOVE / WM_EXITSIZEMOVE, `frames` = the WM_SIZE
+    // frames coalesced into the one recompute, `duration_ms` = the gesture
+    // wall-clock) or "direct" (a WM_SIZE outside any gesture — maximize / snap /
+    // programmatic SetWindowPos — with `frames`=1 and `duration_ms`=0).
     [Event(EvtWindowResizeSettled,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Windowing,
@@ -196,15 +174,12 @@ public sealed class DeckleWindowingSource : DeckleEventSource
         WriteEvent(EvtWindowResizeSettled, window, trigger, frames, duration_ms);
     }
 
-    // Per-frame companion to `WindowResizeSettled`, emitted by ResizeCoalescer for
-    // each coalesced WM_SIZE while a drag gesture is in flight — the granular view
-    // the rollup deliberately omits, for diagnosing resize lag. `frame` is the
-    // 1-based index within the gesture, `size` the client area this frame in
-    // pixels, `since_prev_ms` the wall time since the previous frame (the cadence
-    // Windows drives the modal resize loop at), and `relayout_ms` the cost of
-    // WinUI's synchronous layout pass for this frame (it runs inside
-    // DefSubclassProc). A near-zero `relayout_ms` under a tight `since_prev_ms`
-    // points the lag below the framework, at composition/present, not at our draw.
+    // Per-frame companion to `WindowResizeSettled`, for each coalesced WM_SIZE
+    // of a drag gesture. `since_prev_ms` is the cadence Windows drives the
+    // modal resize loop at; `relayout_ms` is WinUI's synchronous layout pass
+    // for this frame (it runs inside DefSubclassProc). A near-zero
+    // `relayout_ms` under a tight `since_prev_ms` points the lag below the
+    // framework, at composition/present, not at Deckle's draw.
     [Event(EvtWindowResizeFrame,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Windowing,
@@ -216,17 +191,11 @@ public sealed class DeckleWindowingSource : DeckleEventSource
         WriteEvent(EvtWindowResizeFrame, window, frame, size_w, size_h, since_prev_ms, relayout_ms);
     }
 
-    // Lazy first-open construction cost: one rolled-up event per lazily
-    // constructed secondary window (`window` reuses the closed logical-name
-    // vocabulary above — "log", "settings", "playground"). `load_ms` is the
-    // wall-clock of the one-shot construction span the call site brackets with a
-    // Stopwatch: `new <Window>()` plus the synchronous placement-restore and
-    // first-time wiring inside the lazy guard, NOT the per-open Show/Activate
-    // path. Mirrors the whisper ModelLoadComplete(load_ms) shape; emitted as a
-    // single complete event with no paired start, matching WindowResizeSettled —
-    // the source's existing one-shot rolled-up-duration idiom — since the span
-    // is synchronous, non-cancellable, and has no intermediate phase to bracket
-    // externally.
+    // Lazy first-open construction cost of a secondary window. `load_ms` spans
+    // `new <Window>()` plus the synchronous placement-restore and first-time
+    // wiring inside the lazy guard, NOT the per-open Show/Activate path. One
+    // complete event with no paired start: the span is synchronous and has no
+    // intermediate phase to bracket.
     [Event(EvtWindowLoadComplete,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Windowing,

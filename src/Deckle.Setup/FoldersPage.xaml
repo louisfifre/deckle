@@ -35,9 +35,6 @@
                 </StackPanel>
             </controls:SettingsCard>
 
-            <!-- Per-drive space recap: what this install needs on each drive
-                 the two folders touch, against what is free. Flips to Error
-                 (and gates Next) when a drive can't take its share. -->
             <InfoBar x:Name="SpaceBar"
                      IsOpen="True"
                      IsClosable="False"

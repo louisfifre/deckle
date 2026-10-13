@@ -7,15 +7,11 @@
     xmlns:vm="using:Deckle.Autocorrect"
     xmlns:catalog="using:Deckle.Catalog">
 
-    <!-- Child page of the Autocorrect family: the domains that add a field's
-         vocabulary to the effective lexicon, and nothing else. Same canonical
-         Settings layout as its parent and its sibling. The domain section is
-         collapsed while the master switch is off (mask-never-grey) and one line
-         says why — the door on the parent page and the rail entry stay, so the
-         page must answer for itself when nothing behind them applies. -->
-    <!-- No SettingsSection block here, unlike the parent and the sibling: this
-         page carries a single section and its tabs name it, so a title would add
-         nothing. The card spacing resource comes from App.xaml. -->
+    <!-- Child page of the Autocorrect family. While the master switch is off the
+         domain section is collapsed and one line says why: the door on the
+         parent page and the rail entry stay, so the page must answer for itself.
+         No SettingsSection block: the page carries a single section and its tabs
+         name it, so a title would add nothing. -->
 
     <ScrollViewer Padding="32,24,32,24"
                   VerticalScrollBarVisibility="Auto"
@@ -25,15 +21,12 @@
                         HorizontalAlignment="Stretch"
                         Spacing="{StaticResource SettingsCardSpacing}">
 
-                <!-- The shared header block. No Reset all: the page holds no
-                     composed setting, only per-language switches over a shipped
-                     catalogue, so there is no page-level default to return to. -->
+                <!-- No Reset all: the page holds only per-language switches over a
+                     shipped catalogue, with no page-level default to return to. -->
                 <catalog:SettingsPageHeader x:Name="Header"
                                             x:Uid="LexicalDomainsPageHeader"
                                             HasResetAll="False" />
 
-                <!-- Shown in place of the whole section while autocorrect is off:
-                     one inline channel, the wording carries the tone. -->
                 <TextBlock x:Name="DisabledNotice"
                            x:Uid="LexicalDomainsPage_Disabled"
                            Style="{StaticResource BodyTextBlockStyle}"
@@ -48,32 +41,23 @@
                             Tag="LexicalDomainsPage_Section_Domains"
                             Spacing="{StaticResource SettingsCardSpacing}">
 
-                    <!-- Peer views, not a filter: each tab is a different domain
-                         to read, and selection follows keyboard focus — the
-                         control's own behaviour, which is why the first domain is
-                         selected on load. Items are filled from code-behind off
-                         ViewModel.Domains (a runtime-enumerated catalogue). No
-                         header above it: the tabs name the domains, and a
-                         "Categories" line would be a third title level over a page
-                         that already has two. -->
+                    <!-- Peer views, not a filter. Selection follows keyboard focus,
+                         the control's own behaviour, which is why the first domain
+                         is selected on load. No header above it: a "Categories"
+                         line would be a third title level. -->
                     <SelectorBar x:Name="DomainSelector"
                                  Margin="0,4,0,12"
                                  SelectionChanged="OnDomainChanged" />
 
-                    <!-- The selected domain's one-line description. No "Computing"
-                         header above the list either — the selected tab already
-                         names it. -->
                     <TextBlock Text="{x:Bind ViewModel.SelectedDomain.Description, Mode=OneWay}"
                                Style="{StaticResource BodyTextBlockStyle}"
                                Foreground="{ThemeResource TextFillColorSecondaryBrush}"
                                TextWrapping="Wrap"
                                Margin="0,0,0,8" />
 
-                    <!-- One row per language the domain ships. Bespoke rather than
-                         composed: the rows are enumerated from DomainPack.Shipped
-                         and each carries its own term count, which no composer kind
-                         models. The row label is self-describing (language + terms),
-                         so there is no second description line. -->
+                    <!-- Bespoke rather than composed: the rows are enumerated from
+                         DomainPack.Shipped and each carries its own term count,
+                         which no composer kind models. -->
                     <ItemsControl ItemsSource="{x:Bind ViewModel.SelectedDomain.Languages, Mode=OneWay}">
                         <ItemsControl.ItemsPanel>
                             <ItemsPanelTemplate>
@@ -90,8 +74,7 @@
                     </ItemsControl>
 
                     <!-- What the domain ships against what fabrication turned away,
-                         in prose under the list. One inline channel, and the wording
-                         carries the tone — no InfoBar, no severity ladder. -->
+                         in plain prose on purpose: no InfoBar, no severity ladder. -->
                     <TextBlock Text="{x:Bind ViewModel.SelectedDomain.Indications, Mode=OneWay}"
                                Visibility="{x:Bind ViewModel.SelectedDomain.IndicationsVisibility, Mode=OneWay}"
                                Style="{StaticResource BodyTextBlockStyle}"

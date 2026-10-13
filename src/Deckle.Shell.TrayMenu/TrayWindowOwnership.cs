@@ -14,10 +14,6 @@ internal static class TrayWindowOwnership
     // only guards against a cyclic lookup.
     internal const int MaxDepth = 8;
 
-    /// <summary>
-    /// True when <paramref name="window"/> is owned by <paramref name="owner"/>,
-    /// directly or through intermediate owners. Zero handles are never owned.
-    /// </summary>
     internal static bool IsOwnedBy(IntPtr window, IntPtr owner, Func<IntPtr, IntPtr> getOwner)
     {
         if (window == IntPtr.Zero || owner == IntPtr.Zero) return false;

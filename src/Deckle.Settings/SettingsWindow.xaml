@@ -7,15 +7,8 @@
 
     <Grid x:Name="RootGrid">
         <Grid.Resources>
-            <!-- Search box cap. The box stretches with the TitleBar's central zone
-                 and stops growing here; a named resource keeps the cap
-                 self-documenting and single-sourced. -->
             <x:Double x:Key="SettingsSearchBoxMaxWidth">360</x:Double>
 
-            <!-- Suggestion rows: a rich hit (page glyph + card label with matched
-                 terms bold + breadcrumb line) and a terminal notice ("+N more",
-                 "No results"). Two templates, chosen by row type — same shape as
-                 LogWindow's LogEntryTemplateSelector. -->
             <DataTemplate x:Key="SearchHitTemplate" x:DataType="local:SettingSuggestionHit">
                 <Grid ColumnSpacing="12" Padding="4,2">
                     <Grid.ColumnDefinitions>
@@ -54,19 +47,14 @@
             <RowDefinition Height="*" />
         </Grid.RowDefinitions>
 
-        <!-- Native TitleBar: icon + title, plus the pane-toggle (hamburger) and
-             the Logs command. The NavigationView's own pane toggle is turned off
-             (IsPaneToggleButtonVisible=False below); the TitleBar carries it and
-             relays through PaneToggleRequested — the WinUI 3 Gallery pattern, pure
-             code-behind, no automatic link between the two controls.
-             No back button: IsBackButtonVisible stays at its default (false).
-             The rail now nests (a module page may register under a ParentId), but
-             every destination still HAS a rail entry — a child is one click away in
-             the pane, never reachable only by going back. Frame.Navigate pushes the
-             back stack on every nav change, siblings included, so a CanGoBack-bound
-             button would offer to retrace ordinary page switches, against the
-             flat-nav intent. Wire it once a destination exists that the rail does
-             not list. -->
+        <!-- The NavigationView's own pane toggle is off; the TitleBar carries it
+             and relays through PaneToggleRequested — the WinUI 3 Gallery pattern,
+             pure code-behind, no automatic link between the two controls.
+             No back button: every destination has a rail entry, even a child page
+             registered under a ParentId. Frame.Navigate pushes the back stack on
+             every nav change, siblings included, so a CanGoBack-bound button would
+             offer to retrace ordinary page switches. Wire it once a destination
+             exists that the rail does not list. -->
         <TitleBar Grid.Row="0"
                   x:Name="AppTitleBar"
                   x:Uid="SettingsTitleBar"
@@ -82,13 +70,6 @@
                 <ImageIconSource x:Name="AppTitleBarIcon" />
             </TitleBar.IconSource>
             <TitleBar.Content>
-                <!-- Cross-page search, central slot. The zone is the TitleBar's one
-                     star column, so its width IS the space the bar can afford: the
-                     box stretches with it up to its cap, and when the zone drops
-                     below the box's useful floor the code-behind swaps it for the
-                     search icon, whose click floats the same box in SearchOverlay
-                     below the bar. At extreme widths the TitleBar's own Compact
-                     state reclaims the title area natively. -->
                 <Grid x:Name="SearchZone"
                       VerticalAlignment="Center"
                       Margin="8,0"
@@ -122,9 +103,8 @@
                 </Grid>
             </TitleBar.Content>
             <TitleBar.RightHeader>
-                <!-- Logs: opens the shared LogWindow through the App callback. A
-                     lateral command, so RightHeader — the central Content slot is
-                     reserved for the interactive search added later. -->
+                <!-- A lateral command, so RightHeader; the central Content slot
+                     holds the search. -->
                 <Button x:Name="LogsButton"
                         x:Uid="SettingsLogsButton"
                         Style="{StaticResource SubtleButtonStyle}"
@@ -137,10 +117,6 @@
             </TitleBar.RightHeader>
         </TitleBar>
 
-        <!-- NavigationView. PaneDisplayMode=Auto (default) lets WinUI choose
-             Left / LeftCompact / LeftMinimal. Its own pane toggle is off — the
-             TitleBar carries it. Tag = full Page type name, resolved through
-             Type.GetType in the handler. -->
         <NavigationView Grid.Row="1"
                         x:Name="Nav"
                         IsBackButtonVisible="Collapsed"
@@ -148,13 +124,9 @@
                         IsSettingsVisible="False"
                         SelectionChanged="OnNavSelectionChanged">
 
-            <!-- The rail (settings design system, decision 15): Home, General, a
-                 separator, then the modules. Home and General are the shell's two
-                 static anchors; every module page lives in its own assembly and is
-                 materialised from SettingsModuleRegistry in the code-behind, appended
-                 after the separator in (tier, order) order — so a module can appear /
-                 disappear without editing this file (the seam the module installer
-                 needs). -->
+            <!-- Home and General are the shell's two static anchors; every module
+                 page is materialised from SettingsModuleRegistry in the code-behind,
+                 so a module can appear or disappear without editing this file. -->
             <NavigationView.MenuItems>
                 <NavigationViewItem x:Uid="SettingsNavHome"
                                     Tag="Deckle.Settings.HomePage">
@@ -169,28 +141,18 @@
                     </NavigationViewItem.Icon>
                 </NavigationViewItem>
                 <NavigationViewItemSeparator />
-                <!-- Module pages inserted here from SettingsModuleRegistry, in
-                     (tier, order) order — Recording first through Diagnostics last. -->
             </NavigationView.MenuItems>
 
-            <!-- Footer menu holds only Footer-tier module items, inserted from
-                 SettingsModuleRegistry in the code-behind. Logs moved to the
-                 TitleBar. -->
-
-            <!-- Content area: NavigationView already places its Layer surface
-                 with a rounded DWM top-left corner. No Border wrapper, no
-                 custom CornerRadius, no sticky header/footer. Each Page
-                 manages its own H1 title and ScrollViewer (Win11 Settings
-                 pattern). Auto-save everywhere → no global Cancel/Save. -->
+            <!-- NavigationView already draws its content surface with the rounded
+                 top-left corner: no Border wrapper, no custom CornerRadius. Each
+                 Page owns its H1 title and ScrollViewer (Windows 11 Settings). -->
             <Frame x:Name="PageFrame" />
         </NavigationView>
 
-        <!-- Narrow-window search overlay. When the TitleBar can only afford the
-             search icon, clicking it floats the SAME AutoSuggestBox here — the
-             code-behind reparents it in, and back out on dismissal — so there is
-             one search control, one state, whatever the window size. Transient
-             surface, so flyout acrylic and flyout stroke; declared after the
-             NavigationView to render above the page. -->
+        <!-- Narrow-window search overlay: the code-behind reparents the same
+             AutoSuggestBox in here. Transient surface, so flyout acrylic and
+             flyout stroke; declared after the NavigationView to render above the
+             page. -->
         <Border x:Name="SearchOverlay"
                 Grid.Row="1"
                 MaxWidth="376"

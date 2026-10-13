@@ -7,9 +7,8 @@ namespace Deckle.Llm.Rewrite;
 // Dynamic-programming alignment of the original and rewritten token
 // sequences. Strictly monotone by construction: the DP only ever advances
 // through both sequences in order, so no alignment it can produce moves a
-// span — reordering surfaces as a replacement/deletion pair that no rule
-// admits, and the paragraph is rejected. That is the framing decision
-// "ordre monotone strict" made mechanical.
+// span: reordering surfaces as a replacement/deletion pair that no rule
+// admits, and the paragraph is rejected.
 //
 // Every transition is one ruling of the gate. Allowed transitions carry
 // small costs that prefer the tightest script (matches over replacements,
@@ -29,8 +28,6 @@ namespace Deckle.Llm.Rewrite;
 
 internal static class DiffAlignment
 {
-    // Group horizons. Replacements merge/split at most 3 tokens a side;
-    // deletions extend to the longest filler phrase.
     const int ReplaceGroupMax = 3;
 
     internal static List<DiffEdit> Align(IReadOnlyList<GateToken> a, IReadOnlyList<GateToken> b)
@@ -54,14 +51,12 @@ internal static class DiffAlignment
                 double here = cost[i, j];
                 if (double.IsPositiveInfinity(here)) continue;
 
-                // Insertion of B[j].
                 if (j < m)
                 {
                     var ins = ClassifyInsertion(b[j]);
                     Relax(cost, parent, i, j + 1, here + Cost(ins, 1, violationPenalty), new Parent(0, 1, ins));
                 }
 
-                // Deletion of A[i..i+k).
                 for (int k = 1; k <= deleteGroupMax && i + k <= n; k++)
                 {
                     var del = ClassifyDeletion(a, i, k);
@@ -69,7 +64,6 @@ internal static class DiffAlignment
                     Relax(cost, parent, i + k, j, here + Cost(del.Value, k, violationPenalty), new Parent((byte)k, 0, del.Value));
                 }
 
-                // Match / replacement of A[i..i+ga) with B[j..j+gb).
                 for (int ga = 1; ga <= ReplaceGroupMax && i + ga <= n; ga++)
                 {
                     for (int gb = 1; gb <= ReplaceGroupMax && j + gb <= m; gb++)
@@ -137,13 +131,10 @@ internal static class DiffAlignment
             return DiffEditRuling.RejectedDeletion;
         }
 
-        // Filler phrase ("du coup", "je veux dire").
         var span = new GateToken[count];
         for (int k = 0; k < count; k++) span[k] = a[start + k];
         if (GateLexicon.IsFillerPhrase(span)) return DiffEditRuling.AllowedDeletion;
 
-        // Phrase duplicate: the span repeats the tokens just before it
-        // ("tu vois tu vois").
         if (start - count >= 0)
         {
             bool repeats = true;
@@ -207,16 +198,14 @@ internal static class DiffAlignment
                 : DiffEditRuling.RejectedReplacement;
         }
 
-        // Merge/split groups: words only, compared on concatenated forms.
         for (int k = 0; k < ga; k++) if (!a[ai + k].IsWord) return null;
         for (int k = 0; k < gb; k++) if (!b[bj + k].IsWord) return null;
 
         // A group replacement is a re-segmentation of DIFFERENT forms: a
         // word that survives verbatim must be consumed as a match, never
         // inside a group. Without this, an identical neighbor dilutes the
-        // concatenated distance and smuggles a substitution through —
-        // measured on the 2026-07-19 eval ("pas lisible" → "peu lisible"
-        // passing as one 2→2 group).
+        // concatenated distance and smuggles a substitution through
+        // ("pas lisible" → "peu lisible" passing as one 2→2 group).
         for (int k = 0; k < ga; k++)
             for (int l = 0; l < gb; l++)
                 if (SameForm(a[ai + k], b[bj + l])) return null;

@@ -3,18 +3,8 @@ using Deckle.Input.Trackpad;
 
 namespace Deckle.App;
 
-// Trackpad module composition. The App owns the three pieces and keeps
-// them reconciled with the persisted settings, same posture as the
-// Ambient engine observer:
-//
-//   RawInputHost      — dedicated Raw Input thread; runs whenever anyone
-//                       consumes frames (drag engine or frame recorder),
-//                       stops when both are off.
-//   TrackpadEngine    — three-finger drag (master switch).
-//   ContactFrameRecorder — raw frame telemetry to JSONL (diagnostics
-//                       toggle, deliberately independent of the master
-//                       switch so real Bluetooth sessions can be
-//                       recorded with the recognizer off).
+// The frame recorder is deliberately independent of the master switch, so real
+// Bluetooth sessions can be recorded with the recognizer off.
 public partial class App
 {
     private RawInputHost? _inputHost;
@@ -37,10 +27,7 @@ public partial class App
         ReconcileTrackpad();
     }
 
-    // Idempotent settings → runtime reconciliation, called at boot and on
-    // every settings flush. Start/Stop on the host and engine are
-    // themselves idempotent, so re-running on unrelated settings changes
-    // costs nothing.
+    // Start and Stop are idempotent, so unrelated settings changes cost nothing.
     private void ReconcileTrackpad()
     {
         if (_inputHost is null || _trackpadEngine is null || _frameRecorder is null) return;
@@ -65,9 +52,8 @@ public partial class App
         if (!needsFrames) _inputHost.Stop();
     }
 
-    // Called from QuitApp — an injected primary button must never outlive
-    // the process, so the engine (safety release) goes down first, then
-    // the recorder flushes, then the input thread.
+    // An injected primary button must never outlive the process, so the engine
+    // and its safety release go down first, then the recorder, then the input thread.
     private void ShutdownTrackpad()
     {
         _trackpadEngine?.Dispose();

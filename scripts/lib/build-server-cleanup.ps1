@@ -18,7 +18,7 @@ function Get-DotnetBuildServerProcesses {
             ForEach-Object { $commandLines[[int]$_.ProcessId] = [string]$_.CommandLine }
     } catch {
         # Keep the cleanup usable in restricted shells. Without command lines
-        # we still identify VBCSCompiler, but we do not guess for dotnet.exe.
+        # VBCSCompiler is still identified, but dotnet.exe is never guessed.
     }
 
     foreach ($process in $processes) {

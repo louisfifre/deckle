@@ -1,29 +1,20 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <RootNamespace>Deckle.Playground</RootNamespace>
-    <!-- WinUI XAML compilation : the Playground ships PlaygroundWindow,
-         HomePage, experiment pages, and the PreviewGrid control.
-         Aligned on Deckle.Lighting.Ambient pattern. -->
     <UseWinUI>true</UseWinUI>
     <DefaultLanguage>en-US</DefaultLanguage>
     <!-- Generates the lib's own .pri so x:Uid lookups resolve against
-         Deckle.Playground/Strings — same pattern as Deckle.Lighting.Ambient
-         and Deckle.Transcription. -->
+         Deckle.Playground/Strings. -->
     <EnableMsixTooling>true</EnableMsixTooling>
   </PropertyGroup>
 
   <ItemGroup>
-    <!-- Versions aligned on Deckle.csproj. -->
     <PackageReference Include="Microsoft.WindowsAppSDK" />
     <PackageReference Include="Microsoft.Windows.SDK.BuildTools" />
-    <!-- MVVM Toolkit — [ObservableProperty] / [RelayCommand] used by the
-         tuning view-models. -->
     <PackageReference Include="CommunityToolkit.Mvvm" />
-    <!-- SettingsCard / SettingsExpander — canonical Windows 11 pattern for
-         the tuning panels in HudPage and AmbientPage. -->
+    <!-- SettingsCard for the HomePage routing cards. -->
     <PackageReference Include="CommunityToolkit.WinUI.Controls.SettingsControls" />
-    <!-- Win2D — used by the HUD preview surface (matches the host App's
-         dependency for the stroke conic gradient). -->
+    <!-- Win2D: the HUD and Segmentation previews draw through it. -->
     <PackageReference Include="Microsoft.Graphics.Win2D" />
   </ItemGroup>
 

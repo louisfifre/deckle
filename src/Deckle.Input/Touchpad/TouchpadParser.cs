@@ -7,8 +7,7 @@ namespace Deckle.Input;
 // the hid.dll preparsed-data parser. One parser instance per device,
 // created once and cached by the host: the preparsed data blob and the
 // caps discovery (which link collections carry which usages) are paid at
-// construction, never per frame — the references re-fetch both on every
-// WM_INPUT, a needless cost at report cadence.
+// construction, never per frame at report cadence.
 //
 // Parsing approach follows emoacht/RawInput.Touchpad (MIT), extended
 // with what the references leave out and the recognizer depends on:

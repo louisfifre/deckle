@@ -9,15 +9,14 @@ using Xunit;
 
 namespace Deckle.Autocorrect.Tests;
 
-// The maintainer's replay gesture: run the collected typed-text corpus through the
-// staged ONNX judge, offline, and write the margin-calibration report. An optional
+// The replay gesture: run the collected typed-text corpus through the staged ONNX
+// judge, offline, and write the margin-calibration report. An optional
 // DECKLE_REPLAY_RIGHT_CONTEXT_WORDS value truncates each slot to the prefix that
 // would have existed after that many following commits, for anticipated-pass
-// calibration. It is not a
-// unit test — it wires the REAL FR lexicon and the REAL model, and is a silent skip
-// wherever either is absent (CI, a fresh clone, before any corpus is collected or a
-// judge is staged). Where both are present it is a deliberate, supervised run: the
-// judge is seconds per slot, so a full corpus is minutes, and nothing is applied.
+// calibration. It is not a unit test — it wires the REAL FR lexicon and the REAL
+// model, and is a silent skip wherever either is absent (CI, a fresh clone, before
+// any corpus is collected or a judge is staged). Where both are present it is a
+// deliberate, supervised run, and nothing is applied.
 [Trait("Category", "maintenance")]
 [Collection(OnnxJudgeSerialCollection.Name)]
 public sealed class SentenceReplayMaintenanceTests
@@ -47,8 +46,8 @@ public sealed class SentenceReplayMaintenanceTests
         Assert.SkipUnless(File.Exists(frenchPath), "packaged FR lexicon absent");
 
         // The judge is role-named on disk, not model-named: whatever ORT GenAI
-        // export is staged there (the Luth-vs-Qwen choice is still open) is picked
-        // up. Skip when absent; once staged, a broken export must fail loudly.
+        // export is staged there is picked up. Skip when absent; once staged, a
+        // broken export must fail loudly.
         string judgeDir = Path.Combine(AppPaths.ModelsDirectory, "sentence-judge");
         Assert.SkipUnless(Directory.Exists(judgeDir), "sentence judge not staged");
 
@@ -79,7 +78,7 @@ public sealed class SentenceReplayMaintenanceTests
         using var judge = new OnnxSlotReranker(new OnnxSentenceScorer(judgeDir, margin: 0.0, ep));
         Console.Error.WriteLine("[replay] judge loaded — replaying corpus, nothing is applied");
 
-        // The maintainer's truth sheet sits next to the corpus. The file-based Run
+        // The truth sheet sits next to the corpus. The file-based Run
         // has already read its resolved cells and measured agreement against them;
         // here the sheet is regenerated from this pass's disagreements and MERGED
         // with the existing one, so a filled truth cell survives corpus growth.

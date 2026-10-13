@@ -3,7 +3,7 @@ namespace Deckle.Orchestration;
 // What this module needs from the shared foreground service. The module never
 // detects the foreground itself (no WinEvent hook here): WatcherForegroundMonitor
 // adapts the shared ForegroundWatcher (Deckle.Shell.Foreground) to this
-// interface; NullForegroundMonitor stands in for tests.
+// interface; NullForegroundMonitor stands in when no watcher is composed.
 //
 // Contract the implementation must honour:
 // - Raise ForegroundChanged on EVENT_SYSTEM_FOREGROUND, and again whenever the

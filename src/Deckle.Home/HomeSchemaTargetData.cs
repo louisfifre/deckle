@@ -67,8 +67,8 @@ internal static class HomeSchemaTargetData
             result[HomeSchema.WirePropertyKey(canonical)] = targets
                 .Select(target => HomeSchema.WireTypeKey(target!.GetValue<string>())).ToArray();
         }
-        // These guards predate the sidecar annotations and remain part of the
-        // Home domain contract: a task attachment targets a Worksite, and a
+        // The annotations carry no target for these two relations, yet the
+        // Home domain requires them: a todo attaches to a Worksite, and a
         // circuit's driver is a Point.
         result[HomeSchema.Properties.Worksite] = [HomeSchema.Types.Worksite];
         result[HomeSchema.Properties.PoweredBy] = [HomeSchema.Types.Point];

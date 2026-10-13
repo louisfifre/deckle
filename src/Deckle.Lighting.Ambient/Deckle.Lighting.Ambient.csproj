@@ -1,14 +1,10 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <RootNamespace>Deckle.Lighting.Ambient</RootNamespace>
-    <!-- WinUI XAML compilation : Lighting.Ambient ships AmbientPage.xaml
-         (Settings page) + ViewModels/AmbientViewModel.cs. Aligned on
-         Deckle.Transcription / Deckle.Llm pattern. -->
     <UseWinUI>true</UseWinUI>
     <DefaultLanguage>en-US</DefaultLanguage>
     <!-- Generates the lib's own .pri so x:Uid lookups in AmbientPage
-         resolve against the Deckle.Lighting.Ambient/Resources subtree.
-         Same pattern as Deckle.Transcription and Deckle.Llm. -->
+         resolve against the Deckle.Lighting.Ambient/Resources subtree. -->
     <EnableMsixTooling>true</EnableMsixTooling>
   </PropertyGroup>
 
@@ -17,10 +13,8 @@
   </ItemGroup>
 
   <ItemGroup>
-    <!-- Versions aligned on Deckle.csproj. -->
     <PackageReference Include="Microsoft.WindowsAppSDK" />
     <PackageReference Include="Microsoft.Windows.SDK.BuildTools" />
-    <!-- AmbientViewModel (ObservableObject, partial properties). -->
     <PackageReference Include="CommunityToolkit.Mvvm" />
   </ItemGroup>
 
@@ -28,20 +22,16 @@
     <ProjectReference Include="..\Deckle.Composition\Deckle.Composition.csproj" />
     <ProjectReference Include="..\Deckle.Core\Deckle.Core.csproj" />
     <ProjectReference Include="..\Deckle.Diagnostics\Deckle.Diagnostics.csproj" />
-    <!-- Diagnostics.Logging carries AmbientCaptureGate (volatile bool
-         consumed by AmbientEngine to signal the active capture loop
-         au gate central du dispatcher). -->
+    <!-- Diagnostics.Logging carries AmbientCaptureGate, which AmbientEngine
+         sets while its capture loop runs, for log admission. -->
     <ProjectReference Include="..\Deckle.Diagnostics.Logging\Deckle.Diagnostics.Logging.csproj" />
     <ProjectReference Include="..\Deckle.Lighting\Deckle.Lighting.csproj" />
     <ProjectReference Include="..\Deckle.Catalog\Deckle.Catalog.csproj" />
-    <!-- The Ambient presets (Game, Vivid, Movie, Ambient) and the stored Custom. -->
     <ProjectReference Include="..\Deckle.Presets\Deckle.Presets.csproj" />
     <ProjectReference Include="..\Deckle.Settings\Deckle.Settings.csproj" />
     <ProjectReference Include="..\Deckle.Vision\Deckle.Vision.csproj" />
-    <!-- Shell carries the DispatcherQueue.TryEnqueueObserved extensions
-         consumed by AmbientPage to instrument UI marshalling on the Threading
-         sub-provider. Direct dependency made explicit rather than transitive
-         via Settings. -->
+    <!-- Shell carries the DispatcherQueue.TryEnqueueObserved extensions the
+         UI uses; referenced directly rather than through Settings. -->
     <ProjectReference Include="..\Deckle.Shell\Deckle.Shell.csproj" />
   </ItemGroup>
 </Project>

@@ -5,17 +5,9 @@ using Xunit;
 
 namespace Deckle.Transcription.Tests;
 
-// EnergySegmenter is internal sealed in Deckle.Transcription; access from the
-// test project goes through InternalsVisibleTo declared in
-// Deckle.Transcription.csproj. Pure, deterministic tests: feed it synthetic
-// frame sequences (50 ms each, voiced or silent) and assert emitted utterances,
-// without microphone or threading.
-//
 // Reference points with TestSettings (frame = 50 ms):
 //   hangover 400 ms = 8 frames · margin 150 ms = 3 frames · min 250 ms = 5 frames
-//   (voiced extent). The ramp is parked far above any test length, so the
-//   hangover stays at HangoverMaxMs throughout — the rampless legacy behaviour
-//   the early tests were written against.
+//   (voiced extent).
 [Trait("Category", "unit")]
 public class EnergySegmenterTests
 {
@@ -188,8 +180,8 @@ public class EnergySegmenterTests
     public void HangoverStaysAtMaxBeforeRamp()
     {
         var got = new List<Utterance>();
-        // Same max/min as the previous test, but the ramp anchors are pushed
-        // past any test length. A 5-frame pause (intra-phrase) must NOT split.
+        // The ramp anchors sit past any test length, so a 5-frame pause
+        // (intra-phrase) must NOT split.
         var settings = new EnergySegmenterSettings
         {
             HangoverMaxMs       = 400,

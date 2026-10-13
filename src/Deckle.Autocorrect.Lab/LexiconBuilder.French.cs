@@ -15,8 +15,7 @@ public static partial class LexiconBuilder
     // name so a column reorder upstream cannot silently misread. Per ortho we
     // sum the film and book frequencies separately across its rows (the same
     // surface appears once per lemma/POS), then take the max of the two sums —
-    // the more generous of the two registers. Multi-word and junk forms are
-    // dropped by the letter/apostrophe/hyphen filter.
+    // the more generous of the two registers.
     private static void BuildFrench(string sourcePath, string morphalouPath, string outPath, string verbsOutPath)
     {
         using var reader = new StreamReader(sourcePath, Encoding.UTF8);
@@ -29,8 +28,7 @@ public static partial class LexiconBuilder
         int iLivres = IndexOf(cols, "freqlivres");
         // Verb morphology: lemma (the infinitive), cgram (VER/AUX flags the verb
         // rows), infover (the mode:tense:person codes) and cgramortho (every
-        // category the surface carries — the verb-only test). Resolved by name so
-        // a column reorder upstream throws rather than silently misreading.
+        // category the surface carries, the verb-only test).
         int iLemme = IndexOf(cols, "lemme");
         int iCgram = IndexOf(cols, "cgram");
         int iInfover = IndexOf(cols, "infover");
@@ -58,14 +56,10 @@ public static partial class LexiconBuilder
             sumLivres[ortho] = sumLivres.TryGetValue(ortho, out double pl) ? pl + livres : livres;
             rows++;
 
-            // Capture the verb rows for the morphology artifact (VER conjugations
-            // and AUX avoir/être). cgramortho holds every category the surface
-            // carries, so the verb-only flag is read straight off it.
             if (f[iCgram] is "VER" or "AUX")
                 verbs.Add(ortho, f[iLemme], f[iInfover], f[iCgramOrtho]);
         }
 
-        // Final frequency per form = max of the two register sums.
         var final = new Dictionary<string, double>(sumFilms.Count, StringComparer.Ordinal);
         foreach (var (form, films) in sumFilms)
             final[form] = Math.Max(films, sumLivres.GetValueOrDefault(form, 0.0));
@@ -84,23 +78,21 @@ public static partial class LexiconBuilder
         Console.WriteLine($"        verbs : {verbForms:N0} verb surface forms.");
     }
 
-    // Overlays Morphalou inflected forms onto the Lexique map — but ONLY the ones
+    // Overlays Morphalou inflected forms onto the Lexique map, but ONLY the ones
     // that bring unambiguous new coverage. A form is added at epsilon iff it is
     // the SOLE accented candidate of a fold Lexique leaves empty: then a bare
-    // typing has one deterministic restoration the lexical gate fires on. Two
-    // rejections matter, both measured: a form folding onto an EXISTING Lexique
-    // fold would demote that fold's clean gate/dominance restoration into a
-    // contested slot the conservative reranker abstains on (recall loss); and a
-    // fold carrying TWO Morphalou forms (enlèves vs enlevés) is genuinely
-    // ambiguous — adding both only feeds the reranker a slot it abstains on too.
-    // Returns the count added, or -1 when no Morphalou source is present (the
-    // step is optional, so `build-data` still runs Lexique-only without it).
+    // typing has one deterministic restoration the lexical gate fires on. A form
+    // folding onto an EXISTING Lexique fold would demote that fold's clean
+    // gate/dominance restoration into a contested slot the conservative reranker
+    // abstains on; a fold carrying TWO Morphalou forms (enlèves vs enlevés) is
+    // genuinely ambiguous, and adding both only feeds the reranker a slot it
+    // abstains on too. Returns the count added, or -1 when no Morphalou source
+    // is present.
     private static int OverlayMorphalou(Dictionary<string, double> french, string morphalouPath)
     {
         if (!File.Exists(morphalouPath))
             return -1;
 
-        // Folds Lexique already populates — never crowd one of these.
         var lexiqueFolds = new HashSet<string>(StringComparer.Ordinal);
         foreach (string form in french.Keys)
             lexiqueFolds.Add(AccentFolding.Fold(form));
@@ -166,7 +158,6 @@ public static partial class LexiconBuilder
             _verbOnly[ortho] = _verbOnly.TryGetValue(ortho, out bool prior) ? prior && verbOnly : verbOnly;
         }
 
-        // Every category in the comma-separated cgramortho is a verb category.
         private static bool IsVerbOnly(string cgramOrtho)
         {
             foreach (string c in cgramOrtho.Split(',', StringSplitOptions.RemoveEmptyEntries))
@@ -177,7 +168,6 @@ public static partial class LexiconBuilder
 
         // `form<TAB>lemma<TAB>codes<TAB>verbOnly`, codes ';'-joined, lines sorted
         // ordinally by (form, lemma) so the gzip artifact is byte-deterministic.
-        // Returns the count of distinct verb surface forms.
         public int Write(string outPath)
         {
             var keys = new List<(string Ortho, string Lemma)>(_codes.Keys);

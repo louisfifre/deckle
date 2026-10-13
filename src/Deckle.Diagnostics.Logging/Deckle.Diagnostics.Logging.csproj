@@ -1,26 +1,20 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <RootNamespace>Deckle.Diagnostics.Logging</RootNamespace>
-    <!-- WinUI XAML compilation: the module now ships DiagnosticsPage.xaml +
-         DiagnosticsViewModel (moved from Deckle.Settings). The logging store the
-         page configures — LoggingSettingsService — already lives here, so the
-         module owns both the live-journal settings and their page. -->
     <UseWinUI>true</UseWinUI>
-    <!-- Neutral language for the lib's PRI fallback. Mirrors Deckle.csproj. -->
+    <!-- Neutral language for the lib's PRI fallback. Mirrors Deckle.App.csproj. -->
     <DefaultLanguage>en-US</DefaultLanguage>
     <!-- Generates the lib's own .pri so x:Uid lookups in DiagnosticsPage resolve
          against the Deckle.Diagnostics.Logging/Resources subtree
-         (Strings/en-US/Resources.resw). Same pattern as Deckle.Audio. -->
+         (Strings/en-US/Resources.resw). -->
     <EnableMsixTooling>true</EnableMsixTooling>
   </PropertyGroup>
 
   <ItemGroup>
-    <!-- Versions aligned on Deckle.csproj: single WinAppSDK runtime per process. -->
+    <!-- One WinAppSDK runtime per process: never override the central version. -->
     <PackageReference Include="Microsoft.WindowsAppSDK" />
     <PackageReference Include="Microsoft.Windows.SDK.BuildTools" />
-    <!-- MVVM Toolkit — [ObservableProperty] in DiagnosticsViewModel. -->
     <PackageReference Include="CommunityToolkit.Mvvm" />
-    <!-- SettingsCard — DiagnosticsPage's Diagnostic-files card. -->
     <PackageReference Include="CommunityToolkit.WinUI.Controls.SettingsControls" />
   </ItemGroup>
 
@@ -30,15 +24,9 @@
          Diagnostics > Telemetry. This UI dependency does not move ownership
          of the setting or recorder into Logging. -->
     <ProjectReference Include="..\Deckle.Input\Deckle.Input.csproj" />
-    <!-- AppPaths resolves the logging settings path and lives in Deckle.Core. -->
     <ProjectReference Include="..\Deckle.Core\Deckle.Core.csproj" />
-    <!-- Catalog: DiagnosticsPage composes via SettingsComposer and reads Glyphs;
-         DiagnosticsSettingsModule builds a SettingsModuleDescriptor, and the
-         Application-log opt-in gates through the TelemetryConsent registry. -->
     <ProjectReference Include="..\Deckle.Catalog\Deckle.Catalog.csproj" />
-    <!-- Telemetry POCOs: the Application-log and storage-folder opt-ins read/write
-         TelemetrySettings via TelemetrySettingsService. No cycle — Diagnostics.Telemetry
-         does not reference this module. -->
+    <!-- No cycle: Diagnostics.Telemetry does not reference this module. -->
     <ProjectReference Include="..\Deckle.Diagnostics.Telemetry\Deckle.Diagnostics.Telemetry.csproj" />
   </ItemGroup>
 </Project>

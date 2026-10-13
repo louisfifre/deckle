@@ -16,13 +16,10 @@ public sealed partial class LogWindow : Window, ILogWindowSink
     private readonly ConcurrentQueue<LogEntry> _pendingEntries = new();
     private int _entryDrainScheduled;
 
-    // ── ILogWindowSink (events from LogWindowSink) ─────────────────────────────
-
     public void Write(EventEntry entry)
     {
-        // The listener emits on the EventSource origin thread; immediately
-        // wrap as LogEntry to precompute Text once (same reasons as the legacy
-        // pipeline: avoid repeated formatting during ListView virtualization).
+        // Called on the EventSource origin thread, so the formatting happens
+        // here rather than on the UI thread.
         _pendingEntries.Enqueue(new LogEntry(entry));
         ScheduleEntryDrain();
     }
@@ -53,24 +50,18 @@ public sealed partial class LogWindow : Window, ILogWindowSink
             ScheduleEntryDrain();
     }
 
-    // Not exposed on the interface; ILogWindowSink is a write-only channel.
-    // Kept as a public method for internal use (OnClearClick and future
-    // programmatic reset). Same marshalling as Write.
     public void Clear()
     {
         if (DispatcherQueue.HasThreadAccess) ClearAll();
         else DispatcherQueue.TryEnqueueOrLog(ClearAll, "LOGWIN", "clear all");
     }
 
-    // Beacon app icon (red = recording / grey = idle). Called from
-    // TranscriptionEngine.StatusChanged via App.xaml.cs. Thread-safe.
     public void SetRecordingState(bool isRecording)
     {
         if (DispatcherQueue.HasThreadAccess) ApplyRecordingState(isRecording);
         else
         {
-            // Threading: real cross-thread site (engine worker thread through
-            // StatusChanged to UI). Same pattern as Write.
+            // The engine raises StatusChanged on its worker thread.
             DispatcherQueue.TryEnqueueObserved(
                 "ui-update", "log-window",
                 () => ApplyRecordingState(isRecording),
@@ -85,8 +76,6 @@ public sealed partial class LogWindow : Window, ILogWindowSink
         _entries.Clear();
         _visible.Clear();
     }
-
-    // ── Implementation ─────────────────────────────────────────────────────────
 
     private void AddEntrySafe(LogEntry entry)
     {
@@ -151,10 +140,9 @@ public sealed partial class LogWindow : Window, ILogWindowSink
         if (_visible.Count == 0) return;
         try
         {
-            // ScrollIntoView(last entry) stops before ListView.Footer. Force a
-            // layout pass, then move to the full extent including the five-line
-            // tail. disableAnimation keeps insertion/autoscroll independent of
-            // both Windows and HUD animation preferences.
+            // ScrollIntoView(last entry) stops before ListView.Footer, so lay out
+            // first, then move to the full extent including the tail.
+            // disableAnimation keeps autoscroll independent of animation preferences.
             LogItems.UpdateLayout();
             ScrollViewer? viewer = GetListViewScrollViewer();
             viewer?.ChangeView(

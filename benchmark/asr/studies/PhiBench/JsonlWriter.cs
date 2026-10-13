@@ -9,9 +9,6 @@ namespace Deckle.Benchmark.PhiBench;
 /// <c>_build_row()</c> in benchmark/asr/studies/voxtral-validation/bench.py.
 /// Field names and types match exactly so the Python post-processors
 /// (lib.metrics.*, lib.judges.gemini) can consume the rows unchanged.
-///
-/// One row per (sample, regime). <c>metrics</c> and <c>judge</c> are left
-/// null here — they are added downstream by the Python enrichment pass.
 /// </summary>
 public sealed class JsonlWriter : IDisposable
 {
@@ -54,7 +51,7 @@ public sealed class JsonlWriter : IDisposable
             ["generated_tokens"]        = result.GeneratedTokens,
             ["extras"]                  = result.Extras,
             ["timestamp"]               = DateTime.Now.ToString("s"),
-            // Placeholders for Python enrichment downstream.
+            // Left null for the Python enrichment pass downstream.
             ["metrics"]                 = null,
             ["judge"]                   = null,
         };

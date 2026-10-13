@@ -5,12 +5,10 @@ using System.Text.Json;
 
 namespace Deckle.Autocorrect.Lab;
 
-// Renders the ventilated surface profiles twice: the maintainer's markdown
-// report — one table, busiest surface first, the whole-corpus row on top as
-// the baseline — and the live JSON artifact the engine's pause pass consumes
-// (the SurfaceProfileStore contract: process → pauseThresholdMs, qualified
-// surfaces only). Same posture as the replay calibration report: a measured
-// artifact to read, never a configuration to edit.
+// Renders the surface profiles twice: the markdown report a reviewer reads, and
+// the live JSON the engine's pause pass consumes. The JSON is the
+// SurfaceProfileStore contract (process → pauseThresholdMs, qualified surfaces
+// only): a measured artifact, never a configuration to edit.
 public static class SurfaceProfileReport
 {
     public static string RenderLiveJson(IReadOnlyList<SurfaceProfile> profiles)

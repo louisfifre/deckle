@@ -9,23 +9,17 @@ namespace Deckle.Settings;
 
 // ─── AutocorrectTextConsentDialog ──────────────────────────────────────────
 //
-// Opt-in consent for the typed-sentence corpus (autocorrect.text.jsonl). Shown
-// the first time the user flips the nested toggle from off to on. Cancelling
-// reverts it.
-//
-// Same pattern as AutocorrectDecisionsConsentDialog, but this is the heaviest
-// text capture in the app — a verbatim record of everything typed at the keyboard
-// in any editable field (never password fields), enrolled or not — so the wording
-// is the most explicit of the consent dialogs.
-// Strings via Loc.Get / Resources.resw; the where path is the actual file.
+// Opt-in consent for the verbatim typed-input capture on enrolled apps (never
+// password fields). This is the heaviest text capture in the app, so the
+// wording is the most explicit of the consent dialogs. Same consent form as
+// CorpusConsentDialog.
 
 internal static class AutocorrectTextConsentDialog
 {
     public static async Task<bool> ShowAsync(XamlRoot root)
     {
-        // One consent envelope, two files: the typed-sentence corpus and, on
-        // enrolled apps only, the typing stream (runs segmented at backward
-        // repairs). Both paths shown so the where stays the actual files.
+        // One consent covers two files, the typed-sentence corpus and the
+        // typing stream, so the where lists both.
         string directory = CorpusPaths.GetDirectoryPath();
         string where = Path.Combine(directory, "autocorrect.text.jsonl")
             + "\n" + Path.Combine(directory, "autocorrect.stream.jsonl");

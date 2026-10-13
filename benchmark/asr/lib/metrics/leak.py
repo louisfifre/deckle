@@ -1,21 +1,4 @@
-"""Détection de patterns d'hallucination et de prompt leak.
-
-Deux familles de patterns :
-
-  - **Hallucinations connues** : chaînes que Whisper produit sur audio
-    quasi-vide ou bruit, héritage de son training-data (sous-titres
-    YouTube, crédits TV). C'est rare en français mais bien documenté.
-
-  - **Prompt leak suspects** : tokens qui apparaîtraient si le modèle
-    "fuyait" son initial prompt dans la sortie. **Désactivé par défaut
-    en v2** parce que ça génère trop de faux positifs sur du corpus tech
-    (l'audio mentionne légitimement ces mots). À ré-activer cas par cas
-    avec ``patterns=`` paramétrable.
-
-Les patterns hallucination restent compilés en dur — c'est un set
-fermé de chaînes que ni Voxtral ni Whisper ne devraient générer
-spontanément.
-"""
+"""Detect known ASR hallucinations and, on request, prompt leaks."""
 
 from __future__ import annotations
 
@@ -23,8 +6,8 @@ import re
 from dataclasses import dataclass
 
 
-# Hallucinations Whisper connues sur audio français bruit/silence.
-# Trainings-data crédits qui remontent quand le signal est pauvre.
+# Subtitle and credit lines from Whisper's training data, which surface on
+# near-silent or noisy French audio.
 _HALLUCINATION_PATTERNS: tuple[str, ...] = (
     r"Sous-titrage\s+Soci[ée]t[ée]\s+Radio-Canada",
     r"Sous-titres?\s+r[ée]alis[ée]s?\s+par",
@@ -39,18 +22,14 @@ _HALLUCINATION_PATTERNS: tuple[str, ...] = (
 
 @dataclass(frozen=True)
 class LeakReport:
-    hallucinations: list[str]    # matches sur _HALLUCINATION_PATTERNS
-    custom_leaks:   list[str]    # matches sur patterns custom optionnels
+    hallucinations: list[str]
+    custom_leaks:   list[str]
 
 
 def detect(text: str, *, custom_patterns: tuple[str, ...] = ()) -> LeakReport:
-    """Scanne ``text`` pour des hallucinations + patterns custom.
-
-    ``custom_patterns`` est laissé vide par défaut. Si tu veux flagger
-    des mots-clés d'un prompt système (ex. pour le bench Deckle Whisper
-    qui a un initial_prompt avec .NET / WinUI / Whisper), passe-les ici.
-    Mais réfléchis bien : sur du corpus tech, ces mots peuvent
-    apparaître légitimement dans l'audio source.
+    """``custom_patterns`` takes the words of a prompt to flag as leaks. It
+    is empty by default: on a tech corpus the audio legitimately says those
+    words, so leak patterns give false positives.
     """
     return LeakReport(
         hallucinations=_match_all(text, _HALLUCINATION_PATTERNS),

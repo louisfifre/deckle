@@ -5,11 +5,10 @@ using Xunit;
 namespace Deckle.Autocorrect.Tests;
 
 // The dilution indicator: what a pack brings and what fabrication refused to
-// keep base corrections working (CONTEXT.md § Pack sanitization). The numbers
-// are measured at build and shipped in a manifest beside the forms, so the
-// product to guard is that the two agree — a manifest quoting a count the
-// artifact does not carry would state a falsehood in the settings page, and
-// nothing else would notice.
+// keep base corrections working. The numbers are measured at build and shipped
+// in a manifest beside the forms, so the product to guard is that the two agree
+// — a manifest quoting a count the artifact does not carry would state a
+// falsehood in the settings page, and nothing else would notice.
 [Trait("Category", "unit")]
 public class DomainPackManifestTests
 {

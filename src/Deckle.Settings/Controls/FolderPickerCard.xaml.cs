@@ -12,22 +12,17 @@ namespace Deckle.Settings;
 
 // ── FolderPickerCard ────────────────────────────────────────────────────────
 //
-// Read-only display of a folder path with two actions: Change (opens the
-// FolderPicker) and Show (opens the path in Explorer). Designed to live
+// Read-only display of a folder path with two actions: Set (opens the
+// FolderPicker) and Open (opens the path in Explorer). Designed to live
 // inside a SettingsCard at the consumer site — that lets the SettingsCard
 // own Header / Description / HeaderIcon via x:Uid, and keeps the visual
 // tree compatible with SettingsExpander.Items (which rejects UserControl
 // wrappers around SettingsCard children).
 //
-// Path is exposed as a TwoWay DependencyProperty bound to a ViewModel
-// property; auto-save handles persistence. When Path is empty, the
-// TextBlock falls back to DefaultPath in the same secondary styling at
-// reduced opacity — same UX as the legacy TextBox PlaceholderText, but
-// without the misleading affordance of an editable input field.
+// When Path is empty, the TextBlock shows DefaultPath at reduced opacity:
+// a placeholder without the misleading affordance of an editable field.
 public sealed partial class FolderPickerCard : UserControl, IPathControl
 {
-    // IPathControl: the floor composer hosts this control as a SettingsCard's
-    // content for a Path setting; Path and PathChanged below complete the contract.
     public FrameworkElement View => this;
 
     public static readonly DependencyProperty PathProperty =
@@ -52,10 +47,6 @@ public sealed partial class FolderPickerCard : UserControl, IPathControl
         set => SetValue(DefaultPathProperty, value);
     }
 
-    // Picker affordance set. Configure shows both Change + Open; OpenOnly hides
-    // the Change button so a folder the app owns reads as fixed (the path is
-    // still shown and openable, just not repointable). Default Configure keeps
-    // the existing call sites — which never set Mode — behaving as before.
     public static readonly DependencyProperty ModeProperty =
         DependencyProperty.Register(
             nameof(Mode), typeof(FolderPickerMode), typeof(FolderPickerCard),
@@ -81,10 +72,6 @@ public sealed partial class FolderPickerCard : UserControl, IPathControl
         if (d is FolderPickerCard card) card.ApplyMode();
     }
 
-    // Collapse the Change button in OpenOnly so the grid's auto column folds
-    // away and only Open remains; Configure restores it. Driven both from the
-    // constructor and on Mode changes so a programmatic set after construction
-    // (the composer's Path case) takes effect.
     private void ApplyMode()
     {
         PickButton.Visibility =
@@ -96,10 +83,6 @@ public sealed partial class FolderPickerCard : UserControl, IPathControl
         if (d is FolderPickerCard card) card.RefreshDisplay();
     }
 
-    // The TextBlock displays Path when set, otherwise falls back to
-    // DefaultPath in the same secondary brush. Opacity dials down when
-    // showing the fallback so it reads as a placeholder rather than a
-    // real value.
     private void RefreshDisplay()
     {
         string effective = string.IsNullOrEmpty(Path) ? (DefaultPath ?? string.Empty) : Path;
@@ -107,10 +90,9 @@ public sealed partial class FolderPickerCard : UserControl, IPathControl
         PathTextBlock.Opacity = string.IsNullOrEmpty(Path) ? 0.6 : 1.0;
     }
 
-    // FolderPicker (WindowsAppSDK 1.7+ namespace Microsoft.Windows.Storage.Pickers).
-    // Takes the AppWindow.Id of the parent Settings window via SettingsHost,
-    // avoiding the legacy WinRT.Interop.InitializeWithWindow dance and the
-    // elevation breakage that comes with the UWP-heritage picker.
+    // Use the Windows App SDK picker (Microsoft.Windows.Storage.Pickers, 1.7+),
+    // never the UWP Windows.Storage.Pickers one: the UWP picker does not work
+    // under elevation and needs the InitializeWithWindow interop.
     private async void PickButton_Click(object sender, RoutedEventArgs e)
     {
         try
@@ -118,13 +100,9 @@ public sealed partial class FolderPickerCard : UserControl, IPathControl
             var window = SettingsHost.GetSettingsWindow?.Invoke()
                 ?? throw new InvalidOperationException("Settings window not initialized");
 
-            // Windowing: system picker. Microsoft.Windows.Storage.Pickers
-            // opens a Win32 COM dialog whose HWND the app does not own (the API
-            // does not expose it); effective dialog pos/size are inaccessible
-            // from code. Emit PopupAnchored with the button rect that triggered
-            // the picker (UI Settings anchoring intent), dialog pos/size at
-            // zero. parent_rect in absolute screen pixels computed through
-            // TransformToVisual(null) + AppWindow.Position + scale DPI.
+            // The picker's Win32 dialog HWND is not exposed by the API, so its
+            // position and size are unknowable: the probe records the trigger
+            // button's rect as the anchoring intent, dialog rect at zero.
             EmitFolderPickerAnchor(sender as FrameworkElement, window);
 
             var picker = new Microsoft.Windows.Storage.Pickers.FolderPicker(window.AppWindow.Id)
@@ -145,10 +123,8 @@ public sealed partial class FolderPickerCard : UserControl, IPathControl
         }
     }
 
-    // Computes the trigger button rect in absolute screen pixels from
-    // TransformToVisual(null) (button position in the window in DIPs) +
-    // AppWindow.Position (window top-left in screen pixels) + DPI scale. Reused
-    // by both FolderPicker variants.
+    // TransformToVisual(null) yields the button position in DIPs, while
+    // AppWindow.Position is in screen pixels: scale by the window DPI first.
     internal static void EmitFolderPickerAnchor(FrameworkElement? trigger, Microsoft.UI.Xaml.Window window)
     {
         if (trigger is null) { WindowingProbe.EmitPopupAnchored(IntPtr.Zero, "folder-picker", 0, 0, 0, 0); return; }
@@ -168,9 +144,8 @@ public sealed partial class FolderPickerCard : UserControl, IPathControl
             parent_x, parent_y, parent_w, parent_h);
     }
 
-    // Open the effective path in Explorer. We open the fallback DefaultPath
-    // when Path is empty — that's the actual location data lands in (e.g.
-    // <UserDataRoot>\telemetry\), not a placeholder.
+    // An empty Path opens DefaultPath: that is where the data actually lands,
+    // not a placeholder.
     private void OpenButton_Click(object sender, RoutedEventArgs e)
     {
         string target = string.IsNullOrEmpty(Path) ? (DefaultPath ?? string.Empty) : Path;

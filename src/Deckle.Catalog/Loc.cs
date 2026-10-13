@@ -7,11 +7,7 @@ namespace Deckle.Catalog;
 
 // ─── Loc ──────────────────────────────────────────────────────────
 //
-// Single entry point for code-behind string lookups. XAML uses
-// `x:Uid="MyKey"` to bind to entries in Strings/en-US/Resources.resw,
-// resolved automatically by the WinUI 3 framework. C# code that
-// builds UI programmatically (ConsentDialogs, engine status,
-// UserFeedback, HUD, tray, setup wizard pages) goes through Loc.
+// Single entry point for code-behind string lookups; XAML uses x:Uid.
 //
 // Key naming conventions:
 //
@@ -25,10 +21,10 @@ namespace Deckle.Catalog;
 
 public static class Loc
 {
-    // Lazy-initialized so the ResourceLoader is built on first use, after
-    // the Windows App SDK runtime is bootstrapped in App.OnLaunched.
-    // Default constructor binds to the "Resources" map (single monolithic
-    // .resw under Strings/<lang>/Resources.resw).
+    // The Windows App SDK ResourceLoader, never the UWP one in
+    // Windows.ApplicationModel.Resources: the UWP loader needs package
+    // identity, and Deckle runs unpackaged. Built on first use; the default
+    // constructor binds to the host app's root "Resources" map.
     private static readonly Lazy<ResourceLoader> _loader =
         new(static () => new ResourceLoader());
 
@@ -79,13 +75,10 @@ public static class Loc
         => string.Format(CultureInfo.CurrentCulture, Get(key), args);
 
     /// <summary>
-    /// Returns the localized string for <paramref name="key"/> from a referenced
-    /// class library's resources, addressed by the library's PRI subtree
-    /// ("<paramref name="library"/>/Resources"). The default <see cref="Get"/>
-    /// only sees the host app's root resource map; a library's own .resw — the
-    /// x:Uid strings of its pages — lives under its own subtree, so code that
-    /// builds a module's UI programmatically (the settings composer) must target
-    /// it explicitly. Same miss contract as <see cref="Get"/> (a DEBUG marker).
+    /// Returns the localized string for <paramref name="key"/> from a class
+    /// library's PRI subtree ("<paramref name="library"/>/Resources"), which
+    /// <see cref="Get"/> cannot see. Same miss contract as <see cref="Get"/>
+    /// (a DEBUG marker).
     /// </summary>
     public static string GetFrom(string library, string key)
     {

@@ -5,20 +5,14 @@ using Xunit;
 
 namespace Deckle.Transcription.Tests;
 
-// The cut presets fix the eight hangover values of the energy segmenter. These
-// tests cover the pure parts only: the preset table, the values record, its
-// round trip through the segmenter POCO, the one-time derivation of a missing
-// selection, and the JSON persistence of the stored selection and Custom
-// values. WhisperViewModel is never built here (it touches the settings service
-// on disk and WinUI), so the family runs over a small store around the POCO,
-// the way the view model's store reaches it. Every expectation reads
-// CutPresets.All or the POCO initializers, never a copy of the literals.
+// WhisperViewModel is never built here (it touches the settings service on disk
+// and WinUI), so the family runs over a small store around the POCO. Every
+// expectation reads CutPresets.All or the POCO initializers, never a copy of the
+// literals.
 [Trait("Category", "unit")]
 public class CutPresetsTests
 {
-    // Values through From / ApplyTo, Selection and CustomValues on the POCO's
-    // two persisted properties: the same mapping as CutPresetStore, minus the
-    // view model.
+    // The same mapping as CutPresetStore, minus the view model.
     private sealed class SettingsStore : IPresetStore<CutCurveValues>
     {
         private readonly EnergySegmenterSettings _settings;

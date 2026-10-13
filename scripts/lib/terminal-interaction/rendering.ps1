@@ -298,8 +298,8 @@ function Write-TerminalInteractionFrame {
         -HostState $HostState
     $escape = [char]27
     # The changed lines go out in one write, bracketed as a synchronized
-    # update, so the terminal never shows a half-painted frame: that is what
-    # made the Header blink on every redraw.
+    # update, so the terminal never shows a half-painted frame, which makes
+    # the Header blink on every redraw.
     $builder = [System.Text.StringBuilder]::new()
     if ($useVirtualTerminal) { [void]$builder.Append("$escape[?2026h") }
     foreach ($lineIndex in $changedLines) {

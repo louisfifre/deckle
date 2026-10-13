@@ -1,11 +1,10 @@
 // A preset family: the built-in presets of one group of settings in one
 // module, plus the user's own values under the Custom selection.
 //
-// The rule (Louis, 2026-10-12): real time. Any hand edit saves at once and
-// switches the selection to Custom; picking a preset writes its values;
-// picking Custom again brings the hand-made values back. So the selection
-// is stored, and so are the Custom values: the family writes both through
-// the store the module hands it.
+// The rule: real time. Any hand edit saves at once and switches the selection
+// to Custom; picking a preset writes its values; picking Custom again brings
+// the hand-made values back. So the selection is stored, and so are the
+// Custom values: the family writes both through the store the module hands it.
 //
 // Reentrance: applying a preset writes the values through the module's own
 // setters, which report every write as an edit. NotifyEdited ignores those

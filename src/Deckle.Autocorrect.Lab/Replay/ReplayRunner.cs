@@ -6,20 +6,18 @@ namespace Deckle.Autocorrect.Lab;
 
 // The whole replay in one call: read the typed-text corpus, align each sentence,
 // judge its ambiguous slots with the final sentence as context, and calibrate the
-// margin over the lot. The probe and reranker are injected — pass the live FR
-// lexicon and the staged ONNX judge for a real calibration, or fakes for a test —
-// so the same runner also diffs any two engine versions over one corpus. Pure but
-// for reading the corpus file; the judge is seconds per slot, so a real run is a
-// serial offline pass, never a hot path.
+// margin over the lot. The probe and reranker are injected (the live FR lexicon
+// and the staged ONNX judge for a real calibration, fakes for a test), so the
+// same runner also diffs two engine versions over one corpus. The judge is slow
+// per slot, so a real run is a serial offline pass, never a hot path.
 //
 // Two validity guards run before any slot is judged. Alignment classifies each
-// record (replayed / legacy-repaired via the final string / skipped as unusable)
-// and those counts ride into the report, so a corpus that silently degraded the
-// judge's measured precision — legacy records with no history field, a corrupted
-// typed string — can never do so unnoticed again. And a ground-truth overlay lets a
-// maintainer resolve the slots where the judge overruled the corpus final (which is
-// not itself ground truth): agreement is then measured against the resolved truth
-// where set, the corpus final elsewhere.
+// record (replayed, legacy-repaired via the final string, skipped as unusable)
+// and those counts ride into the report, so records without a history field or
+// with a corrupted typed string cannot skew the judge's measured precision
+// unnoticed. And a ground-truth overlay lets a reviewer resolve the slots where
+// the judge overruled the corpus final, which is not itself ground truth:
+// agreement is then measured against the resolved truth where set.
 public static class ReplayRunner
 {
     // A spread from argmax (0) up, dense where the operating margin is likely to
@@ -75,8 +73,6 @@ public static class ReplayRunner
                     review.Add(new TruthReviewRow(
                         key, entry.Record.Final, slot.TypedForm, slot.FinalForm, slot.JudgeChosen, truth ?? string.Empty));
 
-                // A maintainer-resolved truth is the ground truth for this slot, so
-                // agreement is measured against it instead of the corpus final.
                 SlotReplayResult judged = slot;
                 if (truth is not null)
                 {
@@ -101,9 +97,8 @@ public static class ReplayRunner
             MarginCalibration.Render(summary, intake, calibration));
     }
 
-    // Convenience over raw records built inline (tests, an ad-hoc diff): every record
-    // is treated as history-present, the path that overlays History rather than
-    // repairing from the final string. No truth overlay — that needs a sheet on disk.
+    // Over raw records built inline (tests, an ad-hoc diff): every record is
+    // treated as history-present, and no truth overlay applies.
     public static ReplayReport Run(
         IEnumerable<SentenceCorpus.SentenceRecord> corpus,
         IAmbiguityProbe probe,
@@ -115,8 +110,6 @@ public static class ReplayRunner
             WrapPresent(corpus), probe, reranker, resolvedTruths: null,
             thresholds, onProgress, rightContextWords);
 
-    // Over a corpus file: reads the sibling ground-truth review sheet (if the
-    // maintainer has started one) and applies its resolved truths to this pass.
     public static ReplayReport Run(
         string corpusPath,
         IAmbiguityProbe probe,
@@ -138,8 +131,8 @@ public static class ReplayRunner
             yield return new CorpusEntry(record, HistoryPresent: true);
     }
 
-    // Closure buckets into its three exact values; any legacy or unknown value falls
-    // to the sentence-ending default, matching the reader's own default.
+    // An unknown closure falls to the sentence-ending default, matching
+    // CorpusReader's own default.
     private static void TallyClosure(string closure, ref int sentence, ref int enter, ref int interrupted)
     {
         switch (closure)
@@ -151,18 +144,11 @@ public static class ReplayRunner
     }
 }
 
-// A live tick emitted once per replayed sentence: how many sentences and ambiguous
-// slots have been judged so far, and the slots this sentence produced — enough for a
-// caller to stream progress over a long offline pass that is otherwise blind.
 public readonly record struct ReplayProgress(
     int SentenceIndex,
     int TotalSlotsJudged,
     IReadOnlyList<SlotReplayResult> SentenceSlots);
 
-// The corpus-intake counts, the guard against silent degradation: how many records
-// were replayed, how many of those were legacy records repaired via their final
-// string, how many were skipped as unusable, how many slots had a maintainer truth
-// overlaid, and the closure mix of the replayed records.
 public readonly record struct CorpusIntake(
     int Replayed,
     int LegacyRepaired,
@@ -172,9 +158,6 @@ public readonly record struct CorpusIntake(
     int ClosedOnEnter,
     int Interrupted);
 
-// The replay's whole output: the corpus-level counts, the intake guard counts, every
-// judged slot (the raw material), the truth-review rows (slots the judge overruled
-// the final on), the margin curve, and its rendered markdown for the maintainer.
 public readonly record struct ReplayReport(
     ReplaySummary Summary,
     CorpusIntake Intake,

@@ -6,26 +6,10 @@ internal static partial class ScreenCaptureInterop
 {
     // ── DXGI Output Duplication ──────────────────────────────────────────────
     //
-    // Desktop Duplication is the capture API that predates
-    // Windows.Graphics.Capture. It runs on every desktop session without
-    // a system-drawn capture indicator (the yellow border WGC paints
-    // around the captured monitor), and supports HDR via DXGI 1.5's
-    // DuplicateOutput1 + DXGI_FORMAT_R16G16B16A16_FLOAT in the format
-    // list. Documented in Microsoft Learn "Desktop Duplication API" and
-    // standard practice in OBS / NVIDIA ShadowPlay / HyperHDR.
-    //
-    // The pump is poll-based : IDXGIOutputDuplication::AcquireNextFrame
-    // blocks up to a caller-specified timeout for a new desktop frame,
-    // returning an IDXGIResource the caller QI's to ID3D11Texture2D.
-    // ReleaseFrame returns the buffer to the OS. A worker thread loops
-    // these two calls.
-    //
-    // Architecture note. The D3D11 device passed to DuplicateOutput1
-    // MUST be created on the same DXGI adapter as the output being
-    // duplicated, otherwise E_INVALIDARG. On multi-GPU laptops (Intel
-    // iGPU + NVIDIA dGPU) the default adapter is rarely the one driving
-    // the target monitor — we walk adapters/outputs to find the match,
-    // then create the device on that specific adapter.
+    // DuplicateOutput1 (IDXGIOutput5, DXGI 1.5) is the HDR-capable entry
+    // point. The D3D11 device passed to it must be created on the adapter
+    // that drives the output, or the call fails with E_INVALIDARG; on a
+    // multi-GPU laptop the default adapter is often not that one.
 
     public const int DXGI_ERROR_ACCESS_LOST           = unchecked((int)0x887A0026);
     public const int DXGI_ERROR_WAIT_TIMEOUT          = unchecked((int)0x887A0027);
@@ -85,23 +69,17 @@ internal static partial class ScreenCaptureInterop
         public uint                          PointerShapeBufferSize;
     }
 
-    /// <summary>The IDXGIAdapter + IDXGIOutput5 pair that drives a given
-    /// HMONITOR, plus the HDR state of that output. Both pointers are
-    /// AddRef'd ; caller releases via <see cref="Marshal.Release"/> when
-    /// done (typically alongside the IDXGIOutputDuplication's own
-    /// lifetime).</summary>
+    /// <summary>Both pointers are AddRef'd; the caller releases
+    /// them.</summary>
     public readonly record struct DxgiOutputMatch(
         nint     AdapterPtr,
         nint     Output5Ptr,
         HdrState Hdr);
 
     /// <summary>
-    /// Walks every DXGI adapter / output combination and returns the
-    /// pair whose IDXGIOutput6::GetDesc1 reports the requested HMONITOR.
-    /// Throws <see cref="InvalidOperationException"/> if no match is
-    /// found (display disconnected mid-startup, headless adapter, etc.).
-    /// On success the caller owns one reference to each returned
-    /// pointer and must Release both.
+    /// Throws <see cref="InvalidOperationException"/> when no output
+    /// reports the HMONITOR (display disconnected mid-startup, headless
+    /// adapter).
     /// </summary>
     public static DxgiOutputMatch FindDxgiOutputForMonitor(nint hmon)
     {
@@ -136,9 +114,7 @@ internal static partial class ScreenCaptureInterop
                             bool keepOutput = false;
                             try
                             {
-                                // QI to IDXGIOutput6 for GetDesc1 (HDR state +
-                                // HMONITOR). Same vtable shape walk as
-                                // DetectHdrState.
+                                // Vtable slots as explained in DetectHdrState.
                                 Guid iidOutput6 = IID_IDXGIOutput6;
                                 hr = Marshal.QueryInterface(outputPtr, in iidOutput6, out nint output6Ptr);
                                 if (hr != 0) continue;
@@ -159,10 +135,6 @@ internal static partial class ScreenCaptureInterop
                                     float peak = desc.MaxLuminance > 0 ? desc.MaxLuminance : 80f;
                                     var hdrState = new HdrState(isHdr, peak, desc.ColorSpace);
 
-                                    // QI down to IDXGIOutput5 — the
-                                    // interface that exposes
-                                    // DuplicateOutput1 (HDR-capable
-                                    // duplication).
                                     Guid iidOutput5 = IID_IDXGIOutput5;
                                     hr = Marshal.QueryInterface(outputPtr, in iidOutput5, out nint output5Ptr);
                                     Marshal.ThrowExceptionForHR(hr);
@@ -199,13 +171,10 @@ internal static partial class ScreenCaptureInterop
     }
 
     /// <summary>
-    /// Calls IDXGIOutput5::DuplicateOutput1 on the supplied output with
-    /// the given list of acceptable surface formats (priority order —
-    /// DXGI picks the first the OS can fulfil). The returned
-    /// IDXGIOutputDuplication pointer is AddRef'd ; caller releases
-    /// when done. supportedFormats must include at least one valid
-    /// DXGI_FORMAT (typically R16G16B16A16_FLOAT for HDR fallback to
-    /// B8G8R8A8_UNORM for SDR).
+    /// DXGI delivers the desktop in one of <paramref name="supportedFormats"/>,
+    /// converting when the current format is not listed; read the result
+    /// back with <see cref="GetDuplicationDesc"/>. The returned pointer is
+    /// AddRef'd; the caller releases it.
     /// </summary>
     public static nint DuplicateOutput1(nint output5Ptr, nint d3dDevicePtr, uint[] supportedFormats)
     {
@@ -232,11 +201,6 @@ internal static partial class ScreenCaptureInterop
         }
     }
 
-    /// <summary>
-    /// Calls IDXGIOutputDuplication::GetDesc to retrieve the negotiated
-    /// surface format and dimensions. Useful right after DuplicateOutput1
-    /// to learn which format DXGI picked from the supplied priority list.
-    /// </summary>
     public static DXGI_OUTDUPL_DESC GetDuplicationDesc(nint duplicationPtr)
     {
         unsafe
@@ -250,18 +214,11 @@ internal static partial class ScreenCaptureInterop
     }
 
     /// <summary>
-    /// Calls IDXGIOutputDuplication::AcquireNextFrame. Blocks up to
-    /// <paramref name="timeoutMs"/> for a desktop image update. On
-    /// success returns S_OK and populates the out parameters ;
-    /// pDesktopResource is AddRef'd and the caller must call
-    /// <see cref="ReleaseFrame"/> after processing (which also Releases
-    /// the resource implicitly via OS bookkeeping — but we Release the
-    /// COM ref ourselves for symmetry with the QI to ID3D11Texture2D).
-    /// Other notable HRESULTs to handle explicitly :
-    /// <see cref="DXGI_ERROR_WAIT_TIMEOUT"/> (no new frame in the
-    /// interval — common, not an error), <see cref="DXGI_ERROR_ACCESS_LOST"/>
-    /// (desktop switch / mode change / fullscreen swap — caller must
-    /// recreate the IDXGIOutputDuplication).
+    /// Returns the HRESULT instead of throwing:
+    /// <see cref="DXGI_ERROR_WAIT_TIMEOUT"/> (no update in the interval) is
+    /// routine and <see cref="DXGI_ERROR_ACCESS_LOST"/> means the
+    /// duplication must be recreated. On success the resource is AddRef'd:
+    /// release it, then call <see cref="ReleaseFrame"/>.
     /// </summary>
     public static int AcquireNextFrame(
         nint duplicationPtr,
@@ -283,9 +240,7 @@ internal static partial class ScreenCaptureInterop
     }
 
     /// <summary>
-    /// Calls IDXGIOutputDuplication::ReleaseFrame. Returns the previously
-    /// acquired frame's GPU buffer to the OS. Must be called once per
-    /// successful AcquireNextFrame ; calling it a second time returns
+    /// Call once per successful AcquireNextFrame; a second call returns
     /// DXGI_ERROR_INVALID_CALL.
     /// </summary>
     public static int ReleaseFrame(nint duplicationPtr)
@@ -299,10 +254,7 @@ internal static partial class ScreenCaptureInterop
     }
 
     /// <summary>
-    /// QI helper : given an IDXGIResource pointer (typically from
-    /// AcquireNextFrame's out param), returns the underlying
-    /// ID3D11Texture2D. The returned pointer is AddRef'd ; caller
-    /// releases.
+    /// Returns an AddRef'd ID3D11Texture2D; the caller releases it.
     /// </summary>
     public static nint QueryD3D11Texture(nint dxgiResourcePtr)
     {

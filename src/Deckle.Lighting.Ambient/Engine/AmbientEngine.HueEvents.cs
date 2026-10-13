@@ -12,7 +12,9 @@ public sealed partial class AmbientEngine
     // Called on the EventStream task (HttpClient SSE reader). Attributes
     // a bridge-side event to either our own pending push (echo) or a stable
     // bridge-side change Ambient should not fight. Never blocks — only
-    // field reads and a stop request.
+    // field reads and a stop request. Losing the stream never stops the
+    // lighting : the client reconnects on its own, and until then the
+    // engine keeps pushing, blind to external changes.
     private void OnResourceUpdate(HueResourceUpdate ev)
     {
         // Translate the v2 UUID to the v1 id the engine pushes against.
@@ -74,9 +76,7 @@ public sealed partial class AmbientEngine
         // Honest stop on external interference : we don't try to wrestle
         // control back. Log and stop the engine off the SSE worker
         // thread (Stop() raises StateChanged, marshalling needs the
-        // thread-pool). The user-facing notification for this case
-        // belongs to a later error-handling pass — for now the toggle
-        // simply flips off and the LogWindow shows the reason.
+        // thread-pool).
         AbortStartOrStop(
             "external",
             () =>

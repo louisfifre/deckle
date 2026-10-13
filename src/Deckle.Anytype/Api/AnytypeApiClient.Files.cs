@@ -6,13 +6,11 @@ namespace Deckle.Anytype;
 
 public sealed partial class AnytypeApiClient
 {
-    // POST a file into the space as multipart/form-data. Wire facts read from
-    // anytype-heart's UploadFileHandler (backwards-compatible addition of
-    // v0.50.5, served under the 2025-11-08 umbrella this client already pins):
-    // the form field is named "file", the stored name comes from the part's
-    // filename, and the media type is derived from the bytes on the backend
-    // side. The answer is a BARE {object_id, name, media, extension,
-    // size_in_bytes} — no "object" wrapper, unlike every other create route.
+    // Wire facts from anytype-heart's UploadFileHandler: the multipart form
+    // field is named "file", the stored name comes from the part's filename,
+    // and the backend derives the media type from the bytes. The answer is a
+    // BARE {object_id, name, media, extension, size_in_bytes} — no "object"
+    // wrapper, unlike every other create route.
     //
     // The returned object_id is what a property of format "files" references;
     // the file itself lives in the space like any other object.

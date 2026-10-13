@@ -1,8 +1,7 @@
 # menu.psm1 — Interactive arrow-key menu utilities.
 #
-# Module facade kept at the internal library path. Implementation lives under
-# scripts/lib/menu/ so the terminal session, shared chrome, list picker, and
-# grid picker can evolve independently without growing this file again.
+# Module facade: the implementation lives under scripts/lib/menu/, one file per
+# concern (terminal session, shared chrome, list picker, grid picker).
 
 Set-StrictMode -Version Latest
 

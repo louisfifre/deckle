@@ -44,7 +44,6 @@ public class VerbMorphologyTests
     [Fact]
     public void ParsesInfinitiveAndParticipleWithFewerParts()
     {
-        // "inf" carries no tense/person; "par:pas" carries no person.
         var inf = Assert.Single(Load().Analyses("manger"));
         Assert.Equal(("manger", "inf", "", ""), (inf.Lemma, inf.Mode, inf.Tense, inf.PersonNumber));
 
@@ -72,7 +71,6 @@ public class VerbMorphologyTests
     [Fact]
     public void ConjugateReturnsNullForAnUnfilledSlot()
     {
-        // The paradigm has no future tense — the slot is empty, not guessed.
         Assert.Null(Load().Conjugate("manger", "ind", "fut", "1s"));
     }
 
@@ -92,10 +90,8 @@ public class VerbMorphologyTests
     {
         var vb = Load();
 
-        // "ferme" (verbOnly=0) is also a noun; "mangé" (0) also an adjective.
         Assert.True(vb.IsAmbiguous("ferme"));
         Assert.True(vb.IsAmbiguous("mangé"));
-        // A verb-only form is not ambiguous.
         Assert.False(vb.IsAmbiguous("manges"));
     }
 
@@ -117,7 +113,6 @@ public class VerbMorphologyTests
     [Fact]
     public void FormsAreKeyedLowercase()
     {
-        // The store lowercases on load, so a lookup by lowercased literal hits.
         Assert.True(Load("Mange\tmanger\tind:pre:1s\t1\n").IsVerb("mange"));
     }
 }

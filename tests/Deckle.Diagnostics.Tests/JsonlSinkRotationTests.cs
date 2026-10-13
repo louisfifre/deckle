@@ -7,15 +7,6 @@ using Xunit;
 
 namespace Deckle.Diagnostics.Tests;
 
-// Rotation of the application journal: roll by line count into a monotonically
-// numbered generation under an `archive/` subfolder, full `.jsonl` extension
-// preserved and a zero-padded index appended after it (app.jsonl →
-// archive/app.jsonl.0001). Generations accumulate — none is renamed or deleted.
-//
-// Since the dispatch refonte JsonlSink is a passive ILogSink, no longer an
-// EventListener: rotation is a property of Write(EventEntry), so the test drives
-// the sink directly with fabricated entries. No EventSource, no cross-source
-// isolation hack — deterministic and fast.
 [Trait("Category", "integration")]
 public sealed class JsonlSinkRotationTests
 {
@@ -27,8 +18,6 @@ public sealed class JsonlSinkRotationTests
             schema:    JsonlSchema.SelfDescribing,
             rotation:  new JsonlRotationPolicy(maxLines));
 
-    // A minimal self-describing entry whose payload carries the line index, so
-    // an assertion can locate a specific line across generations.
     private static EventEntry Line(int n) =>
         new(
             timestamp:        DateTimeOffset.Now,
@@ -59,9 +48,8 @@ public sealed class JsonlSinkRotationTests
         var sink = NewSink(active, maxLines: 3);
         try
         {
-            // Lines 0..2 fill the active file to the cap; line 3 triggers the
-            // roll, so the active file restarts and the first generation lands
-            // in the archive subfolder under a padded index.
+            // Lines 0..2 fill the active file to the cap; line 3 rolls them
+            // into .0001 and restarts the active file.
             for (int i = 0; i < 4; i++) sink.Write(Line(i));
             sink.Flush();
 
@@ -83,9 +71,8 @@ public sealed class JsonlSinkRotationTests
         string dir = NewTempDir("keep");
         string active = Path.Combine(dir, "app.jsonl");
 
-        // maxLines=1 → every line after the first rolls. Five lines yield four
-        // generations; nothing is dropped and .0001 keeps the very first line
-        // (proving no rename or overwrite as the index climbs).
+        // maxLines=1: five lines yield four generations, and .0001 still holds
+        // the very first line, so nothing was renamed or overwritten.
         var sink = NewSink(active, maxLines: 1);
         try
         {
@@ -142,14 +129,13 @@ public sealed class JsonlSinkRotationTests
         string dir = NewTempDir("restart");
         string active = Path.Combine(dir, "app.jsonl");
 
-        // First session rolls once → archive/app.jsonl.0001 holds line 0.
         var first = NewSink(active, maxLines: 1);
         first.Write(Line(0));
         first.Write(Line(1));
         first.Dispose();
 
         // A fresh sink over the same files must scan the archive and roll into
-        // .0002, never overwriting .0001 — the numbering continues with no
+        // .0002, never overwriting .0001: numbering continues with no
         // persisted state.
         var second = NewSink(active, maxLines: 1);
         try

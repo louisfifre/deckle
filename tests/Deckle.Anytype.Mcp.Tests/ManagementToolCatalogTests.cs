@@ -5,10 +5,8 @@ using Xunit;
 
 namespace Deckle.Anytype.Mcp.Tests;
 
-// Unit tests for ManagementToolCatalog.Build. Like ToolCatalogTests, the gesture
-// wraps a real client built from dummy credentials but Build does no I/O, so the
-// catalog materializes without a network call. These pin the supervised surface:
-// exactly the delete tool, with a well-formed schema forbidding extra arguments.
+// The client is real but built from dummy credentials: Build does no I/O, so the
+// catalog materializes without a network call.
 [Trait("Category", "unit")]
 public class ManagementToolCatalogTests
 {

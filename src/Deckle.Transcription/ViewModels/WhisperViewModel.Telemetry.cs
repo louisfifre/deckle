@@ -5,8 +5,6 @@ namespace Deckle.Transcription;
 
 public partial class WhisperViewModel
 {
-    // ── Observability (dictation logging + telemetry opt-ins) ────────────────
-    //
     // Purpose-specific dataset consents stay beside the workflow that produces
     // them. Operational-detail admission is edited centrally on DiagnosticsPage.
 
@@ -19,11 +17,8 @@ public partial class WhisperViewModel
     [ObservableProperty]
     public partial bool RecordAudioCorpus { get; set; }
 
-    // Audio-corpus content selector — int index mirroring the RadioButtons order
-    // (0 = match the transcription, 1 = always raw), mapped to
-    // TelemetrySettings.AudioCorpusContent in Load / Push. Same idiom as
-    // DiagnosticsViewModel: RadioButtons emits -1 transiently while it realises its
-    // items, so the handler and the push both guard against a negative index.
+    // Index in the RadioButtons order (0 = match the transcription, 1 = always
+    // raw), cast to TelemetrySettings.AudioCorpusContent.
     [ObservableProperty]
     public partial int AudioCorpusContentIndex { get; set; }
 
@@ -47,15 +42,11 @@ public partial class WhisperViewModel
 
     partial void OnAudioCorpusContentIndexChanged(int value)
     {
-        // RadioButtons emits -1 transiently while it realises its items —
-        // ignore it so we never cast a bogus index onto the enum.
+        // RadioButtons emits -1 transiently while it realises its items.
         if (_isSyncing || value < 0) return;
         PushTelemetryToSettings();
     }
 
-    // Writes the four dictation telemetry opt-ins back to TelemetrySettings. The
-    // index↔enum guard mirrors DiagnosticsViewModel: a transient negative index
-    // resolves to MatchTranscription rather than casting a bogus value onto the enum.
     private void PushTelemetryToSettings()
     {
         var t = TelemetrySettingsService.Instance.Current;

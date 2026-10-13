@@ -5,28 +5,19 @@ namespace Deckle.Transcription;
 
 // ── WavCorpusWriter ─────────────────────────────────────────────────────────
 //
-// Pure audio passthrough for the normalized corpus. Writes the
-// 16 kHz mono PCM provided to whisper_full as signed 16-bit WAV, one file per
-// transcription, under `<telemetry-root>/audio/<transcription_id>.wav`. Flat:
-// no slug, no per-profile subfolder. Audio is universal and deduplicated; ASR
-// and rewrite JSONL lines refer to the same WAV through their `audio_file`
-// field (basename relative to the `audio/` folder).
+// Pure audio passthrough for the corpus. Writes the take's 16 kHz mono float
+// samples (the backend buffer or the raw capture, per the corpus content
+// setting) as signed 16-bit WAV, one file per transcription, under
+// `<telemetry-root>/audio/<transcription_id>.wav`. Flat: no slug, no
+// per-profile subfolder. ASR and rewrite JSONL lines refer to the same WAV
+// through their `audio_file` field (basename relative to the `audio/` folder).
 //
 // int16 quantization (not float32): half the disk use, playback remains
-// universal in any WAV viewer, and offline retranscription accepts both. The
-// pipeline provides float [-1, 1] (the exact buffer consumed by whisper.cpp),
-// clamped on write to defend against a possible out-of-range value.
+// universal in any WAV viewer, and offline retranscription accepts both.
 //
-// Returns the relative basename (`<id>.wav`) on success; this is what corpus
-// events stamp into `audio_file`. Null on failure, so the emitter surfaces an
-// empty string in the payload rather than propagating an exception that would
-// break transcription.
-//
-// Carry-over from wave 6: this helper used to live in `Deckle.Logging` next to
-// `CorpusPaths`. Relocated here because its only business consumer is
-// `TranscriptionEngine`; `CorpusPaths` stays in `Deckle.Core` because it is
-// also consumed by consent dialogs on the `Deckle.Settings` side (which cannot
-// depend on `Deckle.Transcription` without introducing a cycle).
+// Returns the relative basename (`<id>.wav`) on success. Null on failure, so
+// the emitter surfaces an empty string in the payload rather than propagating
+// an exception that would break transcription.
 public static class WavCorpusWriter
 {
     private const int    SampleRate     = 16_000;
@@ -48,15 +39,12 @@ public static class WavCorpusWriter
 
             // transcriptionId is a Guid "N" (32 hex without dashes) emitted by
             // TranscriptionEngine; it is already filesystem-safe. No Sanitize
-            // here by principle: if the ID format changes one day, the
-            // contract must remain a safe identifier.
+            // here by principle: if the ID format changes, the contract must
+            // remain a safe identifier.
             string fileName = transcriptionId + ".wav";
             string path = Path.Combine(audioDir, fileName);
             WritePcm16(path, audio);
 
-            // Basename relative to `audio/`: this is what corpus events put in
-            // `audio_file` so an offline tool can resolve the WAV by joining
-            // `<telemetry>/audio/` + basename.
             return fileName;
         }
         catch
@@ -76,7 +64,6 @@ public static class WavCorpusWriter
         using var fs = new FileStream(path, FileMode.Create, FileAccess.Write, FileShare.Read);
         using var bw = new BinaryWriter(fs);
 
-        // RIFF header.
         bw.Write(new[] { (byte)'R', (byte)'I', (byte)'F', (byte)'F' });
         bw.Write(riffSize);
         bw.Write(new[] { (byte)'W', (byte)'A', (byte)'V', (byte)'E' });
@@ -91,13 +78,11 @@ public static class WavCorpusWriter
         bw.Write(blockAlign);
         bw.Write(BitsPerSample);
 
-        // data subchunk.
         bw.Write(new[] { (byte)'d', (byte)'a', (byte)'t', (byte)'a' });
         bw.Write(dataBytes);
 
-        // float [-1, 1] → int16 with clamp. Recording path already stays
-        // in range; the clamp defends against the occasional out-of-band
-        // sample that would wrap around on an unchecked cast.
+        // The clamp defends against an out-of-band sample that would wrap
+        // around on the unchecked cast to int16.
         for (int i = 0; i < audio.Length; i++)
         {
             float s = audio[i];

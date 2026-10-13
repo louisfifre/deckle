@@ -5,14 +5,9 @@ using Deckle.Core;
 
 namespace Deckle.Setup;
 
-// ── InstallItem ───────────────────────────────────────────────────────────────
-//
-// One unit of the install step: something a selected module needs on disk, with
-// its two verbs — is it already there, and put it there. The wizard's install
-// page runs a list of these sequentially and renders one row per item; the item
-// itself knows nothing about UI. RunAsync reports download progress through the
-// standard Downloader progress shape and returns an outcome instead of throwing
-// — a failed item lands in the results and the run continues with the next one.
+// One thing a selected module needs on disk; the item knows nothing about UI.
+// RunAsync returns a failed outcome instead of throwing, so the run continues
+// with the next item.
 internal sealed record InstallItem
 {
     // Stable id — keys the InstallResult, and the SummaryPage's recovery

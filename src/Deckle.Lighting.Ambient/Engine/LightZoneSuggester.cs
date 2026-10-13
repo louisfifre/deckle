@@ -20,18 +20,15 @@ namespace Deckle.Lighting.Ambient;
 // behind the TV ((0, 1, 0) on the Hue convention) doesn't have a
 // natural border zone — defaulting it to "Top" or "Left" would feel
 // arbitrary. We surface "no clear suggestion" instead, the user picks
-// from the ComboBox explicitly.
+// from the zone picker explicitly.
 //
 // LightPlacementResolver calls Suggest() to pre-fill the per-light zone
 // pickers of the Settings page. Keeping the heuristic here avoids
 // duplicating ambient-domain rules in UI code.
 public static class LightZoneSuggester
 {
-    // Threshold below which an axis is considered "too close to zero
-    // to matter". A light at (0.05, …, 0.10) reads as "centred" — we
-    // don't want either edge winning by a hair-thin margin. 0.15
-    // gives a clear neutral zone around the origin without eating
-    // legitimate corner placements.
+    // Below this an axis reads as centred, so no edge wins by a
+    // hair-thin margin, without eating legitimate corner placements.
     private const double NeutralDeadband = 0.15;
 
     public static LightZone Suggest(HueLightPlacement placement)
@@ -39,7 +36,6 @@ public static class LightZoneSuggester
         double ax = Math.Abs(placement.X);
         double az = Math.Abs(placement.Z);
 
-        // Both axes inside the dead-band → centred light, no suggestion.
         if (ax < NeutralDeadband && az < NeutralDeadband) return LightZone.None;
 
         // Pick the dominant axis. Ties favour the horizontal split

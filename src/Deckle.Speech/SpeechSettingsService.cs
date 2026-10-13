@@ -3,10 +3,6 @@ using Deckle.Core;
 
 namespace Deckle.Speech;
 
-// Module-local persistence for SpeechSettings. Twin of AmbientSettingsService /
-// CaptureSettingsService — same JsonSettingsStore pattern, same lazy singleton,
-// same naming convention. Backing file:
-// <UserDataRoot>/modules/speech/settings.json.
 public sealed class SpeechSettingsService
 {
     private static readonly Lazy<SpeechSettingsService> _instance = new(() => new SpeechSettingsService());

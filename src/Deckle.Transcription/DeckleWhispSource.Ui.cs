@@ -22,8 +22,6 @@ public sealed partial class DeckleWhispSource
 
     // ── Llm-side observation from TranscriptionEngine ─────────────────────────
 
-    // User-facing guidance kept as the milestone; the missing profile name
-    // moves to the Verbose mirror.
     [Event(EvtManualProfileNotFound,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Pipeline,
@@ -119,10 +117,6 @@ public sealed partial class DeckleWhispSource
     }
 
     // ── TranscriptionSettings persistence ─────────────────────────────────
-    // Same exception as DeckleAudioSource for JsonSettingsStore delegates: the
-    // exact operation in progress is not known at the call site. Preserved
-    // separately from SettingsLoaded* to keep a dedicated event for messages
-    // already prefixed on the module side.
 
     [Event(EvtWhispSettingsPrefixed,
            Level = EventLevel.Informational,
@@ -135,9 +129,6 @@ public sealed partial class DeckleWhispSource
 
     // ── ViewModel + WhisperPage UI side ─────────────────────────────────
 
-    // Demoted to Verbose: a settings field mutating from the UI is an opaque
-    // internal step with no user-facing milestone value; the line is property +
-    // value detail, which belongs at Verbose. No milestone, no mirror.
     [Event(EvtSettingChanged,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Lifecycle,
@@ -273,10 +264,8 @@ public sealed partial class DeckleWhispSource
         if (IsEnabled()) WriteEvent(EvtPageResetAll);
     }
 
-    // Demoted to Verbose: a raw stack trace is pure technical detail attached to
-    // PageInitFailed / PageLoadedFailed, not a user-facing milestone. It carries
-    // multi-line content, which an Error-level message must not; at Verbose it is
-    // the greppable detail behind the Capital failure milestone.
+    // Verbose detail behind PageInitFailed / PageLoadedFailed: a stack trace is
+    // multi-line, which a milestone message must not be.
     [Event(EvtPageStackTrace,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Lifecycle,

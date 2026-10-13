@@ -13,23 +13,20 @@ namespace Deckle.Anytype;
 //     its presence pins the base URL to the fixed 31012 listener; the file's
 //     api_url is not consulted.
 //   • Desktop (legacy) — no vault entry: the file's api_key + api_url (the
-//     Desktop challenge pairing) keep working, until the space cutover
-//     retires them.
+//     Desktop challenge pairing).
 //
 // The non-secret coordinates (api_version, space_id) stay in the module file
-// in both worlds; only the secret moved to the vault. No key material is ever
-// logged (see DeckleAnytypeSource: no event carries it).
+// in both worlds; only the secret lives in the vault. No event ever carries
+// key material.
 public sealed record AnytypeCredentials(string ApiUrl, string ApiVersion, string ApiKey, string SpaceId)
 {
     private const string ModuleId = "anytype";
     private const string FileName = "credentials.json";
 
-    // The vault name of the bot API key. The provisioning act (the wizard,
-    // eventually) writes it; resolution here reads it.
     public const string ApiKeySecretName = "anytype-api-key";
 
     // JSON keys are snake_case to match the on-disk file written by the
-    // provisioning step (and the vendor reference shape).
+    // provisioning step.
     internal sealed record Dto(string? api_url, string? api_version, string? api_key, string? space_id);
 
     private static readonly JsonSerializerOptions JsonOptions = new()
@@ -37,12 +34,9 @@ public sealed record AnytypeCredentials(string ApiUrl, string ApiVersion, string
         PropertyNameCaseInsensitive = true
     };
 
-    // Loads %LOCALAPPDATA%\Deckle\modules\anytype\credentials.json plus the
-    // default vault. Throws InvalidOperationException with a remediation
-    // message when the file is absent, a coordinate is blank, or no bearer
-    // exists in either home — a half-provisioned machine is a configuration
-    // error, not a runtime condition to limp through. An unreadable vault
-    // (SecretVaultException) propagates for the same reason.
+    // A half-provisioned machine is a configuration error, not a runtime
+    // condition to limp through: an absent file, a blank coordinate, no bearer
+    // in either home or an unreadable vault all throw.
     public static AnytypeCredentials Load() => Load(SecretVault.CreateDefault());
 
     public static AnytypeCredentials Load(ISecretVault vault)
@@ -70,9 +64,6 @@ public sealed record AnytypeCredentials(string ApiUrl, string ApiVersion, string
         return Resolve(dto, vaultApiKey, path);
     }
 
-    // The resolution contract, pure so it pins under test: vault bearer →
-    // headless profile on the fixed listener; file bearer alone → legacy
-    // Desktop profile; neither → a remediation error.
     internal static AnytypeCredentials Resolve(Dto? dto, string? vaultApiKey, string path)
     {
         if (dto is null ||

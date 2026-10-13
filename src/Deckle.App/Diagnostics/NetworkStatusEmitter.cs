@@ -4,29 +4,19 @@ using Windows.Networking.Connectivity;
 
 namespace Deckle.App;
 
-// Single emission site for `DeckleNetworkSource`. Wired at boot in
-// `App.OnLaunched` via `Start()`. The subscription to
-// `NetworkInformation.NetworkStatusChanged` is static on the WinRT side
-// (process-wide broadcast event), so duplicating the subscription would
-// duplicate events; `Start()` is idempotent and ignores extra calls.
-//
-// The initial boot emission captures state at launch time; without it, the
-// first event would only arrive on the next transition (which may never happen
-// if the machine stays connected). The listener then loops over the current
-// state in `IsEnabled` and pushes it.
+// NetworkStatusChanged is a process-wide WinRT event, so a second subscription
+// would duplicate every event; Start ignores extra calls. The boot emission
+// matters: on a machine that stays connected, no transition ever comes.
 internal static class NetworkStatusEmitter
 {
     private static int _started;
 
     public static void Start()
     {
-        // Interlocked CAS rather than a bool: `Start()` can be called from any
-        // thread, and we want to guarantee a single subscription without
-        // paying for a dedicated lock.
+        // Interlocked rather than a bool: one subscription whatever the calling thread.
         if (System.Threading.Interlocked.Exchange(ref _started, 1) != 0) return;
 
         NetworkInformation.NetworkStatusChanged += OnNetworkStatusChanged;
-        // Initial emission: capture state at boot.
         EmitCurrent();
     }
 
@@ -34,10 +24,8 @@ internal static class NetworkStatusEmitter
 
     private static void EmitCurrent()
     {
-        // The provider-side gate already avoids payload allocation when no
-        // listener is attached, but WinRT collection (GetInternet-
-        // ConnectionProfile + GetHostNames) costs COM marshalling.
-        // Short-circuiting here when nobody listens saves those round trips.
+        // Checked before the WinRT queries: they cost COM round trips that the
+        // provider-side gate would not save.
         if (!DeckleNetworkSource.Log.IsEnabled(
                 System.Diagnostics.Tracing.EventLevel.Verbose,
                 (System.Diagnostics.Tracing.EventKeywords)Keywords.Network))

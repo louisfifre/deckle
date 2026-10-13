@@ -1,15 +1,12 @@
 namespace Deckle.Transcription;
 
-// Parameters of the energy segmenter — the threshold-on-RMS state machine that
-// places utterance boundaries on the live capture stream. Auto-properties so the
-// POCO round-trips cleanly through JsonSettingsStore.
-//
-// The segmenter works in 50 ms frames, so every duration below resolves to a
-// whole frame count.
+// Parameters of the energy segmenter. Auto-properties so the POCO round-trips
+// cleanly through JsonSettingsStore. The segmenter works in 50 ms frames, so
+// every duration below resolves to a whole frame count.
 //
 //   ThresholdDbfs       — a frame counts as voiced when its RAW linear RMS is at
-//                         or above this level. -45 dBFS leaves headroom for
-//                         quieter mics while staying above the broken-mic floor.
+//                         or above this level. The default leaves headroom for
+//                         quieter mics while staying above a broken mic's floor.
 //   HangoverMaxMs       — DECISION delay at the start of an utterance: how much
 //                         trailing silence to wait, after the last voiced frame,
 //                         before declaring the utterance ended. Long by default
@@ -27,8 +24,7 @@ namespace Deckle.Transcription;
 //   The decay between RampStart and RampEnd follows a cubic Bézier easing — the
 //   same function CSS cubic-bezier(x1,y1,x2,y2) defines — with fixed endpoints
 //   (0,0) and (1,1) and two free control points. The four coordinates below ARE
-//   those two control points. They span the whole space the old contrast / knee
-//   knobs reached and more: pulling both handles into a corner gives a true
+//   those two control points: pulling both handles into a corner gives a true
 //   right-angle hug, the diagonal gives a straight decline.
 //
 //   HangoverCurveX1/Y1  — first control point (P1), each in [0, 1]. Its direction
@@ -36,8 +32,8 @@ namespace Deckle.Transcription;
 //   HangoverCurveX2/Y2  — second control point (P2), each in [0, 1]. Its direction
 //                         into (1,1) sets the exit slope ((1−Y2)/(1−X2)).
 //
-//   The default (0.85, 0.10, 0.90, 0.25) is the curve currently tuned in use:
-//   the delay holds near the max through most of the ramp, then drops late.
+//   The default curve holds the delay near the max through most of the ramp,
+//   then drops late.
 //   MarginMs            — CUT POSITION: the kept span ends MarginMs after the
 //                         last voiced frame. Distinct from hangover — the silence
 //                         between the margin and the hangover expiry is dropped.
@@ -45,12 +41,11 @@ namespace Deckle.Transcription;
 //                         are dropped as noise blips rather than emitted.
 //
 //   CutPreset           — the STORED selection of the cut preset family: a preset
-//                         id (see CutPresets) or "custom". It is null in a file
-//                         written before it existed; the family then derives it
-//                         once from the eight hangover values and stores it. After
-//                         that the stored id is the truth, even if the values no
-//                         longer equal the preset's. Nothing in the segmenter
-//                         reads it.
+//                         id (see CutPresets) or "custom". Null in an older file;
+//                         the family then derives it once from the eight hangover
+//                         values and stores it. After that the stored id is the
+//                         truth, even if the values no longer equal the preset's.
+//                         Nothing in the segmenter reads it.
 //   CutCustomValues     — the user's own eight hangover values, kept while a
 //                         preset is selected so choosing Custom again brings them
 //                         back. Null until the user first edits by hand (or the

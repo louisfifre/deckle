@@ -6,20 +6,14 @@ using Xunit;
 
 namespace Deckle.Catalog.Tests;
 
-// Tests de comportement sur les factories Setting.* — le contrat entre l'auteur
-// d'un manifeste et le composer. On vérifie ce qu'une factory PRODUIT (le kind,
-// les args, les sélecteurs boxés, le défaut, l'avis), pas comment le composer le
-// rend : ces descripteurs sont des records purs, sans UI, donc exerçables tels
-// quels. Un test survit à un refactor du rendu.
-//
-// Portée : les capacités ajoutées ce workstream (Text, la variante radio de
-// Choice, la Section sans maître, le canal d'avis, le mode Editable du Path) plus
-// le contrat de base des sélecteurs (aller-retour, défaut) sur lequel le reset et
-// la synchro du composer s'appuient.
+// Behavior tests on the Setting.* factories, the contract between a manifest
+// author and the composer. They check what a factory produces (kind, args, boxed
+// selectors, default, advisory), not how the composer renders it: descriptors are
+// pure records with no UI.
 [Trait("Category", "unit")]
 public class SettingFactoryTests
 {
-    // ── Toggle : aller-retour boxé + défaut ────────────────────────────────────
+    // ── Toggle: boxed round trip and default ───────────────────────────────────
 
     [Fact]
     public void ToggleRoundTripsThroughBoxedSelectorsAndCarriesItsDefault()
@@ -29,12 +23,10 @@ public class SettingFactoryTests
 
         Assert.Equal(SettingKind.Toggle, d.Kind);
 
-        // Le composer écrit/lit via les sélecteurs object? boxés.
         d.SetValue(true);
         Assert.True(value);
         Assert.Equal(true, d.GetValue());
 
-        // Le défaut est lu à la source à chaque appel (jamais mis en cache).
         Assert.NotNull(d.Default);
         Assert.Equal(true, d.Default!());
     }
@@ -42,7 +34,7 @@ public class SettingFactoryTests
     [Fact]
     public void AnOmittedDefaultLeavesNoResettableDefault()
     {
-        // Pas de defaultValue → Default null : le composer ne rend alors aucun reset.
+        // With no Default the composer renders no reset.
         var d = Setting.Toggle("k", () => false, _ => { });
         Assert.Null(d.Default);
     }
@@ -70,7 +62,7 @@ public class SettingFactoryTests
         Assert.Equal(2, requests);
     }
 
-    // ── Text : args par défaut, args fournis, aller-retour ─────────────────────
+    // ── Text: default args, supplied args, round trip ──────────────────────────
 
     [Fact]
     public void TextWithoutArgsDefaultsToAPlainSingleLineField()
@@ -103,7 +95,7 @@ public class SettingFactoryTests
         Assert.Equal("def", d.Default!());
     }
 
-    // ── Choice vs Radio : même kind, le drapeau Radio les distingue ────────────
+    // ── Choice vs Radio: same kind, told apart by the Radio flag ───────────────
 
     [Fact]
     public void RadioIsAChoiceWithTheRadioFlagSetAndOptionsMappedInOrder()
@@ -144,7 +136,7 @@ public class SettingFactoryTests
         Assert.Equal("b", d.Default!());
     }
 
-    // ── Section : pli sans maître, valueless, porte ses enfants ────────────────
+    // ── Section: a valueless fold with no master, holding its children ─────────
 
     [Fact]
     public void SectionIsValuelessAndHoldsItsChildren()
@@ -155,8 +147,7 @@ public class SettingFactoryTests
         Assert.Equal(SettingKind.Section, s.Kind);
         Assert.Equal("G", s.Glyph);
 
-        // Nœud sans valeur : lit null, l'écriture est un no-op qui ne jette pas,
-        // et il n'a pas de défaut resettable (seuls ses enfants en ont).
+        // The write must not throw: a valueless node ignores it.
         Assert.Null(s.GetValue());
         s.SetValue("anything");
         Assert.Null(s.Default);
@@ -178,7 +169,7 @@ public class SettingFactoryTests
         Assert.True(s.VisibleWhen!());
     }
 
-    // ── Avis : un canal réactif, ré-évalué comme VisibleWhen ───────────────────
+    // ── Advisory: a live channel, re-evaluated like VisibleWhen ────────────────
 
     [Fact]
     public void AdvisoryIsLiveAndReEvaluatedEachCall()
@@ -187,13 +178,13 @@ public class SettingFactoryTests
         var d = Setting.Text("k", () => "", _ => { }, advisory: () => message);
 
         Assert.NotNull(d.Advisory);
-        Assert.Null(d.Advisory!());   // rien à dire
+        Assert.Null(d.Advisory!());
 
         message = "beware";
-        Assert.Equal("beware", d.Advisory!());   // l'état a changé, l'avis suit
+        Assert.Equal("beware", d.Advisory!());   // the state changed, the advisory follows
     }
 
-    // ── Path : le mode Editable et le défaut différé ───────────────────────────
+    // ── Path: the Editable mode and the deferred default path ──────────────────
 
     [Fact]
     public void PathCarriesTheEditableModeAndItsDeferredDefaultPath()
@@ -205,10 +196,10 @@ public class SettingFactoryTests
         var args = Assert.IsType<PathArgs>(d.Args);
         Assert.Equal(FolderPickerMode.Editable, args.Mode);
         Assert.NotNull(args.DefaultPath);
-        Assert.Equal("D:/models", args.DefaultPath!());   // résolu à l'appel, pas capturé
+        Assert.Equal("D:/models", args.DefaultPath!());   // resolved at call time, not captured
     }
 
-    // ── Magnitude : les bornes et la forme du contrôle vivent dans les args ────
+    // ── Magnitude: bounds and control shape live in the args ───────────────────
 
     [Fact]
     public void MagnitudeDefaultsToASliderOverAPlainRange()
@@ -227,7 +218,6 @@ public class SettingFactoryTests
     [Fact]
     public void MagnitudeCarriesTheFieldOnlyAndCountShapes()
     {
-        // Un compte tapé, jamais balayé : pas de slider, pas de décimales.
         var d = Setting.Magnitude("k", () => 5, _ => { },
             new MagnitudeArgs(1, 10, Slider: false, Integer: true));
 
@@ -301,7 +291,7 @@ public class SettingFactoryTests
         Assert.Equal(allowUnbound, Assert.IsType<HotkeyArgs>(d.Args).AllowUnbound);
     }
 
-    // ── Group : maître + enfants, le maître fait l'aller-retour ────────────────
+    // ── Group: master and children, the master round-trips ─────────────────────
 
     [Fact]
     public void GroupRoundTripsItsMasterAndHoldsItsChildren()

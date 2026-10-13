@@ -2,8 +2,7 @@ namespace Deckle.Audio;
 
 // ── PreprocessingSettings ──────────────────────────────────────────────────
 //
-// Tuning state for the transcription pre-processing DSP stage (see
-// CONTEXT.md « transcription pre-processing »). Nested under
+// Tuning state for the transcription pre-processing DSP stage. Nested under
 // CaptureSettings.Preprocessing, persisted with the rest of the audio
 // module settings under modules/audio/settings.json.
 //
@@ -23,20 +22,18 @@ public sealed class PreprocessingSettings
     // runs on every recording and self-adjusts (the makeup lands near 0 dB on a
     // mic already at target, so it does nothing there). The mic level check on
     // the Recording page advises whether turning it on is worth it; the user
-    // decides — there is no deferral and no automatic on/off.
+    // decides — nothing turns it on or off automatically.
     public bool Enabled { get; set; } = false;
 
     // ── High-pass — removes rumble (mains hum, HVAC), plosive thumps and
-    //    the DC offset. Shared brick with the future energy VAD of the
-    //    windowing workstream. Kept on by default: it only strips energy
-    //    below the speech band, never touches intelligibility.
+    //    the DC offset. Kept on by default: it only strips energy below the
+    //    speech band, never touches intelligibility.
     public bool  HighPassEnabled { get; set; } = true;
     public float HighPassHz      { get; set; } = 90f;
 
     // ── Noise gate — soft downward expander below the threshold. OFF by
     //    default on purpose: the real silence handling belongs to the VAD
-    //    upstream (windowing workstream), and an aggressive gate eats weak
-    //    phonemes. Off by default; available but not run.
+    //    upstream, and an aggressive gate eats weak phonemes.
     public bool  GateEnabled       { get; set; } = false;
     public float GateThresholdDbfs { get; set; } = -55f;
     public float GateRatio         { get; set; } = 2f;
@@ -58,7 +55,7 @@ public sealed class PreprocessingSettings
     //    (not peak — a single transient would skew a peak target). This is
     //    the « normalization » half: it fixes the absolute level of a quiet
     //    mic, complementary to compression which fixes the dynamics. The
-    //    two-pass design lets the orchestrator hit the target exactly.
+    //    two-pass design hits the target exactly.
     //    MaxMakeupGainDb caps the boost so a near-silent take does not
     //    explode its noise floor.
     public float TargetRmsDbfs   { get; set; } = -20f;

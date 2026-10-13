@@ -8,25 +8,16 @@ namespace Deckle.Transcription;
 
 public sealed partial class TranscriptionEngine
 {
-    // ── MonolithicPipeline partial — the delivered capture→one-call path ───────
+    // ── MonolithicPipeline partial — capture, then one backend call ──────────
     //
-    // Monolithic strategy: capture the whole take, then a single
-    // backend.TranscribeAsync() that does its own internal windowing (30 s +
-    // dynamic seek in Whisper) and inter-window context propagation via tokens.
-    // No chunking on the C# side. This is the path the streaming socle is meant
-    // to eventually replace; it is kept behind the strategy selector and is the
-    // default until streaming proves out (see PipelineStrategyKind).
+    // Capture the whole take, then a single backend.TranscribeAsync() that does
+    // its own internal windowing (30 s + dynamic seek in Whisper) and
+    // inter-window context propagation. No chunking on the C# side.
     //
-    // It owns capture and every state transition through to Transcribing,
-    // emitting the same logs / UserFeedback / status the inline pipeline did, in
-    // the same order — so behaviour is identical to before the seam. It returns
-    // the raw text + audio + backend timings for the shared FinalizeTranscription,
-    // or null when it already handled an early exit (mic error, empty audio,
-    // backend failure, lost CAS) and raised Finished itself.
-    //
-    // Runs on the worker thread; producerCt is the run's _recordCts token (Stop
-    // and Dispose cancel it to drain capture, and it is the abort signal for the
-    // single backend call).
+    // Owns capture and every state transition through to Transcribing; returns
+    // null when it already handled an early exit and raised Finished itself.
+    // Runs on the worker thread. producerCt is the run's _recordCts token: Stop
+    // and Dispose cancel it to drain capture, and it aborts the backend call.
     private async Task<PipelineProduction?> ProduceMonolithicAsync(
         CancellationToken producerCt, Task<bool> primeTask)
     {
@@ -45,11 +36,10 @@ public sealed partial class TranscriptionEngine
 
         if (capture.Outcome == CaptureOutcome.CapHit)
         {
-            // CAS Recording → Stopping ourselves so the transition sequence below
-            // stays uniform with the user-driven Stop path (which RequestToggle
-            // already moved to Stopping). The drain ran inside Record(), so the
-            // stop-to-pipeline stopwatch only covers the post-Record overhead on
-            // this rare path (acceptable drift, unchanged from before the seam).
+            // CAS Recording → Stopping here so the sequence below stays uniform
+            // with the user Stop path (which RequestToggle already moved to
+            // Stopping). The drain ran inside Record(), so on this path the
+            // stop-to-pipeline stopwatch covers only the post-Record overhead.
             if (Interlocked.CompareExchange(
                     ref _state,
                     (int)PipelineState.Stopping,
@@ -60,8 +50,6 @@ public sealed partial class TranscriptionEngine
             }
         }
 
-        // Auto-calibration enveloppe — pure compute in MicrophoneCalibrationCalculator;
-        // the ring buffer + side effects stay on the engine (TryAutoCalibrate).
         if (capture.Telemetry is not null)
         {
             TryAutoCalibrate(capture.Telemetry);
@@ -69,10 +57,8 @@ public sealed partial class TranscriptionEngine
 
         float[] audio = capture.Pcm;
 
-        // Record() returned because RequestToggle CAS'd Recording → Stopping
-        // (user Stop) or the cap-duration branch CAS'd it above. Either way the
-        // state should be Stopping; move to Transcribing. Losing this CAS means
-        // Dispose won — skip transcription.
+        // RequestToggle (user Stop) or the cap-hit branch above moved the state
+        // to Stopping. Losing this CAS means Dispose won: skip transcription.
         if (Interlocked.CompareExchange(
                 ref _state,
                 (int)PipelineState.Transcribing,
@@ -87,13 +73,10 @@ public sealed partial class TranscriptionEngine
         RaiseStatus(Loc.Get("Status_Transcribing"));
 
         // ── Inference ─────────────────────────────────────────────────────────
-        // Prime gate. The single backend call must not race the prime's dummy
-        // inference; cross the gate before touching the backend. On a warm worker
-        // this returns instantly. On a short cold take it blocks until the prime
-        // finishes (its wall counts toward _stopToPipelineSw, stopped below — the
-        // user genuinely waited for it, so the gate phase is "at_stop"). A failed
-        // prime falls through to the IsModelLoaded check, which raises
-        // ModelNotReady (UserFeedback already shown by LoadModel).
+        // Prime gate. On a short cold take it blocks until the prime finishes;
+        // that wait counts toward _stopToPipelineSw because the user genuinely
+        // waited for it, hence "at_stop". A failed prime falls through to the
+        // IsModelLoaded check (UserFeedback already shown by LoadModel).
         await AwaitPrime(primeTask, "at_stop").ConfigureAwait(false);
 
         if (!_backend.IsModelLoaded)
@@ -110,14 +93,10 @@ public sealed partial class TranscriptionEngine
             return null;
         }
 
-        // Stop the pre-backend overhead stopwatch the moment we hand off to the
-        // backend.
         if (_stopToPipelineSw is { IsRunning: true }) _stopToPipelineSw.Stop();
 
-        // Transcription pre-processing DSP — terminal float[]→float[] stage,
-        // applied to a separate buffer fed to the backend only: the raw `audio`
-        // stays untouched and is what the normalized corpus stores. Self-adjusting
-        // when the user opts in; a near no-op on a mic already at target.
+        // The opt-in DSP writes a separate buffer fed to the backend only: the
+        // raw `audio` stays untouched and is what the normalized corpus stores.
         float[] backendAudio = audio;
         var pp = _host.Audio.Preprocessing;
         if (pp.Enabled)
@@ -129,7 +108,6 @@ public sealed partial class TranscriptionEngine
             EmitPreprocessedTelemetry(backendAudio);
         }
 
-        // Monolithic consumer for the legacy whole-take dictation strategy.
         TranscriptionResult? consumed =
             await ConsumeMonolithicAudioAsync(backendAudio, producerCt).ConfigureAwait(false);
         if (consumed is null)

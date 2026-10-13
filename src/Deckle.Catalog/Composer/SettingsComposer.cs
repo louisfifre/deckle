@@ -9,29 +9,18 @@ namespace Deckle.Catalog;
 
 // ── SettingsComposer ─────────────────────────────────────────────────────────
 //
-// Renders a list of SettingDescriptor into Windows-11 SettingsCard rows inside a
-// host Panel. This is the engine of the declarative settings model: a module
-// declares WHAT its settings are (typed get/set selectors + a UI kind + a
-// localization key + a glyph), and the composer builds the WinUI surface.
+// Renders SettingDescriptors into SettingsCard rows inside a host Panel: a module
+// declares what its settings are, the composer builds the WinUI surface.
 //
-// Why imperative wiring, not data binding. x:Bind is compile-time generated
-// against a known ViewModel type in XAML; it cannot target controls created in
-// code. Classic {Binding} would work at runtime but relies on reflection over a
-// property-name string — exactly what we avoid (it breaks rename-safety and
-// trim/AOT). Instead each descriptor carries typed Func<T>/Action<T> selectors;
-// the composer reads the initial value through the getter, writes user edits
-// back through the setter, and re-reads the getter whenever the source model
-// raises PropertyChanged. No reflection, no expression trees, no magic strings
-// beyond the localization key.
+// Imperative wiring, not data binding: x:Bind cannot target controls created in
+// code, and {Binding} relies on reflection over a property-name string, which
+// breaks rename safety and trimming. Each descriptor carries typed selectors
+// instead; the composer reads through the getter, writes through the setter and
+// re-reads the getter whenever the source model raises PropertyChanged.
 //
-// Why we subscribe to PropertyChanged even for non-reactive settings. The owning
-// ViewModel loads its persisted values AFTER the page (and therefore the composed
-// controls) are constructed. Without a subscription the toggles would be frozen
-// at their constructor defaults. Re-reading every getter on any PropertyChanged
-// keeps the surface in sync with the model — including external mutations such as
-// a section "Reset" — and is cheap at the scale of a settings region (tens of
-// rows). The model→UI pass is guarded so it cannot bounce back through a
-// control's change handler into the setter.
+// Every row re-reads on any PropertyChanged, reactive or not, because the owning
+// ViewModel loads its persisted values after the page is constructed; without it
+// the controls would stay frozen at their constructor defaults.
 public sealed partial class SettingsComposer
 {
     private readonly Panel _host;
@@ -43,16 +32,12 @@ public sealed partial class SettingsComposer
     // fall back to the host app's root map).
     private readonly string? _module;
 
-    // One refresher per composed row: re-reads the getter, updates the control,
-    // and re-applies reactive enabled/visible state. Invoked on every source
-    // PropertyChanged and once at the end of Compose.
+    // One per composed row; run on every source PropertyChanged and once at the
+    // end of Compose.
     private readonly List<Action> _refreshers = new();
 
-    // Parallel to _refreshers but sparse: only rows (and groups) that carry a
-    // resettable Default register here. A dirty-check answers "does this row's
-    // value differ from its default?"; its paired reset-action drives the value
-    // back to that default through the normal setter. IsDirty()/ResetAll() fold
-    // over these — the reset surface for the whole composed region.
+    // Only rows and folds that carry a Default register here; IsDirty and
+    // ResetAll fold over them.
     private readonly List<Func<bool>> _dirtyChecks = new();
     private readonly List<Action> _resetActions = new();
 
@@ -65,12 +50,9 @@ public sealed partial class SettingsComposer
     // advanced children the same way the top level filters advanced settings.
     private bool _showAdvanced = true;
 
-    // Host-supplied factory for the Path kind's picker control. The concrete
-    // FolderPickerCard lives in Settings (it needs the Settings window and the
-    // module's ETW source), so the floor composer cannot new it up; the app wires
-    // this at boot, beside the SettingsHost delegates. Null until wired — a Path
-    // setting composed before then throws, surfacing the gap loudly rather than
-    // rendering a dead card.
+    // Host-supplied because the picker controls live in Deckle.Settings (see
+    // IPathControl). Null until the app wires it at boot; a Path setting composed
+    // before then throws rather than rendering a dead card.
     public static Func<PathArgs, IPathControl>? PathControlFactory { get; set; }
 
     public SettingsComposer(Panel host, INotifyPropertyChanged? source)
@@ -80,10 +62,7 @@ public sealed partial class SettingsComposer
         _module = source?.GetType().Assembly.GetName().Name;
     }
 
-    // Builds a card per descriptor into the host, wires change handling, and
-    // performs the initial model→UI sync. Advanced-only settings are skipped
-    // unless showAdvanced is set (the "displayed dose" lever; the surface is
-    // built once, so changing the dose means rebuilding the region).
+    // The surface is built once: changing showAdvanced means rebuilding the region.
     public void Compose(IReadOnlyList<SettingDescriptor> settings, bool showAdvanced = true)
     {
         _showAdvanced = showAdvanced;
@@ -123,20 +102,15 @@ public sealed partial class SettingsComposer
 
     // ── Reset surface ────────────────────────────────────────────────────────
     //
-    // The composed region's collective default-state, for a page-level "Reset all"
-    // affordance to gate and act on. Each composed row/group that carries a Default
-    // contributed a dirty-check and a reset-action at build time; these fold over
-    // them. ResetAll drives each value back through its own setter, exactly the path
-    // a per-card reset uses — the model's PropertyChanged then re-syncs the surface
-    // (and re-raises DirtyChanged) via RefreshAll, no special re-read needed here.
+    // The region's collective default state, for a page-level "Reset all". Each
+    // row or fold that carries a Default registered a dirty-check and a
+    // reset-action at build time.
 
-    // Raised at the END of every RefreshAll, once the dirty-checks have settled —
-    // so a "Reset all" button can re-gate its own enabled-state off IsDirty().
+    // Raised at the end of every RefreshAll, once the dirty-checks have settled,
+    // so a "Reset all" button can re-gate itself off IsDirty().
     public event EventHandler? DirtyChanged;
 
-    // True when any composed value differs from its default. Cheap at settings
-    // scale (tens of rows); recomputed on demand rather than cached, so it cannot
-    // drift from the live model.
+    // Recomputed on demand, never cached, so it cannot drift from the live model.
     public bool IsDirty()
     {
         foreach (Func<bool> dirty in _dirtyChecks)
@@ -144,21 +118,16 @@ public sealed partial class SettingsComposer
         return false;
     }
 
-    // Drives every defaulted value back to its default. Each reset-action calls the
-    // descriptor's setter, which raises PropertyChanged; RefreshAll then re-syncs
-    // the controls and re-evaluates dirtiness — the same round-trip the section
-    // resets already rely on, so no manual UI refresh is needed here.
+    // Each reset goes through the descriptor's setter; the model's PropertyChanged
+    // then re-syncs the controls through RefreshAll, so no manual refresh is needed.
     public void ResetAll()
     {
         foreach (Action reset in _resetActions) reset();
     }
 
-    // Dictated dirtiness equality: doubles compare with the slider/readout tolerance
-    // (a difference beyond 1e-9 is a real edit, anything finer is float dust and
-    // counts as equal); everything else is plain value-equality. "Dirty" is the
-    // negation — NOT equal. Mirrors TunableRow's reset tolerance and the composer's
-    // own FormatValue rounding, so what the eye reads as "default" is what this
-    // calls clean.
+    // Doubles compare within 1e-9: anything finer is float dust, not an edit, so a
+    // value the eye reads as default counts as clean. Everything else is plain
+    // value equality.
     private static bool DefaultEquals(object? a, object? b)
     {
         if (a is double da && b is double db)
@@ -166,14 +135,8 @@ public sealed partial class SettingsComposer
         return Equals(a, b);
     }
 
-    // Dispatches a descriptor to its element: a Group becomes a SettingsExpander
-    // (master toggle + children), a Section the same expander minus the master
-    // toggle (header + chevron grouping only), every leaf kind a SettingsCard. All
-    // derive from Control, so the host panel holds them side by side. A leaf that
-    // carries an Advisory is wrapped so its contextual message hangs beneath the
-    // card; a Group or Section never carries one at its own level (the capability
-    // lives on leaves only — but a child leaf inside a fold can, see
-    // AddChildToExpander).
+    // A leaf with an advisory is wrapped so the message hangs beneath the card; a
+    // fold child gets its advisory through AddChildToExpander instead.
     private FrameworkElement BuildElement(SettingDescriptor s)
     {
         if (s.Kind == SettingKind.Group) return BuildGroup(s);
@@ -215,28 +178,14 @@ public sealed partial class SettingsComposer
 
     // ── Inline advisory ──────────────────────────────────────────────────────
     //
-    // Wraps a fully-wired card with a sibling InfoBar carrying the descriptor's
-    // contextual message — a single channel (no warning/error split: the wording
-    // carries the tone), rendered SHARED here rather than per-kind so every leaf
-    // gets it the same way. The card keeps every bit of its existing wiring (reset,
-    // reactive state, value sync) untouched; the advisory is a frère element added
-    // below it, never a replacement.
-    //
-    // The InfoBar opens with text when Advisory() returns non-null and closes when
-    // it returns null, re-evaluated on every refresh exactly like EnabledWhen/
-    // VisibleWhen — its refresher is appended to _refreshers like the card's own.
-    //
-    // VisibleWhen already collapses the CARD (the kind's refresher calls
-    // ApplyReactiveState on it), but a collapsed card inside a visible container
-    // would leave the InfoBar and an empty slot showing. So this refresher mirrors
-    // the card's resolved Visibility onto the whole container — when the setting is
-    // hidden, its advisory is hidden with it, holding to "mask, never grey".
+    // Hangs an InfoBar under a fully wired card, re-evaluated on every refresh
+    // like EnabledWhen/VisibleWhen. VisibleWhen collapses only the card, so the
+    // refresher mirrors the card's Visibility onto the whole container: a hidden
+    // setting hides its advisory too.
     private FrameworkElement WrapWithAdvisory(SettingsCard card, SettingDescriptor s)
     {
-        // Severity.Warning is the single tone the channel renders; IsClosable=false
-        // because the message is a live state of the setting, not a notification the
-        // user dismisses; the title is left empty so the compact bar shows only the
-        // caller's one-line message.
+        // Not closable: the message is a live state of the setting, not a
+        // notification the user dismisses.
         var info = new InfoBar
         {
             Severity = InfoBarSeverity.Warning,
@@ -247,8 +196,6 @@ public sealed partial class SettingsComposer
         var container = new StackPanel
         {
             Orientation = Orientation.Vertical,
-            // A small gap so the bar reads as belonging to the card above it without
-            // crowding it — the same spacing the stacked settings sections use.
             Spacing = 4,
         };
         container.Children.Add(card);
@@ -267,8 +214,8 @@ public sealed partial class SettingsComposer
                 info.IsOpen = true;
             }
 
-            // Mirror the card's own resolved visibility onto the container so the
-            // advisory disappears with the card when VisibleWhen collapses it.
+            // The card's own refresher was registered before this one, so its
+            // Visibility is already current here.
             container.Visibility = card.Visibility;
         }
 

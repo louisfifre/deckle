@@ -7,10 +7,6 @@ namespace Deckle.Shell.Foreground;
 // detail line per foreground switch or fullscreen change. Location changes
 // themselves are never logged — they arrive at drag cadence and only the
 // rare publish they cause carries diagnostic value.
-//
-// Verbose/Info separation per the deckle-logging skill: an Info or a
-// Warning is a short Capital sentence with no IDs and no k=v; the technical
-// detail lives in a Verbose mirror that FOLLOWS it.
 [EventSource(Name = "Deckle-Foreground")]
 public sealed class DeckleShellForegroundSource : DeckleEventSource
 {

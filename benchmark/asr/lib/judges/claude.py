@@ -1,23 +1,12 @@
-"""Juge Claude via l'API Anthropic.
+"""Claude judge over the Anthropic API, on text only.
 
-Architecture en deux niveaux (cf. ``_base.Judge`` docstring) :
+``score_row()`` runs once per row on a light model and marks the system
+prompt ``cache_control: ephemeral``: every call of a run shares it, so only
+the short user part is paid in full. ``score_macro()`` runs once per run on
+a large model, over a curated summary and the examples the row judge picked.
 
-  - ``score_row()``   : juge un row, modèle léger (Haiku par défaut).
-    Cache le system prompt via ``cache_control: ephemeral`` — un run
-    de bench fait N appels avec le MÊME system, donc les tokens d'input
-    sont mis en cache après le 1er appel et le coût total est dominé
-    par les ~quelques centaines de tokens user variables.
-
-  - ``score_macro()`` : juge un agrégat de rows, modèle gros (Opus
-    par défaut). Reçoit un résumé curaté + exemples sélectionnés par
-    le juge per-row. Une seule fois en fin de run.
-
-Le SDK est importé en lazy à l'instanciation pour qu'un bench qui n'use
-pas Claude (ex. juge Ollama only) ne paie pas le coût d'import.
-
-Env requis :
-  - ``ANTHROPIC_API_KEY`` doit être set. Le SDK le lit automatiquement.
-    Loadé via ``lib.env.load_dotenv()`` à l'entrée du bench.
+The SDK is imported in the constructor, so a bench without Claude never
+pays the import.
 """
 
 from __future__ import annotations
@@ -32,16 +21,13 @@ from typing import Any
 from ._base import Judge, JudgeScore
 
 
-# Modèles par défaut — paramétrables au constructeur. Les noms exacts
-# dépendent du catalog Anthropic au moment du run ; voir
-# https://docs.anthropic.com/en/docs/about-claude/models pour la liste à jour.
+# Model ids follow Anthropic's catalog:
+# https://docs.anthropic.com/en/docs/about-claude/models
 DEFAULT_ROW_MODEL   = "claude-haiku-4-5"
 DEFAULT_MACRO_MODEL = "claude-opus-4-5"
 
 
 class ClaudeJudge(Judge):
-    """Juge Claude (per-row + macro)."""
-
     name = "claude"
     label = "Claude API (Anthropic)"
 
@@ -95,9 +81,8 @@ class ClaudeJudge(Judge):
         source_name:   str,
         audio_path:    Path | None = None,
     ) -> JudgeScore:
-        # ``audio_path`` ignoré : l'API Anthropic ne consomme pas l'audio
-        # en input, seul le texte est jugé. Argument accepté pour la
-        # symétrie multi-juge — voir _base.Judge.score_row.
+        # The Anthropic API takes no audio input, so only text is judged;
+        # the parameter keeps the shared Judge signature.
         del audio_path
         user_msg = _build_user_message_row(
             hypothesis=hypothesis,
@@ -201,13 +186,8 @@ def _build_user_message_row(
     regime_label: str,
     source_name:  str,
 ) -> str:
-    """Construit le message user pour un appel score_row.
-
-    Format choisi pour rester lisible si on inspecte le raw côté juge
-    (Anthropic console, replay manuel). Délimiteurs ``<<<TEXT>>>`` pour
-    que les transcriptions multi-lignes ne se mélangent pas avec la
-    structure du prompt.
-    """
+    """The ``<<<REF>>>`` and ``<<<HYP>>>`` delimiters keep a multi-line
+    transcript from blending into the prompt's structure."""
     parts = [
         f"Source       : {source_name}",
         f"Régime       : {regime_name} — {regime_label}",
@@ -232,12 +212,8 @@ def _build_user_message_macro(
     run_summary: dict[str, Any],
     examples:    list[dict[str, Any]],
 ) -> str:
-    """Construit le message user pour score_macro.
-
-    Format JSON pour le résumé (lisible et facile à parser côté juge),
-    Markdown pour les exemples (lisible humain). Le total reste court —
-    le but est qu'Opus puisse réfléchir longtemps sur peu de matière
-    bien sélectionnée, pas qu'il moule dans un dump de 50 rows."""
+    """Keep it short: the macro judge reasons better over a few chosen
+    examples than over a dump of every row."""
     summary_json = json.dumps(run_summary, ensure_ascii=False, indent=2)
     out = [
         "RÉSUMÉ DU RUN (stats agrégées) :",
@@ -270,21 +246,15 @@ _JSON_OBJ_RE = re.compile(r"\{[\s\S]*\}", re.DOTALL)
 
 
 def _parse_judge_json(raw: str) -> dict[str, Any]:
-    """Parse la réponse JSON du juge. Robust à un éventuel wrapping en
-    ```json ... ``` ou à du texte avant/après l'objet. Retourne :
-
-      { "axes": {...}, "verdict": str, "parse_ok": bool }
-    """
-    # 1. Bloc markdown ```json ... ```
+    """The model may wrap the object in a ```json fence or surround it
+    with prose."""
     m = _JSON_BLOCK_RE.search(raw)
     candidate = m.group(1) if m else None
 
-    # 2. À défaut, premier {...} dans le texte
     if not candidate:
         m2 = _JSON_OBJ_RE.search(raw)
         candidate = m2.group(0) if m2 else None
 
-    # 3. Direct parse en dernier
     if not candidate:
         candidate = raw.strip()
 
@@ -292,8 +262,8 @@ def _parse_judge_json(raw: str) -> dict[str, Any]:
         obj = json.loads(candidate)
         if not isinstance(obj, dict):
             return {"axes": {}, "verdict": "", "parse_ok": False}
-        # Convention : tous les champs sauf 'verdict' / 'verdict_court' /
-        # 'commentaire' sont des axes. Plus tolérant qu'un schéma fermé.
+        # Every key that is not a verdict is an axis, so a prompt can add
+        # axes without a code change.
         verdict_keys = {"verdict", "verdict_court", "commentaire", "comment"}
         axes = {k: v for k, v in obj.items() if k not in verdict_keys}
         verdict = ""
@@ -307,7 +277,6 @@ def _parse_judge_json(raw: str) -> dict[str, Any]:
 
 
 def _extract_usage(message: Any) -> dict[str, int]:
-    """Extrait le compte de tokens d'une réponse Anthropic. Optionnel."""
     try:
         u = message.usage
         return {

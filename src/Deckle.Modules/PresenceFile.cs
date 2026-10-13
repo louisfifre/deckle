@@ -11,11 +11,10 @@ namespace Deckle.Modules;
 //
 // Shape: { "version": 1, "present": ["ambient", "transcription"] }.
 //
-// A missing file reads as null — "no choice recorded", which callers interpret
-// as everything present (the state of every install that predates the presence
-// model, and of every dev build). A corrupt file also reads as null, after a
-// warning: falling back to all-present degrades to today's behaviour instead of
-// making modules vanish on a bad byte.
+// A missing file reads as null, "no choice recorded", which callers interpret
+// as everything present (older installs, dev builds). A corrupt file also reads
+// as null, after a warning: falling back to all-present beats making modules
+// vanish on a bad byte.
 public static class PresenceFile
 {
     private const int CurrentVersion = 1;
@@ -28,7 +27,6 @@ public static class PresenceFile
         WriteIndented = true,
     };
 
-    // The recorded choice, or null when no valid choice is on disk.
     public static IReadOnlySet<string>? LoadFrom(string path)
     {
         if (!File.Exists(path)) return null;
@@ -46,8 +44,7 @@ public static class PresenceFile
         }
     }
 
-    // Records the choice atomically (write-then-rename), creating the parent
-    // folder on first save.
+    // Write-then-rename, so a crash never leaves a half-written choice.
     public static void SaveTo(string path, IReadOnlyCollection<string> present)
     {
         string json = JsonSerializer.Serialize(

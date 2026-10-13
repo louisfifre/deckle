@@ -5,8 +5,7 @@ namespace Deckle.Vad;
 
 // EventSource provider for the VAD module — the external speech-activity detector
 // that trims each streaming utterance to its speech and drops a no-speech one.
-// These events used to ride the Whisp provider; they live here now that the VAD is
-// its own module. Same Pipeline keyword as the rest of the staged pipeline.
+// Same Pipeline keyword as the rest of the staged pipeline.
 [EventSource(Name = "Deckle-Vad")]
 public sealed class DeckleVadSource : DeckleEventSource
 {
@@ -19,9 +18,7 @@ public sealed class DeckleVadSource : DeckleEventSource
             || OperationalLogAdmission.AllowsScopedDetail(OperationalLogActivity.Transcription))
         && base.IsEnabled(level, keywords);
 
-    // ── EventIds: sequential from 1, never reused ───────────────────────
-    // Milestones keep their original id; the Verbose mirrors added for the
-    // Verbose/Info separation take fresh ids 9-12 at the end of the sequence.
+    // EventIds: sequential from 1, never reused; a new event takes the next id.
     public const int EvtSpeechTrimmed                       = 1;
     public const int EvtUtteranceDroppedNoSpeech            = 2;
     public const int EvtSpeechTrimVadLoaded                 = 3;
@@ -45,8 +42,8 @@ public sealed class DeckleVadSource : DeckleEventSource
         if (IsEnabled()) WriteEvent(EvtSpeechTrimmed, utterance_index, in_samples, out_samples, speech_segments, trim_ms);
     }
 
-    // Per-take config line — verbose precedes the trim activity so a reread of the
-    // log never has to wonder which threshold or duration was active for the take.
+    // Logged before the trim activity, so a reread of the log shows which
+    // threshold and durations were active for the take.
     [Event(EvtSpeechTrimSettingsSnapshot,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Pipeline,
@@ -84,11 +81,8 @@ public sealed class DeckleVadSource : DeckleEventSource
     }
 
     // Wall-clock for the VAD load: SHA-256 verify + ONNX session construction,
-    // measured together in VadService. Mirrors whisper's ModelLoadComplete
-    // (load_ms on a dedicated Verbose *Complete event), with the canonical ms
-    // unit. A fresh event rather than a new arg on SpeechTrimVadLoadedDetail —
-    // that event's signature is frozen, and whisper carries the number on its
-    // own *Complete event, not on *Detail.
+    // measured together in VadService. A separate event because
+    // SpeechTrimVadLoadedDetail's signature is frozen.
     [Event(EvtSpeechTrimVadLoadComplete,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Pipeline,

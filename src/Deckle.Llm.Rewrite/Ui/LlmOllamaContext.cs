@@ -6,16 +6,10 @@ namespace Deckle.Llm.Rewrite;
 
 // ─── Shared Ollama state across LlmPage subsections ─────────────────────────
 //
-// Instantiated by the host (LlmPage), filled by RefreshOllamaStateAsync, passed
-// to dependent sections (Profiles, Models) through Initialize().
-//
-// Sections subscribe to StateChanged to rebuild when model list or availability
-// changes. Sections that do not depend on Ollama (General, ManualShortcut,
-// shortcut slots) do not touch the context.
-//
-// This context is NOT a ViewModel: it does not observe properties and does not
-// notify field-by-field. It only shares runtime state (service, models,
-// availability) and coordinates refreshes through a single coarse event.
+// Filled by LlmPage.RefreshOllamaStateAsync and handed to the Models section
+// through Initialize(). Not a ViewModel: it does not notify field by field. It
+// shares runtime state (service, models, availability) and signals a refresh
+// through a single coarse event.
 
 internal sealed class LlmOllamaContext
 {

@@ -42,7 +42,6 @@ public sealed partial class SettingsWindow
     private enum SearchPresentation { Inline, Icon, Overlay }
     private SearchPresentation _searchPresentation = SearchPresentation.Inline;
 
-    // Rebuilt (created lazily) on first keystroke; a single dedicated debounce timer.
     private DispatcherQueueTimer? _searchDebounce;
 
     // Debounce window before a query runs: long enough to skip mid-word passes,
@@ -204,7 +203,6 @@ public sealed partial class SettingsWindow
             _searchDebounce.IsRepeating = false;
             _searchDebounce.Tick += (_, _) => RunSearch();
         }
-        // Restart the window on every keystroke; IsRepeating=false self-stops on Tick.
         _searchDebounce.Stop();
         _searchDebounce.Start();
     }
@@ -300,8 +298,6 @@ public sealed partial class SettingsWindow
 
     private void OnSearchQuerySubmitted(AutoSuggestBox sender, AutoSuggestBoxQuerySubmittedEventArgs args)
     {
-        // Only a chosen hit navigates. Enter with no selection is a no-op by spec
-        // (no standalone results page), and the notice rows navigate nowhere.
         if (args.ChosenSuggestion is SettingSuggestionHit hit)
             NavigateToHit(hit);
     }
@@ -336,7 +332,7 @@ public sealed partial class SettingsWindow
         {
             // Cached page already in the tree (NavigationCacheMode.Required, or already
             // the current page): one dispatcher tick lets any pending layout settle
-            // before the scroll. TryEnqueueObserved, not a bare TryEnqueue, per repo rule.
+            // before the scroll.
             DispatcherQueue.TryEnqueueObserved(
                 operation: "ui-update", caller: "settings-search-scroll",
                 callback: () => ScrollToCard(page, hit.CardTag),
@@ -387,9 +383,8 @@ public sealed partial class SettingsWindow
         return null;
     }
 
-    // Generalises FindVisualDescendantByName (matched on Name) to match on Tag — the
-    // identity the composer stamps onto each built card, and the handle a search hit
-    // carries. Returns the first FrameworkElement whose Tag string equals the target.
+    // Matches on Tag: the identity the composer stamps onto each built card, and the
+    // handle a search hit carries.
     private static FrameworkElement? FindVisualDescendantByTag(DependencyObject root, string tag)
     {
         int count = VisualTreeHelper.GetChildrenCount(root);

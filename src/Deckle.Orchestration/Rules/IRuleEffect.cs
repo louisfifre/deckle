@@ -1,8 +1,8 @@
 namespace Deckle.Orchestration;
 
-// One kind of change Deckle makes while a listed app runs (HDR per monitor
-// today; autocorrect or Ambient later). ProfileTransaction applies every
-// effect at session start and keeps the restore actions they return.
+// One kind of change Deckle makes while a listed app runs. ProfileTransaction
+// applies every effect at session start and keeps the restore actions they
+// return.
 //
 // An effect owns its own state only: it never writes another module's
 // settings, it changes the live system and gives back the way to undo it.

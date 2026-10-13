@@ -219,9 +219,9 @@ public sealed class DeckleOrchestrationSource : DeckleEventSource
         if (IsEnabled()) WriteEvent(EvtProcessTraceStopFailed, error_type, message);
     }
 
-    // OpenProcess(SYNCHRONIZE) was refused (protected process) or the process
-    // was already gone. Emitted once per process lifetime; the Verbose mirror
-    // follows each refusal with the pid and the Win32 error.
+    // OpenProcess(SYNCHRONIZE) was refused (protected process). Emitted once
+    // per process lifetime; the Verbose mirror follows each refusal with the
+    // pid and the Win32 error.
     [Event(EvtExitWatchUnavailable,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Lifecycle,

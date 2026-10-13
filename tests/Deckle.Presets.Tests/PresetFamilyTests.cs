@@ -7,9 +7,9 @@ namespace Deckle.Presets.Tests;
 
 // Behaviour tests for a preset family against a store it does not own. The
 // store is a plain object implementing IPresetStore, the way a module hands
-// over its settings POCO. The contract under test is Louis's rule: a hand
-// edit switches to Custom and keeps the values, a preset writes its values,
-// Custom brings the kept values back.
+// over its settings POCO. The contract under test: a hand edit switches to
+// Custom and keeps the values, a preset writes its values, Custom brings the
+// kept values back.
 [Trait("Category", "unit")]
 public class PresetFamilyTests
 {

@@ -53,7 +53,7 @@ public class MistouchMinerTests
     [Theory]
     [InlineData("ecole", "école")]   // diacritics — the restorer's domain
     [InlineData("chien", "cheval")]  // rewording — wider than one edit
-    [InlineData("mot", "mot")]       // no edit at all
+    [InlineData("mot", "mot")]
     public void RefusesWhatIsNotOneMechanicalEdit(string from, string to)
     {
         Assert.Null(MistouchMiner.ClassifySingleEdit(from, to));

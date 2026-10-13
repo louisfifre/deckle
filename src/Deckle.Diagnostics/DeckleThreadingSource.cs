@@ -3,31 +3,18 @@ using System.Diagnostics.Tracing;
 namespace Deckle.Diagnostics;
 
 // Cross-cutting sub-provider: significant dispatcher marshalling
-// (`DispatcherQueue.TryEnqueue`) to the UI thread. Without this cross-cutting
-// event, a UI deadlock or abnormal marshalling latency can at best be guessed
-// through indirect correlation with business milestones; a site whose enqueue
+// (`DispatcherQueue.TryEnqueue`) to the UI thread. Without this event, a UI
+// deadlock or abnormal marshalling latency can at best be guessed through
+// indirect correlation with business milestones; a site whose enqueue
 // silently fails (queue already closed) also has no systematic trace. The
 // primitive is strictly non-business (platform wiring on the
 // `Microsoft.UI.Dispatching` side) and consumed by several modules with
-// exactly the same parameter set: promotion to cross-cutting sub-provider
-// under the two-clause criterion in `reference--eventsource-convention--1.2.md`
-// §*Cross-cutting sub-providers*.
+// exactly the same parameter set.
 //
-// Also inherits the historical `DispatcherEnqueueRejected` event migrated from
-// `DeckleShellSource`: the event did not describe a shell operation, it
-// described a dispatcher rejection cross-cutting every module that marshals to
-// the UI thread. Its natural place is here, next to the
-// `MarshalQueued` / `MarshalCompleted` trunk.
-//
-// "Common trunk + specialized events" pattern (see 1.2 §*Convention*).
-// `MarshalQueued` + `MarshalCompleted` are the trunk emitted by every
-// significant site around a `TryEnqueue`. `MarshalTimeout` is the specialized
-// event for the abnormal case where the callback never ran within a bounded
-// delay: no site is actively wired in this pass; it is declared to freeze the
-// signature before detection is added. `DispatcherEnqueueRejected` is the
-// specialized event for the case where `TryEnqueue` returns false (queue shut
-// down): the event already existed in legacy under `DeckleShellSource`, simply
-// repositioned here.
+// `MarshalQueued` + `MarshalCompleted` are the common trunk emitted around a
+// `TryEnqueue` by `DispatcherQueueExtensions.TryEnqueueObserved`;
+// `MarshalTimeout` and `DispatcherEnqueueRejected` specialize the abnormal
+// cases.
 //
 // Closed `operation` vocabulary (extend here if a new significant site emerges;
 // no ad hoc operation on the call-site side):
@@ -43,25 +30,14 @@ namespace Deckle.Diagnostics;
 //                         (Settings/Playground page pattern)
 //   "engine-state-sync" — UI synchronization after an engine event (pipeline
 //                         state, recording transition, screen capture stop)
-//   "warm-pass-tail"    — reserved legacy operation from the former HUD
-//                         composition warm pass. Do not reuse for a different
-//                         scheduling pattern.
 //
-// `caller` convention: short name of the logical site
-// ("transcription-engine", "ambient-pipeline", "hue-driver", "hud-window",
-// "log-window", "settings-window", etc.). Differentiates two marshallings of
-// the same `operation` on distinct sites without inflating the schema.
+// `caller` convention: short name of the logical site ("hud-window",
+// "log-window", "overlay-manager", "ambient-page", etc.). Differentiates two
+// marshallings of the same `operation` on distinct sites without inflating
+// the schema.
 //
-// `queue_depth` convention: approximation of queue depth at `TryEnqueue` time.
-// `DispatcherQueue` exposes no public getter; when not measurable, pass `-1`
-// as the "unknown" sentinel.
-//
-// `wait_ms` / `run_ms` convention:
-//   - `wait_ms` measures the time between the `TryEnqueue` call (Stopwatch
-//     started just before) and callback execution start (Stopwatch read at the
-//     beginning of the callback).
-//   - `run_ms` measures callback execution time (Stopwatch restarted at the
-//     beginning of the callback and read at the end).
+// `queue_depth`: `DispatcherQueue` exposes no depth getter, so `-1` stands
+// for "unknown".
 [EventSource(Name = "Deckle-Threading")]
 public sealed class DeckleThreadingSource : DeckleEventSource
 {
@@ -74,14 +50,11 @@ public sealed class DeckleThreadingSource : DeckleEventSource
     public const int EvtMarshalCompleted                   = 2;
     public const int EvtMarshalTimeout                     = 3;
     public const int EvtDispatcherEnqueueRejected          = 4;
-    // Verbose mirrors appended for the Verbose/Info separation (ids 5-6).
     public const int EvtMarshalTimeoutDetail               = 5;
     public const int EvtDispatcherEnqueueRejectedDetail    = 6;
 
-    // Trunk: emitted just before `TryEnqueue` on the caller-site side. Verbose
-    // because marshalling is frequent by nature (a typical user Stop chains
-    // several marshals per engine state) and grep-ability goes through typed
-    // parameters rather than level.
+    // Trunk: emitted just before `TryEnqueue`. Verbose because one user Stop
+    // chains several marshals per engine state.
     [Event(EvtMarshalQueued,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Threading,
@@ -107,12 +80,9 @@ public sealed class DeckleThreadingSource : DeckleEventSource
         WriteEvent(EvtMarshalCompleted, operation, caller, wait_ms, run_ms);
     }
 
-    // Specialized: abnormal case where the callback never ran within a
-    // bounded delay (the marshal remained queued longer than an app threshold).
-    // Warning because this is an anomaly that deserves surfacing even when
-    // Verbose is not listened to. No active site today; declared to freeze the
-    // signature before detection (dedicated timer, per-operation watchdog) is
-    // wired.
+    // Specialized: the callback stayed queued longer than an app threshold.
+    // Warning so it surfaces even when Verbose is not listened to. No emitter
+    // yet: declared to freeze the signature before detection is wired.
     [Event(EvtMarshalTimeout,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Threading,
@@ -133,14 +103,10 @@ public sealed class DeckleThreadingSource : DeckleEventSource
         WriteEvent(EvtMarshalTimeoutDetail, operation, caller, waited_ms);
     }
 
-    // Specialized: `TryEnqueue` returned false (queue shut down). Migrated from
-    // `DeckleShellSource.DispatcherEnqueueRejected` (event id 15 in legacy
-    // Shell). The detail (`caller_source`, `reason`) moves to the Verbose mirror
-    // `DispatcherEnqueueRejectedDetail` (id 6) per the Verbose/Info separation.
-    // `caller_source` is the free label propagated by
-    // `DispatcherQueueExtensions.TryEnqueueOrLog` (e.g. "HUD", "LOGWIN"),
-    // `reason` describes the cause or context of the lost enqueue (e.g.
-    // "queue-rejected", short description of the event being marshalled).
+    // Specialized: `TryEnqueue` returned false (queue shut down). In the
+    // Verbose mirror, `caller_source` is the free label passed to
+    // `DispatcherQueueExtensions.TryEnqueueOrLog` (e.g. "HUD", "LOGWIN") and
+    // `reason` describes the lost enqueue.
     [Event(EvtDispatcherEnqueueRejected,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Threading,

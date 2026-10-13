@@ -34,8 +34,6 @@ public enum WheelInputState
     XButton2 = 1 << 7,
 }
 
-// Which wheel a MouseWheelEvent rode: Vertical is the common scroll wheel
-// (RI_MOUSE_WHEEL), Horizontal the tilt/side wheel (RI_MOUSE_HWHEEL).
 public enum WheelAxis
 {
     Vertical,

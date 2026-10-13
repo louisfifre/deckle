@@ -25,7 +25,6 @@ public class AccentIndexTests
     [Fact]
     public void VariantsAreSortedByFrequencyDescending()
     {
-        // Two forms fold to "eleve" — the more frequent must come first.
         var index = Build("élève\t30\nélevé\t25\n");
 
         var eleve = index.VariantsOf("eleve");
@@ -58,7 +57,6 @@ public class AccentIndexTests
     {
         var index = Build("école\t200\nélève\t30\nélevé\t25\n");
 
-        // "ecole" and "eleve" — two keys, even though three forms.
         Assert.Equal(2, index.Count);
     }
 }

@@ -20,14 +20,13 @@ public sealed partial class AppEntryRow : ObservableObject
     private Dictionary<string, HdrRule> _hdrRules = new(StringComparer.OrdinalIgnoreCase);
 
     // Set while the row is filled from the stored entry, so hydration is not
-    // mistaken for a user change (same guard as AutocorrectAppRow).
+    // mistaken for a user change.
     private bool _syncing;
 
     public string Id { get; }
 
     public string DisplayName { get; }
 
-    // Expander description: where the app lives.
     [ObservableProperty]
     public partial string? Description { get; set; }
 
@@ -45,7 +44,7 @@ public sealed partial class AppEntryRow : ObservableObject
     public partial string Glyph { get; set; } = Glyphs.Window;
 
     // The cards inside the expander: kind, executable, then one per
-    // HDR-capable monitor. No monitor card when no monitor supports HDR.
+    // HDR-capable monitor.
     public ObservableCollection<object> Items { get; } = new();
 
     public AppEntryRow(

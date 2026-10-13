@@ -5,27 +5,9 @@ using Deckle.Core;
 
 namespace Deckle.Diagnostics.Telemetry;
 
-// ── TelemetrySettingsService ────────────────────────────────────────────────
-//
-// Module-local persistence for TelemetrySettings. Successor of the legacy
-// Deckle.Logging.TelemetrySettingsService removed in sub-wave 6g: same
-// JsonSettingsStore<T>, same lazy singleton, and above all the same on-disk
-// path (<UserDataRoot>/modules/telemetry/settings.json) to preserve existing
-// user settings through the switch.
-//
-// Consumers: DiagnosticsViewModel (UI read/write), App boot wiring
-// (CorpusPaths.ConfigureStorageDirectoryOverride +
-// TelemetryListenerBootstrap.ConfigureGates), AppTranscriptionEngineHost
-// (read by the transcription pipeline).
-//
-// Internal store logs. JsonSettingsStore<T> receives its log callbacks through
-// lambdas to stay decoupled from the observability pipeline. Callbacks are null
-// in 6g: the store stays silent; critical load errors become a reset to
-// defaults. Lack of I/O logging is acceptable while access frequency stays low
-// (read per tick on the listener side, rare writes triggered by UI toggles).
-// Wiring an EventSource provider would require either a dedicated module or
-// reusing the Settings provider through cross-module wiring without a
-// dependency cycle; not urgent.
+// Module-local persistence for TelemetrySettings. The on-disk path
+// (<UserDataRoot>/modules/telemetry/settings.json) is where existing user
+// settings live; changing it loses them.
 public sealed class TelemetrySettingsService
 {
     private static readonly Lazy<TelemetrySettingsService> _instance =
@@ -56,8 +38,8 @@ public sealed class TelemetrySettingsService
             AppPaths.UserDataRoot, "modules", "telemetry", "settings.json");
         Directory.CreateDirectory(System.IO.Path.GetDirectoryName(path)!);
 
-        // Log callbacks deliberately unwired (see header comment). The store
-        // stays silent; critical load errors become a reset to defaults.
+        // Log callbacks left unwired: the store is silent, and a load error
+        // resets to defaults without a trace.
         _store = new JsonSettingsStore<TelemetrySettings>(
             path:        path,
             mutexName:   $"{AppPaths.AppFolderName}-Settings-DiagnosticsTelemetry-Save",

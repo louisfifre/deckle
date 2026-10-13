@@ -4,9 +4,9 @@ using Xunit;
 namespace Deckle.Llm.Rewrite.Tests;
 
 // Unit tests of the diff gate's contract: three rules under strictly
-// monotone order, all-or-nothing. The framing examples of 2026-07-19 are
-// pinned as-is ("samarreter" passes, "voiture" → "véhicule" blocks) — they
-// are the contract, not an illustration of it.
+// monotone order, all-or-nothing. The framing examples are pinned as-is
+// ("samarreter" passes, "voiture" → "véhicule" blocks): they are the
+// contract, not an illustration of it.
 [Trait("Category", "unit")]
 public class RewriteDiffGateTests
 {
@@ -150,8 +150,8 @@ public class RewriteDiffGateTests
     [Fact]
     public void FrancizationOfATechnicalTermIsRejected()
     {
-        // Measured false accept on the 2026-07-19 eval at the 34 % bound:
-        // "gate" → "gâteau" is a vocabulary corruption, not a form repair.
+        // "gate" → "gâteau" is a vocabulary corruption, not a form repair; a
+        // 34 % bound would let it through.
         var verdict = RewriteDiffGate.Evaluate(
             "le gate rejette tout",
             "le gâteau rejette tout");
@@ -162,10 +162,9 @@ public class RewriteDiffGateTests
     [Fact]
     public void GroupDilutionCannotHideASubstitution()
     {
-        // Measured false accept on the 2026-07-19 eval: grouped as one
-        // 2→2 replacement, the identical "lisible" diluted the concatenated
-        // form distance and let "pas" → "peu" through. A word that survives
-        // verbatim must be matched, never grouped.
+        // Grouped as one 2→2 replacement, the identical "lisible" would dilute
+        // the concatenated form distance and let "pas" → "peu" through. A
+        // word that survives verbatim must be matched, never grouped.
         var verdict = RewriteDiffGate.Evaluate(
             "cest pas lisible",
             "c'est peu lisible");
@@ -176,9 +175,8 @@ public class RewriteDiffGateTests
     [Fact]
     public void MarkdownFormattingInsertionIsRejected()
     {
-        // Measured false accept on the 2026-07-19 eval: models decorate
-        // offers with markdown bold; formatting characters are not
-        // punctuation to this gate.
+        // Models decorate offers with markdown bold; formatting characters
+        // are not punctuation to this gate.
         var verdict = RewriteDiffGate.Evaluate(
             "le total fait 54",
             "le total fait **54**");
@@ -215,7 +213,7 @@ public class RewriteDiffGateTests
     {
         // Every other edit is impeccable — filler dropped, capitalization,
         // final period. The single substitution still kills the offer:
-        // all-or-nothing, no per-edit filtering in V1.
+        // all-or-nothing, no per-edit filtering.
         var verdict = RewriteDiffGate.Evaluate(
             "euh je pense que ma voiture est rouge",
             "Je pense que ma véhicule est rouge.");

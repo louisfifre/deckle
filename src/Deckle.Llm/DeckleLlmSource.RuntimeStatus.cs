@@ -28,9 +28,6 @@ public sealed partial class DeckleLlmSource
             WriteEvent(EvtPsProbeUnreachableDetail, http_status);
     }
 
-    // Constant hint (no resident model, request may be stuck) lived in the old
-    // k=v message; the method takes no args, so the milestone carries no detail
-    // and no Verbose mirror is needed.
     [Event(EvtPsProbeEmpty,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Heartbeat,

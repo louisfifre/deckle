@@ -53,8 +53,8 @@ public sealed class AmbientPresetsTests
     [Fact]
     public void NoPresetTouchesTheBrightnessFloor()
     {
-        // The floor is a room choice, outside the presets by decision
-        // (2026-10-12): applying any preset leaves it where the user put it.
+        // The floor is a room choice, outside the presets: applying any
+        // preset leaves it where the user put it.
         foreach (var preset in AmbientPresets.All)
         {
             var settings = new AmbientSettings { MinBrightnessEnabled = false, MinBrightness = 12 };
@@ -118,8 +118,8 @@ public sealed class AmbientPresetsTests
     [Fact]
     public void AFileWithTheRetiredIntegerModeStillLoads()
     {
-        // Files from before 2026-10-12 stored "mode" as an integer. It is
-        // ignored; the values decide the selection.
+        // Older files store "mode" as an integer. It is ignored; the values
+        // decide the selection.
         var options = new JsonSerializerOptions
         {
             PropertyNamingPolicy = JsonNamingPolicy.CamelCase,

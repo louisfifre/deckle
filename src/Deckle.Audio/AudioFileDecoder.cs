@@ -15,17 +15,10 @@ namespace Deckle.Audio;
 // source reader auto-inserts the decoder, the resampler, and the channel
 // down-mix to satisfy it, so any container/codec Windows can play — mp3, m4a,
 // wav, flac, ogg, wma, … — reaches us already conditioned. We add no DSP here.
-//
-// Decode is stateless and thread-agnostic, but must run OFF the UI thread: it
-// initializes COM as MTA and blocks draining the whole file. A bad file is a
-// status, never an exception — only a caller programming error (an STA thread)
-// throws.
 public sealed class AudioFileDecoder
 {
-    // The fixed transcription format. Kept in lock-step with MicrophoneCapture's
-    // capture format (16 kHz mono) so both producers hand the pipeline the same
-    // shape; float/32-bit is Media Foundation's uncompressed representation,
-    // converted to [-1, 1] amplitude with no further scaling.
+    // Kept in lock-step with MicrophoneCapture's 16 kHz mono format. 32-bit
+    // float is Media Foundation's uncompressed representation, already in [-1, 1].
     private const int TargetSampleRate    = 16000;
     private const uint TargetChannels     = 1;
     private const uint TargetBitsPerSample = 32;
@@ -75,9 +68,8 @@ public sealed class AudioFileDecoder
 
         try
         {
-            // MFStartup … MFShutdown balanced 1:1 per decode. A startup failure is
-            // environmental (Media Foundation missing / safe mode), mapped to a
-            // read error.
+            // A startup failure is environmental (Media Foundation missing, safe
+            // mode), mapped to a read error.
             int mfHr = MediaFoundationInterop.MFStartup(
                 MediaFoundationInterop.MF_VERSION, MediaFoundationInterop.MFSTARTUP_FULL);
             if (mfHr < 0)

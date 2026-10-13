@@ -33,7 +33,6 @@ public class PairModelTrainerTests
     [Fact]
     public void CountsBareFormPerPreviousWord()
     {
-        // "a" follows "il" in two distinct sentences.
         var model = Train(new TrainerOptions { MinPairCount = 1 });
 
         Assert.Equal(2L, model.Bigram("a", "a", "il"));
@@ -42,7 +41,6 @@ public class PairModelTrainerTests
     [Fact]
     public void CountsAccentedFormPerPreviousWord()
     {
-        // "à" follows "va" in two distinct sentences.
         var model = Train(new TrainerOptions { MinPairCount = 1 });
 
         Assert.Equal(2L, model.Bigram("a", "à", "va"));
@@ -53,7 +51,6 @@ public class PairModelTrainerTests
     {
         var model = Train(new TrainerOptions { MinPairCount = 1 });
 
-        // Each variant occurs twice overall — the "" row is the per-slot total.
         Assert.Equal(2L, model.Unigram("a", "a"));
         Assert.Equal(2L, model.Unigram("a", "à"));
     }
@@ -74,8 +71,6 @@ public class PairModelTrainerTests
     {
         var model = Train(new TrainerOptions { MinPairCount = 1 });
 
-        // "il", "va", "chat"… fold to themselves and are not ambiguous slots:
-        // the only folded key in the model is "a".
         Assert.Equal(1, model.SlotCount);
     }
 
@@ -102,7 +97,6 @@ public class PairModelTrainerTests
         Assert.Equal(4L, model.Report.Sentences);
         // 15 word tokens: il a un chat / elle va à paris / il a faim / on va à lyon.
         Assert.Equal(15L, model.Report.Tokens);
-        // The a/à slot fires four times (two "a", two "à").
         Assert.Equal(4L, model.Report.AmbiguousSlotOccurrences);
     }
 
@@ -139,7 +133,7 @@ public class PairModelTrainerTests
 
         Assert.Equal(5L, model.Bigram("a", "à", "x"));
         Assert.Equal(4L, model.Bigram("a", "à", "y"));
-        Assert.Equal(0L, model.Bigram("a", "à", "z")); // the tail, pruned.
+        Assert.Equal(0L, model.Bigram("a", "à", "z"));
         Assert.Equal(12L, model.Unigram("a", "à"));      // the total is intact.
     }
 
@@ -153,16 +147,14 @@ public class PairModelTrainerTests
         var model = PairModelTrainer.Train(
             new StringReader(corpus), french, index, new TrainerOptions { MinPairCount = 1 });
 
-        Assert.Equal(2L, model.Bigram("a", "à", "ne va")); // the trigram row
-        Assert.Equal(2L, model.Bigram("a", "à", "va"));    // the bigram is still there
-        Assert.Equal(2L, model.Unigram("a", "à"));         // the unigram total is intact
+        Assert.Equal(2L, model.Bigram("a", "à", "ne va"));
+        Assert.Equal(2L, model.Bigram("a", "à", "va"));
+        Assert.Equal(2L, model.Unigram("a", "à"));
     }
 
     [Fact]
     public void MaxOrderTwoEmitsNoTrigramRows()
     {
-        // Capping the trainer at order 2 reproduces the bigram model: the
-        // "ne va" trigram is never counted, the bigram is unchanged.
         const string corpus = "il ne va à paris. il ne va à lyon.";
         var (french, index) = Lexicon();
         var model = PairModelTrainer.Train(

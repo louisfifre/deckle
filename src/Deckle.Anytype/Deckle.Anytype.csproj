@@ -11,9 +11,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <!-- The backend task XML document (BackendTaskDocument) is an internal
-         composition detail, but its shape is the load-bearing contract of the
-         lifecycle design — kept unit-testable without widening the public API. -->
     <InternalsVisibleTo Include="Deckle.Anytype.Tests" />
   </ItemGroup>
 

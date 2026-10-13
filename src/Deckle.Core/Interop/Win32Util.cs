@@ -6,7 +6,7 @@ namespace Deckle.Core;
 // ─── Win32 Helpers For Debugging ─────────────────────────────────────────────
 //
 // DescribeHwnd: produces a readable "Exe / Title / focus=Class" string to
-// characterize a window. Used to diagnose focus / paste losses.
+// diagnose focus / paste losses.
 
 public static class Win32Util
 {
@@ -16,13 +16,11 @@ public static class Win32Util
 
         try
         {
-            // Exe via PID
             uint pid;
             uint tid = NativeMethods.GetWindowThreadProcessId(hwnd, out pid);
             string exe = "?";
             try { exe = Process.GetProcessById((int)pid).ProcessName; } catch { }
 
-            // Window title
             int len = NativeMethods.GetWindowTextLength(hwnd);
             string title = "";
             if (len > 0)
@@ -32,7 +30,6 @@ public static class Win32Util
                 title = sb.ToString();
             }
 
-            // Focused control in the target thread
             string focus = "?";
             var gti = new NativeMethods.GUITHREADINFO { cbSize = System.Runtime.InteropServices.Marshal.SizeOf<NativeMethods.GUITHREADINFO>() };
             if (NativeMethods.GetGUIThreadInfo(tid, ref gti))
@@ -55,8 +52,6 @@ public static class Win32Util
         }
     }
 
-    // Process name for an HWND — just the exe, no title, no focus probe.
-    // Used by the user-facing narrative log to name the target app of a paste.
     public static string GetExeName(IntPtr hwnd)
     {
         if (hwnd == IntPtr.Zero) return "(unknown)";

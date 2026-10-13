@@ -4,7 +4,7 @@ namespace Deckle.Audio;
 
 // ── TranscriptionPreprocessor ──────────────────────────────────────────────
 //
-// The transcription pre-processing DSP stage (CONTEXT.md). A pure, terminal
+// The transcription pre-processing DSP stage. A pure, terminal
 // float[] → float[] transform sitting between microphone capture and the ASR
 // backend, with the sole purpose of maximising machine intelligibility — not
 // listening quality. It does NOT touch how the buffer is windowed for the
@@ -17,8 +17,7 @@ namespace Deckle.Audio;
 // adaptive AGC (which pumps, has transients, and is hard to test). Instead:
 // pass 1 runs the dynamics chain and measures the resulting level; pass 2
 // applies the exact makeup gain to hit an absolute RMS target.
-// Self-normalising per span, O(n), ~tens of ms over 20 min — invisible next
-// to inference.
+// Self-normalising per span, O(n).
 //
 // Canonical voice order, each stage individually bypassable so a single
 // stage's contribution can be A/B tested:
@@ -30,7 +29,7 @@ namespace Deckle.Audio;
 //
 // Central guardrail (kept here in prose because it governs every default):
 // compressing hard + boosting hard lifts the inter-word noise floor, which
-// is documented fuel for Whisper's silence hallucinations. Stay gentle; the
+// feeds Whisper's silence hallucinations. Stay gentle; the
 // clean silence fix is the upstream VAD, not this stage.
 //
 // Pure: Process clones its input and never mutates the caller's buffer — the

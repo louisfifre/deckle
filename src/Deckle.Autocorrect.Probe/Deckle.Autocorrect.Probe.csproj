@@ -5,7 +5,6 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <!-- Benchmark metric logic is internal; tests reach it through this seam. -->
     <InternalsVisibleTo Include="Deckle.Autocorrect.Tests" />
   </ItemGroup>
 

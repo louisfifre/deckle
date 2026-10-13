@@ -15,31 +15,24 @@ public sealed partial class TranscriptionEngine
 {
     // ── StreamingPipeline partial — producer/consumer over utterances ──────────
     //
-    // Streaming strategy: an energy segmenter cuts the live capture stream into
-    // utterances on the worker thread (via the Audio Frame event), a Channel hands
-    // them to a consumer task that transcribes each one as it arrives and
-    // accumulates the text. At Stop the producer flushes the open utterance and
-    // completes the channel; the consumer drains whatever is queued, then the
-    // assembled text flows into the shared FinalizeTranscription. Most utterances
-    // are already transcribed before Stop, so the perceived Stop latency is just
-    // the remaining backlog — and a decoder loop is confined to one utterance
-    // instead of poisoning the whole take.
+    // An energy segmenter cuts the live capture stream into utterances on the
+    // worker thread (via the capture Frame event); a Channel hands them to a
+    // consumer task that transcribes each one as it arrives. At Stop the
+    // producer flushes the open utterance and completes the channel; the
+    // consumer drains the queue, then the text flows into FinalizeTranscription.
+    // The perceived Stop latency is only the remaining backlog, and a decoder
+    // loop is confined to one utterance instead of poisoning the whole take.
     //
-    // Threading: capture (Record) blocks the worker thread = the producer; the
-    // segmenter is therefore single-threaded (Push/Flush both on the worker
-    // thread, synchronously inside the capture loop). The consumer runs on a
-    // separate task and is the only backend caller at a time (sequential loop),
-    // so the single-context invariant holds. The Channel is the one thread-safe
-    // hand-off between them.
+    // Threading: capture (Record) blocks the worker thread, which is the
+    // producer, so the segmenter is single-threaded. The consumer is the only
+    // backend caller at a time (sequential loop), so the single-context
+    // invariant holds. The Channel is the one thread-safe hand-off.
     //
     // Two tokens: producerCt (Stop + Dispose) stops capture; drainCt (Dispose
-    // only) aborts the consumer. On Stop the consumer is NOT cancelled, so the
-    // queued tail transcribes losslessly; on Dispose it is, so the worker join
-    // stays bounded. Note how the abort actually lands: the backend observes
-    // drainCt through its abort hook and returns a normal result with
-    // Aborted=true (it does NOT throw), so the deterministic stop comes from the
-    // explicit drainCt check at the top of the consumer loop, not from an
-    // exception out of the backend call.
+    // only) aborts the consumer, so on Stop the queued tail transcribes
+    // losslessly. The backend observes drainCt through its abort hook and
+    // returns Aborted=true without throwing, so the deterministic stop is the
+    // explicit drainCt check at the top of the consumer loop.
     private async Task<PipelineProduction?> ProduceStreamingAsync(
         CancellationToken producerCt, CancellationToken drainCt, Task<bool> primeTask)
     {
@@ -50,13 +43,10 @@ public sealed partial class TranscriptionEngine
         SegmentedTranscriptionSession<StreamingConsumeResult> session =
             StartSegmentedTranscription(policy, drainCt, primeTask);
 
-        // Frame-rate clock for the 1 Hz heartbeat (20 × 50 ms frames per tick)
-        // and for the recording_sec field. Stopwatch starts now, OnFrame trips
-        // the heartbeat once per second.
+        // 1 Hz heartbeat: 20 × 50 ms frames per tick. recordSw starts on the
+        // first frame the heartbeat admits and feeds the recording_sec field.
         Stopwatch? recordSw = null;
         int hbFrames = 0;
-        // Last per-frame RMS, kept so the heartbeat can report a live mic level
-        // without spamming an event for every 50 ms frame.
         float lastRmsLinear = 0f;
 
         void OnFrame(CaptureFrame f)
@@ -154,9 +144,8 @@ public sealed partial class TranscriptionEngine
             return null;
         }
 
-        // Mark the perceived Stop→drained latency (the streaming priority metric).
-        // On a user Stop _stopToPipelineSw was started by RequestToggle; on cap-hit
-        // it was never started, so it stays 0 (matches the monolithic cap-hit path).
+        // The perceived Stop→drained latency. On a cap hit the stopwatch was
+        // never started, so it reports 0.
         if (_stopToPipelineSw is { IsRunning: true }) _stopToPipelineSw.Stop();
 
         if (capture.Outcome == CaptureOutcome.MicError)
@@ -187,9 +176,6 @@ public sealed partial class TranscriptionEngine
 
         RaiseStatus(Loc.Get("Status_Transcribing"));
 
-        // Streaming-native completion recap, emitted once at Stop: the readable
-        // summary of the whole take (utterances the segmenter produced, audio
-        // length, cumulative Whisper time, word count, Whisper's own sub-segments).
         DeckleWhispSource.Log.StreamingDrained();
         if (OperationalLogAdmission.IsDetailEnabled(
                 OperationalLogActivity.Transcription,
@@ -213,15 +199,13 @@ public sealed partial class TranscriptionEngine
             return null;
         }
 
-        // RawAudio is the untouched capture — the normalized corpus baseline. When
-        // the opt-in DSP ran, the consumer handed back the concatenation of the
-        // processed utterances: that is exactly what the backend received (the kept
-        // utterances, not the continuous take), so it becomes BackendAudio. With the
-        // DSP off there is no separate buffer and BackendAudio falls back to raw.
+        // RawAudio is the untouched capture, the normalized corpus baseline. When
+        // the DSP or the VAD trim ran, the consumer handed back the concatenation
+        // of what the backend received (the kept utterances, not the continuous
+        // take); otherwise BackendAudio falls back to raw.
         float[] raw = capture.Pcm;
         float[] backendAudio = consumed.BackendAudio ?? raw;
 
-        // Post-DSP distribution, only when the DSP ran (else backendAudio == raw).
         if (consumed.BackendAudio is not null) EmitPreprocessedTelemetry(consumed.BackendAudio);
 
         return new PipelineProduction(
@@ -291,20 +275,16 @@ public sealed partial class TranscriptionEngine
         SileroVad? vad, SileroVadOptions vadOptions, Task<bool> primeTask,
         SegmentedTranscriptionPolicy policy)
     {
-        // Prime gate. No utterance is decoded until the prime's dummy inference
-        // has returned (single whisper context). The producer keeps capturing and
-        // segmenting meanwhile; the unbounded channel buffers the backlog, so the
-        // wait is hidden behind the recording, not added to the Stop latency — the
-        // gate phase is "during_recording".
+        // Prime gate. The producer keeps capturing and segmenting meanwhile; the
+        // unbounded channel buffers the backlog, so the wait hides behind the
+        // recording instead of adding to the Stop latency.
         if (!await AwaitPrime(primeTask, "during_recording").ConfigureAwait(false))
         {
-            // Prime failed (model load error — UserFeedback already shown). Nothing
-            // to transcribe onto, but Record is still capturing on the worker thread
-            // and the segmenter keeps writing utterances. Drain-and-discard so those
-            // buffers are released as they arrive instead of piling up unread until
-            // Stop; then return empty and let ProduceStreamingAsync take its
-            // empty-text exit on the normal Stop path. Dispose (drainCt) ends the
-            // drain early.
+            // Prime failed (UserFeedback already shown), but Record is still
+            // capturing and the segmenter keeps writing utterances. Drain and
+            // discard so those buffers are released as they arrive instead of
+            // piling up until Stop; the empty result takes the caller's
+            // empty-text exit. Dispose (drainCt) ends the drain early.
             try
             {
                 await foreach (var _ in reader.ReadAllAsync(drainCt).ConfigureAwait(false)) { }
@@ -327,23 +307,16 @@ public sealed partial class TranscriptionEngine
         string? previousTail = null;
         bool incomplete = false;
 
-        // Transcription pre-processing DSP, opt-in. The monolithic path runs the
-        // two-pass chain once over the whole take; here it runs per utterance, just
-        // before each backend call. Per-utterance is faithful for intelligibility:
-        // every utterance is decoded in its own backend call, so landing each one
-        // on TargetRmsDbfs is exactly the per-call level Whisper wants — the
-        // inter-utterance coherence a whole-take pass would add is moot when no two
-        // utterances share a decode window, and a true whole-take measure could only
-        // complete at Stop, which would defeat the streaming latency it exists for.
-        // The segmenter emits only voiced spans, so the makeup guardrail (boosting
-        // silence lifts the noise floor) is already defused upstream. Processed
-        // chunks are accumulated so BackendAudio is exactly what the backend
-        // received — the kept utterances, not the continuous take.
+        // The opt-in DSP runs per utterance here, not once over the whole take:
+        // each utterance is decoded in its own backend call, so landing each on
+        // TargetRmsDbfs is the per-call level Whisper wants, and a whole-take
+        // measure could only complete at Stop, defeating the streaming latency.
+        // The segmenter emits only voiced spans, so boosting silence is not a
+        // risk here.
         var pp = _host.Audio.Preprocessing;
         bool applyPreprocessing = policy.ApplyPreprocessing && pp.Enabled;
-        // Capture the backend audio whenever a stage transforms it — the
-        // DSP or the VAD trim — so BackendAudio mirrors exactly what the backend
-        // received.
+        // Kept whenever a stage transforms the audio (the DSP or the VAD trim),
+        // so BackendAudio mirrors exactly what the backend received.
         List<float[]>? backendChunks = (applyPreprocessing || vad is not null) ? new List<float[]>() : null;
 
         await foreach (Utterance u in reader.ReadAllAsync(drainCt).ConfigureAwait(false))
@@ -351,30 +324,19 @@ public sealed partial class TranscriptionEngine
             // Deterministic Dispose stop — see the method remark.
             drainCt.ThrowIfCancellationRequested();
             nUtt++;
-            // Decrement the shared backlog now: heartbeat readings between here
-            // and the end of this iteration reflect the in-flight utterance as
-            // dequeued, regardless of whether the backend call ahead succeeds
-            // or fails.
+            // Decrement now, so heartbeat readings count the in-flight utterance
+            // as dequeued whether or not the backend call succeeds.
             int backlogAfter = onDequeue();
 
-            // Inter-utterance context, rebuilt by hand: the fixed stylistic prompt
-            // plus the tail of the previous utterance, so continuity carries
-            // across these separate backend calls (Whisper has no cross-call
-            // context). A looped previous utterance contributes no tail, so a loop
-            // cannot contaminate the next.
-            //
-            // EmitPreamble only on the first utterance (nUtt was ++'d above, so
-            // ==1 here) → the params/prompt log once for the whole take, not once
-            // per utterance. TimelineOffsetSec positions this utterance's segments
-            // on the take's global timeline so the logs read true positions.
+            // Whisper has no cross-call context, so continuity is rebuilt by hand:
+            // the fixed stylistic prompt plus the previous utterance's tail. A
+            // looped previous utterance contributes no tail, so a loop cannot
+            // contaminate the next.
             var ctx = new TranscriptionContext(
                 BuildPriming(fixedPrompt, previousTail),
                 EmitPreamble:      nUtt == 1,
                 TimelineOffsetSec: u.StartSec);
 
-            // Resolve the buffer the backend will see: optional DSP, then the
-            // optional external VAD trim. Accumulate the final buffer so
-            // BackendAudio mirrors exactly what was sent.
             float[] samples = u.Samples;
             if (applyPreprocessing)
             {
@@ -409,11 +371,9 @@ public sealed partial class TranscriptionEngine
                 }
                 catch (Exception ex)
                 {
-                    // Resilience (the first goal): a VAD runtime failure must not lose
-                    // the dictation. The ONNX binding is the never-runtime-verified part,
-                    // so on any error log it once, stop trimming for the rest of this
-                    // take (vad = null), and let this utterance through UNtrimmed rather
-                    // than dropping it or crashing the consumer.
+                    // A VAD runtime failure must not lose the dictation: log it once,
+                    // stop trimming for the rest of this take, and let this utterance
+                    // through untrimmed rather than dropping it or crashing the consumer.
                     DeckleVadSource.Log.SpeechTrimVadUnavailable();
                     DeckleVadSource.Log.SpeechTrimVadUnavailableDetail($"trim failed: {ex.GetType().Name}: {ex.Message}");
                     vad = null;
@@ -432,13 +392,12 @@ public sealed partial class TranscriptionEngine
             }
             catch (OperationCanceledException)
             {
-                // Dispose aborted us — stop draining, abandon.
                 throw;
             }
             catch (Exception ex)
             {
-                // One utterance failing must not lose the whole dictation — log,
-                // drop its context, keep going (resilience, the first goal).
+                // One utterance failing must not lose the whole dictation: log,
+                // drop its context, keep going.
                 DeckleWhispSource.Log.UtteranceSkipped();
                 DeckleWhispSource.Log.UtteranceSkippedDetail(u.Index, ex.GetType().Name, ex.Message);
                 if (policy.RejectIncompleteResults)
@@ -484,11 +443,8 @@ public sealed partial class TranscriptionEngine
             sb.ToString(), totalMs, initMs, nSeg, nUtt, backendAudio, incomplete);
     }
 
-    // Flatten the per-utterance processed buffers into one contiguous take. A
-    // single exact-sized allocation rather than a growing List<float> — the chunks
-    // are known and immutable by the time we drain, so there is nothing to double.
-    // internal: the ordered-concat invariant it guards is what makes BackendAudio
-    // a faithful normalized corpus record, exercised directly by Deckle.Transcription.Tests.
+    // internal for Deckle.Transcription.Tests: the ordered concatenation is what
+    // makes BackendAudio a faithful normalized corpus record.
     internal static float[] ConcatSamples(List<float[]> chunks)
     {
         int total = 0;
@@ -513,10 +469,9 @@ public sealed partial class TranscriptionEngine
         return fixedPrompt + " " + previousTail;
     }
 
-    // Last N words of an utterance — the continuity carried into the next.
-    // PrimingTailWords is a reference value, not exposed and not yet tuned: enough
-    // for word-boundary/register continuity without blowing the prompt-token
-    // budget (Whisper keeps the most recent tokens if the prompt overflows anyway).
+    // Enough for word-boundary and register continuity without blowing the
+    // prompt-token budget (Whisper keeps the most recent tokens if the prompt
+    // overflows anyway).
     private const int PrimingTailWords = 30;
     private static string TailOf(string text)
     {
@@ -526,11 +481,8 @@ public sealed partial class TranscriptionEngine
         return string.Join(' ', words[^PrimingTailWords..]);
     }
 
-    // Roll-up the consumer hands back to ProduceStreamingAsync — assembled text,
-    // the backend timings summed across utterances, how many utterances the
-    // segmenter produced, and (when the opt-in DSP ran) the concatenation of the
-    // processed utterances for the corpus. BackendAudio is null when the DSP was
-    // off, so the caller falls back to the raw take.
+    // BackendAudio is null when no stage (DSP or VAD trim) transformed the
+    // audio, so the caller falls back to the raw take.
     private readonly record struct StreamingConsumeResult(
         string Text, long TotalMs, long InitMs, int NSegments, int NUtterances,
         float[]? BackendAudio, bool Incomplete);

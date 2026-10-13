@@ -4,14 +4,12 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <!-- Pure scoring geometry is internal; tests reach it through this seam. -->
     <InternalsVisibleTo Include="Deckle.Autocorrect.Tests" />
     <!-- The isolated probe profiles the exact scorer without widening its public API. -->
     <InternalsVisibleTo Include="Deckle.Autocorrect.Probe" />
   </ItemGroup>
 
   <ItemGroup>
-    <!-- The autocorrect sentence scorer contract and closed-candidate outcome. -->
     <ProjectReference Include="..\Deckle.Autocorrect\Deckle.Autocorrect.csproj" />
     <!-- ONNX Runtime GenAI (DirectML variant) — runs the forced-decoding sentence
          judge on the GPU, with the CPU EP as a selectable fallback. Version and the

@@ -182,7 +182,6 @@ public sealed partial class TrayQuickActionsHost
         _onTranscribeFiles?.Invoke();
     }
 
-    // Reflects module and engine state at each open.
     private void SyncState(bool isRecording)
     {
         if (_recordIcon is not null)

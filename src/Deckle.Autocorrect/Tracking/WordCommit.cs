@@ -3,8 +3,8 @@ namespace Deckle.Autocorrect;
 // A word the user finished typing — a boundary character committed it.
 // PreviousWord is the token committed just before on the same surface, and
 // PreviousPreviousWord the one before that (elision prefixes keep their
-// apostrophe: « l' »); both null after a reset, the second also null one word
-// into a sentence. The two together feed the trigram disambiguator.
+// apostrophe: « l' »); both null right after a reset, the second still null
+// one word later. The two together are the commit stage's left context.
 // Reopened is set when this commit came from a word the user backspaced into
 // and retyped: the deliberate keystroke asserts intent, so the commit stage
 // must leave it literal — only the sentence stage, with full context, keeps

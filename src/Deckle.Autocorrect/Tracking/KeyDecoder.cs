@@ -63,32 +63,24 @@ public sealed class KeyDecoder
         _capsToggled = (KeyboardStateInterop.GetKeyState(VK_CAPITAL) & 1) != 0;
     }
 
-    // Test seam: inject the ToUnicodeEx behaviour and the initial caps state.
     internal KeyDecoder(ToUnicodeFn toUnicode, bool capsToggled = false)
     {
         _toUnicode = toUnicode;
         _capsToggled = capsToggled;
     }
 
-    /// <summary>Current CapsLock toggle, exposed for tests.</summary>
     internal bool CapsToggled => _capsToggled;
 
     public Keystroke? Decode(KeyboardKeyEvent e)
     {
-        // Modifier transitions only update state; they never produce output —
-        // neither on press nor on release.
         if (TryUpdateModifier(e))
             return null;
 
-        // Non-modifier key-ups carry nothing for the buffer.
         if (!e.IsKeyDown)
             return null;
 
         ushort vk = e.VirtualKey;
         double t = e.TimestampMs;
-
-        // Caps is decoded as a modifier above only for its latch; the down
-        // edge also flips the toggle. Handled in TryUpdateModifier.
 
         // Chords the application owns — we cannot predict their text effect,
         // and that includes the editing keys: Ctrl+Backspace deletes a whole
@@ -106,7 +98,6 @@ public sealed class KeyDecoder
         if (AltDown && !CtrlDown)
             return Keystroke.Of(KeystrokeKind.Shortcut, t);
 
-        // Editing / navigation keys win before any character translation.
         switch (vk)
         {
             case VK_BACK: return Keystroke.Of(KeystrokeKind.Backspace, t);
@@ -119,7 +110,6 @@ public sealed class KeyDecoder
                 return Keystroke.Of(KeystrokeKind.Navigation, t);
         }
 
-        // Otherwise resolve the character under the foreground layout.
         return Translate(vk, e.ScanCode, altGr, t);
     }
 
@@ -163,8 +153,8 @@ public sealed class KeyDecoder
             _keyState[VK_CAPITAL] = 0x01;
     }
 
-    // Updates a modifier latch from a transition. Returns true when the event
-    // WAS a modifier (handled, no output), false otherwise.
+    // Returns true when the event was a modifier: handled, no output on press or
+    // release.
     private bool TryUpdateModifier(KeyboardKeyEvent e)
     {
         bool down = e.IsKeyDown;

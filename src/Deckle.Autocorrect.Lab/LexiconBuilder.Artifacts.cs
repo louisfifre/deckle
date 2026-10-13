@@ -77,8 +77,8 @@ public static partial class LexiconBuilder
 
     // ── Filters / parsing ──────────────────────────────────────────────────
 
-    // A form we keep: every char is a letter, an apostrophe or a hyphen. Drops
-    // multi-word locutions (spaces) and junk; keeps « aujourd'hui », « peut-être ».
+    // Drops multi-word locutions (spaces) and junk; keeps « aujourd'hui »,
+    // « peut-être ».
     private static bool IsAcceptedForm(string form)
     {
         if (form.Length == 0) return false;

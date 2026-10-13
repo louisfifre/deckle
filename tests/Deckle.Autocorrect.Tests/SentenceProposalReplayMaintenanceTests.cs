@@ -42,7 +42,7 @@ public sealed class SentenceProposalReplayMaintenanceTests
             $"[proposal-replay] loading judge — ep={executionProvider}, limit={limit}, dir={judgeDir}");
 
         // Zero margin exposes raw top-1 plus its gap. The report is review data for
-        // calibrating a separate whole-sentence margin; the slot margin of 1.0 is
+        // calibrating a separate whole-sentence margin; the slot margin is
         // deliberately not imported into this different task.
         using var scorer = new OnnxSentenceScorer(judgeDir, margin: 0.0, executionProvider);
         var verifier = new SentenceProposalVerifier(scorer);

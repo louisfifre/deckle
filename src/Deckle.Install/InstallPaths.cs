@@ -1,15 +1,13 @@
 namespace Deckle.Install;
 
-// ── InstallPaths ──────────────────────────────────────────────────────────────
-//
 // The two locations the installer reasons about, and their defaults. The split
-// is the whole point of the install UX (cf. the install-location decision):
+// is the whole point of the install UX:
 //
-//   • Binaries  — the app folder (~300 MB). Per-user, no admin, VS Code / Discord
-//     style. Default %LOCALAPPDATA%\Programs\Deckle, changeable.
+//   • Binaries  — the app folder. Per-user, no admin, VS Code / Discord style.
+//     Default %LOCALAPPDATA%\Programs\Deckle, changeable.
 //
-//   • Data      — Whisper models (up to ~3 GB), settings, corpus. The real volume
-//     concern. Default %LOCALAPPDATA%\Deckle (what AppPaths uses), relocatable off
+//   • Data      — Whisper models, settings, corpus. The real volume concern.
+//     Default %LOCALAPPDATA%\Deckle (what AppPaths uses), relocatable off
 //     a saturated C: via the DECKLE_DATA_ROOT environment variable the app already
 //     honours. When the user picks a non-default data folder, the installer sets
 //     that variable; otherwise it leaves the app's own default untouched.

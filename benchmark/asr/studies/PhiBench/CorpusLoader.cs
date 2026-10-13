@@ -9,9 +9,8 @@ namespace Deckle.Benchmark.PhiBench;
 /// benchmark/asr/lib/corpus.py — same JSONL format, same Sample fields, sorted
 /// by ascending duration so the bench warms up on short samples first.
 ///
-/// Silently filters samples whose audio file is missing — a corpus can be
-/// partial (Louis may have deleted a wav to test something), the bench should
-/// not crash.
+/// Silently skips samples whose audio file is missing: a corpus can be
+/// partial, and the bench should not crash.
 /// </summary>
 public static class CorpusLoader
 {

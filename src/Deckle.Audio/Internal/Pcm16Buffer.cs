@@ -2,8 +2,8 @@ using System.Runtime.InteropServices;
 
 namespace Deckle.Audio.Internal;
 
-// Recording-local PCM16 accumulator. Capacity follows captured duration
-// instead of reserving a minute on the large-object heap at every hotkey.
+// Recording-local PCM16 accumulator. Capacity grows with the captured
+// duration, so a short take never reserves a large-object-heap block.
 internal sealed class Pcm16Buffer(int initialCapacity)
 {
     private byte[] _bytes = new byte[initialCapacity];

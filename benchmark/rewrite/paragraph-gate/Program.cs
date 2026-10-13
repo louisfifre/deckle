@@ -5,10 +5,10 @@ using Deckle.Llm.Rewrite;
 
 // ─── ParagraphGate — prompt-sample eval of the retaille service + diff gate ──
 //
-// Slice 1 of the paragraph rewrite ("Retaille de paragraphe"): before any
-// UI or wiring exists, burn the core risk — does a Ministral-class model at
-// temperature 0, behind the real ParagraphRewrite prompt, produce rewrites
-// the diff gate can accept, at an offer-compatible latency?
+// The core risk of the paragraph rewrite ("Retaille de paragraphe"): does a
+// Ministral-class model at temperature 0, behind the real ParagraphRewrite
+// prompt, produce rewrites the diff gate can accept, at an offer-compatible
+// latency?
 //
 // The study exercises the REAL production code end to end: the prompt's
 // single home (ParagraphRewrite), the engine seam (OllamaEngine), the gate

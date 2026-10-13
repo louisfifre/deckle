@@ -9,8 +9,8 @@ namespace Deckle.Core;
 // A concrete global memory handle hands the bytes to the OS clipboard the moment
 // SetClipboardData returns — no delayed rendering. The WinRT SetContent path, by
 // contrast, keeps the data source-owned and served lazily until Clipboard.Flush
-// is called, which is unreliable for large payloads and fails silently. Any
-// proposal to route this back through the WinRT API must justify it against that.
+// is called, which is unreliable for large payloads and fails silently. Routing
+// this through the WinRT API must be justified against that.
 //
 // TryCopyText is pure: it performs the write and an immediate length read-back,
 // and returns a structured result. It logs nothing and shows nothing — each
@@ -18,7 +18,8 @@ namespace Deckle.Core;
 
 public enum ClipboardWriteStatus
 {
-    // The bytes reached the OS clipboard and the read-back matched.
+    // The bytes reached the OS clipboard; the read-back matched or could not
+    // reopen the clipboard.
     Success,
     // GlobalAlloc/GlobalLock returned no usable handle — the text was never written.
     AllocFailed,
@@ -32,7 +33,6 @@ public enum ClipboardWriteStatus
     VerifyLengthMismatch,
 }
 
-// Status carries the outcome; the numeric fields feed the caller's logs.
 // ActualChars is -1 when the read-back could not run or found nothing.
 public readonly record struct ClipboardWriteResult(
     ClipboardWriteStatus Status,
@@ -73,9 +73,6 @@ public static class Win32Clipboard
     private const uint GMEM_MOVEABLE  = 0x0002;
     private const uint CF_UNICODETEXT = 13;
 
-    // P/Invokes co-located here because this writer is their only consumer.
-    // Keeping them private keeps NativeMethods free of clipboard plumbing and
-    // makes the capability self-contained.
     [DllImport("kernel32.dll")]
     private static extern IntPtr GlobalAlloc(uint uFlags, UIntPtr dwBytes);
     [DllImport("kernel32.dll")]
@@ -121,8 +118,8 @@ public static class Win32Clipboard
         if (setHandle == IntPtr.Zero)
             return new ClipboardWriteResult(ClipboardWriteStatus.SetDataFailed, expected, -1, byteCount, (long)hMem);
 
-        // Immediate read-back to verify the length. Best-effort: if the clipboard
-        // can't be reopened we leave the write as Success (the bytes were set).
+        // Best-effort read-back: if the clipboard can't be reopened the write
+        // stays Success, since the bytes were set.
         ClipboardWriteStatus status = ClipboardWriteStatus.Success;
         int actual = -1;
         if (OpenClipboard(IntPtr.Zero))

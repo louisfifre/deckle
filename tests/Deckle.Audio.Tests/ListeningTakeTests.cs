@@ -4,10 +4,8 @@ using Xunit;
 
 namespace Deckle.Audio.Tests;
 
-// The listening take renders a raw recording at a pre-processing strength:
-// 0 is the raw take, 1 is exactly the dictation path's output, anything
-// between is the dry/wet blend. Asserted against TranscriptionPreprocessor
-// itself, so the tests follow any re-tune of the DSP.
+// Asserted against TranscriptionPreprocessor itself rather than fixed numbers,
+// so the tests follow any re-tune of the DSP.
 [Trait("Category", "unit")]
 public class ListeningTakeTests
 {

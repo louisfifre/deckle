@@ -3,15 +3,11 @@ using System.Security.Cryptography;
 
 namespace Deckle.Installer;
 
-// ── Downloader ────────────────────────────────────────────────────────────────
-//
 // Streams an HTTP download to disk while reporting byte progress and computing
-// SHA-256 incrementally. Deliberately a stub-local re-take of
-// Deckle.Transcription.Downloader rather than a reference to it: that one
-// lives in a WinUI module and reports through IProgress<T> on a UI dispatcher;
-// pulling it in would drag all of WinUI into a stub whose entire reason to exist
-// is to stay small and self-contained. The shared shape (atomic .partial →
-// rename, streaming hash, throttled progress) is reproduced, ~80 lines.
+// SHA-256 incrementally. Deliberately a stub-local re-take of Deckle.Core's
+// Downloader rather than a reference to it: the stub takes no Deckle.*
+// reference, so it stays small, self-contained and AOT-safe. The shared shape
+// (atomic .partial → rename, streaming hash, throttled progress) is reproduced.
 //
 // Progress is a plain callback (downloaded, total-or-null) rather than a hard
 // dependency on the window: the caller wires it to the progress window, and the

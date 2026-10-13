@@ -5,19 +5,15 @@ using Xunit;
 
 namespace Deckle.Autocorrect.Tests;
 
-// The conservative typo corrector: stage two, acting only on NON-words and only
-// when one common French word sits a single edit away and clearly dominates.
-// Conservativity is the product, so — as with the diacritics gate — most of
-// these assert a word is LEFT ALONE; the few corrections are the ones that
-// earned it. Edits modelled: deletion, transposition, keyboard-adjacent
-// substitution, insertion.
+// The typo corrector acts only on NON-words, and only when a common French word
+// sits one edit away (two in the far tier) and clearly dominates. Edits
+// modelled: deletion, transposition, keyboard-adjacent substitution, insertion.
 [Trait("Category", "unit")]
 public class ConservativeTypoCorrectorTests
 {
     // Frequencies per million, Lexique scale. ballet/billet are the synthetic
-    // ambiguity pair (both one insertion from "bllet", equal frequency); obscur
-    // is the below-floor rarity case; monde pairs with the English "mode" for
-    // the bilingual guard.
+    // ambiguity pair (both one insertion from "bllet", equal frequency); monde
+    // pairs with the English "mode" for the bilingual guard.
     private const string FrenchTsv =
         "bonjour\t300\nballet\t100\nbillet\t100\nobscur\t2\nchat\t90\nmonde\t100\n";
 
@@ -38,7 +34,6 @@ public class ConservativeTypoCorrectorTests
     [Fact]
     public void CorrectsTransposition()
     {
-        // "bonjuor" — the u/o keys swapped — is one transposition from "bonjour".
         var d = Corrector().Evaluate("bonjuor", []);
 
         Assert.NotNull(d);
@@ -64,7 +59,6 @@ public class ConservativeTypoCorrectorTests
     [Fact]
     public void CorrectsMissingLetter()
     {
-        // "bonjor" — a dropped u — is one insertion from "bonjour".
         var d = Corrector().Evaluate("bonjor", []);
 
         Assert.Equal("bonjour", d!.Replacement);
@@ -74,8 +68,6 @@ public class ConservativeTypoCorrectorTests
     [Fact]
     public void CorrectsAdjacentSubstitution()
     {
-        // "bobjour" — n typed as the touching key b — is one adjacent substitution
-        // from "bonjour".
         var d = Corrector().Evaluate("bobjour", []);
 
         Assert.Equal("bonjour", d!.Replacement);
@@ -85,8 +77,7 @@ public class ConservativeTypoCorrectorTests
     [Fact]
     public void PreservesSentenceInitialCase()
     {
-        // Sentence-initial (no left context): a capitalised typo is still fixed,
-        // and the case is carried over.
+        // No left context means sentence-initial, so the capital is not a name.
         var d = Corrector().Evaluate("Bonjuor", []);
 
         Assert.Equal("Bonjour", d!.Replacement);
@@ -95,8 +86,7 @@ public class ConservativeTypoCorrectorTests
     [Fact]
     public void DominantNeighbourWins()
     {
-        // ballet 2000 vs billet 100: ratio 20 clears the 10× bar, so "bllet" is
-        // resolved rather than left ambiguous.
+        // ballet 2000 vs billet 100: ratio 20 clears the 5× near bar.
         var d = Corrector("ballet\t2000\nbillet\t100\n").Evaluate("bllet", []);
 
         Assert.Equal("ballet", d!.Replacement);
@@ -108,7 +98,6 @@ public class ConservativeTypoCorrectorTests
     [Fact]
     public void ValidFrenchWordIsNeverTouched()
     {
-        // "chat" is a valid form — the defining gate: this stage acts on non-words.
         Assert.Null(Corrector().Evaluate("chat", []));
     }
 
@@ -125,7 +114,7 @@ public class ConservativeTypoCorrectorTests
     public void AmbiguousNeighboursAreLeftAlone()
     {
         // "bllet" is one insertion from both ballet (100) and billet (100):
-        // ratio 1, far under 10× — real ambiguity, leave it.
+        // ratio 1, under the 5× near bar.
         Assert.Null(Corrector().Evaluate("bllet", []));
     }
 
@@ -174,8 +163,8 @@ public class ConservativeTypoCorrectorTests
     [Fact]
     public void ShortWordIsLeftAlone()
     {
-        // "ch" is below MinWordLength (3) — too little signal — even though "chat"
-        // is two edits away.
+        // "ch" is below MinWordLength, too little signal, even though "chat" is
+        // two edits away.
         Assert.Null(Corrector().Evaluate("ch", []));
     }
 
@@ -189,8 +178,6 @@ public class ConservativeTypoCorrectorTests
     [Fact]
     public void EnglishShapedTokenIsCorrectedWithoutTheGlobalEnglishSeed()
     {
-        // Without the restricted English seed loaded, "mode" is just a non-word
-        // one insertion away from "monde"; the ordinary typo bar can fire.
         var d = Corrector().Evaluate("mode", []);
 
         Assert.NotNull(d);
@@ -201,8 +188,7 @@ public class ConservativeTypoCorrectorTests
     [Fact]
     public void ValidEnglishWordIsNotFrenchified()
     {
-        // "mode" is in the restricted English seed (and one insertion from
-        // "monde"); the bilingual guard leaves it alone by membership.
+        // The bilingual guard works by membership, whatever the English frequency.
         var english = FrequencyLexicon.LoadTsv(new StringReader(EnglishTsv));
         Assert.Null(Corrector(english: english).Evaluate("mode", []));
     }
@@ -224,7 +210,6 @@ public class ConservativeTypoCorrectorTests
     [Fact]
     public void AdoptedWordShieldsItself()
     {
-        // The user adopted "bonjuor" as their own — never spell-fix it.
         var personal = new StubPersonal(adopted: new() { "bonjuor" });
         Assert.Null(Corrector(personal: personal).Evaluate("bonjuor", []));
     }
@@ -295,8 +280,6 @@ public class ConservativeTypoCorrectorTests
     [Fact]
     public void CorrectsTwoEditFault()
     {
-        // "bonjuro" is two transpositions from "bonjour" with nothing one edit
-        // away — the far tier reaches it.
         var d = Corrector().Evaluate("bonjuro", []);
 
         Assert.Equal("bonjour", d!.Replacement);
@@ -314,8 +297,7 @@ public class ConservativeTypoCorrectorTests
     [Fact]
     public void RelaxedDominanceResolvesAModerateRatio()
     {
-        // ballet 600 vs billet 100: ratio 6 clears the relaxed 5× near bar (it
-        // would have stayed ambiguous under the former 10×).
+        // ballet 600 vs billet 100: ratio 6 clears the 5× near bar.
         var d = Corrector("ballet\t600\nbillet\t100\n").Evaluate("bllet", []);
 
         Assert.Equal("ballet", d!.Replacement);

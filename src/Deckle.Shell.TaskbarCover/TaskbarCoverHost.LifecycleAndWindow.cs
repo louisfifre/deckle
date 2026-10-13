@@ -11,7 +11,6 @@ public sealed partial class TaskbarCoverHost
     public bool IsRunning => _running;
 
     /// <summary>
-    /// Spawns the cover thread, creates the band window, hooks the cursor.
     /// Returns false (and logs) when the native setup failed; the app keeps
     /// running without the cover.
     /// </summary>
@@ -89,7 +88,6 @@ public sealed partial class TaskbarCoverHost
         }
     }
 
-    /// <summary>Posts WM_QUIT to the cover thread and joins it.</summary>
     public void Stop()
     {
         Thread? thread;
@@ -178,8 +176,7 @@ public sealed partial class TaskbarCoverHost
                 $"CreateWindowEx failed (Win32 err {Marshal.GetLastWin32Error()})");
 
         // A layered window renders nothing until its attributes are set once
-        // (Microsoft Learn, Window Features: layered windows). Opaque to start;
-        // ApplyCoverAlpha moves it from there.
+        // (Microsoft Learn, Window Features: layered windows).
         NativeMethods.SetLayeredWindowAttributes(_hwnd, 0, 255, NativeMethods.LWA_ALPHA);
 
         // Without the cursor signal the band would cover the taskbar and

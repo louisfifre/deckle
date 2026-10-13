@@ -5,10 +5,9 @@ using System.Text.Json;
 
 namespace Deckle.Autocorrect.Lab;
 
-// Renders the mined families twice from one result: the markdown the maintainer
-// reviews (the one-time gate before family adoption turns automatic), and the
-// JSON the routing wiring will consume once reviewed. Same data, two readers —
-// neither is ever edited by hand into the other.
+// Renders the mined families twice from one result: the markdown a reviewer reads
+// before any family is adopted, and the JSON a machine reads. Same data, two
+// readers; neither is ever edited by hand into the other.
 public static class MistouchFamilyReport
 {
     public static string RenderMarkdown(MistouchMiner.MiningResult result)

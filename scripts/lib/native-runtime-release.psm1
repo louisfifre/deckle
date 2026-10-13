@@ -1,6 +1,7 @@
 # Reads and validates the native runtime artifact pinned by the app. App
 # publication uses this module as a fail-closed preflight so a Deckle installer
-# cannot be released while its first-run dependency is absent or mismatched.
+# cannot be released while the bundle its setup wizard downloads is absent or
+# mismatched.
 
 $ErrorActionPreference = 'Stop'
 

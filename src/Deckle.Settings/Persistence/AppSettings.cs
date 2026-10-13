@@ -4,28 +4,9 @@ namespace Deckle.Settings;
 
 // ── AppSettings ───────────────────────────────────────────────────────────────
 //
-// Shell-only settings root persisted to <UserDataRoot>/settings.json.
-// Used to also aggregate every module's POCO (Whisp / Llm / Capture /
-// Telemetry) but those moved to their own modules/<id>/settings.json
-// files in slice C2b — see SettingsBootstrap.MigrateLegacyToPerModule
-// for the dispatch logic.
-//
-// What stays here:
-//   • Paths       — BackupDirectory only (ModelsDirectory migrated to
-//                   TranscriptionSettings since it's a Whisper-engine concern).
-//   • Appearance  — global theme.
-//   • Startup     — boot behaviour.
-//   • Overlay     — HUD overlay system.
-//   • Paste       — auto-paste vs clipboard-only.
-//   • Hotkeys     — global hotkey chords, one per App hotkey action.
-//
-// What moved out (loaded via the matching XxxSettingsService.Instance):
-//   • CaptureSettings        → Deckle.Audio/CaptureSettingsService
-//   • TranscriptionSettings          → Deckle.Transcription/TranscriptionSettingsService
-//   • LlmSettings            → Deckle.Llm.Rewrite/LlmSettingsService
-//   • TelemetrySettings      → Deckle.Diagnostics.Telemetry/TelemetrySettingsService
-//
-// Mutations to `Current` go through SettingsService (debounced Save).
+// Shell-only settings root persisted to <UserDataRoot>/settings.json; each
+// module persists its own modules/<id>/settings.json. Mutations to `Current`
+// go through SettingsService (debounced Save).
 public sealed class AppSettings
 {
     public PathsSettings       Paths       { get; set; } = new();
@@ -36,11 +17,9 @@ public sealed class AppSettings
     public HotkeysSettings     Hotkeys     { get; set; } = new();
 }
 
-// Global hotkeys, one property per hotkey action the App exposes: Record
-// (dictation start/stop) and one per switchable module toggle. null = unbound.
-// The POCO initializers are the single source of defaults: the composer's
-// reset reads them. Record keeps the historical chord, Win + the physical key
-// left of "1" (scancode 0x29); toggles start unbound.
+// null = unbound. The initializers are the single source of defaults: the
+// composer's reset reads them. Record defaults to Win + the physical key left
+// of "1" (scancode 0x29).
 public sealed class HotkeysSettings
 {
     public HotkeyChord? Record          { get; set; } = new(HotkeyModifiers.Win, 0x29);
@@ -61,22 +40,21 @@ public sealed class UpdatesSettings
 }
 
 // Auto-paste after transcription. Off by default — the clipboard is the safe
-// default and the user explicitly opts in to SendInput-driven paste. When
-// false, the engine skips PasteFromClipboard entirely and the HUD shows the
-// "Copied to clipboard" message instead of "Pasted".
+// default and the user explicitly opts in to SendInput-driven paste.
 public sealed class PasteSettings
 {
     public bool AutoPasteEnabled { get; set; } = false;
 }
 
-// Apparence globale. Theme = "System" | "Light" | "Dark".
+// Theme = "System" | "Light" | "Dark".
 public sealed class AppearanceSettings
 {
     public string Theme { get; set; } = "System";
 }
 
 // HUD overlay displayed during recording/transcription.
-// Position = "BottomCenter" | "BottomRight" | "TopCenter".
+// Position = "BottomCenter" | "TopCenter"; readers treat any value starting
+// with "Top" as TopCenter, anything else as BottomCenter.
 public sealed class OverlaySettings
 {
     public bool Enabled { get; set; } = true;
@@ -93,17 +71,9 @@ public sealed class OverlaySettings
     public string TranscriptPanelSide { get; set; } = "Right";
 }
 
-// User paths. Empty by default → automatic resolution through
-// AppPaths: DECKLE_DATA_ROOT, then %LOCALAPPDATA%\Deckle, then fallback
-// under the exe folder.
-//
-// BackupDirectory  : folder where SettingsBackupService writes snapshots
-//                    settings-YYYYMMDD-HHmmss.json. PowerToys pattern:
-//                    the user can point to a OneDrive/Drive folder to carry
-//                    backups across machines.
-//
-// ModelsDirectory used to live here too; it migrated to TranscriptionSettings on
-// 2026-05-02 (per-module persistence) since it's a Whisper-engine concern.
+// BackupDirectory: where SettingsBackupService writes snapshots; empty falls
+// back to AppPaths.SettingsBackupDirectory. The user can point it at a synced
+// folder (OneDrive) to carry backups across machines.
 public sealed class PathsSettings
 {
     public string BackupDirectory { get; set; } = "";

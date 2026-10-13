@@ -3,16 +3,13 @@
     <RootNamespace>Deckle.Shell.TrayMenu</RootNamespace>
     <!-- WinUI 3 XAML compilation in a class library: required so MenuFlyout
          theme resources resolve at runtime and the MainResourceMap merges
-         this assembly's PRI into the host process map. Mirror of the flag
-         set on Deckle.Hud.csproj and Deckle.App.csproj (cf. WindowsAppSDK#3451). -->
+         this assembly's PRI into the host process map (cf. WindowsAppSDK#3451). -->
     <UseWinUI>true</UseWinUI>
     <DefaultLanguage>en-US</DefaultLanguage>
     <EnableMsixTooling>true</EnableMsixTooling>
   </PropertyGroup>
 
   <ItemGroup>
-    <!-- Strict alignment with Deckle.App.csproj: one WinAppSDK runtime per
-         process, synchronous bump obligatory across the whole solution. -->
     <PackageReference Include="Microsoft.WindowsAppSDK" />
     <PackageReference Include="Microsoft.Windows.SDK.BuildTools" />
   </ItemGroup>
@@ -25,7 +22,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <!-- TrayMenuSizing (internal) is unit-tested through this. -->
     <InternalsVisibleTo Include="Deckle.Shell.TrayMenu.Tests" />
   </ItemGroup>
 </Project>

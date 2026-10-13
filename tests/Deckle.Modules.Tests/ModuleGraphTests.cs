@@ -4,10 +4,9 @@ using Xunit;
 
 namespace Deckle.Modules.Tests;
 
-// Tests de comportement sur la cascade du sélecteur — le contrat entre le
-// catalogue (arêtes DependsOn) et la page à cocher. On vérifie ce que la
-// cascade PRODUIT (l'ensemble coché résultant), pas comment elle marche : le
-// graphe est un module pur, exerçable tel quel.
+// Behavior tests of the selector cascade, the contract between the catalogue
+// (DependsOn edges) and the checklist page. They assert what the cascade
+// PRODUCES (the resulting checked set), not how it works.
 [Trait("Category", "unit")]
 public class ModuleGraphTests
 {
@@ -18,7 +17,7 @@ public class ModuleGraphTests
         DependsOn = deps,
     };
 
-    // rewrite → transcription : la forme réelle du catalogue aujourd'hui.
+    // rewrite → transcription mirrors the real catalogue (AppModules).
     private static readonly IReadOnlyList<ModuleDescriptor> Catalog =
     [
         Module("transcription"),
@@ -70,7 +69,7 @@ public class ModuleGraphTests
             Module("c", "b"),
         ];
 
-        // b n'est pas coché ; décocher a doit quand même expulser c à travers lui.
+        // b is unchecked; unchecking a must still expel c through it.
         var result = ModuleGraph.WithoutDependents(chain, ["a", "c"], "a");
 
         Assert.Empty(result);

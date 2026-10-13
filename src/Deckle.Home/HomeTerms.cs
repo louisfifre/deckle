@@ -3,11 +3,10 @@ using System.Text.Json;
 
 namespace Deckle.Home;
 
-// Every Anytype-visible label — type names, property names, closed-vocabulary
-// options — lives in one embedded terms file per language, the pattern shipped
-// by Deckle.Travel. The schema names the structure with stable English keys;
-// this file names the words. Adding a language is a file addition
-// (Terms/terms.<lang>.json); French is the only language shipped today.
+// Every Anytype-visible label (type names, property names, closed-vocabulary
+// options) lives in one embedded terms file per language,
+// Terms/terms.<lang>.json. The schema names the structure with stable English
+// keys; this file names the words.
 internal sealed class HomeTerms
 {
     private const string DefaultLanguage = "fr";

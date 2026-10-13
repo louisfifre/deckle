@@ -13,15 +13,14 @@ namespace Deckle.Modules;
 // heavy assets; the setup plan composes those probes without duplicating them in
 // the presence catalogue.
 //
-// No choice on disk means everything is present: installs that predate the
-// presence model, and dev builds, keep behaving as before the model existed.
+// No choice on disk means everything is present, so older installs and dev
+// builds keep every module.
 public static class ModulePresence
 {
     private static readonly object _gate = new();
     private static IReadOnlySet<string>? _present;
     private static bool _loaded;
 
-    // The choice file, beside the per-module folders it governs.
     public static string FilePath => FilePathUnder(AppPaths.UserDataRoot);
 
     // The same location under an arbitrary data root — for the installer
@@ -30,16 +29,14 @@ public static class ModulePresence
     public static string FilePathUnder(string dataRoot) =>
         Path.Combine(dataRoot, "modules", "presence.json");
 
-    // Whether the user chose to have this module installed. True for every id
-    // while no choice is recorded.
     public static bool IsPresent(string id)
     {
         IReadOnlySet<string>? present = Load();
         return present is null || present.Contains(id);
     }
 
-    // The recorded choice, or null when none is — the selector then defaults to
-    // everything checked.
+    // Null when no choice is recorded: the selector then defaults to everything
+    // checked.
     public static IReadOnlySet<string>? Choice => Load();
 
     // Records the choice and adopts it in place, so a reader after Save sees

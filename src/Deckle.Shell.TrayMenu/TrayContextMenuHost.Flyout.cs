@@ -25,12 +25,10 @@ public sealed partial class TrayContextMenuHost
     {
         _flyout = new MenuFlyout
         {
-            // Animations disabled: H.NotifyIcon documents a
-            // reopen-during-close-animation hack to avoid the carrier window
-            // being hidden mid-animation and cutting the transition. By
-            // disabling them we avoid the hack entirely; the menu appears and
-            // disappears instantly, matching the tempo of a native Windows tray
-            // click (TrackPopupMenu is just as abrupt).
+            // Hiding the carrier mid-animation would cut the transition, which
+            // H.NotifyIcon works around with a reopen-during-close hack. Without
+            // animations the menu opens and closes instantly, as a native tray
+            // menu (TrackPopupMenu) does.
             AreOpenCloseAnimationsEnabled = false,
         };
 
@@ -56,27 +54,16 @@ public sealed partial class TrayContextMenuHost
 
     // ── Force NarrowPadding on every open ────────────────────────────────────
     //
-    // NarrowPadding state (compact 32 DIP density, Win11 mouse-driven target)
-    // is applied by the framework as soon as a mouse pointer interacts with the
-    // menu, but the state resets to DefaultPadding (40 DIP) between flyout
-    // Hide/Show cycles. Visible consequence: on the first click after launch,
-    // items render at 40 DIP while the carrier window is sized at 32 DIP/item
-    // through the _primedSizes cache; content overflows, MenuFlyoutPresenter
-    // enables its internal ScrollViewer, and the user can scroll in a menu that
-    // should not scroll. From the 2nd click onward, the framework restores
-    // NarrowPadding (persisted mouse interaction) and everything aligns.
+    // The framework applies NarrowPadding (32 DIP, the Win11 mouse density) on
+    // pointer interaction, but resets to DefaultPadding (40 DIP) between
+    // Hide/Show cycles: items then overflow a carrier sized for 32 DIP/item and
+    // the presenter scrolls. GoToState only takes effect once the items are
+    // attached to the popup tree, hence the Opened handler.
     //
-    // Fix: force NarrowPadding on all items in the Opened handler, when the
-    // framework attaches them to the popup visual tree. This is when GoToState
-    // can actually apply the state. Aligned with the native Win11 desktop
-    // pattern: Sound, Defender, Date/Time, Network all render their tray menu
-    // in narrow density.
-    //
-    // A real open then re-captures the sizes once laid out, for the next open:
-    // a show that ran on the fallback size (prime not done yet) gets the real
-    // presenter size, and a bad capture does not stick for the process
-    // lifetime. The prime cycle's own open is excluded (_isVisible is false):
-    // it captures in its own callback.
+    // A real open then re-captures the sizes for the next open, so a fallback
+    // size or a bad capture does not stick for the process lifetime. The prime
+    // cycle's own open is excluded (_isVisible is false): it captures in its
+    // own callback.
     private void OnFlyoutOpened(object? sender, object e)
     {
         if (_flyout is null) return;
@@ -96,8 +83,7 @@ public sealed partial class TrayContextMenuHost
     private MenuFlyoutItem CreateItem(string text, Action action)
     {
         // Pure native MenuFlyoutItem: no Style or Template override, no forced
-        // Height. The framework fully handles hover, radius, inset, padding,
-        // foreground, DPI scaling, and cell height from natural DesiredSize.
+        // Height. The framework owns hover, padding, DPI scaling and cell height.
         var item = new MenuFlyoutItem { Text = text };
         item.Click += (_, _) =>
         {
@@ -109,20 +95,11 @@ public sealed partial class TrayContextMenuHost
         return item;
     }
 
-    // Neutralizes the PaddingSizeStates VisualStateGroup by setting each item's
-    // Padding to the narrow value. The initial DefaultPadding state is an empty
-    // VisualState: it leaves LayoutRoot.Padding at its TemplateBinding value,
-    // therefore item.Padding. By setting item.Padding to narrow, the first
-    // render is already compact, without waiting for the framework to switch to
-    // NarrowPadding (that switch only arrived after the first frame, causing
-    // first-click scroll: items rendered at 40 DIP in a window sized for 32).
-    // The NarrowPadding state sets the same value, making both states
-    // equivalent and keeping narrow density permanently.
-    //
-    // Narrow density is assumed as the single target: the tray menu opens on
-    // mouse right-click (the native touch/DefaultPadding branch does not apply
-    // in practice to a desktop app), consistent with Win11
-    // density.
+    // Neutralizes the PaddingSizeStates VisualStateGroup: the initial
+    // DefaultPadding state is empty and leaves LayoutRoot.Padding bound to
+    // item.Padding, so a narrow item.Padding makes the first render compact
+    // and both states equivalent. Narrow density is the single target: the
+    // menu opens on a mouse right-click.
     private void ApplyNarrowPadding()
     {
         if (_flyout is null) return;
