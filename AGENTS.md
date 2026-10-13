@@ -45,7 +45,7 @@ Everything specialized is discoverable, not pre-chewed here — orient, never re
 - Frozen decisions → `docs/adr/`.
 - WinUI/XAML and Windows APIs → Microsoft Learn MCP before local code.
 
-## For Codex
+## Worktrees
 
 Use a sibling `worktrees/deckle` container beside the directory that holds the
 primary checkout. For example, `D:\projects\deckle` resolves to

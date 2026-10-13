@@ -248,4 +248,3 @@ coverage/
 
 # Legacy singular agent facade, kept local when present.
 .agent
-.codex-remote-attachments/
