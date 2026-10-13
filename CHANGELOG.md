@@ -135,6 +135,7 @@ doctrine). This file is generated from the Conventional-Commit history by
 - **playground:** Show the Recording rows under the countdown views
 - **settings:** Add the section block
 - **composer:** Add the mode fold
+- **composition:** Move the countdown gauge with one named fast motion
 
 ### Changed
 
@@ -161,6 +162,10 @@ doctrine). This file is generated from the Conventional-Commit history by
 - **settings:** Open every page with the shared header block
 - **settings:** Put the preset selectors in the header of their fold
 - **settings:** Open every section with the shared block
+
+### Removed
+
+- **hud:** Take the outline's alpha back out of the countdown
 
 ### Fixed
 
