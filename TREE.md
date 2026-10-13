@@ -1764,7 +1764,6 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │       ├── FrameSampler.Readback.cs
 │       ├── FrameSampler.Resources.cs
 │       ├── IFrameAnalyzer.cs
-│       ├── JOURNAL.md
 │       ├── SampledFrame.cs
 │       ├── ScreenCaptureInterop.cs
 │       ├── ScreenCaptureInterop.D3D11.cs
