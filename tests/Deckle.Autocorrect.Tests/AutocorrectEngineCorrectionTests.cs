@@ -150,7 +150,7 @@ public sealed class AutocorrectEngineCorrectionTests
         Assert.Contains(("suivante", (string?)"qualité"), policy.Calls);
     }
 
-    // Regression (JOURNAL 2026-07-02): a correction firing on an elision commit
+    // Regression: a correction firing on an elision commit
     // must not double the apostrophe. The elision apostrophe lives INSIDE the
     // committed form (« j' ») and never showed as a separate boundary char, so
     // the diff carries no trailing boundary — before the fix the boundary was

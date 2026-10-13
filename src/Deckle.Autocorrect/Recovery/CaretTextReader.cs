@@ -12,6 +12,9 @@ public interface ICaretTextReader
 // focus drift, or any text mutation abstains without exposing text to logs.
 public sealed class UIAutomationCaretTextReader : ICaretTextReader
 {
+    // A read cap, not a boundary: in Codex and Anytype the UIA range runs on across
+    // the surrounding document instead of stopping at the composer or block, so the
+    // text is trusted only from a local sentence boundary or the true document start.
     private const int MaxCharacters = 1024;
     private static readonly TimeSpan InitialSettle = TimeSpan.FromMilliseconds(35);
     private static readonly TimeSpan VerificationGap = TimeSpan.FromMilliseconds(75);

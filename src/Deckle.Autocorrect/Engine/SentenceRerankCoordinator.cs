@@ -342,6 +342,8 @@ public sealed class SentenceRerankCoordinator : IDisposable
 
     // Drop the sentence model: the caret left the span we model (or a backspace is
     // editing it). A verdict still in flight will be recognised as stale by epoch.
+    // Raw Input cannot hold back the Enter that sends, so a verdict still running at
+    // that gesture is abandoned rather than applied behind a moved caret.
     public void Invalidate(ResetReason reason)
     {
         if (_disposed) return;

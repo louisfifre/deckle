@@ -7,13 +7,15 @@ namespace Deckle.Autocorrect;
 // ── BackgroundRerankLane ─────────────────────────────────────────────────────
 //
 // The production IRerankLane: one long-lived background thread owns the
-// CamemBERT reranker (and thus the ONNX session, CPU-bound and single-threaded by
-// policy), so the ~100 ms inference never touches the input thread. Requests cross
-// in through a capacity-1, drop-oldest queue — only the freshest slot matters, a
-// backlog can never form. Verdicts cross back as a ConcurrentQueue the input
-// thread drains: the worker enqueues a result and posts a drain message to the
-// host pump (RequestDrain), and the host raises DrainRequested on the input
-// thread, where ResultSink applies it against live engine state.
+// reranker (and thus the ONNX session), so inference never touches the input
+// thread. Requests cross in through a capacity-1, drop-oldest queue — only the
+// freshest slot matters, a backlog can never form. A request already running is
+// not cancelled: a stale verdict still occupies the worker and a fresh request
+// waits for it, so the epoch check protects what gets applied, not latency.
+// Verdicts cross back as a ConcurrentQueue the input thread drains: the worker
+// enqueues a result and posts a drain message to the host pump (RequestDrain),
+// and the host raises DrainRequested on the input thread, where ResultSink
+// applies it against live engine state.
 //
 // Teardown does not trust any pump join (the keyboard host is reference-counted
 // and may outlive this consumer): Dispose cancels the worker, completes the queue,

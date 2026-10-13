@@ -19,6 +19,8 @@ namespace Deckle.Autocorrect.Tests;
 //
 // All are explicit and skip unless their inputs are present, so an ordinary
 // test run never touches the repo or requires the multi-hundred-MB dumps.
+// `dotnet test --filter` runs none of them and reports Total 0; run one with the
+// in-process runner: `Deckle.Autocorrect.Tests.exe -explicit only -method "<name>"`.
 [Trait("Category", "maintenance")]
 public sealed class DomainPackMaintenanceTests(ITestOutputHelper output)
 {
@@ -121,7 +123,7 @@ public sealed class DomainPackMaintenanceTests(ITestOutputHelper output)
         output.WriteLine($"pack {DomainPackBuilder.EnItPack.Id}: {pack.Count} forms, "
             + $"{promoted} promoted above the {DomainPackBuilder.FloorFrequencyPerMillion} opm floor");
 
-        // Journaled, never asserted: whether a given word is in the pack
+        // Logged, never asserted: whether a given word is in the pack
         // depends on upstream Wiktionary categorization, not on our code — a
         // hard assert would fire on someone else's edit.
         foreach (string witness in new[]
@@ -180,8 +182,8 @@ public sealed class DomainPackMaintenanceTests(ITestOutputHelper output)
     // (artifacts/autocorrect-data/experiments/pack-fr-it-wordfreq.tsv.gz).
     // The gate on the effective run: zero wrong changes, and no failure
     // outside the known residue — the contested Morphalou-epsilon fold and
-    // the instant typo repair toward a sub-bar pack form, both measured and
-    // journaled when the floor-vs-promotion call was made. Everything else
+    // the instant typo repair toward a sub-bar pack form, both engine-bar
+    // questions rather than frequency-policy ones. Everything else
     // (protection, sole-candidate restoration, promoted contests) must pass.
     [Fact(Explicit = true)]
     public void BenchFrItPackVocabulary()

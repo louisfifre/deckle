@@ -41,7 +41,7 @@ public static class WordBoundaries
     // empty; every other boundary renders verbatim. Every consumer rebuilding
     // on-screen text from (form, boundary) pairs goes through this one rule,
     // or the rebuilt text drifts one char off the screen per elision — the
-    // doubled-apostrophe / eaten-letter injection corruption (JOURNAL 2026-07-02).
+    // doubled-apostrophe / eaten-letter injection corruption.
     public static string DisplaySeparator(char boundary) =>
         IsApostrophe(boundary) ? string.Empty : boundary.ToString();
 

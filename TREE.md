@@ -741,7 +741,6 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── CONTEXT.md  — context-deckle-autocorrect Autocorrect vocabulary — where correction may act (surfaces, enrollment), the t…
 │   │   ├── Deckle.Autocorrect.csproj
 │   │   ├── DeckleAutocorrectSource.cs
-│   │   ├── JOURNAL.md
 │   │   └── SettingsSearch.cs
 │   ├── Deckle.Autocorrect.Lab/
 │   │   ├── Mining/

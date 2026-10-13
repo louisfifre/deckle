@@ -38,8 +38,8 @@ namespace Deckle.Autocorrect;
 // Timing rides per char: comma-joined gaps in ms since the previous keystroke
 // seen in the span (first of a span "0"; the second UTF-16 unit of a surrogate
 // pair "0" so the string stays aligned to Text). The first gap after a repair
-// therefore includes the repair burst itself — the pause the pause-pass will
-// one day want. Empty when no keystroke carried a clock, mirroring the corpus.
+// therefore includes the repair burst itself. Empty when no keystroke carried a
+// clock, mirroring the corpus.
 public sealed class TypingStream
 {
     // A run is at most a long sentence; the cap only splits pathological

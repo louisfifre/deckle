@@ -4,10 +4,10 @@ using Xunit;
 
 namespace Deckle.Autocorrect.Tests;
 
-// Backspace after a correction is a PLAIN Backspace. The implicit-Backspace
-// revert is retired (JOURNAL 2026-07-02): Backspace never restores the typo,
-// never writes a suppression, and no time window governs it — a correction is
-// taken back only through the correction inlay. What Backspace DOES still do is
+// Backspace after a correction is a PLAIN Backspace. There is no implicit-Backspace
+// revert: Backspace never restores the typo, never writes a suppression, and no
+// time window governs it — a correction is taken back only through the
+// correction inlay. What Backspace DOES still do is
 // re-open the corrected word for re-editing, so the tracker's realignment holds.
 [Trait("Category", "integration")]
 public sealed class AutocorrectEngineBackspaceTests
