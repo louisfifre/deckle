@@ -127,6 +127,7 @@ doctrine). This file is generated from the Conventional-Commit history by
 - **playground:** Bring back the Ambient tab
 - **catalog:** Make Magnitude the one numeric block
 - **catalog:** Retire the Slider and Number kinds
+- **composer:** Name the default in a card's reset tooltip
 
 ### Changed
 
