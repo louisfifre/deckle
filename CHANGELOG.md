@@ -128,6 +128,10 @@ doctrine). This file is generated from the Conventional-Commit history by
 - **catalog:** Make Magnitude the one numeric block
 - **catalog:** Retire the Slider and Number kinds
 - **composer:** Name the default in a card's reset tooltip
+- **composition:** Shape the utterance countdown as the Recording outline
+- **composition:** Open the utterance countdown later and past the corners
+- **hud:** Smooth the countdown rise with the outline's level alpha
+- **playground:** Show the Recording rows under the countdown views
 
 ### Changed
 
