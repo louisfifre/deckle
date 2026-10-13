@@ -16,10 +16,8 @@ public sealed partial class HudWindow : Window
 {
     // ── Fade-in: Hidden → visible transition ──────────────────────────────────
     //
-    // 150ms cubic ease-out, matches WindowSlideAnimator / LayeredAlphaAnimator
-    // to keep the HUD subsystem visually consistent. Proximity is suspended for
-    // the duration so a WM_INPUT mid-fade cannot snap alpha to a smoothstep
-    // value while the fade-in is still ramping up.
+    // Proximity is suspended for the duration so a cursor move mid-fade cannot
+    // snap alpha to a smoothstep value while the fade-in is still ramping up.
 
     private void StartFadeIn(byte target, bool activateProximityOnComplete)
     {
@@ -37,10 +35,8 @@ public sealed partial class HudWindow : Window
         _fadeInTimer.Tick += OnFadeInTick;
         _fadeInTimer.Start();
 
-        // Axis 2: FadeInStarted. scope="hud" because this is the main window's
-        // fade-in (HudOverlayWindow has its own emission site with
-        // scope="overlay"). fromAlpha is captured before the reset to 0 to
-        // trace a possible transition from an in-progress proximity alpha.
+        // fromAlpha is captured before the reset to 0 to trace a fade that
+        // starts from an in-progress proximity alpha.
         DeckleHudSource.Log.FadeInStarted("hud", FADE_IN_MS, fromAlpha, target);
     }
 

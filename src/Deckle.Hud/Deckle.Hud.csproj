@@ -21,10 +21,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <!-- Exposes internal types to the test project: ProximityRollupAggregator
-         is internal sealed (strictly module-local concern) but unit-tested in
-         isolation from Deckle.Hud.Tests. .NET 5+ pattern via MSBuild attribute,
-         which generates an [InternalsVisibleTo] on the Roslyn side at build. -->
     <InternalsVisibleTo Include="Deckle.Hud.Tests" />
   </ItemGroup>
 

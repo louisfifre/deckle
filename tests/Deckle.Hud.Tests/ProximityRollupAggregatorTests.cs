@@ -3,8 +3,6 @@ using Xunit;
 
 namespace Deckle.Hud.Tests;
 
-// Aggregator is internal sealed in Deckle.Hud; access from the test project
-// goes through InternalsVisibleTo declared in Deckle.Hud.csproj.
 [Trait("Category", "unit")]
 public class ProximityRollupAggregatorTests
 {

@@ -4,12 +4,9 @@ namespace Deckle.Hud;
 // incrementally (no alpha buffer) and keeps a bounded distance ring buffer
 // for percentile computation flushed at the end of the session.
 //
-// Why a ring instead of a truncated window. WM_INPUT at ~125 Hz during a
-// typical ~10 s HUD session is ~1250 samples; capacity 2048 fully covers
-// ~16 s, i.e. almost all real visibility sessions. For the rare longer
-// sessions, percentiles reflect the last ~16 seconds: a still diagnostically
-// representative window, unlike a truncated buffer that would freeze the
-// samples from the beginning.
+// A ring rather than a truncated buffer: on a session longer than Capacity
+// samples, percentiles reflect the latest samples instead of freezing the
+// first ones.
 internal sealed class ProximityRollupAggregator
 {
     internal const int Capacity = 2048;
@@ -43,11 +40,9 @@ internal sealed class ProximityRollupAggregator
         if (alpha > _maxAlpha) _maxAlpha = alpha;
     }
 
-    // Returns (p50, p95) in DIPs over the min(TotalSamples, Capacity) latest
-    // collected samples. Called only once at the end of the session; the copy
-    // and sort allocation is acceptable at this cadence (once per HUD show,
-    // not per WM_INPUT). Throws InvalidOperationException if no sample was
-    // added; the caller must gate on TotalSamples > 0 first.
+    // (p50, p95) in dips over the min(TotalSamples, Capacity) latest samples.
+    // Called once per HUD show, so the copy and sort allocation is fine.
+    // Throws when no sample was added; gate on TotalSamples > 0 first.
     public (int P50, int P95) ComputePercentiles()
     {
         if (_totalSamples == 0)

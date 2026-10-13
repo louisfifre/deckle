@@ -3,22 +3,8 @@ using Deckle.Diagnostics;
 
 namespace Deckle.Hud;
 
-// EventSource provider for the Deckle.Hud module.
-//
-// Comes from the resolution of the obs/cartography conflict: obs had
-// centralized HUD observations in DeckleAppSource (on the Deckle host side),
-// but cartography extracted Deckle.Hud into a separate module, and a module
-// cannot depend on the host. Modular doctrine (one provider per coherent
-// component) requires an emitting module to own its provider; this file does
-// that, following the pattern of the other Deckle.* providers.
-//
-// Initially the provider only carried the HideSync rendezvous timeout warning.
-// The cross-cutting observability instrumentation wave (May 2026) extends it
-// with four internal observation axes: state machine transitions, fade-in,
-// message retract, and proximity rollup. This makes the HUD mechanics
-// diagnosable from the LogWindow and JSONL files instead of through ad hoc
-// File.AppendAllText calls. See `reference--eventsource-convention--1.2.md`
-// §*Under-instrumented internal HUD* (gap 1.1), which motivates the extension.
+// EventSource provider for the Deckle.Hud module. A module cannot depend on the
+// host, so the module that emits owns its provider.
 [EventSource(Name = "Deckle-Hud")]
 public sealed class DeckleHudSource : DeckleEventSource
 {
@@ -29,22 +15,13 @@ public sealed class DeckleHudSource : DeckleEventSource
     public const int EvtStateChanged        = 2;
     public const int EvtFadeInStarted       = 3;
     public const int EvtMessageRetracted    = 4;
-    // 5 reserved: former HUD composition warm pass event, removed in 2026-06
-    // when boot-time PrimeAndHide was deleted.
+    // 5 reserved: a removed event; never reuse the id.
     public const int EvtProximityRollup     = 6;
-    // 7: Verbose mirror added for Verbose/Info separation — HudWarning detail.
     public const int EvtHudWarningDetail    = 7;
-    // 8: digit reveal mask (F1) build failure — degrades to the flat accent.
     public const int EvtRevealMaskFailed    = 8;
-    // 9 reserved: former reveal custom-font resolution event, removed in 2026-06
-    // when the digit mask moved from a Win2D-painted glyph to
-    // TextBlock.GetAlphaMask (no font loading left to observe).
-    // 10: reveal mask geometry — cell + host extents and the cell offset used to
-    // place the shared conic under the digit (F1 placement diagnostics).
+    // 9 reserved: a removed event; never reuse the id.
     public const int EvtRevealGeometry      = 10;
-    // 11: Verbose mirror for the reveal-mask failure's technical details.
     public const int EvtRevealMaskFailedDetail = 11;
-    // 12: live transcript panel shown / hidden.
     public const int EvtTranscriptPanelVisibilityChanged = 12;
 
     [Event(EvtHudWarning,
@@ -66,11 +43,9 @@ public sealed class DeckleHudSource : DeckleEventSource
         WriteEvent(EvtHudWarningDetail, message);
     }
 
-    // Digit reveal mask (F1 prototype) failed to build — most often a Win2D
-    // font-load failure (DrawText E_INVALIDARG when the Bitcount URI can't be
-    // resolved). The reveal is optional, so the digit silently falls back to
-    // the flat-accent overlay; this records *why* it fell back so a degraded
-    // reveal isn't mistaken for a design choice.
+    // The digit reveal mask kept failing to build, so the face fell back to the
+    // flat-accent overlay; this records it so a degraded reveal isn't mistaken
+    // for a design choice.
     [Event(EvtRevealMaskFailed,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Lifecycle,
@@ -90,11 +65,8 @@ public sealed class DeckleHudSource : DeckleEventSource
         WriteEvent(EvtRevealMaskFailedDetail, error, message);
     }
 
-    // Geometry captured when a digit reveal is built: the cell extents, the
-    // cell's top-left offset within the processing-surface host, and the host
-    // extents. These are exactly the numbers the F1 placement maths consume
-    // (conicCentre = hostCentre − cellOffset), so a misplaced "window on the
-    // conic" can be read straight off the log instead of guessed at.
+    // The inputs of the reveal placement (conicCentre = apex − cellOffset), so
+    // a misplaced digit reveal can be read straight off the log.
     [Event(EvtRevealGeometry,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Lifecycle,
@@ -105,14 +77,11 @@ public sealed class DeckleHudSource : DeckleEventSource
         WriteEvent(EvtRevealGeometry, cellW, cellH, offX, offY, hostW, hostH);
     }
 
-    // ─── Axis 1 — Six-state state machine transitions ──────────────────
+    // ─── State machine transitions ──────────────────────────────────────
     //
-    // Emitted by HudWindow.SetState on each transition (Hidden, Charging,
-    // Recording, Transcribing, Rewriting, Message). `reason` captures the
-    // caller-side semantic trigger (hotkey, paste, message_hide, etc.).
-    // `alpha` and `dpi` are the window manager's technical parameters at the
-    // time of the transition; a bad alpha or unexpected dpi often points to a
-    // fade-in or DPI-aware resizing bug.
+    // `alpha` and `dpi` are the window's parameters at the transition; a bad
+    // alpha or unexpected dpi often points to a fade-in or DPI-aware resizing
+    // bug.
     [Event(EvtStateChanged,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Lifecycle,
@@ -125,9 +94,8 @@ public sealed class DeckleHudSource : DeckleEventSource
 
     // ─── Live transcript panel visibility ──────────────────────────────
     //
-    // Emitted by TranscriptPanelWindow when it appears (first text of a take)
-    // and when it leaves. Content-free by design: the side it sits on and the
-    // number of utterances it holds, never the transcript text.
+    // Content-free by design: the side and the utterance count, never the
+    // transcript text.
     [Event(EvtTranscriptPanelVisibilityChanged,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Lifecycle,
@@ -138,13 +106,10 @@ public sealed class DeckleHudSource : DeckleEventSource
         WriteEvent(EvtTranscriptPanelVisibilityChanged, shown, side, utterances);
     }
 
-    // ─── Axis 2 — 150 ms cubic ease-out fade-in ────────────────────────
+    // ─── Fade-in ────────────────────────────────────────────────────────
     //
-    // Emitted at the start of each fade-in. `scope` distinguishes surfaces
-    // with their own alpha animator: "hud" for HudWindow, "overlay" for
-    // HudOverlayWindow — both now fade off the shared CursorMovementSignal
-    // (Deckle.Shell). A future separate "message" surface (the retract hybrid
-    // bleed, not implemented) would be added here.
+    // `scope` names the surface that owns the alpha animator: "hud" for
+    // HudWindow, "overlay" for HudOverlayWindow.
     [Event(EvtFadeInStarted,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Lifecycle,
@@ -155,13 +120,10 @@ public sealed class DeckleHudSource : DeckleEventSource
         WriteEvent(EvtFadeInStarted, scope, duration_ms, from_alpha, to_alpha);
     }
 
-    // ─── Axis 3 — Message retract 400×160 → 272×78 ─────────────────────
+    // ─── Message retract ────────────────────────────────────────────────
     //
-    // Emitted at the start of the retract (hybrid bleed → standalone card).
-    // There is no active call site in the current code: the retract mechanics
-    // are the target architecture, but HudMessage is
-    // currently fixed at 272×78. The event is declared to freeze the signature;
-    // it will activate when the retract mechanics are wired.
+    // No call site: the event only freezes the signature of a planned message
+    // retract; HudMessage is fixed at 272×78.
     [Event(EvtMessageRetracted,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Lifecycle,
@@ -172,23 +134,12 @@ public sealed class DeckleHudSource : DeckleEventSource
         WriteEvent(EvtMessageRetracted, from_w, from_h, to_w, to_h, duration_ms);
     }
 
-    // ─── Axis 4 — Proximity smoothstep (per-session rollup) ────────────
+    // ─── Proximity smoothstep (per-session rollup) ──────────────────────
     //
-    // Canonical rollup pattern (see observable class #3 "High-frequency
-    // real-time loop" in `reference--eventsource-convention--1.2.md`
-    // §*Canonical observable classes*): proximity is evaluated at ~125 Hz on
-    // WM_INPUT, a frequency too hot for the LogWindow according to the
-    // "heartbeats < 1 s are not logged" doctrine. HudWindow accumulates over
-    // the full visibility window (shown → hidden) and emits a single summary
-    // when it becomes hidden, under two cumulative conditions: at least one
-    // sample collected AND min_alpha != max_alpha (otherwise the mouse did not
-    // enter the proximity radius, smoothstep stayed flat, and there is no
-    // diagnostic material). A previous 1 s periodic variant flooded the
-    // LogWindow with valueless events on sessions where nothing moved. The
-    // strict gate avoids all allocation when no listener is attached,
-    // including collection-side allocation (see _proximityRollupEnabled in
-    // HudWindow). `duration_ms` is the actual visibility session duration, not
-    // a fixed period.
+    // Proximity runs on every cursor move, too hot for the log: heartbeats
+    // under one second are never logged. HudWindow aggregates one visibility
+    // (shown → hidden) into this single summary. `duration_ms` is the actual
+    // visibility duration, not a fixed period.
     [Event(EvtProximityRollup,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Heartbeat,

@@ -33,10 +33,6 @@ public sealed partial class HudWindow : Window
     public void SwitchToTranscribing() => EnqueueUI(() => SetState(HudState.Transcribing, reason: "switch_transcribing"));
     public void SwitchToRewriting()    => EnqueueUI(() => SetState(HudState.Rewriting,    reason: "switch_rewriting"));
 
-    // Durations are severity-driven (see FeedbackDuration / SuccessDuration
-    // below). Success and Informational clear fast, warnings and errors
-    // linger so the user has time to read the actionable body.
-
     public void ShowError(string title, string body) =>
         EnqueueUI(() => SetState(HudState.Message,
             new MessagePayload(MessageKind.Critical, title, body, FeedbackDuration(2)),
@@ -48,11 +44,9 @@ public sealed partial class HudWindow : Window
                 SuccessDuration),
             reason: "show_pasted"));
 
-    // "Copied to clipboard" is a *success* outcome — the transcription
-    // landed on the clipboard, which is the default flow when
-    // AutoPasteEnabled is off (ship default). The green checkmark matches
-    // the user's model: the operation succeeded. "Ctrl+V where you want it"
-    // is a next-step hint, not a failure notice.
+    // "Copied to clipboard" is a *success* outcome: the transcription landed
+    // on the clipboard, the default flow when AutoPasteEnabled is off. "Ctrl+V
+    // where you want it" is a next-step hint, not a failure notice.
     public void ShowCopied() =>
         EnqueueUI(() => SetState(HudState.Message,
             new MessagePayload(MessageKind.Success,
@@ -60,10 +54,8 @@ public sealed partial class HudWindow : Window
                 SuccessDuration),
             reason: "show_copied"));
 
-    // File transcription completion. The saved .txt file is the primary
-    // outcome — the transcript is on disk — so this is a *success* message; the
-    // clipboard copy is a next-step hint under the title, exactly as ShowCopied
-    // frames its own hint. Same green checkmark, same SuccessDuration.
+    // The saved .txt file is the primary outcome, so this is a *success*
+    // message; the clipboard copy is a next-step hint, as in ShowCopied.
     public void ShowFileSaved() =>
         EnqueueUI(() => SetState(HudState.Message,
             new MessagePayload(MessageKind.Success,
@@ -73,17 +65,11 @@ public sealed partial class HudWindow : Window
 
     // ─── Feedback routing ───────────────────────────────────────────────────
     //
-    // Severity and duration arrive as primitives rather than as a
-    // `UserFeedback` record: since sub-wave 6b, emission goes through the
-    // `UserFeedbackEmitted(severity:int, title, body, role:int)` EventSource
-    // channel exposed by each module provider (DeckleWhispSource, etc.). The
-    // host sink (`AppHudFeedbackSink`) routes to the replica surface
-    // (`ShowUserFeedback`) or stack (`HudOverlayManager.Enqueue`) according to
-    // `role`.
-    //
-    // Severity convention: 0=Info, 1=Warning, 2+=Error (same ordinals as the
-    // former `UserFeedbackSeverity` enum). Preserved exactly to avoid changing
-    // this contract on the provider side.
+    // Feedback arrives through the `UserFeedbackEmitted(severity, title, body,
+    // role)` EventSource event each module provider exposes; the host sink
+    // (`AppHudFeedbackSink`) routes it here or to `HudOverlayManager.Enqueue`
+    // by `role`. Severity convention 0=Info, 1=Warning, 2+=Error is a
+    // contract shared with every provider.
     public void ShowUserFeedback(int severity, string title, string body)
     {
         MessageKind kind = severity switch
@@ -99,10 +85,9 @@ public sealed partial class HudWindow : Window
 
     // ─── Feedback durations ─────────────────────────────────────────────────
     //
-    // Tuned by severity: warn/error linger, info clears quickly. Hardcoded
-    // constants; a Settings knob here would add complexity for a value a user
-    // never changes. `SuccessDuration` is shared with the HUD's internal
-    // Success messages (ShowCopied / ShowPasted).
+    // Warnings and errors linger so the user can read the actionable body;
+    // info clears quickly. Hardcoded: a Settings knob would add complexity for
+    // a value a user never changes.
 
     internal static TimeSpan FeedbackDuration(int severity) => severity switch
     {
@@ -122,10 +107,6 @@ public sealed partial class HudWindow : Window
     {
         if (DispatcherQueue.HasThreadAccess) { SetState(HudState.Hidden, reason: "hide_sync"); return; }
         var done = new ManualResetEventSlim();
-        // Threading: real and critical cross-thread site (transcribe thread →
-        // UI rendezvous just before SendInput Ctrl+V). An abnormal wait_ms
-        // here indicates a blocked UI thread that will trigger the defensive
-        // timeout and propagate a paste race.
         bool enqueued = DispatcherQueue.TryEnqueueObserved(
             "window-show", "hud-window-hide-sync",
             () =>
@@ -153,14 +134,10 @@ public sealed partial class HudWindow : Window
 
     // ── State dispatcher ──────────────────────────────────────────────────────
     //
-    // Single entry point for all UI transitions. Marshals control visibility,
-    // forwards to the control's ApplyState / Show, shows the (fixed-size)
-    // window, and arms the auto-hide timer for messages.
+    // Single entry point for every HUD transition.
 
-    // `reason` is a semantic trigger label propagated to
-    // DeckleHudSource.StateChanged to distinguish "hide_sync",
-    // "message_timeout", "show_recording", etc.; without it, reading the
-    // LogWindow trace would mean guessing why the HUD just changed state.
+    // `reason` labels the trigger in the StateChanged event, so the trace says
+    // why the HUD changed state.
     private void SetState(HudState next, MessagePayload? msg = null, string reason = "unspecified")
     {
         // Overlay disabled in Settings → no-op for any *visible* state. Hidden
@@ -177,34 +154,23 @@ public sealed partial class HudWindow : Window
 
         _messageHideTimer?.Stop();
 
-        // Axis 1: StateChanged. Emitted before the concrete dispatch so the
-        // sequence in the LogWindow reads the transition at the head of each
-        // change. alpha is read before ApplyShowAlpha (therefore the "current"
-        // pre-transition alpha); dpi is recalculated through GetDpiForWindow to
-        // track a runtime DPI change between two shows.
+        // Emitted before the dispatch, with the pre-transition alpha, so the
+        // trace reads each transition first.
         int dpiNow = (int)NativeMethods.GetDpiForWindow(_hwnd);
         DeckleHudSource.Log.StateChanged(from.ToString(), next.ToString(), reason, _currentAlpha, dpiNow);
 
         if (wasShown != isShown)
             MainHudVisibilityChanged?.Invoke(this, isShown);
 
-        // Proximity rollup: Begin when becoming visible (initializes the
-        // IsEnabled gate and arms the session stopwatch), End when becoming
-        // Hidden (flushes the visibility window's single summary). No emission
-        // between the two; the rollup is strictly per-session, not periodic.
         if (isShown && !wasShown)
             BeginProximitySession();
         else if (!isShown && wasShown)
             EndProximitySessionAndFlush();
 
-        // Clock lifecycle — owned by the chrono control, driven from here, the
-        // single transition dispatcher, NOT by the Apply* paint methods. A new
-        // session zeroes the face, recording starts ticking, the Stop (the
-        // instant-ack on the hotkey thread, or the later engine status) freezes
-        // it. Kept out of ApplyState so the painted visual and the elapsed value
-        // stay independent — see HudChrono's clock lifecycle remark. Gated with
-        // the visible states (above the overlay-disabled early return), so a
-        // disabled overlay never arms the vsync tick on a hidden control.
+        // Clock lifecycle, driven from this dispatcher rather than the Apply*
+        // paint methods, so the painted look and the elapsed value stay
+        // independent. It sits after the overlay-disabled return, so a disabled
+        // overlay never arms the vsync tick on a hidden control.
         switch (next)
         {
             case HudState.Charging:
@@ -270,11 +236,6 @@ public sealed partial class HudWindow : Window
         }
     }
 
-    // Centralised alpha application for visible states. Two branches:
-    //   - Hidden → visible transition with animations enabled → fade-in
-    //     150ms cubic ease-out, proximity re-activated on completion.
-    //   - Other cases (state switch while visible, animations off) →
-    //     instant alpha, proximity activated immediately.
     private static bool ShouldFadeIn(bool wasShown) =>
         !wasShown && SystemAnimationPreference.Instance.AnimationsEnabled;
 

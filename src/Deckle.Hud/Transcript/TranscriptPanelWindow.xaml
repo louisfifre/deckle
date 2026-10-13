@@ -3,13 +3,7 @@
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
     <!-- Live transcript panel: the dictated text as it arrives, beside the HUD.
-         Reuses the HUD's visual grammar as is: the RootGrid and card Border
-         painted with LayerFillColorDefaultBrush, OverlayCornerRadius, body text
-         in TextFillColorPrimaryBrush, HudMessage's 16/12 padding, the 1-dip DWM
-         frame stroke, no shadow. The HWND shell in the code-behind (DWM round
-         corners, layered click-through no-activate ex-styles, WM_NCCALCSIZE
-         subclass) is a deliberate copy of HudOverlayWindow's, pending a shared
-         extraction once the three surfaces can be run side by side.
+         Reuses the HUD's visual grammar as is.
 
          The ScrollViewer is never scrolled by the user: the HWND is
          WS_EX_TRANSPARENT so no input reaches it, and IsHitTestVisible="False"

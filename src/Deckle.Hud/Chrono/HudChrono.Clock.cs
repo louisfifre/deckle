@@ -16,16 +16,10 @@ namespace Deckle.Hud;
 // with the matching clock op; the Playground drives the same public methods.
 public sealed partial class HudChrono
 {
-    // Cross-assembly hook for the recording cap used by UpdateClock to
-    // freeze the chrono at the configured ceiling. The shipping App wires
-    // this to Audio.CaptureSettingsService.Instance.Current.MaxRecordingDurationSeconds
-    // at boot; until wired, the default `int.MaxValue` is a no-op (no cap),
-    // which keeps the lib usable standalone (HudPlayground tests, future
-    // host modules) without a Settings module dependency.
-    //
-    // Read by ChronoFormatter.Decompose on every vsync tick — must be
-    // cheap (a single delegate invoke). Mutating it live is allowed; the
-    // change takes effect on the next render frame.
+    // Recording cap that freezes the chrono at the configured ceiling. The App
+    // wires it at boot; the default int.MaxValue means no cap, so this library
+    // needs no Settings dependency. Read on every vsync tick, so it must stay
+    // cheap; a live change applies on the next frame.
     public static System.Func<int> MaxRecordingDurationSecondsProvider { get; set; }
         = () => int.MaxValue;
 
@@ -36,18 +30,9 @@ public sealed partial class HudChrono
     private int _lastCs  = -1;
 
     // ── Clock lifecycle ───────────────────────────────────────────────────────
-    //
-    // The functional chronometer, owned here and driven by the host
-    // (HudWindow.SetState maps each transition to one of these) and the
-    // Playground. Deliberately kept OUT of the Apply* paint methods: ApplyState
-    // only styles the card — it never starts, stops, or zeroes the clock. That
-    // separation is what lets the same visual (e.g. the parked Charging look) be
-    // painted over either a zeroed clock at session start or a frozen one at the
-    // end of a take, without the paint deciding the elapsed value.
 
-    // Zero the clock and the digit face. Called on a new session (Charging
-    // entry) so a take never opens on the previous take's frozen value — the
-    // bug the old in-ApplyCharging reset papered over, now an explicit step.
+    // Called on a new session (Charging entry) so a take never opens on the
+    // previous take's frozen value.
     public void ResetClock()
     {
         _stopwatch.Reset();
@@ -67,20 +52,17 @@ public sealed partial class HudChrono
     }
 
     // Freeze on the final value. UpdateClock latches the elapsed reached between
-    // the last vsync tick and the Stop (may light the last-changed digit) — it
-    // must run before the processing reveal starts, which the caller guarantees by calling
-    // StopClock before SetState(Transcribing).
+    // the last vsync tick and the Stop (may light the last-changed digit), so it
+    // must run before the processing reveal starts: HudWindow.SetState calls
+    // StopClock before ApplyState(Transcribing).
     public void StopClock()
     {
         _stopwatch.Stop();
         UpdateClock();
     }
 
-    // Reset the visible chrono face to a pristine zero: invalidate the
-    // last-rendered cache so UpdateClock repaints every position, clear the
-    // accent flash state, and
-    // write the glyphs straight to "0" via ResetDigitTexts (not WriteDigit,
-    // which would treat the change as a tick and flash it).
+    // Writes the glyphs straight to "0" through ResetDigitTexts, not WriteDigit,
+    // which would treat the change as a tick and flash it.
     private void ClearDigitDisplay()
     {
         _lastMin = _lastSec = _lastCs = -1;
@@ -102,21 +84,13 @@ public sealed partial class HudChrono
         Cs1Accent.Text  = Cs2Accent.Text  = "0";
     }
 
-    // Writes `newText` onto both the primary and accent TextBlocks at
-    // `index`, then makes its accent overlay visible
-    // immediately — the Recording-time "each change flashes in accent" UX
-    // we have been iterating on. Returns early if the text didn't
-    // actually change (no-op on every vsync for stationary digits).
-    // Index order matches the six digit arrays:
-    // 0 Min1, 1 Min2, 2 Sec1, 3 Sec2, 4 Cs1, 5 Cs2.
+    // Each digit change flashes in accent while recording.
     private void WriteDigit(int index, string newText, TextBlock primary, TextBlock accent)
     {
         if (primary.Text == newText) return;
         primary.Text = newText;
         accent.Text  = newText;
-        // Push the flash directly on the overlay. It is an instantaneous data
-        // state, not a temporal animation. Transcribing/Rewriting replace it
-        // with the static processing-material reveal.
+        // The flash is an instantaneous data state, not a temporal animation.
         //
         // Invariant primary.Opacity + accent.Opacity = 1 so only one
         // glyph ever contributes ink. Without this, both TextBlocks

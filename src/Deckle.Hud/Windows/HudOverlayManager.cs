@@ -9,9 +9,9 @@ using Deckle.Shell;
 namespace Deckle.Hud;
 
 // Owns the stack of transient overlay cards displayed alongside the main
-// HudWindow. Each enqueued UserFeedback with Role=Overlay creates one
-// HudOverlayWindow, placed at the next free slot away from the main HUD.
-// Per-card timers expire based on severity (see UserFeedbackDurations).
+// HudWindow. Each Enqueue creates one HudOverlayWindow, placed at the next
+// free slot away from the main HUD. Per-card timers expire by severity
+// (HudWindow.FeedbackDuration).
 //
 // ─── Invariant — no gap ──────────────────────────────────────────────────────
 // Slot indices span 0..N-1 contiguously, with 0 adjacent to the main HUD and
@@ -49,20 +49,14 @@ public sealed class HudOverlayManager : IDisposable
         SettingsService.Instance.OverlayAnimationsChanged += OnOverlayAnimationsChanged;
     }
 
-    // Sub-wave 6b: signature in primitives rather than a `UserFeedback`
-    // record. Severity convention 0=Info, 1=Warning, 2+=Error, aligned with
-    // the `UserFeedbackEmitted(severity, ...)` EventSource event.
+    // Severity convention 0=Info, 1=Warning, 2+=Error, aligned with the
+    // `UserFeedbackEmitted(severity, ...)` EventSource event.
     public void Enqueue(int severity, string title, string body)
     {
         if (_disposed) return;
 
         if (!_dispatcher.HasThreadAccess)
         {
-            // Threading: overlay enqueue from a non-UI thread
-            // (HudFeedbackSink on the Diagnostics side, or any
-            // UserFeedbackEmitted emitter from a worker engine). An abnormal
-            // wait_ms here indicates a saturated UI thread delaying overlay
-            // display.
             _dispatcher.TryEnqueueObserved(
                 "feedback-display", "overlay-manager",
                 () => Enqueue(severity, title, body),
@@ -77,8 +71,7 @@ public sealed class HudOverlayManager : IDisposable
         var window = new HudOverlayWindow(_cursorSignal);
         var hwnd = window.Hwnd;
 
-        // Append to the list first so ComputeSlotPositionPx sees the final
-        // count. The new card sits at the top of the stack (slot = N-1,
+        // The new card takes the top of the stack (slot N-1 once added,
         // farthest from the main HUD).
         int newSlot = _entries.Count;
         var (xPx, yPx) = ComputeSlotPositionPx(newSlot);
@@ -86,12 +79,9 @@ public sealed class HudOverlayManager : IDisposable
         window.ApplyPayload(severity, title, body);
         window.ShowAt(xPx, yPx);
 
-        // Windowing: overlay specialization emitted after ShowAt (which
-        // already emits the common trunk with window="hud-overlay"). The slot
-        // is only known here in the manager, not in the window itself. Also
-        // emitted on each slot reassignment in Recompact below when an overlay
-        // changes position after a neighbor expires or the main HUD
-        // appears/disappears.
+        // The slot is known only here, so the manager emits the overlay
+        // specialization after ShowAt's common trunk; Recompact emits it again
+        // on each slot change.
         WindowingProbe.EmitOverlaySlotAssigned(hwnd, newSlot);
 
         var slide = new WindowSlideAnimator(
@@ -127,10 +117,6 @@ public sealed class HudOverlayManager : IDisposable
 
         if (!_dispatcher.HasThreadAccess)
         {
-            // Threading: propagation of the main HUD visibility event to the
-            // overlay stack. Cross-thread when HudWindow emits from a non-UI
-            // path (rare in practice, but the path is wired). Instrumentation
-            // identical to other overlay sites.
             _dispatcher.TryEnqueueObserved(
                 "ui-update", "overlay-manager",
                 () => OnMainHudVisibilityChanged(sender, visible),
@@ -168,10 +154,6 @@ public sealed class HudOverlayManager : IDisposable
         entry.IsExpiring = true;
         entry.LifeTimer.Stop();
 
-        // Fade out, then close the HWND and recompact the stack so remaining
-        // cards slide into the freed slot(s). Recompact is what guarantees the
-        // "no gap" invariant — regardless of where the expiring card sat
-        // (bottom, middle, top), the surviving cards end up contiguous.
         entry.Window.FadeOut(onComplete: () =>
         {
             entry.Slide.Cancel();
@@ -181,10 +163,6 @@ public sealed class HudOverlayManager : IDisposable
         });
     }
 
-    // The one primitive — walks entries in list order (0 = oldest), reassigns
-    // SlotIndex to match list position, and slides any card whose target
-    // pixel position differs from its current one. Called from every mutation:
-    // enqueue, expiry, main HUD visibility flip.
     private void Recompact()
     {
         for (int i = 0; i < _entries.Count; i++)
@@ -203,12 +181,8 @@ public sealed class HudOverlayManager : IDisposable
                 entry.SlotIndex = newSlot;
                 entry.Slide.SlideTo(xPx, yPx);
 
-                // Windowing: slot reassignment. Emitted only when the slot
-                // changes (not on simple in-slot repositioning caused by a DPI
-                // or work area change). The post-slide rect is asynchronous on
-                // the animator side; we capture the current rect, which
-                // reflects the pre-animation position. The trace says "slot N
-                // assigned to this window", not "animation completed".
+                // The probe captures the pre-slide rect: the trace means "slot N
+                // assigned", not "animation completed".
                 if (slotChanged)
                 {
                     WindowingProbe.EmitOverlaySlotAssigned(entry.Window.Hwnd, newSlot);
@@ -226,9 +200,6 @@ public sealed class HudOverlayManager : IDisposable
         int gapPx = (int)Math.Round(GapDip * scale);
         int stride = gapPx + mainRect.Height;
 
-        // When the main HUD is visible, slot 0 sits one stride away (leaving
-        // room for the HUD itself + the 24 dip gap). When it's hidden, slot 0
-        // drops onto the HUD's exact position.
         int offset = slot + (_mainHudVisible ? 1 : 0);
 
         string position = SettingsService.Instance.Current.Overlay.Position ?? "";

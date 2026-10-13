@@ -5,9 +5,8 @@ namespace Deckle.Hud;
 
 // HudChrono — static digit reveal for Transcribing and Rewriting.
 //
-// The retired left-to-right swipe has no live path. Each of the six glyphs is
-// fully open onto one shared clone of the processing material for the whole
-// state. The material may rotate when functional HUD animation is on; its
+// Each of the six glyphs is fully open onto one shared clone of the
+// processing material for the whole state. The material may rotate when functional HUD animation is on; its
 // opacity never interpolates.
 public sealed partial class HudChrono
 {

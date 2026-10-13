@@ -19,9 +19,8 @@ namespace Deckle.Hud;
 // cursor approaches, alpha smooth-ramps from MAX down toward MIN. The cursor
 // signal is the shared CursorMovementSignal (Deckle.Shell): the card subscribes
 // on fade-in and unsubscribes on fade-out. A per-window Raw Input sink is
-// impossible (RIDEV_INPUTSINK is per-process-per-usage), and the former 60 Hz
-// GetCursorPos poll is gone now that every surface shares the one sink owned by
-// the message-only host.
+// impossible (RIDEV_INPUTSINK is per-process-per-usage), so every surface
+// shares the one sink owned by the message-only host.
 //
 // Unlike HudWindow, no Closing intercept: the manager calls FadeOut, which
 // ends with ForceClose → Window.Close() after the alpha animator reaches 0.
@@ -30,12 +29,10 @@ public sealed partial class HudOverlayWindow : Window
     public const int HUD_WIDTH  = 272;
     public const int HUD_HEIGHT = 78;
 
-    // Proximity smoothstep constants. NEAR / MIN / MAX match HudWindow so
-    // the endpoints behave the same, but FAR_RADIUS is deliberately wider
-    // than HudWindow's 128 dip — overlays sit above the main HUD so any
-    // cursor approach toward the main HUD naturally passes through the
-    // overlay region too, and the user wants those cards to start clearing
-    // earlier to stay out of the way.
+    // NEAR / MIN / MAX match HudWindow, but FAR_RADIUS is deliberately wider
+    // than HudWindow's: overlays sit above the main HUD, so any cursor approach
+    // toward the HUD passes through the overlay region too, and the cards
+    // start clearing earlier to stay out of the way.
     private const double NEAR_RADIUS_DIP = 10;
     private const double FAR_RADIUS_DIP  = 256;
     private const byte   MAX_ALPHA       = 255;
@@ -44,16 +41,14 @@ public sealed partial class HudOverlayWindow : Window
     private readonly IntPtr _hwnd;
     private LayeredAlphaAnimator? _fade;
 
-    // Cached window scale (DPI/96); see HudWindow for the rationale. Seeded in
-    // the ctor, refreshed from WM_DPICHANGED in SubclassCallback. Replaces the
-    // per-WM_INPUT-tick GetDpiForWindow call in UpdateProximity. UI-thread only.
+    // Cached window scale (DPI/96), refreshed from WM_DPICHANGED so the
+    // per-mouse-move proximity handler never calls GetDpiForWindow.
+    // UI-thread only.
     private double _dpiScale = 1.0;
 
     private NativeMethods.SubclassProc? _subclassDelegate;
     private static readonly UIntPtr SubclassId = new(0x48554F56); // "HUOV"
 
-    // Shared mouse-move source (Deckle.Shell). Subscribed while the card is in
-    // proximity mode; see BeginProximityMode / EndProximityMode.
     private readonly CursorMovementSignal _cursorSignal;
     private bool _proximityActive;
     private byte _proximityAlpha = MAX_ALPHA;
@@ -65,8 +60,6 @@ public sealed partial class HudOverlayWindow : Window
         InitializeComponent();
         _hwnd = WindowNative.GetWindowHandle(this);
 
-        // Seed the cached scale from the HWND's current monitor; WM_DPICHANGED
-        // refreshes it thereafter (see SubclassCallback).
         _dpiScale = NativeMethods.GetDpiForWindow(_hwnd) / 96.0;
 
         SystemBackdrop = null;
@@ -81,18 +74,16 @@ public sealed partial class HudOverlayWindow : Window
         presenter.SetBorderAndTitleBar(hasBorder: false, hasTitleBar: false);
         AppWindow.SetPresenter(presenter);
 
-        // Same DWM triptych as HudWindow — DWMWCP_ROUND for the rounded HWND
+        // Same DWM triptych as HudWindow: DWMWCP_ROUND for the rounded HWND
         // silhouette, DWMWA_COLOR_DEFAULT for the 1-dip system accent stroke
         // that frames the card (without it the card reads as a naked colored
         // rectangle on the desktop), DWMSBT_NONE to keep Mica/Acrylic off.
         //
-        // Additional tweak on overlay cards vs the main HUD:
-        // DWMWA_NCRENDERING_POLICY = DWMNCRP_DISABLED. The main HUD's Win11
-        // Shell dropshadow is fine against the desktop, but when an overlay
-        // card sits 12 dip above the HUD that same shadow lands on the HUD's
-        // top edge as a visible halo. Disabling NC rendering kills the
-        // shadow on overlays; the stroke + corner-preference compositor clip
-        // are independent paths, they keep doing their job.
+        // Overlay cards also set DWMWA_NCRENDERING_POLICY = DWMNCRP_DISABLED:
+        // the Win11 Shell dropshadow of a card stacked above the HUD lands on
+        // the HUD's top edge as a visible halo. Disabling NC rendering kills
+        // that shadow; the stroke and the corner clip are independent paths
+        // and keep working.
         uint cornerPref = NativeMethods.DWMWCP_ROUND;
         NativeMethods.DwmSetWindowAttribute(
             _hwnd, NativeMethods.DWMWA_WINDOW_CORNER_PREFERENCE,
@@ -114,8 +105,7 @@ public sealed partial class HudOverlayWindow : Window
         NativeMethods.SetWindowLongPtr(
             _hwnd, NativeMethods.GWL_EXSTYLE,
             new IntPtr(ex | NativeMethods.WS_EX_LAYERED | NativeMethods.WS_EX_TOOLWINDOW | NativeMethods.WS_EX_TRANSPARENT));
-        // Start fully transparent — LayeredAlphaAnimator ramps up to 255 when
-        // the manager invokes FadeTo after ShowAt.
+        // Fully transparent until FadeIn.
         NativeMethods.SetLayeredWindowAttributes(_hwnd, 0, 0, NativeMethods.LWA_ALPHA);
 
         _subclassDelegate = SubclassCallback;
@@ -127,16 +117,13 @@ public sealed partial class HudOverlayWindow : Window
             NativeMethods.SWP_NOMOVE | NativeMethods.SWP_NOSIZE |
             NativeMethods.SWP_NOZORDER | NativeMethods.SWP_NOACTIVATE);
 
-        // Fade animator owns the layered alpha from here on. Manager calls
-        // FadeIn / FadeOut; proximity mixes in at runtime via instant FadeTo
-        // updates driven by the shared cursor signal (no animation overhead).
+        // The fade animator owns the layered alpha from here on; proximity goes
+        // through it with instant FadeTo updates.
         _fade = new LayeredAlphaAnimator(_hwnd, DispatcherQueue, initialAlpha: 0);
         SystemAnimationPreference.Instance.Changed += OnSystemAnimationsChanged;
 
-        // Theme: wires ActualThemeChanged for transient overlays. An overlay
-        // lives 2-8 s; a theme change during display is rare but possible (the
-        // user swaps while a notification is floating). The event remains
-        // useful to correlate a colored stroke glitch with a transition.
+        // Theme tracing only: the event helps correlate a stroke glitch with a
+        // theme switch while a card is floating.
         if (Content is Microsoft.UI.Xaml.FrameworkElement root)
         {
             _lastTheme = root.ActualTheme;
@@ -173,13 +160,9 @@ public sealed partial class HudOverlayWindow : Window
             "HUD", "system animation preference change");
     }
 
-    // Pushes the feedback payload into the embedded HudMessage control. The
-    // Duration field of MessagePayload is unused here (HudMessage ignores it);
-    // the manager owns the per-card timer.
-    //
-    // Sub-wave 6b: signature in primitives rather than a `UserFeedback`
-    // record. Severity convention 0=Info, 1=Warning, 2+=Error, aligned with
-    // the `UserFeedbackEmitted(severity, ...)` EventSource event.
+    // MessagePayload.Duration is unused here: the manager owns the per-card
+    // timer. Severity convention 0=Info, 1=Warning, 2+=Error, aligned with the
+    // `UserFeedbackEmitted(severity, ...)` EventSource event.
     public void ApplyPayload(int severity, string title, string body)
     {
         MessageKind kind = severity switch
@@ -191,8 +174,6 @@ public sealed partial class HudOverlayWindow : Window
         Message.Show(new MessagePayload(kind, title, body, TimeSpan.Zero));
     }
 
-    // Card pixel size for the current DPI — manager uses this to compute slot
-    // positions (stride = gap + card height).
     public (int Width, int Height) GetSizePx()
     {
         uint dpi = NativeMethods.GetDpiForWindow(_hwnd);
@@ -202,9 +183,8 @@ public sealed partial class HudOverlayWindow : Window
             (int)Math.Round(HUD_HEIGHT * scale));
     }
 
-    // Initial placement: size the window at current DPI, move to target pixel
-    // position, then show without activation and reassert HWND_TOPMOST so the
-    // newest overlay stays in the topmost band without stealing focus.
+    // Shows without activation and reasserts HWND_TOPMOST so the newest
+    // overlay stays in the topmost band without stealing focus.
     public void ShowAt(int xPx, int yPx)
     {
         var (w, h) = GetSizePx();
@@ -215,20 +195,11 @@ public sealed partial class HudOverlayWindow : Window
             0, 0, 0, 0,
             NativeMethods.SWP_NOSIZE | NativeMethods.SWP_NOMOVE | NativeMethods.SWP_NOACTIVATE);
 
-        // Windowing: common trunk emitted here after MoveAndResize. The anchor
-        // is "absolute": the position is computed by
-        // HudOverlayManager.ComputeSlotPositionPx from the main HUD + slot, but
-        // that calculation is invisible on the window side. We capture the
-        // effective position without inventing a logical anchor that belongs
-        // to the manager. The OverlaySlotAssigned specialization (which
-        // carries the slot) is emitted on the manager side, where the slot
-        // index is known.
+        // Anchor "absolute": the slot geometry lives in HudOverlayManager,
+        // which emits the OverlaySlotAssigned specialization.
         WindowingProbe.EmitWindowPositioned(_hwnd, "hud-overlay", "absolute");
     }
 
-    // Used for instant repositioning (reduced-motion path, or to bypass the
-    // animator if the manager needs to snap). Under normal conditions,
-    // WindowSlideAnimator.SlideTo owns the live position of this HWND.
     public void SetPositionPx(int xPx, int yPx)
     {
         NativeMethods.SetWindowPos(
@@ -239,18 +210,11 @@ public sealed partial class HudOverlayWindow : Window
 
     // ── Fade: public entry points driven by HudOverlayManager ────────────────
 
-    // Ramps alpha from current (0 on first call after ShowAt) up to MAX_ALPHA
-    // over 150 ms, then enters proximity mode (subscribes to the cursor
-    // signal). Callback fires once both the fade and the arming are complete.
+    // Enters proximity mode once the fade completes; the callback fires after
+    // both.
     public void FadeIn(Action? onComplete = null)
     {
-        // Axis 2: FadeInStarted (scope="overlay"). from_alpha comes from the
-        // ctor, which sets alpha=0 through SetLayeredWindowAttributes; read
-        // _fade?.CurrentAlpha to stay exact if a subsequent FadeIn is
-        // triggered (the current manager does not do that, but a future
-        // evolution could). Duration 150 ms = private
-        // LayeredAlphaAnimator.Duration of WindowSlideAnimator (constant
-        // Duration, mirror of HudWindow's FADE_IN_MS).
+        // 150 mirrors LayeredAlphaAnimator's private Duration.
         byte fromAlpha = _fade?.CurrentAlpha ?? 0;
         DeckleHudSource.Log.FadeInStarted("overlay", 150, fromAlpha, MAX_ALPHA);
 
@@ -262,9 +226,7 @@ public sealed partial class HudOverlayWindow : Window
         });
     }
 
-    // Leaves proximity mode immediately (so it can't fight the fade),
-    // then ramps alpha down to 0 over 150 ms. Manager uses the completion
-    // callback to schedule ForceClose.
+    // Leaves proximity mode first so it cannot fight the fade.
     public void FadeOut(Action? onComplete = null)
     {
         EndProximityMode();
@@ -273,9 +235,8 @@ public sealed partial class HudOverlayWindow : Window
 
     // ── Proximity: cursor-distance → alpha smoothstep (the curve lives in ProximityFade) ──
     //
-    // Same profile as HudWindow.UpdateProximity, driven by the shared cursor
-    // signal. The proximity-requested alpha only modulates downward from
-    // MAX_ALPHA to MIN_ALPHA — fade-in / fade-out own the 0..MAX_ALPHA range.
+    // Proximity only modulates between MAX_ALPHA and MIN_ALPHA; fade-in and
+    // fade-out own the 0..MAX_ALPHA range.
 
     private void BeginProximityMode()
     {
@@ -315,8 +276,6 @@ public sealed partial class HudOverlayWindow : Window
         _fade?.FadeTo(alpha, instant: true);
     }
 
-    // Actually destroys the window (no Closing intercept on this transient).
-    // The manager calls this after the fade-out animator completes.
     public void ForceClose()
     {
         SystemAnimationPreference.Instance.Changed -= OnSystemAnimationsChanged;
@@ -335,17 +294,16 @@ public sealed partial class HudOverlayWindow : Window
         IntPtr hWnd, uint uMsg, IntPtr wParam, IntPtr lParam,
         UIntPtr uIdSubclass, IntPtr dwRefData)
     {
-        // Refresh the cached scale from the new DPI (LOWORD of wParam) instead
-        // of calling GetDpiForWindow per WM_INPUT tick in UpdateProximity. Not
-        // consumed — DefSubclassProc lets WinUI 3 run its own DPI layout.
+        // LOWORD(wParam) is the new DPI. Not consumed: WinUI 3 runs its own DPI
+        // layout through DefSubclassProc.
         if (uMsg == NativeMethods.WM_DPICHANGED)
         {
             _dpiScale = (wParam.ToInt32() & 0xFFFF) / 96.0;
         }
 
-        // Same zero-NC-area trick as HudWindow. WinUI 3 reapplies
-        // WS_DLGFRAME / WS_EX_WINDOWEDGE on the top-level; we leave those bits
-        // on and deny Windows any non-client area to paint into.
+        // WinUI 3 reapplies WS_DLGFRAME / WS_EX_WINDOWEDGE on the top-level;
+        // leave those bits on and deny Windows any non-client area to paint
+        // into.
         if (uMsg == NativeMethods.WM_NCCALCSIZE)
         {
             return IntPtr.Zero;

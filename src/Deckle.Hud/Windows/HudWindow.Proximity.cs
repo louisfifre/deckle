@@ -17,10 +17,9 @@ public sealed partial class HudWindow : Window
 {
     // ── Proximity: subscribe to the shared cursor signal ──────────────────────
     //
-    // While active, every mouse move recomputes the HUD alpha (UpdateProximity).
-    // Subscription is idempotent; each Enable re-seeds the alpha from the
-    // current cursor position so a state change reflects reality immediately
-    // rather than waiting for the next move.
+    // Each Enable re-seeds the alpha from the current cursor position so a
+    // state change reflects reality immediately rather than waiting for the
+    // next move.
 
     private void EnableProximity()
     {
@@ -57,13 +56,8 @@ public sealed partial class HudWindow : Window
         byte alpha = ProximityFade.Alpha(distancePx, scale, NEAR_RADIUS_DIP, FAR_RADIUS_DIP, MIN_ALPHA, MAX_ALPHA);
         if (alpha != _currentAlpha) SetAlphaImmediate(alpha);
 
-        // Axis 5: sample collection for ProximityRollup. The
-        // _proximityRollupEnabled flag short-circuits collection when no
-        // listener is attached to Verbose+Heartbeat on Deckle.Hud; this is the
-        // strict gate required by the deckle-logging doctrine for
-        // high-frequency WM_INPUT loops (~125 Hz). Re-evaluated at the start
-        // of each visibility session to absorb a listener live toggle between
-        // two shows.
+        // Collected only when a Verbose+Heartbeat listener was attached at
+        // session start: this runs on every cursor move.
         if (_proximityRollupEnabled)
         {
             int distDip = (int)Math.Round(distancePx / scale);
@@ -73,22 +67,13 @@ public sealed partial class HudWindow : Window
 
     // ── Proximity rollup — per-session HUD visibility summary ──────────
     //
-    // WM_INPUT arrives at ~125 Hz when the mouse moves; deckle-logging
-    // doctrine forbids emitting one event per tick. A previous 1 s periodic
-    // variant produced up to ~10 events per HUD session (50 sessions ×
-    // ~10 s/day = ~500 events/day in LogWindow) with no diagnostic value on
-    // sessions where the mouse did not approach. The current pattern
-    // aggregates the full visibility window (shown → hidden) and emits one
-    // summary under two cumulative conditions: at least one sample collected
-    // AND min_alpha != max_alpha (otherwise smoothstep stayed flat and there
-    // is no proximity trajectory to diagnose).
+    // Never one event per cursor move: one summary per visibility (shown →
+    // hidden), and only when there is a proximity trajectory, at least one
+    // sample and min_alpha != max_alpha.
 
     private void BeginProximitySession()
     {
-        // Evaluates the gate at session start; when closed, collection is
-        // short-circuited in UpdateProximity (_proximityRollupEnabled test).
-        // If a listener attaches during the session, nothing is recorded late;
-        // the next show will capture the new gate.
+        // A listener that attaches mid-session is picked up at the next show.
         _proximityRollupEnabled = DeckleHudSource.Log.IsEnabled(
             EventLevel.Verbose, (EventKeywords)Keywords.Heartbeat);
         if (!_proximityRollupEnabled) return;
@@ -111,17 +96,10 @@ public sealed partial class HudWindow : Window
         byte minAlpha = _proximityRollup.MinAlpha;
         byte maxAlpha = _proximityRollup.MaxAlpha;
 
-        // Skip if min == max: the mouse did not enter the proximity radius,
-        // smoothstep stayed flat, and there is no trajectory to diagnose. The
-        // "every emission carries diagnostic value" doctrine requires this
-        // gate, otherwise the LogWindow is drowned in "nothing happened"
-        // summaries on typical HUD sessions where the user does not approach
-        // the HUD.
+        // The cursor never entered the proximity radius: nothing to diagnose.
         if (minAlpha == maxAlpha) return;
 
-        // Re-test the gate at flush time; a listener may have detached during
-        // the session. Matches the double-test semantics of the previous
-        // periodic design.
+        // A listener may have detached during the session.
         if (!DeckleHudSource.Log.IsEnabled(
                 EventLevel.Verbose, (EventKeywords)Keywords.Heartbeat)) return;
 

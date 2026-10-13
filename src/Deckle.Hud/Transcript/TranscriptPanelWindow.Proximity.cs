@@ -35,7 +35,7 @@ public sealed partial class TranscriptPanelWindow : Window
         _cursorSignal.Moved -= _onCursorMoved;
     }
 
-    // ~125 Hz on mouse move: allocation-free, writes the alpha only when it
+    // Runs on every mouse move: allocation-free, writes the alpha only when it
     // changes.
     private void UpdateProximity()
     {
