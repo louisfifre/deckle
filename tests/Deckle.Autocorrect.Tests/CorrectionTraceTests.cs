@@ -6,10 +6,9 @@ namespace Deckle.Autocorrect.Tests;
 
 // The decision ledger threaded through the synchronous chain — the observable
 // surface of the per-word telemetry. These assert what a stage RECORDS (outcome,
-// decisive reason, candidate pool, the per-stage trail), the diagnostic Louis
-// reads, not how the chain computes it. Reasons are asserted against the closed
-// vocabulary constants the code itself emits, so a re-tune of a threshold never
-// breaks them.
+// decisive reason, candidate pool, the per-stage trail), not how the chain
+// computes it. Reasons are asserted against the closed vocabulary constants the
+// code itself emits, so a re-tune of a threshold never breaks them.
 [Trait("Category", "unit")]
 public class CorrectionTraceTests
 {
@@ -28,8 +27,6 @@ public class CorrectionTraceTests
     private static ConservativeTypoCorrector Typo() =>
         new(French(), english: null, personal: null, options: null);
 
-    // ── A correction fired ──────────────────────────────────────────────────
-
     [Fact]
     public void RecordsAFiredLexicalGate()
     {
@@ -42,8 +39,6 @@ public class CorrectionTraceTests
         Assert.Contains("français", trace.RenderCandidates());
     }
 
-    // ── A literal left alone, with the deciding guard visible ─────────────────
-
     [Fact]
     public void RecordsTheGuardThatLeftAValidWordAlone()
     {
@@ -54,8 +49,6 @@ public class CorrectionTraceTests
         Assert.Equal(CorrectionTrace.Outcomes.Literal, trace.Outcome);
         Assert.Equal(CorrectionTrace.Reasons.ValidFrench, trace.PrimaryReason);
     }
-
-    // ── The safety gauges of the dominance path are surfaced with their bounds ─
 
     [Fact]
     public void RecordsDominanceGaugesAgainstTheirThresholds()
@@ -72,8 +65,6 @@ public class CorrectionTraceTests
         Assert.Contains("top_freq", gauges);
     }
 
-    // ── The typo stage records its tier and the neighbour it chose ────────────
-
     [Fact]
     public void RecordsATypoNearCorrection()
     {
@@ -87,8 +78,6 @@ public class CorrectionTraceTests
         Assert.Contains("marche", trace.RenderCandidates());
     }
 
-    // ── The trail spans every stage the composite ran, in order ───────────────
-
     [Fact]
     public void TrailSpansEveryStageForALiteral()
     {
@@ -99,7 +88,7 @@ public class CorrectionTraceTests
             new ConservativeTypoCorrector(french));
 
         var trace = new CorrectionTrace();
-        policy.Evaluate("marche", [], trace); // a valid word: every stage stands aside
+        policy.Evaluate("marche", [], trace);
 
         string trail = trace.RenderTrail();
         Assert.Contains(CorrectionTrace.StageNames.Diacritics, trail);
@@ -107,8 +96,6 @@ public class CorrectionTraceTests
         Assert.Contains(CorrectionTrace.StageNames.Typo, trail);
         Assert.Equal(CorrectionTrace.Outcomes.Literal, trace.Outcome);
     }
-
-    // ── A fired stage stops the chain: later stages never run ─────────────────
 
     [Fact]
     public void TrailStopsAtTheFiringStage()
@@ -120,7 +107,7 @@ public class CorrectionTraceTests
             new ConservativeTypoCorrector(french));
 
         var trace = new CorrectionTrace();
-        policy.Evaluate("francais", [], trace); // diacritics fires; elision/typo never run
+        policy.Evaluate("francais", [], trace);
 
         string trail = trace.RenderTrail();
         Assert.Contains(CorrectionTrace.StageNames.Diacritics, trail);
@@ -128,14 +115,12 @@ public class CorrectionTraceTests
         Assert.Equal(CorrectionTrace.Outcomes.Corrected, trace.Outcome);
     }
 
-    // ── A learned-suppression veto reads as suppressed, not corrected ─────────
-
     [Fact]
     public void MarkSuppressedOverridesAFiredOutcome()
     {
         var trace = new CorrectionTrace();
-        Diacritics().Evaluate("francais", [], trace); // a stage fires…
-        trace.MarkSuppressed();                        // …then a learned suppression vetoes it
+        Diacritics().Evaluate("francais", [], trace);
+        trace.MarkSuppressed();
 
         Assert.Equal(CorrectionTrace.Outcomes.Suppressed, trace.Outcome);
     }

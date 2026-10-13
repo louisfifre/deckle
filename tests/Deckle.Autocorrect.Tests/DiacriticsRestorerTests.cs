@@ -8,8 +8,7 @@ namespace Deckle.Autocorrect.Tests;
 // The lexical gate end to end: the skip chain that protects the literal by
 // default and only corrects on unambiguous evidence. Conservativity is the
 // product — a wrongly corrected valid word is the worst outcome — so most of
-// these assert that a word is LEFT ALONE, and the few corrections are the ones
-// that earned it.
+// these assert that a word is LEFT ALONE.
 [Trait("Category", "unit")]
 public class DiacriticsRestorerTests
 {
@@ -90,7 +89,6 @@ public class DiacriticsRestorerTests
     [Fact]
     public void RestoresDeja()
     {
-        // "deja" folds to "deja", whose only accented variant is "déjà" — single.
         var d = Restorer().Evaluate("deja", []);
 
         Assert.Equal("déjà", d!.Replacement);
@@ -102,16 +100,12 @@ public class DiacriticsRestorerTests
     [Fact]
     public void ValidFrenchFormIsNeverTouched()
     {
-        // "cote" is itself a valid French form — the literal wins (guard 7),
-        // even though "côte" exists behind the same fold.
         Assert.Null(Restorer().Evaluate("cote", []));
     }
 
     [Fact]
     public void MarcheIsProtectedAsValidFormBeforeAmbiguity()
     {
-        // "marche" is a valid form (guard 7 fires before any candidate work),
-        // although "marché" sits behind the same fold.
         Assert.Null(Restorer().Evaluate("marche", []));
     }
 
@@ -125,9 +119,9 @@ public class DiacriticsRestorerTests
     [Fact]
     public void ValidEnglishWordIsNeverFrenchified()
     {
-        // No language detection in v1 — the bilingual guard protects a seed
-        // English literal even when an accented French candidate exists. Its
-        // frequency is deliberately low: membership is the contract.
+        // The bilingual guard protects a seed English literal even when an
+        // accented French candidate exists. Its frequency is deliberately low:
+        // membership is the contract.
         Assert.Null(Restorer().Evaluate("cafe", []));
     }
 
@@ -174,7 +168,7 @@ public class DiacriticsRestorerTests
     [Fact]
     public void AlreadyAccentedWordIsNeverSecondGuessed()
     {
-        // The user typed the accent deliberately (guard 6).
+        // The user typed the accent deliberately.
         Assert.Null(Restorer().Evaluate("déja", []));
     }
 
@@ -187,7 +181,6 @@ public class DiacriticsRestorerTests
     [Fact]
     public void ElisionTokenIsLeftAlone()
     {
-        // Trailing apostrophe — an elision prefix ("l'"), not a word.
         Assert.Null(Restorer().Evaluate("l'", []));
     }
 
@@ -202,7 +195,6 @@ public class DiacriticsRestorerTests
     [Fact]
     public void DominantVariantWinsWithoutContext()
     {
-        // "etant" → étant (100) vs êtant (1): ratio 100, clears 20× and the floor.
         var d = Restorer().Evaluate("etant", []);
 
         Assert.NotNull(d);
@@ -215,7 +207,6 @@ public class DiacriticsRestorerTests
     [Fact]
     public void ContextResolvesAmbiguousPair()
     {
-        // The pair model picks élève; without it "eleve" stays (see above).
         var ctx = new StubDisambiguator(chosen: "élève");
         var d = Restorer(context: ctx).Evaluate("eleve", ["bon"]);
 
@@ -238,7 +229,6 @@ public class DiacriticsRestorerTests
     [Fact]
     public void AdoptedWordShieldsItself()
     {
-        // The user adopted "ecole" as a literal — it must not be corrected.
         var personal = new StubPersonal(adopted: new() { "ecole" });
         Assert.Null(Restorer(personal: personal).Evaluate("ecole", []));
     }
@@ -246,7 +236,6 @@ public class DiacriticsRestorerTests
     [Fact]
     public void SuppressedPairIsBlocked()
     {
-        // The user reverted ecole→école once — that pair never fires on its own.
         var personal = new StubPersonal(suppressed: new() { ("ecole", "école") });
         Assert.Null(Restorer(personal: personal).Evaluate("ecole", []));
     }
@@ -254,7 +243,6 @@ public class DiacriticsRestorerTests
     [Fact]
     public void PersonalVariantSuppliesACorrection()
     {
-        // "lea" is in no lexicon, but the personal dictionary knows "Léa".
         var d = Restorer(personalVariants: lower =>
             lower == "lea"
                 ? new[] { new AccentVariant("léa", 0.0) }
@@ -271,9 +259,8 @@ public class DiacriticsRestorerTests
     [Fact]
     public void SentenceCorrectsOnlyTheRestorableWord()
     {
-        // « j'ai marche vers l'ecole » — tokenised, only "ecole" is corrected.
-        // "j'ai"/"vers" are unknown literals (no variant), "marche" is a valid
-        // form, "l'" is an elision token. The gate touches one word.
+        // « j'ai marche vers l'ecole »: "j'ai"/"vers" are unknown literals (no
+        // variant), "marche" is a valid form, "l'" is an elision token.
         var r = Restorer();
 
         Assert.Null(r.Evaluate("j'ai", []));
@@ -296,8 +283,6 @@ public class DiacriticsRestorerTests
     [Fact]
     public void RarityGateDropsAFarRarerVariantWhenTheLiteralIsValid()
     {
-        // "cotes" (50) is a valid literal; cotés (0.1) is 500× rarer — ratio
-        // 0.002, well under the 0.01 floor — so it is dropped from the slot.
         var candidates = Restorer().SentenceCandidates("cotes", includeTypedLiteral: true);
 
         Assert.DoesNotContain(candidates, v => v.Form == "cotés");
@@ -306,8 +291,6 @@ public class DiacriticsRestorerTests
     [Fact]
     public void RarityGateKeepsAModerateRatioVariant()
     {
-        // tâches (20) against the "taches" literal (40) is ratio 0.5 — far above
-        // the floor, the class of correct restoration the gate must not touch.
         var candidates = Restorer().SentenceCandidates("taches", includeTypedLiteral: true);
 
         Assert.Contains(candidates, v => v.Form == "tâches");
@@ -316,13 +299,8 @@ public class DiacriticsRestorerTests
     [Fact]
     public void RarityGateFallsBackToTheBestVariantWhenTheLiteralIsNotValid()
     {
-        // "ete" is in no lexicon, so the gate's reference falls back to the
-        // slot's most frequent variant: été (500) anchors, êté (1) is 500× rarer
-        // and drops — collapsing the fold to one form, no longer an ambiguous
-        // slot at all (the commit stage restores it deterministically). Before
-        // the fallback the gate was disarmed here and êté survived to mislead
-        // the judge. With the typed literal included the slot still carries the
-        // surviving pair, êté-free.
+        // Once êté drops, the fold collapses to one form and is no longer an
+        // ambiguous slot; the commit stage restores it deterministically.
         Assert.Empty(Restorer().AmbiguousCandidates("ete"));
 
         var withLiteral = Restorer().SentenceCandidates("ete", includeTypedLiteral: true);
@@ -333,9 +311,6 @@ public class DiacriticsRestorerTests
     [Fact]
     public void RarityGateClosesTheCaCedillaHole()
     {
-        // The motivating live residue: "ca" is not a valid form, its slot pairs
-        // ça (9000) with çà (20) — ratio 0.0022, under the 0.01 floor. The
-        // fallback reference drops çà; ça and the typed literal stay.
         var candidates = Restorer().SentenceCandidates("ca", includeTypedLiteral: true);
 
         Assert.Contains(candidates, v => v.Form == "ça");
@@ -346,9 +321,6 @@ public class DiacriticsRestorerTests
     [Fact]
     public void RarityGateFallbackKeepsAModerateRatioPairIntact()
     {
-        // "eleve" is not a valid form either, but élève (30) and élevé (25) sit
-        // at ratio 0.83 — both are plausible restorations and both must survive
-        // the fallback reference.
         var candidates = Restorer().AmbiguousCandidates("eleve");
 
         Assert.Contains(candidates, v => v.Form == "élève");
@@ -358,8 +330,6 @@ public class DiacriticsRestorerTests
     [Fact]
     public void RarityGateNeverDropsTheTypedLiteralItself()
     {
-        // The literal is the reference, never a casualty: "cotes" stays in the
-        // slot even as its far-rarer fold-mate cotés is dropped around it.
         var candidates = Restorer().SentenceCandidates("cotes", includeTypedLiteral: true);
 
         Assert.Contains(candidates, v => v.Form == "cotes");
@@ -369,8 +339,6 @@ public class DiacriticsRestorerTests
     [Fact]
     public void RarityGateCollapsingASlotBelowTwoFormsMakesItUnambiguous()
     {
-        // "mais" (500) has only maïs (3) behind it, and the gate drops maïs. With
-        // just the literal left the fold is no longer a two-way slot at all.
         var restorer = Restorer();
 
         Assert.Empty(restorer.SentenceCandidates("mais", includeTypedLiteral: true));

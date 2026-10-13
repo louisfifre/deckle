@@ -3,13 +3,10 @@ using Deckle.Diagnostics;
 
 namespace Deckle.Autocorrect;
 
-// Autocorrect module provider. Covers the engine lifecycle, surface
-// transitions, applied corrections and learning signals.
-//
 // The default events carry counts, lengths and reasons only — no typed text on
 // the always-on path. A few opt-in, consent-gated events deliberately carry words
-// (the per-word decision and reranker records; the typed-sentence corpus), routed
-// to dedicated datasets and off by default.
+// (the per-word decision and reranker records, the typed-sentence corpus, the
+// typing stream), routed to dedicated datasets and off by default.
 [EventSource(Name = "Deckle-Autocorrect")]
 public sealed class DeckleAutocorrectSource : DeckleEventSource
 {
@@ -21,8 +18,7 @@ public sealed class DeckleAutocorrectSource : DeckleEventSource
         => OperationalLogAdmission.IsDetailEnabled(
             OperationalLogActivity.Autocorrect, Log, level, keywords);
 
-    // Ids 6 (CorrectionReverted) and 20 (AutocorrectRevertRecorded) are retired
-    // with the implicit-Backspace revert — never reuse them, old logs carry them.
+    // Ids 6 and 20 are retired: never reuse them, old logs carry them.
     public const int EvtEngineStarted      = 1;
     public const int EvtEngineStopped      = 2;
     public const int EvtSurfaceChanged     = 3;
@@ -42,7 +38,7 @@ public sealed class DeckleAutocorrectSource : DeckleEventSource
     public const int EvtAutocorrectRerank   = 18;
     public const int EvtAutocorrectText     = 19;
     public const int EvtAutocorrectStream   = 21;
-    // Retired with the live pause pass; the published event id stays reserved.
+    // Retired; the published event id stays reserved.
     public const int EvtPausePassTriggered  = 22;
     public const int EvtInjectionIncident   = 23;
     public const int EvtInjectionRecovered  = 24;
@@ -84,12 +80,9 @@ public sealed class DeckleAutocorrectSource : DeckleEventSource
         if (IsEnabled()) WriteEvent(EvtEngineStopped);
     }
 
-    // load_ms is the wall-clock of the off-UI-thread lexicon+index+bigram
-    // build (gzip decode + dictionary build of the multi-MB FR frequency
-    // data); entries is the loaded FR lexicon form count. Structured-verbose
-    // sibling of the EngineReady milestone — mirrors whisper's
-    // ModelLoadComplete(load_ms, backend). Verbose so the number never reaches
-    // the Info milestone stream.
+    // load_ms is the wall-clock of the off-UI-thread lexical build, the
+    // contextual model load excluded; entries is the effective lexicon's form
+    // count. Verbose so the number never reaches the Info milestone stream.
     [Event(EvtLexiconLoadComplete,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Lifecycle,
@@ -100,11 +93,9 @@ public sealed class DeckleAutocorrectSource : DeckleEventSource
     }
 
     // One active domain pack fused into the effective lexicon. forms is what
-    // the pack artifact carries, not what it added — max-wins means a form the
-    // base already holds is absorbed, so the gap between the sum of these and
-    // the entries on LexiconLoadComplete is itself the overlap. Emitted before
-    // LexiconLoadComplete, whose entries count is the post-merge total; verbose
-    // beside it, and silent when no pack is active.
+    // the pack artifact carries, not what it added: max-wins absorbs a form the
+    // base already holds, so these counts do not add up to LexiconLoadComplete's
+    // post-merge entries.
     [Event(EvtDomainPackMerged,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Lifecycle,
@@ -114,9 +105,8 @@ public sealed class DeckleAutocorrectSource : DeckleEventSource
         if (IsEnabled()) WriteEvent(EvtDomainPackMerged, pack, forms);
     }
 
-    // Concise readiness edge: the engine is built, wired and reconciled to the
-    // persisted settings. No number — its verbose sibling LexiconLoadComplete
-    // carries the timing. Mirrors whisper's ModelLoaded() "Model loaded".
+    // Readiness edge: the engine is built, wired and reconciled to the persisted
+    // settings. No number: its verbose sibling LexiconLoadComplete carries the timing.
     [Event(EvtEngineReady,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Lifecycle,
@@ -126,10 +116,9 @@ public sealed class DeckleAutocorrectSource : DeckleEventSource
         if (IsEnabled()) WriteEvent(EvtEngineReady);
     }
 
-    // Which contextual (sentence-stage) engine came up and what its model load
-    // cost: engine names the winner of the composition-root preference order
-    // (RerankerEngines vocabulary), load_ms its wall-clock load. "none" means
-    // the engine runs gate + typo only, with deterministic sentence rules.
+    // Which contextual (sentence-stage) engine came up: engine names the winner
+    // of the composition-root preference order (RerankerEngines vocabulary),
+    // load_ms its wall-clock model load.
     [Event(EvtRerankerStatus,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Lifecycle,
@@ -151,7 +140,7 @@ public sealed class DeckleAutocorrectSource : DeckleEventSource
         if (IsEnabled()) WriteEvent(EvtRerankerLoadFailed, engine, exception);
     }
 
-    // Closed vocabulary for RerankerStatus.engine — one spelling, one place.
+    // Closed vocabulary for RerankerStatus.engine.
     public static class RerankerEngines
     {
         public const string SentenceJudge = "sentence_judge"; // ONNX GenAI Qwen judge (DirectML)
@@ -248,14 +237,14 @@ public sealed class DeckleAutocorrectSource : DeckleEventSource
     //
     // The slot's life across the deferred second stage, so a "why didn't it
     // correct?" reads off the trace: a SlotPending with no Submitted means the
-    // right-context deferral was never met; a Submitted with no Verdict means the
+    // sentence never closed into a request; a Submitted with no Verdict means the
     // inference is still running or died; an abstain/stale Verdict says the model
     // declined or the sentence was reset under it. Counts and a closed outcome
     // vocabulary only — no typed text on these pipeline events.
 
-    // A real-word ambiguity the synchronous gate left intact is now an open slot,
-    // waiting for enough right-context (or a sentence-ender) before the CamemBERT
-    // reranker decides it. candidates is the closed candidate-set size.
+    // A word with two or more candidates is now an open slot, waiting for the
+    // sentence stage to decide it. candidates is the larger of its slot and
+    // whole-sentence candidate sets.
     [Event(EvtRerankSlotPending,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Pipeline,
@@ -268,7 +257,8 @@ public sealed class DeckleAutocorrectSource : DeckleEventSource
 
     // A terminal sentence ender handed a closed decision to the background
     // reranker. slot is -1 for the production whole-sentence transaction; a
-    // non-negative value identifies an explicit legacy slot-mode request.
+    // non-negative value is a compatibility slot-mode request, which production
+    // never sends.
     [Event(EvtRerankSubmitted,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Pipeline,
@@ -330,19 +320,13 @@ public sealed class DeckleAutocorrectSource : DeckleEventSource
 
     // ── Correction decision dataset ──────────────────────────────────────
     //
-    // The per-word decision ledger — the deep "why did(n't) it correct?" surface.
-    // Unlike every event above (counts, lengths and a closed outcome vocabulary
-    // only), these two DELIBERATELY carry text: the typed word, its left context,
-    // and the candidate forms with their scores. That is the whole point — to see
-    // the behaviour fully before adding any new correction. They are routed solely
-    // to the dedicated, opt-in autocorrect.decisions.jsonl telemetry sink (gated by
-    // AutocorrectDecisionsEnabled, off by default) and excluded from app.jsonl; no
-    // other path reads them. The synchronous decision and its deferred reranker
-    // verdict share `id`, so the two lines join.
-    //
-    // Fields are flat and self-reading (no re-encoded JSON): candidates as
-    // "form@freq@source", gauges as "name=value" with their "…_min/…_max" bounds,
-    // trail as "stage:reason" across the chain. CorrectionTrace renders them.
+    // The per-word decision ledger, the deep "why did(n't) it correct?" surface.
+    // These two DELIBERATELY carry text: the typed word, its left context, and the
+    // candidate forms with their scores. They are routed solely to the opt-in
+    // autocorrect.decisions.jsonl sink (gated by AutocorrectDecisions, off by
+    // default) and excluded from app.jsonl. The synchronous decision and its
+    // deferred reranker verdict share `id`, so the two lines join. CorrectionTrace
+    // renders the flat fields.
 
     [Event(EvtAutocorrectDecision,
            Level = EventLevel.Verbose,
@@ -384,21 +368,11 @@ public sealed class DeckleAutocorrectSource : DeckleEventSource
 
     // ── Typed-sentence corpus ─────────────────────────────────────────────
     //
-    // One sentence the user typed at the keyboard on an enrolled, editable,
-    // non-password surface, as two parallel strings: `typed`
-    // verbatim (keyboard substitutions and all — the telling ';' for an apostrophe
-    // survives) and `final` after the corrector — plus `history`, the ordered path of
-    // every slot that changed (first-typed then each stage's transition,
-    // "#i=typed»commit:…»user:…"), so a commit repair, a sentence-stage rewrite and a
-    // manual re-edit are told apart. `closure` says how the run ended — "sentence"
-    // (a '.'/'!'/'?' closed it), "enter" (an Enter), or "interrupted" (any other
-    // reset cut it short before an ending boundary) — so a partial run can be weighed
-    // apart from a clean one. `timing` is the typing rhythm: comma-joined per-slot
-    // inter-commit gaps in ms, first slot "0", empty when no timestamps were
-    // available. Feeds the per-user error-pattern corpus; routed to the dedicated,
-    // opt-in autocorrect.text.jsonl sink (gated by AutocorrectText, off by default)
-    // and excluded from app.jsonl. The heaviest text capture in the module — a
-    // verbatim record of typed input — so its consent toggle stands on its own.
+    // One sentence typed on an enrolled, editable, non-password surface; its fields
+    // are SentenceCorpus.SentenceRecord's. The heaviest text capture in the module,
+    // a verbatim record of typed input: routed solely to the opt-in
+    // autocorrect.text.jsonl sink (gated by AutocorrectText, off by default) and
+    // excluded from app.jsonl.
 
     [Event(EvtAutocorrectText,
            Level = EventLevel.Verbose,
@@ -414,19 +388,12 @@ public sealed class DeckleAutocorrectSource : DeckleEventSource
 
     // ── Typing stream ─────────────────────────────────────────────────────
     //
-    // One closed run of the typing stream (CONTEXT.md § Typing stream): the
-    // verbatim forward flow typed on an ENROLLED correctable surface, segmented
-    // at backward repairs. `text` is the run as it landed on screen; `erased`
-    // the backspaces that preceded it inside the span; `closure` why it ended
-    // ("repair" and "cap" continue the span, "enter"/"navigation"/"escape"/
-    // "shortcut"/"delete"/"deadkey"/"pointer"/"focus"/"external" end it); `timing` the
-    // per-char keystroke gaps in ms. Replaying the runs in order restores the
-    // faulty forms as they stood, what was erased, what was retyped — the
-    // substrate of mistouch-family mining and of the natural-language corpus.
-    // Verbatim typed input: routed solely to the opt-in autocorrect.stream.jsonl
-    // sink under the SAME consent envelope as the typed-sentence corpus (gated
-    // by AutocorrectText, off by default) and excluded from app.jsonl. Password
-    // surfaces never reach the stream — the engine gates them before decoding.
+    // One closed run of the typing stream on an ENROLLED correctable surface; its
+    // fields and replay contract are TypingStream's. Verbatim typed input: routed
+    // solely to the opt-in autocorrect.stream.jsonl sink under the SAME consent
+    // envelope as the typed-sentence corpus (gated by AutocorrectText, off by
+    // default) and excluded from app.jsonl. Password surfaces never reach the
+    // stream: the engine gates them before decoding.
 
     [Event(EvtAutocorrectStream,
            Level = EventLevel.Verbose,

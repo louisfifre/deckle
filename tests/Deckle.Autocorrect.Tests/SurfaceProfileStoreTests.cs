@@ -85,8 +85,6 @@ public class SurfaceProfileStoreTests
         File.WriteAllText(path, json);
         try
         {
-            // Round-trip through the live store: the engine sees exactly the
-            // qualified surface with its measured bar.
             var records = SurfaceProfileStore.Load(path);
             var record = Assert.Single(records);
             Assert.Equal("chat.exe", record.Process);

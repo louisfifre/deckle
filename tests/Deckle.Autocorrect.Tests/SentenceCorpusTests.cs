@@ -8,9 +8,9 @@ namespace Deckle.Autocorrect.Tests;
 // The text-corpus accumulator — the substrate of the « what I typed » dataset.
 // These pin the things the corpus must get right: faithful reconstruction of both
 // sides (so a keyboard substitution like ';' for an apostrophe survives to be
-// mined), the closure tagging (a run ends "sentence", "enter" or "interrupted", and
-// an interrupted run is now EMITTED — still verbatim keyboard input — not dropped),
-// the typed/final separator split that keeps both sides tokenizing to the same slot
+// mined), the closure tagging (a run ends "sentence", "enter" or "interrupted"; an
+// interrupted run is still verbatim keyboard input, so it is EMITTED), the
+// typed/final separator split that keeps both sides tokenizing to the same slot
 // count, the typing-rhythm timing string, and the ordered per-slot history (each
 // transition tagged by the stage that made it — commit / sentence / user).
 [Trait("Category", "unit")]
@@ -116,7 +116,7 @@ public class SentenceCorpusTests
     {
         // A Ctrl-chord (possible paste) before any sentence end: the run is still
         // verbatim keyboard input (paste never reaches the word stream), so it is
-        // emitted with its slots and tagged "interrupted" — no longer dropped.
+        // emitted with its slots and tagged "interrupted".
         var (c, done) = New();
         c.Word("bonjour", "bonjour", ' ');
         c.Reset(ResetReason.Shortcut);
@@ -129,7 +129,6 @@ public class SentenceCorpusTests
     [Fact]
     public void AnInterruptedEmptyRunEmitsNothing()
     {
-        // No word accumulated before the reset — nothing to emit.
         var (c, done) = New();
         c.Reset(ResetReason.Navigation);
 
@@ -184,7 +183,7 @@ public class SentenceCorpusTests
         // TYPED side keeps the error, the FINAL side takes the fix — one labelled
         // pair, not a duplicated token.
         var (c, done) = New();
-        c.Word("etant", "etant", ' ');   // first commit, left alone
+        c.Word("etant", "etant", ' ');
         c.Word("étant", "étant", ' ');   // the re-commit appends a slot…
         c.Edit("etant", "étant");        // …folded back into the slot it edited
         c.Word("la", "là", '.');
@@ -208,7 +207,6 @@ public class SentenceCorpusTests
     [Fact]
     public void RecordsTheCommitStageTransition()
     {
-        // A commit-stage repair is the slot's first transition, tagged commit.
         var (c, done) = New();
         c.Word("marche", "marché", ' ');
         c.Word("ecole", "école", '.');
@@ -219,8 +217,6 @@ public class SentenceCorpusTests
     [Fact]
     public void RecordsASentenceStageRewriteFromBehind()
     {
-        // « la » committed literal, then the sentence stage rewrites it to « là »
-        // while the sentence is still open — a Sentence transition on its slot.
         var (c, done) = New();
         c.Word("la", "la", ' ');
         c.SentenceEdit("la", "là");       // deferred rewrite, sentence still open
@@ -237,8 +233,8 @@ public class SentenceCorpusTests
         // A verdict for the last word arriving after the sentence flushed finds no
         // open slot — a post-close edit, invisible by design.
         var (c, done) = New();
-        c.Word("la", "la", '.');          // flushes immediately
-        c.SentenceEdit("la", "là");       // too late — nothing to attach to
+        c.Word("la", "la", '.');
+        c.SentenceEdit("la", "là");
 
         Assert.Single(done);
         Assert.Equal("la.", done[0].Final);
@@ -252,7 +248,7 @@ public class SentenceCorpusTests
         // « étant »: the ordered path is user (the retype) then commit (its repair).
         var (c, done) = New();
         c.Word("etant", "etant", ' ');
-        c.Word("etant", "étant", ' ');    // re-commit: user retyped, gate repaired
+        c.Word("etant", "étant", ' ');
         c.Edit("etant", "étant");
         c.Word("la", "là", '.');
 
@@ -341,14 +337,13 @@ public class SentenceCorpusTests
     {
         // « de » committed, then backspaced and retyped as the elision « d' », whose
         // display separator is empty. The FINAL side rejoins « d'avoir » on the
-        // attached apostrophe; the TYPED side must keep « de »'s own boundary —
-        // rejoining both with the redo's empty separator fused « de »+« avoir » into
-        // « deavoir » (the proven corruption). Both sides must still tokenize to the
-        // same slot count, the parity offline alignment relies on.
+        // attached apostrophe; the TYPED side must keep « de »'s own boundary, or
+        // it fuses into « deavoir ». Both sides must still tokenize to the same
+        // slot count, the parity offline alignment relies on.
         var (c, done) = New();
         c.Word("de", "de", ' ');
-        c.Word("d'", "d'", '\'');   // elision commit — empty display separator
-        c.Edit("de", "d'");         // fold the retype back into the « de » slot
+        c.Word("d'", "d'", '\'');
+        c.Edit("de", "d'");       // fold the retype back into the « de » slot
         c.Word("avoir", "avoir", '.');
 
         Assert.Equal("de avoir.", done[0].Typed);

@@ -32,7 +32,7 @@ public sealed class OnnxSlotRerankerTests
         var candidates = new[] { new AccentVariant("a", 100), new AccentVariant("à", 500) };
 
         var scorer = new FakeScorer(cands => new SentenceScoringOutcome(
-            Chosen: cands[1], // the judge prefers the "à" sentence
+            Chosen: cands[1],
             Scores: new[]
             {
                 new SentenceCandidateScore(cands[0], -5.0, -50.0, 10),
@@ -45,14 +45,11 @@ public sealed class OnnxSlotRerankerTests
 
         RerankOutcome outcome = reranker.Rerank(sentence, slotIndex: 2, candidates);
 
-        // The slot word is swapped, the rest of the sentence held fixed, order kept.
         Assert.Equal(new[] { "je vais a la banque", "je vais à la banque" }, scorer.Received);
-        // The winning full sentence maps back to the "à" surface form.
         Assert.Equal("à", outcome.Chosen);
         Assert.Null(outcome.AbstainReason);
         Assert.Equal(3.0, outcome.Margin);
         Assert.Equal(0.25, outcome.Threshold);
-        // Per-sentence scores remap to per-form scores, in candidate order.
         Assert.Equal(new[] { "a", "à" }, outcome.Scores.Select(s => s.Form));
         Assert.Equal(-2.0, outcome.Scores[1].Score);
     }
@@ -254,7 +251,7 @@ public sealed class OnnxSlotRerankerTests
 
         RerankOutcome outcome = reranker.Rerank(sentence, slotIndex: 1, candidates);
 
-        Assert.NotNull(scorer.Received); // the floor let it through to the judge
+        Assert.NotNull(scorer.Received);
         Assert.Equal("continue", outcome.Chosen);
         Assert.NotEqual(RerankOutcome.AbstainReasons.ShortContext, outcome.AbstainReason);
     }

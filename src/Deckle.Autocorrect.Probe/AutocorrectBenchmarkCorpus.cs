@@ -1,9 +1,8 @@
 namespace Deckle.Autocorrect.Probe;
 
-// Versioned gold corpus shared by the quality gate and the offline benchmark.
-// Each scenario is still driven as physical key events through AutocorrectEngine;
-// moving the data here prevents the benchmark and the invariant test from
-// quietly measuring different products.
+// Versioned gold corpus shared by the quality gate and the offline benchmark, so
+// the two never quietly measure different products. Each scenario is driven as
+// physical key events through AutocorrectEngine.
 internal static class AutocorrectBenchmarkCorpus
 {
     public static IReadOnlyList<KeyboardScenario> All { get; } =

@@ -11,20 +11,15 @@ namespace Deckle.Autocorrect;
 // "ete" reach the accented candidates indexed behind it.
 //
 // Folding = lowercase + strip combining marks (NFD, drop NonSpacingMark, back
-// to NFC) + the two French ligatures œ/æ that no decomposition splits.
+// to NFC) + the two French ligatures œ/æ.
 //
-// Fold is on the hot path — one call per committed word. The common case is a
-// word that needs no folding at all (plain ASCII, already lowercase): for that
-// we return the lowercased input without ever touching the normalizer, which
-// is the expensive part.
+// Fold is on the hot path, one call per committed word. A word that needs no
+// folding (plain ASCII, already lowercase) is returned without touching the
+// normalizer, which is the expensive part.
 public static class AccentFolding
 {
-    // Lowercased canonical key — case-folded and diacritic-stripped.
     public static string Fold(string s)
     {
-        // Fast path: scan once. If nothing needs folding (no uppercase, no
-        // mark-bearing char, no ligature) the lowercased string is the answer
-        // and we skip NFD/NFC entirely.
         if (!NeedsFold(s, out bool needsLigature))
             return s;
 
@@ -44,11 +39,8 @@ public static class AccentFolding
         return StripMarks(ligatured);
     }
 
-    // True when stripping diacritics would change the string.
     public static bool HasDiacritics(string s) => StripDiacritics(s) != s;
 
-    // Detects whether Fold has any work to do: a non-lowercase char, a char
-    // that carries (or could carry) a combining mark, or a ligature.
     private static bool NeedsFold(string s, out bool needsLigature)
     {
         needsLigature = false;
@@ -69,7 +61,6 @@ public static class AccentFolding
         return needsWork;
     }
 
-    // Like NeedsFold but case is preserved, so uppercase alone is not work.
     private static bool NeedsStrip(string s, out bool needsLigature)
     {
         needsLigature = false;
@@ -89,8 +80,6 @@ public static class AccentFolding
         return needsWork;
     }
 
-    // NFD decomposition splits an accented letter into base + combining mark;
-    // dropping the marks and lowering yields the folded key, recomposed to NFC.
     private static string StripAndLower(string s)
     {
         string decomposed = s.ToLowerInvariant().Normalize(NormalizationForm.FormD);
@@ -103,7 +92,6 @@ public static class AccentFolding
         return sb.ToString().Normalize(NormalizationForm.FormC);
     }
 
-    // Same mark-stripping, case left intact.
     private static string StripMarks(string s)
     {
         string decomposed = s.Normalize(NormalizationForm.FormD);
@@ -132,8 +120,7 @@ public static class AccentFolding
         return sb.ToString();
     }
 
-    // Case-preserving ligature expansion: Œ → Oe, œ → oe (the eval's typist
-    // keeps the leading capital).
+    // The eval's typist keeps the leading capital: Œ → Oe.
     private static string FoldLigaturesPreservingCase(string s)
     {
         var sb = new StringBuilder(s.Length + 2);

@@ -1,7 +1,7 @@
 namespace Deckle.Autocorrect;
 
-// Physically touching keys on a QWERTY-US keyboard — the layout Louis dictates
-// French on. A wrong-key slip lands on a neighbour, so the typo corrector only
+// Physically touching keys on a QWERTY-US keyboard, the layout the corrector
+// assumes French is typed on. A wrong-key slip lands on a neighbour, so the typo corrector only
 // treats a substitution as plausible when the two letters actually touch
 // (horizontally, vertically or diagonally). Deletions, insertions and
 // transpositions need no layout — a missing or doubled key is layout-agnostic.
@@ -42,8 +42,6 @@ internal static class QwertyAdjacency
         ['m'] = "jkn",
     };
 
-    // The touching keys of a lowercase letter, or an empty span for anything
-    // outside the modelled letter set.
     public static string Neighbours(char lower) =>
         Neighbourhood.TryGetValue(lower, out string? n) ? n : string.Empty;
 

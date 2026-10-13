@@ -33,8 +33,6 @@ public class DomainActivationTests
         Assert.False(DomainActivation.IsActive(settings, Pack, Languages("sv")));
     }
 
-    // The decision outranks the detection in both directions: a pack turned off
-    // in a language the user writes stays off…
     [Fact]
     public void DecliningAPack_SurvivesItsLanguageBeingASystemLanguage()
     {
@@ -46,7 +44,6 @@ public class DomainActivationTests
         Assert.False(DomainActivation.IsActive(settings, Pack, Languages(Pack.Language)));
     }
 
-    // …and a pack turned on in a language Windows never heard of stays on.
     [Fact]
     public void ActivatingAPack_SurvivesItsLanguageBeingUnknownToWindows()
     {

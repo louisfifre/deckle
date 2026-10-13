@@ -3,11 +3,10 @@ using Xunit;
 
 namespace Deckle.Autocorrect.Tests;
 
-// Comportement du diff minimal : combien de Backspaces, quel suffixe à taper.
-// On n'assert que le contrat observable (le couple Backspaces/Text), jamais la
-// façon dont le préfixe commun est calculé. Le cas paire de substitution est
-// load-bearing : c'est lui qui garantit qu'on ne coupe jamais un char astral
-// en deux demi-surrogates, ce qui produirait du texte corrompu à l'injection.
+// The minimal diff: how many Backspaces, which suffix to type. Only the
+// observable contract (the Backspaces/Text pair) is asserted, never how the
+// common prefix is computed. The surrogate-pair cases are load-bearing: an
+// astral char cut into two half-surrogates would inject corrupt text.
 [Trait("Category", "unit")]
 public class InjectionPlanTests
 {
@@ -24,10 +23,9 @@ public class InjectionPlanTests
     [Fact]
     public void DiacriticSuffixChange_BackspacesTheTail_TypesTheAccentedSuffix()
     {
-        // Le cas canonique de la restauration de diacritiques.
         var plan = InjectionPlan.Compute("francais ", "français ");
 
-        Assert.Equal(5, plan.Backspaces);  // c-a-i-s-espace
+        Assert.Equal(5, plan.Backspaces);  // c-a-i-s-space
         Assert.Equal("çais ", plan.Text);
         Assert.False(plan.IsNoOp);
     }
@@ -44,7 +42,6 @@ public class InjectionPlanTests
     [Fact]
     public void PrefixOnlyGrowth_NoBackspaces()
     {
-        // target prolonge current : rien à effacer, on tape juste la suite.
         var plan = InjectionPlan.Compute("auto", "automatique");
 
         Assert.Equal(0, plan.Backspaces);
@@ -54,23 +51,19 @@ public class InjectionPlanTests
     [Fact]
     public void SurrogatePairIsNeverSplit()
     {
-        // "ab𝄞" (U+1D11E, paire de surrogates) vs "abc" : le préfixe commun
-        // s'arrête à "ab", la clé de sol compte pour UN code point (un seul
-        // Backspace), et le suffixe tapé est le "c" entier.
+        // U+1D11E is two UTF-16 units but one code point, so one Backspace.
         var plan = InjectionPlan.Compute("ab\U0001D11E", "abc");
 
-        Assert.Equal(1, plan.Backspaces);  // le 𝄞 = 1 code point, pas 2 unités
+        Assert.Equal(1, plan.Backspaces);
         Assert.Equal("c", plan.Text);
     }
 
     [Fact]
     public void SharedAstralPrefix_NotDivergent_StaysWhole()
     {
-        // Préfixe commun qui inclut une paire de surrogates : elle ne doit pas
-        // faire diverger le diff ni se faire couper.
         var plan = InjectionPlan.Compute("x\U0001D11Ey", "x\U0001D11Ez");
 
-        Assert.Equal(1, plan.Backspaces);  // seul le 'y' final diverge
+        Assert.Equal(1, plan.Backspaces);
         Assert.Equal("z", plan.Text);
     }
 

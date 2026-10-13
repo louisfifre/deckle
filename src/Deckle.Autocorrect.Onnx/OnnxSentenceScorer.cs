@@ -28,7 +28,5 @@ public sealed partial class OnnxSentenceScorer : ISentenceScorer, IDisposable
     private readonly string? _chatTemplate;
     private readonly string _executionProvider;
 
-    // The execution provider the judge model was loaded onto ("dml" for the GPU,
-    // "cpu" for the built-in CPU EP) — surfaced so a run can report where it ran.
     public string ExecutionProvider => _executionProvider;
 }

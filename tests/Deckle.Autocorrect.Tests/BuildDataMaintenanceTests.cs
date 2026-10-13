@@ -5,12 +5,12 @@ using Xunit;
 
 namespace Deckle.Autocorrect.Tests;
 
-// The maintainer's build-data gesture, expressed as a test — Deckle keeps its
-// offline data tooling in lib modules exercised by the suite, never a standalone
-// CLI. This regenerates the versioned derived lexicons under
-// src/Deckle.Autocorrect/Data/ (French, legacy English, verbs, and the restricted
-// globish seed) from the raw sources fetched by scripts/commands/fetch-autocorrect-data.ps1,
-// then self-certifies the globish seed.
+// The build-data gesture, expressed as a test — Deckle keeps its offline data
+// tooling in lib modules exercised by the suite, never a standalone CLI. This
+// regenerates the versioned derived lexicons under src/Deckle.Autocorrect/Data/
+// (French, legacy English, verbs, and the restricted globish seed) from the raw
+// sources fetched by scripts/commands/fetch-autocorrect-data.ps1. Each source's
+// licence and attribution live in the root NOTICE.md.
 //
 // It is explicit and also skips unless the raw sources are present, so an ordinary
 // test run never touches the repo. Run it deliberately after a fetch, with explicit
@@ -38,7 +38,7 @@ public sealed class BuildDataMaintenanceTests
         Assert.Equal(0, code);
 
         // Self-certify the regenerated restricted globish seed: a known technical
-        // term survives, a French-colliding stopword is filtered out (structural).
+        // term survives, a French-colliding stopword is filtered out.
         var seed = AutocorrectLexiconArtifacts.LoadGlobalEnglishSeed(outDir);
         Assert.NotNull(seed);
         Assert.True(seed!.Contains("greenwashing"));

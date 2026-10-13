@@ -6,12 +6,6 @@
     xmlns:controls="using:CommunityToolkit.WinUI.Controls"
     xmlns:vm="using:Deckle.Autocorrect">
 
-    <!-- Child page of the Autocorrect family: the domains that add a field's
-         vocabulary to the effective lexicon, and nothing else. Same canonical
-         Settings layout as its parent and its sibling. The domain section is
-         collapsed while the master switch is off (mask-never-grey) and one line
-         says why — the door on the parent page and the rail entry stay, so the
-         page must answer for itself when nothing behind them applies. -->
     <!-- No section-header style here, unlike the parent and the sibling: this page
          carries a single section and its tabs name it, so nothing resolves that
          style and declaring it would be dead XAML. -->
@@ -37,8 +31,10 @@
                            TextWrapping="Wrap"
                            Margin="0,0,0,12" />
 
-                <!-- Shown in place of the whole section while autocorrect is off:
-                     one inline channel, the wording carries the tone. -->
+                <!-- Shown in place of the whole section while autocorrect is off
+                     (mask-never-grey): the door on the parent page and the rail
+                     entry stay, so the page must answer for itself. One inline
+                     channel, the wording carries the tone. -->
                 <TextBlock x:Name="DisabledNotice"
                            x:Uid="LexicalDomainsPage_Disabled"
                            Style="{StaticResource BodyTextBlockStyle}"
@@ -54,13 +50,10 @@
                             Spacing="{StaticResource SettingsCardSpacing}">
 
                     <!-- Peer views, not a filter: each tab is a different domain
-                         to read, and selection follows keyboard focus — the
-                         control's own behaviour, which is why the first domain is
-                         selected on load. Items are filled from code-behind off
-                         ViewModel.Domains (a runtime-enumerated catalogue). No
-                         header above it: the tabs name the domains, and a
-                         "Categories" line would be a third title level over a page
-                         that already has two. -->
+                         to read. Items are filled from code-behind off
+                         ViewModel.Domains. No header above it: the tabs name the
+                         domains, and a "Categories" line would be a third title
+                         level over a page that already has two. -->
                     <SelectorBar x:Name="DomainSelector"
                                  Margin="0,4,0,12"
                                  SelectionChanged="OnDomainChanged" />

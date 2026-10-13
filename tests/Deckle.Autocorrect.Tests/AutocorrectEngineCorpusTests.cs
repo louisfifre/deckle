@@ -17,7 +17,7 @@ public sealed class AutocorrectEngineCorpusTests
     {
         using var listener = new TestEventListener("Deckle-Autocorrect");
         using var h = new AutocorrectEngineHarness(textTelemetry: () => true);
-        h.Prober.Surface = AutocorrectEngineHarness.Editable("chrome"); // never enrolled
+        h.Prober.Surface = AutocorrectEngineHarness.Editable("chrome");
         h.Start();
 
         h.Type("bonjour.");
@@ -31,7 +31,7 @@ public sealed class AutocorrectEngineCorpusTests
     {
         using var listener = new TestEventListener("Deckle-Autocorrect");
         using var h = new AutocorrectEngineHarness(textTelemetry: () => true);
-        h.Settings.Apps["chrome"] = false; // the user declined correction here
+        h.Settings.Apps["chrome"] = false;
         h.Prober.Surface = AutocorrectEngineHarness.Editable("chrome");
         h.Start();
 
@@ -44,10 +44,9 @@ public sealed class AutocorrectEngineCorpusTests
     [Fact]
     public void KeepsAFragmentTailOutOfTheCorpusSentence()
     {
-        // A pointer reset in the middle of a word throws the typed prefix away;
-        // the word's tail then commits alone and used to open the next corpus
-        // sentence as a fragment (« e Setting UX … »). The tracker now reports
-        // the dropped partial and the corpus drops that suspect first word.
+        // A pointer reset mid-word throws the typed prefix away, so the tail
+        // commits alone. The tracker reports the dropped partial and the corpus
+        // drops that suspect first word.
         using var listener = new TestEventListener("Deckle-Autocorrect");
         using var h = new AutocorrectEngineHarness(textTelemetry: () => true);
         h.Settings.Apps["chrome"] = true;
@@ -55,7 +54,7 @@ public sealed class AutocorrectEngineCorpusTests
         h.Start();
 
         h.Type("probl");
-        h.Pointer();            // mid-word reset — the tail below is a fragment
+        h.Pointer();
         h.Type("eme bonjour.");
 
         Assert.Contains(listener.Events, e =>

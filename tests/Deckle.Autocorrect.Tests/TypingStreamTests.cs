@@ -38,8 +38,6 @@ public class TypingStreamTests
             s.OnKeystroke(Keystroke.Of(KeystrokeKind.Backspace, timestampMs));
     }
 
-    // Replays a span the way a reader would: append each run's text after
-    // deleting its Erased chars off what came before.
     private static string Replay(IEnumerable<TypingStream.RunRecord> runs)
     {
         var screen = new StringBuilder();
@@ -67,9 +65,8 @@ public class TypingStreamTests
     [Fact]
     public void BackwardRepairSegmentsTheFlowAndReplayRestoresTheScreen()
     {
-        // « chien » — back over « en », retype « at. » : the faulty form, the
-        // erase and the retype must all survive, and replay must restore what
-        // the screen ended on.
+        // The faulty form, the erase and the retype must all survive, and replay
+        // must restore what the screen ended on.
         var (s, done) = New();
         Type(s, "chien");
         Backspace(s, 2);
@@ -171,14 +168,14 @@ public class TypingStreamTests
     public void TimingCarriesPerCharGapsAndSurvivesTheRepairPause()
     {
         var (s, done) = New();
-        Type(s, "ab", startMs: 1000, stepMs: 100);      // a@1000, b@1100
+        Type(s, "ab", startMs: 1000, stepMs: 100);
         Backspace(s, 1, timestampMs: 1200);
         Type(s, "c", startMs: 1500);
         s.OnKeystroke(Keystroke.Of(KeystrokeKind.Enter, 0));
 
         Assert.Equal("0,100", done[0].Timing);
-        // The retype's first gap counts from the backspace — the repair pause
-        // the pause-pass calibration will want.
+        // The retype's first gap counts from the backspace, so the repair pause
+        // is kept.
         Assert.Equal("300", done[1].Timing);
     }
 

@@ -4,21 +4,15 @@ namespace Deckle.Autocorrect.Mlm;
 
 // ── CamembertAssets ───────────────────────────────────────────────────────────
 //
-// Identity of the CamemBERT reranker's on-disk assets: the model folder name,
-// and the pinned file set the provisioning step downloads into it. The pins
-// (immutable HuggingFace revision URLs would be ideal; `main` is what the
-// Xenova export publishes, so each file carries its measured SHA-256 instead —
-// a silent upstream change fails the checksum rather than corrupting the
-// reranker). Sizes feed the wizard's estimate and progress display.
-//
-// The scorer itself (CamembertMlmScorer) stays path-agnostic — callers compose
-// <ModelsDirectory>\<DirectoryName> and hand it the folder. IsInstalled checks
-// the three files the scorer actually opens; the config/tokenizer-config
-// sidecars are staged for completeness but their absence does not gate.
+// Identity of the CamemBERT reranker's on-disk assets: the model folder name and
+// the pinned file set the provisioning step downloads into it. The Xenova export
+// publishes on `main`, not on an immutable revision URL, so each file carries its
+// SHA-256: a silent upstream change fails the checksum rather than corrupting the
+// reranker.
 public static class CamembertAssets
 {
-    // Folder name under the shared models directory — the single name
-    // App composition and the wizard both compose against.
+    // Folder name under the shared models directory, the single name callers
+    // compose against.
     public const string DirectoryName = "camembert-base";
 
     public sealed record AssetFile(
@@ -59,7 +53,6 @@ public static class CamembertAssets
             354L),
     ];
 
-    // Total download weight, for the wizard's estimate (~440 MB).
     public static long TotalSizeBytes
     {
         get
@@ -70,8 +63,8 @@ public static class CamembertAssets
         }
     }
 
-    // The provisioning predicate: the three files the scorer opens are on
-    // disk. Same shape as CamembertMlmScorer's own load-time check.
+    // Checks only the three files the scorer opens; the config sidecars are
+    // staged for completeness but their absence does not gate.
     public static bool IsInstalled(string modelDirectory) =>
         File.Exists(Path.Combine(modelDirectory, "model.onnx"))
         && File.Exists(Path.Combine(modelDirectory, "sentencepiece.bpe.model"))

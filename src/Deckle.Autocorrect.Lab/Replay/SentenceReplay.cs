@@ -4,11 +4,6 @@ using Deckle.Autocorrect;
 
 namespace Deckle.Autocorrect.Lab;
 
-// One ambiguous slot replayed through a reranker: what the user typed there, the
-// corpus's recorded final form, and what the reranker (e.g. the ONNX judge) would
-// say — its chosen form, the margin it cleared or missed, and its abstain reason.
-// This is the raw material for calibrating the sentence-stage margin against real
-// typing, without any live application.
 public readonly record struct SlotReplayResult(
     string TypedForm,
     string FinalForm,
@@ -20,28 +15,20 @@ public readonly record struct SlotReplayResult(
 {
     public bool Abstained => JudgeChosen is null;
 
-    // The reranker landed on the form the sentence actually ended with — a proxy
-    // for "the judge would have agreed", meaningful only when it did not abstain.
+    // A proxy only: the form the sentence ended with is not ground truth.
     public bool AgreesWithFinal =>
         JudgeChosen is not null && string.Equals(JudgeChosen, FinalForm, StringComparison.Ordinal);
 }
 
-// Aggregate counts over a replay pass — the shape a calibration report reads.
 public readonly record struct ReplaySummary(
     int Sentences, int AmbiguousSlots, int Chosen, int Abstained, int AgreedWithFinal);
 
 // Replays the typed-sentence corpus through a reranker offline: every slot whose
-// active probe exposes two or more closed choices (accent variants or bounded
-// typo neighbours) is judged with the FINAL sentence as context — mirroring the
-// live sentence stage — but nothing is applied. The judge
-// (a full-sentence forced-decoding scorer) is seconds per slot, so this is a serial
-// offline pass over collected corpus, never a hot-path stage. The reranker is
-// injected, so the same runner diffs any two engine versions over the same corpus.
+// probe exposes two or more closed choices is judged with the FINAL sentence as
+// context, mirroring the live sentence stage, but nothing is applied.
 public static class SentenceReplay
 {
-    // Judges every ambiguous slot in one corpus sentence. typedWords and finalWords
-    // are the sentence's word-forms as typed and as it ended; the caller aligns them
-    // slot-for-slot (the I/O layer that reads the corpus owns tokenization). A fixed
+    // The caller aligns typedWords and finalWords slot for slot. A fixed
     // right-context horizon skips slots that had not reached it and hides every
     // later word from the judge.
     public static IReadOnlyList<SlotReplayResult> ReplaySentence(

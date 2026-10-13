@@ -3,28 +3,24 @@ using Deckle.Autocorrect;
 namespace Deckle.Autocorrect.Onnx;
 
 // Adapts a closed-sentence ISentenceScorer (the ONNX judge) to the production
-// whole-sentence transaction and to the retained slot-level replay contract. In
+// whole-sentence transaction and to the slot-level replay contract. In
 // production, the literal sentence and every bounded one-edit variant compete in
 // one global decision. It stays a CORRECTION, not a rewrite: the verdict is one
-// supplied edit, KEEP, or abstention — never invented text.
+// supplied edit, KEEP, or abstention, never invented text.
 //
-// The judge is a full-sentence forced-decoding scorer whose speed follows the
-// execution provider it loads onto: seconds per slot on CPU int4 (offline-only),
-// close to a second per whole-sentence verdict on the resident DirectML model.
-// That is too slow to answer directly at the sentence-ending punctuation, so the
-// judge runs behind the engine's background rerank lane, which keeps inference
-// off the input thread, holds one request in flight and drops stale verdicts by
-// epoch. The offline replay drives the same class, so live and replay inherit
-// one behavior.
+// The judge is a full-sentence forced-decoding scorer, too slow to answer
+// directly at the sentence-ending punctuation even on the resident DirectML
+// model, so it runs behind the engine's background rerank lane, which keeps
+// inference off the input thread, holds one request in flight and drops stale
+// verdicts by epoch. The offline replay drives the same class, so live and
+// replay inherit one behavior.
 public sealed class OnnxSlotReranker : ISentenceReranker, IWholeSentenceReranker, IDisposable
 {
-    // Context floor: the judge is unreliable on short sentences. Replayed over the
-    // maintainer's corpus its changes-only precision was 33% on 1–3-word sentences
-    // and 39% on 4–6 words, against 55–65% at 7+ — the wrong changes being
-    // sentence-initial imperatives it reads as participles (continue→continué),
-    // where margin does not separate the two but sentence length does. Below four
-    // word tokens the judge abstains outright. The floor lives here, the choke
-    // point shared by the live stage and the offline replay, so both inherit it.
+    // Context floor: the judge is unreliable on short sentences. Its wrong
+    // changes there are sentence-initial imperatives read as participles
+    // (continue → continué), where margin does not separate the two but sentence
+    // length does. The floor lives here, the choke point shared by the live stage
+    // and the offline replay, so both inherit it.
     private const int MinSentenceWordTokens = 4;
 
     private readonly ISentenceScorer _scorer;
@@ -62,16 +58,9 @@ public sealed class OnnxSlotReranker : ISentenceReranker, IWholeSentenceReranker
         if (slotIndex < 0 || slotIndex >= sentence.Count)
             return RerankOutcome.Abstained(RerankOutcome.AbstainReasons.Error);
 
-        // Context floor (see MinSentenceWordTokens): a sentence carrying too few
-        // word tokens does not give the judge enough to be trusted, so abstain
-        // before scoring. Word tokens are the entries that carry a letter — the
-        // sentence is a list of output word-forms, punctuation living on the
-        // boundary rather than as its own token.
         if (!HasMinimumContext(sentence))
             return RerankOutcome.Abstained(RerankOutcome.AbstainReasons.ShortContext);
 
-        // One full-sentence candidate per surface form, in candidate order: the
-        // slot word is swapped, the rest of the sentence held fixed.
         var words = new string[sentence.Count];
         for (int w = 0; w < sentence.Count; w++)
             words[w] = sentence[w];
@@ -93,7 +82,6 @@ public sealed class OnnxSlotReranker : ISentenceReranker, IWholeSentenceReranker
         for (int i = 0; i < scored; i++)
             scores[i] = new RerankCandidateScore(candidates[i].Form, outcome.Scores[i].Score);
 
-        // The chosen full sentence maps back to its slot form by position.
         string? chosenForm = null;
         if (outcome.Chosen is not null)
         {

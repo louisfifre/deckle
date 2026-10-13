@@ -1,10 +1,7 @@
 namespace Deckle.Autocorrect;
 
-// Runs an ordered list of correction policies and returns the first decision —
-// the earlier policy wins. AutocorrectPolicySet owns the production order so the
-// app, benchmark and tests cannot silently compose different engines; this type
-// only enforces first-decision precedence and keeps each policy independently
-// testable.
+// The first decision wins, so order is precedence. AutocorrectPolicySet owns the
+// production order.
 public sealed class CompositeCorrectionPolicy : ICorrectionPolicy
 {
     private readonly ICorrectionPolicy[] _policies;

@@ -43,8 +43,6 @@ public sealed class AutocorrectEngineLifecycleTests
         Assert.False(h.Start());
         Assert.Equal(1, h.Host.StartCount);
 
-        // Detached: host signals reach nothing — no surface seeded, no tracking,
-        // no correction.
         h.Host.RaiseFocusChanged();
         h.Type("ca ");
 
@@ -64,7 +62,6 @@ public sealed class AutocorrectEngineLifecycleTests
 
         Assert.Equal(1, h.Host.StopCount);
 
-        // After Stop the handlers are gone: a committed word triggers no correction.
         h.Type("ca ");
         Assert.Empty(h.Injector.Calls);
     }

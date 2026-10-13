@@ -1,6 +1,6 @@
 namespace Deckle.Autocorrect;
 
-// Mechanical permission gate for a future silent whole-sentence proposal. The
+// Mechanical permission gate for a silent whole-sentence proposal. The
 // judge answers "which sentence reads better"; this gate answers the separate
 // safety question "is this still a bounded correction of the exact text on
 // screen?". Both must pass. It deliberately rejects reflow, token insertion or

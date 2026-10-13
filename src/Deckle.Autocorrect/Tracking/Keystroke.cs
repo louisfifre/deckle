@@ -13,11 +13,11 @@ public enum KeystrokeKind
     /// <summary>Arrows, Home/End, PageUp/PageDown — the caret moved, the buffer is stale.</summary>
     Navigation,
     Escape,
-    /// <summary>Any key chorded with Ctrl or Win — the application may have done anything.</summary>
+    /// <summary>Any key chorded with Ctrl, Alt or Win, except the Ctrl+Alt (AltGr) chord — the application may have done anything.</summary>
     Shortcut,
     /// <summary>Dead-key composition pending — conservative reset.</summary>
     DeadKey,
-    /// <summary>Function keys, Insert, lone modifiers… irrelevant to the buffer.</summary>
+    /// <summary>A key that produces no character (function keys, Insert…): irrelevant to the buffer.</summary>
     Other,
 }
 

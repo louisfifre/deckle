@@ -109,8 +109,6 @@ public sealed partial class AutocorrectEngine
                 return;
             }
 
-            // Feed the typed-sentence corpus the (typed, on-screen) pair — the
-            // decision replacement when one applied, else the typed word itself.
             FeedCorpus(commit, decision?.Replacement ?? commit.Word);
 
             // Feed the contextual stage both the typed literal and the on-screen
@@ -234,19 +232,11 @@ public sealed partial class AutocorrectEngine
         _lastInjectionTextLength = 0;
     }
 
-    // A word is protected when any tier the engine sees knows it — the French
-    // lexicon, the restricted global-English seed, or the user's own adopted
-    // vocabulary. The mistouch corrector's validity oracle.
+    // The mistouch corrector's validity oracle.
     private bool IsProtectedWord(string lowerForm) =>
         _french?.Contains(lowerForm) == true
         || _english?.Contains(lowerForm) == true
         || _dictionary?.IsAdopted(lowerForm) == true;
-
-    // Feed the typed-sentence corpus one word: the verbatim typed form paired with
-    // the form the engine left on screen (onScreen). Collection is allowed only on
-    // an enrolled, editable, non-password surface while both the module and dedicated
-    // consent are on. Exactly one call fires per eligible commit.
-    // commit.TimestampMs feeds the corpus rhythm (cast to whole ms; 0 stays unknown).
 
     private void OnWordEdited(WordEdit edit)
     {
@@ -311,6 +301,4 @@ public sealed partial class AutocorrectEngine
             or CorrectionReason.ContextPair
             or CorrectionReason.FrequencyDominance
             or CorrectionReason.PersonalWord;
-
-    // Corrections run here only when the app's decision is explicitly on.
 }

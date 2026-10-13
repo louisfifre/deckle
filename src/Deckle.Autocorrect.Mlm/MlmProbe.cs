@@ -4,25 +4,19 @@ using System.Text.RegularExpressions;
 
 namespace Deckle.Autocorrect.Mlm;
 
-// Offline probe (NOT the live engine) for the post-sentence reranker idea: can a
-// CamemBERT masked-LM choose the right accented form among a CLOSED set, from
-// bidirectional context? It mines BALANCED real cases for each ambiguous group
-// (one bucket per surface form, so a model that always answers the common form
-// is not flattered), masks the slot, and asks the model.
-//
-// Two readings are reported. Forced-choice accuracy = the raw signal "does it
-// discriminate". The confidence curve = the product-relevant view: if we only
-// act when the top-vs-second score margin clears a threshold, what precision do
-// we buy and what fraction of cases do we still cover? The live reranker will
-// sit somewhere on that curve.
+// Offline probe (NOT the live engine): can a CamemBERT masked-LM choose the right
+// accented form among a CLOSED set, from bidirectional context? It mines
+// BALANCED real cases for each ambiguous group (one bucket per surface form, so a
+// model that always answers the common form is not flattered), masks the slot,
+// and asks the model. It reports forced-choice accuracy and a confidence curve:
+// acting only when the top-vs-second margin clears a threshold, what precision is
+// bought and what share of cases stays covered.
 public static class MlmProbe
 {
     // Curated ambiguous groups: a folded key and its real French surface forms.
-    // These are the high-frequency function-word ambiguities the left-context
-    // n-gram could not resolve (a/à alone was the corpus's #1 miss). Content-word
-    // pairs whose forms are multi-piece (cote/côté, tache/tâche, élève/élevé) need
-    // per-subtoken PLL scoring; groups with any multi-piece form are skipped here
-    // and reported, never silently dropped.
+    // Content-word pairs whose forms are multi-piece (cote/côté, tache/tâche,
+    // élève/élevé) need per-subtoken PLL scoring; a group with any multi-piece
+    // form is skipped and reported, never silently dropped.
     private static readonly string[][] Groups =
     {
         new[] { "a", "à" },
@@ -37,11 +31,6 @@ public static class MlmProbe
 
     private static readonly char[] SentenceBreaks = { '.', '!', '?', ';', ':', '…', '\n' };
 
-    // Runs the probe. The caller supplies the resolved paths — the model
-    // directory (holding model.onnx + the tokenizer files) and the evaluation
-    // corpus — plus how many cases to mine per surface form and an optional TSV
-    // dump of the per-case results. Returns 0 on success, 1 when an input is
-    // missing.
     public static int Run(string modelDir, string corpus, int perForm = 120, string? outPath = null)
     {
         if (!File.Exists(Path.Combine(modelDir, "model.onnx")))
@@ -62,8 +51,6 @@ public static class MlmProbe
 
         using var scorer = new CamembertMlmScorer(modelDir);
 
-        // Resolve each group to its candidate ids; a group with any multi-piece
-        // form is reported and skipped (it needs the PLL path, a follow-up).
         var live = new List<ProbeGroup>();
         foreach (string[] forms in Groups)
         {
@@ -97,7 +84,6 @@ public static class MlmProbe
 
             float[] logits = scorer.MaskLogits(left, right);
 
-            // Argmax over the group's candidate ids; margin = best minus runner-up.
             int bestK = 0; float best = float.NegativeInfinity, second = float.NegativeInfinity;
             for (int k = 0; k < c.Group.Ids.Length; k++)
             {
@@ -136,9 +122,6 @@ public static class MlmProbe
         Console.WriteLine($"  unknown context pieces   {unknownTotal,9}");
         Console.WriteLine();
 
-        // Confidence curve: act only when the margin clears a threshold. Coverage
-        // = share of cases acted on; precision = accuracy among those. This is the
-        // product tradeoff — the live reranker picks a point on it.
         Console.WriteLine("── confidence curve (act when margin ≥ T) ──────");
         Console.WriteLine("     T      coverage     precision");
         foreach (double t in new[] { 0.0, 0.5, 1.0, 1.5, 2.0, 3.0, 5.0 })
@@ -158,8 +141,6 @@ public static class MlmProbe
         }
     }
 
-    // Mines balanced cases: per group, one bucket per surface form, capped. Scans
-    // the corpus in order, stops a group once every form bucket is full.
     private static List<SlotCase> MineCases(string corpusPath, List<ProbeGroup> groups, int perForm)
     {
         // group -> form -> cases

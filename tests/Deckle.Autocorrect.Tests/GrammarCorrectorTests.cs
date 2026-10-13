@@ -5,10 +5,8 @@ using Xunit;
 
 namespace Deckle.Autocorrect.Tests;
 
-// The grammar stage's first rule: subject–verb agreement on a valid-but-
-// misconjugated word the earlier stages leave alone. As everywhere in the
-// engine, conservativity is the product — most of these assert the word is LEFT
-// ALONE, and the few corrections are the ones that closed every doubt.
+// The grammar stage: subject–verb agreement on a valid-but-misconjugated word
+// the earlier stages leave alone.
 [Trait("Category", "unit")]
 public class GrammarCorrectorTests
 {
@@ -35,7 +33,6 @@ public class GrammarCorrectorTests
     [Fact]
     public void AddsTheMissingSecondPersonS()
     {
-        // "tu mange" — the 3rd-person form after "tu" — is re-conjugated to "manges".
         var d = Corrector().Evaluate("mange", ["tu"]);
 
         Assert.NotNull(d);
@@ -46,7 +43,6 @@ public class GrammarCorrectorTests
     [Fact]
     public void FixesSingularVerbAfterPluralPronoun()
     {
-        // The classic il/ils slip: "ils mange" → "ils mangent".
         var d = Corrector().Evaluate("mange", ["ils"]);
 
         Assert.Equal("mangent", d!.Replacement);
@@ -72,14 +68,12 @@ public class GrammarCorrectorTests
     [Fact]
     public void ReadsTheSubjectCaseInsensitively()
     {
-        // Sentence-initial "Tu" still resolves as the subject pronoun.
         Assert.Equal("manges", Corrector().Evaluate("mange", ["Tu"])!.Replacement);
     }
 
     [Fact]
     public void AgreementLooksOnlyAtTheImmediatelyPrecedingWord()
     {
-        // The subject is the last left-context word; earlier words don't matter.
         Assert.Equal("manges", Corrector().Evaluate("mange", ["bonjour", "tu"])!.Replacement);
     }
 
@@ -88,21 +82,18 @@ public class GrammarCorrectorTests
     [Fact]
     public void AlreadyAgreeingVerbIsNeverTouched()
     {
-        // "tu manges" carries a 2s reading — it already agrees.
         Assert.Null(Corrector().Evaluate("manges", ["tu"]));
     }
 
     [Fact]
     public void CorrectThirdPersonIsLeftAlone()
     {
-        // "il mange" is right (3s); the stage must not nudge it.
         Assert.Null(Corrector().Evaluate("mange", ["il"]));
     }
 
     [Fact]
     public void NoSubjectPronounLeavesItAlone()
     {
-        // A determiner before the word is no subject pronoun — out of scope.
         Assert.Null(Corrector().Evaluate("mange", ["le"]));
     }
 
@@ -149,7 +140,6 @@ public class GrammarCorrectorTests
     [Fact]
     public void AdoptedWordShieldsItself()
     {
-        // The user adopted "mange" after "tu" — never re-conjugate it.
         var personal = new StubPersonal(adopted: new() { "mange" });
         Assert.Null(Corrector(personal: personal).Evaluate("mange", ["tu"]));
     }

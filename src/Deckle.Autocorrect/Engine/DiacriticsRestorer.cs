@@ -2,9 +2,7 @@ using Deckle.Autocorrect;
 
 namespace Deckle.Autocorrect;
 
-// ── DiacriticsRestorer ──────────────────────────────────────────────────────
-//
-// The lexical gate, stage one of the engine: given a just-committed word, it
+// The lexical gate: given a just-committed word, it
 // restores the French diacritics a QWERTY-US typist omitted ("francais" →
 // "français"). It is a skip chain — a long sequence of guards that each return
 // null to leave the literal untouched, because the literal always wins by
@@ -55,7 +53,7 @@ public sealed class DiacriticsRestorer : ICorrectionPolicy, IAmbiguityProbe
     {
         StageTrace? st = trace?.Open(CorrectionTrace.StageNames.Diacritics);
 
-        // 1. Too short to carry signal — and the single-char class is blacklisted.
+        // 1. Too short to carry signal.
         if (word.Length < _options.MinWordLength)
             return Abstain(st, CorrectionTrace.Reasons.TooShort);
 
@@ -195,21 +193,15 @@ public sealed class DiacriticsRestorer : ICorrectionPolicy, IAmbiguityProbe
         return Abstain(st, CorrectionTrace.Reasons.NotDominant);
     }
 
-    // Records the abstain reason onto the stage trace (when present) and leaves
-    // the literal untouched — the single conservative return.
     private static CorrectionDecision? Abstain(StageTrace? st, string reason)
     {
         st?.Abstain(reason);
         return null;
     }
 
-    // IAmbiguityProbe: the closed candidate set when the fold carries >=2 forms,
-    // for a post-sentence reranker to resolve. Mirrors the candidate machinery of
-    // Evaluate (index variants + valid literal + personal, floor- and
-    // suppression-filtered) but without the guard chain or any decision — it only
-    // answers "is this an ambiguous slot, and which forms?". The blacklist guards
-    // (digits, internal upper, elision, already-accented) still matter: an
-    // already-accented or non-word token is never an ambiguous slot.
+    // Shares Evaluate's candidate machinery without its guard chain or decision.
+    // The blacklist guards (digits, internal upper, elision, already-accented)
+    // still apply: an already-accented or non-word token is never an ambiguous slot.
     public IReadOnlyList<AccentVariant> AmbiguousCandidates(string word)
     {
         string lower = word.ToLowerInvariant();
@@ -264,11 +256,10 @@ public sealed class DiacriticsRestorer : ICorrectionPolicy, IAmbiguityProbe
         // Reference frequency for the rarity gate: the typed literal's own when it
         // is a valid form; otherwise the slot's most frequent lexicon variant. A
         // misspelled literal has no frequency of its own ("ca"), yet its slot can
-        // still pair a dominant form with an ultra-rare cousin (ça at 8 972/M vs
-        // çà at 21/M) — without the fallback the gate is disarmed exactly where
-        // the judge's wrong changes cluster. Computed before personal variants
-        // join: their sentinel frequency would inflate the reference past every
-        // real form.
+        // still pair a dominant form with an ultra-rare cousin (ça vs çà) —
+        // without the fallback the gate is disarmed exactly where the judge's
+        // wrong changes cluster. Computed before personal variants join: their
+        // sentinel frequency would inflate the reference past every real form.
         double rarityReference = 0.0;
         if (applyRarityGate)
         {

@@ -36,7 +36,6 @@ public sealed class SentenceAlignmentTests
     [Fact]
     public void OverlaysCommitStageFinalFormsBySlot()
     {
-        // The record SentenceCorpusTests.RecordsTheCommitStageTransition emits.
         AlignmentResult r = AlignModern(
             "marche ecole.", "marché école.", "#0=marche»commit:marché|#1=ecole»commit:école");
 
@@ -48,7 +47,6 @@ public sealed class SentenceAlignmentTests
     [Fact]
     public void TakesTheLastTransitionAsTheFinalForm()
     {
-        // « etant » retyped by hand then commit-repaired: user»commit, last wins.
         AlignmentResult r = AlignModern(
             "etant la.", "étant là.", "#0=etant»user:etant»commit:étant|#1=la»sentence:là");
 
@@ -65,9 +63,9 @@ public sealed class SentenceAlignmentTests
         Assert.Equal(new[] { "j'", "ai", "faim" }, r.Final);
     }
 
-    // Fix (1): a legacy record whose final differs from typed must NOT collapse to
-    // final=typed (which counted every live correction against the judge). When the
-    // final tokenizes one-to-one with the typed side, it IS the final.
+    // A legacy record whose final differs from typed must NOT collapse to
+    // final=typed, which would count every live correction against the judge. When
+    // the final tokenizes one-to-one with the typed side, it IS the final.
     [Fact]
     public void LegacyRecordRecoversTheFinalByReTokenizingIt()
     {
@@ -78,8 +76,8 @@ public sealed class SentenceAlignmentTests
         Assert.Equal(new[] { "mise", "à", "jour" }, r.Final);
     }
 
-    // Fix (1) guard: an elision apostrophe re-split the final into more tokens than
-    // the typed side, so no one-to-one slot map exists — skip, do not mis-align.
+    // An elision apostrophe re-split the final into more tokens than the typed
+    // side, so no one-to-one slot map exists — skip, do not mis-align.
     [Fact]
     public void LegacyRecordWithTokenCountDriftIsSkipped()
     {
@@ -89,9 +87,8 @@ public sealed class SentenceAlignmentTests
         Assert.Equal(AlignmentStatus.Unusable, r.Status);
     }
 
-    // Fix (2): a corrupted typed string (a User re-edit into « d' » dropped the
-    // separator and fused « de » + « avoir » into « deavoir ») shifts the history
-    // indices; the first-typed « de » no longer matches the token « deavoir » at
+    // A corrupted typed string (« de » + « avoir » fused into « deavoir ») shifts
+    // the history indices; the first-typed « de » no longer matches the token at
     // index 0, so the record is unusable.
     [Fact]
     public void HistoryFirstTypedMismatchSkipsTheRecord()
@@ -102,8 +99,8 @@ public sealed class SentenceAlignmentTests
         Assert.Equal(AlignmentStatus.Unusable, r.Status);
     }
 
-    // An out-of-range slot index is the same broken-indexing signal — skip, not a
-    // silent ignore (the pre-integrity behaviour that hid the drift).
+    // An out-of-range slot index is the same broken-indexing signal: skip the
+    // record, never ignore the entry silently.
     [Fact]
     public void OutOfRangeSlotReferenceSkipsTheRecord()
     {

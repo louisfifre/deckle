@@ -339,8 +339,8 @@ public class SentenceRerankCoordinatorTests
         });
         var lane = new TestRerankLane
         {
-            // This would rewrite every slot if the old compatibility cascade
-            // were allowed to run after the global judge abstained.
+            // This would rewrite every slot if a word-by-word cascade were
+            // allowed to run after the global judge abstained.
             Reranker = _ => "là",
         };
         var injector = new RecordingInjector();

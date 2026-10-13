@@ -6,7 +6,7 @@ using Xunit;
 
 namespace Deckle.Autocorrect.Tests;
 
-// The maintainer's domain-pack gestures, expressed as tests like build-data.
+// The domain-pack gestures, expressed as tests like build-data.
 // BuildFrItPack / BuildEnItPack fabricate the computing packs from the kaikki
 // fr- and en-wiktionary dumps (fetched by scripts/commands/fetch-autocorrect-data.ps1
 // -IncludeKaikki) and write their artifacts under src/Deckle.Autocorrect/Data/
@@ -99,9 +99,9 @@ public sealed class DomainPackMaintenanceTests(ITestOutputHelper output)
         Assert.True(pack.Count > 0, "The en-IT pack came out empty.");
 
         // A silently amputated pack is the failure mode a non-empty check
-        // cannot see: one renamed upstream category would cost a fifth of the
-        // harvest without breaking anything. The bar sits far below the
-        // measured yield, so only a structural loss trips it.
+        // cannot see: one renamed upstream category would cut the harvest
+        // without breaking anything. The bar sits far below the measured
+        // yield, so only a structural loss trips it.
         Assert.True(pack.Count > 5_000,
             $"The en-IT pack shrank to {pack.Count} forms — check the category names against the dump.");
 
@@ -136,10 +136,8 @@ public sealed class DomainPackMaintenanceTests(ITestOutputHelper output)
         BenchPackKeyboardQuality(DomainPackBuilder.FrItPack);
 
     // The bench that matters for en-IT: it proves the sterilization held when
-    // English computing forms land in a French lexicon. There is no vocabulary
-    // bench facing it — no English gold corpus exists, and building one is the
-    // « protects de facto » measurement, its own workstream. This pack ships a
-    // measured non-nuisance, not a measured benefit.
+    // English computing forms land in a French lexicon. No vocabulary bench
+    // faces it, since no English gold corpus exists.
     [Fact(Explicit = true)]
     public void BenchEnItPackKeyboardQuality() =>
         BenchPackKeyboardQuality(DomainPackBuilder.EnItPack);

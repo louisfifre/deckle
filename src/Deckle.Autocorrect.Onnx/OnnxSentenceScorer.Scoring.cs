@@ -229,9 +229,8 @@ public sealed partial class OnnxSentenceScorer
             // One forward over prompt + the scored completion span, reading the
             // teacher-forced logits at every scored position from a single pass.
             // DirectML rejects continuous decoding (a second AppendTokens on a live
-            // generator), so the earlier incremental per-token loop cannot run there;
-            // feeding the whole span at once is also one forward instead of N, and
-            // causal masking makes each scored row identical to the incremental read.
+            // generator), so a per-token loop cannot run there; causal masking makes
+            // each scored row identical to an incremental read.
             long started = profile is null ? 0 : Stopwatch.GetTimestamp();
             int promptLen = promptTokens.Length;
             var input = new int[promptLen + plan.EndExclusive];

@@ -8,14 +8,13 @@ namespace Deckle.Autocorrect.Lab;
 // Encrypted persistence for the observation harvest. Unlike the personal
 // dictionary (plaintext, inspectable by doctrine), the harvest is a raw,
 // higher-volume capture of real typed words, so it is sealed at rest with DPAPI
-// (CurrentUser scope — only this Windows account can decrypt). The readable
-// surface is the `harvest list` command, which decrypts in memory and prints;
-// the file on disk is ciphertext.
+// (CurrentUser scope: only this Windows account can decrypt). The file on disk
+// is ciphertext; reads decrypt in memory.
 //
 // Writes are debounced (a burst of typing collapses to one flush) and atomic
 // (temp + Move); a synchronous Flush on stop bounds loss to the debounce
-// window. One writer is assumed — a single `harvest` process; concurrent
-// instances would last-writer-win, never tear the file.
+// window. One writer is assumed; concurrent instances would last-writer-win,
+// never tear the file.
 internal sealed class HarvestStore : IDisposable
 {
     private const int DebounceMs = 1000;
@@ -66,8 +65,6 @@ internal sealed class HarvestStore : IDisposable
         Save();
     }
 
-    // Snapshots both streams, heaviest first — the order the `list` command and
-    // any offline ranking want.
     public (IReadOnlyList<HarvestedEdit> Edits, IReadOnlyList<HarvestedWord> Words) Snapshot()
     {
         lock (_lock)
@@ -89,10 +86,9 @@ internal sealed class HarvestStore : IDisposable
 
     private void Save() => _debounce.Change(DebounceMs, System.Threading.Timeout.Infinite);
 
-    // Writes the harvest to disk, encrypted, but only when there is an unsaved
-    // mutation — so a read-only command (`harvest list`) never creates or
-    // rewrites the file. _flushLock serializes overlapping callers (the debounce
-    // timer and the shutdown flush) so they never collide on the temp path.
+    // Writes only when a mutation is unsaved, so a read-only session never
+    // creates or rewrites the file. _flushLock serializes the debounce timer and
+    // the shutdown flush so they never collide on the temp path.
     public void Flush()
     {
         lock (_flushLock)

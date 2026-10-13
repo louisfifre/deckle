@@ -6,14 +6,14 @@ namespace Deckle.Autocorrect;
 // under the caret, commits it on a boundary, and harvests the « typed wrong,
 // backspaced, retyped » gesture as a WordEdit. No OS calls, no threads — time
 // rides in on the keystrokes, effects go out as events, so every quality
-// decision is testable keystroke by keystroke (mirrors the trackpad recognizer).
+// decision is testable keystroke by keystroke.
 //
 // The edit window is the subtle part. The autocorrect observes and repairs
 // AFTER a word commits; the same window that lets the engine fix a word
 // also lets the tracker watch the user fix it. After a commit the screen holds
 // « word » + boundary; the first Backspace eats the boundary and RE-OPENS the
-// committed word as the live buffer, with previousWord reverted one step (a
-// two-deep memory) so the re-commit lands in the same slot. The one exception
+// committed word as the live buffer, with the left context reverted one step
+// so the re-commit lands in the same slot. The one exception
 // is the elision commit (« j' »), whose boundary apostrophe lives INSIDE the
 // word and was never displayed separately: there the same Backspace already
 // bit the word's last char off the screen, so the re-opened buffer drops it
@@ -26,13 +26,7 @@ public sealed class TypedWordTracker
 
     private readonly StringBuilder _buffer = new();
 
-    // The token committed just before the live word on this surface, with no
-    // intervening reset — surfaced as WordCommit.PreviousWord. Null after a reset.
     private string? _previousWord;
-
-    // The token two before the live word (the one before _previousWord) — surfaced
-    // as WordCommit.PreviousPreviousWord, the second context word the trigram
-    // disambiguator needs. Null after a reset or one word into a sentence.
     private string? _previousPreviousWord;
 
     // ── Edit-window state ──
@@ -67,12 +61,10 @@ public sealed class TypedWordTracker
     // tracker itself cannot tell tail from fresh word; it only reports the drop.
     public Action<ResetReason, bool>? TrackerReset;
 
-    /// <summary>The live buffer, for the CLI watch display.</summary>
     public string CurrentWord => _buffer.ToString();
 
-    // The engine's per-key path normally needs only presence, not the text.
-    // Keep that query allocation-free; CurrentWord remains the deliberate
-    // snapshot API for diagnostics and the eventual sentence rewrite.
+    // Allocation-free presence check for the engine's per-key path;
+    // CurrentWord allocates a snapshot.
     internal bool HasCurrentWord => _buffer.Length > 0;
 
     public void OnKeystroke(Keystroke k)
@@ -153,7 +145,7 @@ public sealed class TypedWordTracker
             }
 
             // One final commit boundary is enough to realign a corrected word;
-            // richer synthetic editing is not a closed replacement anymore.
+            // richer synthetic editing is not a closed replacement.
             if (i != replacement.Length - 1)
                 return false;
             boundarySeen = true;
@@ -206,13 +198,11 @@ public sealed class TypedWordTracker
             _buffer.Append(c);
             if (_buffer.Length > BufferCap)
             {
-                // BufferLimit is the only cap-overflow reason — see ResetReason.
                 Reset(ResetReason.BufferLimit);
             }
             return;
         }
 
-        // Any other char (space, punctuation, …) is a boundary.
         ProcessBoundary(c, timestampMs);
     }
 
@@ -298,9 +288,6 @@ public sealed class TypedWordTracker
         // No edit window, empty buffer — backspace is plain noise.
     }
 
-    // Commits the current buffer as a word, raises WordCommitted, and (when
-    // re-editing) WordEdited. Opens a fresh edit window on the committed word.
-    //
     // State lands BEFORE the events fire: a WordCommitted handler may react by
     // injecting a correction and calling ReplaceLastCommitted — it must find
     // the window already open, and nothing here may overwrite its realignment
@@ -323,15 +310,12 @@ public sealed class TypedWordTracker
         _separators.Append(WordBoundaries.DisplaySeparator(boundary));
         _separatorsValid = true;
 
-        // Chain slides by one: this word becomes the previous, the previous slides
-        // to two-back; the old two-back drops off (the next word's context is
-        // [previous, this]).
         _previousPreviousWord = _previousWord;
         _previousWord = word;
         _buffer.Clear();
 
-        // Open the edit window on this commit. Three-deep memory: the two words
-        // before THIS one are what the context reverts to if the window re-opens.
+        // The two words before THIS one are what the context reverts to if the
+        // window re-opens.
         _lastCommittedWord = word;
         _lastBoundaryAttached = WordBoundaries.DisplaySeparator(boundary).Length == 0;
         _wordBeforeLast = wordBeforeThis;

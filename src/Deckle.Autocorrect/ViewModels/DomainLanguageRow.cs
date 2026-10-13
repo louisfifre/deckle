@@ -5,10 +5,8 @@ using Deckle.Catalog;
 
 namespace Deckle.Autocorrect;
 
-// One language row inside a lexical domain on LexicalDomainsPage: the language
-// this domain's vocabulary is available in, how many terms it would add, and
-// whether it is on. Same discipline as AutocorrectAppRow — the row never
-// persists anything itself, toggling Active calls back into the view-model,
+// One language row inside a lexical domain on LexicalDomainsPage. The row never
+// persists anything itself: toggling Active calls back into the view-model,
 // which routes to AutocorrectSettingsService.
 //
 // The rows are enumerated from DomainPack.Shipped rather than from the settings
@@ -26,17 +24,13 @@ public sealed partial class DomainLanguageRow : ObservableObject
     private readonly Action<DomainLanguageRow, bool> _onToggled;
 
     // Guards the seed assignment so hydrating from the stored state is not
-    // mistaken for a user toggle (the _isSyncing pattern of the page VMs).
+    // mistaken for a user toggle.
     private bool _syncing;
 
     public string PackId { get; }
 
-    // The pack this row decides on — the view-model re-reads its activation
-    // through it on every Load().
     public DomainPack Pack { get; }
 
-    // The language as Windows names it — the row's own label is built from it,
-    // and the domain's indications block names the language the same way.
     public string LanguageName { get; }
 
     public string Label { get; }
@@ -68,8 +62,6 @@ public sealed partial class DomainLanguageRow : ObservableObject
         Sync(active);
     }
 
-    // Re-seeds the row from the model without reporting a user toggle — the path
-    // Load() takes when the page comes back into view.
     internal void Sync(bool active)
     {
         _syncing = true;

@@ -27,10 +27,10 @@ public class RestorationEvaluatorTests
         {
             string? previousWord = leftContext.Count > 0 ? leftContext[^1] : null;
             if (word == "a")
-                LastPrevForA = previousWord; // capture the chained left context.
+                LastPrevForA = previousWord;
 
             if (!_rules.TryGetValue(word, out var rule))
-                return null; // no rule → leave the literal (a miss on accented text).
+                return null;
             if (rule.requirePrev is not null && rule.requirePrev != previousWord)
                 return null;
             return new CorrectionDecision(word, rule.repl, CorrectionReason.LexicalGate);
@@ -46,11 +46,10 @@ public class RestorationEvaluatorTests
     //   côté  accented, wrong form    → WrongForm
     private static ScriptedPolicy Policy() => new(new Dictionary<string, (string, string?)>
     {
-        ["le"] = ("là", null),          // mangles a correctly-typed word
-        ["marche"] = ("marché", null),  // correct restoration
-        // "etait" has no rule → Missed
-        ["a"] = ("à", "etait"),         // only fires when prev is the prior output
-        ["cote"] = ("coté", null),      // wrong accented form (ref is "côté")
+        ["le"] = ("là", null),
+        ["marche"] = ("marché", null),
+        ["a"] = ("à", "etait"),
+        ["cote"] = ("coté", null),
     });
 
     private static RestorationReport Evaluate(string reference, ICorrectionPolicy policy) =>
@@ -63,13 +62,11 @@ public class RestorationEvaluatorTests
 
         Assert.Equal(6L, report.TotalTokens);
 
-        // Accented world: marché + à restored, était missed, côté wrong form.
         Assert.Equal(4L, report.AccentedRef);
         Assert.Equal(2L, report.Restored);
         Assert.Equal(1L, report.Missed);
         Assert.Equal(1L, report.WrongForm);
 
-        // Bare world: chat untouched, le falsely corrected.
         Assert.Equal(2L, report.BareRef);
         Assert.Equal(1L, report.Untouched);
         Assert.Equal(1L, report.FalseCorrections);
@@ -96,8 +93,7 @@ public class RestorationEvaluatorTests
         Assert.Equal(3.0 / 6.0, report.WordAccuracy, 6);
 
         // Precision is the headline: of the 4 emitted corrections (là, marché,
-        // à, coté) two were right — restored marché and à. The two wrong ones
-        // are the false correction (là) and the wrong form (coté).
+        // à, coté) two were right.
         Assert.Equal(4L, report.EmittedCorrections);
         Assert.Equal(2L, report.Corruptions);
         Assert.Equal(2.0 / 4.0, report.Precision, 6);
@@ -122,9 +118,7 @@ public class RestorationEvaluatorTests
     public void BreaksDownEmittedCorrectionsByStage()
     {
         // Every ScriptedPolicy rule reports LexicalGate, so the four emitted
-        // corrections land in one stage: two correct (marché, à), two wrong
-        // (the false correction là, the wrong form coté). Missed/untouched
-        // tokens never acted, so they contribute nothing to the breakdown.
+        // corrections land in one stage.
         var report = Evaluate("le chat marché était à côté.", Policy());
 
         Assert.True(report.ByStage.TryGetValue(CorrectionReason.LexicalGate, out var gate));
@@ -148,8 +142,6 @@ public class RestorationEvaluatorTests
     [Fact]
     public void TypingSimulationStripsAccentsKeepingCase()
     {
-        // The typist produces "Francais" from "Français": accent gone, capital
-        // kept. A policy that only knows the stripped key still gets to fire.
         var policy = new ScriptedPolicy(new Dictionary<string, (string, string?)>
         {
             ["Francais"] = ("Français", null),
@@ -291,8 +283,6 @@ public class RestorationEvaluatorTests
         }
     }
 
-    // Fires only when there is no left context — to prove the prev resets at a
-    // sentence boundary.
     private sealed class OnlyAtSentenceStartPolicy : ICorrectionPolicy
     {
         public CorrectionDecision? Evaluate(string word, IReadOnlyList<string> leftContext, CorrectionTrace? trace = null) =>
@@ -310,9 +300,9 @@ public class RestorationEvaluatorTests
         var report = RestorationEvaluator.Evaluate(
             new StringReader("x était. était y."), new OnlyAtSentenceStartPolicy());
 
-        Assert.Equal(2L, report.AccentedRef); // both "était" are accented refs
-        Assert.Equal(1L, report.Restored);    // only the sentence-initial one
-        Assert.Equal(1L, report.Missed);      // the mid-sentence one (prev "x")
+        Assert.Equal(2L, report.AccentedRef);
+        Assert.Equal(1L, report.Restored);
+        Assert.Equal(1L, report.Missed);
     }
 
     [Fact]
@@ -324,6 +314,6 @@ public class RestorationEvaluatorTests
             policy,
             new EvaluatorOptions { MaxTokens = 3 });
 
-        Assert.Equal(3L, report.TotalTokens); // le, chat, marché — then stop.
+        Assert.Equal(3L, report.TotalTokens);
     }
 }

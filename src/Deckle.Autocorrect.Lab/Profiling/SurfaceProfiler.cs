@@ -4,13 +4,12 @@ using System.Linq;
 
 namespace Deckle.Autocorrect.Lab;
 
-// Ventilates the typed-sentence corpus into surface profiles (CONTEXT.md
-// § Surface profile): one per-application portrait of how typing behaves there,
-// computed from each record's closure and timing. Everything here is measured,
-// never configured — the profiles name where the sentence stage arrives too
-// late (Enter-heavy surfaces) and give the pause pass the gap distribution its
-// threshold will be calibrated on. Pure over parsed corpus entries; the gesture
-// owns file I/O and report placement.
+// Splits the typed-sentence corpus into surface profiles: one per-application
+// portrait of how typing behaves there, computed from each record's closure and
+// timing. Everything here is measured, never configured: the profiles show where
+// the sentence stage arrives too late (Enter-heavy surfaces) and give the pause
+// pass its gap distribution. Pure over parsed corpus entries; the gesture owns
+// file I/O and report placement.
 public static class SurfaceProfiler
 {
     public static IReadOnlyList<SurfaceProfile> Profile(IEnumerable<CorpusEntry> entries)
@@ -24,22 +23,17 @@ public static class SurfaceProfiler
             bucket.Add(entry.Record);
         }
 
-        // Busiest surfaces first — the ordering the reader scans for where the
-        // pause pass matters most.
         return buckets
             .Select(kv => kv.Value.ToProfile(kv.Key))
             .OrderByDescending(p => p.Sentences)
             .ToList();
     }
 
-    // The pause bar a surface earns from its own measurements — PROVISIONAL
-    // FORMULA, pending the calibration pass on real closure/timing data (the
-    // chantier's rule: thresholds are calibrated, never guessed; this is the
-    // one quarantined guess, in one place, so recalibration touches nothing
-    // else). A surface qualifies when Enter dominates its true closures and
-    // enough timed sentences back the statistics; its bar is the p99 of its
-    // own inter-commit gaps — "a pause unusual for the way I type there".
-    // 0 = not qualified, the pause pass stays disarmed on that surface.
+    // The pause bar a surface earns from its own measurements. The formula is a
+    // guess awaiting calibration on real closure and timing data, quarantined
+    // here so recalibration touches nothing else. The bar is the p99 of the
+    // surface's own inter-commit gaps: a pause unusual for the way the user
+    // types there. 0 = not qualified; the pause pass stays disarmed there.
     public static int ProvisionalPauseThresholdMs(SurfaceProfile profile)
     {
         const int minTimedSentences = 30;
@@ -51,8 +45,6 @@ public static class SurfaceProfiler
         return profile.Gaps.P99;
     }
 
-    // The whole-corpus row: every entry folded into one profile, so the reader
-    // can weigh a surface against the global behaviour.
     public static SurfaceProfile Overall(IEnumerable<CorpusEntry> entries)
     {
         var bucket = new Bucket();
@@ -61,8 +53,6 @@ public static class SurfaceProfiler
         return bucket.ToProfile("(all)");
     }
 
-    // Per-process accumulation: closure counts, slot counts, and the raw
-    // inter-slot gaps the percentiles are cut from.
     private sealed class Bucket
     {
         private int _sentences, _enters, _interrupted, _other, _words;
@@ -81,7 +71,7 @@ public static class SurfaceProfiler
 
             // Timing is the exact slot count when present ("0,340,1220" = three
             // slots); the typed side's whitespace split approximates it for
-            // legacy records that predate the field.
+            // records without the field.
             if (record.Timing.Length > 0)
             {
                 _timedSentences++;
@@ -111,10 +101,9 @@ public static class SurfaceProfiler
     }
 }
 
-// One surface's measured portrait. Sentences is every record whatever its
-// closure; TimedSentences the subset carrying a timing string (the gap stats'
-// population). Gap percentiles are inter-slot (word-commit to word-commit)
-// milliseconds — the raw material of the pause-pass threshold.
+// Sentences counts every record whatever its closure; TimedSentences the subset
+// carrying a timing string, the gap stats' population. Gaps are inter-slot
+// (word-commit to word-commit) milliseconds.
 public sealed record SurfaceProfile(
     string Process,
     int Sentences,

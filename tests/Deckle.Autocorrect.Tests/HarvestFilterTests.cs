@@ -13,7 +13,6 @@ namespace Deckle.Autocorrect.Tests;
 [Trait("Category", "unit")]
 public sealed class HarvestFilterTests
 {
-    // A tiny French lexicon: two known forms, one accented.
     private static FrequencyLexicon Lexicon() =>
         FrequencyLexicon.LoadTsv(new StringReader("mange\t100\nécole\t50\n"));
 
@@ -21,11 +20,11 @@ public sealed class HarvestFilterTests
     [InlineData("ça", true)]
     [InlineData("aujourd'hui", true)]                 // interior apostrophe
     [InlineData("peut-être", true)]                   // interior hyphen
-    [InlineData("a", false)]                          // single character
-    [InlineData("ab12", false)]                       // digit-bearing
-    [InlineData("12", false)]                         // pure digits
-    [InlineData("c#", false)]                         // symbol
-    [InlineData("l'", false)]                         // trailing-apostrophe elision marker
+    [InlineData("a", false)]
+    [InlineData("ab12", false)]
+    [InlineData("12", false)]
+    [InlineData("c#", false)]
+    [InlineData("l'", false)]                       // trailing-apostrophe elision marker
     [InlineData("-mot", false)]                       // leading connector
     public void IsHarvestableTokenKeepsOnlyAlphabeticFrenchShapedTokens(string word, bool expected) =>
         Assert.Equal(expected, HarvestFilter.IsHarvestableToken(word));
@@ -33,7 +32,6 @@ public sealed class HarvestFilterTests
     [Fact]
     public void LengthCapIsEnforcedAtItsBoundary()
     {
-        // Drive the boundary off the real cap, both sides of the strict '>'.
         Assert.True(HarvestFilter.IsHarvestableToken(new string('a', HarvestFilter.MaxTokenLength)));
         Assert.False(HarvestFilter.IsHarvestableToken(new string('a', HarvestFilter.MaxTokenLength + 1)));
     }
@@ -42,8 +40,8 @@ public sealed class HarvestFilterTests
     public void ACorrectionPairNeedsBothSidesHarvestableAndDifferent()
     {
         Assert.True(HarvestFilter.IsCorrectionPair("captes", "capte"));
-        Assert.False(HarvestFilter.IsCorrectionPair("capte", "capte"));   // identical
-        Assert.False(HarvestFilter.IsCorrectionPair("co2", "co"));        // digit-bearing side
+        Assert.False(HarvestFilter.IsCorrectionPair("capte", "capte"));
+        Assert.False(HarvestFilter.IsCorrectionPair("co2", "co"));
     }
 
     [Fact]
@@ -51,22 +49,22 @@ public sealed class HarvestFilterTests
     {
         var french = Lexicon();
         Assert.False(HarvestFilter.IsUnknownWord("mange", french));
-        Assert.False(HarvestFilter.IsUnknownWord("Mange", french));  // lowercased before lookup
-        Assert.False(HarvestFilter.IsUnknownWord("école", french));  // accent preserved
+        Assert.False(HarvestFilter.IsUnknownWord("Mange", french));
+        Assert.False(HarvestFilter.IsUnknownWord("école", french));
     }
 
     [Fact]
     public void AnAbsentHarvestableFormIsUnknown()
     {
         var french = Lexicon();
-        Assert.True(HarvestFilter.IsUnknownWord("captes", french));   // the coverage gap
+        Assert.True(HarvestFilter.IsUnknownWord("captes", french));
     }
 
     [Fact]
     public void NonHarvestableTokensAreNeverReportedUnknown()
     {
         var french = Lexicon();
-        Assert.False(HarvestFilter.IsUnknownWord("a", french));     // too short
-        Assert.False(HarvestFilter.IsUnknownWord("pin1234", french)); // digit-bearing
+        Assert.False(HarvestFilter.IsUnknownWord("a", french));
+        Assert.False(HarvestFilter.IsUnknownWord("pin1234", french));
     }
 }

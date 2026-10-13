@@ -10,8 +10,8 @@ namespace Deckle.Autocorrect.Tests;
 // raw key events and exercises the genuine decode → track → decide → inject
 // chain — what actually happens at runtime, minus the desktop.
 //
-// Set Prober.Surface / Settings / Policy / Injector.Result BEFORE Start(); the
-// engine seeds the surface on Start and captures the policy reference then.
+// Set Prober.Surface and Settings BEFORE Start(): Start seeds the surface and
+// reports its enrollment from the settings read then.
 internal sealed class AutocorrectEngineHarness : IDisposable
 {
     public readonly FakeKeyboardInputHost Host = new();
@@ -23,13 +23,11 @@ internal sealed class AutocorrectEngineHarness : IDisposable
     public AutocorrectSettings Settings = new();
     public readonly AutocorrectEngine Engine;
 
-    // Observable engine outputs, recorded in order.
     public readonly List<CorrectionDecision> Applied = new();
     public readonly List<(string Original, string Replacement)> InjectionFailures = new();
     public readonly List<(FocusedSurface Surface, bool Enrolled)> SurfaceChanges = new();
     public readonly List<string> EnrollmentSuggestions = new();
 
-    // Timestamp stamped on every raised key — only the rollup heartbeat cares.
     public double TimeMs { get; set; }
 
     // Counts character-key decode attempts (one per ToUnicode call) — lets a
@@ -62,7 +60,7 @@ internal sealed class AutocorrectEngineHarness : IDisposable
         // structurally and never reach this.
         _decoder = new KeyDecoder((vk, _, _, buffer) =>
         {
-            DecodeCharCount++; // a character key reached translation — i.e. decoding ran
+            DecodeCharCount++;
             buffer.Clear();
             if (_layout.TryGetValue(vk, out char ch)) { buffer.Append(ch); return 1; }
             return 0;
@@ -87,7 +85,6 @@ internal sealed class AutocorrectEngineHarness : IDisposable
 
     // ── Driving input ────────────────────────────────────────────────────
 
-    /// <summary>Types each character as a physical key-down through the host.</summary>
     public void Type(string text) => Type(text, interKeyMs: 0);
 
     public void Type(string text, int interKeyMs)
@@ -156,7 +153,6 @@ internal sealed class AutocorrectEngineHarness : IDisposable
             return condition();
         }, timeout);
 
-    /// <summary>Re-probes the (already updated) surface, as a focus change would.</summary>
     public void RefocusOn(FocusedSurface surface)
     {
         Prober.Surface = surface;
@@ -256,7 +252,6 @@ internal sealed class AutocorrectEngineHarness : IDisposable
 
 // ── Port substitutes ─────────────────────────────────────────────────────
 
-// Raises the host signals on demand; records the lifecycle calls.
 internal sealed class FakeKeyboardInputHost : IKeyboardInputHost
 {
     public event Action<KeyboardKeyEvent>? KeyReceived;
@@ -296,7 +291,6 @@ internal sealed class FakeKeyboardInputHost : IKeyboardInputHost
     public void RaiseFocusChanged() => FocusChanged?.Invoke();
 }
 
-// Returns a surface the test chose; counts the probes.
 internal sealed class FakeSurfaceProber : ISurfaceProber
 {
     public FocusedSurface Surface = FocusedSurface.Unknown;
@@ -305,7 +299,6 @@ internal sealed class FakeSurfaceProber : ISurfaceProber
     public FocusedSurface Probe() { ProbeCount++; return Surface; }
 }
 
-// Records each requested edit and returns a controllable verdict.
 internal sealed class RecordingInjector : ITextInjector
 {
     private readonly SimulatedTextSurface? _surface;
@@ -329,8 +322,6 @@ internal sealed class RecordingInjector : ITextInjector
     }
 }
 
-// A policy scripted by the test. The convenience factory corrects one exact
-// form, case-sensitive, leaving everything else untouched.
 internal sealed class ScriptedPolicy : ICorrectionPolicy
 {
     private readonly Func<string, string?, CorrectionDecision?> _evaluate;

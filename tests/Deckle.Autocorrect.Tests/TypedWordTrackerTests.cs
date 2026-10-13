@@ -3,16 +3,13 @@ using Xunit;
 
 namespace Deckle.Autocorrect.Tests;
 
-// Tests de comportement sur TypedWordTracker — la machine à états pure qui
-// accumule le mot sous le caret, le valide sur une frontière, et récolte le
-// geste « tapé faux, effacé, retapé » en WordEdit. Aucun appel OS : le temps
-// arrive sur les keystrokes, les effets sortent en événements, donc tout est
-// observable frappe par frappe. Les cas sont réalistes en français : élision,
-// trait d'union, ponctuation, et le scénario complet de fenêtre d'édition.
+// TypedWordTracker is the pure state machine that accumulates the word under the
+// caret, commits it on a boundary, and harvests the « typed wrong, erased,
+// retyped » gesture as a WordEdit. No OS calls: time arrives on keystrokes and
+// effects leave as events, so everything is observable keystroke by keystroke.
 [Trait("Category", "unit")]
 public class TypedWordTrackerTests
 {
-    // Collecteur des trois flux d'événements, monté sur un tracker.
     private sealed class Recorder
     {
         public readonly List<WordCommit> Commits = new();
@@ -28,7 +25,6 @@ public class TypedWordTrackerTests
         }
     }
 
-    // Frappe une chaîne caractère par caractère (chaque char = un Keystroke Text).
     private static void Type(TypedWordTracker t, string text, double time = 0)
     {
         foreach (char c in text)
@@ -83,9 +79,9 @@ public class TypedWordTrackerTests
         Type(t, "de la mer ");
 
         Assert.Equal(3, rec.Commits.Count);
-        Assert.Null(rec.Commits[1].PreviousPreviousWord);        // "la": only one word before
-        Assert.Equal("la", rec.Commits[2].PreviousWord);         // "mer"
-        Assert.Equal("de", rec.Commits[2].PreviousPreviousWord); // two back — the trigram context
+        Assert.Null(rec.Commits[1].PreviousPreviousWord);
+        Assert.Equal("la", rec.Commits[2].PreviousWord);
+        Assert.Equal("de", rec.Commits[2].PreviousPreviousWord); // the trigram context
     }
 
     [Fact]
@@ -94,15 +90,15 @@ public class TypedWordTrackerTests
         var t = new TypedWordTracker();
         var rec = new Recorder(t);
 
-        Type(t, "de la mer ");  // commits de, la, mer; edit window on "mer"
-        Backspace(t);           // re-open "mer" (eats the boundary)
-        Backspace(t, 3);        // erase "mer"
-        Type(t, "lac ");        // re-commit a different word in the same slot
+        Type(t, "de la mer ");
+        Backspace(t);           // eats the boundary, re-opening "mer"
+        Backspace(t, 3);
+        Type(t, "lac ");
 
         var last = rec.Commits[^1];
         Assert.Equal("lac", last.Word);
-        Assert.Equal("la", last.PreviousWord);                   // context restored…
-        Assert.Equal("de", last.PreviousPreviousWord);           // …two deep
+        Assert.Equal("la", last.PreviousWord);
+        Assert.Equal("de", last.PreviousPreviousWord);
     }
 
     [Fact]
@@ -111,8 +107,6 @@ public class TypedWordTrackerTests
         var t = new TypedWordTracker();
         var rec = new Recorder(t);
 
-        // « l'école » : l'apostrophe ferme « l' », puis « école » se valide
-        // sur la frontière suivante avec PreviousWord « l' ».
         Type(t, "l'école ");
 
         Assert.Equal(2, rec.Commits.Count);
@@ -123,12 +117,10 @@ public class TypedWordTrackerTests
         Assert.Equal("l'", rec.Commits[1].PreviousWord);
     }
 
-    // Régression injection. L'apostrophe d'élision vit
-    // DANS le mot (« j' ») et ne s'affiche jamais comme frontière séparée. La
-    // 1re backspace après un commit d'élision a déjà rongé cette apostrophe à
-    // l'écran ; le buffer réouvert la laisse tomber aussi pour rester collé à
-    // l'écran. Retaper l'apostrophe re-valide « j' » à l'identique — aucun
-    // WordEdit, car rien n'a changé.
+    // The elision apostrophe lives INSIDE the word (« j' ») and never shows as a
+    // separate boundary, so the first backspace after an elision commit already
+    // ate it on screen; the reopened buffer drops it too to stay aligned with the
+    // screen.
     [Fact]
     public void ElisionReopenDropsTheTrailingApostropheAndRecommitsWithoutEdit()
     {
@@ -136,21 +128,18 @@ public class TypedWordTrackerTests
         var rec = new Recorder(t);
 
         Type(t, "j");
-        Type(t, "'");                      // commit « j' » sur son apostrophe attachée
+        Type(t, "'");
         Assert.Equal('\'', rec.Commits[0].Boundary);
 
-        Backspace(t);                      // rouvre « j' » MINUS l'apostrophe → « j »
+        Backspace(t);
         Assert.Equal("j", t.CurrentWord);
 
-        Type(t, "'");                      // re-valide « j' » à l'identique
+        Type(t, "'");
         Assert.Equal(2, rec.Commits.Count);
         Assert.Equal("j'", rec.Commits[1].Word);
-        Assert.Empty(rec.Edits);           // rien n'a changé → aucun WordEdit
+        Assert.Empty(rec.Edits);
     }
 
-    // Réouverture d'élision puis correction : « j' » → « je ». Le buffer rouvre
-    // « j », l'utilisateur tape « e » puis une frontière ; le re-commit « je »
-    // récolte un WordEdit contre la forme validée d'origine « j' ».
     [Fact]
     public void ElisionReopenThenRetypeHarvestsTheWordEdit()
     {
@@ -158,10 +147,10 @@ public class TypedWordTrackerTests
         var rec = new Recorder(t);
 
         Type(t, "j");
-        Type(t, "'");        // commit « j' »
-        Backspace(t);        // rouvre → « j »
-        Type(t, "e");        // « je »
-        Type(t, " ");        // re-commit sur frontière
+        Type(t, "'");
+        Backspace(t);
+        Type(t, "e");
+        Type(t, " ");
 
         Assert.Equal(2, rec.Commits.Count);
         Assert.Equal("je", rec.Commits[1].Word);
@@ -170,23 +159,19 @@ public class TypedWordTrackerTests
         Assert.Equal("je", edit.Replacement);
     }
 
-    // Le pendant de la régression : un commit NORMAL (mot + espace) rouvre le
-    // mot ENTIER à la 1re backspace — la frontière espace s'affichait bien à
-    // l'écran, donc rien n'est rogné. La correction élision ne doit pas avoir
-    // déplacé ce comportement.
+    // A NORMAL commit's space boundary did show on screen, so the first
+    // backspace eats only that boundary and reopens the WHOLE word.
     [Fact]
     public void NormalCommitReopensTheFullWordOnFirstBackspace()
     {
         var t = new TypedWordTracker();
 
-        Type(t, "mot ");     // frontière espace, affichée
-        Backspace(t);        // rouvre « mot » en entier
+        Type(t, "mot ");
+        Backspace(t);
 
         Assert.Equal("mot", t.CurrentWord);
     }
 
-    // Après une réouverture d'élision, effacer au-delà du début connu reste un
-    // hard reset — comme pour un mot normal.
     [Fact]
     public void ElisionReopenBackspacingPastTheStartResets()
     {
@@ -194,13 +179,13 @@ public class TypedWordTrackerTests
         var rec = new Recorder(t);
 
         Type(t, "j");
-        Type(t, "'");        // commit « j' »
-        Backspace(t);        // rouvre → « j »
-        Backspace(t);        // efface « j » → buffer vide réouvert
+        Type(t, "'");
+        Backspace(t);
+        Backspace(t);
         Assert.Equal(string.Empty, t.CurrentWord);
         Assert.Empty(rec.Resets);
 
-        Backspace(t);        // une de plus → au-delà du début connu
+        Backspace(t);
         Assert.Equal(new[] { ResetReason.Navigation }, rec.Resets.ToArray());
     }
 
@@ -224,7 +209,7 @@ public class TypedWordTrackerTests
 
         Type(t, "l’an ");   // U+2019
 
-        Assert.Equal("l'", rec.Commits[0].Word); // U+0027 en sortie
+        Assert.Equal("l'", rec.Commits[0].Word); // U+0027 on output
         Assert.Equal("an", rec.Commits[1].Word);
     }
 
@@ -268,8 +253,8 @@ public class TypedWordTrackerTests
         var rec = new Recorder(t);
 
         Type(t, "chein");
-        Backspace(t, 2);   // « chein » → « che »
-        Type(t, "at ");    // « cheat »? non : « che » + « at » = « cheat »
+        Backspace(t, 2);
+        Type(t, "at ");
 
         var c = Assert.Single(rec.Commits);
         Assert.Equal("cheat", c.Word);
@@ -286,12 +271,9 @@ public class TypedWordTrackerTests
         Assert.Equal(string.Empty, t.CurrentWord);
     }
 
-    // Scénario complet de fenêtre d'édition. Spec : la 1re backspace mange la
-    // frontière et RÉOUVRE le mot validé en entier ; les suivantes grignotent
-    // le mot. Donc pour passer de « francais » à « français » (remplacer le
-    // « cais » final par « çais »), il faut 1 (frontière) + 4 (les 4 lettres
-    // « cais ») = 5 backspaces, ce qui laisse « fran ». La spec écrit « ×4 » de
-    // façon approximative ; le modèle exact est suivi ici (déviation notée).
+    // The first backspace eats the boundary and REOPENS the committed word whole;
+    // the following ones nibble the word. So « francais » → « français » takes
+    // 1 (boundary) + 4 (« cais ») = 5 backspaces, leaving « fran ».
     [Fact]
     public void EditWindowHarvestsCorrectionAsWordEditAndRecommit()
     {
@@ -302,18 +284,16 @@ public class TypedWordTrackerTests
         Type(t, " ");
         Assert.Single(rec.Commits);
 
-        Backspace(t, 5);             // frontière + « cais » → buffer « fran »
+        Backspace(t, 5);
         Assert.Equal("fran", t.CurrentWord);
 
-        Type(t, "çais");             // « fran » + « çais » = « français »
+        Type(t, "çais");
         Type(t, " ", time: 99);
 
-        // Deux commits au total (le premier « francais », le second « français »).
         Assert.Equal(2, rec.Commits.Count);
         Assert.Equal("français", rec.Commits[1].Word);
         Assert.Equal(99, rec.Commits[1].TimestampMs);
 
-        // ET un WordEdit récolté.
         var edit = Assert.Single(rec.Edits);
         Assert.Equal("francais", edit.Original);
         Assert.Equal("français", edit.Replacement);
@@ -326,12 +306,12 @@ public class TypedWordTrackerTests
         var rec = new Recorder(t);
 
         Type(t, "chat ");
-        Backspace(t, 2);   // frontière + « t » → « cha »
-        Type(t, "t ");     // retape « chat » à l'identique
+        Backspace(t, 2);   // boundary + « t »
+        Type(t, "t ");
 
         Assert.Equal(2, rec.Commits.Count);
         Assert.Equal("chat", rec.Commits[1].Word);
-        Assert.Empty(rec.Edits); // identique → aucun WordEdit
+        Assert.Empty(rec.Edits);
     }
 
     [Fact]
@@ -340,13 +320,12 @@ public class TypedWordTrackerTests
         var t = new TypedWordTracker();
         var rec = new Recorder(t);
 
-        Type(t, "le chat ");   // commits: le, chat ; previousWord(chat)=le
+        Type(t, "le chat ");
         rec.Commits.Clear();
         rec.Edits.Clear();
 
-        // Réouvre « chat », corrige en « chien » : le re-commit doit chaîner
-        // sur « le » (mémoire deux niveaux), pas sur « chat ».
-        Backspace(t, 5);       // frontière + « chat » → buffer vide réouvert
+        // The re-commit must chain on « le » (two-level memory), not on « chat ».
+        Backspace(t, 5);       // boundary + « chat »
         Type(t, "chien ");
 
         var c = Assert.Single(rec.Commits);
@@ -361,12 +340,12 @@ public class TypedWordTrackerTests
         var t = new TypedWordTracker();
         var rec = new Recorder(t);
 
-        Type(t, "mot ");          // commit « mot » (len 3), budget = frontière + 3
-        Backspace(t, 4);          // mange frontière + « mot » → buffer vide réouvert
+        Type(t, "mot ");          // budget = boundary + 3 letters
+        Backspace(t, 4);
         Assert.Equal(string.Empty, t.CurrentWord);
         Assert.Empty(rec.Resets);
 
-        Backspace(t);             // une de plus → au-delà du début connu
+        Backspace(t);
         Assert.Equal(new[] { ResetReason.Navigation }, rec.Resets.ToArray());
     }
 
@@ -376,12 +355,11 @@ public class TypedWordTrackerTests
         var t = new TypedWordTracker();
         var rec = new Recorder(t);
 
-        Type(t, "premier ");      // commit, previousWord = premier
+        Type(t, "premier ");
         Press(t, KeystrokeKind.Enter);
         Type(t, "second ");
 
         Assert.Equal(ResetReason.Enter, rec.Resets[0]);
-        // Le commit d'après Enter n'a pas de PreviousWord.
         Assert.Equal("second", rec.Commits[1].Word);
         Assert.Null(rec.Commits[1].PreviousWord);
     }
@@ -402,8 +380,8 @@ public class TypedWordTrackerTests
         Press(t, kind);
 
         Assert.Equal(new[] { reason }, rec.Resets.ToArray());
-        Assert.Equal(string.Empty, t.CurrentWord); // buffer vidé
-        Assert.Empty(rec.Commits);                  // pas de commit sur reset
+        Assert.Equal(string.Empty, t.CurrentWord);
+        Assert.Empty(rec.Commits);
     }
 
     [Fact]
@@ -416,7 +394,7 @@ public class TypedWordTrackerTests
         Press(t, KeystrokeKind.Other);
 
         Assert.Empty(rec.Resets);
-        Assert.Equal("abc", t.CurrentWord); // le buffer survit
+        Assert.Equal("abc", t.CurrentWord);
     }
 
     [Fact]
@@ -439,8 +417,8 @@ public class TypedWordTrackerTests
     [Fact]
     public void ResetMidWordReportsTheDroppedPartial()
     {
-        // Un reset en plein mot jette le préfixe déjà tapé ; le signal dit au
-        // consommateur que la suite du mot committera comme un fragment.
+        // A reset mid-word throws the typed prefix away; the signal tells the
+        // consumer that the rest of the word will commit as a fragment.
         var t = new TypedWordTracker();
         var rec = new Recorder(t);
 
@@ -453,7 +431,6 @@ public class TypedWordTrackerTests
     [Fact]
     public void ResetBetweenWordsReportsNoDroppedPartial()
     {
-        // Buffer vide au reset : rien n'était en vol, le mot suivant est légitime.
         var t = new TypedWordTracker();
         var rec = new Recorder(t);
 
@@ -469,7 +446,7 @@ public class TypedWordTrackerTests
         var t = new TypedWordTracker();
         var rec = new Recorder(t);
 
-        Type(t, new string('a', TypedWordTracker.BufferCap + 1)); // un caractère au-delà du cap déclenche le hard reset
+        Type(t, new string('a', TypedWordTracker.BufferCap + 1));
 
         Assert.Equal(new[] { ResetReason.BufferLimit }, rec.Resets.ToArray());
         Assert.Equal(string.Empty, t.CurrentWord);
@@ -483,21 +460,19 @@ public class TypedWordTrackerTests
         var rec = new Recorder(t);
 
         Type(t, "mot");
-        Type(t, "   ");  // une frontière puis deux espaces de bruit
+        Type(t, "   ");
         Type(t, "deux ");
 
-        // « mot » et « deux » seulement ; les frontières surnuméraires sont du
-        // bruit et ne cassent pas la chaîne.
         Assert.Equal(2, rec.Commits.Count);
         Assert.Equal("mot", rec.Commits[0].Word);
         Assert.Equal("deux", rec.Commits[1].Word);
         Assert.Equal("mot", rec.Commits[1].PreviousWord);
     }
 
-    // Le moteur réagit à un commit DEPUIS le handler WordCommitted (réentrance) :
-    // il injecte la correction puis appelle ReplaceLastCommitted pour réaligner
-    // le tracker sur l'écran. L'état du commit doit donc être posé AVANT que
-    // l'événement parte, et rien ne doit écraser le réalignement après.
+    // The engine reacts to a commit FROM the WordCommitted handler (reentrancy):
+    // it injects the correction then calls ReplaceLastCommitted to realign the
+    // tracker with the screen. The commit state must be set BEFORE the event
+    // fires, and nothing may overwrite the realignment afterwards.
     [Fact]
     public void ReplaceLastCommittedFromTheCommitHandlerRealignsTheChain()
     {
@@ -513,7 +488,6 @@ public class TypedWordTrackerTests
         Type(t, "francais ");
         Type(t, "ecole ");
 
-        // Le mot suivant chaîne sur la forme corrigée — celle de l'écran.
         Assert.Equal(2, commits.Count);
         Assert.Equal("français", commits[1].PreviousWord);
     }
@@ -529,7 +503,7 @@ public class TypedWordTrackerTests
         };
 
         Type(t, "francais ");
-        Backspace(t); // rouvre le mot tel qu'il est à l'écran : la forme corrigée
+        Backspace(t);
 
         Assert.Equal("français", t.CurrentWord);
     }
@@ -540,13 +514,13 @@ public class TypedWordTrackerTests
         var t = new TypedWordTracker();
         var rec = new Recorder(t);
 
-        Type(t, "mot  ");    // commit, puis un espace surnuméraire
-        Backspace(t);        // mange l'espace de bruit — ne rouvre PAS « mot »
+        Type(t, "mot  ");
+        Backspace(t);        // eats the noise space; does NOT reopen « mot »
         Assert.Equal(string.Empty, t.CurrentWord);
 
         Type(t, "deux ");
-        Assert.Equal(2, rec.Commits.Count);               // aucun commit fantôme
-        Assert.Equal("mot", rec.Commits[1].PreviousWord); // la chaîne survit
+        Assert.Equal(2, rec.Commits.Count);
+        Assert.Equal("mot", rec.Commits[1].PreviousWord);
         Assert.Empty(rec.Edits);
     }
 
@@ -562,10 +536,8 @@ public class TypedWordTrackerTests
         Assert.Equal(4242.0, Assert.Single(rec.Commits).TimestampMs);
     }
 
-    // Parité avec WordBoundaries.Tokenize : le tracker découpe comme le
-    // tokeniseur canonique. On exerce une phrase et on compare la suite des
-    // mots validés à la tokenisation, hors apostrophe d'élision (le tracker
-    // valide « l' » comme token, ce que Tokenize fait aussi).
+    // Parity with WordBoundaries.Tokenize: the tracker must split like the
+    // canonical tokenizer, elision « l' » included.
     [Fact]
     public void TrackerCommitsMatchCanonicalTokenization()
     {
@@ -580,10 +552,10 @@ public class TypedWordTrackerTests
         Assert.Equal(tokenized, committed);
     }
 
-    // ── Le rail de séparateurs (PrecedingSeparators) ──
-    // La suite de caractères à l'écran entre le mot précédent et celui qui
-    // valide — la matière des familles mistouch de frontière. Fidèle tant que
-    // rien ne l'a perturbée ; vide (inconnue) sinon, et les familles s'abstiennent.
+    // ── The separator run (PrecedingSeparators) ──
+    // The characters on screen between the previous word and the committing one,
+    // the material of the boundary mistouch families. Faithful while nothing
+    // disturbed it; empty (unknown) otherwise, and the families abstain.
 
     [Fact]
     public void PrecedingSeparatorsCarryTheGluedBoundary()
@@ -593,8 +565,8 @@ public class TypedWordTrackerTests
 
         Type(t, "qu;il ");
 
-        Assert.Equal("", rec.Commits[0].PrecedingSeparators);   // début de piste : inconnu
-        Assert.Equal(";", rec.Commits[1].PrecedingSeparators);  // le ';' qui a validé « qu »
+        Assert.Equal("", rec.Commits[0].PrecedingSeparators);   // start of the run: unknown
+        Assert.Equal(";", rec.Commits[1].PrecedingSeparators);
     }
 
     [Fact]
@@ -605,14 +577,14 @@ public class TypedWordTrackerTests
 
         Type(t, "fait, beau ");
 
-        Assert.Equal(", ", rec.Commits[1].PrecedingSeparators); // virgule PUIS espace
+        Assert.Equal(", ", rec.Commits[1].PrecedingSeparators);
     }
 
     [Fact]
     public void PrecedingSeparatorsRenderTheElisionBoundaryEmpty()
     {
-        // L'apostrophe d'élision vit DANS le mot (« l' ») — rien à l'écran
-        // entre elle et le mot suivant, le rail doit le refléter.
+        // The elision apostrophe lives INSIDE the word (« l' »): nothing on screen
+        // separates it from the next word.
         var t = new TypedWordTracker();
         var rec = new Recorder(t);
 
@@ -624,13 +596,13 @@ public class TypedWordTrackerTests
     [Fact]
     public void PrecedingSeparatorsGoUnknownWhenBackspaceEatsTheRun()
     {
-        // Backspace sur tampon vide mange un séparateur : le rail ne reflète
-        // plus l'écran, il s'invalide plutôt que de mentir.
+        // A Backspace on an empty buffer eats a separator: the run no longer
+        // matches the screen, so it invalidates itself rather than lie.
         var t = new TypedWordTracker();
         var rec = new Recorder(t);
 
         Type(t, "fait, ");
-        Backspace(t); // mange l'espace — et rouvre la fenêtre d'édition
+        Backspace(t);
         Type(t, " beau ");
 
         Assert.Equal("", rec.Commits[^1].PrecedingSeparators);
@@ -643,7 +615,7 @@ public class TypedWordTrackerTests
         var rec = new Recorder(t);
 
         Type(t, "un mot ");
-        Backspace(t, 4); // rouvre « mot » et l'efface
+        Backspace(t, 4); // reopens « mot » and erases it
         Type(t, "sot ");
 
         WordCommit recommit = rec.Commits[^1];

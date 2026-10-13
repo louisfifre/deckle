@@ -3,19 +3,16 @@ using Xunit;
 
 namespace Deckle.Autocorrect.Tests;
 
-// Tests sur WordBoundaries — la tokenisation française canonique, partagée par
-// le tracker live et le futur entraîneur offline. Les cas reflètent la garantie
-// de parité : un mot est découpé de la même façon partout. On vérifie les
-// classes de caractères, l'élision (« l' » se ferme, « aujourd'hui » reste
-// entier), le trait d'union (« est-ce » entier) et la normalisation de
-// l'apostrophe typographique U+2019 vers U+0027.
+// WordBoundaries is the canonical French tokenization, shared by the live tracker
+// and the offline tools. The cases pin the parity guarantee: a word splits the
+// same way everywhere.
 [Trait("Category", "unit")]
 public class WordBoundariesTests
 {
     [Theory]
     [InlineData('a', true)]
     [InlineData('é', true)]
-    [InlineData('ß', true)]   // lettre non-latine gérée naturellement par char.IsLetter
+    [InlineData('ß', true)]   // a letter beyond ASCII, handled by char.IsLetter
     [InlineData('7', true)]
     [InlineData('-', true)]
     [InlineData(' ', false)]
@@ -33,19 +30,19 @@ public class WordBoundariesTests
 
     [Theory]
     [InlineData("l", true)]
-    [InlineData("L", true)]      // insensible à la casse
+    [InlineData("L", true)]      // case-insensitive
     [InlineData("qu", true)]
     [InlineData("jusqu", true)]
     [InlineData("lorsqu", true)]
-    [InlineData("é", false)]     // accent seul, pas un préfixe
+    [InlineData("é", false)]     // a lone accented letter is not a prefix
     [InlineData("le", false)]
     [InlineData("xyz", false)]
     public void IsElisionPrefixMatchesTheClosedSet(string token, bool expected) =>
         Assert.Equal(expected, WordBoundaries.IsElisionPrefix(token));
 
-    // La règle unique de reconstruction de l'écran à partir des paires (mot,
-    // frontière). Les deux glyphes d'apostrophe rendent vide (l'élision est déjà
-    // collée au mot) ; toute autre frontière se rend telle quelle.
+    // The single rule for rebuilding the screen from (word, boundary) pairs. Both
+    // apostrophe glyphs render empty (the elision is already attached to the
+    // word); any other boundary renders as is.
     [Theory]
     [InlineData('\'', "")]  // U+0027
     [InlineData('’', "")]   // U+2019
@@ -79,7 +76,6 @@ public class WordBoundariesTests
     [Fact]
     public void TypographicApostropheIsNormalizedToAscii()
     {
-        // U+2019 en entrée, U+0027 en sortie — élision comme jointure.
         var elided = WordBoundaries.Tokenize("l’école").ToArray();
         Assert.Equal(new[] { "l'", "école" }, elided);
 
@@ -116,7 +112,6 @@ public class WordBoundariesTests
     [Fact]
     public void JusquPrefixClosesElision()
     {
-        // « jusqu' » est un préfixe d'élision : il se ferme, « à » repart neuf.
         var tokens = WordBoundaries.Tokenize("jusqu'à").ToArray();
         Assert.Equal(new[] { "jusqu'", "à" }, tokens);
     }

@@ -5,8 +5,6 @@ using Deckle.Autocorrect;
 
 namespace Deckle.Autocorrect;
 
-// ── PairModel ───────────────────────────────────────────────────────────────
-//
 // The in-memory shape of the left-context pair model, shared by the trainer
 // (which fills it) and the disambiguator (which queries it). Layout:
 //   folded → variant → prev → count,  prev="" = the per-slot unigram total.
@@ -29,23 +27,21 @@ public sealed class PairModel
     // otherwise.
     public TrainerReport Report { get; }
 
-    // Distinct folded keys that hold any data.
     public int SlotCount => _model.Count;
 
     // Total rows (every folded/variant/prev triple, unigrams included).
     public long RowCount => CountRows(_model);
 
-    // Bigram count for (folded, variant, prev). 0 when the row is absent.
+    // Count for (folded, variant, prev); prev may also be a two-word
+    // "prevPrev prev" trigram key. 0 when the row is absent.
     public long Bigram(string folded, string variant, string prev) =>
         _model.TryGetValue(folded, out var byVariant)
         && byVariant.TryGetValue(variant, out var byPrev)
         && byPrev.TryGetValue(prev, out long c) ? c : 0L;
 
-    // Unigram total for (folded, variant) — the prev="" row. 0 when absent.
     public long Unigram(string folded, string variant) =>
         Bigram(folded, variant, string.Empty);
 
-    // Every row as a (folded, variant, prev, count) tuple — for serialization.
     public IEnumerable<(string Folded, string Variant, string Prev, long Count)> Rows()
     {
         foreach (var (folded, byVariant) in _model)
@@ -54,8 +50,6 @@ public sealed class PairModel
                     yield return (folded, variant, prev, count);
     }
 
-    // Build a model from flat rows — the trainer→disambiguator handoff and the
-    // deserialization path share this.
     public static PairModel FromRows(
         IEnumerable<(string Folded, string Variant, string Prev, long Count)> rows)
     {
@@ -71,8 +65,7 @@ public sealed class PairModel
         return new PairModel(model);
     }
 
-    // Write `folded<TAB>variant<TAB>prev<TAB>count`, UTF-8, gzip. prev may be
-    // empty (the unigram row) — it is still its own tab-delimited field.
+    // prev may be empty (the unigram row); it is still its own tab-delimited field.
     public void SaveTsvGz(string path)
     {
         using var file = File.Create(path);
@@ -90,9 +83,8 @@ public sealed class PairModel
         return LoadTsv(reader);
     }
 
-    // Parse the flat TSV back into a model. A line must have exactly four
-    // tab-delimited fields; prev (field 3) may be empty. Malformed lines are
-    // skipped silently — the file is our own artifact, not user input.
+    // Malformed lines are skipped silently: the file is our own artifact, not
+    // user input.
     public static PairModel LoadTsv(TextReader reader)
     {
         var rows = new List<(string, string, string, long)>();
@@ -121,17 +113,12 @@ public sealed class PairModel
     }
 }
 
-// ── BigramPairDisambiguator ─────────────────────────────────────────────────
-//
-// Stage two of the engine, the context model: given the left context (up to two
-// preceding words within the sentence) and the accent variants of one ambiguous
-// folded form, it picks the variant the context favors — or returns null,
-// leaving the literal untouched. Null is the expected, conservative outcome; a
-// verdict is earned only when the evidence is both present and decisive.
-//
-// NOTE: this is now an n-gram backoff model (trigram → bigram → unigram), no
-// longer a pure bigram. The class keeps its name until the trigram direction is
-// confirmed by the offline eval, then renames.
+// The context model: given the left context (up to two preceding words within
+// the sentence) and the accent variants of one ambiguous folded form, it picks
+// the variant the context favors — or returns null, leaving the literal
+// untouched. Null is the expected, conservative outcome; a verdict is earned only
+// when the evidence is both present and decisive. Despite the name, it backs off
+// trigram → bigram → unigram.
 //
 // The decision is a guarded argmax over per-candidate scores:
 //   • score(c) backs off per candidate: the trigram count for the "prevPrev prev"
@@ -154,7 +141,6 @@ public sealed class BigramPairDisambiguator : IPairDisambiguator
         _options = options ?? new DisambiguatorOptions();
     }
 
-    // Construct straight from flat rows — the trainer handoff and tests.
     public BigramPairDisambiguator(
         IEnumerable<(string Folded, string Variant, string Prev, long Count)> rows,
         DisambiguatorOptions? options = null)
@@ -208,7 +194,6 @@ public sealed class BigramPairDisambiguator : IPairDisambiguator
                 raw = _model.Unigram(folded, c.Form);
             rawSum += raw;
 
-            // Add-one smoothing, then the literal defense on the bare form.
             double score = raw + 1.0;
             if (c.Form == folded)
                 score *= _options.LiteralBias;
@@ -225,10 +210,8 @@ public sealed class BigramPairDisambiguator : IPairDisambiguator
             }
         }
 
-        // The context decision's safety gauges, for the decision telemetry: the
-        // smoothed best/second scores, the margin they form against its threshold,
-        // and the raw evidence against its floor. Recorded onto the caller's
-        // (diacritics) stage trace before the gates below read them.
+        // Recorded on the caller's (diacritics) stage trace for the decision
+        // telemetry.
         if (trace is not null)
         {
             double margin = secondScore > 0.0 ? bestScore / secondScore : double.PositiveInfinity;
@@ -240,7 +223,6 @@ public sealed class BigramPairDisambiguator : IPairDisambiguator
                  .Gauge("ctx_evidence_min", _options.MinEvidence);
         }
 
-        // Never guess from thin air.
         if (rawSum < _options.MinEvidence)
             return null;
 
@@ -252,10 +234,8 @@ public sealed class BigramPairDisambiguator : IPairDisambiguator
     }
 }
 
-// Tuning for the context decision. Defaults are the measured optimum of the
-// eval matrix: margin is the lever that kills wrong-variant picks (342→116
-// from 3× to 10× for −0.6 pt of recall); the evidence floor barely moves
-// anything past 5.
+// Tuning for the context decision. Margin is the lever against wrong-variant
+// picks, at a small recall cost; the evidence floor matters far less.
 public sealed record DisambiguatorOptions
 {
     // The winner's smoothed score must beat the runner-up's by this factor.

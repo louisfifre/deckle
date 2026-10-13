@@ -20,8 +20,8 @@ public sealed class AutocorrectEngineGateTests
 
         h.Type("ca"); // no boundary: were the gate open, the buffer would hold "ca"
 
-        Assert.Equal(0, h.DecodeCharCount);       // the gate cut BEFORE decoding — no key was translated
-        Assert.Equal("", h.Tracker.CurrentWord);  // and nothing was buffered
+        Assert.Equal(0, h.DecodeCharCount);
+        Assert.Equal("", h.Tracker.CurrentWord);
         Assert.Empty(policy.Calls);
         Assert.Empty(h.Injector.Calls);
     }
@@ -46,14 +46,11 @@ public sealed class AutocorrectEngineGateTests
     {
         var policy = ScriptedPolicy.Maps("ca", "ça");
         using var h = new AutocorrectEngineHarness(policy);
-        h.Prober.Surface = AutocorrectEngineHarness.Editable("chrome"); // never decided
+        h.Prober.Surface = AutocorrectEngineHarness.Editable("chrome");
         h.Start();
 
         h.Type("ca ");
 
-        // The policy IS consulted on an undecided surface — that is how a
-        // would-be correction is detected — but nothing is injected, and the
-        // app is offered for enrollment exactly once.
         Assert.NotEmpty(policy.Calls);
         Assert.Empty(h.Injector.Calls);
         Assert.Equal(new[] { "chrome" }, h.EnrollmentSuggestions);
@@ -64,15 +61,15 @@ public sealed class AutocorrectEngineGateTests
     {
         var policy = ScriptedPolicy.Maps("ca", "ça");
         using var h = new AutocorrectEngineHarness(policy);
-        h.Settings.Apps["chrome"] = false; // the user said no
+        h.Settings.Apps["chrome"] = false;
         h.Prober.Surface = AutocorrectEngineHarness.Editable("chrome");
         h.Start();
 
         h.Type("ca ");
 
-        Assert.Empty(policy.Calls);            // decided-off: not even evaluated
+        Assert.Empty(policy.Calls);
         Assert.Empty(h.Injector.Calls);
-        Assert.Empty(h.EnrollmentSuggestions); // and never prompted
+        Assert.Empty(h.EnrollmentSuggestions);
     }
 
     [Fact]
@@ -86,7 +83,7 @@ public sealed class AutocorrectEngineGateTests
         h.Type("ca ");
         h.Type("ca ");
 
-        Assert.Equal(new[] { "chrome" }, h.EnrollmentSuggestions); // one prompt, not two
+        Assert.Equal(new[] { "chrome" }, h.EnrollmentSuggestions);
     }
 
     [Fact]

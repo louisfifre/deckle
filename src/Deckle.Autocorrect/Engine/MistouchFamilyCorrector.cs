@@ -1,10 +1,10 @@
 namespace Deckle.Autocorrect;
 
-// The deterministic detector-generator over the approved mistouch families
-// (CONTEXT.md § Mistouch family): interprets family RECORDS (per-user data)
-// through family KINDS (universal keyboard mechanics), at the commit stage,
-// for the single-reading case only — what it cannot decide deterministically
-// it leaves alone, per the engine doctrine.
+// The deterministic detector-generator over the approved mistouch families:
+// interprets family RECORDS (per-user data) through family KINDS (universal
+// keyboard mechanics), at the commit stage, for the single-reading case only —
+// what it cannot decide deterministically it leaves alone, per the engine
+// doctrine.
 //
 // Boundary families act on the span between the previous word and the one
 // just committed — territory no word-level ICorrectionPolicy sees, so this
@@ -19,8 +19,7 @@ public sealed class MistouchFamilyCorrector
     // The span rewrite a family wants, in pieces — the words stand, only the
     // separator run between them changes; consumers that need the full span
     // (the injection) read Original/Replacement, consumers that need the parts
-    // (the corpus separator edit) read them directly. Signature identifies the
-    // family in telemetry and in the suppression an undo writes.
+    // (the corpus separator edit) read them directly.
     public sealed record SpanRepair(
         string Previous, string OldSeparators, string NewSeparators, string Word, string Signature)
     {

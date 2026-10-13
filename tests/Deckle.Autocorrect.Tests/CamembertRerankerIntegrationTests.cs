@@ -43,7 +43,7 @@ public class CamembertRerankerIntegrationTests : IClassFixture<CamembertModelFix
     {
         string dir = Path.Combine(AppPaths.ModelsDirectory, "camembert-base");
         if (!File.Exists(Path.Combine(dir, "model.onnx")))
-            return; // absent (CI/fresh clone): nothing to assert
+            return;
         // Present: it MUST load — a corrupt or version-mismatched export fails here.
         Assert.NotNull(_model.Reranker);
     }

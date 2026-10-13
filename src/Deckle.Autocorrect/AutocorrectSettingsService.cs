@@ -3,11 +3,6 @@ using Deckle.Core;
 
 namespace Deckle.Autocorrect;
 
-// Module-local persistence for AutocorrectSettings — the standard
-// JsonSettingsStore<T> lazy singleton at
-// <UserDataRoot>/modules/autocorrect/settings.json, same shape as
-// TrackpadSettingsService. Store logging callbacks stay null: no
-// EventSource dependency from the persistence layer.
 public sealed class AutocorrectSettingsService
 {
     private static readonly Lazy<AutocorrectSettingsService> _instance =
@@ -45,6 +40,8 @@ public sealed class AutocorrectSettingsService
             AppPaths.UserDataRoot, "modules", "autocorrect", "settings.json");
         Directory.CreateDirectory(System.IO.Path.GetDirectoryName(path)!);
 
+        // Logging callbacks stay null: the persistence layer takes no
+        // EventSource dependency.
         _store = new JsonSettingsStore<AutocorrectSettings>(
             path:        path,
             mutexName:   $"{AppPaths.AppFolderName}-Settings-Autocorrect-Save",
@@ -57,12 +54,7 @@ public sealed class AutocorrectSettingsService
     public void Replace(AutocorrectSettings next) => _store.Replace(next);
 
     // ── Decision writes ──────────────────────────────────────────────────
-    //
-    // The module owns the mutation of its own state. The enrollment toast and
-    // the settings page both route through here, so the per-app map is always
-    // swapped by reference (never mutated in place) under one lock.
 
-    /// <summary>Flip the master switch and persist.</summary>
     public void SetEnabled(bool enabled)
     {
         lock (_writeLock)
@@ -72,10 +64,6 @@ public sealed class AutocorrectSettingsService
         }
     }
 
-    /// <summary>
-    /// Record a per-app decision (true = correct here, false = declined) and
-    /// persist. New or existing process alike.
-    /// </summary>
     public void SetDecision(string process, bool enabled)
     {
         if (string.IsNullOrEmpty(process)) return;
@@ -88,9 +76,8 @@ public sealed class AutocorrectSettingsService
     }
 
     /// <summary>
-    /// Activate or deactivate a domain pack and persist. The effective lexicon
-    /// is merged at engine build, so the App rebuilds its runtime when the
-    /// resulting EffectiveLexiconKey changes.
+    /// The effective lexicon is merged at engine build, so the App rebuilds its
+    /// runtime when the resulting EffectiveLexiconKey changes.
     /// </summary>
     public void SetDomainPackActive(string packId, bool active)
     {
@@ -104,9 +91,8 @@ public sealed class AutocorrectSettingsService
     }
 
     /// <summary>
-    /// Pull a word out of correction's reach and persist. Returns the
-    /// normalized form actually registered, or null when the text cannot name a
-    /// single lexicon form. Re-excluding a registered word is a no-op.
+    /// Returns the normalized form actually registered, or null when the text
+    /// cannot name a single lexicon form.
     /// </summary>
     public string? ExcludeWord(string? word)
     {
@@ -122,10 +108,6 @@ public sealed class AutocorrectSettingsService
         return normalized;
     }
 
-    /// <summary>
-    /// Put a word back within correction's reach and persist. No-op if it was
-    /// not excluded.
-    /// </summary>
     public void IncludeWord(string word)
     {
         string? normalized = AutocorrectSettings.NormalizeExcludedWord(word);
@@ -141,8 +123,7 @@ public sealed class AutocorrectSettingsService
     }
 
     /// <summary>
-    /// Drop a per-app decision entirely — the app returns to "never met" and
-    /// can be offered enrollment again. No-op if it was not decided.
+    /// The app returns to "never met" and can be offered enrollment again.
     /// </summary>
     public void RemoveDecision(string process)
     {

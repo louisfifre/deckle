@@ -14,9 +14,9 @@ public interface IAmbiguityProbe
     // empty when there is nothing safe to disambiguate.
     IReadOnlyList<AccentVariant> AmbiguousCandidates(string word);
 
-    // The full candidate set used by offline sentence studies. Multiple commit
-    // policies may contribute because the study starts from typed text without a
-    // live decision that says which stage acted.
+    // The full candidate set when no live decision says which stage acted:
+    // offline sentence studies and caret sentence recovery. Multiple commit
+    // policies may contribute.
     IReadOnlyList<AccentVariant> SentenceCandidates(string word, bool includeTypedLiteral);
 
     // The closed set allowed to take back a correction the commit stage already

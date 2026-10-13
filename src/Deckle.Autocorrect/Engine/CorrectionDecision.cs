@@ -2,7 +2,8 @@ namespace Deckle.Autocorrect;
 
 public enum CorrectionReason
 {
-    /// <summary>Single accented variant behind the folded form — deterministic.</summary>
+    /// <summary>Accent restoration settled without the pair model: a single accented
+    /// variant, or a morphological rule of the typo stage.</summary>
     LexicalGate,
     /// <summary>Ambiguity resolved by the left-context pair model, above margin.</summary>
     ContextPair,
@@ -10,7 +11,7 @@ public enum CorrectionReason
     FrequencyDominance,
     /// <summary>Candidate supplied by the personal dictionary.</summary>
     PersonalWord,
-    /// <summary>A non-word spell-fixed to the single common French word one edit away.</summary>
+    /// <summary>A non-word spell-fixed to a common French word one or two keyboard edits away.</summary>
     TypoCorrection,
     /// <summary>A dropped elision apostrophe restored in a glued proclitic (cest → c'est).</summary>
     Elision,
@@ -20,13 +21,12 @@ public enum CorrectionReason
     Capitalization,
     /// <summary>A verb re-conjugated to agree with its adjacent subject pronoun.</summary>
     SubjectVerbAgreement,
-    /// <summary>The étape-2 toy hotstring — dev only.</summary>
+    /// <summary>Dev-only toy hotstring.</summary>
     ToyHotstring,
     /// <summary>An approved mistouch family repaired the span behind the caret (qu;il → qu'il).</summary>
     MistouchFamily,
 }
 
-// A rewrite the engine wants applied to a just-committed word.
 public sealed record CorrectionDecision(string Original, string Replacement, CorrectionReason Reason);
 
 // Decides whether a just-committed word should be rewritten.

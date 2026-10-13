@@ -7,11 +7,11 @@ namespace Deckle.Autocorrect.Mlm;
 
 // ── CamembertMlmScorer ──────────────────────────────────────────────────────
 //
-// POC core for the post-sentence reranker: loads a CamemBERT masked-LM exported
-// to ONNX and, given a sentence with one masked slot, reads the fill-mask logits
-// to score a CLOSED SET of candidate surface forms (e.g. "à" vs "a"). It never
-// generates — it only ranks forms the lexicon already proposed, so it stays a
-// correction, not a rewrite.
+// Core of the CamemBERT post-sentence reranker: loads a CamemBERT masked-LM
+// exported to ONNX and, given a sentence with one masked slot, reads the
+// fill-mask logits to score a CLOSED SET of candidate surface forms (e.g. "à" vs
+// "a"). It never generates; it only ranks forms the lexicon already proposed, so
+// it stays a correction, not a rewrite.
 //
 // Tokenisation guardrail. CamemBERT's ids do not follow the raw SentencePiece
 // order (fairseq remap: <s>=5, </s>=6, <mask>=32004). The generic
@@ -49,8 +49,6 @@ internal sealed class CamembertMlmScorer : IDisposable
     public int LeadingPieceId(string word) =>
         _vocab.TryGetValue(Metaspace + word, out int id) ? id : -1;
 
-    // Segments a text fragment and maps each piece to its model id. Unknown
-    // pieces become <unk>; their count is reported for diagnostics.
     public int[] Encode(string text, out int unknownPieces)
     {
         int unknown = 0;
@@ -66,8 +64,7 @@ internal sealed class CamembertMlmScorer : IDisposable
     }
 
     // Runs the model on  <s> left <mask> right </s>  and returns the logits row
-    // at the masked position — one score per vocabulary id. The caller reads the
-    // scores of its candidate ids and picks the argmax.
+    // at the masked position, one score per vocabulary id.
     public float[] MaskLogits(IReadOnlyList<int> leftIds, IReadOnlyList<int> rightIds)
     {
         var ids = new List<int>(leftIds.Count + rightIds.Count + 3) { BosId };

@@ -1,15 +1,11 @@
 namespace Deckle.Autocorrect;
 
-// ── TypoOptions ──────────────────────────────────────────────────────────────
-//
 // The thresholds governing the typo corrector. Two tiers: a relaxed near tier
 // (one edit away) for ordinary slips, and a strict far tier (two edits away) for
 // bigger faults, tried only when nothing sits one edit away. The far tier is held
 // to a higher word-length, frequency and dominance bar — a correction reaching
-// further must clear stronger evidence. Aggression is the product (Louis: "taper
-// à l'arrache et que ça réécrive"); the safety net is the correction inlay's
-// undo, which writes a permanent suppression — until the inlay ships a wrong
-// correction can only be re-edited by hand, so these bars stand on their own.
+// further must clear stronger evidence. Aggression is the product (type fast and
+// carelessly, and let it rewrite), so these bars carry the safety on their own.
 // Defaults are an engineer's operating point, tuned by feel, not measured optima.
 public sealed record TypoOptions
 {

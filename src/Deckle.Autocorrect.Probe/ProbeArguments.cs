@@ -39,10 +39,9 @@ internal sealed class ProbeArguments
     public long StreamBytes { get; private init; }
     public string PlanPath { get; private init; } = string.Empty;
 
-    // The ONNX Runtime GenAI execution provider the judge loads onto: "dml" drives
-    // the forced-decoding judge on the GPU (DirectML), "cpu" the built-in CPU EP.
-    // The scorer selects it in code, so one export can be benchmarked on either —
-    // the lever for the CPU-int4-vs-DirectML comparison. Defaults to "dml".
+    // The ONNX Runtime GenAI execution provider the judge loads onto: "dml" for the
+    // GPU (DirectML), "cpu" for the built-in CPU EP. The scorer selects it in code,
+    // but the export must suit it: a CPU int4 export does not partition to DirectML.
     public string Provider { get; private init; } = "dml";
 
     public static ProbeArguments? Parse(string[] args)

@@ -11,9 +11,8 @@ namespace Deckle.Autocorrect.Lab;
 // silently misread.
 public static class MorphalouReader
 {
-    // Yields each inflected surface form, raw and unfiltered (the caller applies
-    // the accepted-form filter and the merge). Throws if the column header is
-    // never found — a clear signal the format drifted.
+    // Raw and unfiltered: the caller applies the accepted-form filter and the
+    // merge.
     public static IEnumerable<string> ReadInflectedForms(TextReader reader)
     {
         int formColumn = LocateInflectedFormColumn(reader);
@@ -34,10 +33,6 @@ public static class MorphalouReader
         }
     }
 
-    // Consumes the preamble up to and including the column-header line, and
-    // returns the index of the inflected-form column — the SECOND "GRAPHIE"
-    // (the first is the lemma). The header is the first line that carries two
-    // distinct "GRAPHIE" fields. Throws if none is seen.
     private static int LocateInflectedFormColumn(TextReader reader)
     {
         string? line;

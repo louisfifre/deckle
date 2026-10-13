@@ -37,8 +37,8 @@ public sealed class HarvestDataTests
 
         var edit = Assert.Single(data.Edits);
         Assert.Equal(2, edit.Count);
-        Assert.Equal(T0, edit.FirstSeenUtc); // first-seen is sticky
-        Assert.Equal(T1, edit.LastSeenUtc);  // last-seen tracks the latest
+        Assert.Equal(T0, edit.FirstSeenUtc);
+        Assert.Equal(T1, edit.LastSeenUtc);
     }
 
     [Fact]
@@ -47,7 +47,7 @@ public sealed class HarvestDataTests
         var data = new HarvestData();
 
         data.RecordEdit("ca", "ça", T0);
-        data.RecordEdit("ca", "ca", T0); // the pair key is (original, replacement)
+        data.RecordEdit("ca", "ca", T0);
 
         Assert.Equal(2, data.Edits.Count);
     }

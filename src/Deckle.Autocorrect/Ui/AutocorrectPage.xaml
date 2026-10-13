@@ -7,15 +7,6 @@
     xmlns:ui="using:CommunityToolkit.WinUI"
     xmlns:vm="using:Deckle.Autocorrect">
 
-    <!-- Canonical Settings page layout, identical to TrackpadPage /
-         AmbientPage : ScrollViewer Padding 32,24, a StackPanel max 1000 inside
-         a Grid, Spacing=4 between cards, section headers in BodyStrong with
-         Margin 1,30,0,6. The master switch is composed (declared in
-         AutocorrectViewModel.Settings.cs, built into MasterHost by the
-         SettingsComposer) ; below it, two navigation cards drill into the
-         family's child pages, then the exclusion register, and Diagnostics
-         closes the page. The exclusion section is collapsed while the master is
-         off (mask-never-grey). -->
     <Page.Resources>
         <x:Double x:Key="SettingsCardSpacing">4</x:Double>
         <Style x:Key="SettingsSectionHeaderTextBlockStyle"
@@ -46,29 +37,23 @@
                            Margin="0,0,0,12" />
 
                 <!-- ── Master switch ─────────────────────────────────────────── -->
-                <!-- Composed region — the Enable-autocorrect master toggle,
-                     declared in AutocorrectViewModel.Settings.cs and built into
-                     this host by ComposeSettings(). It carries its own inline
-                     reset off the POCO default. -->
+                <!-- Composed: the master toggle is declared in
+                     AutocorrectViewModel.Settings.cs and built into this host by
+                     ComposeSettings(). -->
                 <StackPanel x:Name="MasterHost"
                             Spacing="{StaticResource SettingsCardSpacing}" />
 
                 <!-- ── Drill-ins ─────────────────────────────────────────────── -->
-                <!-- The two child pages of this family. IsClickEnabled + Click
-                     follows the SettingsCard "actionable row" pattern (the
-                     Playground home cards): the whole card is a hit target and the
-                     chevron is added automatically. Deliberately icon-less — the
-                     rail children are icon-less too, and a glyph here would claim
-                     a second identity for a page that already has the family's.
-                     The cards themselves are NOT gated on the master switch: they
+                <!-- The two child pages of this family. Deliberately icon-less —
+                     the rail children are icon-less too, and a glyph here would
+                     claim a second identity for a page that already has the
+                     family's. The cards are NOT gated on the master switch: they
                      are doors, not settings, and the rail lists both destinations
                      regardless, so collapsing them here would only hide one of two
-                     routes. What mask-never-grey covers is what lies BEHIND them —
-                     each child page collapses its own settings while the master is
-                     off and says so in one line, so a door opened with autocorrect
-                     off leads to an explanation rather than to live switches.
-                     Tag matches the x:Uid and the search entry's LabelKey — the
-                     scroll-to handle a hit on this card lands on. -->
+                     routes. Each child page collapses its own settings while the
+                     master is off and says so in one line. Tag matches the x:Uid
+                     and the search entry's LabelKey — the scroll-to handle a hit
+                     on this card lands on. -->
                 <controls:SettingsCard x:Uid="AutocorrectPage_DomainsCard"
                                        Tag="AutocorrectPage_DomainsCard"
                                        IsClickEnabled="True"
@@ -155,16 +140,12 @@
                 </StackPanel>
 
                 <!-- ── Diagnostics ───────────────────────────────────────────── -->
-                <!-- The module's observability opt-ins, relocated here from the
-                     shared Diagnostics page so they sit beside the engine they
-                     observe: log-activity (a runtime filter, no consent) plus the
-                     decisions and text telemetry opt-ins (each consent-gated,
-                     independent). All three are COMPOSED — declared in
-                     AutocorrectViewModel.Settings.cs (DiagnosticsSettings) and
-                     built into DiagnosticsHost by the SettingsComposer. This
+                <!-- The module's dataset consents, beside the engine they
+                     observe: the decisions and text telemetry opt-ins, each
+                     consent-gated and independent. Composed from
+                     DiagnosticsSettings in AutocorrectViewModel.Settings.cs. This
                      section is NOT gated by the master switch: what the module
-                     records is a consent that outlives a switch flip, unlike the
-                     exclusion section above. -->
+                     records is a consent that outlives a switch flip. -->
                 <TextBlock x:Uid="AutocorrectPageDiagnosticsHeader"
                            Style="{StaticResource SettingsSectionHeaderTextBlockStyle}" />
 

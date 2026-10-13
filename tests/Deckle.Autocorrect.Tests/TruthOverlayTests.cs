@@ -57,14 +57,14 @@ public sealed class TruthOverlayTests
     public void MergePreservesFilledTruthsForKeysStillPresent()
     {
         var existing = new[] { Row("aaaa1111", "à"), Row("bbbb2222", "où") };
-        var fresh = new[] { Row("aaaa1111", ""), Row("cccc3333", "") }; // bbbb dropped, cccc new
+        var fresh = new[] { Row("aaaa1111", ""), Row("cccc3333", "") };
 
         var merged = TruthOverlay.Merge(fresh, existing);
 
         Assert.Equal(2, merged.Count);
-        Assert.Equal("à", merged.Single(r => r.Key == "aaaa1111").Truth); // preserved
-        Assert.Equal("", merged.Single(r => r.Key == "cccc3333").Truth);  // new, blank
-        Assert.DoesNotContain(merged, r => r.Key == "bbbb2222");          // gone
+        Assert.Equal("à", merged.Single(r => r.Key == "aaaa1111").Truth);
+        Assert.Equal("", merged.Single(r => r.Key == "cccc3333").Truth);
+        Assert.DoesNotContain(merged, r => r.Key == "bbbb2222");
     }
 
     [Fact]

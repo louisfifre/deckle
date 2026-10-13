@@ -2,8 +2,6 @@ using System.Globalization;
 
 namespace Deckle.Autocorrect;
 
-// ── CasePattern ─────────────────────────────────────────────────────────────
-//
 // Candidates are stored lowercase, but the user typed a case the correction
 // must honour: "Ecole" → "École", "FRANCAIS" → "FRANÇAIS". This transfers the
 // typed word's case shape onto the replacement.
@@ -32,11 +30,9 @@ public static class CasePattern
                 replacement.AsSpan(1));
         }
 
-        // All-upper shout, more than one char.
         if (typed.Length > 1 && IsAllUpper(typed))
             return replacement.ToUpperInvariant();
 
-        // all-lower and any unrecognised shape (camel, mixed) → as-is.
         return replacement;
     }
 
@@ -48,8 +44,6 @@ public static class CasePattern
         return false;
     }
 
-    // All-upper = no lowercase letter anywhere (cased chars only count; a
-    // hyphen or apostrophe is neutral).
     private static bool IsAllUpper(string s)
     {
         foreach (char c in s)

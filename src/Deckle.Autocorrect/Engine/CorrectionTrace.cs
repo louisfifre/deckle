@@ -3,8 +3,6 @@ using System.Text;
 
 namespace Deckle.Autocorrect;
 
-// ── CorrectionTrace ───────────────────────────────────────────────────────────
-//
 // The optional decision ledger threaded through the synchronous correction chain.
 // Each policy stage, handed a non-null trace, records why it acted or stood aside
 // — its guard exit, the candidate pool it weighed, and the safety gauges it
@@ -20,7 +18,7 @@ namespace Deckle.Autocorrect;
 //
 // Vocabularies (stage names, exit reasons, candidate sources) are closed and live
 // here, one spelling in one place, so a grep on a reason finds every occurrence
-// (logging doctrine). A new magnitude is added below before its first use.
+// (logging doctrine).
 public sealed class CorrectionTrace
 {
     private readonly List<StageTrace> _stages = new();
@@ -41,8 +39,6 @@ public sealed class CorrectionTrace
     // stayed literal on screen. PrimaryStage/Reason still name what would have fired.
     public void MarkSuppressed() => _suppressed = true;
 
-    // The outcome headline: vetoed by a learned suppression, a correction fired,
-    // or the literal stood untouched.
     public string Outcome =>
         _suppressed                    ? Outcomes.Suppressed
         : _stages.Exists(s => s.Fired) ? Outcomes.Corrected
@@ -67,7 +63,6 @@ public sealed class CorrectionTrace
         }
     }
 
-    // The decisive stage name / exit reason for the flat headline fields.
     public string PrimaryStage  => Primary?.Stage  ?? StageNames.None;
     public string PrimaryReason => Primary?.Reason ?? Reasons.NotEvaluated;
 
@@ -134,7 +129,7 @@ public sealed class CorrectionTrace
         public const string Suppressed = "suppressed"; // a fire vetoed by a learned suppression
     }
 
-    // The correction stages, in chain order. Closed vocabulary.
+    // The correction stages. Closed vocabulary.
     public static class StageNames
     {
         public const string Diacritics = "diacritics";
@@ -228,7 +223,6 @@ public sealed class StageTrace
     public List<TraceCandidate> Candidates { get; } = new();
     public List<(string Name, double Value)> Gauges { get; } = new();
 
-    // The stage stood aside, leaving the literal — with the guard that decided it.
     public StageTrace Abstain(string reason)
     {
         Reason = reason;
@@ -236,7 +230,6 @@ public sealed class StageTrace
         return this;
     }
 
-    // The stage corrected the word — with the firing reason.
     public StageTrace Fire(string reason)
     {
         Reason = reason;
@@ -244,8 +237,6 @@ public sealed class StageTrace
         return this;
     }
 
-    // Records the candidate pool the stage ranked. Source tags where each form
-    // came from (index / literal / personal).
     public StageTrace WithCandidates(IEnumerable<AccentVariant> candidates, Func<AccentVariant, string> source)
     {
         foreach (AccentVariant v in candidates)
@@ -269,5 +260,4 @@ public sealed class StageTrace
     }
 }
 
-// One weighed surface form: the candidate, its frequency-per-million, and its source.
 public readonly record struct TraceCandidate(string Form, double FrequencyPerMillion, string Source);

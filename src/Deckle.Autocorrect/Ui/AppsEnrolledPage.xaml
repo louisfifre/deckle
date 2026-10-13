@@ -6,13 +6,6 @@
     xmlns:controls="using:CommunityToolkit.WinUI.Controls"
     xmlns:vm="using:Deckle.Autocorrect">
 
-    <!-- Child page of the Autocorrect family: where correction is allowed to
-         run, app by app. Same canonical Settings layout as its parent and its
-         sibling — ScrollViewer Padding 32,24, StackPanel max 1000 inside a Grid,
-         Spacing=4, section headers in BodyStrong. The section is collapsed while
-         the master switch is off (mask-never-grey) and one line says why — the
-         door on the parent page and the rail entry stay, so the page must answer
-         for itself when nothing behind them applies. -->
     <Page.Resources>
         <x:Double x:Key="SettingsCardSpacing">4</x:Double>
         <Style x:Key="SettingsSectionHeaderTextBlockStyle"
@@ -42,8 +35,10 @@
                            TextWrapping="Wrap"
                            Margin="0,0,0,12" />
 
-                <!-- Shown in place of the whole section while autocorrect is off:
-                     one inline channel, the wording carries the tone. -->
+                <!-- Shown in place of the whole section while autocorrect is off
+                     (mask-never-grey): the door on the parent page and the rail
+                     entry stay, so the page must answer for itself. One inline
+                     channel, the wording carries the tone. -->
                 <TextBlock x:Name="DisabledNotice"
                            x:Uid="AppsEnrolledPage_Disabled"
                            Style="{StaticResource BodyTextBlockStyle}"
@@ -67,9 +62,8 @@
                                TextWrapping="Wrap"
                                Margin="0,0,0,8" />
 
-                    <!-- Shown only when no app has been decided on yet ; the list
-                         and this line trade places from code-behind off
-                         Apps.CollectionChanged. -->
+                    <!-- Shown only when no app has been decided on yet; the list
+                         and this line trade places from code-behind. -->
                     <TextBlock x:Name="EmptyState"
                                x:Uid="AppsEnrolledPage_Empty"
                                Style="{StaticResource BodyTextBlockStyle}"

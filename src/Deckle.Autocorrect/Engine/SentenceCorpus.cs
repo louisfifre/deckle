@@ -14,16 +14,16 @@ namespace Deckle.Autocorrect;
 //
 // A sentence is the run of committed words up to one of three closures, recorded on
 // the record so the reader can weigh a run by how it ended:
-//   • "sentence" — a sentence-ending boundary ('.', '!', '?') closed it;
+//   • "sentence" — a sentence-ending boundary ('.', '!', '?', '…') closed it;
 //   • "enter"    — an Enter closed it;
 //   • "interrupted" — any OTHER reset (focus change, navigation, a Ctrl-chord that
 //     may have pasted, …) cut it short before an ending boundary.
-// Earlier every reset but Enter DROPPED the partial run; it is now emitted tagged
-// "interrupted", because the run is still verbatim keyboard input worth mining. The
-// purity guarantee is what makes that safe: paste and dictation never reach the word
-// stream in the first place (clipboard inserts raise no key events; injected text is
-// filtered upstream), so even an interrupted run is « what I actually typed at the
-// keyboard ». An interrupted run whose slot list is already empty emits nothing.
+// The partial run is emitted, not dropped, because it is still verbatim keyboard
+// input worth mining. The purity guarantee is what makes that safe: paste and
+// dictation never reach the word stream in the first place (clipboard inserts
+// raise no key events; injected text is filtered upstream), so even an
+// interrupted run is « what I actually typed at the keyboard ». An interrupted
+// run whose slot list is already empty emits nothing.
 //
 // Reconstruction. Each slot carries the boundary chars it closed on; the sentence is
 // the slots rejoined by those separators, so punctuation (the telling ';') and
@@ -32,9 +32,9 @@ namespace Deckle.Autocorrect;
 // does not double it. The typed side and the final side keep SEPARATE closing
 // separators per slot: a re-edit (Edit) can leave a slot whose typed first form ended
 // on one boundary while its on-screen final form ends on another — rejoining both
-// with a single separator fused two typed tokens (« de » + « avoir » → « deavoir »),
-// a proven corruption. Each side rejoins with its own boundary, so both still
-// tokenize back to the same slot count that offline alignment relies on.
+// with a single separator would fuse two typed tokens (« de » + « avoir » →
+// « deavoir »). Each side rejoins with its own boundary, so both still tokenize
+// back to the same slot count that offline alignment relies on.
 //
 // History. `typed` and `final` are the flat pair for direct mining; `history`
 // spells the ordered path of every slot that changed — first-typed then each
@@ -59,9 +59,9 @@ public sealed class SentenceCorpus
     // mining, the per-slot ordered history (empty when nothing changed), the closure
     // that ended the run ("sentence" / "enter" / "interrupted"), and the typing rhythm
     // as comma-joined per-slot inter-commit gaps in ms (first slot "0"; empty when no
-    // timestamps were available). The defaults mirror how a reader interprets a
-    // legacy record that predates the two fields: closed on a sentence boundary,
-    // rhythm unknown.
+    // timestamps were available). The defaults match how a reader interprets a
+    // record without those two fields: closed on a sentence boundary, rhythm
+    // unknown.
     public readonly record struct SentenceRecord(
         string Typed, string Final, string History, string Closure = "sentence", string Timing = "");
 
@@ -91,8 +91,6 @@ public sealed class SentenceCorpus
     // judges or by the next reset, whose own drop signal re-arms it or not.
     private bool _nextWordSuspect;
 
-    /// <summary>The last reset dropped a partial word; hold the next committed
-    /// word suspect and keep it out of the corpus.</summary>
     public void MarkNextWordSuspect() => _nextWordSuspect = true;
 
     // A committed word: its typed form, the form left on screen after the commit

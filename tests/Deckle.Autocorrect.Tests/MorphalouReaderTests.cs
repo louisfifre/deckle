@@ -29,7 +29,6 @@ public sealed class MorphalouReaderTests
     {
         var forms = MorphalouReader.ReadInflectedForms(new StringReader(Sample)).ToList();
 
-        // The second GRAPHIE (inflected), in file order: "capte" not "capter".
         Assert.Equal(new[] { "capte", "captes", "modèle", "modèles" }, forms);
     }
 

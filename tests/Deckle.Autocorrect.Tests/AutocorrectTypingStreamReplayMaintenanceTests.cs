@@ -4,7 +4,7 @@ using Xunit;
 
 namespace Deckle.Autocorrect.Tests;
 
-// Replays Louis's consented raw typing stream through the real keyboard-facing
+// Replays the consented raw typing stream through the real keyboard-facing
 // engine harness. This is a robustness probe, not a truth benchmark: historical
 // text contains both intended literals and mistakes. The hard assertion is that
 // every attempted correction matches the actual simulated screen suffix; named

@@ -27,7 +27,6 @@ public class AccentFoldingTests
     [Fact]
     public void FoldFastPathLeavesPlainLowercaseUntouched()
     {
-        // A plain ASCII lowercase word needs no work — same instance back.
         const string s = "marche";
         Assert.Same(s, AccentFolding.Fold(s));
     }

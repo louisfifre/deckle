@@ -20,9 +20,9 @@ public sealed class MarginCalibrationTests
 
     private static readonly SlotReplayResult[] Results =
     {
-        Judged(final: "à", chosen: "à", margin: 2.0),  // agree, wide
-        Judged(final: "à", chosen: "à", margin: 0.5),  // agree, narrow
-        Judged(final: "la", chosen: "là", margin: 1.0), // disagree
+        Judged(final: "à", chosen: "à", margin: 2.0),
+        Judged(final: "à", chosen: "à", margin: 0.5),
+        Judged(final: "la", chosen: "là", margin: 1.0),
         Errored(),                                       // model error: never applied
     };
 

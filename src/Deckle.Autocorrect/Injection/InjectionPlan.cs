@@ -27,7 +27,6 @@ public readonly record struct InjectionPlan(int Backspaces, string Text)
             prefixUtf16 += char.IsHighSurrogate(current[prefixUtf16]) ? 2 : 1;
         }
 
-        // Count code points (not code units) in current's divergent tail.
         int backspaces = 0;
         for (int i = prefixUtf16; i < current.Length; i += char.IsHighSurrogate(current[i]) ? 2 : 1)
             backspaces++;

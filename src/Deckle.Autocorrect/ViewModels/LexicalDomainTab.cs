@@ -6,13 +6,10 @@ using Microsoft.UI.Xaml;
 
 namespace Deckle.Autocorrect;
 
-// One tab of the domain selector on LexicalDomainsPage, with everything that
-// tab shows: the domain's name and its one-line description, the language rows
-// it offers, and the indications block that closes the list.
-//
-// Immutable — a domain is fixed by the build, only its rows carry state — so
-// there is nothing to observe here; the page binds through SelectedDomain,
-// whose change swaps the whole object.
+// One tab of the domain selector on LexicalDomainsPage. Immutable — a domain is
+// fixed by the build, only its rows carry state — so there is nothing to
+// observe here; the page binds through SelectedDomain, whose change swaps the
+// whole object.
 public sealed class LexicalDomainTab
 {
     public string DomainId { get; }

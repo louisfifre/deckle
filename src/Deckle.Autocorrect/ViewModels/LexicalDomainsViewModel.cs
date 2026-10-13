@@ -5,9 +5,7 @@ using CommunityToolkit.Mvvm.ComponentModel;
 
 namespace Deckle.Autocorrect;
 
-// ViewModel for LexicalDomainsPage — the domains that add a field's vocabulary
-// to the effective lexicon. Same shape as the other page VMs: the model is
-// re-pulled on Load(), and every user change routes back through
+// ViewModel for LexicalDomainsPage. Every user change routes back through
 // AutocorrectSettingsService, which owns the write.
 //
 // The domain catalogue is built once, in the constructor: it is fixed by the
@@ -18,10 +16,7 @@ namespace Deckle.Autocorrect;
 // activation.
 public sealed partial class LexicalDomainsViewModel : ObservableObject
 {
-    // Mirror of the module's master switch — read-only here, flipped on the
-    // parent page. The page collapses its whole section while it is false: no
-    // domain reaches the corrector with autocorrect off, so none of these rows
-    // applies (mask-never-grey).
+    // Mirror of the module's master switch, read-only here.
     [ObservableProperty]
     public partial bool Enabled { get; set; }
 
@@ -30,9 +25,8 @@ public sealed partial class LexicalDomainsViewModel : ObservableObject
     // before enabling anything in it.
     public ObservableCollection<LexicalDomainTab> Domains { get; } = new();
 
-    // Which tab is showing. The SelectorBar is the sole owner: the page fills the
-    // bar from Domains, selects the first item, and mirrors every selection here —
-    // including the first, so nothing is seeded from this side. Nothing is
+    // The SelectorBar is the sole owner: the page mirrors every selection here,
+    // the first included, so nothing is seeded from this side. Nothing is
     // persisted either; a tab is a view, not a setting.
     [ObservableProperty]
     public partial LexicalDomainTab? SelectedDomain { get; set; }
@@ -43,10 +37,9 @@ public sealed partial class LexicalDomainsViewModel : ObservableObject
         Load();
     }
 
-    // The catalogue: one tab per shipped domain, one row per language that
-    // domain ships a pack in. The dilution figures come from each pack's shipped
-    // manifest, read here rather than held live — they are fabrication output and
-    // only change when a new pack ships.
+    // The dilution figures come from each pack's shipped manifest, read here
+    // rather than held live — they are fabrication output and only change when a
+    // new pack ships.
     private void BuildDomains()
     {
         var settings = AutocorrectSettingsService.Instance.Current;

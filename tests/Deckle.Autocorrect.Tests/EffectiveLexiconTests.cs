@@ -7,11 +7,11 @@ using Xunit;
 namespace Deckle.Autocorrect.Tests;
 
 // The effective lexicon: the single table the correctors consult once the base
-// lexicon and the active domain packs have fused (CONTEXT.md § Lexicon
-// composition). The product here is the merge law, not the plumbing — highest
-// frequency wins, and the result cannot depend on which pack the user turned on
-// first. Those two properties are what let the engine keep taking one lexicon
-// and let activation order stay a non-question, so they are what is asserted.
+// lexicon and the active domain packs have fused. The product here is the merge
+// law, not the plumbing — highest frequency wins, and the result cannot depend
+// on which pack the user turned on first. Those two properties are what let the
+// engine keep taking one lexicon and let activation order stay a non-question,
+// so they are what is asserted.
 [Trait("Category", "unit")]
 public class EffectiveLexiconTests
 {
@@ -50,8 +50,7 @@ public class EffectiveLexiconTests
     // ── The merge law ───────────────────────────────────────────────────────
 
     // A shared form keeps the HIGHEST frequency, never the sum the plain
-    // FrequencyLexicon load applies to duplicate rows: a pack promotion
-    // (« hebergeur » at 0.87 opm, the value the IT bench settled on) must lift
+    // FrequencyLexicon load applies to duplicate rows: a pack promotion must lift
     // the form, and two sources must never inflate each other.
     [Fact]
     public void Compose_KeepsTheHighestFrequencyOnASharedForm()

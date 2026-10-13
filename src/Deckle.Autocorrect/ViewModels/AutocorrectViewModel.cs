@@ -7,16 +7,9 @@ using Deckle.Diagnostics.Telemetry;
 
 namespace Deckle.Autocorrect;
 
-// ViewModel for AutocorrectPage — what belongs on a family's landing surface:
-// the master switch, the exclusion register, and the observability opt-ins. The
-// two collections keyed by a child surface left with it — LexicalDomainsViewModel
-// owns the domains, AppsEnrolledViewModel the per-app decisions. The exclusions
-// stayed: an exclusion holds against every domain and every app at once, so it
-// belongs to the family rather than to either child.
-//
-// Same Load/_isSyncing shape as TrackpadViewModel: Load() seeds the bound state
-// with writes suppressed, then each user change routes back through the service
-// that owns it.
+// ViewModel for AutocorrectPage. Load() seeds the bound state with writes
+// suppressed (_isSyncing), then each user change routes back through the
+// service that owns it.
 public sealed partial class AutocorrectViewModel : ObservableObject
 {
     private bool _isSyncing;
@@ -25,10 +18,8 @@ public sealed partial class AutocorrectViewModel : ObservableObject
     [ObservableProperty]
     public partial bool Enabled { get; set; }
 
-    // The exclusion register: words the user pulled out of correction's reach,
-    // whatever lexicon carried them. Consultable and reversible here — the
-    // settings mirror of a gesture that will also be born in the correction
-    // inlay, once that surface exists.
+    // Words the user pulled out of correction's reach, whatever lexicon carried
+    // them.
     public ObservableCollection<AutocorrectExcludedWordRow> ExcludedWords { get; } = new();
 
     // What the user is typing into the exclusion field. Not persisted — it
@@ -57,8 +48,6 @@ public sealed partial class AutocorrectViewModel : ObservableObject
     {
         _isSyncing = true;
 
-        // Seed the observability opt-ins closed; Load() overwrites from the
-        // stores under the sync guard.
         AutocorrectDecisions = false;
         AutocorrectText = false;
 
@@ -73,8 +62,6 @@ public sealed partial class AutocorrectViewModel : ObservableObject
             var settings = AutocorrectSettingsService.Instance.Current;
             Enabled = settings.Enabled;
 
-            // Observability opt-ins pulled from their own stores, not
-            // AutocorrectSettings.
             var telemetry = TelemetrySettingsService.Instance.Current;
             AutocorrectDecisions = telemetry.AutocorrectDecisions;
             AutocorrectText = telemetry.AutocorrectText;
@@ -115,12 +102,10 @@ public sealed partial class AutocorrectViewModel : ObservableObject
         TelemetrySettingsService.Instance.Save();
     }
 
-    // Excludes what is in the field. The service owns the normalization and
-    // answers with the form it registered, so the list shows the stored key
-    // rather than what was typed. Text that cannot name a single word — blank,
-    // or several words — clears the field and adds nothing: the add button is
-    // already disabled for the blank case, and a constrained control beats an
-    // error message.
+    // The service owns the normalization and answers with the form it
+    // registered, so the list shows the stored key rather than what was typed.
+    // Text that cannot name a single word — blank, or several words — clears
+    // the field and adds nothing, with no error message.
     [RelayCommand]
     private void ExcludeWord()
     {

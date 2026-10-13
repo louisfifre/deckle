@@ -14,10 +14,7 @@ namespace Deckle.Autocorrect;
 // the page sat cached.
 public sealed partial class AppsEnrolledViewModel : ObservableObject
 {
-    // Mirror of the module's master switch — read-only here, flipped on the
-    // parent page. The page collapses its whole section while it is false: with
-    // autocorrect off nothing is corrected anywhere, so no per-app row applies
-    // (mask-never-grey).
+    // Mirror of the module's master switch, read-only here.
     [ObservableProperty]
     public partial bool Enabled { get; set; }
 
@@ -51,9 +48,8 @@ public sealed partial class AppsEnrolledViewModel : ObservableObject
         Apps.Remove(row);
     }
 
-    // Process name → a friendly label. Until the enrollment path captures the
-    // real product name (the first-party pass), title-case the executable
-    // stem: "anytype" -> "Anytype", "claude" -> "Claude".
+    // Decisions are keyed by process name only, so the label is that name
+    // title-cased: "anytype" -> "Anytype".
     private static string Humanize(string process)
     {
         if (string.IsNullOrWhiteSpace(process)) return process;

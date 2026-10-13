@@ -6,18 +6,14 @@ namespace Deckle.Autocorrect.Mlm;
 // ── CamembertReranker ────────────────────────────────────────────────────────
 //
 // The module's public seam: builds an ISentenceReranker backed by the CamemBERT
-// masked-LM so the App composition root can wire the live post-sentence pass
-// without reaching the internal scorer. Loading is heavy — the 442 MB ONNX model
-// plus the tokenizer — and synchronous, so call it OFF the UI / input thread,
-// exactly as App.Autocorrect already loads the lexicons on the thread pool.
+// masked-LM without exposing the internal scorer. Loading the ONNX model and the
+// tokenizer is heavy and synchronous, so call it OFF the UI and input threads.
 public static class CamembertReranker
 {
-    // Builds the reranker from a model directory holding model.onnx,
-    // tokenizer.json and sentencepiece.bpe.model. Returns null when the model is
-    // absent or fails to load, so the engine runs without the contextual stage
-    // rather than failing — the same graceful degradation the lexicons get.
-    // `margin` is the top-vs-second logit gap required to act; `freqPrior` weights
-    // the prefer-the-common-form prior (0 recovers pure-logit behaviour).
+    // Null when the model is absent or fails to load, so the engine runs without
+    // the contextual stage rather than failing. `margin` is the top-vs-second
+    // logit gap required to act; `freqPrior` weights the prefer-the-common-form
+    // prior (0 recovers pure-logit behaviour).
     public static ISentenceReranker? TryLoad(string modelDir, double margin, double freqPrior)
     {
         try

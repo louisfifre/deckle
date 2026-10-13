@@ -92,9 +92,8 @@ internal static class CorrectionBenchmarkCommand
                 process.StartInfo.ArgumentList.Add("--show-cases");
 
             // Forward the child's stderr live (its per-case progress) and read stdout
-            // (the summary, emitted at the end) on this thread. Reading one stream fully
-            // before the other deadlocks once the child fills the unread pipe's buffer —
-            // the likely cause of a batch run appearing to hang with no visible output.
+            // (the summary, emitted at the end) on this thread: reading one stream fully
+            // before the other deadlocks once the child fills the unread pipe's buffer.
             process.ErrorDataReceived += static (_, e) =>
             {
                 if (e.Data is not null)
@@ -130,9 +129,8 @@ internal static class CorrectionBenchmarkCommand
                 outcome,
                 stopwatch.Elapsed));
 
-            // One line per case to stderr so a slow model (seconds per case on the CPU
-            // EP) shows life rather than a silent multi-minute wait; stdout stays the
-            // clean summary. The load-bearing timing lives in each result, not here.
+            // One line per case to stderr so a slow model shows life; stdout stays the
+            // clean summary.
             index++;
             Console.Error.WriteLine(
                 $"  [{model.Label}] {index}/{total} {benchmarkCase.Id} {stopwatch.Elapsed.TotalMilliseconds:0}ms");

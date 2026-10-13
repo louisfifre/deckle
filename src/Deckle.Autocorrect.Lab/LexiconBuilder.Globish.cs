@@ -17,7 +17,7 @@ public static partial class LexiconBuilder
     // content tokens, then filtered against French exact/accent-fold forms and
     // one-edit French neighbours. This is deliberately narrower than a general
     // English frequency list: it protects technical globish without turning the
-    // historical full English lexicon back on.
+    // full English lexicon on as a guard.
     private static void BuildGlobalEnglishSeed(
         string sourcePath, string outPath, FrequencyLexicon french)
     {

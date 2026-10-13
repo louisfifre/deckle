@@ -5,15 +5,11 @@ using Deckle.Autocorrect;
 
 namespace Deckle.Autocorrect.Lab;
 
-// One corpus line, parsed: the record the accumulator emitted, plus whether the
-// « history » property was present on the wire. Absence is not emptiness — a line
-// that predates the history field (pre-2026-07-02) carries NO property, and the
-// alignment must treat it differently from a modern record that simply had nothing
-// to correct (property present, value ""). Only the reader can tell the two apart,
-// so it surfaces the fact rather than folding it into an empty string. Process is
-// the producing application (payload "process", "" when absent) — the replay never
-// reads it, the surface profiler ventilates on it. Day is the envelope timestamp's
-// date ("2026-07-14", "" when absent) — the miner's recurrence-across-days signal.
+// HistoryPresent: absence is not emptiness. A line older than the history field
+// carries NO property, and the alignment must treat it differently from a record
+// that had nothing to correct (property present, value ""). Only the reader can
+// tell the two apart. Day is the envelope timestamp's date (yyyy-MM-dd, "" when
+// absent).
 public readonly record struct CorpusEntry(
     SentenceCorpus.SentenceRecord Record, bool HistoryPresent, string Process = "", string Day = "");
 
@@ -23,18 +19,14 @@ public readonly record struct CorpusEntry(
 //     "payload": { "process": …, "typed": …, "final": …, "history": …,
 //                  "closure": …, "timing": … } }
 // — into the same SentenceCorpus.SentenceRecord the accumulator emitted, so the
-// offline replay reads exactly what the live engine collected. Only the payload
-// matters here; the envelope (timestamp, session) is provenance the offline
-// passes do not need.
+// offline replay reads exactly what the live engine collected.
 //
-// Tolerant by design, like the ASR CorpusLoader: a blank line, a truncated tail
-// line from a crash mid-write, or a line missing its payload is skipped rather
-// than fatal — a corpus is an append log that may end mid-flight. Legacy lines are
-// tolerated too: a line may lack « history » (pre-2026-07-02) and will lack
-// « closure »/« timing »; closure defaults to "sentence", timing to "".
+// Tolerant by design: a blank line, a truncated tail line from a crash mid-write,
+// or a line missing its payload is skipped rather than fatal; a corpus is an
+// append log that may end mid-flight. Older lines may lack « history »,
+// « closure » and « timing »; closure defaults to "sentence", timing to "".
 public static class CorpusReader
 {
-    // Streams the records lazily so a large corpus never lands in memory at once.
     public static IEnumerable<CorpusEntry> Read(string path)
     {
         foreach (string line in File.ReadLines(path))
@@ -42,10 +34,6 @@ public static class CorpusReader
                 yield return entry;
     }
 
-    // Parses one JSONL line into an entry; false when the line is blank, not JSON,
-    // carries no payload, or has neither a typed nor a final side. HistoryPresent
-    // reflects whether the « history » property existed on the line, not whether it
-    // held anything.
     public static bool TryParse(string line, out CorpusEntry entry)
     {
         entry = default;
@@ -66,15 +54,12 @@ public static class CorpusReader
 
             bool historyPresent = payload.TryGetProperty("history", out _);
 
-            // Closure names how the run ended (a legitimate context regardless);
-            // a missing or blank value means a legacy record, defaulted to a normal
-            // sentence-ending close. Timing is unused by the replay but kept whole.
             string closure = String(payload, "closure");
             if (closure.Length == 0)
                 closure = "sentence";
 
-            // The envelope timestamp's date part — ISO on the wire, so the first
-            // ten chars are the day whatever the offset.
+            // ISO 8601 on the wire, so the first ten chars are the day whatever
+            // the offset.
             string stamp = String(doc.RootElement, "timestamp");
             string day = stamp.Length >= 10 ? stamp[..10] : string.Empty;
 

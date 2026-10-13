@@ -8,10 +8,9 @@ namespace Deckle.Autocorrect;
 
 public sealed partial class AutocorrectEngine
 {
-    // ── Input thread handlers ────────────────────────────────────────────
-
-    // Called by the host when telemetry settings change. RequestDrain is the
-    // cross-thread marshalling point; the corpus itself remains input-thread-owned.
+    // Called by the app, off the input thread, when telemetry settings change.
+    // RequestDrain is the cross-thread marshalling point; the corpus itself
+    // remains input-thread-owned.
     public void ReconcileTextTelemetry()
     {
         if (_textTelemetry?.Invoke() == true) return;
@@ -196,16 +195,14 @@ public sealed partial class AutocorrectEngine
         // accumulation and reset cannot leak a sentence to disk.
         _corpus?.Reset(reason);
         // A reset that threw away a word in flight can leave its tail to commit as
-        // the next "word" — a fragment that used to pollute corpus sentence starts
-        // (« e Setting UX … »). The corpus holds that next word suspect and drops it.
+        // the next "word", a fragment at the sentence start. The corpus holds that
+        // next word suspect and drops it.
         if (droppedPartialWord)
             _corpus?.MarkNextWordSuspect();
         _coordinator?.Invalidate(reason);
         _sentenceContextDiscontinuous = reason != ResetReason.Enter;
     }
 
-    // A correction the contextual stage applied inside the closed sentence. It
-    // counts and logs like any correction, and records the actual write plan.
     private void OnCoordinatorApplied(CorrectionDecision decision, InjectionPlan plan)
     {
         if (IsActivityRollupEnabled()) _rollupCorrections++;

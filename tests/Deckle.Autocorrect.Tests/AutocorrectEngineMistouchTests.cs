@@ -70,7 +70,6 @@ public class AutocorrectEngineMistouchTests
     public void WithholdsTheRepairWhereCorrectionIsNotArmed()
     {
         using var h = NewHarness();
-        // An app the user never enrolled: observation runs, action is withheld.
         h.Prober.Surface = AutocorrectEngineHarness.Editable(process: "stranger");
         Assert.True(h.Start());
 
@@ -82,16 +81,15 @@ public class AutocorrectEngineMistouchTests
     [Fact]
     public void ABackspaceIntoTheRunDisarmsTheRepair()
     {
-        // « fait, » then a backspace eating the space, then « beau » — the
-        // screen really holds the glued comma, but the tracker can no longer
+        // The screen really holds the glued comma, but the tracker can no longer
         // vouch for the run it saw, so the family abstains rather than inject
-        // against a screen it cannot prove. Conservative, a missed repair.
+        // against a screen it cannot prove.
         using var h = NewHarness();
         h.Prober.Surface = AutocorrectEngineHarness.Editable();
         Assert.True(h.Start());
 
         h.Type("fait, ");
-        h.Backspace();      // eats the noise space behind the comma
+        h.Backspace();
         h.Type("beau ");
 
         Assert.Empty(h.Injector.Calls);
@@ -100,16 +98,16 @@ public class AutocorrectEngineMistouchTests
     [Fact]
     public void ARetypedRunIsFaithfulAgainAndRepairs()
     {
-        // Backspace re-opened « qu », the retype re-committed it on a fresh
-        // « ; » — the run is the screen again, the family regains its rights on
-        // the NEXT word (only the reopened word itself is exempt).
+        // The retype re-commits « qu » on a fresh « ; », so the run matches the
+        // screen again and the family repairs the NEXT word; only the reopened
+        // word itself is exempt.
         using var h = NewHarness();
         h.Prober.Surface = AutocorrectEngineHarness.Editable();
         Assert.True(h.Start());
 
         h.Type("qu;");
-        h.Backspace();      // eats the ';' — re-opens « qu »
-        h.Type(";il ");     // retypes the same slip
+        h.Backspace();
+        h.Type(";il ");
 
         var call = Assert.Single(h.Injector.Calls);
         Assert.Equal(("qu;il ", "qu'il "), call);

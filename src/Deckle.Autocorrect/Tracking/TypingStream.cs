@@ -2,8 +2,8 @@ using System.Text;
 
 namespace Deckle.Autocorrect;
 
-// The typing-stream accumulator (CONTEXT.md § Typing stream): the verbatim flow
-// of what is typed on enrolled correctable surfaces, recorded as runs. A run
+// The typing-stream accumulator: the verbatim flow of what is typed on enrolled
+// correctable surfaces, recorded as runs. A run
 // accumulates while typing flows forward and closes the moment a backward
 // repair begins; the next run resumes from the repair point. Reading the runs
 // in order restores everything — faulty forms as they stood on screen, what
@@ -50,8 +50,6 @@ public sealed class TypingStream
     // the span, why it closed, and the per-char keystroke gaps.
     public readonly record struct RunRecord(string Text, int Erased, string Closure, string Timing);
 
-    /// <summary>Raised when a run closes. The engine emits it on the
-    /// dedicated, consent-gated dataset.</summary>
     public Action<RunRecord>? Completed;
 
     private readonly StringBuilder _text = new();
@@ -187,7 +185,6 @@ public sealed class TypingStream
         _lastKeyMs = 0;
     }
 
-    // Flushes the current run and starts the next one inside the same span.
     private void EmitRun(string closure)
     {
         string timing = _anyStamp ? string.Join(',', _gaps) : string.Empty;

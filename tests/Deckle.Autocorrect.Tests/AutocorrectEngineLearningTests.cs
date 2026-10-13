@@ -39,7 +39,7 @@ public sealed class AutocorrectEngineLearningTests : IDisposable
     public void AWordTheEngineLeavesAloneIsAdoptedAsACommit()
     {
         using var dict = NewDictionary();
-        using var h = Harness(dict); // NeverCorrects
+        using var h = Harness(dict);
 
         h.Type("wibble ");
 
@@ -54,8 +54,8 @@ public sealed class AutocorrectEngineLearningTests : IDisposable
 
         h.Type("ca ");
 
-        // The correction landed; the typo must not be learned, or repetition
-        // would adopt it and silently disable its own correction.
+        // The typo must not be learned, or repetition would adopt it and
+        // silently disable its own correction.
         Assert.DoesNotContain(dict.SnapshotWords(), w => w.Word == "ca");
     }
 
@@ -101,7 +101,7 @@ public sealed class AutocorrectEngineLearningTests : IDisposable
 
         h.Type("bonjour ");
 
-        Assert.Empty(dict.SnapshotWords()); // committed, then rejected as a known French form
+        Assert.Empty(dict.SnapshotWords());
     }
 
     [Fact]
@@ -113,7 +113,7 @@ public sealed class AutocorrectEngineLearningTests : IDisposable
 
         h.Type("hello ");
 
-        Assert.Empty(dict.SnapshotWords()); // committed, then rejected as a protected English seed form
+        Assert.Empty(dict.SnapshotWords());
     }
 
     [Fact]
@@ -135,14 +135,14 @@ public sealed class AutocorrectEngineLearningTests : IDisposable
     public void TypingBareThenFixingAccentsByHandOnlyCountsTheRetypedWordOnce()
     {
         using var dict = NewDictionary();
-        using var h = Harness(dict); // NeverCorrects
+        using var h = Harness(dict);
 
-        h.Type("widget "); // a neutral word: an ordinary commit, no edit — the baseline
+        h.Type("widget ");
 
-        h.Type("cafe ");  // commit the bare form, opening the edit window
-        h.Backspace();    // re-open "cafe" as the live buffer
-        h.Backspace();    // drop the 'e'  → "caf"
-        h.Type("é ");     // retype the accented form → commit "café" as an edit of "cafe"
+        h.Type("cafe ");
+        h.Backspace();    // eats the boundary, re-opening "cafe"
+        h.Backspace();
+        h.Type("é ");
 
         // The re-edit removes the bare occurrence from the clean count. The
         // accented word is a fresh clean commit, not a special adoption boost.
@@ -157,7 +157,7 @@ public sealed class AutocorrectEngineLearningTests : IDisposable
     {
         using var dict = NewDictionary();
         using var h = new AutocorrectEngineHarness(dictionary: dict);
-        h.Prober.Surface = AutocorrectEngineHarness.Editable("chrome"); // not enrolled
+        h.Prober.Surface = AutocorrectEngineHarness.Editable("chrome");
         h.Start();
 
         h.Type("cafe ");
@@ -165,27 +165,25 @@ public sealed class AutocorrectEngineLearningTests : IDisposable
         h.Backspace();
         h.Type("é ");
 
-        Assert.Empty(dict.SnapshotWords()); // gated: neither the commit nor the edit is learned
+        Assert.Empty(dict.SnapshotWords());
     }
 
     [Fact]
     public void AnEditToADifferentWordIsNotRecordedAsAnAccentFix()
     {
         using var dict = NewDictionary();
-        using var h = Harness(dict); // NeverCorrects
+        using var h = Harness(dict);
 
-        h.Type("widget "); // a plain commit under the same clock — the ordinary-commit baseline
+        h.Type("widget ");
 
-        h.Type("cat ");  // commit "cat", open the edit window
-        h.Backspace();   // re-open "cat" as the live buffer
-        h.Backspace();   // "ca"
-        h.Backspace();   // "c"
-        h.Backspace();   // "" — still re-opened (the boundary was eaten on the first Backspace)
-        h.Type("dog ");  // recommit a DIFFERENT word: an edit, but not an accent fix
+        h.Type("cat ");
+        h.Backspace();   // eats the boundary, re-opening "cat"
+        h.Backspace();
+        h.Backspace();
+        h.Backspace();   // empty, still re-opened
+        h.Type("dog ");
 
-        // Fold("cat") != Fold("dog"), so the edit is just an edit, not accent
-        // evidence. "dog" carries the ordinary commit count alone, equal to the
-        // baseline.
+        // Fold("cat") != Fold("dog"), so the edit is not accent evidence.
         double baseline = Assert.Single(dict.SnapshotWords(), w => w.Word == "widget").EffectiveWeight;
         var dog = Assert.Single(dict.SnapshotWords(), w => w.Word == "dog");
         Assert.Equal(baseline, dog.EffectiveWeight, precision: 3);
@@ -195,9 +193,9 @@ public sealed class AutocorrectEngineLearningTests : IDisposable
     public void AnOverlongWordIsNotLearned()
     {
         using var dict = NewDictionary();
-        using var h = Harness(dict); // NeverCorrects
+        using var h = Harness(dict);
 
-        h.Type(new string('a', 31) + " "); // 31 letters — past the 30-char content guard
+        h.Type(new string('a', 31) + " "); // past the 30-char content guard
 
         Assert.Empty(dict.SnapshotWords());
     }
@@ -209,11 +207,10 @@ public sealed class AutocorrectEngineLearningTests : IDisposable
         dict.RecordSuppression("ca", "ça"); // as the correction inlay's undo would write it
         using var h = Harness(dict, ScriptedPolicy.Maps("ca", "ça"));
 
-        h.Type("ca "); // the policy WANTS to correct; the suppression must withhold it
+        h.Type("ca ");
 
-        // A suppressed pair stays literal whatever the policy says — enforced in
-        // the engine (CONTEXT.md), so even a policy without dictionary access
-        // honors it. No correction applied, nothing injected.
+        // Enforced in the engine, so even a policy without dictionary access
+        // honors the suppression.
         Assert.Empty(h.Applied);
         Assert.Empty(h.Injector.Calls);
     }

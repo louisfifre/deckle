@@ -57,7 +57,7 @@ public sealed class SentenceReplayTests
         Assert.False(slot.Abstained);
 
         var call = Assert.Single(reranker.Calls);
-        Assert.Equal(final, call.Sentence); // the FINAL sentence is the judge's context
+        Assert.Equal(final, call.Sentence);
         Assert.Equal(2, call.Slot);
         Assert.Equal(new[] { "a", "à" }, call.Candidates.Select(c => c.Form));
 
@@ -91,7 +91,7 @@ public sealed class SentenceReplayTests
     {
         var typed = new[] { "bonjour", "le", "monde" };
         var final = new[] { "bonjour", "le", "monde" };
-        var probe = new FakeProbe(new()); // nothing ambiguous
+        var probe = new FakeProbe(new());
         var reranker = new RecordingReranker(_ =>
             throw new InvalidOperationException("a non-ambiguous slot must not be judged"));
 
