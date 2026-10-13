@@ -6,11 +6,11 @@ namespace Deckle.Vad;
 // Pure port of Silero's get_speech_timestamps decision logic (snakers4/silero-vad,
 // the default max_speech_duration_s = inf path). This is the model-independent
 // post-processing, so it is unaffected by which silero_vad.onnx the wrapper loads.
-// The reference function is two
-// phases: phase 1 runs the ONNX model per window to get one speech probability
-// each (that lives in SileroVad), phase 2 — this — turns the probability sequence
-// into padded speech [start,end) sample ranges. Kept model-free so it is unit
-// tested directly on synthetic probability sequences.
+// The reference function is two phases: phase 1 runs the ONNX model per window
+// to get one speech probability each (that lives in SileroVad), phase 2 — this —
+// turns the probability sequence into padded speech [start,end) sample ranges.
+// Kept model-free so it is unit tested directly on synthetic probability
+// sequences.
 //
 // Faithful to the reference:
 //   • a span's end is the FIRST sub-release-threshold window (temp_end), not the
@@ -60,7 +60,6 @@ internal static class SileroSpeechTimestamps
                 continue;
             }
 
-            // Trailing silence — maybe close the span.
             if (p < negThreshold && triggered)
             {
                 if (tempEnd == 0) tempEnd = cur;            // end = first silent window
@@ -75,7 +74,6 @@ internal static class SileroSpeechTimestamps
             // keep tempEnd — an in-progress silence countdown survives it.
         }
 
-        // Tail flush: close a still-open span at the end of the audio.
         if (triggered && audioLengthSamples - curStart > minSpeech)
             speeches.Add(new SpeechSegment(curStart, audioLengthSamples));
 

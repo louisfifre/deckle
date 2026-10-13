@@ -31,11 +31,7 @@ public sealed class SileroVad : IDisposable
     private readonly float[] _input   = new float[ContextSamples + WindowSamples];
     private readonly long[]  _sr      = new long[] { SampleRate };
 
-    // Per-window plumbing hoisted to fields so RunWindow allocates nothing. The
-    // input tensors wrap the reused _input/_state/_sr buffers (shapes are
-    // constant); the two destinations receive the outputs by position — _prob1
-    // the probability, _state the new recurrent state copied in place for the
-    // next window.
+    // Hoisted to fields so RunWindow allocates nothing.
     private readonly float[] _prob1 = new float[1];
     private readonly OnnxTensorInput[] _inputs;
     private readonly float[][] _outputs;
@@ -52,9 +48,8 @@ public sealed class SileroVad : IDisposable
         _outputs = new[] { _prob1, _state };
     }
 
-    // Detects the speech spans within a 16 kHz mono buffer, in sample indices
-    // (padded per options). Resets the recurrent state first, so each call is
-    // independent. An empty list means "no speech in this buffer".
+    // Spans in sample indices of a 16 kHz mono buffer, padded per options. An
+    // empty list means "no speech in this buffer".
     public IReadOnlyList<SpeechSegment> DetectSpeech(ReadOnlySpan<float> samples, SileroVadOptions options)
     {
         Reset();
@@ -104,16 +99,14 @@ public sealed class SileroVad : IDisposable
 
     private float RunWindow()
     {
-        // Inputs and destinations are cached fields; the run writes the
-        // probability into _prob1 and the new state into _state in place — by
-        // position, the order the graph and the reference Python
-        // (`out, state = ort_outs`) use, robust to the exact output node names —
-        // so the next window picks up the state.
+        // Outputs land by position — the order the graph and the reference
+        // Python (`out, state = ort_outs`) use, robust to the exact output node
+        // names: the probability into _prob1, the new state into _state in place
+        // for the next window.
         _session.Run(_inputs, _outputs);
         return _prob1[0];
     }
 
-    // Clears the recurrent state and context between independent buffers.
     public void Reset()
     {
         Array.Clear(_state);

@@ -1,8 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <ItemGroup>
-    <!-- SileroSpeechTimestamps is internal; access goes through InternalsVisibleTo
-         declared in the module csproj. The xunit.v3 / MTP harness comes from
-         tests\Directory.Build.props. -->
+    <!-- The xunit.v3 / MTP harness comes from tests\Directory.Build.props. -->
     <ProjectReference Include="..\..\src\Deckle.Vad\Deckle.Vad.csproj" />
   </ItemGroup>
 </Project>
