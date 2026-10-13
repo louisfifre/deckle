@@ -11,30 +11,19 @@ namespace Deckle.Composition;
 // a top/bottom gradient when a Saturation effect drags the stroke
 // toward greyscale).
 //
-// Math is pure: no Composition runtime, no allocations, no IO. Reusable
-// from any Deckle module that needs perceptually-uniform colour output
-// (e.g. Ask-Ollama palette, future status badges).
-//
-// Extracted from HudComposition.cs on 2026-05-02.
+// Math is pure: no Composition runtime, no allocations, no IO.
 public static class ColorSpace
 {
     // OKLCh → sRGB (gamma-corrected, 8-bit channels).
     //
-    // Pipeline: OKLCh → OKLab → linear sRGB → gamma-corrected sRGB.
-    // Linear sRGB values may fall outside [0, 1] for L/C combinations
-    // that exit the sRGB gamut (yellows and blues at L=0.75 start
-    // clipping around C ≈ 0.18). We clamp to [0, 1] on the gamma
-    // output — that reads as a gentle flattening of the out-of-gamut
-    // hues rather than a hard stop, which is good enough for a
-    // rotating conic wheel where no individual hue lingers.
+    // L/C combinations outside the sRGB gamut give linear values outside
+    // [0, 1]. The clamp on the gamma output flattens those hues gently
+    // rather than stopping hard, which is good enough for a rotating conic
+    // wheel where no individual hue lingers.
     //
-    // Parameters:
-    //   L      — OKLab lightness ∈ [0, 1]; 0.75 is the family default.
-    //   C      — OKLab chroma ∈ ~[0, 0.4]; 0.18 stays in-gamut for
-    //            most hues at L=0.75, with gentle fall-off in the
-    //            yellow / blue extremes.
-    //   hTurns — hue in turns ∈ [0, 1]; 0=red, 0.25=yellow, 0.5=green,
-    //            0.75=blue (approximate, OKLab hue ordering).
+    // L is OKLab lightness in [0, 1], C is OKLab chroma in about [0, 0.4],
+    // hTurns is hue in turns in [0, 1]: 0 red, 0.25 yellow, 0.5 green,
+    // 0.75 blue (approximate, OKLab hue ordering).
     public static Color OklchToRgb(float L, float C, float hTurns)
     {
         var (rLin, gLin, bLin) = OklchToLinearRgb(L, C, hTurns);
@@ -46,33 +35,18 @@ public static class ColorSpace
             (byte)MathF.Round(Math.Clamp(LinearToSrgb(bLin), 0f, 1f) * 255f));
     }
 
-    // sRGB 8-bit → OKLCh — inverse of OklchToRgb. Same pipeline run
-    // backwards : sRGB byte → linear via the LUT → cone responses via
-    // the forward Björn Ottosson matrix → cube root → OKLab via the
-    // forward matrix → polar (C, h) in the a-b plane.
+    // sRGB 8-bit → OKLCh, the inverse of OklchToRgb. Hue is returned in
+    // turns in [0, 1), like OklchToRgb takes it.
     //
-    // Used by AmbientColorPipeline.ApplySaturationBoost to scale chroma at
-    // constant L : HSV-S boosting drags yellows brighter and blues
-    // darker because HSV's V is not perceptually uniform (the same
-    // asymmetry that drove the conic stroke onto OKLCh — see the file
-    // header). OKLCh's L is, so chroma scaling preserves perceived
-    // lightness across the hue wheel.
-    //
-    // Hue is returned in turns ∈ [0, 1) to match OklchToRgb's
-    // convention. Atan2 wraps at the −x axis ; the if-branch lifts the
-    // negative half-turn back into [0, 1).
-    //
-    // Edge case : a perfectly grey input (r = g = b) yields a = b = 0,
-    // so C = 0 and h is degenerate. Atan2(0, 0) returns 0 in .NET, which
-    // gives h = 0 — caller is expected to treat C == 0 as "hue
-    // irrelevant" rather than read h.
+    // A perfectly grey input (r = g = b) gives C = 0 and a degenerate h
+    // (Atan2(0, 0) returns 0 in .NET): treat C == 0 as "hue irrelevant"
+    // rather than read h.
     public static (float L, float C, float h) RgbToOklch(byte r, byte g, byte b)
         => LinearRgbToOklch(SrgbToLinear8Lut[r], SrgbToLinear8Lut[g], SrgbToLinear8Lut[b]);
 
-    // sRGB OETF (IEC 61966-2-1). Handles the linear toe for small
-    // values so the curve stays continuous at the piecewise seam.
-    // Negative inputs are mirrored through the curve — produces a
-    // symmetric result that clamps cleanly to 0 afterwards.
+    // sRGB OETF (IEC 61966-2-1). Negative inputs are mirrored through the
+    // curve, which gives a symmetric result that clamps cleanly to 0
+    // afterwards.
     public static float LinearToSrgb(float x)
     {
         if (x < 0f) return -LinearToSrgb(-x);
@@ -81,15 +55,10 @@ public static class ColorSpace
             : 1.055f * MathF.Pow(x, 1f / 2.4f) - 0.055f;
     }
 
-    // sRGB EOTF — the reciprocal of LinearToSrgb. Same piecewise toe
-    // around the 0.04045 seam. Used by the HDR tone-mapping path in
-    // FrameSampler to convert FP16 scRGB samples back to linear sRGB
-    // before averaging in linear light.
-    //
-    // Negative inputs are mirrored through the curve, matching the
-    // LinearToSrgb convention so that round-trips (LinearToSrgb →
-    // SrgbToLinear or the reverse) are numerically stable for the
-    // small-magnitude negatives that scRGB allows.
+    // sRGB EOTF, the reciprocal of LinearToSrgb. Negative inputs are
+    // mirrored through the curve like LinearToSrgb does, so round-trips
+    // stay numerically stable for the small-magnitude negatives that
+    // scRGB allows.
     public static float SrgbToLinear(float x)
     {
         if (x < 0f) return -SrgbToLinear(-x);
@@ -98,13 +67,10 @@ public static class ColorSpace
             : MathF.Pow((x + 0.055f) / 1.055f, 2.4f);
     }
 
-    // Byte-indexed precomputation of SrgbToLinear over [0, 255]. 1 KB
-    // resident, init once at type load. Consumed by every gamma-correct
-    // averaging site in the ambient pipeline — FrameSampler grids and
-    // AmbientEngine.SampleZone — where summing arithmetic sRGB bytes
-    // would otherwise bias mid-tones upward (sRGB encodes luminance via
-    // a ~2.4 gamma, so equal byte deltas don't represent equal photon
-    // deltas). One lookup replaces a Pow per pixel.
+    // SrgbToLinear for every byte value. Averaging pixels must happen in
+    // linear light: sRGB encodes luminance through a ~2.4 gamma, so equal
+    // byte deltas are not equal light deltas and a sum of raw bytes is
+    // biased. One lookup replaces a Pow per pixel.
     public static readonly float[] SrgbToLinear8Lut = InitSrgbToLinear8Lut();
 
     private static float[] InitSrgbToLinear8Lut()
@@ -117,58 +83,34 @@ public static class ColorSpace
 
     // scRGB FP16 → sRGB 8-bit, content-relative Hable filmic tone-map.
     //
-    // scRGB (the colour space `Direct3D11CaptureFramePool` returns when
-    // the OS is in HDR mode) is a linear-light, floating-point space
-    // where (1, 1, 1) maps to the SDR reference white (≈ 80 nits) and
-    // values above 1 represent HDR highlights up to the display's
-    // peakWhite nits. Out-of-gamut negatives (Rec.2020 / DCI-P3
-    // primaries beyond sRGB) are allowed ; they're clipped below.
+    // scRGB (the FP16 format DXGI Output Duplication returns when the OS
+    // is in HDR mode) is linear light where (1, 1, 1) is the SDR
+    // reference white (80 nits) and values above 1 are HDR highlights up
+    // to the display's peakWhite. Negatives (primaries beyond sRGB) are
+    // allowed; they are clipped after the tone-map.
     //
-    // The previous V0 implementation normalised on the display's peak
-    // (peakWhite / 80, e.g. 12.5 on HDR1000). That left a typical HDR
-    // scene — which peaks at 200–400 nits, i.e. scRGB 2.5–5 — squashed
-    // in the lower 20–40 % of the output, producing dim lamps even on
-    // a bright sky. The branch's tone-map normalises on an *observed*
-    // `contentPeak` instead, supplied by the caller via a rolling max
-    // over the recent frames. On the same HDR1000 display, a sky-
-    // bright scene now gets contentPeak ≈ 3–5 and the output uses the
-    // full [0, 1] range. The caller is responsible for capping the
-    // rolling max at the display's hard ceiling (peakWhite / 80) so a
-    // freak sun-glint pixel can't crush the whole scene below it.
+    // The curve normalises on contentPeak, the caller's rolling max of
+    // recent frames' max channel in scRGB units, not on the display peak
+    // (peakWhite / 80): a typical HDR scene peaks far below the display,
+    // and normalising on the display squashes it into the bottom of the
+    // output range. The caller caps that rolling max at peakWhite / 80 so
+    // one glint pixel cannot crush the whole scene below it.
     //
-    // The curve itself is Hable's Uncharted-2 filmic operator —
-    // smoothly compresses highlights without crushing the mid-tones,
-    // unlike a simple clip. F(0) = 0 algebraically, F is monotonic ;
-    // the normalisation F(rgb) / F(W) maps scRGB=0 → 0 and scRGB=W →
-    // 1 with a gentle shoulder above mid-tones.
+    // Hable's Uncharted-2 operator compresses highlights without crushing
+    // the mid-tones; F(rgb) / F(W) maps scRGB 0 → 0 and scRGB W → 1.
     //
-    // exposureEv is a linear-light EV-stop bias applied before the
-    // tone-map. +1 doubles brightness, -1 halves it. 0 = neutral.
-    // Combined with the content-relative normalisation, the user can
-    // dial in "Hue Sync presence" with a single value when the
-    // automatic mapping leaves the lights too dim or too aggressive.
-    //
-    // Parameters :
-    //   r, g, b     — scRGB linear-light channels (can be negative or
-    //                 above 1 ; clipping happens after the tone-map).
-    //   contentPeak — caller-maintained rolling max of recent frames'
-    //                 max-channel values, in scRGB units. Floored at
-    //                 1.0 internally so a fully-dark frame still maps
-    //                 SDR white to ~1.0 instead of amplifying noise.
-    //   exposureEv  — additional EV bias (default 0 = no bias).
+    // exposureEv is a linear-light bias in EV stops applied before the
+    // tone-map: +1 doubles brightness, -1 halves it, 0 is neutral.
     public static Color ScRgbToSrgb(float r, float g, float b, float contentPeak, double exposureEv = 0.0)
     {
-        // Linear-light exposure compensation (one EV stop = ×2).
         float gain = MathF.Pow(2f, (float)exposureEv);
         float rE = r * gain;
         float gE = g * gain;
         float bE = b * gain;
 
-        // SDR floor on the normalisation peak. On a fully-dark frame
-        // the caller's rolling max collapses toward 0 ; we never want
-        // to compress below scRGB=1.0 (SDR white) because that would
-        // amplify noise, and a near-zero contentPeak would zero-divide
-        // through Hable.
+        // SDR floor: on a dark frame the caller's rolling max collapses
+        // toward 0. Normalising below scRGB 1.0 would amplify noise, and
+        // Hable(0) = 0 would divide by zero.
         float W = MathF.Max(contentPeak, 1f);
         float invHableW = 1f / Hable(W);
 
@@ -202,15 +144,14 @@ public static class ColorSpace
     // in turns ∈ [0, 1), C == 0 means "hue irrelevant".
     public static (float L, float C, float h) LinearRgbToOklch(float rLin, float gLin, float bLin)
     {
-        // Linear sRGB → non-linear cone responses (forward, Björn
+        // Linear sRGB → linear cone responses (forward, Björn
         // Ottosson's matrix — inverse of the OklchToRgb step).
         float lLin = 0.4122214708f * rLin + 0.5363325363f * gLin + 0.0514459929f * bLin;
         float mLin = 0.2119034982f * rLin + 0.6806995451f * gLin + 0.1073969566f * bLin;
         float sLin = 0.0883024619f * rLin + 0.2817188376f * gLin + 0.6299787005f * bLin;
 
-        // Cube root to recover the non-linear cone responses (inverse
-        // of the cube in OklchToRgb). Negative branches don't appear
-        // for in-gamut sRGB inputs but Cbrt handles them either way.
+        // Cbrt, not Pow(x, 1/3): negative cone responses do not occur for
+        // in-gamut sRGB input, but Cbrt stays defined for them.
         float l_ = MathF.Cbrt(lLin);
         float m_ = MathF.Cbrt(mLin);
         float s_ = MathF.Cbrt(sLin);
@@ -220,7 +161,6 @@ public static class ColorSpace
         float a    = 1.9779984951f * l_ - 2.4285922050f * m_ + 0.4505937099f * s_;
         float bLab = 0.0259040371f * l_ + 0.7827717662f * m_ - 0.8086757660f * s_;
 
-        // OKLab → OKLCh (polar in the a-b plane).
         float C = MathF.Sqrt(a * a + bLab * bLab);
         float hRad = MathF.Atan2(bLab, a);
         float h = hRad / MathF.Tau;
@@ -243,7 +183,6 @@ public static class ColorSpace
         float m_ = L - 0.1055613458f * a - 0.0638541728f * b;
         float s_ = L - 0.0894841775f * a - 1.2914855480f * b;
 
-        // Cube to recover linear cone responses.
         float lc = l_ * l_ * l_;
         float mc = m_ * m_ * m_;
         float sc = s_ * s_ * s_;

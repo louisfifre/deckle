@@ -307,8 +307,6 @@ public static partial class HudComposition
             using (var drawing = CanvasComposition.CreateDrawingSession(contourSurface))
             {
                 drawing.Clear(Microsoft.UI.Colors.Transparent);
-                // The outline is the live stroke's own silhouette, so the lit
-                // band reads as the HUD stroke itself.
                 drawing.DrawRoundedRectangle(
                     new Windows.Foundation.Rect(
                         offsetX + inset + thickness / 2f,

@@ -14,39 +14,24 @@ public static partial class HudComposition
 {
 
     // ╔════════════════════════════════════════════════════════════════════╗
-    // ║  Naked mask diagnostic (HudPlayground only)                        ║
+    // ║  Naked mask diagnostic (Playground only)                           ║
     // ╚════════════════════════════════════════════════════════════════════╝
-    // Exposes the raw conic and arc-mask surfaces — the same ones
-    // CreateConicArcStroke composites behind the stroke silhouette — so
-    // the developer can verify in the playground whether the brush
-    // geometry is centred on its own rotation axis. The shipping stroke clips every
-    // sample to the rounded-rect silhouette, which hides any rotation
-    // wobble or off-centre brush footprint; the naked preview removes that
-    // silhouette and lets the full pxSquare × pxSquare footprint rotate
-    // openly. Not referenced by shipping code — only the playground's
-    // Naked rail wires it up.
+    // Shows the conic and arc-mask surfaces CreateConicArcStroke composites
+    // behind the silhouette. The silhouette clips every sample and hides any
+    // rotation wobble or off-centre footprint; here the whole pxSquare
+    // footprint rotates in the open.
     public enum NakedMaskPart
     {
-        Conic    = 1,   // raw 360° HSV rainbow ring, full square
+        Conic    = 1,   // the conic surface, graded for the chosen variant, full square
         ArcMask  = 2,   // alpha-ramped pie slice(s), monochrome
         Combined = 3,   // Conic ⊗ ArcMask, no stroke silhouette
     }
 
-    // Disposable bundle returned by CreateNakedMaskPreview. Mirrors the
-    // ProcessingStroke pattern on purpose: the rotation PropertySets
-    // returned by StartRotation drive two Forever ScalarKeyFrameAnimations
-    // that the compositor keeps live until they are explicitly stopped.
-    // If the caller (PlaygroundWindow) lets the PropertySets fall out of
-    // scope on every rebuild, the compositor accumulates orphan
-    // animations; after enough slider moves it saturates and Forever
-    // animations across the whole window silently freeze — which is the
-    // "Conic preview frozen mid-animation" regression that was reported.
-    //
-    // Ownership convention: the caller holds the NakedPreview while the
-    // bundle is mounted on the visual tree, disposes it BEFORE replacing
-    // it with a fresh one (and before the host Window closes). Dispose
-    // stops both rotations' Linear + Eased animations and releases every
-    // Composition object the bundle allocated.
+    // Each rotation PropertySet carries two Forever ScalarKeyFrameAnimations
+    // that the compositor keeps until they are stopped. Orphaned on every
+    // rebuild, they accumulate until the compositor saturates and every
+    // Forever animation in the window freezes. The caller disposes the bundle
+    // before mounting a replacement and before its window closes.
     public sealed class NakedPreview : IDisposable
     {
         public ContainerVisual Container { get; }
@@ -89,10 +74,8 @@ public static partial class HudComposition
             if (_disposed) return;
             _disposed = true;
 
-            // 1. Stop every Forever animation so the native scheduler drops
-            //    its refs. ExpressionAnimation on the brush's TransformMatrix
-            //    is what binds the PropertySet scalars; stop it first so
-            //    stopping the scalars doesn't race against a live read.
+            // Stop the TransformMatrix expressions before the scalars they
+            // read, so stopping the scalars cannot race a live evaluation.
             try { _conicBrush.StopAnimation("TransformMatrix");   } catch { }
             try { _arcMaskBrush.StopAnimation("TransformMatrix"); } catch { }
 
@@ -101,10 +84,7 @@ public static partial class HudComposition
             try { _arcRotationProps.StopAnimation("Linear");   } catch { }
             try { _arcRotationProps.StopAnimation("Eased");    } catch { }
 
-            // 2. Dispose in the same order the shipping stroke uses:
-            //    effect brush first (it binds the source brushes), then
-            //    surface brushes, then surfaces, then property sets, then
-            //    the sprite + container last.
+            // Effect brush first: it binds the source brushes.
             try { _effectBrush?.Dispose();   } catch { }
             try { _conicBrush.Dispose();     } catch { }
             try { _arcMaskBrush.Dispose();   } catch { }
@@ -120,39 +100,12 @@ public static partial class HudComposition
         }
     }
 
-    // Returns a ContainerVisual sized pxSquare × pxSquare — the same
-    // visual-diagonal coverage the shipping stroke bakes its rotating
-    // brush into. Inside sits one SpriteVisual filling that container,
-    // with a brush chosen by `part`:
-    //   - Conic    : SurfaceBrush over the painted conic surface.
-    //   - ArcMask  : SurfaceBrush over the painted arc mask surface.
-    //   - Combined : CompositionEffectBrush running AlphaMaskEffect on
-    //                the two surfaces, identical to the first mask stage
-    //                in CreateConicArcStroke but WITHOUT the stroke
-    //                silhouette alpha stage — exposes the full pre-clip
-    //                arc geometry to the eye.
+    // A pxSquare container (the stroke's diagonal footprint) holding one
+    // sprite whose brush `part` picks. Both brushes rotate around the sprite
+    // centre, so a surface painted off that centre shows as a drifting lobe.
     //
-    // Both brushes spin independently at HuePeriodSeconds /
-    // ArcPeriodSeconds around the sprite's geometric centre
-    // (pxSquare / 2). If the rotation centre and the brush-painting
-    // centre disagree (the working hypothesis behind the top/bottom
-    // luminance asymmetry observation), the wobble reads immediately on the naked
-    // preview as a drifting lobe or a wandering dead-spot.
-    //
-    // No effect-pipeline colour knobs (Saturation / Hue / Exposure) —
-    // those are state-blend concerns; the diagnostic is about geometry,
-    // and stripping the colour pipeline keeps the visual signal focused
-    // on where each lobe actually lands.
-    //
-    // `arcFillColor` — the caller picks a theme-legible opaque colour for
-    // the arc mask surface (black on light substrates, white on dark). The
-    // Combined path composites through AlphaMaskEffect and reads only the
-    // mask's .A, so the colour is invisible there; the ArcMask rail draws
-    // the mask directly and relies on this colour to show up against the
-    // window's LayerFillColorDefaultBrush in both themes.
-    //
-    // Returns a NakedPreview bundle the caller MUST hold and Dispose when
-    // replaced — see the type-level comment on NakedPreview for why.
+    // `arcFillColor` is a theme-legible opaque colour for the ArcMask part,
+    // which draws the mask directly; Combined reads only its alpha.
     public static NakedPreview CreateNakedMaskPreview(
         Compositor compositor, Vector2 hudSize,
         ConicArcStrokeConfig cfg, NakedMaskPart part,
@@ -160,10 +113,8 @@ public static partial class HudComposition
         ProcessingVariant gradeVariant, bool isDark,
         bool animationsEnabled = true)
     {
-        // Reuse the exact pxSquare math from CreateConicArcStroke so the
-        // naked preview paints the same brush footprint. Any drift here
-        // would invalidate the diagnostic — the user would be looking at
-        // a different geometry than the shipping stroke samples.
+        // Same pxSquare math as CreateConicArcStroke: a different footprint
+        // would show a geometry the stroke never samples.
         var innerSize = new Vector2(hudSize.X - 2f * cfg.InsetDip, hudSize.Y - 2f * cfg.InsetDip);
         int pxSquare = (int)Math.Ceiling(Math.Sqrt(
             (double)innerSize.X * innerSize.X +
@@ -180,30 +131,16 @@ public static partial class HudComposition
         var conicSurface   = PaintConicSurface  (canvasDevice, graphicsDevice, pxSquare, cfg);
         var arcMaskSurface = PaintArcMaskSurface(canvasDevice, graphicsDevice, pxSquare, cfg, arcFillColor);
 
-        // Stretch.Fill — source is pxSquare, sprite is pxSquare, map 1:1.
-        // (CreateConicArcStroke uses Stretch.None because its sprite is
-        // innerSize, not pxSquare; here the sprite IS pxSquare so Fill
-        // lands trivially.)
+        // Fill, unlike the stroke's Stretch.None: here the sprite is pxSquare,
+        // the same size as the surface.
         var conicBrush = compositor.CreateSurfaceBrush(conicSurface);
         conicBrush.Stretch = CompositionStretch.Fill;
 
         var arcMaskBrush = compositor.CreateSurfaceBrush(arcMaskSurface);
         arcMaskBrush.Stretch = CompositionStretch.Fill;
 
-        // Rotate around the sprite's OWN centre. The shipping stroke
-        // rotates around the visual centre (innerSize/2) because its
-        // sprite is innerSize and the surface is oversized pxSquare; here
-        // the sprite is pxSquare and the surface is pxSquare, so the
-        // correct rotation centre is pxSquare/2. This is the whole point
-        // of the diagnostic: if the brush's painted centre doesn't match
-        // pxSquare/2, the naked preview will show a wobble the shipping
-        // stroke silently masks.
         var centre = new Vector2(pxSquare / 2f, pxSquare / 2f);
 
-        // Capture the returned PropertySets — see NakedPreview class
-        // comment. Letting them die on GC leaks two Forever animations
-        // per rebuild and eventually freezes every Composition animation
-        // in the window.
         var conicRotationProps = StartRotation(
             compositor, conicBrush, centre,
             cfg.HuePeriodSeconds,
@@ -231,9 +168,6 @@ public static partial class HudComposition
         {
             case NakedMaskPart.Conic:
             {
-                // Grade the bare cone like the live stroke in the chosen state
-                // (Transcribing ⇒ grey, Rewriting ⇒ colour) so the toggle reads
-                // the same as the pinned reveal. Static seed — no state blend here.
                 var graded = BuildVariantGrading(
                     new CompositionEffectSourceParameter("Conic"), cfg, gradeVariant, isDark);
                 var ef = compositor.CreateEffectFactory(graded);
@@ -243,15 +177,11 @@ public static partial class HudComposition
                 break;
             }
             case NakedMaskPart.ArcMask:
-                // Pure alpha mask — Sat/Hue/Exp are a no-op on a white monochrome
-                // surface, so the variant toggle leaves it untouched.
+                // Ungraded: Sat/Hue/Exp would be a no-op on the monochrome mask.
                 sprite.Brush = arcMaskBrush;
                 break;
             case NakedMaskPart.Combined:
             {
-                // Conic ⊗ Arc, with the conic graded for the chosen state first —
-                // output = (graded.RGB, graded.A · Arc.A). Same masking stage as
-                // the shipping stroke, minus the silhouette.
                 var graded = BuildVariantGrading(
                     new CompositionEffectSourceParameter("Conic"), cfg, gradeVariant, isDark);
                 var effectGraph = new AlphaMaskEffect
@@ -276,10 +206,4 @@ public static partial class HudComposition
             conicSurface, arcMaskSurface,
             conicRotationProps, arcRotationProps);
     }
-
-    // OklchToRgb + LinearToSrgb moved to Deckle.Composition module
-    // 2026-05-02 — see Primitives/ColorSpace.cs. The methods are pure
-    // math and stayed in the same namespace, so the call to
-    // ColorSpace.OklchToRgb in PaintConicSurface resolves via the
-    // cross-assembly project reference.
 }
