@@ -12,9 +12,9 @@ namespace Deckle.Audio;
 // microphone signal and the fully processed one:
 //     out[i] = raw[i] + (processed[i] - raw[i]) * strength
 // so 0 is the raw take, 1 is exactly what dictation feeds the ASR backend, and
-// 0.25 / 0.75 sit a quarter and three quarters of the way between. This is the
-// lead's interpretation of Louis's "curseurs a 25 % et 75 %", not a parameter
-// of the DSP itself. The blend is well defined because every stage of
+// 0.25 / 0.75 sit a quarter and three quarters of the way between. Strength is
+// a listening-test notion, not a parameter of the DSP. The blend is well
+// defined because every stage of
 // TranscriptionPreprocessor is sample-aligned (the limiter has no look-ahead):
 // processed[i] is the treatment of raw[i], never of a shifted sample.
 //

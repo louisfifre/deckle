@@ -9,11 +9,7 @@
 
     <!-- Same canvas pattern as GeneralPage / DiagnosticsPage / WhisperPage:
          Grid wrapper + StackPanel MaxWidth=1000 + SettingsCardSpacing=4 +
-         section headers in BodyStrong + Margin 1,30,0,6. Page extracted
-         from GeneralPage in slice S3 ; auto-paste + overlay HUD were
-         moved back to GeneralPage (Behaviour section) in pass2. What's
-         left here is the capture pipeline itself : microphone device
-         and voice level window calibration. -->
+         section headers in BodyStrong + Margin 1,30,0,6. -->
     <Page.Resources>
         <x:Double x:Key="SettingsCardSpacing">4</x:Double>
         <!-- Listening-test strengths, passed as CommandParameter: typed doubles
@@ -74,35 +70,23 @@
                               SelectionChanged="AudioInputCombo_SelectionChanged" />
                 </controls:SettingsCard>
 
-                <!-- Maximum recording length — composed ComboBox, "No limit" by
-                     default. RecordingPage.ComposeRecordingLimitSection() declares
-                     it as a Choice SettingDescriptor (RecordingViewModel.Settings.cs);
-                     it sits under the microphone because both shape every take. -->
+                <!-- Maximum recording length — composed ComboBox, declared in
+                     RecordingViewModel.Settings.cs; it sits under the microphone
+                     because both shape every take. -->
                 <StackPanel x:Name="RecordingLimitHost"
                             Spacing="{StaticResource SettingsCardSpacing}" />
 
-                <!-- Transcription pre-processing — the DSP black box. Single
-                     opt-in toggle ; the fine parameters live in the Playground.
-                     The description carries the deferred-activation contract
-                     (enabled now, active after a few measured recordings).
-
-                     Composed region — the lone composable card on this page.
-                     RecordingPage.ComposePreprocessingSection() declares it as a
-                     SettingDescriptor (RecordingViewModel.Settings.cs) and the
-                     composer builds the SettingsCard into this host. It sits
-                     between two bespoke cards (the microphone ComboBox above, the
-                     mic-check button below), so the host holds just this one
-                     toggle — composed and hand-authored cards interleave freely
+                <!-- Transcription pre-processing — the DSP black box, a single
+                     composed opt-in toggle. Each composed region gets its own
+                     host, so composed and hand-authored cards interleave freely
                      in the same StackPanel. -->
                 <StackPanel x:Name="PreprocessingHost"
                             Spacing="{StaticResource SettingsCardSpacing}" />
 
-                <!-- Microphone level check — the indicator. Speak a few seconds;
-                     Deckle reads the level, projects where the DSP would land it,
-                     and advises whether turning the toggle on is worth it. No
-                     transcription, no auto-decision — the user decides. The
-                     button self-disables while measuring (AsyncRelayCommand);
-                     the InfoBars toggle on plain bool flags (InfoBar.IsOpen), so
+                <!-- Microphone level check — the indicator. Deckle reads the
+                     level, projects where the DSP would land it, and advises
+                     whether turning the toggle on is worth it; the user decides.
+                     The InfoBars toggle on plain bool flags (InfoBar.IsOpen), so
                      no value converter is involved. -->
                 <controls:SettingsCard x:Name="MicCheckCard"
                                        x:Uid="RecordingPageMicCheckCard"
@@ -141,13 +125,9 @@
 
                 <!-- Listening test — hear the pre-processing. Record a take once
                      (ListeningTester.TakeSeconds), then play it back on the default
-                     output device in four variants. No microphone loop, nothing
-                     saved, nothing transcribed. Same command + bool-flag InfoBars
-                     pattern as the mic check above. The playback card stays
-                     collapsed until a take exists (bool → Visibility, implicit in
-                     x:Bind); its four buttons share one RelayCommand<double>, each
-                     passing a strength declared as an x:Double in Page.Resources so
-                     a boxed double, not a string, reaches the command. -->
+                     output device in four variants. Nothing saved, nothing
+                     transcribed. The playback card stays collapsed until a take
+                     exists (bool → Visibility, implicit in x:Bind). -->
                 <controls:SettingsCard x:Name="ListeningTestCard"
                                        x:Uid="RecordingPageListeningTestCard"
                                        Tag="RecordingPageListeningTestCard"
@@ -195,21 +175,15 @@
                 <!-- Voice level window — the calibration group, composed. The
                      master toggle is "set the window manually": ON reveals the
                      three sliders, OFF re-enables auto-calibration and the Group
-                     hides them. RecordingPage.ComposeVoiceLevelSection() declares
-                     it as a Group SettingDescriptor (RecordingViewModel.Settings.cs)
-                     with master selectors projecting the inverse of
-                     LevelWindowAutoCalibration; the sliders push live into
-                     AudioLevelMapper via the VM setters' SettingsHost.ApplyLevelWindow. -->
+                     hides them, so the master projects the inverse of
+                     LevelWindowAutoCalibration (RecordingViewModel.Settings.cs).
+                     The VM setters push the sliders live into AudioLevelMapper. -->
                 <StackPanel x:Name="VoiceLevelHost"
                             Spacing="{StaticResource SettingsCardSpacing}" />
 
-                <!-- Diagnostics — the microphone-telemetry opt-in, relocated here from
-                     the shared Diagnostics page because it observes this module's
-                     capture pipeline. A privacy opt-in, so this section carries NO
-                     section-reset link (it is never reset from here).
-                     RecordingPage.ComposeTelemetrySection() declares the toggle as a
-                     SettingDescriptor (RecordingViewModel.Settings.cs) and the composer
-                     builds the SettingsCard into this host. -->
+                <!-- Diagnostics — the microphone-telemetry opt-in, composed. A
+                     privacy opt-in, so this section carries NO section-reset link
+                     (it is never reset from here). -->
                 <TextBlock x:Uid="RecordingPageTelemetryHeader"
                            Style="{StaticResource SettingsSectionHeaderTextBlockStyle}" />
                 <StackPanel x:Name="TelemetryHost"

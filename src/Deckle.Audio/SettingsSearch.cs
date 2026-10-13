@@ -12,20 +12,17 @@ namespace Deckle.Audio;
 //
 // Declared here as a plain static list rather than derived from the page or the
 // ViewModel because neither is available at indexing time: the composed cards live
-// as instance properties of RecordingViewModel (PreprocessingSettings, ...), which
-// cannot be materialized without constructing the VM and its capture-side effects,
-// and the page composes lazily on first navigation. So the searchable surface is
-// spelled out declaratively, keyed by the same LabelKey the composer stamps onto
-// each card's Tag — composed cards named exactly as their manifest descriptors, the
-// two hand-authored cards named as their x:Uid. The index resolves the display text
-// from this module's PRI subtree; the Literal* escapes stay unused here since every
-// card carries a "<LabelKey>/Header" entry.
+// as instance properties of RecordingViewModel, which cannot be materialized
+// without constructing the VM and its capture-side effects, and the page composes
+// lazily on first navigation. Entries are keyed by the same LabelKey the composer
+// stamps onto each card's Tag — composed cards named exactly as their manifest
+// descriptors, hand-authored cards named as their x:Uid.
 //
 // Maintenance contract: one card added to the page — composed or bespoke — is one
 // entry added here. The individual voice-level sliders are deliberately absent: they
 // belong to the GeneralVoiceLevelExpander group and stay collapsed while
-// auto-calibration is on (the default), so a hit on one could not be brought into
-// view; the group card is the reliable, single search target for the whole window.
+// auto-calibration is on, so a hit on one could not be brought into view; the
+// group card is the reliable, single search target for the whole window.
 public static class SettingsSearch
 {
     public static IReadOnlyList<SettingSearchEntry> Entries { get; } =

@@ -6,18 +6,12 @@ namespace Deckle.Audio;
 //   Completed  — normal user-driven Stop OR cancellation token fired.
 //                Audio is in Pcm.
 //   CapHit     — the host's MaxRecordingDurationSeconds was reached. Audio
-//                captured up to the cap is in Pcm; the orchestrator is
-//                expected to emit the "hit the N min cap" narrative and
-//                continue the pipeline normally.
+//                captured up to the cap is in Pcm; the pipeline continues
+//                normally.
 //   MicError   — waveInOpen failed. Pcm is empty. MmsysErr carries the raw
-//                MMSYSERR value; the orchestrator maps it to user-visible
-//                strings via Loc.Get on its side.
-//   Cancelled  — the cancellation token fired before any audio was usable
-//                (kept distinct from Completed for orchestrators that want
-//                to short-circuit Transcribe). MicrophoneCapture itself
-//                does not currently produce this — Stop via CT today flushes
-//                whatever audio was recorded and returns Completed. Reserved
-//                for future use (Dispose-style hard cancel).
+//                MMSYSERR value for the orchestrator to localize.
+//   Cancelled  — never produced by MicrophoneCapture: a Stop through the
+//                token returns Completed with the audio recorded so far.
 public enum CaptureOutcome
 {
     Completed,
@@ -30,9 +24,8 @@ public enum CaptureOutcome
 // (PCM16 normalized). Telemetry is null only when the recording was too
 // short to produce any RMS sample (or on MicError).
 //
-// DrainDuration brackets the post-Stop drain phase — exposed so the
-// caller's LatencyPayload builder can isolate it from the rest of the
-// stop-to-pipeline cost (matches the legacy _recordDrainSw semantics).
+// DrainDuration brackets the post-Stop drain phase, so the pipeline timings
+// can isolate it from the rest of the stop-to-pipeline cost.
 //
 // MmsysErr is 0 unless Outcome == MicError.
 public readonly record struct CaptureResult(

@@ -4,12 +4,9 @@ namespace Deckle.Audio;
 
 // ── RecordingSettingsModule ───────────────────────────────────────────────────
 //
-// The audio-capture module's nav identity for the Settings shell. Recording used
-// to be a static anchor in SettingsWindow.xaml; the Move H relocation makes it a
-// registered module page like the others, so the module owns its page, icon and
-// label key here and the composition root supplies only the Order. Order 50 keeps
-// it first in the module band — right after General, before the other modules —
-// exactly where the static anchor sat.
+// The audio-capture module's nav identity for the Settings shell. The module
+// owns its page, icon and label key here; the composition root supplies only the
+// Order.
 public static class RecordingSettingsModule
 {
     public static SettingsModuleDescriptor Describe(int order) => new()

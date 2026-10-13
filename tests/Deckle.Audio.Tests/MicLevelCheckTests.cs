@@ -4,11 +4,8 @@ using Xunit;
 
 namespace Deckle.Audio.Tests;
 
-// Microphone level indicator: speak for a few seconds, it says whether the DSP
-// is worth it. These tests pin the verdict (recommended / borderline / not
-// useful) according to the gap from target level, and the fact that the "after"
-// lands on target: the measurement that speaks for itself, without
-// transcription or WER.
+// MicLevelCheck judges whether the DSP is worth it from the level deficit to the
+// target alone, with no transcription or WER.
 [Trait("Category", "unit")]
 public class MicLevelCheckTests
 {
@@ -46,7 +43,6 @@ public class MicLevelCheckTests
     [Fact]
     public void MicAlreadyAtTargetIsNotNeeded()
     {
-        // No deficit → nothing to gain.
         var a = MicLevelCheck.Assess(SineAtDbfs(-20.0), AtTarget());
 
         Assert.Equal(PreprocessingAdvice.NotNeeded, a.Advice);
@@ -74,7 +70,6 @@ public class MicLevelCheckTests
     [Fact]
     public void EmptyCaptureHasNoSignal()
     {
-        // Mic error / silence → no verdict, the UI shows a "couldn't read" state.
         var a = MicLevelCheck.Assess(Array.Empty<float>(), AtTarget());
 
         Assert.False(a.HasSignal);

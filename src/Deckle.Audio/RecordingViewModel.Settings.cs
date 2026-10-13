@@ -10,10 +10,9 @@ namespace Deckle.Audio;
 // its kind, its localization key, its glyph, and typed selectors onto this VM's
 // own properties — and SettingsComposer turns the list into SettingsCards.
 //
-// The microphone ComboBox (runtime waveIn enumeration) and the mic-check command
-// + InfoBars (diagnostic readouts, not values) stay hand-authored in the page —
-// neither fits the flat get/set descriptor model. The capture-pipeline toggle and
-// the voice-level window migrate here.
+// The microphone ComboBox (runtime waveIn enumeration) and the mic-check and
+// listening-test commands + InfoBars (diagnostic readouts, not values) stay
+// hand-authored in the page — neither fits the flat get/set descriptor model.
 public partial class RecordingViewModel
 {
     // Maximum recording length — a ComboBox of fixed durations, the Windows 11
@@ -39,11 +38,7 @@ public partial class RecordingViewModel
             defaultValue: () => new CaptureSettings().MaxRecordingDurationSeconds),
     ];
 
-    // Transcription pre-processing (the DSP black box). A single opt-in toggle;
-    // the change handler (OnPreprocessingEnabledChanged → PushToSettings) and
-    // persistence are unchanged, the composer only drives the UI. Reuses the
-    // existing x:Uid as the localization key.
-    //
+    // Transcription pre-processing (the DSP black box). A single opt-in toggle.
     // The default selector reads the POCO initializer (new PreprocessingSettings().Enabled),
     // so the resettable default and the persisted default are the one same literal —
     // the per-card reset goes active exactly when the toggle leaves that value.
@@ -61,19 +56,16 @@ public partial class RecordingViewModel
     // OFF. Here the three sliders are the MANUAL window, and they matter precisely
     // when auto-calibration is OFF (auto overwrites them from measured percentiles).
     // So the master is "set the level window manually" — true when auto is off — and
-    // the selectors project the inverse of LevelWindowAutoCalibration. The VM
-    // property and its OnLevelWindowAutoCalibrationChanged side effect are unchanged;
-    // only this projection flips the bool. The child setters carry the live
-    // AudioLevelMapper push (SettingsHost.ApplyLevelWindow) untouched. Bounds copied
-    // verbatim from the former hand-authored SettingsExpander.
+    // the selectors project the inverse of LevelWindowAutoCalibration. Only this
+    // projection flips the bool; the VM property keeps auto-calibration semantics.
+    // The child setters carry the live AudioLevelMapper push.
     //
     // Defaults read the POCO initializer (new LevelWindowSettings().<Field>) — the
-    // single source of truth, the same literals SettingsService persists. The master
-    // default mirrors the master's own inversion: master = "set manually" =
-    // !AutoCalibrationEnabled, so its default is !new LevelWindowSettings().
-    // AutoCalibrationEnabled. Each child slider takes its raw field as a double; the
-    // float→double widening is implicit. The group's reset thus restores the shipping
-    // calibration window and re-arms auto-calibration in one gesture.
+    // single source of truth. The master default mirrors the master's own inversion:
+    // master = "set manually" = !AutoCalibrationEnabled, so its default is
+    // !new LevelWindowSettings().AutoCalibrationEnabled. The group's reset thus
+    // restores the shipping calibration window and the POCO's auto-calibration
+    // default (off) in one gesture.
     public IReadOnlyList<SettingDescriptor> VoiceLevelSettings =>
     [
         Setting.Group("GeneralVoiceLevelExpander",
@@ -100,13 +92,12 @@ public partial class RecordingViewModel
             defaultValue: () => !new LevelWindowSettings().AutoCalibrationEnabled),
     ];
 
-    // Microphone telemetry — the per-recording RMS-distribution opt-in, relocated
-    // here from the shared Diagnostics page because it observes THIS module's capture
-    // pipeline. One toggle, gated by the shell's consent dialog through the Catalog
-    // registry (TelemetryConsent.RequestMicrophone, a method group the App wires at
-    // boot) — so the module gates its enable behind consent without referencing the
-    // shell. No defaultValue: a privacy opt-in carries no per-card reset affordance,
-    // and this section hosts no section-reset link either.
+    // Microphone telemetry — the per-recording RMS-distribution opt-in. One toggle,
+    // gated by the shell's consent dialog through the Catalog registry
+    // (TelemetryConsent.RequestMicrophone, a method group the App wires at boot) —
+    // so the module gates its enable behind consent without referencing the shell.
+    // No defaultValue: a privacy opt-in carries no per-card reset affordance, and
+    // this section hosts no section-reset link either.
     public IReadOnlyList<SettingDescriptor> TelemetrySettings =>
     [
         Setting.Toggle("RecordingMicrophoneTelemetryCard",

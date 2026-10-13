@@ -1,15 +1,10 @@
 namespace Deckle.Audio;
 
-// PCM16 mono ↔ float helpers shared between the polling loop and the
-// telemetry calculator. All functions are pure; they never touch waveIn
-// state. `internal` because Capture is the only consumer — the warmup
-// path inside TranscriptionEngine loads its priming WAV via TryLoadWarmupClip,
-// not through this conversion.
+// PCM16 mono ↔ float helpers for this module's capture, render and telemetry.
+// All functions are pure; they never touch waveIn state.
 internal static class PcmConversion
 {
-    // PCM16 little-endian → float [-1, 1]. Allocates a single output array
-    // sized to the sample count. Used at the very end of MicrophoneCapture
-    // .Record to hand a flat float buffer to whisper_full.
+    // PCM16 little-endian → float [-1, 1].
     public static float[] PcmToFloat(byte[] pcm)
     {
         int n = pcm.Length / 2;
@@ -22,11 +17,10 @@ internal static class PcmConversion
         return result;
     }
 
-    // float [-1, 1] → PCM16 little-endian. The inverse of PcmToFloat, used by
-    // the speaker render path (SpeakerOutput) before handing bytes to waveOut.
-    // Clamps out-of-range input so a synthesis overshoot can't wrap around to
-    // the opposite sign. Scales by 32767 (full-scale positive); PcmToFloat
-    // divides by 32768, so the round-trip stays within one LSB.
+    // float [-1, 1] → PCM16 little-endian. Clamps out-of-range input so a
+    // synthesis overshoot can't wrap around to the opposite sign. Scales by
+    // 32767 (full-scale positive); PcmToFloat divides by 32768, so the
+    // round-trip stays within one LSB.
     public static byte[] FloatToPcm16(float[] samples)
     {
         var pcm = new byte[samples.Length * 2];
@@ -43,20 +37,13 @@ internal static class PcmConversion
     }
 
     // Linear RMS → dBFS. Floors at -120 dBFS for a pure-zero buffer so the
-    // log domain never sees 0 (the conventional "digital silence" floor —
-    // the -96.7 dBFS we used to see corresponded to a single-LSB residual
-    // from a zero-initialised buffer, indistinguishable from true silence
-    // and historically misleading).
+    // log domain never sees 0 (the conventional "digital silence" floor).
     public static double ToDbfs(float linear) =>
         linear > 0f ? 20.0 * System.Math.Log10(linear) : -120.0;
 
     // Full-buffer dBFS — single pass over a PCM16 mono buffer, returns the
     // 20*log10(rms) value floored at -120 dBFS for a pure-zero buffer (so the
-    // log domain never sees 0). Used by the live low-audio tracker in the
-    // recording polling loop; intentionally coarse (whole-buffer average
-    // rather than per sub-window) because the tracker is already running
-    // at buffer cadence and we don't need finer granularity for a "did it
-    // stay quiet for 5 s?" check.
+    // log domain never sees 0).
     public static double ComputeBufferDbfs(byte[] pcm16)
     {
         int nSamples = pcm16.Length / 2;

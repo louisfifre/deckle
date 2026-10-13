@@ -11,69 +11,53 @@ namespace Deckle.Audio;
 // Microphone capture engine — owns the waveIn handle, the polling loop,
 // the per-recording RMS log, and the post-recording telemetry payload.
 //
-// Designed as a service consumed by orchestrators (today: TranscriptionEngine;
-// future: Ask-Ollama). Capture has no notion of pipeline state — it just
-// blocks in Record() until the cancellation token fires or the duration
-// cap hits, then returns the captured float[] and a structured outcome.
+// Capture has no notion of pipeline state — it just blocks in Record() until
+// the cancellation token fires or the duration cap hits, then returns the
+// captured float[] and a structured outcome.
 //
-// Lifetime: one instance per orchestrator, created at orchestrator
-// construction, disposed at orchestrator disposal. Probe() and Record()
-// are NOT re-entrant on a single instance — the orchestrator's state
-// machine (Idle → Starting → Recording → Stopping) already serializes.
+// Probe() and Record() are NOT re-entrant on a single instance — the
+// orchestrator's state machine (Idle → Starting → Recording → Stopping)
+// serializes them.
 //
 // All public events fire from the recording thread (the thread that
 // called Record()). Subscribers are responsible for marshaling to the
 // UI thread.
 public sealed class MicrophoneCapture : IMicrophoneCapture
 {
-    // Constants (matches the legacy Record() body). 50 ms buffers (1600
-    // bytes) so AudioLevel events fire at a steady ~20 Hz spread across
-    // time, not in bursts of 10 every 500 ms. 500 ms bursts were the
-    // original size — trivial driver workload back then but catastrophic
-    // for a real-time HUD animation because the outline couldn't react
-    // inside a spoken word. 4 circular buffers give 200 ms of headroom
-    // if the drain loop stalls, still enough on any modern scheduler.
-    // 20 waveIn callbacks/s is a no-op for modern drivers (WASAPI defaults
-    // to 10 ms periods).
+    // 50 ms buffers (1600 bytes) so AudioLevel events fire at a steady ~20 Hz:
+    // larger buffers arrive in bursts, and the HUD outline cannot react inside a
+    // spoken word. 4 circular buffers give 200 ms of headroom if the drain loop
+    // stalls.
     private const uint WAVE_MAPPER    = 0xFFFFFFFF;
     private const uint CALLBACK_EVENT = 0x00050000;
     private const int  N_BUFFERS      = 4;
     private const int  BYTES_PER_BUF  = 16000 * 2 * 50 / 1000; // 50ms × 16kHz × 2 bytes/sample
 
-    // Per-recording RMS history — one linear-RMS sample per 50 ms sub-window
-    // (so ~20 Hz). Cleared at every Record() entry, fed by EmitSubWindows
-    // in flow order (in WaveInLoop). Drives:
-    //   - the Tail-600 ms diagnostic at Stop (last 12 samples — sidesteps the
-    //     bytes-buffer ordering ambiguity of the old re-computation path),
-    //   - the per-recording mic telemetry summary (min / percentiles / max
-    //     in dBFS) used to calibrate MinDbfs / MaxDbfs against the actual
-    //     hardware response.
-    // Pre-reserved for ~10 minutes at 20 Hz; the List grows past that without
-    // a resize allocation explosion thanks to standard doubling.
+    // Per-recording RMS history — one linear-RMS sample per 50 ms sub-window,
+    // appended by WaveInLoop.EmitSubWindows. Cleared at every Record() entry.
+    // Drives the tail diagnostic at Stop and the per-recording mic telemetry
+    // summary that auto-calibration reads.
     private readonly List<float> _rmsLog = new(capacity: 20 * 60 * 10);
 
-    // Microphone level, linear RMS [0, 1], throttled ~20 Hz (one emission per
-    // 50 ms sub-window of the captured audio). Fired from the recording thread.
+    // Microphone level, linear RMS [0, 1], one emission per 50 ms sub-window
+    // (~20 Hz).
     public event System.Action<float>? AudioLevel;
 
-    // Per-sub-window capture frame (50 ms PCM float[-1, 1] + its linear RMS),
-    // fired ~20 Hz from the recording thread. Opt-in: when nothing is subscribed
-    // at Record() entry, the loop skips the float conversion entirely and only
-    // AudioLevel fires (the HUD path pays nothing). The streaming transcription
-    // socle subscribes to feed its energy segmenter; Capture stays unaware of
-    // that use — the frame says nothing about why we capture.
+    // Per-sub-window capture frame (50 ms PCM float[-1, 1] + its linear RMS).
+    // Opt-in: when nothing is subscribed at Record() entry, the loop skips the
+    // float conversion for the whole take and only AudioLevel fires, so a
+    // consumer must subscribe before calling Record().
     public event System.Action<CaptureFrame>? Frame;
 
     // Fired after waveInStart succeeds — the mic is now live and the first
-    // 50 ms buffer is on its way. Used by the orchestrator to close the
-    // hotkey-to-capture latency stopwatch (_hotkeySw in TranscriptionEngine).
+    // 50 ms buffer is on its way. The orchestrator closes its hotkey-to-capture
+    // latency stopwatch on it.
     public event System.Action? CaptureStarted;
 
     // Fired once during a Record() call when the live low-audio tracker
     // crossed its threshold (no sustained healthy voice in the first 5 s).
-    // The orchestrator is expected to surface a localized UserFeedback
-    // overlay (Engine_LowAudio_Title / Body) — Capture itself stays free
-    // of any Loc.Get dependency.
+    // The orchestrator surfaces the localized warning — Capture itself stays
+    // free of any Loc.Get dependency.
     public event System.Action? LowAudioDetected;
 
     public MicrophoneCapture()
@@ -85,8 +69,7 @@ public sealed class MicrophoneCapture : IMicrophoneCapture
     // Attempts waveInOpen + waveInClose in sequence with the target format and
     // configured device. If it passes, we know the recording session can start;
     // otherwise the MMSYSERR code maps to a MicErrorKind for the orchestrator
-    // to localize. Measured cost ~1-2 ms on a healthy device — negligible vs
-    // Whisper latency.
+    // to localize.
     public ProbeResult Probe(int deviceId)
     {
         var wfx = new WAVEFORMATEX
@@ -118,8 +101,6 @@ public sealed class MicrophoneCapture : IMicrophoneCapture
         return new ProbeResult(true, MicErrorKind.None, 0);
     }
 
-    // MMSYSERR → MicErrorKind (canonical mapping, mirrors the original
-    // DescribeMicError table). The orchestrator does the Loc.Get translation.
     private static MicErrorKind MapMmsysErr(uint err) => err switch
     {
         0 => MicErrorKind.None,
@@ -134,14 +115,15 @@ public sealed class MicrophoneCapture : IMicrophoneCapture
     // Captures the microphone continuously into a single resizable buffer.
     // When `ct` fires (set by RequestToggle on Recording → Stopping CAS in
     // the orchestrator) or the cap-duration branch hits internally, returns
-    // all accumulated audio as float[] (PCM16 → float [-1, 1]). Whisper
-    // handles its own internal windowing (30s + dynamic seek) and inter-
-    // window context propagation via tokens — no chunking here.
+    // all accumulated audio as float[] (PCM16 → float [-1, 1]). No chunking
+    // here: a consumer that needs utterances cuts them from the Frame stream.
     public CaptureResult Record(IAudioRecordingHost host, CancellationToken ct)
     {
         System.IntPtr hEvent = NativeMethods.CreateEvent(
             System.IntPtr.Zero, bManualReset: false, bInitialState: false, null);
 
+        // 16 kHz mono PCM16 is fixed, not a setting: Whisper expects it, and
+        // WaveInLoop, TranscriptionPreprocessor and AudioFileDecoder assume it.
         var wfx = new WAVEFORMATEX
         {
             wFormatTag      = 1,     // uncompressed PCM
@@ -153,7 +135,6 @@ public sealed class MicrophoneCapture : IMicrophoneCapture
             cbSize          = 0,
         };
 
-        // Device selected in Settings. -1 = WAVE_MAPPER (system default).
         int configuredDevice = host.AudioInputDeviceId;
         uint deviceId = configuredDevice < 0 ? WAVE_MAPPER : (uint)configuredDevice;
 
@@ -207,10 +188,10 @@ public sealed class MicrophoneCapture : IMicrophoneCapture
         }
         catch
         {
-            // Unprepare only headers that cleared waveInPrepareHeader (mirrors
-            // Pump's own drain unprepare). waveInReset is unnecessary: on this
-            // path the device was never successfully started — waveInStart is
-            // the last guarded statement, and if it threw no buffer ran.
+            // Unprepare only headers that cleared waveInPrepareHeader.
+            // waveInReset is unnecessary: on this path the device was never
+            // successfully started — waveInStart is the last guarded
+            // statement, and if it threw no buffer ran.
             for (int i = 0; i < prepared; i++)
             {
                 NativeMethods.waveInUnprepareHeader(hWaveIn, hdrPtrs[i], hdrSize);
@@ -224,9 +205,6 @@ public sealed class MicrophoneCapture : IMicrophoneCapture
             NativeMethods.CloseHandle(hEvent);
             throw;
         }
-        // Hotkey-to-capture latency closes here — the mic is now live and the
-        // first 50 ms buffer is on its way. The orchestrator's stopwatch
-        // (_hotkeySw in TranscriptionEngine) is closed via the CaptureStarted event.
         CaptureStarted?.Invoke();
 
         // Reset the per-recording RMS series — the previous session's tail
@@ -255,8 +233,7 @@ public sealed class MicrophoneCapture : IMicrophoneCapture
         {
             // waveInUnprepareHeader runs inside Pump's drain loop already; we
             // still need to free the unmanaged buffers + the device + event
-            // handle. Order matters: Close the device, then free per-buffer
-            // memory, then close the event.
+            // handle.
             for (int i = 0; i < N_BUFFERS; i++)
             {
                 Marshal.FreeHGlobal(bufPtrs[i]);
@@ -266,9 +243,6 @@ public sealed class MicrophoneCapture : IMicrophoneCapture
             NativeMethods.CloseHandle(hEvent);
         }
 
-        // pump.Pcm is null only if Pump threw before producing a byte buffer
-        // (which would have already propagated through the finally above —
-        // we'd never reach this line). Defensive guard kept for clarity.
         byte[] allBytes = pump.Pcm ?? System.Array.Empty<byte>();
         double totalSec = allBytes.Length / 32000.0;
 
@@ -302,17 +276,6 @@ public sealed class MicrophoneCapture : IMicrophoneCapture
                 rmsAvg, aggPeak, dbfsAvg);
         }
 
-        // Mic telemetry — distribution + tail summary derived from _rmsLog.
-        // Replaces the previous Tail-on-allBytes computation, which was
-        // returning RMS=0 (= -96.7 dBFS, the "uninitialised buffer" floor)
-        // even on sessions Whisper transcribed perfectly. Root cause:
-        // the post-Stop drain loop concatenates buffers in WHDR index order
-        // 0..N-1, which does not always match temporal order at Stop, so
-        // the last 600 ms read from the byte tail could land on an
-        // out-of-order or partially-zeroed buffer. _rmsLog is fed in flow
-        // order by EmitSubWindows (during Recording AND in the drain
-        // pass above), so its tail genuinely reflects the final ~600 ms
-        // of audio.
         MicrophoneTelemetryPayload? telemetry = null;
         var tail = MicrophoneTelemetryCalculator.ComputeTail(_rmsLog);
         if (tail is null)
@@ -339,13 +302,9 @@ public sealed class MicrophoneCapture : IMicrophoneCapture
             telemetry = MicrophoneTelemetryCalculator.Compute(_rmsLog, tail.Value);
         }
 
-        // Gate emission by the host's MicrophoneTelemetryEnabled toggle.
-        // The payload is always *computed* (auto-calibration depends on
-        // it); this flag only decides whether it's broadcast. Auto-
-        // calibration itself runs on the orchestrator side — it has access
-        // to the host's settings + ApplyLevelWindow callback. EventSource
-        // sees a single emission, flat parameters mirror the legacy payload
-        // properties one-for-one (see DeckleAudioSource.MicrophoneTelemetryRecorded).
+        // The payload is always *computed*: the orchestrator's auto-calibration
+        // reads it from the result. The host's toggle only decides whether it's
+        // broadcast.
         if (telemetry is not null && host.MicrophoneTelemetryEnabled)
         {
             DeckleAudioSource.Log.MicrophoneTelemetryRecorded(
@@ -384,9 +343,6 @@ public sealed class MicrophoneCapture : IMicrophoneCapture
     public void Dispose()
     {
         // No persistent native resource — all waveIn handles are scoped to a
-        // single Record() call and freed in its `finally`. Method is here to
-        // honour the contract advertised in the API surface and to give the
-        // class a stable shutdown point for future fields (e.g. a cached
-        // device-info cache).
+        // single Record() call and freed in its `finally`.
     }
 }

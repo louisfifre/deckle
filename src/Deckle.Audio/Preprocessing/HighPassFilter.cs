@@ -6,8 +6,8 @@ namespace Deckle.Audio;
 //
 // Second-order (12 dB/oct) Butterworth high-pass biquad, RBJ Audio-EQ
 // Cookbook coefficients, transposed direct-form II. One instance carries
-// its own two-sample state (z1, z2) — fresh per recording, since each take
-// is processed independently (no cross-take carry).
+// its own two-sample state (z1, z2) — fresh per Process call, since each
+// span is processed independently (no cross-span carry).
 //
 // Role in the chain: strip everything below the speech band — mains hum
 // (50/60 Hz), HVAC rumble, plosive thumps, table vibration — and the DC

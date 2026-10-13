@@ -1,18 +1,11 @@
 namespace Deckle.Audio;
 
 // Categorical decoding of MMSYSERR codes returned by waveInOpen during the
-// pre-flight probe. Capture stays free of any localization dependency:
-// the caller (TranscriptionEngine, App) maps MicErrorKind to user-visible strings
-// via Loc.Get on its side. The raw MMSYSERR value is also returned so the
-// caller can include it verbatim in error logs / format strings (the
-// "Unavailable_Body_Format" path uses {0} = err).
-//
-// Mapping (canonical, mirrors the original DescribeMicError table):
-//   0 (MMSYSERR_NOERROR)     → None         (probe succeeded)
-//   2 (MMSYSERR_BADDEVICEID) → NotDetected
-//   6 (MMSYSERR_NODRIVER)    → NotDetected
-//   4 (MMSYSERR_ALLOCATED)   → InUse
-//   anything else            → Unavailable
+// pre-flight probe (mapping in MicrophoneCapture.MapMmsysErr). Capture stays
+// free of any localization dependency: the caller maps MicErrorKind to
+// user-visible strings via Loc.Get on its side. The raw MMSYSERR value is also
+// returned so the caller can include it verbatim in error logs / format
+// strings (MicError_Unavailable_Body_Format uses {0} = err).
 public enum MicErrorKind
 {
     None,
@@ -22,7 +15,5 @@ public enum MicErrorKind
 }
 
 // Result of MicrophoneCapture.Probe. Two-step Probe + Record so the caller
-// can refuse to transition Idle → Starting when the mic is unavailable —
-// mirrors the original TryProbeMicrophone semantics. MmsysErr is forwarded
-// verbatim from waveInOpen.
+// can refuse to transition Idle → Starting when the mic is unavailable.
 public readonly record struct ProbeResult(bool Ok, MicErrorKind Kind, uint MmsysErr);

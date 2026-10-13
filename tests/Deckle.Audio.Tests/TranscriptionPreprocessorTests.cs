@@ -4,15 +4,9 @@ using Xunit;
 
 namespace Deckle.Audio.Tests;
 
-// Measurement layer 1: signal correction. The DSP is pure and deterministic,
-// so assert on what it does to the signal itself (reached level, high-pass
-// attenuation, limiter ceiling, non-mutation, determinism). Layer 2, real WER
-// gain, lives outside automatic scope (bench).
-//
-// All stages are exercised through the public TranscriptionPreprocessor.Process
-// API: isolate one stage by disabling the others. Trick: setting
-// MaxMakeupGainDb = 0 bounds makeup to [0,0] dB, which neutralizes it and lets
-// one stage be measured alone without parasitic renormalization.
+// The DSP is pure and deterministic, so these assert on what it does to the
+// signal itself, one stage at a time through the public Process API. The WER
+// gain is a bench question, outside unit scope.
 [Trait("Category", "unit")]
 public class TranscriptionPreprocessorTests
 {
@@ -20,7 +14,6 @@ public class TranscriptionPreprocessorTests
 
     // ── Helpers ────────────────────────────────────────────────────────────
 
-    // Sine of a given amplitude (peak) at a given frequency, `seconds` long.
     private static float[] Sine(double freqHz, double amplitude, double seconds = 1.0)
     {
         int n = (int)(SampleRate * seconds);
@@ -30,8 +23,9 @@ public class TranscriptionPreprocessorTests
         return x;
     }
 
-    // Settings with the whole chain bypassed — the neutral baseline a test
-    // opts stages into. Makeup neutralised via MaxMakeupGainDb = 0.
+    // The whole chain bypassed, the baseline a test opts stages into. Makeup has
+    // no switch: MaxMakeupGainDb = 0 clamps it to [0, 0] dB, so one stage is
+    // measured alone, without renormalization.
     private static PreprocessingSettings Bypassed() => new()
     {
         Enabled           = true,
@@ -75,7 +69,6 @@ public class TranscriptionPreprocessorTests
 
         var r = TranscriptionPreprocessor.Process(input, s);
 
-        // Lifted by the cap (24 dB), not all the way to target.
         Assert.Equal(-36.0, r.OutputRmsDbfs, 1.0);
         Assert.Equal(24.0, r.MakeupGainDb, 0.01);
     }
@@ -111,7 +104,6 @@ public class TranscriptionPreprocessorTests
         s.HighPassEnabled = true;
         s.HighPassHz      = 90f;
 
-        // Same amplitude, two frequencies: one below cutoff, one in band.
         var sub    = TranscriptionPreprocessor.Process(Sine(50, 0.5), s);
         var speech = TranscriptionPreprocessor.Process(Sine(1000, 0.5), s);
 

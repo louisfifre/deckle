@@ -8,12 +8,9 @@ namespace Deckle.Audio;
 // to what the AudioLevel event carries, BEFORE any perceptual mapping
 // (AudioLevelMapper).
 //
-// Use-agnostic, like the rest of this module: the frame says nothing about why
-// we capture. Today the streaming transcription socle subscribes to it to feed
-// its energy segmenter; a future consumer (Ask-Ollama) could segment the same
-// stream its own way. The HUD keeps using the lighter AudioLevel event — the
-// Frame event is opt-in and only pays the float conversion when something
-// subscribes.
+// Use-agnostic: the frame says nothing about why we capture. The Frame event is
+// opt-in and pays the float conversion only when something subscribes; the HUD
+// uses the lighter AudioLevel event.
 public readonly record struct CaptureFrame(
     System.ReadOnlyMemory<float> Samples,
     float Rms);

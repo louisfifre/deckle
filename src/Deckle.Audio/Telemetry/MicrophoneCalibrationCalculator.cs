@@ -1,49 +1,22 @@
 namespace Deckle.Audio;
 
-// Pure compute: derives a fresh (MinDbfs, MaxDbfs) pair from a ring buffer
-// of recent MicrophoneTelemetryPayload samples. Returns whether the
-// calibration should be applied (false on too-narrow window, on no-change,
-// etc.) so the orchestrator (TranscriptionEngine) can short-circuit the
-// SaveSettings + ApplyLevelWindow + log emission without re-implementing
-// the constants.
+// Pure compute: derives a fresh (MinDbfs, MaxDbfs) HUD level window from recent
+// MicrophoneTelemetryPayload samples. The caller (TranscriptionEngine) owns the
+// save, the live apply and the log, and skips them when ShouldUpdate is false.
 //
-// Strategy (constants preserved from the original TryAutoCalibrate):
-//   - MinDbfs = median(p25) - 5 dB  — p25 (not p10) so a noise gate
-//                                     cutting to digital silence
-//                                     (-97 dBFS) doesn't drag the
-//                                     floor into "anything below
-//                                     the gate threshold". Then
-//                                     -5 dB of headroom under the
-//                                     useful-signal minimum.
-//   - MaxDbfs = median(p90) + 5 dB  — voice ceiling with breathing
-//                                     room above routine peaks.
-//   - Floor clamp at -75 dBFS to guarantee we never sit on the gate
-//     even if p25 itself is in the noise floor.
-//   - Refuse to write if the resulting window collapses to < 10 dB
-//     (pathological case — e.g. all-silence sessions).
-//   - Clamp to slider domains so the persisted values stay editable.
-//   - Idempotent: returns ShouldUpdate=false when the new window is
-//     within 0.5 dB of the current one (avoids log spam on stable mics).
+// The floor reads p25, not p10: a noise gate that cuts to digital silence would
+// drag a lower percentile into the gated floor.
 public static class MicrophoneCalibrationCalculator
 {
-    // Result of the heuristic. When ShouldUpdate is false, RejectReason
-    // explains why — useful for diagnosis traces, not currently logged.
-    // NewMinDbfs / NewMaxDbfs are only meaningful when ShouldUpdate is true.
+    // NewMinDbfs / NewMaxDbfs are meaningful only when ShouldUpdate is true.
     public readonly record struct CalibrationResult(
         bool    ShouldUpdate,
         float   NewMinDbfs,
         float   NewMaxDbfs,
         string? RejectReason);
 
-    // Compute the new window. Caller is responsible for the ring buffer
-    // and for the SamplesNeeded count check (we don't get involved in
-    // ring-buffer management — the orchestrator owns it).
-    //
-    // `samples` must contain exactly `needed` (= LevelWindow.AutoCalibrationSamples)
-    // entries — caller checks this before calling. Behaviour with a smaller
-    // buffer is defined (median picks the middle entry of however many we
-    // get) but matches the legacy contract: callers wait until the buffer
-    // is full.
+    // The caller owns the ring buffer and calls only once it holds
+    // LevelWindow.AutoCalibrationSamples entries; no count check happens here.
     public static CalibrationResult Compute(
         System.Collections.Generic.IReadOnlyCollection<MicrophoneTelemetryPayload> samples,
         float currentMinDbfs,

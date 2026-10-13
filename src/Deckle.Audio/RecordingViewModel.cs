@@ -7,18 +7,14 @@ using System.Threading.Tasks;
 
 namespace Deckle.Audio;
 
-// ViewModel for RecordingPage — bridges CaptureSettings (audio device,
-// level window) to the XAML via x:Bind. Migrated from GeneralViewModel
-// in slice S3 ; in pass2 the Behaviour properties (auto-paste + overlay)
-// were moved to GeneralViewModel because they describe the app's overall
-// behaviour, not the capture pipeline. What remains here is microphone
-// device selection and voice level window calibration.
+// ViewModel for RecordingPage — bridges CaptureSettings to the XAML via
+// x:Bind.
 //
 // Pattern: Load() pulls from the POCOs, property changes push back via
 // PushToSettings(). The _isSyncing flag prevents re-saving during Load().
 // Level window changes also push directly into the AudioLevelMapper
-// statics via SettingsHost.ApplyLevelWindow so the HUD reflects the new
-// curve on the next sub-window without restart.
+// statics via AudioLevelMapper.Apply so the HUD reflects the new curve on
+// the next sub-window without restart.
 public partial class RecordingViewModel : ObservableObject
 {
     private bool _isSyncing;
@@ -60,18 +56,16 @@ public partial class RecordingViewModel : ObservableObject
         if (_isSyncing) return;
         DeckleSettingsUxSource.Log.SettingChanged("Preprocessing.Enabled", value.ToString());
         // On = active. The DSP self-adjusts on every recording (a no-op when
-        // the mic is already at target); the mic level check advises whether
-        // turning it on is worth it. No deferral, no auto-decision.
+        // the mic is already at target); the mic level check only advises
+        // whether turning it on is worth it.
         PushToSettings();
     }
 
     // ── Microphone level check (the indicator) ────────────────────────────────
     //
-    // Measures the mic and tells the user whether the pre-processing is worth
-    // turning on — no transcription, no auto-decision, the toggle stays their
-    // call. Four mutually-exclusive advice flags drive four InfoBars (IsOpen is
-    // a plain bool, so no value converter is needed); MicResultDetail carries
-    // the raw → normalised dBFS line shown alongside the verdict.
+    // Four mutually-exclusive advice flags drive four InfoBars (IsOpen is a
+    // plain bool, so no value converter is needed); MicResultDetail carries the
+    // raw → normalised dBFS line shown alongside the verdict.
 
     [ObservableProperty]
     public partial bool IsMeasuringMic { get; set; }
@@ -147,11 +141,10 @@ public partial class RecordingViewModel : ObservableObject
     [ObservableProperty]
     public partial bool LevelWindowAutoCalibration { get; set; }
 
-    // Slider drags fire ValueChanged on every step (50+ events per drag),
-    // so we keep the per-edit log line at Verbose level. PushToSettings
-    // is fine on every step (the file save is debounced one level deeper
-    // inside SettingsService); SettingsHost.ApplyLevelWindow ultimately
-    // writes a few static fields in Audio.AudioLevelMapper, also free.
+    // Slider drags fire ValueChanged on every step, so the per-edit log line
+    // stays at Verbose level. PushToSettings is fine on every step (the file
+    // save is debounced inside JsonSettingsStore); AudioLevelMapper.Apply
+    // writes a few static fields, also free.
     partial void OnLevelWindowMinDbfsChanged(double value)
     {
         if (_isSyncing) return;
@@ -185,11 +178,10 @@ public partial class RecordingViewModel : ObservableObject
 
     // ── Telemetry (microphone RMS distribution opt-in) ──────────────────────
     //
-    // A privacy opt-in relocated here from the shared Diagnostics page — it
-    // belongs to the capture pipeline it observes. It persists in its OWN store
-    // (TelemetrySettingsService, telemetry.json), not CaptureSettings, so it
-    // rides a dedicated PushTelemetryToSettings() rather than PushToSettings().
-    // The enable is gated by a consent dialog in the manifest (confirmOnEnable).
+    // A privacy opt-in that persists in its OWN store (TelemetrySettingsService,
+    // telemetry.json), not CaptureSettings, so it rides a dedicated
+    // PushTelemetryToSettings() rather than PushToSettings(). The enable is
+    // gated by a consent dialog in the manifest (confirmOnEnable).
 
     [ObservableProperty]
     public partial bool MicrophoneTelemetry { get; set; }
@@ -208,9 +200,7 @@ public partial class RecordingViewModel : ObservableObject
         _isSyncing = true;
 
         // Seed from the POCO initializers, not hand-copied literals — the same
-        // single source the composer's reset defaults read. The level-window and
-        // pre-processing values thus live in ONE place (the audio settings POCOs);
-        // duplicating them here was the third copy that drifted. The device id has
+        // single source the composer's reset defaults read. The device id has
         // no composed default (runtime hardware enumeration), so its -1 sentinel
         // stays an explicit literal here.
         var levelWindow = new LevelWindowSettings();
@@ -264,18 +254,9 @@ public partial class RecordingViewModel : ObservableObject
         CaptureSettingsService.Instance.Save();
     }
 
-    // Microphone telemetry persists in TelemetrySettingsService's own store,
-    // separate from CaptureSettings — hence its own push rather than folding
-    // into PushToSettings(). One opt-in, one store, one save.
     private void PushTelemetryToSettings()
     {
         TelemetrySettingsService.Instance.Current.MicrophoneTelemetry = MicrophoneTelemetry;
         TelemetrySettingsService.Instance.Save();
     }
-
-    // ResetRecordingDefaults is gone: the composed values (pre-processing toggle,
-    // voice-level group) now reset through their composers' ResetAll(), each value
-    // driven back to the POCO-sourced default — no hand-copied literal list to keep
-    // in sync. The page handler (ResetRecording_Click) orchestrates both composers
-    // and the non-composed device-id reset, and owns the section-reset logging.
 }

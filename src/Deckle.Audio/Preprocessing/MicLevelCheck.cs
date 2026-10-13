@@ -13,11 +13,10 @@ namespace Deckle.Audio;
 // It reuses the shipped DSP rather than estimating: Process runs the real chain
 // on the captured sample, so the "after" level is exactly what transcription
 // would receive. The advice is read from the deficit (how far below target the
-// raw level sits), with the same threshold the deferred-activation calculator
-// uses — one source of truth for "this mic is meaningfully quiet".
+// raw level sits).
 //
 // The decision is never taken for the user: the check proposes, the toggle is
-// the user's call. The thresholds are provisional engineer's guesses, marked.
+// the user's call.
 public static class MicLevelCheck
 {
     // Deficit (target − measured level) at or above which the lift is clearly
