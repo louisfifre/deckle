@@ -35,9 +35,7 @@ public static class AudioLevelMapper
     // word-scale intonation (200–500 ms) intact; the 50 ms key-frame in
     // ProcessingStroke.UpdateLevel does the rest of the visible smoothing.
     // The consumer owns the smoother state (the EMA value to feed back)
-    // since per-window state shouldn't be a global. The utterance countdown
-    // (UtteranceCountdownState) rises through this same alpha, so the gauge
-    // and the outline it replaces settle at one pace.
+    // since per-window state shouldn't be a global.
     public static float EmaAlpha = 0.25f;
 
     // Linear RMS mapped through a dBFS window, then through a power
