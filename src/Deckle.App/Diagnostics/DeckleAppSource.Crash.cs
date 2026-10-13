@@ -5,8 +5,6 @@ namespace Deckle.App;
 
 public sealed partial class DeckleAppSource
 {
-    // ── Crash safety net ────────────────────────────────────────────────
-
     [Event(EvtCrashUnhandled,
            Level = EventLevel.Error,
            Keywords = (EventKeywords)Keywords.Lifecycle,
@@ -61,9 +59,6 @@ public sealed partial class DeckleAppSource
         if (IsEnabled()) WriteEvent(EvtCrashTaskSchedulerDetail, ex_type, ex_message);
     }
 
-    // Demoted to Verbose: a bare stack trace carries no user-facing value on
-    // its own — it is the technical companion of the crash milestones above.
-    // Kept at its frozen id (no rename, no mirror).
     [Event(EvtCrashStackTrace,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Lifecycle,

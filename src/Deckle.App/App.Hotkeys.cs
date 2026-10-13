@@ -7,9 +7,7 @@ namespace Deckle.App;
 
 public partial class App
 {
-    // WM_HOTKEY and the tray panel's Record button land here. Dispatches on
-    // the action list built at startup (App.Hotkeys.Actions.cs); an id with
-    // no action (module absent) is ignored.
+    // The tray panel's Record button lands here too.
     private void OnHotkey(int hotkeyId)
     {
         _hotkeyActions.FirstOrDefault(action => action.Id == hotkeyId)?.Invoke();
@@ -19,9 +17,7 @@ public partial class App
     {
         if (_engine is null)
         {
-            // Speech isn't provisioned (native runtime + model absent), so the
-            // engine was never composed. Rather than do nothing, tell the user
-            // at the moment of intent and point them to where they set it up.
+            // No engine means speech is not provisioned.
             DeckleAppSource.Log.UserFeedbackEmitted(
                 0, // Info
                 "Dictation isn't set up yet",
@@ -54,16 +50,10 @@ public partial class App
 
             case ToggleResult.Stopped:
                 DeckleAppSource.Log.HotkeyStop();
-                // Acknowledge the stop on the hotkey thread, the instant the
-                // CAS claims it — symmetric with Started → ShowPreparing above.
-                // The HUD is otherwise driven by engine status, but the next
-                // status ("Transcribing") only fires after the streaming drain
-                // has finished decoding the queued tail; until then the chrono
-                // would keep ticking and the user would perceive the stop as
-                // laggy. Switching here freezes the chrono and shows the
-                // finishing affordance immediately; the drain ("the margin")
-                // runs invisibly behind it. The later status-driven
-                // SwitchToTranscribing is then an idempotent no-op.
+                // Acknowledged here at once: the next engine status only fires
+                // after the streaming drain decodes the queued tail, so the chrono
+                // would keep ticking and the stop would feel laggy. The later
+                // status-driven SwitchToTranscribing is an idempotent no-op.
                 _hudWindow?.SwitchToTranscribing();
                 break;
 

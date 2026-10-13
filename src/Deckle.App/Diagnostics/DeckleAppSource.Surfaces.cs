@@ -5,8 +5,6 @@ namespace Deckle.App;
 
 public sealed partial class DeckleAppSource
 {
-    // ── HUD / LogWindow surfaces (host-owned) ───────────────────────────
-
     [Event(EvtHudWarning,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Lifecycle,
@@ -43,11 +41,8 @@ public sealed partial class DeckleAppSource
         if (IsEnabled()) WriteEvent(EvtLogWindowWarningDetail, message);
     }
 
-    // ── UserFeedback (HUD bridge) ───────────────────────────────────────
-    // Canonical channel for user notifications emitted from the host app.
-    // Severity 0/1/2 = Info/Warning/Error, role 0/1 = Replacement/Overlay.
-    // Filtered by HudFeedbackSink.
-
+    // HudFeedbackSink matches this event by name. Severity 0/1/2 =
+    // Info/Warning/Error, role 0/1 = Replacement/Overlay.
     [Event(EvtUserFeedbackEmitted,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Push,

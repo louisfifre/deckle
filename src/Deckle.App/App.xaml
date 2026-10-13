@@ -6,18 +6,10 @@
         <ResourceDictionary>
             <ResourceDictionary.MergedDictionaries>
                 <XamlControlsResources xmlns="using:Microsoft.UI.Xaml.Controls" />
-                <!-- Deckle.Catalog ships the centralized Segoe Fluent Icons
-                     ResourceDictionary. Keys are consumed everywhere via
-                     {StaticResource Icon.Microphone} etc. The matching
-                     constants live in Deckle.Catalog.Glyphs for code-behind. -->
                 <ResourceDictionary Source="ms-appx:///Deckle.Catalog/Themes/Icons.xaml" />
             </ResourceDictionary.MergedDictionaries>
 
-            <!-- Resources shared by all Settings pages and their UserControls.
-                 Promoted to App level so UserControls (Settings/Llm/*) access
-                 them without duplication. WhisperPage/GeneralPage still
-                 redefine the same keys locally (shadow without effect); this
-                 will be cleaned up during their refactor. -->
+            <!-- At App level so the UserControls inside Settings pages reach them. -->
             <x:Double x:Key="SettingsCardSpacing">4</x:Double>
             <Style x:Key="SettingsSectionHeaderTextBlockStyle"
                    BasedOn="{StaticResource BodyStrongTextBlockStyle}"
@@ -27,13 +19,10 @@
                 </Style.Setters>
             </Style>
 
-            <!-- No custom "Critical / destructive" style at App level. WinUI 3
-                 does not provide one, and imitating it with hardcoded reds
-                 produces a button that does not follow the theme
-                 (light/dark/contrast). Official Microsoft pattern for
-                 destructive actions: confirmation ContentDialog, not a red
-                 button. Forget / Remove stay DefaultButtonStyle; the dialog
-                 they open carries the signal. -->
+            <!-- No destructive button style: WinUI 3 provides none, and hardcoded
+                 reds do not follow the theme. Destructive actions keep the default
+                 button style and confirm through a ContentDialog, which carries
+                 the signal. -->
         </ResourceDictionary>
     </Application.Resources>
 </Application>

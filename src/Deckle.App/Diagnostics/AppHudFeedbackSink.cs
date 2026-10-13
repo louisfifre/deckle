@@ -2,24 +2,10 @@ using Deckle.Diagnostics;
 
 namespace Deckle.App;
 
-// Concrete host sink that receives each `FeedbackEntry` captured by the
-// `HudFeedbackSink` (a `UserFeedbackEmitted` event emitted by a
-// `Deckle.*` provider) and routes it to the right HUD surface by `Role`:
-//
-//   role 0 (Replacement) → surface principale `HudWindow.ShowUserFeedback`
-//                          (the chrono is swapped out for the message).
-//   role 1 (Overlay)     → stacked card via `HudOverlayManager.Enqueue`
-//                          (above / below the main HUD without interrupting
-//                          the current workflow).
-//
-// Marshalling to the UI thread is owned by each target method
-// (`HudWindow.ShowUserFeedback` / `HudOverlayManager.Enqueue` do their own
-// `EnqueueUI` / `_dispatcher.TryEnqueueOrLog`). The sink is called on the
-// EventListener thread, which can be any business thread; EventSource does not
-// serialize it.
-//
-// The sink consumes the primitive `FeedbackEntry` fields directly; no HUD
-// module dependency flows back into Deckle.Diagnostics.
+// Routes each FeedbackEntry by Role: 1 (Overlay) to a stacked card that leaves
+// the main HUD alone, anything else (Replacement) to the main HUD surface.
+// Called on the EventListener thread, which can be any business thread; each
+// target marshals to the UI thread itself.
 internal sealed class AppHudFeedbackSink : IHudFeedbackSink
 {
     private readonly System.Action<int, string, string> _onReplacement;

@@ -5,8 +5,6 @@ namespace Deckle.App;
 
 public sealed partial class DeckleAppSource
 {
-    // ── Ambient observer ────────────────────────────────────────────────
-
     [Event(EvtAmbientPipelineState,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Lifecycle,

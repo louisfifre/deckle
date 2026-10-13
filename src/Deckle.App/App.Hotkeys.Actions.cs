@@ -6,24 +6,18 @@ using Deckle.Settings;
 
 namespace Deckle.App;
 
-// One global hotkey action: what a chord does, where its chord is persisted,
-// and the name the user sees when it cannot be registered. Id is the
-// RegisterHotKey id, WM_HOTKEY hands it back to OnHotkey. ToggleId is the
-// TrayToggle id ("record" for the dictation action).
+// Id is the RegisterHotKey id that WM_HOTKEY hands back to OnHotkey. ToggleId is
+// the TrayToggle id ("record" for the dictation action).
 internal sealed record HotkeyAction(
     int Id, string ToggleId, string Label, Func<HotkeyChord?> Chord, Action Invoke);
 
-// The hotkey actions the App exposes, presence-gated like the tray panel:
-// Record when transcription is present, then one per module switch the panel
-// shows. Toggle actions are derived from the panel's TrayToggle list and
-// invoke the very same delegate, so the panel and the hotkeys cannot diverge.
+// Toggle actions invoke the panel's own TrayToggle delegate, so the panel and
+// the hotkeys cannot diverge.
 public partial class App
 {
-    // RegisterHotKey id of the Record action, the only source of that id.
     private const int RecordHotkeyId = 1;
 
-    // Stable ids per toggle (they appear in logs), and where each toggle's
-    // chord lives in HotkeysSettings. A toggle missing here gets no hotkey.
+    // Ids stay stable: they appear in logs. A toggle missing here gets no hotkey.
     private static readonly Dictionary<string, (int Id, Func<HotkeysSettings, HotkeyChord?> Chord)> ToggleHotkeys = new()
     {
         ["precision-scroll"] = (2, h => h.PrecisionScroll),
@@ -74,8 +68,7 @@ public partial class App
         return actions;
     }
 
-    // Bindings for the actions whose chord is set and complete. MOD_NOREPEAT
-    // keeps a held chord from firing again on keyboard auto-repeat.
+    // MOD_NOREPEAT keeps a held chord from firing again on keyboard auto-repeat.
     private IReadOnlyList<GlobalHotkeyBinding> BuildHotkeyBindings()
     {
         var bindings = new List<GlobalHotkeyBinding>();
@@ -90,7 +83,6 @@ public partial class App
         return bindings;
     }
 
-    // One HUD overlay and one warning per chord that could not be acquired.
     private void ReportHotkeyFailures(IReadOnlyList<HotkeyRegistrationFailure> failures)
     {
         foreach (HotkeyRegistrationFailure failure in failures)

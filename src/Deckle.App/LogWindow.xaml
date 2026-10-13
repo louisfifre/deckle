@@ -10,10 +10,8 @@
     <Grid x:Name="RootGrid">
         <Grid.Resources>
             <ResourceDictionary>
-                <!-- 4 semantic levels per wrap dimension, swapped through
-                     DataTemplateSelector on Word-wrap toggle. Each template
-                     binds its Foreground to a ThemeResource: WinUI re-resolves
-                     on theme switch without needing to recreate rows. -->
+                <!-- Foreground comes from a ThemeResource so WinUI re-resolves it
+                     on a theme switch without recreating rows. -->
                 <DataTemplate x:Key="NoWrap_Verbose">
                     <local:LogEntryRow
                         Foreground="{ThemeResource TextFillColorTertiaryBrush}"
@@ -56,11 +54,8 @@
                         MessageWrapping="Wrap" />
                 </DataTemplate>
 
-                <!-- Telemetry rows (latency / corpus / microphone): rendered
-                     as secondary text, one notch above Verbose (tertiary), so
-                     they read as structured diagnostic metadata without
-                     drowning in the Verbose firehose. Text is precomputed by
-                     LogEntry when wrapping EventEntry. -->
+                <!-- Telemetry rows use secondary text, one notch above Verbose,
+                     so they stand out from the Verbose stream. -->
                 <DataTemplate x:Key="NoWrap_Latency">
                     <local:LogEntryRow
                         Foreground="{ThemeResource TextFillColorSecondaryBrush}"
@@ -116,8 +111,7 @@
                                     Click="OnContextCopyClick" />
                 </MenuFlyout>
 
-                <!-- Compact container for dense log rendering: reduced padding,
-                     native hover and selection feedback preserved. -->
+                <!-- Reduced padding only: native hover and selection feedback stay. -->
                 <Style x:Key="LogItemContainerStyle" TargetType="ListViewItem">
                     <Setter Property="MinHeight" Value="0" />
                     <Setter Property="Padding" Value="4,1" />
@@ -134,9 +128,6 @@
             <RowDefinition Height="*" />
         </Grid.RowDefinitions>
 
-        <!-- ── Native title bar (Windows App SDK 1.6+) ────────────────────── -->
-        <!-- The TitleBar control handles drag region, themed caption buttons,
-             height, and exposes a Content slot where we place the SearchBox. -->
         <TitleBar Grid.Row="0"
                   x:Name="AppTitleBar"
                   x:Uid="LogWindowTitleBar">
@@ -144,10 +135,8 @@
                 <ImageIconSource x:Name="AppTitleBarIcon" />
             </TitleBar.IconSource>
             <TitleBar.Content>
-                <!-- Fixed-width search, same pattern as WinUI 3 Gallery. Below
-                     the narrow threshold (see code-behind), SearchBox collapses
-                     and SearchIconButton takes over; clicking the icon reveals
-                     the search, focus leaving it restores the icon. -->
+                <!-- Below the narrow threshold set in code-behind, SearchBox
+                     collapses and SearchIconButton takes over. -->
                 <Grid HorizontalAlignment="Right"
                       VerticalAlignment="Center"
                       Margin="8,0">
@@ -173,14 +162,11 @@
             </TitleBar.Content>
         </TitleBar>
 
-        <!-- ── Command bar: filter editor + journal actions ──────────────── -->
         <CommandBar Grid.Row="1"
                     x:Name="MainCommandBar"
                     DefaultLabelPosition="Right"
                     Background="Transparent"
                     IsOpen="False">
-            <!-- Content stays anchored left while the primary view controls
-                 use CommandBar's native right alignment and dynamic overflow. -->
             <CommandBar.Content>
                 <StackPanel Orientation="Horizontal" Spacing="8" Margin="4,0">
                     <SplitButton x:Name="CopyButton"
@@ -233,8 +219,6 @@
                 </StackPanel>
             </CommandBar.Content>
 
-            <!-- Filters remains the leftmost view control. Word wrap and
-                 Auto-scroll migrate to the overflow first as width shrinks. -->
             <AppBarToggleButton x:Name="FiltersToggle"
                                 x:Uid="LogWindowFiltersToggle"
                                 DynamicOverflowOrder="0"
@@ -264,16 +248,13 @@
             </AppBarElementContainer>
         </CommandBar>
 
-        <!-- The editor can collapse without changing the active lens. Its
-             process-lifetime selection is owned outside the lazy window. -->
+        <!-- Collapsing the editor never changes the active filter: the selection
+             lives outside the lazy window, for the whole process. -->
         <loggingControls:LogFilterBar x:Name="FilterBar"
                                       Grid.Row="2"
                                       Visibility="Collapsed"
                                       FilterChanged="OnFilterChanged" />
 
-        <!-- ── Log surface ────────────────────────────────────────────────── -->
-        <!-- ListView owns selection, virtualization and scrolling. Extended
-             selection supplies the standard Ctrl/Shift gestures. -->
         <Grid Grid.Row="3" x:Name="LogSurface">
             <ListView x:Name="LogItems"
                       Background="{ThemeResource LayerFillColorDefaultBrush}"
@@ -290,10 +271,9 @@
                       ContextFlyout="{StaticResource LogContextFlyout}"
                       RightTapped="OnLogItemsRightTapped">
                 <ListView.Resources>
-                    <!-- Keep native ScrollBar templates/thumbs and only replace
-                         their transparent rails + separator with the exact log
-                         surface brush. Text may extend beneath them but cannot
-                         bleed through in either theme. -->
+                    <!-- Native ScrollBar templates stay; only their transparent
+                         rails and separator take the log surface brush, so text
+                         beneath them cannot bleed through in either theme. -->
                     <StaticResource x:Key="ScrollBarBackground" ResourceKey="LayerFillColorDefaultBrush" />
                     <StaticResource x:Key="ScrollBarBackgroundPointerOver" ResourceKey="LayerFillColorDefaultBrush" />
                     <StaticResource x:Key="ScrollBarBackgroundDisabled" ResourceKey="LayerFillColorDefaultBrush" />
@@ -311,9 +291,8 @@
                                          Invoked="OnCopyKeyboardAcceleratorInvoked" />
                 </ListView.KeyboardAccelerators>
                 <ListView.Footer>
-                    <!-- Five real, measured row heights. This structural tail
-                         never enters ItemsSource, so it cannot be selected,
-                         copied or exported. -->
+                    <!-- Five real row heights of tail space, outside ItemsSource
+                         so they cannot be selected, copied or exported. -->
                     <StackPanel IsHitTestVisible="False"
                                 AutomationProperties.AccessibilityView="Raw">
                         <TextBlock Text=" " FontFamily="Consolas" FontSize="12" Margin="4,1" />

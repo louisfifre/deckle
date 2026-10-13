@@ -8,20 +8,13 @@ using Deckle.Setup;
 
 namespace Deckle.App;
 
-// ── Update mode ──────────────────────────────────────────────────────────────
-//
-// The in-app updater's two App-side pieces, mirroring App.Install.cs.
-//
-// The running app hosts the silent check (WireUpdater: boot + daily, gated by
-// the Settings opt-out) and the explicit flow (StartUpdateFlow: the download
-// window; on its success the app exits, releasing the binaries). The NEW
-// payload's process, spawned by the download page from its temp extraction,
-// enters through --update-apply and runs DeployPage over the live install —
-// the same two-process split as the install chain, with the roles reversed.
+// The running app hosts the silent check and the explicit flow, and exits on the
+// flow's success to release the binaries. The new payload's process, spawned by
+// the download page from its temp extraction, enters through --update-apply and
+// runs DeployPage over the live install: the install chain's two-process split
+// with the roles reversed.
 public partial class App
 {
-    // ── Silent check + Settings hooks (runs in the normal app) ──────────────
-
     private Deckle.Setup.SetupWindow? _updateWindow;
 
     private void WireUpdater()
@@ -115,8 +108,7 @@ public partial class App
         return plus > 0 ? version[..plus] : version;
     }
 
-    // ── --update-apply (runs in the NEW payload, from the temp extraction) ──
-
+    // Runs in the new payload, from its temp extraction.
     private async Task RunUpdateApplyAsync(string[] args)
     {
         AppDiagnosticsBootstrap.InitializeLocalSinks(AppPaths.DiagnosticsDirectory);
@@ -168,9 +160,8 @@ public partial class App
         setup.Body.Navigate(typeof(DeployPage), setup);
         setup.Activate();
 
-        // Deploy spawned the updated install's --install-continue on success
-        // (provision check, temp cleanup, plain relaunch); either way this
-        // temp process is done.
+        // On success Deploy spawned the updated install's --install-continue;
+        // either way this temp process is done.
         await setup.Completion;
         Environment.Exit(0);
     }

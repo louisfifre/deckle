@@ -5,8 +5,6 @@ namespace Deckle.App;
 
 public sealed partial class DeckleAppSource
 {
-    // ── Hotkey (App-side observer) ──────────────────────────────────────
-
     [Event(EvtHotkeyStart,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Capture,

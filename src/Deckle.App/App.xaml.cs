@@ -38,30 +38,20 @@ public partial class App : Microsoft.UI.Xaml.Application
     private SpeechEngine? _speechEngine;
     private AmbientEngine? _ambientEngine;
 
-    // Canonical engine accessor for surfaces that observe the running
-    // pipeline (Playground preview, future AmbientPage live readouts).
-    // Returns null when the engine hasn't been built yet (e.g. before
-    // OnLaunched completes) ; consumers should null-check and render an
-    // empty state when missing.
+    // Null until the engine is composed; consumers render an empty state.
     internal static AmbientEngine? AmbientEngine => (Current as App)?._ambientEngine;
 
-    // Last engine recording state, captured on every StatusChanged. Used
-    // to seed PlaygroundWindow's beacon on lazy creation: when the user
-    // opens Playground for the first time mid-recording, the beacon
-    // reflects the current state without waiting for the next status
-    // transition.
+    // Seeds the beacon of a window created mid-recording, before the next
+    // status transition.
     private bool _lastRecordingState;
-    // Operational-detail admission is enforced by each producer before work begins.
 
     public App()
     {
         InitializeComponent();
 
-        // Diagnostic safety net — without this, a crash in a TranscriptionEngine
-        // event disappears silently. Any listener registered later in OnLaunched
-        // picks these up for LogWindow/app.jsonl. Events
-        // raised before OnLaunched have no sinks yet and are dropped — there
-        // are none of those in practice.
+        // Without these nets, an exception in a background TranscriptionEngine
+        // handler vanishes silently. Events raised before OnLaunched registers
+        // the sinks are dropped.
         this.UnhandledException += (_, e) =>
         {
             DeckleAppSource.Log.CrashUnhandled();
@@ -83,9 +73,8 @@ public partial class App : Microsoft.UI.Xaml.Application
             e.SetObserved();
         };
 
-        // Explicit trace for process-exit. JSONL writers run off the emitting
-        // thread, so the final marker is followed by one deterministic drain
-        // covering normal, install, update and relocation exits.
+        // JSONL writers run off the emitting thread, so the final marker is
+        // followed by one drain; it covers install, update and relocation exits.
         AppDomain.CurrentDomain.ProcessExit += (_, _) =>
         {
             DeckleAppSource.Log.ProcessExit();
@@ -109,8 +98,8 @@ public partial class App : Microsoft.UI.Xaml.Application
             return;
         }
 
-        // Load-bearing order. Each phase owns one contiguous slice of the former
-        // OnLaunched body; keep calls in this order when adding startup work.
+        // Load-bearing order: the phases compile in any order but break silently
+        // when reordered.
         var context = new StartupContext();
         InitializeStartupFoundation(context);
         InitializeStartupModules(context);

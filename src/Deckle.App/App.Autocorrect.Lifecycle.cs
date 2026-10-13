@@ -53,8 +53,7 @@ public partial class App
         }
     }
 
-    // Lightweight boot wiring only. ReconcileAutocorrect starts the expensive
-    // build if and only if the persisted switch is currently on.
+    // Cheap at boot: the expensive build starts only when the switch is on.
     private void InitializeAutocorrect()
     {
         lock (_autocorrectLifecycleLock)
@@ -85,18 +84,11 @@ public partial class App
                 return;
             }
 
-            // A settings change that alters the effective lexicon — a domain
-            // pack turned on or off — cannot be reconciled in place: the merged
-            // table, the accent index and every policy built over them are
-            // bound at construction. Drop the runtime and let the branch below
-            // rebuild it. Enrolling an app, by contrast, leaves the key equal
-            // and the engine reads the decision map live, so nothing is torn
-            // down for it.
-            //
-            // Settings writes reach here debounced, so a burst of edits costs
-            // one rebuild, not one per edit. The rebuild is the same cost as
-            // flipping the master switch off and on — it reloads the sentence
-            // model too.
+            // A domain pack flip cannot be reconciled in place: the merged table,
+            // the accent index and every policy built over them are bound at
+            // construction. Enrolling an app leaves the key equal, and the engine
+            // reads the decision map live. Writes arrive debounced, so a burst of
+            // edits costs one rebuild, which reloads the sentence model too.
             AutocorrectRuntime? stale = _autocorrectRuntime;
             if (stale is not null
                 && stale.LexiconKey != DomainActivation.EffectiveLexiconKey(
@@ -178,8 +170,8 @@ public partial class App
         }
     }
 
-    // Called from QuitApp. An in-flight build observes the shutdown flag when
-    // it completes and disposes its local runtime instead of publishing it.
+    // An in-flight build observes the shutdown flag when it completes and
+    // disposes its local runtime instead of publishing it.
     private void ShutdownAutocorrect()
     {
         lock (_autocorrectLifecycleLock)

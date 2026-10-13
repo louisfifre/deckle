@@ -4,9 +4,8 @@
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
 
-    <!-- The invisible probes make the first three columns structural rather
-         than numeric guesses: timestamp, severity, and source use the same
-         font as their visible values. Only the message receives TextWrapping. -->
+    <!-- The invisible probes size the first three columns from the same font as
+         their visible values, rather than from numeric guesses. -->
     <Grid HorizontalAlignment="Stretch">
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="Auto" />

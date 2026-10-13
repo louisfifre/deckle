@@ -2,27 +2,21 @@ using Deckle.Shell.TaskbarCover;
 
 namespace Deckle.App;
 
-// Taskbar cover module composition. The App owns the host and keeps it
-// reconciled with the persisted module settings, same posture as the
-// trackpad composition: the dedicated thread only runs while the master
-// switch is on.
 public partial class App
 {
     private TaskbarCoverHost? _taskbarCover;
 
     private void InitializeTaskbarCover()
     {
-        // InitializeStartupModules built and started the watcher just before
-        // this call, on the same UI thread; the cover only subscribes to it.
+        // The watcher is already started, on this same UI thread; the cover
+        // only subscribes to it.
         _taskbarCover = new TaskbarCoverHost(_foregroundWatcher!);
 
         TaskbarCoverSettingsService.Instance.Changed += ReconcileTaskbarCover;
         ReconcileTaskbarCover();
     }
 
-    // Idempotent settings → runtime reconciliation, called at boot and on
-    // every settings flush. Start/Stop on the host are themselves
-    // idempotent, so re-running on unrelated settings changes costs nothing.
+    // Start and Stop are idempotent, so unrelated settings changes cost nothing.
     private void ReconcileTaskbarCover()
     {
         if (_taskbarCover is null) return;
