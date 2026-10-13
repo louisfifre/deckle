@@ -228,7 +228,10 @@ public sealed partial class SettingsComposer
 
         ShowDraft();
 
-        (FrameworkElement content, Action? updateReset) = WrapWithReset(card, row, s);
+        // The tooltip reads the default chord as the key button's tooltip reads
+        // the current one; an unbound default reads as the button's own wording.
+        (FrameworkElement content, Action? updateReset) = WrapWithReset(card, row, s,
+            () => HotkeyChordText.Format((HotkeyChord?)s.Default!()) ?? unbound);
         card.Content = content;
 
         _refreshers.Add(() =>

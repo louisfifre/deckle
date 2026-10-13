@@ -168,7 +168,10 @@ public sealed partial class SettingsComposer
             });
         }
 
-        (FrameworkElement cardContent, Action? updateReset) = WrapWithReset(card, content, s);
+        // The tooltip writes the default as the field writes the value: same grain,
+        // same unit.
+        (FrameworkElement cardContent, Action? updateReset) = WrapWithReset(card, content, s,
+            () => DefaultValueText.Magnitude(AsDouble(s.Default!()), decimals, args.Unit));
         card.Content = cardContent;
 
         _refreshers.Add(() =>

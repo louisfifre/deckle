@@ -39,7 +39,10 @@ public sealed partial class SettingsComposer
 
         // Per-card reset at the trailing edge of the picker's row (see
         // WrapWithTrailingReset); no Default leaves the picker as the whole content.
-        (FrameworkElement content, Action? updateReset) = WrapWithTrailingReset(card, picker.View, s);
+        // An empty default path has no readable form (the picker shows its own
+        // computed fallback), so the tooltip stays generic for it.
+        (FrameworkElement content, Action? updateReset) = WrapWithTrailingReset(card, picker.View, s,
+            () => DefaultValueText.Text(AsString(s.Default!())));
         card.Content = content;
 
         _refreshers.Add(() =>
@@ -66,7 +69,8 @@ public sealed partial class SettingsComposer
     // descriptor has no Default: no reset chrome, the content is the card's whole
     // content.
     private (FrameworkElement Content, Action? UpdateState) WrapWithTrailingReset(
-        SettingsCard card, FrameworkElement content, SettingDescriptor s)
+        SettingsCard card, FrameworkElement content, SettingDescriptor s,
+        Func<string?>? describeDefault = null)
     {
         if (s.Default is null) return (content, null);
 
@@ -104,7 +108,7 @@ public sealed partial class SettingsComposer
 
         // The tooltip string is constant, but resolved once here (not per refresh)
         // so the dirty-driven refresher only flips IsEnabled.
-        string tooltip = ResolveResetTooltip();
+        string tooltip = ResolveResetTooltip(describeDefault);
         return (grid, () =>
         {
             reset.IsEnabled = Dirty();
@@ -191,7 +195,8 @@ public sealed partial class SettingsComposer
             s.SetValue(box.Text);
         };
 
-        (FrameworkElement content, Action? updateReset) = WrapWithReset(card, box, s);
+        (FrameworkElement content, Action? updateReset) = WrapWithReset(card, box, s,
+            () => DefaultValueText.Text(AsString(s.Default!())));
         card.Content = content;
 
         _refreshers.Add(() =>
@@ -244,7 +249,8 @@ public sealed partial class SettingsComposer
             s.SetValue(args.Options[combo.SelectedIndex].Value);
         };
 
-        (FrameworkElement content, Action? updateReset) = WrapWithReset(card, combo, s);
+        (FrameworkElement content, Action? updateReset) = WrapWithReset(card, combo, s,
+            () => DefaultValueText.Choice(args, s.Default!(), ResolveOptionLabel));
         card.Content = content;
 
         _refreshers.Add(() =>
@@ -284,7 +290,8 @@ public sealed partial class SettingsComposer
         // vertically, as Path and multiline Text do.
         card.ContentAlignment = ContentAlignment.Vertical;
 
-        (FrameworkElement content, Action? updateReset) = WrapWithReset(card, radio, s);
+        (FrameworkElement content, Action? updateReset) = WrapWithReset(card, radio, s,
+            () => DefaultValueText.Choice(args, s.Default!(), ResolveOptionLabel));
         card.Content = content;
 
         _refreshers.Add(() =>
