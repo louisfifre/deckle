@@ -47,7 +47,7 @@ public sealed partial class SettingsComposer
             if (args.Describe is not null)
             {
                 string? sentence = args.Describe(points);
-                card.Description = sentence ?? ResolveDescription(s.LabelKey);
+                card.Description = sentence ?? ResolveDescription(s.LabelKey) ?? string.Empty;
             }
             updateReset?.Invoke();
             ApplyReactiveState(card, s);

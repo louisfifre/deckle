@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using Deckle.Catalog;
 using Deckle.Core;
@@ -244,13 +245,20 @@ public partial class WhisperViewModel
                     new MagnitudeArgs(30000, 900000, Slider: false, Integer: true),
                     visibleWhen: () => CutPreset == PresetFamily.Custom,
                     defaultValue: () => new EnergySegmenterSettings().HangoverRampEndMs),
-                // The instrument last and full width (decision 12).
-                Setting.Editor<CutCurveValues>("WhisperCutCurveCard",
-                    ReadCutValues,
-                    WriteCutValues,
-                    new EditorArgs(() => new CutCurveEditor(this)),
+                // The instrument last and full width (decision 12): the shared
+                // curve block (decision 21) over the four control points, drawn in
+                // the frame the four anchor cards above set, with the sentence that
+                // says what the curve does as its description.
+                Setting.Curve("WhisperCutCurveCard",
+                    () => new CurvePoints(SegCurveX1, SegCurveY1, SegCurveX2, SegCurveY2),
+                    p => { SegCurveX1 = p.X1; SegCurveY1 = p.Y1; SegCurveX2 = p.X2; SegCurveY2 = p.Y2; },
+                    new CurveArgs(Frame: CutCurveFrame, Describe: _ => CutCurveSentence()),
                     visibleWhen: () => CutPreset == PresetFamily.Custom,
-                    defaultValue: () => CutCurveValues.From(new EnergySegmenterSettings())),
+                    defaultValue: () =>
+                    {
+                        var d = new EnergySegmenterSettings();
+                        return new CurvePoints(d.HangoverCurveX1, d.HangoverCurveY1, d.HangoverCurveX2, d.HangoverCurveY2);
+                    }),
             ],
             glyph: Glyphs.Tuning,
             visibleWhen: () => StreamingEnabled,
@@ -268,6 +276,31 @@ public partial class WhisperViewModel
             visibleWhen: () => StreamingEnabled,
             defaultValue: () => new EnergySegmenterSettings().MinUtteranceMs),
     ];
+
+    // The frame of the cut curve: X is the open-utterance length in seconds, from
+    // 0 to a little past the ramp end; Y is the decision delay in seconds, from 0
+    // to the maximum hangover. The unit square runs from (ramp start, max) down
+    // to (ramp end, min), the decay the segmenter eases between. The view model
+    // keeps the anchors in milliseconds, the plot reads seconds.
+    private CurveFrame CutCurveFrame()
+    {
+        double max = Math.Max(SegHangoverMaxMs / 1000.0, 1e-3);
+        double min = Math.Min(SegHangoverMinMs / 1000.0, max);
+        double start = Math.Max(0, SegHangoverRampStartMs / 1000.0);
+        double end = Math.Max(start, SegHangoverRampEndMs / 1000.0);
+        double xMax = end + Math.Max((end - start) * 0.15, 5.0);
+        return new CurveFrame(start, max, end, min, xMax, max, Axes: true, XUnit: "s", YUnit: "s");
+    }
+
+    // The plain-language reading of the envelope the curve eases, the Playground
+    // Segmentation page's sentence.
+    private string CutCurveSentence()
+    {
+        double start = SegHangoverRampStartMs / 1000.0;
+        double end = Math.Max(start, SegHangoverRampEndMs / 1000.0);
+        return $"Waits {SegHangoverMaxMs / 1000.0:F1} s of silence for utterances up to {start:F0} s, " +
+               $"then tightens to {SegHangoverMinMs / 1000.0:F1} s by {end:F0} s.";
+    }
 
     // Output filters — the three flat cards under the "Output filters" section
     // header. No master toggle and no group: this section was hand-authored as a

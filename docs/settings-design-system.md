@@ -74,7 +74,7 @@ by one block, split across several, or empty.
 | One of a runtime list (microphone, monitor, Hue group, model file, profile, language) | A dropdown | None in the composer. Hand-drawn ComboBox or AutoSuggestBox on six pages. | **Empty row.** Options are not `.resw` keys, so `Choice` cannot carry them. |
 | Linear magnitude | One control: slider and number field, grain derived | Composer `Magnitude` with `MagnitudeGrain` | Done 2026-10-13 (feat/magnitude-block): one numeric block. `Magnitude` hides its slider by option and declares a count; `Slider` (14 cards) and `Number` (9 cards) retired into it, arrows on hover (`Compact`), written at the release. `TunableRow` and the HUD row factories still stand in the Playground, for the Playground pass. |
 | Geometric magnitude (stops that multiply: 1, 2, 4 … 256) | Slider over a stop list, field shows the value | None. Rewriting context size is a hand-drawn index slider. | **Empty row.** The composer comment says the log variant was deliberately not built. |
-| Curve or envelope | A dedicated editor | Composer `Editor` hosts a module element. Two editors: `HangoverCurveCanvas` (Win2D) and `BrightnessCurveCanvas` (XAML shapes), same two-handle interaction, one `CurveHandleStyle` copied in both. | Decided 2026-10-13, third round (provisional, see decision 21): one drawing control in XAML shapes, a two-point Bézier with fixed ends, the Playground Segmentation form. The handles stay and write at their release; the four values are fields in a two-by-two grid beside the drawing, which takes the block's width; the computed sentence is its caption (model: `SegmentationPage.xaml.cs:171`); an option lets a handle leave the bounds. The second round's handle-less form is superseded. |
+| Curve or envelope | A dedicated editor | Composer `Curve` over `CurvePoints`, drawn by `CurveEditor` (Catalog, XAML shapes, built in code) on the four surfaces: the cut curve (Streaming page), the Ambient brightness curve (its preset fold), the Playground Segmentation and Ambient pages. `CurveFrame` places the unit square in the plot. | Done 2026-10-13 (feat/curve-block, provisional per decision 21): one drawing control in XAML shapes, a two-point Bézier with fixed ends, the Playground Segmentation form. The handles write at their release and move by arrow key; the four values are fields in a two-by-two grid beside the drawing, which takes the block's width, with the cubic-bezier readout; the computed sentence is the card's description; an option lets a handle's Y leave the bounds by a quarter. Two layouts from one frame: wide with axes and guides, square without. Win2D left Transcription; `HangoverCurveCanvas`, `CutCurveEditor` and `BrightnessCurveCanvas` are gone. |
 | Free text, one line | One shared input | Composer `Text` | Covered. |
 | Free text, multi-line | Same input, wraps | `Text` has `Multiline`, no manifest uses it. Two hand-drawn TextBoxes (initial prompt, system prompt). | Dormant. |
 | Path or folder | One picker, affordances by ownership | Composer `Path` over `FolderPickerCard` (read-only, Change, Open) and `FolderPickerEditableCard` (typeable). `OpenOnly` mode exists, unused. | Covered for two of three affordances. The app-owned data folder and the diagnostic files folder are hand-drawn cards. |
@@ -295,6 +295,18 @@ reopen the decision, not to work around it. The brief they answer is
     call.** Built-in presets are read-only; Save as creates a named copy;
     Revert returns to the selected preset's values; a changed value switches
     the selector to Custom, unchanged.
+
+Built against the three rounds on 2026-10-13, in six steps, each a worktree
+and a minor version, none seen on screen: the reset tooltip that names the
+default and the descriptions without it (v0.43.0); the page header block and
+the Home, General rail (v0.45.0); the section block and the module switch card
+(v0.46.0); the mode fold on both presets (v0.47.0); the Transcription split
+into General, Decoding and Streaming (v0.48.0); the curve block on the four
+curve surfaces (v0.49.0). What Louis has to check first: the breadcrumb's size
+and the Reset all placement on every page; the section reset wheel's reveal;
+the mode fold's information card and its reset order; the curve editor's
+handles, fields and frame on the Streaming page and in the Playground; the
+Ambient tuning section, now one preset fold with the curve last.
 
 ## Still open
 

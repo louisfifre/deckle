@@ -49,13 +49,8 @@ public sealed partial class PlaygroundWindow : Window
     // tree on every interaction.
     private HudPage? _hudPage;
     private AmbientPage? _ambientPage;
-    private SegmentationPage? _segmentationPage;
     private CorrectionApplicationPage? _correctionApplicationPage;
     private PlaygroundWindowActivation _windowActivation;
-
-    // Collapses the per-frame Win2D recompute the Segmentation curve pays during an
-    // interactive edge drag into a single crisp repaint on settle. See ResizeCoalescer.
-    private ResizeCoalescer? _resizeCoalescer;
 
     public PlaygroundWindow()
     {
@@ -158,19 +153,6 @@ public sealed partial class PlaygroundWindow : Window
 
         this.Closed += OnWindowClosed;
 
-        // Resize coalescing. While the user drags a sizing border the Segmentation
-        // curve's Win2D surface would re-layout and reissue its label text every
-        // WM_SIZE — the visible lag. The coalescer flips the canvas's suspend flag
-        // on the gesture's rising edge and clears it, with a crisp final repaint,
-        // once the size settles. Pages without a Win2D surface see no-ops: the
-        // cached page reference stays null until that page is visited. HWND is
-        // already valid (captured above), so we register immediately.
-        _resizeCoalescer = new ResizeCoalescer(
-            _hwnd, "playground",
-            onResizeSettled: () => _segmentationPage?.SetCurveResizeSuspended(false),
-            onResizeStarted: () => _segmentationPage?.SetCurveResizeSuspended(true));
-        _resizeCoalescer.Register();
-
         // Theme: wires ActualThemeChanged on the XAML root. Playground is
         // singleton-hidden (lives for the whole app session once opened), so it
         // sees all theme switches through ThemeRequestSourceProbe ("settings"
@@ -272,9 +254,6 @@ public sealed partial class PlaygroundWindow : Window
         try { _ambientPage?.DisposeResources(); } catch { /* best effort */ }
         try { _correctionApplicationPage?.DisposeResources(); } catch { /* best effort */ }
 
-        // Remove the HWND subclass before the window is gone.
-        _resizeCoalescer?.Dispose();
-
         // Drop the shell's nav callback so a stale page reference can't
         // route into a destroyed window. ReferenceEquals (not ==) because
         // Window inherits the default object equality and the compiler
@@ -342,9 +321,6 @@ public sealed partial class PlaygroundWindow : Window
                     break;
                 case AmbientPage amb:
                     _ambientPage = amb;
-                    break;
-                case SegmentationPage seg:
-                    _segmentationPage = seg;
                     break;
                 case CorrectionApplicationPage correction:
                     _correctionApplicationPage = correction;
