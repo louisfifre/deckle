@@ -125,6 +125,8 @@ doctrine). This file is generated from the Conventional-Commit history by
 - **transcription:** Store the cut preset selection and the Custom values
 - **ambient:** Move the presets to Deckle.Presets, add Vivid, free the floor
 - **playground:** Bring back the Ambient tab
+- **catalog:** Make Magnitude the one numeric block
+- **catalog:** Retire the Slider and Number kinds
 
 ### Changed
 
@@ -145,6 +147,9 @@ doctrine). This file is generated from the Conventional-Commit history by
 - **ambient:** Drop the section resets the composer replaced
 - **catalog:** Move the magnitude grain arithmetic into a testable helper
 - **hud:** Build the live HUD from compiled defaults only
+- **transcription:** Compose the numeric cards as magnitudes
+- **ambient:** Compose the border cards as magnitudes
+- **audio:** Compose the voice level cards as magnitudes
 
 ### Fixed
 
@@ -189,6 +194,8 @@ doctrine). This file is generated from the Conventional-Commit history by
 - **tray-menu:** Never size the quick-actions panel below its content
 - **playground:** Stop writing AudioLevelMapper from the HUD tab
 - **presets:** Write the selection before the values
+- **ambient:** Default the brightness floor to 40
+- **playground:** Drop the hand-typed cadence from the Pipeline card
 
 ## [0.35.0](https://github.com/louisfifre/deckle/compare/v0.31.6...v0.35.0) — 2026-08-13
 
