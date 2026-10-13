@@ -1234,7 +1234,6 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   ├── Controls/
 │   │   │   │   ├── AmbientPreviewCard.xaml
 │   │   │   │   ├── AmbientPreviewCard.xaml.cs
-│   │   │   │   ├── BrightnessCurveCanvas.xaml
 │   │   │   │   ├── LightZonesCard.xaml
 │   │   │   │   └── LightZonesCard.xaml.cs
 │   │   │   ├── AmbientPage.Hue.cs
