@@ -137,6 +137,7 @@ doctrine). This file is generated from the Conventional-Commit history by
 - **composer:** Add the mode fold
 - **composition:** Move the countdown gauge with one named fast motion
 - **transcription:** Split the settings into General, Decoding and Streaming
+- **composer:** Add the curve block
 
 ### Changed
 
@@ -163,6 +164,7 @@ doctrine). This file is generated from the Conventional-Commit history by
 - **settings:** Open every page with the shared header block
 - **settings:** Put the preset selectors in the header of their fold
 - **settings:** Open every section with the shared block
+- **settings:** Draw every curve with the shared curve block
 
 ### Removed
 
