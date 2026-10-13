@@ -9,39 +9,35 @@ namespace Deckle.Core;
 // reads and writes user data on disk. All mutable per-user state lives
 // under <UserDataRoot>:
 //
-//   • settings.json — single config file, sits at the root
+//   • settings.json — the shell's settings file, at the root
 //   • secrets.dat   — Deckle.Security vault, DPAPI-sealed single file
 //   • backups/      — settings backup snapshots
-//   • telemetry/    — JSONL files (app, latency, microphone), raw-capture
+//   • telemetry/    — JSONL files (latency, microphone), raw-capture
 //                     subfolders, and per-profile corpus
-//   • diagnostics/  — always-on local logs (setup, errors); never transmitted
-//   • models/       — Whisper ggml-*.bin
+//   • diagnostics/  — local logs (setup, errors, app.jsonl); never transmitted
+//   • models/       — Whisper ggml-*.bin and the other downloaded models
 //   • native/       — libwhisper.dll, ggml*.dll
-//   • benchmark/    — optional, installed on demand from Settings
+//   • benchmark/    — optional
+//   • modules/      — one folder per module (GetModuleDirectory)
 //
 // Default <UserDataRoot> = %LOCALAPPDATA%\<AppFolderName>\, the canonical
 // per-user data root on Windows (Settings Win11, PowerToys, every
-// first-party Microsoft desktop app). Override with the DECKLE_DATA_ROOT
-// env var to keep %LOCALAPPDATA% clean during development.
+// first-party Microsoft desktop app). The DECKLE_DATA_ROOT env var
+// overrides it.
 //
 // The application binary itself stays read-only and Program Files-friendly:
-// it ships with Assets but no models, no native DLLs, no config.
-// scripts/commands/setup/setup-assets.ps1 populates <UserDataRoot>\models\ and \native\
-// before first run; the future first-run wizard will replace it from inside
-// the app (see Shell/WelcomeWizardWindow).
+// it ships with Assets but no models, no native DLLs, no config. The setup
+// wizard or scripts/commands/setup/setup-assets.ps1 populates
+// <UserDataRoot>\models\ and \native\.
 public static class AppPaths
 {
-    // Filesystem-safe folder name. Single source of truth for the
-    // %LOCALAPPDATA%\Deckle\ root and the inter-process settings mutex.
     public const string AppFolderName = "Deckle";
 
-    // Inter-process mutex name used by SettingsService to serialize writes
-    // across concurrent app instances. Derived from AppFolderName.
+    // Serializes settings writes across concurrent app instances.
     public const string SettingsMutexName = $"{AppFolderName}-Settings-Save";
 
-    // Override env var. Pointed at a freshly-organized dev folder so
-    // user data ends up there instead of polluting %LOCALAPPDATA%.
-    // Empty/unset → default location.
+    // Set to a dev folder, or to the custom data root the installer records
+    // as a user variable. Empty/unset → default location.
     public const string DataRootEnvVar = "DECKLE_DATA_ROOT";
 
     public static string UserDataRoot                 { get; }
@@ -58,16 +54,13 @@ public static class AppPaths
     public static string ModulesDirectory             { get; }
 
     /// <summary>
-    /// Returns the per-module data directory under
-    /// <c>%LOCALAPPDATA%\Deckle\modules\&lt;moduleId&gt;\</c>. Modules use
-    /// this as the root to host their own settings file, telemetry sinks,
-    /// model caches, native runtimes, etc. — keeping each module's footprint
-    /// self-contained and independent of the others.
+    /// Returns the per-module data directory
+    /// <c>&lt;UserDataRoot&gt;\modules\&lt;moduleId&gt;\</c>, which keeps each
+    /// module's files self-contained.
     /// </summary>
     /// <param name="moduleId">
-    /// Stable filesystem-safe identifier of the module (e.g. <c>"whisp"</c>,
-    /// <c>"llm"</c>, <c>"askollama"</c>). Convention: lowercase, ASCII, no
-    /// spaces.
+    /// Stable filesystem-safe identifier of the module. Convention: lowercase,
+    /// ASCII, no spaces.
     /// </param>
     public static string GetModuleDirectory(string moduleId)
     {
@@ -101,8 +94,8 @@ public static class AppPaths
         // must exist at the very first emission. Models, native, and benchmark
         // are populated by the wizard or the user; creating them empty here
         // would mask the "missing dependencies" detection done by
-        // Setup/NativeRuntime and Setup/SpeechModels. Backups dir is created on
-        // first write by SettingsBackupService.
+        // NativeRuntime and SpeechModels. Backups dir is created on first write
+        // by SettingsBackupService.
         Directory.CreateDirectory(UserDataRoot);
         Directory.CreateDirectory(TelemetryDirectory);
         Directory.CreateDirectory(TrackpadTelemetryDirectory);
@@ -112,11 +105,9 @@ public static class AppPaths
         TryMigrateLegacySettingsLayout();
     }
 
-    // Best-effort migration of the previous layout where settings lived in a
-    // dedicated <UserDataRoot>\settings\ subfolder. The new layout puts the
-    // single settings.json at the root and the backups\ folder beside it.
-    // No-op once the migration has run; failures are swallowed so a quirky
-    // filesystem state doesn't bring the app down at start-up.
+    // Moves a legacy <UserDataRoot>\settings\ subfolder (settings.json and
+    // backups\) to the root layout. No-op once done; failures are swallowed
+    // so a quirky filesystem state doesn't bring the app down at start-up.
     private static void TryMigrateLegacySettingsLayout()
     {
         try
@@ -141,13 +132,8 @@ public static class AppPaths
         }
     }
 
-    // <UserDataRoot> resolution order:
-    //   1. DECKLE_DATA_ROOT env var (dev override)
-    //   2. %LOCALAPPDATA%\<AppFolderName>\        ← canonical Windows location
-    //   3. <exeDir>\<AppFolderName>\              ← portable fallback
-    //
-    // Step 3 covers sandboxed runs where LOCALAPPDATA isn't available
-    // (rare, but a USB-stick portable mode is a plausible future use).
+    // The exe-folder fallback covers sandboxed runs where LOCALAPPDATA isn't
+    // available.
     private static string ResolveUserDataRoot()
     {
         string? overrideRoot = Environment.GetEnvironmentVariable(DataRootEnvVar);

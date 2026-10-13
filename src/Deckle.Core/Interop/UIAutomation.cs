@@ -2,13 +2,11 @@ using System.Runtime.InteropServices;
 
 namespace Deckle.Core;
 
-// ── UI Automation — focused-element text-editability probe ──────────────────
+// ── UI Automation — focused-element probes ───────────────────────────────────
 //
-// Used by TranscriptionEngine.PasteFromClipboard to decide whether the window that
-// currently owns the keyboard focus at Stop time is safe to paste into.
-// "Safe" means: UIA can answer, and the focused element is a text-accepting
-// control (Edit or Document). "Can't tell" (UIA refuses, COM exception,
-// protected process) is treated as not safe — clipboard-only path.
+// Every probe reads the system-focused element and returns false when UIA
+// cannot answer (UIA refuses, COM exception, protected process). The paste
+// and autocorrect gates treat that "can't tell" as not safe.
 //
 // COM interop via classic ComImport (no AOT in this project). Only the vtable
 // slots actually needed are declared; earlier slots are placeholders with
@@ -38,19 +36,16 @@ public static partial class UIAutomation
     private const int UIA_ValueIsReadOnlyPropertyId            = 30046;
     private const int UIA_IsTextEditPatternAvailablePropertyId = 30149;
 
-    // CoClass CUIAutomation.
     private static readonly Guid CLSID_CUIAutomation =
         new("FF48DBA4-60EF-4201-AA87-54103EEF594E");
 
-    // Lazy-cached singleton. The UIAutomation client object is thread-safe
-    // and meant to be reused across the life of the process.
+    // The UIAutomation client object is thread-safe and meant to be reused
+    // across the life of the process.
     private static IUIAutomation? _instance;
     private static readonly object _lock = new();
 
-    // Returns true only when UIA confirms that the system-focused element
-    // accepts text input (ControlType is Edit or Document). Any other outcome
-    // — element not found, exception, unknown ControlType — returns false and
-    // fills `diagnostic` with a short line for the Paste log source.
+    // Strict paste gate: true only when the focused element's ControlType is
+    // Edit or Document. `diagnostic` carries a short line for the Paste log.
     public static bool IsFocusedElementTextEditable(out string diagnostic)
     {
         try
@@ -90,15 +85,14 @@ public static partial class UIAutomation
     // verdict is auditable in the logs. Returns false when UIA cannot answer at
     // all — the caller treats that as an unknown surface (observe, never correct).
     //
-    // Editability is no longer the strict Edit/Document ControlType: a multi-line
-    // contenteditable surface (Chromium/Electron apps — Claude, Discord, …)
-    // reports a non-Edit ControlType yet exposes the Text pattern, which is why
-    // the strict gate silently withheld every correction there. We accept any
-    // editable-text signal: the explicit TextEdit pattern, a writable Value, or
-    // a Text provider. The bare Text-provider clause is deliberately broad (a
-    // read-only document also exposes it) and stays safe because corrections are
-    // gated by explicit per-app enrollment; the non-enrolled notification path
-    // tightens it later from the signature captured here.
+    // Editability is wider than the strict Edit/Document ControlType: a
+    // contenteditable surface in Chromium/Electron apps reports a non-Edit
+    // ControlType yet exposes the Text pattern, so the strict test would
+    // withhold every correction there. Any editable-text signal counts: the
+    // TextEdit pattern, a writable Value, or a Text provider. The bare
+    // Text-provider clause is deliberately broad (a read-only document also
+    // exposes it) and stays safe because corrections are gated by explicit
+    // per-app enrollment.
     public static bool TryDescribeFocusedElement(
         out bool isPassword, out bool isTextEditable, out int processId, out string diagnostic)
     {
@@ -198,7 +192,6 @@ public static partial class UIAutomation
         }
     }
 
-    // IUIAutomation IID: 30CBE57D-D9D0-452A-AB13-7AC5AC4825EE
     // Declared up to GetFocusedElement (vtable slot 5); earlier slots are
     // opaque placeholders because we never call them.
     [ComImport]
@@ -214,8 +207,7 @@ public static partial class UIAutomation
         [PreserveSig] int GetFocusedElement(out IUIAutomationElement? el);
     }
 
-    // IUIAutomationElement IID: D22108AA-8AC5-49A5-837B-37BBB3D7591E
-    // Declared up to GetCurrentPropertyValue (slot 7).
+    // Declared in vtable order up to GetCurrentPatternAs (slot 11).
     [ComImport]
     [Guid("D22108AA-8AC5-49A5-837B-37BBB3D7591E")]
     [InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]

@@ -10,10 +10,6 @@ public static partial class NativeMethods
 
     public const int WM_HOTKEY = 0x0312;
 
-    // Sent to the focused window when the active input language changes
-    // (layout switch via Win+Space, language bar, etc.). We intercept it in
-    // the hotkey host subclass to re-resolve the VK for the "left of 1" key
-    // and re-register all hotkeys under the new layout.
     public const int WM_INPUTLANGCHANGE = 0x0051;
 
     public const uint MOD_ALT      = 0x0001;
@@ -33,15 +29,11 @@ public static partial class NativeMethods
     [DllImport("user32.dll", SetLastError = true)]
     public static extern bool UnregisterHotKey(IntPtr hWnd, int id);
 
-    // Translates a scancode/virtual-key via a specific keyboard layout (HKL).
-    // Needed for layout portability: at registration time we resolve the VK
-    // of each hotkey's scancode under the *current* HKL, so the physical key
-    // is always matched regardless of the active layout.
     [DllImport("user32.dll", CharSet = CharSet.Unicode)]
     public static extern uint MapVirtualKeyExW(uint uCode, uint uMapType, IntPtr dwhkl);
 
-    // Returns the HKL (keyboard layout handle) of the specified thread, or
-    // of the active thread when idThread == 0.
+    // idThread == 0 returns the calling thread's layout, not the foreground
+    // window's.
     [DllImport("user32.dll")]
     public static extern IntPtr GetKeyboardLayout(uint idThread);
 

@@ -9,14 +9,6 @@ namespace Deckle.Core;
 // process mutex so two concurrent app instances don't clobber each
 // other's writes.
 //
-// Why a generic helper rather than re-implementing this for each module?
-// Each module that owns settings (Whisp, Llm, Capture, Telemetry, the
-// Settings shell itself) needs the same disk discipline:
-//   • read defaults on a missing or unparseable file (warn, don't crash)
-//   • debounce a stream of UI-driven mutations (slider drag at 60 Hz)
-//   • survive a process kill mid-write (atomic Move)
-//   • coordinate two app instances (mutex per file)
-//
 // Logging is delegate-injected (logInfo / logVerbose / logWarning /
 // logError), so this class stays in Deckle.Core (the lowest-level lib,
 // no diagnostics-module dependency). Each caller passes lambdas that
@@ -26,8 +18,8 @@ namespace Deckle.Core;
 // before strict deserialization (preDeserializeMigration: e.g. legacy
 // JSON key renames) and rewrite the in-memory POCO after load
 // (postLoadMigration: e.g. fill missing ids on first launch). Either
-// returning `mutated == true` causes Load to flag the load as migrated
-// so the caller can flush the cleanup back to disk.
+// hook reporting a change flags the load as migrated, and the
+// constructor and Reload then flush the cleanup back to disk.
 //
 // Thread-safety: Current is read under a lock; mutations to the POCO
 // graph itself are the caller's responsibility (the typical pattern is
@@ -49,13 +41,12 @@ public sealed class JsonSettingsStore<T> where T : class, new()
     private readonly System.Threading.Timer _debounceTimer;
     private T _current;
 
-    /// <summary>Snapshot of the in-memory POCO under the store's lock.</summary>
+    /// <summary>The live in-memory POCO, not a copy.</summary>
     public T Current
     {
         get { lock (_lock) return _current; }
     }
 
-    /// <summary>The on-disk JSON file backing this store (resolved at construction).</summary>
     public string Path => _path;
 
     /// <summary>
@@ -91,9 +82,8 @@ public sealed class JsonSettingsStore<T> where T : class, new()
             System.Threading.Timeout.Infinite,
             System.Threading.Timeout.Infinite);
 
-        // If the on-disk file carried legacy keys or required post-load
-        // patching, rewrite it now so the obsolete shape is gone after
-        // first launch — no need to wait for the user to mutate a setting.
+        // Rewrite a migrated file now, so the obsolete shape is gone without
+        // waiting for the user to change a setting.
         if (migrated) Flush();
     }
 
@@ -137,9 +127,8 @@ public sealed class JsonSettingsStore<T> where T : class, new()
         }
         catch (Exception ex)
         {
-            // Parse failure falls back to defaults — the app still runs, so
-            // this is a Warning rather than an Error. Includes the path +
-            // exception type so the broken file is easy to locate.
+            // The app still runs on defaults, so this is a Warning rather
+            // than an Error.
             _logWarning?.Invoke(
                 $"parse failed, fallback to defaults | path={_path} | error={ex.GetType().Name}: {ex.Message}");
             // Same treatment as the missing-file defaults above: a post-load hook
@@ -154,8 +143,7 @@ public sealed class JsonSettingsStore<T> where T : class, new()
 
     /// <summary>
     /// Schedule a disk write 300 ms from now. Subsequent calls within the
-    /// window reset the timer — typical UI pattern (slider drag fires
-    /// dozens of mutations per second; we only persist the final value).
+    /// window reset the timer, so a slider drag persists only its final value.
     /// </summary>
     public void Save()
     {
@@ -163,11 +151,8 @@ public sealed class JsonSettingsStore<T> where T : class, new()
     }
 
     /// <summary>
-    /// Replace the in-memory POCO with a fresh instance and schedule a
-    /// debounced save. Used by "Reset to defaults" UI actions: callers
-    /// build a freshly-instantiated <typeparamref name="T"/> with the
-    /// constructor defaults and pass it here. The Changed event fires
-    /// once the disk write lands.
+    /// Replace the in-memory POCO and schedule a debounced save. The
+    /// Changed event fires once the disk write lands, not here.
     /// </summary>
     public void Replace(T newValue)
     {
@@ -182,8 +167,6 @@ public sealed class JsonSettingsStore<T> where T : class, new()
     /// <summary>
     /// Synchronous write. Used directly when a debounce window is
     /// inappropriate (process exit, restart, restore from backup).
-    /// Holds a per-store named mutex so two concurrent app instances
-    /// can't write to the same file at the same time.
     /// </summary>
     public void Flush()
     {
@@ -218,8 +201,8 @@ public sealed class JsonSettingsStore<T> where T : class, new()
                 json = JsonSerializer.Serialize(_current, _jsonOptions);
             }
 
-            // Atomic write: temp file then Move. Avoids a truncated JSON
-            // on disk if the process is killed mid-write.
+            // Temp file then Move: a process killed mid-write leaves no
+            // truncated JSON on disk.
             string tmp = _path + ".tmp";
             File.WriteAllText(tmp, json);
             File.Move(tmp, _path, overwrite: true);

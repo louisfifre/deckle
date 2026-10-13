@@ -19,7 +19,6 @@ public static partial class NativeMethods
     public const uint SWP_FRAMECHANGED = 0x0020;
     public const uint SWP_SHOWWINDOW   = 0x0040;
 
-    // SW_SHOWNOACTIVATE: shows the window without giving it focus.
     public const int SW_SHOWNOACTIVATE = 4;
     public const int SW_HIDE           = 0;
 
@@ -44,21 +43,18 @@ public static partial class NativeMethods
     public static extern bool SetForegroundWindow(IntPtr hWnd);
 
     // ── Activation ───────────────────────────────────────────────────────────
-    // WM_ACTIVATE reaches a window when it gains or loses activation. On
-    // WA_INACTIVE, lParam is the window being activated (zero when none), so
-    // an owner can tell whether activation left for one of its own popup
+    // On WA_INACTIVE, lParam is the window being activated (zero when none),
+    // so an owner can tell whether activation left for one of its own popup
     // windows or for somewhere else.
     public const uint WM_ACTIVATE = 0x0006;
     public const int  WA_INACTIVE = 0;
 
-    // GetWindow(hWnd, GW_OWNER): the owner of a top-level window, zero when
-    // it has none.
     public const uint GW_OWNER = 4;
 
     [DllImport("user32.dll", SetLastError = true)]
     public static extern IntPtr GetWindow(IntPtr hWnd, uint uCmd);
 
-    // ── Window Identification / Keyboard Focus (debug) ───────────────────────
+    // ── Window Identification / Keyboard Focus ───────────────────────────────
 
     [DllImport("user32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
     public static extern int GetWindowText(IntPtr hWnd, System.Text.StringBuilder lpString, int nMaxCount);
@@ -126,15 +122,13 @@ public static partial class NativeMethods
     // move/size loop: WM_ENTERSIZEMOVE once at the start, a burst of WM_SIZE /
     // WM_SIZING while the pointer moves, then WM_EXITSIZEMOVE once when
     // DefWindowProc returns. Maximize, snap and programmatic SetWindowPos do NOT
-    // enter this loop — they emit WM_SIZE alone. A resize coalescer brackets the
-    // gesture on ENTER/EXIT and treats a WM_SIZE seen outside it as a one-shot
-    // (the safety net). See Deckle.Shell/ResizeCoalescer.
+    // enter this loop — they emit WM_SIZE alone.
     public const uint WM_SIZE          = 0x0005;
     public const uint WM_ENTERSIZEMOVE = 0x0231;
     public const uint WM_EXITSIZEMOVE  = 0x0232;
 
-    // WM_SIZE wParam value when the window was minimized (client area collapses
-    // to 0×0). A coalescer ignores it so a minimize triggers no phantom recompute.
+    // WM_SIZE wParam value when the window was minimized; the reported client
+    // area is then 0×0.
     public const int SIZE_MINIMIZED    = 1;
 
     // ── Layered Window (global alpha, Mica included) ─────────────────────────
@@ -159,17 +153,12 @@ public static partial class NativeMethods
     public const uint WS_EX_LAYERED    = 0x00080000;
     // WS_EX_TOOLWINDOW: excludes the window from Alt+Tab and the taskbar.
     // Observed side effect (undocumented): topmost tool windows appear on all
-    // virtual desktops. This is the mechanism PowerToys uses for its overlays.
-    // Best-effort; may break on future Windows builds.
+    // virtual desktops. Best-effort; may break on future Windows builds.
     public const uint WS_EX_TOOLWINDOW = 0x00000080;
     // WS_EX_TRANSPARENT: excludes the window from hit-testing. Clicks, cursor,
-    // and selection pass through the HUD and reach the window below,
-    // regardless of the applied layered alpha.
+    // and selection reach the window below, regardless of the applied layered
+    // alpha.
     public const uint WS_EX_TRANSPARENT = 0x00000020;
-    // WS_EX_NOACTIVATE: the window does not become foreground when shown or
-    // clicked. Aligned with the HUD contract: visible information, never focus
-    // stealing. Future interactive menus must live on a separate surface, not
-    // on this passthrough window.
     public const uint WS_EX_NOACTIVATE = 0x08000000;
     // WS_EX_TOPMOST: born above all non-topmost windows, kept there even when
     // deactivated. Set at creation deliberately — a post-creation
@@ -194,11 +183,6 @@ public static partial class NativeMethods
     public static extern int MessageBox(IntPtr hWnd, string text, string caption, uint type);
 
     // ── DWM window attributes ─────────────────────────────────────────────────
-    //
-    // DWMWA_WINDOW_CORNER_PREFERENCE (33) controls whether DWM clips the HWND
-    // to rounded corners at the compositor level. DWMWA_BORDER_COLOR (34)
-    // controls the 1-dip system accent stroke DWM paints around the HWND.
-    // DWMWA_COLOR_NONE (0xFFFFFFFE) is the sentinel that disables that stroke.
 
     public const uint DWMWA_WINDOW_CORNER_PREFERENCE = 33;
     public const uint DWMWCP_DEFAULT                 = 0;
@@ -210,24 +194,14 @@ public static partial class NativeMethods
     public const uint DWMWA_COLOR_DEFAULT = 0xFFFFFFFF; // system default accent stroke
     public const uint DWMWA_COLOR_NONE    = 0xFFFFFFFE; // disables the stroke entirely
 
-    // DWMWA_SYSTEMBACKDROP_TYPE (38) controls the DWM system backdrop layer
-    // rendered behind the window (Mica / Acrylic / Tabbed). DWMSBT_NONE (1)
-    // explicitly disables the backdrop — distinct from DWMSBT_AUTO (0) which
-    // lets the OS pick. WinUI 3 may auto-apply a backdrop when the Window's
-    // SystemBackdrop property is unset on recent WindowsAppSDK versions;
-    // setting the DWM attribute is the Win32-side guarantee that nothing
-    // paints behind our opaque content.
     public const uint DWMWA_SYSTEMBACKDROP_TYPE = 38;
     public const uint DWMSBT_AUTO              = 0;
     public const uint DWMSBT_NONE              = 1;
 
-    // DWMWA_NCRENDERING_POLICY (2) tells DWM whether to render non-client
-    // decorations (frame, 1-dip accent stroke, Shell dropshadow around
-    // rounded corners) for the window. DWMNCRP_DISABLED (1) turns all of
-    // that off — needed on the overlay cards so their Win11 rounded-corner
-    // Shell shadow stops bleeding down onto the main HUD sitting 12 dip
-    // below. The DWMWCP_ROUND corner clipping is a separate compositor-
-    // level attribute and keeps working with NC rendering disabled.
+    // DWMNCRP_DISABLED turns off DWM's non-client rendering, the Win11
+    // Shell drop shadow around rounded corners included. The DWMWCP_ROUND
+    // corner clipping is a separate compositor-level attribute and keeps
+    // working with NC rendering disabled.
     public const uint DWMWA_NCRENDERING_POLICY = 2;
     public const uint DWMNCRP_USEWINDOWSTYLE   = 0;
     public const uint DWMNCRP_DISABLED         = 1;

@@ -33,9 +33,6 @@ public static partial class NativeMethods
     public static extern uint waveInClose(IntPtr hwi);
 
     // ── waveOut (render audio PCM) ──────────────────────────────────────────
-    // Symmetric mirror of the waveIn capture API above. Used by
-    // Deckle.Audio/SpeakerOutput to play a synthesized clip to the default
-    // render device. Reuses the WAVEFORMATEX / WAVEHDR structs in Structs.cs.
 
     [DllImport("winmm.dll")]
     public static extern uint waveOutOpen(
@@ -79,7 +76,7 @@ public static partial class NativeMethods
         public ushort wReserved1;
     }
 
-    // ── kernel32 (event, memory) ─────────────────────────────────────────────
+    // ── kernel32 (event, handle) ─────────────────────────────────────────────
 
     [DllImport("kernel32.dll")]
     public static extern IntPtr CreateEvent(

@@ -10,16 +10,15 @@ namespace Deckle.Core;
 // ── Downloader ───────────────────────────────────────────────────────────────
 //
 // Streams an HTTP download to disk while reporting progress and computing
-// SHA-256 incrementally. The shared file-fetch primitive — same code path for a
-// 700 KB model and a 3 GB one — used by the first-run wizard and by any module
-// that provisions its own model on demand.
+// SHA-256 incrementally.
 //
 // Three guarantees:
 //
 //   1. Atomic write — bytes go to <destPath>.partial during the transfer
 //      and the file is renamed to <destPath> only after SHA-256 verifies
-//      (or unconditionally when ExpectedSha256 is null). An interrupted
-//      or aborted download leaves a .partial the next attempt overwrites.
+//      (or unconditionally when ExpectedSha256 is null). A failed or
+//      cancelled download deletes its .partial; one left by a killed
+//      process is overwritten by the next attempt.
 //
 //   2. Streaming hash — IncrementalHash digests every buffer as it's
 //      written, so verification is O(1) memory and doesn't require a
@@ -38,22 +37,17 @@ public static class Downloader
 {
     private const int BufferSize = 81920; // 80 KB, matches Stream.CopyToAsync default
 
-    // Throttle progress reporting so a 3 GB download doesn't dispatch 39 000
-    // callbacks at the UI thread. IProgress<T>.Report posts on the captured
-    // SyncContext (the UI dispatcher when the page wired up the Progress
-    // instance), and posting every 80 KB saturates the message pump enough
-    // to freeze the window. 200 ms gives ~5 reports per second — smooth
-    // perceived progress, no flood. The final position is always reported
-    // outside the loop so the bar lands at 100% regardless of throttling.
+    // IProgress<T>.Report posts on the captured SyncContext (the UI
+    // dispatcher when a page created the Progress instance), and a post for
+    // every buffer saturates the message pump enough to freeze the window.
     private const int ProgressReportThrottleMs = 200;
 
     private static readonly HttpClient _http = CreateHttpClient();
 
     public sealed record DownloadProgress(long BytesDownloaded, long? TotalBytes)
     {
-        // Null when the server didn't send Content-Length — the UI shows
-        // an indeterminate bar in that case (rare for HuggingFace, common
-        // for proxied or gzipped responses).
+        // Null when the server didn't send Content-Length (common for proxied
+        // or gzipped responses); the UI then shows an indeterminate bar.
         public double? Percent => TotalBytes is > 0
             ? (double)BytesDownloaded / TotalBytes.Value
             : null;
@@ -129,9 +123,6 @@ public static class Downloader
                     $"checksum mismatch: expected {expectedSha256}, got {actualSha}");
             }
 
-            // Atomic publish: rename .partial to the final name. File.Move
-            // with overwrite handles a stale destination from an interrupted
-            // previous run.
             File.Move(partialPath, destPath, overwrite: true);
 
             return DownloadResult.Ok(actualSha);
@@ -156,8 +147,7 @@ public static class Downloader
         });
         client.Timeout = Timeout.InfiniteTimeSpan;
         // User-Agent helps shared infrastructure logs distinguish our traffic
-        // from generic curl/wget. Bump the brand string when the app rename
-        // lands.
+        // from generic curl/wget.
         client.DefaultRequestHeaders.UserAgent.ParseAdd("Deckle/1.0");
         return client;
     }

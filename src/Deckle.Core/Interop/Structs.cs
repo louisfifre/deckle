@@ -11,9 +11,8 @@ public struct POINT
 }
 
 // ── RAWINPUTDEVICE ────────────────────────────────────────────────────────────
-// Describes a source device for RegisterRawInputDevices.
 // For the mouse: usUsagePage=0x01 (Generic Desktop), usUsage=0x02 (Mouse).
-// dwFlags=RIDEV_INPUTSINK: receive events even without focus (hwndTarget required).
+// dwFlags=RIDEV_INPUTSINK requires a hwndTarget.
 [StructLayout(LayoutKind.Sequential)]
 public struct RAWINPUTDEVICE
 {
@@ -25,7 +24,6 @@ public struct RAWINPUTDEVICE
 
 // ── NOTIFYICONDATA ────────────────────────────────────────────────────────────
 //
-// Shell32 structure for managing the notification area icon.
 // CharSet.Unicode: szTip/szInfo fields are WCHAR[].
 // cbSize must be set to Marshal.SizeOf<NOTIFYICONDATA>() before any call.
 [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
@@ -53,10 +51,9 @@ public struct NOTIFYICONDATA
 
 // ── NOTIFYICONIDENTIFIER ──────────────────────────────────────────────────────
 //
-// Tray icon identifier for Shell_NotifyIconGetRect (Vista+). cbSize must be
-// Marshal.SizeOf<NOTIFYICONIDENTIFIER>() before any call. An icon is addressed
-// either by (hWnd, uID) or by guidItem; Deckle uses the (hWnd, uID) pair as in
-// NOTIFYICONDATA.
+// cbSize must be Marshal.SizeOf<NOTIFYICONIDENTIFIER>() before any call. An
+// icon is addressed either by (hWnd, uID) or by guidItem; Deckle uses the
+// (hWnd, uID) pair as in NOTIFYICONDATA.
 [StructLayout(LayoutKind.Sequential)]
 public struct NOTIFYICONIDENTIFIER
 {
@@ -91,10 +88,9 @@ public struct WNDCLASSEX
 
 // Flattened INPUT: represents a keyboard event for SendInput.
 //
-// The Windows INPUT struct contains a C union (keyboard, mouse, hardware).
-// Total size on 64-bit Windows = 40 bytes (MOUSEINPUT fixes the union size).
-// The union is sized by MOUSEINPUT (the largest member).
-// The _pad field at offset 32 forces Marshal.SizeOf to return 40.
+// The native union is sized by MOUSEINPUT, its largest member, so INPUT is
+// 40 bytes on 64-bit Windows. The _pad field at offset 32 forces
+// Marshal.SizeOf to return 40.
 [StructLayout(LayoutKind.Explicit)]
 public struct INPUT
 {

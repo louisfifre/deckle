@@ -25,10 +25,9 @@ public static partial class NativeMethods
     [DllImport("shell32.dll", CharSet = CharSet.Unicode)]
     public static extern bool Shell_NotifyIcon(uint dwMessage, ref NOTIFYICONDATA lpData);
 
-    // Returns the tray icon rect in physical pixels (screen coordinates),
-    // identified by (hWnd, uID). Vista+. The returned HRESULT is S_OK (0) on
-    // success; any negative value indicates failure (missing icon, hidden in
-    // overflow, or shell busy during an explorer.exe restart).
+    // Returns the tray icon rect in physical pixels (screen coordinates).
+    // Any negative HRESULT is a failure: missing icon, hidden in overflow, or
+    // shell busy during an explorer.exe restart.
     [DllImport("shell32.dll")]
     public static extern int Shell_NotifyIconGetRect(
         ref NOTIFYICONIDENTIFIER identifier, out RECT iconLocation);
