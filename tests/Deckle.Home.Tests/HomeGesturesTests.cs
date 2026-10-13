@@ -482,8 +482,8 @@ public class HomeGesturesTests
     [Fact]
     public async Task CreateDeviceAcceptsAnInitialBodyAndALiveSupplierOption()
     {
-        // Supplier is an open vocabulary since the 2026-08-12 reboot: its
-        // options live in the space, not in the compiled schema.
+        // Supplier is an open vocabulary: its options live in the space, not
+        // in the compiled schema.
         using var server = new FakeHomeAnytypeServer();
         server.AddSchemaTag(HomeSchema.Properties.Supplier, "occasion", "Occasion");
 

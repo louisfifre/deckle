@@ -13,7 +13,7 @@ internal sealed class HomeSchemaRuntime
     }
 
     // Key of the app-created collection-layout Zone type, discovered from
-    // the live snapshot; null while Louis has not created it yet.
+    // the live snapshot; null until the type is created in the app.
     public string? FloorTypeKey { get; }
 
     public SchemaPropertyInfo Property(string key) =>
