@@ -1,31 +1,33 @@
 <UserControl
     x:Class="Deckle.Llm.Rewrite.LlmGeneralSection"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:catalog="using:Deckle.Catalog">
 
     <StackPanel Spacing="{StaticResource SettingsCardSpacing}">
-        <Grid>
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="*" />
-                <ColumnDefinition Width="Auto" />
-            </Grid.ColumnDefinitions>
-            <TextBlock x:Uid="LlmGeneralHeader"
-                       Grid.Column="0"
-                       Style="{StaticResource SettingsSectionHeaderTextBlockStyle}" />
-            <HyperlinkButton x:Uid="Settings_SectionResetLink"
-                             Grid.Column="1"
-                             VerticalAlignment="Bottom"
-                             Margin="0,0,0,2"
-                             Click="ResetSection_Click" />
-        </Grid>
-
-        <!-- Composed region — the "Enable rewriting" master toggle and the
-             "Ollama endpoint" URL, declared in LlmGeneralViewModel.Settings.cs
-             and built into this host by ComposeSettings(). The endpoint carries
-             VisibleWhen(() => Enabled), so it collapses with the rest of the page
-             when rewriting is off (mask-not-grey). Each card carries its own
-             inline reset off the POCO default. -->
-        <StackPanel x:Name="ComposedHost"
+        <!-- Composed region — the "Enable rewriting" module switch, first on the
+             page and alone, outside any section. Declared as ModuleSwitch in
+             LlmGeneralViewModel.Settings.cs and built into this host by
+             ComposeSettings(). It stays visible when rewriting is off; it carries
+             its own inline reset off the POCO default. -->
+        <StackPanel x:Name="MasterHost"
                     Spacing="{StaticResource SettingsCardSpacing}" />
+
+        <!-- The General section: the "Ollama endpoint" URL, declared in
+             LlmGeneralViewModel.Settings.cs. The block is collapsed from
+             code-behind while rewriting is off (mask-not-grey), so its title does
+             not stand over an empty body. Its reset covers the switch too (see
+             ResetSection_Click). -->
+        <catalog:SettingsSection x:Name="GeneralBlock"
+                                 x:Uid="LlmGeneralBlock"
+                                 HasReset="True"
+                                 ResetRequested="ResetSection_Click">
+            <!-- Composed region — the endpoint carries VisibleWhen(() => Enabled),
+                 so it collapses with the rest of the page when rewriting is off
+                 (mask-not-grey). The card carries its own inline reset off the
+                 POCO default. -->
+            <StackPanel x:Name="ComposedHost"
+                        Spacing="{StaticResource SettingsCardSpacing}" />
+        </catalog:SettingsSection>
     </StackPanel>
 </UserControl>

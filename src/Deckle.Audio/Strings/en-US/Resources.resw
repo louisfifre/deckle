@@ -119,16 +119,6 @@
   <!-- Nav label — module-owned. The Settings shell reads this bare key straight
        into the module's NavigationViewItem.Content (SettingsModuleDescriptor.LabelKey). -->
 
-  <!-- Shared section-reset link. Copied here (each WinUI assembly resolves x:Uid
-       against its own PRI subtree); the same key also lives in the Settings shell
-       for the pages that stayed there. -->
-  <data name="Settings_SectionResetLink.Content" xml:space="preserve">
-    <value>Reset</value>
-  </data>
-  <data name="Settings_SectionResetLink.ToolTipService.ToolTip" xml:space="preserve">
-    <value>Reset this section to defaults</value>
-  </data>
-
   <!-- RecordingPage — page chrome (x:Uid) -->
   <data name="RecordingPageHeader.Title" xml:space="preserve">
     <value>Recording</value>
@@ -136,7 +126,7 @@
   <data name="RecordingPageHeader.Description" xml:space="preserve">
     <value>Microphone selection, maximum recording length, signal pre-processing with a listening test, and voice level window calibration.</value>
   </data>
-  <data name="RecordingPageSectionHeaderLabel.Text" xml:space="preserve">
+  <data name="RecordingPageDefaultsSection.Title" xml:space="preserve">
     <value>Defaults</value>
   </data>
 
@@ -278,7 +268,7 @@
   </data>
 
   <!-- Diagnostics section — microphone-telemetry opt-in (section header + composed card) -->
-  <data name="RecordingPageTelemetryHeader.Text" xml:space="preserve">
+  <data name="RecordingPageTelemetrySection.Title" xml:space="preserve">
     <value>Diagnostics</value>
   </data>
   <data name="RecordingMicrophoneTelemetryCard.Header" xml:space="preserve">

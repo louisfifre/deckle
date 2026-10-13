@@ -13,12 +13,9 @@
          collapsed while the master switch is off (mask-never-grey) and one line
          says why — the door on the parent page and the rail entry stay, so the
          page must answer for itself when nothing behind them applies. -->
-    <!-- No section-header style here, unlike the parent and the sibling: this page
-         carries a single section and its tabs name it, so nothing resolves that
-         style and declaring it would be dead XAML. -->
-    <Page.Resources>
-        <x:Double x:Key="SettingsCardSpacing">4</x:Double>
-    </Page.Resources>
+    <!-- No SettingsSection block here, unlike the parent and the sibling: this
+         page carries a single section and its tabs name it, so a title would add
+         nothing. The card spacing resource comes from App.xaml. -->
 
     <ScrollViewer Padding="32,24,32,24"
                   VerticalScrollBarVisibility="Auto"

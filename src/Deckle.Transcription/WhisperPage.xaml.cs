@@ -144,7 +144,7 @@ public sealed partial class WhisperPage : Page
             BehaviourHost,
             ViewModel.BehaviourSettings,
             composer => composer.DirtyChanged += (_, _) =>
-                BehaviourResetLink.IsEnabled = composer.IsDirty());
+                BehaviourSection.IsResetEnabled = composer.IsDirty());
         _behaviourComposer = behaviourComposer;
 
         ComposeRegion(UseGpuHost, ViewModel.UseGpuSettingsManifest);

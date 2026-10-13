@@ -323,16 +323,6 @@
        button label flips between "Get started" (success path) and
        "Retry" (any failure path). -->
 
-  <!-- ─── Settings — common section actions ──────────────────────────
-       Per-section "Reset" hyperlink and its tooltip. Reused on every
-       Settings section header (Appearance, Startup, Recording, etc.). -->
-  <data name="Settings_SectionResetLink.Content" xml:space="preserve">
-    <value>Reset</value>
-  </data>
-  <data name="Settings_SectionResetLink.ToolTipService.ToolTip" xml:space="preserve">
-    <value>Reset this section to defaults</value>
-  </data>
-
   <!-- ─── GeneralPage ────────────────────────────────────────────────
        First page in the Settings nav. Page title, page subtitle, then
        sections in order: Shortcuts, Appearance, Startup, Recording,
@@ -343,7 +333,7 @@
   <data name="GeneralAutoPasteCard.Description" xml:space="preserve">
     <value>Also tries to paste into the focused field. The paste is strict and only fires when the target can be safely confirmed — so it rarely triggers. The clipboard is always the reliable path.</value>
   </data>
-  <data name="WhisperPageBehaviourHeaderLabel.Text" xml:space="preserve">
+  <data name="WhisperPageBehaviourSection.Title" xml:space="preserve">
     <value>Overlay and pasting</value>
   </data>
   <data name="GeneralOverlayExpander.Header" xml:space="preserve">
@@ -588,19 +578,19 @@
   <data name="WhisperPageHeader.Description" xml:space="preserve">
     <value>Control how Deckle turns your voice into text. Start with the model and language — then use Speech filtering to fight hallucinations on silences and background noise.</value>
   </data>
-  <data name="WhisperPageModelEngineHeaderLabel.Text" xml:space="preserve">
+  <data name="WhisperPageModelEngineSection.Title" xml:space="preserve">
     <value>Model &amp; engine</value>
   </data>
-  <data name="WhisperPageSpeechFilteringHeaderLabel.Text" xml:space="preserve">
+  <data name="WhisperPageSpeechFilteringSection.Title" xml:space="preserve">
     <value>Speech filtering</value>
   </data>
-  <data name="WhisperPageSpeechFilteringBodyLabel.Text" xml:space="preserve">
+  <data name="WhisperPageSpeechFilteringSection.Caption" xml:space="preserve">
     <value>Pre-filter your audio to strip silence and background noise before transcription — the main defense against phantom text on quiet stretches.</value>
   </data>
-  <data name="WhisperPageOutputFiltersHeaderLabel.Text" xml:space="preserve">
+  <data name="WhisperPageOutputFiltersSection.Title" xml:space="preserve">
     <value>Output filters</value>
   </data>
-  <data name="WhisperPageContextSegmentationHeaderLabel.Text" xml:space="preserve">
+  <data name="WhisperPageContextSegmentationSection.Title" xml:space="preserve">
     <value>Context and segmentation</value>
   </data>
   <data name="WhisperDecodingExpander.Header" xml:space="preserve">
@@ -652,11 +642,11 @@
 
   <!-- ─── WhisperPage — Streaming pipeline (experimental) ─────────────
        Strategy selector + energy-segmenter parameters. -->
-  <data name="WhisperPageStreamingHeaderLabel.Text" xml:space="preserve">
+  <data name="WhisperPageStreamingSection.Title" xml:space="preserve">
     <value>Streaming pipeline (experimental)</value>
   </data>
-  <data name="WhisperPageStreamingBodyLabel.Text" xml:space="preserve">
-    <value>Instead of transcribing the whole take in one pass at Stop, cut the live recording into utterances on silence and transcribe each as you speak. Most of your dictation is already done by the time you Stop, and a runaway loop is confined to a single utterance.</value>
+  <data name="WhisperPageStreamingSection.Caption" xml:space="preserve">
+    <value>Cut the live recording into utterances on silence and transcribe each as you speak, instead of in one pass at Stop.</value>
   </data>
   <data name="WhisperStreamingEnabledCard.Header" xml:space="preserve">
     <value>Use the streaming pipeline</value>
@@ -738,7 +728,7 @@
        carried above under the Overlay/telemetry keys); only the section
        header and the audio-corpus content radio
        are added here. -->
-  <data name="WhisperPageDiagnosticsHeader.Text" xml:space="preserve">
+  <data name="WhisperPageDiagnosticsSection.Title" xml:space="preserve">
     <value>Diagnostics</value>
   </data>
   <data name="GeneralAudioCorpusContentCard.Header" xml:space="preserve">

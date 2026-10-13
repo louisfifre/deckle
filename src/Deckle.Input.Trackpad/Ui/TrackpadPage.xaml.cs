@@ -38,9 +38,10 @@ public sealed partial class TrackpadPage : Page
     // the revert would otherwise re-enter the handler.
     private bool _suppressElevatedToggle;
 
-    // Drive the two composed section hosts. Held in fields so their subscriptions
-    // to the ViewModel live as long as the (cached) page — the same host-only
-    // pattern GeneralPage/DiagnosticsPage use.
+    // Drive the three composed hosts (the module switch and the two sections). Held
+    // in fields so their subscriptions to the ViewModel live as long as the (cached)
+    // page — the same host-only pattern GeneralPage/DiagnosticsPage use.
+    private SettingsComposer? _enabledComposer;
     private SettingsComposer? _dragComposer;
     private SettingsComposer? _diagnosticsComposer;
 
@@ -56,23 +57,27 @@ public sealed partial class TrackpadPage : Page
     //
     // Host-only, like GeneralPage's sections: the page hands each section's host
     // panel and its manifest (declared in TrackpadViewModel.Settings.cs) to a
-    // composer — the drag section (master toggle + drag-speed slider) and the
-    // diagnostics section (raw-frame recording), one composer each so the two
-    // section headers keep their on-screen order. The composers subscribe to the
-    // ViewModel, so the controls reflect Load() (and each card's inline reset)
-    // with no code-behind sync — the change handlers still live in the VM's
-    // partial setters (Push + Save), which the composers drive through the
-    // descriptor setters.
+    // composer — the module switch (master toggle, first on the page), the drag
+    // section (drag-speed slider) and the diagnostics section (raw-frame
+    // recording), one composer each so they keep their on-screen order. The
+    // composers subscribe to the ViewModel, so the controls reflect Load() (and
+    // each card's inline reset) with no code-behind sync — the change handlers
+    // still live in the VM's partial setters (Push + Save), which the composers
+    // drive through the descriptor setters.
     private void ComposeSettings()
     {
+        _enabledComposer = new SettingsComposer(EnabledHost, ViewModel);
+        _enabledComposer.Compose(ViewModel.TrackpadEnabledSettingsManifest);
+
         _dragComposer = new SettingsComposer(DragHost, ViewModel);
         _dragComposer.Compose(ViewModel.TrackpadDragSettingsManifest);
 
         _diagnosticsComposer = new SettingsComposer(DiagnosticsHost, ViewModel);
         _diagnosticsComposer.Compose(ViewModel.TrackpadDiagnosticsSettingsManifest);
 
-        // The page-level "Reset all" gate spans both composers; re-gate it
-        // whenever either goes dirty.
+        // The page-level "Reset all" gate spans every composer; re-gate it
+        // whenever one goes dirty.
+        _enabledComposer.DirtyChanged += (_, _) => GateResetAll();
         _dragComposer.DirtyChanged += (_, _) => GateResetAll();
         _diagnosticsComposer.DirtyChanged += (_, _) => GateResetAll();
         GateResetAll();
@@ -92,7 +97,7 @@ public sealed partial class TrackpadPage : Page
 
     // ── Whole-page "Reset all" ───────────────────────────────────────────────
     //
-    // Drives both composers back to their defaults at once, from the shared
+    // Drives every composer back to its defaults at once, from the shared
     // header. Active-when-dirty: enabled only while some composed value differs
     // from its default. The header asks before firing (generic wording: nothing
     // user-authored is lost). The Windows-integration acts are commands, not
@@ -100,12 +105,14 @@ public sealed partial class TrackpadPage : Page
     private void GateResetAll()
     {
         Header.IsResetAllEnabled =
+            (_enabledComposer?.IsDirty() ?? false) ||
             (_dragComposer?.IsDirty() ?? false) ||
             (_diagnosticsComposer?.IsDirty() ?? false);
     }
 
     private void ResetAll_Click(object sender, RoutedEventArgs e)
     {
+        _enabledComposer?.ResetAll();
         _dragComposer?.ResetAll();
         _diagnosticsComposer?.ResetAll();
     }

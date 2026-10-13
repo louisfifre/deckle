@@ -10,23 +10,13 @@
 
     <!-- Canonical Settings page layout, identical to TrackpadPage /
          AmbientPage : ScrollViewer Padding 32,24, a StackPanel max 1000 inside
-         a Grid, Spacing=4 between cards, section headers in BodyStrong with
-         Margin 1,30,0,6. The master switch is composed (declared in
-         AutocorrectViewModel.Settings.cs, built into MasterHost by the
-         SettingsComposer) ; below it, two navigation cards drill into the
-         family's child pages, then the exclusion register, and Diagnostics
-         closes the page. The exclusion section is collapsed while the master is
-         off (mask-never-grey). -->
-    <Page.Resources>
-        <x:Double x:Key="SettingsCardSpacing">4</x:Double>
-        <Style x:Key="SettingsSectionHeaderTextBlockStyle"
-               BasedOn="{StaticResource BodyStrongTextBlockStyle}"
-               TargetType="TextBlock">
-            <Style.Setters>
-                <Setter Property="Margin" Value="1,30,0,6" />
-            </Style.Setters>
-        </Style>
-    </Page.Resources>
+         a Grid, Spacing=4 between cards, each section the shared SettingsSection
+         block (the card spacing resource comes from App.xaml). The master switch
+         is composed (declared in AutocorrectViewModel.Settings.cs, built into
+         MasterHost by the SettingsComposer) ; below it, two navigation cards drill
+         into the family's child pages, then the exclusion register, and
+         Diagnostics closes the page. The exclusion section is collapsed while the
+         master is off (mask-never-grey). -->
 
     <ScrollViewer Padding="32,24,32,24"
                   VerticalScrollBarVisibility="Auto"
@@ -85,72 +75,66 @@
                      PropertyChanged; bespoke rather than composed, a live
                      collection with add and undo gestures no composer kind models.
                      Tag is the search index's scroll-to handle; it matches the
-                     SettingSearchEntry's LabelKey. -->
-                <StackPanel x:Name="ExclusionsSection"
-                            Tag="AutocorrectPage_Section_Exclusions"
-                            Spacing="{StaticResource SettingsCardSpacing}">
+                     SettingSearchEntry's LabelKey. It sits on the section block
+                     itself so hiding it hides the title with the cards. -->
+                <catalog:SettingsSection x:Name="ExclusionsSection"
+                                         x:Uid="AutocorrectPageExclusionsSection"
+                                         Tag="AutocorrectPage_Section_Exclusions">
+                    <StackPanel Spacing="{StaticResource SettingsCardSpacing}">
 
-                    <TextBlock x:Uid="AutocorrectPage_Section_Exclusions"
-                               Style="{StaticResource SettingsSectionHeaderTextBlockStyle}" />
+                        <controls:SettingsCard x:Uid="AutocorrectPage_ExcludeCard"
+                                               HeaderIcon="{ui:FontIcon Glyph={StaticResource Icon.Filter}}">
+                            <StackPanel Orientation="Horizontal"
+                                        Spacing="8"
+                                        VerticalAlignment="Center">
+                                <TextBox x:Name="ExclusionBox"
+                                         x:Uid="AutocorrectPage_ExclusionBox"
+                                         Width="200"
+                                         Text="{x:Bind ViewModel.NewExclusion, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                         KeyDown="ExclusionBox_KeyDown" />
+                                <Button x:Uid="AutocorrectPage_ExcludeButton"
+                                        Style="{StaticResource AccentButtonStyle}"
+                                        Command="{x:Bind ViewModel.ExcludeWordCommand}" />
+                            </StackPanel>
+                        </controls:SettingsCard>
 
-                    <TextBlock x:Uid="AutocorrectPage_Exclusions_Body"
-                               Style="{StaticResource BodyTextBlockStyle}"
-                               Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                               TextWrapping="Wrap"
-                               Margin="0,0,0,8" />
+                        <TextBlock x:Name="ExclusionsEmptyState"
+                                   x:Uid="AutocorrectPage_Exclusions_Empty"
+                                   Style="{StaticResource BodyTextBlockStyle}"
+                                   Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                   TextWrapping="Wrap"
+                                   Margin="0,8,0,0"
+                                   Visibility="Collapsed" />
 
-                    <controls:SettingsCard x:Uid="AutocorrectPage_ExcludeCard"
-                                           HeaderIcon="{ui:FontIcon Glyph={StaticResource Icon.Filter}}">
-                        <StackPanel Orientation="Horizontal"
-                                    Spacing="8"
-                                    VerticalAlignment="Center">
-                            <TextBox x:Name="ExclusionBox"
-                                     x:Uid="AutocorrectPage_ExclusionBox"
-                                     Width="200"
-                                     Text="{x:Bind ViewModel.NewExclusion, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                                     KeyDown="ExclusionBox_KeyDown" />
-                            <Button x:Uid="AutocorrectPage_ExcludeButton"
-                                    Style="{StaticResource AccentButtonStyle}"
-                                    Command="{x:Bind ViewModel.ExcludeWordCommand}" />
-                        </StackPanel>
-                    </controls:SettingsCard>
+                        <ItemsControl x:Name="ExclusionsList"
+                                      ItemsSource="{x:Bind ViewModel.ExcludedWords}">
+                            <ItemsControl.ItemsPanel>
+                                <ItemsPanelTemplate>
+                                    <StackPanel Spacing="4">
+                                        <StackPanel.ChildrenTransitions>
+                                            <TransitionCollection>
+                                                <AddDeleteThemeTransition />
+                                            </TransitionCollection>
+                                        </StackPanel.ChildrenTransitions>
+                                    </StackPanel>
+                                </ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate x:DataType="vm:AutocorrectExcludedWordRow">
+                                    <controls:SettingsCard Header="{x:Bind Word}">
+                                        <Button x:Uid="AutocorrectPage_IncludeButton"
+                                                Style="{StaticResource SubtleButtonStyle}"
+                                                Command="{x:Bind IncludeCommand}">
+                                            <FontIcon Glyph="{StaticResource Icon.Delete}"
+                                                      FontSize="16" />
+                                        </Button>
+                                    </controls:SettingsCard>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
 
-                    <TextBlock x:Name="ExclusionsEmptyState"
-                               x:Uid="AutocorrectPage_Exclusions_Empty"
-                               Style="{StaticResource BodyTextBlockStyle}"
-                               Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                               TextWrapping="Wrap"
-                               Margin="0,8,0,0"
-                               Visibility="Collapsed" />
-
-                    <ItemsControl x:Name="ExclusionsList"
-                                  ItemsSource="{x:Bind ViewModel.ExcludedWords}">
-                        <ItemsControl.ItemsPanel>
-                            <ItemsPanelTemplate>
-                                <StackPanel Spacing="4">
-                                    <StackPanel.ChildrenTransitions>
-                                        <TransitionCollection>
-                                            <AddDeleteThemeTransition />
-                                        </TransitionCollection>
-                                    </StackPanel.ChildrenTransitions>
-                                </StackPanel>
-                            </ItemsPanelTemplate>
-                        </ItemsControl.ItemsPanel>
-                        <ItemsControl.ItemTemplate>
-                            <DataTemplate x:DataType="vm:AutocorrectExcludedWordRow">
-                                <controls:SettingsCard Header="{x:Bind Word}">
-                                    <Button x:Uid="AutocorrectPage_IncludeButton"
-                                            Style="{StaticResource SubtleButtonStyle}"
-                                            Command="{x:Bind IncludeCommand}">
-                                        <FontIcon Glyph="{StaticResource Icon.Delete}"
-                                                  FontSize="16" />
-                                    </Button>
-                                </controls:SettingsCard>
-                            </DataTemplate>
-                        </ItemsControl.ItemTemplate>
-                    </ItemsControl>
-
-                </StackPanel>
+                    </StackPanel>
+                </catalog:SettingsSection>
 
                 <!-- ── Diagnostics ───────────────────────────────────────────── -->
                 <!-- The module's observability opt-ins, relocated here from the
@@ -163,11 +147,10 @@
                      section is NOT gated by the master switch: what the module
                      records is a consent that outlives a switch flip, unlike the
                      exclusion section above. -->
-                <TextBlock x:Uid="AutocorrectPageDiagnosticsHeader"
-                           Style="{StaticResource SettingsSectionHeaderTextBlockStyle}" />
-
-                <StackPanel x:Name="DiagnosticsHost"
-                            Spacing="{StaticResource SettingsCardSpacing}" />
+                <catalog:SettingsSection x:Uid="AutocorrectPageDiagnosticsSection">
+                    <StackPanel x:Name="DiagnosticsHost"
+                                Spacing="{StaticResource SettingsCardSpacing}" />
+                </catalog:SettingsSection>
 
             </StackPanel>
         </Grid>

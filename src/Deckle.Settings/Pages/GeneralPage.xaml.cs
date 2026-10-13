@@ -48,7 +48,7 @@ public sealed partial class GeneralPage : Page
     {
         _hotkeysComposer = new SettingsComposer(HotkeysHost, ViewModel);
         _hotkeysComposer.DirtyChanged += (_, _) =>
-            HotkeysResetLink.IsEnabled = _hotkeysComposer.IsDirty();
+            HotkeysSection.IsResetEnabled = _hotkeysComposer.IsDirty();
         _hotkeysComposer.Compose(ViewModel.HotkeySettings);
     }
 
@@ -67,11 +67,11 @@ public sealed partial class GeneralPage : Page
     private void ComposeAppearanceSection()
     {
         _appearanceComposer = new SettingsComposer(AppearanceHost, ViewModel);
-        // Gate the section "Reset" link on the composer's dirtiness, re-evaluated
+        // Gate the section's reset on the composer's dirtiness, re-evaluated
         // each time it raises DirtyChanged (after every RefreshAll). Subscribed
         // before Compose so its closing RefreshAll lands the initial gate too.
         _appearanceComposer.DirtyChanged += (_, _) =>
-            AppearanceResetLink.IsEnabled = _appearanceComposer.IsDirty();
+            AppearanceSection.IsResetEnabled = _appearanceComposer.IsDirty();
         _appearanceComposer.Compose(ViewModel.AppearanceSettings);
     }
 
@@ -87,7 +87,7 @@ public sealed partial class GeneralPage : Page
     {
         _startupComposer = new SettingsComposer(StartupHost, ViewModel);
         _startupComposer.DirtyChanged += (_, _) =>
-            StartupResetLink.IsEnabled = _startupComposer.IsDirty();
+            StartupSection.IsResetEnabled = _startupComposer.IsDirty();
         _startupComposer.Compose(ViewModel.StartupSettings);
     }
 
@@ -102,7 +102,7 @@ public sealed partial class GeneralPage : Page
     {
         _updatesComposer = new SettingsComposer(UpdatesHost, ViewModel);
         _updatesComposer.DirtyChanged += (_, _) =>
-            UpdatesResetLink.IsEnabled = _updatesComposer.IsDirty();
+            UpdatesSection.IsResetEnabled = _updatesComposer.IsDirty();
         _updatesComposer.Compose(ViewModel.UpdatesSettings);
     }
 

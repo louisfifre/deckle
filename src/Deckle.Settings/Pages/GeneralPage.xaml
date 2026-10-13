@@ -8,18 +8,9 @@
     xmlns:catalog="using:Deckle.Catalog">
 
     <!-- Canonical Microsoft Learn pattern (SettingsExpander sample "Settings page
-         example"): StackPanel max 1000 in a Grid, Spacing=4 between cards,
-         Margin="1,30,0,6" on section headers. -->
-    <Page.Resources>
-        <x:Double x:Key="SettingsCardSpacing">4</x:Double>
-        <Style x:Key="SettingsSectionHeaderTextBlockStyle"
-               BasedOn="{StaticResource BodyStrongTextBlockStyle}"
-               TargetType="TextBlock">
-            <Style.Setters>
-                <Setter Property="Margin" Value="1,30,0,6" />
-            </Style.Setters>
-        </Style>
-    </Page.Resources>
+         example"): StackPanel max 1000 in a Grid, Spacing=4 between cards. The
+         section form lives in the shared SettingsSection block; the card
+         spacing resource comes from App.xaml. -->
 
     <ScrollViewer Padding="32,24,32,24"
                   VerticalScrollBarVisibility="Auto"
@@ -36,126 +27,88 @@
                                             x:Uid="GeneralPageHeader"
                                             ResetAllRequested="ResetAll_Click" />
 
-                <!-- ── Hotkeys ─────────────────────────────────────────────── -->
-                <Grid>
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="*" />
-                        <ColumnDefinition Width="Auto" />
-                    </Grid.ColumnDefinitions>
-                    <TextBlock x:Uid="GeneralPageShortcutsHeaderLabel"
-                               Grid.Column="0"
-                               Style="{StaticResource SettingsSectionHeaderTextBlockStyle}" />
-                    <HyperlinkButton x:Name="HotkeysResetLink"
-                                     x:Uid="Settings_SectionResetLink"
-                                     Grid.Column="1"
-                                     VerticalAlignment="Bottom"
-                                     Margin="0,0,0,2"
-                                     Click="ResetHotkeys_Click" />
-                </Grid>
+                <!-- Each section is the shared block: title, optional caption, cards,
+                     and the section-level reset revealed on hover, enabled while a
+                     composed value differs from its default (the code-behind gates
+                     IsResetEnabled off the section's composer). -->
 
-                <!-- Composed: one hotkey card per action the App built
-                     (GeneralViewModel.HotkeySettings); an absent module's card
-                     is hidden. -->
-                <StackPanel x:Name="HotkeysHost"
-                            Spacing="{StaticResource SettingsCardSpacing}" />
+                <!-- ── Hotkeys ─────────────────────────────────────────────── -->
+                <catalog:SettingsSection x:Name="HotkeysSection"
+                                         x:Uid="GeneralPageHotkeysSection"
+                                         HasReset="True"
+                                         ResetRequested="ResetHotkeys_Click">
+                    <!-- Composed: one hotkey card per action the App built
+                         (GeneralViewModel.HotkeySettings); an absent module's card
+                         is hidden. -->
+                    <StackPanel x:Name="HotkeysHost"
+                                Spacing="{StaticResource SettingsCardSpacing}" />
+                </catalog:SettingsSection>
 
                 <!-- ── Appearance ──────────────────────────────────────────── -->
-                <Grid>
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="*" />
-                        <ColumnDefinition Width="Auto" />
-                    </Grid.ColumnDefinitions>
-                    <TextBlock x:Uid="GeneralPageAppearanceHeaderLabel"
-                               Grid.Column="0"
-                               Style="{StaticResource SettingsSectionHeaderTextBlockStyle}" />
-                    <HyperlinkButton x:Name="AppearanceResetLink"
-                                     x:Uid="Settings_SectionResetLink"
-                                     Grid.Column="1"
-                                     VerticalAlignment="Bottom"
-                                     Margin="0,0,0,2"
-                                     Click="ResetAppearance_Click" />
-                </Grid>
-
-                <!-- Composed: the theme picker — the Appearance section's lone
-                     value-backed card. GeneralViewModel.AppearanceSettings declares
-                     it as a Choice descriptor (3 options) and the composer builds the
-                     ComboBox into this host, where the card stood. The section header
-                     and Reset link above stay hand-authored. -->
-                <StackPanel x:Name="AppearanceHost"
-                            Spacing="{StaticResource SettingsCardSpacing}" />
+                <catalog:SettingsSection x:Name="AppearanceSection"
+                                         x:Uid="GeneralPageAppearanceSection"
+                                         HasReset="True"
+                                         ResetRequested="ResetAppearance_Click">
+                    <!-- Composed: the theme picker — the Appearance section's lone
+                         value-backed card. GeneralViewModel.AppearanceSettings declares
+                         it as a Choice descriptor (3 options) and the composer builds the
+                         ComboBox into this host, where the card stood. -->
+                    <StackPanel x:Name="AppearanceHost"
+                                Spacing="{StaticResource SettingsCardSpacing}" />
+                </catalog:SettingsSection>
 
                 <!-- ── Startup ─────────────────────────────────────────────── -->
-                <Grid>
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="*" />
-                        <ColumnDefinition Width="Auto" />
-                    </Grid.ColumnDefinitions>
-                    <TextBlock x:Uid="GeneralPageStartupHeaderLabel"
-                               Grid.Column="0"
-                               Style="{StaticResource SettingsSectionHeaderTextBlockStyle}" />
-                    <HyperlinkButton x:Name="StartupResetLink"
-                                     x:Uid="Settings_SectionResetLink"
-                                     Grid.Column="1"
-                                     VerticalAlignment="Bottom"
-                                     Margin="0,0,0,2"
-                                     Click="ResetStartup_Click" />
-                </Grid>
-
-                <!-- Composed: the "start with Windows" toggle — the Startup
-                     section's lone card. Its registry write and revert-on-refusal
-                     live in the VM setter (OnAutostartEnabledChanged), so the
-                     composer hosts it like any toggle: GeneralViewModel.StartupSettings
-                     declares it and the composer builds the card into this host. -->
-                <StackPanel x:Name="StartupHost"
-                            Spacing="{StaticResource SettingsCardSpacing}" />
+                <catalog:SettingsSection x:Name="StartupSection"
+                                         x:Uid="GeneralPageStartupSection"
+                                         HasReset="True"
+                                         ResetRequested="ResetStartup_Click">
+                    <!-- Composed: the "start with Windows" toggle — the Startup
+                         section's lone card. Its registry write and revert-on-refusal
+                         live in the VM setter (OnAutostartEnabledChanged), so the
+                         composer hosts it like any toggle: GeneralViewModel.StartupSettings
+                         declares it and the composer builds the card into this host. -->
+                    <StackPanel x:Name="StartupHost"
+                                Spacing="{StaticResource SettingsCardSpacing}" />
+                </catalog:SettingsSection>
 
                 <!-- ── Updates ─────────────────────────────────────────────── -->
-                <Grid>
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="*" />
-                        <ColumnDefinition Width="Auto" />
-                    </Grid.ColumnDefinitions>
-                    <TextBlock x:Uid="GeneralPageUpdatesHeaderLabel"
-                               Grid.Column="0"
-                               Style="{StaticResource SettingsSectionHeaderTextBlockStyle}" />
-                    <HyperlinkButton x:Name="UpdatesResetLink"
-                                     x:Uid="Settings_SectionResetLink"
-                                     Grid.Column="1"
-                                     VerticalAlignment="Bottom"
-                                     Margin="0,0,0,2"
-                                     Click="ResetUpdates_Click" />
-                </Grid>
+                <catalog:SettingsSection x:Name="UpdatesSection"
+                                         x:Uid="GeneralPageUpdatesSection"
+                                         HasReset="True"
+                                         ResetRequested="ResetUpdates_Click">
+                    <StackPanel Spacing="{StaticResource SettingsCardSpacing}">
+                        <!-- Composed: the silent-check opt-out — the section's lone
+                             settable value (GeneralViewModel.UpdatesSettings). -->
+                        <StackPanel x:Name="UpdatesHost"
+                                    Spacing="{StaticResource SettingsCardSpacing}" />
 
-                <!-- Composed: the silent-check opt-out — the section's lone
-                     settable value (GeneralViewModel.UpdatesSettings). -->
-                <StackPanel x:Name="UpdatesHost"
-                            Spacing="{StaticResource SettingsCardSpacing}" />
-
-                <!-- Bespoke: the version readout is a live status projection,
-                     and "Install now" is an action — neither composes. The
-                     description carries the running version (code-behind);
-                     the content pair appears only while the silent check has
-                     a newer release parked. -->
-                <controls:SettingsCard x:Name="VersionCard"
-                                       x:Uid="GeneralVersionCard"
-                                       Tag="GeneralVersionCard"
-                                       HeaderIcon="{ui:FontIcon Glyph={StaticResource Icon.Download}}">
-                    <StackPanel Orientation="Horizontal" Spacing="12" VerticalAlignment="Center">
-                        <TextBlock x:Name="UpdateAvailableText"
-                                   VerticalAlignment="Center"
-                                   Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                                   Visibility="Collapsed" />
-                        <Button x:Name="InstallUpdateButton"
-                                x:Uid="GeneralInstallUpdateButton"
-                                Style="{StaticResource AccentButtonStyle}"
-                                Visibility="Collapsed"
-                                Click="InstallUpdateButton_Click" />
+                        <!-- Bespoke: the version readout is a live status projection,
+                             and "Install now" is an action — neither composes. The
+                             description carries the running version (code-behind);
+                             the content pair appears only while the silent check has
+                             a newer release parked. -->
+                        <controls:SettingsCard x:Name="VersionCard"
+                                               x:Uid="GeneralVersionCard"
+                                               Tag="GeneralVersionCard"
+                                               HeaderIcon="{ui:FontIcon Glyph={StaticResource Icon.Download}}">
+                            <StackPanel Orientation="Horizontal" Spacing="12" VerticalAlignment="Center">
+                                <TextBlock x:Name="UpdateAvailableText"
+                                           VerticalAlignment="Center"
+                                           Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                           Visibility="Collapsed" />
+                                <Button x:Name="InstallUpdateButton"
+                                        x:Uid="GeneralInstallUpdateButton"
+                                        Style="{StaticResource AccentButtonStyle}"
+                                        Visibility="Collapsed"
+                                        Click="InstallUpdateButton_Click" />
+                            </StackPanel>
+                        </controls:SettingsCard>
                     </StackPanel>
-                </controls:SettingsCard>
+                </catalog:SettingsSection>
 
                 <!-- ── Application data ────────────────────────────────────── -->
-                <TextBlock x:Uid="GeneralPageApplicationDataHeaderLabel"
-                           Style="{StaticResource SettingsSectionHeaderTextBlockStyle}" />
+                <catalog:SettingsSection x:Uid="GeneralPageApplicationDataSection">
+                <StackPanel Spacing="{StaticResource SettingsCardSpacing}">
 
                 <controls:SettingsCard x:Uid="GeneralRerunSetupCard"
                                        Tag="GeneralRerunSetupCard"
@@ -258,6 +211,9 @@
                         </controls:SettingsCard>
                     </controls:SettingsExpander.Items>
                 </controls:SettingsExpander>
+
+                </StackPanel>
+                </catalog:SettingsSection>
 
             </StackPanel>
         </Grid>

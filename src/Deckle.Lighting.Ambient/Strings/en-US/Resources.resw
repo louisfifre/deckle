@@ -144,7 +144,7 @@
   </data>
 
   <!-- ── State ─────────────────────────────────────────────── -->
-  <data name="AmbientStateSectionHeader.Text" xml:space="preserve">
+  <data name="AmbientPageStateSection.Title" xml:space="preserve">
     <value>State</value>
   </data>
   <data name="AmbientEnabledCard.Header" xml:space="preserve">
@@ -164,7 +164,7 @@
   </data>
 
   <!-- ── Behaviour ─────────────────────────────────────────── -->
-  <data name="AmbientBehaviourSectionHeader.Text" xml:space="preserve">
+  <data name="AmbientPageBehaviourSection.Title" xml:space="preserve">
     <value>Behaviour</value>
   </data>
   <data name="AmbientPresetCard.Header" xml:space="preserve">
@@ -222,7 +222,7 @@
   </data>
 
   <!-- ── Fine tuning ───────────────────────────────────────── -->
-  <data name="AmbientTuningSectionHeader.Text" xml:space="preserve">
+  <data name="AmbientPageTuningSection.Title" xml:space="preserve">
     <value>Fine tuning</value>
   </data>
   <data name="AmbientBrightnessCurveCard.Header" xml:space="preserve">
@@ -269,7 +269,7 @@
   </data>
 
   <!-- ── Configuration : capture and Hue bridge pairing ────── -->
-  <data name="AmbientConfigSectionHeader.Text" xml:space="preserve">
+  <data name="AmbientPageConfigSection.Title" xml:space="preserve">
     <value>Configuration</value>
   </data>
   <data name="AmbientMonitorCard.Header" xml:space="preserve">

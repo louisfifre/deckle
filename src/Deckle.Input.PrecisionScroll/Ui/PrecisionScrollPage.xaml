@@ -5,10 +5,6 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:catalog="using:Deckle.Catalog">
 
-    <Page.Resources>
-        <x:Double x:Key="SettingsCardSpacing">4</x:Double>
-    </Page.Resources>
-
     <ScrollViewer Padding="32,24,32,24"
                   VerticalScrollBarVisibility="Auto"
                   HorizontalScrollBarVisibility="Disabled">

@@ -131,7 +131,7 @@
   </data>
 
   <!-- Three-finger drag -->
-  <data name="TrackpadPage_Section_Drag.Text" xml:space="preserve">
+  <data name="TrackpadPageDragSection.Title" xml:space="preserve">
     <value>Three-finger drag</value>
   </data>
   <data name="TrackpadPage_DragCard.Header" xml:space="preserve">
@@ -148,7 +148,7 @@
   </data>
 
   <!-- Windows integration -->
-  <data name="TrackpadPage_Section_Windows.Text" xml:space="preserve">
+  <data name="TrackpadPageWindowsSection.Title" xml:space="preserve">
     <value>Windows integration</value>
   </data>
   <data name="TrackpadPage_GesturesCard.Header" xml:space="preserve">
@@ -183,7 +183,7 @@
   </data>
 
   <!-- Diagnostics -->
-  <data name="TrackpadPage_Section_Diagnostics.Text" xml:space="preserve">
+  <data name="TrackpadPageDiagnosticsSection.Title" xml:space="preserve">
     <value>Diagnostics</value>
   </data>
   <data name="TrackpadPage_RecordFramesCard.Header" xml:space="preserve">
