@@ -8,7 +8,7 @@ By the value's nature:
 - on/off → a switch; its state shown on the control itself (a shape legible in black-and-white), its label fixed and naming what it governs.
 - one of a few mutually exclusive options → radio buttons, every option laid flat and visible; more than a few → a dropdown.
 - a numeric magnitude → one control, a field with an optional slider (see below).
-- a relationship or shape — a curve, an envelope → a dedicated editor, never a row of raw numbers.
+- a relationship or shape, a curve, an envelope → its values as fields, with a drawing that shows them, never the drawing alone.
 - free text → one shared input; multi-line only when the value wraps.
 - a path or folder → one normalized picker (see below).
 - the fine configuration of something activatable → an inline fold revealed only when it is on.
@@ -33,6 +33,7 @@ One normalized picker, its affordances set by who owns the location and how the 
 
 - a fold governed by a master switch: its settings are revealed when the master is on, hidden when off (masked, never greyed). Use it when one switch commands everything inside. (We call it a group.)
 - a fold that only collects related settings, no master: each stands on its own condition. Use it when there is no single on/off to command the whole. (A section.)
+- a fold whose header carries a choice: its cards change with the choice, each shown under the value it belongs to, and a note stands in when the chosen value has nothing to set. Use it when a choice decides which settings exist. (A mode.)
 
 ## Reset — three levels, one default
 
