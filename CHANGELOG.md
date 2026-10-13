@@ -215,6 +215,7 @@ doctrine). This file is generated from the Conventional-Commit history by
 - **playground:** Drop the hand-typed cadence from the Pipeline card
 - **tray-menu:** Open a tray flyout once its carrier reports its size
 - **tray-menu:** Give the quick-actions panel a popup window of its own
+- **composition:** Map the conic palette into the sRGB gamut by chroma
 
 ## [0.35.0](https://github.com/louisfifre/deckle/compare/v0.31.6...v0.35.0) — 2026-08-13
 
