@@ -5,47 +5,23 @@ using Deckle.Diagnostics;
 
 namespace Deckle.Shell;
 
-// ─── Resize coalescer ────────────────────────────────────────────────────────
-//
 // Collapses the per-frame recompute a resizable window pays during an
 // interactive edge drag into a single recompute once the gesture settles.
 //
 // Windows runs a modal move/size loop while the user drags a window's title bar
-// or sizing border: WM_ENTERSIZEMOVE once, a burst of WM_SIZE (often faster than
-// the compositor) while the pointer moves, WM_EXITSIZEMOVE once at release. WinUI
-// relays out the tree and Win2D reissues its Draw on every one of those WM_SIZE —
-// the visible lag. WinUI 3 exposes no native resize-begin/resize-end event
-// (AppWindow.Changed only reports "size changed", and wiring its handler silently
-// kills Window.SizeChanged after the first resize — microsoft-ui-xaml #6466), so
-// the boundary has to be read off the Win32 messages directly.
+// or sizing border: WM_ENTERSIZEMOVE once, a burst of WM_SIZE while the pointer
+// moves, WM_EXITSIZEMOVE once at release. WinUI relays out the tree and Win2D
+// reissues its Draw on every one of those WM_SIZE. WinUI 3 exposes no native
+// resize-begin/resize-end event (AppWindow.Changed only reports "size changed",
+// and wiring its handler silently kills Window.SizeChanged after the first
+// resize — microsoft-ui-xaml #6466), so the boundary is read off the Win32
+// messages directly.
 //
-// We subclass the HWND — the same comctl32 SetWindowSubclass primitive
-// HotkeyManager and HudWindow already use, never SetWindowLongPtr(GWLP_WNDPROC)
-// which would replace the WinUI message chain — and surface the gesture as:
-//   • IsResizing — true between ENTER and EXIT. Expensive per-frame work (a Win2D
-//     Draw, a SizeChanged rebuild) gates on !IsResizing and renders a cheap
-//     placeholder, or nothing, while it is true.
-//   • onResizeStarted — the rising edge, invoked once on ENTER. Lets a consumer
-//     flip a reactive suspend flag the instant a drag begins, without polling
-//     IsResizing or arming a debounce timer. Only a real gesture raises it; the
-//     direct safety-net path below never does (a single settled frame needs no
-//     suspend).
-//   • onResizeSettled — the falling edge / recompute callback, invoked once when
-//     the size settles, to clear the suspend flag and repaint crisply.
-//
-// Safety net: maximize, snap and programmatic SetWindowPos do NOT enter the modal
-// loop, so they never raise ENTER/EXIT — they emit WM_SIZE alone. A WM_SIZE seen
-// while IsResizing is false is therefore an already-settled size, and settles
-// immediately. IsResizing never goes true on that path, so nothing is suppressed.
-//
-// Threading: the subclass runs on the host window's UI thread (its own message
-// pump), so onResizeSettled fires on the UI thread — consumers touch XAML
-// directly, no DispatcherQueue marshalling (same as HotkeyManager's WM_HOTKEY).
-//
-// Lifetime: construct, wire the callback, Register() once the HWND exists;
-// Dispose() at window close removes the subclass. The SubclassProc delegate is
-// kept in a field so the GC can't collect it while comctl32 holds its function
-// pointer — exactly as HotkeyManager does.
+// The HWND is subclassed with comctl32 SetWindowSubclass, never
+// SetWindowLongPtr(GWLP_WNDPROC), which would replace the WinUI message chain.
+// The subclass runs on the window's UI thread, so both callbacks fire there and
+// consumers touch XAML directly. The SubclassProc delegate lives in a field so
+// the GC can't collect it while comctl32 holds its function pointer.
 public sealed class ResizeCoalescer : IDisposable
 {
     private readonly IntPtr  _hwnd;
@@ -58,7 +34,6 @@ public sealed class ResizeCoalescer : IDisposable
 
     private NativeMethods.SubclassProc? _subclassDelegate;
 
-    // Arbitrary id to retrieve our subclass at Remove time — "RSZC".
     private static readonly UIntPtr SubclassId = new(0x52535A43);
 
     private bool _registered;
@@ -71,7 +46,8 @@ public sealed class ResizeCoalescer : IDisposable
     // `window` is the short logical name from the DeckleWindowingSource closed
     // vocabulary ("playground", "settings", "log", …). `onResizeSettled` runs the
     // window's one deferred recompute, `onResizeStarted` (optional) the rising-edge
-    // suspend; both fire on the UI thread.
+    // suspend. Only a real drag raises `onResizeStarted`; a direct settle
+    // (maximize, snap, programmatic resize) never does.
     public ResizeCoalescer(IntPtr hwnd, string window, Action onResizeSettled, Action? onResizeStarted = null)
     {
         _hwnd = hwnd;
@@ -82,7 +58,7 @@ public sealed class ResizeCoalescer : IDisposable
 
     // Installs the subclass. Call once the window's HWND is valid (after
     // WindowNative.GetWindowHandle). Separate from the ctor so the wiring can be
-    // set up first, mirroring HotkeyManager.Register. Idempotent.
+    // set up first. Idempotent.
     public void Register()
     {
         if (_registered) return;
@@ -132,10 +108,8 @@ public sealed class ResizeCoalescer : IDisposable
 
         // Always chain: WinUI's own WM_SIZE handling (its layout pass) and any
         // other subclass must still run. We observe the gesture, never consume it.
-        // For a coalesced gesture frame we bracket the chain call to time WinUI's
-        // synchronous relayout — it runs inside DefSubclassProc — and surface the
-        // per-frame trace afterwards, so the cadence and layout cost of a laggy
-        // drag are observable frame by frame.
+        // For a coalesced gesture frame the chain call is timed, since WinUI's
+        // relayout runs synchronously inside DefSubclassProc.
         if (!traceFrame)
             return NativeMethods.DefSubclassProc(hWnd, uMsg, wParam, lParam);
 
@@ -155,10 +129,6 @@ public sealed class ResizeCoalescer : IDisposable
         return result;
     }
 
-    // Turns a non-null settlement into the rolled-up trace and the recompute. One
-    // WindowResizeSettled per settled resize, on the cross-cutting windowing
-    // provider, so a drag's coalescing is observable after the fact — the granular
-    // per-frame view is the WindowResizeFrame companion emitted above.
     private void Settle(ResizeSettlement? settlement)
     {
         if (settlement is null) return;

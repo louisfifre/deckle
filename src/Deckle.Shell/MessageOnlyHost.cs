@@ -3,25 +3,19 @@ using Deckle.Core;
 
 namespace Deckle.Shell;
 
-// Invisible native Win32 host window (HWND_MESSAGE parent).
+// Invisible native Win32 host window (HWND_MESSAGE parent) for tray callbacks,
+// RegisterHotKey and the cursor signal. WinUI 3 has no canonical "tray-only,
+// no flash" window (PowerToys #11010, microsoft-ui-xaml #6723); a hidden XAML
+// Window moved off-screen is a hack.
 //
-// Replaces the former AnchorWindow — a hidden Microsoft.UI.Xaml.Window that
-// was moved off-screen and Show(false)'d just to get a stable HWND for tray
-// callbacks and RegisterHotKey. That was a hack: WinUI 3 has no canonical
-// "tray-only, no flash" pattern (documented platform gap, cf. PowerToys
-// #11010, microsoft-ui-xaml #6723).
+// Created with HWND_MESSAGE as its parent, it is invisible by construction: no
+// z-order, no enumeration, no broadcast messages, just a message dispatcher.
+// RegisterHotKey posts WM_HOTKEY to the thread that created it, and
+// Shell_NotifyIcon posts its callback message to it. TrayIconManager,
+// HotkeyManager and CursorMovementSignal attach through SetWindowSubclass.
 //
-// Message-only window is the canonical Win32 answer: created with HWND_MESSAGE
-// as its parent, it is invisible by construction — no z-order, no enumeration,
-// no broadcast messages, just a message dispatcher. RegisterHotKey posts
-// WM_HOTKEY to the thread that created it; Shell_NotifyIcon posts its
-// callback message to it. TrayIconManager and HotkeyManager attach via
-// SetWindowSubclass exactly as they did on the former AnchorWindow HWND —
-// zero refactor on either side.
-//
-// Created on the UI thread in App.OnLaunched so WM_HOTKEY and tray callbacks
-// arrive on the same thread as DispatcherQueue — direct invocation without
-// marshaling, same as before.
+// Created on the UI thread so WM_HOTKEY and tray callbacks arrive on the
+// DispatcherQueue's thread, invoked directly without marshaling.
 //
 // References:
 //   learn.microsoft.com/windows/win32/winmsg/window-features#window-types
@@ -35,8 +29,7 @@ public sealed class MessageOnlyHost : IDisposable
     private readonly IntPtr _hwnd;
 
     // The WndProc delegate must live in a field for the GC not to collect it
-    // while native code holds its function pointer (same rule as SubclassProc
-    // in HotkeyManager/TrayIconManager).
+    // while native code holds its function pointer.
     private readonly NativeMethods.WndProc _wndProcDelegate;
 
     private bool _disposed;

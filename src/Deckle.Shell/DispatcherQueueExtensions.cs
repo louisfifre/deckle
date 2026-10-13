@@ -5,59 +5,24 @@ using Microsoft.UI.Dispatching;
 
 namespace Deckle.Shell;
 
-// ─── DispatcherQueueExtensions ─────────────────────────────────────────────
+// Wrappers around `DispatcherQueue.TryEnqueue` for every site that marshals a
+// callback to the UI thread. A rejected enqueue (queue shut down, typically an
+// engine StatusChanged arriving during window teardown) would otherwise lose
+// the UI event silently; both wrappers log it on `DeckleThreadingSource`.
 //
-// Wrappers around `DispatcherQueue.TryEnqueue`, consumed by every Deckle site
-// that marshals a callback to the UI thread.
+// `TryEnqueueObserved` also emits `MarshalQueued` and `MarshalCompleted` with
+// `wait_ms` and `run_ms`. With no Verbose Threading listener it falls back to
+// `TryEnqueueOrLog`, so the instrumentation costs one ETW check.
 //
-// `TryEnqueueOrLog` is the historical wrapper: emits a
-// `DispatcherEnqueueRejected` Warning when enqueue fails (queue shut down).
-// Without it, the UI event is silently lost, typical during window teardown
-// when engine StatusChanged arrives after the dispatcher queue is already
-// closed. Since the cross-cutting instrumentation wave, the Warning is emitted
-// on `DeckleThreadingSource` (cross-cutting `Deckle.Diagnostics.Threading`
-// sub-provider). The event did not describe a shell operation; it described a
-// dispatcher rejection crossing any module that marshals to the UI thread. The
-// public signature for callers stays identical (`source` and `what`) to avoid
-// breaking existing sites.
-//
-// `TryEnqueueObserved` is the instrumented wrapper from the cross-cutting wave:
-// in addition to rejection, it emits the `MarshalQueued` (before TryEnqueue)
-// and `MarshalCompleted` (at callback end) pair with `wait_ms` (marshalling
-// latency) and `run_ms` (callback execution duration) measurements. Strict
-// `IsEnabled(Verbose, Threading)` gate at the top: when no listener is attached,
-// instrumentation has zero net cost (one ETW test + return), and the wrapper
-// falls back to `TryEnqueueOrLog` behavior. `MarshalTimeout` remains declared
-// on the provider but is not actively wired in this pass; its contract is
-// frozen for a later pass that will detect callbacks that stayed too long in
-// queue through a dedicated watchdog.
-//
-// Anti-recursion guard `_logging` (warning path). If LogWindow calls one of
-// these wrappers and its own queue is closed, the logged Warning routes back to
-// LogWindow → re-TryEnqueue → re-fail → loop. A thread-static flag
-// short-circuits the second attempt. The guard remains relevant after the
-// EventSource migration: `LogWindowSink` still receives the Warning event and
-// pushes it back into the same LogWindow-side `DispatcherQueue`.
-//
-// Anti-recursion guard `_emittingMarshal` (verbose path). Same loop class,
-// triggered by the *systematic* `MarshalQueued` emission in `TryEnqueueObserved`:
-// a `LogWindow.Write` call from `LogWindowSink.Write` (invoked by
-// `DispatchEventListener.OnEventWritten` on a worker thread) goes through
-// `TryEnqueueObserved`, which synchronously emits `MarshalQueued`; the
-// dispatcher observes it and re-routes to `LogWindow.Write`
-// → new emission → synchronous recursion → stack overflow. Empirically
-// observed on 2026-05-25; signature: JSONL tail flooded with `MarshalQueued
-// operation=log-append caller=log-window` at several kHz, then crash. When
-// reentrancy is detected, fall back to the cold `TryEnqueueOrLog` path, which
-// enqueues the callback without emission. The useful event (the one that
-// triggered the chain) still lands in the UI queue; only observation of nested
-// marshalling is skipped.
-//
-// Why not a simple `if (!queue.TryEnqueue(...)) _log.Warning(...)` inline at
-// each site? Centralizing reduces duplication (8 rejection sites + 5 observed
-// sites) and guarantees the anti-recursion guard pattern is everywhere, with no
-// risk of forgetting it.
-
+// Two thread-static guards break feedback loops through an event listener that
+// marshals what it receives, as the LogWindow sink does:
+//   • `_logging`: a rejection Warning routed back into a closed queue would be
+//     rejected and logged again, forever.
+//   • `_emittingMarshal`: `MarshalQueued` is emitted synchronously, so a
+//     listener that marshals through `TryEnqueueObserved` re-enters on the same
+//     thread and recurses until the stack overflows. A re-entrant call takes
+//     the cold `TryEnqueueOrLog` path, which enqueues without emitting; only
+//     the observation of nested marshalling is lost.
 public static class DispatcherQueueExtensions
 {
     [System.ThreadStatic]
@@ -125,23 +90,14 @@ public static class DispatcherQueueExtensions
         bool verboseEnabled = DeckleThreadingSource.Log.IsEnabled(
             EventLevel.Verbose, (EventKeywords)Keywords.Threading);
 
-        // Cold path: no Queued/Completed instrumentation, just raw enqueue +
-        // the historical rejection path. The Warning gate on
-        // DispatcherEnqueueRejected remains open independently of Verbose. This
-        // path is also used during reentrancy (see `_emittingMarshal` note at
-        // top of file): enqueue without emission to avoid retriggering the
-        // synchronous listener → Write → TryEnqueueObserved chain.
+        // Cold path, also taken on re-entry (see `_emittingMarshal` above):
+        // enqueue without emitting. The rejection Warning still fires,
+        // independently of Verbose.
         if (!verboseEnabled || _emittingMarshal)
         {
             return queue.TryEnqueueOrLog(callback, rejectSource, rejectWhat, priority);
         }
 
-        // Hot path: full instrumentation. Stopwatch captured in the closure to
-        // measure wait_ms (queue → callback start) and run_ms (callback
-        // duration). Guarded by thread-static `_emittingMarshal`: any
-        // MarshalQueued/Completed emission that synchronously re-enters this
-        // wrapper on the same thread sees the guard and switches to the cold
-        // path instead of re-emitting.
         _emittingMarshal = true;
         try
         {

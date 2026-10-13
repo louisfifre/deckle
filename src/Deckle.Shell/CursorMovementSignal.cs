@@ -4,32 +4,21 @@ using Deckle.Core;
 namespace Deckle.Shell;
 
 // The single, process-wide source of "the mouse cursor moved". Surfaces that
-// fade with cursor proximity (the HUD, its overlay cards) subscribe to Moved;
-// each reads the cursor position itself and computes its own distance. The
-// signal carries no position payload — GetCursorPos is the source of truth and
-// every subscriber runs on the UI thread, so a shared point would buy nothing.
+// fade with cursor proximity (the HUD, its overlay cards) subscribe to Moved
+// and read GetCursorPos themselves; the signal carries no position, since every
+// subscriber runs on the UI thread.
 //
-// Why one owner. RIDEV_INPUTSINK is registered once per process per HID usage;
-// a second registration for the mouse usage (0x01:0x02) clobbers the first.
-// Before this type the HUD owned the sink on its own HWND, and the overlay
-// cards — unable to register a second one — fell back to a 60 Hz GetCursorPos
-// poll. Centralizing the sink here lets every surface share the one
-// registration: the poll is gone, and a single place knows how the cursor
-// signal is produced.
+// One owner: raw input registers once per process per HID usage, so a
+// second RIDEV_INPUTSINK registration for the mouse (0x01:0x02) would
+// clobber this one.
 //
-// Why the MessageOnlyHost HWND. The sink must target a window that lives for
-// the whole process and is never hidden. The HUD HWND is hidden between uses
-// (SW_HIDE), yet an overlay card can fade with proximity while the HUD is
-// hidden — so the HUD HWND is the wrong target. The MessageOnlyHost window is
-// HWND_MESSAGE: invisible by construction, never shown or hidden, alive from
-// boot to quit. WM_INPUT therefore arrives regardless of any surface's
-// visibility. The touchpad's RawInputHost proves an HWND_MESSAGE window is a
-// valid RIDEV_INPUTSINK target; this is the same pattern on the UI thread.
+// The sink targets the MessageOnlyHost window: HWND_MESSAGE, never shown or
+// hidden, alive from boot to quit. A surface HWND is the wrong target: the HUD
+// is hidden between uses while an overlay card can still fade with proximity.
 //
-// Threading. The host window lives on the UI thread, so Moved is raised there
-// and subscribers touch their windows without marshaling — identical to the
-// former HUD subclass. WM_INPUT is only a wake-up: its payload is never read,
-// the message is forwarded to DefSubclassProc so the system can clean up.
+// The host window lives on the UI thread, so Moved is raised there. WM_INPUT
+// is only a wake-up: its payload is never read, and the message goes on to
+// DefSubclassProc so the system can clean up.
 public sealed class CursorMovementSignal : IDisposable
 {
     // "CURS" — distinct from the other window subclass ids in the process.
@@ -40,8 +29,6 @@ public sealed class CursorMovementSignal : IDisposable
     private bool _rawInputRegistered;
     private bool _disposed;
 
-    // Raised on the UI thread on every mouse move (WM_INPUT). Subscribers read
-    // the current cursor position via GetCursorPos; the event carries no data.
     public event Action? Moved;
 
     public CursorMovementSignal(IntPtr hostHwnd)

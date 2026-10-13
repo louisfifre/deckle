@@ -2,15 +2,8 @@ using Microsoft.UI.Windowing;
 
 namespace Deckle.Shell;
 
-// ─── Icon asset resolution ───────────────────────────────────────────────────
-//
-// Single source of truth for .ico file paths.
-// Shared between TrayIconManager (Win32 LoadImage) and LogWindow
-// (BitmapImage + AppWindow.SetIcon).
-//
-// Icons are copied to the output directory by the .csproj Content items,
-// so they always live next to the exe at Assets/Icons/.
-
+// Single source of truth for the .ico paths the tray and every window use.
+// Deckle.App.csproj copies them next to the exe, under Assets/Icons/.
 public static class IconAssets
 {
     private const string FileIdle      = "recording--indicator--false--32px.ico";
@@ -24,8 +17,6 @@ public static class IconAssets
         return File.Exists(path) ? Path.GetFullPath(path) : null;
     }
 
-    // Helper for windows that do not need dynamic swapping (HUD): just sets the
-    // idle icon once in the constructor.
     public static void ApplyToWindow(AppWindow appWindow, bool recording = false)
     {
         var path = ResolvePath(recording);

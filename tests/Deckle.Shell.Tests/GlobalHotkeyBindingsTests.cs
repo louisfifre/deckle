@@ -17,7 +17,7 @@ public sealed class GlobalHotkeyBindingsTests
         new(3, 0x04, 0xE04B),
     ];
 
-    // Layout stand-in: scancode → VK, 0 for a key the layout lacks.
+    // Layout stand-in: scancode → VK.
     private static uint Resolve(uint scanCode) => scanCode + 0x100;
 
     [Theory]

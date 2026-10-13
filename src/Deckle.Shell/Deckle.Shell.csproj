@@ -4,9 +4,9 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <!-- Microsoft.UI.Windowing (AppWindow icon) + Microsoft.UI.Dispatching
-         (DispatcherQueue) consumed by IconAssets and DispatcherQueueExtensions.
-         No XAML, no UseWinUI=true — pure WinAppSDK API surface. -->
+    <!-- Only the WinAppSDK API surface (AppWindow, DispatcherQueue).
+         Deckle.Shell stays XAML-free, no UseWinUI: code that needs the XAML
+         visual tree lives in a sibling module such as Deckle.Shell.TrayMenu. -->
     <PackageReference Include="Microsoft.WindowsAppSDK" />
   </ItemGroup>
 

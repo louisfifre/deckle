@@ -2,19 +2,14 @@ using Deckle.Core;
 
 namespace Deckle.Shell;
 
-// Registers the host-supplied global hotkeys and intercepts WM_HOTKEY via SetWindowSubclass.
-// SetWindowSubclass chains into the existing message pump of the host window
-// (message-only window in our case) without replacing its WndProc — the only
-// safe approach.
+// Binds the host's global hotkeys and intercepts WM_HOTKEY through
+// SetWindowSubclass, which chains into the host window's pump without
+// replacing its WndProc. The host decides which chords exist and what they do;
+// the shell only binds them.
 //
-// The host decides which chords exist and what they do; the shell only binds
-// them. Each binding is acquired on its own: a chord another app owns fails
-// alone and comes back in the failure list, the others stay live.
-//
-// Layout portability: every binding names a physical key by scancode. At
-// registration time the current VK for each scancode is resolved via
-// MapVirtualKeyExW(GetKeyboardLayout(0)). On layout switch we receive
-// WM_INPUTLANGCHANGE, unregister, re-resolve, re-register the current set.
+// Every binding names a physical key by scancode. Each registration resolves
+// the current VK through MapVirtualKeyExW(GetKeyboardLayout(0)), and
+// WM_INPUTLANGCHANGE re-resolves and re-registers the current set.
 public sealed class HotkeyManager : IDisposable
 {
     private readonly IntPtr _hwnd;
@@ -28,7 +23,6 @@ public sealed class HotkeyManager : IDisposable
     private readonly GlobalHotkeyBindings _bindings;
     private IReadOnlyList<GlobalHotkeyBinding> _requested;
 
-    // Arbitrary identifier to retrieve our subclass at Remove time.
     private static readonly UIntPtr SubclassId = new(0x5748_4B45); // "WHKE"
 
     public HotkeyManager(IntPtr hwnd, Action<int> onHotkey, IReadOnlyList<GlobalHotkeyBinding> bindings)
@@ -42,7 +36,6 @@ public sealed class HotkeyManager : IDisposable
     // The set currently requested (acquired or not).
     public IReadOnlyList<GlobalHotkeyBinding> Bindings => _requested;
 
-    // Bindings the last registration pass could not acquire.
     public IReadOnlyList<HotkeyRegistrationFailure> LastFailures { get; private set; } = [];
 
     // Installs the WM_HOTKEY subclass, then registers the requested set.
@@ -68,9 +61,7 @@ public sealed class HotkeyManager : IDisposable
         return RegisterAll();
     }
 
-    // Resolves each binding's VK under the active keyboard layout and
-    // registers it. GlobalHotkeyBindings releases the previous set first.
-    // Called at startup, on Rebind, and on every WM_INPUTLANGCHANGE.
+    // GlobalHotkeyBindings releases the previous set first.
     private IReadOnlyList<HotkeyRegistrationFailure> RegisterAll()
     {
         IntPtr hkl = NativeMethods.GetKeyboardLayout(0);

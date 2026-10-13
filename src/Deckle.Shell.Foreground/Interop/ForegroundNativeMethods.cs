@@ -5,8 +5,8 @@ namespace Deckle.Shell.Foreground;
 
 // Module-local Win32 surface for the foreground watcher, beyond what
 // Deckle.Core's NativeMethods already declares (GetForegroundWindow,
-// GetWindowThreadProcessId, GetClassName, RECT). Same precedent as
-// TaskbarCoverNativeMethods: APIs consumed by a single module stay in it.
+// GetWindowThreadProcessId, GetClassName, RECT). APIs consumed by a single
+// module stay in it.
 internal static class ForegroundNativeMethods
 {
     // ── WinEvent hooks ───────────────────────────────────────────────────────
@@ -36,9 +36,6 @@ internal static class ForegroundNativeMethods
     public static extern bool UnhookWinEvent(IntPtr hWinEventHook);
 
     // ── Desktop exclusion ────────────────────────────────────────────────────
-    //
-    // The desktop covers its whole monitor: clicking the wallpaper makes it
-    // foreground, and without these guards it would read as a fullscreen app.
 
     [DllImport("user32.dll")]
     public static extern IntPtr GetShellWindow();
@@ -48,10 +45,8 @@ internal static class ForegroundNativeMethods
 
     // ── Fullscreen probes ────────────────────────────────────────────────────
     //
-    // Stage 1: SHQueryUserNotificationState — QUNS_BUSY (2),
-    // QUNS_RUNNING_D3D_FULL_SCREEN (3) and QUNS_PRESENTATION_MODE (4).
-    // Stage 2: the window's DWM extended frame bounds (visual rect without
-    // the invisible shadow margins) against its monitor rect.
+    // DWM extended frame bounds are the visual rect, without the invisible
+    // shadow margins.
 
     public const int QUNS_BUSY                    = 2;
     public const int QUNS_RUNNING_D3D_FULL_SCREEN = 3;
@@ -74,9 +69,8 @@ internal static class ForegroundNativeMethods
     public static extern IntPtr MonitorFromWindow(IntPtr hWnd, uint dwFlags);
 
     // MONITORINFOEXW: MONITORINFO plus the monitor's GDI device name
-    // (szDevice, CCHDEVICENAME = 32 WCHARs, e.g. "\\.\DISPLAY1"), the name
-    // Ambient and the games registry key monitors by. cbSize must be
-    // sizeof(MONITORINFOEXW) for GetMonitorInfoW to fill szDevice.
+    // (szDevice, CCHDEVICENAME = 32 WCHARs, e.g. "\\.\DISPLAY1"). cbSize must
+    // be sizeof(MONITORINFOEXW) for GetMonitorInfoW to fill szDevice.
     [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
     public struct MONITORINFOEX
     {
