@@ -11,8 +11,6 @@
                  ModuleRegistry (BuildModuleCards) — the list is data, not layout. -->
             <StackPanel x:Name="ModulesList" Spacing="4" />
 
-            <!-- Same estimate bar as the Choices recap, retotalled on every
-                 checkbox change from the same install plan. -->
             <InfoBar x:Name="TotalEstimateBar"
                      x:Uid="SetupTotalEstimateBar"
                      IsOpen="True"

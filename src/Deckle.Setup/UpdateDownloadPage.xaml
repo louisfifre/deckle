@@ -7,8 +7,6 @@
     <StackPanel Spacing="16" MaxWidth="640" HorizontalAlignment="Stretch"
                 VerticalAlignment="Center">
 
-        <!-- Marquee while resolving the sidecar and extracting; determinate
-             with real byte counts during the payload download. -->
         <ProgressBar x:Name="DownloadProgress" IsIndeterminate="True" />
 
         <TextBlock x:Name="StatusText"
@@ -16,8 +14,6 @@
                    Foreground="{ThemeResource TextFillColorSecondaryBrush}"
                    HorizontalAlignment="Center" />
 
-        <!-- A failed fetch/verify/extract lands here with Retry as the
-             InfoBar's action — same blocking-state shape as DeployPage. -->
         <InfoBar x:Name="ErrorBar"
                  IsOpen="False"
                  IsClosable="False"

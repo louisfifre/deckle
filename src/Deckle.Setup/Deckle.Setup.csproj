@@ -1,18 +1,11 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <RootNamespace>Deckle.Setup</RootNamespace>
-    <!-- WinUI XAML compilation : Deckle.Setup hosts the first-run wizard
-         (SetupWindow + ChoicesPage / InstallingPage / SummaryPage). Extracted
-         from Deckle.App/Shell/Setup/ to break the App-side coupling — the
-         wizard now only sees Deckle.Transcription's setup primitives and
-         Deckle.Catalog/Logging/Core, not the full host. -->
     <UseWinUI>true</UseWinUI>
-    <!-- Neutral language for the lib's PRI fallback. Mirrors Deckle.csproj. -->
+    <!-- Neutral language for the lib's PRI fallback. -->
     <DefaultLanguage>en-US</DefaultLanguage>
     <!-- Generates the lib's own .pri so x:Uid lookups in the wizard pages
-         resolve against the Deckle.Setup/Resources subtree. The resw under
-         Strings/en-US/ is a copy of the App's resw — same pattern as
-         Deckle.Settings + Deckle.Llm + Deckle.Transcription. -->
+         resolve against this library's Strings/en-US resw. -->
     <EnableMsixTooling>true</EnableMsixTooling>
   </PropertyGroup>
 
@@ -21,7 +14,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <!-- Versions aligned on Deckle.App.csproj. -->
     <PackageReference Include="Microsoft.WindowsAppSDK" />
     <PackageReference Include="Microsoft.Windows.SDK.BuildTools" />
   </ItemGroup>
@@ -49,9 +41,8 @@
     <!-- Transcription parent owns the wizard-agnostic primitives (ModelEntry,
          Downloader) and the EventSource provider. -->
     <ProjectReference Include="..\Deckle.Transcription\Deckle.Transcription.csproj" />
-    <!-- Whisper-specific catalogs (SpeechModels) and the libwhisper native
-         runtime descriptor migrated to the child module — Setup consumes
-         both directly to drive the wizard pages. -->
+    <!-- Whisper catalogs (SpeechModels) and the libwhisper native runtime
+         descriptor drive the wizard pages. -->
     <ProjectReference Include="..\Deckle.Transcription.Whisper\Deckle.Transcription.Whisper.csproj" />
   </ItemGroup>
 </Project>

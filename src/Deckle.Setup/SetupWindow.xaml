@@ -15,9 +15,8 @@
             <RowDefinition Height="Auto" />  <!-- Footer -->
         </Grid.RowDefinitions>
 
-        <!-- Empty drag region. ExtendsContentIntoTitleBar=true is set in
-             code-behind; the Tall preference comes from AppWindow.TitleBar.
-             Caption buttons live above this row. -->
+        <!-- Empty pad under the caption buttons; ExtendsContentIntoTitleBar
+             and the Tall title bar are set in code-behind. -->
         <Grid Grid.Row="0" Height="32" />
 
         <StackPanel Grid.Row="1" Padding="40,12,40,16" Spacing="6">
@@ -31,9 +30,6 @@
                        TextWrapping="Wrap" />
         </StackPanel>
 
-        <!-- Pages navigate into ContentFrame. The SetupWindow is passed via
-             Frame.Navigate parameter so each page picks up shared state and
-             shell controls in OnNavigatedTo. -->
         <Frame x:Name="ContentFrame"
                Grid.Row="2"
                Padding="40,8,40,16" />

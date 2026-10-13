@@ -10,10 +10,8 @@ namespace Deckle.Setup;
 // (Loc reads the root map only).
 public static class SetupNotifications
 {
-    // Raised when the background check finds a newer release. The body carries
-    // the version through Loc.Format. "Install now" opens the explicit update
-    // flow; "Later" (or ignoring the toast — null response) leaves the offer
-    // parked in UpdateService.Available, still reachable from Settings.
+    // "Later", or ignoring the toast, leaves the offer parked in
+    // UpdateService.Available, still reachable from Settings.
     public static readonly NotificationDescriptor UpdateAvailable = new(
         Id: "setup.update_available",
         Category: "setup",

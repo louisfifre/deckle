@@ -14,43 +14,21 @@ using Deckle.Transcription.Whisper;
 
 namespace Deckle.Setup;
 
-// ── SetupWindow ──────────────────────────────────────────────────────────────
-//
-// Shell of the first-run wizard. Three rows: a drag-region pad above the
-// step header, the page Frame in the middle, and a fixed footer with
-// Cancel + Back + Next. Mica backdrop, custom Tall title bar (no back
-// button — the Back button lives in the footer instead).
-//
-// Pages drive the shell via the public surface below:
-//   • Header text     — SetStepHeader(title, subtitle)
-//   • Footer state    — SetBackEnabled / SetNextEnabled / SetNextLabel /
-//                       SetNextVisible / SetCancelVisible
-//   • Footer events   — NextRequested / BackRequested  (the Window itself
-//                       doesn't know how to advance; the active page does)
-//   • Termination     — Complete(success)              (pages call this
-//                       on Done; CancelButton + window close call false)
-//
-// Lifecycle: App.OnLaunched instantiates this Window when setup is needed,
-// awaits Completion, and either boots the engine (success=true) or exits
-// the app (false). The TaskCompletionSource resolves on Complete() or on
-// Window.Closed, whichever fires first.
+// Shell of the setup wizard: step header, page Frame, and a footer with
+// Cancel, Back and Next. The window does not know how to advance; the active
+// page handles NextRequested and BackRequested and navigates Body itself.
 public sealed partial class SetupWindow : Window
 {
     private readonly TaskCompletionSource<bool> _completion = new();
 
-    // Shared state every page reads/writes. Created here so pages don't
-    // each instantiate their own — the Window is the lifetime owner.
     public SetupContext Context { get; }
 
     // Resolves true when a page calls Complete(true); false on Cancel,
-    // window close, or Complete(false). App.OnLaunched awaits this before
-    // booting the engine.
+    // window close, or Complete(false).
     public Task<bool> Completion => _completion.Task;
 
-    // Exposed so pages can Frame.Navigate without going through the
-    // Window's internals. Pages pass `this.Frame.Navigate(typeof(Next),
-    // setupWindow)` and the next page picks the SetupWindow up from
-    // OnNavigatedTo.Parameter.
+    // Pages navigate with `Body.Navigate(typeof(Next), setupWindow)`; the next
+    // page picks the SetupWindow up from OnNavigatedTo's Parameter.
     public Frame Body => ContentFrame;
 
     public event Action? NextRequested;
@@ -58,18 +36,12 @@ public sealed partial class SetupWindow : Window
 
     public SetupWindow() : this(null) { }
 
-    // The install-mode host (App's --install / --install-continue branches)
-    // builds the context itself — mode flags, source/stub/cleanup paths, the
-    // model relayed across the process boundary — and passes it in. The
-    // parameterless path keeps the in-app behaviour: the window seeds the
-    // default context.
+    // The install, update and relocate hosts build their own context and pass
+    // it in. The parameterless path serves the in-app wizard: the window seeds
+    // the default context.
     public SetupWindow(SetupContext? context)
     {
         InitializeComponent();
-        // SetupContext stays backend-agnostic (no hard reference to any
-        // ASR catalog). The wizard host wires the default Whisper model
-        // into the initial state — when a second backend ships (Voxtral),
-        // the host picks the catalog based on the user's selected engine.
         // The module selection is seeded from the recorded presence choice
         // (full catalogue when none), so the install plan is meaningful even
         // if a navigation path skips the Modules page.
@@ -82,9 +54,6 @@ public sealed partial class SetupWindow : Window
                     .ToHashSet(StringComparer.Ordinal),
         };
 
-        // Mica on long-lived windows — same primitive as Settings, Logs,
-        // and the rest of the app's persistent surfaces. DWM applies the
-        // shell rounded corners and shadow.
         SystemBackdrop = new MicaBackdrop();
 
         ConfigureWindow();
@@ -92,10 +61,8 @@ public sealed partial class SetupWindow : Window
         Closed += OnWindowClosed;
         DeckleSetupSource.Log.WindowOpened();
 
-        // Theme: wires ActualThemeChanged on the XAML root. The setup wizard
-        // is a transient window (lives for first-run or a re-setup session from
-        // Settings), but a theme switch during display is still possible:
-        // useful to diagnose a correlated InfoBar or ProgressBar glitch.
+        // Theme switches are traced even on this short-lived window, to
+        // correlate an InfoBar or ProgressBar glitch with a switch.
         if (Content is FrameworkElement root)
         {
             _lastTheme = root.ActualTheme;
@@ -145,14 +112,9 @@ public sealed partial class SetupWindow : Window
 
     private void ConfigureWindow()
     {
-        // 560×720 DIPs centred on the primary work area — narrow card
-        // shape, taller than wide; tuned by hand. Edit the literals on
-        // lines 125-126 to retune.
-        //
-        // AppWindow.MoveAndResize takes raw pixels, so DIPs are scaled by
-        // GetDpiForWindow / 96 (same pattern as HudOverlayWindow.ShowAt).
-        // Without scaling, the wizard rendered at 50–66 % of intended size
-        // on high-DPI displays.
+        // 560×720 DIPs, a narrow card shape tuned by hand, centred on the
+        // window's display work area. AppWindow.MoveAndResize takes raw
+        // pixels, so DIPs are scaled by GetDpiForWindow / 96.
         ExtendsContentIntoTitleBar = true;
         if (AppWindow is { } appWindow)
         {
@@ -169,11 +131,8 @@ public sealed partial class SetupWindow : Window
                 int y = area.WorkArea.Y + (area.WorkArea.Height - h) / 2;
                 appWindow.MoveAndResize(new RectInt32(x, y, w, h));
 
-                // Windowing: emitted post-MoveAndResize. SetupWindow
-                // explicitly centers itself on the current monitor work area
-                // (calculation above), so the logical anchor is "Center":
-                // distinct from the implicit Windows-managed "Center" of
-                // Settings/Log, which only Resize without Move.
+                // Emitted after MoveAndResize: this window centres itself
+                // explicitly, so its anchor is "Center".
                 WindowingProbe.EmitWindowPositioned(hwnd, "setup", "Center");
             }
 
@@ -192,7 +151,6 @@ public sealed partial class SetupWindow : Window
 
     private void OnWindowClosed(object sender, WindowEventArgs args)
     {
-        // X button or Alt+F4 path — treat as cancel if no page completed.
         if (!_completion.Task.IsCompleted) _completion.TrySetResult(false);
     }
 }

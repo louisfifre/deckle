@@ -7,8 +7,6 @@
     <StackPanel Spacing="16" MaxWidth="640" HorizontalAlignment="Stretch"
                 VerticalAlignment="Center">
 
-        <!-- Marquee during the space recheck and the switch; determinate
-             with real byte counts while the tree copies. -->
         <ProgressBar x:Name="RelocateProgress" IsIndeterminate="True" />
 
         <TextBlock x:Name="StatusText"
@@ -16,8 +14,6 @@
                    Foreground="{ThemeResource TextFillColorSecondaryBrush}"
                    HorizontalAlignment="Center" />
 
-        <!-- A failed check or copy lands here with Retry as the InfoBar's
-             action — same blocking-state shape as DeployPage. -->
         <InfoBar x:Name="ErrorBar"
                  IsOpen="False"
                  IsClosable="False"

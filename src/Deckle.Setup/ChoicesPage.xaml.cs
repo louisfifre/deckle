@@ -8,21 +8,10 @@ using Deckle.Transcription.Whisper;
 
 namespace Deckle.Setup;
 
-// ── ChoicesPage ──────────────────────────────────────────────────────────────
-//
-// First step of the wizard. Collects every user choice up-front so the
-// install step can run unattended afterwards:
-//
-//   • Install location — read-only display in V1 (default UserDataRoot).
-//     Custom location lands in a later iteration.
-//   • Speech runtime  — Browse for a folder containing the whisper DLLs.
-//     Copy is immediate (NativeRuntime.CopyFromFolder), so the install
-//     step has nothing native left to do.
-//   • Speech model    — radio between the catalog's Whisper models.
-//
-// The Install button is enabled only when both the runtime is installed
-// and a model is selected. Clicking Install navigates to InstallingPage,
-// which downloads the chosen model.
+// The Dictation step: collects the speech choices up-front so the install step
+// can run unattended. Browse copies the whisper DLLs immediately
+// (NativeRuntime.CopyFromFolder), so a picked runtime leaves nothing native for
+// the install step to do.
 public sealed partial class ChoicesPage : Page
 {
     private SetupWindow? _setup;
@@ -43,7 +32,6 @@ public sealed partial class ChoicesPage : Page
         setup.SetStepHeader(
             Loc.Get("Setup_StepTitle_Choices"),
             Loc.Get("Setup_StepSubtitle_Choices"));
-        // The module selector precedes this page — Back returns to it.
         setup.SetBackEnabled(true);
         setup.SetNextLabel(Loc.Get("Setup_NextLabel_Install"));
         setup.SetNextVisible(true);
@@ -107,25 +95,17 @@ public sealed partial class ChoicesPage : Page
     {
         if (NativeRuntime.IsInstalled())
         {
-            // Already installed — local copy from a previous run, setup-assets.ps1,
-            // or a prior Browse... pass. The button lets the user replace it
-            // (e.g. after a manual rebuild of whisper.cpp).
             NativeStatusText.Text = Loc.Get("Setup_Native_Installed");
             BrowseNativeButton.Content = Loc.Get("Setup_Native_Replace");
         }
         else if (NativeRuntime.BundleUrlIsPlaceholder)
         {
-            // Auto-download disabled for this build. Browse... is the only
-            // path forward — surface it as a primary action.
             int missing = NativeRuntime.GetMissing().Count;
             NativeStatusText.Text = Loc.Format("Setup_Native_Missing_Format", missing);
             BrowseNativeButton.Content = Loc.Get("Common_Browse");
         }
         else
         {
-            // Auto-download available — surface the size so the user understands
-            // what's about to happen. Browse... stays as a secondary "I have it
-            // locally already" affordance.
             NativeStatusText.Text = Loc.Format(
                 "Setup_Native_WillDownload_Format",
                 ByteSizeFormatter.Format(NativeRuntime.CurrentBundle.SizeBytes));
@@ -166,10 +146,8 @@ public sealed partial class ChoicesPage : Page
     {
         if (_context is null) return;
 
-        // The consolidated total: everything the install step will actually
-        // fetch for the selected modules — the same plan InstallingPage runs,
-        // summed over the items not yet on disk. The model radio feeds the
-        // plan through SelectedModel, so a model swap re-totals live.
+        // The same plan InstallingPage runs, so the estimate matches what the
+        // install step fetches; the model radio feeds it through SelectedModel.
         long pendingBytes = InstallPlan.PendingBytes(_context);
 
         TotalEstimateBar.Message = pendingBytes > 0
@@ -180,10 +158,8 @@ public sealed partial class ChoicesPage : Page
     private void UpdateNextEnabled()
     {
         if (_setup is null) return;
-        // Native runtime gate is conditional on the bundle URL: when auto-DL
-        // is wired, the install page handles missing runtime via download.
-        // When the URL is still a placeholder, only a manual Browse... can
-        // unblock the wizard, so we keep the legacy gate.
+        // With a bundle URL the install step downloads a missing runtime; with
+        // a placeholder URL only a manual Browse can supply it.
         bool nativeReady = NativeRuntime.IsInstalled() || !NativeRuntime.BundleUrlIsPlaceholder;
         bool ready = nativeReady && ModelRadio.SelectedIndex >= 0;
         _setup.SetNextEnabled(ready);

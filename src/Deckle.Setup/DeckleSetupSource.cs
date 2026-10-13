@@ -3,20 +3,6 @@ using Deckle.Diagnostics;
 
 namespace Deckle.Setup;
 
-// Setup wizard provider. Covers first-run wizard pages under
-// src/Deckle/Shell/Setup/: ChoicesPage (selection of items to download),
-// InstallingPage (download orchestration + verification), SummaryPage (final
-// summary), SetupWindow (window lifecycle).
-//
-// Provider Name = "Deckle-Setup" → [SETUP] tag through the bridge. Legacy used
-// LogSource.Setup (= "SETUP") for exactly this scope.
-//
-// Verbose/Info separation per the deckle-logging skill: an Info/Warning is a
-// short Capital sentence with no IDs and no k=v; the technical detail (item id,
-// byte count, duration, sha256, error) lives in a Verbose mirror that FOLLOWS
-// it. The native runtime download keeps its own events (it has two failure
-// modes — placeholder url, incomplete bundle — that the model items don't); the
-// model items share the generic Item* events keyed by id.
 [EventSource(Name = "Deckle-Setup")]
 public sealed partial class DeckleSetupSource : DeckleEventSource
 {
@@ -25,10 +11,8 @@ public sealed partial class DeckleSetupSource : DeckleEventSource
     private DeckleSetupSource() { }
 
     // ── Event IDs ─────────────────────────────────────────────────────────────
-    // Milestones 4-19, their Verbose mirrors 20-32. 1/2/3 — the old generic
-    // SetupInfo / SetupWarning / SetupError channels split 1:many into typed
-    // events with no single successor; burned, never reused. IDs are public in
-    // the ETW manifest; never reuse an id after deleting an event.
+    // IDs 1-3 are burned. IDs are public in the ETW manifest; never reuse an
+    // id after deleting an event.
     public const int EvtWizardOpening              = 4;
     public const int EvtWizardCancelled            = 5;
     public const int EvtWindowOpened               = 6;

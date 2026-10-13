@@ -16,15 +16,10 @@ using Deckle.Install;
 
 namespace Deckle.Setup;
 
-// ── UpdateDownloadPage ───────────────────────────────────────────────────────
-//
 // The running app's leg of an update: fetch the new payload into a unique temp
 // folder (sidecar SHA-256 verified by the shared Downloader), extract it, and
-// hand off to the NEW payload's own `Deckle.exe --update-apply` — the binary
+// hand off to the NEW payload's own `Deckle.exe --update-apply`. The binary
 // swap cannot run in this process, whose image is among the files to replace.
-// The same two-process split as the install chain, with the roles reversed:
-// there the temp process places and the installed process provisions; here the
-// installed process fetches and the temp process places.
 //
 // On success the page completes the window and the App exits, freeing the
 // binaries for the --update-apply gate. On failure nothing was touched — the
@@ -55,8 +50,6 @@ public sealed partial class UpdateDownloadPage : Page
         setup.SetBackEnabled(false);
         setup.SetNextEnabled(false);
         setup.SetNextVisible(false);
-        // The shell Cancel is the abort affordance: Complete(false) closes the
-        // window, and the token below aborts the transfer mid-flight.
         setup.SetCancelVisible(true);
 
         RetryButton.Content = Loc.Get("Setup_Deploy_Retry");
@@ -176,8 +169,8 @@ public sealed partial class UpdateDownloadPage : Page
         Process.Start(psi);
     }
 
-    // Locates Deckle.exe in the extracted tree — flat at the root for today's
-    // zip, tolerant of a single wrapping folder (same probe as the stub).
+    // The release zip is flat; the shallowest match also tolerates a wrapping
+    // folder.
     private static string? FindDeckleExe(string root)
     {
         string direct = Path.Combine(root, "Deckle.exe");

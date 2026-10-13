@@ -7,21 +7,16 @@ using Deckle.Install;
 
 namespace Deckle.Setup;
 
-// ── UpdateService ─────────────────────────────────────────────────────────────
-//
-// The silent update check and its one piece of state. The App runs CheckAsync
-// in the background (at boot, then daily, gated by the Settings opt-out); a
-// newer release parks in Available, from which every surface reads — the toast
-// prompt, the Settings version row, and the download page the user's explicit
-// click opens. Checking never downloads anything: the payload moves only on
-// that click (UpdateDownloadPage), and the binary swap belongs to the new
-// payload itself (Deckle.exe --update-apply), mirroring the install chain.
+// The silent update check and its one piece of state. A newer release parks in
+// Available, from which every surface reads: the toast prompt, the Settings
+// version row, and the download page. Checking never downloads anything: the
+// payload moves only on the user's explicit click (UpdateDownloadPage), and
+// the binary swap belongs to the new payload itself (Deckle.exe --update-apply).
 //
 // The check runs only for a launch of the INSTALLED copy: the registered
 // Installed-apps entry names the install folder, and the running image must be
 // that folder's Deckle.exe. A dev build running from a worktree shares the
-// registry hive but must neither offer nor apply updates over the dev tree —
-// neophytes get the updater, maintainers keep the repo scripts.
+// registry hive but must neither offer nor apply updates over the dev tree.
 public static class UpdateService
 {
     public sealed record AvailableUpdate(

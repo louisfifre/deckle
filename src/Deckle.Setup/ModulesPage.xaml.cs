@@ -9,25 +9,14 @@ using Microsoft.UI.Xaml.Navigation;
 
 namespace Deckle.Setup;
 
-// ── ModulesPage ──────────────────────────────────────────────────────────────
-//
-// The module selector — the wizard's first step. One checkbox card per
-// catalogue module (ModuleRegistry), checked from the recorded choice
-// (ModulePresence.Choice; no choice = everything checked). Checking a module
-// pulls in its dependencies, unchecking one expels its dependents — the
-// cascade itself lives in ModuleGraph, this page only renders the returned
-// selection.
-//
-// Continue records the choice and routes on it: into the transcription
-// provisioning flow (ChoicesPage) when Dictation is selected, straight to
-// completion otherwise. Presence acts at the next boot — the App restarts
-// after a successful wizard run, so the selection takes effect immediately
-// from the user's point of view.
+// The module selector, the wizard's first step. Checking a module pulls in its
+// dependencies and unchecking one expels its dependents; the cascade lives in
+// ModuleGraph, this page only renders the selection it returns. Presence acts
+// at the next boot, and the App restarts after a successful run.
 //
 // Wording is keyed by module id from THIS module's resources (mirrored into
 // the root map for Loc), not from the described module's assembly: the
-// installer companion's end state must be able to name a module whose DLLs
-// are not on disk.
+// installer must be able to name a module whose DLLs are not on disk.
 public sealed partial class ModulesPage : Page
 {
     private SetupWindow? _setup;
@@ -112,8 +101,6 @@ public sealed partial class ModulesPage : Page
                 : ModuleGraph.WithoutDependents(catalog, _selection, id),
             StringComparer.Ordinal);
 
-        // Re-sync every box to the cascaded selection; the guard keeps the
-        // sync's own Checked/Unchecked events from cascading again.
         _syncing = true;
         try
         {
@@ -128,8 +115,8 @@ public sealed partial class ModulesPage : Page
         SyncSelectionToContext();
     }
 
-    // The context mirrors the live selection so the estimate (here and on the
-    // Choices recap) always totals what the install step would actually run.
+    // The context mirrors the live selection so every estimate totals what the
+    // install step would actually run.
     private void SyncSelectionToContext()
     {
         if (_setup is null) return;
@@ -159,9 +146,6 @@ public sealed partial class ModulesPage : Page
 
         ModulePresence.Save(_selection.ToList());
 
-        // Dictation selected → its Choices page first (model pick). Otherwise
-        // straight to the install step when a selected module still has
-        // something to put on disk, and to completion when nothing does.
         if (_selection.Contains(ModuleIds.Transcription))
         {
             _setup.Body.Navigate(typeof(ChoicesPage), _setup);

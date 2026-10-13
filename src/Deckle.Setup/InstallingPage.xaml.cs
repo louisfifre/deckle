@@ -15,23 +15,6 @@ using Deckle.Transcription.Whisper;
 
 namespace Deckle.Setup;
 
-// ── InstallingPage ───────────────────────────────────────────────────────────
-//
-// Runs the install plan in bulk (sequential V1) and reports per-item progress.
-// The rows are no longer hardcoded: InstallPlan maps the wizard's module
-// selection to install items (Dictation → native runtime + model + VAD model,
-// Autocorrect → CamemBERT, Anytype → the pinned CLI), and this page renders
-// one row per item and runs them in order.
-//
-// Already-installed shortcut: a row whose item detects an existing valid
-// install renders as "already installed" without consuming bandwidth.
-//
-// Errors don't abort the run — each item's result is appended independently so
-// the user sees what worked and what didn't, and SummaryPage offers Retry.
-//
-// Cancellation is handled inline (Cancel install button on the page), not via
-// the shell footer. The shell's Cancel button is hidden while this page is
-// active to avoid two competing affordances.
 public sealed partial class InstallingPage : Page
 {
     private SetupWindow? _setup;
@@ -172,15 +155,13 @@ public sealed partial class InstallingPage : Page
             TranscriptionSettingsService.Instance.Current,
             TranscriptionSettingsService.Instance.Save);
 
-        // Hand off to the summary page. Frame.Navigate is UI-thread-safe when
-        // invoked from an awaited continuation that resumed on the UI thread.
+        // Frame.Navigate needs the UI thread: every await above resumes on it,
+        // so none of them may take ConfigureAwait(false).
         _setup.Body.Navigate(typeof(SummaryPage), _setup);
     }
 
     // ── Rows ──────────────────────────────────────────────────────────────────
 
-    // One Grid per item: glyph column + (label / progress / status) rows —
-    // the same shape the former static rows had.
     private IReadOnlyList<ItemRow> BuildItemRows(IReadOnlyList<InstallItem> plan)
     {
         ItemsPanel.Children.Clear();

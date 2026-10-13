@@ -13,22 +13,16 @@ using Deckle.Install;
 
 namespace Deckle.Setup;
 
-// ── RelocatePage ─────────────────────────────────────────────────────────────
+// Moves the data root as a transaction: recheck the target drive's space, copy
+// the whole tree, flip DECKLE_DATA_ROOT, then relaunch the plain app with
+// `--cleanup-data <old root>`. Order matters: prepare beside, then switch, then
+// clean; the origin is removed only by the relaunched process, once nothing
+// holds it.
 //
-// Moves the data root as a transaction: recheck the target drive's space,
-// copy the whole tree with byte progress, flip DECKLE_DATA_ROOT (cleared when
-// the target is the built-in default), then relaunch the plain app pointed at
-// the new root with `--cleanup-data <old root>` — the origin is removed only
-// by the relaunched process, once nothing holds it. Order matters: prepare
-// beside, then switch, then clean — the same posture as the install and
-// update chains, never a move under the app's own feet.
-//
-// Runs in the dedicated `--relocate-data` process (App.Relocate.cs): the
-// normal app cannot copy its own live root (sinks and engines hold files
-// open), so it exits and this process — whose only open handles under the
-// source are its log sinks — does the work. Files that still refuse to copy
-// (in practice the diagnostics this very process is writing) are skipped and
-// counted rather than failing the move: logs are shed, user data is not.
+// Runs in the dedicated `--relocate-data` process, whose only open handles
+// under the source are its own log sinks. Files that still refuse to copy (in
+// practice the diagnostics this process is writing) are skipped and counted
+// rather than failing the move: logs are shed, user data is not.
 public sealed partial class RelocatePage : Page
 {
     private SetupWindow? _setup;
@@ -158,8 +152,6 @@ public sealed partial class RelocatePage : Page
         }
     }
 
-    // One funnel for every blocking state: the warning narrative and the
-    // retryable InfoBar. `display` defaults to the raw reason.
     private void Fail(string step, string reason, string? display = null)
     {
         DeckleSetupSource.Log.RelocateFailed();
@@ -169,8 +161,6 @@ public sealed partial class RelocatePage : Page
         ErrorBar.Message = Loc.Format("Setup_Relocate_Failed_Format", display ?? reason);
         ErrorBar.IsOpen = true;
     }
-
-    // ── Steps (background thread) ─────────────────────────────────────────────
 
     // ── UI helpers ────────────────────────────────────────────────────────────
 

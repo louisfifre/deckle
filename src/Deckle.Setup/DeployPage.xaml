@@ -16,8 +16,6 @@
                    Foreground="{ThemeResource TextFillColorSecondaryBrush}"
                    HorizontalAlignment="Center" />
 
-        <!-- Blocking states (Deckle already running, a failed step) land here
-             with Retry as the InfoBar's action. -->
         <InfoBar x:Name="ErrorBar"
                  IsOpen="False"
                  IsClosable="False"
