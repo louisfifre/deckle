@@ -60,8 +60,8 @@ public sealed class ParagraphDraft
     }
 
     /// <summary>Mirrors a bounded correction already applied to the observed
-    /// paragraph. The last matching occurrence is the safest available slot;
-    /// absence invalidates the draft instead of guessing.</summary>
+    /// paragraph. It does so only when the original occurs exactly once; zero or
+    /// several occurrences invalidate the draft instead of guessing.</summary>
     public void ApplyCorrection(string original, string replacement)
     {
         if (!_valid || string.IsNullOrEmpty(original)) return;

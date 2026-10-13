@@ -1315,7 +1315,6 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   └── LlmGeneralViewModel.Settings.cs
 │   │   ├── CONTEXT.md  — context-deckle-llm-rewrite Rewrite service vocabulary — the single service every rewrite goes through, who…
 │   │   ├── Deckle.Llm.Rewrite.csproj
-│   │   ├── JOURNAL.md
 │   │   ├── LlmSettings.cs
 │   │   ├── LlmSettingsMigrations.cs
 │   │   ├── LlmSettingsModule.cs
