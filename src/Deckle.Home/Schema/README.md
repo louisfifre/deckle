@@ -3,7 +3,7 @@
 The manifest and annotations are exact copies of the Home repository at commit
 `d4f98c6` (2026-09-11). They contain public structure and policies, never household
 objects, room registries or provider IDs. Update them together when accepted Home
-decisions change. `Terms/terms.fr.json` contains the corresponding French labels
+decisions change. `../Terms/terms.fr.json` contains the corresponding French labels
 under the current wire coordinates, with legacy terms retained for callers.
 
 `HomeSchemaTargetData` reads the manifest's formats, type membership and seed
