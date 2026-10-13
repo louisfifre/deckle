@@ -453,49 +453,49 @@
     <value>GPU acceleration (requires restart)</value>
   </data>
   <data name="WhisperUseGpuCard.Description" xml:space="preserve">
-    <value>Run Whisper on the GPU via Vulkan for faster transcription. Turn off if you see instability or crashes. Default: on.</value>
+    <value>Run Whisper on the GPU via Vulkan for faster transcription. Turn off if you see instability or crashes.</value>
   </data>
   <data name="WhisperVadEnabledCard.Header" xml:space="preserve">
     <value>Voice activity detection</value>
   </data>
   <data name="WhisperVadEnabledCard.Description" xml:space="preserve">
-    <value>The on/off for speech filtering; the settings below tune how it decides. When off, raw audio goes straight to the model. Default: on.</value>
+    <value>The on/off for speech filtering; the settings below tune how it decides. When off, raw audio goes straight to the model.</value>
   </data>
   <data name="WhisperVadThresholdCard.Header" xml:space="preserve">
     <value>Speech threshold</value>
   </data>
   <data name="WhisperVadThresholdCard.Description" xml:space="preserve">
-    <value>How sure the detector must be that a window contains speech before keeping it. Higher trims more aggressively but can clip soft speech. Default: 0.50.</value>
+    <value>How sure the detector must be that a window contains speech before keeping it. Higher trims more aggressively but can clip soft speech.</value>
   </data>
   <data name="WhisperVadMinSpeechCard.Header" xml:space="preserve">
     <value>Minimum speech</value>
   </data>
   <data name="WhisperVadMinSpeechCard.Description" xml:space="preserve">
-    <value>Speech shorter than this is discarded as a blip, so a stray click or tap is not kept. Default: 250 ms.</value>
+    <value>Speech shorter than this is discarded as a blip, so a stray click or tap is not kept.</value>
   </data>
   <data name="WhisperVadMinSilenceCard.Header" xml:space="preserve">
     <value>Minimum silence</value>
   </data>
   <data name="WhisperVadMinSilenceCard.Description" xml:space="preserve">
-    <value>A pause shorter than this does not split speech, so a breath mid-sentence is bridged rather than cut. Default: 100 ms.</value>
+    <value>A pause shorter than this does not split speech, so a breath mid-sentence is bridged rather than cut.</value>
   </data>
   <data name="WhisperVadSpeechPadCard.Header" xml:space="preserve">
     <value>Speech padding</value>
   </data>
   <data name="WhisperVadSpeechPadCard.Description" xml:space="preserve">
-    <value>Audio kept on each side of a detected span, so a word's onset or tail is not clipped. Default: 30 ms.</value>
+    <value>Audio kept on each side of a detected span, so a word's onset or tail is not clipped.</value>
   </data>
   <data name="WhisperSuppressNstCard.Header" xml:space="preserve">
     <value>Suppress non-speech tokens</value>
   </data>
   <data name="WhisperSuppressNstCard.Description" xml:space="preserve">
-    <value>Remove tags like [Music] or (laughter) that Whisper sometimes adds to the transcription. Default: on.</value>
+    <value>Remove tags like [Music] or (laughter) that Whisper sometimes adds to the transcription.</value>
   </data>
   <data name="WhisperSuppressBlankCard.Header" xml:space="preserve">
     <value>Suppress blank segments</value>
   </data>
   <data name="WhisperSuppressBlankCard.Description" xml:space="preserve">
-    <value>Drop segments that contain only whitespace or punctuation. Default: on.</value>
+    <value>Drop segments that contain only whitespace or punctuation.</value>
   </data>
   <data name="WhisperSuppressRegexCard.Header" xml:space="preserve">
     <value>Custom regex filter</value>
@@ -507,55 +507,55 @@
     <value>Carry previous context</value>
   </data>
   <data name="WhisperUseContextCard.Description" xml:space="preserve">
-    <value>Pass each segment's result as context for the next one, improving consistency across sentences. Turn off if the transcription starts repeating itself. Default: on.</value>
+    <value>Pass each segment's result as context for the next one, improving consistency across sentences. Turn off if the transcription starts repeating itself.</value>
   </data>
   <data name="WhisperMaxTokensCard.Header" xml:space="preserve">
     <value>Maximum tokens per segment</value>
   </data>
   <data name="WhisperMaxTokensCard.Description" xml:space="preserve">
-    <value>Limit how much text can be generated for each segment. Default: -1 (auto).</value>
+    <value>Limit how much text can be generated for each segment. -1 removes the limit.</value>
   </data>
   <data name="WhisperUseBeamSearchCard.Header" xml:space="preserve">
     <value>Beam search</value>
   </data>
   <data name="WhisperUseBeamSearchCard.Description" xml:space="preserve">
-    <value>Explore several hypotheses in parallel and keep the best overall sequence. Higher quality than greedy decoding, at the cost of latency. Default: on.</value>
+    <value>Explore several hypotheses in parallel and keep the best overall sequence. Higher quality than greedy decoding, at the cost of latency.</value>
   </data>
   <data name="WhisperBeamSizeCard.Header" xml:space="preserve">
     <value>Beam size</value>
   </data>
   <data name="WhisperBeamSizeCard.Description" xml:space="preserve">
-    <value>How many hypotheses beam search explores at once. Higher is slower but can recover more accurate phrasing. Default: 5.</value>
+    <value>How many hypotheses beam search explores at once. Higher is slower but can recover more accurate phrasing.</value>
   </data>
   <data name="WhisperTemperatureCard.Header" xml:space="preserve">
     <value>Temperature</value>
   </data>
   <data name="WhisperTemperatureCard.Description" xml:space="preserve">
-    <value>Randomness of the decoder. 0 is deterministic and safest — raise only if the model gets stuck repeating the same phrase. Default: 0.0.</value>
+    <value>Randomness of the decoder. 0 is deterministic and safest — raise only if the model gets stuck repeating the same phrase.</value>
   </data>
   <data name="WhisperTemperatureIncrementCard.Header" xml:space="preserve">
     <value>Fallback temperature step</value>
   </data>
   <data name="WhisperTemperatureIncrementCard.Description" xml:space="preserve">
-    <value>When a segment seems uncertain, the model retries with increasing randomness in steps of this size. Set to 0 to disable retries. Default: 0.2.</value>
+    <value>When a segment seems uncertain, the model retries with increasing randomness in steps of this size. Set to 0 to disable retries.</value>
   </data>
   <data name="WhisperEntropyCard.Header" xml:space="preserve">
     <value>Entropy threshold</value>
   </data>
   <data name="WhisperEntropyCard.Description" xml:space="preserve">
-    <value>Detects repetition loops by measuring token diversity. Low-diversity segments are retried at higher temperature. Raise to catch subtler repetitions. Default: 2.4.</value>
+    <value>Detects repetition loops by measuring token diversity. Low-diversity segments are retried at higher temperature. Raise to catch subtler repetitions.</value>
   </data>
   <data name="WhisperLogprobCard.Header" xml:space="preserve">
     <value>Log-probability threshold</value>
   </data>
   <data name="WhisperLogprobCard.Description" xml:space="preserve">
-    <value>Average decoder confidence per segment. Low-confidence segments are retried at higher temperature. Also gates silence suppression with the no-speech check. Raise (toward 0) to be stricter. Default: -1.0.</value>
+    <value>Average decoder confidence per segment. Low-confidence segments are retried at higher temperature. Also gates silence suppression with the no-speech check. Raise (toward 0) to be stricter.</value>
   </data>
   <data name="WhisperNoSpeechCard.Header" xml:space="preserve">
     <value>No-speech threshold</value>
   </data>
   <data name="WhisperNoSpeechCard.Description" xml:space="preserve">
-    <value>Controls silence suppression. When the model flags a segment as silence and confidence is also low, the segment is dropped. Lower values suppress more aggressively. Default: 0.6.</value>
+    <value>Controls silence suppression. When the model flags a segment as silence and confidence is also low, the segment is dropped. Lower values suppress more aggressively.</value>
   </data>
   <data name="WhisperModelsDirCard.Header" xml:space="preserve">
     <value>Models folder</value>
@@ -659,7 +659,7 @@
     <value>Streaming pipeline (experimental)</value>
   </data>
   <data name="WhisperPageStreamingBodyLabel.Text" xml:space="preserve">
-    <value>Instead of transcribing the whole take in one pass at Stop, cut the live recording into utterances on silence and transcribe each as you speak. Most of your dictation is already done by the time you Stop, and a runaway loop is confined to a single utterance. Default: off.</value>
+    <value>Instead of transcribing the whole take in one pass at Stop, cut the live recording into utterances on silence and transcribe each as you speak. Most of your dictation is already done by the time you Stop, and a runaway loop is confined to a single utterance.</value>
   </data>
   <data name="WhisperStreamingEnabledCard.Header" xml:space="preserve">
     <value>Use the streaming pipeline</value>
@@ -671,13 +671,13 @@
     <value>Silence threshold</value>
   </data>
   <data name="WhisperSegThresholdCard.Description" xml:space="preserve">
-    <value>Audio at or above this raw level (in dBFS) counts as speech. Lower is more sensitive; raise it if quiet background noise keeps a segment open. Default: -45 dBFS.</value>
+    <value>Audio at or above this raw level (in dBFS) counts as speech. Lower is more sensitive; raise it if quiet background noise keeps a segment open.</value>
   </data>
   <data name="WhisperCutPresetCard.Header" xml:space="preserve">
     <value>Pause before cutting</value>
   </data>
   <data name="WhisperCutPresetCard.Description" xml:space="preserve">
-    <value>How long a pause must last before the utterance is cut and transcribed. Patient waits through thinking pauses, Quick sends sentences sooner, and Balanced is the default. Custom shows the curve and its bounds.</value>
+    <value>How long a pause must last before the utterance is cut and transcribed. Patient waits through thinking pauses, Quick sends sentences sooner, Balanced sits between. Custom shows the curve and its bounds.</value>
   </data>
   <data name="WhisperCutPresetPatient.Content" xml:space="preserve">
     <value>Patient</value>
@@ -701,37 +701,37 @@
     <value>Hangover (max)</value>
   </data>
   <data name="WhisperSegHangoverMaxCard.Description" xml:space="preserve">
-    <value>How much trailing silence (in milliseconds) to wait after the last word at the start of an utterance, before deciding it has ended. Long by default so only a paragraph-break silence cuts. Default: 5000 ms.</value>
+    <value>How much trailing silence (in milliseconds) to wait after the last word at the start of an utterance, before deciding it has ended. Long enough, only a paragraph-break silence cuts.</value>
   </data>
   <data name="WhisperSegHangoverMinCard.Header" xml:space="preserve">
     <value>Hangover (min)</value>
   </data>
   <data name="WhisperSegHangoverMinCard.Description" xml:space="preserve">
-    <value>Floor the hangover decays to once the utterance has grown past the ramp end. Never below this — a shorter micro-pause is treated as intra-word. Default: 500 ms.</value>
+    <value>Floor the hangover decays to once the utterance has grown past the ramp end. Never below this — a shorter micro-pause is treated as intra-word.</value>
   </data>
   <data name="WhisperSegHangoverRampStartCard.Header" xml:space="preserve">
     <value>Hangover ramp start</value>
   </data>
   <data name="WhisperSegHangoverRampStartCard.Description" xml:space="preserve">
-    <value>Utterance length (in milliseconds) at which the hangover starts shrinking from the max toward the min. Below this, the hangover stays at the max. Default: 15000 ms (15 s).</value>
+    <value>Utterance length (in milliseconds) at which the hangover starts shrinking from the max toward the min. Below this, the hangover stays at the max.</value>
   </data>
   <data name="WhisperSegHangoverRampEndCard.Header" xml:space="preserve">
     <value>Hangover ramp end</value>
   </data>
   <data name="WhisperSegHangoverRampEndCard.Description" xml:space="preserve">
-    <value>Utterance length at and above which the hangover equals the min. Between the ramp start and end, the hangover follows a shaped curve that declines from the start and steepens toward the end. Default: 120000 ms (2 min).</value>
+    <value>Utterance length at and above which the hangover equals the min. Between the ramp start and end, the hangover follows a shaped curve that declines from the start and steepens toward the end.</value>
   </data>
   <data name="WhisperSegMarginCard.Header" xml:space="preserve">
     <value>Cut margin</value>
   </data>
   <data name="WhisperSegMarginCard.Description" xml:space="preserve">
-    <value>How much silence (in milliseconds) to keep after the last word when cutting. Distinct from the hangover — the silence beyond this is dropped. Default: 150 ms.</value>
+    <value>How much silence (in milliseconds) to keep after the last word when cutting. Distinct from the hangover — the silence beyond this is dropped.</value>
   </data>
   <data name="WhisperSegMinUtteranceCard.Header" xml:space="preserve">
     <value>Minimum utterance</value>
   </data>
   <data name="WhisperSegMinUtteranceCard.Description" xml:space="preserve">
-    <value>Spans of speech shorter than this (in milliseconds) are dropped as noise blips rather than transcribed. Default: 250 ms.</value>
+    <value>Spans of speech shorter than this (in milliseconds) are dropped as noise blips rather than transcribed.</value>
   </data>
 
   <!-- ─── WhisperPage — Diagnostics ───────────────────────────────────

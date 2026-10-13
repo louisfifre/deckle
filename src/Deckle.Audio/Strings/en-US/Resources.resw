@@ -145,7 +145,7 @@
     <value>Microphone</value>
   </data>
   <data name="GeneralMicrophoneCard.Description" xml:space="preserve">
-    <value>Audio input device used for recording. Default: system default.</value>
+    <value>Audio input device used for recording.</value>
   </data>
 
   <!-- Composed maximum-recording-length card (composer label key + Choice option keys) -->
@@ -153,7 +153,7 @@
     <value>Maximum recording length</value>
   </data>
   <data name="RecordingLimitCard.Description" xml:space="preserve">
-    <value>A recording stops on its own when it reaches this length, as if you'd pressed the hotkey. What you recorded is still transcribed. Default: no limit.</value>
+    <value>A recording stops on its own when it reaches this length, as if you'd pressed the hotkey. What you recorded is still transcribed.</value>
   </data>
   <data name="RecordingLimitNone.Content" xml:space="preserve">
     <value>No limit</value>
@@ -179,7 +179,7 @@
     <value>Microphone pre-processing</value>
   </data>
   <data name="RecordingPagePreprocessingCard.Description" xml:space="preserve">
-    <value>Lifts and evens out a quiet or uneven microphone before transcription, for better accuracy on soft passages. Off by default. It only acts when your level is low — a microphone already at a good level passes through untouched.</value>
+    <value>Lifts and evens out a quiet or uneven microphone before transcription, for better accuracy on soft passages. It only acts when your level is low — a microphone already at a good level passes through untouched.</value>
   </data>
 
   <!-- Microphone level check (x:Uid) -->
@@ -285,7 +285,7 @@
     <value>Log microphone level</value>
   </data>
   <data name="RecordingMicrophoneTelemetryCard.Description" xml:space="preserve">
-    <value>At the end of every recording, record the RMS distribution of your microphone (min, percentiles, max in dBFS) to microphone.jsonl in your telemetry folder. Off by default; kept on this device. Useful when calibrating the level window.</value>
+    <value>At the end of every recording, record the RMS distribution of your microphone (min, percentiles, max in dBFS) to microphone.jsonl in your telemetry folder. Kept on this device. Useful when calibrating the level window.</value>
   </data>
   <data name="SettingsModuleNavLabel" xml:space="preserve">
     <value>Recording</value>
