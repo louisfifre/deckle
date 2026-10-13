@@ -2198,7 +2198,6 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 ├── Directory.Build.rsp
 ├── Directory.Build.targets
 ├── Directory.Packages.props
-├── JOURNAL.md  — Dated project notes for Deckle — cross-cutting findings too dated for a CLAUDE.…
 ├── LICENSE
 ├── NOTICE.md
 ├── README.md
