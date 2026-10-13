@@ -1259,7 +1259,6 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── DeckleAmbientSource.Push.cs
 │   │   ├── DeckleAmbientSource.UiAndSettings.cs
 │   │   ├── IAmbientEngineHost.cs
-│   │   ├── JOURNAL.md
 │   │   └── SettingsSearch.cs
 │   ├── Deckle.Llm/
 │   │   ├── Deckle.Llm.csproj

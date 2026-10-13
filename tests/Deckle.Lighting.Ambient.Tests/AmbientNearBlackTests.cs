@@ -183,9 +183,8 @@ public sealed class AmbientNearBlackTests
 
     // The two tunings the sequences run under. True : the Ambient preset
     // (the shadow-lifting curve, the slow alpha). False : the gamma-like
-    // curve (0.42, 0, 1, 1) with alpha 0.30 — the defaults before the
-    // Ambient preset became the default, kept here as the reference the
-    // JOURNAL's near-black evidence was measured against.
+    // curve (0.42, 0, 1, 1) with alpha 0.30, the reference tuning the
+    // rounding-boundary sequence is built for.
     private static AmbientSettings SettingsFor(bool ambientPreset)
     {
         var settings = new AmbientSettings();

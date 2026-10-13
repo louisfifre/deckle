@@ -28,6 +28,10 @@ internal enum AmbientPushDecision
 //   - A smaller change is held on a continuous output (Hue Entertainment
 //     streams a full frame on every tick, so the previous colour is sent
 //     again) and dropped on a persistent one (Hue REST keeps its state).
+//
+// A lamp that stops following while the screen is still is this gate
+// dropping unchanged pushes (the heartbeat's dropped count), not a capture
+// fault.
 internal static class AmbientPushGate
 {
     public static AmbientPushDecision Decide(
