@@ -142,25 +142,25 @@ public partial class WhisperViewModel
             () => VadEnabled,
             value => VadEnabled = value,
             [
-                Setting.Slider("WhisperVadThresholdCard",
+                Setting.Magnitude("WhisperVadThresholdCard",
                     () => VadThreshold,
                     value => VadThreshold = value,
-                    new SliderArgs(0.1, 0.9, 0.05),
+                    new MagnitudeArgs(0.1, 0.9),
                     defaultValue: () => new SpeechTrimSettings().Threshold),
-                Setting.Slider("WhisperVadMinSpeechCard",
+                Setting.Magnitude("WhisperVadMinSpeechCard",
                     () => VadMinSpeechDurationMs,
                     value => VadMinSpeechDurationMs = value,
-                    new SliderArgs(0, 1000, 50),
+                    new MagnitudeArgs(0, 1000, Integer: true),
                     defaultValue: () => new SpeechTrimSettings().MinSpeechDurationMs),
-                Setting.Slider("WhisperVadMinSilenceCard",
+                Setting.Magnitude("WhisperVadMinSilenceCard",
                     () => VadMinSilenceDurationMs,
                     value => VadMinSilenceDurationMs = value,
-                    new SliderArgs(0, 1000, 50),
+                    new MagnitudeArgs(0, 1000, Integer: true),
                     defaultValue: () => new SpeechTrimSettings().MinSilenceDurationMs),
-                Setting.Slider("WhisperVadSpeechPadCard",
+                Setting.Magnitude("WhisperVadSpeechPadCard",
                     () => VadSpeechPadMs,
                     value => VadSpeechPadMs = value,
-                    new SliderArgs(0, 200, 10),
+                    new MagnitudeArgs(0, 200, Integer: true),
                     defaultValue: () => new SpeechTrimSettings().SpeechPadMs),
             ],
             glyph: Glyphs.Microphone,
@@ -173,8 +173,9 @@ public partial class WhisperViewModel
     // are hidden by the composer while streaming is off. In order: the silence
     // threshold, the cut-preset selector, the curve editor, the four hangover
     // anchors, then the cut margin and the minimum utterance. The numeric cards
-    // are Number cards (exact figures typed, not swept) — the same NumberBoxes the
-    // hand-authored cards used, with their Min/Max/Small/Large copied verbatim.
+    // are field-only magnitudes (exact figures typed, not swept), their bounds
+    // copied verbatim from the hand-authored NumberBoxes; the grain derives from
+    // each range.
     //
     // A cut preset (Patient / Balanced / Quick, see CutPresets) carries the eight
     // hangover values: the four anchors (max, min, ramp start, ramp end) and the
@@ -199,10 +200,10 @@ public partial class WhisperViewModel
             () => StreamingEnabled,
             value => StreamingEnabled = value,
             [
-                Setting.Number("WhisperSegThresholdCard",
+                Setting.Magnitude("WhisperSegThresholdCard",
                     () => SegThresholdDbfs,
                     value => SegThresholdDbfs = value,
-                    new NumberArgs(-90, 0, 1, 5),
+                    new MagnitudeArgs(-90, 0, Slider: false),
                     defaultValue: () => new EnergySegmenterSettings().ThresholdDbfs),
                 Setting.Choice<string>("WhisperCutPresetCard",
                     () => CutPreset,
@@ -215,39 +216,39 @@ public partial class WhisperViewModel
                     new EditorArgs(() => new CutCurveEditor(this)),
                     visibleWhen: () => CutPreset == PresetFamily.Custom,
                     defaultValue: () => CutCurveValues.From(new EnergySegmenterSettings())),
-                Setting.Number("WhisperSegHangoverMaxCard",
+                Setting.Magnitude("WhisperSegHangoverMaxCard",
                     () => SegHangoverMaxMs,
                     value => SegHangoverMaxMs = value,
-                    new NumberArgs(500, 15000, 100, 500),
+                    new MagnitudeArgs(500, 15000, Slider: false, Integer: true),
                     visibleWhen: () => CutPreset == PresetFamily.Custom,
                     defaultValue: () => new EnergySegmenterSettings().HangoverMaxMs),
-                Setting.Number("WhisperSegHangoverMinCard",
+                Setting.Magnitude("WhisperSegHangoverMinCard",
                     () => SegHangoverMinMs,
                     value => SegHangoverMinMs = value,
-                    new NumberArgs(100, 2000, 50, 100),
+                    new MagnitudeArgs(100, 2000, Slider: false, Integer: true),
                     visibleWhen: () => CutPreset == PresetFamily.Custom,
                     defaultValue: () => new EnergySegmenterSettings().HangoverMinMs),
-                Setting.Number("WhisperSegHangoverRampStartCard",
+                Setting.Magnitude("WhisperSegHangoverRampStartCard",
                     () => SegHangoverRampStartMs,
                     value => SegHangoverRampStartMs = value,
-                    new NumberArgs(0, 600000, 5000, 30000),
+                    new MagnitudeArgs(0, 600000, Slider: false, Integer: true),
                     visibleWhen: () => CutPreset == PresetFamily.Custom,
                     defaultValue: () => new EnergySegmenterSettings().HangoverRampStartMs),
-                Setting.Number("WhisperSegHangoverRampEndCard",
+                Setting.Magnitude("WhisperSegHangoverRampEndCard",
                     () => SegHangoverRampEndMs,
                     value => SegHangoverRampEndMs = value,
-                    new NumberArgs(30000, 900000, 5000, 30000),
+                    new MagnitudeArgs(30000, 900000, Slider: false, Integer: true),
                     visibleWhen: () => CutPreset == PresetFamily.Custom,
                     defaultValue: () => new EnergySegmenterSettings().HangoverRampEndMs),
-                Setting.Number("WhisperSegMarginCard",
+                Setting.Magnitude("WhisperSegMarginCard",
                     () => SegMarginMs,
                     value => SegMarginMs = value,
-                    new NumberArgs(0, 1000, 50, 100),
+                    new MagnitudeArgs(0, 1000, Slider: false, Integer: true),
                     defaultValue: () => new EnergySegmenterSettings().MarginMs),
-                Setting.Number("WhisperSegMinUtteranceCard",
+                Setting.Magnitude("WhisperSegMinUtteranceCard",
                     () => SegMinUtteranceMs,
                     value => SegMinUtteranceMs = value,
-                    new NumberArgs(0, 2000, 50, 100),
+                    new MagnitudeArgs(0, 2000, Slider: false, Integer: true),
                     defaultValue: () => new EnergySegmenterSettings().MinUtteranceMs),
             ],
             glyph: Glyphs.Tuning,
@@ -291,10 +292,10 @@ public partial class WhisperViewModel
     // Context and segmentation — the two flat cards under the "Context and
     // segmentation" section header. Same flat-list shape as the output filters:
     // independent cards under a section TextBlock, composed as leaf descriptors into
-    // a host. UseContext is a Toggle; MaxTokens is a Number whose -1..448 range and
-    // 1/10 nudges are copied verbatim from the hand-authored NumberBox (the VM's
-    // OnMaxTokensChanged NaN-guard is the same guard the composer's BuildNumber
-    // applies, so a cleared field never persists). Defaults read the ContextSettings
+    // a host. UseContext is a Toggle; MaxTokens is a field-only magnitude over the
+    // -1..448 range the hand-authored NumberBox carried (the VM's
+    // OnMaxTokensChanged NaN-guard is the same guard the composer applies, so a
+    // cleared field never persists). Defaults read the ContextSettings
     // POCO initializer; the header/description keys match the hand-authored x:Uids.
     public IReadOnlyList<SettingDescriptor> ContextSettingsManifest =>
     [
@@ -303,10 +304,10 @@ public partial class WhisperViewModel
             value => UseContext = value,
             glyph: Glyphs.Context,
             defaultValue: () => new ContextSettings().UseContext),
-        Setting.Number("WhisperMaxTokensCard",
+        Setting.Magnitude("WhisperMaxTokensCard",
             () => MaxTokens,
             value => MaxTokens = value,
-            new NumberArgs(-1, 448, 1, 10),
+            new MagnitudeArgs(-1, 448, Slider: false, Integer: true),
             glyph: Glyphs.Tokens,
             defaultValue: () => new ContextSettings().MaxTokens),
     ];
@@ -317,9 +318,9 @@ public partial class WhisperViewModel
     // UseBeamSearch and BeamSize were runtime-only until now — surfaced as VM
     // properties above and exposed here; BeamSize is hidden by its VisibleWhen while
     // beam search is off (mask, never grey), its 1..10 range a sensible default
-    // (the hand-authored UI never exposed it). Temperature/TemperatureIncrement keep
-    // the Slider kind and the verbatim 0..1 / 0.1-step bounds the hand-authored
-    // sliders carried. TemperatureIncrement carries the EXISTING fallback-disabled
+    // (the hand-authored UI never exposed it). Temperature/TemperatureIncrement are
+    // magnitudes over the verbatim 0..1 bounds the hand-authored sliders carried.
+    // TemperatureIncrement carries the EXISTING fallback-disabled
     // warning as an Advisory: the composer renders it as a flat note row under the
     // card when the step is 0, reusing the WhisperTemperatureIncrementWarning copy
     // (the former standalone InfoBar). All defaults read the DecodingSettings POCO
@@ -333,21 +334,21 @@ public partial class WhisperViewModel
                     () => UseBeamSearch,
                     value => UseBeamSearch = value,
                     defaultValue: () => new DecodingSettings().UseBeamSearch),
-                Setting.Number("WhisperBeamSizeCard",
+                Setting.Magnitude("WhisperBeamSizeCard",
                     () => BeamSize,
                     value => BeamSize = value,
-                    new NumberArgs(1, 10, 1, 1),
+                    new MagnitudeArgs(1, 10, Slider: false, Integer: true),
                     visibleWhen: () => UseBeamSearch,
                     defaultValue: () => new DecodingSettings().BeamSize),
-                Setting.Slider("WhisperTemperatureCard",
+                Setting.Magnitude("WhisperTemperatureCard",
                     () => Temperature,
                     value => Temperature = value,
-                    new SliderArgs(0, 1, 0.1),
+                    new MagnitudeArgs(0, 1),
                     defaultValue: () => new DecodingSettings().Temperature),
-                Setting.Slider("WhisperTemperatureIncrementCard",
+                Setting.Magnitude("WhisperTemperatureIncrementCard",
                     () => TemperatureIncrement,
                     value => TemperatureIncrement = value,
-                    new SliderArgs(0, 1, 0.1),
+                    new MagnitudeArgs(0, 1),
                     defaultValue: () => new DecodingSettings().TemperatureIncrement,
                     advisory: () => TemperatureIncrement == 0
                         ? Loc.GetFromOptional("Deckle.Transcription", "WhisperTemperatureIncrementWarning/Message")
@@ -357,32 +358,31 @@ public partial class WhisperViewModel
     ];
 
     // Confidence thresholds — the second master-less fold (WhisperConfidenceExpander),
-    // now a Section. The three thresholds keep the Slider kind; the Min/Max/step the
+    // now a Section. The three thresholds are magnitudes; the Min/Max the
     // code-behind set imperatively to dodge the WinUI XAML-trimming parser crash
-    // (Minimum > defaultValue in XAML) move INTO SliderArgs here, where a code-built
-    // control sets them without that parser ever seeing them — so the workaround
-    // retires. Bounds verbatim: Entropy 1.5..3.5 step 0.1; Logprob -1.5..-0.4 step
-    // 0.05; NoSpeech 0.05..0.80 step 0.05. Defaults read the ConfidenceSettings POCO
-    // initializer; the section's header/description reuse the WhisperConfidenceExpander
-    // x:Uid.
+    // (Minimum > defaultValue in XAML) move INTO MagnitudeArgs here, where a
+    // code-built control sets them without that parser ever seeing them — so the
+    // workaround retires. Bounds verbatim: Entropy 1.5..3.5; Logprob -1.5..-0.4;
+    // NoSpeech 0.05..0.80. Defaults read the ConfidenceSettings POCO initializer;
+    // the section's header/description reuse the WhisperConfidenceExpander x:Uid.
     public IReadOnlyList<SettingDescriptor> ConfidenceSettingsManifest =>
     [
         Setting.Section("WhisperConfidenceExpander",
             [
-                Setting.Slider("WhisperEntropyCard",
+                Setting.Magnitude("WhisperEntropyCard",
                     () => EntropyThreshold,
                     value => EntropyThreshold = value,
-                    new SliderArgs(1.5, 3.5, 0.1),
+                    new MagnitudeArgs(1.5, 3.5),
                     defaultValue: () => new ConfidenceSettings().EntropyThreshold),
-                Setting.Slider("WhisperLogprobCard",
+                Setting.Magnitude("WhisperLogprobCard",
                     () => LogprobThreshold,
                     value => LogprobThreshold = value,
-                    new SliderArgs(-1.5, -0.4, 0.05),
+                    new MagnitudeArgs(-1.5, -0.4),
                     defaultValue: () => new ConfidenceSettings().LogprobThreshold),
-                Setting.Slider("WhisperNoSpeechCard",
+                Setting.Magnitude("WhisperNoSpeechCard",
                     () => NoSpeechThreshold,
                     value => NoSpeechThreshold = value,
-                    new SliderArgs(0.05, 0.80, 0.05),
+                    new MagnitudeArgs(0.05, 0.80),
                     defaultValue: () => new ConfidenceSettings().NoSpeechThreshold),
             ],
             glyph: Glyphs.Diagnostics),

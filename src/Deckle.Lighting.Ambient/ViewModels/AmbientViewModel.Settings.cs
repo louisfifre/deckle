@@ -57,18 +57,18 @@ public partial class AmbientViewModel
                         (BorderThicknessMode.Cells, "AmbientBorderModeCells"),
                     ],
                     defaultValue: () => new AmbientSettings().BorderMode),
-                Setting.Slider(
+                Setting.Magnitude(
                     "AmbientBorderDepthCard",
                     () => BorderDepthPercent,
                     value => BorderDepthPercent = value,
-                    new SliderArgs(5, 50, 5, Unit: "%"),
+                    new MagnitudeArgs(5, 50, Unit: "%"),
                     visibleWhen: () => BorderMode == BorderThicknessMode.Share,
                     defaultValue: () => new AmbientSettings().BorderDepth * 100.0),
-                Setting.Slider(
+                Setting.Magnitude(
                     "AmbientBorderCellsCard",
                     () => BorderCells,
                     value => BorderCells = (int)Math.Round(value),
-                    new SliderArgs(4, 24, 2),
+                    new MagnitudeArgs(4, 24, Integer: true),
                     visibleWhen: () => BorderMode == BorderThicknessMode.Cells,
                     defaultValue: () => new AmbientSettings().BorderCells),
             ],

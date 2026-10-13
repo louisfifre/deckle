@@ -870,6 +870,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   └── StaleWorkProbeCommand.cs
 │   ├── Deckle.Catalog/
 │   │   ├── Composer/
+│   │   │   ├── GestureHold.cs
 │   │   │   ├── HotkeyChordText.cs
 │   │   │   ├── HotkeyKeyNames.cs
 │   │   │   ├── IPathControl.cs
@@ -2028,9 +2029,11 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   └── WordBoundariesTests.cs
 │   ├── Deckle.Catalog.Tests/
 │   │   ├── Deckle.Catalog.Tests.csproj
+│   │   ├── GestureHoldTests.cs
 │   │   ├── HotkeyChordTests.cs
 │   │   ├── HotkeyChordTextTests.cs
 │   │   ├── MagnitudeGrainBugNotes.md
+│   │   ├── MagnitudeGrainIntegerTests.cs
 │   │   ├── MagnitudeGrainTests.cs
 │   │   └── SettingFactoryTests.cs
 │   ├── Deckle.Chrono.Tests/

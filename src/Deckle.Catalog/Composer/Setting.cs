@@ -53,68 +53,14 @@ public static class Setting
             Advisory = advisory,
         };
 
-    // Slider over a double. The range/step live in SliderArgs (the control's
-    // bounds, not the value), required because a slider is meaningless without
-    // them — unlike Toggle, args is not optional here.
-    public static SettingDescriptor Slider(
-        string labelKey,
-        Func<double> get,
-        Action<double> set,
-        SliderArgs args,
-        string? glyph = null,
-        bool isAdvanced = false,
-        Func<bool>? enabledWhen = null,
-        Func<bool>? visibleWhen = null,
-        Func<double>? defaultValue = null,
-        Func<string?>? advisory = null) => new()
-        {
-            Kind = SettingKind.Slider,
-            LabelKey = labelKey,
-            Glyph = glyph,
-            IsAdvanced = isAdvanced,
-            Args = args,
-            GetValue = () => get(),
-            SetValue = value => set((double)value!),
-            EnabledWhen = enabledWhen,
-            VisibleWhen = visibleWhen,
-            Default = defaultValue is null ? null : () => defaultValue(),
-            Advisory = advisory,
-        };
-
-    // NumberBox over a double. Like Slider, the range/increments live in
-    // NumberArgs (the control's bounds, not the value) and are required — a
-    // NumberBox without Minimum/Maximum has no clamp. Same boxed selectors as
-    // Slider, including the optional default for the per-card reset.
-    public static SettingDescriptor Number(
-        string labelKey,
-        Func<double> get,
-        Action<double> set,
-        NumberArgs args,
-        string? glyph = null,
-        bool isAdvanced = false,
-        Func<bool>? enabledWhen = null,
-        Func<bool>? visibleWhen = null,
-        Func<double>? defaultValue = null,
-        Func<string?>? advisory = null) => new()
-        {
-            Kind = SettingKind.Number,
-            LabelKey = labelKey,
-            Glyph = glyph,
-            IsAdvanced = isAdvanced,
-            Args = args,
-            GetValue = () => get(),
-            SetValue = value => set((double)value!),
-            EnabledWhen = enabledWhen,
-            VisibleWhen = visibleWhen,
-            Default = defaultValue is null ? null : () => defaultValue(),
-            Advisory = advisory,
-        };
-
-    // A Slider fused with an editable NumberBox over a double — sweep to
-    // approximate, type to be exact. MagnitudeArgs carries only the bounds and
-    // unit; the composer derives the slider's "nice" 1-2-5 grain from the range, so
-    // unlike Slider there is no StepFrequency to pass. Same boxed selectors and
-    // optional default (for the per-card reset) as the other numeric kinds.
+    // The one numeric block: an editable NumberBox over a double, with a Slider
+    // beside it when the value earns a gesture — sweep to approximate, type or
+    // nudge to be exact. MagnitudeArgs carries the bounds, the unit and the shape
+    // (slider or field alone, count or not), required because a numeric control
+    // is meaningless without its bounds — unlike Toggle, args is not optional
+    // here. The composer derives the "nice" 1-2-5 grain from the range, so there
+    // is no step to pass. Same boxed selectors and optional default (for the
+    // per-card reset) as the other kinds.
     public static SettingDescriptor Magnitude(
         string labelKey,
         Func<double> get,
@@ -142,7 +88,7 @@ public static class Setting
 
     // Free-form text as a string. TextArgs shapes the TextBox (placeholder,
     // multiline, max length) and is optional — a bare single-line field needs no
-    // arguments, so unlike Slider/Number it defaults to a plain TextArgs. Same
+    // arguments, so unlike Magnitude it defaults to a plain TextArgs. Same
     // boxed selectors and optional default as the other kinds; the default points
     // at the POCO initializer so an empty/edited field can reset to it.
     public static SettingDescriptor Text(
@@ -198,7 +144,7 @@ public static class Setting
         };
 
     // Folder path as a string. PathArgs carries the picker mode and the
-    // deferred default-path lookup; like Slider's args it is required, since a
+    // deferred default-path lookup; like Magnitude's args it is required, since a
     // FolderPickerCard needs at minimum its mode.
     public static SettingDescriptor Path(
         string labelKey,

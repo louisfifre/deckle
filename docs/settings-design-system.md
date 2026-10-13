@@ -44,7 +44,7 @@ by one block, split across several, or empty.
 | One of a few options | Radio buttons, all visible | Composer `Choice` with `Radio` flag | Covered. Theme (three options) and overlay position (two) still render as dropdowns, *to check on screen*. |
 | One of many options, labels fixed | A dropdown | Composer `Choice` | Covered. |
 | One of a runtime list (microphone, monitor, Hue group, model file, profile, language) | A dropdown | None in the composer. Hand-drawn ComboBox or AutoSuggestBox on six pages. | **Empty row.** Options are not `.resw` keys, so `Choice` cannot carry them. |
-| Linear magnitude | One control: slider and number field, grain derived | Composer `Magnitude` with `MagnitudeGrain` | Decided 2026-10-13: one numeric block. `Magnitude` gains an option that hides the slider when a value has no gesture worth it; `Slider` (14 cards), `Number` (9 cards), `TunableRow` and the HUD row factories retire into it. The field shows its arrows on hover (`Compact`), as the Playground does; the composer hides them today. |
+| Linear magnitude | One control: slider and number field, grain derived | Composer `Magnitude` with `MagnitudeGrain` | Done 2026-10-13 (feat/magnitude-block): one numeric block. `Magnitude` hides its slider by option and declares a count; `Slider` (14 cards) and `Number` (9 cards) retired into it, arrows on hover (`Compact`), written at the release. `TunableRow` and the HUD row factories still stand in the Playground, for the Playground pass. |
 | Geometric magnitude (stops that multiply: 1, 2, 4 … 256) | Slider over a stop list, field shows the value | None. Rewriting context size is a hand-drawn index slider. | **Empty row.** The composer comment says the log variant was deliberately not built. |
 | Curve or envelope | A dedicated editor | Composer `Editor` hosts a module element. Two editors: `HangoverCurveCanvas` (Win2D) and `BrightnessCurveCanvas` (XAML shapes), same two-handle interaction, one `CurveHandleStyle` copied in both. | Decided 2026-10-13: one editor in XAML shapes, a composer block. It carries the control-point values, a computed sentence that says what the curve does with them (model: `SegmentationPage.xaml.cs:171`), and one form that adapts to a compact width, two forms only if one cannot. |
 | Free text, one line | One shared input | Composer `Text` | Covered. |
@@ -75,10 +75,10 @@ From the doctrine, with the code facts that bear on each rule.
   handle, the commit of a field, the click of a switch. Never per tick, and
   the same on every page. Louis's rule of 2026-10-12 still holds: the write
   auto-saves and, under a preset, switches it to Custom; picking a preset
-  restores its values. Today the composer slider and magnitude write on every
-  `ValueChanged` (`SettingsComposer.Numeric.cs:66,211`) and a brightness-curve
-  drag saves the Ambient store on every handle move, once per coordinate
-  (`AmbientViewModel.cs:169-176`).
+  restores its values. The composer magnitude writes at the release since
+  feat/magnitude-block (`GestureHold`, pure state, tested apart from the
+  control); a brightness-curve drag still saves the Ambient store on every
+  handle move, once per coordinate (`AmbientViewModel.cs:169-176`).
 - **Confirmation and restart are parameters of the setting.** Decided
   2026-10-13: they are carried by the descriptor, never behaviours of a block,
   so every block applies them the same way. The marker names are still open.
@@ -126,10 +126,13 @@ Louis's answers to the first version's open points.
 1. **Magnitude is the one numeric block.** A number field with its arrows on
    hover (`Compact`), paired with a slider that an option hides when the value
    has no gesture worth it. `Slider` and `Number` retire into `Magnitude`; the
-   23 cards, `TunableRow` and the HUD row factories follow. Fact to carry: the
-   composer hides the arrows today (`SpinButtonPlacementMode.Hidden` in
-   `SettingsComposer.Numeric.cs`), while the Playground pages and `TunableRow`
-   show them on hover.
+   23 cards, `TunableRow` and the HUD row factories follow. Done the same day
+   for the composer and the 23 cards (feat/magnitude-block): arrows on hover,
+   slider optional (`MagnitudeArgs.Slider`), count-aware grain
+   (`MagnitudeArgs.Integer`, floored at one), one write at the release. The
+   former Number cards keep the field alone, the former Slider cards gain the
+   field; the grain now derives from each range instead of the hand-set steps.
+   `TunableRow` and the HUD rows wait for the Playground pass.
 2. **Preset is a row of its own.** The selector sits above the group it
    governs. `Deckle.Presets` stays a separate module: `Deckle.Lighting.Ambient`
    and `Deckle.Transcription` reference it and own the families;
@@ -180,15 +183,15 @@ nudge, tooltip or automation name.
 ## Annex A: blocks in the code, 2026-10-13
 
 Where a value lives and who uses it. Kinds are in `src/Deckle.Catalog/Composer/SettingKind.cs`
-(eleven: Toggle, Slider, Path, Choice, Number, Magnitude, Text, Editor, Hotkey,
-Group, Section; Radio is a flag of Choice). Rows marked (sweep) come from a
-read-only agent pass and were not re-read line by line.
+(nine since feat/magnitude-block: Toggle, Path, Choice, Magnitude, Text, Editor,
+Hotkey, Group, Section; Radio is a flag of Choice). Rows marked (sweep) come
+from a read-only agent pass and were not re-read line by line.
 
 | Block | File | Covers | Used by |
 |---|---|---|---|
 | Toggle | Composer | on/off, consent gate | ten pages, about thirty cards (sweep) |
 | Choice, Radio | Composer `SettingsComposer.Inputs.cs` | choice, fixed labels | six Choice cards on four pages, three Radio cards on two (sweep) |
-| Slider, Number, Magnitude | Composer `SettingsComposer.Numeric.cs`, `MagnitudeGrain.cs` | linear magnitude | Slider 14 cards, Number 9, Magnitude 9 (sweep) |
+| Magnitude | Composer `SettingsComposer.Numeric.cs`, `MagnitudeGrain.cs`, `GestureHold.cs` | linear magnitude, field alone or with slider | the 23 former Slider and Number cards plus the existing magnitudes (Trackpad, Precision scrolling, Ambient) |
 | Text | Composer | one-line text | two cards (sweep) |
 | Path | Composer, `IPathControl`, `PathControlFactory` | folder | three cards (sweep) |
 | Editor | Composer | hosts a module editor | one card, the cut curve |
