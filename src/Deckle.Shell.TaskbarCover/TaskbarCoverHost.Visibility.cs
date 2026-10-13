@@ -21,13 +21,10 @@ public sealed partial class TaskbarCoverHost
         {
             NativeMethods.ShowWindow(_hwnd, NativeMethods.SW_SHOWNOACTIVATE);
             ReassertTopmost();
-            // Z-order witness: ShowWindow + the topmost assert can both succeed
-            // while the band still sits below Shell_TrayWnd (the taskbar is
-            // topmost too, last-positioned wins). CoverShown only proves the
-            // ShowWindow call; this captures the native result — what occludes
-            // the band right after the assert, and the foreground at that
-            // instant — to settle the boot "covers but stays under the taskbar"
-            // case the visibility log can't see.
+            // Z-order witness: ShowWindow and the topmost assert can both
+            // succeed while the band still sits below Shell_TrayWnd. CoverShown
+            // only proves the ShowWindow call; this records what occludes the
+            // band right after the assert, and the foreground at that instant.
             WindowingProbe.EmitWindowZOrderState(_hwnd, "taskbar-cover", "after_show_topmost");
             DeckleShellTaskbarCoverSource.Log.CoverShown(reason);
         }
@@ -38,13 +35,10 @@ public sealed partial class TaskbarCoverHost
         }
     }
 
-    // Climb to the top of the topmost band. The taskbar is topmost too and
-    // among topmost windows the most recently positioned wins, so this is how
-    // the band stays above it — re-asserted when shown, on every foreground
-    // change and F11 toggle while visible, on every layout message while
-    // visible (TaskbarCreated, WM_SETTINGCHANGE, WM_DISPLAYCHANGE, even with
-    // an unchanged rect), and when the band returns to full opacity on
-    // leaving the approach zone.
+    // The taskbar is topmost too and among topmost windows the most recently
+    // positioned wins, so the band re-asserts its place on show and, while
+    // visible, on every foreground change, every layout message (even with an
+    // unchanged rect) and every return to full opacity.
     private void ReassertTopmost() =>
         NativeMethods.SetWindowPos(_hwnd, NativeMethods.HWND_TOPMOST, 0, 0, 0, 0,
             NativeMethods.SWP_NOMOVE | NativeMethods.SWP_NOSIZE | NativeMethods.SWP_NOACTIVATE);

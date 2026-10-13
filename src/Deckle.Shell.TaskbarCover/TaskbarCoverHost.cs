@@ -7,31 +7,14 @@ using static Deckle.Shell.TaskbarCover.TaskbarCoverNativeMethods;
 
 namespace Deckle.Shell.TaskbarCover;
 
-// Dedicated thread owning the cover band — an opaque black topmost window
-// sized to the exact taskbar rect — and the whole cover state machine:
+// Dedicated thread owning the cover band, an opaque black topmost window
+// sized to the exact taskbar rect, and the whole cover state machine: the
+// band fades as the cursor approaches, a fullscreen foreground on its monitor
+// suppresses it, sleep and session lock park it. Event driven only.
 //
-//   • the band covers the taskbar whatever edge it is anchored to
-//     (ABM_GETTASKBARPOS rect, rebuilt on WM_SETTINGCHANGE /
-//     WM_DISPLAYCHANGE / TaskbarCreated);
-//   • in the approach zone (CoverGeometry.ApproachZone) the band fades with
-//     the cursor's distance to it, gone on the band itself; leaving the
-//     zone re-covers at once, fully opaque;
-//   • a fullscreen / presentation foreground app suppresses the band; the
-//     shared ForegroundWatcher (Deckle.Shell.Foreground) tells the host the
-//     instant the foreground switches or its window toggles fullscreen in
-//     place, and the host reconciles suppression — and the band's z-order
-//     above the taskbar — on its own thread. Event driven only;
-//   • sleep and session lock park the machine entirely.
-//
-// Cursor movement arrives through a WinEvent hook
-// (EVENT_OBJECT_LOCATIONCHANGE filtered on OBJID_CURSOR), not Raw Input:
-// the RIDEV_INPUTSINK mouse registration is per-process-per-usage and
-// CursorMovementSignal (Deckle.Shell) owns the only one. The hook is asynchronous
-// and additive — no input-chain latency, no contention. It delivers on
-// the thread that registered it, which therefore owns a message pump;
-// the same thread owns the window, the hooks and every state field, so
-// the machine runs without a single lock. Start/Stop mirror
-// RawInputHost's thread lifecycle.
+// The cursor WinEvent hook delivers on the thread that registered it, which
+// therefore owns a message pump; the same thread owns the window, the hooks
+// and every state field, so the state machine runs without a lock.
 public sealed partial class TaskbarCoverHost : IDisposable
 {
     private const string ClassName = "DeckleTaskbarCover";

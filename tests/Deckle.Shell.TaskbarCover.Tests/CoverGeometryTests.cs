@@ -4,12 +4,6 @@ using Xunit;
 
 namespace Deckle.Shell.TaskbarCover.Tests;
 
-// Behaviour of CoverGeometry, the observable contract: the approach zone
-// starts at the screen edge the taskbar is anchored to, reaches
-// ApproachZoneFactor × the band thickness inward (band included), stays
-// bounded to the band's extent along the edge (a cursor near the same edge
-// on another monitor is not in it), and the band's opacity eases from 0 on
-// the band to 1 at the zone's outer boundary.
 [Trait("Category", "unit")]
 public class CoverGeometryTests
 {
@@ -18,8 +12,6 @@ public class CoverGeometryTests
 
     private static POINT Point(int x, int y) => new() { X = x, Y = y };
 
-    // One band per edge on a 2560×1440 screen: the 44 px vertical bar of the
-    // original standalone, a 48 px horizontal bar.
     private static NativeMethods.RECT Band(TaskbarEdge edge) => edge switch
     {
         TaskbarEdge.Left  => Rect(0, 0, 44, 1440),
@@ -63,8 +55,8 @@ public class CoverGeometryTests
     [Fact]
     public void ApproachZoneIsFourTimesTheBandThickness()
     {
-        // The contract Louis set: 4 × the bar, the bar included. For the
-        // left 44 px band that is x = 175 inside, x = 176 outside.
+        // The contract: 4 × the bar, the bar included. For the left 44 px
+        // band that is x = 175 inside, x = 176 outside.
         var band = Band(TaskbarEdge.Left);
         var zone = CoverGeometry.ApproachZone(band, TaskbarEdge.Left);
 
@@ -137,8 +129,6 @@ public class CoverGeometryTests
     [Fact]
     public void OpacityIsOneBesideTheBandOutsideItsExtent()
     {
-        // Close to the left screen edge but past the band's bottom end: the
-        // cover stays opaque, the cursor is not approaching this taskbar.
         Assert.Equal(1.0, Opacity(TaskbarEdge.Left, Point(10, 1440)));
         Assert.Equal(1.0, Opacity(TaskbarEdge.Left, Point(10, -1)));
     }

@@ -73,14 +73,11 @@ public sealed partial class TaskbarCoverHost
         if (!changed)
         {
             UpdateAppSuppressed(_foreground.Current);
-            // Same rect, but the taskbar may have been re-created (Explorer
-            // restart, a Windhawk mod re-injecting: TaskbarCreated) or
-            // restacked by Explorer during the setting or display change. It
-            // is topmost too and the last positioned topmost window wins, so
-            // without this the band would stay under it, still "visible",
-            // until the next foreground change. One SetWindowPos on a
-            // user-cadence message; WM_SETTINGCHANGE also fires for plenty
-            // of unrelated settings, which is why nothing else is redone.
+            // Same rect, but Explorer may have re-created or restacked the
+            // taskbar. It is topmost too and the last positioned topmost
+            // window wins, so without this the band would stay under it until
+            // the next foreground change. WM_SETTINGCHANGE also fires for many
+            // unrelated settings, which is why nothing else is redone.
             if (_coverVisible) ReassertTopmost();
             return;
         }
@@ -97,7 +94,6 @@ public sealed partial class TaskbarCoverHost
         DeckleShellTaskbarCoverSource.Log.LayoutRebuiltDetail(
             edge.ToString(), band.left, band.top, band.right, band.bottom, reason);
 
-        // The zone moved with the band — recompute where the cursor stands.
         // Suppression after the band is in place, so a show it triggers never
         // lands on the old rect or a stale alpha.
         ResetZoneStateFromCursor();
@@ -105,10 +101,9 @@ public sealed partial class TaskbarCoverHost
         UpdateCover("layout_rebuilt");
     }
 
-    // Direct re-read of the band's alpha from where the cursor stands now:
-    // used at boot, on layout change and on resume, where the last alpha may
-    // be stale. Unknown layout or cursor falls back to 0, the pessimistic
-    // "revealed" state. The caller runs UpdateCover with its own reason.
+    // Boot, layout change and resume re-read the alpha from the cursor, since
+    // the last one may be stale. Unknown layout or cursor falls back to 0, the
+    // pessimistic "revealed" state. The caller runs UpdateCover.
     private void ResetZoneStateFromCursor()
     {
         byte alpha = _layoutKnown && NativeMethods.GetCursorPos(out var p)
@@ -142,9 +137,6 @@ public sealed partial class TaskbarCoverHost
         DeckleShellTaskbarCoverSource.Log.SystemResumedDetail(reason);
     }
 
-    // A fullscreen foreground on the band's monitor — as the watcher's
-    // two-stage test reads it — stands the band down (CoverSuppression).
-    // Only a change of verdict logs and updates.
     private void UpdateAppSuppressed(ForegroundState state)
     {
         bool suppressed = CoverSuppression.Applies(state, _bandMonitor);

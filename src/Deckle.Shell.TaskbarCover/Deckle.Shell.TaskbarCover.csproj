@@ -2,8 +2,7 @@
   <PropertyGroup>
     <RootNamespace>Deckle.Shell.TaskbarCover</RootNamespace>
     <!-- WinUI 3 XAML compilation in a class library: the module ships its
-         Settings page (TaskbarCoverPage) and its own .resw, same pattern as
-         Deckle.Input.PrecisionScroll. -->
+         Settings page (TaskbarCoverPage) and its own .resw. -->
     <UseWinUI>true</UseWinUI>
     <DefaultLanguage>en-US</DefaultLanguage>
     <EnableMsixTooling>true</EnableMsixTooling>

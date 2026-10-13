@@ -5,15 +5,12 @@ namespace Deckle.Shell.TaskbarCover;
 
 public sealed partial class TaskbarCoverHost
 {
-    // ── Cursor signal ─────────────────────────────────────────────────────
-
-    // The process's single global EVENT_OBJECT_LOCATIONCHANGE hook; only the
-    // cursor (hwnd == NULL + OBJID_CURSOR) matters here, it drives the band's
-    // opacity in the approach zone. The foreground window's in-place F11
-    // toggle reaches the host through the ForegroundWatcher instead, whose
-    // own location hook is narrowed to the foreground process. Runs at input
-    // cadence: outside the zone with the band already opaque, the cursor path
-    // costs one GetCursorPos, one rect test and one byte compare.
+    // The process's single global EVENT_OBJECT_LOCATIONCHANGE hook. It runs at
+    // input cadence, so it stays trivial: outside the zone with the band
+    // opaque it costs one GetCursorPos, one rect test and one byte compare.
+    // The foreground window's in-place F11 toggle reaches the host through
+    // the ForegroundWatcher, whose own location hook is narrowed to the
+    // foreground process.
     private void OnLocationChange(
         IntPtr hWinEventHook, uint evt, IntPtr hwnd,
         int idObject, int idChild, uint idEventThread, uint dwmsEventTime)
@@ -25,7 +22,6 @@ public sealed partial class TaskbarCoverHost
 
         if (!CoverGeometry.Contains(_zone, p))
         {
-            // Out of the zone: the band re-covers at once, fully opaque.
             if (_coverAlpha == 255) return;
             SetCoverAlpha(255, "zone_exit");
             return;
@@ -34,7 +30,6 @@ public sealed partial class TaskbarCoverHost
         SetCoverAlpha(CoverAlphaAt(p), "zone_fade");
     }
 
-    // Alpha byte of the band for a cursor at p.
     private byte CoverAlphaAt(POINT p) =>
         (byte)Math.Round(CoverGeometry.Opacity(_band, _edge, p) * 255);
 
@@ -55,8 +50,8 @@ public sealed partial class TaskbarCoverHost
         if (alpha == 255 && wasVisible && _coverVisible) ReassertTopmost();
     }
 
-    // Stores the alpha and hands it to the layered window. At 0 the window is
-    // hidden by UpdateCover instead, so no click lands on an invisible band.
+    // At 0 the window is hidden by UpdateCover instead, so no click lands on
+    // an invisible band.
     private void ApplyCoverAlpha(byte alpha)
     {
         _coverAlpha = alpha;

@@ -4,9 +4,8 @@ using Xunit;
 
 namespace Deckle.Shell.TaskbarCover.Tests;
 
-// Behaviour of CoverSuppression: a fullscreen foreground stands the band down
-// only when it sits on the band's own monitor. Monitor handles are opaque, so
-// any two distinct values stand for two monitors.
+// Monitor handles are opaque, so any two distinct values stand for two
+// monitors.
 public class CoverSuppressionTests
 {
     private static readonly IntPtr BandMonitor = new(0x10001);
@@ -15,8 +14,6 @@ public class CoverSuppressionTests
     private static ForegroundState Foreground(IntPtr monitor, FullscreenStage stage) =>
         new(new IntPtr(0x2000), 1234, "app", monitor, default, default, stage);
 
-    // Regression: suppression used to read "is anything fullscreen" without
-    // comparing monitors, so a fullscreen app on a second screen hid the band.
     [Fact]
     [Trait("Category", "regression")]
     public void FullscreenOnAnotherMonitorLeavesTheCoverUp()

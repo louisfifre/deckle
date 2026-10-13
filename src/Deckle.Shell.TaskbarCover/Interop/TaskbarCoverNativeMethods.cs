@@ -3,11 +3,8 @@ using Deckle.Core;
 
 namespace Deckle.Shell.TaskbarCover;
 
-// Module-local Win32 surface for the cover host — everything the band
-// window, its message pump, the taskbar query, the cursor WinEvent hook
-// and the suspend gates need beyond what Deckle.Core's
-// NativeMethods already declares. Same precedent as TrayMenuNativeMethods:
-// APIs consumed by a single module stay in that module.
+// Module-local Win32 surface for the cover host, beyond what Deckle.Core's
+// NativeMethods declares: APIs consumed by a single module stay in that module.
 internal static class TaskbarCoverNativeMethods
 {
     // ── Message pump (dedicated thread) ──────────────────────────────────────
@@ -80,9 +77,9 @@ internal static class TaskbarCoverNativeMethods
 
     // ── Band monitor ─────────────────────────────────────────────────────────
     //
-    // The monitor with the largest intersection with the band rect, compared
-    // with the foreground window's monitor to decide fullscreen suppression.
-    // DEFAULTTONEAREST: a taskbar rect always yields a monitor, never NULL.
+    // Compared with the foreground window's monitor to decide fullscreen
+    // suppression. DEFAULTTONEAREST: a taskbar rect always yields a monitor,
+    // never NULL.
 
     public const uint MONITOR_DEFAULTTONEAREST = 0x00000002;
 

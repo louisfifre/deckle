@@ -3,16 +3,10 @@ using Deckle.Diagnostics;
 
 namespace Deckle.Shell.TaskbarCover;
 
-// TaskbarCover module provider: host lifecycle, taskbar layout, cover
-// visibility transitions and the suppression/suspension gates. Cursor
-// movement itself is never logged, nor is each opacity step of the
-// approach-zone fade — the WinEvent stream runs at input cadence and only
-// visibility transitions (band gone on the taskbar, back on zone exit)
-// carry diagnostic value; those surface through CoverShown / CoverHidden.
-//
-// Verbose/Info separation per the deckle-logging skill: an Info is a
-// short Capital sentence with no IDs and no k=v; the technical detail
-// (handles, geometry, reasons) lives in a Verbose mirror that FOLLOWS it.
+// TaskbarCover module provider. Cursor movement itself is never logged, nor
+// is each opacity step of the approach-zone fade: the WinEvent stream runs at
+// input cadence and only visibility transitions carry diagnostic value;
+// those surface through CoverShown / CoverHidden.
 [EventSource(Name = "Deckle-TaskbarCover")]
 public sealed class DeckleShellTaskbarCoverSource : DeckleEventSource
 {
@@ -47,11 +41,7 @@ public sealed class DeckleShellTaskbarCoverSource : DeckleEventSource
     public const int EvtSystemResumedDetail   = 18;
     public const int EvtCursorHookFailed      = 19;
     public const int EvtSessionNotifyFailed   = 20;
-    // 21, 22 and 25 are reserved: the arm-failed, arm-failed detail and
-    // arm-recovered events of the delayed re-cover, retired when the band
-    // started re-covering at once on leaving the approach zone (2026-10-08).
-    // 23 is reserved: ForegroundHookFailed, retired when the foreground hook
-    // moved to the shared ForegroundWatcher (2026-10-08), which logs its own.
+    // 21, 22, 23 and 25 belong to retired events: reserved, never reuse.
     public const int EvtLayoutQueryRecovered  = 24;
 
     // ── Host lifecycle ────────────────────────────────────────────────────────
@@ -154,9 +144,8 @@ public sealed class DeckleShellTaskbarCoverSource : DeckleEventSource
 
     // ── Cover visibility ──────────────────────────────────────────────────────
     //
-    // Verbose: these flip on every approach/retreat of the cursor — many
-    // times a day, valuable when diagnosing the state machine, noise in the
-    // LogWindow otherwise.
+    // Verbose: these flip on every approach and retreat of the cursor, noise
+    // in the LogWindow outside a state-machine diagnosis.
 
     [Event(EvtCoverShown,
            Level = EventLevel.Verbose,
