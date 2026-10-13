@@ -206,9 +206,9 @@ public sealed class AmbientSettings
     //   - Min brightness compensates for HueColorMath deriving bri
     //     from max(R,G,B) — a mid-tone scene like (60, 40, 80) gives
     //     bri ≈ 31 %, dim enough that the lamp's diffuser swallows
-    //     the colour. A floor of ~180 keeps the chromaticity
-    //     readable on the lamp without manual scene-by-scene
-    //     adjustment. The floor has its own switch so the user can
+    //     the colour. A floor keeps the chromaticity readable on
+    //     the lamp without manual scene-by-scene adjustment. The
+    //     floor has its own switch so the user can
     //     choose between true black and a readable low-light floor
     //     without losing the chosen floor value.
     //   - Brightness curve reshapes the max-channel response through
@@ -242,10 +242,11 @@ public sealed class AmbientSettings
     /// this floor whenever <see cref="MinBrightnessEnabled"/> is true,
     /// so neither mid-tone nor black scenes can dim the lamp below it.
     /// Pure black has no chromaticity, so it becomes neutral RGB at the
-    /// floor. 254 forces full brightness. Default 180 ≈ 70 % — bright
-    /// enough to colour the room, dim enough to follow the screen's
-    /// intent. Tuned in AmbientPage.</summary>
-    public int MinBrightness { get; set; } = 180;
+    /// floor. 254 forces full brightness. Default 40 ≈ 16 % (Louis,
+    /// 2026-10-13): a dim scene keeps a readable tint on the lamp while
+    /// the room stays close to dark. The former default of 180 lit the
+    /// room on every scene. Tuned in AmbientPage.</summary>
+    public int MinBrightness { get; set; } = 40;
 
     /// <summary>First cubic-Bézier control point X coordinate in [0, 1].
     /// The anchors are fixed at (0,0) and (1,1), so the four stored

@@ -544,7 +544,7 @@ Total : **693 entrées** réparties sur **41 modules**.
 | AmbientSettings.ExposureEv | persisted-setting | `-0.5` | src/Deckle.Lighting.Ambient/AmbientSettings.cs | oui | Since 2026-10-12 the eight tuning initializers ARE the Ambient preset (the default), read by AmbientPresets from a fresh instance: one source for a fresh install, the per-card reset and Reset all. |
 | AmbientSettings.SaturationBoost | persisted-setting | `0.7` | src/Deckle.Lighting.Ambient/AmbientSettings.cs | oui | Ambient preset value (see ExposureEv). Applied in OKLCh; the HSV-S remark of the property comment was stale and is corrected. |
 | AmbientSettings.MinBrightnessEnabled | persisted-setting | `true` | src/Deckle.Lighting.Ambient/AmbientSettings.cs:211 | non | June lists MinBrightness but not its enabling switch. |
-| AmbientSettings.MinBrightness | persisted-setting | `180` | src/Deckle.Lighting.Ambient/AmbientSettings.cs:221 | oui | POCO 180 (matches June) but Game preset sets 100, Movie 60, Ambient 40 - 180 is only reached in Custom mode. |
+| AmbientSettings.MinBrightness | persisted-setting | `40` | src/Deckle.Lighting.Ambient/AmbientSettings.cs:248 | oui | POCO 40 since 2026-10-13 (Louis); was 180. No preset sets the floor since 2026-10-12. |
 | AmbientSettings.BrightnessCurveX1 | persisted-setting | `0.42` | src/Deckle.Lighting.Ambient/AmbientSettings.cs:228 | oui | Game preset overrides to 0.33. |
 | AmbientSettings.BrightnessCurveY1 | persisted-setting | `0.00` | src/Deckle.Lighting.Ambient/AmbientSettings.cs:232 | oui | Game preset overrides to 0.33. |
 | AmbientSettings.BrightnessCurveX2 | persisted-setting | `1.00` | src/Deckle.Lighting.Ambient/AmbientSettings.cs:235 | oui | Game preset overrides to 0.67. |
