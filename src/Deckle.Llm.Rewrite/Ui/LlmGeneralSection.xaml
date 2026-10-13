@@ -19,12 +19,8 @@
                              Click="ResetSection_Click" />
         </Grid>
 
-        <!-- Composed region — the "Enable rewriting" master toggle and the
-             "Ollama endpoint" URL, declared in LlmGeneralViewModel.Settings.cs
-             and built into this host by ComposeSettings(). The endpoint carries
-             VisibleWhen(() => Enabled), so it collapses with the rest of the page
-             when rewriting is off (mask-not-grey). Each card carries its own
-             inline reset off the POCO default. -->
+        <!-- Filled at construction by SettingsComposer from the cards declared
+             in LlmGeneralViewModel.Settings.cs. -->
         <StackPanel x:Name="ComposedHost"
                     Spacing="{StaticResource SettingsCardSpacing}" />
     </StackPanel>

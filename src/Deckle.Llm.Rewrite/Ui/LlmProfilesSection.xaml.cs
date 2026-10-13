@@ -9,24 +9,12 @@ using Deckle.Catalog;
 
 namespace Deckle.Llm.Rewrite;
 
-// ─── LlmPage Profiles section ──────────────────────────────────────────────
-//
-// Lists rewrite profiles. All content is declarative (XAML DataTemplate +
-// ProfileViewModel). Code-behind only handles:
-//  - Reload() → repopulates the ObservableCollection from the POCO
-//  - Click handlers (Delete/Add) via Tag={x:Bind}
-//  - Model AutoSuggestBox handlers → push to VM + filter the list
-//  - ProfilesChanged event (fired on Name changes via PropertyChanged) to
-//    notify the shortcut slots so they refresh their lists
-
 public sealed partial class LlmProfilesSection : UserControl
 {
     public ObservableCollection<ProfileViewModel> Profiles { get; } = new();
 
-    // Model names available from Ollama — source for the AutoSuggestBox
-    // in each profile template. ObservableCollection so updates from
-    // LlmPage.RefreshOllamaStateAsync are reflected on the next keystroke
-    // or re-focus (ItemsSource is rebuilt from this list in FilterModels).
+    // FilterModels rebuilds each AutoSuggestBox's ItemsSource from this list,
+    // so a refresh shows on the next keystroke or focus.
     public ObservableCollection<string> AvailableModelNames { get; } = new();
 
     internal void SetAvailableModelNames(IEnumerable<string> names)
@@ -55,11 +43,9 @@ public sealed partial class LlmProfilesSection : UserControl
         }
     }
 
-    // Fire ProfilesChanged when a profile's Name changes so shortcut slots
-    // refresh their dropdowns live. Auto-save on every
-    // property change would be overkill — only Name is surfaced elsewhere.
-    // No unsubscribe: VMs live as long as this section, and Reload() starts
-    // from an empty collection.
+    // Only a Name change raises ProfilesChanged: the name is the only profile
+    // field shown elsewhere (the active-profile ComboBox). No unsubscribe: the
+    // section outlives the VMs it subscribes to.
     private void TrackProfile(ProfileViewModel vm)
     {
         vm.PropertyChanged += OnProfilePropertyChanged;
@@ -78,9 +64,8 @@ public sealed partial class LlmProfilesSection : UserControl
 
         // Removing the active profile clears the active choice (back to plain
         // transcription), so the page and the engine agree instead of keeping
-        // an orphan the ComboBox shows as (None). Retained legacy auto-rule data
-        // is preserved for lossless deserialization, although it has no runtime
-        // or UI consumer.
+        // an orphan the ComboBox shows as (None). Legacy auto-rule references
+        // stay untouched for lossless deserialization.
         bool confirmed = await ConfirmationService.RequestAsync(
             this.XamlRoot,
             new ConfirmationRequest(
@@ -104,8 +89,6 @@ public sealed partial class LlmProfilesSection : UserControl
                 settings.ActiveProfileName = null;
             }
             profiles.RemoveAt(vm.ProfileIndex);
-            // Reconcile the active profile and retained legacy references
-            // against the remaining profile list. The migration never deletes data.
             LlmSettingsMigrations.RepairProfileReferences(LlmSettingsService.Instance.Current);
             LlmSettingsService.Instance.Save();
         }
@@ -115,9 +98,9 @@ public sealed partial class LlmProfilesSection : UserControl
 
     // ── TextChanged → push value immediately for live auto-save ────────────
     //
-    // x:Bind TwoWay on TextBox updates the source on LostFocus only.
-    // These handlers push the value on every keystroke so auto-save fires
-    // during typing, matching the cadence of slider/NumberBox interactions.
+    // x:Bind TwoWay on TextBox updates the source on LostFocus only. These
+    // handlers push the value on every keystroke so auto-save fires during
+    // typing.
 
     private void NameBox_TextChanged(object sender, TextChangedEventArgs e)
     {
@@ -133,20 +116,10 @@ public sealed partial class LlmProfilesSection : UserControl
 
     // ── Model picker (AutoSuggestBox) ──────────────────────────────────────
     //
-    // AutoSuggestBox is the canonical Win11 control for "free text + filtered
-    // suggestions" (Start Menu, Settings search, Explorer search). Replaces
-    // a ComboBox IsEditable="True" whose dropdown-arrow mouse interaction
-    // was unreliable in WinUI 3.
-    //
-    // Text is OneWay (VM → UI) so the stored model name shows regardless of
-    // whether it is in the suggestion list. UI → VM flows through:
-    //   - TextChanged (Reason == UserInput) as the user types — also filters
-    //     the suggestion list live.
-    //   - SuggestionChosen when the user picks an item from the dropdown.
-    //   - QuerySubmitted when the user presses Enter on free text not in
-    //     the list (Ollama offline, model renamed, etc.).
-    //   - GotFocus opens the suggestion list so a mouse click on the chevron
-    //     or the field exposes the available models without typing first.
+    // Not an editable ComboBox: its dropdown-arrow mouse interaction is
+    // unreliable in WinUI 3. Text is OneWay (VM → UI) so the stored model name
+    // shows even when it is not in the suggestion list (Ollama offline, model
+    // renamed); the handlers below carry UI → VM.
 
     private void ModelSuggest_GotFocus(object sender, RoutedEventArgs e)
     {
@@ -217,12 +190,9 @@ public sealed partial class LlmProfilesSection : UserControl
         ProfilesChanged?.Invoke(this, EventArgs.Empty);
     }
 
-    // Scope: the Profiles list only. Replaces user-authored profiles with
-    // the three defaults (Lissage / Affinage / Arrangement) — pre-written
-    // prompts tuned via autoresearch, Temperature 0.30, NumCtxK 8/16/16.
-    // MigrateProfileIds re-pairs shortcut slots and retained legacy settings
-    // so references to the default profiles pick up their fresh ids.
-    // ProfilesChanged then reloads the shortcut slots.
+    // Scope: the Profiles list only, replaced by the defaults.
+    // RepairProfileReferences gives the fresh defaults their ids and re-pairs
+    // the active profile and legacy references to them by name.
     private async void ResetSection_Click(object sender, RoutedEventArgs e)
     {
         bool confirmed = await ConfirmationService.RequestAsync(

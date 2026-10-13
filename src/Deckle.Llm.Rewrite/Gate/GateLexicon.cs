@@ -5,8 +5,8 @@ namespace Deckle.Llm.Rewrite;
 // The two word lists the gate's rules lean on. Both are deliberately small:
 // severe calibration is the framing decision — a false reject costs one
 // offer, a false accept would cost the trust the whole corrector is built
-// on. Growing either list is a calibration act fed by the offer/verdict
-// dataset, not an editing convenience.
+// on. Growing either list is a calibration act checked against the
+// paragraph-gate benchmark, not an editing convenience.
 //
 // Entries are NORMALIZED forms (see GateTokenizer.Normalize): lowercase, no
 // diacritics, no apostrophes — "où" and "ou" are one entry, "l'" is "l".
@@ -63,9 +63,9 @@ public static class GateLexicon
     };
 
     // Punctuation the rewrite may introduce: French text punctuation only.
-    // Formatting characters (*, _, `, #…) are NOT punctuation to this gate —
-    // the 2026-07-19 eval measured models decorating offers with markdown
-    // bold that the gate then let through as "punctuation insertion".
+    // Formatting characters (*, _, `, #…) are NOT punctuation to this gate:
+    // models decorate offers with markdown bold, which would otherwise pass as
+    // a punctuation insertion.
     static readonly HashSet<char> _insertablePunctuation = new()
     {
         '.', ',', ';', ':', '!', '?', '…',
@@ -83,8 +83,6 @@ public static class GateLexicon
 
     public static bool IsFiller(string normalized) => _fillers.Contains(normalized);
 
-    /// <summary>Longest filler-phrase length, the alignment's group-deletion
-    /// horizon.</summary>
     public static int MaxFillerPhraseLength { get; } = ComputeMaxPhraseLength();
 
     public static bool IsFillerPhrase(ReadOnlySpan<GateToken> tokens)

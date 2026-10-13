@@ -6,18 +6,14 @@ namespace Deckle.Llm.Rewrite;
 
 // ─── Active profile section of LlmPage ─────────────────────────────────────
 //
-// One ComboBox: "(None)" then every defined profile. The choice persists
-// (LlmSettings.ActiveProfileId/Name) and applies to every dictation while
-// rewriting is enabled; "(None)" keeps the transcript as spoken.
-//
-// The list depends on the defined profiles — Reload() must be called by the
-// host after any mutation of the Profiles section so newly-added / renamed
-// profiles show up here.
+// The list depends on the defined profiles: the host must call Reload() after
+// any mutation of the Profiles section so added or renamed profiles show up
+// here.
 
 public sealed partial class LlmActiveProfileSection : UserControl
 {
-    // Sentinel shown first in the combo to mean "plain transcription".
-    // Stored as null in settings — not as this string.
+    // Means "plain transcription". Stored as null in settings, never as this
+    // string.
     private const string NoneSentinel = "(None)";
 
     private bool _loading;
@@ -32,8 +28,8 @@ public sealed partial class LlmActiveProfileSection : UserControl
         _loading = true;
         var s = LlmSettingsService.Instance.Current;
 
-        // Match the saved choice first by stable id (survives renames), then
-        // by name for pre-migration configs. Nothing resolves → (None).
+        // Match the saved choice by stable id (survives renames), then by name
+        // for a choice saved without an id. Nothing resolves → (None).
         ActiveProfileCombo.Items.Clear();
         ActiveProfileCombo.Items.Add(new ComboBoxItem { Content = NoneSentinel });
         for (int i = 0; i < s.Profiles.Count; i++)
@@ -75,12 +71,10 @@ public sealed partial class LlmActiveProfileSection : UserControl
         LlmSettingsService.Instance.Save();
     }
 
-    // Scope: the active profile choice only. The Profiles list itself stays
-    // untouched — resetting the choice should not wipe user-authored profiles.
-    //
-    // No confirmation: this reset is REVERSIBLE — it only puts the choice back
-    // to the POCO default (null, plain transcription), destroying nothing the
-    // user can't re-pick in a click.
+    // Scope: the active profile choice only; resetting the choice must not
+    // wipe user-authored profiles. No confirmation: the reset only puts the
+    // choice back to plain transcription, which the user can re-pick in a
+    // click.
     private void ResetSection_Click(object sender, RoutedEventArgs e)
     {
         var defaults = new LlmSettings();
