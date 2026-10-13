@@ -5,27 +5,18 @@
     xmlns:catalog="using:Deckle.Catalog">
 
     <StackPanel Spacing="{StaticResource SettingsCardSpacing}">
-        <!-- Composed region — the "Enable rewriting" module switch, first on the
-             page and alone, outside any section. Declared as ModuleSwitch in
-             LlmGeneralViewModel.Settings.cs and built into this host by
-             ComposeSettings(). It stays visible when rewriting is off; it carries
-             its own inline reset off the POCO default. -->
+        <!-- The module switch, first on the page and alone, outside any section.
+             It stays visible when rewriting is off. -->
         <StackPanel x:Name="MasterHost"
                     Spacing="{StaticResource SettingsCardSpacing}" />
 
-        <!-- The General section: the "Ollama endpoint" URL, declared in
-             LlmGeneralViewModel.Settings.cs. The block is collapsed from
-             code-behind while rewriting is off (mask-not-grey), so its title does
-             not stand over an empty body. Its reset covers the switch too (see
-             ResetSection_Click). -->
+        <!-- Collapsed from code-behind while rewriting is off (mask-not-grey), so
+             its title does not stand over an empty body. Its reset covers the
+             endpoint only. -->
         <catalog:SettingsSection x:Name="GeneralBlock"
                                  x:Uid="LlmGeneralBlock"
                                  HasReset="True"
                                  ResetRequested="ResetSection_Click">
-            <!-- Composed region — the endpoint carries VisibleWhen(() => Enabled),
-                 so it collapses with the rest of the page when rewriting is off
-                 (mask-not-grey). The card carries its own inline reset off the
-                 POCO default. -->
             <StackPanel x:Name="ComposedHost"
                         Spacing="{StaticResource SettingsCardSpacing}" />
         </catalog:SettingsSection>
