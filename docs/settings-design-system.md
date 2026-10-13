@@ -75,7 +75,9 @@ From the doctrine, with the code facts that bear on each rule.
   a preset, switches it to Custom; picking a preset restores its values.
 - **On release when expensive.** A change that relaunches a measure or reloads
   a model waits for the release of the gesture. *To decide*: which settings are
-  in this class; the code has no marker for it.
+  in this class; the code has no marker for it. Today a brightness-curve drag
+  writes the Ambient store and saves it to disk on every handle move, once per
+  coordinate (`AmbientViewModel.cs:169-176`).
 - **Held when hard to undo.** Section and surface resets, clearing a pairing,
   deleting on disk, overwriting live state are confirmed first; the safe button
   is the default. Eleven call sites use `ConfirmationService`; several resets
@@ -142,7 +144,19 @@ Louis's answers to the first version's open points.
 - Which settings apply on release and which need a restart, and the marker
   for each.
 - The save and revert gesture, for presets and everywhere else a draft exists.
-- Win2D or XAML shapes, for the curve editor and for the HUD.
+- Win2D or XAML shapes for the curve editor. Inventory of 2026-10-13:
+  `HangoverCurveCanvas` is the only `CanvasControl` in `src`. The HUD uses
+  Win2D for static surfaces painted once (the conic wheel, the arc mask) and
+  for the effect graphs (alpha mask, saturation, hue, exposure) that
+  Composition animates on the compositor thread; no blur exists anywhere in
+  the code. The Transcription project took Win2D to avoid rebuilding a shapes
+  tree on resize (`Deckle.Transcription.csproj:28-32`), not for the HUD.
+  Proposal, Louis's call: the surviving editor is XAML shapes, built as a
+  composer block that updates its shapes in place instead of rebuilding them;
+  Win2D stays confined to `Deckle.Composition` for as long as the graded conic
+  ring exists. Leads from the same pass, not re-read: the two editors
+  duplicate the Bézier solver (`UnitBezier`, `AmbientBrightnessCurve.Solve`),
+  flip the y axis, and neither has keyboard nudge, tooltip or automation name.
 - The preview contract and the meter's explicit-gesture rule.
 
 ## Annex A: blocks in the code, 2026-10-13
