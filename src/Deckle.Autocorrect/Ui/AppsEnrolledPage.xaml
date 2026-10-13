@@ -8,12 +8,9 @@
     xmlns:catalog="using:Deckle.Catalog">
 
     <!-- Child page of the Autocorrect family: where correction is allowed to
-         run, app by app. Same canonical Settings layout as its parent and its
-         sibling — ScrollViewer Padding 32,24, StackPanel max 1000 inside a Grid,
-         Spacing=4, the section the shared SettingsSection block. The section is
-         collapsed while the master switch is off (mask-never-grey) and one line
-         says why — the door on the parent page and the rail entry stay, so the
-         page must answer for itself when nothing behind them applies. -->
+         run, app by app. While the master switch is off the section is collapsed
+         and one line says why: the door on the parent page and the rail entry
+         stay, so the page must answer for itself. -->
 
     <ScrollViewer Padding="32,24,32,24"
                   VerticalScrollBarVisibility="Auto"
@@ -23,14 +20,12 @@
                         HorizontalAlignment="Stretch"
                         Spacing="{StaticResource SettingsCardSpacing}">
 
-                <!-- The shared header block. No Reset all: the page is a list the
-                     user authors through their answers, with nothing to restore. -->
+                <!-- No Reset all: the page is a list the user authors through their
+                     answers, with nothing to restore. -->
                 <catalog:SettingsPageHeader x:Name="Header"
                                             x:Uid="AppsEnrolledPageHeader"
                                             HasResetAll="False" />
 
-                <!-- Shown in place of the whole section while autocorrect is off:
-                     one inline channel, the wording carries the tone. -->
                 <TextBlock x:Name="DisabledNotice"
                            x:Uid="AppsEnrolledPage_Disabled"
                            Style="{StaticResource BodyTextBlockStyle}"
@@ -38,18 +33,15 @@
                            TextWrapping="Wrap"
                            Visibility="Collapsed" />
 
-                <!-- Tag is the search index's scroll-to handle for this bespoke
-                     section (composed cards get theirs from the composer); it
-                     matches the SettingSearchEntry's LabelKey. It sits on the
-                     section block itself so hiding it hides the title with the
-                     cards. -->
+                <!-- Tag is the search index's scroll-to handle; it matches the
+                     SettingSearchEntry's LabelKey. It sits on the section block
+                     itself so hiding it hides the title with the cards. -->
                 <catalog:SettingsSection x:Name="AppsSection"
                                          x:Uid="AppsEnrolledPageAppsSection"
                                          Tag="AppsEnrolledPage_Section_Apps">
                     <StackPanel Spacing="{StaticResource SettingsCardSpacing}">
 
-                        <!-- Shown only when no app has been decided on yet ; the list
-                             and this line trade places from code-behind off
+                        <!-- Trades places with the list from code-behind, off
                              Apps.CollectionChanged. -->
                         <TextBlock x:Name="EmptyState"
                                    x:Uid="AppsEnrolledPage_Empty"
@@ -58,9 +50,8 @@
                                    TextWrapping="Wrap"
                                    Visibility="Collapsed" />
 
-                        <!-- Bespoke, not composed: the per-app list is a live,
-                             runtime-enumerated collection of cards with add/remove/
-                             forget gestures — no composer kind models that. -->
+                        <!-- Bespoke, not composed: a live, runtime-enumerated list
+                             of cards, which no composer kind models. -->
                         <ItemsControl x:Name="AppsList"
                                       ItemsSource="{x:Bind ViewModel.Apps}">
                             <ItemsControl.ItemsPanel>
