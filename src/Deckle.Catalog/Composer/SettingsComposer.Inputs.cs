@@ -7,18 +7,13 @@ namespace Deckle.Catalog;
 
 public sealed partial class SettingsComposer
 {
-    // Folder path via the curated FolderPickerCard. The card owns the picker and
-    // Explorer affordances; the composer only bridges its Path to the descriptor
-    // selectors. Same guard rationale as the other kinds: set Path before
-    // subscribing PathChanged, and suppress the write-back during a model refresh.
+    // The picker owns the folder dialog and the Explorer affordances; the composer
+    // only bridges its Path to the descriptor selectors. Path is set before
+    // PathChanged is subscribed, so the seed does not write back.
     private void BuildPath(SettingsCard card, SettingDescriptor s)
     {
         var args = (PathArgs)s.Args!;
 
-        // The picker control is module-owned (see PathControlFactory): the composer
-        // builds it through the host's factory, which resolves Mode and the deferred
-        // DefaultPath (the empty-value fallback computed from AppPaths at compose
-        // time), then bridges its Path to the descriptor selectors.
         if (PathControlFactory is null)
             throw new InvalidOperationException(
                 "SettingsComposer.PathControlFactory is not wired — the host must " +
@@ -27,8 +22,6 @@ public sealed partial class SettingsComposer
         IPathControl picker = PathControlFactory(args);
         picker.Path = AsString(s.GetValue());
 
-        // The card's content stacks the path readout on its own row below the
-        // description, so it hosts vertically rather than on the trailing edge.
         card.ContentAlignment = ContentAlignment.Vertical;
 
         picker.PathChanged += (_, _) =>
@@ -37,8 +30,6 @@ public sealed partial class SettingsComposer
             s.SetValue(picker.Path);
         };
 
-        // Per-card reset at the trailing edge of the picker's row (see
-        // WrapWithTrailingReset); no Default leaves the picker as the whole content.
         // An empty default path has no readable form (the picker shows its own
         // computed fallback), so the tooltip stays generic for it.
         (FrameworkElement content, Action? updateReset) = WrapWithTrailingReset(card, picker.View, s,
@@ -54,20 +45,10 @@ public sealed partial class SettingsComposer
         });
     }
 
-    // Per-card reset for a VERTICALLY hosted content (card.ContentAlignment =
-    // Vertical, the content on its own row below the description) when the
-    // descriptor carries a Default — the same reset machinery every other kind
-    // uses (BuildResetButton + WireReveal + the _dirtyChecks/_resetActions surface
-    // + active-when-dirty + tooltip), but laid out by hand instead of through
-    // WrapWithReset. WrapWithReset assumes a trailing-edge value control and puts
-    // the reset to its LEFT; a vertical row puts it at the TRAILING edge instead —
-    // a [content* | reset] grid mirroring how the hand-authored Whisper
-    // ModelsDirectory hangs its reset off the picker's RightContent slot
-    // (WhisperPage.xaml). The content stretches (star column), the reset takes its
-    // natural width on the right, revealed on the card's hover/focus like every
-    // other reset. Shared by Path and Editor. Returns (content, null) when the
-    // descriptor has no Default: no reset chrome, the content is the card's whole
-    // content.
+    // The reset for a vertically hosted content, shared by Path and Editor.
+    // WrapWithReset puts the reset to the left of a trailing-edge control; a
+    // vertical row puts it at the trailing edge instead, in a [content* | reset]
+    // grid.
     private (FrameworkElement Content, Action? UpdateState) WrapWithTrailingReset(
         SettingsCard card, FrameworkElement content, SettingDescriptor s,
         Func<string?>? describeDefault = null)
@@ -76,22 +57,14 @@ public sealed partial class SettingsComposer
 
         Button reset = BuildResetButton();
 
-        // Reveal on the CARD's hover and the BUTTON's keyboard focus, matching
-        // WrapWithReset — either keeps it shown so leaving one while the other
-        // holds does not hide it early.
         WireReveal(card, reset);
 
-        // active-when-dirty: the value differing from its Default is what enables
-        // the reset, evaluated live through the caller's refresher. Registered into
-        // the shared reset surface so a page-level "Reset all" folds this row in too.
         bool Dirty() => !DefaultEquals(s.GetValue(), s.Default!());
         _dirtyChecks.Add(Dirty);
         _resetActions.Add(() => s.SetValue(s.Default!()));
 
-        // Reset drives the value back to the descriptor's Default through the
-        // normal setter; the model's PropertyChanged then re-syncs the content
-        // (the caller's refresher, or the element's own binding), so no manual
-        // update is needed here.
+        // The model's PropertyChanged re-syncs the content (the caller's refresher,
+        // or the element's own binding), so no manual update is needed here.
         reset.Click += (_, _) => s.SetValue(s.Default!());
 
         // A two-column grid rather than a StackPanel so the content keeps the full
@@ -106,8 +79,6 @@ public sealed partial class SettingsComposer
         grid.Children.Add(content);
         grid.Children.Add(reset);
 
-        // The tooltip string is constant, but resolved once here (not per refresh)
-        // so the dirty-driven refresher only flips IsEnabled.
         string tooltip = ResolveResetTooltip(describeDefault);
         return (grid, () =>
         {
@@ -116,18 +87,12 @@ public sealed partial class SettingsComposer
         });
     }
 
-    // A module-owned editor for a value with a shape (a curve, an envelope). The
-    // Path kind's picker is host-owned, built through PathControlFactory; here the
-    // element is descriptor-owned, built through EditorArgs.Build. The composer owns
-    // only the card chrome: vertical hosting (an editor needs the row's width, not
-    // the trailing edge), the Default-gated trailing reset shared with Path, and the
-    // reactive state. Unlike every other kind there is no value-sync in the
-    // refresher: the element binds to the model itself (x:Bind or its own events),
-    // so pushing a value into it would duplicate, and fight, that binding.
+    // A module-owned editor for a value with a shape (a curve, an envelope); the
+    // composer owns only the card chrome. Unlike every other kind the refresher
+    // pushes no value: the element binds to the model itself, so pushing a value
+    // into it would fight that binding.
     private void BuildEditor(SettingsCard card, SettingDescriptor s)
     {
-        // Required by Setting.Editor, so the cast is safe; a wrong-kind args here is
-        // a manifest bug, hence the hard cast.
         var args = (EditorArgs)s.Args!;
 
         card.ContentAlignment = ContentAlignment.Vertical;
@@ -143,20 +108,8 @@ public sealed partial class SettingsComposer
         });
     }
 
-    // Free-form text via a TextBox, bridged to the descriptor's string selectors.
-    // Two shapes from TextArgs: single-line sits on the card's trailing edge with
-    // a fixed MinWidth (like the Number box), so the row reads as "label … field";
-    // multiline switches AcceptsReturn on, bounds the height, and lays the field on
-    // its own row below the description (card.ContentAlignment = Vertical, the same
-    // layout BuildPath uses) so a wrapping value has room. Same sync discipline as
-    // the other kinds: assign .Text BEFORE subscribing to TextChanged so the seed
-    // does not fire it, guard the write-back during a model refresh, route through
-    // WrapWithReset for the inline reset, and re-apply reactive state in the
-    // refresher. Placeholder and MaxLength are applied when supplied.
     private void BuildText(SettingsCard card, SettingDescriptor s)
     {
-        // Required by Setting.Text (which defaults it when omitted), so the cast is
-        // safe; a wrong-kind args here is a manifest bug, hence the hard cast.
         var args = (TextArgs)s.Args!;
 
         var box = new TextBox
@@ -173,18 +126,16 @@ public sealed partial class SettingsComposer
         {
             box.AcceptsReturn = true;
             box.TextWrapping = TextWrapping.Wrap;
-            // A bounded scroller: tall enough for a few lines, capped so a long
-            // value scrolls inside the field rather than stretching the card.
+            // Capped so a long value scrolls inside the field rather than
+            // stretching the card.
             box.MinHeight = 72;
             box.MaxHeight = 160;
-            // Hosts on its own row below the description, like the Path picker, so
-            // a wrapping value is not crammed onto the trailing edge.
+            // On its own row below the description, so a wrapping value is not
+            // crammed onto the trailing edge.
             card.ContentAlignment = ContentAlignment.Vertical;
         }
         else
         {
-            // MinWidth matches the Number box so a single-line field sits at a
-            // comparable width to the other trailing-edge controls beside it.
             box.MinWidth = 200;
         }
 
@@ -208,34 +159,22 @@ public sealed partial class SettingsComposer
         });
     }
 
-    // Choice among a small fixed set. The settings-UX doctrine picks the control
-    // by the count of options: a RadioButtons group for "a few" (every option laid
-    // flat and visible), a ComboBox for "more than a few" (the dropdown that keeps
-    // a long set compact). The descriptor's ChoiceArgs.Radio carries that call —
-    // set by Setting.Radio, clear by Setting.Choice — and this dispatches on it.
-    // Both renderings share the same value semantics: each item's label is resolved
-    // from the module's .resw, and the current value is matched against the options
-    // by value-equality (IndexOfValue) to pick the selection — so the VM keeps its
-    // own value type (the theme's "Dark" string, an int index, an enum) and the
-    // composer never assumes an index.
+    // RadioButtons for a few options, a ComboBox for more: ChoiceArgs.Radio carries
+    // that call. Both match the current value against the options by
+    // value-equality, so the VM keeps its own value type and the composer never
+    // assumes an index.
     private void BuildChoice(SettingsCard card, SettingDescriptor s)
     {
-        // Required by Setting.Choice/Radio, so the cast is safe; a wrong-kind args
-        // here is a manifest bug, not a runtime input, hence the hard cast.
         var args = (ChoiceArgs)s.Args!;
 
         if (args.Radio) BuildRadio(card, s, args);
         else BuildCombo(card, s, args);
     }
 
-    // The ComboBox rendering — the trailing-edge dropdown for "more than a few"
-    // options. Same sync discipline as the other kinds: set SelectedIndex before
-    // subscribing so the seed does not fire SelectionChanged, and guard the
-    // write-back during a model refresh.
     private void BuildCombo(SettingsCard card, SettingDescriptor s, ChoiceArgs args)
     {
-        // MinWidth matches the hand-authored ComboBoxes (GeneralPage theme/overlay)
-        // so a composed picker sits at the same width as a bespoke one beside it.
+        // MinWidth matches the hand-authored Language ComboBox on WhisperPage, so a
+        // composed picker sits at the same width as a bespoke one.
         var combo = new ComboBox { MinWidth = 160 };
         foreach (ChoiceOption option in args.Options)
             combo.Items.Add(new ComboBoxItem { Content = ResolveOptionLabel(option.LabelKey) });
@@ -262,13 +201,6 @@ public sealed partial class SettingsComposer
         });
     }
 
-    // The RadioButtons rendering — the flat option group for "a few", every choice
-    // visible at once. Selection is driven by SelectedIndex exactly like the
-    // ComboBox (IndexOfValue → -1 clears the selection when no option matches the
-    // persisted value), so the sync discipline is identical: set SelectedIndex
-    // before subscribing so the seed does not fire SelectionChanged, guard the
-    // write-back during a model refresh, and route through WrapWithReset so a
-    // defaulted radio carries the same inline reset as every other kind.
     private void BuildRadio(SettingsCard card, SettingDescriptor s, ChoiceArgs args)
     {
         var radio = new RadioButtons();
@@ -284,10 +216,8 @@ public sealed partial class SettingsComposer
             s.SetValue(args.Options[radio.SelectedIndex].Value);
         };
 
-        // A RadioButtons group reads best stacked below the header, the Win11 pattern
-        // (and the layout the hand-authored corpus-content card used), rather than
-        // crammed onto the trailing edge like a single control — so the card hosts
-        // vertically, as Path and multiline Text do.
+        // A RadioButtons group stacks below the header, the Windows 11 pattern,
+        // rather than on the trailing edge.
         card.ContentAlignment = ContentAlignment.Vertical;
 
         (FrameworkElement content, Action? updateReset) = WrapWithReset(card, radio, s,
@@ -303,10 +233,9 @@ public sealed partial class SettingsComposer
         });
     }
 
-    // Index of the option whose value equals the current model value, or -1 (no
-    // selection) when none matches — e.g. a persisted value the option set no
-    // longer exposes. Object.Equals gives value-equality for the boxed strings
-    // and ints the options carry.
+    // -1 (no selection) when none matches, such as a persisted value the option set
+    // does not expose. Object.Equals gives value-equality for the boxed strings and
+    // ints the options carry.
     private static int IndexOfValue(ChoiceArgs args, object? value)
     {
         for (int i = 0; i < args.Options.Count; i++)
