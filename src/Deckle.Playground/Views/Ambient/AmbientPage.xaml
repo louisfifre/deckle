@@ -163,7 +163,7 @@
                         <StackPanel Spacing="4">
                             <TextBlock Text="Pipeline (capture → analysis → lights)"
                                        Style="{ThemeResource SubtitleTextBlockStyle}" />
-                            <TextBlock Text="Wires the screen capture to the selected Hue group via the AmbientEngine. Per-pixel analysis at 15 Hz (group) or 10 Hz (per-light zones)."
+                            <TextBlock Text="Wires the screen capture to the selected Hue group via the AmbientEngine. The capture rate comes from Settings; the push cadence from the transport."
                                        Style="{ThemeResource CaptionTextBlockStyle}"
                                        Foreground="{ThemeResource TextFillColorSecondaryBrush}"
                                        TextWrapping="Wrap"
