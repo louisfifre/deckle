@@ -15,36 +15,34 @@ public static partial class HudComposition
     // ╔════════════════════════════════════════════════════════════════════╗
     // ║  Processing stroke — single visual, live-modulated variants        ║
     // ╚════════════════════════════════════════════════════════════════════╝
-    // One stroke lives across Transcribing ↔ Rewriting: ApplyVariant blends
-    // the Saturation, HueRotation and Exposure effects and the visual's
-    // Opacity toward the variant's targets over BlendSeconds, with no surface
-    // rebuild.
+    // One stroke is created on HUD state entry and kept alive across
+    // Transcribing ↔ Rewriting. Per-state differentiation runs LIVE on
+    // the same visual via Composition effects (SaturationEffect,
+    // HueRotationEffect, ExposureEffect on the colour pipeline + Opacity
+    // on the visual). ProcessingStroke.ApplyVariant blends toward the
+    // target values over BlendSeconds — no surface rebuild, no GC, no lag.
     //
+    // Recording uses the same stroke type but with a frozen-rotation
+    // pipeline and paint-time geometry overrides (arc lobes parked at
+    // visual 12/6 o'clock). Because paint-time knobs differ from the
+    // rotating variant, crossing the Recording ↔ (Transcribing /
+    // Rewriting) boundary requires a rebuild — HudChrono tears down and
+    // recreates the stroke at that boundary. Transcribing ↔ Rewriting
+    // stays live-blended on the same visual.
+    //
+    // All knobs live on ConicArcStrokeConfig below, split into blocks:
+    //   1. "Baseline palette / rotations" — paint-time config, applies to
+    //      all variants unless overridden (OklchLightness, HueRange,
+    //      ConicSpan, ArcPeriod…).
+    //   2. Runtime variants (Rewriting* / Transcribing* / Recording*) —
+    //      the live knobs animated by ApplyVariant. Edit these to shape
+    //      each state's look.
+    //   3. Recording paint-time overrides (RecordingConic* /
+    //      RecordingArcPhaseTurns / RecordingArcMirror) — consumed by
+    //      CreateRecordingStroke to carve the frozen-rotation silhouette.
+    //   4. BlendSeconds — per-variant transition duration.
+
     // ── Lexicon — vocabulary shared across the struct fields below ──────
-<<<<<<< HEAD
-    //   OklchLightness OKLab lightness, 0 = black, 1 = white.
-    //   OklchChroma    OKLab chroma, 0 = grey. Values outside the sRGB gamut
-    //                  are clamped per channel, which flattens those hues.
-    //   HueStart       hue at 3 o'clock, in turns.
-    //   HueRange       wheel slice. 1 = full rainbow, 0 = mono.
-    //   WedgeCount     posterisation. 360 reads as smooth, 12 or 24 as steps.
-    //   Span           arc length in turns. Mirror clamps it to 0.5.
-    //   LeadFade/Tail  fade extents in turns. If Lead + Tail > Span both
-    //                  scale down to meet at the arc middle (a bell).
-    //   FadeCurve      pow(t, curve). 1 = linear, 3+ = crisp comet,
-    //                  < 1 = near solid.
-    //   Mirror         a second arc at +π for a symmetric double comet.
-    //   PeriodSeconds  seconds per turn. Direction +1 CW, -1 CCW.
-    //   PhaseTurns     start offset in turns.
-    //   EaseP1/P2      cubic-bezier control points of one turn.
-    //   MinSpeedFraction share of the mean angular velocity kept at every
-    //                  instant. 0 = pure easing, 1 = constant rotation.
-    //   Saturation     multiplier on the baked conic. 0 = greyscale.
-    //   HueShiftTurns  runtime rotation of the colour wheel, in turns.
-    //   Exposure       EV stops. ExposureEffect accepts [-2, +2].
-    //   Opacity        SpriteVisual.Opacity, dims the whole stroke.
-    //   BlendSeconds   duration of the blend into this variant.
-=======
     //
     // Paint-time (OKLCh conic palette baked once into a surface).
     // OKLCh is a perceptually uniform cylindrical colour space: at
@@ -126,11 +124,18 @@ public static partial class HudComposition
     // (DWMWA_BORDER_COLOR = DWMWA_COLOR_DEFAULT in HudWindow), 1-dip and
     // theme/accent-aware. Rotating arcs composite on top; transparent
     // regions between arcs expose the DWM stroke.
->>>>>>> main
 
-    // The explicit parameterless constructor is what makes the property
-    // initialisers run on `new ConicArcStrokeConfig { ... }`; C# requires one
-    // in a struct with initialisers.
+    // Config for CreateConicArcStroke. Init-only fields with defaults —
+    // each wrapper overrides only what it needs. The explicit
+    // parameterless constructor is required by C# for struct field
+    // initialisers to run on `new ConicArcStrokeConfig { ... }`.
+    //
+    // `internal` (not `private`) so the internal ProcessingStroke ctor
+    // can reference it without CS0051. Still effectively HudComposition-
+    // scoped — nothing outside this file constructs one.
+    //
+    // See the Lexicon above for what each field means; only per-field
+    // deviations from the generic definition are repeated here.
     public readonly struct ConicArcStrokeConfig
     {
         public ConicArcStrokeConfig() {}
@@ -140,9 +145,10 @@ public static partial class HudComposition
         public float InsetDip { get; init; } = -2f;
 
         // ── Colour palette (paint-time, baked once) ──────────────────────
-        // OKLCh, not HSV: its uniform luminance across hues keeps the
-        // Saturation = 0 variants a flat grey instead of a top/bottom
-        // grey gradient.
+        // OKLCh replaces HSV so the baked conic wheel has perceptually
+        // uniform luminance across hues — critical for the
+        // Saturation=0 greyscale variants, which otherwise inherit
+        // HSV's top/bottom brightness asymmetry as a grey gradient.
         public float  OklchLightness     { get; init; } = 0.75f;
         public float  OklchChroma        { get; init; } = 0.3f;
         public float  HueStart           { get; init; } = 0f;
@@ -154,15 +160,23 @@ public static partial class HudComposition
         public double HuePeriodSeconds   { get; init; } = 14.0;
         public float  HueDirection       { get; init; } = 1f;
         public float  HuePhaseTurns      { get; init; } = 0f;
-        // Out-in curve: both endpoint tangents have slope 3, so the Forever
-        // loop is C¹ across the cycle seam and the rotation never pauses. An
-        // in-out curve has zero slope at both ends and stalls at every seam.
+        // Out-in shape at (0.125, 0.375) / (0.875, 0.625) — tangent at
+        // the endpoints has slope 0.375 / 0.125 = 3.0 at both t=0 and
+        // t=1. Same slope on both sides means the loop is C¹ across the
+        // cycle seam: no "freeze at the plateau" reading between
+        // iterations. The midsection dips below the mean (slow-down ≈
+        // 0.5× mean around t=0.5) and the endpoints push above (pulse
+        // ≈ 3× mean), but continuously — no pause on any frame.
+        // Replaces the classic in-out (0.2, 0, 0.8, 1) whose zero-slope
+        // endpoints forced MinSpeedFraction as a workaround.
         public float  HueEaseP1X         { get; init; } = 0.125f;
         public float  HueEaseP1Y         { get; init; } = 0.375f;
         public float  HueEaseP2X         { get; init; } = 0.875f;
         public float  HueEaseP2Y         { get; init; } = 0.625f;
-        // 0 in shipping: the out-in curve never stalls. The Playground
-        // exposes it for ease curves that do.
+        // Vestigial — the out-in curve above no longer plateaus at cycle
+        // boundaries, so the linear blend is redundant. Kept at 0 so the
+        // playground can still experiment with exotic ease curves that
+        // DO need a floor, but untouched in the shipping path.
         public float  HueMinSpeedFraction { get; init; } = 0f;
 
         // ── Arc mask shape (white pie slice, alpha-ramped at both ends) ─
@@ -172,12 +186,14 @@ public static partial class HudComposition
         public float  ConicFadeCurve     { get; init; } = 4f;
         public bool   ArcMirror          { get; init; } = true;
 
-        // ── Arc rotation — independent of the hue rotation; what the eye
-        //    reads as the speed of the animation ──────────────────────────
+        // ── Arc rotation — rotates the arc mask independently of the
+        //    hue rotation. This is what the eye reads as "the speed of
+        //    the loading animation" ─────────────────────────────────────
         public double ArcPeriodSeconds   { get; init; } = 8.0;
         public float  ArcDirection       { get; init; } = 1f;
         public float  ArcPhaseTurns      { get; init; } = 0f;
-        // Same out-in curve as HueEase, for the same seam continuity.
+        // Same out-in shape as HueEase for the same reason — seam
+        // continuity across the cycle loop without a plateau floor.
         public float  ArcEaseP1X         { get; init; } = 0.125f;
         public float  ArcEaseP1Y         { get; init; } = 0.375f;
         public float  ArcEaseP2X         { get; init; } = 0.875f;
@@ -185,40 +201,66 @@ public static partial class HudComposition
         public float  ArcMinSpeedFraction { get; init; } = 0f;
 
         // ── Clone-cone placement (the pinned digit reveal) ──────────────
-        // Apex of the reveal cone as a fraction of host size, read by both
-        // the live reveal and the ConicClone preview. (0.5, 0.5) reproduces
-        // the contour's centred cone; (0, 0) radiates from the top-left
-        // corner. The clone surface is sized so its inscribed circle reaches
-        // every host corner from the apex; an angular gradient is unchanged
-        // by that radial scaling.
+        // Where the reveal cone's centre sits within the host frame, as a
+        // FRACTION of host size (DPI/size-independent, so one slider drives
+        // both the live reveal and the ConicClone preview through the same
+        // value). (0.5, 0.5) = centred — reproduces the contour's cone, so
+        // each digit samples the same slice the contour shows at that point.
+        // (0, 0) = top-left corner, the cone radiating from there.
+        //
+        // The reveal cone is a CLONE of the contour's: same OKLCh palette and
+        // same breathing rotation (it shares the stroke's HueRotationProps and
+        // EffectProps), but its OWN surface, auto-scaled so its inscribed
+        // circle reaches every host corner FROM this centre. That guarantees a
+        // digit anywhere in the row samples a painted pixel instead of falling
+        // off the surface (out-of-bounds = transparent) — the coverage the
+        // earlier shared-surface route lacked. The cone is a pure angular
+        // gradient, invariant under radial scaling, so growing the surface only
+        // extends coverage, never distorts the look.
         public float  CloneCentreXFraction { get; init; } = 196f / 272f; // 196 px on the 272-wide row
         public float  CloneCentreYFraction { get; init; } = 0f;          // apex at the row's top edge
 
-        // ── Clone-cone palette — the reveal's own OKLCh lightness and
-        //    chroma, so the swept digits can read brighter than the contour.
-        //    The lift lives in the baked surface because ExposureEffect caps
-        //    at +2 EV, too low for the grey-on-Tertiary sweep. ──────────────
+        // ── Clone-cone palette — the reveal's OWN OKLCh lightness/chroma, decoupled
+        //    from the contour's (OklchLightness/Chroma) so the swept digits can be
+        //    pushed brighter / more chromatic for "peps" without touching the
+        //    contour. This is the peps knob: ExposureEffect caps at +2 EV — too low
+        //    for the lift the grey-on-Tertiary sweep needs — so the lift lives in the
+        //    baked surface instead. Lightness above the contour's 0.75 reads as a
+        //    brighter sweep in Transcribing (greyscale); chroma feeds the Rewriting
+        //    colour. Painted into the clone surface by CloneSurfaceConfig. ─────────
         public float  CloneOklchLightness   { get; init; } = 0.9f;
         public float  CloneOklchChroma      { get; init; } = 0.3f;
 
-        // ── Clone-cone rotation — only speeds and directions split from the
-        //    contour; arc shape, ease and phase stay shared ────────────────
+        // ── Clone-cone rotation — INDEPENDENT from the contour's, so the
+        //    reveal cone can spin at its own pace (a distinct animation, not
+        //    a window locked to the contour). Only the speeds + directions
+        //    split: the arc SHAPE (ConicSpan/Fade/Mirror), the ease curves,
+        //    the phase and the palette stay shared, so a fresh clone looks
+        //    identical to the contour until you tune the speeds apart. The
+        //    reveal is a DOUBLE-comet (conic ⊗ arc mask) like the visible
+        //    contour, NOT the naked cone — critical in Transcribing, where the
+        //    greyscale (luminance-uniform OKLCh) cone shows no motion on its
+        //    own and only the swept comet SHAPE reads. ─────────────────────
         public double CloneHuePeriodSeconds { get; init; } = 7.0;
         public float  CloneHueDirection     { get; init; } = -1f;
         public double CloneArcPeriodSeconds { get; init; } = 4.0;
         public float  CloneArcDirection     { get; init; } = -1f;
 
-        // ── Rewriting variant — live effect targets ─────────────────────
+        // ── Rewriting variant — target values for the live effect
+        //    pipeline. Baseline neutrals leave the baked palette alone ──
         public float  RewritingSaturation       { get; init; } = 1f;
         public float  RewritingHueShiftTurns    { get; init; } = 0f;
         public float  RewritingExposure         { get; init; } = 0f;
         public float  RewritingOpacity          { get; init; } = 1f;
         public double RewritingBlendSeconds     { get; init; } = 2;
 
-        // ── Transcribing variant — greyscale by default. Saturation and
-        //    Exposure split Dark/Light: the grey must read against both
-        //    substrates, so exposure lifts it on dark and lowers it on
-        //    light ─────────────────────────────────────────────────────────
+        // ── Transcribing variant — greyscale (Saturation 0) by default.
+        //    Saturation + Exposure are split Dark/Light because even with
+        //    OKLCh's uniform-luminance baseline, the greyscale target
+        //    still depends on the substrate (light on dark / dark on
+        //    light) — exposure biases the baked L=0.75 neutral up or
+        //    down to read against each theme. HueShift/Opacity stay
+        //    unified — widen later if per-theme control is needed ───────
         public float  TranscribingSaturationDark  { get; init; } = 0f;
         public float  TranscribingSaturationLight { get; init; } = 0f;
         public float  TranscribingHueShiftTurns   { get; init; } = 0f;
@@ -227,14 +269,32 @@ public static partial class HudComposition
         public float  TranscribingOpacity         { get; init; } = 1f;
         public double TranscribingBlendSeconds    { get; init; } = 2;
 
-        // ── Recording variant — frozen arc, RMS-driven opacity ──────────
-        //    The paint-time fields (ConicSpan, fades, FadeCurve, ArcMirror,
-        //    ArcPhaseTurns) are fixed when CreateRecordingStroke runs; edit
-        //    and rebuild to iterate. Phase 0 parks the lobes at 12 and 6
-        //    o'clock (see CreateRecordingStroke). The runtime fields blend
-        //    through ApplyVariant like the other variants.
-        //    No RecordingOpacity: UpdateLevel owns opacity from the mic RMS,
-        //    and ApplyVariant(Recording) skips Opacity so the two never fight.
+        // ── Recording variant — frozen-rotation stroke with RMS-driven
+        //    opacity. Two blocks:
+        //
+        //    PAINT-TIME (baked into Win2D conic/arc surfaces when
+        //    CreateRecordingStroke runs — cannot be animated live; edit
+        //    the defaults and rebuild to iterate):
+        //      - ConicSpan / LeadFade / TailFade / FadeCurve / ArcMirror
+        //        shape the silhouette's arc geometry. Span 0.5 + Mirror
+        //        covers the full perimeter as two 180° lobes. Fades
+        //        auto-scale to bell if Lead+Tail > Span.
+        //      - ArcPhaseTurns rotates the arc mask at paint-time to
+        //        park the lobes at visual 12/6 o'clock (see
+        //        CreateRecordingStroke header for the phase math).
+        //
+        //    RUNTIME (consumed by ApplyVariant — animated via the same
+        //    live effect pipeline as Transcribing/Rewriting, so a theme
+        //    change mid-recording blends smoothly):
+        //      - Saturation Dark/Light, HueShift, Exposure Dark/Light,
+        //        BlendSeconds.
+        //      - Defaults mirror Transcribing so the out-of-box greyscale
+        //        stays theme-consistent; tune independently if Recording
+        //        needs a distinct palette.
+        //
+        //    No RecordingOpacity — UpdateLevel owns that channel from
+        //    the mic RMS stream. ApplyVariant(Recording) deliberately
+        //    skips the Opacity animation to avoid fighting UpdateLevel.
         public float  RecordingConicSpanTurns      { get; init; } = 0.5f;
         public float  RecordingConicLeadFadeTurns  { get; init; } = 1f;
         public float  RecordingConicTailFadeTurns  { get; init; } = 1f;
@@ -248,9 +308,14 @@ public static partial class HudComposition
         public float  RecordingExposureLight       { get; init; } = -1.2f;
         public double RecordingBlendSeconds        { get; init; } = 2;
 
-        // 0 freezes the hue at HuePhaseTurns. A positive period drifts the
-        // hue under the frozen lobes, visible only with RecordingSaturation
-        // > 0: at saturation 0 every hue renders the same grey.
+        // Recording hue rotation — independent from arc rotation (which is
+        // always frozen in Recording). 0 = hue frozen on HuePhaseTurns
+        // (uniform grey at RecordingSaturation = 0, static tint at > 0).
+        // > 0 = slow hue drift across the silhouette; pair with
+        // RecordingSaturation Dark/Light > 0 for the chromatic effect to be
+        // visible — at Saturation = 0 strict, RGB = (V, V, V) irrespective
+        // of hue, so the hue rotates mathematically but reads identical.
+        // Typical drift period for a calm "chatoiement" effect: 20–30 s.
         public double RecordingHuePeriodSeconds    { get; init; } = 0;
     }
 
