@@ -1705,8 +1705,12 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── DeckleWhispSource.Transcribe.cs
 │   │   ├── DeckleWhispSource.Ui.cs
 │   │   ├── DeckleWhispSource.WarmupModel.cs
+│   │   ├── DecodingPage.xaml
+│   │   ├── DecodingPage.xaml.cs
 │   │   ├── ITranscriptionEngineHost.cs
 │   │   ├── SettingsSearch.cs
+│   │   ├── StreamingPage.xaml
+│   │   ├── StreamingPage.xaml.cs
 │   │   ├── TranscriptionSettings.cs
 │   │   ├── TranscriptionSettingsService.cs
 │   │   ├── WhisperPage.xaml
