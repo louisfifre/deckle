@@ -1,0 +1,11 @@
+# Utterance countdown bug notes
+
+## A dark band swept through the gauge while its cone spun
+
+- **Trigger:** a pause in dictation long enough to open the gauge, with the default material (OKLCh L 0.75, C 0.3) graded at Saturation 0.
+- **Observed symptom:** reported by the maintainer (2026-10-13): a darker zone, "the red, I think", crossed the lit wedges slowly and read as a hole in the outline. Not reproduced by an agent; nothing was run on screen.
+- **Cause (computed from the code, not observed):** the countdown spun its cone with the Transcribing hue rotation (14 s) while the Recording outline it replaces keeps its cone frozen. The cone is baked from OKLCh at a chroma no sRGB hue carries at that lightness; `ColorSpace.OklchToRgb` clamps each channel, so the clamped colours no longer share one luminance. Desaturated with Rec. 709 weights, the wheel runs from a grey near 0.24 (hue 0.04, the red band) to near 0.69 (hue 0.54, cyan). The ordering holds for any luma formula: the red band has almost no green. At phase 0 the red band sits at 3 o'clock, inside the outline's fade-out; the rotation carried it through 12 and 6 o'clock, where the wedges are brightest.
+- **Invariant:** the gauge is the Recording outline opened by the pause: same cone, same pose, same fade, same grading, read from one mapping.
+- **Fix:** `CreateUtteranceCountdownVisual` paints and poses its cone through `BuildRecordingPaintConfig`, the mapping `CreateRecordingStroke` uses: frozen at `HuePhaseTurns` unless `RecordingHuePeriodSeconds` is set, graded as Recording, wedges fading in the outline's proportion (`GetUtteranceCountdownMaskConfig`). The Playground's Countdown material view shows the same frozen cone.
+- **Recurrence cue:** a visual that samples the greyscale cone through a rotation the Recording outline does not have; a chroma raised above the sRGB gamut at the chosen lightness, which widens the grey spread.
+- **Regression coverage:** `UtteranceCountdownGeometryTests.MaskFadesKeepTheRecordingOutlinesProportion` pins the fade mapping. The pose and the grading are Composition objects with no headless seam. Manual check: Playground ▸ HUD ▸ Countdown material shows a still cone; Utterance countdown at 100 % shows no moving dark band.
