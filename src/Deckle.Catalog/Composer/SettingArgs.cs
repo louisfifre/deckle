@@ -13,39 +13,11 @@ namespace Deckle.Catalog;
 //
 //   PathArgs(FolderPickerMode)   — folder picker: "configure" vs "open-only"
 //   ChoiceArgs(itemsProvider)    — dropdown whose items are sourced at runtime
-//   SliderArgs(min, max, step)   — slider range and increment
+//   MagnitudeArgs(min, max)      — numeric bounds, unit and shape
 //
 // The base is empty on purpose: it is the typed slot the composer dispatches on,
 // not a grab-bag. Each subtype stays minimal and specific to its component.
 public abstract record SettingArgs;
-
-// ── SliderArgs ────────────────────────────────────────────────────────────────
-//
-// Range and increment for a Slider setting, mirroring the Slider properties the
-// composer sets (Minimum/Maximum/StepFrequency). Unit is the optional suffix
-// rendered next to the value readout ("dBFS", "%", "ms"); null when the value is
-// dimensionless (e.g. the curve exponent). These belong in args, not the
-// descriptor's selectors, because they describe the CONTROL's bounds — the
-// value type (double) is fixed by the kind, the bounds vary per setting.
-public sealed record SliderArgs(
-    double Minimum,
-    double Maximum,
-    double StepFrequency,
-    string? Unit = null) : SettingArgs;
-
-// ── NumberArgs ────────────────────────────────────────────────────────────────
-//
-// Range and increments for a Number setting, mirroring the NumberBox properties
-// the composer sets (Minimum/Maximum/SmallChange/LargeChange — keyboard arrow vs
-// PageUp/PageDown nudge). No Unit, unlike SliderArgs: the segmenter cards read as
-// bare figures (the unit lives in the card's header/description), so a trailing
-// suffix would only add chrome. Like a slider's bounds these describe the
-// CONTROL, not the value type (double, fixed by the kind).
-public sealed record NumberArgs(
-    double Minimum,
-    double Maximum,
-    double SmallChange,
-    double LargeChange) : SettingArgs;
 
 // ── MagnitudeArgs ─────────────────────────────────────────────────────────────
 //
@@ -155,7 +127,7 @@ public sealed record ChoiceArgs(
 // ── GroupArgs ─────────────────────────────────────────────────────────────────
 //
 // The child settings a Group reveals, in display order. They are ordinary leaf
-// descriptors (Toggle, Slider, Path, Choice) — the composer renders each as a
+// descriptors (Toggle, Magnitude, Path, Choice) — the composer renders each as a
 // SettingsCard inside the group's SettingsExpander and HIDES them while the
 // master toggle is off (Microsoft-first dependency gating masks, never greys).
 // Like a slider's bounds or a choice's options, the

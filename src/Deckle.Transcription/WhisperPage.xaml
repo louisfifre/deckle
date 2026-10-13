@@ -291,7 +291,7 @@
                 <!-- Confidence fold — composed. ComposeConfidenceSection() builds the
                      three thresholds as a Section into this host; the slider bounds
                      that the code-behind set imperatively (to dodge the XAML-trimming
-                     parser crash) now live in the manifest's SliderArgs, so that
+                     parser crash) now live in the manifest's MagnitudeArgs, so that
                      workaround is gone. -->
                 <StackPanel x:Name="ConfidenceHost"
                             Spacing="{StaticResource SettingsCardSpacing}" />

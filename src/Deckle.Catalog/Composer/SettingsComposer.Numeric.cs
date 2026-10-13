@@ -1,5 +1,4 @@
 using System;
-using System.Globalization;
 using CommunityToolkit.WinUI.Controls;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
@@ -9,135 +8,6 @@ namespace Deckle.Catalog;
 
 public sealed partial class SettingsComposer
 {
-    // Slider over a double, laid out like the RecordingPage "Voice level" rows:
-    // a fixed-width Slider with the live value to its right (secondary brush) and
-    // an optional unit suffix. Same sync discipline as BuildToggle — set Value
-    // before subscribing so the initial assignment does not fire ValueChanged,
-    // and guard the write-back so the model→UI refresh below cannot bounce back
-    // through ValueChanged into the setter.
-    private void BuildSlider(SettingsCard card, SettingDescriptor s)
-    {
-        // Required by Setting.Slider, so the cast is safe; a wrong-kind args here
-        // is a manifest bug, not a runtime input, hence the hard cast.
-        var args = (SliderArgs)s.Args!;
-
-        var slider = new Slider
-        {
-            Minimum = args.Minimum,
-            Maximum = args.Maximum,
-            StepFrequency = args.StepFrequency,
-            Width = 220,
-            // The tooltip-on-thumb duplicates the value readout we render
-            // ourselves and floats over neighbouring rows — off, as the page does.
-            IsThumbToolTipEnabled = false,
-            VerticalAlignment = VerticalAlignment.Center,
-            Value = AsDouble(s.GetValue()),
-        };
-
-        // MinWidth keeps the row from reflowing as digits/sign change (e.g.
-        // "-55" → "-9"); the secondary brush matches the page's readout.
-        var valueText = new TextBlock
-        {
-            Text = FormatValue(slider.Value, args.StepFrequency),
-            MinWidth = 36,
-            VerticalAlignment = VerticalAlignment.Center,
-            Foreground = SecondaryBrush(),
-        };
-
-        var content = new StackPanel
-        {
-            Orientation = Orientation.Horizontal,
-            Spacing = 12,
-            VerticalAlignment = VerticalAlignment.Center,
-        };
-        content.Children.Add(slider);
-        content.Children.Add(valueText);
-
-        if (!string.IsNullOrEmpty(args.Unit))
-        {
-            content.Children.Add(new TextBlock
-            {
-                Text = args.Unit,
-                VerticalAlignment = VerticalAlignment.Center,
-                Foreground = SecondaryBrush(),
-            });
-        }
-
-        // Subscribe AFTER the initial Value assignment above so it does not fire.
-        slider.ValueChanged += (_, e) =>
-        {
-            // The readout tracks the thumb even during a model-driven refresh, so
-            // it stays truthful; only the write-back to the model is suppressed.
-            valueText.Text = FormatValue(e.NewValue, args.StepFrequency);
-            if (_syncingFromModel) return;
-            // Same dust as BuildMagnitude: store the value the readout shows.
-            s.SetValue(MagnitudeGrain.Snap(e.NewValue, MagnitudeGrain.DecimalsFor(args.StepFrequency)));
-        };
-
-        (FrameworkElement cardContent, Action? updateReset) = WrapWithReset(card, content, s);
-        card.Content = cardContent;
-
-        _refreshers.Add(() =>
-        {
-            double value = AsDouble(s.GetValue());
-            if (slider.Value != value) slider.Value = value;
-            // ValueChanged may not fire if the getter equals the current Value
-            // (e.g. nothing changed on this PropertyChanged), so refresh the
-            // readout unconditionally to stay in sync after Load()/Reset.
-            valueText.Text = FormatValue(value, args.StepFrequency);
-            updateReset?.Invoke();
-            ApplyReactiveState(card, s);
-        });
-    }
-
-    // NumberBox over a double, on the card's trailing edge — the same control the
-    // hand-authored segmenter and MaxTokens cards use: spin buttons hidden (no
-    // flyout pushing the layout, keyboard + wheel only), a fixed MinWidth so the
-    // row does not reflow as digits change. Same sync discipline as BuildSlider —
-    // seed Value before subscribing so the assignment does not fire ValueChanged,
-    // and a NaN-guard so a CLEARED field (NumberBox.Value goes NaN) never reaches
-    // the setter, matching the VM's own double.IsNaN guards on the Seg* setters.
-    private void BuildNumber(SettingsCard card, SettingDescriptor s)
-    {
-        // Required by Setting.Number, so the cast is safe; a wrong-kind args here
-        // is a manifest bug, not a runtime input, hence the hard cast.
-        var args = (NumberArgs)s.Args!;
-
-        var box = new NumberBox
-        {
-            Minimum = args.Minimum,
-            Maximum = args.Maximum,
-            SmallChange = args.SmallChange,
-            LargeChange = args.LargeChange,
-            SpinButtonPlacementMode = NumberBoxSpinButtonPlacementMode.Hidden,
-            MinWidth = 100,
-            Value = AsDouble(s.GetValue()),
-        };
-
-        // Subscribe AFTER the initial Value assignment above so it does not fire.
-        box.ValueChanged += (_, _) =>
-        {
-            if (_syncingFromModel) return;
-            // A cleared field surfaces as NaN; swallow it so it never persists, the
-            // same guard the VM's Seg* setters apply on the other side.
-            if (double.IsNaN(box.Value)) return;
-            s.SetValue(box.Value);
-        };
-
-        (FrameworkElement content, Action? updateReset) = WrapWithReset(card, box, s);
-        card.Content = content;
-
-        _refreshers.Add(() =>
-        {
-            double value = AsDouble(s.GetValue());
-            // Don't write NaN back into the box, and don't fight a value the box
-            // already shows (which would also re-fire ValueChanged needlessly).
-            if (box.Value != value && !double.IsNaN(value)) box.Value = value;
-            updateReset?.Invoke();
-            ApplyReactiveState(card, s);
-        });
-    }
-
     // The one numeric block: an editable NumberBox over a double, with a Slider
     // beside it when the value earns a gesture (MagnitudeArgs.Slider). Sweep the
     // slider for a fast approximation, type the box or nudge its arrows for an
@@ -158,6 +28,10 @@ public sealed partial class SettingsComposer
     // press to the release and writes it then; a keyboard or wheel step has no
     // press, so it writes at once. The box tracks the thumb live throughout, as
     // the readout.
+    //
+    // Same sync discipline as BuildToggle: seed Value before subscribing so the
+    // initial assignment does not fire ValueChanged, and a NaN-guard so a CLEARED
+    // field (NumberBox.Value goes NaN) never reaches the setter.
     private void BuildMagnitude(SettingsCard card, SettingDescriptor s)
     {
         // Required by Setting.Magnitude, so the cast is safe; a wrong-kind args here
@@ -312,14 +186,5 @@ public sealed partial class SettingsComposer
             updateReset?.Invoke();
             ApplyReactiveState(card, s);
         });
-    }
-
-    // Renders a slider's value with invariant formatting. The displayed
-    // precision follows StepFrequency so binary-float dust never reaches the UI.
-    private static string FormatValue(double value, double stepFrequency)
-    {
-        int decimals = MagnitudeGrain.DecimalsFor(stepFrequency);
-        return Math.Round(value, decimals)
-            .ToString("F" + decimals.ToString(CultureInfo.InvariantCulture), CultureInfo.InvariantCulture);
     }
 }

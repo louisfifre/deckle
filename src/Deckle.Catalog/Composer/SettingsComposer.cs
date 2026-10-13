@@ -296,12 +296,6 @@ public sealed partial class SettingsComposer
             case SettingKind.Toggle:
                 BuildToggle(card, s);
                 break;
-            case SettingKind.Slider:
-                BuildSlider(card, s);
-                break;
-            case SettingKind.Number:
-                BuildNumber(card, s);
-                break;
             case SettingKind.Magnitude:
                 BuildMagnitude(card, s);
                 break;

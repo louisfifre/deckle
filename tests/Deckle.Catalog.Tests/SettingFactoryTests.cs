@@ -208,34 +208,6 @@ public class SettingFactoryTests
         Assert.Equal("D:/models", args.DefaultPath!());   // résolu à l'appel, pas capturé
     }
 
-    // ── Slider / Number : les bornes du contrôle vivent dans les args ──────────
-
-    [Fact]
-    public void SliderCarriesItsRangeStepAndUnit()
-    {
-        var d = Setting.Slider("k", () => 0, _ => { }, new SliderArgs(0.25, 3.0, 0.05, Unit: "×"));
-
-        Assert.Equal(SettingKind.Slider, d.Kind);
-        var args = Assert.IsType<SliderArgs>(d.Args);
-        Assert.Equal(0.25, args.Minimum);
-        Assert.Equal(3.0, args.Maximum);
-        Assert.Equal(0.05, args.StepFrequency);
-        Assert.Equal("×", args.Unit);
-    }
-
-    [Fact]
-    public void NumberCarriesItsRangeAndNudges()
-    {
-        var d = Setting.Number("k", () => 0, _ => { }, new NumberArgs(-1, 448, 1, 10));
-
-        Assert.Equal(SettingKind.Number, d.Kind);
-        var args = Assert.IsType<NumberArgs>(d.Args);
-        Assert.Equal(-1, args.Minimum);
-        Assert.Equal(448, args.Maximum);
-        Assert.Equal(1, args.SmallChange);
-        Assert.Equal(10, args.LargeChange);
-    }
-
     // ── Magnitude : les bornes et la forme du contrôle vivent dans les args ────
 
     [Fact]
@@ -335,7 +307,7 @@ public class SettingFactoryTests
     public void GroupRoundTripsItsMasterAndHoldsItsChildren()
     {
         bool master = false;
-        var child = Setting.Slider("child", () => 0, _ => { }, new SliderArgs(0, 1, 0.1));
+        var child = Setting.Magnitude("child", () => 0, _ => { }, new MagnitudeArgs(0, 1));
         var g = Setting.Group("g", () => master, v => master = v, new[] { child },
             defaultValue: () => true);
 
