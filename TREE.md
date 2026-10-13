@@ -161,7 +161,6 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   └── README.md  — readme-studies Index of frozen benchmark studies — completed or abandoned ASR/TTS spikes kept…
 │   │   ├── __init__.py
 │   │   ├── build_corpus.py
-│   │   ├── JOURNAL.md
 │   │   └── README.md  — readme-benchmark-asr Human-facing entry point for benchmark/asr — ASR-specific harness pieces and fr…
 │   ├── autoresearch/
 │   │   ├── campaigns/

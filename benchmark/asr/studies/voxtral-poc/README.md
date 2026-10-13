@@ -8,7 +8,7 @@ module: benchmark/asr/studies/voxtral-poc
 
 POC bench evaluating Voxtral Mini 3B as a Whisper alternative inside the Deckle transcription pipeline.
 
-> **Status — archived study (abandoned 2026-06).** Whisper streaming covers the need; the Voxtral evaluation is dropped. This bench is the canonical **template** for a new scenario — copy its `bench.py`. See [`../../README.md`](../../README.md) and [`../../JOURNAL.md`](../../JOURNAL.md).
+> **Status — archived study (abandoned 2026-06).** Whisper streaming covers the need; the Voxtral evaluation is dropped. This bench is the canonical **template** for a new scenario — copy its `bench.py`. See [`../../README.md`](../../README.md).
 
 ## What
 

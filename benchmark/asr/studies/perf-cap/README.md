@@ -1,6 +1,6 @@
 ---
 name: readme-study-perf-cap
-description: "Frozen Voxtral GGUF performance-characterization session (2026-05-26) over llama.cpp Vulkan on the RX 7900 XT. Reference scripts; findings live in the benchmark JOURNAL."
+description: "Frozen Voxtral GGUF performance-characterization session (2026-05-26) over llama.cpp Vulkan on the RX 7900 XT. Reference scripts."
 module: benchmark/asr/studies/perf-cap
 ---
 
@@ -8,7 +8,7 @@ module: benchmark/asr/studies/perf-cap
 
 A dated, **frozen** session that characterized the throughput of Voxtral GGUF variants through `llama-mtmd-cli` on the Vulkan backend (RX 7900 XT), to decide which quantization fit the VRAM/latency budget.
 
-> **Status — frozen study.** Kept for the method and the numbers; not maintained as a live bench. Findings (Voxtral 24B Q4_K_M profiled via llama.cpp Vulkan; the Q4 fidelity cost; the Vulkan timing breakdown) are recorded in [`../../JOURNAL.md`](../../JOURNAL.md).
+> **Status — frozen study.** Kept for the method and the numbers; not maintained as a live bench. Voxtral 24B Q4_K_M through llama.cpp Vulkan reached about 730 GB/s effective bandwidth and 47 tok/s generation, an RTF of 0.05 on a 12 s sample. It is fast, but Q4 costs French fidelity, so these figures size the VRAM/latency budget and do not make Q4 a delivery candidate.
 
 ## Pipeline (reusable scripts kept)
 
@@ -17,7 +17,7 @@ A dated, **frozen** session that characterized the throughput of Voxtral GGUF va
 3. **`profile-config.ps1`** / **`profile-server-text.ps1`** — profile one config (model GGUF + mmproj), CLI and server-text paths.
 4. **`parse_vulkan_log.py`** — parses a `llama-mtmd-cli` log captured with `GGML_VK_PERF_LOGGER=1`, classifies the Vulkan timing blocks (warmup / audio_prefill / lm_prefill / gen) and aggregates `gen` into throughput metrics.
 
-The dated session/debug capture scripts were removed — their numbers are in the JOURNAL.
+The dated session/debug capture scripts were removed; the status note above keeps the figures that mattered.
 
 ## Layout note
 

@@ -1,12 +1,12 @@
 ---
 name: readme-studies
-description: "Index of frozen benchmark studies — completed or abandoned ASR/TTS spikes kept for reference. Each subfolder has its own README; findings live in the benchmark JOURNAL."
+description: "Index of frozen benchmark studies — completed or abandoned ASR/TTS spikes kept for reference. Each subfolder has its own README."
 module: benchmark/asr/studies
 ---
 
 # `studies/` — frozen benchmark spikes
 
-Completed or abandoned evaluation spikes, kept as reference. Each is parked, not maintained; its durable findings are in [`../JOURNAL.md`](../JOURNAL.md). The live ASR-specific harness stays at the [ASR root](../README.md) (`lib/`, `prompts/`, `build_corpus.py`), while shared viewers and infrastructure live at `benchmark/`.
+Completed or abandoned evaluation spikes, kept as reference. Each is parked, not maintained; its own README holds its findings. The live ASR-specific harness stays at the [ASR root](../README.md) (`lib/`, `prompts/`, `build_corpus.py`), while shared viewers and infrastructure live at `benchmark/`.
 
 | Study | What it explored | Outcome |
 |---|---|---|
@@ -18,4 +18,4 @@ Completed or abandoned evaluation spikes, kept as reference. Each is parked, not
 | [`PhiBench/`](PhiBench/) | Phi-4 multimodal via OGA (C#) | Blocked upstream (#1455) |
 | [`perf-cap/`](perf-cap/) | Voxtral GGUF perf characterization (llama.cpp Vulkan) | Frozen reference |
 
-Why these are kept and not deleted: each carries a **reusable pattern** — a `Source` implementation, a measurement method, or the ONNX-local inference plumbing — or a worked reference for a path that might reopen. The pure one-off diagnostic scripts were removed; their findings are in the JOURNAL.
+Why these are kept and not deleted: each carries a **reusable pattern** — a `Source` implementation, a measurement method, or the ONNX-local inference plumbing — or a worked reference for a path that might reopen. The pure one-off diagnostic scripts were removed.

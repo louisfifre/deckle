@@ -8,13 +8,15 @@ here we drive it purely through `onnxruntime_genai` (LM on DirectML) and
 upsampling decoder off the GPU).
 
 Pipeline (Orpheus -> SNAC):
-  1. LM: prompt = [SOH] + tokenizer("<voice>: <text>") + [EOT, EOH, SOA, SOS];
-     autoregress until end-of-speech (128258). The FR finetune exposes NAMED
-     voices (pierre/amelie/marie) — a valid voice is REQUIRED; a voiceless or
-     English-voice prompt yields corrupted ("alien") audio.
+  1. LM: prompt = [SOH, BOS] + tokenizer("<voice>: <text>") + [EOT, EOH]; the
+     model emits SOA and SOS itself (pre-filling them yields short or empty
+     turns). Autoregress until end-of-speech (128258). The FR finetune exposes
+     NAMED voices (pierre/amelie/marie) — a valid voice is REQUIRED; a
+     voiceless or English-voice prompt yields corrupted ("alien") audio.
   2. token -> SNAC code: code = id - 128266 - (pos % 7) * 4096; 7 codes = 1 frame.
   3. de-interleave 7 codes -> 3 SNAC levels (c0=[0]; c1=[1,4]; c2=[2,3,5,6]).
-  4. SNAC static decoder: 12 frames -> 24576 samples; window the stream by 12.
+  4. SNAC static decoder: 12 frames -> 24576 samples, driven as a sliding
+     centre window (hop 10), not disjoint blocks.
 
 LM export: D:\\models\\tts\\orpheus-fr-genai-fp16-dml (fp16, DirectML provider).
 SNAC: D:\\models\\tts\\snac-decoder\\snac24_int2wav_static.onnx (CPU).
@@ -22,7 +24,7 @@ Outputs land in the shared run dir; stats are recorded per voice.
 
 Run with the dedicated venv:
     benchmark\\.venv-orpheus\\Scripts\\python.exe ^
-        benchmark\\benches\\tts-audition\\orpheus_synth.py
+        benchmark\\asr\\studies\\tts-audition\\orpheus_synth.py
 """
 
 from __future__ import annotations
