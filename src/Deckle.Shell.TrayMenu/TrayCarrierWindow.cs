@@ -17,9 +17,6 @@ namespace Deckle.Shell.TrayMenu;
 //
 // A WinUI flyout cannot anchor to a message-only HWND or to a Shell_NotifyIcon
 // icon: it needs a XamlRoot, hence a WinUI Window. This class owns that window
-<<<<<<< HEAD
-// and nothing else; the flyout it carries belongs to the host that uses it.
-=======
 // and nothing else: build it invisible, finalize its style once the HWND is
 // ready, place it tangent to the tray icon at a requested physical size, show
 // and hide it. The flyout it carries (MenuFlyout for the context menu, Flyout
@@ -36,22 +33,30 @@ namespace Deckle.Shell.TrayMenu;
 // The host's flyout opens through ShowAt's callback, not right after it:
 // Placement Full sizes the presenter from the XAML island's size at ShowAt,
 // which lags behind the HWND rect just set (see the deferred open below).
->>>>>>> main
 //
 // A flyout shown in Standard mode moves keyboard focus into that popup, a
 // top-level window this carrier owns, and Windows then deactivates the
 // carrier toward it. That is not a dismiss: a WM_ACTIVATE subclass keeps the
 // window activation went to, and Deactivated is raised only when that window
 // is not owned by the carrier (TrayWindowOwnership).
+//
+// Observability: positioning events (anchor, monitor, popup position,
+// move-and-resize) go through WindowingProbe on the cross-cutting
+// DeckleWindowingSource sub-provider; the carrier lifecycle (Frame.Loaded,
+// style finalize, activation) goes to the module-local
+// DeckleShellTrayMenuSource.
 
 public sealed class TrayCarrierWindow : IDisposable
 {
+    // Owner HWND (tray message-only host). Defines the popup's parent z-order
+    // so activation/deactivation chains correctly with the tray. Stored as the
+    // Win32 GWLP_HWNDPARENT (-8) const offset.
     private const int GWLP_HWNDPARENT = -8;
 
-    // Exclusion half-extent around the cursor, in physical pixels, so the
-    // popup does not cover the tray icon itself (CalculatePopupWindowPosition
-    // places it beside the exclusion rect). 36 px = a typical tray icon slot
-    // at 100% DPI.
+    // Exclusion margin around the cursor, in physical pixels. Prevents the
+    // popup from covering the tray icon itself (CalculatePopupWindowPosition
+    // looks for a location adjacent to the exclusion rect). 36 px = typical
+    // tray icon slot size at 100% DPI.
     private const int CursorExcludeHalfExtent = 18;
 
     private readonly IntPtr _ownerHwnd;
@@ -60,7 +65,7 @@ public sealed class TrayCarrierWindow : IDisposable
     private bool _disposed;
 
     // WM_ACTIVATE subclass: the delegate lives in a field so the GC keeps it
-    // while native code holds its pointer.
+    // while native code holds its pointer (same rule as TrayIconManager).
     private readonly NativeMethods.SubclassProc _subclassProc;
     private static readonly UIntPtr SubclassId = new(0x5452_4143); // "TRAC"
 
@@ -68,13 +73,16 @@ public sealed class TrayCarrierWindow : IDisposable
     // read once by the Deactivated that follows. Zero when Windows named none.
     private IntPtr _activationTarget;
 
+    /// <summary>The carrier WinUI window. Invisible (layered alpha 0).</summary>
     public Window Window { get; }
 
     /// <summary>Transparent root frame; the anchor target of the flyout.</summary>
     public Frame Frame { get; }
 
+    /// <summary>The carrier HWND.</summary>
     public IntPtr Hwnd { get; }
 
+    /// <summary>The carrier AppWindow, used to move and resize it.</summary>
     public AppWindow AppWindow { get; }
 
     /// <summary>True between <see cref="ShowAt"/> and <see cref="Hide"/>.</summary>
@@ -106,6 +114,8 @@ public sealed class TrayCarrierWindow : IDisposable
         Window = new Window();
         Frame = new Frame
         {
+            // Transparent background: the frame paints nothing, and the entire
+            // window stays invisible thanks to layered alpha=0.
             Background = new SolidColorBrush(Microsoft.UI.Colors.Transparent),
         };
         Window.Content = Frame;
@@ -113,9 +123,11 @@ public sealed class TrayCarrierWindow : IDisposable
         Hwnd = WindowNative.GetWindowHandle(Window);
         AppWindow = Window.AppWindow;
 
-        // Owned by the tray message-only host, like a native Win32 context
-        // menu. Without an owner the popup is an autonomous top-level window,
-        // and activation and dismiss no longer chain correctly with the tray.
+        // Owner = HWND of the tray message-only host. Places the popup in the
+        // tray's z-order / activation stack, exactly like a native Win32
+        // context menu. Without an owner, the popup would be an autonomous
+        // top-level window; activation and dismiss would no longer chain
+        // correctly with the tray.
         NativeMethods.SetWindowLongPtr(Hwnd, GWLP_HWNDPARENT, _ownerHwnd);
 
         // Win11 rounded corners: DWM clips the HWND at compositor level.
@@ -126,10 +138,10 @@ public sealed class TrayCarrierWindow : IDisposable
         NativeMethods.DwmSetWindowAttribute(
             Hwnd, NativeMethods.DWMWA_WINDOW_CORNER_PREFERENCE, ref rounded, sizeof(uint));
 
-        // WS_EX_LAYERED + alpha=0: the carrier is invisible while the flyout,
-        // rendered in its own WinUI popup window, stays visible. No
-        // WS_EX_TRANSPARENT: the window must keep focus so a click outside
-        // dismisses through Deactivated.
+        // WS_EX_LAYERED + alpha=0: completely invisible carrier window. The
+        // flyout is rendered in a separate WinUI popup (child HWND), so it
+        // remains normally visible. No WS_EX_TRANSPARENT: the window must
+        // receive focus for dismiss through Activated to work.
         IntPtr exStyle = NativeMethods.GetWindowLongPtr(Hwnd, NativeMethods.GWL_EXSTYLE);
         IntPtr newExStyle = new(exStyle.ToInt64() | (long)NativeMethods.WS_EX_LAYERED);
         NativeMethods.SetWindowLongPtr(Hwnd, NativeMethods.GWL_EXSTYLE, newExStyle);
@@ -188,10 +200,13 @@ public sealed class TrayCarrierWindow : IDisposable
         if (_disposed) return;
         CancelPendingOpen();
 
-        // Anchor on the real tray icon rect (Shell_NotifyIconGetRect), never
-        // the click point, so placement is right for any taskbar orientation.
-        // The cursor is only the fallback when the shell does not know the
-        // icon (not yet registered, hidden in overflow, explorer.exe restarting).
+        // Anchor + exclude: prefer the real tray icon rect
+        // (Shell_NotifyIconGetRect API). This makes positioning automatically
+        // correct regardless of taskbar orientation: above if the taskbar is at
+        // the bottom, right if the taskbar is on the left, etc., without
+        // depending on the click point on the icon. Fallback to cursor position
+        // if the shell does not know (icon not yet registered, hidden in
+        // overflow, or explorer.exe restarting).
         NativeMethods.RECT? iconRect = getIconRect?.Invoke();
         POINT anchor;
         NativeMethods.RECT exclude;
@@ -216,17 +231,19 @@ public sealed class TrayCarrierWindow : IDisposable
                 right  = cursor.X + CursorExcludeHalfExtent,
                 bottom = cursor.Y + CursorExcludeHalfExtent,
             };
-            // A 0×0 parent rect at the anchor point tells the PopupAnchored
-            // trace that no parent control was identified.
+            // Degenerate parent rect (0×0 at the anchor point): convention
+            // documented on DeckleWindowingSource.PopupAnchored for popups
+            // where the app has no identified parent control.
             parentRectX = cursor.X;
             parentRectY = cursor.Y;
             parentRectW = 0;
             parentRectH = 0;
         }
 
-        // DPI of the monitor under the anchor point. XamlRoot.RasterizationScale
-        // reports the monitor where the carrier sits hidden (typically the
-        // primary), not where the tray lives: wrong on multi-monitor setups.
+        // Real DPI of the monitor under the anchor point. XamlRoot
+        // RasterizationScale would reflect the DPI of the monitor where the
+        // carrier window is hidden (typically primary), not where the tray
+        // lives: mismatch on multi-monitor setups or a 150% primary screen.
         IntPtr monitor = TrayMenuNativeMethods.MonitorFromPoint(
             anchor, TrayMenuNativeMethods.MONITOR_DEFAULTTONEAREST);
         TrayMenuNativeMethods.GetDpiForMonitor(
@@ -254,6 +271,10 @@ public sealed class TrayCarrierWindow : IDisposable
         NativeMethods.ShowWindow(Hwnd, TrayMenuNativeMethods.SW_SHOWNORMAL);
         NativeMethods.SetForegroundWindow(Hwnd);
 
+        // Canonical Windowing emission: common WindowPositioned trunk
+        // (effective HWND state after MoveAndResize + ShowWindow +
+        // SetForegroundWindow) and specialized PopupAnchored (parent rect =
+        // tray icon or degenerate cursor rect).
         WindowingProbe.EmitWindowPositioned(Hwnd, _windowName, "CursorRelative");
         WindowingProbe.EmitPopupAnchored(
             Hwnd, _windowName,
@@ -369,7 +390,7 @@ public sealed class TrayCarrierWindow : IDisposable
 
     // ── Hide ──────────────────────────────────────────────────────────────────
 
-    /// <summary>The host closes its flyout first.</summary>
+    /// <summary>Hides the carrier window. The host closes its flyout first.</summary>
     public void Hide()
     {
         CancelPendingOpen();

@@ -11,6 +11,9 @@ public sealed partial class TrayContextMenuHost
 {
     // ── Show ──────────────────────────────────────────────────────────────────
 
+    // Menu items are static (no module state to reflect), so a show is only
+    // anchor + measure + open.
+
     public void Show()
     {
         if (_disposed || _flyout is null)
@@ -28,20 +31,10 @@ public sealed partial class TrayContextMenuHost
             DeckleShellTrayMenuSource.Log.ShowRequestedDetail(msSinceLastShow, _showCount);
         }
 
+        // The carrier anchors on the icon, resolves the monitor DPI and asks
+        // for the menu's physical size at that scale.
         _isVisible = true;
-<<<<<<< HEAD
-        _carrier.ShowAt(GetIconRect, MeasureFlyout);
-
-        // FlyoutPlacementMode.Full: the default Top placement would add its
-        // own offset above the frame on top of CalculatePopupWindowPosition's,
-        // and the menu would jump up by about one menu height. Full also
-        // stretches the presenter to fill the carrier (MS docs), so
-        // MeasureFlyout dictates the visible size: too large shows an empty
-        // Mica band, too small scrolls.
-        _flyout.ShowAt(_carrier.Frame, new FlyoutShowOptions
-=======
         _carrier.ShowAt(GetIconRect, MeasureFlyout, () =>
->>>>>>> main
         {
             // The carrier runs this once its XAML island reports the size it
             // was just given, or after its grace period: Full reads that size
@@ -71,6 +64,10 @@ public sealed partial class TrayContextMenuHost
 
     // ── Hide ──────────────────────────────────────────────────────────────────
 
+    // The `reason` parameter qualifies the dismiss origin at the call site:
+    // "deactivated" (activation loss), "flyout_closed" (Flyout.Closed),
+    // "item_click:<label>" (item selection). Traced on the Hidden event to
+    // distinguish close paths in JSONL.
     private void Hide(string reason)
     {
         if (!_isVisible) return;
