@@ -1092,7 +1092,6 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── CONTEXT.md  — context-deckle-input Input-layer vocabulary — the contact frame as the unit assembled from Raw Input…
 │   │   ├── Deckle.Input.csproj
 │   │   ├── DeckleInputSource.cs
-│   │   ├── JOURNAL.md
 │   │   ├── MouseWheelSettings.cs
 │   │   ├── MouseWheelSettingsService.cs
 │   │   └── RawInputHost.cs
