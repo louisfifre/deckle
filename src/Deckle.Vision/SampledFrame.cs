@@ -2,15 +2,11 @@ using Windows.UI;
 
 namespace Deckle.Vision;
 
-// One snapshot from FrameSampler. AverageLinear is the mean over the
-// whole grid in linear light, unrounded (what AmbientEngine tunes and
-// pushes to the lamps ; exactly (0, 0, 0) only when every cell is
-// black). Average is the same mean re-encoded to sRGB bytes, for
-// previews. Grid is laid out row-major — Grid[row * Cols + col]. All
-// reflect the same source frame and are produced atomically inside
-// FrameSampler.Process ; a new SampledFrame is allocated per processed frame and replaces
-// LatestSample via a single volatile write. Consumers read it via
-// volatile read and use it directly — the array is never mutated after
+// One snapshot from FrameSampler. AverageLinear is the grid mean in linear
+// light, unrounded: what AmbientEngine tunes and pushes to the lamps, and
+// exactly (0, 0, 0) only when every cell is black (the engine's black gate
+// relies on it). Average is the same mean in sRGB bytes, for previews. Grid
+// is row-major, Grid[row * Cols + col], and is never mutated after
 // publication.
 public sealed record SampledFrame(
     Color Average,

@@ -7,72 +7,41 @@ using Deckle.Diagnostics;
 
 namespace Deckle.Vision;
 
-// Screen capture pump on top of IDXGIOutputDuplication.
+// Screen capture pump on top of IDXGIOutputDuplication. One instance is one
+// capture session: restart by disposing it and building a new one.
 //
-// Lifecycle. Construct → Start() → FrameArrived fires repeatedly →
-// Stop() (or Dispose()) cancels the capture loop and releases the
-// duplication, output, adapter and D3D device. Idempotent — Stop on a
-// non-started service is a no-op, Dispose calls Stop. One instance =
-// one capture session ; restart is done by disposing and rebuilding.
+// Why DXGI Output Duplication and not Windows.Graphics.Capture. WGC draws a
+// yellow notification border around the captured surface, and the only way
+// to disable it is the MSIX capability `graphicsCaptureWithoutBorder`,
+// which an unpackaged desktop app cannot declare. Output Duplication has no
+// border.
 //
-// Why DXGI Output Duplication and not Windows.Graphics.Capture. WGC is
-// the modern API but the OS draws a yellow notification border around
-// the captured surface, and the only way to disable it is the MSIX
-// capability `graphicsCaptureWithoutBorder` — which can't be declared
-// from an unpackaged desktop app. DXGI Output Duplication is the
-// pre-WGC API (Windows 8+) and is not subject to the border. It's
-// what HyperHDR / OBS / NVIDIA ShadowPlay use.
+// Threading. FrameArrived is raised on the capture loop's worker thread,
+// never on the caller's UI thread; consumers that touch UI marshal
+// themselves through DispatcherQueue.TryEnqueue.
 //
-// Threading. The capture loop runs on a dedicated Task spun in Start.
-// FrameArrived is raised on that worker thread, never on the caller's
-// UI thread. Consumers that need to touch UI marshal themselves via
-// DispatcherQueue.TryEnqueue. Matches the prior WGC contract.
+// Cadence. CapturePacer admits frames at the target rate; the others are
+// released without a copy. The rate is independent of the lamps: the
+// AmbientEngine push loop reads the latest sample at its transport's own
+// rate.
 //
-// HDR. DuplicateOutput1 negotiates a pixel format from the supplied
-// priority list (FP16-preferred when the display is in HDR mode,
-// BGRA8-preferred for SDR). The negotiated format is read back via
-// GetDuplicationDesc and exposed as ActiveFormat for FrameSampler to
-// pick its tone-map path. Peak luminance comes from
-// IDXGIOutput6::GetDesc1 during the adapter walk.
-//
-// Cadence. AcquireNextFrame blocks the loop thread until a desktop
-// update or timeout. The target delivery rate is a constructor
-// parameter (60 Hz by default); CapturePacer admits frames against a
-// deadline grid at that rate and the others are released on the GPU
-// without a copy. The rate is independent of how often a consumer
-// pushes to its lights: the AmbientEngine push loop reads the latest
-// sample at its transport's own rate.
-//
-// Recovery. DXGI_ERROR_ACCESS_LOST fires on desktop switch, mode
-// change, or fullscreen exclusive swap ; DXGI_ERROR_ACCESS_DENIED
-// and DXGI_ERROR_SESSION_DISCONNECTED fire on secure-desktop transitions
-// (UAC, Win+L, password screensaver) and RDP disconnects. All four
-// invalidate the IDXGIOutputDuplication. We release it and retry
-// DuplicateOutput1 every 2 s through attempt five, then every 5 s.
-// Expected Windows unavailability retries for as long as the user has the
-// engine running; unexpected failures stop on attempt five and dead devices
-// stop immediately. The workflow consumer owns the human terminal error.
+// Recovery. A lost duplication is reopened with backoff (see
+// TryRecreateDuplication). Vision reports the technical cause; the
+// workflow consumer owns the human terminal error.
 public sealed partial class ScreenCaptureService : IDisposable
 {
     /// <summary>Delivery rate used when the caller does not choose one.</summary>
     public const int DefaultTargetFrameRateHz = 60;
 
-    // Target delivery rate fixed at construction. The loop builds its
-    // CapturePacer from it; the throttle interval is logged at Start.
     private readonly int _targetFrameRateHz;
 
-    // AcquireNextFrame timeout. It bounds how long the loop waits when
-    // the screen is static and how quickly Stop is honoured; it does
-    // not cap the delivery rate (AcquireNextFrame returns as soon as a
-    // desktop update exists), so it is independent of the target rate.
-    // Short enough that cancellation responds promptly on Stop, long
-    // enough that we don't spin the CPU on a static screen.
+    // Bounds how quickly Stop is honoured on a static screen without
+    // spinning the CPU. It does not cap the delivery rate: AcquireNextFrame
+    // returns as soon as a desktop update exists.
     private const uint AcquireTimeoutMs = 200;
 
-    // Back-off when AcquireNextFrame returns an unexpected error
-    // (anything that isn't S_OK / WAIT_TIMEOUT / ACCESS_LOST /
-    // ACCESS_DENIED / SESSION_DISCONNECTED / INVALID_CALL). Keeps a
-    // transient driver hiccup from busy-looping.
+    // Keeps a transient driver error from busy-looping the generic failure
+    // branch of the capture loop.
     private const int ErrorBackoffMs = 500;
 
     // Persistent INVALID_CALL means DXGI still thinks Deckle owns a frame
@@ -81,25 +50,18 @@ public sealed partial class ScreenCaptureService : IDisposable
     // long-lived Verbose storm while never pushing colors.
     private const int MaxInvalidCallRecoveryAttempts = 10;
 
-    // Recreate backoff and terminal threshold. Expected Windows
-    // unavailability retries indefinitely; unexpected failures stop after the
-    // fifth attempt. The longer interval keeps a locked session quiet.
+    // The longer recreate interval keeps a locked session quiet.
     private const int RecreateInitialBackoffMs = 2_000;
     private const int RecreateExtendedBackoffMs = 5_000;
     private const int MaxUnexpectedRecreateAttempts = 5;
 
-    // Heartbeat rollup cadence — one DeckleVisionSource.Log.Heartbeat
-    // emission per window summarising throughput + latency percentiles.
-    // 5 s matches the Ambient engine cadence (DeckleAmbientSource.Heartbeat)
-    // so the two rollups line up in the log, and keeps a long session
-    // readable — at 1 s a multi-hour capture flooded the window with
-    // thousands of lines. A 5 s window averages out the pacer's
-    // frame-to-frame jitter at any target rate.
+    // Matches the Ambient engine heartbeat so the two rollups line up in
+    // the log, and keeps a multi-hour session readable.
     private const int HeartbeatIntervalMs = 5_000;
 
-    // Format priorities passed to DuplicateOutput1. The first format
-    // the OS can honour wins. HDR sessions prefer FP16 scRGB ; SDR
-    // sessions prefer BGRA8 (FP16 still acceptable as a fallback).
+    // Formats offered to DuplicateOutput1, preferred first. Both lists keep
+    // B8G8R8A8_UNORM: Microsoft asks for it in every list as the most
+    // common desktop format.
     private static readonly uint[] HdrFormats = new[]
     {
         ScreenCaptureInterop.DXGI_FORMAT_R16G16B16A16_FLOAT,
@@ -113,13 +75,12 @@ public sealed partial class ScreenCaptureService : IDisposable
 
     private readonly object _lock = new();
 
-    // Managed WinRT wrapper around the native D3D11 device. Kept for
-    // FrameSampler's existing constructor signature ; the sampler
-    // extracts the native pointer via ScreenCaptureInterop.GetD3D11Device.
+    // WinRT wrapper of the D3D11 device: the form FrameSampler's
+    // constructor takes.
     private IDirect3DDevice? _device;
 
-    // Native COM pointers — AddRef'd on Start, Released on Stop.
-    // _duplicationPtr is also released and re-AddRef'd on ACCESS_LOST.
+    // AddRef'd on Start, released on Stop. _duplicationPtr is also
+    // released and recreated by every recovery, and is 0 in between.
     private nint _d3dDevicePtr;
     private nint _adapterPtr;
     private nint _output5Ptr;
@@ -134,17 +95,14 @@ public sealed partial class ScreenCaptureService : IDisposable
     private float _peakLuminance = 80f;
     private bool _isHdrSession;
 
-    // Capture loop task + cancellation. _captureLoopTask is non-null
-    // while IsRunning, gated by _lock for visibility from Stop.
     private CancellationTokenSource? _cts;
     private Task? _captureLoopTask;
 
     private long _frameCount;
     private long _startTimestamp;
 
-    // Acquire timestamp of the current _duplicationPtr, read at release time
-    // to compute age_ms in DeckleResourceSource. Rewritten on each duplication
-    // (re)creation.
+    // Stamped only when the Resource acquire event was emitted; 0 skips the
+    // matching release event.
     private long _duplicationAcquiredTicks;
 
     /// <summary>
@@ -162,46 +120,36 @@ public sealed partial class ScreenCaptureService : IDisposable
         _targetFrameRateHz = targetFrameRateHz;
     }
 
-    /// <summary>Target delivery rate this instance was built with.</summary>
     public int TargetFrameRateHz => _targetFrameRateHz;
 
-    /// <summary>True when a capture session is currently running.</summary>
     public bool IsRunning { get; private set; }
 
-    /// <summary>Total frames delivered since the last Start().</summary>
+    /// <summary>Frames delivered since the last Start().</summary>
     public long FrameCount => Interlocked.Read(ref _frameCount);
 
-    /// <summary>The WinRT IDirect3DDevice the duplication is bound to.
-    /// Null when the service isn't running. Borrowed by consumers
-    /// (FrameSampler) for D3D11 texture allocation — do not Dispose
-    /// from outside.</summary>
+    /// <summary>Null when the service isn't running. Borrowed by
+    /// FrameSampler: never dispose it from outside.</summary>
     public IDirect3DDevice? Device => _device;
 
-    /// <summary>Negotiated pixel format for the current session.
-    /// Either <see cref="DirectXPixelFormat.B8G8R8A8UIntNormalized"/>
-    /// (SDR) or <see cref="DirectXPixelFormat.R16G16B16A16Float"/>
-    /// (HDR). Decided by DuplicateOutput1 based on the priority list
-    /// and the OS's current display mode.</summary>
+    /// <summary>Either <see cref="DirectXPixelFormat.B8G8R8A8UIntNormalized"/>
+    /// (SDR) or <see cref="DirectXPixelFormat.R16G16B16A16Float"/> (HDR);
+    /// a change mid-session raises <see cref="FormatChanged"/>.</summary>
     public DirectXPixelFormat ActiveFormat => _activeFormat;
 
-    /// <summary>True when the primary display reports an HDR colour
-    /// space (HDR10 or scRGB) at Start time.</summary>
+    /// <summary>True when the captured display reports an HDR colour
+    /// space (HDR10 or scRGB); refreshed on every recreate.</summary>
     public bool IsHdrSession => _isHdrSession;
 
-    /// <summary>Reported peak luminance of the display in nits. 80 nits
-    /// (SDR reference white) when HDR is off or unknown. Used by the
-    /// FrameSampler tone-map to normalise scRGB FP16 values.</summary>
+    /// <summary>Peak luminance the display reports, in nits; 80 (the SDR
+    /// reference white) when it reports none.</summary>
     public float PeakLuminance => _peakLuminance;
 
-    /// <summary>Size of the captured surface (the source monitor's
-    /// resolution). Valid only when <see cref="IsRunning"/> is true.</summary>
+    /// <summary>Valid only while <see cref="IsRunning"/> is true.</summary>
     public Windows.Graphics.SizeInt32 ContentSize => _lastSize;
 
     /// <summary>
-    /// Raised on the capture loop's worker thread for every desktop
-    /// frame the duplication delivers. The supplied
-    /// <see cref="CapturedFrame"/>'s TexturePtr is valid only for the
-    /// duration of the handler — do not retain it past return.
+    /// Raised on the capture loop's worker thread for each delivered frame.
+    /// The frame's TexturePtr is valid only during the handler.
     /// </summary>
     public event Action<CapturedFrame>? FrameArrived;
 
@@ -212,34 +160,26 @@ public sealed partial class ScreenCaptureService : IDisposable
     /// </summary>
     public event Action? FrameProcessingFailed;
 
-    /// <summary>Raised on the worker thread when the capture stops
-    /// after a sustained failure to recreate the duplication (display
-    /// disconnected, mode change loop, etc.). Service is already in
-    /// stopped state by the time this fires.</summary>
+    /// <summary>Raised on the worker thread when capture ends on its own: a
+    /// lost device, or a frame-ownership or duplication recovery
+    /// abandoned. <see cref="IsRunning"/> is already false when it
+    /// fires.</summary>
     public event Action? Stopped;
 
     /// <summary>
-    /// Raised on the capture worker thread after a duplication recreate
-    /// renegotiated a surface that no longer matches what the consumer's
-    /// format-dependent resources were built against — a different pixel
-    /// format (the HDR↔SDR desktop toggle, which flips FP16↔BGRA8) or a
-    /// different surface size (a display mode / resolution change). The
-    /// consumer (AmbientEngine) must rebuild its FrameSampler from the
-    /// fresh <see cref="ActiveFormat"/> / <see cref="ContentSize"/> /
-    /// <see cref="PeakLuminance"/>. Raised synchronously on the same
-    /// worker thread that raises <see cref="FrameArrived"/>, so the
-    /// handler is serialised against frame delivery and can swap the
-    /// sampler without racing a Process() call. The name keeps the
-    /// "format" framing of the diagnosed bug even though a pure resize
-    /// (same format) also raises it — both invalidate the sampler.
+    /// Raised on the capture worker thread after a recreate negotiated a
+    /// different pixel format (the HDR↔SDR toggle flips FP16↔BGRA8) or a
+    /// different surface size; a resize alone raises it too. Either
+    /// invalidates the consumer's FrameSampler, which it must rebuild from
+    /// the fresh <see cref="ActiveFormat"/> / <see cref="ContentSize"/> /
+    /// <see cref="PeakLuminance"/>. Raised on the thread that raises
+    /// <see cref="FrameArrived"/>, so the swap cannot race a Process() call.
     /// </summary>
     public event Action? FormatChanged;
 
     /// <summary>
-    /// Probes whether the running OS supports DXGI Output Duplication.
-    /// Returns true on every Windows 8+ desktop session — kept as a
-    /// method to preserve the call shape from the previous WGC-based
-    /// service (where the WinRT API needed a feature check).
+    /// Always true: Output Duplication exists on every Windows 8+ desktop
+    /// session.
     /// </summary>
     public static bool IsSupported() => true;
 

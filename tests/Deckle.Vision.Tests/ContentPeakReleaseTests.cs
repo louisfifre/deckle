@@ -9,8 +9,7 @@ public sealed class ContentPeakReleaseTests
     [Fact]
     public void ReleaseOverOneFifteenthOfASecondMatchesTheOriginalPerFrameDecay()
     {
-        // The release was 0.97 per frame at the original 15 Hz capture;
-        // expressing it per second must keep that behaviour.
+        // The per-second constant encodes a decay of 0.97 per frame at 15 Hz.
         Assert.Equal(0.97, FrameSampler.ContentPeakRetention(1.0 / 15), precision: 6);
     }
 

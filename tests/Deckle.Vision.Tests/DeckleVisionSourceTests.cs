@@ -6,10 +6,6 @@ using Xunit;
 
 namespace Deckle.Vision.Tests;
 
-// Vision module: capture heartbeat coverage (one representative event of the
-// cross-cutting heartbeat sub-provider as consumed by ScreenCaptureService).
-// The heartbeat is strictly gated by Verbose + Keywords.Heartbeat; without an
-// attached listener, cost collapses to IsEnabled.
 [Trait("Category", "observability")]
 public class DeckleVisionSourceTests
 {

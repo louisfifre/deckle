@@ -4,14 +4,8 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <!-- Versions aligned on Deckle.csproj. WindowsAppSDK is required for
-         the CsWinRT projection of IDirect3DDevice (the WinRT wrapper
-         FrameSampler holds onto for D3D11 texture allocation). The
-         capture pipeline itself uses DXGI Output Duplication via raw
-         COM interop (no WinRT capture API anymore — see
-         ScreenCaptureService class header for the migration rationale).
-         The library is not a WinUI XAML lib — UseWinUI stays off because
-         Deckle.Vision consumes the headless WinRT APIs only. -->
+    <!-- Not a WinUI XAML library: UseWinUI stays off because
+         Deckle.Vision uses headless WinRT APIs only. -->
     <PackageReference Include="Microsoft.WindowsAppSDK" />
     <PackageReference Include="Microsoft.Windows.SDK.BuildTools" />
   </ItemGroup>
@@ -19,14 +13,10 @@
   <ItemGroup>
     <ProjectReference Include="..\Deckle.Core\Deckle.Core.csproj" />
     <ProjectReference Include="..\Deckle.Diagnostics\Deckle.Diagnostics.csproj" />
-    <!-- Deckle.Composition provides ColorSpace.ScRgbToSrgb (HDR
-         tone-mapping) consumed by FrameSampler. -->
     <ProjectReference Include="..\Deckle.Composition\Deckle.Composition.csproj" />
   </ItemGroup>
 
   <ItemGroup>
-    <!-- Pure-logic internals (CapturePacer, the content-peak release)
-         are tested without a GPU. -->
     <InternalsVisibleTo Include="Deckle.Vision.Tests" />
   </ItemGroup>
 

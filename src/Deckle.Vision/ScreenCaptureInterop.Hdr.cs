@@ -6,16 +6,9 @@ internal static partial class ScreenCaptureInterop
 {
     // ── HDR detection (IDXGIOutput6::GetDesc1) ───────────────────────────────
     //
-    // Reads the primary monitor's colour space + peak luminance to decide
-    // whether to allocate the frame pool in R16G16B16A16Float (HDR / scRGB
-    // linear) or B8G8R8A8UNorm (SDR). DXGI_COLOR_SPACE_RGB_FULL_G2084_NONE_P2020
-    // is HDR10 (PQ transfer) ; DXGI_COLOR_SPACE_RGB_FULL_G10_NONE_P709 is
-    // scRGB linear — both indicate the OS is in HDR mode. peakLuminance is
-    // the display's reported max nits (typ. 400-1000 for HDR monitors,
-    // 0 or 80 for SDR).
-    //
-    // Returns (false, 80.0, sRGB) when no HDR signalling is detected, so the
-    // SDR tone-map path can use 80 nits as the reference white.
+    // An output is in HDR mode when it reports HDR10 (G2084, PQ) or scRGB
+    // (G10, linear). A display that reports no peak luminance, or any
+    // failure, falls back to 80 nits, the sRGB reference white.
 
     private const int DXGI_COLOR_SPACE_RGB_FULL_G22_NONE_P709     = 0;  // sRGB
     private const int DXGI_COLOR_SPACE_RGB_FULL_G10_NONE_P709     = 1;  // scRGB
@@ -26,9 +19,8 @@ internal static partial class ScreenCaptureInterop
     [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
     private struct DXGI_OUTPUT_DESC1
     {
-        // WCHAR DeviceName[32] — 64 bytes of fixed-width name. We treat
-        // it as a flat byte array via two ulong pairs for layout safety ;
-        // we never read the name here.
+        // WCHAR DeviceName[32]: 64 bytes, held as eight ulongs to keep the
+        // layout; the name is never read.
         public ulong DeviceName0;
         public ulong DeviceName1;
         public ulong DeviceName2;
@@ -62,19 +54,13 @@ internal static partial class ScreenCaptureInterop
         public float MaxFullFrameLuminance;
     }
 
-    // CreateDXGIFactory2 entry point. Exported by dxgi.dll, available on
-    // every Win10+. The Flags parameter is 0 for production (debug factory
-    // not requested).
     [DllImport("dxgi.dll", PreserveSig = false, ExactSpelling = true)]
     private static extern void CreateDXGIFactory2(uint flags, [In] in Guid iid, out nint factory);
 
-    // Snapshot of the relevant HDR state for the primary monitor.
     public readonly record struct HdrState(bool IsHdr, float PeakLuminance, int ColorSpace);
 
     public static HdrState DetectHdrState(nint hmon)
     {
-        // Default fallback when something goes wrong (no HDR monitor, no
-        // adapter found, etc.) : SDR with 80 nits as reference white.
         const float SdrReferenceNits = 80f;
         var fallback = new HdrState(false, SdrReferenceNits, DXGI_COLOR_SPACE_RGB_FULL_G22_NONE_P709);
 
@@ -90,7 +76,6 @@ internal static partial class ScreenCaptureInterop
                 return fallback;
             }
 
-            // Walk adapters / outputs to find the one matching hmon.
             // IDXGIFactory6::EnumAdapters lives at vtable slot 7 (after
             // IUnknown's 3 + IDXGIObject's 4 = 7). IDXGIAdapter::EnumOutputs
             // lives at vtable slot 7 as well.
@@ -118,7 +103,6 @@ internal static partial class ScreenCaptureInterop
 
                             try
                             {
-                                // QI to IDXGIOutput6 to get GetDesc1.
                                 Guid iidOutput6 = IID_IDXGIOutput6;
                                 hr = Marshal.QueryInterface(outputPtr, in iidOutput6, out nint output6Ptr);
                                 if (hr != 0) continue;

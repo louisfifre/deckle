@@ -22,25 +22,17 @@ public sealed partial class ScreenCaptureService
                         "Primary monitor not found — MonitorFromPoint returned NULL.");
                 }
 
-                // Find the DXGI adapter + output5 driving this monitor,
-                // capture the HDR state in passing. Throws if no match
-                // (display disconnected mid-startup).
                 var match = ScreenCaptureInterop.FindDxgiOutputForMonitor(_hmon);
                 _adapterPtr    = match.AdapterPtr;
                 _output5Ptr    = match.Output5Ptr;
                 _isHdrSession  = match.Hdr.IsHdr;
                 _peakLuminance = match.Hdr.PeakLuminance;
 
-                // Create the D3D11 device on that specific adapter —
-                // mandatory for DuplicateOutput1 (E_INVALIDARG otherwise
-                // on multi-GPU laptops where the default adapter
-                // doesn't drive the target monitor).
+                // The device must live on the adapter that drives this
+                // monitor, or DuplicateOutput1 fails with E_INVALIDARG.
                 _device = ScreenCaptureInterop.CreateDirect3DDevice(_adapterPtr);
                 _d3dDevicePtr = ScreenCaptureInterop.GetD3D11Device(_device);
 
-                // DuplicateOutput1 with the format priority list that
-                // matches the OS's current display mode. The negotiated
-                // format is read back via GetDuplicationDesc.
                 uint[] formatList = _isHdrSession ? HdrFormats : SdrFormats;
                 _duplicationPtr = ScreenCaptureInterop.DuplicateOutput1(
                     _output5Ptr, _d3dDevicePtr, formatList);
@@ -54,9 +46,8 @@ public sealed partial class ScreenCaptureService
                 _activeDxgiFormat = desc.ModeDesc.Format;
                 _activeFormat = MapDxgiFormat(_activeDxgiFormat);
 
-                // Cross-cutting Resource sub-provider: output duplication
-                // acquire. size_bytes=0 because this is a synchronization
-                // handle, not a measurable memory allocation.
+                // size_bytes 0: the duplication is a handle, not a
+                // measurable allocation.
                 bool resourceDetailOpen = OperationalLogAdmission.IsScopedDetailEnabled(
                     OperationalLogActivity.Ambient,
                     DeckleResourceSource.Log,
@@ -146,11 +137,8 @@ public sealed partial class ScreenCaptureService
         try { loopTask?.Wait(TimeSpan.FromSeconds(2)); }
         catch (AggregateException ex) when (ex.InnerExceptions.All(e => e is OperationCanceledException))
         {
-            // Expected: cooperative cancellation. Trace the expected OCE on the
-            // cross-cutting Cancellation sub-provider: Stop() explicitly
-            // requested the stop, the loop propagated it. `age_ms` reflects the
-            // full capture session duration because the worker ran from Start
-            // until cancellation time.
+            // Expected cooperative cancellation; age_ms spans the whole
+            // capture session.
             if (OperationalLogAdmission.IsScopedDetailEnabled(
                     OperationalLogActivity.Ambient,
                     DeckleCancellationSource.Log,

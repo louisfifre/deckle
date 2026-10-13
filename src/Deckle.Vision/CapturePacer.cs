@@ -32,8 +32,6 @@ internal sealed class CapturePacer
         _toleranceTicks = _intervalTicks / 8;
     }
 
-    /// <summary>Returns true when the frame acquired at
-    /// <paramref name="nowTicks"/> should be delivered.</summary>
     public bool TryAdmit(long nowTicks)
     {
         if (!_started)

@@ -6,8 +6,8 @@ internal static partial class ScreenCaptureInterop
 {
     // ── D3D11 vtable indices (counted from IUnknown::QueryInterface = 0) ─────
     //
-    // Pulled from d3d11.h. Stable per COM contract (interfaces never change
-    // shape once published). Exposed as constants so call sites read clearly.
+    // Counted from the d3d11.h declaration order. Stable because a published
+    // COM interface never changes shape.
 
     internal static class D3D11Vtbl
     {
@@ -21,9 +21,6 @@ internal static partial class ScreenCaptureInterop
         public const int Context_Unmap                     = 15;
         public const int Context_CopySubresourceRegion     = 46;
         public const int Context_CopyResource              = 47;
-        // GenerateMips is at slot 54 — after the Map/Unmap/Copy*/Update*/
-        // Clear* family. Trust the d3d11.h declaration order ; the slot
-        // is stable per COM contract.
         public const int Context_GenerateMips              = 54;
     }
 

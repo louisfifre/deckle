@@ -21,13 +21,10 @@ public sealed partial class FrameSampler
             ReadGridBGRA8(in mapped, grid, ref sumRLin, ref sumGLin, ref sumBLin, ref count);
         }
 
-        // Average in linear light, re-encode via the sRGB OETF so the
-        // returned colour matches what a perceptually-correct mean of
-        // the source pixels would produce. Arithmetic averaging on the
-        // raw sRGB bytes would bias mid-tones upward (sRGB's ~2.4 gamma
-        // makes equal byte deltas non-uniform in photons).
-        // The linear mean is also published unrounded : the engine tunes
-        // it in float and quantises once at its output.
+        // Average in linear light, then re-encode to sRGB: averaging the
+        // raw sRGB bytes would darken mixed cells, because sRGB is not
+        // linear in light. The linear mean is also published unrounded:
+        // the engine tunes it in float and quantises once at its output.
         Color avg;
         (float R, float G, float B) avgLinear;
         if (count == 0)
@@ -55,12 +52,8 @@ public sealed partial class FrameSampler
         Color[] grid,
         ref double sumRLin, ref double sumGLin, ref double sumBLin, ref int count)
     {
-        // Exposure compensation in linear light, mirroring ReadGridFP16
-        // semantics. Without this branch the SDR path used to ignore
-        // _exposureEv entirely — the AmbientPage slider had visible
-        // effect only on HDR displays. When _exposureEv = 0 the
-        // multiplier collapses to 1.0 and the inner loop is
-        // arithmetically equivalent to the legacy direct LUT lookup.
+        // Exposure scales in linear light, as on the HDR path. At 0 EV the
+        // plain branch gives the same result without the re-encode.
         double exposureMultiplier = Math.Pow(2.0, _exposureEv);
         bool exposed = _exposureEv != 0.0;
 
@@ -81,11 +74,6 @@ public sealed partial class FrameSampler
 
                     if (exposed)
                     {
-                        // Scale in linear light, then re-encode sRGB
-                        // for the per-cell display and feed the sum
-                        // with the post-exposure linear value so the
-                        // engine's downstream averaging respects the
-                        // user's EV choice.
                         float rLin = (float)(ColorSpace.SrgbToLinear8Lut[r] * exposureMultiplier);
                         float gLin = (float)(ColorSpace.SrgbToLinear8Lut[g] * exposureMultiplier);
                         float bLin = (float)(ColorSpace.SrgbToLinear8Lut[b] * exposureMultiplier);
@@ -118,11 +106,9 @@ public sealed partial class FrameSampler
         double elapsedSeconds,
         ref double sumRLin, ref double sumGLin, ref double sumBLin, ref int count)
     {
-        // Tone-map runs against the rolling content peak captured by
-        // the *previous* frame ; this frame's max feeds the rolling
-        // update at the end of the loop. The lag is one frame at the
-        // capture rate (~16 ms at 60 Hz), imperceptible, and avoids a
-        // two-pass read.
+        // The tone-map uses the content peak from the previous frame; this
+        // frame's max updates it after the loop. The one-frame lag avoids a
+        // second pass over the grid.
         float framePeak = 1f; // SDR floor — never normalise below 1.0
         float toneMapPeak = _contentPeak;
         double exposureEv = _exposureEv;
@@ -146,14 +132,10 @@ public sealed partial class FrameSampler
                     if (g > framePeak) framePeak = g;
                     if (b > framePeak) framePeak = b;
 
-                    // Per-pixel Hable tone-map in linear scRGB, then
-                    // sRGB OETF for the per-cell display value. The
-                    // sum that feeds the grid-wide average goes back
-                    // through the LUT so it stays in linear light
-                    // (symmetric with ReadGridBGRA8 — the bias
-                    // introduced by re-encoding then re-linearising
-                    // is sub-perceptual after Hable has already
-                    // compressed the highlights).
+                    // The sum re-linearises the tone-mapped sRGB cell so
+                    // the average stays in linear light, as on the SDR
+                    // path; the 8-bit round trip is negligible once Hable
+                    // has compressed the highlights.
                     Color c = ColorSpace.ScRgbToSrgb(r, g, b, toneMapPeak, exposureEv);
                     grid[row * _gridCols + col] = c;
                     sumRLin += ColorSpace.SrgbToLinear8Lut[c.R];
@@ -164,15 +146,10 @@ public sealed partial class FrameSampler
             }
         }
 
-        // Rolling content peak update. Attack is instant (peak rises
-        // with the first bright frame) ; release decays toward the
-        // current frame's max so a quick scene change brightens fast
-        // but doesn't crash when a dark frame slips in. Capped at the
-        // display's hard ceiling — a freak sun-glint pixel reading
-        // above peakWhite (rare but possible in scRGB) cannot crush
-        // the rest of the scene below it. The release retention covers
-        // the time since the previous processed frame, so the peak
-        // falls at the same speed whatever the capture rate.
+        // Instant attack, so a bright cut lands at once; the release decays
+        // toward this frame's max over the time since the previous processed
+        // frame, so the peak falls at the same speed whatever the capture
+        // rate and one dark frame does not crash it.
         if (framePeak > _contentPeak)
         {
             _contentPeak = framePeak;

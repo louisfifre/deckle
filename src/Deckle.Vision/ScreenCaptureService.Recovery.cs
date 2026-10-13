@@ -7,19 +7,16 @@ namespace Deckle.Vision;
 
 public sealed partial class ScreenCaptureService
 {
-    // Map a negotiated DXGI surface format to the WinRT pixel format the
-    // FrameSampler keys its tone-map path on. Only the two formats the
-    // duplication priority lists request are distinguished — FP16 scRGB
-    // (HDR) and BGRA8 (SDR / everything else). Shared by Start and the
-    // format-aware recreate so the derivation lives in one place.
+    // DXGI only ever returns one of the two requested formats, so anything
+    // that is not FP16 is BGRA8.
     private static DirectXPixelFormat MapDxgiFormat(uint dxgiFormat)
         => dxgiFormat == ScreenCaptureInterop.DXGI_FORMAT_R16G16B16A16_FLOAT
             ? DirectXPixelFormat.R16G16B16A16Float
             : DirectXPixelFormat.B8G8R8A8UIntNormalized;
 
-    // Reopen the duplication after it was invalidated. Expected Windows
-    // unavailability retries indefinitely; unexpected failures stop after five
-    // attempts so the workflow owner can surface one terminal error.
+    // Expected Windows unavailability retries without limit; unexpected
+    // failures stop after MaxUnexpectedRecreateAttempts and a dead device
+    // stops at once, so the workflow owner surfaces one terminal error.
     private bool TryRecreateDuplication(CancellationToken ct)
     {
         int attempt = 0;
@@ -30,17 +27,11 @@ public sealed partial class ScreenCaptureService
             attempt++;
             try
             {
-                // Re-detect the display's HDR state fresh on every attempt.
-                // The interruption that invalidated the duplication is often
-                // an HDR desktop toggle, which flips BOTH the negotiable
-                // pixel format (FP16 scRGB ↔ BGRA8) and the peak luminance.
-                // Reusing the Start-time snapshot would request a format
-                // priority list that no longer matches the desktop — the
-                // root of the silent HDR→SDR freeze : the duplication then
-                // delivers BGRA8 while the sampler, never told, keeps tone-
-                // mapping it as FP16. DetectHdrState builds a throwaway DXGI
-                // factory each call, which is required — a factory predating
-                // the mode change reports stale colour-space state.
+                // Re-detect HDR on every attempt: the interruption is often an
+                // HDR desktop toggle, which flips both the pixel format and
+                // the peak luminance. DetectHdrState needs its fresh DXGI
+                // factory: one created before the mode change reports a stale
+                // colour space.
                 var hdr = ScreenCaptureInterop.DetectHdrState(_hmon);
                 _isHdrSession  = hdr.IsHdr;
                 _peakLuminance = hdr.PeakLuminance;
@@ -56,13 +47,10 @@ public sealed partial class ScreenCaptureService
                     Height = (int)desc.ModeDesc.Height,
                 };
 
-                // Read back the negotiated format and compare against the
-                // surface the consumer's sampler was built against. Either a
-                // format flip (HDR↔SDR) or a resize invalidates the sampler's
-                // GPU textures, so we surface a single FormatChanged signal
-                // covering both — without it, TryRecreateDuplication used to
-                // recover the duplication but leave the pipeline assuming the
-                // stale format/size for the rest of the session.
+                // A format flip or a resize invalidates the sampler's GPU
+                // textures. Without FormatChanged the sampler keeps reading
+                // the new surface with the old layout and an HDR↔SDR toggle
+                // freezes the output silently.
                 uint oldDxgiFormat = _activeDxgiFormat;
                 uint newDxgiFormat = desc.ModeDesc.Format;
                 bool formatChanged = newDxgiFormat != oldDxgiFormat;
@@ -79,12 +67,6 @@ public sealed partial class ScreenCaptureService
                     _lastSize = newSize;
                 }
 
-                // Cross-cutting Resource sub-provider: re-acquire a new
-                // duplication after invalidation. The handle differs from the
-                // previous one (Marshal.Release was already called upstream on
-                // the old value; the matching ResourceReleased event was
-                // emitted in CaptureLoop's ACCESS_LOST / SECURE_DESKTOP branch
-                // or by the failed previous attempt finalizer).
                 bool resourceDetailOpen = OperationalLogAdmission.IsScopedDetailEnabled(
                     OperationalLogActivity.Ambient,
                     DeckleResourceSource.Log,
@@ -188,9 +170,8 @@ public sealed partial class ScreenCaptureService
                 try { Task.Delay(backoffMs, ct).Wait(ct); }
                 catch (OperationCanceledException)
                 {
-                    // Stop() cancelled while waiting for the next recreate
-                    // attempt. age_ms is relative to the session; there is no
-                    // dedicated anchor for TryRecreateDuplication.
+                    // age_ms is relative to the session: the recreate has no
+                    // anchor of its own.
                     long ageMs = _startTimestamp != 0
                         ? (Stopwatch.GetTimestamp() - _startTimestamp) * 1000 / Stopwatch.Frequency
                         : -1;

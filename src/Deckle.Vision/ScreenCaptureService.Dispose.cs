@@ -11,10 +11,8 @@ public sealed partial class ScreenCaptureService
     {
         if (_duplicationPtr != 0)
         {
-            // Cross-cutting Resource sub-provider: release duplication on
-            // Stop / Dispose. Age computed from the last acquire (Start or
-            // TryRecreateDuplication). Emitted before Release so the event is
-            // not lost if Release throws.
+            // Emitted before Release so the event is not lost if Release
+            // throws.
             bool resourceDetailOpen = _duplicationAcquiredTicks != 0
                 && OperationalLogAdmission.IsScopedDetailEnabled(
                     OperationalLogActivity.Ambient,
@@ -49,9 +47,8 @@ public sealed partial class ScreenCaptureService
         }
         if (_device is not null)
         {
-            // IDirect3DDevice implements IDisposable through IClosable in
-            // CsWinRT projection. Release here so the underlying D3D11
-            // device is freed promptly.
+            // The CsWinRT projection maps IClosable to IDisposable; disposing
+            // frees the D3D11 device now instead of at finalization.
             try { (_device as IDisposable)?.Dispose(); } catch { /* best effort */ }
             _device = null;
         }
