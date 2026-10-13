@@ -12,11 +12,12 @@ namespace Deckle.Transcription;
 // monotone (hence single-valued) by clamping X1, X2 to [0,1] ; the inversion is
 // Newton-Raphson with a bisection fallback, the same scheme WebKit's UnitBezier
 // uses for the CSS timing functions. A handful of iterations land within 1e-6,
-// so the whole Solve is a few microseconds — cheap enough to call per frame.
+// so Solve is cheap enough to call per frame.
 //
-// Used in two places, one model :
+// Used in two places, one model:
 //   • EnergySegmenter.RequiredHangoverFrames — the runtime decision delay decay.
-//   • HangoverCurveCanvas — the Playground plot of that same decay.
+//   • HangoverCurveCanvas — the plot of that same decay (Settings cut-curve
+//     editor and Playground).
 // Sharing this one type is why neither has to hand-mirror the curve math.
 internal readonly struct UnitBezier
 {

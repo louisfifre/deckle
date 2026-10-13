@@ -4,10 +4,8 @@ namespace Deckle.Transcription;
 
 // ── TranscriptionSettings ────────────────────────────────────────────────────
 //
-// Root POCO for the transcription module. Groups every section consumed by
-// the orchestrator (TranscriptionEngine) and by the active IAsrBackend. The
-// module owns its own JSON file under <UserDataRoot>/modules/transcription/
-// settings.json.
+// Root POCO for the transcription module, read by the orchestrator
+// (TranscriptionEngine) and by the active IAsrBackend.
 public sealed class TranscriptionSettings
 {
     // User override for the directory containing speech models (.bin files
@@ -23,17 +21,13 @@ public sealed class TranscriptionSettings
     public StreamingSettings       Streaming       { get; set; } = new();
 }
 
-// Which transcription pipeline runs a recording. Monolithic = the delivered
-// path (capture the whole take, one backend call doing its own internal
-// windowing). Streaming = the producer/consumer socle (energy segmenter cuts
-// utterances on the live stream, each transcribed as it arrives). Default
-// Monolithic so an upgrade changes nothing until the user opts in; the
-// monolithic path is slated for removal once streaming proves out.
+// Which pipeline runs a dictation. Monolithic captures the whole take, then one
+// backend call does its own internal windowing. Streaming has the energy
+// segmenter cut utterances on the live stream, each transcribed as it arrives.
 public enum PipelineStrategyKind { Monolithic, Streaming }
 
-// Settings for the streaming socle. Strategy selects the pipeline; Segmenter
-// carries the energy-segmenter parameters (consulted only when Streaming is
-// active). Auto-properties round-trip cleanly through JsonSettingsStore.
+// Strategy selects the dictation pipeline. Segmenter and SpeechTrim drive the
+// segmented session, which streaming dictation and file transcription share.
 public sealed class StreamingSettings
 {
     public PipelineStrategyKind    Strategy   { get; set; } = PipelineStrategyKind.Monolithic;
@@ -41,18 +35,16 @@ public sealed class StreamingSettings
     public SpeechTrimSettings      SpeechTrim { get; set; } = new();
 }
 
-// External Silero VAD pre-trim (Deckle.Vad) — the active VAD now that
-// the whisper-internal SpeechDetection VAD is unplugged. Streaming path only: it
-// cleans each big chunk the energy segmenter cut, keeping only the speech spans
+// External Silero VAD pre-trim (Deckle.Vad), applied in the segmented session.
+// It cleans each chunk the energy segmenter cut, keeping only the speech spans
 // (so a mid-utterance pause the energy threshold didn't split is removed) and
 // dropping an utterance with no speech at all (an energy false positive on
 // noise/silence) — the main guard against whisper hallucinating on near-silence.
-// Surfaced as the "Voice activity detection" toggle in the Whisper settings, with
-// the four detection parameters below it. The model (silero_vad.onnx) is provisioned
-// on demand; until it is present the trim is a silent no-op (the first take after
-// enabling triggers a one-time background download and runs untrimmed). Default on.
-// The four parameters default to the Silero reference values (SileroVadOptions) and
-// map straight onto a SileroVadOptions built per take.
+// The model (silero_vad.onnx) is provisioned on demand; until it is present the
+// trim is a silent no-op (the first take after enabling triggers a one-time
+// background download and runs untrimmed). The four parameters default to the
+// Silero reference values (SileroVadOptions) and map straight onto a
+// SileroVadOptions built per take.
 public sealed class SpeechTrimSettings
 {
     public bool Enabled { get; set; } = true;
@@ -74,14 +66,18 @@ public sealed class SpeechTrimSettings
     public int SpeechPadMs { get; set; } = 30;
 }
 
-// Bootstrap parameters for the active ASR engine. The first three (Model /
-// UseGpu / Language) are "heavy" settings — changing them requires reloading
-// the backend's model context.
+// Bootstrap parameters for the active ASR engine. Model and UseGpu are
+// load-time settings (the page asks for a restart when they change); Language
+// and the prompt apply on every call.
 public sealed class EngineSettings
 {
     public string Model { get; set; } = "ggml-base.bin";
     public bool UseGpu { get; set; } = true;
     public string Language { get; set; } = "fr";
+
+    // A style sample, not an instruction: Whisper is not instruction-tuned, so
+    // meta phrases leak into the output. Never put a raw-speech → clean-text
+    // example in it.
     public string InitialPrompt { get; set; } =
         "Bon. Je suis en train de coder une application Windows, je continue l'interface avec un contour animé qui tourne. " +
         "C'est plutôt propre, même si certaines parties restent fragiles. " +
@@ -100,6 +96,8 @@ public sealed class EngineSettings
 // mapping to the native struct.
 public sealed class ConfidenceSettings
 {
+    // whisper.cpp fails a decode when its token entropy falls below this value,
+    // so a higher threshold is stricter, not laxer.
     public double EntropyThreshold { get; set; } = 2.4;
     public double LogprobThreshold { get; set; } = -1.0;
     public double NoSpeechThreshold { get; set; } = 0.6;
@@ -117,16 +115,14 @@ public sealed class DecodingSettings
     public double Temperature { get; set; } = 0.0;
     public double TemperatureIncrement { get; set; } = 0.2;
 
-    // Beam search explores multiple hypotheses in parallel, picking the
-    // best sequence overall. Higher quality than greedy at the cost of
-    // latency. BeamSize only used when UseBeamSearch is true.
+    // BeamSize applies only when UseBeamSearch is true.
     public bool UseBeamSearch { get; set; } = true;
     public int BeamSize { get; set; } = 5;
 }
 
 
-// UseContext = inverse of native no_context (user-oriented vocabulary).
-// MaxTokens = -1 means "auto / unlimited".
+// UseContext = inverse of native no_context.
+// MaxTokens <= 0 means "auto": whisper.cpp keeps its own default.
 public sealed class ContextSettings
 {
     public bool UseContext { get; set; } = true;

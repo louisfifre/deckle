@@ -1,17 +1,8 @@
 namespace Deckle.Transcription;
 
-// Five length tiers applied to ASR output, indexed on word count. Hardcoded
-// here because the later Settings pass will decide whether these thresholds
-// deserve user editing; until then, the centralization point exists and
-// tier-stratified corpus analyses remain consistent.
-//
-// Bounds: floor included, ceiling excluded. Empty text falls into very-short.
-//
-//   very-short → 0   ≤ words < 30
-//   short      → 30  ≤ words < 200
-//   medium     → 200 ≤ words < 1000
-//   long       → 1000 ≤ words < 3000
-//   very-long  → 3000 ≤ words
+// Five length tiers applied to ASR output, indexed on word count. The single
+// definition keeps tier-stratified corpus analyses consistent. Empty text falls
+// into very-short.
 internal static class CorpusTier
 {
     public const int ShortLowerBound    = 30;

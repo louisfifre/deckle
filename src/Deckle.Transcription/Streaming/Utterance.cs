@@ -1,14 +1,14 @@
 namespace Deckle.Transcription;
 
 // One unit emitted by the EnergySegmenter: a speech span bounded by detected
-// silence (or by the safety ceiling), and the atomic audio span handed to the
-// ASR backend for ONE transcription call. See CONTEXT.md § Speech segmentation
-// for the term and its distinction from Whisper's output "segment".
+// silence or by the end of capture, handed to the ASR backend as ONE
+// transcription call. Distinct from Whisper's output "segment"
+// (TranscriptionSegment).
 //
 //   Samples  — mono 16 kHz float[-1, 1], the concatenation of the kept 50 ms
 //              frames (voiced span + the trailing margin), trailing silence
 //              beyond the margin already dropped.
-//   Index    — 0-based emission order within one recording, for ordering/logs.
+//   Index    — 0-based emission order within one recording.
 //   StartSec — onset of the utterance relative to the start of capture.
 //   EndSec   — end of the kept span (StartSec + kept duration).
 //   EndedOnSilence — true when the segmenter cut on a detected silence (a real

@@ -7,19 +7,13 @@ public sealed partial class DeckleWhispSource
 {
     // ── Transcription pre-processing DSP (Deckle.Audio) ─────────────────────
     //
-    // The DSP stage lives in Deckle.Audio but is invoked by the orchestrator
-    // just before the ASR backend, so — like AutoCalibrated, another
-    // audio-calibration concern owned by the orchestrator — its events are
-    // emitted on this provider, the orchestrator's own. Keeps the pipeline's
-    // observability under one provider and one filter.
+    // The DSP stage lives in Deckle.Audio but the orchestrator invokes it just
+    // before the ASR backend, so its events go on the orchestrator's provider:
+    // the pipeline's observability stays under one provider and one filter.
     //
-    // Two events. TranscriptionPreprocessed is the per-recording (per-utterance
-    // in streaming) transform summary — a staged transformation, Pipeline keyword,
-    // same family as the VAD trim. PreprocessedTelemetryRecorded is the distribution
-    // rollup of the processed signal — the post-DSP mirror of DeckleAudioSource's raw
-    // MicrophoneTelemetryRecorded, on Heartbeat so the two distributions sit under
-    // the same filter and read before/after term for term. It lives on this provider
-    // because the DSP is the orchestrator's concern, not the capture module's.
+    // PreprocessedTelemetryRecorded is the post-DSP mirror of DeckleAudioSource's
+    // raw MicrophoneTelemetryRecorded, on Heartbeat like it, so the two
+    // distributions read before/after term for term.
 
     [Event(EvtTranscriptionPreprocessed,
            Level = EventLevel.Verbose,

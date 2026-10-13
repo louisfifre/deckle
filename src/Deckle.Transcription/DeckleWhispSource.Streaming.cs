@@ -49,10 +49,8 @@ public sealed partial class DeckleWhispSource
             WriteEvent(EvtUtteranceSkippedDetail, index, ex_type, ex_message);
     }
 
-    // Producer side: one event per utterance the segmenter cuts off the live
-    // stream. hangover_used_ms is the silence the state machine actually waited
-    // before deciding the utterance had ended — when it shrinks below the
-    // configured max, the dynamic ramp is in action.
+    // hangover_used_ms is the silence the segmenter actually waited before
+    // closing the utterance; below the configured max, the dynamic ramp is acting.
     [Event(EvtSegmenterUtteranceEmitted,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Pipeline,
@@ -65,10 +63,7 @@ public sealed partial class DeckleWhispSource
             WriteEvent(EvtSegmenterUtteranceEmitted, index, voiced_frames, kept_frames, start_sec, end_sec, hangover_used_ms);
     }
 
-    // 1 Hz recap of the streaming socle during capture. Reads the segmenter's
-    // live state, the consumer-side backlog, and the current capture RMS at one
-    // point in time, so the log shows the producer/consumer balance, the dynamic
-    // hangover in action, and the live mic level without spamming per-frame.
+    // Once per second during streaming capture, instead of one event per frame.
     [Event(EvtStreamingHeartbeat,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Pipeline,
@@ -81,10 +76,6 @@ public sealed partial class DeckleWhispSource
             WriteEvent(EvtStreamingHeartbeat, state, rms_dbfs, utterance_ms, hangover_required_ms, backlog, emitted, recording_sec);
     }
 
-    // Milestone: human-readable jalon at the start of a streaming take, paired
-    // with TranscribeStarted on the monolithic path. The LogWindow shows this
-    // line; the next SegmenterSettingsSnapshot details which parameters the
-    // socle is running with.
     [Event(EvtStreamingPipelineStarted,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Pipeline,
@@ -94,9 +85,9 @@ public sealed partial class DeckleWhispSource
         if (IsEnabled()) WriteEvent(EvtStreamingPipelineStarted);
     }
 
-    // Verbose snapshot of the effective segmenter parameters at the start of a
-    // take, so a log session is reproducible regardless of whether the values
-    // come from the hard-coded defaults or a settings.json override.
+    // Logs the effective segmenter parameters at the start of each segmented
+    // session, so a log is reproducible whether the values come from the
+    // defaults or a settings.json override.
     [Event(EvtSegmenterSettingsSnapshot,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Pipeline,
@@ -132,10 +123,8 @@ public sealed partial class DeckleWhispSource
                 min_utterance_ms);
     }
 
-    // Producer side: emitted when the segmenter discards a voiced span shorter
-    // than MinUtteranceMs (a noise blip). Helps diagnose a threshold that
-    // catches the wrong things — a flurry of blips says the threshold is too
-    // permissive for the current room.
+    // A voiced span shorter than MinUtteranceMs, discarded as a noise blip. A
+    // flurry of blips says the threshold is too permissive for the room.
     [Event(EvtSegmenterBlipDropped,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Pipeline,
@@ -148,9 +137,8 @@ public sealed partial class DeckleWhispSource
             WriteEvent(EvtSegmenterBlipDropped, voiced_frames, voiced_ms);
     }
 
-    // Consumer side: one event per utterance transcribed. backlog_after is the
-    // remaining channel depth right after this utterance was dequeued — drops
-    // toward 0 mean the consumer has caught up with the producer.
+    // backlog_after is the channel depth right after this utterance was
+    // dequeued; near 0 means the consumer has caught up with the producer.
     [Event(EvtConsumerUtterance,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Pipeline,

@@ -43,8 +43,6 @@ public sealed partial class DeckleWhispSource
         if (IsEnabled()) WriteEvent(EvtClipboardOpen, ok);
     }
 
-    // In-place clean (no params, no placeholders): the Win32 API name was
-    // dropped for a human sentence.
     [Event(EvtClipboardOpenFailed,
            Level = EventLevel.Error,
            Keywords = (EventKeywords)Keywords.Push,
@@ -54,8 +52,6 @@ public sealed partial class DeckleWhispSource
         if (IsEnabled()) WriteEvent(EvtClipboardOpenFailed);
     }
 
-    // Constant-only detail dropped: the method takes no args (handle was the
-    // compile-time constant 0). No Verbose mirror.
     [Event(EvtClipboardSetDataFailed,
            Level = EventLevel.Error,
            Keywords = (EventKeywords)Keywords.Push,
@@ -65,8 +61,6 @@ public sealed partial class DeckleWhispSource
         if (IsEnabled()) WriteEvent(EvtClipboardSetDataFailed);
     }
 
-    // Constant-only detail dropped: the method takes no args (reason was the
-    // compile-time constant no_unicode_data). No Verbose mirror.
     [Event(EvtClipboardVerifyMissing,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Push,
@@ -135,8 +129,6 @@ public sealed partial class DeckleWhispSource
         if (IsEnabled()) WriteEvent(EvtPasteForeground, foreground_descriptor);
     }
 
-    // In-place clean (entirely human guidance, no params, no placeholders):
-    // only the "skipped:" implementation prefix was dropped.
     [Event(EvtPasteSkippedNoForeground,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Push,
@@ -146,9 +138,6 @@ public sealed partial class DeckleWhispSource
         if (IsEnabled()) WriteEvent(EvtPasteSkippedNoForeground);
     }
 
-    // In-place clean (entirely human guidance, no params, no placeholders):
-    // only the "skipped:" implementation prefix was dropped. "Deckle" is kept —
-    // it is the app name addressed to the user, not the EventSource tag.
     [Event(EvtPasteSkippedSelfTarget,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Push,
@@ -167,8 +156,6 @@ public sealed partial class DeckleWhispSource
         if (IsEnabled()) WriteEvent(EvtPasteUiaDiag, uia_diag);
     }
 
-    // In-place clean (entirely human guidance, no params, no placeholders):
-    // only the "skipped:" implementation prefix was dropped.
     [Event(EvtPasteSkippedNotTextField,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Push,
@@ -178,8 +165,6 @@ public sealed partial class DeckleWhispSource
         if (IsEnabled()) WriteEvent(EvtPasteSkippedNotTextField);
     }
 
-    // User-facing guidance kept as the milestone; the injected/total counts
-    // move to the Verbose mirror.
     [Event(EvtPasteSendInputPartial,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Push,

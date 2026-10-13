@@ -2,12 +2,6 @@ using Xunit;
 
 namespace Deckle.Transcription.Whisper.Tests;
 
-// RepetitionDetector is internal sealed in Deckle.Transcription.Whisper; the
-// test project reaches it through InternalsVisibleTo declared in that module's
-// csproj. Pure and deterministic: feed a sequence of segment texts and assert
-// when the detector asks whisper to abort and with which period. We test the
-// behaviour — does it abort, on which segment, as which loop shape — never the
-// internal counters, so the tests survive a refactor of the matching.
 [Trait("Category", "unit")]
 public class RepetitionDetectorTests
 {

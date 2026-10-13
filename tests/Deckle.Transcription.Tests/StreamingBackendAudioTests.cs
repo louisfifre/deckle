@@ -5,11 +5,8 @@ using Xunit;
 
 namespace Deckle.Transcription.Tests;
 
-// BackendAudio reconstruction in the normalized corpus contract: when the opt-in
-// DSP runs, the per-utterance processed buffers are concatenated into the exact
-// signal the backend received. TranscriptionEngine.ConcatSamples is the pure core
-// of that reconstruction — these pin the ordering and length invariants the corpus
-// record depends on, without standing up the threaded pipeline around it.
+// ConcatSamples rebuilds the corpus BackendAudio: the per-utterance processed
+// buffers, concatenated into the exact signal the backend received.
 [Trait("Category", "unit")]
 public class StreamingBackendAudioTests
 {

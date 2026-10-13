@@ -34,8 +34,8 @@ public sealed partial class TranscriptionEngine
         if (!string.IsNullOrWhiteSpace(result.Text))
         {
             finalText = result.Text;
-            // The raw transcript is already safe on the clipboard. A failed
-            // replacement therefore degrades to that raw copy without noise.
+            // The raw transcript is already on the clipboard, so a failed
+            // replacement leaves that raw copy in place.
             CopyToClipboard(finalText);
         }
 

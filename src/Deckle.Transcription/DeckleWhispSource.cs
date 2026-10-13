@@ -4,32 +4,19 @@ using Deckle.Diagnostics;
 namespace Deckle.Transcription;
 
 // Whisp module provider. Covers the transcription engine (TranscriptionEngine),
-// the native Whisper model lifecycle (lazy load, idle unload), boot warmup,
-// transcription itself (params, prompt, segments, completion), clipboard,
+// the native Whisper model lifecycle (lazy load, idle unload), the cold-start
+// prime, transcription itself (params, prompt, segments, completion), clipboard,
 // paste, whisper.cpp log redirection, and structured end-of-pipeline heartbeats
 // (LatencyRecorded, CorpusAsrRecorded, CorpusRewriteRecorded). Module settings
 // persistence goes through the four transitional Settings* events (documented
 // exception: see DeckleAudioSource).
 //
-// Design choices: notable exceptions:
+// Transcript text never enters an operational event, so never the LogWindow or
+// app.jsonl. It travels only in the Dataset-tagged corpus events, which those
+// sinks reject and which the corpus consent gates.
 //
-//   1. The old narrative lines (`_log.Narrative`) are abandoned. EventLevel has
-//      no "Narrative" level; these lines were prose reformulations that carried
-//      no new information beyond the Info milestones and structured verbose
-//      events preceding them.
-//
-//   2. LatencyRecorded and CorpusRecorded are canonical JSONL events (filtered
-//      by TelemetryListenerBootstrap). The three human [DONE] timings /
-//      llm_metrics / outputs lines are still emitted in parallel under
-//      PipelineTimings, PipelineLlmMetrics, and PipelineOutputs: this is the
-//      human reading path on the LogWindow side. JsonlSink latency.jsonl
-//      only picks up LatencyRecorded (24 flattened fields), not the three human
-//      lines.
-//
-//   3. UserFeedback is emitted through the canonical
-//      UserFeedbackEmitted(severity, title, body, role) channel: severity
-//      0/1/2 = Info/Warning/Error, role 0/1 = Replacement/Overlay. The mapping
-//      lives on the HudFeedbackSink side.
+// PipelineTimings, PipelineLlmMetrics and PipelineOutputs repeat LatencyRecorded
+// for the LogWindow reader; latency.jsonl takes only LatencyRecorded.
 [EventSource(Name = "Deckle-Whisp")]
 public sealed partial class DeckleWhispSource : DeckleEventSource
 {
@@ -48,14 +35,9 @@ public sealed partial class DeckleWhispSource : DeckleEventSource
     public const int EvtWarmupClipSampleMismatch         = 3;
     public const int EvtWarmupClipLoadFailed             = 4;
     public const int EvtWarmupStart                      = 5;
-    // 6–9 — EvtWarmupCancelledBeforeModel / AbortedModelLoad /
-    // CancelledBeforeTranscribe / CancelledDuringTranscribe removed with the
-    // move from boot warmup to on-demand prime (synchronous on the worker,
-    // without distinct cancellation phases). IDs burned, never reused.
+    // 6–9: retired IDs, never reused.
     public const int EvtWarmupComplete                   = 10;
-    // 11–16 — EvtWarmupCompleteDetail / Failed / FlagModelKO / FlagOllamaKO /
-    // FlagOllamaRecovered / FlagMicKO removed with the same move (no more
-    // warmup flags consumed on first hotkey). IDs burned, never reused.
+    // 11–16: retired IDs, never reused.
     public const int EvtModelLoading                     = 17;
     public const int EvtModelLoadStart                   = 18;
     public const int EvtModelLoadAborted                 = 19;
@@ -73,8 +55,7 @@ public sealed partial class DeckleWhispSource : DeckleEventSource
     public const int EvtWhisperLogWarning                = 31;
     public const int EvtWhisperLogError                  = 32;
     public const int EvtWhisperLogSetUnavailable         = 33;
-    // 34 — was EvtVadParsed (whisper-internal VAD log parser, removed with the
-    // unplug of whisper's built-in VAD). ID burned, never reused.
+    // 34: retired ID, never reused.
     public const int EvtHotkeyToggleIgnored              = 35;
     public const int EvtHotkeyStartingCASLost            = 36;
     public const int EvtRecordingProbeFailed             = 37;
@@ -119,8 +100,7 @@ public sealed partial class DeckleWhispSource : DeckleEventSource
     public const int EvtPipelineLlmMetrics               = 74;
     public const int EvtPipelineOutputs                  = 75;
     public const int EvtLatencyRecorded                  = 76;
-    // 77: EvtCorpusRecorded removed in favor of CorpusAsr/RewriteRecorded
-    // under the normalized corpus contract. The ID is burned, never reused.
+    // 77: retired ID, never reused.
     public const int EvtUserFeedbackEmitted              = 78;
     public const int EvtManualProfileNotFound            = 79;
     public const int EvtDisposeWorkerJoinTimeout         = 80;
@@ -160,17 +140,12 @@ public sealed partial class DeckleWhispSource : DeckleEventSource
     public const int EvtStreamingPipelineStarted         = 114;
     public const int EvtSegmenterSettingsSnapshot        = 115;
     public const int EvtSegmenterBlipDropped             = 116;
-    // 117–124 — the external Silero VAD events (SpeechTrimmed, UtteranceDroppedNoSpeech,
-    // SpeechTrimVadLoaded/Unavailable/DownloadStart/DownloadComplete, SpeechTrimNotReady,
-    // SpeechTrimSettingsSnapshot) moved to the Deckle-Vad provider when the VAD became
-    // its own module. IDs burned, never reused.
+    // 117–124: retired IDs, never reused.
 
-    // ── Verbose mirrors (Verbose/Info separation) ───────────────────────
-    // Milestones keep their original id; the Verbose mirrors added for the
-    // Verbose/Info separation take fresh ids 125-152 appended after the
-    // sequence (124 is the last burned id). Each mirrors a milestone whose
-    // IDs / k=v detail / native log line moved out of the Capital message.
-    // IDs are public in the ETW manifest; never reuse an id.
+    // ── Verbose mirrors ─────────────────────────────────────────────────
+    // A *Detail event carries the k=v detail of the milestone it mirrors, so
+    // the milestone message stays a plain sentence. IDs are public in the ETW
+    // manifest; never reuse an id.
     public const int EvtWarmupClipHeaderInvalidDetail    = 125;
     public const int EvtWarmupClipSampleMismatchDetail   = 126;
     public const int EvtWarmupClipLoadFailedDetail       = 127;
@@ -204,7 +179,6 @@ public sealed partial class DeckleWhispSource : DeckleEventSource
     // 154 — retired: its payload contained transcript text.
     public const int EvtTranscribeHallucinationFilteredDetail = 154;
     public const int EvtPrimeOverlap                     = 155;
-    // File transcription (tray → decode → monolithic backend → .txt on disk).
     public const int EvtFileTranscriptionStarted         = 156;
     public const int EvtFileTranscriptionStartedDetail   = 157;
     public const int EvtFileTranscriptionSaved           = 158;
@@ -214,12 +188,10 @@ public sealed partial class DeckleWhispSource : DeckleEventSource
     public const int EvtFileDecodeFailedDetail           = 162;
     public const int EvtFileTranscriptionWriteFailed     = 163;
     public const int EvtFileTranscriptionWriteFailedDetail = 164;
-    // Installed-model fallback (configured model file absent on disk).
     public const int EvtModelFallback                    = 165;
     public const int EvtModelFallbackDetail              = 166;
     public const int EvtTranscriptionCorrelation         = 167;
 
-    // Content-free replacements for retired operational transcript events.
     public const int EvtTranscribePromptConfigured       = 168;
     public const int EvtTranscribeRepetitionLoopMetrics  = 169;
     public const int EvtSegmentRecognized                = 170;
@@ -239,9 +211,8 @@ public sealed partial class DeckleWhispSource : DeckleEventSource
     public const int EvtFileTranscriptionBatchCompletedDetail = 184;
 
     // ── Per-provider keywords ───────────────────────────────────────────
-    // The global vocabulary (Deckle.Diagnostics.Keywords) reserves bits
-    // 0x400+ for provider-local use. This bit was used by the retired
-    // transcript-bearing operational event. It stays burned because ETW
-    // keyword contracts are never recycled.
+    // Bits 0x400+ are provider-local (Deckle.Diagnostics.Keywords). No live
+    // event uses this bit; it stays burned because ETW keyword contracts are
+    // never recycled.
     public const EventKeywords KwTranscript = (EventKeywords)0x400;
 }

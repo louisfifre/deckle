@@ -59,7 +59,6 @@ public sealed partial class WhisperBackend
         string msg = Marshal.PtrToStringUTF8(textPtr)?.TrimEnd('\r', '\n', ' ') ?? "";
         if (string.IsNullOrEmpty(msg)) return;
 
-        // ── Backend detection (first hit wins, sticks) ───────────
         if (_detectedBackend == "CPU")
         {
             if (msg.StartsWith("ggml_vulkan:", StringComparison.Ordinal))
@@ -72,15 +71,8 @@ public sealed partial class WhisperBackend
                 _detectedBackend = "Metal";
         }
 
-        // ── Init-phase compaction ────────────────────────────────
-        // Each phase prefix accumulates its own values; the moment a
-        // different prefix is seen, the accumulated phase is flushed
-        // as a single event before the new phase starts. Lines that
-        // are not from a tracked phase flush any pending phase first,
-        // then fall through to the level switch below.
         if (_logCompactor.TryAccumulatePhaseLine(msg)) return;
 
-        // ── "no GPU found" downgrade for the second backend init ─
         // The VAD context creation triggers a second whisper_backend
         // _init_gpu that always reports "no GPU found" (whisper.cpp
         // hardcodes use_gpu=false in whisper_vad_init_context). Benign
@@ -94,6 +86,8 @@ public sealed partial class WhisperBackend
         }
 
         // ggml levels: 0=None, 1=Debug, 2=Info, 3=Warn, 4=Error, 5=Cont.
+        // whisper.cpp sends its routine lines at Info, so only Warn and Error
+        // rise above Verbose.
         switch (level)
         {
             case 4:

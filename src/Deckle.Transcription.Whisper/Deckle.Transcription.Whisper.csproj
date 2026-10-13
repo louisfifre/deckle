@@ -1,25 +1,14 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <RootNamespace>Deckle.Transcription.Whisper</RootNamespace>
-    <!-- WhisperStructs carries C interop structs; P/Invoke does not use
-         fixed/unsafe directly, but we align with the parent to stay free to
-         introduce native spans/pointers if the need emerges. -->
   </PropertyGroup>
 
   <ItemGroup>
-    <!-- RepetitionDetector is internal; the test project reaches it through the
-         SDK InternalsVisibleTo item (MSBuild→Roslyn), same pattern as the parent
-         Deckle.Transcription / Deckle.Hud. -->
     <InternalsVisibleTo Include="Deckle.Transcription.Whisper.Tests" />
   </ItemGroup>
 
   <ItemGroup>
-    <!-- AppPaths.NativeDirectory for the DllImport resolver,
-         AppPaths.ModelsDirectory for the Setup catalog. -->
     <ProjectReference Include="..\Deckle.Core\Deckle.Core.csproj" />
-    <!-- For IAsrBackend, TranscriptionResult, TranscriptionSegment,
-         TranscriptionSettings, and DeckleWhispSource (transcription
-         EventSource provider, shared parent/child). -->
     <ProjectReference Include="..\Deckle.Transcription\Deckle.Transcription.csproj" />
   </ItemGroup>
 </Project>

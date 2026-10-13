@@ -4,8 +4,6 @@ namespace Deckle.Transcription;
 
 public partial class WhisperViewModel
 {
-    // ── Paths ────────────────────────────────────────────────────────────────
-
     [ObservableProperty]
     public partial string ModelsDirectory { get; set; }
 
@@ -14,8 +12,6 @@ public partial class WhisperViewModel
         if (_isSyncing) return;
         PushToSettings();
     }
-
-    // ── Transcription ────────────────────────────────────────────────────────
 
     [ObservableProperty]
     public partial string Model { get; set; }
@@ -53,8 +49,6 @@ public partial class WhisperViewModel
         PushToSettings();
     }
 
-    // ── Decoding ─────────────────────────────────────────────────────────────
-
     [ObservableProperty]
     public partial bool UseBeamSearch { get; set; }
 
@@ -91,8 +85,6 @@ public partial class WhisperViewModel
         PushToSettings();
     }
 
-    // ── Confidence ───────────────────────────────────────────────────────────
-
     [ObservableProperty]
     public partial double EntropyThreshold { get; set; }
 
@@ -120,8 +112,6 @@ public partial class WhisperViewModel
         PushToSettings();
     }
 
-    // ── Output Filters ───────────────────────────────────────────────────────
-
     [ObservableProperty]
     public partial bool SuppressNonSpeechTokens { get; set; }
 
@@ -148,8 +138,6 @@ public partial class WhisperViewModel
         if (_isSyncing) return;
         PushToSettings();
     }
-
-    // ── Context ──────────────────────────────────────────────────────────────
 
     [ObservableProperty]
     public partial bool UseContext { get; set; }

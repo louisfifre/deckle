@@ -4,26 +4,20 @@ using System.Linq;
 
 namespace Deckle.Transcription.Whisper;
 
-// ── KnownHallucinations ──────────────────────────────────────────────────────
-//
 // Whisper was trained on a large body of TV/film subtitles; on silence, music,
 // or noise without clear speech it does not stay silent — it "completes" with
 // the most frequent credit lines of that corpus. The French signature is
 // "Sous-titrage Société Radio-Canada"; others recur across languages (the
-// Amara.org / SousTitreur.com credits). These land at HIGH confidence
-// (observed p̄ ≈ 0.9, no_speech ≈ 0%), so logprob_thold / no_speech_thold never
-// trip and the RepetitionDetector — which only catches loops (A A A, A B A B) —
-// does not see a single isolated emission. A phrase catalog is the only thing
-// that catches them. Observed 2026-06 on this machine: 24 isolated emissions of
-// the Radio-Canada line.
+// Amara.org / SousTitreur.com credits). These land at HIGH confidence, so
+// logprob_thold / no_speech_thold never trip, and the RepetitionDetector —
+// which only catches loops (A A A, A B A B) — does not see a single isolated
+// emission. A phrase catalog is the only thing that catches them.
 //
 // The match is on the WHOLE utterance, never a substring. The artifact always
 // arrives as an utterance to itself (a noise/music chunk decoded alone), while a
 // real dictation that happens to quote the phrase carries surrounding context —
 // so whole-utterance matching kills the artifact and leaves the citation
-// intact. Confirmed against the logged corpus: the real dictations that
-// mentioned "sous-titrage Radio-Canada" were all longer utterances, the
-// artifact was always the bare phrase.
+// intact.
 //
 // Normalisation before matching: edge whitespace and edge punctuation/symbols
 // stripped (whisper ends the line with '.' or '!' some emissions, not others;
@@ -31,9 +25,7 @@ namespace Deckle.Transcription.Whisper;
 // comparer. Interior punctuation is kept (the apostrophe in "d'Amara").
 //
 // Whisper-specific by construction — the phrases ARE its training corpus — so it
-// lives here beside RepetitionDetector, not in the backend-agnostic
-// orchestrator. Voxtral and future backends hallucinate differently and will
-// bring their own catalogue if needed.
+// lives in this module, not in the backend-agnostic orchestrator.
 internal static class KnownHallucinations
 {
     // Curated catalogue of pure artifact signatures: subtitle/credit lines no
@@ -54,15 +46,9 @@ internal static class KnownHallucinations
         .Select(Normalize)
         .ToHashSet(StringComparer.InvariantCultureIgnoreCase);
 
-    // True when the whole utterance is a known hallucination. The caller passes
-    // the assembled, trimmed utterance text; matching is whole-string only — a
-    // hit means the entire utterance is the artifact and nothing else.
     public static bool Matches(string utteranceText)
         => !string.IsNullOrEmpty(utteranceText) && Catalog.Contains(Normalize(utteranceText));
 
-    // Strip edge whitespace, then edge punctuation/symbols, keeping the interior
-    // intact. Applied identically to the catalogue entries and the candidate, so
-    // the two are compared on equal footing.
     private static string Normalize(string text)
     {
         int start = 0, end = text.Length;

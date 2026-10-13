@@ -2,24 +2,17 @@ using Deckle.Presets;
 
 namespace Deckle.Transcription;
 
-// The store the cut preset family reads and writes through (IPresetStore). It
-// joins two places that already exist, and keeps no copy of its own:
+// The cut preset family's store. It keeps no copy of its own: the eight values
+// go through the view model's setters, so a preset write persists like a hand
+// edit; the selection and the custom values live on the persisted
+// EnergySegmenterSettings. Those two save on every write: picking a preset
+// whose values are already live runs no setter, so the selection would never
+// reach the disk.
 //
-//   Values       the eight hangover values live in the view model's setters, so a
-//                preset write goes through WriteCutValues and persists exactly
-//                like a hand edit (each setter pushes to the settings file).
-//   Selection    the stored selection id and the user's own values live on the
-//   CustomValues persisted EnergySegmenterSettings (CutPreset, CutCustomValues).
-//                They are saved on every write: picking a preset can change no
-//                value (it was already the live one), so no setter would run and
-//                the selection would never reach the disk.
-//
-// The segmenter and the save are handed in as delegates, not read from the
-// settings service here, for one reason: the view model builds a first family
-// before Load(), when the persisted values are not yet in its setters. That
-// family is bound to a throwaway segmenter, so the family's one-time derivation
-// of a missing selection (which compares the live values to the presets) can not
-// land in the real file from stale seeds. Load() then builds the real family.
+// The segmenter and the save are delegates because the view model builds a
+// first family before Load(), bound to a throwaway segmenter, so the family's
+// one-time derivation of a missing selection cannot land in the real file from
+// stale seeds.
 internal sealed class CutPresetStore : IPresetStore<CutCurveValues>
 {
     private readonly WhisperViewModel _viewModel;

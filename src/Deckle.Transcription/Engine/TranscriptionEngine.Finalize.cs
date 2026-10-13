@@ -16,11 +16,9 @@ public sealed partial class TranscriptionEngine
 
     // ── Microphone error localization ──────────────────────────────────────────
     //
-    // MicErrorKind → (title, body) for UI. Messages formulated for the end user
-    // — no Win32 jargon. Raw MMSYSERR code is included verbatim in the
-    // Unavailable_Body_Format path so users can paste it back when reporting.
-    // Capture itself stays free of any Loc.Get dependency; the engine owns
-    // the localization step.
+    // Capture stays free of any Loc.Get dependency; the engine localizes. The
+    // raw MMSYSERR code goes verbatim into the Unavailable body so users can
+    // quote it when reporting.
     private static (string Title, string Body) LocalizeMicError(MicErrorKind kind, uint err) => kind switch
     {
         MicErrorKind.NotDetected => (Loc.Get("MicError_NotDetected_Title"), Loc.Get("MicError_NotDetected_Body")),
@@ -31,17 +29,10 @@ public sealed partial class TranscriptionEngine
 
     // ── Shared finalize ──────────────────────────────────────────────────────
     //
-    // Strategy-agnostic tail of a recording. From the assembled raw text plus
-    // the captured audio it executes an explicit delivery command, then emits
+    // Producer-agnostic tail: executes the delivery command, then emits
     // telemetry and optionally raises Finished. Dictation writes the clipboard,
     // may rewrite, and may paste; imported audio writes an adjacent text file.
-    // Both production pipelines converge here. Synchronous: every delivery step
-    // is blocking.
-    //
-    // The producing strategy owns capture, the backend call(s), and the state
-    // transitions up to Transcribing; here we only consume the result it hands
-    // back. _transcriptionId is generated once per recording by WorkerRun before
-    // the strategy runs under the corpus join contract.
+    // Synchronous: every delivery step blocks.
     private TranscriptionOutcome FinalizeTranscription(
         PipelineProduction production,
         TranscriptionDelivery delivery,
@@ -74,6 +65,8 @@ public sealed partial class TranscriptionEngine
 
         // The raw copy is the safety net for every later stage. A failed rewrite
         // copy therefore leaves useful text behind, and paste never sees stale data.
+        // Every write lands in the Windows clipboard history, so a take writes the
+        // raw text once and at most one rewrite, never per utterance.
         var clipboardStopwatch = System.Diagnostics.Stopwatch.StartNew();
         bool rawCopySucceeded = CopyToClipboard(rawText);
         clipboardStopwatch.Stop();
@@ -133,12 +126,9 @@ public sealed partial class TranscriptionEngine
 
     // ── File-transcription delivery ─────────────────────────────────────────────
     //
-    // Writes the transcript to a .txt named after the source audio file, beside
-    // that source. Called only
-    // on a file run as its primary delivery command. A write failure returns None:
-    // no fallback output was delivered. The catch covers filesystem exceptions
-    // plus the invalid-path family. Anything
-    // else is a genuine bug and propagates to the worker's crash handler.
+    // A write failure returns None: no fallback output was delivered. The catch
+    // covers filesystem exceptions plus the invalid-path family; anything else
+    // is a genuine bug and propagates.
     private TranscriptionOutcome WriteFileTranscript(string fullText, string audioPath)
     {
         try
@@ -162,20 +152,14 @@ public sealed partial class TranscriptionEngine
         }
     }
 
-    // ── Presse-papier ─────────────────────────────────────────────────────────
+    // ── Clipboard ─────────────────────────────────────────────────────────────
 
-    // Returns true on a successful copy + verified read-back. False on any of
-    // the three fatal branches (GlobalAlloc, OpenClipboard, SetClipboardData) —
-    // each surfaces a Critical UserFeedback. Verify-length mismatch only emits
-    // a Warning since the bytes reached the clipboard; the length check is a
-    // safety net against clipboard-format mangling by a third-party watcher.
+    // False on any of the three fatal branches (GlobalAlloc, OpenClipboard,
+    // SetClipboardData), each with an error UserFeedback. A failed read-back
+    // only warns, since the bytes reached the clipboard; the length check is a
+    // safety net against format mangling by a third-party clipboard watcher.
     private bool CopyToClipboard(string text)
     {
-        // The Win32 write + read-back verification now lives in
-        // Deckle.Core.Win32Clipboard, shared with the LogWindow Copy
-        // command. This method keeps the engine's observability surface: it
-        // maps the structured result back onto the same EventSource events and
-        // UserFeedback the inline implementation emitted, in the same order.
         ClipboardWriteResult r = _clipboard.TryWriteText(text);
 
         DeckleWhispSource.Log.ClipboardGlobalAlloc(r.ByteCount, r.Handle);
@@ -202,7 +186,6 @@ public sealed partial class TranscriptionEngine
             return false;
         }
 
-        // The clipboard opened successfully for every remaining branch.
         DeckleWhispSource.Log.ClipboardOpen(true);
 
         if (r.Status == ClipboardWriteStatus.SetDataFailed)
@@ -215,8 +198,8 @@ public sealed partial class TranscriptionEngine
             return false;
         }
 
-        // Bytes reached the OS clipboard. The two Verify states are advisory
-        // Warnings — the read-back flagged a discrepancy but the copy landed.
+        // The two Verify states are advisory: the read-back flagged a
+        // discrepancy, but the copy landed.
         if (r.Status == ClipboardWriteStatus.VerifyMissing)
         {
             DeckleWhispSource.Log.ClipboardVerifyMissing();
@@ -240,15 +223,14 @@ public sealed partial class TranscriptionEngine
         return true;
     }
 
-    // Sends Ctrl+V to whatever window currently has the foreground at Stop
-    // time — but only when UI Automation confirms the focused element is a
-    // text-accepting control (Edit or Document). No Start-time capture, no
-    // bring-to-front, no focus comparison: the user had all the time of the
-    // recording + transcription to place their cursor where they want.
+    // Sends Ctrl+V to whatever window has the foreground at Stop time, but only
+    // when UI Automation confirms the focused element is a text-accepting
+    // control (Edit or Document). No Start-time capture, no bring-to-front, no
+    // focus comparison: the user had the whole recording and transcription to
+    // place their cursor.
     //
-    // Doctrine: clipboard is the safe default. Paste only when we are confident
-    // the target expects text. When in doubt — UIA refuses to answer, unknown
-    // control type, foreground is Deckle itself — the text stays on the
+    // The clipboard is the safe default. When in doubt (UIA refuses to answer,
+    // unknown control type, foreground is Deckle itself) the text stays on the
     // clipboard and the HUD shows the Ctrl+V reminder.
     private bool PasteFromClipboard()
     {
@@ -277,9 +259,9 @@ public sealed partial class TranscriptionEngine
             return false;
         }
 
-        // UI Automation probe on the currently focused element. If the probe
-        // is anything other than "yes, it's an Edit or Document", we bail out
-        // to the clipboard-only path. No speculative paste.
+        // UI Automation, not window class names: Chromium, Electron and Qt draw
+        // their text fields inside one window, so a class name cannot see them.
+        // Anything other than "Edit or Document" falls back to clipboard-only.
         bool editable = UIAutomation.IsFocusedElementTextEditable(out string uiaDiag);
         DeckleWhispSource.Log.PasteUiaDiag(uiaDiag);
         if (!editable)

@@ -25,8 +25,6 @@ public sealed partial class WhisperBackend
         return Task.FromResult(TranscribeSync(pcmSamples, segmentSink, ct, context));
     }
 
-    // ── Transcribe internals ─────────────────────────────────────────────────
-
     // whisper.cpp new_segment_callback signature:
     //   void fn(whisper_context* ctx, whisper_state* state, int n_new, void* user_data)
     [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
@@ -47,10 +45,8 @@ public sealed partial class WhisperBackend
     private volatile bool _abortRequested;
     private int _tokenBeg;
     private Stopwatch? _transcribeSw;
-    // Where the current call's audio sits on the whole recording's timeline,
-    // from TranscriptionContext.TimelineOffsetSec. Added to the per-segment
-    // t0/t1 we log so a streaming segment reads its true position in the take.
-    // 0 for a standalone (monolithic) call.
+    // Added to the logged segment t0/t1 so a streaming segment reads its true
+    // position in the take; 0 for a standalone call.
     private double _timelineOffsetSec;
     private readonly RepetitionDetector _repetitionDetector = new();
 
@@ -102,18 +98,14 @@ public sealed partial class WhisperBackend
         wparams.new_segment_callback = Marshal.GetFunctionPointerForDelegate(_segmentCallback);
         wparams.new_segment_callback_user_data = IntPtr.Zero;
 
-        // Combined abort signal: repetition guard OR external cancellation.
         _abortCallback = _ => _abortRequested || ct.IsCancellationRequested;
         wparams.abort_callback = Marshal.GetFunctionPointerForDelegate(_abortCallback);
         wparams.abort_callback_user_data = IntPtr.Zero;
 
         _timelineOffsetSec = context?.TimelineOffsetSec ?? 0;
 
-        // One-time configuration preamble. A standalone call (monolithic) and the
-        // first utterance of a streaming take log it; the rest skip it, so a long
-        // streaming dictation shows the params/prompt once, not once per utterance
-        // (they are identical across the take). Pure observability gate — defaults
-        // on when there is no context.
+        // A standalone call and the first utterance of a streaming take log the
+        // configuration; the rest skip it, since it is identical across the take.
         if (context?.EmitPreamble ?? true)
         {
             DeckleWhispSource.Log.TranscribeStarted();
@@ -185,8 +177,6 @@ public sealed partial class WhisperBackend
                 Array.Empty<TranscriptionSegment>(), "", totalMs, whisperInitMs, aborted, result);
         }
 
-        // Snapshot segments accumulated by the callback. Build full text by
-        // concatenating segment texts and trimming the outer whitespace.
         TranscriptionSegment[] segments;
         lock (_segmentsLock)
         {
@@ -196,13 +186,9 @@ public sealed partial class WhisperBackend
         foreach (var seg in segments) sb.Append(seg.Text);
         string fullText = sb.ToString().Trim();
 
-        // Known-hallucination filter. On silence/music whisper emits a fixed
-        // subtitle-credit phrase from its training corpus at high confidence,
-        // where neither the confidence thresholds nor the repetition guard bite.
-        // Matched on the WHOLE utterance (never a substring), so a real dictation
-        // quoting the phrase is untouched. A hit blanks the text — the segments
-        // stay for telemetry, and an empty FullText is already treated as "no
-        // text" by both the streaming consumer and the monolithic finalize.
+        // A hit blanks the text; the segments stay for telemetry, and an empty
+        // FullText already reads as "no text" to both the streaming consumer and
+        // the monolithic finalize.
         if (KnownHallucinations.Matches(fullText))
         {
             DeckleWhispSource.Log.TranscribeHallucinationFiltered();
@@ -252,10 +238,8 @@ public sealed partial class WhisperBackend
                 var segment = new TranscriptionSegment(segText, t0, t1, avgP, nsp);
                 lock (_segmentsLock) _segmentsLocal.Add(segment);
 
-                // Repetition-loop guard: if recent segments repeat — one phrase
-                // (A A A) or an alternating pair (A B A B) — ask whisper to stop.
                 // abort_callback is probed between decoder steps, so one more
-                // segment may surface — that's expected.
+                // segment may surface after the guard trips.
                 if (!_abortRequested &&
                     _repetitionDetector.ObserveAndShouldAbort(segText, out int streak, out int period))
                 {
@@ -293,26 +277,9 @@ public sealed partial class WhisperBackend
         }
     }
 
-    // ── Whisper native log hook ──────────────────────────────────────────────
-    //
-    // Redirects whisper.cpp internal logs (ggml_log) to the LogWindow. Handles
-    // two concerns at once:
-    //
-    //   1. Backend detection — the first ggml_vulkan: / ggml_cuda: / ggml_metal:
-    //      prefix wins and is captured into _detectedBackend.
-    //   2. Init-phase compaction — four phases of whisper.cpp init each emit
-    //      ~3 to 17 separate lines; we accumulate per-phase values and emit
-    //      one consolidated event per phase as soon as the prefix changes.
-    //
-    // The hook is installed once at construction. whisper_log_set keeps the
-    // function pointer indefinitely — clearing it would have to coordinate
-    // with any other libwhisper consumer in the process.
-
-    // ── Init timing ───────────────────────────────────────────────────────────
-    //
     // Meant to time whisper.cpp's pre-decode setup, but it starts just before
-    // whisper_full and stops only when it returns, so it spans the whole call.
-    // Both timers are degenerate: whisper_init_ms is about the total and
-    // whisper_ms (total minus init) is about 0. Neither is a phase breakdown.
+    // whisper_full and stops only when it returns, so it spans the whole call:
+    // whisper_init_ms is about the total and whisper_ms (total minus init) about
+    // 0. Neither is a phase breakdown.
     private Stopwatch? _whisperInitSw;
 }

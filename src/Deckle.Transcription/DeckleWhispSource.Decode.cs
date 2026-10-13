@@ -68,8 +68,6 @@ public sealed partial class DeckleWhispSource
         WriteEvent(EvtTranscribePromptConfigured, prompt_len, carry);
     }
 
-    // In-place clean (no params, no placeholders): lowercase phrasing
-    // recapitalized into a human sentence.
     [Event(EvtTranscribeEmpty,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Pipeline,
@@ -97,9 +95,6 @@ public sealed partial class DeckleWhispSource
         if (IsEnabled()) WriteEvent(EvtTranscribeFailedDetail, result);
     }
 
-    // Milestone drops the segment count; the existing TranscribeCompleteDetail
-    // (whisper_ms | n_seg | chars) is its Verbose mirror, already following at
-    // the call site.
     [Event(EvtTranscribeCompleted,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Pipeline,

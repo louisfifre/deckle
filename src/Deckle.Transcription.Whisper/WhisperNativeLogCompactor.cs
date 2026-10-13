@@ -1,5 +1,3 @@
-// WhisperNativeLogCompactor — init-phase compaction state machine for whisper.cpp native logs.
-
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -14,8 +12,6 @@ using Deckle.Transcription.Whisper;
 
 namespace Deckle.Transcription.Whisper;
 
-// ── Init-phase compaction ────────────────────────────────────────────────────
-//
 // whisper.cpp's init flow emits four distinct prefix groups whose lines
 // are useful as a whole but noisy individually. We accumulate the
 // value-of-interest from each line of the active phase into per-phase
@@ -23,9 +19,6 @@ namespace Deckle.Transcription.Whisper;
 // from a different phase (or any non-phase line). The fifth init prefix —
 // whisper_init_from_file_with_params_no_state: — emits a single line and
 // passes through unchanged.
-//
-// Pure string state machine: no dependency on _ctx, the model, or any native
-// pointer. Owned by WhisperBackend and driven from its native log hook.
 internal sealed class WhisperNativeLogCompactor
 {
     private static readonly string[] s_phasePrefixes = new[]
@@ -56,22 +49,16 @@ internal sealed class WhisperNativeLogCompactor
 
         if (matched < 0)
         {
-            // Non-phase line — flush any pending phase first, then let the
-            // caller route the line normally.
             FlushPendingPhase();
             return false;
         }
 
         if (_phaseIndex >= 0 && matched != _phaseIndex)
         {
-            // Different phase started — flush the previous one before
-            // starting accumulation on the new phase.
             FlushPendingPhase();
         }
 
         _phaseIndex = matched;
-        // Capture the substring after the prefix, trimmed. Empty bodies are
-        // skipped — they carry no value to consolidate.
         string body = msg.Substring(s_phasePrefixes[matched].Length).Trim();
         if (body.Length > 0) _phaseAccumulator.Add(body);
         return true;

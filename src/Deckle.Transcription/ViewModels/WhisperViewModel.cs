@@ -5,26 +5,18 @@ using Deckle.Settings;
 
 namespace Deckle.Transcription;
 
-// ViewModel for WhisperPage — bridges the 7 AppSettings sections
-// (Paths, Transcription, SpeechDetection, Decoding, Confidence,
-// OutputFilters, Context) to the XAML via x:Bind.
+// ViewModel for WhisperPage. Load() pulls from the settings POCOs, property
+// changes push back via PushToSettings(); _isSyncing prevents re-saving during
+// Load().
 //
-// Pattern: Load() pulls from the POCO, property changes push back via
-// PushToSettings(). The _isSyncing flag prevents re-saving during Load().
-//
-// Model and Language are set from code-behind (combo handlers), not
-// bound in XAML — same pattern as GeneralViewModel.AudioInputDeviceId.
-//
-// NumberBox-bound properties are double (NumberBox.Value type). NaN guard
-// in OnXChanged and PushToSettings prevents saving when the user clears
+// NumberBox-bound properties are double (NumberBox.Value type). The NaN guards
+// in the change handlers and PushToSettings prevent saving when the user clears
 // a field.
 //
 // Partial properties (not fields) for WinRT/AOT compatibility (MVVMTK0045).
 public partial class WhisperViewModel : ObservableObject
 {
     private bool _isSyncing;
-
-    // ── Constructor ──────────────────────────────────────────────────────────
 
     public WhisperViewModel()
     {
@@ -69,12 +61,9 @@ public partial class WhisperViewModel : ObservableObject
         SegCurveX2 = segmenter.HangoverCurveX2;
         SegCurveY2 = segmenter.HangoverCurveY2;
 
-        // The cut preset family reads and writes the eight hangover values
-        // through this VM's own setters, so applying a preset persists like a
-        // hand edit. This first family is bound to a throwaway segmenter (the
-        // page composes the selector before Load() runs, and only needs the
-        // options); it derives Balanced from the seeds above, and nothing of
-        // it reaches the settings file. Load() builds the real one.
+        // A first family bound to a throwaway segmenter: the page composes the
+        // selector before Load() runs and only needs the options, and nothing of
+        // it may reach the settings file. Load() builds the real one.
         _cutPresets = BuildCutPresets(() => segmenter, () => { });
         CutPreset = _cutPresets.Selection;
 
@@ -94,14 +83,9 @@ public partial class WhisperViewModel : ObservableObject
         RecordAudioCorpus = false;
         AudioCorpusContentIndex = 0;
 
-        // _isSyncing stays true — Load() will set it to false.
+        // _isSyncing stays true until Load(), so no setter saves the seeds.
     }
 
-    // ── Sync with SettingsService ────────────────────────────────────────────
-
-    // All transcription settings live in modules/transcription/settings.json
-    // and ModelsDirectory moved off Paths into TranscriptionSettings — so a single
-    // module read covers everything this VM exposes.
     public void Load()
     {
         _isSyncing = true;
@@ -143,8 +127,7 @@ public partial class WhisperViewModel : ObservableObject
             SegMarginMs = s.Streaming.Segmenter.MarginMs;
             SegMinUtteranceMs = s.Streaming.Segmenter.MinUtteranceMs;
 
-            // Dictation experience — read from the shell's Overlay/Paste sections
-            // (persisted separately from this module's TranscriptionSettings).
+            // The shell's SettingsService persists these, not TranscriptionSettings.
             var shell = SettingsService.Instance.Current;
             AutoPasteEnabled = shell.Paste.AutoPasteEnabled;
             OverlayEnabled = shell.Overlay.Enabled;
@@ -153,17 +136,14 @@ public partial class WhisperViewModel : ObservableObject
             OverlayPosition = (shell.Overlay.Position ?? "").StartsWith("Top") ? "TopCenter" : "BottomCenter";
             TranscriptPanelSide = NormalizeTranscriptPanelSide(shell.Overlay.TranscriptPanelSide);
 
-            // Dataset consents are read here so composed cards reflect persisted state.
             var t = TelemetrySettingsService.Instance.Current;
             TelemetryLatencyEnabled = t.LatencyEnabled;
             TelemetryCorpusEnabled = t.CorpusEnabled;
             RecordAudioCorpus = t.RecordAudioCorpus;
             AudioCorpusContentIndex = (int)t.AudioCorpusContent;
 
-            // Last: the real preset family, over the persisted segmenter. It is
-            // built only now because, for a file written before the selection
-            // existed, it derives the selection from the hangover values read
-            // above and stores it in the settings.
+            // Last: when the file holds no selection, the real family derives one
+            // from the hangover values read above and stores it.
             _cutPresets = BuildCutPresets(
                 () => TranscriptionSettingsService.Instance.Current.Streaming.Segmenter,
                 TranscriptionSettingsService.Instance.Save);

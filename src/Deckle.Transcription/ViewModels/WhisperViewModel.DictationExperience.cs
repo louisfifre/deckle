@@ -5,19 +5,9 @@ namespace Deckle.Transcription;
 
 public partial class WhisperViewModel
 {
-    // ── Dictation experience (overlay HUD + auto-paste) ──────────────────────
-    //
-    // Relocated from GeneralPage in the settings reorg: the on-screen HUD shown
-    // during dictation (master toggle + fade-on-proximity, animations, position)
-    // and whether the transcript is pasted into the focused window after copy.
-    // These describe how dictation surfaces itself and delivers its output, so
-    // they live on the Dictation page beside the engine that produces them.
-    //
-    // Persistence stays in the shell's Overlay / Paste sections (settings.json),
-    // read at runtime by the HUD (Deckle.Hud) and the hotkey paste path
-    // (App.Hotkeys) — this VM only surfaces them. Pushed through a dedicated
-    // PushBehaviourToSettings so the shell save stays separate from the module's
-    // TranscriptionSettings save.
+    // These persist in the shell's Overlay / Paste sections, read at runtime by
+    // the HUD and the hotkey paste path; this view model only surfaces them, and
+    // saves them through the shell's SettingsService, not TranscriptionSettings.
 
     [ObservableProperty]
     public partial bool AutoPasteEnabled { get; set; }
@@ -58,8 +48,7 @@ public partial class WhisperViewModel
         PushBehaviourToSettings();
     }
 
-    // Which side of the primary display the live transcript panel sits on:
-    // "Left" or "Right", read by the panel at the start of each take.
+    // "Left" or "Right" of the primary display; the panel reads it once per show.
     [ObservableProperty]
     public partial string TranscriptPanelSide { get; set; }
 
@@ -80,9 +69,6 @@ public partial class WhisperViewModel
     private static string NormalizeTranscriptPanelSide(string? side) =>
         side == "Left" ? "Left" : "Right";
 
-    // Writes the overlay/paste values back to the shell's Overlay/Paste sections —
-    // kept separate from PushToSettings (which persists this module's own
-    // TranscriptionSettings) because these live in the shell's settings.json.
     private void PushBehaviourToSettings()
     {
         var shell = SettingsService.Instance.Current;

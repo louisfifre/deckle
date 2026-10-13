@@ -14,39 +14,16 @@ public sealed partial class TranscriptionEngine
 {
     // ── Telemetry partial — post-recording auto-calibration and preprocessed-level telemetry ──
 
-    // Auto-calibration heuristic — runs after every Recording when
-    // LevelWindow.AutoCalibrationEnabled is true, independent of the
-    // Log microphone toggle (the payload is always computed in
-    // LogRecordingTelemetry above).
+    // Runs after every recording when LevelWindow.AutoCalibrationEnabled is
+    // on, independent of the microphone telemetry consent toggle (capture
+    // always computes the payload). The heuristic is
+    // MicrophoneCalibrationCalculator; the ring buffer and side effects stay on
+    // the orchestrator.
     //
-    // Strategy:
-    //   - Keep the last N MicrophoneTelemetryPayloads in a ring buffer
-    //     (N = LevelWindow.AutoCalibrationSamples, default 5).
-    //   - Once the buffer is full, recompute MinDbfs / MaxDbfs from
-    //     median-across-sessions percentiles, with margins:
-    //       MinDbfs = median(p25) - 5 dB  — p25 (not p10) so a noise gate
-    //                                       cutting to digital silence
-    //                                       (-97 dBFS) doesn't drag the
-    //                                       floor into "anything below
-    //                                       the gate threshold". Then
-    //                                       -5 dB of headroom under the
-    //                                       useful-signal minimum.
-    //       MaxDbfs = median(p90) + 5 dB  — voice ceiling with breathing
-    //                                       room above routine peaks.
-    //   - Floor clamp at -75 dBFS to guarantee we never sit on the gate
-    //     even if p25 itself is in the noise floor.
-    //   - Refuse to write if the resulting window collapses to < 10 dB
-    //     (pathological case — e.g. all-silence sessions).
-    //   - Push to settings + AudioLevelMapper + log a Success line.
-    //
-    // The buffer is in-memory only: a fresh app launch starts collecting
-    // again, which is fine — calibration only fires after N consecutive
-    // recordings within one process anyway, and the persisted Min/Max
-    // already reflects the last successful auto-calibration.
-    //
-    // The user's manual slider edits override auto-calibration until the
-    // next time it fires — there's no "manual flag" gating; whoever wrote
-    // last wins, which is the natural behaviour from the user's POV.
+    // The buffer is in-memory only: a fresh launch starts collecting again,
+    // and the persisted Min/Max already reflect the last calibration. There is
+    // no manual-edit flag: a slider edit holds until calibration next fires,
+    // and whoever wrote last wins.
     private void TryAutoCalibrate(MicrophoneTelemetryPayload payload)
     {
         var lw = _host.Audio.LevelWindow;
@@ -58,12 +35,6 @@ public sealed partial class TranscriptionEngine
         while (_autoCalibBuffer.Count > needed) _autoCalibBuffer.Dequeue();
         if (_autoCalibBuffer.Count < needed) return;
 
-        // Pure compute lives in MicrophoneCalibrationCalculator — the
-        // constants (-5 dB / +5 dB margins, -75 floor, ≥10 dB spread,
-        // [-90,-10] / [-60,-10] clamps, 0.5 dB no-change tolerance) are
-        // preserved exactly. The enveloppe (ring buffer, SaveSettings,
-        // ApplyLevelWindow, log) stays here because the side effects
-        // belong to the orchestrator.
         var calib = MicrophoneCalibrationCalculator.Compute(
             _autoCalibBuffer, lw.MinDbfs, lw.MaxDbfs);
         if (!calib.ShouldUpdate) return;
@@ -72,21 +43,17 @@ public sealed partial class TranscriptionEngine
         lw.MaxDbfs = calib.NewMaxDbfs;
         _host.SaveSettings();
 
-        // Push live into HudChrono so the next sub-window already uses the
-        // new calibration. The host owns the static-field write
-        // (App.ApplyLevelWindow on the App side).
         _host.ApplyLevelWindow(lw);
 
         DeckleWhispSource.Log.AutoCalibrated();
         DeckleWhispSource.Log.AutoCalibratedDetail(calib.NewMinDbfs, calib.NewMaxDbfs, needed);
     }
 
-    // Emit the post-DSP level distribution — the processed-signal mirror of the raw
-    // MicrophoneTelemetryRecorded, on this orchestrator's provider (the DSP is its
-    // concern, not the capture module's). Same consent gate as the raw side. Callers
-    // pass the buffer the backend received, and only when the DSP actually ran — off,
-    // processed == raw and this would just duplicate the raw distribution. Rebuilds a
-    // 50 ms RMS series so the shared Compute path yields a payload comparable, field
+    // The post-DSP mirror of the raw MicrophoneTelemetryRecorded, on this
+    // orchestrator's provider because the DSP is its concern. Same consent gate
+    // as the raw side. Callers pass the buffer the backend received, and only
+    // when the DSP actually ran; otherwise it would duplicate the raw
+    // distribution. The 50 ms RMS series keeps the payload comparable, field
     // for field, with the raw one.
     private void EmitPreprocessedTelemetry(float[] processed)
     {

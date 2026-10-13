@@ -23,8 +23,7 @@ namespace Deckle.Transcription;
 // avoids any collision with a character present in the SystemPrompt.
 //
 // 16 hex chars = 8 hash bytes = 64 bits, easily enough to distinguish two
-// templates in a user corpus (50% collision at ~5 billion distinct templates:
-// out of reach).
+// templates in a user corpus.
 internal static class PromptTemplateHash
 {
     private const char Separator = '';

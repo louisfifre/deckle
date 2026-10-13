@@ -6,7 +6,7 @@ using Xunit;
 
 namespace Deckle.Transcription.Tests;
 
-// Bug note — 2026-07-31
+// Bug note
 // Trigger: importing several files from the tray in one picker selection.
 // Observed: the timer and status reset, with a visible pause between files.
 // Cause: each file owned a separate worker and lifecycle instead of feeding the live segmented session.

@@ -12,41 +12,21 @@ using Windows.UI;
 
 namespace Deckle.Transcription;
 
-// Editor + plot of the dynamic-hangover decay curve the EnergySegmenter applies
-// between HangoverRampStart and HangoverRampEnd. X is the open-utterance length in
-// seconds (0 → a little past RampEnd), Y is the decision delay in seconds
-// (0 → HangoverMax). Two polylines overlap : a dashed grey reference = the
-// straight (linear) decline, and the live accent curve = the cubic-Bézier easing
-// set by the two control points (X1,Y1) and (X2,Y2). Faint vertical guides mark
-// RampStart and RampEnd.
+// Editor and plot of the dynamic-hangover decay curve the EnergySegmenter
+// applies between HangoverRampStart and HangoverRampEnd. X is the open-utterance
+// length, Y the decision delay, both in seconds. The two cubic-Bézier control
+// points are draggable Thumbs in the normalised [0,1]² curve box, bounded by the
+// RampStart/RampEnd guides and the Max/Min delay lines; a drag writes the X1..Y2
+// dependency properties, which the host binds two-way.
 //
-// ── The editor ───────────────────────────────────────────────────────────────
-// The two control points are draggable handles (Thumbs) over the plot, the same
-// direct-manipulation model as a CSS cubic-bezier editor. The handles live in the
-// normalised [0,1]² curve box — the rectangle bounded by the RampStart/RampEnd
-// guides (x) and the Max/Min delay lines (y). A drag writes the X1/Y1 or X2/Y2
-// dependency property and raises ControlPointsChanged ; the host page reads the
-// four values back. Faint stems from (0,0)→P1 and (1,1)→P2 echo the handles.
-//
-// The control captions its own axes : a faint horizontal grid on Y (delay
-// seconds) with left-gutter labels and a tick ruler on X (utterance seconds)
-// with bottom-gutter labels, both graduated on "nice" steps.
-//
-// ── Rendering : Win2D immediate mode ─────────────────────────────────────────
-// Everything is drawn procedurally in OnDraw on a CanvasControl (GPU, Direct2D),
-// NOT as a XAML Shapes tree. A data or theme change calls Plot.Invalidate(),
-// which schedules a single Draw ; CanvasControl reissues Draw itself on resize.
-// There is no Children.Clear + element re-creation per SizeChanged frame, which
-// is what made the previous retained-mode version lag while the window was
-// dragged. The easing math is shared with the segmenter through UnitBezier, so
-// the two need no hand-mirroring.
+// Drawn in Win2D immediate mode, not as a XAML Shapes tree: rebuilding shapes
+// on every SizeChanged frame lags during a window drag, while CanvasControl
+// reissues Draw itself on resize. The easing math is shared with the segmenter
+// through UnitBezier, so the two need no hand-mirroring.
 public sealed partial class HangoverCurveCanvas : UserControl
 {
     private const int    SampleCount  = 96;
 
-    // Gutters reserved inside the plot for the axis rulers : the left gutter holds
-    // the Y labels (delay seconds), the bottom gutter the X labels (utterance
-    // seconds). PadTop / PadRight keep the curve off the frame.
     private const double GutterLeft   = 46.0;
     private const double GutterBottom = 24.0;
     private const double PadTop       = 12.0;
@@ -57,8 +37,7 @@ public sealed partial class HangoverCurveCanvas : UserControl
     private const double HandleSize   = 24.0;
     private const double HandleRadius = HandleSize / 2.0;
 
-    // Device-independent draw resources, built once : safe to hold across device
-    // loss (they carry no GPU handle) and shared by every Draw.
+    // Device-independent: they carry no GPU handle, so they survive device loss.
     private static readonly CanvasTextFormat LabelRight = new()
         { FontSize = 11, HorizontalAlignment = CanvasHorizontalAlignment.Right,  VerticalAlignment = CanvasVerticalAlignment.Center, WordWrapping = CanvasWordWrapping.NoWrap };
     private static readonly CanvasTextFormat LabelCenter = new()
@@ -71,8 +50,8 @@ public sealed partial class HangoverCurveCanvas : UserControl
     public HangoverCurveCanvas()
     {
         InitializeComponent();
-        // Re-read the theme brushes on a light/dark switch (the colours are pulled
-        // from the resource dictionary at Draw time).
+        // Colours are read from the resource dictionary at Draw time, so a theme
+        // switch needs a redraw.
         ActualThemeChanged += (_, _) => Plot.Invalidate();
         Handle1.DragDelta += OnHandle1DragDelta;
         Handle2.DragDelta += OnHandle2DragDelta;
@@ -124,9 +103,8 @@ public sealed partial class HangoverCurveCanvas : UserControl
 
     private static void OnAnyVisualChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
     {
-        // Schedule one Draw and keep the handles pinned to the (possibly shifted)
-        // curve box. Guard the handles : DP defaults can resolve before the named
-        // parts exist.
+        // DP defaults can resolve before the named parts exist, hence the null
+        // checks on Plot and Handle1.
         if (d is not HangoverCurveCanvas self) return;
         self.Plot?.Invalidate();
         if (self.Handle1 is not null) self.RepositionHandles();
@@ -134,15 +112,10 @@ public sealed partial class HangoverCurveCanvas : UserControl
 
     private void OnPlotSizeChanged(object sender, SizeChangedEventArgs e) => RepositionHandles();
 
-    // ── Resize coalescing hook ───────────────────────────────────────────────────
-    //
-    // Set true by the host window while an interactive resize gesture is in flight
-    // (driven off the Shell's ResizeCoalescer). Kept a plain bool, pushed in from
-    // outside, so this control carries no Deckle.Shell or Win32 dependency. While
-    // true OnDraw still strokes the curves, grid and guides — cheap GPU line work —
-    // but drops the axis labels, whose per-frame DWrite text layout is the cost
-    // that made the drag lag. Toggling it schedules one Draw: the light pass on the
-    // way in, the full pass (labels back) on settle.
+    // Set by the host while an interactive resize is in flight. A plain bool
+    // pushed in from outside keeps this control free of any Deckle.Shell or Win32
+    // dependency. While true, OnDraw drops the axis labels, whose per-frame
+    // DWrite text layout is what lags during a drag.
     private bool _suspendExpensiveDraw;
     public bool SuspendExpensiveDraw
     {
@@ -155,11 +128,8 @@ public sealed partial class HangoverCurveCanvas : UserControl
         }
     }
 
-    // ── PlotRect geometry ────────────────────────────────────────────────────────────
-    //
-    // The pixel frame of the plot, derived once from the current size and the
-    // anchor values, then shared by the draw, the handle placement and the drag
-    // hit-test so all three agree on where the curve box sits.
+    // Shared by the draw, the handle placement and the drag hit-test so all three
+    // agree on where the curve box sits.
     private readonly struct PlotRect
     {
         public readonly bool   Valid;
@@ -208,34 +178,26 @@ public sealed partial class HangoverCurveCanvas : UserControl
         return new PlotRect(w, h, maxSec, minSec, startSec, endSec);
     }
 
-    // ── Draw ─────────────────────────────────────────────────────────────────
-
     private void OnDraw(CanvasControl sender, CanvasDrawEventArgs args)
     {
         CanvasDrawingSession ds = args.DrawingSession;
         PlotRect g = Geometry();
         if (!g.Valid) return;
 
-        // Axis rulers first (under everything else).
+        // Axis rulers first, under everything else.
         AddYRuler(ds, g);
         AddXRuler(ds, g);
 
-        // Faint vertical guides at RampStart / RampEnd — the bounds of the decline.
         AddGuide(ds, g, g.StartSec);
         AddGuide(ds, g, g.EndSec);
 
-        // Dashed reference = straight (linear) decline, then the live Bézier curve.
         AddCurve(sender, ds, g, asReference: true);
         AddCurve(sender, ds, g, asReference: false);
 
-        // Handle stems : (0,0)→P1 and (1,1)→P2, faint accent lines under the Thumbs.
         AddStems(ds, g);
     }
 
-    // ── Axis rulers ──────────────────────────────────────────────────────────────
-
-    // Y ruler : faint full-width horizontal gridlines on "nice" delay steps, each
-    // labelled in the left gutter. The v = 0 line doubles as the X baseline.
+    // The v = 0 gridline doubles as the X baseline.
     private void AddYRuler(CanvasDrawingSession ds, PlotRect g)
     {
         double step = NiceStep(g.YMax, 4);
@@ -250,9 +212,8 @@ public sealed partial class HangoverCurveCanvas : UserControl
         }
     }
 
-    // X ruler : short tick marks hanging under the baseline on "nice" utterance
-    // steps, each labelled in the bottom gutter. No full vertical gridlines — the
-    // RampStart / RampEnd dashed guides own the verticals so the plot stays clean.
+    // Ticks only, no vertical gridlines: the RampStart / RampEnd guides own the
+    // verticals so the plot stays clean.
     private void AddXRuler(CanvasDrawingSession ds, PlotRect g)
     {
         double step = NiceStep(g.XMax, 5);
@@ -267,18 +228,14 @@ public sealed partial class HangoverCurveCanvas : UserControl
         }
     }
 
-    // Axis label, drawn into a fixed box so the text format's alignment lands it
-    // (right-aligned in the left gutter, centred under each X tick). DWrite lays the
-    // string out on every call — the per-frame cost — so it is skipped while a
-    // resize gesture coalesces; the labels snap back when the size settles.
+    // DWrite lays the string out on every call, so labels are skipped while a
+    // resize is in flight; they come back when the size settles.
     private void AddLabel(CanvasDrawingSession ds, string text, double left, double top, double width, CanvasTextFormat format)
     {
         if (_suspendExpensiveDraw) return;
         ds.DrawText(text, new Rect(left, top, width, 16), ThemeColor("TextFillColorTertiaryBrush"), format);
     }
 
-    // "Nice" tick step (1 / 2 / 5 × 10ⁿ) so the ruler lands on round seconds
-    // regardless of the current ramp bounds.
     private static double NiceStep(double range, int targetTicks)
     {
         if (range <= 0 || targetTicks <= 0) return 0;
@@ -327,8 +284,6 @@ public sealed partial class HangoverCurveCanvas : UserControl
         ds.DrawGeometry(geometry, color, asReference ? 1.0f : 1.5f, asReference ? ReferenceDash : LiveStroke);
     }
 
-    // The two handle stems : faint accent lines from each fixed endpoint to its
-    // control point, the visual tie between the corner and its handle.
     private void AddStems(CanvasDrawingSession ds, PlotRect g)
     {
         Color stem = WithAlpha(ThemeColor("AccentFillColorDefaultBrush"), 0.45);
@@ -337,8 +292,6 @@ public sealed partial class HangoverCurveCanvas : UserControl
         ds.DrawLine((float)g.BoxX(1), (float)g.BoxY(1),
                     (float)g.BoxX(Clamp01(X2)), (float)g.BoxY(Clamp01(Y2)), stem, 1.0f);
     }
-
-    // ── Handles (the curve editor) ───────────────────────────────────────────────
 
     private void RepositionHandles()
     {
@@ -374,26 +327,21 @@ public sealed partial class HangoverCurveCanvas : UserControl
         double cx = curLeft + HandleRadius + e.HorizontalChange;
         double cy = Canvas.GetTop(t) + HandleRadius + e.VerticalChange;
         // Snap to the 0.01 grid the manual-entry boxes step on, so a dragged value
-        // reads as 0.42, not 0.4237 — 100 steps across the box stays smooth.
+        // reads as 0.42, not 0.4237.
         double nx = Math.Round(Clamp01((cx - leftPx) / (rightPx - leftPx)), 2);
         double ny = Math.Round(Clamp01((cy - topPx)  / (botPx - topPx)), 2);
 
-        // Setting the DP propagates to the bound view-model (the X1..Y2 DPs are
-        // bound two-way by the host), which drives the readouts and the box entry.
         if (first) { X1 = nx; Y1 = ny; }
         else       { X2 = nx; Y2 = ny; }
     }
-
-    // ── Helpers ────────────────────────────────────────────────────────────────
 
     private static double Clamp01(double v) => Math.Clamp(Clean(v, 0.0), 0.0, 1.0);
 
     private static double Clean(double v, double fallback)
         => double.IsNaN(v) || double.IsInfinity(v) ? fallback : v;
 
-    // Theme brush colour pulled from the merged resource dictionary, optionally
-    // dimmed by baking the alpha into the colour (Win2D draws take a Color, not a
-    // Brush, so there is no Opacity to set on the line).
+    // Win2D draws take a Color, not a Brush, so dimming bakes the alpha into the
+    // colour (WithAlpha) instead of setting an Opacity.
     private static Color ThemeColor(string brushKey)
         => ((SolidColorBrush)Application.Current.Resources[brushKey]).Color;
 

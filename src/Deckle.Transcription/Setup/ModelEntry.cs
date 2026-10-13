@@ -2,16 +2,11 @@ namespace Deckle.Transcription;
 
 // ── ModelEntry ───────────────────────────────────────────────────────────────
 //
-// One downloadable speech model — Whisper, Silero, or any future ASR family
-// the wizard knows how to install. Url + Sha256 + SizeBytes drive the
-// downloader; Url empty means the entry can only be satisfied by a local
-// copy. SizeBytes is nominal — used to size the progress bar and budget
-// the disk estimate, not for verification.
+// One downloadable speech model the wizard can install. SizeBytes is nominal:
+// it sizes the progress bar and the disk estimate, while Sha256 verifies.
 //
-// Lives in the transcription parent (not in any backend child) because the
-// shape is backend-agnostic: a Voxtral catalog would reuse the same record.
-// Catalogs themselves are backend-specific (cf. Deckle.Transcription.Whisper
-// /Setup/SpeechModels.cs for the Whisper + Silero catalog).
+// Lives in the transcription parent because the shape is backend-agnostic;
+// catalogs are backend-specific (Deckle.Transcription.Whisper/Setup/SpeechModels.cs).
 public sealed record ModelEntry(
     string Id,
     string FileName,

@@ -5,9 +5,8 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:local="using:Deckle.Transcription">
 
-    <!-- Same 280 height the Playground gives this control. Anchors are one-way
-         (the four Number cards own them, in ms; the canvas wants seconds); the
-         two control points are two-way (the handles write them back). -->
+    <!-- Anchors are one-way: the four Number cards own them. The control points
+         are two-way: the handles write them back. -->
     <local:HangoverCurveCanvas
         Height="280"
         HangoverMaxSec="{x:Bind local:CutCurveEditor.Seconds(ViewModel.SegHangoverMaxMs), Mode=OneWay}"

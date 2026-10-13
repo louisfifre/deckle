@@ -4,11 +4,9 @@ using Deckle.Audio;
 
 namespace Deckle.Transcription;
 
-// A point-in-time view of the segmenter's internal state, consumed by the
-// streaming pipeline to populate the 1 Hz StreamingHeartbeat. HangoverRequired
-// frames is the silence the state machine WOULD currently demand to cut — it
-// shrinks as the open utterance grows past the ramp, so the log shows the
-// dynamic hangover in action.
+// Feeds the 1 Hz StreamingHeartbeat. RequiredHangoverFrames is the silence the
+// state machine would currently demand to cut; it shrinks as the open
+// utterance grows past the ramp.
 internal readonly record struct SegmenterSnapshot(
     string State,
     int CurrentUtteranceFrames,
@@ -17,34 +15,21 @@ internal readonly record struct SegmenterSnapshot(
 
 // ── EnergySegmenter ──────────────────────────────────────────────────────────
 //
-// Threshold-on-RMS state machine that places utterance boundaries on the live
-// capture stream (see CONTEXT.md § Speech segmentation). NOT a model and NOT
-// speech recognition — it reads energy dips to decide where to cut. It consumes
-// CaptureFrames (50 ms sub-windows + their RAW linear RMS) one at a time and
-// emits an Utterance each time it decides a speech span has ended.
+// Threshold-on-RMS state machine that places utterance boundaries on the
+// capture stream. NOT a model and NOT speech recognition: it reads energy dips
+// to decide where to cut. It consumes CaptureFrames (50 ms sub-windows + their
+// RAW linear RMS) one at a time and emits an Utterance each time a speech span
+// ends.
 //
-// Pure and single-threaded by construction: Push and Flush are called from the
-// one producer thread (inside the capture loop, via the Frame event), so there
-// is no shared mutable state and no lock. This is the testable heart of the
-// streaming socle — feed it synthetic frames, assert the utterances out.
-//
-// ── The three states ─────────────────────────────────────────────────────────
-//   Silence  — no open utterance. Silent frames are discarded. The first VOICED
-//              frame opens an utterance and moves to Speech.
-//   Speech   — building an utterance, last frame was voiced. A silent frame
-//              opens the hangover (move to Hangover); a voiced frame extends.
-//   Hangover — building an utterance, in a trailing silence we are not yet sure
-//              is the end. A voiced frame means speech resumed (back to Speech);
-//              enough consecutive silence (current hangover reached) ends it.
+// Single-threaded by construction: Push and Flush run on the one producer
+// thread, so there is no shared mutable state and no lock.
 //
 // ── Hangover vs margin (the two values people conflate) ───────────────────────
-//   Hangover = DECISION delay. We wait this much silence after the last voiced
-//   frame before declaring the utterance over, so a brief intra-phrase pause
-//   does not split a sentence. The required delay SHRINKS as the utterance
-//   grows: HangoverMaxMs while the utterance is below HangoverRampStartMs,
-//   HangoverMinMs at and above HangoverRampEndMs, a cubic-Bézier decay in
-//   between (two control points). No hard cap — a very long
-//   utterance ends on a micro-pause, never mid-word.
+//   Hangover = DECISION delay: how much silence after the last voiced frame
+//   before the utterance is declared over, so a brief intra-phrase pause does
+//   not split a sentence. It SHRINKS as the utterance grows (see
+//   RequiredHangoverFrames). No hard cap: a very long utterance ends on a
+//   micro-pause, never mid-word.
 //
 //   Margin = CUT POSITION. The emitted span ends MarginMs after the last voiced
 //   frame. The silence between the margin and the hangover expiry is DROPPED.
@@ -107,12 +92,10 @@ internal sealed class EnergySegmenter
     private static int FramesFromMs(int ms, int min)
         => Math.Max(min, (int)Math.Round(ms / FrameMs));
 
-    // Current hangover requirement, based on how long the open utterance has
-    // grown. Below RampStart: max. At/above RampEnd: min. In between, the delay
-    // eases from max to min along the cubic-Bézier curve (see UnitBezier), which
-    // declines from the very start of the ramp — no built-in plateau, whole-frame
-    // rounding aside — with entry and exit slopes set by the two control points.
-    // No hard cap — a long utterance still ends on a micro-pause, never mid-word.
+    // Between RampStart and RampEnd the delay eases from max to min along the
+    // cubic-Bézier curve (see UnitBezier), which declines from the very start of
+    // the ramp (no built-in plateau, whole-frame rounding aside), with entry and
+    // exit slopes set by the two control points.
     private int RequiredHangoverFrames()
     {
         int len = _frames.Count;
@@ -125,8 +108,6 @@ internal sealed class EnergySegmenter
         return Math.Clamp(frames, _hangoverMinFrames, _hangoverMaxFrames);
     }
 
-    // Feed one capture frame. Emits an Utterance via the callback if this frame
-    // completes one (silence-bounded end).
     public void Push(CaptureFrame frame)
     {
         bool voiced = frame.Rms >= _rmsThreshold;
@@ -138,7 +119,6 @@ internal sealed class EnergySegmenter
             case State.Silence:
                 if (voiced)
                 {
-                    // First voiced frame opens an utterance.
                     _frames.Clear();
                     _frames.Add(frame.Samples);
                     _lastVoicedIdx = 0;
@@ -146,7 +126,6 @@ internal sealed class EnergySegmenter
                     _utteranceStartFrame = frameIndex;
                     _state = State.Speech;
                 }
-                // else: discard the silent frame, stay in Silence.
                 break;
 
             case State.Speech:
@@ -157,7 +136,6 @@ internal sealed class EnergySegmenter
                 }
                 else
                 {
-                    // First silent frame after speech opens the hangover.
                     _state = State.Hangover;
                     _hangoverCount = 1;
                     if (_hangoverCount >= RequiredHangoverFrames()) { EmitOnSilence(); return; }
@@ -183,9 +161,9 @@ internal sealed class EnergySegmenter
         }
     }
 
-    // End of capture (Stop / cap). Emits the open utterance, if any, applying the
-    // same margin rule — clamped to what we have, so a Stop mid-word still ships
-    // the in-progress speech. A no-op when no utterance is open.
+    // End of capture (Stop / cap). Emits the open utterance with the same margin
+    // rule, clamped to what we have, so a Stop mid-word still ships the
+    // in-progress speech.
     public void Flush()
     {
         if (_state == State.Silence) return;
@@ -193,15 +171,12 @@ internal sealed class EnergySegmenter
         ResetToSilence();
     }
 
-    // Silence-bounded end: cut at lastVoiced + margin, drop the rest, reset.
     private void EmitOnSilence()
     {
         EmitKept(endedOnSilence: true);
         ResetToSilence();
     }
 
-    // Emit the kept span (voiced extent + margin, clamped) unless the voiced
-    // extent is below the min-duration floor (then drop as a blip).
     private void EmitKept(bool endedOnSilence)
     {
         int voicedExtent = _lastVoicedIdx + 1;
@@ -228,9 +203,6 @@ internal sealed class EnergySegmenter
             (int)Math.Round(hangoverUsedFrames * FrameMs));
     }
 
-    // Snapshot reads the live state. Frame counts come from the running
-    // utterance (0 when in Silence); the required hangover is computed from the
-    // current length so the heartbeat sees the ramp moving as the chunk grows.
     internal SegmenterSnapshot Snapshot()
         => new(
             State: _state.ToString(),

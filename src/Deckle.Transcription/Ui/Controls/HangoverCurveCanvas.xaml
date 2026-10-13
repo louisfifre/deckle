@@ -7,10 +7,9 @@
     xmlns:primitives="using:Microsoft.UI.Xaml.Controls.Primitives">
 
     <UserControl.Resources>
-        <!-- Curve control-point handle : a filled accent dot with a ring in the
-             card colour so it reads as floating over the plotted curve. The Thumb
-             box (24) is larger than the visible dot (14) to give a comfortable
-             pointer target. -->
+        <!-- The Thumb box (24) is larger than the visible dot (14) to give a
+             comfortable pointer target; HandleSize in the code-behind must match
+             it. -->
         <Style x:Key="CurveHandleStyle" TargetType="primitives:Thumb">
             <Setter Property="Width" Value="24" />
             <Setter Property="Height" Value="24" />
@@ -31,16 +30,7 @@
         </Style>
     </UserControl.Resources>
 
-    <!-- Win2D immediate-mode plot. The curve, axes, labels and the two handle
-         stems are drawn procedurally in OnDraw — one Draw per Invalidate (a data
-         or theme change). CanvasControl reissues Draw itself on resize, so there
-         is NO XAML Shapes tree to Children.Clear and rebuild per SizeChanged
-         frame : that retained-mode rebuild was the source of the resize lag.
-
-         The Border owns the frame (LayerFill background, card stroke, rounded
-         corners) and an inner Padding so the plot breathes off the frame. On top
-         of the CanvasControl, a transparent Canvas hosts the two draggable
-         control-point handles (the curve editor) ; only the Thumbs hit-test, the
+    <!-- HandleLayer has no Background, so only the Thumbs hit-test and the
          empty plot passes pointer events through. -->
     <Border x:Name="PlotBorder"
             Padding="12"
