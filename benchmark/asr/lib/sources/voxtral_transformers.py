@@ -1,40 +1,21 @@
-"""Source Voxtral Mini 3B BF16 via Transformers + torch ROCm Windows.
+"""Voxtral Mini 3B in BF16 over Transformers and torch ROCm on Windows.
 
-Voie d'inférence safetensors-native en BF16, la voie haute précision que
-la doctrine « pas de Q4 » désigne.
-Charge le modèle une seule fois dans le constructeur (coût ~8s, VRAM
-~8.7 GiB sur RX 7900 XT en BF16), puis réutilise pour chaque appel à
-``transcribe()``.
+Safetensors in BF16, the precision a shipping speech model needs; a 4-bit
+quantization serves smoke tests only. The model loads once in the
+constructor and serves every ``transcribe()`` call.
 
-Stack actuelle (épinglée par le sanity check 2026-05-27) :
-  - torch 2.9.1+rocm7.2.1 (wheel officiel AMD pour Windows)
-  - transformers 4.57.6 (fenêtre stable >=4.56, <5.0 ; la 5.x ré-introduit
-    le bug d'import via ``continuous_batching``)
+Stack:
+  - torch 2.9.1+rocm7.2.1 (AMD's official Windows wheel)
+  - transformers >=4.56, <5.0 (pinned 4.57.6); 5.x brings back an import
+    failure through ``continuous_batching``
   - mistral-common 1.11.2 [audio]
-  - accelerate (requis par ``device_map``)
-  - librosa (requis par ``load_audio_as``)
+  - accelerate (``device_map`` needs it)
+  - librosa (``load_audio_as`` needs it)
 
-Deux modes d'invocation, choisis par heuristique sur le prompt fourni :
-
-  - **Canonique** (``processor.apply_transcription_request``) : quand
-    ``prompt`` et ``system_prompt`` sont tous deux vides. La méthode
-    officielle Mistral accepte ``language`` + ``audio`` + ``model_id``
-    et injecte un template fixe avec le token spécial Voxtral
-    ``[TRANSCRIBE]`` implicite. Sortie : transcription pure, lissée par
-    défaut. C'est précisément ce que ``llama-mtmd-cli`` ne fait pas.
-  - **Chat** (``processor.apply_chat_template``) : quand un ``prompt``
-    ou ``system_prompt`` est fourni. Format multimodal officiel Mistral
-    avec un ``role: user`` mixant un bloc ``{"type": "audio"}`` et un
-    bloc ``{"type": "text"}``. Voxtral suit l'instruction (verbatim,
-    traduction, résumé, classification de ton, etc.).
-
-Voxtral ne supporte pas le rôle ``system`` séparément (cf. model card
-Mistral) — quand ``system_prompt`` est fourni, son contenu est
-concaténé devant le ``prompt`` utilisateur dans un seul bloc text avec
-une séparation par double saut de ligne.
-
-Référence : ``mistralai/Voxtral-Mini-3B-2507`` model card et
-``docs/transformers/model_doc/voxtral``.
+With no ``prompt`` and no ``system_prompt``, the source uses Mistral's
+canonical ``apply_transcription_request``, which injects the
+``[TRANSCRIBE]`` template that ``llama-mtmd-cli`` lacks. Otherwise it uses
+``apply_chat_template`` and Voxtral follows the instruction.
 """
 
 from __future__ import annotations
@@ -48,16 +29,13 @@ from typing import Callable
 from ._base import Source, Transcription
 
 
-# Identifiant HF officiel pour résoudre les templates côté processor.
-# Le path local sert au chargement des poids ; le model_id sert à
-# ``apply_transcription_request`` qui résout le bon template via
-# mistral-common. Les deux sont nécessaires.
+# The local path loads the weights, but ``apply_transcription_request``
+# still needs the Hugging Face id to resolve its template through
+# mistral-common.
 HF_REPO_ID = "mistralai/Voxtral-Mini-3B-2507"
 
 
 class VoxtralTransformersSource(Source):
-    """Voxtral Mini 3B BF16 via Transformers (ROCm Windows)."""
-
     name = "voxtral-transformers"
     label = "Voxtral Mini 3B BF16 via Transformers (ROCm)"
 
@@ -65,7 +43,7 @@ class VoxtralTransformersSource(Source):
         self,
         *,
         model_path: Path | str | None = None,
-        dtype:      "object | None"  = None,    # torch.dtype, importé lazy
+        dtype:      "object | None"  = None,    # torch.dtype; torch is imported lazily
         device:     str               = "cuda",
         hf_repo_id: str               = HF_REPO_ID,
         max_new_tokens_floor:        int   = 128,
@@ -101,7 +79,7 @@ class VoxtralTransformersSource(Source):
             device_map=device,
         )
 
-    # ── Interface Source ───────────────────────────────────────────────
+    # ── Source interface ───────────────────────────────────────────────
 
     def transcribe(
         self,
@@ -122,9 +100,6 @@ class VoxtralTransformersSource(Source):
 
         torch = self._torch
 
-        # Heuristique de routage : prompt et system_prompt tous deux
-        # vides → mode canonique (apply_transcription_request, [TRANSCRIBE]
-        # injecté implicitement). Sinon → mode chat (apply_chat_template).
         use_chat = bool(prompt) or bool(system_prompt)
         chat_instruction = _build_chat_instruction(prompt, system_prompt) if use_chat else ""
 
@@ -196,17 +171,12 @@ class VoxtralTransformersSource(Source):
         )
 
     def warmup(self) -> None:
-        """Charge déjà le modèle au __init__ ; pas de second warmup utile.
-
-        Note : la première inférence post-load est plus lente (~10s vs
-        ~2s en steady-state à cause du JIT HIP). Le bench fait sa propre
-        boucle donc l'overhead est isolé sur le premier sample sans nous
-        en occuper ici.
-        """
+        """No warmup: the first inference pays the HIP JIT, and the bench's
+        own loop absorbs that on its first sample."""
         return None
 
 
-# ── Helpers libres ────────────────────────────────────────────────────
+# ── Helpers ───────────────────────────────────────────────────────────
 
 
 def _wav_duration_seconds(path: Path) -> float:
@@ -223,13 +193,8 @@ def _wav_duration_seconds(path: Path) -> float:
 
 
 def _build_chat_instruction(prompt: str, system_prompt: str | None) -> str:
-    """Construit le bloc text unique du message user pour le mode chat.
-
-    Voxtral ne supporte pas le rôle ``system`` séparément (cf. model card
-    Mistral et ``voxtral_chat.py``). Quand ``system_prompt`` est fourni,
-    son contenu précède le ``prompt`` utilisateur, séparé par un double
-    saut de ligne — c'est la convention la plus proche d'un vrai rôle
-    system tout en restant dans un message ``role: user``."""
+    """Voxtral has no separate ``system`` role, so ``system_prompt`` goes
+    before the user prompt in the one ``role: user`` text block."""
     sp = (system_prompt or "").strip()
     up = (prompt or "").strip()
     if sp and up:

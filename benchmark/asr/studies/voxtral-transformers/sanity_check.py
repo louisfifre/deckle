@@ -1,12 +1,10 @@
-"""Sanity check Voxtral Mini 3B BF16 via Transformers + torch ROCm Windows.
+"""Sanity check of Voxtral Mini 3B BF16 over Transformers and torch ROCm on
+Windows: load the local safetensors shards, transcribe one short sample of the
+voxtral-val-30 corpus through the official processor, report VRAM and time.
 
-Charge le modèle depuis le path local (safetensors shards), prépare la
-requête de transcription via le processor officiel, transcrit un sample
-court du corpus voxtral-val-30, mesure VRAM et temps.
+Usage, from benchmark/:
 
-Usage : exécuter depuis le venv `.venv-voxtral-rocm/` :
-
-    .venv-voxtral-rocm\\Scripts\\python.exe benches\\voxtral-transformers\\sanity_check.py
+    .venv-voxtral-rocm\\Scripts\\python.exe asr\\studies\\voxtral-transformers\\sanity_check.py
 """
 
 from __future__ import annotations
@@ -17,8 +15,8 @@ import sys
 import time
 from pathlib import Path
 
-# Force stdout en UTF-8 sous Windows pour ne pas crasher sur les caractères
-# non-cp1252 (sortie modèle multilingue, séparateurs box, etc.).
+# UTF-8 stdout on Windows, or a character outside cp1252 in the model's
+# output crashes the print.
 if sys.stdout.encoding.lower() != "utf-8":
     sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8")
     sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding="utf-8")
@@ -31,7 +29,7 @@ MODEL_PATH = Path(r"D:\models\llm\voxtral\Voxtral-Mini-3B-2507-safetensors")
 HF_REPO_ID = "mistralai/Voxtral-Mini-3B-2507"
 CORPUS_DIR = Path(os.environ["LOCALAPPDATA"]) / "Deckle" / "benchmark" / "corpora" / "voxtral-val-30"
 
-# Sample court ~1.7s avec contenu réel ("Et toujours douter un peu.")
+# A short sample with real speech.
 SAMPLE_ID = "dcad692a54fd452cbfb174ca9899deba"
 SAMPLE_REFERENCE = "Et toujours douter un peu."
 

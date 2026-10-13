@@ -1,20 +1,13 @@
-"""Mesure perf RTF de Voxtral Mini 3B BF16 sur Transformers + torch ROCm.
+"""Measure the steady-state RTF of Voxtral Mini 3B BF16 on Transformers and
+torch ROCm.
 
-Charge le modèle une fois, fait un warm-up jeté, puis transcrit trois
-samples de durée croissante (court 1.75s, moyen 29.17s, long 113.95s) en
-mesurant temps preprocess + generate + decode et RTF (temps inférence
-total / durée audio). Cible : caractériser le RTF en steady-state pour
-décider si Voxtral via Transformers est viable comme runtime de
-production pour la dictée Deckle, ou seulement comme vérité de terrain.
+One discarded warm-up, then three samples of rising duration, timing
+preprocess, generate and decode. The question is whether Voxtral on
+Transformers can serve live dictation or only as ground truth: an RTF above 1
+is slower than real time, which rules out interactive dictation.
 
-Le RTF de référence à dépasser sur la même machine :
-  - Whisper.cpp large-v3   : ~0.05-0.10
-  - llama-mtmd-cli (GGUF)  : ~0.05-0.50 selon quant
-Un RTF >1 signifie « plus lent que le temps réel », rédhibitoire pour la
-dictée interactive.
-
-Usage :
-    .venv-voxtral-rocm\\Scripts\\python.exe benches\\voxtral-transformers\\perf_rtf.py
+Usage, from benchmark/:
+    .venv-voxtral-rocm\\Scripts\\python.exe asr\\studies\\voxtral-transformers\\perf_rtf.py
 """
 
 from __future__ import annotations
@@ -38,7 +31,7 @@ MODEL_PATH = Path(r"D:\models\llm\voxtral\Voxtral-Mini-3B-2507-safetensors")
 HF_REPO_ID = "mistralai/Voxtral-Mini-3B-2507"
 CORPUS_DIR = Path(os.environ["LOCALAPPDATA"]) / "Deckle" / "benchmark" / "corpora" / "voxtral-val-30"
 
-WARMUP_SAMPLE_ID = "b9d726f4577a4fda998110044bb1109c"  # 1.06s, jeté
+WARMUP_SAMPLE_ID = "b9d726f4577a4fda998110044bb1109c"  # 1.06 s, discarded
 
 SAMPLES = [
     ("court ",  1.75,   "dcad692a54fd452cbfb174ca9899deba"),
@@ -56,7 +49,6 @@ def fmt_bytes(n: float) -> str:
 
 
 def transcribe(model, processor, audio_path: Path, device: str, dtype) -> dict:
-    """Une transcription complète, retourne les métriques de chaque étape."""
     t0 = time.perf_counter()
     inputs = processor.apply_transcription_request(
         language="fr",
@@ -117,7 +109,7 @@ def main() -> int:
     print(f"[load] ready in {t_load:.2f}s, vram allocated={fmt_bytes(torch.cuda.memory_allocated())}")
     print()
 
-    # ── Warm-up jeté ───────────────────────────────────────────────
+    # ── Discarded warm-up ──────────────────────────────────────────
     warmup_path = CORPUS_DIR / f"{WARMUP_SAMPLE_ID}.wav"
     print(f"[warm] inférence jetée sur {WARMUP_SAMPLE_ID[:8]}... (1.06s)")
     t0 = time.perf_counter()
@@ -125,7 +117,7 @@ def main() -> int:
     print(f"[warm] done in {time.perf_counter() - t0:.2f}s")
     print()
 
-    # ── Mesures ────────────────────────────────────────────────────
+    # ── Measurements ───────────────────────────────────────────────
     print(f"[meas] {'label':6s}  {'duration':>9s}  {'preproc':>8s}  {'generate':>8s}  {'tokens':>7s}  {'RTF':>6s}")
     print(f"       {'-'*6}  {'-'*9}  {'-'*8}  {'-'*8}  {'-'*7}  {'-'*6}")
 

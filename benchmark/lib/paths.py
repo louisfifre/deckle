@@ -1,31 +1,14 @@
 """Paths shared by benchmark workspaces.
 
-Le **code** vit sous `benchmark/` et bouge avec le worktree courant. Les
-**données** (corpora curated, runs avec ground truth, runs avec verdicts judge)
-sont précieuses et doivent **survivre aux worktrees** — sinon chaque rebase ou
-nettoyage les perd.
+Code lives under ``benchmark/`` and moves with the current worktree. Data
+(curated corpora, runs with ground truth or judge verdicts) lives under
+``BENCHMARK_DATA_DIR`` so it survives worktrees; a rebase or a cleanup would
+otherwise lose it. Every reader or writer of results or corpora goes through
+``CORPORA_DIR`` and ``RUNS_DIR``.
 
-La séparation :
-
-  - ``BENCHMARK_CODE_DIR`` — résolu depuis ``__file__`` du module, pointe
-    sur le dossier ``benchmark/`` du worktree courant.
-  - ``BENCHMARK_DATA_DIR`` — par défaut ``%LOCALAPPDATA%\\Deckle\\benchmark\\``,
-    survit aux worktrees. Override via ``DECKLE_BENCHMARK_DIR``.
-
-Tout consommateur qui lit/écrit des **résultats** ou des **corpora** passe
-par ``CORPORA_DIR`` et ``RUNS_DIR`` exposés ici.
-
-Nommage canonique d'un run : ``<candidat>-<phase>-<NNNN>`` où :
-  - ``candidat`` est le slug de l'objet testé
-  - ``phase`` ∈ ``{poc, debug, testing, integration}`` — le bench est un
-    harnais récurrent, pas un one-shot
-  - ``NNNN`` est un compteur incrémental à 4 chiffres par couple
-    (candidat, phase)
-
-Exemples : ``candidate-poc-0001``, ``prompt-debug-0003``,
-``backend-testing-0001``.
-
-Tri naturel : candidat d'abord, phase ensuite, id en dernier.
+A run is named ``<candidate>-<phase>-<NNNN>``: the slug of the thing tested,
+a phase in ``{poc, debug, testing, integration}``, and a 4-digit counter per
+(candidate, phase) pair, so runs sort by candidate, then phase, then id.
 """
 
 from __future__ import annotations
@@ -37,11 +20,10 @@ from pathlib import Path
 # ── Code (worktree) ─────────────────────────────────────────────────
 
 BENCHMARK_CODE_DIR = Path(__file__).resolve().parent.parent
-"""Le ``benchmark/`` du worktree courant. Ne contient que du code et des
-templates de prompts versionnés. Ne contient pas de résultats."""
+"""Holds code and versioned prompt templates only, never results."""
 
 
-# ── Data (AppData, survit aux worktrees) ────────────────────────────
+# ── Data (AppData, survives worktrees) ──────────────────────────────
 
 def _resolve_data_dir() -> Path:
     override = os.environ.get("DECKLE_BENCHMARK_DIR")
@@ -49,13 +31,11 @@ def _resolve_data_dir() -> Path:
         return Path(override)
     localappdata = os.environ.get("LOCALAPPDATA")
     if not localappdata:
-        # Fallback minimal — ne devrait pas arriver sous Windows.
         return BENCHMARK_CODE_DIR
     return Path(localappdata) / "Deckle" / "benchmark"
 
 
 BENCHMARK_DATA_DIR = _resolve_data_dir()
-"""Racine des données persistantes du bench. Survit aux worktrees."""
 
 def _resolve_deckle_data_dir() -> Path:
     localappdata = os.environ.get("LOCALAPPDATA")
@@ -67,33 +47,28 @@ def _resolve_deckle_data_dir() -> Path:
 
 
 DECKLE_DATA_DIR = _resolve_deckle_data_dir()
-"""Racine locale de Deckle (``%LOCALAPPDATA%/Deckle`` par défaut).
-Les benchmarks la lisent pour importer la télémétrie produite par l'app."""
+"""Benchmarks read the app's own data root to import the telemetry it produces."""
 
 DECKLE_TELEMETRY_DIR = DECKLE_DATA_DIR / "telemetry"
-"""Télémétrie locale produite par Deckle, source des corpus de benchmark."""
 
 CORPORA_DIR = BENCHMARK_DATA_DIR / "corpora"
-"""Corpora curated avec leur ``corpus.jsonl`` enrichi. Un sous-dossier par slug."""
+"""One subfolder per corpus slug, each with its enriched ``corpus.jsonl``."""
 
 RUNS_DIR = BENCHMARK_DATA_DIR / "runs"
-"""Résultats des passes de bench. Un sous-dossier par run au format
-``<candidat>-<phase>-<NNNN>``."""
 
 
-# ── Modèles — répertoire central, partagé avec Ollama et autres ─
+# ── Models (one shared store) ───────────────────────────────────────
 
 def _resolve_models_dir() -> Path:
     override = os.environ.get("DECKLE_MODELS_DIR")
     if override:
         return Path(override)
-    # Convention Deckle : les modèles lourds vivent sous ``D:\models\llm\``,
-    # à côté du store Ollama. Évite la duplication entre worktrees.
+    # Heavy models live beside the Ollama store, outside any worktree, so
+    # worktrees never duplicate them.
     return Path(r"D:\models\llm")
 
 
 MODELS_DIR = _resolve_models_dir()
-"""Répertoire central des modèles lourds partagés entre benchmarks."""
 
 
 # ── Helpers ─────────────────────────────────────────────────────────
@@ -102,15 +77,12 @@ _ID_SUFFIX_RE = re.compile(r"^\d{4}$")
 
 
 def next_run_id(model: str, phase: str) -> int:
-    """Renvoie le prochain id à 4 chiffres pour un couple (modèle, phase),
-    en scannant ``RUNS_DIR`` pour les runs existants. Démarre à 1.
+    """Return the next 4-digit id for (model, phase), starting at 1.
 
-    Le parse se fait par préfixe ``{model}-{phase}-`` plutôt que par regex
-    global, parce que ``model`` peut légitimement contenir des tirets
-    (ex. ``voxtral-transformers``, ``voxtral-llamacpp-mini3b-q8``). Tout
-    autre schéma de parsing fait collision et fait toujours retourner 1,
-    ce qui écrase silencieusement les runs existants au prochain
-    ``mkdir(exist_ok=True)`` + write en mode ``"w"``."""
+    Parse by the ``{model}-{phase}-`` prefix, not a global regex: ``model``
+    may contain hyphens (``voxtral-llamacpp-mini3b-q8``). A parse that
+    misses always returns 1, and the next ``mkdir(exist_ok=True)`` plus a
+    ``"w"`` write silently overwrites an existing run."""
     if not RUNS_DIR.exists():
         return 1
     prefix = f"{model}-{phase}-"
@@ -127,10 +99,6 @@ def next_run_id(model: str, phase: str) -> int:
 
 
 def make_run_dir(model: str, phase: str, *, create: bool = True) -> Path:
-    """Construit un nouveau ``RUNS_DIR/<modèle>-<phase>-<NNNN>``. Le NNNN
-    est calculé automatiquement comme ``next_run_id(model, phase)``.
-
-    Si ``create=True`` (défaut), le dossier est créé et ses parents."""
     n = next_run_id(model, phase)
     run_dir = RUNS_DIR / f"{model}-{phase}-{n:04d}"
     if create:
@@ -139,6 +107,4 @@ def make_run_dir(model: str, phase: str, *, create: bool = True) -> Path:
 
 
 def corpus_dir(slug: str) -> Path:
-    """Renvoie ``CORPORA_DIR / slug``. Ne crée pas le dossier — utilisé
-    en lecture comme en écriture."""
     return CORPORA_DIR / slug

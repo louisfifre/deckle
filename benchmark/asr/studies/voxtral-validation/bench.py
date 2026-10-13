@@ -1,44 +1,19 @@
 """Bench voxtral-validation — Voxtral 24B Q4_K_M vs ground-truth Gemini.
 
-Pour chaque (sample, régime) du corpus ``voxtral-val-30`` :
-  1. Transcrit via ``voxtral-llamacpp`` (stack Vulkan validée).
-  2. Calcule WER + CER **contre la référence Gemini** (champ
-     ``payload.reference_text_gemini``), pas contre la référence Whisper
-     qui hallucine sur les samples bruités ou très courts.
-  3. Calcule ``word_count_ratio = words(hyp) / words(ref_gemini)`` —
-     un proxy lisible pour détecter le lissage (ratio < 0.7) versus la
-     fidélité verbatim (ratio 0.9–1.1).
-  4. Calcule looping + leak patterns (mêmes métriques que voxtral-poc).
-  5. Score via le juge Gemini multimodal (audio + hyp) — déjà câblé,
-     écoute le signal et produit fidelite_signal / proprete /
-     absence_hallucination / regime_respecte.
-  6. Écrit une row JSON par expérience dans
-     ``runs/voxtral-validation-<id>/results.jsonl``.
+``_parse_args`` shows the first line above as the CLI description.
 
-Différences avec ``voxtral-poc/bench.py`` :
-  - source unique ``voxtral-llamacpp`` (pas de switcher DirectML)
-  - judge unique Gemini (pas d'option Claude)
-  - référence WER = Gemini (pas Whisper)
-  - métrique supplémentaire ``word_count_ratio``
-  - pas de monitor PowerShell GPU (overkill pour valider la qualité ;
-    la perf a déjà été mesurée en session perf-cap 2026-05-26)
-  - TOML régimes lit ``prompt`` + ``system_prompt`` distincts (la
-    source supporte ``--system-prompt`` Mistral V7)
+For each (sample, regime): transcribe with the chosen Voxtral source, score
+WER and CER against the Gemini reference (``payload.reference_text_gemini``)
+rather than the Whisper one, which hallucinates on noisy or very short
+samples, add ``word_count_ratio`` and the looping and leak metrics, run the
+multimodal Gemini judge, and write one JSON row to ``results.jsonl``. No GPU
+monitor: this bench measures quality, not performance. Regimes carry a
+separate ``prompt`` and ``system_prompt``.
 
-Préalable :
-  - Avoir construit le corpus ``voxtral-val-30`` via
-    ``python benchmark/asr/build_corpus.py --corpus voxtral-val-30``.
-  - Avoir un champ ``reference_text_gemini`` déjà renseigné dans le corpus
-    pour les samples à juger.
-  - ``GEMINI_API_KEY`` dans ``benchmark/.env``.
-
-Usage typique :
-    python bench.py                              # 30 samples × 6 régimes
-    python bench.py --regimes T1_baseline,T2_verbatim
-    python bench.py --limit 5                    # 5 premiers samples
-    python bench.py --skip-judge                 # metrics objectives seulement
-
-Référence : brief session 2026-05-26.
+Prerequisites: the ``voxtral-val-30`` corpus built with
+``python benchmark/asr/build_corpus.py --corpus voxtral-val-30``, its
+``reference_text_gemini`` filled, and ``GEMINI_API_KEY`` in
+``benchmark/.env``.
 """
 
 from __future__ import annotations
@@ -88,9 +63,6 @@ def main() -> int:
         print(f"FATAL : aucun sample dans corpus {args.corpus!r}", file=sys.stderr)
         return 2
 
-    # Filtre samples sans référence Gemini — on imprime un warning mais
-    # on continue avec ceux qui en ont. La pré-gen est censée tourner
-    # avant ; un corpus sans Gemini = exécution bench inutile.
     n_total = len(samples)
     samples = [s for s in samples if s.reference_text_gemini.strip()]
     n_skipped = n_total - len(samples)
@@ -131,9 +103,6 @@ def main() -> int:
             print(f"  judge ready  : {judge.label} model={judge.row_model}")
 
     # ── Run dir ────────────────────────────────────────────────────────
-    # Nommage canonique `<modèle>-<phase>-<NNNN>` (cf. lib/paths.py). Run
-    # dir vit sous %LOCALAPPDATA%\Deckle\benchmark\runs\ pour survivre aux
-    # worktrees. Override via --run-name si besoin d'un nom custom.
     if args.run_name:
         run_dir = paths.RUNS_DIR / args.run_name
         run_dir.mkdir(parents=True, exist_ok=True)
@@ -159,13 +128,10 @@ def main() -> int:
                 user_prompt   = regime_cfg.get("prompt", "")
                 system_prompt = regime_cfg.get("system_prompt", "") or None
 
-                # Filter very-short × chat-mode : Voxtral en chat dégénère
-                # sur les samples silencieux (réponses templates identiques
-                # cross-samples observées 2026-05-27 sur T4/T5, dérive 128
-                # tokens sur T6). Le mode canonique (prompt ET system_prompt
-                # vides) traverse sans risque — il reste robuste sur ces
-                # samples. La détection chat reproduit l'heuristique de la
-                # source voxtral-transformers.
+                # Chat mode degenerates on very short, near-silent samples
+                # (one template answer across samples, or runaway output);
+                # canonical mode stays robust there. The chat test mirrors
+                # VoxtralTransformersSource's routing.
                 is_chat = bool(user_prompt) or bool(system_prompt)
                 if is_chat and sample.tier == "very-short":
                     print(f"{tag} {sample.id[:8]}… ({sample.duration_s:>5.1f}s) "
@@ -273,8 +239,8 @@ def _load_regimes(only: str) -> dict[str, dict]:
 
 
 def _build_judge():
-    """Instancie le juge Gemini multimodal. Retourne None si la clé
-    n'est pas dispo (warning loud, bench continue sans judge)."""
+    """None when the API key or the prompt is missing: the bench then runs
+    without a judge."""
     import os
     if not os.environ.get("GEMINI_API_KEY"):
         print("  ⚠ GEMINI_API_KEY absente — judge skipped.\n"
@@ -317,13 +283,10 @@ def _build_row(*, sample, source_name, source_label, regime_name,
 
 
 def _compute_metrics(*, hypothesis: str, reference: str) -> dict:
-    """Métriques objectives. Référence = Gemini ground-truth.
-
-    ``word_count_ratio`` = words(hyp) / words(ref) — proxy lisible pour
-    différencier le lissage (ratio < 0.7) de la fidélité verbatim
-    (ratio 0.9–1.1). N'est PAS une mesure de qualité en soi : un ratio
-    parfait ne dit rien sur l'ordre des mots ou les substitutions. À
-    lire conjointement avec WER.
+    """``reference`` is the Gemini ground truth. ``word_count_ratio`` is a
+    readable proxy for smoothing (below 0.7) versus verbatim fidelity (0.9
+    to 1.1). It is not a quality measure: a perfect ratio says nothing about
+    word order or substitutions, so read it with WER.
     """
     er = metric_wer.compute(reference, hypothesis)
     lo = metric_looping.compute(hypothesis)

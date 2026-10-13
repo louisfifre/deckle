@@ -1,29 +1,24 @@
-"""Smoke test Voxtral Mini 3B 2507 ONNX sur la voie 2 (DirectML).
+"""Smoke test of Voxtral Mini 3B 2507 ONNX on DirectML.
 
-Objectif validation breadth : confirmer que le pipeline ONNX produit des
-transcriptions cohérentes sur (a) plusieurs variantes de quantization
-decoder (FP16, Q4F16) et (b) plusieurs durées audio (court / long-form).
+Checks that the ONNX pipeline transcribes coherently across decoder
+quantizations (FP16, Q4F16) and audio durations; a 4-bit decoder serves this
+smoke test only.
 
-Pipeline porté du code de référence de la discussion #1 du repo
-`onnx-community/Voxtral-Mini-3B-2507-ONNX` (auteur urroxyz, validé après
-les fixes Xenova des 21-22 juillet 2025). Adapté avec le format de
-prompt **transcription canonique** Voxtral officiel :
+Pipeline ported from the reference code in discussion #1 of
+`onnx-community/Voxtral-Mini-3B-2507-ONNX` (author urroxyz, after Xenova's
+fixes), with Voxtral's canonical transcription prompt:
 
     <s>[INST][BEGIN_AUDIO][AUDIO]×N[/INST] lang:fr [TRANSCRIBE]
 
-Distinct du format chat (apply_chat_template) qui omet [BEGIN_AUDIO] et
-met l'instruction texte INSIDE le INST block. Sur audio court silencieux
-le chat-mode peut paraphraser ; le canonique cible la transcription pure.
+The chat format (apply_chat_template) omits [BEGIN_AUDIO] and puts the text
+instruction inside the INST block, and may paraphrase.
 
-Approche actuelle : génération **sans KV cache** (recompute le prompt
-complet à chaque step). O(N²) en compute mais établit une référence
-fonctionnelle propre. L'optimisation KV-cache est un follow-up tracké
-séparément — la version naïve avec mapping `present.* → past_key_values.*`
-ne fonctionne pas malgré le buffer reuse contourné par `.copy()`, cause
-non identifiée à ce stade.
+Generation runs without a KV cache, recomputing the whole prompt each step
+(O(N²)): feeding ``present.*`` back as ``past_key_values.*`` gave wrong
+output even with ``.copy()``, cause unknown.
 
-Tous les `.onnx` et `.onnx_data*` vivent sous D:\\models\\llm\\ pour
-ne pas dupliquer entre worktrees.
+The ``.onnx`` files live under D:\\models\\llm\\ so worktrees never
+duplicate them.
 """
 
 from __future__ import annotations
@@ -50,7 +45,7 @@ if sys.stdout.encoding and sys.stdout.encoding.lower() not in {"utf-8", "utf8"}:
 REPO_ID    = "onnx-community/Voxtral-Mini-3B-2507-ONNX"
 MODELS_DIR = Path(r"D:\models\llm\voxtral-mini-3b-2507-onnx")
 
-# IDs token Mistral Tekken validés par debug_tokens.py.
+# Mistral Tekken token ids.
 BOS_ID, INST_ID, BAUD_ID, AUD_ID, EINST_ID, EOS_ID, TRANSCRIBE_ID = 1, 3, 25, 24, 4, 2, 34
 
 TARGET_SR        = 16000
@@ -80,7 +75,7 @@ def default_audio_path() -> Path:
 
 
 def compute_mel(audio_path: Path) -> np.ndarray:
-    """Whisper-style 128-bin log-mel spectrogram, padded/truncated à 30s."""
+    """Whisper-style 128-bin log-mel spectrogram, padded or truncated to 30 s."""
     y, sr = sf.read(str(audio_path))
     if y.ndim > 1:
         y = y.mean(axis=1)
@@ -126,7 +121,7 @@ def main() -> int:
     print(f"   decoder   = {decoder_filename}")
     print(f"   elapsed   = {time.perf_counter() - t0:.1f}s")
 
-    # ─── 2. Load tokenizer + 3 sessions DirectML ─────────────────────────
+    # ─── 2. Load tokenizer + 3 DirectML sessions ─────────────────────────
     step(f"2. Load tokenizer + sessions (decoder={args.decoder}, EP=DirectML)")
     t0 = time.perf_counter()
     tok = Tokenizer.from_file(str(Path(local_dir) / "tokenizer.json"))
@@ -165,7 +160,7 @@ def main() -> int:
     print(f"   stats: mean={audio_embeds.mean():+.3f} std={audio_embeds.std():.3f}")
     print(f"   encoder elapsed = {time.perf_counter() - t0:.2f}s")
 
-    # ─── 5. Build prompt transcription canonique ─────────────────────────
+    # ─── 5. Build the canonical transcription prompt ─────────────────────
     step(f"5. Build prompt (lang:{args.lang} [TRANSCRIBE])")
     suffix_ids = tok.encode(f" lang:{args.lang} [TRANSCRIBE]", add_special_tokens=False).ids
     prompt_ids = (
@@ -183,7 +178,7 @@ def main() -> int:
     inputs_embeds = emb.run([emb_output], {emb_input: input_ids})[0].astype(np.float32)
     inputs_embeds[0, 3 : 3 + n_audio, :] = audio_embeds.astype(np.float32)
 
-    # ─── 6. Decoder loop (sans KV cache, full re-run) ────────────────────
+    # ─── 6. Decoder loop (no KV cache, full re-run) ──────────────────────
     step(f"6. Decoder loop greedy (max_new={args.max_new}, no-KV — O(N²))")
     t0 = time.perf_counter()
     dec_input_names = [i.name for i in dec.get_inputs()]

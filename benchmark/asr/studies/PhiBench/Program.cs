@@ -6,7 +6,7 @@ namespace Deckle.Benchmark.PhiBench;
 /// Two subcommands :
 ///
 ///   single  : transcribe ONE audio, write the result to stdout as JSON.
-///             Used for sanity checks (palier 1).
+///             Used for sanity checks.
 ///
 ///   corpus  : iterate over a Deckle telemetry corpus, write one JSONL row per
 ///             (sample, regime). Row schema mirrors benchmark/asr/studies/voxtral-validation/bench.py
@@ -54,7 +54,6 @@ public static class Program
         }
     }
 
-    /// <summary>Parses --key value pairs into a dictionary. Bool flags use --flag (no value).</summary>
     private static Dictionary<string, string> ParseOptions(string[] args)
     {
         var dict = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);

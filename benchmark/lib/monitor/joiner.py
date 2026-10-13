@@ -1,31 +1,10 @@
-"""Jointure events × monitor — relie l'activité logique du bench
-(row_start, row_end, model_load_*, bench_start, bench_end) avec les
-échantillons système (VRAM, GPU%, RAM) capturés en parallèle par le
-script PowerShell ``gpu_monitor.ps1``.
+"""Join the bench's events with the system samples ``gpu_monitor.ps1``
+records beside it, by time window (both logs use ISO 8601 milliseconds).
 
-Les deux JSONL partagent le même format de timestamp (ISO 8601
-millisecondes) — la jointure se fait par intervalle temporel.
-
-L'helper produit deux artefacts :
-
-  - **Peaks par row** — pour chaque ``(sample_id, regime)`` qu'on a vu
-    passer entre un ``row_start`` et un ``row_end``, on extrait la
-    fenêtre temporelle et on calcule peak_vram_dedicated, peak_vram_
-    shared, peak_gpu_compute, peak_ram. Enrichit ``results.jsonl`` en
-    ajoutant une clé ``system`` à chaque row.
-
-  - **Phase peaks** — peaks aux trois moments stratégiques du run :
-    ``idle_baseline`` (entre ``bench_start`` et ``model_load_start``,
-    fenêtre que le bench laisse intentionnellement vide pour capter
-    l'état au repos avant chargement du modèle), ``model_load`` (entre
-    ``model_load_start`` et ``model_load_end``, instrumenté côté bench),
-    ``global_run`` (entre ``bench_start`` et ``bench_end``). Posés
-    comme un nouvel event ``bench_summary`` à la fin de
-    ``events.jsonl`` et imprimés en console.
-
-Conçu pour être appelé en fin de bench une fois le monitor stoppé.
-Pas de polling, pas de jointure incrémentale — on lit deux fichiers
-fermés et on calcule.
+Per-row peaks land as a ``system`` key on each ``results.jsonl`` row; phase
+peaks (idle baseline, model load, whole run) land as a ``bench_summary``
+event at the end of ``events.jsonl``. Call it once the bench is over and
+the monitor stopped: it reads two closed files, nothing incremental.
 """
 
 from __future__ import annotations
@@ -37,24 +16,17 @@ from pathlib import Path
 from typing import Any, Iterable
 
 
-# Cadence effective du monitor — dominée par le sample interval de
-# Get-Counter (1 s minimum côté Windows perfcounter API). Utilisé pour
-# calculer le ``coverage_ratio`` théorique des fenêtres ; si le PS
-# accumule du jitter (charge système, GC pwsh), la cadence réelle peut
-# glisser à 1.1-1.6 s. Ancienne valeur 0.5 s pré-batching gardée en
-# mémoire dans le commit qui a basculé le monitor en batch.
+# gpu_monitor.ps1's nominal cadence, bounded by Get-Counter's 1 s minimum
+# sample interval. Only feeds the theoretical ``coverage_ratio``; load on
+# the machine can stretch the real cadence above it.
 _MONITOR_SAMPLE_INTERVAL_S = 1.0
 
 
 @dataclass(frozen=True)
 class MonitorSample:
-    """Un échantillon système issu de gpu_monitor.ps1.
-
-    Convention d'unités : mégaoctets pour la mémoire (RAM/VRAM),
-    pourcentage pour les utilizations (CPU/GPU/RAM), MB/s pour les
-    débits disque, length brute (file d'attente moyenne instantanée)
-    pour ``disk_queue_length``. ``ts`` est un datetime — parsé une fois
-    au chargement pour éviter de reparser à chaque comparaison.
+    """Units: MB for memory, percent for utilization, MB/s for disk
+    throughput, and the raw instantaneous queue length for
+    ``disk_queue_length``.
     """
     ts:                datetime
     ram_used_mb:       float
@@ -70,7 +42,6 @@ class MonitorSample:
 
 @dataclass(frozen=True)
 class PeakStats:
-    """Peaks sur un intervalle temporel donné."""
     peak_vram_dedicated_mb: float
     peak_vram_shared_mb:    float
     peak_gpu_compute_pct:   float
@@ -81,23 +52,17 @@ class PeakStats:
     peak_disk_write_mb_s:   float
     peak_disk_queue_length: float
     samples_count:          int
-    coverage_ratio:         float = 1.0   # fraction d'intervalle couverte
+    coverage_ratio:         float = 1.0   # fraction of the window covered by samples
 
 
 # ── Parsing ────────────────────────────────────────────────────────────
 
 def _parse_ts(raw: str) -> datetime:
-    """Parse un timestamp ISO 8601 millisecondes. Tolère soit
-    ``2026-05-24T12:34:56.789`` (le format émis par les deux sources),
-    soit ``2026-05-24T12:34:56`` (au cas où une seconde-precise apparaît
-    dans un futur log). ``fromisoformat`` mange les deux."""
     return datetime.fromisoformat(raw)
 
 
 def load_monitor_samples(path: Path) -> list[MonitorSample]:
-    """Charge tous les échantillons monitor dans l'ordre chronologique.
-    Robuste à des lignes vides ou mal formées (un coup d'eau du
-    process PS qui stoppe en pleine écriture)."""
+    """Skip blank or malformed lines: the monitor can be stopped mid-write."""
     if not path.exists():
         return []
     samples: list[MonitorSample] = []
@@ -111,10 +76,7 @@ def load_monitor_samples(path: Path) -> list[MonitorSample]:
             except json.JSONDecodeError:
                 continue
             try:
-                # Les champs cpu/disk sont arrivés en 2026-05-25 — les
-                # runs antérieurs n'ont pas ces clés, le ``or 0.0`` les
-                # rétro-comble silencieusement (pas de KeyError, juste
-                # des peaks à 0 pour ces axes).
+                # Older monitor logs lack the cpu and disk keys; they read as 0.
                 samples.append(MonitorSample(
                     ts=_parse_ts(obj["ts"]),
                     ram_used_mb=float(obj.get("ram_used_mb", 0.0) or 0.0),
@@ -134,8 +96,6 @@ def load_monitor_samples(path: Path) -> list[MonitorSample]:
 
 
 def load_events(path: Path) -> list[dict[str, Any]]:
-    """Charge tous les events bench dans l'ordre du fichier (déjà
-    chronologique). Robuste aux mêmes accidents."""
     if not path.exists():
         return []
     events: list[dict[str, Any]] = []
@@ -158,9 +118,6 @@ def peaks_in_window(
     start_ts: datetime,
     end_ts:   datetime,
 ) -> PeakStats | None:
-    """Extrait les peaks dans ``[start_ts, end_ts]``. Retourne None si
-    aucun échantillon ne tombe dans l'intervalle (fenêtre trop courte
-    ou monitor non démarré à ce moment-là)."""
     if end_ts < start_ts:
         return None
     in_window = [s for s in samples if start_ts <= s.ts <= end_ts]
@@ -168,10 +125,6 @@ def peaks_in_window(
         return None
 
     duration = (end_ts - start_ts).total_seconds()
-    # Cadence nominale du monitor : ``_MONITOR_SAMPLE_INTERVAL_S``. Si la
-    # fenêtre dure moins qu'un sample et qu'on a zéro échantillon, on est
-    # revenu None plus haut. Sinon coverage = nombre d'échantillons ×
-    # interval / durée, capé à 1.0.
     expected = max(1.0, duration / _MONITOR_SAMPLE_INTERVAL_S)
     coverage = min(1.0, len(in_window) / expected)
 
@@ -191,7 +144,6 @@ def peaks_in_window(
 
 
 def _peak_dict(p: PeakStats | None) -> dict[str, Any] | None:
-    """Sérialise un PeakStats en dict JSON-friendly."""
     if p is None:
         return None
     return {
@@ -209,22 +161,15 @@ def _peak_dict(p: PeakStats | None) -> dict[str, Any] | None:
     }
 
 
-# ── Jointure ──────────────────────────────────────────────────────────
+# ── Join ──────────────────────────────────────────────────────────────
 
 def join_row_peaks(
     events:  list[dict[str, Any]],
     samples: list[MonitorSample],
 ) -> dict[tuple[str, str], dict[str, Any]]:
-    """Apparie les ``row_start`` / ``row_end`` consécutifs pour la même
-    paire (sample_id, regime), et calcule les peaks dans la fenêtre.
-
-    Retourne ``{(sample_id, regime): {row_start_ts, row_end_ts, ...peaks}}``.
-    Si plusieurs rows ont la même paire (rejeu, retry), la dernière
-    écrase la précédente — on garde le résultat final.
-    """
+    """When a (sample_id, regime) pair runs twice (replay, retry), the last
+    row wins, so the peaks match the result that was kept."""
     out: dict[tuple[str, str], dict[str, Any]] = {}
-    # On scanne les events dans l'ordre ; pour chaque row_start on
-    # cherche le prochain row_end qui matche (sample_id, regime).
     open_rows: dict[tuple[str, str], datetime] = {}
     for ev in events:
         kind = ev.get("kind")
@@ -256,23 +201,7 @@ def compute_phase_peaks(
     events:  list[dict[str, Any]],
     samples: list[MonitorSample],
 ) -> dict[str, dict[str, Any] | None]:
-    """Calcule les peaks sur trois phases stratégiques :
-
-      - ``idle_baseline`` : entre ``bench_start`` et ``model_load_start``.
-        Cette fenêtre correspond à la pause que le bench insère
-        volontairement entre les deux events précisément pour laisser
-        au monitor le temps de capturer des samples avant que le
-        chargement du modèle ne pousse la VRAM. Si ``model_load_start``
-        est absent (vieux run sans instrumentation source), on tombe en
-        rabattement sur ``bench_start`` comme borne haute — la fenêtre
-        est alors vide.
-      - ``model_load`` : entre ``model_load_start`` et ``model_load_end``,
-        instrumenté par le bench autour de ``_build_source``.
-      - ``global_run`` : entre ``bench_start`` et ``bench_end``.
-
-    Chaque phase peut être ``None`` si l'event correspondant n'est pas
-    présent (vieux run sans instrumentation model_load par exemple).
-    """
+    """A phase is None when the run lacks its events."""
     def find_ts(kind: str) -> datetime | None:
         for ev in events:
             if ev.get("kind") == kind:
@@ -291,12 +220,9 @@ def compute_phase_peaks(
     }
 
     if samples and bench_start is not None:
-        # Idle = avant le début du chargement du modèle. Le bench émet
-        # bench_start puis attend 10 s avant model_load_start, fenêtre
-        # dans laquelle le monitor capte le baseline. Sans
-        # model_load_start (rétrocompat) on retombe sur bench_start
-        # comme borne haute — la fenêtre sera vide, ce que
-        # `if idle_start < idle_end` gère.
+        # The bench pauses between bench_start and model_load_start so the
+        # monitor records an idle baseline before the model fills VRAM.
+        # Without model_load_start the window is empty.
         idle_end = load_start if load_start is not None else bench_start
         idle_start = max(samples[0].ts, bench_start)
         if idle_start < idle_end:
@@ -314,14 +240,8 @@ def compute_phase_peaks(
 # ── Orchestration ─────────────────────────────────────────────────────
 
 def enrich_run(run_dir: Path) -> dict[str, Any]:
-    """Lit ``run_dir/{events,monitor,results}.jsonl``, enrichit
-    ``results.jsonl`` (chaque row gagne une clé ``system``), ajoute un
-    event ``bench_summary`` à la fin de ``events.jsonl`` avec les phase
-    peaks, et retourne le summary pour usage console.
-
-    Idempotent : appelable plusieurs fois sur le même run. Si le monitor
-    est absent (``--skip-monitor``), on n'enrichit rien et on retourne
-    un summary vide. Aucune exception si un fichier est manquant.
+    """Without a monitor log (``--skip-monitor``) nothing is written. Each
+    call appends one more ``bench_summary`` event to ``events.jsonl``.
     """
     events_path  = run_dir / "events.jsonl"
     monitor_path = run_dir / "monitor.jsonl"
@@ -338,7 +258,6 @@ def enrich_run(run_dir: Path) -> dict[str, Any]:
     if not samples:
         return summary
 
-    # Enrichissement des rows.
     row_peaks = join_row_peaks(events, samples)
     if results_path.exists() and row_peaks:
         enriched_lines: list[str] = []
@@ -358,7 +277,6 @@ def enrich_run(run_dir: Path) -> dict[str, Any]:
                 enriched_lines.append(json.dumps(row, ensure_ascii=False))
         results_path.write_text("\n".join(enriched_lines) + "\n", encoding="utf-8")
 
-    # Append du bench_summary dans events.jsonl.
     if events_path.exists():
         summary_event = {
             "ts":   datetime.now().isoformat(timespec="milliseconds"),
@@ -372,10 +290,6 @@ def enrich_run(run_dir: Path) -> dict[str, Any]:
 
 
 def format_summary_console(summary: dict[str, Any]) -> str:
-    """Met en forme le summary pour affichage en fin de bench. Deux
-    lignes par phase : la première rassemble les peaks GPU+RAM (les
-    axes critiques pour les modèles lourds), la seconde les peaks CPU+disk
-    (utiles surtout pour les tests de pression I/O ou multi-process)."""
     lines = ["=== system summary ==="]
     phases = summary.get("phases") or {}
     for name in ("idle_baseline", "model_load", "global_run"):
@@ -390,8 +304,7 @@ def format_summary_console(summary: dict[str, Any]) -> str:
             f"RAM {p['peak_ram_pct']:>4.1f}% "
             f"({p['samples_count']} samples, cov {p.get('coverage_ratio', 0):.2f})"
         )
-        # Champs cpu/disk peuvent manquer sur d'anciens runs — get avec
-        # défaut 0.0 pour ne pas crasher sur les artefacts pré-2026-05-25.
+        # Older runs lack the cpu and disk peaks.
         lines.append(
             f"  {'':<14}   "
             f"CPU {p.get('peak_cpu_pct', 0.0):>5.1f}%, "

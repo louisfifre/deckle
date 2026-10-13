@@ -4,14 +4,14 @@ Supertonic-3 (Supertone) is French (first-class lang) and pure-ONNX-local (the
 `supertonic` package runs 4 .onnx graphs on onnxruntime — no torch, no transformers
 at inference). ~99M params, CPU real-time. NOTE: its text frontend maps characters
 to raw unicode code points — there is NO expression-tag channel (a literal <laugh>
-is spoken, not performed). Arbitrary expressive tags live in Orpheus, not here. We
-keep only the M1 (male) voice, the one Louis validated.
+is spoken, not performed). Arbitrary expressive tags live in Orpheus, not here.
+Only the M1 (male) voice is kept.
 
 Weights auto-download once to D:\\models\\tts\\supertonic-3 (outside the repo).
 Outputs land in the gitignored run dir.
 
 Run with the dedicated venv:
-    benchmark\\.venv-tts-onnx\\Scripts\\python.exe benchmark\\benches\\tts-audition\\supertonic_synth.py
+    benchmark\\.venv-tts-onnx\\Scripts\\python.exe benchmark\\asr\\studies\\tts-audition\\supertonic_synth.py
 """
 
 from __future__ import annotations
@@ -37,7 +37,7 @@ import _harness  # noqa: E402
 OUT = _harness.RUN_DIR
 MODEL_DIR = Path(r"D:\models\tts\supertonic-3")
 
-VOICES = ["M1"]  # keeper — Louis validated the M1 (male) voice; F5/F1 dropped as noise.
+VOICES = ["M1"]
 
 
 def log(m: str) -> None:

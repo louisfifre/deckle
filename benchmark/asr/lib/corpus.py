@@ -1,27 +1,13 @@
-"""Lecture des corpora pour le bench (layout v2).
+"""Load benchmark corpora.
 
-Un corpus est un dossier sous ``%LOCALAPPDATA%\\Deckle\\benchmark\\corpora\\<slug>\\``
-qui contient :
+A corpus is a folder ``corpora/<slug>/`` holding ``corpus.jsonl`` (one
+Deckle telemetry payload per sample) and one WAV per sample, named by
+``payload.audio_file``.
 
-  - ``corpus.jsonl`` : une ligne par sample, schéma payload Deckle telemetry
-    (cf. corpus_asr dans Deckle.Diagnostics.Telemetry). Champs obligatoires
-    utilisés ici : ``transcription_id``, ``audio_file``, ``text`` (réf
-    Whisper large-v3), ``duration_seconds``, ``tier``.
-  - ``<audio_file>`` : un WAV par sample, nom exact référencé dans
-    ``payload.audio_file``.
-
-Les corpora vivent **hors du worktree** sous ``%LOCALAPPDATA%\\Deckle\\benchmark\\``
-(cf. ``lib/paths.py``) pour survivre aux changements de worktree et aux
-rebases. Pas versionnés Git — chaque machine apporte ses samples. Le
-``corpus.jsonl`` enrichi (ground truth Gemini, références Whisper) reste
-précieux et persistant.
-
-Le corpus est traité en lecture seule par les benches — on ne touche
-jamais aux fichiers sources, seulement aux résultats sous ``RUNS_DIR``.
-
-Pourquoi un module séparé : ce loader est appelé par les benches ASR
-(voxtral-validation, voxtral-debug, whisper-testing futur, etc.) donc
-il vit en ``lib/`` — pas en duplication dans chaque bench.
+Corpora hold the user's own voice, so they are never versioned: each
+machine brings its own samples, from its Deckle telemetry or captured
+fresh. Benches treat a corpus as read-only and write only under
+``RUNS_DIR``.
 """
 
 from __future__ import annotations
@@ -38,15 +24,10 @@ CORPORA_DIR = paths.CORPORA_DIR
 
 @dataclass(frozen=True)
 class Sample:
-    """Un sample du corpus, prêt à être consommé par une Source.
-
-    ``reference_text`` reste la référence par défaut (Whisper large-v3
-    quand le corpus vient de la télémétrie Deckle), pour rétrocompat.
-    ``reference_text_gemini`` est optionnel — vide si le corpus n'a pas
-    été enrichi par une passe ground-truth Gemini. Les benches qui
-    veulent comparer contre Gemini lisent ce champ et tombent en erreur
-    explicite si vide, plutôt que de retomber silencieusement sur la
-    référence Whisper.
+    """``reference_text`` is the Whisper large-v3 transcript from telemetry.
+    ``reference_text_gemini`` stays empty until a Gemini ground-truth pass
+    enriches the corpus; a bench that scores against it fails loudly on an
+    empty value rather than fall back to the Whisper reference.
     """
     id: str
     audio_path: Path
@@ -58,8 +39,6 @@ class Sample:
 
 
 def available() -> list[str]:
-    """Liste les slugs de corpora dispo sur la machine. Pratique pour
-    l'erreur ``corpus introuvable`` ou un menu CLI."""
     if not CORPORA_DIR.exists():
         return []
     return sorted(p.name for p in CORPORA_DIR.iterdir()
@@ -67,12 +46,9 @@ def available() -> list[str]:
 
 
 def load(slug: str) -> list[Sample]:
-    """Charge un corpus depuis ``corpora/<slug>/corpus.jsonl``.
-
-    Trie par durée croissante (utile pour le bench : on commence par les
-    petits samples, le pipeline se réchauffe avant les longs). Filtre
-    silencieusement les samples dont l'audio est introuvable — un corpus
-    peut être partiel (ex. user a supprimé un WAV pour tester).
+    """Sorted by ascending duration, so the pipeline warms up on short
+    samples before the long ones. A sample whose WAV is missing is skipped:
+    a corpus may be partial.
     """
     corpus_dir = CORPORA_DIR / slug
     jsonl_path = corpus_dir / "corpus.jsonl"

@@ -1,22 +1,8 @@
-"""Validation du prompt judge corrigé — challenger Gemini avant grande échelle.
+"""Check the Gemini judge prompt before scaling up: re-score a handful of
+rows from a past run, chosen to cover each regime with clean and degenerate
+outputs, and print the old and new axes side by side with their verdicts.
 
-Avant d'investir dans des évaluations de centaines d'extraits qui s'appuient
-sur le judge Gemini, on veut s'assurer que la correction du prompt
-(commit fix(bench) du 2026-05-27 suite 3) produit bien les comportements
-attendus sur la rubrique T1-T6 actualisée. Stratégie minimale :
-
-  1. Cherry-pick depuis le run Q8_0 le plus récent (180 rows dispo) un
-     échantillon ciblé qui couvre chaque régime, avec des cas variés
-     (sortie propre, sortie dégénérée chat-mode, sortie correcte pour le
-     régime non-transcription T5).
-  2. Re-scorer chaque row avec le judge instancié sur le prompt corrigé.
-  3. Imprimer côte-à-côte ancien score (lu depuis le results.jsonl) vs
-     nouveau score, axe par axe, avec verdicts. Diagnostic en clair.
-
-Sortie : un tableau lisible sur stdout. Pas de JSONL persisté — c'est un
-test ponctuel de la rubrique, pas un run de référence.
-
-Script ad-hoc, archivable une fois la confiance dans le judge établie.
+Prints to stdout only: a spot check of the rubric, not a reference run.
 """
 from __future__ import annotations
 
@@ -41,30 +27,29 @@ Q8_RUN       = RUNS_DIR / "voxtral-llamacpp-mini3b-q8-validation-0001" / "result
 JUDGE_PROMPT = BENCHMARK_ROOT / "prompts" / "judges" / "gemini_per_row.md"
 
 
-# Cherry-pick — couvre chaque régime, mix propre/dégénéré.
-# Format : (audio_id_prefix, regime, intention_du_test)
+# (audio_id_prefix, regime, what the pick tests)
 CHERRY_PICKS = [
-    # ── T1_baseline : un propre + un dégénéré chat-mode
+    # ── T1_baseline: one clean, one degenerated into chat mode
     ("a0ae729a", "T1_baseline",   "T1 propre (4.2s) — sortie de transcription correcte"),
     ("dcad692a", "T1_baseline",   "T1 dégénéré (1.7s) — Q8 part en dissertation chat-mode"),
 
-    # ── T2_verbatim : un propre + un dégénéré
+    # ── T2_verbatim: one clean, one degenerate
     ("79f66a7c", "T2_verbatim",   "T2 propre (5.0s) — verbatim correct"),
     ("b9d726f4", "T2_verbatim",   "T2 dégénéré (1.1s) — chat-mode pur"),
 
-    # ── T3_translate : un propre EN + un (à voir)
+    # ── T3_translate: one clean English output, one long sample
     ("a0ae729a", "T3_translate",  "T3 propre — sortie EN attendue, fidélité sémantique"),
     ("9b8c6405", "T3_translate",  "T3 sample long — sortie EN sur audio FR 10s"),
 
-    # ── T4_summary : un propre + un long
+    # ── T4_summary: one clean, one long
     ("a0ae729a", "T4_summary",    "T4 propre — résumé une phrase"),
     ("bc08abb2", "T4_summary",    "T4 sample 13s — résumé d'un contenu plus dense"),
 
-    # ── T5_qa_register : convention nouvelle fidelite_signal=100
+    # ── T5_qa_register: not a transcription, so fidelite_signal is expected at 100
     ("a0ae729a", "T5_qa_register", "T5 régime non-transcription — fidelite_signal attendu à 100"),
     ("79f66a7c", "T5_qa_register", "T5 autre sample — vérif convention stable"),
 
-    # ── T6_sys_prompt : transcription + étiquette ton
+    # ── T6_sys_prompt: transcription plus a tone label
     ("a0ae729a", "T6_sys_prompt", "T6 propre — transcription + étiquette ton"),
     ("8ebfbfa2", "T6_sys_prompt", "T6 sample 5s — étiquette ton attendue"),
 ]
@@ -152,7 +137,6 @@ def main() -> int:
         new_axes = new_score.axes or {}
         new_verdict = new_score.verdict or ""
 
-        # Delta perceptible : axes qui ont bougé
         deltas_str = ""
         for axis in ("fidelite_signal", "proprete", "absence_hallucination", "regime_respecte"):
             o = old_axes.get(axis)
@@ -167,7 +151,7 @@ def main() -> int:
               f"{fmt_axes(old_axes):<16} {fmt_axes(new_axes):<16}{deltas_str}")
         deltas.append((prefix, regime, old_axes, new_axes, old_verdict, new_verdict, why))
 
-    # ── Verdicts détaillés ─────────────────────────────────────────────
+    # ── Detailed verdicts ──────────────────────────────────────────────
     print()
     print("=== Verdicts détaillés ===")
     for prefix, regime, old_axes, new_axes, old_verdict, new_verdict, why in deltas:

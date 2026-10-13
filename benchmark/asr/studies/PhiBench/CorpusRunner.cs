@@ -6,13 +6,11 @@ namespace Deckle.Benchmark.PhiBench;
 /// <summary>
 /// Handles <c>PhiBench corpus ...</c> — iterates a corpus × regimes,
 /// writes one JSONL row per (sample, regime) to the output file. Mirrors
-/// the loop structure of benchmark/asr/studies/voxtral-validation/bench.py
-/// (palier 2 of the POC).
+/// the loop structure of benchmark/asr/studies/voxtral-validation/bench.py.
 ///
-/// Metrics and judge are NOT computed here — Python downstream consumes the
-/// JSONL to add WER/CER/looping (lib.metrics) and Gemini scoring
-/// (lib.judges.gemini). This keeps the C# layer focused on the inference
-/// path that production will use.
+/// Metrics and judge are NOT computed here: the Python pass downstream reads
+/// the JSONL and adds WER/CER/looping (lib.metrics) and Gemini scoring
+/// (lib.judges.gemini), so the C# layer stays on the inference path.
 /// </summary>
 public static class CorpusRunner
 {

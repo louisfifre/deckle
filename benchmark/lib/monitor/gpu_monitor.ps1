@@ -1,27 +1,15 @@
-# Monitor système : RAM, CPU, disk, VRAM, GPU compute — sortie JSONL.
+# System monitor: RAM, CPU, disk, VRAM and GPU compute, one JSONL line per sample.
 #
-# Usage :
+# Usage:
 #   pwsh gpu_monitor.ps1 -OutFile monitor.jsonl
 #
-# Pourquoi PowerShell : Get-Counter coûte cher en spawn. Une boucle pwsh
-# unique sample en continu sans re-spawn → mesure honnête, charge CPU
-# minimale. Le Python du bench tourne à côté et lit ce log post-mortem.
+# One long-lived pwsh loop, because spawning Get-Counter per sample is
+# expensive and would load the machine being measured. The bench's Python
+# runs beside it and reads this log afterwards.
 #
-# Cadence : `Get-Counter` impose un sample interval minimum de 1 s par
-# appel (limite Windows perfcounter API). Le script batche tous les
-# compteurs en un seul appel donc on paye 1 s/itération total au lieu
-# de N s (mesure : N=4 séparés → ~3.5 s/itération avant batching, ~1 s
-# après). `IntervalMs` est un sleep additionnel après chaque sample —
-# laisser à 0 pour la cadence max (1 Hz).
-#
-# Format ligne JSONL :
-#   {"ts":"2026-05-25T12:34:56.789",
-#    "ram_used_mb": 14234.5, "ram_total_mb": 31900, "ram_pct": 44.6,
-#    "cpu_pct": 12.3,
-#    "disk_read_mb_s": 8.4, "disk_write_mb_s": 2.1, "disk_queue_length": 0.0,
-#    "vram_dedicated_mb": 14080.0, "vram_shared_mb": 4800.0,
-#    "gpu_compute_pct": 87.3,
-#    "top_gpu_proc": "llama-mtmd-cli.exe (6234 MB)"}
+# Get-Counter takes at least one 1 s sample interval per call, so the
+# fastest cadence is 1 Hz. `IntervalMs` adds a sleep after each sample;
+# leave it at 0 for that cadence.
 
 param(
     [string]$OutFile  = "",
@@ -30,9 +18,8 @@ param(
 
 $ErrorActionPreference = "Continue"
 
-# Tous les compteurs en un seul batch. Get-Counter accepte une liste et
-# ne paie qu'un seul sample interval pour l'ensemble — gain x3-x4 sur
-# la cadence par rapport à des appels séquentiels.
+# Every counter goes in one Get-Counter call: a list pays a single sample
+# interval, where one call per counter would pay one each.
 $CounterPaths = @(
     '\GPU Adapter Memory(*)\Dedicated Usage',
     '\GPU Adapter Memory(*)\Shared Usage',
@@ -56,23 +43,19 @@ try {
     while ($true) {
         $ts = (Get-Date).ToString("yyyy-MM-ddTHH:mm:ss.fff")
 
-        # RAM via CIM (fast, ~40 ms).
         $os = Get-CimInstance Win32_OperatingSystem
         $ramUsedMb  = [math]::Round(($os.TotalVisibleMemorySize - $os.FreePhysicalMemory) / 1024, 1)
         $ramTotalMb = [math]::Round($os.TotalVisibleMemorySize / 1024, 1)
         $ramPct     = [math]::Round($ramUsedMb / $ramTotalMb * 100, 1)
 
-        # Batch perfcounters. SilentlyContinue : un counter sans instance
-        # active (e.g. GPU Engine compute quand le GPU est idle) est juste
-        # absent du résultat — pas une erreur fatale.
+        # A counter with no live instance (GPU Engine compute while the GPU
+        # is idle) is simply missing from the result, not an error.
         $samples = @()
         try {
             $cs = Get-Counter -Counter $CounterPaths -ErrorAction SilentlyContinue
             if ($cs) { $samples = $cs.CounterSamples }
         } catch {}
 
-        # Helper local : filtre par sous-chaîne sur le path (insensible à
-        # la casse, le path est en lowercase côté Get-Counter).
         function _sum_matching($pattern) {
             ($samples | Where-Object { $_.Path -like $pattern } |
              Measure-Object CookedValue -Sum).Sum
@@ -91,9 +74,7 @@ try {
         $diskWriteMbS  = [math]::Round((_first_matching '*physicaldisk(_total)\disk write bytes/sec') / 1MB, 2)
         $diskQueue     = [math]::Round((_first_matching '*physicaldisk(_total)\current disk queue length'), 2)
 
-        # Top processus GPU par VRAM dédiée. Filtre > 100 MB pour ignorer
-        # les dwm/explorer qui polluent la liste, puis garde celui qui
-        # consomme le plus.
+        # The 100 MB floor drops dwm and explorer, which always hold some VRAM.
         $topProc = ""
         $procSample = $samples | Where-Object { $_.Path -like '*gpu process memory(*)\dedicated usage' -and $_.CookedValue -gt 100MB } |
             Sort-Object -Property CookedValue -Descending | Select-Object -First 1

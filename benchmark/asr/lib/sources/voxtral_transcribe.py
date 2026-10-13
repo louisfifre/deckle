@@ -1,25 +1,10 @@
-"""Source Voxtral en mode transcription canonique Mistral.
+"""Voxtral in Mistral's canonical transcription mode
+(``processor.apply_transcription_request``).
 
-Utilise ``processor.apply_transcription_request(audio, model_id, language)``,
-la méthode officielle Mistral qui produit une transcription pure.
-
-**Le ``prompt`` passé à ``transcribe()`` est ignoré par design.** Cette
-méthode ne lit que ``audio`` + ``language`` + ``model_id``. C'est confirmé
-par le code source ``mistral-common.TranscriptionRequest`` qui n'expose
-pas de champ ``prompt`` ou ``instructions``. Pour donner des instructions
-à Voxtral (verbatim, traduction, etc.), utiliser ``VoxtralChatSource``
-qui passe par ``apply_chat_template``.
-
-Comportement par défaut Voxtral en mode transcription :
-  - Transcription lissée (ponctuation, accents corrects).
-  - Pas d'hésitations conservées (pas de « euh », « hum »).
-  - Pas de paraphrase ni reformulation (≠ chat mode où le modèle peut
-    paraphraser).
-  - Sur audio bruit / silence, sortie courte ou vide — plus prudent que
-    Whisper qui hallucine "Sous-titrage Société Radio-Canada".
-
-Validé Phase 3 (2026-05-24) : RTF 0.22 sur AMD RX 7900 XT, WER moyen
-0.10 vs Whisper large-v3 référence (hors sample 1 où Whisper hallucine).
+The ``prompt`` passed to ``transcribe()`` is ignored: the request reads only
+audio, language and model id, and mistral-common's ``TranscriptionRequest``
+has no prompt or instruction field. The output is smoothed, with hesitations
+dropped; for instructions (verbatim, translation) use ``VoxtralChatSource``.
 """
 
 from __future__ import annotations
@@ -36,15 +21,12 @@ from ._voxtral_common import (
 )
 
 
-# Délai d'attente après un OOM avant de tenter à nouveau. Empirique :
-# DirectML met du temps à libérer effectivement la VRAM allouée même
-# après gc.collect, on lui laisse une fenêtre.
+# DirectML releases VRAM some time after gc.collect, so a retry after an
+# OOM waits first.
 OOM_RETRY_SLEEP_S = 10.0
 
 
 class VoxtralTranscribeSource(Source):
-    """Voxtral en mode transcription pure (apply_transcription_request)."""
-
     name = "voxtral-transcribe"
     label = "Voxtral Mini 3B — transcription canonique (DirectML)"
 
@@ -58,17 +40,15 @@ class VoxtralTranscribeSource(Source):
         model_id: str = "mistralai/Voxtral-Mini-3B-2507",
         language: str = "fr",
     ) -> None:
-        """Si ``backend`` est passé, on le réutilise (utile si tu veux
-        instancier les deux sources Voxtral côte à côte sans recharger
-        le modèle). Sinon on charge le modèle ici."""
+        """Pass ``backend`` to share one loaded model between both Voxtral
+        sources."""
         self._backend = backend or load_voxtral(
             dtype=dtype, device_index=device_index, cpu=cpu, model_id=model_id,
         )
         self.language = language
 
-        # Résolution du nom de méthode (la doc HF officielle de Voxtral
-        # contient une typo `apply_transcrition_request` ; selon la version
-        # de transformers, c'est l'un ou l'autre).
+        # Some transformers versions spell it ``apply_transcrition_request``,
+        # as the Voxtral docs on Hugging Face do.
         proc = self._backend.processor
         self._apply_fn = (
             getattr(proc, "apply_transcription_request", None)
@@ -82,17 +62,15 @@ class VoxtralTranscribeSource(Source):
 
     @property
     def backend(self) -> VoxtralBackend:
-        """Expose le backend pour qu'une autre source Voxtral puisse le
-        réutiliser sans recharger le modèle."""
         return self._backend
 
-    # ── Interface Source ───────────────────────────────────────────────
+    # ── Source interface ───────────────────────────────────────────────
 
     def transcribe(
         self,
         *,
         audio_path:     Path,
-        prompt:         str,         # IGNORÉ : voir docstring module
+        prompt:         str,         # ignored: see the module docstring
         max_new_tokens: int | None = None,
         on_event:       Callable[[str, dict], None] | None = None,
     ) -> Transcription:
@@ -114,8 +92,7 @@ class VoxtralTranscribeSource(Source):
         max_new_tokens: int,
         on_event:       Callable[[str, dict], None] | None,
     ) -> Transcription:
-        """Une tentative ; si OOM, cleanup_gpu(sleep=10s) + retry une fois.
-        Le retry réduit max_new_tokens de 25% pour donner plus de marge."""
+        """On OOM, free VRAM and retry once with half the token cap."""
         attempts = 0
         current_tokens = max_new_tokens
         last_err = ""
@@ -127,21 +104,17 @@ class VoxtralTranscribeSource(Source):
                     max_new_tokens=current_tokens,
                     attempt=attempts,
                 )
-                # Cleanup VRAM systématique après chaque row réussie.
-                # Sans ça la VRAM DirectML plateaute (observé : 18 GB
-                # stable sur 8 min de run). Le sleep=0 n'ajoute pas de
-                # latence — l'inter-row-sleep du bench (0.5 s par défaut)
-                # couvre déjà le temps réel que DirectML met à libérer.
+                # Without a cleanup after every row, DirectML VRAM climbs to
+                # a plateau. No sleep here: the bench's pause between rows
+                # already gives DirectML time to release.
                 cleanup_gpu(sleep_s=0.0, on_event=on_event)
                 return result
             except Exception as e:
                 last_err = f"{type(e).__name__}: {e}"
                 if not is_oom_error(e):
-                    # Erreur non-OOM : on n'insiste pas.
                     if on_event:
                         on_event("row_fail", {"error": last_err, "audio_s": audio_s})
                     return _fail(last_err, audio_s, self._backend)
-                # OOM : cleanup + retry
                 if on_event:
                     on_event("row_oom_caught", {
                         "error": last_err, "audio_s": audio_s,
@@ -149,14 +122,13 @@ class VoxtralTranscribeSource(Source):
                     })
                 cleanup_gpu(sleep_s=OOM_RETRY_SLEEP_S, on_event=on_event)
                 attempts += 1
-                # Retry agressif : divise par 2 (les retries 0.75 ne
-                # suffisaient pas sur les audios ~128s).
+                # Halve the cap: a gentler cut still ran out of memory on
+                # long clips.
                 current_tokens = max(256, int(current_tokens * 0.5))
                 if on_event and attempts < 2:
                     on_event("row_retry_start", {
                         "audio_s": audio_s, "new_max_tokens": current_tokens,
                     })
-        # Deux tentatives échouées
         if on_event:
             on_event("row_fail", {"error": last_err, "audio_s": audio_s, "attempts": attempts})
         return _fail(f"OOM after retry: {last_err}", audio_s, self._backend)
@@ -181,21 +153,16 @@ class VoxtralTranscribeSource(Source):
         dt_prep = time.perf_counter() - t_prep
 
         t_gen = time.perf_counter()
-        # ``no_grad`` plutôt qu'``inference_mode`` : ce dernier est plus
-        # strict mais incompatible avec certains in-place updates que
-        # ``processor.apply_transcription_request`` et l'audio encoder
-        # Voxtral effectuent (échec ``Cannot set version_counter for
-        # inference tensor`` observé 2026-05-25). Le gain mémoire de
-        # ``inference_mode`` est marginal de toute façon.
+        # ``no_grad``, not ``inference_mode``: the Voxtral audio encoder
+        # updates tensors in place, which inference mode rejects with
+        # ``Cannot set version_counter for inference tensor``.
         with b.torch.no_grad():
             generated_ids = b.model.generate(
                 **inputs,
                 max_new_tokens=max_new_tokens,
                 do_sample=False,
-                # Greedy explicite : sans cet override, transformers peut
-                # hériter d'un ``num_beams`` du generation_config du modèle
-                # et multiplier le KV-cache par autant — gaspillage sur
-                # un bench où on veut le mode déterministe le moins lourd.
+                # Without it, a ``num_beams`` inherited from the model's
+                # generation config multiplies the KV cache.
                 num_beams=1,
                 use_cache=True,
             )

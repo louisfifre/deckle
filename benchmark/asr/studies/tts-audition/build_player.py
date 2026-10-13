@@ -47,7 +47,7 @@ def id_label(sid: str) -> str:
     return sid
 
 
-# engine prefix -> (display label, honest note). Judgement-by-ear is Louis's.
+# engine prefix -> (display label, note)
 ENGINES = [
     ("orpheus", "Orpheus français", "3B expressif, le seul à faire les vrais tags &lt;laugh&gt;/&lt;sigh&gt; arbitraires. Lourd : tourne sur le GPU (DirectML)."),
     ("chatterbox", "Chatterbox-ML", "Clonage zéro-shot : reprend le timbre d'une référence (ici des clips Piper/Supertonic FR) "
@@ -72,7 +72,7 @@ VOICE_LABEL = {
     "piper_upmc_s1": "upmc · pierre (masculine)",
 }
 
-# Static model facts (from the inspection) -> (licence, poids, params).
+# Static model facts (from the inspection) -> (licence, weight, params).
 MODEL_FACTS = {
     "chatterbox": ("MIT — commercial libre", "~2,2 Go", "~0,5 Md"),
     "supertonic": ("OpenRAIL-M — conditionnel", "~0,4 Go", "~99 M"),
@@ -150,8 +150,8 @@ def stats_panel() -> str:
 
 
 def stats_history() -> str:
-    """All run records, newest-first, in a collapsible dropdown — the run history
-    Louis asked for (the latest-only panel above is the at-a-glance view)."""
+    """All run records, newest first, in a collapsible dropdown; the
+    latest-only panel above is the at-a-glance view."""
     p = OUT / "_stats.jsonl"
     if not p.exists():
         return ""

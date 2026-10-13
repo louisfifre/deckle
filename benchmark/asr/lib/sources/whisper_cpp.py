@@ -1,23 +1,7 @@
-"""Source Whisper.cpp via le binaire whisper-cli.exe.
+"""Whisper.cpp through ``whisper-cli.exe``, the baseline: Deckle's own
+transcription runs on whisper.cpp.
 
-Wrapper subprocess autour de ``whisper-cli.exe`` (binaire whisper.cpp).
-C'est la baseline de référence — la stack de transcription Deckle en
-production aujourd'hui.
-
-Le binaire est résolu via :
-  1. Argument ``binary=`` du constructeur
-  2. Variable d'environnement ``DECKLE_WHISPER_CLI``
-  3. Chemin par défaut : ``<repo_root>/whisper.cpp/build/bin/whisper-cli.exe``
-
-Idem pour le modèle (par défaut ``<repo_root>/models/ggml-large-v3.bin``).
-
-Le ``initial_prompt`` Whisper est passé tel quel via ``--prompt`` ; c'est
-le ``prompt`` reçu par la méthode ``transcribe()``. Le format de l'output
-est forcé à stdout pur texte sans timestamps (``-otxt -of - -nt``).
-
-Note encoding env : sur Windows, MinGW dans le PATH peut faire que
-whisper-cli charge des DLL Unix-y au lieu des MSVC runtime DLLs.
-``_clean_path_env()`` retire les markers MinGW du PATH pour cet appel.
+``-otxt -of - -nt`` sends plain text without timestamps to stdout.
 """
 
 from __future__ import annotations
@@ -37,8 +21,6 @@ REPO_ROOT     = BENCHMARK_DIR.parent
 
 
 class WhisperCppSource(Source):
-    """Whisper.cpp via whisper-cli.exe."""
-
     name = "whisper-cpp"
     label = "Whisper.cpp (whisper-cli)"
 
@@ -67,15 +49,15 @@ class WhisperCppSource(Source):
         self.language = language
         self.extra_args = extra_args
 
-    # ── Interface Source ───────────────────────────────────────────────
+    # ── Source interface ───────────────────────────────────────────────
 
     def transcribe(
         self,
         *,
         audio_path:     Path,
         prompt:         str,
-        max_new_tokens: int | None = None,    # ignoré : whisper-cli n'expose pas
-        on_event = None,                       # ignoré
+        max_new_tokens: int | None = None,    # ignored: whisper-cli has no such option
+        on_event = None,                       # ignored
     ) -> Transcription:
         audio_s = _wav_duration_seconds(audio_path)
         cmd: list[str] = [
@@ -123,7 +105,7 @@ class WhisperCppSource(Source):
             elapsed_s=elapsed,
             audio_s=audio_s,
             rtf=elapsed / audio_s if audio_s > 0 else float("inf"),
-            generated_tokens=-1,    # whisper-cli ne rapporte pas le token count
+            generated_tokens=-1,    # whisper-cli does not report a token count
             ok=True,
             extras={
                 "binary":      str(self._binary),
@@ -135,7 +117,7 @@ class WhisperCppSource(Source):
         )
 
 
-# ── Helpers locaux ────────────────────────────────────────────────────
+# ── Helpers ───────────────────────────────────────────────────────────
 
 def _default_binary() -> Path:
     return (REPO_ROOT / "whisper.cpp" / "build" / "bin" / "whisper-cli.exe").resolve()
@@ -159,8 +141,9 @@ _UNIX_PATH_MARKERS = (
 
 
 def _clean_path_env() -> dict[str, str]:
-    """Retire les répertoires Unix-y du PATH avant de lancer whisper-cli
-    pour qu'il charge les DLL MSVC, pas celles de MinGW."""
+    """Drop MinGW and MSYS folders from PATH: their DLLs are
+    ABI-incompatible with whisper-cli's MSVC build, which then dies with
+    ``STATUS_ENTRYPOINT_NOT_FOUND`` before printing anything."""
     env = dict(os.environ)
     path = env.get("PATH", "")
     cleaned = ";".join(

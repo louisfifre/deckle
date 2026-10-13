@@ -8,18 +8,14 @@ namespace Deckle.Benchmark.PhiBench;
 
 /// <summary>
 /// Wraps a long-lived Phi-4-multimodal ONNX model on DirectML. The model is
-/// loaded once in the constructor (paid cost — several seconds, ~4 GiB VRAM
-/// for the gpu-int4-rtn-block-32 variant) and reused across many transcribe
-/// calls. Mirrors the lifecycle of <c>VoxtralTransformersSource</c> in the
-/// Python bench (benchmark/asr/lib/sources/voxtral_transformers.py).
-///
-/// The chat template is the one shipped with the model under
-/// <c>chat_template.jinja</c> — applied via <c>tokenizer.ApplyChatTemplate</c>
-/// over a messages list <c>[{role: system, content: ...}, {role: user, content: ...}]</c>.
+/// loaded once in the constructor and reused across many transcribe calls,
+/// like <c>VoxtralTransformersSource</c> in the Python bench
+/// (benchmark/asr/lib/sources/voxtral_transformers.py).
 ///
 /// Phi-4 has no canonical transcription mode (unlike Voxtral's [TRANSCRIBE]
 /// token). The bench passes the regime prompt through as-is. A null user
-/// prompt falls back to a short FR instruction; an empty string is honored.
+/// prompt falls back to a short instruction to transcribe in French; an
+/// empty string is honored.
 /// </summary>
 public sealed class Phi4Transcriber : IDisposable
 {
@@ -61,10 +57,10 @@ public sealed class Phi4Transcriber : IDisposable
     public string ExecutionProvider => _executionProvider;
 
     /// <summary>
-    /// Transcribes one audio file. <paramref name="audioSeconds"/> is provided
-    /// from the corpus when available, computed from the WAV header otherwise.
-    /// On error returns <c>Ok=false</c> with the message in <c>Error</c> — the
-    /// bench loop continues on the next row.
+    /// <paramref name="audioSecondsOverride"/> comes from the corpus when
+    /// available; otherwise the WAV header gives the duration. On error returns
+    /// <c>Ok=false</c> with the message in <c>Error</c>, so the bench loop
+    /// continues on the next row.
     /// </summary>
     public TranscriptionResult Transcribe(
         string audioPath,
@@ -91,19 +87,15 @@ public sealed class Phi4Transcriber : IDisposable
             var templated = BuildRawPhi4Prompt(promptForUser, systemPrompt);
 
             using var audios = Audios.Load(new[] { audioPath });
-            // Audio-only path : ProcessAudios is the dedicated overload, distinct
-            // from ProcessImagesAndAudios(prompt, null, audios) which leaves the
-            // images branch in the multimodal pipeline. Empirically the
-            // image-and-audio variant with null images on Phi-4 caused the model
-            // to reply "I cannot transcribe the audio you mentioned" — the audio
-            // embeddings weren't being spliced in at the <|audio_1|> position.
+            // ProcessAudios, not ProcessImagesAndAudios(prompt, null, audios): with
+            // null images the latter does not splice the audio embeddings in at
+            // <|audio_1|>, and Phi-4 answers that it cannot transcribe the audio.
             using var inputTensors = _processor.ProcessAudios(templated, audios);
 
             using var generatorParams = new GeneratorParams(_model);
-            // Phi-4 multimodal expects max_length as total context (input + output).
-            // The Python sample (examples/python/model-mm.py) defaults to 7680.
-            // We set a generous upper bound here and rely on the EOS token to stop
-            // generation — early truncation produces incoherent loops on short audios.
+            // max_length counts the whole context, input plus output. A generous
+            // bound lets EOS stop generation; an early cut produces incoherent
+            // loops on short audios.
             generatorParams.SetSearchOption("max_length", Math.Max(2048, maxNewTokens + 1024));
             generatorParams.SetSearchOption("do_sample", false);
 
@@ -158,9 +150,7 @@ public sealed class Phi4Transcriber : IDisposable
         }
     }
 
-    /// <summary>Warmup transcription on a single audio. Pays the first-call JIT
-    /// cost outside the measurement loop. Errors are swallowed — warmup is
-    /// best-effort.</summary>
+    /// <summary>Best effort: errors are swallowed.</summary>
     public void Warmup(string audioPath)
     {
         try
@@ -225,10 +215,5 @@ public sealed class Phi4Transcriber : IDisposable
             template_str: templateStr);
     }
 
-    /// <summary>Rough character-based estimate of prompt token count, used to
-    /// size <c>max_length</c> as <c>promptTokens + maxNewTokens</c>. Conservative —
-    /// 1 token ≈ 3 chars for English/French, audio tokens added on top once we
-    /// know the audio. We add a generous margin (audioSeconds * 50) to cover the
-    /// audio tokens injected by the multimodal processor.</summary>
     private static int GuessPromptTokenCount(string prompt) => Math.Max(64, prompt.Length / 3 + 256);
 }

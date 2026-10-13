@@ -31,25 +31,25 @@ from pathlib import Path
 from typing import Any
 
 
-# Bytes par paramètre pour chaque format de quantization llama.cpp.
-# Source : ggml/src/ggml-quants.c (constantes QK_K et tailles de super-blocks).
-# Format K-quants : super-block de 256 éléments avec scales hiérarchiques.
+# Bytes per parameter of each llama.cpp quantization format, from
+# ggml/src/ggml-quants.c (QK_K and super-block sizes). K-quants pack 256
+# elements per super-block with hierarchical scales.
 BYTES_PER_PARAM: dict[str, float] = {
     "q2_K": 84 / 256,    # 2.625 bits
     "q3_K": 110 / 256,   # 3.4375 bits
     "q4_K": 144 / 256,   # 4.5 bits
     "q5_K": 176 / 256,   # 5.5 bits
     "q6_K": 210 / 256,   # 6.5625 bits
-    "q4_0": 18 / 32,     # 4.5 bits (block de 32 avec scale f16)
+    "q4_0": 18 / 32,     # 4.5 bits (32-element block with an f16 scale)
     "q5_0": 22 / 32,     # 5.5 bits
-    "q8_0": 34 / 32,     # 8.5 bits (block de 32 avec scale f16)
+    "q8_0": 34 / 32,     # 8.5 bits (32-element block with an f16 scale)
     "f16":  2.0,
     "bf16": 2.0,
     "f32":  4.0,
 }
 
 
-# Pattern d'une ligne d'op Vulkan dans le log. Exemples :
+# Vulkan op lines as the log prints them:
 #   ADD: 79 x 2020.49 us = 159619 us
 #   MUL_MAT_VEC q4_K m=32768 n=1 k=5120: 80 x 864.695 us = 69175.6 us (388.011 GFLOPS/s)
 #   MUL_MAT_ADD MUL_MAT_VEC q4_K m=5120 n=1 k=32768: 35 x 967.105 us = 33848.7 us (346.952 GFLOPS/s)
@@ -61,8 +61,7 @@ OP_LINE_RE = re.compile(
 )
 
 
-# Pattern pour extraire le format de quant et les dimensions d'une op matvec.
-# Capture par exemple "q4_K m=32768 n=1 k=5120" à l'intérieur du head.
+# Quant format and dimensions inside an op head, such as "q4_K m=32768 n=1 k=5120".
 MATVEC_DIM_RE = re.compile(
     r"(?P<quant>[bif][fp]?16|[qf]\d+(?:_[KMS])?(?:_[KMSL])?|q\d+_\d+)\s+"
     r"m=(?P<m>\d+)\s+n=(?P<n>\d+)\s+k=(?P<k>\d+)"
@@ -71,8 +70,7 @@ MATVEC_DIM_RE = re.compile(
 
 @dataclass
 class OpStat:
-    """Stat agrégée d'une op à travers tous les blocs gen."""
-    name: str  # head normalisé, e.g. "MUL_MAT_VEC q4_K m=32768 n=1 k=5120"
+    name: str  # op head, e.g. "MUL_MAT_VEC q4_K m=32768 n=1 k=5120"
     quant: str | None = None
     m: int | None = None
     n: int | None = None
@@ -85,18 +83,11 @@ class OpStat:
 
 @dataclass
 class Block:
-    """Un bloc Vulkan Timings avec ses ops et son Total time."""
     ops: list[dict[str, Any]] = field(default_factory=list)
     total_us: float = 0.0
 
 
 def _parse_blocks(log_text: str) -> list[Block]:
-    """Découpe le log en blocs Vulkan Timings.
-
-    Chaque bloc commence par la ligne ``Vulkan Timings:`` et finit par
-    ``Total time: <X> us.``. Entre les deux, les lignes d'ops. On
-    ignore les lignes qui ne matchent pas (séparateurs, headers, etc.).
-    """
     blocks: list[Block] = []
     current: Block | None = None
 
@@ -122,7 +113,6 @@ def _parse_blocks(log_text: str) -> list[Block]:
                 "total_us": float(op_match.group("total_us")),
                 "gflops": float(op_match.group("gflops")) if op_match.group("gflops") else None,
             }
-            # Tente d'extraire quant/dim si c'est une op matvec/matmul
             dim_match = MATVEC_DIM_RE.search(head)
             if dim_match:
                 op["quant"] = dim_match.group("quant")
@@ -135,13 +125,9 @@ def _parse_blocks(log_text: str) -> list[Block]:
 
 
 def _classify_block(block: Block) -> str:
-    """Classe un bloc en warmup / audio_prefill / lm_prefill / gen.
-
-    Heuristique sur la nature des matvec/matmul présents :
-    - n=1 partout sur les matvec → gen (un token par bloc)
-    - MUL_MAT (non-VEC) sur f16/bf16 → audio_prefill (encoder audio)
-    - MUL_MAT (non-VEC) sur q4_K/q5_K/q6_K → lm_prefill (LM en batch)
-    - reste → warmup
+    """A batched MUL_MAT on f16/bf16 is the audio encoder; on a quantized
+    format it is the LM prefill; matvecs with n=1 only are one generated
+    token; anything else is warmup.
     """
     has_matvec_n1 = False
     has_matvec_n_gt_1 = False
@@ -174,11 +160,6 @@ def _classify_block(block: Block) -> str:
 
 
 def _aggregate_gen_ops(gen_blocks: list[Block]) -> list[OpStat]:
-    """Agrège les ops à travers les blocs gen.
-
-    Pour chaque op (identifiée par head normalisé), collecte les
-    count / avg_us / total_us / gflops de chaque bloc où elle apparaît.
-    """
     by_head: dict[str, OpStat] = {}
     for block in gen_blocks:
         for op in block.ops:
@@ -200,15 +181,9 @@ def _aggregate_gen_ops(gen_blocks: list[Block]) -> list[OpStat]:
 
 
 def _bandwidth_gb_s(stat: OpStat, mean_us_per_call: float) -> float | None:
-    """Estime la bande passante effective de l'op en GB/s.
-
-    Pour une op matvec, l'élément dominant lu en VRAM est la matrice
-    de poids : m * k éléments dans le format de quantization donné.
-    Les activations (vecteur k) et la sortie (vecteur m) sont
-    négligeables face à la matrice pour n=1.
-
-    Retourne None si le format n'est pas connu ou si l'op n'est pas
-    une matvec/matmul avec dimensions extraites.
+    """A matvec reads mostly its weight matrix, m * k elements in the
+    quantization format; for n=1 the input and output vectors are
+    negligible beside it.
     """
     if stat.quant is None or stat.m is None or stat.k is None:
         return None
@@ -225,11 +200,7 @@ def _bandwidth_gb_s(stat: OpStat, mean_us_per_call: float) -> float | None:
 def summarize(log_path: Path, config_name: str, audio_duration_s: float,
               model_file: str | None = None,
               model_size_bytes: int | None = None) -> dict[str, Any]:
-    """Produit le dict résumé d'un log.
-
-    Pas d'I/O en dehors de la lecture du log. Le caller décide où
-    écrire (JSONL append, stdout, etc.).
-    """
+    """Reads the log only; the caller decides where the summary goes."""
     log_text = log_path.read_text(encoding="utf-8", errors="replace")
     blocks = _parse_blocks(log_text)
 
@@ -247,7 +218,7 @@ def summarize(log_path: Path, config_name: str, audio_duration_s: float,
         if kind == "gen":
             gen_blocks.append(block)
 
-    # gen tok/s et RTF sur la phase gen seule.
+    # One gen block is one generated token.
     gen_total_s = phases["gen"]["total_us"] / 1e6
     if phases["gen"]["blocks_count"] > 0 and gen_total_s > 0:
         phases["gen"]["tok_per_sec"] = phases["gen"]["blocks_count"] / gen_total_s
@@ -256,7 +227,6 @@ def summarize(log_path: Path, config_name: str, audio_duration_s: float,
         phases["gen"]["tok_per_sec"] = None
         phases["gen"]["rtf"] = None
 
-    # Agrégat per-op sur les blocs gen.
     ops = _aggregate_gen_ops(gen_blocks)
     gen_ops_rows: list[dict[str, Any]] = []
     for stat in ops:
@@ -286,7 +256,6 @@ def summarize(log_path: Path, config_name: str, audio_duration_s: float,
             "bandwidth_gb_s": round(bw, 1) if bw is not None else None,
         })
 
-    # Tri par share descendant, dominant op en tête.
     gen_ops_rows.sort(key=lambda r: r["share_of_token"] or 0, reverse=True)
 
     summary = {
@@ -299,7 +268,6 @@ def summarize(log_path: Path, config_name: str, audio_duration_s: float,
         "gen_ops": gen_ops_rows,
     }
 
-    # Snapshot de surface pour lecture rapide
     if gen_ops_rows:
         bws_with_values = [r["bandwidth_gb_s"] for r in gen_ops_rows if r["bandwidth_gb_s"]]
         summary["bandwidth_min_gb_s"] = min(bws_with_values) if bws_with_values else None

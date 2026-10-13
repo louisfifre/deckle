@@ -31,10 +31,8 @@ if sys.stdout.encoding.lower() != "utf-8":
 
 RUNS = Path(os.environ["LOCALAPPDATA"]) / "Deckle" / "benchmark" / "runs"
 
-# Vocabulaire diagnostique observé dans les verdicts Gemini sur les
-# benchs voxtral-validation. Chaque entrée est (label, regex) où le
-# regex est appliqué case-insensitive sur le verdict. À enrichir au fil
-# des observations.
+# Diagnostic vocabulary seen in Gemini verdicts: (label, regex), matched
+# against the lowercased verdict, so patterns stay lowercase.
 KEYWORDS = [
     ("hallucination",      r"halluci|invent|fabriqu|inexistant|absent du signal|absent du son"),
     ("paraphrase",         r"paraphras|reformul|réécri"),
@@ -65,7 +63,6 @@ def load_rows(run_name: str) -> list[dict]:
 
 
 def hardest_rows(rows: list[dict], axis: str, threshold: int, top: int) -> list[dict]:
-    """Retourne les rows avec axis < threshold, triées par axe croissant."""
     candidates = []
     for r in rows:
         if not r.get("ok"):
@@ -83,8 +80,6 @@ def hardest_rows(rows: list[dict], axis: str, threshold: int, top: int) -> list[
 
 
 def keyword_counts(rows: list[dict]) -> dict[str, Counter]:
-    """Pour chaque régime, compte les occurrences des mots-clés
-    diagnostiques dans les verdicts."""
     by_regime: dict[str, Counter] = defaultdict(Counter)
     for r in rows:
         regime = r["regime"]

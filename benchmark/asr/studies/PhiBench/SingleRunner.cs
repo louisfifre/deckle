@@ -5,9 +5,8 @@ using Microsoft.ML.OnnxRuntimeGenAI;
 namespace Deckle.Benchmark.PhiBench;
 
 /// <summary>
-/// Handles <c>PhiBench single ...</c> — one transcription, JSON result on
-/// stdout. Used for palier 1 sanity checks (GPU placement, VRAM, RTF on a
-/// single sample).
+/// Handles <c>PhiBench single ...</c>: one transcription, JSON result on
+/// stdout, for sanity checks (GPU placement, VRAM, RTF on a single sample).
 /// </summary>
 public static class SingleRunner
 {
