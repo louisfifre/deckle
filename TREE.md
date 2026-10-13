@@ -1740,7 +1740,6 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── CONTEXT.md  — Trip-preparation vocabulary — the seven types, their French labels, and the ter…
 │   │   ├── Deckle.Travel.csproj
 │   │   ├── DeckleTravelSource.cs
-│   │   ├── JOURNAL.md
 │   │   ├── TravelGestures.cs
 │   │   ├── TravelMcp.cs
 │   │   ├── TravelObjects.cs

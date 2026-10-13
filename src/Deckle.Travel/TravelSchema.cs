@@ -25,6 +25,8 @@ public static class TravelSchema
     {
         public const string StartDate = "start_date";
         public const string EndDate = "end_date";
+        // Date is the master day; Appointment adds an optional hour. Anytype has
+        // no rich start/end range, so a multi-day trek keeps only its first day.
         public const string Date = "date";
         public const string Appointment = "appointment";
         public const string Arrival = "arrival";
