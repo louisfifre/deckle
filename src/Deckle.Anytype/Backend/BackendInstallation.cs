@@ -45,12 +45,15 @@ public static class BackendInstallation
     // migration must label it with this constant and never with the pin.
     internal const string LegacyBundleVersion = "0.3.6";
 
-    // The version pin (known-good, never auto-update — JOURNAL 2026-06-18).
-    // The release publishes no checksum manifest, so the SHA-256 is the GitHub
-    // per-asset digest pinned by ourselves (JOURNAL 2026-07-01; re-measured on
-    // v0.4.0 on 2026-10-05 and 2026-10-07). Installing the binary is only half
-    // the first run: the bot account and API key are a separate, interactive
-    // provisioning act.
+    // The version pin (known-good, never auto-update). The release publishes no
+    // checksum manifest, so the SHA-256 is the GitHub per-asset digest pinned by
+    // ourselves. Installing the binary is only half the first run: the bot
+    // account and API key are a separate, interactive provisioning act.
+    //
+    // 0.4.0's official Windows asset links msvcrt and dies with 0xC0000374 at
+    // account open, so a fresh provisioning would install a binary known to
+    // die. The pin stays until the install path for a self-built provider is
+    // decided.
     public static BackendBundle CurrentBundle { get; } = new(
         Version:     "0.4.0",
         Url:         "https://github.com/anyproto/anytype-cli/releases/download/v0.4.0/anytype-cli-v0.4.0-windows-amd64.zip",
@@ -103,8 +106,8 @@ public static class BackendInstallation
 
     // The serve invocation the supervisor spawns. --no-update-check because
     // the version pin is Deckle's (known-good + signal newer, never
-    // auto-update — JOURNAL 2026-06-18); the CLI must not self-nag or
-    // self-move. No embedded paths, so no quoting concerns in the arguments.
+    // auto-update); the CLI must not self-nag or self-move. No embedded
+    // paths, so no quoting concerns in the arguments.
     public static BackendProcessSpec? ServeSpec() => Store.ResolveActiveSpec();
 
     internal static IBackendProviderCatalog ProviderCatalog => Store;

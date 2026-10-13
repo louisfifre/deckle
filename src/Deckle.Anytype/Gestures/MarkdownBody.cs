@@ -14,7 +14,7 @@ namespace Deckle.Anytype;
 // and are replaced with it. The heading line is kept — only the body under it is
 // replaced.
 //
-// Round-trip facts this is built against (measured live, see JOURNAL): Anytype
+// Round-trip facts this is built against (measured live): Anytype
 // destroys-and-recreates blocks on every PATCH then re-exports markdown, so the
 // read-back is a NORMALIZED render, not the bytes sent. Heading text and level
 // survive intact (hence "find by title" is sound), but a literal _ * ` | comes

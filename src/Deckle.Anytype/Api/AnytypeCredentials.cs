@@ -9,9 +9,9 @@ namespace Deckle.Anytype;
 // where the bearer lives decides which backend the client talks to:
 //
 //   • Headless — the Deckle vault holds the bot API key (minted against the
-//     headless serve, JOURNAL 2026-07-01). That key only exists against the
-//     headless backend, so its presence pins the base URL to the fixed 31012
-//     listener; the file's api_url is not consulted.
+//     headless serve). That key only exists against the headless backend, so
+//     its presence pins the base URL to the fixed 31012 listener; the file's
+//     api_url is not consulted.
 //   • Desktop (legacy) — no vault entry: the file's api_key + api_url (the
 //     Desktop challenge pairing) keep working, until the space cutover
 //     retires them.

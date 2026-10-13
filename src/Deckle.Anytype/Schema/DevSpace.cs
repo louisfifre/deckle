@@ -16,10 +16,9 @@ public sealed record PropertyDef(string Key, string Label, string Format, TagOpt
 // ─── DevSpace — frozen schema map ────────────────────────────────────────────
 //
 // Freezes the live structure of Louis's project-management space (« Dev »),
-// discovered against the running Anytype REST API on 2026-06-12, re-verified
-// 2026-06-13 when the rapport↔task links were inverted (see JOURNAL). This file
-// is the single source of truth for every type key, property key and tag-option
-// key the gestures send over the wire. Everything here is measured fact, not
+// discovered against the running Anytype REST API. This file is the single
+// source of truth for every type key, property key and tag-option key the
+// gestures send over the wire. Everything here is measured fact, not
 // interpretation — indicative mood, no conditional.
 //
 // The keys are transcribed VERBATIM, including the malformed ones the space
@@ -89,8 +88,7 @@ public static class DevSpace
         // « tag » is Anytype's auto-transversal multi_select: it re-attaches itself
         // to every object and resists deletion. It is deliberately NOT mapped onto
         // any type table below — unused, left out of every digest — so the key only
-        // survives here to document the residue (see the 2026-06-16 entry in
-        // the module JOURNAL.md).
+        // survives here to document the residue.
         public const string Tag               = "tag";                      // multi_select — auto-transversal, unmapped
         public const string Archive           = "archive";                  // checkbox
         public const string Description       = "description";              // text

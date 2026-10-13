@@ -11,7 +11,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │       ├── deckle-interface/
 │       │   └── SKILL.md  — deckle-interface Render the visual interface at Microsoft first-party level — native primitives,…
 │       ├── deckle-journal/
-│       │   └── SKILL.md  — deckle-journal How to write the JOURNAL.md. Invoke when recording a finding, or a small decisi…
+│       │   └── SKILL.md
 │       ├── deckle-logging/
 │       │   └── SKILL.md  — deckle-logging What to observe in code, and how to write it readable and actionable. Invoke be…
 │       ├── deckle-modularite/
@@ -161,7 +161,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   └── README.md  — readme-studies Index of frozen benchmark studies — completed or abandoned ASR/TTS spikes kept…
 │   │   ├── __init__.py
 │   │   ├── build_corpus.py
-│   │   ├── JOURNAL.md  — Dated findings from the Voxtral/ASR benchmark spike — backends, quantization, a…
+│   │   ├── JOURNAL.md
 │   │   └── README.md  — readme-benchmark-asr Human-facing entry point for benchmark/asr — ASR-specific harness pieces and fr…
 │   ├── autoresearch/
 │   │   ├── campaigns/
@@ -475,8 +475,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   └── DevSpace.cs
 │   │   ├── CONTEXT.md  — context-deckle-anytype Anytype integration vocabulary (covers Deckle.Anytype.Mcp) — backend vs MCP hos…
 │   │   ├── Deckle.Anytype.csproj
-│   │   ├── DeckleAnytypeSource.cs
-│   │   └── JOURNAL.md  — Dated decisions and findings for the Anytype MCP server — founding grilling, AP…
+│   │   └── DeckleAnytypeSource.cs
 │   ├── Deckle.Anytype.Mcp/
 │   │   ├── Http/
 │   │   │   ├── McpClients.cs
@@ -742,7 +741,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── CONTEXT.md  — context-deckle-autocorrect Autocorrect vocabulary — where correction may act (surfaces, enrollment), the t…
 │   │   ├── Deckle.Autocorrect.csproj
 │   │   ├── DeckleAutocorrectSource.cs
-│   │   ├── JOURNAL.md  — Dated decisions and findings for Deckle.Autocorrect — founding choices, measure…
+│   │   ├── JOURNAL.md
 │   │   └── SettingsSearch.cs
 │   ├── Deckle.Autocorrect.Lab/
 │   │   ├── Mining/
@@ -1005,7 +1004,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── HomeTerms.cs
 │   │   ├── HomeToolCatalog.cs
 │   │   ├── HomeTypedToolCatalog.cs
-│   │   ├── JOURNAL.md  — Durable findings and frozen decisions for the Home inventory domain.
+│   │   ├── JOURNAL.md
 │   │   └── OPERATIONS.md
 │   ├── Deckle.Hud/
 │   │   ├── Chrono/
@@ -1046,7 +1045,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── DeckleHudSource.cs
 │   │   ├── HudMessage.xaml
 │   │   ├── HudMessage.xaml.cs
-│   │   ├── JOURNAL.md  — Diagnosis notes, render doctrine, and deferred work for Deckle.Hud — read on de…
+│   │   ├── JOURNAL.md
 │   │   └── ProximityRollupAggregator.cs
 │   ├── Deckle.Inference.Onnx/
 │   │   ├── Deckle.Inference.Onnx.csproj
@@ -1094,7 +1093,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── CONTEXT.md  — context-deckle-input Input-layer vocabulary — the contact frame as the unit assembled from Raw Input…
 │   │   ├── Deckle.Input.csproj
 │   │   ├── DeckleInputSource.cs
-│   │   ├── JOURNAL.md  — Dated decisions and findings for Deckle.Input — founding choices, measurements,…
+│   │   ├── JOURNAL.md
 │   │   ├── MouseWheelSettings.cs
 │   │   ├── MouseWheelSettingsService.cs
 │   │   └── RawInputHost.cs
@@ -1199,7 +1198,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── DeckleLightingSource.InventoryAndEventStream.cs
 │   │   ├── DeckleLightingSource.Pairing.cs
 │   │   ├── ILightOutput.cs
-│   │   ├── JOURNAL.md  — Color-science decisions and the Night Owl gamut bug for Deckle.Lighting — read…
+│   │   ├── JOURNAL.md
 │   │   ├── LightColor.cs
 │   │   └── LightDescriptor.cs
 │   ├── Deckle.Lighting.Ambient/
@@ -1263,7 +1262,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── DeckleAmbientSource.Push.cs
 │   │   ├── DeckleAmbientSource.UiAndSettings.cs
 │   │   ├── IAmbientEngineHost.cs
-│   │   ├── JOURNAL.md  — Dated findings for Deckle.Lighting.Ambient — how a light colour is derived from…
+│   │   ├── JOURNAL.md
 │   │   └── SettingsSearch.cs
 │   ├── Deckle.Llm/
 │   │   ├── Deckle.Llm.csproj
@@ -1319,7 +1318,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   └── LlmGeneralViewModel.Settings.cs
 │   │   ├── CONTEXT.md  — context-deckle-llm-rewrite Rewrite service vocabulary — the single service every rewrite goes through, who…
 │   │   ├── Deckle.Llm.Rewrite.csproj
-│   │   ├── JOURNAL.md  — Dated decisions and findings for Deckle.Llm.Rewrite — engine seam, paragraph re…
+│   │   ├── JOURNAL.md
 │   │   ├── LlmSettings.cs
 │   │   ├── LlmSettingsMigrations.cs
 │   │   ├── LlmSettingsModule.cs
@@ -1549,7 +1548,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── InstallingPage.xaml.cs
 │   │   ├── InstallItem.cs
 │   │   ├── InstallPlan.cs
-│   │   ├── JOURNAL.md  — Dated decisions and findings for the setup wizard — installer, updater, relocat…
+│   │   ├── JOURNAL.md
 │   │   ├── ModulesPage.xaml
 │   │   ├── ModulesPage.xaml.cs
 │   │   ├── RelocatePage.xaml
@@ -1618,7 +1617,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   └── TrayMenuNativeMethods.cs
 │   │   ├── Deckle.Shell.TrayMenu.csproj
 │   │   ├── DeckleShellTrayMenuSource.cs
-│   │   ├── JOURNAL.md  — Dated diagnostics for Deckle.Shell.TrayMenu — the tray-menu density, gap, and f…
+│   │   ├── JOURNAL.md
 │   │   ├── TrayCarrierWindow.cs
 │   │   ├── TrayContextMenuHost.cs
 │   │   ├── TrayContextMenuHost.Flyout.cs
@@ -1638,7 +1637,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── Deckle.Speech.csproj
 │   │   ├── DeckleSpeechSource.cs
 │   │   ├── ISpeechBackend.cs
-│   │   ├── JOURNAL.md  — Diagnosis notes and kept decisions for Deckle.Speech — read on demand when chas…
+│   │   ├── JOURNAL.md
 │   │   ├── SpeechEngine.cs
 │   │   ├── SpeechSettings.cs
 │   │   └── SpeechSettingsService.cs
@@ -1713,7 +1712,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── DeckleWhispSource.Ui.cs
 │   │   ├── DeckleWhispSource.WarmupModel.cs
 │   │   ├── ITranscriptionEngineHost.cs
-│   │   ├── JOURNAL.md  — Diagnosis notes and kept decisions for Deckle.Transcription — read on demand wh…
+│   │   ├── JOURNAL.md
 │   │   ├── SettingsSearch.cs
 │   │   ├── TranscriptionSettings.cs
 │   │   ├── TranscriptionSettingsService.cs
@@ -1777,7 +1776,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │       ├── FrameSampler.Readback.cs
 │       ├── FrameSampler.Resources.cs
 │       ├── IFrameAnalyzer.cs
-│       ├── JOURNAL.md  — Dated diagnostics for Deckle.Vision — the DXGI capture freeze on an HDR toggle…
+│       ├── JOURNAL.md
 │       ├── SampledFrame.cs
 │       ├── ScreenCaptureInterop.cs
 │       ├── ScreenCaptureInterop.D3D11.cs

@@ -292,6 +292,8 @@ public sealed partial class SchemaAdminGestures(AnytypeApiClient api, AnytypeSpa
                     applied.Add($"icône définie {section.Name} · {section.Icon.Display}");
             }
 
+            // Member ids come from the schema snapshot, never from NameResolver:
+            // object search does not return type objects.
             var memberIds = new List<string>(section.Types.Count);
             foreach (string typeKey in section.Types)
             {

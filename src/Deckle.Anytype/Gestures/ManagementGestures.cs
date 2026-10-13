@@ -5,13 +5,13 @@ namespace Deckle.Anytype;
 
 // Management gestures: the destructive operations the base catalog withholds.
 // One responsibility — taking objects out of the space — served only to a
-// supervised consumer (the host mounts this behind a launch flag). For now the
-// single capability is delete; the batch variant is deferred.
+// supervised consumer (the host mounts this only on the client surface that
+// opts in). For now the single capability is delete; the batch variant is
+// deferred.
 //
-// delete moves an object to Anytype's RESTORABLE bin, not a hard delete
-// (verified live, see JOURNAL). The danger is therefore not irreversibility but
-// hitting the wrong target, since the object is named. So delete is a two-step,
-// stateless gesture pinned by id:
+// delete moves an object to Anytype's RESTORABLE bin, not a hard delete. The
+// danger is therefore not irreversibility but hitting the wrong target, since
+// the object is named. So delete is a two-step, stateless gesture pinned by id:
 //
 //   • first call (confirm:false) — looks the target up and returns its identity
 //     (name, type, id, snippet) WITHOUT deleting anything;

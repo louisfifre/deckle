@@ -12,7 +12,7 @@ namespace Deckle.Anytype;
 
 // Thin transport over the local Anytype REST API. No domain knowledge: every
 // method takes/returns a JsonNode and the gestures layer owns the payload
-// shapes. Two robustness obligations, both founding decisions (mcp/JOURNAL.md):
+// shapes. Two robustness obligations:
 //
 //   • Serialize all calls through a SemaphoreSlim. The API tolerates ~1 rps
 //     sustained with a burst of 60; one in-flight request at a time keeps us
@@ -212,9 +212,8 @@ public sealed partial class AnytypeApiClient : IDisposable
     }
 
     // DELETE object → moves it to Anytype's restorable bin (the native trash),
-    // NOT a hard delete (verified 2026-06-12, see JOURNAL). Returns the inner
-    // "object" node when the API echoes the archived object, and tolerates an
-    // empty body by returning the bare root.
+    // NOT a hard delete. Returns the inner "object" node when the API echoes the
+    // archived object, and tolerates an empty body by returning the bare root.
     public Task<JsonObject> DeleteObjectAsync(string id, CancellationToken ct = default) =>
         DeleteObjectAsync(SpaceId, id, ct);
 

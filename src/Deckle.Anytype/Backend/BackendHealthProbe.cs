@@ -9,11 +9,10 @@ namespace Deckle.Anytype;
 // signal is `GET /docs/openapi.json` returning 200 — unauthenticated, and chosen
 // over a port ping or a PID check because the listener only binds after the
 // account login propagates the listen address, so a 200 here proves the REST
-// surface is actually serving (verified 2026-06-18, see JOURNAL). Since
-// anytype-heart 0.51 this root route serves the v2 OpenAPI document and v1 lives
-// under `/v1/docs/openapi.json`; the probe only needs the unauthenticated 200,
-// so it stays valid on either. The PID is never the signal: the task process can
-// be alive while REST is not yet bound.
+// surface is actually serving. Since anytype-heart 0.51 this root route serves
+// the v2 OpenAPI document and v1 lives under `/v1/docs/openapi.json`; the probe
+// only needs the unauthenticated 200, so it stays valid on either. The PID is
+// never the signal: the task process can be alive while REST is not yet bound.
 //
 // Separate from AnytypeApiClient on purpose — that client is bound to a space and
 // a bearer token and speaks /v1; this probe is unauthenticated and hits the root

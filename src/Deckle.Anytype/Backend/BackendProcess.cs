@@ -96,6 +96,8 @@ internal sealed class BackendProcessHost : IBackendProcessHost
                 FileName         = spec.ExecutablePath,
                 Arguments        = spec.Arguments,
                 UseShellExecute  = false,
+                // No console window at all: a windowed console receives
+                // CTRL_CLOSE_EVENT and the serve dies with 0xC000013A.
                 CreateNoWindow   = true,
                 WorkingDirectory = Path.GetDirectoryName(spec.ExecutablePath) ?? string.Empty,
             });
