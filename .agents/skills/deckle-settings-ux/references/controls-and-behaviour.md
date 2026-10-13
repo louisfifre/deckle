@@ -16,7 +16,7 @@ By the value's nature:
 
 ## Magnitude — one control, a chosen fineness
 
-Always both a slider and a number field, the field being the readout too — never one without the other, so "both" adds nothing to hide.
+One control, a number field that is also the readout, with a slider beside it when the value earns a gesture. A figure that is typed and never swept, a count or a duration nobody drags, keeps the field alone. It is the same control without its slider, not a second one. A count is declared as such, so its grain never drops below one.
 
 A linear magnitude is declared by min, max, unit, and a desired fineness (three levels, from coarse to fine) — nothing else is hand-numbered. The fineness sets how many steps should span the range (an order of ten, a hundred, a thousand). The step grain is the value on the 1-2-5 ladder (…, 0.05, 0.1, 0.2, 0.5, 1, 2, 5, 10, …) nearest — as a ratio, not an absolute gap — to (span ÷ target). From that grain the rest follows: the readout shows only the digits the grain implies; the slider steps by the grain; a fine nudge moves one grain, a coarse one ten; the field takes any multiple of the grain in range. Powers of ten are just the ladder's round rungs, not the whole ladder.
 
