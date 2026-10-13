@@ -2,17 +2,16 @@ namespace Deckle.Security;
 
 // ── ISecretVault ──────────────────────────────────────────────────────────
 //
-// Deckle's home for every secret it must persist: the Anytype API key, the
-// per-client MCP tokens, future third-party keys (transcription, rewrite).
-// A named-value store — arbitrary, caller-owned names to opaque string values
-// — kept sealed at rest so only the current Windows user account can read it.
+// Deckle's home for every secret it must persist, such as the Anytype API key,
+// the per-client MCP tokens and the Hue Entertainment client key. A
+// named-value store, caller-owned names to opaque string values, sealed at
+// rest so only the current Windows user account can read it. The concrete
+// store (SecretVault) owns the sealing; consumers never learn how.
 //
-// This is the seam the rest of Deckle depends on; the concrete store
-// (SecretVault) owns the sealing mechanism. Consumers never learn how a secret
-// is protected, only that it is. The boundary with the Windows Credential
-// Manager is deliberate: the anytype-cli account key lives there (go-keyring
-// owns it); everything Deckle itself mints or holds lives here. Two stores,
-// split by which subsystem owns the secret — not an inconsistency.
+// The boundary with the Windows Credential Manager is deliberate: the
+// anytype-cli account key lives there (go-keyring owns it); everything Deckle
+// itself mints or holds lives here. Two stores, split by which subsystem owns
+// the secret.
 public interface ISecretVault
 {
     /// <summary>

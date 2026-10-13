@@ -9,10 +9,10 @@ namespace Deckle.Security;
 
 // ── SecretVault ───────────────────────────────────────────────────────────
 //
-// The default ISecretVault: a single file under %LOCALAPPDATA%\Deckle, sealed
-// at rest with DPAPI (CurrentUser scope — only this Windows account can
+// The default ISecretVault: a single file under the user data root, sealed at
+// rest with DPAPI (CurrentUser scope — only this Windows account can
 // decrypt). Follows the HarvestStore pattern (DPAPI + atomic temp+Move) with
-// two deliberate departures that the higher stakes of a credential store
+// three deliberate departures that the higher stakes of a credential store
 // justify:
 //
 //   • No debounce. Secrets are low-volume, high-value: a Set/Remove writes
@@ -35,8 +35,8 @@ namespace Deckle.Security;
 // DPAPI is used with null entropy, matching HarvestStore. A static app-baked
 // entropy would be security-by-obscurity (it ships in the binary) and would
 // pin the format forever; per-install random entropy has a chicken-and-egg
-// storage problem. CurrentUser scope already excludes other Windows accounts;
-// hardening against same-user malware is a separate, deferred pass.
+// storage problem. CurrentUser scope excludes other Windows accounts, not
+// malware running as the same user.
 public sealed class SecretVault : ISecretVault
 {
     private const int SchemaVersion = 1;
@@ -221,9 +221,8 @@ public sealed class SecretVault : ISecretVault
         return "Deckle-Secrets-" + Convert.ToHexString(hash, 0, 8);
     }
 
-    // The on-disk envelope. Version is written for forward compatibility; the
-    // reader tolerates its absence (defaults apply) and does not yet branch on
-    // it — the first migration will.
+    // Version is written for a future migration; the reader ignores it and
+    // tolerates its absence.
     private sealed class VaultData
     {
         public int Version { get; set; } = SchemaVersion;
