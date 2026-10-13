@@ -20,37 +20,21 @@ public partial class App
 {
     private void WireStartupSettings(StartupContext context)
     {
-        // Wire the recording cap into the Hud lib. Deckle.Hud is
-        // a Settings-agnostic module ; the App is the one that reads
-        // Settings on every vsync to honour live edits to MaxRecordingDurationSeconds
-        // (the Recording page's maximum recording length picker). Provider is invoked from UpdateClock at vsync.
+        // Deckle.Hud does not read settings, so the App hands it the recording cap
+        // as a provider. The HUD calls it at every vsync, so a live edit applies.
         Deckle.Hud.HudChrono.MaxRecordingDurationSecondsProvider =
             () => Audio.CaptureSettingsService.Instance.Current.MaxRecordingDurationSeconds;
 
-        // SettingsHost — App-side hooks the Deckle.Settings UI surface
-        // calls back into to drive theme broadcast, level-window
-        // propagation, restart, and the parent-window accessor for
-        // dialogs. Must be wired before any Settings page is created.
-        // Pattern aligned on HudChrono.MaxRecordingDurationSecondsProvider
-        // above: lib exposes static delegates, App owns the contract.
+        // SettingsHost holds the App-side hooks the Settings UI calls back into.
+        // Must be wired before any Settings page is created.
         Settings.SettingsHost.ApplyTheme       = ApplyTheme;
         Settings.SettingsHost.RestartApp       = RestartApp;
         Settings.SettingsHost.GetSettingsWindow = () => _settingsWindow;
-        // Page-to-page drill-in for the settings surface: a module page hands a
-        // destination PageTag, the shell selects the matching rail item (children
-        // included) and the Frame follows. Same lib-exposes-a-delegate / App-owns-the
-        // -wiring shape as the PathControlFactory below — Deckle.Autocorrect cannot
-        // see Deckle.Settings, so the hook lives on the Catalog floor between them.
         Catalog.SettingsNavigation.GoToPage = tag => _settingsWindow?.SelectPage(tag);
-        // The Path-kind picker control is module-owned (FolderPickerCard needs the
-        // Settings window + ETW source), so the floor composer builds it through
-        // this factory — same lib-exposes-delegate / App-owns-contract pattern.
-        // Dispatch on Mode: Editable wants the typeable variant (a TextBox the user
-        // can paste a transplanted path into), every other mode the read-only card.
-        // Both implement IPathControl and take Mode + DefaultPath the same way, so
-        // the only difference is which type is newed up. DefaultPath is resolved
-        // once here (the deferred AppPaths lookup), never captured earlier — the
-        // fallback shown when the value is empty must be computed at compose time.
+        // The folder picker lives in Deckle.Settings (it needs the Settings window
+        // and its ETW source), so the Catalog composer builds it through this
+        // factory. DefaultPath is invoked here, at compose time, never captured
+        // earlier: the fallback shown for an empty value must be current.
         Catalog.SettingsComposer.PathControlFactory = args =>
             args.Mode == Catalog.FolderPickerMode.Editable
                 ? new Settings.FolderPickerEditableCard
@@ -62,27 +46,20 @@ public partial class App
                     Mode = args.Mode,
                     DefaultPath = args.DefaultPath?.Invoke() ?? string.Empty,
                 };
-        // Fill the Catalog.TelemetryConsent registry with the shell's consent
-        // dialogs so module settings pages can gate their telemetry opt-ins behind
-        // the right consent — same lib-exposes-slots / App-owns-wiring pattern as
-        // the PathControlFactory above. Must run before any module settings page is
-        // created (its manifest reads the registry through confirmOnEnable).
+        // Fills the shell's consent dialogs into Catalog.TelemetryConsent. Must run
+        // before any module settings page is created: its manifest reads the
+        // registry through confirmOnEnable.
         Settings.TelemetryConsentWiring.Wire();
         Settings.SettingsHost.OpenSetupWizard  = async () =>
         {
-            // Wizard XAML lives in the standalone Deckle.Setup module
-            // (extracted out of Deckle.App/Shell/Setup/ for J3). Detached
-            // from the Settings window — Settings stays open behind it.
             var setup = new Deckle.Setup.SetupWindow();
             setup.Body.Navigate(typeof(Deckle.Setup.ModulesPage), setup);
             setup.Activate();
 
-            // Provisioning AND presence are decoupled from boot: engines are
-            // composed at startup only for the modules chosen and provisioned.
-            // A successful wizard run (module change, first setup, model swap)
-            // therefore needs a restart to (re)compose. Land on the Dictation
-            // page when transcription is still part of the install, on the
-            // Settings default otherwise — its page no longer exists.
+            // Engines are composed at startup only for the modules chosen and
+            // provisioned, so a successful wizard run needs a restart. Land on the
+            // Dictation page only when transcription is still installed: otherwise
+            // that page does not exist.
             bool ok = await setup.Completion;
             if (ok)
                 RestartApp(ModulePresence.IsPresent(ModuleIds.Transcription)
@@ -90,48 +67,28 @@ public partial class App
                     : null);
         };
 
-        // Readiness probe for the Dictation settings page's "set up" CTA. That
-        // page lives in Deckle.Transcription, which cannot see the Whisper child
-        // module, so the App — which composes both — answers here.
+        // The Dictation page lives in Deckle.Transcription, which cannot see the
+        // Whisper child module, so the App, which composes both, answers here.
         Settings.SettingsHost.IsSpeechProvisioned =
             () => NativeRuntime.IsInstalled() && SpeechModels.IsAnyModelInstalled();
 
-        // In-app updater: the General page's version-row hooks, plus the silent
-        // background check (installed launches only, opt-out in Settings) whose
-        // toast offers the explicit update flow. Lives in App.Update.cs.
         WireUpdater();
 
-        // Data-root move: Settings hands the validated target here; the live
-        // app cannot copy its own root, so it restarts into --relocate-data.
-        // Lives in App.Relocate.cs.
+        // The live app cannot copy its own data root, so it restarts into
+        // --relocate-data.
         Settings.SettingsHost.RelocateDataRoot = StartDataRelocation;
 
-        // General › Hotkeys shows a card per hotkey action the App built, so a
-        // module that is absent has no hotkey card. Read at call time: the
-        // actions are built later, when the shell starts.
+        // A module that is absent has no hotkey card. Read at call time: the
+        // hotkey actions are built later, when the shell starts.
         Settings.SettingsHost.IsHotkeyActionAvailable =
             id => _hotkeyActions.Any(action => action.ToggleId == id);
 
-        // Settings module nav registry + cross-page search index — each module-owned
-        // settings page declares its own nav identity (page tag + module PRI + icon) in
-        // its own assembly, via its <Module>SettingsModule.Describe(order). The
-        // composition root supplies ONLY the Order here, so the shell builds their
-        // NavigationView items from the registry instead of hardcoding them in
-        // SettingsWindow.xaml. This is the seam the module installer needs: a module
-        // appears / disappears here without editing the shell. The shell's own General
-        // stays a static anchor; Logs stays a footer command. Order leaves gaps so a
-        // later module can land between two existing ones. Recording (order 50) sits
-        // first in the band — right after General — where its former static anchor was;
-        // Diagnostics (order 600) sits last, where its own former static anchor was.
-        //
-        // Each descriptor is captured once and registered twice: into the nav registry
-        // that materialises its rail item, and into the search index paired with the
-        // module's SettingsSearch.Entries — the page's findable cards, resolved from the
-        // module's own PRI subtree without composing the page.
-        // A page registers only when the presence module that owns it is
-        // installed: an absent module has no rail entry and no search hits.
-        // Both registrations travel together — a nav item without its search
-        // entries (or the reverse) would read as a half-installed module.
+        // Each module page declares its own nav identity in its own assembly; the
+        // composition root supplies only the Order, which leaves gaps so a later
+        // module can land between two. A page registers only when the presence
+        // module that owns it is installed, and its rail item and search entries
+        // always register together: one without the other reads as a
+        // half-installed module.
         void RegisterSettingsModule(
             Catalog.SettingsModuleDescriptor page,
             System.Collections.Generic.IReadOnlyList<Catalog.SettingSearchEntry> entries)
@@ -149,11 +106,9 @@ public partial class App
             RegisterSettingsModule(Llm.Rewrite.LlmSettingsModule.Describe(order: 200), Llm.Rewrite.SettingsSearch.Entries);
         if (context.AutocorrectPresent)
         {
-            // One family, three rail entries: the parent page, then its two children
-            // (nested through their descriptors' ParentId). Each registers on its own
-            // because the search index resolves page coordinates per registration —
-            // a child folded into its parent's call would index its cards against the
-            // parent's tag and send every hit to the wrong page.
+            // Each page of the family registers on its own: the search index
+            // resolves page coordinates per registration, so a child folded into
+            // its parent's call would send every hit to the parent's page.
             RegisterSettingsModule(
                 Autocorrect.AutocorrectSettingsModule.Describe(order: 300),
                 Autocorrect.SettingsSearch.Entries);
@@ -172,20 +127,15 @@ public partial class App
         // Apps and games is not a presence module: nothing to provision, so it
         // is always registered, like precision scrolling.
         RegisterSettingsModule(Orchestration.OrchestrationSettingsModule.Describe(order: 560), Orchestration.SettingsSearch.Entries);
-        // Taskbar cover is always composed (App.TaskbarCover.cs), so its page is
-        // always registered. Its place in the rail is provisional until the
-        // navigation tree is decided.
+        // Taskbar cover is always composed, so its page is always registered.
         RegisterSettingsModule(Shell.TaskbarCover.TaskbarCoverSettingsModule.Describe(order: 580), Shell.TaskbarCover.SettingsSearch.Entries);
         // Diagnostics is shell-level observability, not a presence module —
         // always registered.
         RegisterSettingsModule(Diagnostics.Logging.DiagnosticsSettingsModule.Describe(order: 600), Diagnostics.Logging.SettingsSearch.Entries);
 
-        // General is a static nav anchor of the shell (Home, the other one, has no
-        // cards to find), not a registry module, so it has no descriptor to read
-        // coordinates off: its cards register with the values its NavigationViewItem
-        // carries in SettingsWindow.xaml — the Deckle.Settings.GeneralPage tag, the
-        // Settings glyph, and the nav label resolved from the shell's own subtree
-        // (SettingsNavGeneral, the item's x:Uid).
+        // General is a static nav anchor of the shell, not a registry module, so its
+        // cards register with the values its NavigationViewItem carries in
+        // SettingsWindow.xaml: tag, glyph and x:Uid must stay in step with it.
         Settings.SettingsSearchIndex.RegisterPage(
             "Deckle.Settings.GeneralPage",
             "Deckle.Settings",
