@@ -136,6 +136,7 @@ doctrine). This file is generated from the Conventional-Commit history by
 - **settings:** Add the section block
 - **composer:** Add the mode fold
 - **composition:** Move the countdown gauge with one named fast motion
+- **transcription:** Split the settings into General, Decoding and Streaming
 
 ### Changed
 
