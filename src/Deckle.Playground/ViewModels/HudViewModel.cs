@@ -62,7 +62,8 @@ public enum HudTuningSection
 // Play / Pause / Stop transport buttons. Mirrors the GeneralViewModel
 // pattern (CommunityToolkit.Mvvm partial properties, _isSyncing guard
 // — here named _suppressTargetEvents for the same role) without the
-// PushToSettings step since HUD tuning isn't persisted.
+// PushToSettings step. HUD tuning is not persisted: a value that proves
+// right becomes a code default, never a second source of truth.
 public partial class HudViewModel : ObservableObject
 {
     // Suppresses change side-effects when the page is programmatically

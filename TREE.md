@@ -1043,7 +1043,6 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── DeckleHudSource.cs
 │   │   ├── HudMessage.xaml
 │   │   ├── HudMessage.xaml.cs
-│   │   ├── JOURNAL.md
 │   │   └── ProximityRollupAggregator.cs
 │   ├── Deckle.Inference.Onnx/
 │   │   ├── Deckle.Inference.Onnx.csproj
