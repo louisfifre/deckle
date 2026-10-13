@@ -233,6 +233,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   ├── taskbar-probe.ps1
 │   │   │   ├── taskbar-strings.ps1
 │   │   │   └── tray-uia.ps1
+│   │   ├── research--settings-ux--2026-10-13.md  — Recherche vérifiée (2026-10-13), la direction Settings de Louis passée au cribl…
 │   │   └── research--taskbar-sans-windhawk--2026-10-08.md  — Recherche vérifiée (2026-10-08) — remplacer Windhawk par un module Deckle pour…
 │   ├── inventaire-exposables.csv
 │   ├── inventaire-exposables.md
