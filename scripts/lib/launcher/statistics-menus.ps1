@@ -88,7 +88,7 @@ function Set-CustomContextDocuments {
             [pscustomobject]@{ Label = 'On-demand references';        Value = 'on-demand' }
             [pscustomobject]@{ Label = 'AGENTS and CLAUDE';           Value = 'instructions' }
             [pscustomobject]@{ Label = 'Skills and skill references'; Value = 'skills' }
-            [pscustomobject]@{ Label = 'README, context, and journal'; Value = 'project-context' }
+            [pscustomobject]@{ Label = 'README and context';          Value = 'project-context' }
             [pscustomobject]@{ Label = 'Decisions and research';      Value = 'decisions' }
         )
     if ($null -eq $choice) { return }
@@ -99,7 +99,7 @@ function Set-CustomContextDocuments {
         'on-demand'       { $Specification.LoadingModes = @('On-demand references') }
         'instructions'    { $Specification.DocumentTypes = @('AGENTS', 'CLAUDE') }
         'skills'          { $Specification.DocumentTypes = @('Skill', 'Skill reference') }
-        'project-context' { $Specification.DocumentTypes = @('README', 'Context', 'Journal') }
+        'project-context' { $Specification.DocumentTypes = @('README', 'Context') }
         'decisions'       { $Specification.DocumentTypes = @('ADR', 'Research') }
     }
 }
