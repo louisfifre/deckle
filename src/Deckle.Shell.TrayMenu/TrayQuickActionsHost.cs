@@ -9,16 +9,9 @@ namespace Deckle.Shell.TrayMenu;
 // ─── Tray quick-actions panel — left click ────────────────────────────────────
 //
 // The panel the tray icon opens on left click, in the spirit of Windows 11
-// quick settings: a Record action, "Transcribe audio files…", then one
-// ToggleSwitch row per switchable module. Unlike the right-click MenuFlyout,
-// whose every item click closes the menu, this is a plain Flyout with real
-// controls: flipping a switch leaves the panel open. Actions (Record,
-// Transcribe files) close it first, so the window that had focus before the
-// click gets it back (paste at Stop relies on it).
-//
-// Same carrier pattern as TrayContextMenuHost: an invisible TrayCarrierWindow
-// of its own, anchored on the icon, sized to the real FlyoutPresenter
-// captured by a single prime cycle, Placement Full, animations off.
+// quick settings. Unlike the right-click MenuFlyout, whose every item click
+// closes the menu, this is a plain Flyout with real controls: flipping a
+// switch leaves the panel open.
 //
 // Dismiss, as Windows quick settings: click outside or focus loss (carrier
 // Deactivated), Esc (Flyout light dismiss → Closed), and a second left click
@@ -50,7 +43,6 @@ public sealed partial class TrayQuickActionsHost : IDisposable
     // deactivated, flyout light-dismissed); 0 = none yet (TickCount64 counts
     // from boot, so a real tick is never 0).
     private long _lastDismissTick;
-    // Reason of the last Hide, for the "dismissed while opening" trace.
     private string _lastHideReason = "";
 
     /// <summary>
@@ -86,8 +78,8 @@ public sealed partial class TrayQuickActionsHost : IDisposable
     }
 
     /// <summary>
-    /// Switches shown last, separated from <see cref="Toggles"/> by a divider
-    /// (Ambient Light: the most frequent one, nearest the icon).
+    /// Switches shown last, separated from <see cref="Toggles"/> by a divider:
+    /// the most frequent ones, nearest the icon.
     /// </summary>
     public IReadOnlyList<TrayToggle> FooterToggles
     {
@@ -109,9 +101,8 @@ public sealed partial class TrayQuickActionsHost : IDisposable
 
         _flyout = new Flyout
         {
-            // Same reason as the context menu: hiding the carrier mid-close
-            // would cut the animation; the panel appears and disappears at
-            // once, like the native tray flyouts.
+            // Hiding the carrier mid-close would cut the animation; the panel
+            // appears and disappears at once, like the native tray flyouts.
             AreOpenCloseAnimationsEnabled = false,
         };
         _flyout.Opened += OnFlyoutOpened;

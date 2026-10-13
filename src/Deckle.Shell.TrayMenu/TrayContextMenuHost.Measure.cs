@@ -18,17 +18,12 @@ public sealed partial class TrayContextMenuHost
 {
     // ── Prime cycle ────────────────────────────────────────────────────────────
 
-    // Prime measure: prime the visual tree so native MenuFlyoutItems have
-    // their ControlTemplate applied and DesiredSize measurable on the first
-    // real Show(). A synchronous ShowAt + Hide cycle is insufficient:
-    // 2026-05-25 app.jsonl observation: show_count=1 measured desired_w/h=0
-    // for all native items. Cause: immediate synchronous Hide cuts the
-    // prime before WinUI's layout pass has run on MenuFlyoutPresenter
-    // items. Fix: defer Hide through DispatcherQueue.TryEnqueue(Low); Low
-    // priority inserts the callback after the layout pass and initial
-    // popup render frame have occurred. At that point each item has its
-    // correct DesiredSize, and the visual tree remains "warmed" for the
-    // process lifetime.
+    // Primes the visual tree so native MenuFlyoutItems have their template
+    // applied and a measurable DesiredSize on the first real Show(). A
+    // synchronous ShowAt + Hide cuts the prime before WinUI's layout pass runs
+    // on the presenter items, which then measure zero. Hide is deferred through
+    // DispatcherQueue.TryEnqueue(Low), which runs after the layout pass and the
+    // first popup render frame; the tree then stays warm for the process lifetime.
     private void PrimeFlyout()
     {
         // A real Show() already opened the menu: Opened captures the sizes.
@@ -57,17 +52,14 @@ public sealed partial class TrayContextMenuHost
 
     // ── Size capture ──────────────────────────────────────────────────────────
 
-    // Captures the item sizes and the real presenter size with the items
-    // attached to the popup tree. Runs after the prime cycle's layout pass,
-    // and again after every real open (OnFlyoutOpened), so a bad value from
-    // one capture heals on the next open instead of sticking for the process
-    // lifetime.
+    // Runs after the prime cycle's layout pass and again after every real open,
+    // so a bad value from one capture heals on the next open instead of
+    // sticking for the process lifetime.
     //
-    // NarrowPadding is forced first. The framework switches to it anyway as
-    // soon as a mouse/pen/keyboard pointer interacts with the menu
-    // (PaddingSizeStates in DefaultMenuFlyoutItemStyle, WindowsAppSDK
-    // generic.xaml); forcing it here makes the capture reflect the final size
-    // (≈ 32 DIP/item) rather than the initial DefaultPadding size (≈ 40).
+    // NarrowPadding is forced first. The framework switches to it anyway on
+    // pointer interaction (PaddingSizeStates in DefaultMenuFlyoutItemStyle,
+    // WindowsAppSDK generic.xaml); forcing it makes the capture reflect the
+    // final size rather than the initial DefaultPadding one.
     //
     // phase: "prime" or "opened", traced when a capture is rejected.
     private void CaptureSizes(string phase)
@@ -83,10 +75,9 @@ public sealed partial class TrayContextMenuHost
         // DesiredSize values read below.
         _carrier.Frame.UpdateLayout();
 
-        // Item sizes: kept only when every visible item measured a height.
-        // A capture taken before the items were laid out reads zeros (the
-        // 2026-05-25 observation); it must not replace an earlier good one.
-        // Without them the presenter size cannot be checked either.
+        // A capture taken before the items were laid out reads zeros; it must
+        // not replace an earlier good one. Without item sizes the presenter
+        // size cannot be checked either.
         bool itemsLaidOut = _flyout.Items
             .Where(i => i.Visibility == Visibility.Visible)
             .All(i => i.DesiredSize.Height > 0);
@@ -124,9 +115,6 @@ public sealed partial class TrayContextMenuHost
             phase, captured.Width, captured.Height, itemsW, itemsH);
     }
 
-    // Walks up the visual tree from a descendant to the MenuFlyoutPresenter
-    // that hosts popup items. Returns null if the tree is not mounted yet
-    // (presenter absent from the tree at call time).
     private static MenuFlyoutPresenter? FindAncestorPresenter(DependencyObject start)
     {
         DependencyObject? current = VisualTreeHelper.GetParent(start);
@@ -183,10 +171,8 @@ public sealed partial class TrayContextMenuHost
     // ── Measure ───────────────────────────────────────────────────────────────
     //
     // Placement Full stretches the presenter to the carrier window, so the
-    // carrier size IS the visible card. TrayMenuSizing.Decide picks it: the
-    // captured presenter size when it holds every item, else the item extent
-    // plus a frame margin. Returns physical pixels at the anchor monitor's
-    // scale.
+    // carrier size IS the visible card. Returns physical pixels at the anchor
+    // monitor's scale.
 
     private (int width, int height) MeasureFlyout(double scale)
     {

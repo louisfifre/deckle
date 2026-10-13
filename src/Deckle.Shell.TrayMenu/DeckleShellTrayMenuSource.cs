@@ -3,25 +3,11 @@ using Deckle.Diagnostics;
 
 namespace Deckle.Shell.TrayMenu;
 
-// Shell.TrayMenu module sub-provider: events specific to the WinUI 3 tray menu
-// lifecycle and open pipeline. Strict window-positioning events (anchor,
-// monitor, popup position, move-and-resize, foreground set) are emitted by the
-// cross-cutting `DeckleWindowingSource` sub-provider through
-// `WindowingProbe.Emit*` on the `TrayContextMenuHost` side, not duplicated
-// here, in line with the `reference--eventsource-convention` doctrine that
-// reserves cross-cutting positioning for the common Windowing trunk.
-//
-// What remains here is tray-menu-specific and has no equivalent in
-// cross-cutting sub-providers: visual tree priming (prime cycle), individual
-// flyout item measurement, dismiss qualification (deactivated / flyout_closed /
-// item_click:<label>), item click. These traces diagnose flyout-specific bugs
-// (zero measurement, excess height, unexpected dismiss) without drowning the
-// signal in Windowing noise.
-//
-// Verbose/Info separation per the deckle-logging skill: an Info is a short
-// Capital sentence with no IDs and no k=v; the technical detail (handles,
-// durations, dismiss reason, item label) lives in a Verbose mirror that FOLLOWS
-// it.
+// Shell.TrayMenu module sub-provider. Window positioning (anchor, monitor,
+// popup position, move-and-resize) belongs to the cross-cutting
+// DeckleWindowingSource, emitted through WindowingProbe, and is not duplicated
+// here. What remains is tray-specific: prime cycle, item measurement, dismiss
+// reason, item click.
 [EventSource(Name = "Deckle-TrayMenu")]
 public sealed class DeckleShellTrayMenuSource : DeckleEventSource
 {
@@ -34,8 +20,6 @@ public sealed class DeckleShellTrayMenuSource : DeckleEventSource
             OperationalLogActivity.Windowing, Log, level, keywords);
 
     // ── Event IDs ─────────────────────────────────────────────────────────────
-    // Milestones keep their original id; the Verbose mirrors added for the
-    // Verbose/Info separation take fresh ids 17-21 at the end of the sequence.
     // IDs are public in the ETW manifest; never reuse an id after deleting an event.
     public const int EvtHostConstructed           = 1;
     public const int EvtFlyoutBuilt               = 2;
@@ -43,8 +27,7 @@ public sealed class DeckleShellTrayMenuSource : DeckleEventSource
     public const int EvtPrimeCycleStarted         = 4;
     public const int EvtPrimeCycleCompleted       = 5;
     public const int EvtShowRequested             = 6;
-    // 7 and 16 retired with the menu's module switches (now in the
-    // quick-actions panel, traced by PanelToggleClicked): reserved, never reuse.
+    // 7 and 16 belong to retired events: reserved, never reuse.
     public const int EvtAmbientStateRead          = 7;
     public const int EvtItemMeasured              = 8;
     public const int EvtFlyoutMeasured            = 9;
@@ -60,7 +43,6 @@ public sealed class DeckleShellTrayMenuSource : DeckleEventSource
     public const int EvtShowRequestedDetail       = 19;
     public const int EvtHiddenDetail              = 20;
     public const int EvtItemClickedDetail         = 21;
-    // Quick-actions panel (left click), 22 onward.
     public const int EvtPanelShown                = 22;
     public const int EvtPanelShownDetail          = 23;
     public const int EvtPanelHidden               = 24;
@@ -73,10 +55,8 @@ public sealed class DeckleShellTrayMenuSource : DeckleEventSource
     public const int EvtPanelActionClickedDetail  = 31;
     public const int EvtPanelPrimed               = 32;
     public const int EvtPanelPrimedDetail         = 33;
-    // Context menu size check, 34 onward.
     public const int EvtPresenterSizeRejected       = 34;
     public const int EvtPresenterSizeRejectedDetail = 35;
-    // Carrier activation and the quick-actions panel's own checks, 36 onward.
     public const int EvtActivationMovedToOwnedPopup      = 36;
     public const int EvtPanelSizeRejected                = 37;
     public const int EvtPanelSizeRejectedDetail          = 38;
@@ -214,9 +194,8 @@ public sealed class DeckleShellTrayMenuSource : DeckleEventSource
             WriteEvent(EvtFlyoutMeasured, dip_w, dip_h, physical_w, physical_h, scale, size_source);
     }
 
-    // A captured presenter smaller than its items is the anomaly behind the
-    // "menu one item tall" bug: the milestone stays visible whatever the
-    // Windowing verbosity, the detail follows it.
+    // A captured presenter smaller than its items would open the menu one item
+    // tall: the milestone stays visible whatever the Windowing verbosity.
     [Event(EvtPresenterSizeRejected,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Lifecycle,
@@ -238,8 +217,6 @@ public sealed class DeckleShellTrayMenuSource : DeckleEventSource
             WriteEvent(EvtPresenterSizeRejectedDetail, phase, presenter_w, presenter_h, items_w, items_h);
     }
 
-    // Constant placement (FlyoutPlacementMode.Full, FlyoutShowMode.Transient) is
-    // documented at the ShowAt call site; the milestone carries no detail.
     [Event(EvtFlyoutShownAt,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Lifecycle,
@@ -381,7 +358,7 @@ public sealed class DeckleShellTrayMenuSource : DeckleEventSource
             WriteEvent(EvtPanelHidden);
     }
 
-    // reason: "deactivated", "flyout_closed", "icon_click", "action:<id>".
+    // reason: "deactivated", "flyout_closed", "icon_click", "action:<id>", "api".
     [Event(EvtPanelHiddenDetail,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Lifecycle,
@@ -453,9 +430,8 @@ public sealed class DeckleShellTrayMenuSource : DeckleEventSource
             WriteEvent(EvtPanelActionClickedDetail, action, was_recording);
     }
 
-    // A captured presenter smaller than the panel content is the same anomaly
-    // as the menu's: the milestone stays visible whatever the Windowing
-    // verbosity, the detail follows it.
+    // Same anomaly as the menu's: the milestone stays visible whatever the
+    // Windowing verbosity.
     [Event(EvtPanelSizeRejected,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Lifecycle,
@@ -479,7 +455,7 @@ public sealed class DeckleShellTrayMenuSource : DeckleEventSource
 
     // The panel was hidden before Show() returned: a click that opens nothing.
     // Visible whatever the Windowing verbosity, so a silent left click leaves
-    // a trace in the journal.
+    // a trace in the log.
     [Event(EvtPanelDismissedWhileOpening,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Lifecycle,

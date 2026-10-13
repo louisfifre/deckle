@@ -28,9 +28,8 @@ public class TrayWindowOwnershipTests
     private static IntPtr GetOwner(IntPtr window)
         => Owners.TryGetValue(window, out var owner) ? owner : IntPtr.Zero;
 
-    // Regression: a Standard flyout moves focus into its popup, which the
-    // carrier owns; the carrier used to hide on that deactivation, so the
-    // panel closed inside its own Show().
+    // A Standard flyout moves focus into its popup, which the carrier owns;
+    // hiding on that deactivation would close the panel inside its own Show().
     [Fact]
     [Trait("Category", "regression")]
     public void ADeactivationTowardTheCarriersOwnPopupIsNotADismiss()
