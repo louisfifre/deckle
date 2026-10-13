@@ -23,11 +23,14 @@ public sealed class HudTargetControlsTests
     [InlineData(HudTarget.CountdownMaterial)]
     [InlineData(HudTarget.CountdownMasks)]
     [InlineData(HudTarget.MaskedCountdown)]
-    public void CountdownViewsShareGeometryAndDoNotOfferAnotherPalette(HudTarget target)
+    public void CountdownViewsShareTheRecordingRowsAndOfferNoOtherPalette(HudTarget target)
     {
         var model = new HudViewModel { CurrentTarget = target };
         Assert.True(model.IsCountdownTarget);
         Assert.Contains(HudTuningSection.UtteranceCountdown, model.ActiveTuningSections);
+        // The gauge is the Recording outline opened by the pause: its fade,
+        // hue period and grading are the Recording rows, tuned beside it.
+        Assert.Contains(HudTuningSection.Recording, model.ActiveTuningSections);
         Assert.DoesNotContain(HudTuningSection.Palette, model.ActiveTuningSections);
     }
 
