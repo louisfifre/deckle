@@ -6,10 +6,9 @@ using Xunit;
 
 namespace Deckle.Modules.Tests;
 
-// Tests de comportement sur la persistance du choix de présence : ce qu'un
-// Save laisse sur disque doit se relire tel quel, et les deux dégradations
-// (fichier absent, fichier corrompu) doivent se lire comme « pas de choix » —
-// le repli tout-présent que l'app interprète au-dessus.
+// Behavior tests of the presence-choice persistence: what a Save leaves on disk
+// reads back as is, and both degradations (missing file, corrupt file) read as
+// "no choice", the all-present fallback the app applies above.
 [Trait("Category", "unit")]
 public class PresenceFileTests : IDisposable
 {

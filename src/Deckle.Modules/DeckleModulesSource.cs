@@ -3,14 +3,8 @@ using Deckle.Diagnostics;
 
 namespace Deckle.Modules;
 
-// Module catalogue and presence provider. Covers catalogue registration
-// (ModuleRegistry) and the presence choice's load/save lifecycle
-// (ModulePresence / PresenceFile).
-//
-// Verbose/Info separation per the deckle-logging skill: an Info / Warning
-// is a short Capital sentence with no ids, paths, or k=v; the technical detail
-// (module ids, csv lists, paths, exception type+message) lives in a Verbose
-// mirror beside it.
+// Covers catalogue registration (ModuleRegistry) and the presence choice's
+// load/save lifecycle (ModulePresence / PresenceFile).
 [EventSource(Name = "Deckle-Modules")]
 public sealed class DeckleModulesSource : DeckleEventSource
 {
