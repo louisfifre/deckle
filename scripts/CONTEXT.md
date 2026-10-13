@@ -1,6 +1,5 @@
 ---
 description: "Deckle Scripts interaction vocabulary — launcher choices, action runs, detailed output, and completion."
-type: agent-instructions
 ---
 
 # Deckle Scripts — Context

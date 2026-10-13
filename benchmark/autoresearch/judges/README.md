@@ -1,7 +1,6 @@
 ---
 name: readme-autoresearch-judges
 description: "Generic judge rubrics and wrappers for autoresearch loops."
-type: module-readme
 module: benchmark/autoresearch/judges
 ---
 

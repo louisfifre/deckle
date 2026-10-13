@@ -1,7 +1,6 @@
 ---
 name: readme-autoresearch-metrics
 description: "Generic metric wrappers for autoresearch loops."
-type: module-readme
 module: benchmark/autoresearch/metrics
 ---
 

@@ -1,7 +1,6 @@
 ---
 name: context-deckle-tests
 description: "Test taxonomy — the four categories inside the automatic scope (unit, integration, observability, regression) and the three outside it (system, interactive, maintenance). Read when classifying or naming a test."
-type: agent-instructions
 ---
 
 # Deckle tests — Context

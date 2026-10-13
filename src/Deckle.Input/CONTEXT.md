@@ -1,7 +1,6 @@
 ---
 name: context-deckle-input
 description: "Input-layer vocabulary — the contact frame as the unit assembled from Raw Input reads, and its place in the report → frame → intention chain. Read before touching touchpad parsing or frame assembly."
-type: agent-instructions
 ---
 
 # Deckle.Input — Context

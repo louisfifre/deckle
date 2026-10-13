@@ -1,7 +1,6 @@
 ---
 name: readme-benchmark
 description: "Index for Deckle benchmark workspaces — routes ASR evaluation and generic autoresearch instead of mixing them at the root."
-type: module-readme
 module: benchmark
 ---
 

@@ -1,6 +1,5 @@
 ---
 description: The resident Anytype gateway uses stateless MCP requests and advertises an explicit ambiguous-outcome policy for every tool.
-type: adr
 ---
 
 # ADR-0005 — Serve Anytype MCP stateless with explicit recovery contracts

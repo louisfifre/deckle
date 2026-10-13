@@ -1,6 +1,5 @@
 ---
 description: "Home inventory vocabulary — the public norm, personal room registry, point codes, and managed Home schema."
-type: agent-instructions
 ---
 
 # Deckle.Home — Context

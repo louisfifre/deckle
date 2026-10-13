@@ -1,6 +1,5 @@
 ---
 description: Durable findings and frozen decisions for the Home inventory domain.
-type: journal
 ---
 
 # Deckle.Home — Journal

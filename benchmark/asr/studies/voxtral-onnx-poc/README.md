@@ -1,7 +1,6 @@
 ---
 name: readme-study-voxtral-onnx
 description: "Completed POC — Voxtral Mini 3B via ONNX Runtime + DirectML. Smoke pipeline kept as the ONNX-local inference reference; blocked on KV-cache decode. Findings in the benchmark JOURNAL."
-type: study
 module: benchmark/asr/studies/voxtral-onnx-poc
 ---
 

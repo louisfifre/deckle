@@ -1,7 +1,6 @@
 ---
 name: acx-0021-delayed-range-owned-correction
 description: "Frozen design and safety matrix for delayed correction of a closed sentence while typing continues."
-type: benchmark-plan
 module: benchmark/autoresearch/campaigns/interactive-autocorrect
 ---
 

@@ -1,6 +1,5 @@
 ---
 description: Dated diagnostics for Deckle.Shell.TrayMenu — the tray-menu density, gap, and first-click-scroll trail.
-type: module-journal
 ---
 
 # Journal — Deckle.Shell.TrayMenu

@@ -1,7 +1,6 @@
 ---
 name: readme-bench-voxtral-poc
 description: "Bench scenario evaluating Voxtral Mini 3B as a Whisper alternative in the Deckle transcription pipeline. Read before running, modifying, or extending this bench, or before extracting its results."
-type: module-readme
 module: benchmark/asr/studies/voxtral-poc
 ---
 

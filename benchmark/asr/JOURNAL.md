@@ -1,6 +1,5 @@
 ---
 description: Dated findings from the Voxtral/ASR benchmark spike — backends, quantization, and the bench bugs found.
-type: module-journal
 ---
 
 # Journal — Benchmark

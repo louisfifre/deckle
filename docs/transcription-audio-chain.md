@@ -1,6 +1,5 @@
 ---
 description: How a dictation travels from the hotkey to the pasted text — vocabulary, three diagrams, every parameter with its default and where it is exposed, the latencies the code measures, and how the energy segmenter cuts utterances.
-type: architecture-note
 ---
 
 # The dictation chain

@@ -1,6 +1,5 @@
 ---
 description: Dated decisions and findings for the setup wizard — installer, updater, relocation.
-type: module-journal
 ---
 
 # Journal — Deckle.Setup

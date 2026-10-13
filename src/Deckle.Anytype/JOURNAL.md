@@ -1,6 +1,5 @@
 ---
 description: Dated decisions and findings for the Anytype MCP server — founding grilling, API facts, tool surface.
-type: module-journal
 ---
 
 # Journal — MCP Anytype

@@ -1,7 +1,6 @@
 ---
 name: bench-voxtral-validation
 description: "Étude Q4 archivée : smoke fonctionnel et comparaison historique, impropre à une validation qualité de livraison."
-type: bench-scenario
 ---
 
 # `studies/voxtral-validation/` — Voxtral vs Whisper

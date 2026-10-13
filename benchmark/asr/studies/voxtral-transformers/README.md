@@ -1,7 +1,6 @@
 ---
 name: readme-study-voxtral-transformers
 description: "Completed study — Voxtral Mini 3B BF16 via Transformers + torch-ROCm on Windows (the high-precision, no-Q4 path). Diagnostic scripts, no bench.py; findings in the benchmark JOURNAL."
-type: study
 module: benchmark/asr/studies/voxtral-transformers
 ---
 

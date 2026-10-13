@@ -1,7 +1,6 @@
 ---
 name: context-deckle-anytype
 description: "Anytype integration vocabulary (covers Deckle.Anytype.Mcp) — backend vs MCP host vs resident core, surfaces, bot vs client token, and the Home space types. Read before touching the integration or its authorship model."
-type: agent-instructions
 ---
 
 # Deckle.Anytype — Context

@@ -1,6 +1,5 @@
 ---
 description: "Trip-preparation vocabulary — the seven types, their French labels, and the terms file boundary."
-type: agent-instructions
 ---
 
 # Deckle.Travel — Context

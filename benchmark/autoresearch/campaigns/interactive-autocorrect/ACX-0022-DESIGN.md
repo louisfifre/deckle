@@ -1,7 +1,6 @@
 ---
 name: acx-0022-one-qwen-multi-adapter
 description: "Frozen compatibility design for one resident Qwen base with per-task LoRA adapters."
-type: benchmark-plan
 module: benchmark/autoresearch/campaigns/interactive-autocorrect
 ---
 

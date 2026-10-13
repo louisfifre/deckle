@@ -1,6 +1,5 @@
 ---
 description: Fill-in template for a Deckle ADR — copy it to start one, record no decision here.
-type: adr
 ---
 
 # ADR-NNNN — {short decision title}

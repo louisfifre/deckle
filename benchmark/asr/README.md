@@ -1,7 +1,6 @@
 ---
 name: readme-benchmark-asr
 description: "Human-facing entry point for benchmark/asr — ASR-specific harness pieces and frozen speech studies."
-type: module-readme
 module: benchmark/asr
 ---
 

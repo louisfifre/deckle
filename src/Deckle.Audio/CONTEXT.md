@@ -1,7 +1,6 @@
 ---
 name: context-deckle-audio
 description: "Audio vocabulary — display level vs transcription pre-processing, the two notions of « level » that must never be conflated. Read before touching level mapping or the DSP chain."
-type: agent-instructions
 ---
 
 # Deckle.Audio — Context

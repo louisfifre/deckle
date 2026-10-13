@@ -1,7 +1,6 @@
 ---
 name: context-deckle-diagnostics
 description: "Observability vocabulary for the Diagnostics family (.Logging, .Telemetry included) — admission vs view, the five controls that quiet the log stream without being confused. Read before touching verbosity, filters, or sinks."
-type: agent-instructions
 ---
 
 # Deckle.Diagnostics — Context

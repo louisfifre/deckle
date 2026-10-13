@@ -1,7 +1,6 @@
 ---
 name: deckle-bug-note
 description: Preserve what a confirmed bug teaches for future tests and reviews. Invoke automatically once its cause is established, before closing the workstream.
-type: skill
 ---
 
 # Deckle — Bug note

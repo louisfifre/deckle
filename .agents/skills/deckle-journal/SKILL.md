@@ -1,7 +1,6 @@
 ---
 name: deckle-journal
 description: How to write the JOURNAL.md. Invoke when recording a finding, or a small decision worth keeping.
-type: skill
 ---
 
 # Deckle — Journal

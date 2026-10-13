@@ -1,7 +1,6 @@
 ---
 name: context-deckle-security
 description: "Security vocabulary — the trusted-session boundary, captured content, and where Deckle's custody ends. Read before storing, exporting, or transmitting user-originated content or credentials."
-type: agent-instructions
 ---
 
 # Deckle.Security — Context

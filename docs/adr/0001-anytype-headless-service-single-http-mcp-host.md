@@ -1,6 +1,5 @@
 ---
 description: Anytype runs as a Deckle-orchestrated headless service behind one HTTP MCP host that serializes writes.
-type: adr
 ---
 
 # ADR-0001 — Anytype via a Deckle-orchestrated headless service behind a single HTTP MCP host

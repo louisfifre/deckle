@@ -1,7 +1,6 @@
 ---
 name: readme-scripts
 description: "Dev workflows entry point for Deckle: the deckle.ps1 menu, the commands under commands/ and internal implementation under lib/, the TREE.md pre-commit hook, generated-docs automation, and the three native-runtime sourcing modes. Read before running, modifying, or extending a script under scripts/."
-type: module-readme
 module: scripts
 ---
 

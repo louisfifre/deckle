@@ -1,6 +1,5 @@
 ---
 description: Dated project notes for Deckle — cross-cutting findings too dated for a CLAUDE.md, too light for an ADR.
-type: project-journal
 ---
 
 # Journal — Deckle

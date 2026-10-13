@@ -1,6 +1,5 @@
 ---
 description: Deckle provisions specialized Anytype spaces from versioned composed plans and resolves live identities during installation.
-type: adr
 ---
 
 # ADR-0003 — Provision specialized Anytype spaces from versioned plans

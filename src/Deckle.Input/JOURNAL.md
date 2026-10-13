@@ -1,6 +1,5 @@
 ---
 description: Dated decisions and findings for Deckle.Input — founding choices, measurements, open direction.
-type: module-journal
 ---
 
 # JOURNAL — Deckle.Input

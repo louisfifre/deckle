@@ -1,6 +1,5 @@
 ---
 description: Dated decisions and findings for Deckle.Autocorrect — founding choices, measurements, open direction.
-type: module-journal
 ---
 
 # JOURNAL — Deckle.Autocorrect

@@ -1,7 +1,6 @@
 ---
 name: deckle-nomenclature
 description: One normalized way to name files, folders, symbols, resources and providers. Invoke before naming or renaming.
-type: skill
 ---
 
 # Deckle — Naming

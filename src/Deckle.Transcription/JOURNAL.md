@@ -1,6 +1,5 @@
 ---
 description: Diagnosis notes and kept decisions for Deckle.Transcription — read on demand when chasing why something is the way it is, not on every visit.
-type: module-journal
 ---
 
 # JOURNAL — Deckle.Transcription

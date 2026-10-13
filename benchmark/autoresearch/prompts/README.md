@@ -1,7 +1,6 @@
 ---
 name: readme-autoresearch-prompts
 description: "Prompt templates owned by generic autoresearch campaigns."
-type: module-readme
 module: benchmark/autoresearch/prompts
 ---
 

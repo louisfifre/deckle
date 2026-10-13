@@ -1,7 +1,6 @@
 ---
 name: context-map-deckle
 description: "Index of Deckle's bounded-context glossaries — where each module's CONTEXT.md lives and the relationships that carry meaning. Read to find which vocabulary governs the code at hand."
-type: agent-instructions
 ---
 
 # Context Map — Deckle

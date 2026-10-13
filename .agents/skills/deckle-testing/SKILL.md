@@ -1,7 +1,6 @@
 ---
 name: deckle-testing
 description: Testing posture — test behavior not implementation, stay sober, grow coverage per workstream. Invoke before writing a test or extending coverage.
-type: skill
 ---
 
 # Deckle — Testing

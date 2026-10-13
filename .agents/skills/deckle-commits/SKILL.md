@@ -1,7 +1,6 @@
 ---
 name: deckle-commits
 description: Commit grain and the few deviations from the universal convention. Invoke before committing, splitting a workstream into commits, or auditing history.
-type: skill
 ---
 
 # Deckle — Commits

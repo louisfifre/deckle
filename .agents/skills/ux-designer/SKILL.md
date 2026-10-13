@@ -1,7 +1,6 @@
 ---
 name: ux-designer
 description: Design or review user research, flows, information architecture, wireframes, prototypes, personas, accessibility, and usability tests. Use ux-copy for interface wording.
-type: skill
 license: MIT
 metadata:
   author: awesome-llm-apps

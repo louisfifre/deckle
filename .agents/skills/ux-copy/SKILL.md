@@ -1,7 +1,6 @@
 ---
 name: ux-copy
 description: Write or review interface wording — CTAs, errors, empty states, confirmations, tooltips, notifications, loading states, forms, settings labels, onboarding. Use when drafting or critiquing any UI string; for research, flows, or information architecture use ux-designer instead.
-type: skill
 ---
 
 # UX copy

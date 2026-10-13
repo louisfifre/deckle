@@ -1,7 +1,6 @@
 ---
 name: readme-autoresearch-runners
 description: "Runner helpers for autoresearch campaigns."
-type: module-readme
 module: benchmark/autoresearch/runners
 ---
 

@@ -1,7 +1,6 @@
 ---
 name: readme-autoresearch
 description: "Generic autoresearch workspace for measurable iterative generation, editing, judging, and keep/discard loops."
-type: module-readme
 module: benchmark/autoresearch
 ---
 
