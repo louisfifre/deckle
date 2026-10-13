@@ -1541,7 +1541,6 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── InstallingPage.xaml.cs
 │   │   ├── InstallItem.cs
 │   │   ├── InstallPlan.cs
-│   │   ├── JOURNAL.md
 │   │   ├── ModulesPage.xaml
 │   │   ├── ModulesPage.xaml.cs
 │   │   ├── RelocatePage.xaml
