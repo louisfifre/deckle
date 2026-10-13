@@ -298,4 +298,43 @@ public static class Setting
             SetValue = _ => { },
             VisibleWhen = visibleWhen,
         };
+
+    // A choice that decides which settings exist — a fold whose header carries
+    // the choice (settings design system, decision 12). The get/set selectors are
+    // the chosen mode, over any value type T like Choice; the children are the
+    // settings of the modes, each naming the mode that shows it through its own
+    // visibleWhen. A preset family's selector is declared this way, with
+    // SelectorOptions() as the options and the hand values as Custom-only
+    // children. The fold's reset returns the choice to its default and every
+    // defaulted child to its own.
+    public static SettingDescriptor Mode<T>(
+        string labelKey,
+        Func<T> get,
+        Action<T> set,
+        IReadOnlyList<(T Value, string LabelKey)> options,
+        IReadOnlyList<SettingDescriptor> children,
+        string? glyph = null,
+        bool isAdvanced = false,
+        Func<bool>? enabledWhen = null,
+        Func<bool>? visibleWhen = null,
+        Func<T>? defaultValue = null)
+    {
+        var boxed = new List<ChoiceOption>(options.Count);
+        foreach ((T value, string optionKey) in options)
+            boxed.Add(new ChoiceOption(value, optionKey));
+
+        return new()
+        {
+            Kind = SettingKind.Mode,
+            LabelKey = labelKey,
+            Glyph = glyph,
+            IsAdvanced = isAdvanced,
+            Args = new ModeArgs(boxed, children),
+            GetValue = () => get(),
+            SetValue = value => set((T)value!),
+            EnabledWhen = enabledWhen,
+            VisibleWhen = visibleWhen,
+            Default = defaultValue is null ? null : () => defaultValue(),
+        };
+    }
 }

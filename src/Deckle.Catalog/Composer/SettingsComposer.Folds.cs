@@ -193,6 +193,144 @@ public sealed partial class SettingsComposer
         return expander;
     }
 
+    // A choice that decides which settings exist — the mode fold (settings design
+    // system, decision 12). The same SettingsExpander as a Group, with a ComboBox
+    // in the header's trailing-edge slot where the master toggle would be; the
+    // children are the settings of the modes, each shown or hidden by its own
+    // VisibleWhen (the manifest names the mode there), so the composer adds no
+    // gating of its own. One information card closes the fold, shown only when
+    // the chosen mode leaves every child hidden, so the fold never opens on
+    // nothing. The combo wires like BuildCombo — seed the selection before
+    // subscribing, guard the write-back during a model refresh — and the fold's
+    // reset covers the choice and every defaulted child, children first so that
+    // a preset chosen by the reset is not turned back to Custom by the children's
+    // own writes landing after it.
+    private SettingsExpander BuildMode(SettingDescriptor s)
+    {
+        var args = (ModeArgs)s.Args!;
+        var choice = new ChoiceArgs(args.Options);
+
+        // Tag carries the LabelKey as this fold's runtime identity — see BuildCard.
+        var expander = new SettingsExpander { Header = ResolveHeader(s.LabelKey), Tag = s.LabelKey };
+
+        string? description = ResolveDescription(s.LabelKey);
+        if (description is not null) expander.Description = description;
+
+        IconElement? icon = BuildIcon(s.Glyph);
+        if (icon is not null) expander.HeaderIcon = icon;
+
+        var combo = new ComboBox { MinWidth = 160, VerticalAlignment = VerticalAlignment.Center };
+        foreach (ChoiceOption option in args.Options)
+            combo.Items.Add(new ComboBoxItem { Content = ResolveOptionLabel(option.LabelKey) });
+        combo.SelectedIndex = IndexOfValue(choice, s.GetValue());
+
+        // Subscribe AFTER the initial SelectedIndex assignment above so it does not fire.
+        combo.SelectionChanged += (_, _) =>
+        {
+            if (_syncingFromModel) return;
+            if (combo.SelectedIndex < 0) return;
+            s.SetValue(args.Options[combo.SelectedIndex].Value);
+        };
+
+        var defaultedChildren = new List<SettingDescriptor>();
+        var childCards = new List<SettingsCard>();
+
+        foreach (SettingDescriptor child in args.Children)
+        {
+            if (child.Kind is SettingKind.Group or SettingKind.Section or SettingKind.Mode)
+                throw new NotSupportedException(
+                    "A Mode's children must be leaf settings — folds never nest.");
+            if (child.IsAdvanced && !_showAdvanced) continue;
+
+            if (child.Default is not null) defaultedChildren.Add(child);
+
+            // The child keeps its own VisibleWhen, which names its mode.
+            int before = expander.Items.Count;
+            AddChildToExpander(expander, child);
+            if (expander.Items[before] is SettingsCard card) childCards.Add(card);
+        }
+
+        // The information card: no header, one line of secondary text, no frame
+        // of its own beyond the fold's, like the advisory note rows.
+        var nothingToSet = new SettingsCard
+        {
+            Description = Loc.Get("SettingsComposer_ModeNothingToSet"),
+            Visibility = Visibility.Collapsed,
+        };
+        expander.Items.Add(nothingToSet);
+
+        Action? updateReset = null;
+        bool hasReset = s.Default is not null || defaultedChildren.Count > 0;
+        if (hasReset)
+        {
+            Button reset = BuildResetButton();
+            WireReveal(expander, reset);
+
+            bool ModeDirty()
+            {
+                if (s.Default is not null && !DefaultEquals(s.GetValue(), s.Default())) return true;
+                foreach (SettingDescriptor child in defaultedChildren)
+                    if (!DefaultEquals(child.GetValue(), child.Default!())) return true;
+                return false;
+            }
+
+            void ResetMode()
+            {
+                foreach (SettingDescriptor child in defaultedChildren)
+                    child.SetValue(child.Default!());
+                if (s.Default is not null) s.SetValue(s.Default());
+            }
+
+            _dirtyChecks.Add(ModeDirty);
+            _resetActions.Add(ResetMode);
+            reset.Click += (_, _) => ResetMode();
+
+            // [reset | choice] in the trailing-edge slot, mirroring the group's
+            // [reset | master] order.
+            var header = new StackPanel
+            {
+                Orientation = Orientation.Horizontal,
+                Spacing = 4,
+                VerticalAlignment = VerticalAlignment.Center,
+            };
+            header.Children.Add(reset);
+            header.Children.Add(combo);
+            expander.Content = header;
+
+            // The tooltip names the default mode when the choice has one; a fold
+            // whose reset only covers its children keeps the generic wording.
+            string tooltip = ResolveResetTooltip(
+                () => s.Default is null ? null : DefaultValueText.Choice(choice, s.Default(), ResolveOptionLabel));
+            updateReset = () =>
+            {
+                reset.IsEnabled = ModeDirty();
+                ToolTipService.SetToolTip(reset, tooltip);
+            };
+        }
+        else
+        {
+            expander.Content = combo;
+        }
+
+        // Registered after the children's refreshers, so their visibility is
+        // settled when this decides whether the information card shows.
+        _refreshers.Add(() =>
+        {
+            int index = IndexOfValue(choice, s.GetValue());
+            if (combo.SelectedIndex != index) combo.SelectedIndex = index;
+
+            bool anyVisible = false;
+            foreach (SettingsCard card in childCards)
+                if (card.Visibility == Visibility.Visible) { anyVisible = true; break; }
+            nothingToSet.Visibility = anyVisible ? Visibility.Collapsed : Visibility.Visible;
+
+            updateReset?.Invoke();
+            ApplyReactiveState(expander, s);
+        });
+
+        return expander;
+    }
+
     // ── Child of a fold ────────────────────────────────────────────────────────
     //
     // Shared by BuildGroup and BuildSection; the caller composes any master gating

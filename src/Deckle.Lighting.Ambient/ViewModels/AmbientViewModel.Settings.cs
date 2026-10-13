@@ -28,21 +28,10 @@ public partial class AmbientViewModel
             defaultValue: () => new AmbientSettings().Enabled),
     ];
 
-    // Behaviour: the preset, then per-zone colours with their band shape.
-    // The two band sliders share one place and show only the one the chosen
-    // band mode reads. The preset options come from the family (each preset
-    // in declared order, then Custom); the selector's reset returns to the
-    // default preset.
+    // Behaviour: per-zone colours with their band shape. The two band sliders
+    // share one place and show only the one the chosen band mode reads.
     public IReadOnlyList<SettingDescriptor> BehaviourSettings =>
     [
-        Setting.Choice<string>(
-            "AmbientPresetCard",
-            () => Preset,
-            value => Preset = value,
-            AmbientSettingsService.Instance.Presets.SelectorOptions("AmbientPresetCustom"),
-            glyph: Glyphs.Theme,
-            defaultValue: () => AmbientPresets.Default),
-
         Setting.Group(
             "AmbientZonesGroup",
             () => UseMultiLight,
@@ -76,56 +65,68 @@ public partial class AmbientViewModel
             defaultValue: () => new AmbientSettings().UseMultiLight),
     ];
 
-    // Fine tuning, after the bespoke brightness-curve card: a flat run of cards,
-    // not a fold — this is the part of the page people come to adjust.
+    // Fine tuning: the preset fold (settings design system, decision 12). The
+    // preset selector sits in the fold's header, the values it governs are its
+    // children — the brightness floor (its switch and its level, flat because
+    // folds never nest), smoothing, change threshold, exposure, saturation. Every
+    // child shows in every mode: a preset fills the values, and any hand edit
+    // turns the selection to Custom (AmbientViewModel reports it to the family).
+    // The preset options come from the family (each preset in declared order,
+    // then Custom); the fold's reset writes the children's defaults, then returns
+    // the selector to the default preset. The bespoke brightness curve stays
+    // beside the fold until it becomes a composer instrument.
     public IReadOnlyList<SettingDescriptor> TuningSettings =>
     [
-        Setting.Group(
-            "AmbientMinBrightnessGroup",
-            () => MinBrightnessEnabled,
-            value => MinBrightnessEnabled = value,
+        Setting.Mode<string>(
+            "AmbientPresetCard",
+            () => Preset,
+            value => Preset = value,
+            AmbientSettingsService.Instance.Presets.SelectorOptions("AmbientPresetCustom"),
             [
+                Setting.Toggle(
+                    "AmbientMinBrightnessGroup",
+                    () => MinBrightnessEnabled,
+                    value => MinBrightnessEnabled = value,
+                    glyph: Glyphs.LightbulbFilled,
+                    defaultValue: () => new AmbientSettings().MinBrightnessEnabled),
                 Setting.Magnitude(
                     "AmbientMinBrightnessCard",
                     () => MinBrightness,
                     value => MinBrightness = (int)Math.Round(value),
                     new MagnitudeArgs(0, 254),
+                    visibleWhen: () => MinBrightnessEnabled,
                     defaultValue: () => new AmbientSettings().MinBrightness),
+                Setting.Magnitude(
+                    "AmbientSmoothingCard",
+                    () => SmoothingAlpha,
+                    value => SmoothingAlpha = value,
+                    new MagnitudeArgs(0.05, 1),
+                    glyph: Glyphs.Latency,
+                    defaultValue: () => new AmbientSettings().SmoothingAlpha),
+                Setting.Magnitude(
+                    "AmbientChangeThresholdCard",
+                    () => ChangeThreshold,
+                    value => ChangeThreshold = (int)Math.Round(value),
+                    new MagnitudeArgs(0, 30),
+                    glyph: Glyphs.Filter,
+                    defaultValue: () => new AmbientSettings().ChangeThreshold),
+                Setting.Magnitude(
+                    "AmbientExposureCard",
+                    () => ExposureEv,
+                    value => ExposureEv = value,
+                    new MagnitudeArgs(-2, 2, Unit: "EV"),
+                    glyph: Glyphs.Lightning,
+                    defaultValue: () => new AmbientSettings().ExposureEv),
+                Setting.Magnitude(
+                    "AmbientSaturationCard",
+                    () => SaturationBoost,
+                    value => SaturationBoost = value,
+                    new MagnitudeArgs(0, 2, Unit: "×"),
+                    glyph: Glyphs.Sparkle,
+                    defaultValue: () => new AmbientSettings().SaturationBoost),
             ],
-            glyph: Glyphs.LightbulbFilled,
-            defaultValue: () => new AmbientSettings().MinBrightnessEnabled),
-
-        Setting.Magnitude(
-            "AmbientSmoothingCard",
-            () => SmoothingAlpha,
-            value => SmoothingAlpha = value,
-            new MagnitudeArgs(0.05, 1),
-            glyph: Glyphs.Latency,
-            defaultValue: () => new AmbientSettings().SmoothingAlpha),
-
-        Setting.Magnitude(
-            "AmbientChangeThresholdCard",
-            () => ChangeThreshold,
-            value => ChangeThreshold = (int)Math.Round(value),
-            new MagnitudeArgs(0, 30),
-            glyph: Glyphs.Filter,
-            defaultValue: () => new AmbientSettings().ChangeThreshold),
-
-        Setting.Magnitude(
-            "AmbientExposureCard",
-            () => ExposureEv,
-            value => ExposureEv = value,
-            new MagnitudeArgs(-2, 2, Unit: "EV"),
-            glyph: Glyphs.Lightning,
-            defaultValue: () => new AmbientSettings().ExposureEv),
-
-        Setting.Magnitude(
-            "AmbientSaturationCard",
-            () => SaturationBoost,
-            value => SaturationBoost = value,
-            new MagnitudeArgs(0, 2, Unit: "×"),
-            glyph: Glyphs.Sparkle,
-            defaultValue: () => new AmbientSettings().SaturationBoost),
+            glyph: Glyphs.Theme,
+            defaultValue: () => AmbientPresets.Default),
     ];
 
     // Configuration: the capture rate, after the bespoke display picker.

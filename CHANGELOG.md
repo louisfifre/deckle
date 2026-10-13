@@ -133,6 +133,7 @@ doctrine). This file is generated from the Conventional-Commit history by
 - **composition:** Open the utterance countdown later and past the corners
 - **hud:** Smooth the countdown rise with the outline's level alpha
 - **playground:** Show the Recording rows under the countdown views
+- **settings:** Add the section block
 
 ### Changed
 
@@ -157,6 +158,7 @@ doctrine). This file is generated from the Conventional-Commit history by
 - **ambient:** Compose the border cards as magnitudes
 - **audio:** Compose the voice level cards as magnitudes
 - **settings:** Open every page with the shared header block
+- **settings:** Open every section with the shared block
 
 ### Fixed
 

@@ -101,3 +101,18 @@ public sealed record GroupArgs(IReadOnlyList<SettingDescriptor> Children) : Sett
 // each child stands on its own VisibleWhen. Folds never nest; the composer
 // enforces it.
 public sealed record SectionArgs(IReadOnlyList<SettingDescriptor> Children) : SettingArgs;
+
+// ── ModeArgs ──────────────────────────────────────────────────────────────────
+//
+// The options of a Mode fold's choice (the same shape a Choice carries, rendered
+// as a ComboBox in the fold's header) and the child settings the modes reveal, in
+// display order. A child names the mode that shows it through its own
+// VisibleWhen (`() => Preset == "custom"`); a child with no VisibleWhen shows in
+// every mode. The composer adds an information card, shown when no child is
+// visible, so a mode with nothing to set still says so.
+//
+// Children may not themselves be folds: folds never nest, and the composer
+// enforces it as it does for Group and Section.
+public sealed record ModeArgs(
+    IReadOnlyList<ChoiceOption> Options,
+    IReadOnlyList<SettingDescriptor> Children) : SettingArgs;
