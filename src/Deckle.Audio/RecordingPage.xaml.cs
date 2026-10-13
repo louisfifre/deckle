@@ -12,15 +12,9 @@ namespace Deckle.Audio;
 
 // ── RecordingPage ───────────────────────────────────────────────────────────
 //
-// Extracted from GeneralPage in slice S3. In pass2 the Behaviour
-// settings (auto-paste + overlay HUD) were moved back to GeneralPage —
-// what remains is the capture pipeline itself : microphone device
-// selection (Win32 waveIn enumeration), the maximum recording length,
-// the pre-processing toggle, its mic check and listening test, voice level window
-// calibration (sliders + auto-calibration toggle) and the microphone
-// telemetry opt-in. Same patterns as
-// GeneralPage / DiagnosticsPage : NavigationCacheMode.Required and
-// the _initializing guard around the initial sync pass.
+// Settings page of the capture pipeline. Cached (NavigationCacheMode.Required);
+// the _initializing guard keeps the microphone combo from writing back to the
+// ViewModel during the sync pass.
 public sealed partial class RecordingPage : Page
 {
     public RecordingViewModel ViewModel { get; } = new();
@@ -40,10 +34,8 @@ public sealed partial class RecordingPage : Page
 
     // ── Composed maximum-recording-length card ────────────────────────────────
     //
-    // Same host-only pattern as the pre-processing card below: a single Choice
-    // ComboBox ("No limit" by default) composed into its own host so it can sit
-    // right under the bespoke microphone card. Part of the resettable section,
-    // so it subscribes to DirtyChanged and is folded into GateResetLink.
+    // Composed into its own host so it can sit right under the bespoke
+    // microphone card.
     private SettingsComposer? _recordingLimitComposer;
 
     private void ComposeRecordingLimitSection()
@@ -55,51 +47,36 @@ public sealed partial class RecordingPage : Page
 
     // ── Composed pre-processing card ──────────────────────────────────────────
     //
-    // The page only hosts: it hands the host panel and the ViewModel's settings
-    // manifest (declared beside the VM in RecordingViewModel.Settings.cs) to the
-    // composer, which builds the single SettingsCard. The composer subscribes to
-    // the ViewModel so the toggle reflects Load() and the section "Reset" without
-    // any per-toggle binding here. Composed before LoadAndSync so the
-    // subscription catches Load()'s PropertyChanged. Held in a field so the
-    // subscription lives as long as the (cached) page.
+    // The composer subscribes to the ViewModel, so the toggle reflects Load() and
+    // the section "Reset" without any binding here. Every composer is created
+    // before LoadAndSync so its subscription catches Load()'s PropertyChanged,
+    // and held in a field so the subscription lives as long as the cached page.
     private SettingsComposer? _preprocessingComposer;
 
     private void ComposePreprocessingSection()
     {
         _preprocessingComposer = new SettingsComposer(PreprocessingHost, ViewModel);
         _preprocessingComposer.Compose(ViewModel.PreprocessingSettings);
-        // The section "Reset" link spans BOTH composed regions, so either one going
-        // dirty must re-gate it. The composer raises DirtyChanged at the end of every
-        // RefreshAll (post-settle), so the handler reads true aggregate dirtiness.
+        // The section "Reset" link spans every resettable composed region, so any
+        // one going dirty must re-gate it. The composer raises DirtyChanged at the
+        // end of every RefreshAll, so the handler reads the settled dirtiness.
         _preprocessingComposer.DirtyChanged += OnComposedDirtyChanged;
     }
 
     // ── Composed voice-level group ────────────────────────────────────────────
-    //
-    // Same host-only pattern as the pre-processing card: the page hands the host
-    // panel and the VM's voice-level manifest to the composer, which builds the
-    // SettingsExpander (master toggle + three sliders). The master projects the
-    // inverse of LevelWindowAutoCalibration, so it reads "set the window manually";
-    // the composer hides the sliders while the master is off (auto on). Composed
-    // before LoadAndSync so the subscription catches Load()'s PropertyChanged, and
-    // held in a field so the subscription lives as long as the (cached) page.
     private SettingsComposer? _voiceLevelComposer;
 
     private void ComposeVoiceLevelSection()
     {
         _voiceLevelComposer = new SettingsComposer(VoiceLevelHost, ViewModel);
         _voiceLevelComposer.Compose(ViewModel.VoiceLevelSettings);
-        // Same aggregate gating as the pre-processing region — see ComposePreprocessingSection.
         _voiceLevelComposer.DirtyChanged += OnComposedDirtyChanged;
     }
 
     // ── Composed telemetry section ────────────────────────────────────────────
     //
-    // Same host-only pattern as the two sections above. Deliberately NOT wired into
-    // the section-reset link: this is a privacy opt-in, so it has no per-card reset
-    // and its section carries no "Reset" link — hence no DirtyChanged subscription
-    // and no GateResetLink participation. Held in a field so the composer's
-    // subscription to the ViewModel lives as long as the (cached) page.
+    // Deliberately not wired into the section-reset link: a privacy opt-in is
+    // never reset from here.
     private SettingsComposer? _telemetryComposer;
 
     private void ComposeTelemetrySection()
@@ -110,20 +87,10 @@ public sealed partial class RecordingPage : Page
 
     private void OnComposedDirtyChanged(object? sender, EventArgs e) => GateResetLink();
 
-    // The section "Reset" link is active-when-dirty (Playground model): enabled only
-    // while a composed value differs from its default. Recomputed off the union of
-    // the resettable composers' IsDirty() whenever one raises DirtyChanged, AND once after
-    // Load() — Load only raises PropertyChanged for values it actually changes, so on
-    // a clean profile (loaded values equal the POCO-seeded defaults) no DirtyChanged
-    // fires and this explicit call is what settles the link to disabled. The device-id
-    // is deliberately NOT folded in — it is hardware enumeration, not a defaulted
-    // setting, so it never gates this link (a greyed link on a clean section, with a
-    // non-default device, is the accepted outcome).
-    //
-    // The header's page-level "Reset all" shares this gate: the page has a single
-    // resettable section, so Reset all and the section "Reset" cover the same values.
-    // The telemetry opt-in is left out of both on purpose (a privacy opt-in is never
-    // reset from here).
+    // The device id is deliberately not folded in: it is hardware enumeration, not
+    // a defaulted setting, so a non-default device leaves the link greyed. The
+    // header's "Reset all" shares this gate, since the page has a single resettable
+    // section.
     private void GateResetLink()
     {
         bool dirty =
@@ -153,8 +120,8 @@ public sealed partial class RecordingPage : Page
         _initializing = true;
         ViewModel.Load();
         PopulateAudioInputDevices();
-        // Settle the reset link off the freshly-loaded values — Load() may have raised
-        // no PropertyChanged (clean profile), so DirtyChanged would not have fired.
+        // Load() raises PropertyChanged only for values it changes, so on a clean
+        // profile DirtyChanged never fires and this call settles the link.
         GateResetLink();
         DispatcherQueue.TryEnqueueObserved(
             operation: "init-flag-clear", caller: "recording-page",
@@ -198,23 +165,10 @@ public sealed partial class RecordingPage : Page
         ViewModel.AudioInputDeviceId = deviceId;
     }
 
-    // Section "Reset": two halves with different owners. The composed values (the
-    // recording length, the pre-processing toggle and the voice-level group) go back through their
-    // composers' ResetAll(), each value driven to its POCO-sourced default via the
-    // normal setter + RefreshAll round-trip — which also re-gates this link through
-    // OnComposedDirtyChanged. The microphone device is NOT composed (runtime waveIn
-    // enumeration, not a defaulted setting), so its reset stays hand-authored here.
-    //
-    // The device reset writes the VM property directly (= -1, system default) so its
-    // OnAudioInputDeviceIdChanged push persists the change — exactly what the deleted
-    // VM ResetRecordingDefaults used to do. The combo then follows cosmetically under
-    // the _initializing guard: SelectedIndex = 0 must NOT re-enter the VM, otherwise
-    // it would either no-op (already 0) or fight the value we just set. Relying on the
-    // combo's SelectionChanged alone would not work — the guard suppresses its push,
-    // so the source-of-truth write has to be the VM assignment above.
-    //
-    // The section-reset logging, formerly inside that deleted VM method, now lives at
-    // this gesture — the one place that resets the whole section.
+    // The microphone device is not composed, so its reset is written here. The VM
+    // assignment is the write that persists (system default, -1); the combo then
+    // follows under the _initializing guard so SelectedIndex = 0 does not re-enter
+    // the VM and fight the value just set.
     private void ResetRecording_Click(object sender, RoutedEventArgs e)
     {
         _recordingLimitComposer?.ResetAll();
@@ -233,8 +187,6 @@ public sealed partial class RecordingPage : Page
         DeckleSettingsUxSource.Log.SectionResetDetail("Recording");
     }
 
-    // Page-level "Reset all" (the header confirms by itself, with the generic wording):
-    // the page's one resettable section, so it is the same gesture as the section link.
     private void ResetAll_Click(object sender, RoutedEventArgs e) =>
         ResetRecording_Click(sender, e);
 }
