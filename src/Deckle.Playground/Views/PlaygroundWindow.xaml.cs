@@ -16,30 +16,42 @@ namespace Deckle.Playground;
 
 // ─── Playground window shell ─────────────────────────────────────────────────
 //
-// The window only routes navigation and forwards the App's lifecycle calls.
-// Pages are cached (NavigationCacheMode.Required), so their state and
-// runtime resources survive navigation until Closed disposes them. Close is
-// real destruction: the App drops its reference and the next open builds a
-// fresh window.
+// Native TitleBar + Mica backdrop + compact NavigationView + Frame. Hosts
+// five pages : HomePage, HudPage, AmbientPage, SegmentationPage, and
+// CorrectionApplicationPage — each owning
+// its tuning surface, ViewModel, and runtime resources. The window itself only
+// routes navigation and forwards the lifecycle calls the App makes
+// (SetRecordingState, ShowAndActivate, Closed→DisposeResources).
+//
+// Pattern : same as SettingsWindow. NavigationViewItem.Tag carries the
+// fully-qualified Page type name, resolved via Type.GetType in
+// OnNavSelectionChanged. Pages declare NavigationCacheMode.Required so
+// their tuning state and runtime resources survive nav switches ;
+// PlaygroundWindow.Closed disposes the resources owned by each page
+// via the DisposeResources() entry points.
+//
+// Real-destruction lifetime : Close tears the window down, disposes
+// HudPage/AmbientPage resources, and App clears its lazy reference so
+// the next open constructs a fresh Playground instance.
 public sealed partial class PlaygroundWindow : Window
 {
     private readonly IntPtr _hwnd;
 
+    // Icons shared with tray / LogWindow / SettingsWindow via IconAssets.
+    // Swapping the .ico on disk propagates everywhere.
     private BitmapImage? _iconIdle;
     private BitmapImage? _iconRecording;
     private string? _iconIdlePath;
     private string? _iconRecordingPath;
 
+    // Page references resolved on first navigate so the shell can call
+    // ForcePause / DisposeResources without walking the Frame's content
+    // tree on every interaction.
     private HudPage? _hudPage;
     private AmbientPage? _ambientPage;
     private CorrectionApplicationPage? _correctionApplicationPage;
     private PlaygroundWindowActivation _windowActivation;
 
-<<<<<<< HEAD
-    private ResizeCoalescer? _resizeCoalescer;
-
-=======
->>>>>>> main
     public PlaygroundWindow()
     {
         InitializeComponent();
@@ -49,7 +61,8 @@ public sealed partial class PlaygroundWindow : Window
         AppTitleBarIcon.ImageSource = _iconIdle;
         if (_iconIdlePath is not null) AppWindow.SetIcon(_iconIdlePath);
 
-        // Standard height, not Tall: no SearchBox in this title bar.
+        // Native title bar. Standard height (not Tall) — no SearchBox in
+        // this window so caption buttons don't need the extended chrome.
         ExtendsContentIntoTitleBar = true;
         SetTitleBar(AppTitleBar);
         AppWindow.TitleBar.PreferredHeightOption = TitleBarHeightOption.Standard;
@@ -60,20 +73,30 @@ public sealed partial class PlaygroundWindow : Window
 
         SystemBackdrop = new MicaBackdrop();
 
+        // Wire the Pages → shell navigation callback. HomePage's
+        // routing cards invoke PlaygroundShell.NavigateTo("hud" /
+        // "ambient") to bring the matching NavigationView item into
+        // selected state without holding a back-reference to this
+        // Window.
         PlaygroundShell.NavigateTo = NavigateTo;
         PlaygroundShell.ReadWindowActivation = () => _windowActivation;
         Activated += OnWindowActivated;
 
         Title = "Deckle Playground";
-        // AppWindow sizes are physical pixels: scale the intended DIPs (or a
-        // 200 % display opens a half-size window), clamped to the work area.
+        // Default 1800×1440 DIPs — comfortable two-column footprint (preview
+        // + tuning expanders) on a typical 1440p display. Min 1280×600
+        // keeps everything reachable below that. Window sizes are PHYSICAL
+        // pixels — scale the intended DIPs (or a 200 % display opens a
+        // half-size window), clamped to the display's work area so the
+        // scaled size never overflows the screen.
         double dpiScale = NativeMethods.GetDpiForWindow(_hwnd) / 96.0;
         var workArea = DisplayArea.GetFromWindowId(AppWindow.Id, DisplayAreaFallback.Nearest).WorkArea;
         AppWindow.Resize(new Windows.Graphics.SizeInt32(
             Math.Min((int)(1800 * dpiScale), workArea.Width),
             Math.Min((int)(1440 * dpiScale), workArea.Height)));
 
-        // Presenter minimums are physical pixels too.
+        // Presenter minimums are PHYSICAL pixels — scale the intended DIPs,
+        // or a 200 % display halves the real floor.
         var presenter = OverlappedPresenter.Create();
         presenter.IsMinimizable = true;
         presenter.IsMaximizable = true;
@@ -82,9 +105,20 @@ public sealed partial class PlaygroundWindow : Window
         presenter.PreferredMinimumHeight = (int)(600 * dpiScale);
         AppWindow.SetPresenter(presenter);
 
-        // The pane toggle's tooltip follows the OS locale while the UI is
-        // English. The template materialises the button only after Loaded,
-        // hence the Low-priority dispatch; the pane events re-apply it.
+        // Close → real destruction. The Playground holds heavy runtime
+        // resources (Win2D composition, screen capture, frame sampler,
+        // Hue REST client, preview timers) — when the user dismisses
+        // the window they expect the costs to go with it. App.xaml.cs
+        // nullifies its reference on Closed so the next ShowPlaygroundLazy
+        // call builds a fresh instance, starting from the persisted
+        // AmbientSettings without any in-memory carry-over from the
+        // previous session.
+
+        // NavigationView pane toggle tooltip override : default OS locale
+        // string ("Ouvrir navigation" on FR) clashes with the rest of the
+        // UI which is locked in English. Tooltip applied after the
+        // template generator has materialised the button (Loaded → Low
+        // priority dispatch), re-applied on PaneOpened / PaneClosed.
         Nav.Loaded += (_, _) =>
         {
             DispatcherQueue.TryEnqueueObserved(
@@ -103,31 +137,22 @@ public sealed partial class PlaygroundWindow : Window
         Nav.PaneClosed += (_, _) =>
             OverrideNavPaneToggleTooltip(Nav, "Open navigation");
 
-        // Only a tap on RootGrid itself takes focus, so clicks on buttons,
-        // dropdowns or flyouts keep theirs.
+        // Tap on empty background → move focus to RootGrid, dismisses
+        // the caret from a NumberBox the user just edited. Filter on
+        // OriginalSource so clicks landing on buttons / dropdowns /
+        // ComboBox flyouts don't steal focus mid-action.
         RootGrid.Tapped += (_, e) =>
         {
             if (ReferenceEquals(e.OriginalSource, RootGrid))
                 RootGrid.Focus(FocusState.Pointer);
         };
 
+        // Initial selection : Home. Setting SelectedItem fires
+        // OnNavSelectionChanged → PageFrame.Navigate(HomePage).
         Nav.SelectedItem = Nav.MenuItems[0];
 
         this.Closed += OnWindowClosed;
 
-<<<<<<< HEAD
-        // While a sizing border is dragged, the Segmentation curve would redo
-        // its label layout on every WM_SIZE; the coalescer suspends that and
-        // repaints once the size settles. Until that page is visited the calls
-        // are no-ops.
-        _resizeCoalescer = new ResizeCoalescer(
-            _hwnd, "playground",
-            onResizeSettled: () => _segmentationPage?.SetCurveResizeSuspended(false),
-            onResizeStarted: () => _segmentationPage?.SetCurveResizeSuspended(true));
-        _resizeCoalescer.Register();
-
-        // Traces theme switches, so a preview glitch can be matched to one.
-=======
         // Theme: wires ActualThemeChanged on the XAML root. Playground is
         // singleton-hidden (lives for the whole app session once opened), so it
         // sees all theme switches through ThemeRequestSourceProbe ("settings"
@@ -135,7 +160,6 @@ public sealed partial class PlaygroundWindow : Window
         // (the root follows the system when no RequestedTheme is set). Useful
         // trace to correlate a sliders / live preview glitch with a theme
         // switch while the window was active.
->>>>>>> main
         if (Content is FrameworkElement root)
         {
             _lastTheme = root.ActualTheme;
@@ -166,15 +190,22 @@ public sealed partial class PlaygroundWindow : Window
             op.Restore();
         }
 
+        // Reset to Pause systematically on each show — known, predictable
+        // state on every reopen, independent of what the user left when
+        // they last closed. The HudPage handles the actual ApplyTarget
+        // through its VM observer.
         _hudPage?.ForcePause();
 
         AppWindow.Show();
         this.Activate();
         NativeMethods.SetForegroundWindow(_hwnd);
 
-        // After Show, so the trace carries the rect DWM settled on. "Center":
-        // the ctor only resizes and leaves the placement to Windows. Emitted on
-        // every show, since a drag between two shows moves the window.
+        // Windowing: emitted post-Show to capture the effective rect after DWM
+        // has positioned the window. Anchor "Center" because the ctor only does
+        // an AppWindow.Resize (1800×1440) without explicit Move; initial
+        // centering is left to Windows. Emitted on each ShowAndActivate because
+        // a user drag between two openings changes the rect: the last trace
+        // remains the current truth.
         WindowingProbe.EmitWindowPositioned(_hwnd, "playground", "Center");
     }
 
@@ -214,23 +245,20 @@ public sealed partial class PlaygroundWindow : Window
 
     private void OnWindowClosed(object sender, WindowEventArgs args)
     {
+        // Tear down resources owned by the pages — composition preview,
+        // capture service, frame sampler, light output, observers. The
+        // shell deliberately drives this from Closed (terminal) so close
+        // releases the resources instead of leaving an idle visual tree
+        // alive behind the tray.
         try { _hudPage?.DisposeResources(); } catch { /* best effort */ }
         try { _ambientPage?.DisposeResources(); } catch { /* best effort */ }
         try { _correctionApplicationPage?.DisposeResources(); } catch { /* best effort */ }
 
-<<<<<<< HEAD
-        // Remove the HWND subclass before the window is gone.
-        _resizeCoalescer?.Dispose();
-
-        // So a stale page cannot route into a destroyed window. ReferenceEquals,
-        // not ==, avoids the CS0252 warning on an object-to-Window comparison.
-=======
         // Drop the shell's nav callback so a stale page reference can't
         // route into a destroyed window. ReferenceEquals (not ==) because
         // Window inherits the default object equality and the compiler
         // can't prove no derived operator== was added — explicit identity
         // check sidesteps the CS0252 warning.
->>>>>>> main
         if (PlaygroundShell.NavigateTo is not null
             && ReferenceEquals(PlaygroundShell.NavigateTo.Target, this))
         {
@@ -241,6 +269,9 @@ public sealed partial class PlaygroundWindow : Window
     }
 
     // ── Navigation routing ──────────────────────────────────────────────────
+    //
+    // Same Tag → Type.GetType pattern as SettingsWindow. The CurrentSourcePageType
+    // guard avoids redundant re-Navigate on the initial seed.
 
     private void OnNavSelectionChanged(NavigationView sender, NavigationViewSelectionChangedEventArgs args)
     {
@@ -262,6 +293,8 @@ public sealed partial class PlaygroundWindow : Window
 
         if (PageFrame.CurrentSourcePageType == pageType) return;
 
+        // One nav-start timestamp for BOTH the Navigate-return NavTiming and the
+        // destination page's first-Loaded PageReady. Set once per navigation.
         DecklePlaygroundSource.NavClock.Restart();
         try
         {
@@ -275,8 +308,12 @@ public sealed partial class PlaygroundWindow : Window
 
             DecklePlaygroundSource.Log.NavTiming(pageType.Name, DecklePlaygroundSource.NavClock.ElapsedMilliseconds);
 
-            // Each page is cached, so the instance captured here stays valid
-            // for the window's lifetime.
+            // Cache the resolved page instance so ShowAndActivate /
+            // DisposeResources don't have to walk the Frame's content
+            // tree. NavigationCacheMode.Required on each Page means the
+            // first nav builds it ; subsequent navs reuse the same
+            // instance, so the reference captured here stays valid for
+            // the lifetime of the shell.
             switch (PageFrame.Content)
             {
                 case HudPage hud:
@@ -302,6 +339,9 @@ public sealed partial class PlaygroundWindow : Window
         SyncNavigationPane(sender);
     }
 
+    // PlaygroundShell.NavigateTo callback target. Pages invoke this with
+    // a short tag and the shell maps it to
+    // the matching NavigationViewItem.Tag prefix.
     private void NavigateTo(string shortTag)
     {
         string fullTag = shortTag switch
@@ -337,7 +377,11 @@ public sealed partial class PlaygroundWindow : Window
     }
 
     // ── NavigationView tooltip i18n override ────────────────────────────────
-
+    //
+    // Same helper as in SettingsWindow ; kept duplicated by design — two
+    // callsites isn't enough to justify a shared assembly, and pulling it
+    // into Deckle.Catalog would force that pure resw-facing module
+    // to take a WinUI 3 control dependency it doesn't otherwise need.
     private static void OverrideNavPaneToggleTooltip(NavigationView nav, string tooltip)
     {
         var toggle = FindVisualDescendantByName<Button>(nav, "TogglePaneButton");

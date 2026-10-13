@@ -9,12 +9,6 @@ namespace Deckle.Playground;
 
 // ─── Streaming segmentation tuning page ──────────────────────────────────────
 //
-<<<<<<< HEAD
-// Every control binds two-way to SegmentationViewModel, the single source, so
-// there is no imperative control sync. Nothing touches the store until Save.
-// The page watches the view-model only to refresh the two text readouts and
-// toggle the unsaved bar.
-=======
 // Edits the energy segmenter's hangover curve and detection knobs with the live
 // curve plot right next to them. Every knob is a TunableRow (slider + editable
 // NumberBox + per-parameter reset) bound two-way to SegmentationViewModel, and
@@ -27,13 +21,14 @@ namespace Deckle.Playground;
 // footer Save / Revert bar and the Reset affordances are driven by
 // SegmentationViewModel.IsDirty / CanReset. The page only watches the view-model
 // to refresh the two plain-text readouts and toggle the unsaved bar.
->>>>>>> main
 public sealed partial class SegmentationPage : Page
 {
     public SegmentationViewModel ViewModel { get; } = new();
 
-    // Loaded re-fires on every return to the cached page; loading once keeps
-    // unsaved edits across a round-trip through another Playground page.
+    // Loaded re-fires on every navigate-back for a cached (NavigationCacheMode.
+    // Required) page ; this gates the one-time load so unsaved edits survive a
+    // round-trip through another Playground page (the ephemeral model must never
+    // silently discard them).
     private bool _loaded;
 
     public SegmentationPage()
@@ -43,28 +38,8 @@ public sealed partial class SegmentationPage : Page
 
         ViewModel.PropertyChanged += OnViewModelPropertyChanged;
 
-<<<<<<< HEAD
-        // Two decimals, so a control point reads 0.24, not 0.2400000002.
-        var curveFormatter = new DecimalFormatter
-        {
-            IntegerDigits  = 1,
-            FractionDigits = 2,
-            IsGrouped      = false,
-            NumberRounder  = new IncrementNumberRounder
-            {
-                Increment         = 0.01,
-                RoundingAlgorithm = RoundingAlgorithm.RoundHalfUp,
-            },
-        };
-        CurveX1Box.NumberFormatter = curveFormatter;
-        CurveY1Box.NumberFormatter = curveFormatter;
-        CurveX2Box.NumberFormatter = curveFormatter;
-        CurveY2Box.NumberFormatter = curveFormatter;
-
-=======
         // Keep the footer spacer as tall as the floating save bar, so the last
         // caption can scroll just clear of it without leaving a big empty gap.
->>>>>>> main
         UnsavedBar.SizeChanged += (_, e) => UnsavedSpacer.Height = e.NewSize.Height;
 
         if (this.Content is FrameworkElement root)
@@ -76,12 +51,19 @@ public sealed partial class SegmentationPage : Page
         if (_loaded) return;
         _loaded = true;
 
+        // Pull the persisted settings into the view-model ; the two-way bindings
+        // propagate them into the rows, the plot and the boxes.
         ViewModel.Load();
         UpdateReadouts();
         UpdateUnsavedBar();
+        // First Loaded = page ready after the load above (gated by _loaded).
+        // Measured from the nav-start clock set in PlaygroundWindow.
         DecklePlaygroundSource.Log.PageReady(nameof(SegmentationPage), DecklePlaygroundSource.NavClock.ElapsedMilliseconds);
     }
 
+    // The view-model is the single source : watch it to keep the two plain-text
+    // readouts current and to toggle the unsaved bar. Everything else flows
+    // through the two-way bindings.
     private void OnViewModelPropertyChanged(object? sender, PropertyChangedEventArgs e)
     {
         switch (e.PropertyName)
@@ -117,8 +99,9 @@ public sealed partial class SegmentationPage : Page
 
     // ── Curve-shape reset reveal ─────────────────────────────────────────────────
     //
-    // The curve editor is not a TuningCard, so its "Reset section" gets the
-    // cards' hover/focus reveal wired by hand: instant, no animation.
+    // The curve editor lives in the left column rather than a TuningCard, so its
+    // "Reset section" gets the same hover/focus reveal wired by hand — instant, no
+    // animation, matching the cards and the HUD expanders.
 
     private bool _curvePointerOver;
     private bool _curveResetFocused;
@@ -131,26 +114,13 @@ public sealed partial class SegmentationPage : Page
     private void UpdateCurveResetReveal() =>
         CurveResetButton.Opacity = _curvePointerOver || _curveResetFocused ? 1 : 0;
 
-<<<<<<< HEAD
-    // ── Resize coalescing ────────────────────────────────────────────────────────
-    //
-    // The window's ResizeCoalescer sets this while a resize gesture runs; the
-    // canvas then skips its costly axis-label layout. The null guard covers a
-    // call before the named part exists.
-    public void SetCurveResizeSuspended(bool suspended)
-    {
-        if (HangoverCurve is not null)
-            HangoverCurve.SuspendExpensiveDraw = suspended;
-    }
-
-=======
->>>>>>> main
     // ── Graph show / hide ────────────────────────────────────────────────────────
 
     private void OnGraphToggleChanged(object sender, RoutedEventArgs e)
     {
-        // IsChecked="True" can raise Checked during InitializeComponent, before
-        // the sibling elements exist; the XAML defaults already match it.
+        // IsChecked="True" can raise Checked during InitializeComponent, before the
+        // sibling elements exist. The XAML defaults already match the shown state,
+        // so bail out of that early fire.
         if (GraphToggleText is null || HangoverCurve is null) return;
 
         bool show = GraphToggle.IsChecked == true;
