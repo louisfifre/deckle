@@ -49,17 +49,24 @@ public sealed record NumberArgs(
 
 // ── MagnitudeArgs ─────────────────────────────────────────────────────────────
 //
-// Bounds and unit for a Magnitude setting — a Slider fused with an editable
-// NumberBox. Deliberately smaller than SliderArgs: there is no StepFrequency,
-// because a magnitude derives its "nice" 1-2-5 grain from the range itself
-// (MagnitudeGrain.StepFor), so the caller states only where the value lives
-// and what it measures. Unit is the optional suffix beside the field ("ms", "x",
-// "dBFS"); null when dimensionless. Like every *Args these describe the CONTROL —
-// the value type (double) is fixed by the kind.
+// Bounds and shape of a Magnitude setting, the one numeric block: a number field
+// with its arrows, and beside it a slider when the value earns a gesture. There
+// is no step: a magnitude derives its "nice" 1-2-5 grain from the range itself
+// (MagnitudeGrain.StepFor), so the caller states only where the value lives,
+// what it measures and what shape it takes. Unit is the optional suffix beside
+// the field ("ms", "x", "dBFS"); null when dimensionless. Slider false keeps the
+// field alone, for a figure that is typed rather than swept (a token count, a
+// duration nobody drags). Integer says the value is a count: the grain never
+// drops below one, so the field shows no decimals and the arrows move whole
+// units. Like every *Args these describe the CONTROL — the value type (double)
+// is fixed by the kind, and an integer model still travels as a double through
+// the selectors.
 public sealed record MagnitudeArgs(
     double Minimum,
     double Maximum,
-    string? Unit = null) : SettingArgs;
+    string? Unit = null,
+    bool Slider = true,
+    bool Integer = false) : SettingArgs;
 
 // ── TextArgs ──────────────────────────────────────────────────────────────────
 //

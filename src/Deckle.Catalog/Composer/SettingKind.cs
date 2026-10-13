@@ -19,14 +19,14 @@ public enum SettingKind
     // figure matters more than the gesture. Range/step live in NumberArgs.
     Number,
 
-    // A Slider and an editable NumberBox over a double, fused into one control:
-    // sweep the slider to approximate, type the box for an exact figure, both
-    // driving the same value. The grain is not declared — it is derived as a
-    // "nice" 1-2-5 step from the range (MagnitudeArgs carries only bounds + unit) —
-    // so this is the numeric control for a bounded value worth BOTH a gesture and a
-    // precise entry (a threshold, a duration, a rate). It does not replace Slider
-    // (pure gesture, read-only readout) or Number (pure entry, no track); it is the
-    // third numeric kind, for when both inputs earn their place.
+    // The one numeric block, over a double: an editable NumberBox with its arrows
+    // on hover, and beside it a Slider when the value earns a gesture (MagnitudeArgs
+    // hides the slider for a figure that is typed, never swept). Sweep to
+    // approximate, type or nudge for the exact figure, both driving the same
+    // value. The grain is not declared — it is derived as a "nice" 1-2-5 step from
+    // the range, floored at one for a count — so a magnitude declares only bounds,
+    // unit and shape. The model is written once per gesture: at the release of
+    // the slider, at the commit of the field.
     Magnitude,
 
     // A TextBox over a string, for free-form text the user types — a name, a

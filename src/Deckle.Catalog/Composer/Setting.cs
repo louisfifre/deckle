@@ -110,11 +110,12 @@ public static class Setting
             Advisory = advisory,
         };
 
-    // A Slider fused with an editable NumberBox over a double — sweep to
-    // approximate, type to be exact. MagnitudeArgs carries only the bounds and
-    // unit; the composer derives the slider's "nice" 1-2-5 grain from the range, so
-    // unlike Slider there is no StepFrequency to pass. Same boxed selectors and
-    // optional default (for the per-card reset) as the other numeric kinds.
+    // The one numeric block: an editable NumberBox over a double, with a Slider
+    // beside it when the value earns a gesture — sweep to approximate, type or
+    // nudge to be exact. MagnitudeArgs carries the bounds, the unit and the shape
+    // (slider or field alone, count or not); the composer derives the "nice" 1-2-5
+    // grain from the range, so there is no step to pass. Same boxed selectors and
+    // optional default (for the per-card reset) as the other kinds.
     public static SettingDescriptor Magnitude(
         string labelKey,
         Func<double> get,

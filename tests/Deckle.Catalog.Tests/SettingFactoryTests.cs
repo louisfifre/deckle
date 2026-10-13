@@ -236,6 +236,34 @@ public class SettingFactoryTests
         Assert.Equal(10, args.LargeChange);
     }
 
+    // ── Magnitude : les bornes et la forme du contrôle vivent dans les args ────
+
+    [Fact]
+    public void MagnitudeDefaultsToASliderOverAPlainRange()
+    {
+        var d = Setting.Magnitude("k", () => 0, _ => { }, new MagnitudeArgs(0.25, 3.0, Unit: "×"));
+
+        Assert.Equal(SettingKind.Magnitude, d.Kind);
+        var args = Assert.IsType<MagnitudeArgs>(d.Args);
+        Assert.Equal(0.25, args.Minimum);
+        Assert.Equal(3.0, args.Maximum);
+        Assert.Equal("×", args.Unit);
+        Assert.True(args.Slider);
+        Assert.False(args.Integer);
+    }
+
+    [Fact]
+    public void MagnitudeCarriesTheFieldOnlyAndCountShapes()
+    {
+        // Un compte tapé, jamais balayé : pas de slider, pas de décimales.
+        var d = Setting.Magnitude("k", () => 5, _ => { },
+            new MagnitudeArgs(1, 10, Slider: false, Integer: true));
+
+        var args = Assert.IsType<MagnitudeArgs>(d.Args);
+        Assert.False(args.Slider);
+        Assert.True(args.Integer);
+    }
+
     // ── Editor: module-owned element, boxed selectors for the reset ────────────
 
     [Fact]
