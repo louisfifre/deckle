@@ -315,6 +315,9 @@ public sealed partial class SettingsComposer
             case SettingKind.Hotkey:
                 BuildHotkey(card, s);
                 break;
+            case SettingKind.Curve:
+                BuildCurve(card, s);
+                break;
             default:
                 throw new NotSupportedException(
                     $"SettingKind.{s.Kind} has no composer yet — add it when a setting needs it.");

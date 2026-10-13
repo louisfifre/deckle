@@ -840,6 +840,8 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   └── StaleWorkProbeCommand.cs
 │   ├── Deckle.Catalog/
 │   │   ├── Composer/
+│   │   │   ├── CubicBezier.cs
+│   │   │   ├── CurveEditor.cs
 │   │   │   ├── DefaultValueText.cs
 │   │   │   ├── GestureHold.cs
 │   │   │   ├── HotkeyChordText.cs
@@ -852,6 +854,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   ├── SettingKind.cs
 │   │   │   ├── SettingsComposer.Chrome.cs
 │   │   │   ├── SettingsComposer.cs
+│   │   │   ├── SettingsComposer.Curve.cs
 │   │   │   ├── SettingsComposer.Folds.cs
 │   │   │   ├── SettingsComposer.Hotkey.cs
 │   │   │   ├── SettingsComposer.Inputs.cs
@@ -1938,6 +1941,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── VerifiedCaretSentenceTests.cs
 │   │   └── WordBoundariesTests.cs
 │   ├── Deckle.Catalog.Tests/
+│   │   ├── CubicBezierTests.cs
 │   │   ├── Deckle.Catalog.Tests.csproj
 │   │   ├── DefaultValueTextTests.cs
 │   │   ├── GestureHoldTests.cs

@@ -398,4 +398,32 @@ public static class Setting
             Default = defaultValue is null ? null : () => defaultValue(),
         };
     }
+
+    // A two-point cubic Bézier, edited by the one curve component (settings
+    // design system, decision 21). The selectors read and write the four control
+    // point values as one CurvePoints; CurveArgs says what frame the curve is
+    // drawn in and how to say what it does. The default, when given, is the
+    // points the per-card reset writes back.
+    public static SettingDescriptor Curve(
+        string labelKey,
+        Func<CurvePoints> get,
+        Action<CurvePoints> set,
+        CurveArgs? args = null,
+        string? glyph = null,
+        bool isAdvanced = false,
+        Func<bool>? enabledWhen = null,
+        Func<bool>? visibleWhen = null,
+        Func<CurvePoints>? defaultValue = null) => new()
+        {
+            Kind = SettingKind.Curve,
+            LabelKey = labelKey,
+            Glyph = glyph,
+            IsAdvanced = isAdvanced,
+            Args = args ?? new CurveArgs(),
+            GetValue = () => get(),
+            SetValue = value => set((CurvePoints)value!),
+            EnabledWhen = enabledWhen,
+            VisibleWhen = visibleWhen,
+            Default = defaultValue is null ? null : () => defaultValue(),
+        };
 }
