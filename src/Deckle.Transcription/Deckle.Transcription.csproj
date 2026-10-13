@@ -1,19 +1,24 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <RootNamespace>Deckle.Transcription</RootNamespace>
-    <!-- The module's settings UI (WhisperPage) ships in the engine's assembly:
-         both belong to the Whisp module and share its lifecycle. -->
+    <!-- WinUI XAML compilation : Deckle.Transcription now ships WhisperPage.xaml +
+         WhisperViewModel.cs (moved from Deckle.Settings in slice C1). The
+         engine, native runtime setup, and capture host stay in this same
+         assembly — they share the lifecycle and the Whisp module's owner
+         is the natural home for both engine and UI. -->
     <UseWinUI>true</UseWinUI>
-    <!-- Neutral language for the lib's PRI fallback. Mirrors Deckle.App.csproj. -->
+    <!-- Neutral language for the lib's PRI fallback. Mirrors Deckle.csproj. -->
     <DefaultLanguage>en-US</DefaultLanguage>
     <!-- Generates the lib's own .pri so x:Uid lookups in WhisperPage
-         resolve against the Deckle.Transcription/Resources subtree
-         (cf. Microsoft Learn "Localize a class library", PowerToys,
-         WindowsAppSDK#3451). -->
+         resolve against the Deckle.Transcription/Resources subtree. The resw
+         under Strings/en-US/ is a copy of the App's resw — same pattern
+         as Deckle.Settings (cf. Microsoft Learn "Localize a class
+         library", PowerToys, WindowsAppSDK#3451). -->
     <EnableMsixTooling>true</EnableMsixTooling>
   </PropertyGroup>
 
   <ItemGroup>
+    <!-- Versions aligned on Deckle.csproj. -->
     <PackageReference Include="Microsoft.WindowsAppSDK" />
     <PackageReference Include="Microsoft.Windows.SDK.BuildTools" />
     <!-- MVVM Toolkit — [ObservableProperty] in WhisperViewModel. -->
@@ -23,16 +28,12 @@
          Win2D stays confined to Deckle.Composition (settings design system,
          decision 3). -->
     <PackageReference Include="CommunityToolkit.WinUI.Controls.SettingsControls" />
-<<<<<<< HEAD
-    <!-- Win2D: Direct2D-backed CanvasControl for HangoverCurveCanvas — the
-         segmenter's hangover plot is drawn in immediate mode (a single Draw per
-         Invalidate) instead of recreating a XAML Shapes tree on every resize. -->
-    <PackageReference Include="Microsoft.Graphics.Win2D" />
-=======
->>>>>>> main
   </ItemGroup>
 
   <ItemGroup>
+    <!-- Exposes internal algorithm helpers (EnergySegmenter) to the test project,
+         so they can be unit-tested in isolation without being made public. Same
+         MSBuild→Roslyn [InternalsVisibleTo] pattern as Deckle.Hud / Deckle.Lighting.Ambient. -->
     <InternalsVisibleTo Include="Deckle.Transcription.Tests" />
   </ItemGroup>
 
@@ -42,6 +43,7 @@
     <ProjectReference Include="..\Deckle.Core\Deckle.Core.csproj" />
     <ProjectReference Include="..\Deckle.Diagnostics\Deckle.Diagnostics.csproj" />
     <ProjectReference Include="..\Deckle.Diagnostics.Telemetry\Deckle.Diagnostics.Telemetry.csproj" />
+    <!-- For the streaming-transcription log opt-in relocated onto WhisperPage. -->
     <ProjectReference Include="..\Deckle.Diagnostics.Logging\Deckle.Diagnostics.Logging.csproj" />
     <!-- VAD module. One-way dependency: the orchestrator calls the VAD, never the
          reverse. -->
@@ -50,9 +52,9 @@
     <ProjectReference Include="..\Deckle.Presets\Deckle.Presets.csproj" />
     <ProjectReference Include="..\Deckle.Llm\Deckle.Llm.csproj" />
     <ProjectReference Include="..\Deckle.Llm.Rewrite\Deckle.Llm.Rewrite.csproj" />
-    <!-- For SettingsHost (restart, setup wizard, provisioning probe) and the
-         shell's overlay and paste settings. WhisperPage participates in the
-         Settings shell UI; the back-reference is intentional. -->
+    <!-- For SettingsHost.RestartApp — cross-assembly App-side hook called
+         from WhisperPage's "Restart now" footer. WhisperPage participates
+         in the Settings shell UI; the back-reference is intentional. -->
     <ProjectReference Include="..\Deckle.Settings\Deckle.Settings.csproj" />
   </ItemGroup>
 </Project>

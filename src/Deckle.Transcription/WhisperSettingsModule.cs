@@ -5,9 +5,6 @@ namespace Deckle.Transcription;
 // ── WhisperSettingsModule ─────────────────────────────────────────────────────
 //
 // The transcription module's own nav identity for the Settings shell. The module
-<<<<<<< HEAD
-// declares its page and its icon here; the composition root supplies only the Order.
-=======
 // declares its pages, their icons and their label keys here; the composition root
 // supplies only the Order. Registered from App.OnLaunched via SettingsModuleRegistry.
 //
@@ -16,7 +13,6 @@ namespace Deckle.Transcription;
 // pasting, model and engine, diagnostics, the restart footer), then Decoding (the
 // Whisper parameters that apply in both pipelines) and Streaming (the pipeline
 // switch, speech filtering, segmentation) nested under it.
->>>>>>> main
 public static class WhisperSettingsModule
 {
     public const string ResourceLibrary = "Deckle.Transcription";
