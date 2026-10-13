@@ -18,7 +18,11 @@ namespace Deckle.Shell.TrayMenu;
 //
 // Same carrier pattern as TrayContextMenuHost: an invisible TrayCarrierWindow
 // of its own, anchored on the icon, sized to the real FlyoutPresenter
-// captured by a single prime cycle, Placement Full, animations off.
+// captured by a single prime cycle, Placement Full, animations off. One
+// difference the pattern hides: a Flyout is constrained to its XAML root by
+// default where a MenuFlyout is not, so the panel asks for a popup window of
+// its own (see the constructor) or it draws inside the alpha-0 carrier and
+// nobody sees it.
 //
 // Dismiss, as Windows quick settings: click outside or focus loss (carrier
 // Deactivated), Esc (Flyout light dismiss → Closed), and a second left click
@@ -113,6 +117,15 @@ public sealed partial class TrayQuickActionsHost : IDisposable
             // would cut the animation; the panel appears and disappears at
             // once, like the native tray flyouts.
             AreOpenCloseAnimationsEnabled = false,
+
+            // A Flyout is constrained to its XAML root by default, a MenuFlyout
+            // is not (FlyoutBase.ShouldConstrainToRootBounds, Microsoft Learn).
+            // Constrained, the panel drew inside the carrier's own HWND, which
+            // is layered at alpha 0: every left click opened a panel nobody
+            // could see (v0.39.0 to v0.42.0). Unconstrained, the flyout gets a
+            // top-level popup window of its own, like the menu. Set before the
+            // first show: once shown, it cannot be set back.
+            ShouldConstrainToRootBounds = false,
         };
         _flyout.Opened += OnFlyoutOpened;
         _flyout.Closed += OnFlyoutClosed;

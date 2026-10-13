@@ -34,26 +34,32 @@ public sealed partial class TrayContextMenuHost
         // The carrier anchors on the icon, resolves the monitor DPI and asks
         // for the menu's physical size at that scale.
         _isVisible = true;
-        _carrier.ShowAt(GetIconRect, MeasureFlyout);
-
-        // FlyoutPlacementMode.Full: opens the menu at the exact target
-        // location (our frame). Without Full, default Top placement places the
-        // popup above the frame, adding a vertical offset on top of the one
-        // already calculated by CalculatePopupWindowPosition; the menu jumps up
-        // by roughly one menu height. Since the carrier window is already
-        // positioned at the exact desired coordinate, Full neutralizes that
-        // offset.
-        //
-        // Trade-off (MS docs): Full also stretches the presenter to fill the
-        // carrier window. The visible menu size is therefore dictated by
-        // MeasureFlyout: too large shows an empty Mica band at the bottom, too
-        // small scrolls. See TrayMenuSizing.
-        _flyout.ShowAt(_carrier.Frame, new FlyoutShowOptions
+        _carrier.ShowAt(GetIconRect, MeasureFlyout, () =>
         {
-            ShowMode = FlyoutShowMode.Transient,
-            Placement = FlyoutPlacementMode.Full,
+            // The carrier runs this once its XAML island reports the size it
+            // was just given, or after its grace period: Full reads that size
+            // at ShowAt (see TrayCarrierWindow). A Hide meanwhile cancels it.
+            if (_disposed || !_isVisible || _flyout is null) return;
+
+            // FlyoutPlacementMode.Full: opens the menu at the exact target
+            // location (our frame). Without Full, default Top placement places
+            // the popup above the frame, adding a vertical offset on top of the
+            // one already calculated by CalculatePopupWindowPosition; the menu
+            // jumps up by roughly one menu height. Since the carrier window is
+            // already positioned at the exact desired coordinate, Full
+            // neutralizes that offset.
+            //
+            // Trade-off (MS docs): Full also stretches the presenter to fill
+            // the carrier window. The visible menu size is therefore dictated
+            // by MeasureFlyout: too large shows an empty Mica band at the
+            // bottom, too small scrolls. See TrayMenuSizing.
+            _flyout.ShowAt(_carrier.Frame, new FlyoutShowOptions
+            {
+                ShowMode = FlyoutShowMode.Transient,
+                Placement = FlyoutPlacementMode.Full,
+            });
+            if (traceWindowing) DeckleShellTrayMenuSource.Log.FlyoutShownAt();
         });
-        if (traceWindowing) DeckleShellTrayMenuSource.Log.FlyoutShownAt();
     }
 
     // ── Hide ──────────────────────────────────────────────────────────────────
