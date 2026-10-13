@@ -1991,6 +1991,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   └── HomeTypedToolCatalogTests.cs
 │   ├── Deckle.Hud.Tests/
 │   │   ├── AnimationGateTests.cs
+│   │   ├── ConicPaletteTests.cs
 │   │   ├── Deckle.Hud.Tests.csproj
 │   │   ├── DeckleHudSourceTests.cs
 │   │   ├── ProximityFadeTests.cs

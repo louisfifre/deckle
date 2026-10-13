@@ -95,16 +95,14 @@ public static partial class HudComposition
     // mapping instead of restating it.
     //
     // `hueRotates` — whether the cone spins (RecordingHuePeriodSeconds > 0)
-    // or stays frozen at HuePhaseTurns. Frozen matters even at Saturation 0:
-    // the cone is baked from OKLCh at a chroma no sRGB hue carries at that
-    // lightness, ColorSpace.OklchToRgb clamps each channel, and the clamped
-    // colours no longer share one luminance. Desaturated, the default wheel
-    // (L 0.75, C 0.3) runs from a grey near 0.24 around red to near 0.69
-    // around cyan (computed 2026-10-13 with Rec. 709 luma weights; the
-    // ordering holds for any luma formula, the red band has almost no
-    // green). At phase 0 that dark band sits at 3 o'clock, inside the
-    // lobes' fade-out. A spinning cone carries it through 12 and 6 o'clock,
-    // where the lobes are brightest, and reads as a hole walking the outline.
+    // or stays frozen at HuePhaseTurns. The countdown follows this decision
+    // so it is the outline's cone in the outline's pose. Frozen was also the
+    // first fix for a dark band (2026-10-13): the wheel was then baked by a
+    // conversion that clipped out-of-gamut channels, so its greys ran from
+    // about 0.24 (red) to 0.69 (cyan) and a spinning cone walked that band
+    // through the lit lobes. The band itself is gone since the palette is
+    // gamut-mapped by chroma (ColorSpace.OklchToRgbInGamut): every hue keeps
+    // one lightness, so one grey.
     public static ConicArcStrokeConfig BuildRecordingPaintConfig(
         ConicArcStrokeConfig defaults, out bool hueRotates)
     {
