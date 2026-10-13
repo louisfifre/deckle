@@ -13,10 +13,13 @@ public static partial class HudComposition
     private const float CountdownMinimumSpread = 0.0005f;
     private const float CountdownCanonicalRotation = -3f * MathF.PI / 4f;
 
-    // A progress-driven mirrored mask over the same animated, graded conic
-    // material used by the processing stroke. One mask brush lights two wedges,
-    // centred on 12 and 6 o'clock, that widen toward the four corners; only its
-    // transform reads progress.
+    // A progress-driven mirrored mask over the Recording outline's material:
+    // the same baked cone, posed as the outline poses it (frozen unless
+    // RecordingHuePeriodSeconds spins it), graded as Recording. One mask brush
+    // lights two wedges, centred on 12 and 6 o'clock, that widen toward the
+    // four corners and fade like the outline's lobes; only its transform reads
+    // progress. The gauge is the outline opened by the pause, so the two are
+    // tuned together through the Recording* fields.
     public sealed class UtteranceCountdownVisual : IDisposable
     {
         // Windows motion guidance: the fast duration (167 ms) and the
@@ -201,6 +204,30 @@ public static partial class HudComposition
              * Matrix3x2.CreateTranslation(centre);
     }
 
+    // The mask the gauge's wedges are painted with: the Recording outline's
+    // lead and tail fades carried from the outline's span onto the canonical
+    // quarter-turn span, with the outline's curve. PaintArcMaskSurface clamps
+    // both to the span and, when they overlap, rescales them to meet
+    // mid-wedge — the outline's own bell at the defaults. What is kept is the
+    // proportion of fade to span, not the angle: progress stretches the
+    // wedge, the outline's lobe never moves. A source span of zero paints the
+    // outline empty, so the wedges fall back to hard edges rather than divide
+    // by it.
+    public static ConicArcStrokeConfig GetUtteranceCountdownMaskConfig(
+        ConicArcStrokeConfig config)
+    {
+        var recording = BuildRecordingPaintConfig(config, out _);
+        float sourceSpan = recording.ConicSpanTurns;
+        float scale = sourceSpan > 0f ? CountdownCanonicalSpanTurns / sourceSpan : 0f;
+        return recording with
+        {
+            ArcMirror = true,
+            ConicSpanTurns = CountdownCanonicalSpanTurns,
+            ConicLeadFadeTurns = recording.ConicLeadFadeTurns * scale,
+            ConicTailFadeTurns = recording.ConicTailFadeTurns * scale,
+        };
+    }
+
     public static UtteranceCountdownVisual CreateUtteranceCountdownVisual(
         Compositor compositor,
         Vector2 hostSize,
@@ -231,6 +258,10 @@ public static partial class HudComposition
             var graphics = visual.Own(
                 CanvasComposition.CreateCompositionGraphicsDevice(compositor, device));
 
+            // The gauge paints the Recording outline's cone, in the outline's
+            // pose, so a pause opens the very material the voice was lighting.
+            var recording = BuildRecordingPaintConfig(config, out bool hueRotates);
+
             CompositionBrush materialSource;
             if (maskOnly)
             {
@@ -240,22 +271,38 @@ public static partial class HudComposition
             else
             {
                 int square = CoverageSquareSide(hostSize, centre);
-                var conic = visual.Own(PaintConicSurface(device, graphics, square, config));
+                var conic = visual.Own(PaintConicSurface(device, graphics, square, recording));
                 var conicBrush = visual.Own(compositor.CreateSurfaceBrush(conic));
                 conicBrush.Stretch = CompositionStretch.None;
-                rotationProps = StartRotation(
-                    compositor, conicBrush, centre,
-                    config.HuePeriodSeconds, config.HueDirection,
-                    config.HuePhaseTurns, config.HueEaseP1X, config.HueEaseP1Y,
-                    config.HueEaseP2X, config.HueEaseP2Y,
-                    config.HueMinSpeedFraction,
-                    animationsEnabled: animationsEnabled);
-                visual.SetRotationProps(rotationProps, conicBrush);
+                if (hueRotates)
+                {
+                    rotationProps = StartRotation(
+                        compositor, conicBrush, centre,
+                        recording.HuePeriodSeconds, recording.HueDirection,
+                        recording.HuePhaseTurns, recording.HueEaseP1X, recording.HueEaseP1Y,
+                        recording.HueEaseP2X, recording.HueEaseP2Y,
+                        recording.HueMinSpeedFraction,
+                        animationsEnabled: animationsEnabled);
+                    visual.SetRotationProps(rotationProps, conicBrush);
+                }
+                else
+                {
+                    // Frozen at the outline's phase: the one-shot pose
+                    // CreateConicArcStroke bakes under freezeHueRotation. A
+                    // spinning cone is wrong here even at Saturation 0 — the
+                    // clipped OKLCh wheel desaturates to unequal greys (see
+                    // BuildRecordingPaintConfig) and its dark band would sweep
+                    // through the lit wedges.
+                    conicBrush.TransformMatrix =
+                        Matrix3x2.CreateTranslation(-centre) *
+                        Matrix3x2.CreateRotation(MathF.Tau * recording.HuePhaseTurns) *
+                        Matrix3x2.CreateTranslation(centre);
+                }
 
                 using var gradingFactory = compositor.CreateEffectFactory(
                     BuildVariantGrading(
                         new CompositionEffectSourceParameter("Conic"),
-                        config, ProcessingVariant.Transcribing, isDark));
+                        recording, ProcessingVariant.Recording, isDark));
                 var grading = visual.Own(gradingFactory.CreateBrush());
                 grading.SetSourceParameter("Conic", conicBrush);
                 materialSource = grading;
@@ -275,21 +322,9 @@ public static partial class HudComposition
                 config.StrokeThickness, 0.5f,
                 MathF.Max(0.5f, MathF.Min(silhouetteWidth, silhouetteHeight)));
 
-            // The fade is authored in turns of the full opening (each wedge at
-            // EndReach) and rescaled into the canonical quarter-turn span.
-            float fullOpeningTurns = MathF.Max(
-                2f * MathF.Atan(endReach * CountdownAspect(hudSize)) / MathF.Tau, 0.0001f);
-            float edgeFade = Math.Clamp(
-                countdown.EdgeFadeTurns / fullOpeningTurns * CountdownCanonicalSpanTurns,
-                0f, CountdownCanonicalSpanTurns);
-            var maskConfig = config with
-            {
-                ArcMirror = true,
-                ConicSpanTurns = CountdownCanonicalSpanTurns,
-                ConicLeadFadeTurns = edgeFade,
-                ConicTailFadeTurns = edgeFade,
-                ConicFadeCurve = MathF.Max(0.01f, countdown.FadeCurve),
-            };
+            // The two wedges fade like the outline's lobes — see
+            // GetUtteranceCountdownMaskConfig.
+            var maskConfig = GetUtteranceCountdownMaskConfig(config);
             // The canonical boundary rays lose sqrt(2) of their vertical
             // reach after the -135 degree rotation. Oversize before scaling
             // so both feathered boundaries still reach the real HUD edges.

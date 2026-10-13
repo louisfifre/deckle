@@ -212,27 +212,34 @@ public static partial class HudComposition
     }
 
     // Wraps a conic source in the Saturation → Hue → Exposure chain the contour
-    // runs, seeded at the variant's resting values (Transcribing split Dark/Light,
-    // Rewriting unified). Shared by the clone and naked previews so a graded
-    // preview reads identically to the live stroke in that state — greyscale for
-    // Transcribing (Saturation 0), full colour for Rewriting. Static (no
-    // PropertySet binding): previews don't blend between states.
+    // runs, seeded at the variant's resting values (Transcribing and Recording
+    // split Dark/Light, Rewriting unified). Shared by the clone, naked and
+    // countdown visuals so a graded preview reads identically to the live
+    // stroke in that state — greyscale for Transcribing and Recording
+    // (Saturation 0), full colour for Rewriting. Static (no PropertySet
+    // binding): previews don't blend between states.
     private static IGraphicsEffect BuildVariantGrading(
         IGraphicsEffectSource conicSource,
         ConicArcStrokeConfig cfg, ProcessingVariant variant, bool isDark)
     {
         float sat, hueTurns, exposure;
-        if (variant == ProcessingVariant.Rewriting)
+        switch (variant)
         {
-            sat      = cfg.RewritingSaturation;
-            hueTurns = cfg.RewritingHueShiftTurns;
-            exposure = cfg.RewritingExposure;
-        }
-        else // Transcribing (and Recording, unused here) — greyscale baseline
-        {
-            sat      = isDark ? cfg.TranscribingSaturationDark : cfg.TranscribingSaturationLight;
-            hueTurns = cfg.TranscribingHueShiftTurns;
-            exposure = isDark ? cfg.TranscribingExposureDark   : cfg.TranscribingExposureLight;
+            case ProcessingVariant.Rewriting:
+                sat      = cfg.RewritingSaturation;
+                hueTurns = cfg.RewritingHueShiftTurns;
+                exposure = cfg.RewritingExposure;
+                break;
+            case ProcessingVariant.Recording:
+                sat      = isDark ? cfg.RecordingSaturationDark : cfg.RecordingSaturationLight;
+                hueTurns = cfg.RecordingHueShiftTurns;
+                exposure = isDark ? cfg.RecordingExposureDark   : cfg.RecordingExposureLight;
+                break;
+            default: // Transcribing — greyscale baseline
+                sat      = isDark ? cfg.TranscribingSaturationDark : cfg.TranscribingSaturationLight;
+                hueTurns = cfg.TranscribingHueShiftTurns;
+                exposure = isDark ? cfg.TranscribingExposureDark   : cfg.TranscribingExposureLight;
+                break;
         }
 
         var saturationEffect = new SaturationEffect

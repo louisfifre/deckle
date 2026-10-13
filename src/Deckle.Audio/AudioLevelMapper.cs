@@ -26,12 +26,18 @@ namespace Deckle.Audio;
 // HUD control by historical accident; the math is purely audio-domain.
 public static class AudioLevelMapper
 {
-    // EMA smoothing factor applied AFTER the dBFS remap. EmaAlpha 0.25
-    // at 20 Hz source → τ = -T / ln(alpha) ≈ 0.05 / 0.328 ≈ 0.15 s —
-    // fast enough to track intonations at the word scale (typical word
-    // = 200–500 ms) while still ironing out the sample grid into a
-    // continuous ramp. The consumer owns the smoother state (the EMA
-    // value to feed back) since per-window state shouldn't be a global.
+    // EMA smoothing factor applied AFTER the dBFS remap, per 50 ms sample:
+    // next = previous · EmaAlpha + sample · (1 − EmaAlpha). 0.25 keeps a
+    // quarter of the previous value, so the time constant is
+    // τ = −T / ln(EmaAlpha) ≈ 0.05 / 1.386 ≈ 36 ms — under one sample.
+    // (An earlier comment read 0.15 s; that would need EmaAlpha ≈ 0.72.)
+    // It irons the sample grid into a continuous ramp and leaves every
+    // word-scale intonation (200–500 ms) intact; the 50 ms key-frame in
+    // ProcessingStroke.UpdateLevel does the rest of the visible smoothing.
+    // The consumer owns the smoother state (the EMA value to feed back)
+    // since per-window state shouldn't be a global. The utterance countdown
+    // (UtteranceCountdownState) rises through this same alpha, so the gauge
+    // and the outline it replaces settle at one pace.
     public static float EmaAlpha = 0.25f;
 
     // Linear RMS mapped through a dBFS window, then through a power

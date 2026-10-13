@@ -1989,6 +1989,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── TranscriptHistoryTests.cs
 │   │   ├── TranscriptPanelBugNotes.md
 │   │   ├── TranscriptPanelLayoutTests.cs
+│   │   ├── UtteranceCountdownBugNotes.md
 │   │   ├── UtteranceCountdownGeometryTests.cs
 │   │   └── UtteranceCountdownStateTests.cs
 │   ├── Deckle.Input.PrecisionScroll.Tests/

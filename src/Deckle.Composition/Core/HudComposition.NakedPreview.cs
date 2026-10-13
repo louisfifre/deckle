@@ -57,7 +57,8 @@ public static partial class HudComposition
         private readonly CompositionEffectBrush? _effectBrush;
         private readonly CompositionDrawingSurface _conicSurface;
         private readonly CompositionDrawingSurface _arcMaskSurface;
-        private readonly CompositionPropertySet _conicRotationProps;
+        // Null when the cone is frozen (static TransformMatrix, no animation).
+        private readonly CompositionPropertySet? _conicRotationProps;
         private readonly CompositionPropertySet _arcRotationProps;
 
         private bool _disposed;
@@ -70,7 +71,7 @@ public static partial class HudComposition
             CompositionEffectBrush? effectBrush,
             CompositionDrawingSurface conicSurface,
             CompositionDrawingSurface arcMaskSurface,
-            CompositionPropertySet conicRotationProps,
+            CompositionPropertySet? conicRotationProps,
             CompositionPropertySet arcRotationProps)
         {
             Container            = container;
@@ -96,10 +97,10 @@ public static partial class HudComposition
             try { _conicBrush.StopAnimation("TransformMatrix");   } catch { }
             try { _arcMaskBrush.StopAnimation("TransformMatrix"); } catch { }
 
-            try { _conicRotationProps.StopAnimation("Linear"); } catch { }
-            try { _conicRotationProps.StopAnimation("Eased");  } catch { }
-            try { _arcRotationProps.StopAnimation("Linear");   } catch { }
-            try { _arcRotationProps.StopAnimation("Eased");    } catch { }
+            try { _conicRotationProps?.StopAnimation("Linear"); } catch { }
+            try { _conicRotationProps?.StopAnimation("Eased");  } catch { }
+            try { _arcRotationProps.StopAnimation("Linear");    } catch { }
+            try { _arcRotationProps.StopAnimation("Eased");     } catch { }
 
             // 2. Dispose in the same order the shipping stroke uses:
             //    effect brush first (it binds the source brushes), then
@@ -112,8 +113,8 @@ public static partial class HudComposition
             try { _conicSurface.Dispose();   } catch { }
             try { _arcMaskSurface.Dispose(); } catch { }
 
-            try { _conicRotationProps.Dispose(); } catch { }
-            try { _arcRotationProps.Dispose();   } catch { }
+            try { _conicRotationProps?.Dispose(); } catch { }
+            try { _arcRotationProps.Dispose();    } catch { }
 
             try { _sprite.Dispose();    } catch { }
             try { Container.Dispose();  } catch { }
@@ -151,6 +152,12 @@ public static partial class HudComposition
     // the mask directly and relies on this colour to show up against the
     // window's LayerFillColorDefaultBrush in both themes.
     //
+    // `freezeHueRotation` — pins the cone at HuePhaseTurns instead of
+    // spinning it: the pose CreateRecordingStroke takes when
+    // RecordingHuePeriodSeconds is 0. The Playground's Countdown material
+    // view passes the outline's own decision (BuildRecordingPaintConfig) so
+    // the cone it shows is the one the gauge samples, still or drifting.
+    //
     // Returns a NakedPreview bundle the caller MUST hold and Dispose when
     // replaced — see the type-level comment on NakedPreview for why.
     public static NakedPreview CreateNakedMaskPreview(
@@ -158,7 +165,8 @@ public static partial class HudComposition
         ConicArcStrokeConfig cfg, NakedMaskPart part,
         Color arcFillColor,
         ProcessingVariant gradeVariant, bool isDark,
-        bool animationsEnabled = true)
+        bool animationsEnabled = true,
+        bool freezeHueRotation = false)
     {
         // Reuse the exact pxSquare math from CreateConicArcStroke so the
         // naked preview paints the same brush footprint. Any drift here
@@ -204,15 +212,27 @@ public static partial class HudComposition
         // comment. Letting them die on GC leaks two Forever animations
         // per rebuild and eventually freezes every Composition animation
         // in the window.
-        var conicRotationProps = StartRotation(
-            compositor, conicBrush, centre,
-            cfg.HuePeriodSeconds,
-            cfg.HueDirection,
-            cfg.HuePhaseTurns,
-            cfg.HueEaseP1X, cfg.HueEaseP1Y,
-            cfg.HueEaseP2X, cfg.HueEaseP2Y,
-            cfg.HueMinSpeedFraction,
-            animationsEnabled: animationsEnabled);
+        CompositionPropertySet? conicRotationProps = null;
+        if (freezeHueRotation)
+        {
+            // Same one-shot pose as CreateConicArcStroke's freezeHueRotation.
+            conicBrush.TransformMatrix =
+                Matrix3x2.CreateTranslation(-centre) *
+                Matrix3x2.CreateRotation(MathF.Tau * cfg.HuePhaseTurns) *
+                Matrix3x2.CreateTranslation(centre);
+        }
+        else
+        {
+            conicRotationProps = StartRotation(
+                compositor, conicBrush, centre,
+                cfg.HuePeriodSeconds,
+                cfg.HueDirection,
+                cfg.HuePhaseTurns,
+                cfg.HueEaseP1X, cfg.HueEaseP1Y,
+                cfg.HueEaseP2X, cfg.HueEaseP2Y,
+                cfg.HueMinSpeedFraction,
+                animationsEnabled: animationsEnabled);
+        }
         var arcRotationProps = StartRotation(
             compositor, arcMaskBrush, centre,
             cfg.ArcPeriodSeconds,
