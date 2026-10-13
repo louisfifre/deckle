@@ -1,8 +1,8 @@
 namespace Deckle.Lighting.Ambient;
 
 // State machine for AmbientEngine, exposed via the StateChanged event.
-// Five values let consumers (tray status text, AmbientPage ProgressRing) distinguish a transient "in flight" state from a
-// settled Off / Running, and surface failures explicitly.
+// Five values let consumers distinguish a transient "in flight" state from
+// a settled Off / Running, and surface failures explicitly.
 //
 // Canonical transitions :
 //   Off  → Starting  → Running         (successful StartAsync)
@@ -19,19 +19,19 @@ public enum AmbientEngineState
     Off,
 
     /// <summary>Engine is constructing its dependencies (capture init,
-    /// Hue bridge connect, ListLights). Typically 300–800 ms.</summary>
+    /// Hue bridge connect, ListLights).</summary>
     Starting,
 
-    /// <summary>Engine is running its push loop and reacting to frames.</summary>
     Running,
 
-    /// <summary>Engine is tearing down (cancel token + FrameArrived
-    /// unsubscribe). Typically &lt; 50 ms.</summary>
+    /// <summary>Engine is tearing down : the loop is cancelled and the
+    /// owned deps are released on the thread pool ; Off follows once
+    /// they are.</summary>
     Stopping,
 
     /// <summary>Transient — the last StartAsync failed (pair invalid,
-    /// network down, bridge unreachable). State collapses to Off on the
-    /// next event tick ; consumers should display the error briefly
-    /// then return to the Off rendering.</summary>
+    /// network down, bridge unreachable). Off is raised right after it ;
+    /// consumers should display the error briefly then return to the
+    /// Off rendering.</summary>
     Error,
 }

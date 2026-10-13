@@ -28,10 +28,6 @@
         </Style>
     </UserControl.Resources>
 
-    <!-- Compact cubic-Bézier editor for Ambient brightness response.
-         It is intentionally square and self-contained so the same
-         control can later sit inside Settings without bringing the
-         large segmentation editor footprint with it. -->
     <Border Background="{ThemeResource LayerFillColorDefaultBrush}"
             BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
             BorderThickness="1"

@@ -4,20 +4,14 @@ namespace Deckle.Lighting.Ambient;
 
 // The single quantisation to 8 bits, with a black latch per key ("group"
 // or a light id). Plain rounding sends any max channel under half a step
-// (0.5/255) to black : under a shadow-crushing curve such as the default
-// (0.42, 0, 1, 1), a steady dark but non-black frame (8/255 → ~0.46/255)
-// turned the lamp off. The latch splits that threshold in two :
+// (0.5/255) to black, so under a shadow-crushing curve a steady dark but
+// non-black frame would turn the lamp off. The latch splits that threshold
+// in two : a lit key goes black only below EnterBlack, a black key lights
+// again only above LeaveBlack, and while lit a value that would round to
+// black is lifted to one step (1/255).
 //
-//   - a lit key goes black only when its max channel falls below
-//     EnterBlack (0.25/255) ;
-//   - a black key lights again only when its max channel rises above
-//     LeaveBlack (0.75/255) ;
-//   - while lit, a value that would round to black is lifted so its max
-//     channel is one step (1/255).
-//
-// A key seen for the first time starts lit unless it is already under
-// EnterBlack. An exactly black source smooths down to 0 and always ends
-// black. With the floor on, values never come near this band.
+// An exactly black source smooths down to 0 and always ends black. With
+// the floor on, values never come near this band.
 //
 // Not thread-safe : the push loop is its only caller.
 internal sealed class AmbientBlackLatch

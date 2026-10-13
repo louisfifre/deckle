@@ -53,8 +53,6 @@ public sealed partial class DeckleAmbientSource
         WriteEvent(EvtPipelineStartFailedDetail, ex_type, ex_message);
     }
 
-    // The reason / shape / counters move to the existing PipelineStopDetail
-    // Verbose mirror; the milestone drops the (reason) suffix.
     [Event(EvtPipelineStopped,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Lifecycle,
@@ -94,8 +92,4 @@ public sealed partial class DeckleAmbientSource
         if (!IsAmbientDetailEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Lifecycle)) return;
         WriteEvent(EvtPipelineRestartDetail, settings);
     }
-
-    // Entirely human-readable statement, no params and no placeholders — cleaned
-    // in place (dropped the module name and the DEVICE_REMOVED / DEVICE_HUNG
-    // implementation aside), no Verbose mirror.
 }

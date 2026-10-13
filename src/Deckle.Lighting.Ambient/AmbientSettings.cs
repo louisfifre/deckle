@@ -13,64 +13,42 @@ namespace Deckle.Lighting.Ambient;
 public sealed class AmbientSettings
 {
     // Master toggle for the Ambient Light module. When false, the
-    // AmbientEngine never starts — no screen capture, no Hue traffic,
-    // zero CPU cost. Wiring of the runtime toggle happens in J3
-    // (minimal end-to-end pipeline) ; until then the field is persisted
-    // but has no consumer.
+    // AmbientEngine never starts — no screen capture, no Hue traffic.
     public bool Enabled { get; set; } = false;
 
-    // ── Hue bridge persistence (J3 step 2) ─────────────────────────
+    // ── Hue bridge persistence ─────────────────────────────────────
     //
-    // Populated by the Settings AmbientPage after a successful Pair +
-    // group selection. On subsequent app starts the page restores the
-    // HueBridgeClient from these values
-    // without prompting the user to press the bridge's link button
-    // again — the bridge keeps the username valid until manually
-    // revoked from the Hue mobile app.
-    //
-    // All four properties default to null ; null means "not paired".
-    // Cleared together when the user explicitly re-pairs (the new pair
-    // overwrites them).
+    // HuePairingService writes the bridge fields at pairing and restores
+    // the HueBridgeClient from them on first access, with no new
+    // link-button press: the bridge keeps the username valid until it is
+    // revoked from the Hue mobile app. Null means "not paired"; Forget
+    // clears all four.
 
-    /// <summary>LAN address of the paired bridge (e.g. 192.168.1.11).</summary>
     public string? HueBridgeIp { get; set; }
 
-    /// <summary>Bridge serial / identifier (e.g. 001788FFFE3A2C18).</summary>
     public string? HueBridgeId { get; set; }
 
     /// <summary>Application username (CLIP API key) issued by the bridge
-    /// at pairing. Sent on every REST call as the auth segment of the
-    /// URL. Sensitive but recoverable — the user can revoke from the Hue
-    /// mobile app.</summary>
+    /// at pairing. Sensitive but revocable from the Hue mobile app.</summary>
     public string? HueUsername { get; set; }
 
-    /// <summary>CLIP v1 id of the last group the user selected (e.g.
-    /// "1", "5"). Used to pre-select the group in the Settings
-    /// AmbientPage after restoring from settings.</summary>
+    /// <summary>CLIP v1 id of the selected group (e.g. "1", "5"), not a
+    /// v2 UUID.</summary>
     public string? HueLastGroupId { get; set; }
 
-    // ── Monitor selection ──────────────────────────────────────────
-    //
-    // Win32 device name of the monitor the user picked as the capture
-    // source (e.g. "\\\\.\\DISPLAY1"). Null = follow the primary, which
-    // means follow whichever monitor Windows currently marks primary. A
-    // non-null device name pins capture to that physical output; the capture
-    // service falls back to primary if it is temporarily disconnected.
-
-    /// <summary>Selected capture source. Null = follow the primary monitor.
-    /// Non-null = a Win32 device name like "\\\\.\\DISPLAY1" obtained from
-    /// <c>ScreenCaptureService.GetAvailableMonitors</c>.</summary>
+    /// <summary>Selected capture source. Null = follow whichever monitor
+    /// Windows currently marks primary. Non-null = a Win32 device name like
+    /// "\\\\.\\DISPLAY1" from <c>ScreenCaptureService.GetAvailableMonitors</c>;
+    /// the capture service falls back to primary while that output is
+    /// disconnected.</summary>
     public string? SelectedMonitorDeviceName { get; set; }
 
     /// <summary>Screen-capture rate in Hz, a closed choice among
-    /// <see cref="AmbientCaptureRate.Allowed"/> (60, 30, 15); the engine
-    /// snaps any other stored value with <see cref="AmbientCaptureRate.Snap"/>.
-    /// Default 60: a sample every ~16 ms keeps the smoothing fed and the
-    /// lights reactive. 30 or 15 lighten the GPU readback on weaker
-    /// machines. The push to the lights keeps its own transport rate.
-    /// Read at engine start; the app restarts a running engine when it
-    /// changes (<see cref="AmbientStartSettings"/>). Settings files written before
-    /// this field existed load the default.</summary>
+    /// <see cref="AmbientCaptureRate.Allowed"/>; the engine snaps any other
+    /// stored value with <see cref="AmbientCaptureRate.Snap"/>. 30 or 15
+    /// lighten the GPU readback on weaker machines. The push to the lights
+    /// keeps its own transport rate. Read at engine start; the app restarts
+    /// a running engine when it changes (<see cref="AmbientStartSettings"/>).</summary>
     public int CaptureFrameRateHz { get; set; } = AmbientCaptureRate.Default;
 
     // ── Preset selection (Deckle.Presets) ──────────────────────────
@@ -79,12 +57,11 @@ public sealed class AmbientSettings
     // family on AmbientSettingsService.Presets selects, applies and keeps
     // the Custom values. Ambient is the default — the smooth,
     // low-saturation restitution of the scene's light, the one that
-    // reads as room lighting rather than as an effect — and its values
-    // are the initializers of the eight tuning properties.
+    // reads as room lighting rather than as an effect.
     //
-    // Files written before 2026-10-12 hold an integer "mode" instead;
-    // it is ignored and the selection is derived once from the values
-    // (the preset they equal, else Custom with those values kept).
+    // An older file may hold an integer "mode" instead; it is ignored and
+    // the selection is derived once from the values (the preset they
+    // equal, else Custom with those values kept).
 
     /// <summary>The stored selection: a preset id from
     /// <see cref="AmbientPresets"/>, or <c>"custom"</c>. Null until the
@@ -96,7 +73,7 @@ public sealed class AmbientSettings
     /// picking Custom brings it back. Null until the first hand edit.</summary>
     public AmbientTuning? CustomTuning { get; set; }
 
-    // ── Multi-light zones (J4) ─────────────────────────────────────
+    // ── Multi-light zones ──────────────────────────────────────────
     //
     // When the connected output is an IMultiLightOutput and the engine
     // is told to run in multi-light mode, it pushes one colour per
@@ -108,33 +85,26 @@ public sealed class AmbientSettings
     //
     // When <see cref="UseMultiLight"/> is false (default), the engine
     // falls back to the single-colour group push regardless of what
-    // <see cref="LightZones"/> holds — useful for A/B comparison
-    // without losing the zone assignments.
+    // <see cref="LightZones"/> holds, so the zone assignments survive
+    // switching back and forth.
 
-    /// <summary>Master switch for the multi-light pipeline. False keeps
-    /// the legacy "one average → group action" behaviour. True activates
-    /// per-zone sampling driven by <see cref="LightZones"/>, but only
-    /// if the connected driver exposes
+    /// <summary>Master switch for the multi-light pipeline, read at engine
+    /// start. True only takes effect if the connected driver exposes
     /// <see cref="Deckle.Lighting.IMultiLightOutput"/> ; otherwise the
     /// engine logs a warning and falls back to single-colour push.</summary>
     public bool UseMultiLight { get; set; } = false;
 
     /// <summary>Per-light zone assignment, keyed by the driver's opaque
-    /// light id (Hue : CLIP v1 integer-as-string). Empty by default ;
-    /// the assignment UI populates it as the user picks a zone in the
-    /// combo box of each light. Light ids missing from the map default
-    /// to <see cref="LightZone.None"/> at sampling time, so a newly
-    /// added bulb is skipped silently rather than tinted to an
+    /// light id (Hue : CLIP v1 integer-as-string). Light ids missing from
+    /// the map default to <see cref="LightZone.None"/> at sampling time,
+    /// so a newly added bulb is skipped silently rather than tinted to an
     /// arbitrary edge.</summary>
     public Dictionary<string, LightZone> LightZones { get; set; } = new();
 
     /// <summary>Per-light brightness multiplier in [0, 1], keyed by the
-    /// driver's opaque light id. 1.0 = full intensity (the sampled
-    /// colour pushed verbatim), 0.5 = half (R/G/B halved before push,
-    /// which also halves Hue's derived <c>bri</c>), 0 = effectively off
-    /// (the off-threshold clamp kicks in and Hue receives <c>on:false</c>).
-    /// Light ids missing from the map default to 1.0 — a newly added
-    /// bulb runs at full brightness until the user adjusts its slider.
+    /// driver's opaque light id. Scaling R/G/B also scales Hue's derived
+    /// <c>bri</c>. 0 = off: the floor is skipped and Hue receives
+    /// <c>on:false</c>. Light ids missing from the map default to 1.0.
     /// Stored separately from <see cref="LightZones"/> so the user can
     /// dim a single lamp without losing its zone assignment.</summary>
     public Dictionary<string, double> LightBrightness { get; set; } = new();
@@ -144,49 +114,27 @@ public sealed class AmbientSettings
     /// same fraction on every edge (the top band ends up thinner than
     /// the lateral bands on a 16:9 screen because there are fewer rows
     /// than columns in the sampler grid). By-cells keeps the same
-    /// sampler-cell count on every edge — the band is the same number
-    /// of preview cells thick on top as on the sides, regardless of
-    /// aspect ratio. The Settings page exposes this as a two-option
-    /// picker ; the engine swaps the formula on every tick.</summary>
+    /// sampler-cell count on every edge.</summary>
     public BorderThicknessMode BorderMode { get; set; } = BorderThicknessMode.Share;
 
     /// <summary>Border-band depth in <see cref="BorderThicknessMode.Share"/>
-    /// mode, as a fraction of the matching grid dimension. The top zone
-    /// reads cells in y ∈ [0, <see cref="BorderDepth"/>], the bottom in
-    /// y ∈ [1 − <see cref="BorderDepth"/>, 1], the left in
-    /// x ∈ [0, <see cref="BorderDepth"/>], the right in
-    /// x ∈ [1 − <see cref="BorderDepth"/>, 1]. Range of practical
-    /// interest [0.05, 0.5] ; the Settings slider clamps to
-    /// that interval. Default 0.33 — the V0 lateral value, a
-    /// one-third slice that works for a 3-lamp Top + Left + Right
-    /// setup without over-summarising the frame.</summary>
+    /// mode, as a fraction of the matching grid dimension: the top zone
+    /// reads y ∈ [0, depth], the bottom y ∈ [1 − depth, 1], and likewise
+    /// on x for left and right.</summary>
     public double BorderDepth { get; set; } = 0.33;
 
     /// <summary>Border-band depth in <see cref="BorderThicknessMode.Cells"/>
-    /// mode, expressed directly in sampler-grid cells (a 60×33 grid on
-    /// a 4K monitor at mip 6, so each cell covers ~64×64 source pixels).
-    /// Same cell count applied on every edge — top, bottom, left, right
-    /// — so the band feels equally thick on every side regardless of
-    /// the screen aspect ratio. Range of practical interest [4, 24]
-    /// stepping by 2 ; the Settings slider clamps and snaps to that
-    /// grid so every position lands on an even cell count. 24 cells
-    /// on a 60×33 grid covers ~73 % of the vertical axis and ~40 % of
-    /// the horizontal — enough headroom for narrow-aspect monitors or
-    /// 5:4 setups while still leaving room for the opposing band when
-    /// both edges are mapped. Default 8 — roughly matches the V0
-    /// vertical 40 % share on a 60×33 grid without making the lateral
-    /// bands eat the whole frame.</summary>
+    /// mode, in sampler-grid cells (the grid is 60×33 on a 4K or 1080p
+    /// screen), the same count on every edge.</summary>
     public int BorderCells { get; set; } = 8;
 
     // ── Tuning ─────────────────────────────────────────────────────
     //
     // User-tunable colour-grading controls (exposure / saturation /
     // floor / response curve) and motion controls (reaction speed /
-    // change threshold). The sliders live in the Settings AmbientPage
-    // and the Playground Ambient tab; AmbientEngine reads the settings
-    // on every tick so changes apply live without restarting the
-    // pipeline. They apply to SDR and HDR alike: HDR is tone-mapped to
-    // 8 bits before this stage.
+    // change threshold). AmbientEngine reads them on every tick, so
+    // changes apply live without restarting the pipeline. They apply to
+    // SDR and HDR alike: HDR is tone-mapped to 8 bits before this stage.
     //
     // The initializers of the eight preset-covered values (everything
     // but the floor) ARE the Ambient preset, which AmbientPresets reads
@@ -196,39 +144,31 @@ public sealed class AmbientSettings
     // Why these four :
     //   - Exposure compensates for scRGB content peaking well below
     //     the display's reported MaxLuminance on a typical scene,
-    //     which leaves the post-tone-map output dim. +1 EV roughly
-    //     doubles brightness, restoring "Hue Sync" presence.
+    //     which leaves the post-tone-map output dim.
     //   - Saturation boost compensates for the de-saturation that
     //     happens when spatially averaging bright + dark pixels (the
     //     average drifts toward grey). Applied in OKLCh so hue stays
     //     stable and perceived luminance doesn't drift across the
     //     hue wheel.
     //   - Min brightness compensates for HueColorMath deriving bri
-    //     from max(R,G,B) — a mid-tone scene like (60, 40, 80) gives
-    //     bri ≈ 31 %, dim enough that the lamp's diffuser swallows
-    //     the colour. A floor keeps the chromaticity readable on
-    //     the lamp without manual scene-by-scene adjustment. The
-    //     floor has its own switch so the user can
-    //     choose between true black and a readable low-light floor
-    //     without losing the chosen floor value.
+    //     from max(R,G,B): a mid-tone scene comes out dim enough that
+    //     the lamp's diffuser swallows the colour. The floor has its
+    //     own switch so the user can choose between true black and a
+    //     readable low-light floor without losing the floor value.
     //   - Brightness curve reshapes the max-channel response through
-    //     one cubic-Bézier easing. It replaces the previous family
-    //     picker (Linear / Gamma / S-Curve / Logarithmic) with one
-    //     directly manipulable shape. Applied as a uniform RGB scale
-    //     so xy chromaticity stays invariant — only bri moves.
+    //     one cubic-Bézier easing, applied as a uniform RGB scale so
+    //     xy chromaticity stays invariant — only bri moves.
 
     /// <summary>Exposure compensation in EV (stops of light) applied
     /// in linear-light before the tone-map. 0 = no change, +1 doubles
-    /// brightness, -1 halves it. Range of practical interest [-2, +2].
-    /// Default -0.5 (the Ambient preset): the room sits a little under
-    /// the screen.</summary>
+    /// brightness, -1 halves it. The Ambient preset's -0.5 keeps the
+    /// room a little under the screen.</summary>
     public double ExposureEv { get; set; } = -0.5;
 
     /// <summary>Chroma multiplier applied to each sampled colour
     /// before push. 1.0 = no change, 2.0 = double saturation, 0.0 =
-    /// greyscale. Range of practical interest [0, 2]. Applied in OKLCh
-    /// to keep hue stable. Default 0.7 (the Ambient preset): muted,
-    /// so the lights never compete with the content.</summary>
+    /// greyscale. The Ambient preset's 0.7 stays muted so the lights
+    /// never compete with the content.</summary>
     public double SaturationBoost { get; set; } = 0.7;
 
     /// <summary>Whether <see cref="MinBrightness"/> is applied to the
@@ -242,30 +182,24 @@ public sealed class AmbientSettings
     /// this floor whenever <see cref="MinBrightnessEnabled"/> is true,
     /// so neither mid-tone nor black scenes can dim the lamp below it.
     /// Pure black has no chromaticity, so it becomes neutral RGB at the
-    /// floor. 254 forces full brightness. Default 40 ≈ 16 % (Louis,
-    /// 2026-10-13): a dim scene keeps a readable tint on the lamp while
-    /// the room stays close to dark. The former default of 180 lit the
-    /// room on every scene. Tuned in AmbientPage.</summary>
+    /// floor. 254 forces full brightness. The default keeps a readable
+    /// tint on the lamp in a dim scene while the room stays close to
+    /// dark.</summary>
     public int MinBrightness { get; set; } = 40;
 
     /// <summary>First cubic-Bézier control point X coordinate in [0, 1].
     /// The anchors are fixed at (0,0) and (1,1), so the four stored
     /// values are directly equivalent to CSS <c>cubic-bezier()</c>.
-    /// The default curve (0.18, 0.55, 0.40, 0.90) is the Ambient
-    /// preset's: it lifts dark scenes so a dim room still reads as lit.
-    /// The Game and Vivid presets use the identity curve, Movie a
-    /// gentle S; AmbientNearBlackTests keeps the former gamma-like
-    /// default (0.42, 0, 1, 1) as its reference.</summary>
+    /// The default curve is the Ambient preset's: it lifts dark scenes
+    /// so a dim room still reads as lit.</summary>
     public double BrightnessCurveX1 { get; set; } = 0.18;
 
     /// <summary>First cubic-Bézier control point Y coordinate in [0, 1].
     /// Lower values squash dim scenes ; higher values lift them.</summary>
     public double BrightnessCurveY1 { get; set; } = 0.55;
 
-    /// <summary>Second cubic-Bézier control point X coordinate in [0, 1].</summary>
     public double BrightnessCurveX2 { get; set; } = 0.40;
 
-    /// <summary>Second cubic-Bézier control point Y coordinate in [0, 1].</summary>
     public double BrightnessCurveY2 { get; set; } = 0.90;
 
     /// <summary>Sum-of-absolute-channel-deltas threshold that gates
@@ -274,27 +208,17 @@ public sealed class AmbientSettings
     /// previous colour stays : a persistent output (Hue REST) gets no
     /// push, a continuous one (Hue Entertainment) gets the previous
     /// colour again. A change to exact black always goes out
-    /// (AmbientPushGate). 0 disables the gate, useful when smoothing
-    /// already does the heavy lifting. Default 10 (the Ambient preset)
-    /// holds the lights steady on still scenes; Game and Vivid use 6,
-    /// Movie 8. On a slow fade a threshold shows as small steps; 0
-    /// follows every change. Tuned in Settings.</summary>
+    /// (AmbientPushGate). 0 disables the gate. On a slow fade a
+    /// threshold shows as small steps.</summary>
     public int ChangeThreshold { get; set; } = 10;
 
     /// <summary>Exponential moving average factor applied to the colour
-    /// pushed to each light, in [0, 1]. 1.0 disables the filter
-    /// (instantaneous response, legacy behaviour). Lower values trade
-    /// reactivity for stability. The value is defined per push tick at
-    /// the 15 Hz reference rate and adapted to the measured time
-    /// between push ticks (AmbientPushCadence.AdaptSmoothingAlpha); it does not
-    /// depend on the capture rate. 0.30 damps over roughly 3-5 reference
-    /// ticks (200-330 ms), enough to swallow the jitter of small moving
-    /// reflections in a globally dark scene without dulling real scene
-    /// changes; below ~0.10 the lamp lags perceptibly during fast cuts.
-    /// Default 0.08 (the Ambient preset): a slow glide, wanted for room
-    /// lighting; Game and Vivid use 0.40, Movie 0.15. Applied per-light
-    /// in multi mode, on the single group colour in group mode. Range of
-    /// practical interest [0.05, 1.0]. Tuned in Settings.</summary>
+    /// pushed to each light, in [0, 1]. 1.0 disables the filter.
+    /// Lower values trade reactivity for stability. The value is defined
+    /// per push tick at the 15 Hz reference rate and adapted to the
+    /// measured time between push ticks (AmbientPushCadence.AdaptSmoothingAlpha);
+    /// it does not depend on the capture rate. Applied per-light in multi
+    /// mode, on the single group colour in group mode.</summary>
     public double SmoothingAlpha { get; set; } = 0.08;
 }
 
@@ -306,16 +230,11 @@ public enum BorderThicknessMode
 {
     /// <summary>Thickness as a fraction of the matching grid dimension
     /// (top / bottom use the row count, left / right use the column
-    /// count). At 25 % on a 16:9 grid the top band ends up thinner in
-    /// cells than the lateral bands — the proportion stays right, the
-    /// per-edge cell count doesn't.</summary>
+    /// count).</summary>
     Share,
 
     /// <summary>Thickness as a fixed cell count, applied identically on
-    /// every edge. The top band reads at the same number of sampler
-    /// cells as the lateral bands regardless of screen aspect ratio —
-    /// the visual feel is symmetric on widescreen monitors where
-    /// percentages make the top and bottom bands feel too thin
-    /// compared to the sides.</summary>
+    /// every edge, so widescreen top and bottom bands do not feel thin
+    /// next to the sides.</summary>
     Cells,
 }

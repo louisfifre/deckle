@@ -6,10 +6,8 @@
     xmlns:ui="using:CommunityToolkit.WinUI"
     xmlns:ambientControls="using:Deckle.Lighting.Ambient">
 
-    <!-- Canonical Microsoft Learn pattern (SettingsExpander sample
-         "Settings page example"): StackPanel max 1000 in a Grid,
-         Spacing=4 between cards, Margin="1,30,0,6" on section headers.
-         Exact layer of GeneralPage / WhisperPage. -->
+    <!-- Microsoft Learn SettingsExpander sample layout ("Settings page
+         example"), the same as GeneralPage / WhisperPage. -->
     <Page.Resources>
         <x:Double x:Key="SettingsCardSpacing">4</x:Double>
         <Style x:Key="SettingsSectionHeaderTextBlockStyle"
@@ -21,9 +19,9 @@
         </Style>
 
         <!-- Per-card reset for the bespoke curve card, matching the composed
-             cards' reset: subtle, 32×32, hidden until the card is hovered
-             (code-behind flips Opacity), enabled only once the curve differs
-             from its default. -->
+             cards' reset: hidden until the card is hovered (code-behind
+             flips Opacity), enabled only once the curve differs from its
+             default. -->
         <Style x:Key="ResetButtonStyle"
                BasedOn="{StaticResource SubtleButtonStyle}"
                TargetType="Button">
@@ -107,7 +105,7 @@
                 <TextBlock x:Uid="AmbientBehaviourSectionHeader"
                            Style="{StaticResource SettingsSectionHeaderTextBlockStyle}" />
 
-                <!-- Composed: Mode, per-zone colours with the band shape
+                <!-- Composed: preset, per-zone colours with the band shape
                      (AmbientViewModel.BehaviourSettings). -->
                 <StackPanel x:Name="BehaviourHost"
                             Spacing="{StaticResource SettingsCardSpacing}" />
@@ -182,9 +180,6 @@
                                            x:Name="HueBridgeExpander"
                                            Tag="HueBridgeExpander"
                                            HeaderIcon="{ui:FontIcon Glyph={StaticResource Icon.Bridge}}">
-                    <!-- Header right-side : compact status text + dot. The
-                         expander shows / hides the per-section cards below
-                         on click. -->
                     <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
                         <Ellipse x:Name="HueBridgeStatusDot"
                                  Width="10" Height="10"
@@ -196,17 +191,10 @@
                                    Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
                     </StackPanel>
                     <controls:SettingsExpander.Items>
-                        <!-- Bridge address row. SettingsCard default
-                             layout : Header on the left, content on the
-                             right, mirrors the HDR tuning cards above.
-                             Find bridge uses local DNS-SD and autofills
+                        <!-- Find bridge uses local DNS-SD and autofills
                              the textbox. Manual entry remains available,
                              and online discovery is revealed only after
-                             a local result with no bridge. Pair
-                             launches the 30 s link-button countdown via
-                             HuePairingService.PairAsync. Transient
-                             status text lives below the card (separate
-                             TextBlock) so the card itself stays clean. -->
+                             a local result with no bridge. -->
                         <controls:SettingsCard x:Uid="HueBridgeAddressCard"
                                                Tag="HueBridgeAddressCard">
                             <StackPanel Orientation="Horizontal" Spacing="8">
@@ -225,7 +213,6 @@
                             </StackPanel>
                         </controls:SettingsCard>
 
-                        <!-- Entertainment group / room. -->
                         <controls:SettingsCard x:Uid="HueBridgeGroupCard"
                                                Tag="HueBridgeGroupCard">
                             <StackPanel Orientation="Horizontal" Spacing="8">
@@ -242,8 +229,7 @@
 
                         <!-- Forget : DefaultButtonStyle (no custom red).
                              The destructive signal is carried by the
-                             ContentDialog confirmation that opens at
-                             click, following Microsoft's official
+                             confirmation dialog, following Microsoft's
                              Settings pattern (confirm-then-act, not
                              red-button-then-act). -->
                         <controls:SettingsCard x:Uid="HueBridgeForgetCard"
@@ -256,8 +242,7 @@
                     </controls:SettingsExpander.Items>
                     <controls:SettingsExpander.ItemsFooter>
                         <StackPanel>
-                            <!-- Transient pair status (countdown / errors /
-                                 paired confirmation). The footer accepts
+                            <!-- Transient pair status. The footer accepts
                                  free-form content while the Items collection
                                  remains reserved for SettingsCard controls. -->
                             <TextBlock x:Name="HuePairStatusText"

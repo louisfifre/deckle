@@ -3,15 +3,9 @@ using Deckle.Diagnostics;
 
 namespace Deckle.Lighting.Ambient;
 
-// Ambient module provider. Covers the AmbientEngine orchestrator (pipeline
-// lifecycle + group/multi push tick + heartbeat + push failures), the
-// HuePairingService (pairing + restore + forget), the Settings AmbientPage
-// surface (Hue pair button + group list), and module settings persistence
-// (AmbientSettingsService).
-//
-// Provider Name = "Deckle-Ambient": short choice to keep the LogWindow
-// [AMBIENT] tag. The low-level Hue driver keeps its separate provider in
-// Deckle.Lighting.
+// Ambient module provider. Provider Name = "Deckle-Ambient": short choice to
+// keep the LogWindow [AMBIENT] tag. The low-level Hue driver keeps its
+// separate provider in Deckle.Lighting.
 [EventSource(Name = "Deckle-Ambient")]
 public sealed partial class DeckleAmbientSource : DeckleEventSource
 {
@@ -25,8 +19,7 @@ public sealed partial class DeckleAmbientSource : DeckleEventSource
             OperationalLogActivity.Ambient, this, level, keywords);
 
     // IDs are public in the ETW manifest; never reuse an id after deleting an
-    // event. Milestones keep their original id; the Verbose mirrors added for the
-    // Verbose/Info separation take fresh ids 35-52 appended after the sequence.
+    // event. A new event takes the next free id.
 
     // ── EventIds ─────────────────────────────────────────────────────────
     public const int EvtPipelineStarted               = 1;
@@ -64,9 +57,7 @@ public sealed partial class DeckleAmbientSource : DeckleEventSource
     public const int EvtSamplerRebuilt                = 33;
     public const int EvtSamplerRebuildFailed          = 34;
 
-    // ── Verbose mirrors (Verbose/Info separation) ───────────────────────
-    // Fresh ids appended after the milestone sequence; each mirrors a milestone
-    // whose IDs / k=v detail moved out of the Capital Info/Warning/Error message.
+    // ── Appended ────────────────────────────────────────────────────────
     public const int EvtPipelineStartFailedDetail       = 35;
     public const int EvtPushLoopCrashedDetail           = 36;
     public const int EvtStateChangedSubscriberThrewDetail = 37;
@@ -98,14 +89,12 @@ public sealed partial class DeckleAmbientSource : DeckleEventSource
     public const int EvtBridgeEndpointRecoveryFailedDetail = 63;
     public const int EvtPipelineRestartDetail           = 64;
 
-    // ── AmbientViewModel setters (moved from Deckle-Playground ids 3, 16, 17,
-    // which stay reserved there) ─────────────────────────────────────────
+    // ── AmbientViewModel setters ─────────────────────────────────────────
     public const int EvtTuningChanged                   = 65;
     public const int EvtPipelineModeChanged             = 66;
     public const int EvtPipelineModeChangedDetail       = 67;
 
-    // ── Per-light placement (moved from Deckle-Playground ids 7, 8, 9, 15,
-    // 18-22, which stay reserved there) ──────────────────────────────────
+    // ── Per-light placement ──────────────────────────────────────────────
     public const int EvtLightCallFailed                 = 68;
     public const int EvtLightCallFailedDetail           = 69;
     public const int EvtLightsResolved                  = 70;

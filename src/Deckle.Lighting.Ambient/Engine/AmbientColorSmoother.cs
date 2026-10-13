@@ -34,7 +34,6 @@ internal sealed class AmbientColorSmoother
         return next;
     }
 
-    // Forget one key's trail : its next target is adopted as is.
     public void Reset(string key) => _states.Remove(key);
 
     public void Clear() => _states.Clear();

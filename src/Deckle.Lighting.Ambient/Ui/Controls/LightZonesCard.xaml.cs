@@ -30,9 +30,9 @@ namespace Deckle.Lighting.Ambient;
 // it just triggered.
 public sealed partial class LightZonesCard : UserControl
 {
-    // DropDownButton + MenuFlyout rather than ComboBox: in the Playground, a
-    // ComboBox built in code-behind missed its first click (popup measure /
-    // focus quirk); the flyout pair is deterministic.
+    // DropDownButton + MenuFlyout rather than ComboBox: a ComboBox built in
+    // code-behind misses its first click (popup measure / focus quirk); the
+    // flyout pair is deterministic.
     private static readonly (LightZone Zone, string LabelKey)[] ZoneOptions =
     [
         (LightZone.None,   "AmbientLights_Zone_None"),
@@ -94,8 +94,6 @@ public sealed partial class LightZonesCard : UserControl
             },
             rejectSource: "AMBIENT", rejectWhat: "light zones bridge sync");
 
-    // UI thread. Decides visibility, then either resolves a new group or
-    // refreshes the rows already built.
     private void Refresh()
     {
         var settings = AmbientSettingsService.Instance.Current;

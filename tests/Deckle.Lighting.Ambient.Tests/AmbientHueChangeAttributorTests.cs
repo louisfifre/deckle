@@ -195,10 +195,9 @@ public class AmbientHueChangeAttributorTests
         Assert.Equal(AmbientHueChangeDecisionKind.External, external.Kind);
     }
 
-    // Regression — false external-stop observed 2026-06-04 (v1_id=4,
-    // age_ms=4046, xy-only event). Hue can report its own color settling
-    // after the old 2 s window. That remains a pending Ambient echo under
-    // the attribution model, not proof of an external Hue command.
+    // Hue can report its own colour settling seconds after a push. Within
+    // the pending window that is an Ambient echo, not proof of an external
+    // Hue command.
     [Fact]
     public void DelayedXyOnlySettlingWithinPendingWindowIsNotExternal()
     {

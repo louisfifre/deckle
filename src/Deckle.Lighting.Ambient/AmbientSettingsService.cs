@@ -4,10 +4,7 @@ using Deckle.Presets;
 
 namespace Deckle.Lighting.Ambient;
 
-// Module-local persistence for AmbientSettings. Twin of
-// TranscriptionSettingsService and CaptureSettingsService — same JsonSettingsStore
-// pattern, same singleton lazy, same naming convention. Backing file:
-// <UserDataRoot>/modules/ambient/settings.json.
+// Module-local persistence for AmbientSettings.
 //
 // The preset family lives here, one per process, so the Settings page and
 // the Playground tab select and edit the same selection.
@@ -20,11 +17,8 @@ public sealed class AmbientSettingsService
     {
         WriteIndented = true,
         PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
-        // Tolerate case differences when reading legacy settings.json
-        // files written before PropertyNamingPolicy was set (or by a
-        // future record-typed property whose constructor parameter
-        // names aren't transformed by the naming policy). Cheap
-        // insurance — adds no cost on the well-formed read path.
+        // Files on disk may carry PascalCase names from before the
+        // camelCase policy; reading must still accept them.
         PropertyNameCaseInsensitive = true,
     };
 
@@ -34,10 +28,9 @@ public sealed class AmbientSettingsService
 
     public string Path => _store.Path;
 
-    /// <summary>The Ambient presets over <see cref="Current"/>: selection,
-    /// Custom values and the eight tuning values. Built after the file is
-    /// read, so a file from before the stored selection gets it derived
-    /// once from its values (saved with the next edit).</summary>
+    /// <summary>The Ambient presets over <see cref="Current"/>. Built after
+    /// the file is read, so a file without a stored selection gets it
+    /// derived once from its values (saved with the next edit).</summary>
     public PresetFamily<AmbientTuning> Presets { get; }
 
     public event Action? Changed

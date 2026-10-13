@@ -11,9 +11,9 @@ using Microsoft.UI.Xaml.Shapes;
 
 namespace Deckle.Lighting.Ambient;
 
-// Live preview of the running engine, ported from the Playground Ambient tab:
-// the sampled grid mirroring the screen, the colour each light receives
-// (swatches), and the four zone bands tinted with their light's colour.
+// Live preview of the running engine: the sampled grid mirroring the
+// screen, the colour each light receives (swatches), and the four zone
+// bands tinted with their light's colour.
 //
 // A live instrument in Settings opens on a gesture, never on page open: the
 // expander starts collapsed (and is collapsed again on Unloaded, in case the
@@ -23,8 +23,8 @@ namespace Deckle.Lighting.Ambient;
 //
 // Ratio: each cell is sourceWidth / cols by sourceHeight / rows in source
 // pixels, and a uniform Viewbox scales the stage, so the preview has the
-// display's exact shape (the Playground's square cells drifted by up to ~2 %).
-// Without a source size yet, cells fall back to squares for one tick.
+// display's exact shape. Without a source size yet, cells fall back to
+// squares for one tick.
 //
 // Threading: AmbientEngine.StateChanged fires on the engine's thread and is
 // marshalled to the UI thread; everything else runs on the UI thread.
@@ -32,7 +32,6 @@ public sealed partial class AmbientPreviewCard : UserControl
 {
     private static readonly TimeSpan RefreshInterval = TimeSpan.FromMilliseconds(200);
 
-    // Fallback cell edge when the capture has not reported its size yet.
     private const double FallbackCellSize = 16;
 
     // Soft fill so the cells stay readable through a zone band. Opacity on
@@ -82,8 +81,6 @@ public sealed partial class AmbientPreviewCard : UserControl
             callback: UpdateState,
             rejectSource: "AMBIENT", rejectWhat: "preview state");
 
-    // UI thread. Shows the card while the engine runs; refreshes only while
-    // it is also open.
     private void UpdateState()
     {
         bool running = _engine is { IsRunning: true };
@@ -143,11 +140,9 @@ public sealed partial class AmbientPreviewCard : UserControl
         for (int r = 0; r < rows; r++)
             CellsGrid.RowDefinitions.Add(new RowDefinition { Height = new GridLength(cellHeight) });
 
-        // One SolidColorBrush per cell — MANDATORY. In the Playground, one
-        // brush shared across cells and mutated per tick made every cell
-        // snap to the grid's last pixel (usually the dark taskbar): the
-        // preview read "everything dark" while the screen was white and the
-        // lamps were right.
+        // One SolidColorBrush per cell — MANDATORY. A brush shared across
+        // cells and mutated per tick paints every cell with the grid's last
+        // pixel (usually the dark taskbar).
         _cellBrushes = new SolidColorBrush[cols * rows];
         for (int r = 0; r < rows; r++)
         {
@@ -255,9 +250,10 @@ public sealed partial class AmbientPreviewCard : UserControl
         rect.Visibility = Visibility.Visible;
     }
 
-    // Band thickness follows the engine's own rule (AmbientEngine's band
-    // resolution): a share of the stage in Share mode, a whole number of
-    // cells in Cells mode, clamped the same way for a hand-edited file.
+    // Band thickness follows the engine's own rule
+    // (AmbientZoneSampler.ResolveBandCells): a share of the stage in Share
+    // mode, a whole number of cells in Cells mode, clamped the same way for
+    // a hand-edited file.
     private void LayoutZoneRects(AmbientSettings settings)
     {
         double w = _stageWidth;
