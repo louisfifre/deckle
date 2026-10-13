@@ -22,12 +22,17 @@ public static partial class HudComposition
     // tuned together through the Recording* fields.
     public sealed class UtteranceCountdownVisual : IDisposable
     {
-        // Windows motion guidance: the fast duration (167 ms) and the
-        // "fast out, slow in" curve, documented for an object quickly
-        // returning to rest.
-        private static readonly TimeSpan RetreatDuration = TimeSpan.FromMilliseconds(167);
-        private static readonly Vector2 RetreatEaseControlPoint1 = new(0f, 0f);
-        private static readonly Vector2 RetreatEaseControlPoint2 = new(0f, 1f);
+        // The gauge's one motion. Every move — following a capture sample,
+        // reaching full at a cut, retreating when speech resumes — takes the
+        // Windows "fast" duration (167 ms), so the gauge has one feel. The
+        // rest curve is the "fast out, slow in" Windows documents for an
+        // object quickly returning to rest; following uses no curve, see
+        // SetProgress. These two values belong to the design-system holder
+        // of named durations and curves once it exists; until then the
+        // countdown names them here.
+        private static readonly TimeSpan MotionDuration = TimeSpan.FromMilliseconds(167);
+        private static readonly Vector2 RestEaseControlPoint1 = new(0f, 0f);
+        private static readonly Vector2 RestEaseControlPoint2 = new(0f, 1f);
 
         private readonly List<IDisposable> _resources = new();
         private readonly List<CompositionSurfaceBrush> _movingBrushes = new();
@@ -103,34 +108,36 @@ public static partial class HudComposition
             if (_disposed) return;
 
             float value = Math.Clamp(progress, 0f, 1f);
-            if (!interpolate || value == 1f)
+            if (!interpolate)
             {
                 _progress.StopAnimation("Value");
                 _progress.InsertScalar("Value", value);
                 return;
             }
 
-            if (value == 0f)
-            {
-                // Speech resumed: the wedges ease back to the edge centres.
-                // The container opacity expression keeps the visual shown
-                // while Value > 0 and hides it when the retreat lands.
-                using var retreat = _compositor.CreateScalarKeyFrameAnimation();
-                using var easing = _compositor.CreateCubicBezierEasingFunction(
-                    RetreatEaseControlPoint1, RetreatEaseControlPoint2);
-                retreat.InsertExpressionKeyFrame(0f, "this.CurrentValue");
-                retreat.InsertKeyFrame(1f, 0f, easing);
-                retreat.Duration = RetreatDuration;
-                _progress.StartAnimation("Value", retreat);
-                return;
-            }
-
-            using var animation = _compositor.CreateScalarKeyFrameAnimation();
-            using var linear = _compositor.CreateLinearEasingFunction();
-            animation.InsertExpressionKeyFrame(0f, "this.CurrentValue");
-            animation.InsertKeyFrame(1f, value, linear);
-            animation.Duration = TimeSpan.FromMilliseconds(50);
-            _progress.StartAnimation("Value", animation);
+            // One motion for every move, from wherever the gauge stands.
+            //
+            // A live sample is followed linearly: the next sample, 50 ms
+            // later, restarts the move from the point reached, so the gauge
+            // glides about one MotionDuration behind the capture with a
+            // continuous velocity and a soft onset (each early sample moves
+            // only a part of a small gap). An eased curve restarted every
+            // sample would lurch — fast then slow, fast then slow. Reaching
+            // full at a cut is the same move; the completion hold outlasts it.
+            //
+            // Speech resuming is one move to rest, so it alone takes the
+            // "fast out, slow in" curve. The container opacity expression
+            // keeps the visual shown while Value > 0 and hides it when the
+            // retreat lands.
+            using CompositionEasingFunction easing = value == 0f
+                ? _compositor.CreateCubicBezierEasingFunction(
+                    RestEaseControlPoint1, RestEaseControlPoint2)
+                : _compositor.CreateLinearEasingFunction();
+            using var move = _compositor.CreateScalarKeyFrameAnimation();
+            move.InsertExpressionKeyFrame(0f, "this.CurrentValue");
+            move.InsertKeyFrame(1f, value, easing);
+            move.Duration = MotionDuration;
+            _progress.StartAnimation("Value", move);
         }
 
         public void Replay(double seconds, bool animationsEnabled)
