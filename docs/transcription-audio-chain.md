@@ -294,8 +294,8 @@ At the end of each dictation, `RecordPipelineMetrics` emits the `LatencyRecorded
 | `hotkey_to_capture_ms` | Start press → `waveInStart` | `_hotkeySw`, started in `TryStartFromIdleLocked`, stopped in `OnCaptureStarted` |
 | `record_drain_ms` | `waveInStop` → last buffers read | `DrainDuration` in `src/Deckle.Audio/Internal/WaveInLoop.cs` |
 | `stop_to_pipeline_ms` | Stop press → Streaming: consumer finished draining; Monolithic: handoff to the backend | `_stopToPipelineSw`, started in `RequestToggle`, stopped in `ProduceStreamingAsync` or `ProduceMonolithicAsync` |
-| `whisper_init_ms` | Whisper's init phase, summed over all utterances | `InitDurationMs` of each `TranscriptionResult` |
-| `whisper_ms` | Whisper's total time minus init, summed over all utterances | same |
+| `whisper_init_ms` | The init stopwatch, summed over all utterances. It starts just before `whisper_full` and stops when it returns, so it spans the whole call and is about the total, not an init phase | `InitDurationMs` of each `TranscriptionResult` (`_whisperInitSw` in `src/Deckle.Transcription.Whisper/WhisperBackend.Transcribe.cs`) |
+| `whisper_ms` | Whisper's total time minus `whisper_init_ms`, summed over all utterances; about 0 for the reason above | same |
 | `llm_ms` | Ollama rewrite, 0 without a profile | `src/Deckle.Transcription/Engine/TranscriptionEngine.Finalize.Rewrite.cs` |
 | `clipboard_ms` | Raw copy to the clipboard | `FinalizeTranscription` |
 | `paste_ms` | UI Automation check plus Ctrl+V, 0 when paste is off | `DeliverTranscript` |

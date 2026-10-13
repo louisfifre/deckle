@@ -1707,7 +1707,6 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── DeckleWhispSource.Ui.cs
 │   │   ├── DeckleWhispSource.WarmupModel.cs
 │   │   ├── ITranscriptionEngineHost.cs
-│   │   ├── JOURNAL.md
 │   │   ├── SettingsSearch.cs
 │   │   ├── TranscriptionSettings.cs
 │   │   ├── TranscriptionSettingsService.cs
