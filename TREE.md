@@ -1678,12 +1678,6 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── Strings/
 │   │   │   └── en-US/
 │   │   │       └── Resources.resw
-│   │   ├── Ui/
-│   │   │   └── Controls/
-│   │   │       ├── CutCurveEditor.xaml
-│   │   │       ├── CutCurveEditor.xaml.cs
-│   │   │       ├── HangoverCurveCanvas.xaml
-│   │   │       └── HangoverCurveCanvas.xaml.cs
 │   │   ├── ViewModels/
 │   │   │   ├── CutPresetStore.cs
 │   │   │   ├── WhisperViewModel.cs
