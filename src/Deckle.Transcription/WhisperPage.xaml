@@ -7,9 +7,6 @@
     xmlns:catalog="using:Deckle.Catalog">
 
     <Page.Resources>
-        <!-- Compact slider for bounded continuous values: Windows 11 Settings
-             pattern (mouse sensitivity, volume, etc.). No spinner, no layout
-             shift, value shown on the right through ValueTextBlock. -->
         <Style x:Key="SettingSliderStyle"
                TargetType="Slider">
             <Setter Property="MinWidth" Value="180" />
@@ -26,8 +23,8 @@
             <Setter Property="Foreground" Value="{ThemeResource TextFillColorSecondaryBrush}" />
         </Style>
 
-        <!-- Per-setting reset button. Opacity 0 by default, switched to 1 on
-             PointerEntered of the parent SettingsCard (code-behind). -->
+        <!-- Per-card reset for the bespoke cards, revealed on the parent card's
+             hover from code-behind. -->
         <Style x:Key="ResetButtonStyle"
                BasedOn="{StaticResource SubtleButtonStyle}"
                TargetType="Button">
@@ -56,10 +53,6 @@
                             HorizontalAlignment="Stretch"
                             Spacing="{StaticResource SettingsCardSpacing}">
 
-                <!-- The shared header block: breadcrumb, one line of description,
-                     Reset all on the trailing edge (active-when-dirty). This page
-                     asks with its own dialog, so the header's generic one is off
-                     (ConfirmsReset, set in the constructor). -->
                 <catalog:SettingsPageHeader x:Name="Header"
                                             x:Uid="WhisperPageHeader"
                                             ResetAllRequested="ResetAll_Click" />
@@ -75,10 +68,7 @@
                     </InfoBar.ActionButton>
                 </InfoBar>
 
-                <!-- ── Overlay and pasting ──────────────────────────────────────
-                     The dictation experience — the on-screen HUD and auto-paste,
-                     relocated from General. Composed from WhisperViewModel.BehaviourSettings
-                     into the host below; its own section reset gates active-when-dirty. -->
+                <!-- ── Overlay and pasting ─────────────────────────────────── -->
                 <catalog:SettingsSection x:Name="BehaviourSection"
                                          x:Uid="WhisperPageBehaviourSection"
                                          HasReset="True"
@@ -89,15 +79,11 @@
 
                 <!-- ── Transcription ───────────────────────────────────────── -->
                 <!--
-                    Order : Language → Initial prompt → GPU acceleration →
-                    Whisper model. Model goes last because (a) it requires
-                    a restart and (b) it owns the storage location for
-                    downloaded weights, surfaced as an inline child of the
-                    SettingsExpander rather than a separate "Storage" section.
-                    No section reset: Model / Language / InitialPrompt are
-                    bespoke cards with per-card resets, and GPU / models
-                    directory sit in two separate composers, so no single
-                    dirtiness could gate one.
+                    Model goes last because it requires a restart and the
+                    models folder card follows it. No section reset: Model /
+                    Language / InitialPrompt are bespoke cards with per-card
+                    resets, and GPU / models directory sit in two separate
+                    composers, so no single dirtiness could gate one.
                 -->
                 <catalog:SettingsSection x:Uid="WhisperPageModelEngineSection">
                 <StackPanel Spacing="{StaticResource SettingsCardSpacing}">
@@ -154,20 +140,12 @@
                     </controls:SettingsExpander.Items>
                 </controls:SettingsExpander>
 
-                <!-- GPU acceleration — composed. The lone toggle (and its per-card
-                     reset) is built by ComposeUseGpuSection() into this host; the VM's
-                     UseGpu property is the same one the restart footer watches, so
-                     flipping the composed toggle still trips the footer. -->
                 <StackPanel x:Name="UseGpuHost"
                             Spacing="{StaticResource SettingsCardSpacing}" />
 
-                <!-- Whisper model — bespoke. The AutoSuggestBox is a runtime-
-                     enumerated, restart-coupled selector (its items are scanned from
-                     disk, and picking a model trips the restart footer), so it stays
-                     hand-authored rather than composed as a flat descriptor. Its
-                     per-card reset is bespoke too, syncing the un-bound AutoSuggestBox
-                     alongside the VM. The models directory that used to nest inside
-                     this expander is now its own composed card below. -->
+                <!-- Bespoke: a selector enumerated from disk and coupled to the
+                     restart footer. Its reset is bespoke too, syncing the unbound
+                     AutoSuggestBox alongside the VM. -->
                 <controls:SettingsCard x:Name="ModelCard"
                                        x:Uid="WhisperModelCard"
                                        Tag="WhisperModelCard"
@@ -188,11 +166,6 @@
                     </StackPanel>
                 </controls:SettingsCard>
 
-                <!-- Models directory — composed. The editable folder path (with its
-                     own reset) is built by ComposeModelsDirectorySection() into this
-                     host, with FolderPickerMode.Editable and the AppPaths fallback
-                     carried in PathArgs. It reads as its own card under the model
-                     selector, where it used to nest as an inline expander child. -->
                 <StackPanel x:Name="ModelsDirectoryHost"
                             Spacing="{StaticResource SettingsCardSpacing}" />
 
@@ -204,81 +177,42 @@
                      and the VAD fold all depend on it. -->
                 <catalog:SettingsSection x:Uid="WhisperPageSpeechFilteringSection"
                                          Visibility="{x:Bind VisibleWhenStreaming(ViewModel.StreamingEnabled), Mode=OneWay}">
-                    <!-- VAD fold — composed. The on/off toggle is the group master,
-                         the four Silero detection parameters its children; the whole
-                         expander collapses when streaming is off (the group's
-                         visibleWhen gates on StreamingEnabled, matching the former
-                         VisibleWhenStreaming bind). ComposeVadSection() builds it into
-                         this host; the section block around it carries the title and
-                         caption (the composer governs cards, not section chrome). -->
                     <StackPanel x:Name="VadHost"
                                 Spacing="{StaticResource SettingsCardSpacing}" />
                 </catalog:SettingsSection>
 
                 <!-- ── Output filters ──────────────────────────────────────── -->
                 <catalog:SettingsSection x:Uid="WhisperPageOutputFiltersSection">
-                    <!-- Output filters — composed. The three cards (two toggles + the
-                         one-line regex field) are a FLAT run with no master toggle, so
-                         ComposeOutputFiltersSection() builds them as top-level composed
-                         cards into this host; the section block around it carries the
-                         title. Same host-only pattern as the VAD/Streaming folds,
-                         minus the group wrapper — the composer governs cards, not the
-                         section chrome. -->
                     <StackPanel x:Name="OutputFiltersHost"
                                 Spacing="{StaticResource SettingsCardSpacing}" />
                 </catalog:SettingsSection>
 
                 <!-- ── Context and segmentation ────────────────────────────── -->
                 <catalog:SettingsSection x:Uid="WhisperPageContextSegmentationSection">
-                    <!-- Context — composed. The UseContext toggle and the MaxTokens
-                         NumberBox are a flat pair (no master toggle), composed into this
-                         host by ComposeContextSection(); the section block around it
-                         carries the title, as with the output filters above. -->
                     <StackPanel x:Name="ContextHost"
                                 Spacing="{StaticResource SettingsCardSpacing}" />
                 </catalog:SettingsSection>
 
                 <!-- ── Decoding ────────────────────────────────────────────── -->
-                <!-- Decoding fold — composed. The hand-authored master-less
-                     SettingsExpander (and the standalone fallback-disabled InfoBar
-                     beside it) are gone: ComposeDecodingSection() builds the fold as
-                     a Section (header + chevron, no master toggle) into this host,
-                     with UseBeamSearch / BeamSize / Temperature / TemperatureIncrement
-                     as composed cards. The fallback warning rides along as the
-                     TemperatureIncrement card's Advisory — a flat note row inside the
-                     fold, not a separate InfoBar. It has no title of its own: the fold's
-                     own header names it, so it sits outside any SettingsSection. -->
+                <!-- The fold's own header names it, so it sits outside any
+                     SettingsSection. -->
                 <StackPanel x:Name="DecodingHost"
                             Spacing="{StaticResource SettingsCardSpacing}" />
 
                 <!-- ── Confidence thresholds ───────────────────────────────── -->
-                <!-- Confidence fold — composed. ComposeConfidenceSection() builds the
-                     three thresholds as a Section into this host; the slider bounds
-                     that the code-behind set imperatively (to dodge the XAML-trimming
-                     parser crash) now live in the manifest's MagnitudeArgs, so that
-                     workaround is gone. Like the Decoding fold, it has no title of its
-                     own outside the fold's header. -->
+                <!-- Like the Decoding fold, outside any SettingsSection. -->
                 <StackPanel x:Name="ConfidenceHost"
                             Spacing="{StaticResource SettingsCardSpacing}" />
 
                 <!-- ── Streaming pipeline (experimental) ───────────────────── -->
                 <catalog:SettingsSection x:Uid="WhisperPageStreamingSection">
-                    <!-- Streaming fold — composed. The on/off toggle is the group
-                         master, the seven energy-segmenter parameters its Number-box
-                         children; the composer hides them while streaming is off.
-                         ComposeStreamingSection() builds it into this host; the section
-                         block around it carries the title and caption. -->
                     <StackPanel x:Name="StreamingHost"
                                 Spacing="{StaticResource SettingsCardSpacing}" />
                 </catalog:SettingsSection>
 
                 <!-- ── Diagnostics ─────────────────────────────────────────────
-                     The dictation-scoped observability opt-ins relocated from the
-                     shared Diagnostics page: the streaming-transcription log filter,
-                     the latency telemetry toggle, and the audio-corpus consent fold.
-                     Composed from WhisperViewModel.DiagnosticsSettings into the host
-                     below. No section reset — these observability opt-ins carry
-                     no resettable default (a privacy opt-in has no per-row reset). -->
+                     No section reset: these observability opt-ins carry no
+                     resettable default. -->
                 <catalog:SettingsSection x:Uid="WhisperPageDiagnosticsSection">
                     <StackPanel x:Name="DiagnosticsHost"
                                 Spacing="{StaticResource SettingsCardSpacing}" />
@@ -288,9 +222,7 @@
             </Grid>
         </ScrollViewer>
 
-        <!-- Restart footer: Windows Terminal Settings pattern.
-             56px high, DividerStrokeColorDefaultBrush as separator,
-             primary AccentButton + standard Button, 8px gap, 32px right margin. -->
+        <!-- Restart footer: the Windows Terminal Settings pattern. -->
         <Grid x:Name="RestartFooter"
               Grid.Row="1"
               Height="56"

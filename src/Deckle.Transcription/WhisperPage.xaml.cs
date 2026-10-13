@@ -22,7 +22,7 @@ public sealed partial class WhisperPage : Page
     public WhisperViewModel ViewModel { get; } = new();
 
     // Settings-UX doctrine: an option that only makes sense in a context is hidden
-    // when inapplicable, not greyed. The segmenter parameter cards appear only
+    // when inapplicable, not greyed. The speech-filtering section appears only
     // when the streaming pipeline is on.
     private Visibility VisibleWhenStreaming(bool on) =>
         on ? Visibility.Visible : Visibility.Collapsed;
@@ -32,8 +32,6 @@ public sealed partial class WhisperPage : Page
     // set VM properties which would trigger PushToSettings() needlessly.
     private bool _initializing;
 
-    // Full list of installed Whisper models on disk, scanned once per
-    // page entry. Feeds the model AutoSuggestBox as a filterable source.
     private List<string> _modelNames = new();
 
     // Values at page load that require a restart. The footer only appears
@@ -44,9 +42,6 @@ public sealed partial class WhisperPage : Page
     // Defaults resolved from the Engine POCO — single source of truth for the
     // bespoke Model / Language / InitialPrompt resets below.
     private static readonly EngineSettings _engineDefaults = new();
-    // ModelsDirectory's default no longer has a code-behind home either: its card is
-    // composed now, reading its default (new TranscriptionSettings().ModelsDirectory)
-    // from the manifest, like the OutputFilter / Context / Decoding / Confidence cards.
 
     public WhisperPage()
     {
@@ -75,11 +70,10 @@ public sealed partial class WhisperPage : Page
 
         NavigationCacheMode = NavigationCacheMode.Required;
 
-        // Compose the VAD and Streaming folds before the first Load(). Load() runs
-        // in OnNavigatedTo (after this constructor), so each composer's
-        // PropertyChanged subscription is already in place to catch Load()'s refresh
-        // — the same Compose-before-Load ordering RecordingPage uses. The composers
-        // are held in fields so their subscriptions live as long as the cached page.
+        // Composed before the first Load(), which runs in OnNavigatedTo, so each
+        // composer's PropertyChanged subscription catches Load()'s refresh. The
+        // composers are held in fields so their subscriptions live as long as the
+        // cached page.
         ComposeSettings();
 
         // The cached page can be loaded again after navigation. Wire these once in
@@ -94,21 +88,6 @@ public sealed partial class WhisperPage : Page
             DeckleWhispSource.Log.PageLoadedStart();
             try
             {
-                // GPU acceleration and the models directory are composed now — the
-                // composer wires each card's own per-card reset and hover reveal (and
-                // the Path card's AppPaths fallback rides in PathArgs.DefaultPath), so
-                // no WireHover or DefaultPath assignment for those cards here.
-                // The VAD fold (toggle + four Silero parameters) is composed now —
-                // the composer wires its own per-card reset reveal, so no WireHover
-                // for those cards here.
-                // Output filters (SuppressNst / SuppressBlank / SuppressRegex),
-                // Context (UseContext / MaxTokens), Decoding (beam search + temperature)
-                // and Confidence (the three thresholds) are composed now — the composer
-                // wires each card's own per-card reset and hover reveal, so no WireHover
-                // for those cards here.
-
-                // React to VM property changes for side effects (restart
-                // state, model folder re-scan).
                 ViewModel.PropertyChanged -= OnViewModelPropertyChanged;
                 ViewModel.PropertyChanged += OnViewModelPropertyChanged;
 
@@ -125,15 +104,6 @@ public sealed partial class WhisperPage : Page
     }
 
     // ── Composed settings ────────────────────────────────────────────────────
-    //
-    // The page only hosts: each method hands the host StackPanel and the VM's
-    // settings manifest (declared beside the VM in WhisperViewModel.Settings.cs)
-    // to a composer, which builds the SettingsExpander — master toggle, child
-    // cards, per-card and per-group reset — and subscribes to the VM so the
-    // controls reflect Load() and any external reset without per-control binding
-    // here. Composed in the constructor (before the first Load() in OnNavigatedTo)
-    // so the subscription catches Load()'s refresh; held in fields so it lives as
-    // long as the cached page.
 
     private readonly List<SettingsComposer> _composers = new();
     private SettingsComposer? _behaviourComposer;
@@ -172,18 +142,13 @@ public sealed partial class WhisperPage : Page
         return composer;
     }
 
-    // The page-level "Reset all" is active-when-dirty: enabled only while some
-    // composed value differs from its default. Re-gated off every composer's
-    // DirtyChanged and once after Load() (OnNavigatedTo) — Load() raises no
-    // PropertyChanged on a clean profile, so no DirtyChanged would settle it.
-    // The bespoke Model / Language / InitialPrompt cards have no composer, so they
-    // do not feed this gate.
+    // Re-gated once after Load() too: Load() raises no PropertyChanged on a clean
+    // profile, so no DirtyChanged would settle it. The bespoke Model / Language /
+    // InitialPrompt cards have no composer, so they do not feed this gate.
     private void GateResetAll() =>
         Header.IsResetAllEnabled = _composers.Any(c => c.IsDirty());
 
-    // NavigationCacheMode.Required reuses the page instance. On every navigation
-    // we reload settings from the POCO via the VM; constructor-time hover wiring
-    // remains unique for the lifetime of the cached page.
+    // The cached page reloads its settings on every navigation.
     protected override void OnNavigatedTo(NavigationEventArgs e)
     {
         base.OnNavigatedTo(e);
@@ -209,11 +174,6 @@ public sealed partial class WhisperPage : Page
         SettingsHost.OpenSetupWizard?.Invoke();
 
     // ── VM PropertyChanged side effects ─────────────────────────────────────
-    //
-    // During _initializing (Load + combo population), these are skipped.
-    // After that, user interaction triggers:
-    //   Model / UseGpu → restart footer
-    //   ModelsDirectory → re-scan model combo
 
     private void OnViewModelPropertyChanged(object? sender, PropertyChangedEventArgs e)
     {
@@ -232,10 +192,6 @@ public sealed partial class WhisperPage : Page
     }
 
     // ── Combo handlers (Model, Language) ────────────────────────────────────
-    //
-    // Model is an AutoSuggestBox (no dropdown chevron) populated dynamically
-    // from disk: filtering by substring while typing, full list on focus
-    // when empty. Language is an editable ComboBox with ComboBoxItem children.
 
     private static void WireHover(SettingsCard card, Button resetButton)
     {
@@ -293,9 +249,8 @@ public sealed partial class WhisperPage : Page
 
     private void ModelSuggest_GotFocus(object sender, RoutedEventArgs e)
     {
-        // When the field gains focus, show the full list so the user can
-        // browse all available models without typing. Matches the ComboBox
-        // affordance the control replaces.
+        // Show the full list on focus, so the models can be browsed without
+        // typing.
         ModelSuggest.ItemsSource = _modelNames;
         ModelSuggest.IsSuggestionListOpen = true;
     }
@@ -376,9 +331,6 @@ public sealed partial class WhisperPage : Page
     }
 
     // ── Reset handlers ──────────────────────────────────────────────────────
-    //
-    // Set the VM property (or combo for Model/Language) → OnXChanged fires →
-    // PushToSettings. For combos, SelectionChanged fires → handler sets VM.
 
     private void ResetBehaviour_Click(object sender, RoutedEventArgs e)
     {
@@ -404,16 +356,10 @@ public sealed partial class WhisperPage : Page
     private void InitialPromptReset_Click(object sender, RoutedEventArgs e) =>
         ViewModel.InitialPrompt = _engineDefaults.InitialPrompt;
 
-    // The output-filter (SuppressNst / SuppressBlank / SuppressRegex), context
-    // (UseContext / MaxTokens), decoding (beam search + temperature) and confidence
-    // (the three thresholds) reset handlers are gone: those cards are composed, and
-    // the composer drives each reset to its POCO-sourced default through the normal
-    // VM setter — the same round-trip these hand-authored handlers performed.
-
-    // ── Restart state — highlight + footer ─────────────────────────────────
+    // ── Restart state — footer ──────────────────────────────────────────────
     //
     // Model and GPU require a restart. When their current value differs from
-    // the startup snapshot, the footer appears (pattern Windows Terminal).
+    // the startup snapshot, the footer appears (Windows Terminal pattern).
 
     private void UpdateRestartState()
     {
@@ -435,11 +381,10 @@ public sealed partial class WhisperPage : Page
         _initializing = true;
         try
         {
-            // Revert the VM properties to the startup snapshot.
             ViewModel.Model = _startupModel;
             ViewModel.UseGpu = _startupUseGpu;
 
-            // Sync the AutoSuggestBox (not bound).
+            // The AutoSuggestBox is not bound.
             ModelSuggest.Text = _startupModel;
         }
         finally
@@ -447,11 +392,9 @@ public sealed partial class WhisperPage : Page
             _initializing = false;
         }
 
-        // The VM's OnChanged handlers are NOT suppressed by _initializing
-        // (they check _isSyncing, not _initializing). But since we set the
-        // VM properties directly, PushToSettings fires and saves. The
-        // _initializing guard only prevents the combo handler from double-
-        // writing. Model and UseGpu are now reverted — update footer.
+        // The VM's own change handlers check _isSyncing, not _initializing, so
+        // the revert still saves; _initializing only keeps the page's handlers
+        // from writing twice.
         UpdateRestartState();
     }
 
@@ -471,15 +414,8 @@ public sealed partial class WhisperPage : Page
 
         DeckleWhispSource.Log.PageResetAll();
 
-        // After slice C2b, all Whisper settings (including ModelsDirectory)
-        // live in a single TranscriptionSettings POCO at modules/transcription/settings.json.
-        // PathsSettings used to be reset alongside, but BackupDirectory is
-        // unrelated to Whisper — leaving it untouched fixes a long-standing
-        // pre-existing bug where "Reset Whisper" wiped the user's backup
-        // directory override.
         TranscriptionSettingsService.Instance.Replace(new TranscriptionSettings());
 
-        // Reload everything from the fresh POCO defaults.
         _initializing = true;
         ViewModel.Load();
         RefreshModelNames();
