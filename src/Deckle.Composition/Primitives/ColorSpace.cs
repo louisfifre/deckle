@@ -18,15 +18,17 @@ namespace Deckle.Composition;
 // Extracted from HudComposition.cs on 2026-05-02.
 public static class ColorSpace
 {
-    // OKLCh → sRGB (gamma-corrected, 8-bit channels).
+    // OKLCh → sRGB (gamma-corrected, 8-bit channels), channels clamped.
     //
     // Pipeline: OKLCh → OKLab → linear sRGB → gamma-corrected sRGB.
-    // Linear sRGB values may fall outside [0, 1] for L/C combinations
-    // that exit the sRGB gamut (yellows and blues at L=0.75 start
-    // clipping around C ≈ 0.18). We clamp to [0, 1] on the gamma
-    // output — that reads as a gentle flattening of the out-of-gamut
-    // hues rather than a hard stop, which is good enough for a
-    // rotating conic wheel where no individual hue lingers.
+    // Linear sRGB values fall outside [0, 1] for L/C combinations that
+    // exit the sRGB gamut (yellows and blues at L=0.75 start clipping
+    // around C ≈ 0.18). This conversion clamps each channel to [0, 1] on
+    // the gamma output: the chroma is kept as far as it goes and the
+    // lightness is lost — a clipped red at L 0.75 / C 0.3 desaturates to
+    // a grey near 0.24 where cyan gives 0.69. Fine for a swatch that must
+    // stay as saturated as asked; wrong for a wheel that must keep one
+    // lightness across hues, which is OklchToRgbInGamut below.
     //
     // Parameters:
     //   L      — OKLab lightness ∈ [0, 1]; 0.75 is the family default.
@@ -45,6 +47,59 @@ public static class ColorSpace
             (byte)MathF.Round(Math.Clamp(LinearToSrgb(gLin), 0f, 1f) * 255f),
             (byte)MathF.Round(Math.Clamp(LinearToSrgb(bLin), 0f, 1f) * 255f));
     }
+
+    // OKLCh → sRGB with the chroma lowered per hue until the colour fits
+    // the sRGB gamut, lightness and hue kept. This is the promise the HUD's
+    // cone is built on: one lightness for every hue, so one grey once a
+    // Saturation effect desaturates it, and in colour each hue at the
+    // largest chroma the display can show at that lightness — the CSS
+    // Color 4 gamut-mapping idea, by chroma reduction alone. The clamping
+    // conversion above broke that promise on the greyscale cone (2026-10-13):
+    // at L 0.75 / C 0.3 no sRGB hue carries the chroma, every channel was
+    // clipped, and the greys ran from 0.24 to 0.69 around the wheel. The
+    // chroma argument is therefore a ceiling, not a value every hue reaches.
+    public static Color OklchToRgbInGamut(float L, float C, float hTurns)
+    {
+        var (rLin, gLin, bLin) = OklchToLinearRgbInGamut(L, C, hTurns);
+
+        return Color.FromArgb(
+            0xFF,
+            (byte)MathF.Round(LinearToSrgb(rLin) * 255f),
+            (byte)MathF.Round(LinearToSrgb(gLin) * 255f),
+            (byte)MathF.Round(LinearToSrgb(bLin) * 255f));
+    }
+
+    // The linear-light body of OklchToRgbInGamut. A binary search on the
+    // chroma between 0 — the grey at L, in gamut once L is clamped to
+    // [0, 1] — and the requested value; 16 halvings land within 2⁻¹⁶ of the
+    // boundary, far below 8-bit resolution. The channels come back clamped
+    // so float noise at the boundary cannot leak a stray −1e-7.
+    public static (float R, float G, float B) OklchToLinearRgbInGamut(float L, float C, float hTurns)
+    {
+        float lightness = Math.Clamp(L, 0f, 1f);
+        float ceiling = MathF.Max(0f, C);
+        var rgb = OklchToLinearRgb(lightness, ceiling, hTurns);
+        if (!IsInSrgbGamut(rgb))
+        {
+            float inside = 0f, outside = ceiling;
+            for (int i = 0; i < 16; i++)
+            {
+                float middle = (inside + outside) / 2f;
+                if (IsInSrgbGamut(OklchToLinearRgb(lightness, middle, hTurns))) inside = middle;
+                else outside = middle;
+            }
+            rgb = OklchToLinearRgb(lightness, inside, hTurns);
+        }
+        return (Math.Clamp(rgb.R, 0f, 1f), Math.Clamp(rgb.G, 0f, 1f), Math.Clamp(rgb.B, 0f, 1f));
+    }
+
+    // Float noise around the gamut boundary is not a colour out of gamut.
+    private const float GamutTolerance = 1e-5f;
+
+    private static bool IsInSrgbGamut((float R, float G, float B) c)
+        => c.R >= -GamutTolerance && c.R <= 1f + GamutTolerance
+        && c.G >= -GamutTolerance && c.G <= 1f + GamutTolerance
+        && c.B >= -GamutTolerance && c.B <= 1f + GamutTolerance;
 
     // sRGB 8-bit → OKLCh — inverse of OklchToRgb. Same pipeline run
     // backwards : sRGB byte → linear via the LUT → cone responses via
