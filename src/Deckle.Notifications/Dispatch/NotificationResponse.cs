@@ -6,6 +6,5 @@ namespace Deckle.Notifications;
 // and the user typed into it, otherwise null.
 public sealed record NotificationResponse(string ActionId, string? TextInput)
 {
-    // Sentinel ActionId for a click on the notification body (no button).
     public const string BodyActionId = "body";
 }

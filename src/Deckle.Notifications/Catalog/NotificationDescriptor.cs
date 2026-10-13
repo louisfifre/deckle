@@ -15,18 +15,17 @@ public enum NotificationSeverity
     Error,
 }
 
-// The kind of surface a notification prefers. Today only the toast exists;
-// InfoBar / dialog / HUD channels are deliberately deferred.
+// The kind of surface a notification prefers. Only the toast exists; InfoBar,
+// dialog and HUD channels are deliberately deferred.
 public enum NotificationChannel
 {
     Toast,
 }
 
 public sealed record NotificationDescriptor(
-    // Stable, point.snake_case identity (e.g. "playground.test_prompt"). Public
-    // contract from day one: it keys the catalogue, threads through the toast
-    // activation, and may appear in user preferences later — never rename or
-    // recycle it.
+    // Stable, point.snake_case identity (e.g. "playground.test_prompt"). A
+    // public contract: it keys the catalogue and threads through the toast
+    // activation, so never rename or recycle it.
     string Id,
     string Category,
     // .resw key resolved via Deckle.Catalog.Loc by the channel. Loc reads the

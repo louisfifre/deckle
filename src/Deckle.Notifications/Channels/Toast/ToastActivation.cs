@@ -8,8 +8,7 @@ namespace Deckle.Notifications;
 // Owns the AppNotificationManager wiring and the correlation between a shown
 // toast and the activation that comes back when the user interacts with it.
 //
-// Two non-negotiable traps, both proven by the disposable InteractiveToast
-// spike (removed after hand-validation; in git history):
+// Two traps:
 //
 //   1. NotificationInvoked MUST be subscribed BEFORE Register(). If Register
 //      runs first, Windows treats the activation as a cold launch and spawns a
@@ -17,9 +16,9 @@ namespace Deckle.Notifications;
 //      already-running process.
 //
 //   2. The activation carries only the arguments baked into the toast at build
-//      time. We thread a per-show nonce through every AddArgument so
-//      the handler can route the activation back to the exact TaskCompletionSource
-//      that the show is awaiting — Windows gives no other correlation token.
+//      time. A per-show nonce threads through every AddArgument so the handler
+//      can route the activation back to the exact TaskCompletionSource the
+//      show is awaiting: Windows gives no other correlation token.
 //
 // Registration is wrapped in try/catch: a failure (e.g. unsupported OS state)
 // marks the channel unavailable rather than crashing boot.
@@ -27,12 +26,11 @@ internal sealed class ToastActivation
 {
     private readonly AppNotificationManager _manager = AppNotificationManager.Default;
 
-    // Pending prompts keyed by the per-show nonce. RunContinuationsAsynchronously
-    // so the awaiting PromptAsync continuation never runs inline on the
-    // AppNotificationManager callback thread.
+    // Keyed by the per-show nonce. Each TCS must be created with
+    // RunContinuationsAsynchronously so the awaiting PromptAsync continuation
+    // never runs inline on the AppNotificationManager callback thread.
     private readonly ConcurrentDictionary<string, TaskCompletionSource<NotificationResponse?>> _pending = new();
 
-    // True once Register() succeeded. The channel folds this into IsAvailable.
     public bool RegistrationSucceeded { get; private set; }
 
     public ToastActivation()
@@ -63,8 +61,6 @@ internal sealed class ToastActivation
     // cached at construction would go stale.
     public AppNotificationSetting Setting => _manager.Setting;
 
-    // Registers the awaiting TCS under its nonce before the toast is shown, so
-    // an activation that races the Show call still finds its target.
     public void RegisterPending(string nonce, TaskCompletionSource<NotificationResponse?> tcs)
         => _pending[nonce] = tcs;
 
@@ -74,9 +70,9 @@ internal sealed class ToastActivation
 
     private void OnNotificationInvoked(AppNotificationManager sender, AppNotificationActivatedEventArgs args)
     {
-        // The nonce ("nonce") routes the activation to its awaiting show. An
-        // activation with no nonce (or an unknown one) is an orphan — a cold
-        // activation after process exit, deliberately out of scope for v1.
+        // An activation with no nonce (or an unknown one) is an orphan, such as
+        // a cold activation after process exit, which is deliberately not
+        // handled.
         if (!args.Arguments.TryGetValue("nonce", out var nonce) || string.IsNullOrEmpty(nonce))
         {
             return;
@@ -96,9 +92,8 @@ internal sealed class ToastActivation
         string? textInput = null;
         if (args.UserInput.Count > 0)
         {
-            // A descriptor declares at most one text box in v1; take the first
-            // value present rather than assuming a key we would have to thread
-            // here.
+            // A descriptor declares at most one text box: take the first value
+            // rather than threading its key here.
             foreach (var pair in args.UserInput)
             {
                 textInput = pair.Value;

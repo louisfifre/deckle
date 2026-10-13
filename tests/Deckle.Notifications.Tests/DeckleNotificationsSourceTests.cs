@@ -10,10 +10,7 @@ namespace Deckle.Notifications.Tests;
 
 // Observability: pins the narrative the notification subsystem emits on the
 // Deckle-Notifications provider. Every event carries the transverse Push
-// keyword, and each Info milestone is mirrored by its Verbose detail — the
-// Info/Verbose separation from the deckle-logging skill. A TestEventListener
-// attached by ETW name collects the sequence; the test asserts on order,
-// levels, and the id-bearing payloads.
+// keyword, and each Info milestone is followed by its Verbose detail.
 // Same collection as NotificationDispatcherTests: both drive the process-wide
 // NotificationDispatcher singleton, whose Initialize emits on the shared
 // provider — running the classes in parallel makes each listener see the
@@ -40,7 +37,6 @@ public class DeckleNotificationsSourceTests
         Assert.Equal("Toast", detail.Payload?[0]);
         Assert.Equal(1, detail.Payload?[1]);
 
-        // The Verbose detail follows the Info milestone, never precedes it.
         AssertOrdered(listener,
             DeckleNotificationsSource.EvtDispatcherInitialized,
             DeckleNotificationsSource.EvtDispatcherInitializedDetail);
@@ -86,7 +82,6 @@ public class DeckleNotificationsSourceTests
     [Fact]
     public async Task ADroppedPromptEmitsWarningWithTheReasonDetail()
     {
-        // Channel unavailable -> the prompt drops; reason is "channel_unavailable".
         var dispatcher = NotificationDispatcher.Initialize(
             new FakeNotificationChannel(isAvailable: false));
         var descriptor = Descriptors.Make("playground.dropped");
@@ -104,7 +99,6 @@ public class DeckleNotificationsSourceTests
         Assert.Equal("playground.dropped", droppedDetail.Payload?[0]); // notification_id
         Assert.Equal("channel_unavailable", droppedDetail.Payload?[1]); // reason
 
-        // No show / responded events on a drop.
         Assert.DoesNotContain(listener.Events,
             e => e.EventId == DeckleNotificationsSource.EvtNotificationShown);
         Assert.DoesNotContain(listener.Events,
@@ -146,18 +140,15 @@ public class DeckleNotificationsSourceTests
 
         await Assert.ThrowsAsync<TaskCanceledException>(() => prompt);
 
-        // The closing Info: cancellation is caller-initiated and benign.
         var cancelled = Single(listener, DeckleNotificationsSource.EvtNotificationCancelled);
         Assert.Equal(EventLevel.Informational, cancelled.Level);
         Assert.True(cancelled.HasKeyword(Keywords.Push));
 
-        // Its Verbose mirror carries the id.
         var promptCancelled = Single(listener, DeckleNotificationsSource.EvtPromptCancelled);
         Assert.Equal(EventLevel.Verbose, promptCancelled.Level);
         Assert.True(promptCancelled.HasKeyword(Keywords.Push));
         Assert.Equal("playground.cancel_obs", promptCancelled.Payload?[0]); // notification_id
 
-        // The step opened at Shown and closes at Cancelled, the mirror last.
         AssertOrdered(listener,
             DeckleNotificationsSource.EvtNotificationShown,
             DeckleNotificationsSource.EvtNotificationCancelled,
@@ -190,13 +181,11 @@ public class DeckleNotificationsSourceTests
         Assert.Equal("playground.unanswered_obs", unansweredDetail.Payload?[0]); // notification_id
         Assert.Equal("Toast", unansweredDetail.Payload?[1]);                     // channel
 
-        // Shown still opens the step; the unanswered close follows it.
         AssertOrdered(listener,
             DeckleNotificationsSource.EvtNotificationShown,
             DeckleNotificationsSource.EvtNotificationUnanswered,
             DeckleNotificationsSource.EvtNotificationUnansweredDetail);
 
-        // A no-answer outcome is never a response.
         Assert.DoesNotContain(listener.Events,
             e => e.EventId == DeckleNotificationsSource.EvtNotificationResponded);
         Assert.DoesNotContain(listener.Events,
@@ -206,8 +195,6 @@ public class DeckleNotificationsSourceTests
     [Fact]
     public async Task AChannelThatThrowsClosesTheStepWithFailedAndRethrows()
     {
-        // The channel fails while delivering. The dispatcher closes the open
-        // step at Warning and lets the exception escape.
         var channel = new FakeNotificationChannel
         {
             ThrowOnPrompt = new InvalidOperationException("boom"),
@@ -235,7 +222,6 @@ public class DeckleNotificationsSourceTests
             DeckleNotificationsSource.EvtNotificationFailed,
             DeckleNotificationsSource.EvtNotificationFailedDetail);
 
-        // A failure is never a response.
         Assert.DoesNotContain(listener.Events,
             e => e.EventId == DeckleNotificationsSource.EvtNotificationResponded);
     }
@@ -245,9 +231,8 @@ public class DeckleNotificationsSourceTests
     {
         var dispatcher = NotificationDispatcher.Initialize(new FakeNotificationChannel());
 
-        // Attach BEFORE Register so the catalogue audit lands on this listener —
-        // the other suites deliberately attach after, to keep init/registration
-        // noise out of their assertions.
+        // Attach BEFORE Register so the catalogue audit lands on this listener;
+        // the other tests attach after, to keep registration noise out.
         using var listener = new TestEventListener("Deckle-Notifications");
         dispatcher.Catalog.Register(new[]
         {
@@ -264,9 +249,9 @@ public class DeckleNotificationsSourceTests
 
     // ── helpers ────────────────────────────────────────────────────────────
 
-    // The provider is a process-wide singleton; concurrent tests in other
-    // suites could in principle emit onto the same listener. Selecting by
-    // EventId keeps each assertion robust to that without serializing the run.
+    // The provider is a process-wide singleton, so concurrent tests in other
+    // suites can emit onto the same listener. Selecting by EventId keeps each
+    // assertion robust to that without serializing the run.
     private static EventWrittenEventArgs Single(TestEventListener listener, int eventId)
         => Assert.Single(listener.Events, e => e.EventId == eventId);
 
