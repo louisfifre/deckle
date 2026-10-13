@@ -12,28 +12,6 @@
     action: Update changelog | -Commit
 #>
 
-# Two outputs, one engine:
-#   - default            → regenerate the whole CHANGELOG.md in place. The file
-#                          is fully generated; do not hand-edit it.
-#   - -NotesFor <X.Y.Z>  → emit just that one version's section (the body a
-#                          GitHub Release wants), to -OutFile or stdout. This is
-#                          what publish-app.ps1 feeds to `gh ... --notes-file`.
-#
-# How a commit becomes a line. Each commit SUBJECT is parsed as
-# `type(scope)!: description`. The type routes it to a Keep a Changelog group:
-#   feat → Added | fix → Fixed | perf, refactor → Changed | revert → Removed
-# Everything else — chore/docs/test/ci/build/style, merges, and any subject that
-# is not a recognised conventional type — is DROPPED. There is no catch-all, so
-# noise never leaks into "Changed". The description keeps its first line only,
-# its first letter is upper-cased, and the scope (if any) leads it in bold.
-#
-# The changelog is regenerated from $FloorTag forward. Below that floor the
-# history predates Conventional-Commit discipline (the WhispUI genesis, the
-# early research/bench cycles) and renders as noise, so it is summarised in one
-# line rather than itemised. Move the floor by editing $FloorTag.
-#
-# Pendant to publish-app.ps1 — same shared workflow presentation and -Target/-Pick shape.
-
 [CmdletBinding()]
 param(
     # Build a specific repo or worktree instead of the one containing this
@@ -93,7 +71,6 @@ trap {
     throw
 }
 
-# ── RepoRoot resolution (mirrors build-run.ps1 / publish-app.ps1) ────────────
 if ($Pick) {
     Import-Module (Join-Path $LibDir 'menu.psm1') -Force
     $RepoRoot = Select-Worktree -ContextDir $ScriptDir
@@ -106,14 +83,14 @@ if ($Pick) {
 
 Write-DeckleOutputText -Text "Repo: $RepoRoot" -Role Muted
 
-# ── Generation constants ─────────────────────────────────────────────────────
 # Earliest version regenerated in full. Everything below it predates strict
 # Conventional Commits and is summarised, not itemised (see $GenesisNote).
 $FloorTag = 'v0.4.0'
 $RepoUrl  = 'https://github.com/louisfifre/deckle'
 
-# type → Keep a Changelog group. A type absent from this map is dropped
-# (chore/docs/test/ci/build/style, "merge", and non-conventional subjects).
+# A type absent from this map is dropped (chore/docs/test/ci/build/style,
+# merges, non-conventional subjects): no catch-all, so noise never reaches
+# Changed.
 $TypeToGroup = [ordered]@{
     feat     = 'Added'
     fix      = 'Fixed'
@@ -121,7 +98,7 @@ $TypeToGroup = [ordered]@{
     refactor = 'Changed'
     revert   = 'Removed'
 }
-# Fixed emission order (Keep a Changelog). Empty groups are omitted.
+# Keep a Changelog order.
 $GroupOrder = @('Added', 'Changed', 'Deprecated', 'Removed', 'Fixed', 'Security')
 
 $Header = @"
@@ -145,18 +122,14 @@ Versions 0.2.0 – 0.3.5 — the WhispUI genesis and the early Deckle cycles
 generated changelog and are not itemised here. See the git history.
 "@
 
-# ── Helpers ──────────────────────────────────────────────────────────────────
-
-# Upper-case the first character only, leaving the rest untouched (mirrors
-# git-cliff's `upper_first`). Culture-correct for accented initials (é → É).
 function Get-FirstUpper([string]$s) {
     if ([string]::IsNullOrEmpty($s)) { return $s }
     return [char]::ToUpper($s[0]) + $s.Substring(1)
 }
 
-# Public release tags, ascending. release-history.json is the offline source of
-# truth; git tags alone are ambiguous because older internal version records
-# also created tags.
+# release-history.json is the offline source of truth for public releases; git
+# tags alone are ambiguous because older internal version records also created
+# tags.
 function Get-VersionTags {
     $tags = @(Get-PublishedReleaseTags -RepoRoot $RepoRoot)
     foreach ($tag in $tags) {
@@ -168,16 +141,14 @@ function Get-VersionTags {
     return [string[]]$tags
 }
 
-# ISO date (YYYY-MM-DD) of the commit a tag points at.
 function Get-TagDate([string]$tag) {
     $d = & git -C $RepoRoot log -1 --format='%cs' "$tag^{commit}"
     if ($LASTEXITCODE -ne 0) { throw "git log for $tag failed (code $LASTEXITCODE)" }
     return $d.Trim()
 }
 
-# Commits in a range (e.g. "v0.3.5..v0.4.0"), oldest first. Returns objects with
-# Subject only — the body is never read (no parser inspects it, so nothing from
-# a commit body, including any trailer, can leak into the changelog).
+# Subjects only, oldest first: the body is never read, so nothing from it,
+# trailers included, can leak into the changelog.
 function Get-RangeCommits([string]$range) {
     $fmt = '%s%x1f%x1e'                                     # subject, US, RS
     $out = (& git -C $RepoRoot log --reverse "--format=$fmt" $range) -join "`n"
@@ -192,7 +163,6 @@ function Get-RangeCommits([string]$range) {
     return , $commits.ToArray()
 }
 
-# Parse one subject into @{ Group; Line } or $null when the commit is dropped.
 function ConvertTo-Entry([string]$subject) {
     # Case-sensitive: "Merge …" / git's "Revert …" start with a capital and must
     # NOT match the lowercase type token, so they fall through to dropped.
@@ -207,7 +177,7 @@ function ConvertTo-Entry([string]$subject) {
     return @{ Group = $group; Line = $line }
 }
 
-# Render one version section. $thisTag/$prevTag carry the leading 'v'.
+# $thisTag and $prevTag carry the leading 'v'.
 function Format-Section([string]$version, [string]$prevTag, [string]$thisTag, [string]$date, [string[]]$subjects) {
     $byGroup = @{}
     foreach ($s in $subjects) {
@@ -239,22 +209,19 @@ function Format-Section([string]$version, [string]$prevTag, [string]$thisTag, [s
     return ($lines -join "`n")
 }
 
-# ── Mode: release notes (single version) ─────────────────────────────────────
 if ($NotesFor) {
     $version = $NotesFor.TrimStart('v')
     $thisTag = "v$version"
     $tags    = Get-VersionTags
 
     if ($tags -contains $thisTag) {
-        # Public release: range from the preceding public release.
         $idx     = [array]::IndexOf($tags, $thisTag)
         $prevTag = if ($idx -gt 0) { $tags[$idx - 1] } else { $null }
         $range   = if ($prevTag) { "$prevTag..$thisTag" } else { $thisTag }
         $date    = Get-TagDate $thisTag
     } else {
-        # In-progress release: commits since the latest public release. A
-        # legacy internal tag may already exist; use it as the endpoint without
-        # treating it as a release boundary.
+        # A legacy internal tag may already exist: it serves as the endpoint,
+        # never as a release boundary.
         $prevTag = if ($tags.Count) { $tags[-1] } else { $null }
         & git -C $RepoRoot rev-parse --verify --quiet "$thisTag^{commit}" *> $null
         $endRef  = if ($LASTEXITCODE -eq 0) { $thisTag } else { 'HEAD' }
@@ -291,7 +258,6 @@ if ($NotesFor) {
     return
 }
 
-# ── Mode: full regeneration of CHANGELOG.md ──────────────────────────────────
 $tags = Get-VersionTags
 if (-not $tags.Count) { throw "No published release tags found in $RepoRoot" }
 
@@ -300,12 +266,11 @@ if ($floorIdx -lt 0) { throw "Floor tag $FloorTag not found in release-history.j
 
 Write-DeckleWorkflowStep -Output $WorkflowOutput -Message "Regenerating changelog from $FloorTag (latest public release: $($tags[-1]))"
 
-# Rendered tags: floor .. latest, emitted newest-first.
 $rendered = $tags[$floorIdx..($tags.Count - 1)]
 $sections = [System.Collections.Generic.List[string]]::new()
 
-# Optional [Unreleased] section: commits beyond the latest public release, only
-# if any are user-facing (otherwise an empty heading would be noise).
+# [Unreleased] appears only when a commit is user-facing: an empty heading
+# would be noise.
 $unreleased = Get-RangeCommits "$($tags[-1])..HEAD"
 if ($unreleased.Count) {
     $hasEntry = $false

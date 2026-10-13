@@ -13,28 +13,9 @@
     action: Bootstrap dev environment | -Yes | danger | Installs tools on this machine with winget and scoop.
 #>
 
-# Out of scope (intentional):
-#   - Does NOT build or run Deckle (see scripts/commands/build-run.ps1).
-#   - Does NOT clone whisper.cpp (location is per-dev preference; prints
-#     the command instead). Required only for -Full (native rebuild).
-#   - Does NOT pull Ollama models (which model is a per-deployment choice;
-#     prints the command instead).
-#
-# Tiers:
-#   Default — Tier 1 (managed build). Sufficient for 99 % of C#/XAML work.
-#   -Full   — Tier 1 + Tier 2 (native recompile toolchain) + Ollama.
-#             For maintainers who rebuild whisper.cpp DLLs or test the LLM
-#             rewrite path end-to-end.
-#   -IncludeAssets — also invoke setup-assets.ps1 at the end. Normally not
-#             needed anymore: the app's first-run wizard provisions runtime
-#             assets when native DLLs or models are missing.
-#
-# Usage:
-#   scripts\commands\setup\bootstrap-dev-env.ps1                # default tier only
-#   scripts\commands\setup\bootstrap-dev-env.ps1 -DryRun        # probe only, no install
-#   scripts\commands\setup\bootstrap-dev-env.ps1 -Full          # full toolchain
-#   scripts\commands\setup\bootstrap-dev-env.ps1 -IncludeAssets # also run setup-assets.ps1
-#   scripts\commands\setup\bootstrap-dev-env.ps1 -Yes           # no confirmation prompt
+# Left out on purpose: cloning whisper.cpp (its location is a per-dev choice)
+# and pulling Ollama models (the model is a per-deployment choice). With -Full
+# the script prints both commands instead.
 
 [CmdletBinding()]
 param(
@@ -47,12 +28,12 @@ param(
     [switch]$Full,
 
     # Also invoke scripts/commands/setup/setup-assets.ps1 after environment bootstrap.
-    # Kept for explicit dev-machine provisioning; the app's first-run wizard
-    # is the normal runtime-assets path.
+    # Kept for explicit dev-machine provisioning; the app's setup wizard is
+    # the normal runtime-assets path.
     [switch]$IncludeAssets,
 
-    # Deprecated compatibility switch. Runtime assets are skipped by default
-    # now, so this is only kept to avoid breaking old direct calls.
+    # Deprecated. Runtime assets are skipped unless -IncludeAssets; this switch
+    # only cancels -IncludeAssets.
     [switch]$SkipAssets,
 
     # Release tag passed to setup-assets.ps1 -FromRelease. Pins which
@@ -90,10 +71,6 @@ trap {
     throw
 }
 
-# =============================================================================
-# Helpers
-# =============================================================================
-
 function Write-Section($title) {
     Write-Host ""
     Write-Host "=== $title ===" -ForegroundColor Cyan
@@ -105,13 +82,8 @@ function Write-Miss($msg)  { Write-Host "  [MISSING] $msg" -ForegroundColor Yell
 function Write-Skip($msg)  { Write-Host "  [SKIP]    $msg" -ForegroundColor DarkGray }
 function Write-Fail($msg)  { Write-Host "  [FAIL]    $msg" -ForegroundColor Red }
 
-# Returns the captured command output if the command exists and runs cleanly,
-# or $null otherwise. Used by every probe — uniform shape avoids the silent
-# truthy-empty-string bug from my earlier ad-hoc probe.
-#
-# Note: $args is a PowerShell automatic variable; a parameter of the same
-# name silently breaks splatting. Hence the fixed --version flag inline —
-# all probed tools accept it the same way.
+# $args is an automatic variable: a parameter of that name silently breaks
+# splatting, hence the fixed --version flag, which every probed tool accepts.
 function Test-Command([string]$exe) {
     if (-not (Get-Command $exe -ErrorAction SilentlyContinue)) { return $null }
     try {
@@ -121,9 +93,6 @@ function Test-Command([string]$exe) {
     } catch { return $null }
 }
 
-# Returns the JSON metadata of the latest VS install (installation path,
-# version, installed packages), or $null if no VS detected. Used by the
-# component verification path.
 function Get-VsInfo {
     $vswhere = Join-Path ${env:ProgramFiles(x86)} 'Microsoft Visual Studio\Installer\vswhere.exe'
     if (-not (Test-Path $vswhere)) { return $null }
@@ -132,29 +101,16 @@ function Get-VsInfo {
     return $json | ConvertFrom-Json | Select-Object -First 1
 }
 
-# Required VS components for Deckle's WinUI 3 build. Used both for fresh
-# installs (passed to winget --override) and for verifying pre-existing
-# installs (compared against vswhere's packages list, then added via
-# setup.exe modify --add).
-#
-# Why each one:
-# - ManagedDesktop workload : .NET desktop dev (WinUI 3 project templates,
-#   IDE features, .NET SDK targeting pack).
-# - WindowsAppSDK.Cs component group : XAML compiler + WindowsAppSDK
-#   runtime + project templates for C# WinAppSDK projects.
-# - VC.Tools.x86.x64 : MSVC C++ build tools. Required by the WinUI XAML
-#   compiler's GetLatestMSVCVersion task even for pure-C# projects (it
-#   enumerates VC\Tools\MSVC\ to locate platform headers — without this
-#   component, the build fails with MSB4018).
+# One list feeds both the fresh install (winget --override) and the check of
+# an existing install (setup.exe modify --add). VC.Tools.x86.x64 is needed
+# even for pure-C# projects: the WinUI XAML compiler's GetLatestMSVCVersion
+# task enumerates VC\Tools\MSVC\, and without it the build fails with MSB4018.
 $RequiredVsComponents = @(
     'Microsoft.VisualStudio.Workload.ManagedDesktop',
     'Microsoft.VisualStudio.ComponentGroup.WindowsAppSDK.Cs',
     'Microsoft.VisualStudio.Component.VC.Tools.x86.x64'
 )
 
-# Verifies that the required VS components are installed; if any are
-# missing, invokes setup.exe modify --add to install them. Idempotent.
-# Triggers a UAC prompt if elevation is needed for the modify operation.
 function Ensure-VsComponents {
     param([string[]]$RequiredComponents = $script:RequiredVsComponents)
 
@@ -192,10 +148,6 @@ function Ensure-VsComponents {
     Write-Good "VS components added successfully"
 }
 
-# =============================================================================
-# Probe
-# =============================================================================
-
 Write-Section "Probing current state"
 
 $state = [ordered]@{
@@ -218,12 +170,9 @@ foreach ($k in $state.Keys) {
     if ($v) { Write-Good "$k : $v" } else { Write-Miss $k }
 }
 
-# Hard requirements before going further: winget, git. They bootstrap
-# themselves into a Windows machine before this script can do anything
-# useful. If BOTH come up missing, the most likely cause isn't a real
-# install gap but a session PATH problem — the PowerShell extension's
-# Integrated Console in VS Code / VSCodium notoriously starts a host
-# without WindowsApps in PATH, which hides winget. Diagnose first.
+# winget and git both missing is almost always a session PATH problem, not an
+# install gap: the PowerShell extension's Integrated Console in VS Code /
+# VSCodium starts a host without WindowsApps in PATH, which hides winget.
 if (-not $state.Winget -and -not $state.Git) {
     Write-Host ""
     Write-Host "Both winget and git report missing — this is almost certainly a session" -ForegroundColor Yellow
@@ -243,10 +192,6 @@ if (-not $state.Git) {
     throw "git is required. Install via 'winget install --id Git.Git -e', then re-run."
 }
 
-# =============================================================================
-# Build install plan
-# =============================================================================
-
 Write-Section "Install plan"
 
 $plan = New-Object System.Collections.Generic.List[object]
@@ -254,8 +199,6 @@ $plan = New-Object System.Collections.Generic.List[object]
 function Add-Plan($name, $why, $cmd) {
     $plan.Add([pscustomobject]@{ Name = $name; Why = $why; Cmd = $cmd })
 }
-
-# Tier 1 — managed build
 
 if (-not $state.Gh) {
     Add-Plan 'GitHub CLI' 'GitHub auth for push and PR workflows' {
@@ -274,15 +217,11 @@ if (-not $state.Dotnet) {
 }
 
 if (-not (Get-VsInfo)) {
-    # Fresh install: winget pulls VS 2026 Community AND every required
-    # component in one shot via --override. VS 2026 dropped the year suffix
-    # from its winget ID (was Microsoft.VisualStudio.2022.Community, now
-    # just .Community).
+    # This winget ID carries no year suffix, unlike the IDs of earlier
+    # Visual Studio releases.
     Add-Plan 'Visual Studio 2026 Community + WinUI components' `
         'Windows SDK + .NET desktop + WinAppSDK + MSVC tools (needed by the WinUI 3 templates and native module work; build itself runs through dotnet build)' {
-        # Build --override from $RequiredVsComponents so the install path
-        # and the verification path share a single source of truth. Only
-        # the Workload accepts ;includeRecommended; component groups and
+        # Only a workload accepts ;includeRecommended; component groups and
         # individual components don't.
         $overrideParts = @('--quiet', '--wait', '--norestart')
         foreach ($c in $script:RequiredVsComponents) {
@@ -298,28 +237,22 @@ if (-not (Get-VsInfo)) {
             --override $override
     }
 } else {
-    # VS is already installed. winget would refuse to re-modify it ("already
-    # up to date"), so we go through setup.exe modify directly to add any
-    # required components that are missing. Idempotent — no-op when
-    # everything is already present.
+    # winget refuses to modify an installed VS ("already up to date"), so
+    # missing components go through setup.exe modify.
     Add-Plan 'VS WinUI components verification' `
         'Probe vswhere for required workloads/components and add missing ones via setup.exe modify' {
         Ensure-VsComponents
     }
 }
 
-# Tier 2 — native recompile (opt-in via -Full)
-
 if ($Full) {
     if (-not $state.Scoop) {
-        # Scoop bootstrap installer. Per-user, no UAC, lives in %USERPROFILE%\scoop.
         Add-Plan 'Scoop' 'Per-user package manager for the native toolchain' {
             Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser -Force
             Invoke-RestMethod -Uri 'https://get.scoop.sh' | Invoke-Expression
         }
     }
 
-    # extras bucket carries vulkan; main bucket carries mingw/cmake/ninja
     Add-Plan 'Scoop extras bucket' 'Provides the Vulkan SDK package' {
         scoop bucket add extras 2>$null
     }
@@ -371,15 +304,10 @@ if ($DryRun) {
     return
 }
 
-# =============================================================================
-# Confirm
-# =============================================================================
-
 if ($plan.Count -gt 0 -and -not $Yes) {
     Write-Host ""
-    # Warn about UAC if any VS-touching item is in the plan — both the
-    # winget install and setup.exe modify (used by component verification)
-    # need elevation. If the user isn't at the keyboard, the install stalls.
+    # Both the VS winget install and setup.exe modify need elevation; a UAC
+    # prompt nobody answers stalls the install.
     $needsUac = $plan | Where-Object { $_.Name -match 'Visual Studio|VS WinUI components' }
     if ($needsUac) {
         Write-Host "Heads-up: any Visual Studio install or modify triggers a UAC prompt." -ForegroundColor Yellow
@@ -392,12 +320,6 @@ if ($plan.Count -gt 0 -and -not $Yes) {
     }
 }
 
-# =============================================================================
-# Execute
-# =============================================================================
-
-# Track per-item outcome so the final summary can report what actually
-# happened rather than what was planned.
 $results = New-Object System.Collections.Generic.List[object]
 
 if ($plan.Count -gt 0) {
@@ -428,14 +350,9 @@ if ($plan.Count -gt 0) {
     }
 }
 
-# =============================================================================
-# Post-install env vars
-# =============================================================================
-
 Write-Section "Environment variables"
 
-# VULKAN_SDK — scoop's vulkan package does not always set this. Find the
-# install root and pin it. Only touch if -Full was requested.
+# Scoop's vulkan package does not always set VULKAN_SDK.
 if ($Full -and -not $env:VULKAN_SDK) {
     $scoopVulkan = "$env:USERPROFILE\scoop\apps\vulkan\current"
     if (Test-Path $scoopVulkan) {
@@ -445,10 +362,6 @@ if ($Full -and -not $env:VULKAN_SDK) {
         Write-Skip "VULKAN_SDK — scoop vulkan path not found; set manually if you installed elsewhere"
     }
 }
-
-# =============================================================================
-# Runtime assets
-# =============================================================================
 
 if ($IncludeAssets -and -not $SkipAssets) {
     Write-Section "Runtime assets"
@@ -467,15 +380,8 @@ if ($IncludeAssets -and -not $SkipAssets) {
     $RuntimeAssetsStatus = 'Skipped: handled by first-run wizard'
 }
 
-# =============================================================================
-# Post-install verification — re-probe what we just touched
-# =============================================================================
-
-# Re-run the same probes against the new state. PATH for newly-installed
-# tools may not be live in this session (winget refreshes PATH for the
-# current process, but not always reliably), so a "still missing" here
-# isn't always a real failure — it can mean "installed but visible only
-# after terminal restart". The summary distinguishes the two.
+# A tool installed above may stay off this session's PATH until a new
+# terminal opens, so "missing" here does not prove a failed install.
 $finalState = [ordered]@{
     Gh        = Test-Command 'gh'
     Dotnet    = Test-Command 'dotnet'
@@ -486,10 +392,6 @@ $finalState = [ordered]@{
     VulkanSdk = if ($env:VULKAN_SDK -and (Test-Path $env:VULKAN_SDK)) { $env:VULKAN_SDK } else { $null }
     Ollama    = Test-Command 'ollama'
 }
-
-# =============================================================================
-# Summary recap
-# =============================================================================
 
 Write-Section "Summary"
 
@@ -509,9 +411,6 @@ if ($plan.Count -eq 0) {
     }
 }
 
-# Re-display the new state inline so the user sees what is now probable
-# in this very session. Tools installed by winget often need a new
-# terminal before they appear in PATH — that's expected, not a failure.
 Write-Host ""
 Write-Host "  Post-install state (this session, before reopening terminal):" -ForegroundColor White
 foreach ($k in $finalState.Keys) {
@@ -523,10 +422,6 @@ if ($plan.Count -gt 0) {
     Write-Host "  Some freshly-installed tools may only appear in a new terminal." -ForegroundColor Yellow
     Write-Host "  Re-run with -DryRun in a fresh session to confirm full coverage." -ForegroundColor Yellow
 }
-
-# =============================================================================
-# Next steps
-# =============================================================================
 
 Write-Section "Next steps"
 

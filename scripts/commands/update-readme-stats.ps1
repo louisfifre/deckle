@@ -14,7 +14,7 @@
 
 [CmdletBinding()]
 param(
-    # Repository/worktree root. Defaults to the current Git worktree.
+    # Repository/worktree root. Defaults to the repo holding this script.
     [string]$Target,
 
     # Interactive picker: lists the main repo + all linked worktrees and

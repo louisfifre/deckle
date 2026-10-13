@@ -25,8 +25,6 @@ function Resolve-TerminalThemeVariant {
     return 'Light'
 }
 
-# Resolves the launcher's palette choice into the one the theme applies: the
-# Deckle palette takes its dark or light variant from the console background.
 function Resolve-TerminalPalette {
     param(
         [Parameter(Mandatory)][ValidateSet('Terminal', 'Deckle')][string]$Palette,
@@ -37,8 +35,8 @@ function Resolve-TerminalPalette {
     return 'Deckle' + (Resolve-TerminalThemeVariant -BackgroundColor $BackgroundColor)
 }
 
-# The maintainer's palette, Figma "Deckle Scripts", node 22-27: title,
-# sections, action-row title, body text, selection, access, and background.
+# Tokens from the Figma file "Deckle Scripts", node 22-27: title, sections,
+# action-row title, body text, selection, access, and background.
 # It names no colour for a plain Action, muted chrome, or outcomes; those
 # roles keep their ConsoleColor fallback rather than an invented value.
 function Get-TerminalThemePalette {

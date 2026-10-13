@@ -11,31 +11,6 @@
     action: Clean build outputs | | danger | Deletes generated build outputs from the target worktree.
 #>
 
-# Operational notes
-#
-# Two locations, since the repo uses the .NET artifacts output layout
-# (root Directory.Build.props sets ArtifactsPath):
-#   - artifacts\{bin,obj,publish,package}\  — the consolidated output of
-#     every src/ and tests/ project (they share the root layout).
-#   - src\<m>\{bin,obj}\, tests\<m>\{bin,obj}\,
-#     benchmark\asr\studies\<m>\{bin,obj}\
-#     — stragglers: benchmark keeps the classic per-project layout (its
-#     own Directory.Build.props opts out), and a worktree built before the
-#     artifacts migration may still carry old per-module folders. Cleaned
-#     too so a single run leaves the tree pristine.
-#
-# Released ZIP staging (artifacts\Deckle-v<X.Y.Z>\) is KEPT by default — it
-# is a release artefact, not transient build output. Pass -IncludeReleases
-# to purge it as well.
-#
-# The running Deckle process is stopped first: it locks Deckle.exe and its
-# DLLs, and with $ErrorActionPreference='Stop' a locked-file delete would
-# abort the whole purge mid-run. Mirrors build-run.ps1's kill step.
-#
-# Symlink guard: skips any reparse-point folder rather than recursing into
-# it. PowerShell's `Remove-Item -Recurse` follows symlinks and nukes the
-# target — a guard is non-negotiable when scanning blindly.
-
 [CmdletBinding()]
 param(
     # Override the target worktree. Defaults to the repo that contains
@@ -88,12 +63,6 @@ trap {
     throw
 }
 
-# =============================================================================
-# RepoRoot resolution — mirrors build-run.ps1 so the two scripts behave
-# the same way when called from the same context (VS Code Run, terminal,
-# scripts/deckle.ps1 with -Target). Three levels up from this script:
-# scripts/commands/maintenance/clean.ps1 → commands/ → scripts/ → <repo root>.
-# =============================================================================
 if ($Pick) {
     Import-Module (Join-Path $LibDir 'menu.psm1') -Force
     $RepoRoot = Select-Worktree -ContextDir $ScriptDir
@@ -106,14 +75,8 @@ if ($Pick) {
 
 Write-Host "Repo: $RepoRoot" -ForegroundColor DarkGray
 
-# =============================================================================
-# Helpers
-# =============================================================================
-
-# Compute folder size before deletion — gives a meaningful end-of-run
-# tally. Get-ChildItem -Force picks up hidden/system files (e.g. NuGet
-# .lock); -ErrorAction SilentlyContinue swallows transient access denials
-# on Windows-locked temp files inside obj/.
+# -Force counts hidden and system files; SilentlyContinue skips the
+# transient access denials on files Windows holds locked inside obj/.
 function Get-FolderSizeBytes {
     param([string]$Path)
     $sum = Get-ChildItem -LiteralPath $Path -Recurse -File -Force -ErrorAction SilentlyContinue |
@@ -129,8 +92,6 @@ function Format-Size {
     else                    { "$Bytes B" }
 }
 
-# Delete one folder, with size tally and reparse-point guard. Returns a
-# hashtable { Removed; Skipped; Bytes; Label } so the caller can accumulate.
 function Remove-OutputDir {
     param(
         [Parameter(Mandatory)][string]$Path,
@@ -162,10 +123,8 @@ function Remove-OutputDir {
 # =============================================================================
 Stop-DeckleProcess
 
-# Stop .NET build servers left by manual, menu, or agent builds. This is
-# intentionally machine-wide: MSBuild/Roslyn servers are developer cache
-# processes, not repo artifacts, and they are the usual source of lingering
-# ".NET Host" rows after a Deckle build.
+# Machine-wide on purpose: MSBuild and Roslyn servers belong to no worktree,
+# and they are what lingers as ".NET Host" processes after a build.
 Write-Host ""
 Write-Host "Stopping .NET build servers ..." -ForegroundColor Cyan
 $buildServerCleanup = Stop-DotnetBuildServers
@@ -190,9 +149,8 @@ function Add-Result {
 }
 
 # =============================================================================
-# 1. Consolidated artifacts output (src/ + tests/ via the root layout).
-#    bin/obj/publish/package are transient; Deckle-v* release staging is
-#    kept unless -IncludeReleases.
+# 1. Consolidated output of every src/ and tests/ project: the root
+#    Directory.Build.props sets ArtifactsPath.
 # =============================================================================
 $ArtifactsDir = Join-Path $RepoRoot 'artifacts'
 if (Test-Path -LiteralPath $ArtifactsDir) {
@@ -210,8 +168,8 @@ if (Test-Path -LiteralPath $ArtifactsDir) {
 }
 
 # =============================================================================
-# 2. Straggler per-project bin/obj — benchmark/asr studies (classic layout, opts out of
-#    the root props) plus any pre-migration leftovers under src/ and tests/.
+# 2. Per-project bin/obj: benchmark/ has its own Directory.Build.props and
+#    keeps that layout; src/ and tests/ may still hold leftovers of it.
 # =============================================================================
 $stragglerRoots = @(
     (Join-Path $RepoRoot 'src'),
@@ -233,9 +191,6 @@ foreach ($root in $stragglerRoots) {
     }
 }
 
-# =============================================================================
-# Tally
-# =============================================================================
 Write-Host ""
 Write-Host ("Done. {0} folder(s) removed, {1} freed." -f $removed, (Format-Size $totalBytes)) -ForegroundColor Green
 if ($skipped -gt 0) {

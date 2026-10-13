@@ -13,21 +13,8 @@
     action: Publish native runtime | -Publish | danger | Publishes a public GitHub Release of the native runtime.
 #>
 
-# The wizard URL is hardcoded in NativeRuntime.CurrentBundle; the zip is
-# extracted into <UserDataRoot>\native\.
-#
-# Bundle layout (flat, matches NativeRuntime.CopyFromFolder semantics):
-#   libwhisper.dll, ggml.dll, ggml-base.dll, ggml-cpu.dll, ggml-vulkan.dll
-#   libgcc_s_seh-1.dll, libstdc++-6.dll, libwinpthread-1.dll
-#   PROVENANCE.txt   — human-readable build metadata
-#   SHA256SUMS       — `sha256sum -c` compatible
-#
-# Sources, in priority order:
-#   - current bundle: the artifact pinned by NativeRuntime.CurrentBundle
-#   - new bundle    : whisper DLLs from <WhisperRepo>\build\bin\ and MinGW DLLs
-#                     beside the compiler recorded in CMakeCache.txt
-#
-# Keep this script aligned with the native runtime bundle metadata in code.
+# The zip stays flat: NativeRuntime.InstallFromZipAsync looks each DLL up by
+# its bare name at the archive root.
 
 [CmdletBinding()]
 param(
@@ -69,7 +56,6 @@ $LibDir = Join-Path (Split-Path -Parent (Split-Path -Parent $ScriptDir)) 'lib'
 Import-Module (Join-Path $LibDir 'native-runtime-release.psm1') -Force
 Import-Module (Join-Path $LibDir 'release-validation.psm1') -Force
 
-# ── Catalog ──────────────────────────────────────────────────────────────────
 $RepoRoot = if ($Target) {
     if (-not (Test-Path -LiteralPath $Target -PathType Container)) { throw "Target not found: $Target" }
     (Get-Item -LiteralPath $Target).FullName
@@ -191,8 +177,6 @@ if ($ArtifactPath) {
         Write-DeckleWorkflowMessage -Output $WorkflowOutput -Message "whisper.cpp $($versionPlan.WhisperVersion); previous bundle native-v$($versionPlan.PreviousVersion)"
     }
 
-    # ── Resolve sources ──────────────────────────────────────────────────────
-
     $WhisperBin = Join-Path $WhisperRepo 'build\bin'
     if (-not (Test-Path $WhisperBin)) {
         throw "whisper.cpp build output not found: $WhisperBin (cmake --build build needed first)"
@@ -233,8 +217,6 @@ $ZipPath    = Join-Path $OutDir $ZipName
 $StagingDir = Join-Path $OutDir 'staging'
 $null = New-Item -ItemType Directory -Path $StagingDir
 
-# ── Stage DLLs + compute per-file SHA256 ─────────────────────────────────────
-
 Write-DeckleWorkflowStep -Output $WorkflowOutput -Message "Stage DLLs to $StagingDir"
 
 $Sha256ByName = [ordered]@{}
@@ -252,11 +234,8 @@ function Stage-Dll($srcDir, $name) {
 foreach ($n in $WhisperDlls) { Stage-Dll $WhisperBin  $n }
 foreach ($n in $MingwDlls)   { Stage-Dll $MingwBin $n }
 
-# ── Gather provenance metadata ───────────────────────────────────────────────
-
 Write-DeckleWorkflowStep -Output $WorkflowOutput -Message 'Gather provenance'
 
-# whisper.cpp upstream version — read from CMakeLists.txt `project(... VERSION X.Y.Z)`.
 $cmakeLists = Join-Path $WhisperRepo 'CMakeLists.txt'
 $WhisperVersion = 'unknown'
 if (Test-Path $cmakeLists) {
@@ -264,46 +243,40 @@ if (Test-Path $cmakeLists) {
     if ($match) { $WhisperVersion = $match.Matches[0].Groups[1].Value }
 }
 
-# whisper.cpp commit — only available when WhisperRepo is an actual git clone.
 $WhisperCommit = 'unknown (source extraction, not a git clone)'
 if (Test-Path (Join-Path $WhisperRepo '.git')) {
     $rev = & git -C $WhisperRepo rev-parse HEAD 2>$null
     if ($LASTEXITCODE -eq 0 -and $rev) { $WhisperCommit = $rev.Trim() }
 }
 
-# Compiler — query the exact executable CMake used for this build.
+# The exact compiler CMake used for this build, not whichever one PATH finds.
 $CompilerLine = 'unknown'
 if (Test-Path $CxxExe) {
     $line = (& $CxxExe --version 2>$null | Select-Object -First 1)
     if ($line) { $CompilerLine = $line }
 }
 
-# Vulkan SDK version — Scoop installs as <root>\apps\vulkan\<version>\, so the
-# resolved 'current' shim points at the version dir; reading the symlink
-# target is fragile, so we just read the version line from sdk_version.txt
-# if present, else fall back to the env var path tail.
+# Scoop installs the Vulkan SDK under apps\vulkan\<version>\ behind a 'current'
+# link: sdk_version.txt is the reliable source, the link target's leaf only a
+# fallback.
 $VulkanSdk = if ($env:VULKAN_SDK) {
     $verFile = Join-Path $env:VULKAN_SDK 'sdk_version.txt'
     if (Test-Path $verFile) {
         (Get-Content $verFile -First 1).Trim()
     } else {
-        # Resolve symlink target if any; otherwise print the literal path tail.
         $resolved = (Get-Item $env:VULKAN_SDK -ErrorAction SilentlyContinue).Target
         if ($resolved) { Split-Path -Leaf $resolved } else { Split-Path -Leaf $env:VULKAN_SDK }
     }
 } else { 'unknown (VULKAN_SDK not set)' }
 
-# CMake version
 $CMakeLine = 'unknown'
 $cmakeOut = (& cmake --version 2>$null | Select-Object -First 1)
 if ($cmakeOut) { $CMakeLine = ($cmakeOut -replace '^cmake version\s+', '') }
 
-# Ninja version
 $NinjaLine = 'unknown'
 $ninjaOut = (& ninja --version 2>$null)
 if ($ninjaOut) { $NinjaLine = $ninjaOut.Trim() }
 
-# Build flags from CMakeCache
 $VulkanFlags = @()
 if (Test-Path $CMakeCache) {
     $VulkanFlags = (Select-String -Path $CMakeCache -Pattern '^GGML_VULKAN[A-Z_]*:BOOL=' |
@@ -312,8 +285,6 @@ if (Test-Path $CMakeCache) {
 
 $Hostname  = $env:COMPUTERNAME
 $BuildDate = (Get-Date).ToString('yyyy-MM-ddTHH:mm:sszzz')
-
-# ── Compose PROVENANCE.txt ───────────────────────────────────────────────────
 
 $filesBlock = ''
 foreach ($n in ($WhisperDlls + $MingwDlls)) {
@@ -366,15 +337,12 @@ whisper.cpp build and MinGW runtime directories recorded above.
 Set-Content -Path (Join-Path $StagingDir 'PROVENANCE.txt') -Value $prov -Encoding UTF8
 Write-DeckleWorkflowMessage -Output $WorkflowOutput -Message 'PROVENANCE.txt written'
 
-# ── SHA256SUMS (sha256sum -c compatible) ─────────────────────────────────────
-
+# SHA256SUMS stays `sha256sum -c` compatible.
 $sumsLines = foreach ($n in ($WhisperDlls + $MingwDlls)) {
     '{0} *{1}' -f $Sha256ByName[$n], $n
 }
 Set-Content -Path (Join-Path $StagingDir 'SHA256SUMS') -Value $sumsLines -Encoding UTF8
 Write-DeckleWorkflowMessage -Output $WorkflowOutput -Message 'SHA256SUMS written'
-
-# ── Zip flat + zip-level SHA256 ──────────────────────────────────────────────
 
 Write-DeckleWorkflowStep -Output $WorkflowOutput -Message "Compress to $ZipName"
 Compress-Archive -Path (Join-Path $StagingDir '*') -DestinationPath $ZipPath -Force
@@ -389,8 +357,6 @@ Write-DeckleWorkflowMessage -Output $WorkflowOutput -Message "$ZipName ($ZipSize
     Remove-Item $StagingDir -Recurse -Force
     $SourceKind = 'whisper.cpp build'
 }
-
-# ── Summary — paste-ready block for NativeRuntime.CurrentBundle ──────────────
 
 Write-DeckleWorkflowStep -Output $WorkflowOutput -Message 'Done'
 Write-Host @"
@@ -415,8 +381,8 @@ if (-not $ArtifactPath) {
 "@ -ForegroundColor Green
 }
 
-# ── Optional: explicit draft → verify → tag → publish ────────────────────────
-
+# Draft, verify the uploaded bytes, tag, then publish: a broken asset never
+# becomes public.
 if ($Publish) {
     $tag = "native-v$Version"
     $title = "Native runtime $tag"

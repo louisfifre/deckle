@@ -1,13 +1,7 @@
-# cut-version.ps1 — Bump the single source-of-truth <Version>.
-#
-# The version lives in exactly one place: <Version> in Deckle.App.csproj. This
-# script increments one SemVer segment, commits ONLY that one-line change as
-# `chore(version): vX.Y.Z`. A version is an internal progress record; only a
-# successful public release creates the matching git tag.
-#
-# It does NOT push, update the changelog, tag, or publish. record-version.ps1
-# composes the normal internal record; publish-app.ps1 creates the public tag
-# only after release artifacts have built successfully.
+# cut-version.ps1 — Bump the single source-of-truth <Version> in
+# Deckle.App.csproj and commit only that line as `chore(version): vX.Y.Z`.
+# No push, no changelog, no tag: record-version.ps1 composes the internal
+# record, and only publish-app.ps1 creates a tag, after a successful release.
 
 [CmdletBinding()]
 param(
@@ -16,7 +10,7 @@ param(
     [ValidateSet('patch', 'minor', 'major')]
     [string]$Bump = 'patch',
 
-    # Target worktree. Resolves like the other lib scripts: -Pick prompts for
+    # Target worktree. Resolves like the other commands: -Pick prompts for
     # one, -Target takes an explicit path, otherwise the repo two levels up.
     [string]$Target,
     [switch]$Pick,
@@ -54,7 +48,6 @@ trap {
     throw
 }
 
-# ── Resolve the target worktree (same shape as launch-app.ps1) ───────────────
 if ($Pick) {
     Import-Module (Join-Path $LibDir 'menu.psm1') -Force
     $RepoRoot = Select-Worktree -ContextDir $ScriptDir
@@ -69,12 +62,9 @@ Write-DeckleOutputText -Text "Repo: $RepoRoot" -Role Muted
 $Csproj = Join-Path $RepoRoot 'src\Deckle.App\Deckle.App.csproj'
 if (-not (Test-Path $Csproj)) { throw "csproj not found at $Csproj — is '$RepoRoot' a Deckle worktree?" }
 
-# ── Guard: no pending TRACKED change ─────────────────────────────────────────
-# We stage and commit ONLY the csproj, so no tracked change may be pending —
-# otherwise it could ride into the release commit, or we'd tag a half-done
-# state. Untracked files (scratch benches, in-progress notes) have nothing to
-# do with a version bump, so they are deliberately ignored (-uno). The bump
-# runs on main just after a merge, where the tracked state is already clean.
+# A pending tracked change would ride into the version commit. Untracked files
+# (scratch benches, in-progress notes) have nothing to do with a bump, hence
+# --untracked-files=no.
 Write-DeckleWorkflowStep -Output $WorkflowOutput -Message 'Check no tracked change is pending'
 $dirty = & git -C $RepoRoot status --porcelain --untracked-files=no
 if ($LASTEXITCODE -ne 0) { throw "git status failed (code $LASTEXITCODE)" }
@@ -83,7 +73,6 @@ if ($dirty) {
 }
 Write-DeckleWorkflowMessage -Output $WorkflowOutput -Message 'Clean (no tracked change pending)'
 
-# ── Read the current <Version> — the single source of truth ──────────────────
 Write-DeckleWorkflowStep -Output $WorkflowOutput -Message 'Read current <Version>'
 $content = Get-Content -Raw -LiteralPath $Csproj
 $verRe = [regex]'<Version>([^<]+)</Version>'
@@ -95,7 +84,6 @@ if ($current -notmatch '^\d+\.\d+\.\d+$') {
 }
 Write-DeckleWorkflowMessage -Output $WorkflowOutput -Message "current: v$current"
 
-# ── Compute the next version ─────────────────────────────────────────────────
 $p = $current.Split('.') | ForEach-Object { [int]$_ }
 # Parenthesise each addition: PowerShell's comma operator binds TIGHTER than
 # `+`, so `@($p[0], $p[1] + 1, 0)` would parse as `@(($p[0],$p[1]) + (1,0))` —
@@ -110,15 +98,12 @@ $next = $p -join '.'
 $tag  = "v$next"
 Write-DeckleWorkflowStep -Output $WorkflowOutput -Message "Bump ($Bump): v$current -> $tag"
 
-# ── Guard: the next version must not already be a public tag ─────────────────
 $existing = & git -C $RepoRoot tag --list $tag
 if ($LASTEXITCODE -ne 0) { throw "git tag --list failed (code $LASTEXITCODE)" }
 if ($existing) { throw "Tag $tag already exists — refuse to overwrite." }
 
-# ── Rewrite ONLY the <Version> value ─────────────────────────────────────────
-# Bounded replace on the FIRST <Version>…</Version> occurrence; every other
-# line, the line endings, and the encoding stay byte-for-byte. The csproj has
-# no BOM, so we write UTF-8 without BOM to keep the diff to that single line.
+# The csproj has no BOM: writing UTF-8 without one keeps the diff to the
+# <Version> line.
 $newContent = $verRe.Replace($content, "<Version>$next</Version>", 1)
 [System.IO.File]::WriteAllText($Csproj, $newContent, [System.Text.UTF8Encoding]::new($false))
 Write-DeckleWorkflowMessage -Output $WorkflowOutput -Message 'csproj written'
@@ -141,8 +126,6 @@ if ($NoCommit) {
     return
 }
 
-# ── Commit the bump ──────────────────────────────────────────────────────────
-# Stage ONLY the csproj so nothing else can ride along.
 Write-DeckleWorkflowStep -Output $WorkflowOutput -Message 'Commit version record'
 & git -C $RepoRoot add -- $Csproj
 if ($LASTEXITCODE -ne 0) { throw "git add failed (code $LASTEXITCODE)" }
@@ -150,7 +133,6 @@ if ($LASTEXITCODE -ne 0) { throw "git add failed (code $LASTEXITCODE)" }
 if ($LASTEXITCODE -ne 0) { throw "git commit failed (code $LASTEXITCODE)" }
 Write-DeckleWorkflowMessage -Output $WorkflowOutput -Message "committed chore(version): $tag"
 
-# ── Summary — push and publish stay deliberate, separate acts ────────────────
 Write-Host ''
 Write-DeckleOutputText -Text "Cut v$current -> $tag on $RepoRoot"
 Write-DeckleOutputText -Text 'Not pushed. No tag was created; the tag belongs to a successful public release.' -Role Muted

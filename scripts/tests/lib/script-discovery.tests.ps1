@@ -21,7 +21,6 @@ function Get-FixtureHeader([string]$RelativePath) {
 $marker = Join-Path $FixtureDir 'no-header.executed'
 if (Test-Path -LiteralPath $marker) { Remove-Item -LiteralPath $marker -Force }
 
-# Key-value reader shared with front matter.
 $pairs = @(Read-DeckleKeyValueLines -Lines @(
     'action: First | -One'
     'Note without a colon is ignored'
@@ -40,7 +39,6 @@ Assert-Equal 'kept inside' $pairs[3].Value 'surrounding quotes are stripped'
 $table = ConvertTo-DeckleKeyValueTable -Pairs $pairs
 Assert-Equal 'Second' $table['action'] 'the table keeps the last value of a repeated key'
 
-# Front matter null cases.
 $scratch = Join-Path ([IO.Path]::GetTempPath()) "script-discovery-$([guid]::NewGuid())"
 $null = New-Item -ItemType Directory -Path $scratch
 try {
@@ -61,7 +59,6 @@ $toolsFrontMatter = Get-DeckleMarkdownFrontMatter -Path (Join-Path $FixtureDir '
 Assert-Equal 'Tooling' $toolsFrontMatter['name'] 'a folder README names its level'
 Assert-Equal '2' $toolsFrontMatter['order'] 'front matter values stay text'
 
-# Header statuses and reasons.
 $alpha = Get-FixtureHeader 'alpha.ps1'
 Assert-Equal Described $alpha.Status 'a synopsis makes a Header'
 Assert-Equal 'Alpha task' $alpha.Label 'the synopsis is the label'
@@ -87,7 +84,6 @@ $twoAxes = Get-FixtureHeader 'two-axes.ps1'
 Assert-Equal InvalidHeader $twoAxes.Status 'two scalar ValidateSet parameters are invalid'
 Assert-True ($twoAxes.Reason -match 'Configuration' -and $twoAxes.Reason -match 'Mode') 'the two-axes reason names both parameters'
 
-# Actions, variants and parameters.
 $gamma = Get-FixtureHeader 'gamma.ps1'
 Assert-Equal Described $gamma.Status 'action lines keep the Header valid'
 Assert-Equal 2 @($gamma.Actions).Count 'each action line declares one Action'
@@ -117,7 +113,6 @@ Assert-Equal Described $arraySet.Status 'an array ValidateSet keeps the Header v
 Assert-Equal $null $arraySet.VariantParameter 'an array ValidateSet is a Filter, not a Variant axis'
 Assert-Equal 0 @($arraySet.Variants).Count 'an array ValidateSet gives no Variants'
 
-# Catalog.
 $catalog = Get-DeckleScriptCatalog -Path $FixtureDir
 Assert-Equal '' $catalog.RelativePath 'the root level has an empty relative path'
 $sections = @($catalog.Sections)

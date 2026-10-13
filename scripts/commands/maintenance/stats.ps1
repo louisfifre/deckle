@@ -10,26 +10,6 @@
     order: 110
 #>
 
-# Operational notes
-#
-# Walks every .csproj under <RepoRoot>\src\, then builds a single file
-# inventory for each module. The console views are derived from that same
-# inventory:
-#   - long-file watch list (400/600 effective LOC for C#, 500/1000 raw otherwise)
-#   - module summary, sorted by module name
-#   - dynamic file-type counts found in modules
-#   - detailed per-module file tree
-#
-# Generated files and build output are excluded: bin/, obj/, artifacts/,
-# .vs/, __pycache__/, Generated Files/, Properties/, *.g.cs, *.g.i.cs,
-# *.xaml.g.cs, GlobalUsings.g.cs, AssemblyInfo.cs.
-#
-# LOC is intentionally conservative:
-#   - .cs strips blank lines and pure comment lines
-#   - .xaml strips blank lines and single-line XML comments
-#   - .resw is reported by raw line count plus <data> entry count
-# Other text files get raw line counts only.
-
 [CmdletBinding()]
 param(
     # Override the target worktree. Defaults to the repo containing
@@ -576,7 +556,6 @@ function Get-RepoTypeFiles {
     }
 }
 
-# Walk every csproj under src/.
 $csprojs = Get-ChildItem -LiteralPath $SrcDir -Recurse -Filter '*.csproj' -ErrorAction SilentlyContinue |
            Where-Object { -not (Test-SkippedPath -Path $_.FullName -RootForRelative $SrcDir) }
 if (-not $csprojs) { throw "No .csproj found under $SrcDir" }
@@ -613,7 +592,6 @@ $rows = foreach ($group in ($moduleFiles | Group-Object Module)) {
 
 $rows = $rows | Sort-Object Module
 
-# Long file watch list.
 $longFiles = @($moduleFiles |
     Where-Object {
         $_.Extension -ne '.resw' -and (
@@ -653,7 +631,6 @@ if (-not $PassThru -and $resourceFiles.Count -gt 0) {
     }
 }
 
-# Module table.
 if (-not $PassThru) {
     Write-Section "Module summary (src modules)"
     $rows | Out-PlainTable -Property @(
@@ -674,8 +651,8 @@ $tot = [pscustomobject]@{
     ReswKeys = ($rows | Measure-Object -Property ReswKeys -Sum).Sum
 }
 
-# Repository-wide type inventory. Git defines the project-file boundary: ignored
-# workspace data is excluded, and tracked links are counted without traversal.
+# Git defines the file boundary: ignored workspace data stays out, and tracked
+# links are counted without traversal.
 $moduleTypeRows = @(Get-FileTypeRows -Files $moduleFiles)
 $moduleRootPaths = @($csprojs | ForEach-Object { $_.Directory.FullName })
 $repoTypeFiles = @(Get-RepoTypeFiles -ExcludedRoots $moduleRootPaths)
@@ -707,13 +684,11 @@ Write-Host ("Module inventory total: {0} file(s)  /  LOC: {1:N0} cs + {2:N0} xam
     $tot.Files, $tot.LocCs, $tot.LocXaml, $tot.LocTotal, $tot.ReswKeys) -ForegroundColor Cyan
 Write-Host ""
 
-# Dynamic type summary.
 Write-Section "File types"
 Write-Host ("Outside scope: {0}" -f ($scopes -join ', ')) -ForegroundColor DarkGray
 Write-Host ""
 Write-FileTypeTables -ModuleRows $moduleTypeRows -RepoRows $repoTypeRows
 
-# Hierarchical file tree.
 Write-Section "Module details (per-file table)"
 foreach ($row in $rows) {
     Write-Host ""
@@ -728,7 +703,6 @@ foreach ($row in $rows) {
     Write-Host ""
 }
 
-# Optional JSON dump.
 if ($Json) {
     $jsonRows = $rows | Select-Object Module, Files, LocCs, LocXaml, LocTotal, ReswKeys, Types
     $jsonFiles = $moduleFiles | Select-Object Module, RelativeRepo, Kind, Extension, Bytes, RawLines, Loc, ReswKeys

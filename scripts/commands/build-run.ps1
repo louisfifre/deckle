@@ -69,18 +69,8 @@ trap {
     throw
 }
 
-# =============================================================================
-# RepoRoot resolution
-# -----------------------------------------------------------------------------
-# Default: build the repo containing this script copy — the VS Code "Run"
-# flow (PowerShell extension on the open file) naturally picks the
-# worktree currently being edited. Two levels up from this script:
-# scripts/commands/build-run.ps1 → scripts/ → <repo root>.
-#
-# Override: -Target "<path>" picks any path. -Pick lists the worktrees
-# via the shared interactive picker (scripts/lib/menu.psm1) and prompts.
-# Both are for terminal use; VS Code Run should stay no-arg.
-# =============================================================================
+# The default is the repo holding this script copy, so VS Code's Run on the
+# open file builds the worktree being edited.
 if ($Pick) {
     Import-Module (Join-Path $LibDir 'menu.psm1') -Force
     $RepoRoot = Select-Worktree -ContextDir $ScriptDir
@@ -98,24 +88,17 @@ $Csproj     = Join-Path $ProjectDir 'Deckle.App.csproj'
 
 if (-not (Test-Path $Csproj)) { throw "csproj not found at $Csproj — is '$RepoRoot' a Deckle repo?" }
 
-# Artifacts output layout (see root Directory.Build.props): every bin/ is
-# consolidated under <RepoRoot>\artifacts\bin\<Project>\<pivot>\. For the App
-# the pivot is just the lowercased configuration (single-TFM, so no TFM
-# segment; x64 is not a pivot). We still resolve the exe lazily AFTER the
-# build and glob by pivot prefix rather than hardcoding the full path, so a
-# RID-suffixed pivot (debug_win-x64) or a future TFM segment can't leave us
-# launching a stale binary. LastWriteTime sort picks the freshest.
+# The root Directory.Build.props puts every bin/ under
+# artifacts\bin\<Project>\<pivot>\; the App's pivot is the lowercased
+# configuration (single TFM, and x64 is not a pivot).
 $AppArtifactsBin = Join-Path $RepoRoot 'artifacts\bin\Deckle.App'
 $PivotPrefix     = $Configuration.ToLowerInvariant()
 
-# 1. The running instance. Build & run replaces it: Deckle is single-instance
-# (a resident mutex rejects a second process), and an in-place build cannot
-# overwrite the assemblies the instance holds open. A -NoRun build never
-# touches it — the one case where that instance would block the build is when
-# it runs from this build's exact output directory (configuration pivot, no
-# RID), so refuse before compiling instead of stopping anything: the build
-# would otherwise fail on locked files after a full compile, leaving the
-# output directory half-copied.
+# Build & run replaces the running instance: Deckle is single-instance (a
+# resident mutex rejects a second process), and a build cannot overwrite the
+# assemblies it holds open. -NoRun never stops it, so it refuses before
+# compiling rather than failing on locked files after a full compile and
+# leaving the output directory half-copied.
 if ($NoRun) {
     $OutputDir = Join-Path $AppArtifactsBin $PivotPrefix
     Write-DeckleWorkflowStep -Output $WorkflowOutput -Message 'Check running Deckle instance'
@@ -133,15 +116,11 @@ if ($NoRun) {
     }
 }
 
-# 2. Build via `dotnet build`. Restore is implicit (separate evaluation
-# phase before Build), so the WindowsAppSDK targets (CompileXaml etc.)
-# get imported from the freshly-regenerated .nuget.g.targets — no
-# CS5001 / CS0103 InitializeComponent surprise in a fresh worktree.
-#
-# Keep the maintainer machine responsive after repeated agent/menu builds:
-# MSBuild node reuse and Roslyn shared compilation leave .NET Host /
-# VBCSCompiler processes behind for faster follow-up builds, which is hostile
-# to parallel worktrees and WinUI responsiveness diagnostics.
+# Restore stays implicit (separate evaluation phase before Build), so the
+# WindowsAppSDK targets (CompileXaml etc.) get imported from the regenerated
+# .nuget.g.targets — no CS5001 / CS0103 InitializeComponent surprise in a fresh
+# worktree. /m:1 stays explicit: the .NET CLI applies its default node count
+# after Directory.Build.rsp.
 Write-DeckleWorkflowStep -Output $WorkflowOutput -Message "dotnet build ($Configuration x64)"
 $buildExitCode = Invoke-DeckleConsoleProcess -FilePath 'dotnet' -ArgumentList @(
     'build', $Csproj, "-c:$Configuration", '-p:Platform=x64', '-v:m', '-nologo',
@@ -150,7 +129,6 @@ $buildExitCode = Invoke-DeckleConsoleProcess -FilePath 'dotnet' -ArgumentList @(
 if ($buildExitCode -ne 0) { throw "dotnet build failed (code $buildExitCode)" }
 Write-DeckleWorkflowResult -Output $WorkflowOutput -Message 'Build succeeded'
 
-# 3. Run
 if ($NoRun) {
     Write-DeckleWorkflowStep -Output $WorkflowOutput -Message 'Done'
     Write-DeckleWorkflowMessage -Output $WorkflowOutput -Message 'Launch skipped because -NoRun was set'
@@ -168,10 +146,9 @@ if ($NoRun) {
     return
 }
 
-# Resolve the freshest Deckle.exe under artifacts\bin\Deckle.App\<pivot>\.
-# Pivot prefix match (debug / debug_win-x64) rather than an exact folder so a
-# RID-suffixed pivot can't strand us on a stale exe. LastWriteTime sort picks
-# the freshest if several pivots coexist.
+# Prefix match on the pivot (debug, debug_win-x64) rather than an exact folder,
+# so a RID-suffixed pivot cannot strand the launch on a stale exe; the newest
+# write wins when several pivots coexist.
 Write-DeckleWorkflowStep -Output $WorkflowOutput -Message 'Resolve built executable'
 $ExeCandidates = Get-ChildItem -Path $AppArtifactsBin -Recurse -Filter 'Deckle.exe' -ErrorAction SilentlyContinue |
     Where-Object { $_.Directory.Name -like "$PivotPrefix*" } |
@@ -194,16 +171,12 @@ function Start-DeckleViaShell {
     [System.Diagnostics.Process]::Start($psi) | Out-Null
 }
 
-# Launch via real ShellExecute so the new Deckle process is detached from
-# PowerShell and enters the same shell path as a user-opened executable.
-# The earlier `cmd /c start` route went through a console shell first; that
-# looked close but still left Deckle under the timing/foreground state of
-# the build script in the HUD topmost repro.
-#
-# Post-build mitigation: the first launch right after the build can still
-# inherit a degraded foreground state, so we pass --post-build to Deckle.exe
-# and let the app relaunch itself once via the same ShellExecute primitive.
-# Pass -NoAutoRestart to suppress (debug-attach scenarios).
+# Real ShellExecute detaches Deckle from PowerShell and gives it the shell path
+# of a user-opened executable; `cmd /c start` goes through a console shell and
+# leaves Deckle under the build script's foreground state, which breaks the HUD
+# topmost. The first launch after a build can still inherit a degraded
+# foreground state, so --post-build lets the app relaunch itself once through
+# the same ShellExecute primitive.
 $launchArgs = @()
 if ($HudZOrderSelfTest) {
     $launchArgs = @('--post-build-hud-zorder-selftest')
@@ -224,10 +197,8 @@ if ($launchArgs.Count) {
 }
 
 if ($Wait) {
-    # cmd /c start spawned the process detached; we don't have a direct
-    # handle. Poll briefly until the new Deckle process appears, then
-    # wait on it. 5s ceiling so the script can't hang indefinitely if
-    # the exe failed to start for an unrelated reason.
+    # The shell launch keeps no process handle, so poll for the new process;
+    # the 5 s ceiling keeps a failed start from hanging the script.
     $deadline = (Get-Date).AddSeconds(5)
     do {
         Start-Sleep -Milliseconds 100

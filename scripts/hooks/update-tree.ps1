@@ -19,13 +19,9 @@ $WorkflowOutput = New-DeckleWorkflowOutput -Category 'tree'
 Write-DeckleOutputText -Text "Repo: $repoRoot" -Role Muted
 Write-DeckleOutputText -Text "TREE: $outputFile" -Role Muted
 
-# ── Collecte ──────────────────────────────────────────────────────────────
-
 Write-DeckleWorkflowStep -Output $WorkflowOutput -Message 'Collect tracked files'
 $files = git -C $repoRoot ls-files | Where-Object { $_ -ne '' }
 Write-DeckleWorkflowMessage -Output $WorkflowOutput -Message "$($files.Count) tracked file(s)"
-
-# ── Frontmatter ───────────────────────────────────────────────────────────
 
 function Format-TreeSuffix {
     param([string]$Name, [string]$Description)
@@ -64,8 +60,6 @@ function Format-ScriptSuffix {
     return Format-TreeSuffix -Name $header.Label -Description $header.Description
 }
 
-# ── Construction de l'arbre ───────────────────────────────────────────────
-
 function New-Node {
     @{
         Dirs  = [System.Collections.Specialized.OrderedDictionary]::new([System.StringComparer]::OrdinalIgnoreCase)
@@ -90,8 +84,6 @@ $root = New-Node
 foreach ($f in $files) {
     Add-Path $root ($f -split '/')
 }
-
-# ── Rendu ─────────────────────────────────────────────────────────────────
 
 $lines = [System.Collections.Generic.List[string]]::new()
 
@@ -131,16 +123,13 @@ function Render-Node {
 
 Render-Node $root '' ''
 
-# ── Écriture ──────────────────────────────────────────────────────────────
-
 Write-DeckleWorkflowStep -Output $WorkflowOutput -Message 'Write TREE.md'
 $body = $lines -join "`n"
 
-# No wall-clock timestamp on purpose: it made every regeneration differ even
-# when the tree was identical, so any two branches collided on this line at
-# merge time. Without it, a content-only commit regenerates a byte-identical
-# file (git add is a no-op) and the listing only changes when the file set
-# does. git history already records when TREE.md was last touched.
+# No wall-clock timestamp on purpose: it would make every regeneration differ
+# and collide across branches at merge time. Without it an unchanged tree
+# regenerates a byte-identical file; git history already records when it
+# changed.
 $content = @"
 # Arborescence — Deckle
 _Généré depuis ``git ls-files`` — ne pas éditer à la main._

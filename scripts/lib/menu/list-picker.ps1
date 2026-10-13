@@ -14,14 +14,12 @@ function Read-NumberedMenuSelection {
 
     if ($Items.Count -eq 0) { return -1 }
 
-    # Indices of selectable (non-header) items. If empty, nothing to pick.
     $selectableIdx = @()
     for ($i = 0; $i -lt $Items.Count; $i++) {
         if (-not $Items[$i].IsHeader) { $selectableIdx += $i }
     }
     if ($selectableIdx.Count -eq 0) { return -1 }
 
-    # Clamp Default to a valid selectable index.
     $selected = if ($selectableIdx -contains $Default) { $Default } else { $selectableIdx[0] }
 
     Write-Host $Header
@@ -91,7 +89,6 @@ function Select-Worktree {
     }
     if (-not $raw) { throw "git worktree list failed - not a git repo?" }
 
-    # Parse porcelain output into (path, branch) tuples.
     $entries   = @()
     $curPath   = $null
     $curBranch = $null
@@ -111,7 +108,6 @@ function Select-Worktree {
     }
     if ($entries.Count -eq 0) { throw "No worktrees found" }
 
-    # Auto-pick when there is nothing to choose between.
     if ($entries.Count -eq 1) { return $entries[0].Path }
 
     if ([Console]::IsInputRedirected -or [Console]::IsOutputRedirected) {
@@ -154,8 +150,6 @@ function Select-Action {
 
     if ($Items.Count -eq 0) { throw "No items to select from" }
 
-    # Normalise: every item ends up with Label + IsHeader. Missing
-    # IsHeader defaults to false (regular selectable entry).
     $normalised = foreach ($it in $Items) {
         $role = $it.PSObject.Properties['Role']
         $prefix = $it.PSObject.Properties['Prefix']
