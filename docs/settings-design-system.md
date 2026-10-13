@@ -1,8 +1,9 @@
 # Settings design system
 
-First version, 2026-10-13, read against commit 243602f5. The grid and the
-rules are the core; the annexes photograph the code on that date and are meant
-to be regenerated. A line marked *to decide* is Louis's call and nothing below
+First version, 2026-10-13, read against commit 243602f5; Louis's answers of
+the same day are in the Decisions section. The grid and the rules are the
+core; the annexes photograph the code on that date and are meant to be
+regenerated. A line marked *to decide* is Louis's call and nothing below
 assumes an answer.
 
 ## Intent
@@ -43,16 +44,16 @@ by one block, split across several, or empty.
 | One of a few options | Radio buttons, all visible | Composer `Choice` with `Radio` flag | Covered. Theme (three options) and overlay position (two) still render as dropdowns, *to check on screen*. |
 | One of many options, labels fixed | A dropdown | Composer `Choice` | Covered. |
 | One of a runtime list (microphone, monitor, Hue group, model file, profile, language) | A dropdown | None in the composer. Hand-drawn ComboBox or AutoSuggestBox on six pages. | **Empty row.** Options are not `.resw` keys, so `Choice` cannot carry them. |
-| Linear magnitude | One control: slider and number field, grain derived | Composer `Magnitude` with `MagnitudeGrain` | Covered by one block, but three others still do the job: composer `Slider` (14 cards) and `Number` (9 cards), `TunableRow` (Playground), HUD row factories. |
+| Linear magnitude | One control: slider and number field, grain derived | Composer `Magnitude` with `MagnitudeGrain` | Decided 2026-10-13: one block. `Slider` (14 cards), `Number` (9 cards), `TunableRow` and the HUD row factories retire into `Magnitude`. The retained form keeps the field's arrows; the composer hides them today. |
 | Geometric magnitude (stops that multiply: 1, 2, 4 … 256) | Slider over a stop list, field shows the value | None. Rewriting context size is a hand-drawn index slider. | **Empty row.** The composer comment says the log variant was deliberately not built. |
-| Curve or envelope | A dedicated editor | Composer `Editor` hosts a module element. Two editors: `HangoverCurveCanvas` (Win2D) and `BrightnessCurveCanvas` (XAML shapes), same two-handle interaction, one `CurveHandleStyle` copied in both. | Split. One interaction, two renderers, three hostings (composer card, hand card, raw in the Playground). |
+| Curve or envelope | A dedicated editor | Composer `Editor` hosts a module element. Two editors: `HangoverCurveCanvas` (Win2D) and `BrightnessCurveCanvas` (XAML shapes), same two-handle interaction, one `CurveHandleStyle` copied in both. | Decided 2026-10-13: one editor, hosted only through the `Editor` card. Which renderer survives waits on the Win2D inventory (see Still open). |
 | Free text, one line | One shared input | Composer `Text` | Covered. |
 | Free text, multi-line | Same input, wraps | `Text` has `Multiline`, no manifest uses it. Two hand-drawn TextBoxes (initial prompt, system prompt). | Dormant. |
 | Path or folder | One picker, affordances by ownership | Composer `Path` over `FolderPickerCard` (read-only, Change, Open) and `FolderPickerEditableCard` (typeable). `OpenOnly` mode exists, unused. | Covered for two of three affordances. The app-owned data folder and the diagnostic files folder are hand-drawn cards. |
 | Hotkey chord | (Deckle-specific) | Composer `Hotkey` | Covered. |
 | Fine configuration of something activatable | A fold under a master switch, hidden when off | Composer `Group` (SettingsExpander) | Covered. Folds never nest. |
 | Related settings, no master | A fold without master | Composer `Section` (SettingsExpander) | Covered when collapsible. A flat section is a header style plus hand markup, copied on nine pages. |
-| Preset (a named set of values for a group, plus Custom) | Not named in the doctrine | `Choice` fed by `PresetFamily.SelectorOptions()`; the Playground rebuilds the same combo by hand | *To decide*: is a preset a nature of its own, and where does its card sit relative to the group it governs. |
+| Preset (a named set of values for a group, plus Custom) | Not named in the doctrine | `Choice` fed by `PresetFamily.SelectorOptions()`; the Playground rebuilds the same combo by hand | Decided 2026-10-13: a row of its own. The selector sits above the group it governs. The save and revert gesture is an application-wide question, not settled here. |
 | Command (an action now) | A button, confirmation by reversibility | None. Hand-placed SettingsCard and Button on every page; `ConfirmationService` is the only shared piece. | **Empty row.** The composer drives values, not buttons. |
 | Diagnostic readout (version, status, live reading) | Consulted, not configured | None. Hand-drawn: version card, status dots, frame rate, mic-check InfoBars. | **Empty row.** |
 | Preview or instrument (a scene, a meter) | Opt-in for a live microphone meter | `AmbientPreviewCard` (Ambient only). No meter control exists anywhere in `src`. | Module-specific. A shared preview component and a meter are open tasks in Anytype. |
@@ -60,6 +61,10 @@ by one block, split across several, or empty.
 | Advisory next to a value | One inline channel, tone in the wording | Composer `WrapWithAdvisory` (InfoBar, one severity) | Covered. |
 | Reset of a value, a group, the surface | Hover reveal, one default source | Composer reset chrome on every composed card and fold | Covered by the composer; five hand forms of the per-value reset and five of the section reset remain, with two glyphs and some English tooltips. |
 | Page header (title, subtitle, Reset all) | Not named | Hand markup on all thirteen pages | **Empty row** as a block; two resources (`SettingsCardSpacing`, section header style) are redefined locally on nine to twelve pages. |
+
+Louis's rule of 2026-10-13: every surface takes a form the application knows.
+An empty row is a block to build, not a licence to hand-draw. A case that
+cannot be brought to a block is discussed when it arises.
 
 ## Gesture rules: how a value changes, what is held back
 
@@ -105,25 +110,40 @@ From the doctrine, with the code facts that bear on each rule.
   with the preview, the light rows, the Hue pairing, the preset combo and the
   tuning values each implemented twice.
 
-## Open decisions
+## Decisions, 2026-10-13
 
-For Louis, in the order they block the rest.
+Louis's answers to the first version's open points.
 
-1. Does the doctrine "a magnitude is always both slider and field" hold for
-   every numeric setting? If yes, `Slider` and `Number` retire into `Magnitude`
-   (23 cards), and the grain rule decides their readouts.
-2. Preset as a row of the grid: a card above the group it governs, or the
-   group's header? And the postponed Revert/Save band.
-3. One curve editor: which renderer survives (Win2D or XAML shapes), hosted
-   only through the composer `Editor` card.
-4. Runtime-list choice as a block, so the six hand-drawn dropdowns compose.
-5. Command and diagnostic readout as blocks, or left to hand markup with a
-   shared page header and section header.
-6. Preview contract: which pages get a preview slot first (Ambient, segmentation,
-   HUD), and the meter's explicit-gesture rule.
-7. Geometric magnitude and editable collections: build the rows or decide
-   they stay bespoke.
-8. Restart-required and on-release classes: which settings, what marker.
+1. **Magnitude is the one numeric block.** Every numeric setting is a slider
+   paired with a number field that keeps its arrows. `Slider` and `Number`
+   retire into `Magnitude`; the 23 cards, `TunableRow` and the HUD row
+   factories follow. Fact to carry: the composer hides the arrows today
+   (`SpinButtonPlacementMode.Hidden` in `SettingsComposer.Numeric.cs`), while
+   the Playground pages and `TunableRow` show them on hover (`Compact`). A
+   value with no natural bounds is the one case to settle when it arises.
+2. **Preset is a row of its own.** The selector sits above the group it
+   governs. `Deckle.Presets` stays a separate module: `Deckle.Lighting.Ambient`
+   and `Deckle.Transcription` reference it and own the families;
+   `Deckle.Settings` does not. The save and revert gesture is decided once
+   for the whole application, not here.
+3. **One curve editor**, hosted only through the composer `Editor` card. Which
+   renderer survives waits on the Win2D inventory: what the HUD still needs
+   once its animations are redone and the blur possibly dropped.
+4. **Every surface takes a form the application knows.** Runtime-list choice,
+   command, diagnostic readout, editable collection, page header, preview and
+   reset each become a block. Geometric magnitude follows the doctrine, a
+   slider over a stop list. A case that cannot be brought to a block is
+   discussed when it arises.
+5. **docs/ is cleaned as a side task.** The sweep script and the exposables
+   inventory stay.
+
+## Still open
+
+- Which settings apply on release and which need a restart, and the marker
+  for each.
+- The save and revert gesture, for presets and everywhere else a draft exists.
+- Win2D or XAML shapes, for the curve editor and for the HUD.
+- The preview contract and the meter's explicit-gesture rule.
 
 ## Annex A: blocks in the code, 2026-10-13
 
