@@ -11,14 +11,13 @@ namespace Deckle.Shell;
 // Event flow:
 //   Shell32 → WM_TRAY (WM_USER+1) sent to the main HWND
 //   SubclassCallback intercepte WM_TRAY
-//   → left click   → LeftClickRequested raised, subscriber renders the panel
+//   → left click   → LeftClickRequested raised, subscriber opens the quick-actions menu
 //   → double click → DoubleClickRequested raised, subscriber opens Settings
-//   → right click  → RightClickRequested raised, subscriber renders the menu
+//   → right click  → RightClickRequested raised, subscriber opens the context menu
 //
-// Both surfaces live in the sibling Deckle.Shell.TrayMenu module: the
-// quick-actions panel (TrayQuickActionsHost) on left click, the context menu
-// (TrayContextMenuHost) on right click. This module stays Win32-pure: it does
-// not know what either surface contains.
+// Both menus live in the sibling Deckle.Shell.TrayMenu module as two
+// TrayMenuHost instances the App composes. This module stays Win32-pure: it
+// does not know what either menu contains.
 //
 // A double click is delivered by the shell as WM_LBUTTONUP, WM_LBUTTONDBLCLK,
 // WM_LBUTTONUP: the single-click subscriber runs first, then the double-click
@@ -39,10 +38,10 @@ public sealed class TrayIconManager : IDisposable
     private static readonly UIntPtr SubclassId = new(0x5752_4159); // "WRAY"
 
     /// <summary>
-    /// Raised on left-click of the tray icon. The subscriber renders the
-    /// quick-actions panel (typically TrayQuickActionsHost from
-    /// Deckle.Shell.TrayMenu). Raised on the message pump thread of the host
-    /// HWND; marshaling elsewhere is the subscriber's responsibility.
+    /// Raised on left-click of the tray icon. The subscriber opens the
+    /// quick-actions menu (a TrayMenuHost from Deckle.Shell.TrayMenu). Raised
+    /// on the message pump thread of the host HWND; marshaling elsewhere is
+    /// the subscriber's responsibility.
     /// </summary>
     public event Action? LeftClickRequested;
 
@@ -54,11 +53,10 @@ public sealed class TrayIconManager : IDisposable
     public event Action? DoubleClickRequested;
 
     /// <summary>
-    /// Raised on right-click of the tray icon. The subscriber renders the
-    /// context menu (typically TrayContextMenuHost from Deckle.Shell.TrayMenu).
-    /// No payload: the menu host reads the current cursor position itself
-    /// via GetCursorPos, since the cursor may move between WM_RBUTTONUP and
-    /// the actual menu display.
+    /// Raised on right-click of the tray icon. The subscriber opens the
+    /// context menu (a TrayMenuHost from Deckle.Shell.TrayMenu). No payload:
+    /// the menu host anchors on <see cref="GetIconRect"/>, or reads the cursor
+    /// position itself when the shell does not know the icon's rect.
     /// </summary>
     public event Action? RightClickRequested;
 
@@ -99,10 +97,10 @@ public sealed class TrayIconManager : IDisposable
     // Returns the notification-area icon rect in physical pixels (screen
     // coordinates), or null if the icon could not be located (not yet
     // registered, hidden in overflow, or shell temporarily unavailable during
-    // explorer.exe restart). Consumed by TrayContextMenuHost to anchor its
-    // MenuFlyout tangent to the icon through CalculatePopupWindowPosition,
-    // which makes positioning automatically correct regardless of taskbar
-    // orientation (left, right, bottom, top) and independent of click point.
+    // explorer.exe restart). Consumed by TrayMenuHost, which places its anchor
+    // window on this rect so the menu opens beside the icon, on the side
+    // facing the work area whatever the taskbar edge, independent of the
+    // click point.
     public NativeMethods.RECT? GetIconRect()
     {
         if (!_iconAdded) return null;
