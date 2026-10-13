@@ -138,6 +138,7 @@ doctrine). This file is generated from the Conventional-Commit history by
 - **composition:** Move the countdown gauge with one named fast motion
 - **transcription:** Split the settings into General, Decoding and Streaming
 - **composer:** Add the curve block
+- **composition:** Open the countdown at -15 % and run it to 175 %
 
 ### Changed
 

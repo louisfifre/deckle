@@ -15,8 +15,10 @@ public sealed record UtteranceCountdownConfig
     // before they mean anything — is hidden without a timer, and the opening
     // still reaches full at the true cut, only later and faster. Above 1 the
     // wedges pass the corners before the cut, so the last instants no longer
-    // read as a sudden full ring. −0.4 / 1.4 were chosen by eye on 2026-10-13,
-    // between −50/150 (first tried) and −35/135 (felt less extreme).
-    public float StartReach { get; init; } = -0.4f;
-    public float EndReach { get; init; } = 1.4f;
+    // read as a sudden full ring. −0.15 / 1.75 were set on screen on
+    // 2026-10-13: a first pass at −0.4 / 1.4 "came from too far", so the gauge
+    // now opens after 8 % of the pause instead of 22 % and passes the corners
+    // at 60 % instead of 78 %, running well beyond them by the cut.
+    public float StartReach { get; init; } = -0.15f;
+    public float EndReach { get; init; } = 1.75f;
 }
