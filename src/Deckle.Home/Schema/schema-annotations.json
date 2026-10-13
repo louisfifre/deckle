@@ -1,7 +1,6 @@
 {
   "description": "Home model annotations and preserved migration coordinates. This file is documentation for domain alignment; schema-admin does not read or enforce it.",
   "schema": "schema-manifest.json",
-  "decisions": "JOURNAL.md",
   "vocabulary_policy": {
     "closed": "Only the listed options; domain commands do not extend or delete them.",
     "seeded": "Initial options may be extended after explicit validation; domain commands do not delete options.",

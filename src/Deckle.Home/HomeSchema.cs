@@ -271,6 +271,10 @@ public static class HomeSchema
         return new JsonObject { ["types"] = types, ["properties"] = properties };
     }
 
+    // Tolerates surplus but fails on any compiled required property or closed
+    // option the owner deleted in the app, which locks the whole surface.
+    // Compile as required only what the surface cannot work without. HomeTerms
+    // also throws for a required key that has no term.
     internal static HomeSchemaRuntime Validate(SchemaSnapshot snapshot)
     {
         var failures = new List<string>();

@@ -1003,7 +1003,6 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── HomeTerms.cs
 │   │   ├── HomeToolCatalog.cs
 │   │   ├── HomeTypedToolCatalog.cs
-│   │   ├── JOURNAL.md
 │   │   └── OPERATIONS.md
 │   ├── Deckle.Hud/
 │   │   ├── Chrono/
