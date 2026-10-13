@@ -1613,6 +1613,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── TrayContextMenuHost.Flyout.cs
 │   │   ├── TrayContextMenuHost.Measure.cs
 │   │   ├── TrayContextMenuHost.Show.cs
+│   │   ├── TrayIslandSizing.cs
 │   │   ├── TrayMenuSizing.cs
 │   │   ├── TrayQuickActionsHost.Build.cs
 │   │   ├── TrayQuickActionsHost.cs
