@@ -6,16 +6,12 @@ namespace Deckle.Catalog;
 
 // ─── ConfirmationService ───────────────────────────────────────────────────
 //
-// One reusable "are you sure?" gate for destructive commands. Any page that
-// guards an irreversible action (restore-over, wipe, reset-to-default) builds
-// a ConfirmationRequest and awaits RequestAsync — same ContentDialog shape and
-// theme as the modules' consent dialogs, so the look stays consistent.
+// One reusable "are you sure?" gate for irreversible actions, in the same
+// ContentDialog shape as the consent dialogs.
 //
-// The service is deliberately copy-agnostic: the caller passes the already-
-// resolved, already-formatted Title/Body/PrimaryVerb (its own Loc keys, its
-// own placeholders). The service never resolves a key, so it owes nothing to
-// any one page's resw and stays reusable by all of them. Cancel is the one
-// string it owns, because every confirmation shares the same Cancel verb.
+// Copy-agnostic: the caller passes Title/Body/PrimaryVerb already resolved and
+// formatted, so the service owes nothing to any page's .resw. Cancel is the one
+// string it owns, because every confirmation shares it.
 
 public sealed record ConfirmationRequest(string Title, string Body, string PrimaryVerb, bool IsDestructive = false);
 
@@ -26,9 +22,8 @@ public static class ConfirmationService
         var dialog = new ContentDialog
         {
             Title = request.Title,
-            // Wrapped in a TextBlock — like the consent dialogs' bodies — so a
-            // long, caller-supplied body line flows instead of clipping the
-            // dialog. A bare string would render single-line.
+            // A bare string would render on one line and clip; a wrapping
+            // TextBlock lets a long body flow.
             Content = new TextBlock
             {
                 TextWrapping = TextWrapping.Wrap,

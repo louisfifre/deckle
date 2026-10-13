@@ -3,24 +3,16 @@
     <RootNamespace>Deckle.Catalog</RootNamespace>
     <!-- UseWinUI compiles Themes/Icons.xaml as a XAML resource so the
          host App.xaml can merge it via
-         ms-appx:///Deckle.Catalog/Themes/Icons.xaml. The module hosts
-         no Page or UserControl — only the icon ResourceDictionary plus
-         Loc.cs / Glyphs.cs facades. -->
+         ms-appx:///Deckle.Catalog/Themes/Icons.xaml. -->
     <UseWinUI>true</UseWinUI>
     <EnableMsixTooling>true</EnableMsixTooling>
   </PropertyGroup>
 
   <ItemGroup>
-    <!-- ResourceLoader (Microsoft.Windows.ApplicationModel.Resources). Version
-         pinned identical to Deckle.csproj: a single WindowsAppSDK runtime loaded
-         par process. -->
     <PackageReference Include="Microsoft.WindowsAppSDK" />
     <PackageReference Include="Microsoft.Windows.SDK.BuildTools" />
-    <!-- SettingsCard / SettingsExpander. The settings composer (relocated here
-         from Deckle.Settings so every settings-bearing module can compose
-         against the floor, not the Settings shell) builds these controls, so the
-         package belongs with it. Modules that reference Catalog get the control
-         set transitively. Version centralised in Directory.Packages.props. -->
+    <!-- SettingsCard / SettingsExpander, built by the settings composer.
+         Modules that reference Catalog get the control set transitively. -->
     <PackageReference Include="CommunityToolkit.WinUI.Controls.SettingsControls" />
   </ItemGroup>
 </Project>

@@ -12,8 +12,9 @@ public static class MagnitudeGrain
     // declares only bounds. Aims for ~40 detents across the span, then rounds that
     // raw step UP to the nearest 1, 2 or 5 times a power of ten — the classic
     // axis-tick niceness — so the grain reads as a round number (0.05, 1, 50)
-    // rather than an arbitrary fraction. The editable field still takes any exact
-    // value; this only sets how coarsely the thumb detents and the arrows nudge.
+    // rather than an arbitrary fraction. The field still takes any value at the
+    // displayed precision; the step only sets how coarsely the thumb detents and
+    // the arrows nudge.
     //
     // A count has no fraction: when the value is an integer the grain is floored
     // at one, where a short range (1..10, 4..24) would otherwise grain at 0.2 or
