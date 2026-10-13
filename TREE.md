@@ -102,8 +102,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── prompts/
 │   │   │   ├── judges/
 │   │   │   │   ├── claude_per_row.md
-│   │   │   │   ├── gemini_per_row.md
-│   │   │   │   └── legacy_ollama_judge.md
+│   │   │   │   └── gemini_per_row.md
 │   │   │   ├── transcription/
 │   │   │   │   ├── gemini_audio.toml
 │   │   │   │   ├── voxtral_chat.toml
@@ -184,14 +183,6 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   │   ├── README.md  — interactive-autocorrect-research Reproducible campaign for safe, local, interactive whole-sentence autocorrectio…
 │   │   │   │   └── RESULTS.md  — interactive-autocorrect-results Evidence synthesis and provisional Pareto frontier for the interactive autocorr…
 │   │   │   └── README.md  — readme-autoresearch-campaigns How to store individual autoresearch campaign folders.
-│   │   ├── judges/
-│   │   │   └── README.md  — readme-autoresearch-judges Generic judge rubrics and wrappers for autoresearch loops.
-│   │   ├── metrics/
-│   │   │   └── README.md  — readme-autoresearch-metrics Generic metric wrappers for autoresearch loops.
-│   │   ├── prompts/
-│   │   │   └── README.md  — readme-autoresearch-prompts Prompt templates owned by generic autoresearch campaigns.
-│   │   ├── runners/
-│   │   │   └── README.md  — readme-autoresearch-runners Runner helpers for autoresearch campaigns.
 │   │   └── README.md  — readme-autoresearch Generic autoresearch workspace for measurable iterative generation, editing, ju…
 │   ├── input/
 │   │   └── precision-scroll/
