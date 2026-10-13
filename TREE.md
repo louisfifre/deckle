@@ -260,6 +260,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   ├── inventaire-exposables.csv
 │   ├── inventaire-exposables.md
 │   ├── inventaire-settings.md
+│   ├── settings-design-system.md
 │   ├── transcription-audio-chain.md  — [architecture-note] How a dictation travels from the hotkey to the pasted text — vocabulary, three…
 │   └── transcription-live-verification.md  — [verification-protocol] Maintainer verification protocol for live microphone transcription.
 ├── logo/
