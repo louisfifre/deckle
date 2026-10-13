@@ -156,7 +156,7 @@ crash-*.log
 crashdumps/
 
 # Ad hoc DebugLog folder used for native crash instrumentation —
-# temporary by doctrine, never committed (see Deckle.Logging/CLAUDE.md).
+# temporary by doctrine, never committed.
 /logs/
 
 # ─────────────────────────────────────────────────────────────────────────

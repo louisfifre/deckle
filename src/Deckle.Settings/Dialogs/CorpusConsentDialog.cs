@@ -18,7 +18,7 @@ namespace Deckle.Settings;
 //
 // Wording: all user-facing strings are loaded from Resources.resw via
 // Loc.Get. The corpus.jsonl path (`where`) stays hardcoded — it's a
-// filesystem path, not copy. See src/Deckle.Catalog/CLAUDE.md.
+// filesystem path, not copy.
 
 internal static class CorpusConsentDialog
 {

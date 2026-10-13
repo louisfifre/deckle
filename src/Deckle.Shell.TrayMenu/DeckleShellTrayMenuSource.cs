@@ -18,7 +18,7 @@ namespace Deckle.Shell.TrayMenu;
 // (zero measurement, excess height, unexpected dismiss) without drowning the
 // signal in Windowing noise.
 //
-// Verbose/Info separation per Deckle.Diagnostics/CLAUDE.md: an Info is a short
+// Verbose/Info separation per the deckle-logging skill: an Info is a short
 // Capital sentence with no IDs and no k=v; the technical detail (handles,
 // durations, dismiss reason, item label) lives in a Verbose mirror that FOLLOWS
 // it.

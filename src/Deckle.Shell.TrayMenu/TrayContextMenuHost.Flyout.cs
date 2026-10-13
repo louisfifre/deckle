@@ -121,8 +121,8 @@ public sealed partial class TrayContextMenuHost
     //
     // Narrow density is assumed as the single target: the tray menu opens on
     // mouse right-click (the native touch/DefaultPadding branch does not apply
-    // in practice to a desktop app), consistent with the module CLAUDE.md Win11
-    // density doctrine.
+    // in practice to a desktop app), consistent with Win11
+    // density.
     private void ApplyNarrowPadding()
     {
         if (_flyout is null) return;

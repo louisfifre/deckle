@@ -11,7 +11,7 @@ namespace Deckle.Notifications.Tests;
 // Observability: pins the narrative the notification subsystem emits on the
 // Deckle-Notifications provider. Every event carries the transverse Push
 // keyword, and each Info milestone is mirrored by its Verbose detail — the
-// Info/Verbose separation from Deckle.Diagnostics/CLAUDE.md. A TestEventListener
+// Info/Verbose separation from the deckle-logging skill. A TestEventListener
 // attached by ETW name collects the sequence; the test asserts on order,
 // levels, and the id-bearing payloads.
 // Same collection as NotificationDispatcherTests: both drive the process-wide

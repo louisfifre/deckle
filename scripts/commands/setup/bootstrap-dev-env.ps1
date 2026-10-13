@@ -14,8 +14,7 @@
 #>
 
 # Out of scope (intentional):
-#   - Does NOT build or run Deckle (see scripts/commands/build-run.ps1, and
-#     CLAUDE.md non-negotiable).
+#   - Does NOT build or run Deckle (see scripts/commands/build-run.ps1).
 #   - Does NOT clone whisper.cpp (location is per-dev preference; prints
 #     the command instead). Required only for -Full (native rebuild).
 #   - Does NOT pull Ollama models (which model is a per-deployment choice;

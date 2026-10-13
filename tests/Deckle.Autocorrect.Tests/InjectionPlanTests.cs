@@ -24,7 +24,7 @@ public class InjectionPlanTests
     [Fact]
     public void DiacriticSuffixChange_BackspacesTheTail_TypesTheAccentedSuffix()
     {
-        // Le cas canonique de la restauration de diacritiques (CLAUDE.md).
+        // Le cas canonique de la restauration de diacritiques.
         var plan = InjectionPlan.Compute("francais ", "français ");
 
         Assert.Equal(5, plan.Backspaces);  // c-a-i-s-espace

@@ -5,7 +5,7 @@
       EventSource conventions adopt snake_case parameter names so the
       ETW payload keys land directly in the JSONL output. Suppress the
       naming-style warning that flags non-PascalCase parameters; the
-      convention is explicit and documented in CLAUDE.md.
+      convention is explicit and deliberate.
     -->
     <NoWarn>$(NoWarn);IDE1006</NoWarn>
   </PropertyGroup>

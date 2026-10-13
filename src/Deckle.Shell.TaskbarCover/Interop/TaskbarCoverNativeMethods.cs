@@ -94,7 +94,7 @@ internal static class TaskbarCoverNativeMethods
     // EVENT_OBJECT_LOCATIONCHANGE filtered on OBJID_CURSOR is the global
     // cursor-movement signal that does not contend with Raw Input — a
     // RIDEV_INPUTSINK mouse registration is per-process-per-usage and
-    // CursorMovementSignal owns the only one (see the module CLAUDE.md). Delivery is
+    // CursorMovementSignal owns the only one (Deckle.Shell). Delivery is
     // asynchronous (no latency injected into the input chain, unlike a
     // WH_MOUSE_LL hook) on the thread that called SetWinEventHook, which
     // must pump messages; UnhookWinEvent must run on that same thread.

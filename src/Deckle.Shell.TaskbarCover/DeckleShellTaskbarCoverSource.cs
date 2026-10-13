@@ -10,7 +10,7 @@ namespace Deckle.Shell.TaskbarCover;
 // visibility transitions (band gone on the taskbar, back on zone exit)
 // carry diagnostic value; those surface through CoverShown / CoverHidden.
 //
-// Verbose/Info separation per Deckle.Diagnostics/CLAUDE.md: an Info is a
+// Verbose/Info separation per the deckle-logging skill: an Info is a
 // short Capital sentence with no IDs and no k=v; the technical detail
 // (handles, geometry, reasons) lives in a Verbose mirror that FOLLOWS it.
 [EventSource(Name = "Deckle-TaskbarCover")]

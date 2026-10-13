@@ -3,8 +3,8 @@
     <RootNamespace>Deckle.Modules</RootNamespace>
     <!-- EventSource [Event] parameters intentionally use snake_case
          so the ETW payload keys land directly in the JSONL output.
-         Suppress the naming-style warning — the convention is
-         documented in Deckle.Diagnostics/CLAUDE.md. -->
+         Suppress the naming-style warning — the keys must
+         match the ETW manifest. -->
     <NoWarn>$(NoWarn);IDE1006</NoWarn>
   </PropertyGroup>
 

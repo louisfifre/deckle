@@ -1,7 +1,7 @@
 namespace Deckle.Autocorrect;
 
-// On-disk shape of the personal dictionary — the only persisted text in the
-// module (CLAUDE.md), serialized indented so the file is humanly inspectable.
+// On-disk shape of the personal dictionary — the only persisted text on the
+// default path, serialized indented so the file is humanly inspectable.
 public sealed class PersonalDictionaryData
 {
     // Schema 2 replaces the old decaying weight with the Phase 2 adoption
@@ -39,7 +39,7 @@ public sealed class WordEntry
 }
 
 // A suppressed correction: (Original -> Replacement) must never fire on its own
-// again (CLAUDE.md). Explicit, persisted, removable by the user.
+// again. Explicit, persisted, removable by the user.
 public sealed class SuppressionEntry
 {
     public string Original { get; set; } = string.Empty;
