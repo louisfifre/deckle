@@ -55,7 +55,7 @@ internal sealed class TravelPropertyWriter(
             },
             // File objects come from the Anytype files endpoint (heart v0.50.5+)
             // and live in the space like any object; the property references
-            // them by id. Upload itself is not wired yet in Deckle.Anytype.
+            // them by id.
             "files" => new JsonObject
             {
                 ["key"] = property.Key,

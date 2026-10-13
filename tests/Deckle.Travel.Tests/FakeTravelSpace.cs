@@ -13,8 +13,8 @@ namespace Deckle.Travel.Tests;
 // exactly the schema schema-admin would apply — not against a hand-written
 // fixture that can drift from the contract.
 //
-// One deliberate infidelity, which is the measured truth: tag options answer
-// under an OPAQUE provider key, never the manifest's. Anytype derives option
+// One deliberate infidelity: tag options answer under an OPAQUE provider key,
+// never the manifest's. Anytype derives option
 // keys from the label at creation, so a test that echoed the manifest keys back
 // would silently bless an assumption the live API does not honor.
 internal sealed class FakeTravelSpace : IDisposable
@@ -53,8 +53,6 @@ internal sealed class FakeTravelSpace : IDisposable
 
     public static string PropertyId(string key) => $"prop-{key}";
 
-    // ── Route registration ──────────────────────────────────────────────
-
     public void OnListObjects(params JsonObject[] objects) =>
         Add("GET", "/objects", Page([.. objects]));
 
@@ -69,8 +67,6 @@ internal sealed class FakeTravelSpace : IDisposable
     public void OnPatchObject(string id, JsonObject response) =>
         Add("PATCH", $"/objects/{id}", response);
 
-    // ── Request introspection ───────────────────────────────────────────
-
     public IReadOnlyList<Received> Requests => [.. _received];
 
     public Received Last(string method, string path)
@@ -83,8 +79,6 @@ internal sealed class FakeTravelSpace : IDisposable
 
     public JsonObject LastBody(string method, string path) =>
         (JsonObject)JsonNode.Parse(Last(method, path).Body)!;
-
-    // ── Manifest → wire rows ────────────────────────────────────────────
 
     private static IEnumerable<JsonObject> Rows(JsonObject manifest, string field) =>
         ((JsonArray)manifest[field]!).Select(node => (JsonObject)node!);
@@ -156,8 +150,6 @@ internal sealed class FakeTravelSpace : IDisposable
             ["pagination"] = new JsonObject { ["has_more"] = false },
         };
     }
-
-    // ── Serve loop ──────────────────────────────────────────────────────
 
     private void Add(string method, string path, JsonObject response) =>
         _routes.Add(new Route(method, $"/v1/spaces/{Space}{path}", 200, response.ToJsonString()));

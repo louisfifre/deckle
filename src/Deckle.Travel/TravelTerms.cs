@@ -6,8 +6,7 @@ namespace Deckle.Travel;
 // Every Anytype-visible label — type names, property names, closed-vocabulary
 // options — lives in one embedded terms file per language. The schema names
 // the structure with stable English keys; this file names the words. Adding a
-// language is a file addition (Terms/terms.<lang>.json), deferred to the
-// app-wide language pass; French is the only language shipped today.
+// language is a file addition (Terms/terms.<lang>.json).
 internal sealed class TravelTerms
 {
     private const string DefaultLanguage = "fr";
