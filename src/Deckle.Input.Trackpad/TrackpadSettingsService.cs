@@ -3,12 +3,8 @@ using Deckle.Core;
 
 namespace Deckle.Input.Trackpad;
 
-// Module-local persistence for TrackpadSettings — the standard
-// JsonSettingsStore<T> lazy singleton at
-// <UserDataRoot>/modules/trackpad/settings.json, same shape as
-// LoggingSettingsService / TelemetrySettingsService. Store logging
-// callbacks stay null for the same reason as those services: no
-// EventSource dependency from the persistence layer.
+// Store logging callbacks stay null: the persistence layer takes no
+// EventSource dependency.
 public sealed class TrackpadSettingsService
 {
     private static readonly Lazy<TrackpadSettingsService> _instance =

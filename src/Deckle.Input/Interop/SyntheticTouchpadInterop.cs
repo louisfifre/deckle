@@ -2,10 +2,10 @@ using System.Runtime.InteropServices;
 
 namespace Deckle.Input;
 
-// Win32 Precision Touchpad injection surfaced in April 2026. The installed
-// 26100 SDK does not declare CreateSyntheticPointerDevice2 yet, even though
-// current Windows builds export it from user32. Resolve that optional entry by
-// name so older systems fail closed instead of throwing EntryPointNotFoundException.
+// Win32 Precision Touchpad injection. The 26100 SDK does not declare
+// CreateSyntheticPointerDevice2, and only recent Windows builds export it from
+// user32. Resolve that optional entry by name so older systems fail closed
+// instead of throwing EntryPointNotFoundException.
 internal static unsafe class SyntheticTouchpadInterop
 {
     public const uint PT_TOUCHPAD = 5;

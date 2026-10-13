@@ -8,10 +8,9 @@ namespace Deckle.Input;
 // (Bluetooth arrivals and removals), the periodic contact-frame rollup,
 // and the frame-telemetry recording sessions.
 //
-// Frames themselves are never logged — at report cadence (~100 Hz) they
-// would drown the LogWindow ("the window carries steps, not frames").
-// They go to the dedicated JSONL recorder; the EventSource carries the
-// aggregated rollup and the lifecycle milestones.
+// Frames themselves are never logged — at report cadence they would drown
+// the LogWindow. They go to the dedicated JSONL recorder; the EventSource
+// carries the aggregated rollup and the lifecycle milestones.
 [EventSource(Name = "Deckle-Input")]
 public sealed class DeckleInputSource : DeckleEventSource
 {
@@ -43,17 +42,14 @@ public sealed class DeckleInputSource : DeckleEventSource
     public const int EvtRecordingStopped         = 14;
     public const int EvtRecordingStoppedDetail   = 15;
     public const int EvtRecordingFailed          = 16;
-    // Verbose mirrors appended for the Verbose/Info separation (ids 17-20).
     public const int EvtHostStartFailedDetail    = 17;
     public const int EvtRegistrationFailedDetail = 18;
     public const int EvtParserCreateFailedDetail = 19;
     public const int EvtRecordingFailedDetail    = 20;
-    // Keyboard host lifecycle — autocorrect's second Raw Input host (ids 21-24).
     public const int EvtKeyboardHostStarted      = 21;
     public const int EvtKeyboardHostStopped      = 22;
     public const int EvtKeyboardHostStartFailed  = 23;
     public const int EvtKeyboardRollup           = 24;
-    // Wheel observation + recording sessions (ids 25-33).
     public const int EvtWheelRecordingStarted      = 25;
     public const int EvtWheelRecordingStartedDetail = 26;
     public const int EvtWheelRecordingStopped      = 27;
@@ -63,7 +59,6 @@ public sealed class DeckleInputSource : DeckleEventSource
     public const int EvtWheelDeviceObserved        = 31;
     public const int EvtMouseWheelHookFailed       = 32;
     public const int EvtMouseWheelHookFailedDetail = 33;
-    // Verbose mirror for the keyboard-host start failure's technical details.
     public const int EvtKeyboardHostStartFailedDetail = 34;
 
     // ── Raw input host lifecycle ─────────────────────────────────────────
@@ -264,9 +259,6 @@ public sealed class DeckleInputSource : DeckleEventSource
     }
 
     // ── Keyboard host lifecycle ──────────────────────────────────────────
-    // Second Raw Input host (keyboard + mouse buttons + focus signals) for
-    // the autocorrect observation layer. Separate from the touchpad host's
-    // own thread and window.
 
     [Event(EvtKeyboardHostStarted,
            Level = EventLevel.Verbose,
@@ -306,9 +298,7 @@ public sealed class DeckleInputSource : DeckleEventSource
     }
 
     // ── Keyboard activity rollup (30 s aggregate while input flows) ──────
-    // Never carries typed text. Counters only — key transitions seen,
-    // injected events filtered out, pointer button-downs, wheel ticks, focus
-    // changes.
+    // Never carries typed text: counters only.
 
     [Event(EvtKeyboardRollup,
            Level = EventLevel.Verbose,
@@ -339,11 +329,8 @@ public sealed class DeckleInputSource : DeckleEventSource
     }
 
     // ── Wheel recording sessions ─────────────────────────────────────────
-    // The wheel counterpart of the frame recorder: a JSONL session of raw
-    // wheel events (cadence, deltas, axes) captured to compare against
-    // trackpad gestures. Same Informational/Verbose split as the frame
-    // recorder; wheel events themselves never hit the EventSource (they go
-    // to the JSONL), only the lifecycle milestones and the per-device line.
+    // Wheel events themselves never reach the EventSource (they go to the
+    // JSONL); only the lifecycle milestones and the per-device line do.
 
     [Event(EvtWheelRecordingStarted,
            Level = EventLevel.Informational,

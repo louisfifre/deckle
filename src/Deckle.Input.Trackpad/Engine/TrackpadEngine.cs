@@ -14,24 +14,24 @@ namespace Deckle.Input.Trackpad;
 // work inside is microseconds (state machine + SendInput).
 public sealed class TrackpadEngine : IDisposable
 {
-    // Anti-jump clamp as a fraction of the device's logical X range —
-    // in-engine constant by decision (smoothing is never exposed).
+    // Anti-jump clamp as a fraction of the device's logical X range — an
+    // engine constant: smoothing is never exposed.
     private const double MaxFrameDeltaRatio = 0.08;
 
     // Baseline logical-units → mickeys factor the drag-speed multiplier
-    // rides on. In-engine constant by decision: sensitivity is the one
-    // linear drag-speed slider, nothing else.
+    // rides on. An engine constant: sensitivity is the one linear
+    // drag-speed slider, nothing else.
     private const double BaseScale = 0.25;
 
-    // Values frozen 2026-06-12 after hands-on calibration (maintainer's
-    // choices). No grace: the drag releases the instant the fingers lift.
+    // Frozen calibration. No grace: the drag releases the instant the
+    // fingers lift.
     private const double GraceDelayMs = 0;
 
     // Start threshold as a fraction of the X range — the calibrated
     // minimum, perceptually instant. Not zero on purpose: at exactly 0 the
     // drag would commit on the first frame even without movement, turning
     // a three-finger tap into a left click — and tap is deliberately
-    // nothing (framing decision).
+    // nothing.
     private const double StartThresholdRatio = 0.001;
 
     private readonly RawInputHost _host;

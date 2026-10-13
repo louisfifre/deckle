@@ -9,10 +9,9 @@ namespace Deckle.Input;
 // app.jsonl pipeline by design: frames flow at report cadence and would
 // drown the shared log; here they land in a self-describing dataset
 // made to be replayed and analyzed (cadence, gaps, bursts, hybrid
-// fragmentation) before the recognizer's behavior gets designed against
-// real Bluetooth sessions.
+// fragmentation).
 //
-// File layout: a `session` header line (session id, start time), a
+// File layout: a `session` header line (schema, session id, start time), a
 // `device` line per touchpad seen (capabilities, so the file stands
 // alone), then one compact line per frame:
 //   {"t":12.3,"dev":0,"scan":456,"n":3,"tips":3,"btn":0,"reports":1,
@@ -57,7 +56,6 @@ public sealed class ContactFrameRecorder : IDisposable
         }
     }
 
-    /// <summary>Records the capabilities of a touchpad that just became available.</summary>
     public void NoteDevice(TouchpadDevice touchpad)
     {
         lock (_lock)
@@ -78,7 +76,6 @@ public sealed class ContactFrameRecorder : IDisposable
         }
     }
 
-    /// <summary>Appends one frame line. Called on the input thread.</summary>
     public void OnFrame(ContactFrame frame)
     {
         lock (_lock)
@@ -139,7 +136,6 @@ public sealed class ContactFrameRecorder : IDisposable
         }
     }
 
-    /// <summary>Flushes and closes the current session file.</summary>
     public void Stop()
     {
         lock (_lock)

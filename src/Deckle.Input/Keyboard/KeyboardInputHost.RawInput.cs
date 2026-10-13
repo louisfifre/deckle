@@ -18,7 +18,7 @@ public sealed partial class KeyboardInputHost
         return NativeMethods.DefWindowProc(hWnd, msg, wParam, lParam);
     }
 
-    // ── WM_INPUT → key transitions and pointer-down signals ──────────────
+    // ── WM_INPUT → key transitions, wheel and pointer-down signals ───────
 
     private void HandleInput(IntPtr lParam)
     {

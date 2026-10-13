@@ -1,7 +1,7 @@
 namespace Deckle.Input;
 
 // The complete snapshot of touchpad contacts assembled from one Raw Input
-// read — the unit the recognizer consumes (see CONTEXT.md § Input).
+// read — the unit the recognizer consumes.
 //
 // ContactCount is the device's own declaration of how many contacts the
 // frame carries, independent of their tip state; TipCount is the number
@@ -19,7 +19,6 @@ public sealed record ContactFrame(
     double TimestampMs,
     int ReportCount)
 {
-    /// <summary>Raw Input device that emitted this frame.</summary>
     public IntPtr DeviceHandle { get; init; }
 
     public int TipCount

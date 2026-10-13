@@ -24,7 +24,7 @@ public sealed class DeckleTrackpadSource : DeckleEventSource
 
     public const int EvtEngineStarted            = 1;
     public const int EvtEngineStopped            = 2;
-    // 3 retired — TuningApplied, removed at the value freeze (2026-06-12).
+    // Id 3 is retired.
     public const int EvtDragStarted              = 4;
     public const int EvtDragEnded                = 5;
     public const int EvtTapIgnored               = 6;
@@ -35,9 +35,6 @@ public sealed class DeckleTrackpadSource : DeckleEventSource
     public const int EvtGestureWriteFailed       = 11;
     public const int EvtRepairLaunched           = 12;
     public const int EvtRepairLaunchFailed       = 13;
-    // Verbose mirrors added for the Verbose/Info separation (2026-06-13):
-    // InjectionFailed, GestureWriteFailed, and RepairLaunchFailed carried
-    // k=v detail at Warning level; the detail moves to these fresh mirrors.
     public const int EvtInjectionFailedDetail    = 14;
     public const int EvtGestureWriteFailedDetail = 15;
     public const int EvtRepairLaunchFailedDetail = 16;

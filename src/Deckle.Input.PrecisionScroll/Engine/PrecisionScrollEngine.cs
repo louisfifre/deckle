@@ -130,8 +130,9 @@ public sealed class PrecisionScrollEngine : IWheelInterceptor, IDisposable
     }
 
     // The low-level hook is the only suppressible source, but it carries no
-    // device handle. Exact classic detents are therefore the narrow boundary:
-    // measured Precision Touchpad input uses finer deltas and remains native.
+    // device handle, so the engine cannot tell two classic mice apart. Exact
+    // classic detents are therefore the narrow boundary: Precision Touchpad
+    // input uses finer deltas and remains native.
     internal static bool CanConvert(in MouseWheelEvent wheelEvent) =>
         wheelEvent.Source == WheelEventSource.MessageHook
         && wheelEvent.Axis == WheelAxis.Vertical
@@ -156,6 +157,8 @@ public sealed class PrecisionScrollEngine : IWheelInterceptor, IDisposable
                 gesture.AddDetents(contactDetents, tick.TimestampMs);
             }
 
+            // Overload hands the wheel back to Windows: the interceptor detaches,
+            // but the travel already accepted still plays out before the worker exits.
             if (Interlocked.Exchange(ref _overflowed, 0) != 0)
             {
                 Volatile.Write(ref _runRequested, 0);

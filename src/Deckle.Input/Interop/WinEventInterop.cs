@@ -10,15 +10,10 @@ namespace Deckle.Input;
 // rooted for the hook's lifetime, same GC rule as a WndProc.
 public static class WinEventInterop
 {
-    // Out-of-context: callbacks marshalled to the installing thread's
-    // message queue. Skip-own-process: never report focus moves caused by
-    // Deckle's own windows.
     public const uint WINEVENT_OUTOFCONTEXT   = 0x0000;
     public const uint WINEVENT_SKIPOWNPROCESS = 0x0002;
 
-    // Foreground window changed (Alt+Tab, click into another app).
     public const uint EVENT_SYSTEM_FOREGROUND = 0x0003;
-    // Keyboard focus moved within the foreground app (control to control).
     public const uint EVENT_OBJECT_FOCUS      = 0x8005;
 
     public delegate void WinEventDelegate(

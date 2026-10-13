@@ -2,11 +2,8 @@ using Deckle.Catalog;
 
 namespace Deckle.Input.Trackpad;
 
-// ── TrackpadSettingsModule ────────────────────────────────────────────────────
-//
 // The trackpad module's own nav identity for the Settings shell. The module declares
-// its page, its icon and its label key here; the composition root supplies only the
-// Order. Registered from App.OnLaunched via SettingsModuleRegistry.
+// its page and its icon here; the composition root supplies only the Order.
 public static class TrackpadSettingsModule
 {
     public static SettingsModuleDescriptor Describe(int order) => new()

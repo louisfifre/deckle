@@ -12,14 +12,10 @@ namespace Deckle.Input;
 // and removals as WM_INPUT_DEVICE_CHANGE).
 //
 // Why not Deckle.Shell's MessageOnlyHost on the UI thread: hotkeys are
-// rare events, contact frames arrive at report cadence (~100 Hz) and
-// feed an injection path whose perceived quality is latency — a busy UI
-// frame must not stutter a drag. The pattern (HWND_MESSAGE window, the
-// WndProc delegate rooted in a field) mirrors MessageOnlyHost; only the
-// thread ownership differs. Registering with hwndTarget on a message-
-// only window is the documented pattern from Microsoft's "Using Raw
-// Input" sample (standard WndProc read — required anyway, the buffered
-// read is incompatible with RIDEV_DEVNOTIFY).
+// rare events, contact frames arrive at report cadence and feed an
+// injection path whose perceived quality is latency — a busy UI frame
+// must not stutter a drag. Frames are read in the standard WndProc, not
+// the buffered read, which is incompatible with RIDEV_DEVNOTIFY.
 //
 // Events are raised on the input thread. Consumers (recognizer, frame
 // recorder) do microseconds of work per frame; anything heavier must
@@ -29,7 +25,6 @@ public sealed class RawInputHost : IDisposable
     private const string ClassName = "DeckleInputHost";
     private const double RollupPeriodMs = 5000;
 
-    // Host-side monotonic clock shared by every frame timestamp.
     private static readonly Stopwatch s_clock = Stopwatch.StartNew();
 
     private readonly object _stateLock = new();
@@ -139,7 +134,6 @@ public sealed class RawInputHost : IDisposable
         }
     }
 
-    /// <summary>Posts WM_QUIT to the input thread and joins it.</summary>
     public void Stop()
     {
         Thread? thread;
@@ -235,7 +229,6 @@ public sealed class RawInputHost : IDisposable
             RawInputInterop.DispatchMessage(ref msg);
         }
 
-        // WM_QUIT — unwind everything this thread owns.
         var unregister = new[]
         {
             new RAWINPUTDEVICE

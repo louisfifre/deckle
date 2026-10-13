@@ -2,31 +2,16 @@ using CommunityToolkit.Mvvm.ComponentModel;
 
 namespace Deckle.Input.Trackpad;
 
-// ViewModel for TrackpadPage — bridges TrackpadSettings (master switch,
-// drag speed, raw-frame recording) to the XAML via x:Bind. Same shape as
-// Deckle.Settings' DiagnosticsViewModel :
-// Load() pulls from the store, each property change pushes back via
-// Push() + Save(), and the _isSyncing flag suppresses the write-back while
-// Load() seeds the properties so re-hydration never re-saves.
-//
-// The drag-speed readout is no longer a *Label string on this VM: the
-// SettingsComposer renders the slider's value itself (rounded per its
-// StepFrequency) with the "×" unit, so the former DragSpeedLabel is gone.
-// Push() still rounds before persisting so a snapped slider value's float
-// noise (1.3666670…) never reaches the store.
-//
-// The Windows-integration acts (neutralize / repair / start elevated) are
-// NOT modelled here : they are imperative commands with their own success
-// reporting, driven straight from the page code-behind. Only the persisted
-// settings live in this view-model.
+// The _isSyncing flag suppresses the write-back while Load() seeds the
+// properties, so re-hydration never re-saves. Push() rounds before persisting
+// so a snapped slider value's float noise (1.3666670…) never reaches the store.
 public partial class TrackpadViewModel : ObservableObject
 {
     private bool _isSyncing;
 
     // ── Three-finger drag ───────────────────────────────────────────────────
 
-    // Master switch — the recognizer runs only when on. Also greys the
-    // drag-speed card (IsEnabled, OneWay).
+    // Master switch — the recognizer runs only when on.
     [ObservableProperty]
     public partial bool Enabled { get; set; }
 
@@ -64,8 +49,8 @@ public partial class TrackpadViewModel : ObservableObject
 
     public TrackpadViewModel()
     {
-        // Guard BEFORE any property assignment, like DiagnosticsViewModel —
-        // the seed below must not be mistaken for user edits.
+        // Guard BEFORE any property assignment: the seed below must not be
+        // mistaken for user edits.
         _isSyncing = true;
         Load();
     }

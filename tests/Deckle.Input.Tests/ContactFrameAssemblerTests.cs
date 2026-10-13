@@ -3,16 +3,8 @@ using Xunit;
 
 namespace Deckle.Input.Tests;
 
-// Tests de comportement sur ContactFrameAssembler — le contrat de
-// réassemblage hybrid-mode du Precision Touchpad, pas son implémentation.
-// On n'assert que ce qu'un appelant observe : la frame émise (ou son
-// absence) et les compteurs d'anomalie. La règle load-bearing tient en
-// trois points : le premier report d'une frame déclare le total, les
-// suivants déclarent 0, et tous partagent le même scan time.
-//
-// Les contacts sont construits directement (records publics). On marque
-// chaque contact Tip=true par défaut ici : l'assembleur ne lit pas l'état
-// tip, seulement le nombre déclaré — la valeur est neutre pour ces tests.
+// Every contact is Tip=true: the assembler reads only the declared count,
+// never the tip state, so the value is neutral here.
 [Trait("Category", "unit")]
 public class ContactFrameAssemblerTests
 {
@@ -23,8 +15,7 @@ public class ContactFrameAssemblerTests
     public void CompleteReportEmitsFrameImmediatelyClampedToDeclaredCount()
     {
         var assembler = new ContactFrameAssembler();
-        // Trois slots dans le report, mais le device n'en déclare que deux —
-        // le troisième est du padding et doit être ignoré.
+        // The device declares two contacts; the third slot is padding.
         var report = new TouchpadReport(
             ScanTime: 100,
             ContactCount: 2,
@@ -45,9 +36,6 @@ public class ContactFrameAssemblerTests
     public void FragmentedFrameAccumulatesAcrossContinuationsThenEmitsOnce()
     {
         var assembler = new ContactFrameAssembler();
-        // Le report d'ouverture déclare 3 mais n'en porte qu'un : frame
-        // pendante. Deux continuations (count 0, même scan time) apportent
-        // le reste.
         var opening = new TouchpadReport(200, ContactCount: 3, ButtonDown: false,
             Contacts: new[] { Contact(1) });
         var cont1 = new TouchpadReport(200, ContactCount: 0, ButtonDown: false,
@@ -62,7 +50,6 @@ public class ContactFrameAssemblerTests
         Assert.NotNull(frame);
         Assert.Equal(3, frame!.ReportCount);
         Assert.Equal(3, frame.ContactCount);
-        // Contacts dans l'ordre d'arrivée.
         Assert.Equal(new[] { 1, 2, 3 }, frame.Contacts.Select(c => c.Id).ToArray());
     }
 
@@ -85,8 +72,6 @@ public class ContactFrameAssemblerTests
         var assembler = new ContactFrameAssembler();
         var opening = new TouchpadReport(400, ContactCount: 2, ButtonDown: false,
             Contacts: new[] { Contact(1) });
-        // Continuation au mauvais scan time : ce n'est pas la même frame,
-        // la pendante est perdue, rien n'est émis.
         var stray = new TouchpadReport(401, ContactCount: 0, ButtonDown: false,
             Contacts: new[] { Contact(2) });
 
@@ -103,8 +88,6 @@ public class ContactFrameAssemblerTests
         var assembler = new ContactFrameAssembler();
         var firstOpening = new TouchpadReport(500, ContactCount: 3, ButtonDown: false,
             Contacts: new[] { Contact(1) });
-        // Nouvelle ouverture alors qu'une frame était encore pendante :
-        // l'ancienne est flushée (comptée), la nouvelle suit son cours.
         var secondOpening = new TouchpadReport(600, ContactCount: 1, ButtonDown: false,
             Contacts: new[] { Contact(7) });
 
@@ -121,8 +104,6 @@ public class ContactFrameAssemblerTests
     public void ContinuationTakesOnlyWhatIsStillNeeded()
     {
         var assembler = new ContactFrameAssembler();
-        // Déclare 2, en porte 1 ; la continuation en porte 2 mais un seul
-        // manque — le surplus est ignoré.
         var opening = new TouchpadReport(700, ContactCount: 2, ButtonDown: false,
             Contacts: new[] { Contact(1) });
         var cont = new TouchpadReport(700, ContactCount: 0, ButtonDown: false,
@@ -140,8 +121,6 @@ public class ContactFrameAssemblerTests
     public void ButtonDownIsTrueIfAnyReportOfTheFrameHadIt()
     {
         var assembler = new ContactFrameAssembler();
-        // Bouton enfoncé sur la continuation seulement : la frame assemblée
-        // doit porter ButtonDown=true (OU logique sur tous les reports).
         var opening = new TouchpadReport(800, ContactCount: 2, ButtonDown: false,
             Contacts: new[] { Contact(1) });
         var cont = new TouchpadReport(800, ContactCount: 0, ButtonDown: true,

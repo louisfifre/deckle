@@ -2,9 +2,8 @@ using System.Runtime.InteropServices;
 
 namespace Deckle.Input;
 
-// Raw Input plumbing local to Deckle.Input. Deckle.Core already
-// carries the registration primitives shared with the HUD's mouse
-// proximity (RegisterRawInputDevices, RAWINPUTDEVICE, WM_INPUT,
+// Raw Input plumbing local to Deckle.Input. Deckle.Core carries the shared
+// registration primitives (RegisterRawInputDevices, RAWINPUTDEVICE, WM_INPUT,
 // RIDEV_INPUTSINK) and the message-only window primitives; this file adds
 // what only this module consumes — device enumeration, the WM_INPUT data
 // read, device-change notifications, and the message pump for the
@@ -19,8 +18,6 @@ public static class RawInputInterop
     public const ushort UsageTouchpad      = 0x05;
 
     // ── HID usages — Generic Desktop keyboard and mouse ──────────────────
-    // Generic Desktop page (0x01); keyboard observation registers usage
-    // 0x06, mouse-button observation usage 0x02.
     public const ushort UsagePageGeneric = 0x01;
     public const ushort UsageKeyboard    = 0x06;
     public const ushort UsageMouse       = 0x02;
@@ -75,7 +72,6 @@ public static class RawInputInterop
     public const int MouseButtonFlagsOffset = 4;
     public const int MouseButtonDataOffset  = 6;
 
-    // RAWMOUSE.usButtonFlags transition bits we treat as a button press.
     public const ushort RI_MOUSE_LEFT_BUTTON_DOWN   = 0x0001;
     public const ushort RI_MOUSE_RIGHT_BUTTON_DOWN  = 0x0004;
     public const ushort RI_MOUSE_MIDDLE_BUTTON_DOWN = 0x0010;
