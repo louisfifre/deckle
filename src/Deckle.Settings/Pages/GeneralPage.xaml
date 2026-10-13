@@ -4,7 +4,8 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:controls="using:CommunityToolkit.WinUI.Controls"
     xmlns:ui="using:CommunityToolkit.WinUI"
-    xmlns:vm="using:Deckle.Settings">
+    xmlns:vm="using:Deckle.Settings"
+    xmlns:catalog="using:Deckle.Catalog">
 
     <!-- Canonical Microsoft Learn pattern (SettingsExpander sample "Settings page
          example"): StackPanel max 1000 in a Grid, Spacing=4 between cards,
@@ -28,37 +29,12 @@
                         HorizontalAlignment="Stretch"
                         Spacing="{StaticResource SettingsCardSpacing}">
 
-                <!-- Page title + whole-page "Reset all". Win11 Settings pattern:
-                     the H1 lives in the Page (not the window chrome), with the
-                     page-level reset on its trailing edge (active-when-dirty),
-                     mirroring WhisperPage / LlmPage. -->
-                <Grid Margin="0,0,0,8">
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="*" />
-                        <ColumnDefinition Width="Auto" />
-                    </Grid.ColumnDefinitions>
-                    <TextBlock x:Uid="GeneralPageTitleLabel"
-                               Grid.Column="0"
-                               Style="{StaticResource TitleTextBlockStyle}"
-                               VerticalAlignment="Center" />
-                    <Button x:Name="ResetAllButton"
-                            x:Uid="GeneralPage_ResetAll"
-                            Grid.Column="1"
-                            VerticalAlignment="Center"
-                            Style="{StaticResource SubtleButtonStyle}"
-                            Click="ResetAll_Click">
-                        <StackPanel Orientation="Horizontal" Spacing="8">
-                            <FontIcon Glyph="{StaticResource Icon.Reset}" FontSize="14" />
-                            <TextBlock x:Uid="GeneralPageResetAllLabel" />
-                        </StackPanel>
-                    </Button>
-                </Grid>
-
-                <TextBlock x:Uid="GeneralPageSubtitleLabel"
-                           Style="{StaticResource BodyTextBlockStyle}"
-                           Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                           TextWrapping="Wrap"
-                           Margin="0,0,0,12" />
+                <!-- The shared header block: breadcrumb, one line of description,
+                     Reset all on the trailing edge (active-when-dirty, confirmed
+                     by the block itself). -->
+                <catalog:SettingsPageHeader x:Name="Header"
+                                            x:Uid="GeneralPageHeader"
+                                            ResetAllRequested="ResetAll_Click" />
 
                 <!-- ── Hotkeys ─────────────────────────────────────────────── -->
                 <Grid>

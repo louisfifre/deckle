@@ -90,8 +90,13 @@ public sealed partial class SettingsWindow : Window
         SettingsModuleRegistry.Changed += OnModulesChanged;
         this.Closed += (_, _) => SettingsModuleRegistry.Changed -= OnModulesChanged;
 
-        // Initial selection → triggers SelectionChanged → navigates to
-        // GeneralPage. One navigation path, no double-navigation.
+        // The page header asks the shell for its path in the rail; the shell
+        // answers from the registry (see ResolveBreadcrumb). Wired here rather
+        // than in the App because the answer is the rail's own structure.
+        SettingsNavigation.BreadcrumbFor = ResolveBreadcrumb;
+
+        // Initial selection → triggers SelectionChanged → navigates to Home, the
+        // first node of the rail. One navigation path, no double-navigation.
         Nav.SelectedItem = Nav.MenuItems[0];
 
         Title = Loc.Get("Settings_WindowTitle");
@@ -157,13 +162,18 @@ public sealed partial class SettingsWindow : Window
     // code-side path the composer uses.
     //
     // Two passes, because a child must find its parent already built: parents first,
-    // indexed by Id, then children into parent.MenuItems. A child renders icon-less
-    // and its parent starts expanded — the WinUI hierarchical-navigation sample's
-    // shape, where indentation under a named parent carries the relation and a second
-    // icon column would only add noise. Only the top-level items are tracked in
-    // _moduleNavItems: removing a parent takes its children with it, and the registry
-    // hands children back after their parents anyway, so a dangling child is a wiring
-    // gap — traced and skipped, never a boot-stopper.
+    // indexed by Id, then children into parent.MenuItems. A module split into pages
+    // becomes a NODE (settings design system, decision 15): its item loses its tag
+    // and stops navigating, a click only expands or collapses it (SelectsOnInvoked
+    // false, the PowerToys folder shape), and its own page becomes the first child,
+    // named General, the page for what every user of the module touches. The
+    // children render icon-less — the WinUI hierarchical-navigation sample's shape,
+    // where the node's icon carries the family and indentation carries the rest —
+    // and the node starts expanded, so every page stays one click away. Only the
+    // top-level items are tracked in _moduleNavItems: removing a node takes its
+    // children with it, and the registry hands children back after their parents
+    // anyway, so a dangling child is a wiring gap — traced and skipped, never a
+    // boot-stopper.
     private void BuildModuleNavItems()
     {
         foreach (NavigationViewItem old in _moduleNavItems)
@@ -173,9 +183,9 @@ public sealed partial class SettingsWindow : Window
         }
         _moduleNavItems.Clear();
 
-        // Main items append after General, the sole remaining static anchor (its
-        // count is the current end of the primary menu). Header items go to the very
-        // top and push the Main insertion point down as they are inserted.
+        // Main items append after the static anchors and their separator (the
+        // current end of the primary menu). Header items go to the very top and
+        // push the Main insertion point down as they are inserted.
         int mainInsertAt = Nav.MenuItems.Count;
         int headerInsertAt = 0;
         var parents = new Dictionary<string, NavigationViewItem>();
@@ -219,15 +229,65 @@ public sealed partial class SettingsWindow : Window
                 continue;
             }
 
+            // The first child turns its parent into a node: the parent's own page
+            // moves down as the General child, and the parent keeps only its label
+            // and icon.
+            if (parent.Tag is string parentTag)
+            {
+                parent.MenuItems.Add(new NavigationViewItem
+                {
+                    Content = Loc.GetFrom("Deckle.Settings", "SettingsNavGeneral/Content"),
+                    Tag = parentTag,
+                });
+                parent.Tag = null;
+                parent.SelectsOnInvoked = false;
+            }
+
             parent.MenuItems.Add(new NavigationViewItem
             {
                 Content = Loc.GetFrom(module.OwningAssembly, module.LabelKey),
                 Tag = module.PageTag,
             });
             // Expanded from the start: the children ARE the family's surfaces, and a
-            // collapsed parent would hide destinations the user has no other route to.
+            // collapsed node would hide destinations the user has no other route to.
             parent.IsExpanded = true;
         }
+    }
+
+    // ── Breadcrumb ───────────────────────────────────────────────────────────
+    //
+    // A page's path in the rail, for its header block: the module, then the page
+    // (`Autocorrect › General`), each segment carrying the tag it leads to. The
+    // module segment leads to the module's General page, which is the module's own
+    // page when the module is a node. A page of a module with one page has one
+    // segment. The two static anchors answer for themselves; a page the registry
+    // does not know gets null and the header shows its own title.
+    private static IReadOnlyList<SettingsBreadcrumbSegment>? ResolveBreadcrumb(Type pageType)
+    {
+        string general = Loc.GetFrom("Deckle.Settings", "SettingsNavGeneral/Content");
+        if (pageType == typeof(HomePage))
+            return [new(Loc.GetFrom("Deckle.Settings", "SettingsNavHome/Content"), null)];
+        if (pageType == typeof(GeneralPage))
+            return [new(general, null)];
+
+        IReadOnlyList<SettingsModuleDescriptor> modules = SettingsModuleRegistry.Modules;
+        SettingsModuleDescriptor? self = modules.FirstOrDefault(m => Type.GetType(m.PageTag) == pageType);
+        if (self is null) return null;
+
+        static string Label(SettingsModuleDescriptor m) => Loc.GetFrom(m.OwningAssembly, m.LabelKey);
+
+        if (self.ParentId is not null)
+        {
+            SettingsModuleDescriptor? parent = modules.FirstOrDefault(m => m.Id == self.ParentId);
+            return parent is null
+                ? [new(Label(self), null)]
+                : [new(Label(parent), parent.PageTag), new(Label(self), null)];
+        }
+
+        bool isNode = modules.Any(m => m.ParentId == self.Id);
+        return isNode
+            ? [new(Label(self), null), new(general, null)]
+            : [new(Label(self), null)];
     }
 
     // Registry changed (a module installed / removed) — rebuild the band. Register

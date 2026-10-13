@@ -147,6 +147,21 @@
   <data name="SettingsComposer_ValueOff" xml:space="preserve">
     <value>Off</value>
   </data>
+  <!-- The page header block (SettingsPageHeader, Catalog): the Reset all
+       command every page carries, its tooltip and its generic confirmation.
+       Composer-owned and module-agnostic, resolved from this root map. -->
+  <data name="SettingsPageHeader_ResetAll" xml:space="preserve">
+    <value>Reset all</value>
+  </data>
+  <data name="SettingsPageHeader_ResetAllTooltip" xml:space="preserve">
+    <value>Reset this page to defaults</value>
+  </data>
+  <data name="SettingsPageHeader_ResetAllDialogTitle" xml:space="preserve">
+    <value>Reset this page?</value>
+  </data>
+  <data name="SettingsPageHeader_ResetAllDialogBody" xml:space="preserve">
+    <value>Every setting on this page goes back to its default value.</value>
+  </data>
   <!-- The composer's Hotkey kind: the four modifier toggle buttons, the key
        capture button (its listening and unbound states), the Clear button and
        the advisory shown when a captured key has no modifier yet. Composer-owned,

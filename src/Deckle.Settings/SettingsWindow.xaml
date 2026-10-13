@@ -148,19 +148,27 @@
                         IsSettingsVisible="False"
                         SelectionChanged="OnNavSelectionChanged">
 
-            <!-- General is the shell's one static anchor; every module page (from
-                 Recording through Diagnostics) lives in its own assembly and is
+            <!-- The rail (settings design system, decision 15): Home, General, a
+                 separator, then the modules. Home and General are the shell's two
+                 static anchors; every module page lives in its own assembly and is
                  materialised from SettingsModuleRegistry in the code-behind, appended
-                 after General in (tier, order) order — so a module can appear /
+                 after the separator in (tier, order) order — so a module can appear /
                  disappear without editing this file (the seam the module installer
                  needs). -->
             <NavigationView.MenuItems>
-                <NavigationViewItem x:Uid="SettingsNavGeneral"
-                                    Tag="Deckle.Settings.GeneralPage">
+                <NavigationViewItem x:Uid="SettingsNavHome"
+                                    Tag="Deckle.Settings.HomePage">
                     <NavigationViewItem.Icon>
                         <FontIcon Glyph="{StaticResource Icon.Home}" />
                     </NavigationViewItem.Icon>
                 </NavigationViewItem>
+                <NavigationViewItem x:Uid="SettingsNavGeneral"
+                                    Tag="Deckle.Settings.GeneralPage">
+                    <NavigationViewItem.Icon>
+                        <FontIcon Glyph="{StaticResource Icon.Settings}" />
+                    </NavigationViewItem.Icon>
+                </NavigationViewItem>
+                <NavigationViewItemSeparator />
                 <!-- Module pages inserted here from SettingsModuleRegistry, in
                      (tier, order) order — Recording first through Diagnostics last. -->
             </NavigationView.MenuItems>

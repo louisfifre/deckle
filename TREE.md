@@ -855,7 +855,8 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   ├── SettingsComposer.Folds.cs
 │   │   │   ├── SettingsComposer.Hotkey.cs
 │   │   │   ├── SettingsComposer.Inputs.cs
-│   │   │   └── SettingsComposer.Numeric.cs
+│   │   │   ├── SettingsComposer.Numeric.cs
+│   │   │   └── SettingsPageHeader.cs
 │   │   ├── Hotkeys/
 │   │   │   ├── HotkeyChord.cs
 │   │   │   └── HotkeyModifiers.cs
@@ -1481,7 +1482,9 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   └── SettingsModuleRegistry.cs
 │   │   ├── Pages/
 │   │   │   ├── GeneralPage.xaml
-│   │   │   └── GeneralPage.xaml.cs
+│   │   │   ├── GeneralPage.xaml.cs
+│   │   │   ├── HomePage.xaml
+│   │   │   └── HomePage.xaml.cs
 │   │   ├── Persistence/
 │   │   │   ├── AppSettings.cs
 │   │   │   ├── SettingsBackupService.cs

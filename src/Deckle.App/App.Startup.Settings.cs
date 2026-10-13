@@ -180,15 +180,16 @@ public partial class App
         // always registered.
         RegisterSettingsModule(Diagnostics.Logging.DiagnosticsSettingsModule.Describe(order: 600), Diagnostics.Logging.SettingsSearch.Entries);
 
-        // General is the shell's one static nav anchor, not a registry module, so it has
-        // no descriptor to read coordinates off: its cards register with the values its
-        // NavigationViewItem carries in SettingsWindow.xaml — the Deckle.Settings.GeneralPage
-        // tag, the Home glyph, and the nav label resolved from the shell's own subtree
+        // General is a static nav anchor of the shell (Home, the other one, has no
+        // cards to find), not a registry module, so it has no descriptor to read
+        // coordinates off: its cards register with the values its NavigationViewItem
+        // carries in SettingsWindow.xaml — the Deckle.Settings.GeneralPage tag, the
+        // Settings glyph, and the nav label resolved from the shell's own subtree
         // (SettingsNavGeneral, the item's x:Uid).
         Settings.SettingsSearchIndex.RegisterPage(
             "Deckle.Settings.GeneralPage",
             "Deckle.Settings",
-            Deckle.Catalog.Glyphs.Home,
+            Deckle.Catalog.Glyphs.Settings,
             Deckle.Catalog.Loc.GetFrom("Deckle.Settings", "SettingsNavGeneral/Content"),
             Settings.SettingsSearch.Entries);
     }
