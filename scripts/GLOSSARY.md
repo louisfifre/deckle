@@ -28,7 +28,7 @@ The variable region below the Persistent Header. It may hold an Action Menu, a P
 _Avoid_ : view (also includes the Persistent Header).
 
 **Presentation Role** :
-The visual responsibility an interface object carries, named by its meaning. The active theme maps it to terminal attributes, together with the current state and the capabilities of the host. It does not decide interaction intent or layout.
+The role an interface object plays in appearance, named by its meaning. The active theme maps it to terminal attributes, together with the current state and the capabilities of the host. It does not decide interaction intent or layout.
 _Avoid_ : color (one theme's terminal attribute), intent kind (the behavior activation requests).
 
 **Panel** :
@@ -44,7 +44,7 @@ The Panel that presents the Execution Journal.
 The Panel that presents the Execution Tracking.
 
 **Page** :
-One slice of content shown at a time when a list is paginated. The whole visible state of the interface is a View.
+One slice of a paginated list, shown one at a time. The whole visible state of the interface is a View.
 
 **Screen** :
 The terminal itself, or a captured image of it. The visible state of the interface is a View.
@@ -65,11 +65,11 @@ A non-interactive grouping of related Action Menu items.
 _Avoid_ : action row (presents one Action and its variants), panel (owns a content responsibility).
 
 **Navigation Control** :
-A selectable interface target that invokes a navigation command, such as the visible Back control.
+A selectable item that invokes a navigation command, such as the visible Back control.
 _Avoid_ : action (chooses work to carry out), access (opens another View).
 
 **Access** :
-A selectable item whose purpose is to open another View, rather than to choose work to carry out. It names where a navigation starts. The View it opens is the destination of that transition.
+A selectable item that opens another View, rather than choosing work to carry out. It names where a navigation starts. The View it opens is the destination of that transition.
 _Avoid_ : destination (the View's role in the transition), action (chooses work to carry out).
 
 **Action** :
@@ -77,7 +77,7 @@ A selectable operation the user intends to carry out. Choosing it starts that op
 _Avoid_ : access (opens another interface state without choosing an operation), execution (one actual run of the chosen operation).
 
 **Action Row** :
-The menu composition that presents one Action and its choices together across the layout. It keeps the operation visible while the user chooses how to carry it out.
+A menu composition that presents one Action and its choices together across the layout. It keeps the operation visible while the user chooses how to carry it out.
 _Avoid_ : action (the intended operation itself), section (groups several menu items).
 
 **Action Variant** :
@@ -95,38 +95,38 @@ A material criterion that limits what an Action will affect.
 _Avoid_ : selector (the interaction used to edit an input), selection (the accepted value or values).
 
 **Selector** :
-The interaction used to edit one Filter, or another material input of an Action, during Preparation.
+An interaction that edits one Filter, or another material input of an Action, during Preparation.
 _Avoid_ : selection (the value or values it currently holds), access (opens another View).
 
 **Selection** :
-The value or values that one Selector currently accepts.
+The Options that one Selector currently accepts.
 _Avoid_ : selector (the interaction that edits it), focus (the currently active interface target).
 
 **Option** :
-One available value that a Selector presents.
+One choice that a Selector offers.
 _Avoid_ : selection (the currently accepted Option or Options), target (the interactive surface that presents it).
 
 **Radio Group** :
-The single-selection form of a Selector, made of mutually exclusive Radio Buttons.
+A Selector that accepts a single Option, made of mutually exclusive Radio Buttons.
 
 **Radio Button** :
-The selectable target that presents one Option inside a Radio Group.
+A Target that presents one Option inside a Radio Group.
 _Avoid_ : checkbox (represents an independently includable Option).
 
 **Checkbox Group** :
-The multiple-selection form of a Selector, made of Checkboxes that can each be included on their own.
+A Selector that accepts several Options, made of Checkboxes that can each be included on their own.
 
 **Checkbox** :
-The selectable target that includes or excludes one Option from a Checkbox Group.
+A Target that includes or excludes one Option from a Checkbox Group.
 _Avoid_ : radio button (belongs to a mutually exclusive Selection).
 
 **Toggle Button** :
-The two-state form of a Selector, for one independent setting rather than membership in a group.
+A Selector that switches one independent setting between two states, rather than choosing membership in a group.
 _Avoid_ : checkbox (represents one Option within a multiple Selection).
 
 **Effective Scope** :
 The resolved set that an Action will actually inspect or change, once its target and Filters are applied.
-_Avoid_ : selection (one accepted input), review (the account presented before Execution).
+_Avoid_ : selection (the Options one Selector accepts), review (the account presented before Execution).
 
 **Review** :
 The read-only account of an intended Action, its material inputs and its Effective Scope, before Execution.
@@ -140,7 +140,7 @@ _Avoid_ : review (presents what will happen), execution (the run that follows ac
 The View a navigation arrives at. It is a role of that View, while the item that leads there is an Access.
 
 **Focus** :
-The interface target that is active at this moment. It is where input goes, not a value a Selector holds.
+The interface target that is active at this moment. It is where input goes, not the Options a Selector holds.
 
 **Target** :
 An interactive surface the user can select, such as a Radio Button or a Checkbox. It presents an Option without being the Option.
