@@ -992,7 +992,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   └── terms.fr.json
 │   │   ├── Deckle.Home.csproj
 │   │   ├── DeckleHomeSource.cs
-│   │   ├── GLOSSARY.md  — Home inventory vocabulary — the public norm, personal room registry, point code…
+│   │   ├── GLOSSARY.md  — Home inventory vocabulary. It separates the public norm from the personal room…
 │   │   ├── HomeBodyEditor.cs
 │   │   ├── HomeCode.cs
 │   │   ├── HomeCollectionWriter.cs
