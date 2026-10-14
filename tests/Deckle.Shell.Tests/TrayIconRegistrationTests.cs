@@ -144,7 +144,11 @@ public sealed class TrayIconRegistrationTests
 
         Assert.Equal(TrayIconReaddOutcome.Added, registration.Readd());
         Assert.True(registration.IsAdded);
-        Assert.Equal(0, registration.ReaddAttempts);
+        Assert.Equal(3, registration.ReaddAttempts);
+
+        // The next broadcast starts a sequence of its own.
+        registration.Readd();
+        Assert.Equal(1, registration.ReaddAttempts);
     }
 
     // A broadcast that did not follow a restart finds the entry still there:

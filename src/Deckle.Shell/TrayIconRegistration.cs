@@ -38,13 +38,15 @@ internal sealed class TrayIconRegistration(IntPtr window, INotifyIconApi api)
     private IntPtr _icon;
     private bool _added;
     private int _readdAttempts;
+    private bool _readdSequenceClosed = true;
 
     public IntPtr Window => window;
     public bool IsAdded => _added;
     public string Tip => _tip;
     public IntPtr Icon => _icon;
 
-    // Attempts made in the current re-add sequence, for the journal.
+    // Attempts made in the current re-add sequence, or in the last one once
+    // it closed, for the journal.
     public int ReaddAttempts => _readdAttempts;
 
     // First add, with the status kept so far: Update may have run before.
@@ -73,20 +75,22 @@ internal sealed class TrayIconRegistration(IntPtr window, INotifyIconApi api)
     // follow a restart) refuses a second add, and the icon is then on screen.
     public TrayIconReaddOutcome Readd()
     {
-        _readdAttempts = _readdAttempts >= MaxReaddAttempts ? 1 : _readdAttempts + 1;
+        _readdAttempts = _readdSequenceClosed ? 1 : _readdAttempts + 1;
+        _readdSequenceClosed = false;
 
         var data = BuildData(NativeMethods.NIF_MESSAGE | NativeMethods.NIF_ICON | NativeMethods.NIF_TIP);
         if (api.Notify(NativeMethods.NIM_ADD, ref data) || api.Notify(NativeMethods.NIM_MODIFY, ref data))
         {
             _added = true;
-            _readdAttempts = 0;
+            _readdSequenceClosed = true;
             return TrayIconReaddOutcome.Added;
         }
 
         _added = false;
-        return _readdAttempts >= MaxReaddAttempts
-            ? TrayIconReaddOutcome.GaveUp
-            : TrayIconReaddOutcome.RetryLater;
+        if (_readdAttempts < MaxReaddAttempts) return TrayIconReaddOutcome.RetryLater;
+
+        _readdSequenceClosed = true;
+        return TrayIconReaddOutcome.GaveUp;
     }
 
     public void Delete()

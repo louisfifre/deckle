@@ -51,11 +51,13 @@ public sealed class DeckleShellSource : DeckleEventSource
 
     // ── Tray icon ───────────────────────────────────────────────────────
 
+    // Both long: a (long, uint) pair lands on the WriteEvent(long, long)
+    // overload and the payload no longer matches the declared types.
     [Event(EvtTrayIconHostCreated,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Lifecycle,
            Message = "tray icon owner window created | hwnd={0} | taskbar_created_msg={1}")]
-    public void TrayIconHostCreated(long hwnd, uint taskbar_created_msg)
+    public void TrayIconHostCreated(long hwnd, long taskbar_created_msg)
     {
         if (IsEnabled()) WriteEvent(EvtTrayIconHostCreated, hwnd, taskbar_created_msg);
     }
