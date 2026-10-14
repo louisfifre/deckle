@@ -8,13 +8,11 @@
     xmlns:catalog="using:Deckle.Catalog">
 
     <!-- Two columns: the page on the left, the live preview on the right, a
-         GridSplitter between them (settings design system, 2026-10-14: the
-         right pane comes back for the preview alone, reversing decision 17).
-         The preview is there to be watched while the tuning values move; as
-         a card in the flow it left the screen as soon as the user scrolled to
-         the tuning section. The pane follows the card's own rule: it opens
-         while the engine runs and the page takes the full width otherwise
-         (code-behind, SyncPreviewPane).
+         GridSplitter between them (Louis, 2026-10-14, on screen). The preview is
+         there to be watched while the tuning values move; as a card in the flow
+         it left the screen as soon as the user scrolled to the tuning section.
+         The pane follows the card's own rule: it opens while the engine runs and
+         the page takes the full width otherwise (code-behind, SyncPreviewPane).
 
          The header stays in the left column rather than spanning both. The
          left column is the page as every settings page lays it out, a
@@ -62,8 +60,8 @@
                                                 ResetAllRequested="ResetAll_Click" />
 
                     <!-- The module switch: the on/off card comes first on the page,
-                         alone and outside any section (settings design system,
-                         decision 10). Composed: Enabled (AmbientViewModel.StateSettings). -->
+                         alone and outside any section. Composed: Enabled
+                         (AmbientViewModel.StateSettings). -->
                     <StackPanel x:Name="StateHost"
                                 Spacing="{StaticResource SettingsCardSpacing}" />
 
@@ -266,10 +264,9 @@
                                ResizeBehavior="PreviousAndNext"
                                Visibility="Collapsed" />
 
-        <!-- The preview block (settings design system, decision 18): the
-             sampled grid at the display's exact ratio as the stage, its
-             commands above, the engine's readouts and the colour each light
-             receives below. Shown while the engine runs, never folded
+        <!-- The preview block: the sampled grid at the display's exact ratio as
+             the stage, its commands above, the engine's readouts and the colour
+             each light receives below. Shown while the engine runs, never folded
              (2026-10-14). Its own scroller, so a short window still reaches
              the readouts; the same page padding as the left column, so the
              two columns share their top edge and the line sits at the same

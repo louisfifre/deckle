@@ -66,16 +66,15 @@ public partial class AmbientViewModel
 
     // Fine tuning: flat cards, the brightness curve first at full width (the
     // value the section is about, so it opens it: Louis, 2026-10-14, reversing
-    // the "instrument last" order of decision 12 for this page), then the
+    // the "instrument last" order for this page), then the
     // brightness floor (its switch and its level, drawn on the curve as a guide
     // while it is on), reaction speed, exposure, saturation. The preset fold
     // that held them (Game / Vivid / Movie / Ambient / Custom in its header) is
-    // set aside with every preset (settings design system, decision 22): the
-    // family still runs underneath (Preset, AmbientSettingsService.Presets), so
-    // a hand edit still records Custom, but nothing on the page selects a
-    // preset any more. The change threshold, an engine optimisation nobody
-    // tunes, keeps its AmbientSettings default and is no longer exposed (triage
-    // of 2026-10-14).
+    // set aside with every preset: the family still runs underneath (Preset,
+    // AmbientSettingsService.Presets), so a hand edit still records Custom, but
+    // nothing on the page selects a preset any more. The change threshold, an
+    // engine optimisation nobody tunes, keeps its AmbientSettings default and is
+    // no longer exposed (triage of 2026-10-14).
     public IReadOnlyList<SettingDescriptor> TuningSettings =>
     [
         Setting.Curve(
