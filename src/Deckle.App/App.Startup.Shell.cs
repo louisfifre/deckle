@@ -199,8 +199,8 @@ public partial class App
         };
         _tray.RightClickRequested += () => _trayMenu.Show();
 
-        // Left click: the quick actions, then the module switches as checkable
-        // items, grouped by use (TR-03): the rarely changed ones first, Ambient
+        // Left click: the quick actions, then the module switches as rows with
+        // a pill, grouped by use (TR-03): the rarely changed ones first, Ambient
         // Light last, each group behind a separator. A click flips a module and
         // closes the menu, like any menu item. Every entry follows module
         // presence: an absent module has no Record item, no file action, no

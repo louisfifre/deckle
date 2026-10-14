@@ -1611,6 +1611,8 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   ├── Deckle.Shell.TrayMenu/
 │   │   ├── Interop/
 │   │   │   └── TrayMenuNativeMethods.cs
+│   │   ├── Themes/
+│   │   │   └── Generic.xaml
 │   │   ├── Deckle.Shell.TrayMenu.csproj
 │   │   ├── DeckleShellTrayMenuSource.cs
 │   │   ├── TrayCarrierWindow.cs
@@ -1619,6 +1621,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── TrayMenuHost.Items.cs
 │   │   ├── TrayMenuHost.Show.cs
 │   │   ├── TrayMenuPlacement.cs
+│   │   ├── TraySwitchMenuItem.cs
 │   │   ├── TrayToggle.cs
 │   │   └── TrayWindowOwnership.cs
 │   ├── Deckle.Shell.WindowChrome/

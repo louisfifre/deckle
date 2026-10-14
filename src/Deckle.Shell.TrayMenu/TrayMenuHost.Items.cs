@@ -8,11 +8,13 @@ namespace Deckle.Shell.TrayMenu;
 
 public sealed partial class TrayMenuHost
 {
-    // Pure native items: no Style or Template override, no forced Height. The
-    // framework owns hover, radius, inset, foreground, DPI scaling and cell
-    // height. A toggle is a ToggleMenuFlyoutItem, the checkable item of
-    // Windows 11 context menus: its check mark shows the module state at a
-    // glance and a click flips it, as in any menu.
+    // Command items are pure native MenuFlyoutItems: no Style or Template
+    // override, no forced Height. The framework owns hover, radius, inset,
+    // foreground, DPI scaling and cell height. A toggle is a TraySwitchMenuItem,
+    // the same row with an on/off pill at its right edge; not a
+    // ToggleMenuFlyoutItem, whose check-mark column would push every other
+    // item of the menu to the right (see TraySwitchMenuItem). A click flips
+    // the module and closes the menu, as in any menu.
     private void BuildItems()
     {
         _flyout.Items.Clear();
@@ -52,9 +54,9 @@ public sealed partial class TrayMenuHost
         return item;
     }
 
-    private ToggleMenuFlyoutItem CreateToggleItem(TrayToggle toggle)
+    private TraySwitchMenuItem CreateToggleItem(TrayToggle toggle)
     {
-        var item = new ToggleMenuFlyoutItem { Text = toggle.Label };
+        var item = new TraySwitchMenuItem { Text = toggle.Label };
         item.Click += (_, _) =>
         {
             DeckleShellTrayMenuSource.Log.ItemClicked();
@@ -66,20 +68,19 @@ public sealed partial class TrayMenuHost
     }
 
     // Reflects module and engine state at each open: a command label may
-    // follow a state (Record / Stop recording), and a toggle's check mark
-    // follows its module's Enabled flag, which its Settings page can change
-    // meanwhile.
+    // follow a state (Record / Stop recording), and a toggle's pill follows
+    // its module's Enabled flag, which its Settings page can change meanwhile.
     private void SyncItems()
     {
         foreach (var (entry, item) in _items)
         {
             switch (entry)
             {
+                case TrayToggle toggle when item is TraySwitchMenuItem switchItem:
+                    switchItem.IsOn = toggle.IsOn();
+                    break;
                 case TrayMenuCommand command when item is MenuFlyoutItem menuItem:
                     menuItem.Text = command.Label();
-                    break;
-                case TrayToggle toggle when item is ToggleMenuFlyoutItem toggleItem:
-                    toggleItem.IsChecked = toggle.IsOn();
                     break;
             }
         }

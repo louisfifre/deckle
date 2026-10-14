@@ -4,7 +4,8 @@ namespace Deckle.Shell.TrayMenu;
 
 /// <summary>
 /// One on/off entry of the tray quick-actions menu: a switchable module the
-/// App exposes, rendered as a checkable menu item. The menu reads
+/// App exposes, rendered as a menu item with an on/off pill
+/// (<see cref="TraySwitchMenuItem"/>). The menu reads
 /// <see cref="IsOn"/> at each open and calls <see cref="Toggle"/> when the user
 /// clicks the item; the module's own settings observer does the actual start
 /// or stop. The same record names the toggle's hotkey action.
