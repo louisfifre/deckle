@@ -6,7 +6,7 @@
 
     <!-- The Streaming page of the Transcription module (settings design system,
          decision 16): the pipeline switch alone at the top, then speech
-         filtering, then segmentation with the cut mode fold. Everything under
+         filtering, then segmentation with the cut fold. Everything under
          the switch hides while streaming is off (mask, never grey): the cards
          through their own VisibleWhen, the section titles through the binds
          below. Every card is composed from WhisperViewModel's manifests. -->
@@ -33,9 +33,7 @@
                 <!-- ── Speech filtering ────────────────────────────────────── -->
                 <catalog:SettingsSection x:Uid="WhisperPageSpeechFilteringSection"
                                          Visibility="{x:Bind VisibleWhenStreaming(ViewModel.StreamingEnabled), Mode=OneWay}">
-                    <!-- The VAD fold: the on/off toggle is the group master, the four
-                         Silero detection parameters its children
-                         (WhisperViewModel.VadSettings). -->
+                    <!-- The VAD on/off toggle (WhisperViewModel.VadSettings). -->
                     <StackPanel x:Name="VadHost"
                                 Spacing="{StaticResource SettingsCardSpacing}" />
                 </catalog:SettingsSection>
@@ -43,10 +41,8 @@
                 <!-- ── Segmentation ────────────────────────────────────────── -->
                 <catalog:SettingsSection x:Uid="StreamingPageSegmentationSection"
                                          Visibility="{x:Bind VisibleWhenStreaming(ViewModel.StreamingEnabled), Mode=OneWay}">
-                    <!-- The silence threshold, the cut mode fold (the preset in its
-                         header, the anchors and the curve under Custom), then the cut
-                         margin and the minimum utterance
-                         (WhisperViewModel.SegmentationSettings). -->
+                    <!-- The silence threshold, then the cut fold (the four anchors
+                         and the curve) (WhisperViewModel.SegmentationSettings). -->
                     <StackPanel x:Name="SegmentationHost"
                                 Spacing="{StaticResource SettingsCardSpacing}" />
                 </catalog:SettingsSection>

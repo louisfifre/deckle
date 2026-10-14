@@ -25,8 +25,6 @@ public sealed partial class DecodingPage : Page
         // Composed before the first Load() (OnNavigatedTo), so each composer's
         // subscription catches Load()'s refresh; held so they live as long as
         // the cached page.
-        Compose(OutputFiltersHost, ViewModel.OutputFilterSettingsManifest);
-        Compose(ContextHost, ViewModel.ContextSettingsManifest);
         Compose(DecodingHost, ViewModel.DecodingSettingsManifest);
         Compose(ConfidenceHost, ViewModel.ConfidenceSettingsManifest);
     }

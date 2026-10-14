@@ -348,12 +348,6 @@
   <data name="GeneralOverlayFadeCard.Description" xml:space="preserve">
     <value>Make the overlay transparent when you move over it, so it never blocks what's underneath.</value>
   </data>
-  <data name="GeneralOverlayAnimationsCard.Header" xml:space="preserve">
-    <value>Animate overlay feedback</value>
-  </data>
-  <data name="GeneralOverlayAnimationsCard.Description" xml:space="preserve">
-    <value>Animate processing, microphone feedback, and message movement. This setting is independent of the Windows animation preference.</value>
-  </data>
   <data name="GeneralOverlayPositionCard.Header" xml:space="preserve">
     <value>Screen position</value>
   </data>
@@ -446,61 +440,7 @@
     <value>Voice activity detection</value>
   </data>
   <data name="WhisperVadEnabledCard.Description" xml:space="preserve">
-    <value>The on/off for speech filtering; the settings below tune how it decides. When off, raw audio goes straight to the model.</value>
-  </data>
-  <data name="WhisperVadThresholdCard.Header" xml:space="preserve">
-    <value>Speech threshold</value>
-  </data>
-  <data name="WhisperVadThresholdCard.Description" xml:space="preserve">
-    <value>How sure the detector must be that a window contains speech before keeping it. Higher trims more aggressively but can clip soft speech.</value>
-  </data>
-  <data name="WhisperVadMinSpeechCard.Header" xml:space="preserve">
-    <value>Minimum speech</value>
-  </data>
-  <data name="WhisperVadMinSpeechCard.Description" xml:space="preserve">
-    <value>Speech shorter than this is discarded as a blip, so a stray click or tap is not kept.</value>
-  </data>
-  <data name="WhisperVadMinSilenceCard.Header" xml:space="preserve">
-    <value>Minimum silence</value>
-  </data>
-  <data name="WhisperVadMinSilenceCard.Description" xml:space="preserve">
-    <value>A pause shorter than this does not split speech, so a breath mid-sentence is bridged rather than cut.</value>
-  </data>
-  <data name="WhisperVadSpeechPadCard.Header" xml:space="preserve">
-    <value>Speech padding</value>
-  </data>
-  <data name="WhisperVadSpeechPadCard.Description" xml:space="preserve">
-    <value>Audio kept on each side of a detected span, so a word's onset or tail is not clipped.</value>
-  </data>
-  <data name="WhisperSuppressNstCard.Header" xml:space="preserve">
-    <value>Suppress non-speech tokens</value>
-  </data>
-  <data name="WhisperSuppressNstCard.Description" xml:space="preserve">
-    <value>Remove tags like [Music] or (laughter) that Whisper sometimes adds to the transcription.</value>
-  </data>
-  <data name="WhisperSuppressBlankCard.Header" xml:space="preserve">
-    <value>Suppress blank segments</value>
-  </data>
-  <data name="WhisperSuppressBlankCard.Description" xml:space="preserve">
-    <value>Drop segments that contain only whitespace or punctuation.</value>
-  </data>
-  <data name="WhisperSuppressRegexCard.Header" xml:space="preserve">
-    <value>Custom regex filter</value>
-  </data>
-  <data name="WhisperSuppressRegexCard.Description" xml:space="preserve">
-    <value>A pattern to automatically remove unwanted text from the transcription. Uses regular expression syntax.</value>
-  </data>
-  <data name="WhisperUseContextCard.Header" xml:space="preserve">
-    <value>Carry previous context</value>
-  </data>
-  <data name="WhisperUseContextCard.Description" xml:space="preserve">
-    <value>Pass each segment's result as context for the next one, improving consistency across sentences. Turn off if the transcription starts repeating itself.</value>
-  </data>
-  <data name="WhisperMaxTokensCard.Header" xml:space="preserve">
-    <value>Maximum tokens per segment</value>
-  </data>
-  <data name="WhisperMaxTokensCard.Description" xml:space="preserve">
-    <value>Limit how much text can be generated for each segment. -1 removes the limit.</value>
+    <value>Strip silence and background noise before transcription. When off, raw audio goes straight to the model.</value>
   </data>
   <data name="WhisperUseBeamSearchCard.Header" xml:space="preserve">
     <value>Beam search</value>
@@ -606,12 +546,6 @@
   <data name="WhisperPageSpeechFilteringSection.Caption" xml:space="preserve">
     <value>Pre-filter your audio to strip silence and background noise before transcription — the main defense against phantom text on quiet stretches.</value>
   </data>
-  <data name="WhisperPageOutputFiltersSection.Title" xml:space="preserve">
-    <value>Output filters</value>
-  </data>
-  <data name="WhisperPageContextSegmentationSection.Title" xml:space="preserve">
-    <value>Context</value>
-  </data>
   <data name="WhisperDecodingExpander.Header" xml:space="preserve">
     <value>Decoding</value>
   </data>
@@ -677,7 +611,7 @@
     <value>Pause before cutting</value>
   </data>
   <data name="WhisperCutPresetCard.Description" xml:space="preserve">
-    <value>How long a pause must last before the utterance is cut and transcribed. Patient waits through thinking pauses, Quick sends sentences sooner, Balanced sits between. Custom shows the curve and its bounds.</value>
+    <value>How long a pause must last before the utterance is cut and transcribed. The four bounds frame the curve that shrinks the wait as the utterance grows.</value>
   </data>
   <data name="WhisperCutPresetPatient.Content" xml:space="preserve">
     <value>Patient</value>
@@ -695,7 +629,7 @@
     <value>Cut curve</value>
   </data>
   <data name="WhisperCutCurveCard.Description" xml:space="preserve">
-    <value>Drag the two handles to shape how the wait shrinks as an utterance grows. The four settings below set its bounds.</value>
+    <value>Drag the two handles to shape how the wait shrinks as an utterance grows. The four settings above set its bounds.</value>
   </data>
   <data name="WhisperSegHangoverMaxCard.Header" xml:space="preserve">
     <value>Hangover (max)</value>
@@ -721,18 +655,6 @@
   <data name="WhisperSegHangoverRampEndCard.Description" xml:space="preserve">
     <value>Utterance length at and above which the hangover equals the min. Between the ramp start and end, the hangover follows a shaped curve that declines from the start and steepens toward the end.</value>
   </data>
-  <data name="WhisperSegMarginCard.Header" xml:space="preserve">
-    <value>Cut margin</value>
-  </data>
-  <data name="WhisperSegMarginCard.Description" xml:space="preserve">
-    <value>How much silence (in milliseconds) to keep after the last word when cutting. Distinct from the hangover — the silence beyond this is dropped.</value>
-  </data>
-  <data name="WhisperSegMinUtteranceCard.Header" xml:space="preserve">
-    <value>Minimum utterance</value>
-  </data>
-  <data name="WhisperSegMinUtteranceCard.Description" xml:space="preserve">
-    <value>Spans of speech shorter than this (in milliseconds) are dropped as noise blips rather than transcribed.</value>
-  </data>
 
   <!-- ─── WhisperPage — Diagnostics ───────────────────────────────────
        Dictation-scoped dataset consents: latency telemetry and the
@@ -757,9 +679,6 @@
     <value>Always raw</value>
   </data>
 
-  <data name="WhisperSuppressRegexBox.PlaceholderText" xml:space="preserve">
-    <value>(e.g. ^\s*\[.*\]\s*$)</value>
-  </data>
   <data name="WhisperTemperatureIncrementWarning.Message" xml:space="preserve">
     <value>With the step set to 0, Whisper won't retry uncertain segments. Leave at 0.2 unless you have a specific reason.</value>
   </data>

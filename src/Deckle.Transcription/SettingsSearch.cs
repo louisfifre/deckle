@@ -24,15 +24,14 @@ namespace Deckle.Transcription;
 //
 // Granularity is one entry per TOP-LEVEL card, fold headers included, but NOT their
 // nested children. WhisperPage is the heaviest page, its parameters stacked in folds
-// (the VAD group, the energy-segmenter group, the Decoding and Confidence sections,
-// the overlay and corpus groups); a child lives inside a fold that is collapsed
-// behind its chevron — and often masked outright by runtime state (the whole Speech-
-// filtering fold and the segmenter children hide while streaming is off, the corpus
-// children while the corpus opt-in is off) — so a hit on one could not be reliably
-// brought into view. The fold's own card is the single reliable target that lands the
-// user in the right region; the buried child concepts stay findable through that
-// card's Keywords ("temperature"/"beam" reaching Decoding, "hangover"/"utterance"
-// reaching Streaming, "silero"/"silence" reaching VAD). The transient
+// (the cut fold, the Decoding and Confidence sections, the overlay and corpus
+// groups); a child lives inside a fold that is collapsed behind its chevron — and
+// often masked outright by runtime state (the segmenter cards hide while streaming
+// is off, the corpus children while the corpus opt-in is off) — so a hit on one
+// could not be reliably brought into view. The fold's own card is the single
+// reliable target that lands the user in the right region; the buried child
+// concepts stay findable through that card's Keywords ("temperature"/"beam"
+// reaching Decoding, "hangover"/"curve" reaching the cut fold). The transient
 // WhisperSetupInfoBar is not a setting — a not-provisioned call-to-action — so it is
 // absent too.
 //
@@ -45,8 +44,8 @@ public static class SettingsSearch
     // The module's General page: overlay and pasting, model and engine, diagnostics.
     public static IReadOnlyList<SettingSearchEntry> Entries { get; } =
     [
-        // "Overlay and pasting" — the overlay group (fade / animations / position /
-        // transcript panel side ride under it as composed children).
+        // "Overlay and pasting" — the overlay group (fade / position / transcript
+        // panel side ride under it as composed children).
         new SettingSearchEntry
         {
             LabelKey = "GeneralOverlayExpander",
@@ -115,41 +114,6 @@ public static class SettingsSearch
     // The Decoding page: the Whisper parameters that apply in both pipelines.
     public static IReadOnlyList<SettingSearchEntry> DecodingEntries { get; } =
     [
-        // Suppress non-speech tokens (composed toggle).
-        new SettingSearchEntry
-        {
-            LabelKey = "WhisperSuppressNstCard",
-            Keywords = ["music", "tags", "brackets"],
-        },
-
-        // Suppress blank segments (composed toggle).
-        new SettingSearchEntry
-        {
-            LabelKey = "WhisperSuppressBlankCard",
-            Keywords = ["empty", "whitespace"],
-        },
-
-        // Custom regex filter (composed text field).
-        new SettingSearchEntry
-        {
-            LabelKey = "WhisperSuppressRegexCard",
-            Keywords = ["pattern", "remove"],
-        },
-
-        // Carry previous context (composed toggle).
-        new SettingSearchEntry
-        {
-            LabelKey = "WhisperUseContextCard",
-            Keywords = ["history", "conditioning"],
-        },
-
-        // Maximum tokens per segment (composed number).
-        new SettingSearchEntry
-        {
-            LabelKey = "WhisperMaxTokensCard",
-            Keywords = ["length", "limit"],
-        },
-
         // "Decoding" — the master-less section (beam search, beam size, temperature,
         // fallback step ride under it as composed children).
         new SettingSearchEntry
@@ -179,20 +143,18 @@ public static class SettingsSearch
             Keywords = ["realtime", "live", "segmenter", "utterance"],
         },
 
-        // "Speech filtering" — the VAD group (the four Silero parameters ride under
-        // it; the whole fold hides while streaming is off).
+        // "Speech filtering" — the VAD toggle (hides while streaming is off).
         new SettingSearchEntry
         {
             LabelKey = "WhisperVadEnabledCard",
             Keywords = ["vad", "silero", "silence", "trim"],
         },
 
-        // "Pause before cutting" — the cut mode fold: the preset in its header,
-        // the hangover anchors and the curve under Custom.
+        // "Pause before cutting" — the cut fold: the hangover anchors and the curve.
         new SettingSearchEntry
         {
             LabelKey = "WhisperCutPresetCard",
-            Keywords = ["preset", "patient", "balanced", "quick", "custom", "hangover", "curve"],
+            Keywords = ["hangover", "curve", "pause", "cut"],
         },
     ];
 }
