@@ -12,7 +12,7 @@ The nearest `GLOSSARY.md` up the tree governs the code you're touching. This map
 - [Settings](src/Deckle.Settings/GLOSSARY.md) — the exposable and its kinds, of which a setting is one
 - [Scripts](scripts/GLOSSARY.md) — terminal-launcher navigation, actions, executions, tracking, journals, and results
 - [Tests](tests/GLOSSARY.md) — the test taxonomy: four automatic categories, three outside the automatic scope
-- [Diagnostics](src/Deckle.Diagnostics/GLOSSARY.md) — observability: admission vs view, the five quieting controls (covers `.Logging` and `.Telemetry`)
+- [Diagnostics](src/Deckle.Diagnostics/GLOSSARY.md) — observability: admission vs view, the controls, filters, logs and datasets that quiet or split the stream (covers `.Logging` and `.Telemetry`)
 - [Security](src/Deckle.Security/GLOSSARY.md) — trusted-session boundary, captured content, and custody of persisted copies
 - [Transcription](src/Deckle.Transcription/GLOSSARY.md) — entry points, T1 fidelity criteria, segmentation units
 - [Audio](src/Deckle.Audio/GLOSSARY.md) — display level vs transcription pre-processing

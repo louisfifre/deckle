@@ -13,7 +13,7 @@ Deckle observes through EventSource. Each module derives one provider from `Deck
 
 Observations come in two families, written apart. A milestone is a short sentence a person reads while following the flow, such as "Loading the model" or "Cannot reach the service". It is Informational, or Warning and Error when something is wrong. Its measurements, identifiers and latencies go in a Verbose event of their own, structured and greppable, a few lines per operation. The Verbose event comes before the milestone when it carries the parameters of a decision, and after it when it details what just happened.
 
-Instrument generously. Expose every observable that helps, because re-instrumenting later to chase a bug costs more. Sort at read time. The journals keep every ordinary observation, and filters and condensation lose nothing. A verbosity control is different. It refuses a governed stream of detail before every journal, and whatever tells a person how a workflow went always passes. The Diagnostics glossary, `src/Deckle.Diagnostics/GLOSSARY.md`, defines the verbosity control and the view filter.
+Instrument generously. Expose every observable that helps, because re-instrumenting later to chase a bug costs more. Sort at read time. The journals keep every ordinary observation, and filters lose nothing. A verbosity control is different. It refuses a governed stream of detail before every journal, and whatever tells a person how a workflow went always passes. The Diagnostics glossary, `src/Deckle.Diagnostics/GLOSSARY.md`, defines the verbosity control and the view filter.
 
 A repeating degradation is one incident. The raw attempts stay Verbose. One visible incident opens once the threshold the operation sets is passed, and one visible recovery closes it.
 

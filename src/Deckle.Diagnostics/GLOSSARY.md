@@ -29,10 +29,6 @@ _Avoid_ : verbosity control (which acts before the journals), capture filter (ac
 A filter on what one sink records among the admitted operational observations, persistent and for that sink only. It affects only entries written after it changes.
 _Avoid_ : view filter (temporary and display-only), verbosity control (prevents the observation from existing).
 
-**View condensation** :
-A grouping in the LogWindow of recurring admitted `Verbose` observations into one summary, reversible, while every raw observation stays available. It improves reading only. Repetition at a higher level remains a defect of the producer, which the view does not hide.
-_Avoid_ : deduplication (nothing is deleted), verbosity control (nothing is refused admission).
-
 **Capture control** :
 A control over what Deckle captures, in the audio or screen sense of capture. The control that admits or refuses log observations is the verbosity control.
 
@@ -48,14 +44,9 @@ In ordinary use, any record of what a program did. The word is too loose in Deck
 **Capture filter** :
 A filter applied at the moment of capture, in the audio or screen sense. A temporary lens over the LogWindow is a view filter.
 
-**Deduplication** :
-The removal of repeated copies so that only one remains. View condensation deletes nothing.
-
 ### Example conversation
 
 > - Ambient is flooding the journal. I do not want those detailed observations recorded at all.
 > - Turn off its verbosity control. Its milestones and failures remain, but the governed `Verbose` stream enters neither journal.
 > - I only want to inspect Ambient failures for a minute.
 > - Use a view filter. The other observations stay in the journal and reappear when you clear the filter.
-> - These admitted heartbeats still repeat while I investigate.
-> - Use view condensation. The window groups them, but the raw observations remain expandable.
