@@ -38,6 +38,8 @@ internal sealed class TuningModel
         HueStart        = source.HueStart;
         HueRange        = source.HueRange;
         WedgeCount      = source.WedgeCount;
+        GreyLightnessDark  = source.GreyLightnessDark;
+        GreyLightnessLight = source.GreyLightnessLight;
 
         HuePeriodSeconds    = source.HuePeriodSeconds;
         HueDirection        = source.HueDirection;
@@ -74,19 +76,13 @@ internal sealed class TuningModel
         CloneArcPeriodSeconds = source.CloneArcPeriodSeconds;
         CloneArcDirection     = source.CloneArcDirection;
 
-        RewritingSaturation    = source.RewritingSaturation;
         RewritingHueShiftTurns = source.RewritingHueShiftTurns;
-        RewritingExposure      = source.RewritingExposure;
         RewritingOpacity       = source.RewritingOpacity;
         RewritingBlendSeconds  = source.RewritingBlendSeconds;
 
-        TranscribingSaturationDark  = source.TranscribingSaturationDark;
-        TranscribingSaturationLight = source.TranscribingSaturationLight;
-        TranscribingHueShiftTurns   = source.TranscribingHueShiftTurns;
-        TranscribingExposureDark    = source.TranscribingExposureDark;
-        TranscribingExposureLight   = source.TranscribingExposureLight;
         TranscribingOpacity         = source.TranscribingOpacity;
         TranscribingBlendSeconds    = source.TranscribingBlendSeconds;
+        TranscribingInColour        = source.TranscribingInColour;
 
         RecordingConicSpanTurns     = source.RecordingConicSpanTurns;
         RecordingConicLeadFadeTurns = source.RecordingConicLeadFadeTurns;
@@ -94,14 +90,7 @@ internal sealed class TuningModel
         RecordingConicFadeCurve     = source.RecordingConicFadeCurve;
         RecordingArcMirror          = source.RecordingArcMirror;
         RecordingArcPhaseTurns      = source.RecordingArcPhaseTurns;
-
-        RecordingSaturationDark   = source.RecordingSaturationDark;
-        RecordingSaturationLight  = source.RecordingSaturationLight;
-        RecordingHueShiftTurns    = source.RecordingHueShiftTurns;
-        RecordingExposureDark     = source.RecordingExposureDark;
-        RecordingExposureLight    = source.RecordingExposureLight;
-        RecordingBlendSeconds     = source.RecordingBlendSeconds;
-        RecordingHuePeriodSeconds = source.RecordingHuePeriodSeconds;
+        RecordingBlendSeconds       = source.RecordingBlendSeconds;
     }
 
     // ── Colour palette (paint-time, OKLCh) ──────────────────────────────
