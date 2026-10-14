@@ -62,6 +62,7 @@ public partial class App
                 _lastRecordingState = isRecording;
                 _logWindow?.SetRecordingState(isRecording);
                 _playgroundWindow?.SetRecordingState(isRecording);
+                _settingsWindow?.SetRecordingState(isRecording);
 
                 // StartsWith matches the en-US resource text, the only one
                 // shipped, and its ellipsis variants; a translation breaks it.

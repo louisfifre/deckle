@@ -57,6 +57,7 @@ public partial class App
             };
 
             _settingsWindow = window;
+            window.SetRecordingState(_lastRecordingState);
             ApplyThemeToSingle(window);
             if (sw is not null)
                 DeckleWindowingSource.Log.WindowLoadComplete("settings", sw.ElapsedMilliseconds);

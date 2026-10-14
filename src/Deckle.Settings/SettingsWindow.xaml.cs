@@ -31,9 +31,6 @@ public sealed partial class SettingsWindow : Window
 {
     private readonly IntPtr _hwnd;
 
-    private BitmapImage? _iconIdle;
-    private string? _iconIdlePath;
-
     public Action? OnShowLogsRequested { get; set; }
 
     private readonly List<NavigationViewItem> _moduleNavItems = new();
@@ -43,13 +40,9 @@ public sealed partial class SettingsWindow : Window
         InitializeComponent();
         _hwnd = WindowNative.GetWindowHandle(this);
 
-        _iconIdlePath = IconAssets.ResolvePath(recording: false);
-        if (_iconIdlePath is not null)
-        {
-            _iconIdle = new BitmapImage(new Uri(_iconIdlePath));
-            AppTitleBarIcon.ImageSource = _iconIdle;
-            AppWindow.SetIcon(_iconIdlePath);
-        }
+        // Idle until the App says otherwise: it calls SetRecordingState right
+        // after creating the window, and on every engine state change.
+        SetRecordingState(false);
 
         // Tall gives the bar room for its interactive content (search box, Logs).
         ExtendsContentIntoTitleBar = true;
@@ -125,6 +118,33 @@ public sealed partial class SettingsWindow : Window
         DeckleThemeSource.Log.ThemeChanged(
             "settings", _lastTheme.ToString(), to.ToString(), source);
         _lastTheme = to;
+    }
+
+    // ── Window icon ──────────────────────────────────────────────────────────
+    //
+    // Two images for one state: the .ico goes to the window (taskbar, Alt+Tab),
+    // which picks the frame it needs; the title bar gets the 32 px PNG. A
+    // BitmapImage of the .ico decodes its first frame, 16 px, and the bar's DPI
+    // scale then stretched it into a blur.
+    public void SetRecordingState(bool isRecording)
+    {
+        if (DispatcherQueue.HasThreadAccess) ApplyRecordingState(isRecording);
+        else DispatcherQueue.TryEnqueueObserved(
+            operation: "engine-state-sync", caller: "settings-window",
+            callback: () => ApplyRecordingState(isRecording),
+            rejectSource: "SETTINGS", rejectWhat: "recording state sync");
+    }
+
+    private void ApplyRecordingState(bool isRecording)
+    {
+        string? icoPath = IconAssets.ResolvePath(isRecording);
+        if (icoPath is not null) AppWindow.SetIcon(icoPath);
+
+        // Rebuilt wholesale, as PlaygroundWindow does: an in-place ImageSource
+        // change does not reach the TitleBar visual once it is shown.
+        string? pngPath = IconAssets.ResolveImagePath(isRecording);
+        if (pngPath is not null)
+            AppTitleBar.IconSource = new ImageIconSource { ImageSource = new BitmapImage(new Uri(pngPath)) };
     }
 
     // ── Module nav band ──────────────────────────────────────────────────────
@@ -220,6 +240,71 @@ public sealed partial class SettingsWindow : Window
             // collapsed node would hide destinations the user has no other route to.
             parent.IsExpanded = true;
         }
+
+        FitPaneToLabels();
+    }
+
+    // ── Rail width ───────────────────────────────────────────────────────────
+    //
+    // The open rail is as wide as its longest label, not the control's 320 px
+    // default: a rail wider than its words is dead space the pages could use.
+    // Refitted on every band rebuild, since a module's label can be the longest.
+    // No floor beyond the compact width: the pane holds only items, the search
+    // box lives in the title bar.
+    //
+    // The chrome around a label comes from the left-pane NavigationViewItem
+    // presenter template (WinUI generic.xaml, Windows App SDK 1.6): the item's
+    // 4 px margin each side (NavigationViewItemButtonMargin) around an icon
+    // column of CompactPaneLength minus those 8 px (SmallerIconWidth), so the
+    // two together are CompactPaneLength; the content presenter's 4 + 8 px
+    // (NavigationViewItemContentPresenterMargin); and the content grid's 14 px
+    // right margin. A node adds its 40 px chevron column, pulled 14 px back into
+    // that right margin (NavigationViewItemExpandChevronMargin). A child has no
+    // icon, so its icon column shrinks to 8 px (the IconCollapsed state), and
+    // it is indented 31 px, a constant of the control's code rather than a
+    // theme resource.
+    private const double ItemMargins = 8;
+    private const double ContentPresenterMargins = 4 + 8;
+    private const double ContentGridRightMargin = 14;
+    private const double ChevronColumn = 40 - 14;
+    private const double CollapsedIconColumn = 8;
+    private const double ChildIndentation = 31;
+
+    private void FitPaneToLabels()
+    {
+        double labelChrome = ContentPresenterMargins + ContentGridRightMargin;
+        double widest = Nav.CompactPaneLength;
+
+        foreach (object entry in Nav.MenuItems.Concat(Nav.FooterMenuItems))
+        {
+            if (entry is not NavigationViewItem item) continue;
+
+            double row = Nav.CompactPaneLength + labelChrome + MeasureLabel(item);
+            if (item.MenuItems.Count > 0) row += ChevronColumn;
+            widest = Math.Max(widest, row);
+
+            foreach (NavigationViewItem child in item.MenuItems.OfType<NavigationViewItem>())
+                widest = Math.Max(widest,
+                    ItemMargins + ChildIndentation + CollapsedIconColumn + labelChrome + MeasureLabel(child));
+        }
+
+        Nav.OpenPaneLength = Math.Ceiling(widest);
+    }
+
+    // The item text renders in the control's 14 px body font, the one
+    // BodyTextBlockStyle carries; measured unconstrained, it gives the width
+    // the label needs on one line.
+    private static double MeasureLabel(NavigationViewItem item)
+    {
+        if (item.Content is not string text || text.Length == 0) return 0;
+
+        var probe = new TextBlock
+        {
+            Text = text,
+            Style = Application.Current.Resources["BodyTextBlockStyle"] as Style,
+        };
+        probe.Measure(new Windows.Foundation.Size(double.PositiveInfinity, double.PositiveInfinity));
+        return Math.Ceiling(probe.DesiredSize.Width);
     }
 
     // ── Breadcrumb ───────────────────────────────────────────────────────────
@@ -238,6 +323,8 @@ public sealed partial class SettingsWindow : Window
             return [new(Loc.GetFrom("Deckle.Settings", "SettingsNavHome/Content"), null)];
         if (pageType == typeof(GeneralPage))
             return [new(general, null)];
+        if (pageType == typeof(HotkeysPage))
+            return [new(Loc.GetFrom("Deckle.Settings", "SettingsNavHotkeys/Content"), null)];
 
         IReadOnlyList<SettingsModuleDescriptor> modules = SettingsModuleRegistry.Modules;
         SettingsModuleDescriptor? self = modules.FirstOrDefault(m => Type.GetType(m.PageTag) == pageType);
@@ -323,8 +410,6 @@ public sealed partial class SettingsWindow : Window
     {
         DeckleSettingsSource.Log.OpenLogsFromFooter();
         OnShowLogsRequested?.Invoke();
-        if (pageType == typeof(HotkeysPage))
-            return [new(Loc.GetFrom("Deckle.Settings", "SettingsNavHotkeys/Content"), null)];
     }
 
     // ── NavigationView: pane sync by DisplayMode ─────────────────────────
