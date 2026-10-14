@@ -310,9 +310,11 @@ public sealed partial class HudPage
     private void AddMaterialRow(StackPanel stack, HudMaterial value, Action<HudMaterial> setter)
     {
         // Items follow HudMaterial's order (Grey, Colour), so the index is
-        // the material.
+        // the material. Anything but Colour selects Grey, as MaterialOf reads
+        // it: the settings file stores the material as a number, and an
+        // unknown one paints grey.
         var radios = AddRadioRow(stack, "Material", ["Grey", "Colour"],
-            value == HudMaterial.Grey ? 0 : 1);
+            value == HudMaterial.Colour ? 1 : 0);
         radios.SelectionChanged += (_, _) =>
         {
             var next = radios.SelectedIndex == 0 ? HudMaterial.Grey : HudMaterial.Colour;
