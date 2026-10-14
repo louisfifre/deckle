@@ -1707,7 +1707,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── DeckleWhispSource.WarmupModel.cs
 │   │   ├── DecodingPage.xaml
 │   │   ├── DecodingPage.xaml.cs
-│   │   ├── GLOSSARY.md  — glossary-deckle-transcription Transcription vocabulary — the two entry points (dictation, file transcription)…
+│   │   ├── GLOSSARY.md  — glossary-deckle-transcription Transcription vocabulary. It names the two entry points (dictation, file transc…
 │   │   ├── ITranscriptionEngineHost.cs
 │   │   ├── SettingsSearch.cs
 │   │   ├── StreamingPage.xaml
