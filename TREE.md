@@ -345,6 +345,8 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   ├── repository-portability.json
 │   │   │   └── terminal-cursor-positioning.json
 │   │   ├── commands/
+│   │   │   ├── changelog.tests.ps1
+│   │   │   ├── ChangelogBugNotes.md
 │   │   │   ├── check-script-headers.tests.ps1
 │   │   │   ├── CommitAttributionBugNotes.md
 │   │   │   ├── install-hooks.tests.ps1
@@ -1024,6 +1026,10 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   ├── HudPalette.cs
 │   │   │   ├── HudState.cs
 │   │   │   └── MessageKind.cs
+│   │   ├── Settings/
+│   │   │   ├── ConfigOverrides.cs
+│   │   │   ├── HudSettings.cs
+│   │   │   └── HudSettingsService.cs
 │   │   ├── Transcript/
 │   │   │   ├── TranscriptHistory.cs
 │   │   │   ├── TranscriptPanelLayout.cs
@@ -1990,6 +1996,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── ConicPaletteTests.cs
 │   │   ├── Deckle.Hud.Tests.csproj
 │   │   ├── DeckleHudSourceTests.cs
+│   │   ├── HudSettingsOverridesTests.cs
 │   │   ├── ProximityFadeTests.cs
 │   │   ├── ProximityRollupAggregatorTests.cs
 │   │   ├── TranscriptHistoryTests.cs

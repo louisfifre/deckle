@@ -13,4 +13,4 @@ A commit carries one intent that its subject can name. A workstream splits into 
 
 A commit has one scope, the name a reader of the history looks the change up under, a module, a surface or a repository area. A given module always takes the same scope.
 
-The type comes from the Conventional Commits set the Angular convention lists, feat, fix, docs, style, refactor, perf, test, build, ci, chore and revert, and no type is invented beyond it. The type decides whether the change reaches the changelog, and `deckle-versioning` says which types do.
+The type comes from the Conventional Commits set the Angular convention lists, feat, fix, docs, style, refactor, perf, test, build, ci, chore and revert, plus `deprecate`, which announces a capability the next MAJOR removes. The type decides whether the change reaches the changelog, and `deckle-versioning` says which types do. A revert written by hand carries git's `This reverts commit <sha>` line in its body.

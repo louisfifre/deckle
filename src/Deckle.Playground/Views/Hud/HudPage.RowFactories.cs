@@ -124,6 +124,7 @@ public sealed partial class HudPage
             {
                 numberBox.Value = e.NewValue;
                 setter(e.NewValue);
+                UpdateUnsavedBar();
                 if (rebuild) RequestRebuild();
             }
             finally { _syncing = false; }
@@ -138,6 +139,7 @@ public sealed partial class HudPage
                 double clamped = Math.Clamp(e.NewValue, min, max);
                 slider.Value = clamped;
                 setter(clamped);
+                UpdateUnsavedBar();
                 if (rebuild) RequestRebuild();
             }
             finally { _syncing = false; }
@@ -192,6 +194,7 @@ public sealed partial class HudPage
                 int iv = (int)Math.Round(e.NewValue);
                 numberBox.Value = iv;
                 setter(iv);
+                UpdateUnsavedBar();
                 if (rebuild) RequestRebuild();
             }
             finally { _syncing = false; }
@@ -206,6 +209,7 @@ public sealed partial class HudPage
                 int iv = Math.Clamp((int)Math.Round(e.NewValue), min, max);
                 slider.Value = iv;
                 setter(iv);
+                UpdateUnsavedBar();
                 if (rebuild) RequestRebuild();
             }
             finally { _syncing = false; }
@@ -228,6 +232,7 @@ public sealed partial class HudPage
         toggle.Toggled += (_, _) =>
         {
             setter(toggle.IsOn);
+            UpdateUnsavedBar();
             if (rebuild) RequestRebuild();
         };
 
@@ -262,6 +267,7 @@ public sealed partial class HudPage
         toggle.Toggled += (_, _) =>
         {
             setter(toggle.IsOn ? 1f : -1f);
+            UpdateUnsavedBar();
             RequestRebuild();
         };
 

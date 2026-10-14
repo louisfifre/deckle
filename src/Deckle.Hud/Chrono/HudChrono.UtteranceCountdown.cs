@@ -73,12 +73,14 @@ public sealed partial class HudChrono
         if (width <= 0 || height <= 0) return;
         var size = new Vector2(width, height);
         var compositor = ElementCompositionPreview.GetElementVisual(CountdownSurfaceHost).Compositor;
-        // Compiled defaults only: the Playground tunes its own preview, never
-        // this visual.
+        // The stored settings over the compiled defaults. The Playground tunes
+        // its own preview and reaches this visual only through its Save, which
+        // lands here via OnHudSettingsChanged.
+        var settings = HudSettingsService.Instance;
         _countdownVisual = HudComposition.CreateUtteranceCountdownVisual(
-            compositor, size, size, new HudComposition.ConicArcStrokeConfig(),
+            compositor, size, size, settings.EffectiveStroke(),
             ChronoRoot.ActualTheme == ElementTheme.Dark,
-            new UtteranceCountdownConfig(), materialOpacity: 0f, animationsEnabled: _animationsEnabled);
+            settings.EffectiveCountdown(), materialOpacity: 0f, animationsEnabled: _animationsEnabled);
         _renderedCountdownValue = _countdownState.ValueAt(Stopwatch.GetElapsedTime(_countdownStarted));
         _countdownVisual.SetProgress(_renderedCountdownValue);
         ElementCompositionPreview.SetElementChildVisual(CountdownSurfaceHost, _countdownVisual.Container);
