@@ -138,6 +138,9 @@ public partial class GeneralViewModel
             defaultValue: () => new UpdatesSettings().AutoCheckEnabled),
     ];
 
+    // The backup folder, composed as the child of the page's hand-authored
+    // "Settings backup" fold (Compose inFold), so it renders as the Location
+    // line alone; the fold carries the title and the sentence.
     public IReadOnlyList<SettingDescriptor> ApplicationDataSettings =>
     [
         Setting.Path("GeneralBackupLocationCard",
@@ -147,5 +150,24 @@ public partial class GeneralViewModel
                 FolderPickerMode.Configure,
                 DefaultPath: () => AppPaths.SettingsBackupDirectory),
             defaultValue: () => new PathsSettings().BackupDirectory),
+    ];
+
+    // The data folder, standing alone, so the composer renders it as the folder
+    // fold: "Data folder" and its sentence in the header, the Location line
+    // inside. Choosing a folder is the relocation (DataFolderMoveRequested), so
+    // the mode follows the App's relocate hook: unwired, the line offers Open
+    // alone, as the Move button used to hide. No defaultValue: there is no
+    // default root to go back to, a reset would be another move.
+    public IReadOnlyList<SettingDescriptor> DataFolderSettings =>
+    [
+        Setting.Path("GeneralDataFolderCard",
+            () => DataFolder,
+            RequestDataFolderMove,
+            new PathArgs(
+                SettingsHost.RelocateDataRoot is null
+                    ? FolderPickerMode.OpenOnly
+                    : FolderPickerMode.Configure,
+                DefaultPath: () => AppPaths.UserDataRoot),
+            enabledWhen: () => !DataFolderMoveInFlight),
     ];
 }

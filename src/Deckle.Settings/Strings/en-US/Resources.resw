@@ -439,9 +439,9 @@
   <data name="GeneralUpdateAvailableLabel_Format" xml:space="preserve">
     <value>Version {0} is available</value>
   </data>
-  <data name="GeneralDataFolderMoveButton.Content" xml:space="preserve">
-    <value>Move…</value>
-  </data>
+  <!-- The data move's pre-flight messages (GeneralPage code-behind, through
+       Loc.Get, so mirrored in Deckle.App's root map). The move starts from
+       the data folder fold's "Choose a folder". -->
   <data name="Settings_MoveDataDialog_Title" xml:space="preserve">
     <value>Move app data?</value>
   </data>
@@ -472,26 +472,32 @@
   <data name="GeneralBackupRestoreButton.Content" xml:space="preserve">
     <value>Restore</value>
   </data>
+  <!-- The backup folder's Location line (composed inside the fold) shows the
+       generic FolderPickerCard_Location header; this entry serves the search
+       index alone, which names the card by it. -->
   <data name="GeneralBackupLocationCard.Header" xml:space="preserve">
-    <value>Location</value>
+    <value>Backup location</value>
   </data>
+  <!-- The "Latest backup" card: its header from the x:Uid, its one-line
+       description built in code (GeneralViewModel.LatestBackupSummary). {0}
+       is the file name, {1} the creation time. -->
   <data name="GeneralBackupInfoCard.Header" xml:space="preserve">
     <value>Latest backup</value>
   </data>
-  <data name="GeneralBackupFileNameLabel.Text" xml:space="preserve">
-    <value>File name:</value>
+  <data name="GeneralBackupInfo_Summary_Format" xml:space="preserve">
+    <value>{0}, created {1}</value>
   </data>
-  <data name="GeneralBackupCreatedAtLabel.Text" xml:space="preserve">
-    <value>Created at:</value>
+  <data name="GeneralBackupInfo_None" xml:space="preserve">
+    <value>No backup yet</value>
   </data>
+  <!-- The data folder fold (composed, GeneralViewModel.DataFolderSettings):
+       these two head the fold, the Location line inside uses the
+       FolderPickerCard_* words. -->
   <data name="GeneralDataFolderCard.Header" xml:space="preserve">
     <value>Data folder</value>
   </data>
   <data name="GeneralDataFolderCard.Description" xml:space="preserve">
     <value>Settings, telemetry, models and native libraries.</value>
-  </data>
-  <data name="GeneralDataFolderOpenButton.Content" xml:space="preserve">
-    <value>Open</value>
   </data>
   <data name="GeneralRerunSetupCard.Header" xml:space="preserve">
     <value>Setup wizard</value>

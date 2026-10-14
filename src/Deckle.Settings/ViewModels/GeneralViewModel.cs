@@ -100,6 +100,31 @@ public partial class GeneralViewModel : ObservableObject
         finally { _isSyncing = false; }
     }
 
+    // ── Data folder ──────────────────────────────────────────────────────────
+    //
+    // The data root is not a stored value: AppPaths answers it, and a change is
+    // a relocation the page pre-flights (target rules, free space, confirmation)
+    // and the App performs in a restart. The property exists so the folder
+    // composes like any Path: the getter reads the live root, and the setter
+    // only relays the pick through DataFolderMoveRequested, after raising
+    // PropertyChanged so the Location line snaps back to the root the data is
+    // still in; a confirmed move restarts the app, a refused one leaves it.
+
+    public string DataFolder => AppPaths.UserDataRoot;
+
+    public event EventHandler<string>? DataFolderMoveRequested;
+
+    private void RequestDataFolderMove(string target)
+    {
+        OnPropertyChanged(nameof(DataFolder));
+        DataFolderMoveRequested?.Invoke(this, target);
+    }
+
+    // True while the page scans the data root's size before confirming; the
+    // Location line is greyed for that span, the one meaning greying has.
+    [ObservableProperty]
+    public partial bool DataFolderMoveInFlight { get; set; }
+
     // ── Updates ──────────────────────────────────────────────────────────────
 
     [ObservableProperty]
@@ -126,13 +151,16 @@ public partial class GeneralViewModel : ObservableObject
 
     public bool HasBackup => LatestBackup is not null;
 
-    public string LatestBackupFileName => LatestBackup is null
-        ? "—"
-        : Path.GetFileName(LatestBackup.Path);
-
-    public string LatestBackupCreatedAt => LatestBackup is null
-        ? "No backup yet"
-        : LatestBackup.Timestamp.LocalDateTime.ToString("g");
+    // The "Latest backup" card's description: the file name and its creation
+    // time on one line, or the no-backup sentence. Read from this module's own
+    // .resw, as the manifest's strings are.
+    public string LatestBackupSummary => LatestBackup is null
+        ? Loc.GetFrom("Deckle.Settings", "GeneralBackupInfo_None")
+        : string.Format(
+            System.Globalization.CultureInfo.CurrentCulture,
+            Loc.GetFrom("Deckle.Settings", "GeneralBackupInfo_Summary_Format"),
+            Path.GetFileName(LatestBackup.Path),
+            LatestBackup.DisplayName);
 
     partial void OnBackupDirectoryChanged(string value)
     {
@@ -150,8 +178,7 @@ public partial class GeneralViewModel : ObservableObject
 
         OnPropertyChanged(nameof(LatestBackup));
         OnPropertyChanged(nameof(HasBackup));
-        OnPropertyChanged(nameof(LatestBackupFileName));
-        OnPropertyChanged(nameof(LatestBackupCreatedAt));
+        OnPropertyChanged(nameof(LatestBackupSummary));
     }
 
     // ── Sync with SettingsService ────────────────────────────────────────────

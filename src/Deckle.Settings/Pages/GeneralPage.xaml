@@ -57,6 +57,8 @@
                 </catalog:SettingsSection>
 
                 <!-- ── Application data ────────────────────────────────────── -->
+                <!-- The two folder folds first (settings backup, then the data
+                     folder), the setup wizard card last (Louis, 2026-10-15). -->
                 <catalog:SettingsSection x:Uid="GeneralPageApplicationDataSection">
                 <StackPanel Spacing="{StaticResource SettingsCardSpacing}">
 
@@ -78,65 +80,25 @@
                          item with its SettingsCard item style, so any other
                          element here throws when the fold opens (the crash of
                          2026-10-14 19:09, a StackPanel host in this slot). The
-                         composed location card is moved in from code, first
+                         composed Location line is moved in from code, first
                          (ComposeApplicationDataSection). -->
                     <controls:SettingsExpander.Items>
                         <!-- Bespoke: a live status projection, not a settable
-                             value. -->
+                             value. The header and a one-line summary (file name,
+                             creation time), nothing at the trailing edge. -->
                         <controls:SettingsCard x:Uid="GeneralBackupInfoCard"
                                                Tag="GeneralBackupInfoCard"
-                                               ContentAlignment="Vertical">
-                            <Grid ColumnSpacing="16" RowSpacing="4" Margin="0,4,0,0">
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="Auto" />
-                                    <ColumnDefinition Width="*" />
-                                </Grid.ColumnDefinitions>
-                                <Grid.RowDefinitions>
-                                    <RowDefinition Height="Auto" />
-                                    <RowDefinition Height="Auto" />
-                                </Grid.RowDefinitions>
-                                <TextBlock x:Uid="GeneralBackupFileNameLabel"
-                                           Grid.Row="0" Grid.Column="0"
-                                           Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
-                                <TextBlock Grid.Row="0" Grid.Column="1"
-                                           Text="{x:Bind ViewModel.LatestBackupFileName, Mode=OneWay}"
-                                           TextTrimming="CharacterEllipsis" />
-                                <TextBlock x:Uid="GeneralBackupCreatedAtLabel"
-                                           Grid.Row="1" Grid.Column="0"
-                                           Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
-                                <TextBlock Grid.Row="1" Grid.Column="1"
-                                           Text="{x:Bind ViewModel.LatestBackupCreatedAt, Mode=OneWay}" />
-                            </Grid>
-                        </controls:SettingsCard>
+                                               Description="{x:Bind ViewModel.LatestBackupSummary, Mode=OneWay}" />
                     </controls:SettingsExpander.Items>
                 </controls:SettingsExpander>
 
-                <controls:SettingsCard x:Uid="GeneralRerunSetupCard"
-                                       Tag="GeneralRerunSetupCard">
-                    <Button x:Name="ReRunSetupButton"
-                            x:Uid="GeneralRerunSetupButton"
-                            Click="ReRunSetupButton_Click" />
-                </controls:SettingsCard>
-
-                <!-- The data folder, in the composed folder cards' form: the
-                     path on a line under the description (FolderCardDescription,
-                     attached in code-behind) and the actions at the trailing
-                     edge. Move keeps its word where the composed cards' Change
-                     is an icon: it copies the data and restarts the app, an
-                     act the button has to name. -->
-                <controls:SettingsCard x:Name="DataFolderCard"
-                                       x:Uid="GeneralDataFolderCard"
-                                       Tag="GeneralDataFolderCard">
-                    <StackPanel Orientation="Horizontal" Spacing="8">
-                        <Button x:Name="MoveDataFolderButton"
-                                x:Uid="GeneralDataFolderMoveButton"
-                                Visibility="Collapsed"
-                                Click="MoveDataFolderButton_Click" />
-                        <Button x:Name="OpenDataFolderButton"
-                                x:Uid="GeneralDataFolderOpenButton"
-                                Click="OpenDataFolderButton_Click" />
-                    </StackPanel>
-                </controls:SettingsCard>
+                <!-- The data folder, composed from GeneralViewModel.DataFolderSettings
+                     as the folder fold: the title and sentence in the header, the
+                     Location line inside with "Choose a folder" and "Open".
+                     Choosing a folder is the relocation: the page pre-flights it
+                     (DataFolderMoveRequested) and the App restarts to move. -->
+                <StackPanel x:Name="DataFolderHost"
+                            Spacing="{StaticResource SettingsCardSpacing}" />
 
                 <!-- Pre-flight outcomes of a data move that never left this
                      page; the move itself runs in the dedicated relocate
@@ -145,6 +107,13 @@
                          IsOpen="False"
                          IsClosable="True"
                          catalog:InfoBarLayout.CollapseWhenClosed="True" />
+
+                <controls:SettingsCard x:Uid="GeneralRerunSetupCard"
+                                       Tag="GeneralRerunSetupCard">
+                    <Button x:Name="ReRunSetupButton"
+                            x:Uid="GeneralRerunSetupButton"
+                            Click="ReRunSetupButton_Click" />
+                </controls:SettingsCard>
 
                 </StackPanel>
                 </catalog:SettingsSection>

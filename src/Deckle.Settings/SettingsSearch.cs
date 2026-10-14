@@ -10,9 +10,9 @@ namespace Deckle.Settings;
 // General and Shortcuts are static shell anchors, not registry modules, so they carry
 // no SettingsModuleDescriptor the index could read a manifest off — these lists ARE
 // their search manifests, Entries for GeneralPage and HotkeyEntries for HotkeysPage.
-// The bespoke cards (the data-folder and backup commands) have no manifest at all, so
-// a hand-written entry is their only possible declaration; the composed cards are
-// declared here under the same contract.
+// The bespoke cards (the backup fold with its commands, the latest-backup readout,
+// the setup wizard) have no manifest at all, so a hand-written entry is their only
+// possible declaration; the composed cards are declared here under the same contract.
 //
 // Maintenance contract: a card added to GeneralPage.xaml or HotkeysPage that should be
 // findable is one entry in its page's list, its LabelKey matching the card's x:Uid
@@ -39,23 +39,14 @@ public static class SettingsSearch
             Keywords = ["boot", "startup", "autostart", "login"],
         },
 
-        // ── Application data ──
-        new SettingSearchEntry
-        {
-            LabelKey = "GeneralRerunSetupCard",
-            Keywords = ["onboarding", "reconfigure", "reinstall"],
-        },
-        new SettingSearchEntry
-        {
-            LabelKey = "GeneralDataFolderCard",
-            Keywords = ["directory", "path", "storage"],
-        },
+        // ── Application data, in the page's order ──
         new SettingSearchEntry
         {
             LabelKey = "GeneralBackupExpander",
             Keywords = ["export", "import", "save"],
         },
-        // Composed: GeneralViewModel.ApplicationDataSettings, hosted inside the expander.
+        // Composed: GeneralViewModel.ApplicationDataSettings, the Location line
+        // inside the expander; its /Header entry names it for the search alone.
         new SettingSearchEntry
         {
             LabelKey = "GeneralBackupLocationCard",
@@ -65,6 +56,17 @@ public static class SettingsSearch
         {
             LabelKey = "GeneralBackupInfoCard",
             Keywords = ["snapshot", "restore"],
+        },
+        // Composed: GeneralViewModel.DataFolderSettings, the folder fold.
+        new SettingSearchEntry
+        {
+            LabelKey = "GeneralDataFolderCard",
+            Keywords = ["directory", "path", "storage", "move"],
+        },
+        new SettingSearchEntry
+        {
+            LabelKey = "GeneralRerunSetupCard",
+            Keywords = ["onboarding", "reconfigure", "reinstall"],
         },
     ];
 
