@@ -24,11 +24,11 @@ In ordinary use, saying the same thing in other words. Deckle calls a generated 
 ## The service
 
 **Rewrite service** :
-The single service that carries every rewrite, whoever asks for it, such as transcription finalization, the paragraph rewrite or the escalations of the sentence stage. It holds the one profile store and the one home for the prompts. The inference engine sits behind it, so the engine can change without its clients knowing.
-_Avoid_ : LlmService (an implementation name), Ollama (the current engine, not the service).
+The single service that carries every rewrite, whoever asks for it. The inference engine sits behind it, so the engine can change without its clients knowing.
+_Avoid_ : LlmService (an implementation name), Ollama (one engine, never the service).
 
 **LlmService** :
 An earlier implementation name, built on the generic idea of a language-model service. The concept it carried is the rewrite service.
 
 **Ollama** :
-A local runtime that serves language models. It is the engine behind the rewrite service today, not the service itself.
+A local runtime that serves language models. It is one engine the rewrite service can sit on, never the service itself.
