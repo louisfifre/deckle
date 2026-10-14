@@ -122,7 +122,9 @@
                         IsBackButtonVisible="Collapsed"
                         IsPaneToggleButtonVisible="False"
                         IsSettingsVisible="False"
-                        SelectionChanged="OnNavSelectionChanged">
+                        SelectionChanged="OnNavSelectionChanged"
+                        Collapsed="OnNavCollapsed"
+                        Expanding="OnNavExpanding">
 
             <!-- Home, General and Shortcuts are the shell's static anchors; every
                  module page is materialised from SettingsModuleRegistry in the

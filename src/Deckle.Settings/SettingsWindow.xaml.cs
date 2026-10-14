@@ -112,6 +112,11 @@ public sealed partial class SettingsWindow : Window
 
     private void OnRootActualThemeChanged(FrameworkElement sender, object args)
     {
+        // Before the same-theme early return: a High Contrast switch can fire
+        // this event without changing Light/Dark, and the collapsed-node brush
+        // must still move to the HighContrast dictionary.
+        RefreshCollapsedNodeHighlight();
+
         var to = sender.ActualTheme;
         if (to == _lastTheme) return;
         string source = ThemeRequestSourceProbe.Consume() ?? "system";
@@ -242,6 +247,84 @@ public sealed partial class SettingsWindow : Window
         }
 
         FitPaneToLabels();
+        // The rebuilt nodes are fresh items without the highlight, and a removed
+        // node takes its background with it.
+        RefreshCollapsedNodeHighlight();
+    }
+
+    // ── Collapsed node highlight ─────────────────────────────────────────────
+    //
+    // A collapsed node whose child is the current page wears the background a
+    // selected item has, and loses it when the node expands or the selection
+    // leaves its family. The stock left-pane presenter has no "child selected"
+    // visual state: on collapse WinUI only slides the selection pill onto the
+    // parent, which keeps its transparent background, so nothing else reads as
+    // "you are here" (2026-10-14).
+    //
+    // The route is the item's Background. The NavigationViewItem template
+    // template-binds it to its NavigationViewItemPresenter, whose LayoutRoot
+    // template-binds it in turn and shows it in the Normal state, while the
+    // PointerOver and Pressed states set LayoutRoot.Background themselves (WinUI
+    // generic.xaml, Windows App SDK 1.8). So the highlight shows at rest and
+    // hover still reads, with no retemplate.
+    //
+    // The brush comes from Themes/RailBrushes.xaml, one theme dictionary per
+    // theme, picked by the window root's ActualTheme. Deckle sets Light or Dark
+    // on each window root, so Application.Current.Resources could hand back the
+    // other theme's grey.
+    private ResourceDictionary? _railBrushes;
+    private Windows.UI.ViewManagement.AccessibilitySettings? _accessibility;
+
+    private Brush ResolveCollapsedNodeBrush()
+    {
+        _railBrushes ??= new ResourceDictionary
+        {
+            Source = new Uri("ms-appx:///Deckle.Settings/Themes/RailBrushes.xaml"),
+        };
+        // High Contrast overrides Light/Dark in WinUI's own lookups, and
+        // ActualTheme still reports Light or Dark then, so it is read from the
+        // system setting. The object is live: one instance answers every call.
+        _accessibility ??= new Windows.UI.ViewManagement.AccessibilitySettings();
+        string themeKey = _accessibility.HighContrast ? "HighContrast"
+            : RootGrid.ActualTheme == ElementTheme.Light ? "Light"
+            : "Default";
+        var themeDictionary = (ResourceDictionary)_railBrushes.ThemeDictionaries[themeKey];
+        return (Brush)themeDictionary["DeckleRailChildSelectedBackground"];
+    }
+
+    // Cheap by design: a handful of top-level items, one reference comparison
+    // per child. The brush resolves on each call rather than once, so a theme
+    // switch only has to call this again.
+    private void RefreshCollapsedNodeHighlight()
+    {
+        Brush? brush = null;
+        foreach (var parent in Nav.MenuItems.Concat(Nav.FooterMenuItems).OfType<NavigationViewItem>())
+        {
+            if (parent.MenuItems.Count == 0) continue;
+
+            bool holdsSelection = !parent.IsExpanded
+                && parent.MenuItems.Any(child => ReferenceEquals(child, Nav.SelectedItem));
+            if (holdsSelection)
+                parent.Background = brush ??= ResolveCollapsedNodeBrush();
+            else
+                // ClearValue, not a transparent brush: the style's
+                // NavigationViewItemBackground comes back, theme-aware as before.
+                parent.ClearValue(Control.BackgroundProperty);
+        }
+    }
+
+    private void OnNavCollapsed(NavigationView sender, NavigationViewItemCollapsedEventArgs args)
+    {
+        RefreshCollapsedNodeHighlight();
+    }
+
+    // Expanding fires before IsExpanded turns true, so a full refresh would
+    // still see the node collapsed and keep the highlight; the expanding node
+    // is cleared directly. Its children show again, the selected one with its
+    // own Selected state, so the parent's highlight would read twice.
+    private void OnNavExpanding(NavigationView sender, NavigationViewItemExpandingEventArgs args)
+    {
+        args.ExpandingItemContainer?.ClearValue(Control.BackgroundProperty);
     }
 
     // ── Rail width ───────────────────────────────────────────────────────────
@@ -424,6 +507,11 @@ public sealed partial class SettingsWindow : Window
     private void OnNavSelectionChanged(NavigationView sender, NavigationViewSelectionChangedEventArgs args)
     {
         DeckleSettingsSource.Log.NavSelectionChanged((args.SelectedItem as NavigationViewItem)?.Content?.ToString() ?? "");
+
+        // First, ahead of the early returns below: whatever happens to the
+        // navigation, the selection has moved, and a collapsed node must gain
+        // or lose its highlight with it.
+        RefreshCollapsedNodeHighlight();
 
         if (args.SelectedItem is not NavigationViewItem item)
         {

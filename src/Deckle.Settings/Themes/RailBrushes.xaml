@@ -1,0 +1,40 @@
+<!--
+    RailBrushes.xaml — the Settings rail's brushes that the code sets by hand.
+
+    SettingsWindow paints a collapsed node whose child is the current page with
+    the background a selected item has (DeckleRailChildSelectedBackground). The
+    stock left-pane presenter has no "child selected" visual state: on collapse
+    it only moves the selection pill onto the parent, which otherwise keeps its
+    transparent background, so nothing else reads as "you are here"
+    (2026-10-14). The code sets NavigationViewItem.Background, which the item
+    template hands to the presenter's LayoutRoot in its Normal state.
+
+    The key aliases NavigationViewItemBackgroundSelected, the brush the
+    presenter's Selected state uses, so the collapsed node matches a selected
+    item in every theme: SubtleFillColorSecondaryBrush in Default and Light,
+    a system highlight brush in HighContrast (WinUI generic.xaml).
+
+    Theme dictionaries rather than an Application.Current.Resources lookup:
+    Deckle sets Light or Dark on each window root (FrameworkElement.
+    RequestedTheme), so the application-level lookup can hand back the other
+    theme's grey. Each alias resolves in its own theme's scope, which is why
+    the three copies exist; the code picks the dictionary that matches the
+    window's ActualTheme. Compiled XAML on purpose, as BreadcrumbBrushes.xaml
+    in Deckle.Catalog: a XamlReader.Load string cannot see
+    Application.Resources and would fail to resolve the alias at parse time.
+-->
+<ResourceDictionary
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <ResourceDictionary.ThemeDictionaries>
+        <ResourceDictionary x:Key="Default">
+            <StaticResource x:Key="DeckleRailChildSelectedBackground" ResourceKey="NavigationViewItemBackgroundSelected" />
+        </ResourceDictionary>
+        <ResourceDictionary x:Key="Light">
+            <StaticResource x:Key="DeckleRailChildSelectedBackground" ResourceKey="NavigationViewItemBackgroundSelected" />
+        </ResourceDictionary>
+        <ResourceDictionary x:Key="HighContrast">
+            <StaticResource x:Key="DeckleRailChildSelectedBackground" ResourceKey="NavigationViewItemBackgroundSelected" />
+        </ResourceDictionary>
+    </ResourceDictionary.ThemeDictionaries>
+</ResourceDictionary>
