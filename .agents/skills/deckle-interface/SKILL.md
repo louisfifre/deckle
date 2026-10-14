@@ -9,7 +9,7 @@ Windows already draws most of what an interface needs, and what it draws follows
 
 ## Statement
 
-Before drawing anything, even what looks simple, find the Windows primitive, control, theme resource or canonical pattern that already covers the need. Something drawn by hand that Windows already draws is the sign to look again.
+Before drawing anything, even what looks simple, find the Windows primitive, control, theme resource or canonical pattern that already covers the need. Something drawn by hand that Windows already draws is the sign to look again. When Windows has nothing for the need, look for the component Deckle already has. A need that no existing component covers means stop, the way a fourth level means rework. Ask first whether the need can be reframed on what exists, and say so before building anything new.
 
 Every design value comes from a theme resource, so it follows light, dark, contrast and accent by itself. A value with no theme resource means the primitive is wrong. Go back to the spec and find the right control.
 
