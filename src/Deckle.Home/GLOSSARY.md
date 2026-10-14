@@ -14,7 +14,7 @@ The immutable code carried by the `code` property of a coded inventory object, n
 _Avoid_ : object id (provider coordinate), label (human wording), object title (the human name, no longer the code).
 
 **Home surface** :
-The MCP surface that exposes the guarded Home operations through Deckle's single resident MCP host. It adapts the Home module and does not own its rules.
+The MCP surface that exposes the guarded Home operations through Deckle's single resident MCP host, on rooms, infrastructure, equipment, observations and their links. It writes to a dedicated Home Anytype space, which no client chooses per call. It adapts the Home module and does not own its rules.
 _Avoid_ : Home space (data store), Home module (domain implementation).
 
 **Object id** :

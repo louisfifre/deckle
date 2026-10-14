@@ -21,7 +21,7 @@ The nearest `GLOSSARY.md` up the tree governs the code you're touching. This map
 - [Autocorrect](src/Deckle.Autocorrect/GLOSSARY.md) — correctable surfaces, the two stages, datasets, learning
 - [Llm.Rewrite](src/Deckle.Llm.Rewrite/GLOSSARY.md) — the Correction / Rewrite boundary, the rewrite and the rewrite service
 - [Anytype](src/Deckle.Anytype/GLOSSARY.md) — backend / host / surfaces, bot vs token, Home types (covers `.Mcp`)
-- [Home](src/Deckle.Home/GLOSSARY.md) — public home-inventory norm vs personal room registry and inventory
+- [Home](src/Deckle.Home/GLOSSARY.md) — the inventory code and the Home surface
 - [Hud Chrono](src/Deckle.Hud/Chrono/GLOSSARY.md) — the chrono face elements and their states
 
 ## Relationships
