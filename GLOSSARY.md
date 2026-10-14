@@ -1,23 +1,11 @@
 ---
 name: glossary-deckle
-description: "System-wide Deckle vocabulary. It holds the terms that classify across modules and belong to none of them, today the exposable and the Correction / Rewrite boundary. Module vocabularies live next to their code, indexed in GLOSSARY-MAP.md."
+description: "System-wide Deckle vocabulary. It holds the terms that classify across modules and belong to none of them, today the Correction / Rewrite boundary. Module vocabularies live next to their code, indexed in GLOSSARY-MAP.md."
 ---
 
 # Deckle, Glossary
 
 System-wide glossary. This file holds only the language that classifies *across* modules. A term owned by one module lives in that module's `GLOSSARY.md`, indexed in [GLOSSARY-MAP.md](GLOSSARY-MAP.md).
-
-## Settings, the exposable
-
-**Exposable** :
-An adjustable value held in the code, whether or not an interface shows it today. Its kinds are the persisted setting, the tuning constant, the default and the Playground parameter held in memory. A *setting* is the narrowest kind, an exposable that is persisted and surfaced.
-_Avoid_ : setting (only the persisted, surfaced subset), parameter (too generic, it names any function argument).
-
-**Setting** :
-In ordinary use, any value a user can change in an application. Deckle keeps the word for an exposable that is persisted and surfaced, and calls the wider family exposables.
-
-**Parameter** :
-In ordinary use, any input that a function or a model receives. It is too generic to name a value someone could act on, which Deckle calls an exposable.
 
 ## Text operations, correction vs rewrite
 

@@ -1512,6 +1512,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── DeckleSettingsSource.Navigation.cs
 │   │   ├── DeckleSettingsSource.Persistence.cs
 │   │   ├── DeckleSettingsSource.Search.cs
+│   │   ├── GLOSSARY.md  — glossary-deckle-settings Settings vocabulary. It defines the exposable, the family of adjustable values…
 │   │   ├── SettingSearchHit.cs
 │   │   ├── SettingsHost.cs
 │   │   ├── SettingsSearch.cs

@@ -9,7 +9,8 @@ The nearest `GLOSSARY.md` up the tree governs the code you're touching. This map
 
 ## Glossaries
 
-- [System-wide](GLOSSARY.md) — language that classifies across modules: exposables and the Correction / Rewrite boundary
+- [System-wide](GLOSSARY.md) — language that classifies across modules: the Correction / Rewrite boundary
+- [Settings](src/Deckle.Settings/GLOSSARY.md) — the exposable and its kinds, of which a setting is one
 - [Scripts](scripts/GLOSSARY.md) — terminal-launcher navigation, actions, executions, tracking, journals, and results
 - [Tests](tests/GLOSSARY.md) — the test taxonomy: four automatic categories, three outside the automatic scope
 - [Diagnostics](src/Deckle.Diagnostics/GLOSSARY.md) — observability: admission vs view, the five quieting controls (covers `.Logging` and `.Telemetry`)
