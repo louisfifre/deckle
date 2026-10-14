@@ -83,8 +83,8 @@ by one block, split across several, or empty.
 | Related settings, no master | A fold without master | Composer `Section` (SettingsExpander) when collapsible; `SettingsSection` (Catalog, built in code) for the flat block on every page | Done 2026-10-13 (feat/section-block): a flat section is a block, title, optional one-line caption, cards (the PowerToys `SettingsGroup` form), with the section-level reset as a hover wheel enabled when a value differs from its default; the header style and the always-visible "Reset" links copied on nine pages are gone. |
 | Preset (a named set of values for a group, plus Custom) | Not named in the doctrine | `Choice` fed by `PresetFamily.SelectorOptions()`; the Playground rebuilds the same combo by hand | Decided 2026-10-13: a row of its own. Second round: the selector sits in the header of the fold it governs, a mode fold. The save and revert gesture is an application-wide question, not settled here. |
 | Command (an action now) | A button, confirmation by reversibility | None. Hand-placed SettingsCard and Button on every page; `ConfirmationService` is the only shared piece. | **Empty row.** The composer drives values, not buttons. |
-| Diagnostic readout (version, status, live reading) | Consulted, not configured | None. Hand-drawn: version card, status dots, frame rate, mic-check InfoBars. | **Empty row.** |
-| Preview or instrument (a scene, a meter) | Opt-in for a live microphone meter | `AmbientPreviewCard` (Ambient only). No meter control exists anywhere in `src`. | Decided 2026-10-13: an instrument shows and never writes; the values it draws are cards beside it; it is the last card of its fold, full width. Third round (provisional, decisions 17 and 18): one preview component on every surface, a stage with commands above and readouts below, in its card and in a floating copy opened on hover; never a side pane. A meter is an open task in Anytype. |
+| Diagnostic readout (version, status, live reading) | Consulted, not configured | Catalog `Readout` (label over value, optional status dot), used by the Ambient preview's five readouts. Hand-drawn elsewhere: version card, status dots (Hue header, Playground), mic-check InfoBars. | Done 2026-10-14 (feat/preview-block) for the block; the hand-drawn readouts migrate as their pages are touched. |
+| Preview or instrument (a scene, a meter) | Opt-in for a live microphone meter | Catalog `PreviewBlock` (a fold: commands, stage, readouts), filled by `AmbientPreviewCard` in Settings. The Playground Ambient page still draws its own stage. No meter control exists anywhere in `src`. | Done 2026-10-14 (feat/preview-block) for the block and the Ambient preview in Settings, per decisions 17 and 18 confirmed the same day: an instrument shows and never writes, in a fold the user opens, never a side pane; the Playground stage and a meter wait. |
 | Editable collection (profiles, excluded words, per-app decisions, per-light rows) | Not named in the doctrine | Hand templates per page; `LightZonesCard` rows rebuilt in the Playground | **Empty row.** |
 | Advisory next to a value | One inline channel, tone in the wording | Composer `WrapWithAdvisory` (InfoBar, one severity) | Covered. |
 | Reset of a value, a group, the surface | Hover reveal, one default source | Composer reset chrome on every composed card and fold | Covered by the composer; five hand forms of the per-value reset and five of the section reset remain, with two glyphs and some English tooltips. |
@@ -260,12 +260,10 @@ not re-read: the two editors duplicate the Bézier solver (`UnitBezier`,
 `AmbientBrightnessCurve.Solve`), flip the y axis, and neither has keyboard
 nudge, tooltip or automation name.
 
-## Decisions, 2026-10-13, third round — PROVISIONAL
+## Decisions, 2026-10-13, third round
 
-**Louis decided these at the end of a long day and asked that they be marked
-as the first thing to revisit if a problem shows.** Each one is binding until
-revisited, but a difficulty met while building against 17 to 22 is a reason to
-reopen the decision, not to work around it. The brief they answer is
+Decided at the end of a long day and marked provisional; Louis went over them
+again on 2026-10-14 (next section). The brief they answer is
 `docs/research/research--settings-ux--2026-10-13.md`.
 
 17. **No right pane.** A preview is a block of its page, only on the pages
@@ -308,13 +306,36 @@ the mode fold's information card and its reset order; the curve editor's
 handles, fields and frame on the Streaming page and in the Playground; the
 Ambient tuning section, now one preset fold with the curve last.
 
+## Decisions, 2026-10-14
+
+Louis's second reading of the third round, with the six built steps still
+unseen on screen.
+
+23. **17 holds, without the floating copy.** No side pane; it comes back only
+    if a real need proves it. A preview lives in its page, in a fold the user
+    opens, the way the Light Switch timeline lives in its expander. The
+    floating copy is not asked for.
+24. **18 holds.** One preview component, with options: commands above, readouts
+    and information around the stage. Built the same day as Catalog
+    `PreviewBlock` and `Readout`, and the Ambient preview in Settings.
+25. **19 and 21 hold.** A module's tuning gets its page once it overflows; the
+    curve keeps its handles, movable, with its values beside it.
+26. **20 holds, without any length limit.** A description is understood or it
+    is not; four short sentences are as good as one long one. Reference
+    values go to a legend beside the instrument.
+27. **22 is set aside.** No Save, no named presets, no band: it is work of its
+    own and not needed for the settings to work well. The preset selectors
+    already on screen (Ambient, the cut) stay as they are, a changed value
+    still switches them to Custom; nothing more is built on them.
+
 ## Still open
 
 - The descriptor markers for confirmation and restart: their names, and which
   settings carry them.
 - The legend block (decision 20): its form and where it sits.
-- The floating preview copy (decision 17): its window, its size, its lifetime.
-- Decision 22, once Louis has an opinion on it.
+- The Playground Ambient stage on the preview block (decision 6, same blocks
+  everywhere), and the per-light rows, the Hue pairing and the status dots the
+  two surfaces still draw twice.
 - Whether a General page also carries tiles to its sibling pages.
 - What clicking a module node does besides expanding (PowerToys only expands).
 - The Home page content, later.
