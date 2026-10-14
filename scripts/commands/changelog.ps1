@@ -90,7 +90,10 @@ $RepoUrl  = 'https://github.com/louisfifre/deckle'
 
 # A type absent from this map is dropped (chore/docs/test/ci/build/style,
 # merges, non-conventional subjects): no catch-all, so noise never reaches
-# Changed.
+# Changed. The breaking marker `!` outranks the map: it is the author's word
+# that the user loses something, so such a subject lands under Removed
+# whatever its type. A revert stays a Removed unless it undoes a commit of
+# the same range (see Get-GroupedEntries).
 $TypeToGroup = [ordered]@{
     feat     = 'Added'
     fix      = 'Fixed'
@@ -150,46 +153,83 @@ function Get-TagDate([string]$tag) {
     return $d.Trim()
 }
 
-# Subjects only, oldest first: the body is never read, so nothing from it,
-# trailers included, can leak into the changelog.
+# One record per commit, oldest first: hash, subject, and the hash a revert
+# points at. The body is read for git's own "This reverts commit <sha>" line
+# alone and discarded right here, so no sentence from it, trailers included,
+# can leak into the changelog.
 function Get-RangeCommits([string]$range) {
-    $fmt = '%s%x1f%x1e'                                     # subject, US, RS
+    $fmt = '%H%x1f%s%x1f%b%x1e'                             # hash, US, subject, US, body, RS
     $out = (& git -C $RepoRoot log --reverse "--format=$fmt" $range) -join "`n"
     if ($LASTEXITCODE -ne 0) { throw "git log $range failed (code $LASTEXITCODE)" }
-    $commits = [System.Collections.Generic.List[string]]::new()
+    $commits = [System.Collections.Generic.List[hashtable]]::new()
     foreach ($rec in ($out -split ([char]0x1e))) {
-        $subject = ($rec -split ([char]0x1f))[0].Trim("`r", "`n", ' ')
-        if ($subject) { $commits.Add($subject) }
+        $parts = $rec -split ([char]0x1f), 3
+        if ($parts.Count -lt 2) { continue }
+        $subject = $parts[1].Trim("`r", "`n", ' ')
+        if (-not $subject) { continue }
+        $reverts = $null
+        if ($parts.Count -eq 3 -and $parts[2] -match 'This reverts commit (?<sha>[0-9a-f]{7,40})') {
+            $reverts = $Matches.sha
+        }
+        $commits.Add(@{
+            Hash    = $parts[0].Trim("`r", "`n", ' ')
+            Subject = $subject
+            Reverts = $reverts
+        })
     }
     # Comma stops pipeline unrolling, so an empty range yields a real empty
-    # array (not $null) — the contract is "an array of subjects", always.
+    # array (not $null) — the contract is "an array of records", always.
     return , $commits.ToArray()
 }
 
-function ConvertTo-Entry([string]$subject) {
+function ConvertTo-Entry([hashtable]$commit) {
     # Case-sensitive: "Merge …" / git's "Revert …" start with a capital and must
     # NOT match the lowercase type token, so they fall through to dropped.
-    if ($subject -cnotmatch '^(?<type>[a-z]+)(?:\((?<scope>[^)]+)\))?!?:\s+(?<desc>.+)$') {
+    if ($commit.Subject -cnotmatch '^(?<type>[a-z]+)(?:\((?<scope>[^)]+)\))?(?<bang>!)?:\s+(?<desc>.+)$') {
         return $null
     }
-    $group = $TypeToGroup[$Matches.type]
+    $group = if ($Matches.bang) { 'Removed' } else { $TypeToGroup[$Matches.type] }
     if (-not $group) { return $null }                        # skipped / unmapped type
 
     $desc = Get-FirstUpper (($Matches.desc -split "`n")[0].Trim())
     $line = if ($Matches.scope) { "- **$($Matches.scope):** $desc" } else { "- $desc" }
-    return @{ Group = $group; Line = $line }
+    return @{ Group = $group; Line = $line; Hash = $commit.Hash; Type = $Matches.type }
+}
+
+# Entries of one range, keyed by group, once the reverts are settled. A revert
+# pointing at a commit of the same range undoes something the user never saw,
+# so both lines go. A revert pointing outside the range stays a Removed: the
+# user did see the thing. A revert without the pointer also stays a Removed,
+# and is reported so the author can add git's line to the body.
+function Get-GroupedEntries([hashtable[]]$commits) {
+    $cancelled = [System.Collections.Generic.HashSet[string]]::new()
+    foreach ($c in $commits) {
+        if (-not $c.Reverts) { continue }
+        $origin = $commits | Where-Object { $_.Hash.StartsWith($c.Reverts) } | Select-Object -First 1
+        if ($origin) {
+            $null = $cancelled.Add($c.Hash)
+            $null = $cancelled.Add($origin.Hash)
+        }
+    }
+
+    $byGroup = @{}
+    foreach ($c in $commits) {
+        if ($cancelled.Contains($c.Hash)) { continue }
+        $e = ConvertTo-Entry $c
+        if ($null -eq $e) { continue }
+        if ($e.Type -eq 'revert' -and -not $c.Reverts) {
+            Write-DeckleWorkflowMessage -Output $WorkflowOutput -Role Warning `
+                -Message "Revert without a 'This reverts commit' line, listed under Removed: $($c.Subject)"
+        }
+        if (-not $byGroup.ContainsKey($e.Group)) { $byGroup[$e.Group] = [System.Collections.Generic.List[string]]::new() }
+        $byGroup[$e.Group].Add($e.Line)
+    }
+    return $byGroup
 }
 
 # $thisTag and $prevTag carry the leading 'v'.
-function Format-Section([string]$version, [string]$prevTag, [string]$thisTag, [string]$date, [string[]]$subjects) {
-    $byGroup = @{}
-    foreach ($s in $subjects) {
-        $e = ConvertTo-Entry $s
-        if ($null -ne $e) {
-            if (-not $byGroup.ContainsKey($e.Group)) { $byGroup[$e.Group] = [System.Collections.Generic.List[string]]::new() }
-            $byGroup[$e.Group].Add($e.Line)
-        }
-    }
+function Format-Section([string]$version, [string]$prevTag, [string]$thisTag, [string]$date, [hashtable[]]$commits) {
+    $byGroup = Get-GroupedEntries $commits
 
     $heading = if (-not $version) {
         '## [Unreleased]'
@@ -272,14 +312,13 @@ Write-DeckleWorkflowStep -Output $WorkflowOutput -Message "Regenerating changelo
 $rendered = $tags[$floorIdx..($tags.Count - 1)]
 $sections = [System.Collections.Generic.List[string]]::new()
 
-# [Unreleased] appears only when a commit is user-facing: an empty heading
-# would be noise.
+# [Unreleased] appears only when a line survives: an empty heading would be
+# noise, and a feature reverted before release leaves no line at all.
 $unreleased = Get-RangeCommits "$($tags[-1])..HEAD"
 if ($unreleased.Count) {
-    $hasEntry = $false
-    foreach ($s in $unreleased) { if (ConvertTo-Entry $s) { $hasEntry = $true; break } }
-    if ($hasEntry) {
-        $sections.Add((Format-Section '' $null $null '' $unreleased))
+    $section = Format-Section '' $null $null '' $unreleased
+    if ($section -match '### ') {
+        $sections.Add($section)
         Write-DeckleWorkflowMessage -Output $WorkflowOutput -Message "Unreleased — $($unreleased.Count) commits since public release $($tags[-1])"
     }
 }
