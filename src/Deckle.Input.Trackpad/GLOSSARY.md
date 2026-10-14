@@ -10,11 +10,11 @@ Vocabulary of the trackpad workstream. This module sits at the top of the input 
 ## Gestures
 
 **Recognizer** :
-The state machine that turns the stream of contact frames into gesture intentions, such as drag start, drag continuation and release. It owns every decision that defines gesture quality, such as telling a tap from a drag, the grace delay on finger lift, and robustness to the cadence of Bluetooth reports.
+The state machine of this module that turns the stream of contact frames into gesture intentions, such as drag start, drag continuation and release. It owns every decision that makes a gesture feel right, such as telling a tap from a drag, the grace delay when a finger lifts and the tolerance to the cadence of Bluetooth reports.
 _Avoid_ : detector, gesture engine.
 
 **Three-finger drag** :
-The one gesture that Deckle owns, in which three fingers moving together hold the primary button and drag, and lifting them releases after a grace delay. Every other touchpad gesture stays native to Windows.
+A gesture, the only one Deckle owns, in which three fingers moving together hold the primary button and drag, and lifting them releases after a grace delay. Every other touchpad gesture stays native to Windows.
 _Avoid_ : three-finger swipe (the native Windows gesture Deckle disables).
 
 **Detector** :
