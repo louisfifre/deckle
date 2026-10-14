@@ -34,9 +34,10 @@ public static partial class HudComposition
     //   1. "Baseline palette / rotations" — paint-time config, applies to
     //      all variants unless overridden (OklchLightness, HueRange,
     //      ConicSpan, ArcPeriod…).
-    //   2. Runtime variants (Rewriting* / Transcribing* / Recording*) and
-    //      the grey material (GreyLightness*) — the live values ApplyVariant
-    //      animates. Edit these to shape each state's look.
+    //   2. Runtime variants (Rewriting* / Transcribing* / Recording*: each
+    //      state's material, hue shift and opacity) and the grey material
+    //      (GreyLightness*) — the live values ApplyVariant animates. Edit
+    //      these to shape each state's look.
     //   3. Recording paint-time overrides (RecordingConic* /
     //      RecordingArcPhaseTurns / RecordingArcMirror) — consumed by
     //      CreateRecordingStroke to carve the frozen-rotation silhouette.
@@ -99,8 +100,10 @@ public static partial class HudComposition
     //                    ω_min / ω_max expressions.
     //
     // Two materials, one stroke. The masks sculpt whichever material the
-    // variant shows: Rewriting shows the colour wheel above, Transcribing
-    // and Recording show a flat grey. The grey is not the wheel desaturated
+    // state shows, and which one each state shows is a setting of its own
+    // (RecordingMaterial, TranscribingMaterial, RewritingMaterial: Grey,
+    // Grey and Colour by default). The colour wheel is the palette above;
+    // the grey is a flat colour. The grey is not the wheel desaturated
     // — that route (SaturationEffect then ExposureEffect, until 2026-10-14)
     // made the grey depend on the wheel's lightness and on an exposure
     // bias per theme, two detours for one value the maintainer wanted to
@@ -115,9 +118,12 @@ public static partial class HudComposition
     // the effect graph, plus SpriteVisual.Opacity — animated by
     // ApplyVariant. Switching variants is a property animation on the
     // same GPU resources — no surface rebuild, no GC, no lag):
-    //   HueShiftTurns  runtime rotation of the colour wheel.
+    //   Material       Grey or Colour, per state (HudMaterial). MaterialOf
+    //                  turns it into the mix: 0 = grey, 1 = colour.
+    //   HueShiftTurns  runtime rotation of the colour wheel, per state.
     //                  0 = no shift, 0.5 = red↔cyan swap, 1 = no change.
-    //                  Negatives shift the other way. Colour only.
+    //                  Negatives shift the other way. It shows only while
+    //                  the state's material is Colour.
     //   Opacity        SpriteVisual.Opacity in [0..1]. Dims the whole
     //                  stroke including the silhouette; 0.6-0.8 reads
     //                  as a subtle calm variant.
@@ -160,10 +166,10 @@ public static partial class HudComposition
         public float  HueRange           { get; init; } = 1f;
         public int    WedgeCount         { get; init; } = 360;
 
-        // ── Grey material (Transcribing and Recording) ───────────────────
-        // One flat grey per theme, see the Lexicon. Shared by the two
-        // black-and-white variants: they are the same material in two
-        // poses, so one knob moves both.
+        // ── Grey material ────────────────────────────────────────────────
+        // One flat grey per theme, see the Lexicon. Shared by every state
+        // whose material is Grey: they are the same material in different
+        // poses, so one knob moves them all.
         public float  GreyLightnessDark  { get; init; } = 1f;
         public float  GreyLightnessLight { get; init; } = 0f;
 
@@ -235,9 +241,9 @@ public static partial class HudComposition
         // ── Clone-cone palette — the reveal's OWN OKLCh lightness/chroma, decoupled
         //    from the contour's (OklchLightness/Chroma) so the swept digits can be
         //    pushed brighter / more chromatic for "peps" without touching the
-        //    contour. Colour only, so Rewriting: in Transcribing the reveal shows
-        //    the grey material, the same as the contour's. Painted into the clone
-        //    surface by CloneSurfaceConfig. ─────────────────────────────────────
+        //    contour. They show only in a state whose material is Colour: on
+        //    Grey the reveal shows the grey material, the same as the contour's.
+        //    Painted into the clone surface by CloneSurfaceConfig. ──────────────
         public float  CloneOklchLightness   { get; init; } = 0.9f;
         public float  CloneOklchChroma      { get; init; } = 0.3f;
 
@@ -248,43 +254,46 @@ public static partial class HudComposition
         //    the phase and the palette stay shared, so a fresh clone looks
         //    identical to the contour until you tune the speeds apart. The
         //    reveal is a DOUBLE-comet (conic ⊗ arc mask) like the visible
-        //    contour, NOT the naked cone — critical in Transcribing, where the
-        //    flat grey material shows no motion on its own and only the swept
-        //    comet SHAPE reads. ────────────────────────────────────────────
+        //    contour, NOT the naked cone — critical on the Grey material, which
+        //    shows no motion on its own, so only the swept comet SHAPE reads. ─
         public double CloneHuePeriodSeconds { get; init; } = 7.0;
         public float  CloneHueDirection     { get; init; } = -1f;
         public double CloneArcPeriodSeconds { get; init; } = 4.0;
         public float  CloneArcDirection     { get; init; } = -1f;
 
-        // ── Rewriting variant — the colour wheel, at the palette's own
-        //    lightness and chroma ──────────────────────────────────────────
+        // ── Rewriting variant — the colour wheel by default ───────────────
+        public HudMaterial RewritingMaterial    { get; init; } = HudMaterial.Colour;
         public float  RewritingHueShiftTurns    { get; init; } = 0f;
         public float  RewritingOpacity          { get; init; } = 1f;
         public double RewritingBlendSeconds     { get; init; } = 2;
 
-        // ── Transcribing variant — the grey material (GreyLightness*) ─────
+        // ── Transcribing variant — the grey material by default ───────────
+        public HudMaterial TranscribingMaterial   { get; init; } = HudMaterial.Grey;
+        public float  TranscribingHueShiftTurns   { get; init; } = 0f;
         public float  TranscribingOpacity         { get; init; } = 1f;
         public double TranscribingBlendSeconds    { get; init; } = 2;
 
-        // A probe, not a design: shows the colour material in Transcribing
-        // so the maintainer can judge colour on the state he actually uses
-        // (Rewriting is not wired yet). Which state shows which material is
-        // the open "Grey / Colour" question of the Playground rework; this
-        // flag goes away with its answer.
-        public bool   TranscribingInColour        { get; init; } = false;
-
-        // The material a variant shows: mix 1 is the colour wheel with its
-        // hue shift, mix 0 the flat grey. One answer for the seed of a new
-        // stroke, the live blend (ApplyVariant) and the Playground previews,
-        // so the three cannot disagree.
+        // The material a state shows, as the mix of the grey ↔ colour
+        // cross-fade: mix 1 is the colour wheel turned by the state's own
+        // hue shift, mix 0 the flat grey, where a hue shift has nothing to
+        // turn. One answer for the seed of a new stroke, the live blend
+        // (ApplyVariant) and the gauge, so the three cannot disagree.
+        // Anything but Colour reads as Grey: the settings file stores the
+        // material as a number, and an unknown one must not paint colour.
         public (float Mix, float HueShiftTurns) MaterialOf(ProcessingVariant variant)
-            => variant == ProcessingVariant.Rewriting
-            || (variant == ProcessingVariant.Transcribing && TranscribingInColour)
-                ? (1f, RewritingHueShiftTurns)
-                : (0f, 0f);
+        {
+            var (material, hueShiftTurns) = variant switch
+            {
+                ProcessingVariant.Recording    => (RecordingMaterial, RecordingHueShiftTurns),
+                ProcessingVariant.Transcribing => (TranscribingMaterial, TranscribingHueShiftTurns),
+                ProcessingVariant.Rewriting    => (RewritingMaterial, RewritingHueShiftTurns),
+                _ => throw new ArgumentOutOfRangeException(nameof(variant), variant, null),
+            };
+            return material == HudMaterial.Colour ? (1f, hueShiftTurns) : (0f, 0f);
+        }
 
         // ── Recording variant — frozen-rotation stroke with RMS-driven
-        //    opacity, on the grey material.
+        //    opacity, on the grey material by default.
         //
         //    PAINT-TIME (baked into Win2D conic/arc surfaces when
         //    CreateRecordingStroke runs — cannot be animated live; edit
@@ -297,14 +306,17 @@ public static partial class HudComposition
         //        park the lobes at visual 12/6 o'clock (see
         //        CreateRecordingStroke header for the phase math).
         //
-        //    The cone never spins in Recording: on a flat grey a hue
-        //    rotation shows nothing, so the knob that drove it
-        //    (RecordingHuePeriodSeconds, until 2026-10-14) is gone and the
-        //    countdown poses its cone frozen like the outline.
+        //    The cone never spins in Recording: the outline is a still
+        //    pose (HuePhaseTurns) under the mic level, and the countdown
+        //    poses its cone frozen like the outline. On Colour the pose
+        //    shows which part of the wheel faces each edge; on Grey it
+        //    shows nothing.
         //
         //    No RecordingOpacity — UpdateLevel owns that channel from
         //    the mic RMS stream. ApplyVariant(Recording) deliberately
         //    skips the Opacity animation to avoid fighting UpdateLevel.
+        public HudMaterial RecordingMaterial       { get; init; } = HudMaterial.Grey;
+        public float  RecordingHueShiftTurns       { get; init; } = 0f;
         public float  RecordingConicSpanTurns      { get; init; } = 0.5f;
         public float  RecordingConicLeadFadeTurns  { get; init; } = 1f;
         public float  RecordingConicTailFadeTurns  { get; init; } = 1f;

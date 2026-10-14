@@ -892,6 +892,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   ├── HudComposition.Painting.cs
 │   │   │   ├── HudComposition.ProcessingStroke.cs
 │   │   │   ├── HudComposition.UtteranceCountdownVisual.cs
+│   │   │   ├── HudMaterial.cs
 │   │   │   ├── ProcessingVariant.cs
 │   │   │   └── UtteranceCountdownConfig.cs
 │   │   ├── Primitives/

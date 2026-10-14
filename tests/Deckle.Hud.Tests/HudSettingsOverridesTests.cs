@@ -108,6 +108,7 @@ public class HudSettingsOverridesTests
                 double d => d + 0.25,
                 int i    => i + 1,
                 bool b   => !b,
+                HudMaterial m => m == HudMaterial.Grey ? HudMaterial.Colour : HudMaterial.Grey,
                 _ => throw new Xunit.Sdk.XunitException(
                     $"{property.Name} has an unhandled type {property.PropertyType.Name}; add a case for it"),
             });

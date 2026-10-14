@@ -1,3 +1,4 @@
+using Deckle.Composition;
 using static Deckle.Composition.HudComposition;
 
 namespace Deckle.Playground;
@@ -76,14 +77,18 @@ internal sealed class TuningModel
         CloneArcPeriodSeconds = source.CloneArcPeriodSeconds;
         CloneArcDirection     = source.CloneArcDirection;
 
+        RewritingMaterial      = source.RewritingMaterial;
         RewritingHueShiftTurns = source.RewritingHueShiftTurns;
         RewritingOpacity       = source.RewritingOpacity;
         RewritingBlendSeconds  = source.RewritingBlendSeconds;
 
+        TranscribingMaterial        = source.TranscribingMaterial;
+        TranscribingHueShiftTurns   = source.TranscribingHueShiftTurns;
         TranscribingOpacity         = source.TranscribingOpacity;
         TranscribingBlendSeconds    = source.TranscribingBlendSeconds;
-        TranscribingInColour        = source.TranscribingInColour;
 
+        RecordingMaterial           = source.RecordingMaterial;
+        RecordingHueShiftTurns      = source.RecordingHueShiftTurns;
         RecordingConicSpanTurns     = source.RecordingConicSpanTurns;
         RecordingConicLeadFadeTurns = source.RecordingConicLeadFadeTurns;
         RecordingConicTailFadeTurns = source.RecordingConicTailFadeTurns;
@@ -100,7 +105,7 @@ internal sealed class TuningModel
     public float HueRange       = Defaults.HueRange;
     public int   WedgeCount     = Defaults.WedgeCount;
 
-    // ── Grey material (Transcribing and Recording) ──────────────────────
+    // ── Grey material (every state whose material is Grey) ──────────────
     public float GreyLightnessDark  = Defaults.GreyLightnessDark;
     public float GreyLightnessLight = Defaults.GreyLightnessLight;
 
@@ -147,14 +152,20 @@ internal sealed class TuningModel
     public float  CloneArcDirection     = Defaults.CloneArcDirection;
 
     // ── Rewriting variant ───────────────────────────────────────────────
+    public HudMaterial RewritingMaterial = Defaults.RewritingMaterial;
     public float  RewritingHueShiftTurns = Defaults.RewritingHueShiftTurns;
     public float  RewritingOpacity       = Defaults.RewritingOpacity;
     public double RewritingBlendSeconds  = Defaults.RewritingBlendSeconds;
 
     // ── Transcribing variant ────────────────────────────────────────────
+    public HudMaterial TranscribingMaterial   = Defaults.TranscribingMaterial;
+    public float  TranscribingHueShiftTurns   = Defaults.TranscribingHueShiftTurns;
     public float  TranscribingOpacity         = Defaults.TranscribingOpacity;
     public double TranscribingBlendSeconds    = Defaults.TranscribingBlendSeconds;
-    public bool   TranscribingInColour        = Defaults.TranscribingInColour;
+
+    // ── Recording variant — material ────────────────────────────────────
+    public HudMaterial RecordingMaterial     = Defaults.RecordingMaterial;
+    public float RecordingHueShiftTurns      = Defaults.RecordingHueShiftTurns;
 
     // ── Recording variant — paint-time ──────────────────────────────────
     public float RecordingConicSpanTurns     = Defaults.RecordingConicSpanTurns;
@@ -218,14 +229,18 @@ internal sealed class TuningModel
         CloneArcPeriodSeconds = CloneArcPeriodSeconds,
         CloneArcDirection     = CloneArcDirection,
 
+        RewritingMaterial      = RewritingMaterial,
         RewritingHueShiftTurns = RewritingHueShiftTurns,
         RewritingOpacity       = RewritingOpacity,
         RewritingBlendSeconds  = RewritingBlendSeconds,
 
+        TranscribingMaterial        = TranscribingMaterial,
+        TranscribingHueShiftTurns   = TranscribingHueShiftTurns,
         TranscribingOpacity         = TranscribingOpacity,
         TranscribingBlendSeconds    = TranscribingBlendSeconds,
-        TranscribingInColour        = TranscribingInColour,
 
+        RecordingMaterial           = RecordingMaterial,
+        RecordingHueShiftTurns      = RecordingHueShiftTurns,
         RecordingConicSpanTurns     = RecordingConicSpanTurns,
         RecordingConicLeadFadeTurns = RecordingConicLeadFadeTurns,
         RecordingConicTailFadeTurns = RecordingConicTailFadeTurns,

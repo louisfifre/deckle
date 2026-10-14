@@ -5,7 +5,7 @@ using Xunit;
 
 namespace Deckle.Hud.Tests;
 
-// The cone's two materials. The grey the black-and-white variants show is a
+// The cone's two materials. Each state picks one, and the grey is a
 // flat colour from one lightness, never the colour wheel desaturated: the
 // desaturated wheel once carried a dark red band into the countdown gauge
 // (bug note beside this file). The wheel itself is baked by the clamping
@@ -78,4 +78,48 @@ public sealed class ConicPaletteTests
         Assert.InRange(MathF.Abs(mapped.G - clamped.G), 0f, 1e-6f);
         Assert.InRange(MathF.Abs(mapped.B - clamped.B), 0f, 1e-6f);
     }
+
+    // Recording and Transcribing open on the grey, Rewriting on the colour
+    // wheel: the look the HUD shipped with before the material became a
+    // per-state setting.
+    [Fact]
+    public void EachStateOpensOnItsShippingMaterial()
+    {
+        var config = new HudComposition.ConicArcStrokeConfig();
+
+        Assert.Equal(HudMaterial.Grey, config.RecordingMaterial);
+        Assert.Equal(HudMaterial.Grey, config.TranscribingMaterial);
+        Assert.Equal(HudMaterial.Colour, config.RewritingMaterial);
+    }
+
+    // A state on Colour shows the full wheel turned by its own hue shift; a
+    // state on Grey shows the flat grey, where a hue shift has nothing to
+    // turn. Each state answers from its own fields, never another state's.
+    [Theory]
+    [InlineData(ProcessingVariant.Recording)]
+    [InlineData(ProcessingVariant.Transcribing)]
+    [InlineData(ProcessingVariant.Rewriting)]
+    public void AStateShowsItsOwnMaterialAndHueShift(ProcessingVariant state)
+    {
+        const float shift = 0.3f;
+        var everyStateShifted = new HudComposition.ConicArcStrokeConfig
+        {
+            RecordingHueShiftTurns = 0.1f,
+            TranscribingHueShiftTurns = 0.2f,
+            RewritingHueShiftTurns = 0.4f,
+        };
+
+        Assert.Equal((1f, shift), WithMaterial(everyStateShifted, state, HudMaterial.Colour, shift).MaterialOf(state));
+        Assert.Equal((0f, 0f), WithMaterial(everyStateShifted, state, HudMaterial.Grey, shift).MaterialOf(state));
+    }
+
+    private static HudComposition.ConicArcStrokeConfig WithMaterial(
+        HudComposition.ConicArcStrokeConfig config, ProcessingVariant state, HudMaterial material, float hueShiftTurns)
+        => state switch
+        {
+            ProcessingVariant.Recording => config with { RecordingMaterial = material, RecordingHueShiftTurns = hueShiftTurns },
+            ProcessingVariant.Transcribing => config with { TranscribingMaterial = material, TranscribingHueShiftTurns = hueShiftTurns },
+            ProcessingVariant.Rewriting => config with { RewritingMaterial = material, RewritingHueShiftTurns = hueShiftTurns },
+            _ => throw new ArgumentOutOfRangeException(nameof(state)),
+        };
 }

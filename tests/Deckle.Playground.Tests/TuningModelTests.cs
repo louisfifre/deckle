@@ -1,4 +1,5 @@
 using System.Reflection;
+using Deckle.Composition;
 using Xunit;
 using static Deckle.Composition.HudComposition;
 
@@ -50,6 +51,7 @@ public class TuningModelTests
                 var t when t == typeof(double) => 200 + index + 0.25,
                 var t when t == typeof(int) => 300 + index,
                 var t when t == typeof(bool) => !(bool)field.GetValue(model)!,
+                var t when t == typeof(HudMaterial) => Flipped((HudMaterial)field.GetValue(model)!),
                 var t => throw new Xunit.Sdk.XunitException(
                     $"{field.Name} has an unhandled type {t.Name}; add a sentinel for it"),
             };
@@ -77,6 +79,7 @@ public class TuningModelTests
                 double d => d + 0.25,
                 int i    => i + 1,
                 bool b   => !b,
+                HudMaterial m => Flipped(m),
                 _ => throw new Xunit.Sdk.XunitException(
                     $"{property.Name} has an unhandled type {property.PropertyType.Name}; add a case for it"),
             });
@@ -107,6 +110,7 @@ public class TuningModelTests
                 var t when t == typeof(double) => (double)field.GetValue(edited)! + 0.25,
                 var t when t == typeof(int) => (int)field.GetValue(edited)! + 1,
                 var t when t == typeof(bool) => !(bool)field.GetValue(edited)!,
+                var t when t == typeof(HudMaterial) => Flipped((HudMaterial)field.GetValue(edited)!),
                 var t => throw new Xunit.Sdk.XunitException(
                     $"{field.Name} has an unhandled type {t.Name}; add a sentinel for it"),
             });
@@ -116,6 +120,10 @@ public class TuningModelTests
         Assert.NotEqual(shipping, edited.ToConfig());
         Assert.Equal(shipping, new TuningModel().ToConfig());
     }
+
+    // The other material, so a moved enum field always differs from its default.
+    private static HudMaterial Flipped(HudMaterial material)
+        => material == HudMaterial.Grey ? HudMaterial.Colour : HudMaterial.Grey;
 
     // The live HUD is a single process-wide instance, so the only way the
     // Playground could reach it with a HUD config without a gesture is a
