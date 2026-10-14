@@ -273,10 +273,10 @@
                                       SelectionChanged="OnPlaygroundAmbientModeChanged" />
                         </StackPanel>
 
-                        <!-- The brightness response: the shared curve block (settings
-                             design system, decision 21), the square plot with its four
-                             fields beside it. The floor guide follows the minimum
-                             brightness from the code-behind. -->
+                        <!-- The brightness response: the shared curve block, the
+                             square plot with its four fields beside it. The floor
+                             guide follows the minimum brightness from the
+                             code-behind. -->
                         <StackPanel Spacing="6">
                             <TextBlock Text="Brightness response"
                                        Style="{ThemeResource BodyStrongTextBlockStyle}" />

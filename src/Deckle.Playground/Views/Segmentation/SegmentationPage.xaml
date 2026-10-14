@@ -77,12 +77,12 @@
                 </Grid>
             </Grid>
 
-            <!-- The hangover curve: the shared curve block (settings design system,
-                 decision 21), the plot taking the column's width with the four
-                 fields beside it. The frame (the anchors, in seconds) is pushed
-                 from the code-behind whenever an anchor moves; the four Bézier
-                 control points are bound two-way, so a handle's release or a
-                 field's commit writes the view-model. -->
+            <!-- The hangover curve: the shared curve block, the plot taking the
+                 column's width with the four fields beside it. The frame (the
+                 anchors, in seconds) is pushed from the code-behind whenever an
+                 anchor moves; the four Bézier control points are bound two-way,
+                 so a handle's release or a field's commit writes the
+                 view-model. -->
             <catalog:CurveEditor
                 x:Name="HangoverCurve"
                 Grid.Row="1"
