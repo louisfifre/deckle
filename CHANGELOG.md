@@ -178,6 +178,7 @@ doctrine). This file is generated from the Conventional-Commit history by
 ### Removed
 
 - **hud:** Take the outline's alpha back out of the countdown
+- **travel:** Remove the Deckle.Travel module
 
 ### Fixed
 
