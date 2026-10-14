@@ -8,9 +8,11 @@ namespace Deckle.Playground;
 // sliders and projects it into a fresh config on every rebuild.
 //
 // Field defaults are read from a default-constructed shipping struct, never
-// restated here, so the playground opens on exactly the numbers the shipping
-// HUD renders. A value that proves right in the playground is promoted to the
-// struct's default; it never becomes a playground-only default in this file.
+// restated here, so a fresh model holds exactly the compiled defaults; the
+// page then lays the stored HUD settings over it with Load. A value that
+// proves right in the playground is saved from the page's bar into those
+// settings, or promoted to the struct's default; it never becomes a
+// playground-only default in this file.
 internal sealed class TuningModel
 {
     private static readonly ConicArcStrokeConfig Defaults = new();
@@ -23,6 +25,83 @@ internal sealed class TuningModel
     {
         StrokeThickness = source.StrokeThickness;
         InsetDip = source.InsetDip;
+    }
+
+    // Every field, mirror of ToConfig; TuningModelTests catches a field left
+    // out of either.
+    public void Load(ConicArcStrokeConfig source)
+    {
+        StrokeThickness = source.StrokeThickness;
+        InsetDip        = source.InsetDip;
+        OklchLightness  = source.OklchLightness;
+        OklchChroma     = source.OklchChroma;
+        HueStart        = source.HueStart;
+        HueRange        = source.HueRange;
+        WedgeCount      = source.WedgeCount;
+
+        HuePeriodSeconds    = source.HuePeriodSeconds;
+        HueDirection        = source.HueDirection;
+        HuePhaseTurns       = source.HuePhaseTurns;
+        HueEaseP1X          = source.HueEaseP1X;
+        HueEaseP1Y          = source.HueEaseP1Y;
+        HueEaseP2X          = source.HueEaseP2X;
+        HueEaseP2Y          = source.HueEaseP2Y;
+        HueMinSpeedFraction = source.HueMinSpeedFraction;
+
+        ConicSpanTurns     = source.ConicSpanTurns;
+        ConicLeadFadeTurns = source.ConicLeadFadeTurns;
+        ConicTailFadeTurns = source.ConicTailFadeTurns;
+        ConicFadeCurve     = source.ConicFadeCurve;
+        ArcMirror          = source.ArcMirror;
+
+        ArcPeriodSeconds    = source.ArcPeriodSeconds;
+        ArcDirection        = source.ArcDirection;
+        ArcPhaseTurns       = source.ArcPhaseTurns;
+        ArcEaseP1X          = source.ArcEaseP1X;
+        ArcEaseP1Y          = source.ArcEaseP1Y;
+        ArcEaseP2X          = source.ArcEaseP2X;
+        ArcEaseP2Y          = source.ArcEaseP2Y;
+        ArcMinSpeedFraction = source.ArcMinSpeedFraction;
+
+        CloneCentreXFraction = source.CloneCentreXFraction;
+        CloneCentreYFraction = source.CloneCentreYFraction;
+
+        CloneOklchLightness = source.CloneOklchLightness;
+        CloneOklchChroma    = source.CloneOklchChroma;
+
+        CloneHuePeriodSeconds = source.CloneHuePeriodSeconds;
+        CloneHueDirection     = source.CloneHueDirection;
+        CloneArcPeriodSeconds = source.CloneArcPeriodSeconds;
+        CloneArcDirection     = source.CloneArcDirection;
+
+        RewritingSaturation    = source.RewritingSaturation;
+        RewritingHueShiftTurns = source.RewritingHueShiftTurns;
+        RewritingExposure      = source.RewritingExposure;
+        RewritingOpacity       = source.RewritingOpacity;
+        RewritingBlendSeconds  = source.RewritingBlendSeconds;
+
+        TranscribingSaturationDark  = source.TranscribingSaturationDark;
+        TranscribingSaturationLight = source.TranscribingSaturationLight;
+        TranscribingHueShiftTurns   = source.TranscribingHueShiftTurns;
+        TranscribingExposureDark    = source.TranscribingExposureDark;
+        TranscribingExposureLight   = source.TranscribingExposureLight;
+        TranscribingOpacity         = source.TranscribingOpacity;
+        TranscribingBlendSeconds    = source.TranscribingBlendSeconds;
+
+        RecordingConicSpanTurns     = source.RecordingConicSpanTurns;
+        RecordingConicLeadFadeTurns = source.RecordingConicLeadFadeTurns;
+        RecordingConicTailFadeTurns = source.RecordingConicTailFadeTurns;
+        RecordingConicFadeCurve     = source.RecordingConicFadeCurve;
+        RecordingArcMirror          = source.RecordingArcMirror;
+        RecordingArcPhaseTurns      = source.RecordingArcPhaseTurns;
+
+        RecordingSaturationDark   = source.RecordingSaturationDark;
+        RecordingSaturationLight  = source.RecordingSaturationLight;
+        RecordingHueShiftTurns    = source.RecordingHueShiftTurns;
+        RecordingExposureDark     = source.RecordingExposureDark;
+        RecordingExposureLight    = source.RecordingExposureLight;
+        RecordingBlendSeconds     = source.RecordingBlendSeconds;
+        RecordingHuePeriodSeconds = source.RecordingHuePeriodSeconds;
     }
 
     // ── Colour palette (paint-time, OKLCh) ──────────────────────────────
