@@ -138,7 +138,10 @@ function Get-VersionTags {
             throw "Published release tag $tag is missing from the local repository"
         }
     }
-    return [string[]]$tags
+    # Comma stops pipeline unrolling: a ledger with a single published tag
+    # must still come back as an array, or $tags[-1] reads the last character
+    # of the tag.
+    return , [string[]]$tags
 }
 
 function Get-TagDate([string]$tag) {
