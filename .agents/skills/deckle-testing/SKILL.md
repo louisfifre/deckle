@@ -11,7 +11,7 @@ A test is worth keeping when it survives a refactor and follows a re-tune. Code 
 
 Test what the code does, so the test survives a change in how it does it.
 
-Assert against the value the production code itself uses, so the test follows a re-tune. Write a literal only when the literal is the contract.
+Compare against the value the production code itself uses, so the test follows a re-tune. Write a fixed value in the test only when that value is the promise.
 
 Reach the code through a seam the design already has. When a test would need a seam the design does not want, change the test.
 
@@ -19,4 +19,4 @@ Coverage grows with each workstream. A workstream tests the code it touches and 
 
 Every test class carries a Category trait whose value comes from the taxonomy in `tests/GLOSSARY.md`. A module's tests live in the suite that owns it, `Deckle.<Module>.Tests` for the application and `scripts/tests` for the scripts, and plumbing that several C# suites share lives in `Deckle.TestSupport`.
 
-A fixed bug gets a regression test when its failure can be reproduced through a natural seam. The test carries the `regression` category, recreates the failing conditions and is named for the behavior that must remain true. It fails on the known faulty behavior and passes on the fixed contract. Replayable input from the bug note is stored as a test resource the test reads, declared in the test project when the SDK does not include it. Validate by compiling the owning test project under the build rules of AGENTS.md.
+A fixed bug gets a regression test when its failure can be reproduced through a seam the design already has. The test carries the `regression` category, recreates the failing conditions and is named for the behavior that must remain true. It fails on the faulty behavior and passes on the fixed one.
