@@ -2,7 +2,7 @@
 description: "Home inventory vocabulary — the public norm, personal room registry, point codes, and managed Home schema."
 ---
 
-# Deckle.Home — Context
+# Deckle.Home — Glossary
 
 This context names the boundary between Deckle's shareable home-inventory
 mechanism and the personal data held by each user's Anytype space.

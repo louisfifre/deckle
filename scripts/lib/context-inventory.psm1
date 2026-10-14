@@ -14,7 +14,7 @@ function Get-ContextDocumentType {
     $name = [System.IO.Path]::GetFileName($RelativePath)
     if ($name -eq 'AGENTS.md') { return 'AGENTS' }
     if ($name -eq 'CLAUDE.md') { return 'CLAUDE' }
-    if ($name -in @('CONTEXT.md', 'CONTEXT-MAP.md')) { return 'Context' }
+    if ($name -in @('GLOSSARY.md', 'GLOSSARY-MAP.md')) { return 'Glossary' }
     if ($name -eq 'SKILL.md') { return 'Skill' }
     if ($RelativePath -match '(^|[\\/])\.agents[\\/]skills[\\/]') { return 'Skill reference' }
     if ($RelativePath -match '(^|[\\/])docs[\\/]adr[\\/]') { return 'ADR' }

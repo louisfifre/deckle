@@ -1,11 +1,11 @@
 ---
-name: context-deckle-llm-rewrite
-description: "Rewrite service vocabulary — the single service every rewrite goes through, whoever asks. Read before touching rewrite plumbing or its inference engine. The Correction / Rewrite boundary itself lives in the root CONTEXT.md."
+name: glossary-deckle-llm-rewrite
+description: "Rewrite service vocabulary — the single service every rewrite goes through, whoever asks. Read before touching rewrite plumbing or its inference engine. The Correction / Rewrite boundary itself lives in the root GLOSSARY.md."
 ---
 
-# Deckle.Llm.Rewrite — Context
+# Deckle.Llm.Rewrite — Glossary
 
-This module hosts the rewrite side of the Correction / Rewrite boundary defined in the root `CONTEXT.md` — read that boundary first; it decides what may act silently.
+This module hosts the rewrite side of the Correction / Rewrite boundary defined in the root `GLOSSARY.md` — read that boundary first; it decides what may act silently.
 
 ## The service
 

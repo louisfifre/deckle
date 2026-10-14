@@ -1,9 +1,9 @@
 ---
-name: context-deckle-diagnostics
+name: glossary-deckle-diagnostics
 description: "Observability vocabulary for the Diagnostics family (.Logging, .Telemetry included) — admission vs view, the five controls that quiet the log stream without being confused. Read before touching verbosity, filters, or sinks."
 ---
 
-# Deckle.Diagnostics — Context
+# Deckle.Diagnostics — Glossary
 
 Observability vocabulary shared by the Diagnostics family — `Deckle.Diagnostics`, `Deckle.Diagnostics.Logging`, `Deckle.Diagnostics.Telemetry`. Two controls can make the LogWindow quieter, but they act on opposite sides of the journal boundary. The distinction is whether an observation still exists after the control acts.
 

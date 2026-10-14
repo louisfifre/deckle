@@ -421,7 +421,7 @@ Total : **693 entrées** réparties sur **41 modules**.
 |---|---|---|---|---|---|
 | HudChrono.DigitCount | tuning-constant | `6` | src/Deckle.Hud/Chrono/HudChrono.Reveal.cs:14 | non | Structural: the chrono face has six digits. Likely pure implementation, kept per doubt rule. |
 | HudChrono.MaxRevealBuildAttempts | tuning-constant | `90` | src/Deckle.Hud/Chrono/HudChrono.RevealMask.cs:63 | non | Retry window in vsync frames before latching a reveal-build failure; robustness bound, not user-facing. |
-| HudChrono.ToneCharging | tuning-constant | `"TextFillColorDisabledBrush"` | src/Deckle.Hud/Chrono/HudChrono.xaml.cs:237 | non | Theme-resource key, not a numeric knob. Source says the authoritative mapping lives in Chrono/CONTEXT.md and these are its code mirror - design token rather than exposable. |
+| HudChrono.ToneCharging | tuning-constant | `"TextFillColorDisabledBrush"` | src/Deckle.Hud/Chrono/HudChrono.xaml.cs:237 | non | Theme-resource key, not a numeric knob. Source says the authoritative mapping lives in Chrono/GLOSSARY.md and these are its code mirror - design token rather than exposable. |
 | HudChrono.ToneRecording | tuning-constant | `"TextFillColorSecondaryBrush"` | src/Deckle.Hud/Chrono/HudChrono.xaml.cs:238 | non | Same doubt as ToneCharging. |
 | HudChrono.ToneStopped | tuning-constant | `"TextFillColorTertiaryBrush"` | src/Deckle.Hud/Chrono/HudChrono.xaml.cs:239 | non | Same doubt as ToneCharging. |
 | ProximityRollupAggregator.Capacity | tuning-constant | `2048` | src/Deckle.Hud/ProximityRollupAggregator.cs:15 | non | Ring-buffer depth for the proximity rollup; perceivable only in log-window statistics. |

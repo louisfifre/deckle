@@ -1,9 +1,9 @@
 ---
-name: context-deckle-anytype
+name: glossary-deckle-anytype
 description: "Anytype integration vocabulary (covers Deckle.Anytype.Mcp) — backend vs MCP host vs resident core, surfaces, bot vs client token, and the Home space types. Read before touching the integration or its authorship model."
 ---
 
-# Deckle.Anytype — Context
+# Deckle.Anytype — Glossary
 
 Vocabulary of the Anytype/MCP integration, shared with `Deckle.Anytype.Mcp`. Three layers are constantly conflated — the data runtime, the protocol adapter, and the Deckle process that hosts it — and "bot" versus "token" carries the authorship question.
 

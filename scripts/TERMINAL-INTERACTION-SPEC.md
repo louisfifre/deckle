@@ -4,7 +4,7 @@ description: "Behavior and composition contracts of the reusable terminal launch
 
 # Terminal interaction specification
 
-The contracts of the reusable terminal launcher beneath Deckle Scripts. Read it before designing, implementing, or reusing the launcher's views and interaction primitives. `CONTEXT.md` governs the vocabulary; this document governs behavior and composition, written in the indicative: every sentence is a rule unless it says otherwise. A term the glossary does not hold is defined in bold where it first appears.
+The contracts of the reusable terminal launcher beneath Deckle Scripts. Read it before designing, implementing, or reusing the launcher's views and interaction primitives. `GLOSSARY.md` governs the vocabulary; this document governs behavior and composition, written in the indicative: every sentence is a rule unless it says otherwise. A term the glossary does not hold is defined in bold where it first appears.
 
 ## Product
 

@@ -2,7 +2,7 @@
 description: "Deckle Scripts interaction vocabulary — launcher choices, action runs, detailed output, and completion."
 ---
 
-# Deckle Scripts — Context
+# Deckle Scripts — Glossary
 
 Shared language for the reusable terminal launcher. These terms separate navigation from work and the lifetime of one action run from what it emits and how it ends. Behavioral and composition contracts live in the [terminal interaction specification](TERMINAL-INTERACTION-SPEC.md).
 

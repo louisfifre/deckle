@@ -1,9 +1,9 @@
 ---
-name: context-deckle-security
+name: glossary-deckle-security
 description: "Security vocabulary — the trusted-session boundary, captured content, and where Deckle's custody ends. Read before storing, exporting, or transmitting user-originated content or credentials."
 ---
 
-# Deckle.Security — Context
+# Deckle.Security — Glossary
 
 Vocabulary for the protection boundary shared across Deckle. This context classifies content and custody; cryptographic mechanisms and transport policies are specifications, not glossary terms.
 
