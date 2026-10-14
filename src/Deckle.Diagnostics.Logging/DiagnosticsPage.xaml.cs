@@ -1,13 +1,10 @@
 using System.Collections.Generic;
 using System.ComponentModel;
-using System.Diagnostics;
-using System.IO;
 using System.Linq;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Navigation;
 using Deckle.Catalog;
-using Deckle.Core;
 using Deckle.Diagnostics;
 
 namespace Deckle.Diagnostics.Logging;
@@ -124,15 +121,15 @@ public sealed partial class DiagnosticsPage : Page
 
     // ── Composed Folders section ──────────────────────────────────────────────
     //
-    // The telemetry storage folder, composed above the hand-authored
-    // diagnostics folder card. Its own composer, so the section reset and gate
-    // cover exactly this one value.
-    private SettingsComposer? _telemetryStorageComposer;
+    // The telemetry storage folder and the diagnostics folder, two folder
+    // folds. Their own composer, so the section reset and gate cover exactly
+    // the storage folder, the one value with a default.
+    private SettingsComposer? _foldersComposer;
 
     private void ComposeFoldersSection()
     {
-        _telemetryStorageComposer = new SettingsComposer(TelemetryStorageHost, ViewModel);
-        _telemetryStorageComposer.Compose(ViewModel.TelemetryStorageSettings);
+        _foldersComposer = new SettingsComposer(FoldersHost, ViewModel);
+        _foldersComposer.Compose(ViewModel.FoldersSettings);
     }
 
     private IEnumerable<SettingsComposer> AllComposers()
@@ -140,7 +137,7 @@ public sealed partial class DiagnosticsPage : Page
         if (_loggingComposer is not null) yield return _loggingComposer;
         if (_applicationLogComposer is not null) yield return _applicationLogComposer;
         foreach (SettingsComposer composer in TelemetryComposers()) yield return composer;
-        if (_telemetryStorageComposer is not null) yield return _telemetryStorageComposer;
+        if (_foldersComposer is not null) yield return _foldersComposer;
     }
 
     private IEnumerable<SettingsComposer> TelemetryComposers()
@@ -179,7 +176,7 @@ public sealed partial class DiagnosticsPage : Page
 
     private void ResetFolders_Click(object sender, RoutedEventArgs e)
     {
-        _telemetryStorageComposer?.ResetAll();
+        _foldersComposer?.ResetAll();
         DeckleSettingsUxSource.Log.SectionReset();
         DeckleSettingsUxSource.Log.SectionResetDetail("Folders");
     }
@@ -200,7 +197,7 @@ public sealed partial class DiagnosticsPage : Page
         bool logging = _loggingComposer?.IsDirty() ?? false;
         bool applicationLog = _applicationLogComposer?.IsDirty() ?? false;
         bool telemetry = TelemetryComposers().Any(c => c.IsDirty());
-        bool folders = _telemetryStorageComposer?.IsDirty() ?? false;
+        bool folders = _foldersComposer?.IsDirty() ?? false;
 
         LoggingSection.IsResetEnabled = logging;
         ApplicationLogSection.IsResetEnabled = applicationLog;
@@ -236,26 +233,6 @@ public sealed partial class DiagnosticsPage : Page
         {
             foreach (SettingsComposer composer in composers) composer.ResetAll();
             source.TurnOff();
-        }
-    }
-
-    // Best effort, like FolderPickerCard's Open button: a failure is logged, not
-    // surfaced.
-    private void OpenDiagnosticsFolder_Click(object sender, RoutedEventArgs e)
-    {
-        try
-        {
-            Directory.CreateDirectory(AppPaths.DiagnosticsDirectory);
-            Process.Start(new ProcessStartInfo
-            {
-                FileName = AppPaths.DiagnosticsDirectory,
-                UseShellExecute = true,
-            });
-        }
-        catch (System.Exception ex)
-        {
-            DeckleSettingsUxSource.Log.FolderPickerFailed();
-            DeckleSettingsUxSource.Log.FolderPickerFailedDetail(ex.GetType().Name, ex.Message);
         }
     }
 }

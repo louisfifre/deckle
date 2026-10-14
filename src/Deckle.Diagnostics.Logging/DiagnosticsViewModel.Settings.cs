@@ -63,14 +63,22 @@ public partial class DiagnosticsViewModel
             defaultValue: () => new Deckle.Input.MouseWheelSettings().RecordEvents),
     ];
 
-    // The telemetry storage folder, first card of the Folders section that
-    // closes the page, above the diagnostics folder: each place Deckle writes
-    // to sits in one section, after everything that writes there. The override
-    // reaches only what reads CorpusPaths (today the dictation audio WAVs);
-    // the JSONL sinks, trackpad and wheel recorders write under
+    // The Folders section that closes the page: each place Deckle writes to
+    // sits in one section, after everything that writes there. Both are
+    // folder folds (a standalone Path renders as one), their Location line
+    // inside.
+    //
+    // The telemetry storage folder first, configurable. The override reaches
+    // only what reads CorpusPaths (today the dictation audio WAVs); the JSONL
+    // sinks, trackpad and wheel recorders write under
     // AppPaths.TelemetryDirectory whatever it holds. The path's reset default
     // is the POCO initializer (empty means AppPaths.TelemetryDirectory).
-    public IReadOnlyList<SettingDescriptor> TelemetryStorageSettings =>
+    //
+    // Then the diagnostics folder, which the app owns and never moves: OpenOnly,
+    // so the line shows the path and offers Open alone, and the setter is
+    // never called. No defaultValue, so the section reset covers the storage
+    // folder alone.
+    public IReadOnlyList<SettingDescriptor> FoldersSettings =>
     [
         Setting.Path("GeneralStorageFolderCard",
             () => TelemetryStorageDirectory,
@@ -79,5 +87,11 @@ public partial class DiagnosticsViewModel
                 FolderPickerMode.Configure,
                 DefaultPath: () => AppPaths.TelemetryDirectory),
             defaultValue: () => new TelemetrySettings().StorageDirectory),
+        Setting.Path("DiagnosticsFilesCard",
+            () => AppPaths.DiagnosticsDirectory,
+            _ => { },
+            new PathArgs(
+                FolderPickerMode.OpenOnly,
+                DefaultPath: () => AppPaths.DiagnosticsDirectory)),
     ];
 }

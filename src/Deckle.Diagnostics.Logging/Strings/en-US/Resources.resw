@@ -62,12 +62,6 @@
   <!-- Nav label — module-owned. The Settings shell reads this bare key straight
        into the module's NavigationViewItem.Content (SettingsModuleDescriptor.LabelKey). -->
 
-  <!-- Shared folder-picker Open button. Copied here for the same reason; the key
-       also lives in the Settings shell for the two FolderPicker UserControls. -->
-  <data name="FolderPickerCard_OpenButton.Content" xml:space="preserve">
-    <value>Open</value>
-  </data>
-
   <!-- DiagnosticsPage — page chrome (x:Uid) -->
   <data name="DiagnosticsPageHeader.Title" xml:space="preserve">
     <value>Diagnostics</value>
@@ -136,12 +130,14 @@
     <value>Wheel timing and deltas go to telemetry\mouse-wheel.</value>
   </data>
 
-  <!-- Folders section, last on the page (x:Uid header + the composed storage
-       card's label key + the hand-authored diagnostics folder card). The
-       storage card's General* prefix is the same historical artifact as above.
-       A custom storage folder only receives what reads CorpusPaths (the
-       dictation audio); the other datasets keep writing under the default
-       telemetry folder, and the wording says so. -->
+  <!-- Folders section, last on the page (x:Uid header + the two composed
+       folder folds' label keys, DiagnosticsViewModel.FoldersSettings; each
+       heads its fold, the Location line inside uses the Settings shell's
+       FolderPickerCard_* words). The storage card's General* prefix is the
+       same historical artifact as above. A custom storage folder only
+       receives what reads CorpusPaths (the dictation audio); the other
+       datasets keep writing under the default telemetry folder, and the
+       wording says so. -->
   <data name="DiagnosticsPageFoldersSection.Title" xml:space="preserve">
     <value>Folders</value>
   </data>
