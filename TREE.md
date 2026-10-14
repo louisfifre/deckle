@@ -1962,7 +1962,8 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── MagnitudeGrainBugNotes.md
 │   │   ├── MagnitudeGrainIntegerTests.cs
 │   │   ├── MagnitudeGrainTests.cs
-│   │   └── SettingFactoryTests.cs
+│   │   ├── SettingFactoryTests.cs
+│   │   └── SettingsExpanderItemsBugNotes.md
 │   ├── Deckle.Chrono.Tests/
 │   │   ├── ChronoFormatterTests.cs
 │   │   ├── ChronoTimerTests.cs
