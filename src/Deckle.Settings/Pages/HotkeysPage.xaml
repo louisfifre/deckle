@@ -1,0 +1,49 @@
+<Page
+    x:Class="Deckle.Settings.HotkeysPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:catalog="using:Deckle.Catalog">
+
+    <ScrollViewer Padding="32,24,32,24"
+                  VerticalScrollBarVisibility="Auto"
+                  HorizontalScrollBarVisibility="Disabled">
+        <Grid>
+            <StackPanel MaxWidth="1000"
+                        HorizontalAlignment="Stretch"
+                        Spacing="{StaticResource SettingsCardSpacing}">
+
+                <catalog:SettingsPageHeader x:Name="Header"
+                                            x:Uid="HotkeysPageHeader"
+                                            ResetAllRequested="ResetAll_Click" />
+
+                <!-- ── Dictation ───────────────────────────────────────────── -->
+                <catalog:SettingsSection x:Name="DictationSection"
+                                         x:Uid="HotkeysPageDictationSection"
+                                         HasReset="True"
+                                         ResetRequested="ResetDictation_Click">
+                    <StackPanel x:Name="DictationHost"
+                                Spacing="{StaticResource SettingsCardSpacing}" />
+                </catalog:SettingsSection>
+
+                <!-- ── Input ───────────────────────────────────────────────── -->
+                <catalog:SettingsSection x:Name="InputSection"
+                                         x:Uid="HotkeysPageInputSection"
+                                         HasReset="True"
+                                         ResetRequested="ResetInput_Click">
+                    <StackPanel x:Name="InputHost"
+                                Spacing="{StaticResource SettingsCardSpacing}" />
+                </catalog:SettingsSection>
+
+                <!-- ── Display and lights ──────────────────────────────────── -->
+                <catalog:SettingsSection x:Name="DisplaySection"
+                                         x:Uid="HotkeysPageDisplaySection"
+                                         HasReset="True"
+                                         ResetRequested="ResetDisplay_Click">
+                    <StackPanel x:Name="DisplayHost"
+                                Spacing="{StaticResource SettingsCardSpacing}" />
+                </catalog:SettingsSection>
+
+            </StackPanel>
+        </Grid>
+    </ScrollViewer>
+</Page>

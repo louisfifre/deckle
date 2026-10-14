@@ -22,31 +22,16 @@ public sealed partial class GeneralPage : Page
         InitializeComponent();
         NavigationCacheMode = NavigationCacheMode.Required;
 
-        ComposeHotkeysSection();
         ComposeAppearanceSection();
         ComposeStartupSection();
         ComposeUpdatesSection();
         ComposeApplicationDataSection();
 
         foreach (var composer in new[]
-                 { _hotkeysComposer, _appearanceComposer, _startupComposer, _updatesComposer, _applicationDataComposer })
+                 { _appearanceComposer, _startupComposer, _updatesComposer, _applicationDataComposer })
             composer!.DirtyChanged += (_, _) => GateResetAll();
 
         LoadAndSync();
-    }
-
-    // ── Composed Hotkeys section ──────────────────────────────────────────────
-    //
-    // Each card is hidden when the App did not build its action. The App rebinds
-    // the global hotkeys itself when the saved settings change.
-    private SettingsComposer? _hotkeysComposer;
-
-    private void ComposeHotkeysSection()
-    {
-        _hotkeysComposer = new SettingsComposer(HotkeysHost, ViewModel);
-        _hotkeysComposer.DirtyChanged += (_, _) =>
-            HotkeysSection.IsResetEnabled = _hotkeysComposer.IsDirty();
-        _hotkeysComposer.Compose(ViewModel.HotkeySettings);
     }
 
     // ── Composed Appearance section ───────────────────────────────────────────
@@ -106,8 +91,9 @@ public sealed partial class GeneralPage : Page
 
     // NavigationCacheMode.Required reuses the page instance — the constructor
     // and Loaded only fire once. Without this override, navigating away then
-    // back would show stale values, and PushToSettings() (which writes ALL VM
-    // properties) would silently overwrite any changes made from another page.
+    // back would show stale values, and PushToSettings() (which writes every
+    // value this page shows) would silently overwrite a change made elsewhere,
+    // such as the theme from the tray.
     protected override void OnNavigatedTo(NavigationEventArgs e)
     {
         base.OnNavigatedTo(e);
@@ -156,7 +142,6 @@ public sealed partial class GeneralPage : Page
     private void GateResetAll()
     {
         Header.IsResetAllEnabled =
-            (_hotkeysComposer?.IsDirty() ?? false) ||
             (_appearanceComposer?.IsDirty() ?? false) ||
             (_startupComposer?.IsDirty() ?? false) ||
             (_updatesComposer?.IsDirty() ?? false) ||
@@ -165,7 +150,6 @@ public sealed partial class GeneralPage : Page
 
     private void ResetAll_Click(object sender, RoutedEventArgs e)
     {
-        _hotkeysComposer?.ResetAll();
         _appearanceComposer?.ResetAll();
         _startupComposer?.ResetAll();
         _updatesComposer?.ResetAll();
@@ -180,13 +164,6 @@ public sealed partial class GeneralPage : Page
     // the side effects (Appearance's ApplyTheme in OnThemeChanged, Startup's
     // registry write in OnAutostartEnabledChanged), so a handler only triggers
     // the reset and logs it.
-
-    private void ResetHotkeys_Click(object sender, RoutedEventArgs e)
-    {
-        _hotkeysComposer?.ResetAll();
-        DeckleSettingsUxSource.Log.SectionReset();
-        DeckleSettingsUxSource.Log.SectionResetDetail("Hotkeys");
-    }
 
     private void ResetAppearance_Click(object sender, RoutedEventArgs e)
     {

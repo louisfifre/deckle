@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using Deckle.Catalog;
 using Deckle.Core;
 using Deckle.Shell;
@@ -8,12 +9,12 @@ namespace Deckle.Settings;
 
 // ── GeneralViewModel — settings manifest ──────────────────────────────────────
 //
-// The declarative half of the page, kept beside the ViewModel that owns the
-// values rather than in the page code-behind. Each entry declares one setting —
-// its kind, its localization key, its glyph, and typed selectors onto this VM's
-// own properties — and SettingsComposer turns the list into SettingsCards. Each
-// reset default reads the matching AppSettings POCO initializer, so the literal
-// defaults live in one place.
+// The declarative half of the General and Shortcuts pages, kept beside the
+// ViewModel that owns the values rather than in the page code-behind. Each entry
+// declares one setting — its kind, its localization key, and typed selectors onto
+// this VM's own properties — and SettingsComposer turns the list into
+// SettingsCards. Each reset default reads the matching AppSettings POCO
+// initializer, so the literal defaults live in one place.
 public partial class GeneralViewModel
 {
     public IReadOnlyList<SettingDescriptor> AppearanceSettings =>
@@ -29,36 +30,58 @@ public partial class GeneralViewModel
             defaultValue: () => new AppearanceSettings().Theme),
     ];
 
-    // Record, then one card per module switch of the tray panel, in the panel's
-    // order. Record may not be cleared, it is the dictation's keyboard entry
-    // point; a toggle may.
-    public IReadOnlyList<SettingDescriptor> HotkeySettings =>
+    // ── Shortcuts ────────────────────────────────────────────────────────────
+    //
+    // One list per section of the Shortcuts page, grouped by what the action
+    // drives. Record may not be cleared, it is the dictation's keyboard entry
+    // point; a toggle may. The id lists mirror the descriptor lists so the page
+    // can hide a section whose every action is absent.
+    public static readonly IReadOnlyList<string> DictationHotkeyIds = ["record", "rewrite"];
+    public static readonly IReadOnlyList<string> InputHotkeyIds = ["precision-scroll", "trackpad", "autocorrect"];
+    public static readonly IReadOnlyList<string> DisplayHotkeyIds = ["taskbar-cover", "ambient"];
+
+    public IReadOnlyList<SettingDescriptor> DictationHotkeys =>
     [
         Hotkey("record", "GeneralHotkeyRecordCard", () => RecordHotkey, v => RecordHotkey = v,
             () => new HotkeysSettings().Record, allowUnbound: false),
+        Hotkey("rewrite", "GeneralHotkeyRewriteCard", () => RewriteHotkey, v => RewriteHotkey = v,
+            () => new HotkeysSettings().Rewrite),
+    ];
+
+    public IReadOnlyList<SettingDescriptor> InputHotkeys =>
+    [
         Hotkey("precision-scroll", "GeneralHotkeyPrecisionScrollCard", () => PrecisionScrollHotkey, v => PrecisionScrollHotkey = v,
             () => new HotkeysSettings().PrecisionScroll),
         Hotkey("trackpad", "GeneralHotkeyTrackpadCard", () => TrackpadHotkey, v => TrackpadHotkey = v,
             () => new HotkeysSettings().Trackpad),
-        Hotkey("taskbar-cover", "GeneralHotkeyTaskbarCoverCard", () => TaskbarCoverHotkey, v => TaskbarCoverHotkey = v,
-            () => new HotkeysSettings().TaskbarCover),
         Hotkey("autocorrect", "GeneralHotkeyAutocorrectCard", () => AutocorrectHotkey, v => AutocorrectHotkey = v,
             () => new HotkeysSettings().Autocorrect),
-        Hotkey("rewrite", "GeneralHotkeyRewriteCard", () => RewriteHotkey, v => RewriteHotkey = v,
-            () => new HotkeysSettings().Rewrite),
+    ];
+
+    public IReadOnlyList<SettingDescriptor> DisplayHotkeys =>
+    [
+        Hotkey("taskbar-cover", "GeneralHotkeyTaskbarCoverCard", () => TaskbarCoverHotkey, v => TaskbarCoverHotkey = v,
+            () => new HotkeysSettings().TaskbarCover),
         Hotkey("ambient", "GeneralHotkeyAmbientLightCard", () => AmbientLightHotkey, v => AmbientLightHotkey = v,
             () => new HotkeysSettings().AmbientLight),
     ];
 
+    // A section title over no card reads as a broken page, so the page hides the
+    // section whole when none of its actions was built.
+    public static bool AnyHotkeyAvailable(IReadOnlyList<string> ids)
+        => ids.Any(IsHotkeyActionAvailable);
+
     // Every hotkey action with the card that edits it, for the duplicate check.
+    // The check spans the three sections: a chord is global, whatever section
+    // its card sits in.
     private (string Id, string LabelKey, Func<HotkeyChord?> Get)[] HotkeyEntries =>
     [
         ("record", "GeneralHotkeyRecordCard", () => RecordHotkey),
+        ("rewrite", "GeneralHotkeyRewriteCard", () => RewriteHotkey),
         ("precision-scroll", "GeneralHotkeyPrecisionScrollCard", () => PrecisionScrollHotkey),
         ("trackpad", "GeneralHotkeyTrackpadCard", () => TrackpadHotkey),
-        ("taskbar-cover", "GeneralHotkeyTaskbarCoverCard", () => TaskbarCoverHotkey),
         ("autocorrect", "GeneralHotkeyAutocorrectCard", () => AutocorrectHotkey),
-        ("rewrite", "GeneralHotkeyRewriteCard", () => RewriteHotkey),
+        ("taskbar-cover", "GeneralHotkeyTaskbarCoverCard", () => TaskbarCoverHotkey),
         ("ambient", "GeneralHotkeyAmbientLightCard", () => AmbientLightHotkey),
     ];
 

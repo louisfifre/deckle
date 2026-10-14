@@ -323,6 +323,8 @@ public sealed partial class SettingsWindow : Window
     {
         DeckleSettingsSource.Log.OpenLogsFromFooter();
         OnShowLogsRequested?.Invoke();
+        if (pageType == typeof(HotkeysPage))
+            return [new(Loc.GetFrom("Deckle.Settings", "SettingsNavHotkeys/Content"), null)];
     }
 
     // ── NavigationView: pane sync by DisplayMode ─────────────────────────

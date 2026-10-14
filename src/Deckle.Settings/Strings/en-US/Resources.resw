@@ -288,10 +288,11 @@
 
   <!-- ─── Settings shell ─────────────────────────────────────────────
        NavigationView host with a native TitleBar. The TitleBar carries
-       the pane toggle and the Logs command (RightHeader); the General
-       nav item is the sole static entry, every other page comes from
-       SettingsModuleRegistry. Window.Title XAML attribute is overridden
-       in code-behind, only the TitleBar control title is loc'd. -->
+       the pane toggle and the Logs command (RightHeader); Home, General
+       and Shortcuts are the static nav entries, every other page comes
+       from SettingsModuleRegistry. Window.Title XAML attribute is
+       overridden in code-behind, only the TitleBar control title is
+       loc'd. -->
   <data name="SettingsTitleBar.Title" xml:space="preserve">
     <value>Deckle Settings</value>
   </data>
@@ -300,6 +301,9 @@
   </data>
   <data name="SettingsNavGeneral.Content" xml:space="preserve">
     <value>General</value>
+  </data>
+  <data name="SettingsNavHotkeys.Content" xml:space="preserve">
+    <value>Shortcuts</value>
   </data>
   <!-- The Home page: empty until it earns content (decision 15). -->
   <data name="HomePageHeader.Title" xml:space="preserve">
@@ -347,12 +351,27 @@
 
 
 
-  <!-- ─── GeneralPage ────────────────────────────────────────────────
-       First page in the Settings nav. Page title, page subtitle, then
-       sections in order: Shortcuts, Appearance, Startup, Recording,
-       Telemetry, Back up & restore, Application data. -->
-  <!-- Hotkeys section: one composed card per hotkey action
-       (GeneralViewModel.HotkeySettings). Module names as the code names them. -->
+  <!-- ─── HotkeysPage ────────────────────────────────────────────────
+       The Shortcuts page: one composed card per hotkey action, in three
+       sections (GeneralViewModel.DictationHotkeys, InputHotkeys,
+       DisplayHotkeys). The card keys keep their GeneralHotkey* prefix from
+       the time the cards sat on GeneralPage. Module names as the code
+       names them. -->
+  <data name="HotkeysPageHeader.Title" xml:space="preserve">
+    <value>Shortcuts</value>
+  </data>
+  <data name="HotkeysPageHeader.Description" xml:space="preserve">
+    <value>One key combination per action, active in every app. A combination two actions share goes to the first one registered.</value>
+  </data>
+  <data name="HotkeysPageDictationSection.Title" xml:space="preserve">
+    <value>Dictation</value>
+  </data>
+  <data name="HotkeysPageInputSection.Title" xml:space="preserve">
+    <value>Input</value>
+  </data>
+  <data name="HotkeysPageDisplaySection.Title" xml:space="preserve">
+    <value>Display and lights</value>
+  </data>
   <data name="GeneralHotkeyRecordCard.Header" xml:space="preserve">
     <value>Record</value>
   </data>
@@ -400,6 +419,11 @@
   <data name="GeneralHotkeyAlreadyUsed_Format" xml:space="preserve">
     <value>Already used by {0}</value>
   </data>
+
+  <!-- ─── GeneralPage ────────────────────────────────────────────────
+       Second page in the Settings nav, after Home. Page header, then
+       sections in order: Appearance, Startup, Updates, Application
+       data. -->
   <data name="GeneralAppThemeCard.Header" xml:space="preserve">
     <value>App theme</value>
   </data>
@@ -488,7 +512,7 @@
     <value>Data folder</value>
   </data>
   <data name="GeneralDataFolderCard.Description" xml:space="preserve">
-    <value>Settings, telemetry, models, and native libraries — everything mutable lives here. Defaults to %LOCALAPPDATA%\Deckle\.</value>
+    <value>Settings, telemetry, models, and native libraries — everything mutable lives here.</value>
   </data>
   <data name="GeneralDataFolderOpenButton.Content" xml:space="preserve">
     <value>Open</value>
@@ -527,10 +551,7 @@
     <value>General</value>
   </data>
   <data name="GeneralPageHeader.Description" xml:space="preserve">
-    <value>Hotkeys, appearance, behaviour, startup, backups and application data.</value>
-  </data>
-  <data name="GeneralPageHotkeysSection.Title" xml:space="preserve">
-    <value>Hotkeys</value>
+    <value>Appearance, startup, updates, backups and application data.</value>
   </data>
   <data name="GeneralPageAppearanceSection.Title" xml:space="preserve">
     <value>Appearance</value>

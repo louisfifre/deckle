@@ -1492,7 +1492,9 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   ├── GeneralPage.xaml
 │   │   │   ├── GeneralPage.xaml.cs
 │   │   │   ├── HomePage.xaml
-│   │   │   └── HomePage.xaml.cs
+│   │   │   ├── HomePage.xaml.cs
+│   │   │   ├── HotkeysPage.xaml
+│   │   │   └── HotkeysPage.xaml.cs
 │   │   ├── Persistence/
 │   │   │   ├── AppSettings.cs
 │   │   │   ├── SettingsBackupService.cs

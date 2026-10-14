@@ -70,7 +70,7 @@ public partial class GeneralViewModel : ObservableObject
         // Modifier flags and scancode only: no typed text reaches the log.
         DeckleSettingsUxSource.Log.SettingChanged(
             name, value is { } c ? $"{c.Modifiers}+0x{c.ScanCode:X}" : "unbound");
-        PushToSettings();
+        PushHotkeysToSettings();
     }
 
     // ── Startup ──────────────────────────────────────────────────────────────
@@ -198,12 +198,34 @@ public partial class GeneralViewModel : ObservableObject
         RefreshBackups();
     }
 
+    // The Shortcuts page's reload: the hotkeys alone. Load() also probes
+    // autostart, which can start schtasks.exe on the UI thread, and lists the
+    // backups, two costs a page that shows neither has no reason to pay on every
+    // visit.
+    public void LoadHotkeys()
+    {
+        _isSyncing = true;
+        try { LoadHotkeys(SettingsService.Instance.Current.Hotkeys); }
+        finally { _isSyncing = false; }
+    }
+
+    // The General page and the Shortcuts page each hold their own instance, and
+    // the Shortcuts one loads only the hotkeys (LoadHotkeys()). So each push
+    // writes only its own half: a hotkey edit must not write the Shortcuts
+    // instance's never-loaded theme or backup folder over the user's, and an
+    // edit on General must not write hotkeys it last read a visit ago.
     private void PushToSettings()
     {
         var shell = SettingsService.Instance.Current;
         shell.Appearance.Theme = Theme;
         shell.Paths.BackupDirectory = BackupDirectory ?? "";
         shell.Updates.AutoCheckEnabled = UpdateAutoCheckEnabled;
+        SettingsService.Instance.Save();
+    }
+
+    private void PushHotkeysToSettings()
+    {
+        var shell = SettingsService.Instance.Current;
         shell.Hotkeys.Record = RecordHotkey;
         shell.Hotkeys.AmbientLight = AmbientLightHotkey;
         shell.Hotkeys.Autocorrect = AutocorrectHotkey;

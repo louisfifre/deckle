@@ -18,15 +18,6 @@
                                             x:Uid="GeneralPageHeader"
                                             ResetAllRequested="ResetAll_Click" />
 
-                <!-- ── Hotkeys ─────────────────────────────────────────────── -->
-                <catalog:SettingsSection x:Name="HotkeysSection"
-                                         x:Uid="GeneralPageHotkeysSection"
-                                         HasReset="True"
-                                         ResetRequested="ResetHotkeys_Click">
-                    <StackPanel x:Name="HotkeysHost"
-                                Spacing="{StaticResource SettingsCardSpacing}" />
-                </catalog:SettingsSection>
-
                 <!-- ── Appearance ──────────────────────────────────────────── -->
                 <catalog:SettingsSection x:Name="AppearanceSection"
                                          x:Uid="GeneralPageAppearanceSection"
