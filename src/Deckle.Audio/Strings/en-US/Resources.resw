@@ -233,32 +233,6 @@
     <value>Couldn't record or play back. Check the microphone above and your output device, then try again.</value>
   </data>
 
-  <!-- Composed voice-level group + sliders (composer label keys) -->
-  <data name="GeneralVoiceLevelExpander.Header" xml:space="preserve">
-    <value>Set the level window manually</value>
-  </data>
-  <data name="GeneralVoiceLevelExpander.Description" xml:space="preserve">
-    <value>The dBFS range the recording HUD uses to map your microphone signal onto the on-screen level. Leave this off to let auto-calibration set the range from your measured percentiles; turn it on to set the floor, ceiling, and curve yourself.</value>
-  </data>
-  <data name="GeneralVoiceLevelFloorCard.Header" xml:space="preserve">
-    <value>Floor</value>
-  </data>
-  <data name="GeneralVoiceLevelFloorCard.Description" xml:space="preserve">
-    <value>Below this level, the HUD reads silence. Set just under the percentile of your normal pauses (typical: -55 dBFS).</value>
-  </data>
-  <data name="GeneralVoiceLevelCeilingCard.Header" xml:space="preserve">
-    <value>Ceiling</value>
-  </data>
-  <data name="GeneralVoiceLevelCeilingCard.Description" xml:space="preserve">
-    <value>At or above this level, the HUD saturates. Set just below your loudest peaks (typical: -32 dBFS).</value>
-  </data>
-  <data name="GeneralVoiceLevelCurveCard.Header" xml:space="preserve">
-    <value>Curve</value>
-  </data>
-  <data name="GeneralVoiceLevelCurveCard.Description" xml:space="preserve">
-    <value>Shape of the response between floor and ceiling. 1.0 = linear (recommended). Higher = compress quiet, expand loud. Lower = the opposite.</value>
-  </data>
-
   <!-- Audio input device combo (Loc.Get / Loc.Format from code-behind) -->
   <data name="Settings_AudioInput_SystemDefault" xml:space="preserve">
     <value>System default</value>

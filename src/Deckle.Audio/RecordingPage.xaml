@@ -143,13 +143,6 @@
                                  IsClosable="False"
                                  Severity="Error"
                                  IsOpen="{x:Bind ViewModel.ListeningTestFailed, Mode=OneWay}" />
-
-                        <!-- Voice level window, composed. The master toggle reads "set
-                             the window manually", so it projects the inverse of
-                             LevelWindowAutoCalibration. The VM setters push the sliders
-                             live into AudioLevelMapper. -->
-                        <StackPanel x:Name="VoiceLevelHost"
-                                    Spacing="{StaticResource SettingsCardSpacing}" />
                     </StackPanel>
                 </catalog:SettingsSection>
 

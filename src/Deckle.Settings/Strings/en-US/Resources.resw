@@ -540,10 +540,10 @@
   </data>
   <!-- ─── RecordingPage ───────────────────────────────────────────────
        Page extracted from GeneralPage in slice S3. Owns microphone
-       device, auto-paste, voice level window calibration, overlay HUD.
-       Card-level x:Uid keys (GeneralMicrophoneCard, GeneralVoiceLevel*,
-       GeneralOverlay*) reused as-is — General* prefix is a historical
-       naming artifact, renaming would touch every translation file. -->
+       device, auto-paste, overlay HUD. Card-level x:Uid keys
+       (GeneralMicrophoneCard, GeneralOverlay*) reused as-is — General*
+       prefix is a historical naming artifact, renaming would touch every
+       translation file. -->
 
   <data name="GeneralPageApplicationDataSection.Title" xml:space="preserve">
     <value>Application data</value>

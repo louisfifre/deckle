@@ -27,7 +27,6 @@ public sealed partial class RecordingPage : Page
         NavigationCacheMode = NavigationCacheMode.Required;
         ComposeRecordingLimitSection();
         ComposePreprocessingSection();
-        ComposeVoiceLevelSection();
         ComposeTelemetrySection();
         LoadAndSync();
     }
@@ -63,16 +62,6 @@ public sealed partial class RecordingPage : Page
         _preprocessingComposer.DirtyChanged += OnComposedDirtyChanged;
     }
 
-    // ── Composed voice-level group ────────────────────────────────────────────
-    private SettingsComposer? _voiceLevelComposer;
-
-    private void ComposeVoiceLevelSection()
-    {
-        _voiceLevelComposer = new SettingsComposer(VoiceLevelHost, ViewModel);
-        _voiceLevelComposer.Compose(ViewModel.VoiceLevelSettings);
-        _voiceLevelComposer.DirtyChanged += OnComposedDirtyChanged;
-    }
-
     // ── Composed telemetry section ────────────────────────────────────────────
     //
     // Deliberately not wired into the section-reset link: a privacy opt-in is
@@ -95,8 +84,7 @@ public sealed partial class RecordingPage : Page
     {
         bool dirty =
             (_recordingLimitComposer?.IsDirty() ?? false) ||
-            (_preprocessingComposer?.IsDirty() ?? false) ||
-            (_voiceLevelComposer?.IsDirty() ?? false);
+            (_preprocessingComposer?.IsDirty() ?? false);
         DefaultsSection.IsResetEnabled = dirty;
         Header.IsResetAllEnabled = dirty;
     }
@@ -173,7 +161,6 @@ public sealed partial class RecordingPage : Page
     {
         _recordingLimitComposer?.ResetAll();
         _preprocessingComposer?.ResetAll();
-        _voiceLevelComposer?.ResetAll();
 
         ViewModel.AudioInputDeviceId = -1;
         _initializing = true;

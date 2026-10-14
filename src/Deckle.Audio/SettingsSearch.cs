@@ -19,10 +19,7 @@ namespace Deckle.Audio;
 // descriptors, hand-authored cards named as their x:Uid.
 //
 // Maintenance contract: one card added to the page — composed or bespoke — is one
-// entry added here. The individual voice-level sliders are deliberately absent: they
-// belong to the GeneralVoiceLevelExpander group and stay collapsed while
-// auto-calibration is on, so a hit on one could not be brought into view; the
-// group card is the reliable, single search target for the whole window.
+// entry added here.
 public static class SettingsSearch
 {
     public static IReadOnlyList<SettingSearchEntry> Entries { get; } =
@@ -61,13 +58,6 @@ public static class SettingsSearch
         {
             LabelKey = "RecordingPageListeningTestCard",
             Keywords = ["listen", "playback", "hear", "speakers", "headphones"],
-        },
-
-        // Voice-level window group (composed Group — the sliders live under it).
-        new SettingSearchEntry
-        {
-            LabelKey = "GeneralVoiceLevelExpander",
-            Keywords = ["gain", "sensitivity", "loudness", "threshold"],
         },
 
         // Microphone-telemetry opt-in (composed).
