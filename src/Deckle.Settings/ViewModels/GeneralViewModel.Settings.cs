@@ -26,7 +26,6 @@ public partial class GeneralViewModel
                 ("Light", "GeneralThemeLight"),
                 ("Dark", "GeneralThemeDark"),
             ],
-            glyph: Glyphs.Theme,
             defaultValue: () => new AppearanceSettings().Theme),
     ];
 
@@ -68,7 +67,6 @@ public partial class GeneralViewModel
         Func<HotkeyChord?> defaultValue, bool allowUnbound = true)
         => Setting.Hotkey(labelKey, get, set,
             new HotkeyArgs(allowUnbound),
-            glyph: Glyphs.Shortcut,
             visibleWhen: () => IsHotkeyActionAvailable(id),
             defaultValue: defaultValue,
             advisory: () => DuplicateHotkeyAdvisory(id, get()));
@@ -104,7 +102,6 @@ public partial class GeneralViewModel
         Setting.Toggle("GeneralAutostartCard",
             () => AutostartEnabled,
             value => AutostartEnabled = value,
-            glyph: Glyphs.Launch,
             defaultValue: () => StartupService.DefaultEnabled),
     ];
 
@@ -115,7 +112,6 @@ public partial class GeneralViewModel
         Setting.Toggle("GeneralUpdateAutoCheckCard",
             () => UpdateAutoCheckEnabled,
             value => UpdateAutoCheckEnabled = value,
-            glyph: Glyphs.Refresh,
             defaultValue: () => new UpdatesSettings().AutoCheckEnabled),
     ];
 
@@ -127,7 +123,6 @@ public partial class GeneralViewModel
             new PathArgs(
                 FolderPickerMode.Configure,
                 DefaultPath: () => AppPaths.SettingsBackupDirectory),
-            glyph: Glyphs.Folder,
             defaultValue: () => new PathsSettings().BackupDirectory),
     ];
 }
