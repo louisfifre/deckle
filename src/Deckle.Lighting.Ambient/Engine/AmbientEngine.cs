@@ -267,6 +267,18 @@ public sealed partial class AmbientEngine : IAsyncDisposable
     public Windows.Graphics.SizeInt32? SourceSize
         => _capture is { IsRunning: true } capture ? capture.ContentSize : null;
 
+    /// <summary>Frames the capture has delivered since it started, or zero
+    /// while no capture runs. The preview reads it twice to measure the
+    /// cadence the capture really holds, against the rate the user set.</summary>
+    public long CapturedFrames
+        => _capture is { IsRunning: true } capture ? capture.FrameCount : 0;
+
+    /// <summary>True when the connected output is a live stream (Hue
+    /// Entertainment), false when it is a persistent-state transport
+    /// (REST), null while no output is connected. The preview names the
+    /// transport so a REST fallback is seen, not guessed.</summary>
+    public bool? OutputIsLiveStream => _output?.RequiresContinuousColorUpdates;
+
     // Error is a transient blip : the engine raises Off right after it,
     // so a subscriber gets two consecutive callbacks (Error then Off).
     private AmbientEngineState _state = AmbientEngineState.Off;
