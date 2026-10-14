@@ -1320,7 +1320,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   ├── LlmGeneralViewModel.cs
 │   │   │   └── LlmGeneralViewModel.Settings.cs
 │   │   ├── Deckle.Llm.Rewrite.csproj
-│   │   ├── GLOSSARY.md  — glossary-deckle-llm-rewrite Rewrite service vocabulary — the single service every rewrite goes through, who…
+│   │   ├── GLOSSARY.md  — glossary-deckle-llm-rewrite Rewrite service vocabulary, the single service every rewrite goes through, whoe…
 │   │   ├── LlmSettings.cs
 │   │   ├── LlmSettingsMigrations.cs
 │   │   ├── LlmSettingsModule.cs
