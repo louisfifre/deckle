@@ -95,11 +95,12 @@ $RepoUrl  = 'https://github.com/louisfifre/deckle'
 # whatever its type. A revert stays a Removed unless it undoes a commit of
 # the same range (see Get-GroupedEntries).
 $TypeToGroup = [ordered]@{
-    feat     = 'Added'
-    fix      = 'Fixed'
-    perf     = 'Changed'
-    refactor = 'Changed'
-    revert   = 'Removed'
+    feat      = 'Added'
+    fix       = 'Fixed'
+    perf      = 'Changed'
+    refactor  = 'Changed'
+    deprecate = 'Deprecated'   # Deckle's one type beyond the universal set
+    revert    = 'Removed'
 }
 # Keep a Changelog order.
 $GroupOrder = @('Added', 'Changed', 'Deprecated', 'Removed', 'Fixed', 'Security')

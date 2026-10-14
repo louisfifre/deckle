@@ -72,6 +72,7 @@ try {
     $null = Add-Commit $root 'revert(audio): remove the released capability' 'seven' "This reverts commit $released."
     $null = Add-Commit $root 'revert(scripts): undo a step by hand' 'eight'
     $null = Add-Commit $root 'feat(home): accumulated feature' 'nine'
+    $null = Add-Commit $root 'deprecate(audio): announce the end of the legacy input path' 'ten'
     Set-PublishedTags $root @('v0.4.0', 'v0.5.0')
 
     $full = Invoke-Changelog $root
@@ -85,6 +86,9 @@ try {
     Assert-Contains $unreleased '- **audio:** Remove the released capability' 'A revert of a released capability stays a Removed.'
     Assert-Contains $unreleased '- **scripts:** Undo a step by hand' 'A revert without the pointer stays a Removed.'
     Assert-Contains $unreleased '- **home:** Accumulated feature' 'Other lines of the accumulator are untouched.'
+    Assert-Contains $unreleased '### Deprecated' 'A deprecate commit must open the Deprecated group.'
+    Assert-Contains $unreleased '- **audio:** Announce the end of the legacy input path' 'A deprecate commit lands under Deprecated.'
+    if ($unreleased.IndexOf('### Deprecated') -gt $unreleased.IndexOf('### Removed')) { throw 'Deprecated must precede Removed, as Keep a Changelog orders them.' }
     Assert-Contains (Get-Section $full '## [0.5.0]') '- **audio:** Released capability' 'A frozen section keeps the line a later revert undoes.'
 
     # An accumulator holding only a reverted feature has nothing to announce.
