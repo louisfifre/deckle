@@ -1,48 +1,52 @@
-# Deckle — Settings: controls and behaviour
+---
+description: the control for each nature of value and the finer magnitude, path, fold, reset and confirmation rules, when choosing a control or wiring a reset
+---
 
-A companion to the deckle-settings-ux skill: the control catalogue and the finer behaviour the skill states only in principle. It names value-natures and gestures, not a UI framework's classes.
+The annex of the deckle-settings-ux skill. It names natures of value and gestures, not a UI framework's classes.
 
 ## The control catalogue
 
-By the value's nature:
-- on/off → a switch; its state shown on the control itself (a shape legible in black-and-white), its label fixed and naming what it governs.
-- one of a few mutually exclusive options → radio buttons, every option laid flat and visible; more than a few → a dropdown.
-- a numeric magnitude → one control, a field with an optional slider (see below).
-- a relationship or shape, a curve, an envelope → its values as fields, with a drawing that shows them, never the drawing alone.
-- free text → one shared input; multi-line only when the value wraps.
-- a path or folder → one normalized picker (see below).
-- the fine configuration of something activatable → an inline fold revealed only when it is on.
-- a heavy multi-step action → its own navigated sub-page, returnable from the title bar, never a dropdown or a modal.
+The nature of the value picks the control.
 
-## Magnitude — one control, a chosen fineness
+- An on/off value takes a switch. Its state shows on the control itself, in a shape legible in black and white, and its label stays fixed and names what it governs.
+- Mutually exclusive options take radio buttons when seeing them all at once helps the choice, every option laid flat and visible, and a dropdown otherwise.
+- A numeric magnitude takes one control, a field with an optional slider, as the magnitude section says.
+- A relationship or a shape, a curve, an envelope, takes its values as fields, with a drawing that shows them, never the drawing alone.
+- Free text takes one shared input, multi-line only when the value wraps.
+- A path or a folder takes one normalized picker, as the path section says.
+- The fine configuration of something activatable takes an inline fold revealed only when it is on.
+- A heavy multi-step action takes its own page in the rail, reached from a card and left through the breadcrumb, never a dropdown or a modal.
+
+## Magnitude, one control with a grain from its range
 
 One control, a number field that is also the readout, with a slider beside it when the value earns a gesture. A figure that is typed and never swept, a count or a duration nobody drags, keeps the field alone. It is the same control without its slider, not a second one. A count is declared as such, so its grain never drops below one.
 
-A linear magnitude is declared by min, max, unit, and a desired fineness (three levels, from coarse to fine) — nothing else is hand-numbered. The fineness sets how many steps should span the range (an order of ten, a hundred, a thousand). The step grain is the value on the 1-2-5 ladder (…, 0.05, 0.1, 0.2, 0.5, 1, 2, 5, 10, …) nearest — as a ratio, not an absolute gap — to (span ÷ target). From that grain the rest follows: the readout shows only the digits the grain implies; the slider steps by the grain; a fine nudge moves one grain, a coarse one ten; the field takes any multiple of the grain in range. Powers of ten are just the ladder's round rungs, not the whole ladder.
+A linear magnitude is declared by its minimum, its maximum and its unit. Nothing else is hand-numbered. The grain is the value on the 1-2-5 ladder (0.05, 0.1, 0.2, 0.5, 1, 2, 5, 10 and so on) at or just above the span divided by about forty, so the slider has about forty detents and the grain reads as a round number. From that grain the rest follows. The readout shows only the digits the grain implies, the slider steps by the grain, and the field's arrows nudge by it. The field takes any value in range at the displayed precision.
 
-A geometric magnitude — one whose useful steps multiply rather than add (memory sizes, frequencies: 1, 2, 4, … 256) — is not linear: it is declared by its list of stops. The slider indexes the list (snapping to a stop), the field shows the formatted value. The grain rule above does not apply.
+A geometric magnitude is one whose useful steps multiply rather than add, such as memory sizes or frequencies (1, 2, 4, up to 256). It is declared by its list of stops. The slider indexes the list and snaps to a stop, and the field shows the formatted value. The grain rule above does not apply.
 
-## Path — a picker, its affordances by ownership
+## Path, a picker whose affordances follow ownership
 
-One normalized picker, its affordances set by who owns the location and how the user reaches it:
-- read-only, with Change + Open: the user repoints by browsing.
-- typeable, with Change + Open: the faster route when the user already knows the path and pastes it (a models folder carried from another machine) rather than browsing to it.
-- open-only, a way in but no Change: a location the app owns and should not move.
+One normalized picker. Its affordances follow who owns the location and how the user reaches it.
 
-## Grouping — a fold, with or without a master
+- Read-only, with Change and Open. The user repoints by browsing.
+- Typeable, with Change and Open. The faster route when the user already knows the path and pastes it, such as a models folder carried from another machine.
+- Open-only, a way in but no Change. A location the app owns and should not move.
 
-- a fold governed by a master switch: its settings are revealed when the master is on, hidden when off (masked, never greyed). Use it when one switch commands everything inside. (We call it a group.)
-- a fold that only collects related settings, no master: each stands on its own condition. Use it when there is no single on/off to command the whole. (A section.)
-- a fold whose header carries a choice: its cards change with the choice, each shown under the value it belongs to, and a note stands in when the chosen value has nothing to set. Use it when a choice decides which settings exist. (A mode.)
+## Grouping, a fold with or without a master
 
-## Reset — three levels, one default
+- A fold governed by a master switch. Its settings are revealed when the master is on and hidden when it is off. Use it when one switch commands everything inside. We call it a group.
+- A fold that only collects related settings, with no master. Each setting stands on its own condition. Use it when no single switch commands the whole.
+- A fold whose header carries a choice. Its cards change with the choice, each shown under the value it belongs to, and a note stands in when the chosen value has nothing to set. Use it when a choice decides which settings exist. We call it a mode.
 
-Offered at three nested levels, each appearing on hover and active only once something has changed: a single value, its group or section, the whole surface. The default has one source: the same declaration feeds both what the reset writes and the "has it changed?" test — never two copies that could disagree. When the default is a runtime resolution (the system device, an auto-path), that source is the sentinel meaning "resolve at runtime", not the resolved value; the reset rewrites the sentinel, and change is tested against it.
+## Reset, the finer rules
 
-A single-value reset is instant. A group or surface reset writes many values at once — a group reset returns its master too, which may switch the group off and hide its settings — so it is confirmed before it acts.
+The same declaration feeds what the reset writes and the test that says whether the value changed, so the two can never disagree. When the default is resolved at runtime, such as the system device or an automatic path, the source is the sentinel that means "resolve at runtime", not the resolved value. The reset rewrites the sentinel, and change is tested against it.
 
-## Confirmation — on irreversibility
+A single-value reset is instant. A group or surface reset writes many values at once, and a group reset returns its master too, which may switch the group off and hide its settings. Whether it is confirmed first is carried by the settings it resets, never by the block.
 
-Set by how reversible the action is, never by where the setting sits. A single-value edit or reset is trivially reversible — no gate. An action that wipes many values (group or surface reset), clears a pairing, deletes on disk, or overwrites live state is confirmed first.
+## Confirmation, the finer rules
 
-The gate is copy-agnostic: the caller supplies the wording (title, body, verb); the service owns only the shared Cancel. When the action is destructive, the safe button is the default — Enter commits nothing, the user reaches for the verb on purpose.
+A single-value edit or reset is trivially reversible and has no gate. An action that wipes many values, clears a pairing, deletes on disk or overwrites live state is confirmed first.
+
+The gate owns no wording. The caller supplies the title, the body and the verb, and the service owns only the shared Cancel. When the action is destructive, the safe button is the default. Enter commits nothing, and the user reaches for the verb on purpose.

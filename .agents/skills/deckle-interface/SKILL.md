@@ -1,26 +1,24 @@
 ---
 name: deckle-interface
-description: Render the visual interface at Microsoft first-party level — native primitives, theme resources, system materials. Invoke before touching any UI surface.
+description: Use when you build or change anything a person sees in a Deckle window, from a XAML page to the HUD, to render it the way Microsoft ships it, from native controls, theme resources and system materials.
 ---
 
-# Deckle — Interface
+## Why
 
-## Intent
+Windows already draws most of what an interface needs, and what it draws follows the theme, the contrast and the accent on its own. Reaching for it first is what keeps Deckle at the level AGENTS.md sets. The catalogue of controls and theme resources is generic knowledge, so it lives in `winui-app` and Microsoft Learn, not here.
 
-Render the visual interface at the level Microsoft would ship — as reflexes, not by reinventing what Windows already gives. The exhaustive WinUI control and theme-resource catalog is generic knowledge: reach for `winui-app` and Microsoft Learn, not a copy here.
+## Statement
 
-## How
+Before drawing anything, even what looks simple, find the Windows primitive, control, theme resource or canonical pattern that already covers the need. Something drawn by hand that Windows already draws is the sign to look again. When Windows has nothing for the need, look for the component Deckle already has. A need that no existing component covers means stop, the way a fourth level means rework. Ask first whether the need can be reframed on what exists, and say so before building anything new.
 
-Native primitives first. Before drawing anything — even what looks simple — ask which Windows primitive, control, theme resource, or canonical pattern already covers the need. Reinvention tells: a manual border where a Card resource exists, a hand-drawn shadow instead of the DWM shadow, a numeric radius instead of the corner-radius resource, the wrong backdrop for the window's lifetime, custom caption buttons instead of the native TitleBar.
+Every design value comes from a theme resource, so it follows light, dark, contrast and accent by itself. A value with no theme resource means the primitive is wrong. Go back to the spec and find the right control.
 
-Zero magic values. No hex colour, no numeric corner radius, no arbitrary thickness, no hand-computed shadow — everything goes through theme resources that follow light, dark, contrast and accent on their own. A design value with no theme-resource equivalent signals the wrong primitive — go back to the spec and find the right control.
+The material follows the surface's lifetime. A window the user works in for a long time wears Mica. A surface that appears briefly over other work wears Acrylic. DWM draws the shadows and rounds the corners, not XAML.
 
-System-managed materials. Mica on long-lived windows, Acrylic on transients (popups, menus, dialogs, HUD, notifications); DWM owns the shadows and the rounded corners, not XAML.
-
-Linear animations by default. No custom easing unless explicitly asked — the default curve is linear, and curves are introduced deliberately, one validated at a time.
+Animations run on a linear curve. Another curve enters only when the maintainer asks for it, and each one is validated on its own. Every animation follows the Windows animation preference and snaps to its end when the person has turned animations off.
 
 One `x:Uid` serves one element type. MRT applies every property of the `.resw` entry to each element that carries the Uid, and a property the element does not have crashes the page at load.
 
-Respect deliberate design choices. An existing visual element — shadow, fade, stroke, padding, radius — is a deliberate asset, not a cost to optimize away. Find a solution that preserves it, never one that drops it because it "brings nothing".
+An existing visual element was chosen on purpose, whatever its kind. Find a solution that keeps it.
 
-When in doubt, three live references: the WinUI Gallery for a control's canonical behaviour, PowerToys for HUD/tray/autostart patterns, Windows 11 Settings and Explorer for adaptive navigation, settings cards, auto-save and TitleBar.
+When in doubt, check against three live references. The WinUI Gallery shows a control's canonical behaviour. PowerToys shows how a resident utility handles its HUD, tray and autostart. Windows 11 Settings and Explorer show adaptive navigation, settings cards, auto-save and the TitleBar.

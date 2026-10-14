@@ -48,6 +48,14 @@ try {
             if ($null -ne $result) {
                 $mainResultTitle = $result.Title
                 $mainResultLines = @($result.Lines)
+                # The result stays on screen and the next move is to leave: seat
+                # the selection on Quit so one Enter closes the launcher, which
+                # otherwise keeps its host busy while it waits.
+                $quitSelection = Get-DeckleQuitSelection -MenuRows $mainRows
+                if ($quitSelection) {
+                    $mainSelection.Index = $quitSelection.Index
+                    $mainSelection.PreferredColumn = $quitSelection.PreferredColumn
+                }
             }
         } else {
             switch ($v) {
