@@ -11,7 +11,7 @@ Vocabulary of the input layer. The chain reads from the bottom up. The device em
 
 **Contact frame** :
 A complete snapshot of the touchpad contacts, assembled from one Raw Input read, that gives each finger an identifier and a position, plus the device's own contact count and scan time. It is the unit the recognizer consumes. Unlike a report, it is always whole, even when the device splits it across several HID messages.
-_Avoid_ : report (the HID transport message, possibly partial), sample.
+_Avoid_ : report (the HID transport message, possibly partial), sample (one measurement, or one audio value).
 
 **Report** :
 In HID, the message a device sends over its transport. A report may carry only part of the contacts, so it is not a contact frame.
