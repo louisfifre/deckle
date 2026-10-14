@@ -18,7 +18,7 @@ _Avoid_ : end-to-end, e2e (they cover different things elsewhere).
 
 **observability** :
 A test that exercises a sequence of EventSource events through an internal `TestEventListener`. It checks that the code emits the right providers, event names, levels, keywords and payloads. The category is native to Deckle because of the weight of its EventSource pipeline.
-_Avoid_ : log assertion, telemetry test.
+_Avoid_ : log assertion (checks log text, not events), telemetry test (usage data, not events).
 
 **regression** :
 A test added after a specific bug was fixed. It reproduces the conditions of the bug, passes because the fix holds, and fails if the fix is dropped. It exists to pin the fix in time, not to cover a nominal behavior.
@@ -42,7 +42,7 @@ A test that needs an interactive Windows workstation and a human, or a stand-in 
 
 **maintenance** :
 A test that is in fact an explicit maintainer operation, hosted by the test runner because it composes existing library modules and benefits from assertions, such as regenerating a derived lexicon, mining a collected corpus or refreshing a calibrated artifact. It may read local maintainer data or write versioned or runtime artifacts, so it never runs during an ordinary `dotnet test`.
-_Avoid_ : gesture, tool test.
+_Avoid_ : gesture (already a touchpad and an MCP word), tool test (a test of a tool, not an operation).
 
 **Gesture** :
 In ordinary use, a single act someone performs by hand. A maintainer operation hosted by the test runner is a maintenance test, and Deckle already uses the word for touchpad gestures and for the operations the MCP host exposes.
