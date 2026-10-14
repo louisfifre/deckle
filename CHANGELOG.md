@@ -146,6 +146,7 @@ doctrine). This file is generated from the Conventional-Commit history by
 - **app:** Flush the HUD settings on quit
 - **scripts:** Route the breaking marker to Removed and cancel reverts within a range
 - **scripts:** Route the deprecate type to Deprecated
+- **scripts:** Seat the selection on Quit after a Run action
 
 ### Changed
 
