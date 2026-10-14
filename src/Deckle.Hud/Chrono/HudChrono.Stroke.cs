@@ -128,8 +128,8 @@ public sealed partial class HudChrono
                 _strokeConfig = cfg;
 
                 _processingStroke = variant == ProcessingVariant.Recording
-                    ? HudComposition.CreateRecordingStroke(compositor, size, cfg, _animationsEnabled)
-                    : HudComposition.CreateProcessingStroke(compositor, size, cfg, _animationsEnabled,
+                    ? HudComposition.CreateRecordingStroke(compositor, size, isDark, cfg, _animationsEnabled)
+                    : HudComposition.CreateProcessingStroke(compositor, size, isDark, cfg, _animationsEnabled,
                                                             from: crossingBoundary ? previous : null);
                 ElementCompositionPreview.SetElementChildVisual(
                     ProcessingSurfaceHost, _processingStroke.Visual);
@@ -227,9 +227,10 @@ public sealed partial class HudChrono
             var size = new Vector2(w, h);
             log?.Invoke("REBUILD", $"size={w:F1}×{h:F1}{(fallback ? " (fallback)" : "")}");
 
+            bool isDark = ChronoRoot.ActualTheme == ElementTheme.Dark;
             _processingStroke = variant == ProcessingVariant.Recording
-                ? HudComposition.CreateRecordingStroke(compositor, size, config, _animationsEnabled)
-                : HudComposition.CreateProcessingStroke(compositor, size, config, _animationsEnabled);
+                ? HudComposition.CreateRecordingStroke(compositor, size, isDark, config, _animationsEnabled)
+                : HudComposition.CreateProcessingStroke(compositor, size, isDark, config, _animationsEnabled);
             _strokeConfig = config;
             // A live count climbing above 1 means a Dispose path is leaking.
             log?.Invoke("REBUILD",
@@ -245,7 +246,6 @@ public sealed partial class HudChrono
             DeckleResourceSource.Log.ResourceAcquired(
                 "composition-visual", _processingStrokeHandle, 0, "hud-chrono-stroke");
 
-            bool isDark = ChronoRoot.ActualTheme == ElementTheme.Dark;
             _processingStroke.ApplyVariant(variant, isDark);
             log?.Invoke("REBUILD", $"ApplyVariant {variant} isDark={isDark} — done");
         }

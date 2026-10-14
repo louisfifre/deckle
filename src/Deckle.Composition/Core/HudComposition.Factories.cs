@@ -22,8 +22,13 @@ public static partial class HudComposition
     // "blend from the previous variant" the config promises. Without it the
     // stroke is seeded at Transcribing's values and the blend has nothing
     // to travel, so the state pops in.
+    //
+    // `isDark` is the theme the stroke is born under: its first frame paints
+    // the grey of that theme, the one ApplyVariant will keep. It has no
+    // default on purpose: a stroke seeded with the other theme's grey showed
+    // a white-to-dark ramp on every entry in light theme.
     public static ProcessingStroke CreateProcessingStroke(
-        Compositor compositor, Vector2 hostSize,
+        Compositor compositor, Vector2 hostSize, bool isDark,
         ConicArcStrokeConfig? configOverride = null,
         bool animationsEnabled = true,
         ProcessingVariant? from = null)
@@ -34,6 +39,7 @@ public static partial class HudComposition
         return CreateConicArcStroke(
             compositor, hostSize,
             configOverride ?? new ConicArcStrokeConfig(),
+            isDark,
             initialOpacity:    afterRecording ? 0f : -1f,
             initialVariant:    afterRecording ? ProcessingVariant.Recording : ProcessingVariant.Transcribing,
             animationsEnabled: animationsEnabled);
@@ -78,7 +84,7 @@ public static partial class HudComposition
     // The cone is frozen too: the outline is a still pose under the mic
     // level, whichever material Recording shows.
     public static ProcessingStroke CreateRecordingStroke(
-        Compositor compositor, Vector2 hostSize,
+        Compositor compositor, Vector2 hostSize, bool isDark,
         ConicArcStrokeConfig? configOverride = null,
         bool animationsEnabled = true)
     {
@@ -87,7 +93,7 @@ public static partial class HudComposition
         // mapping bakes them into the generic slots.
         var cfg = BuildRecordingPaintConfig(configOverride ?? new ConicArcStrokeConfig());
         return CreateConicArcStroke(
-            compositor, hostSize, cfg,
+            compositor, hostSize, cfg, isDark,
             freezeHueRotation: true,
             freezeArcRotation: true,
             initialOpacity:    animationsEnabled ? 0f : 1f,
@@ -267,6 +273,7 @@ public static partial class HudComposition
     // via ApplyVariant blend.
     private static ProcessingStroke CreateConicArcStroke(
         Compositor compositor, Vector2 hostSize, ConicArcStrokeConfig cfg,
+        bool              isDark,
         bool              freezeHueRotation = false,
         bool              freezeArcRotation = false,
         float             initialOpacity = -1f,
@@ -446,7 +453,10 @@ public static partial class HudComposition
         // Both masks compound; the final pixel RGB is the mixed material,
         // alpha = material.A · arc.A · stroke.A.
         //
-        // Initial effect values follow initialVariant's (Dark) baseline.
+        // Initial effect values follow initialVariant's baseline, with the
+        // grey of the theme the stroke is born under: ApplyVariant animates
+        // toward that same grey, so the first frame already shows it instead
+        // of ramping from the other theme's.
         // Processing strokes built from cold pass Transcribing (first
         // processing state; Rewriting can only follow a prior Transcribing
         // via ApplyVariant blend — seeding Rewriting values cold caused a
@@ -457,7 +467,7 @@ public static partial class HudComposition
         // with Recording* values from frame 1, skipping any
         // Transcribing-to-Recording flash before ApplyVariant runs.
         var (seedMix, seedHueShiftTurns) = cfg.MaterialOf(initialVariant);
-        Color seedGrey = GreyMaterialColor(cfg.GreyLightnessDark);
+        Color seedGrey = GreyMaterialColor(isDark ? cfg.GreyLightnessDark : cfg.GreyLightnessLight);
 
         var effectGraph = new AlphaMaskEffect
         {

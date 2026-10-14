@@ -5,25 +5,25 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 ├── .agents/
 │   └── skills/
 │       ├── deckle-bug-note/
-│       │   └── SKILL.md  — deckle-bug-note Preserve what a confirmed bug teaches for future tests and reviews. Invoke auto…
+│       │   └── SKILL.md  — deckle-bug-note Use when a confirmed bug has its cause established and its workstream is still…
 │       ├── deckle-commits/
-│       │   └── SKILL.md  — deckle-commits Commit grain and the few deviations from the universal convention. Invoke befor…
+│       │   └── SKILL.md  — deckle-commits Use when you commit in Deckle, split a workstream into commits or read its hist…
 │       ├── deckle-interface/
-│       │   └── SKILL.md  — deckle-interface Render the visual interface at Microsoft first-party level — native primitives,…
+│       │   └── SKILL.md  — deckle-interface Use when you build or change anything a person sees in a Deckle window, from a…
 │       ├── deckle-logging/
-│       │   └── SKILL.md  — deckle-logging What to observe in code, and how to write it readable and actionable. Invoke be…
+│       │   └── SKILL.md  — deckle-logging Use when you add or change an observation point in Deckle code, an event on a p…
 │       ├── deckle-modularite/
-│       │   └── SKILL.md  — deckle-modularite When and along which lines to separate code into modules and files. Invoke befo…
+│       │   └── SKILL.md  — deckle-modularite Use when code is about to grow a module, add a new one, or split a file or a su…
 │       ├── deckle-nomenclature/
-│       │   └── SKILL.md  — deckle-nomenclature One normalized way to name files, folders, symbols, resources and providers. In…
+│       │   └── SKILL.md  — deckle-nomenclature Use when you give a name to anything in the Deckle repository or change one, a…
 │       ├── deckle-settings-ux/
 │       │   ├── references/
-│       │   │   └── controls-and-behaviour.md
-│       │   └── SKILL.md  — deckle-settings-ux What to expose in settings surfaces and how to organize it. Invoke before expos…
+│       │   │   └── controls-and-behaviour.md  — the control for each nature of value and the finer magnitude, path, fold, reset…
+│       │   └── SKILL.md  — deckle-settings-ux Use when you add a setting, place one on a page or rework a settings surface, s…
 │       ├── deckle-testing/
-│       │   └── SKILL.md  — deckle-testing Testing posture — test behavior not implementation, stay sober, grow coverage p…
+│       │   └── SKILL.md  — deckle-testing Use when you write a Deckle test or extend coverage, whatever its category, to…
 │       ├── deckle-versioning/
-│       │   └── SKILL.md  — deckle-versioning How versions are numbered and the changelog written. Invoke before cutting a ve…
+│       │   └── SKILL.md  — deckle-versioning Use when you record a Deckle version, touch CHANGELOG.md or prepare release not…
 │       ├── microsoft-docs/
 │       │   └── SKILL.md  — microsoft-docs Find official Microsoft documentation and code samples. Use for Microsoft techn…
 │       ├── ux-copy/
@@ -345,6 +345,8 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   ├── repository-portability.json
 │   │   │   └── terminal-cursor-positioning.json
 │   │   ├── commands/
+│   │   │   ├── changelog.tests.ps1
+│   │   │   ├── ChangelogBugNotes.md
 │   │   │   ├── check-script-headers.tests.ps1
 │   │   │   ├── CommitAttributionBugNotes.md
 │   │   │   ├── install-hooks.tests.ps1
@@ -421,7 +423,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │       └── theme.tests.ps1
 │   ├── deckle-preview.ps1
 │   ├── deckle.ps1
-│   ├── GLOSSARY.md  — Deckle Scripts interaction vocabulary — launcher choices, action runs, detailed…
+│   ├── GLOSSARY.md  — Deckle Scripts interaction vocabulary. It names the launcher's choices, action…
 │   ├── README.md  — readme-scripts Dev workflows entry point for Deckle: the deckle.ps1 menu, the commands under c…
 │   ├── resource-validation.allowlist.json
 │   └── TERMINAL-INTERACTION-SPEC.md  — Behavior and composition contracts of the reusable terminal launcher beneath De…
@@ -474,7 +476,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   └── DevSpace.cs
 │   │   ├── Deckle.Anytype.csproj
 │   │   ├── DeckleAnytypeSource.cs
-│   │   └── GLOSSARY.md  — glossary-deckle-anytype Anytype integration vocabulary (covers Deckle.Anytype.Mcp) — backend vs MCP hos…
+│   │   └── GLOSSARY.md  — glossary-deckle-anytype Anytype integration vocabulary, Deckle.Anytype.Mcp included. It separates the b…
 │   ├── Deckle.Anytype.Mcp/
 │   │   ├── Http/
 │   │   │   ├── McpClients.cs
@@ -606,7 +608,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── CaptureSettingsService.cs
 │   │   ├── Deckle.Audio.csproj
 │   │   ├── DeckleAudioSource.cs
-│   │   ├── GLOSSARY.md  — glossary-deckle-audio Audio vocabulary — display level vs transcription pre-processing, the two notio…
+│   │   ├── GLOSSARY.md  — glossary-deckle-audio Audio vocabulary. It separates display level from transcription pre-processing,…
 │   │   ├── IAudioRecordingHost.cs
 │   │   ├── IMicrophoneCapture.cs
 │   │   ├── ListeningTake.cs
@@ -739,7 +741,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── AutocorrectSettingsService.cs
 │   │   ├── Deckle.Autocorrect.csproj
 │   │   ├── DeckleAutocorrectSource.cs
-│   │   ├── GLOSSARY.md  — glossary-deckle-autocorrect Autocorrect vocabulary — where correction may act (surfaces, enrollment), the t…
+│   │   ├── GLOSSARY.md  — glossary-deckle-autocorrect Autocorrect vocabulary. It covers where correction may act (surfaces, enrollmen…
 │   │   └── SettingsSearch.cs
 │   ├── Deckle.Autocorrect.Lab/
 │   │   ├── Mining/
@@ -940,7 +942,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── DeckleWindowingSource.cs
 │   │   ├── DispatchEventListener.cs
 │   │   ├── EventEntry.cs
-│   │   ├── GLOSSARY.md  — glossary-deckle-diagnostics Observability vocabulary for the Diagnostics family (.Logging, .Telemetry inclu…
+│   │   ├── GLOSSARY.md  — glossary-deckle-diagnostics Observability vocabulary for the Diagnostics family, .Logging and .Telemetry in…
 │   │   ├── IFlushableLogSink.cs
 │   │   ├── IHudFeedbackSink.cs
 │   │   ├── ILogSink.cs
@@ -991,7 +993,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   └── terms.fr.json
 │   │   ├── Deckle.Home.csproj
 │   │   ├── DeckleHomeSource.cs
-│   │   ├── GLOSSARY.md  — Home inventory vocabulary — the public norm, personal room registry, point code…
+│   │   ├── GLOSSARY.md  — glossary-deckle-home Home inventory vocabulary. It defines the inventory code and the Home surface,…
 │   │   ├── HomeBodyEditor.cs
 │   │   ├── HomeCode.cs
 │   │   ├── HomeCollectionWriter.cs
@@ -1012,7 +1014,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   └── OPERATIONS.md
 │   ├── Deckle.Hud/
 │   │   ├── Chrono/
-│   │   │   ├── GLOSSARY.md  — glossary-deckle-hud-chrono Chrono HUD element vocabulary — the face's eight elements, accent twins, and th…
+│   │   │   ├── GLOSSARY.md  — glossary-deckle-hud-chrono Chrono HUD element vocabulary. It names the face's eight elements and the accen…
 │   │   │   ├── HudChrono.Clock.cs
 │   │   │   ├── HudChrono.Reveal.cs
 │   │   │   ├── HudChrono.RevealMask.cs
@@ -1099,7 +1101,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   └── TouchpadReport.cs
 │   │   ├── Deckle.Input.csproj
 │   │   ├── DeckleInputSource.cs
-│   │   ├── GLOSSARY.md  — glossary-deckle-input Input-layer vocabulary — the contact frame as the unit assembled from Raw Input…
+│   │   ├── GLOSSARY.md  — glossary-deckle-input Input-layer vocabulary. It defines the contact frame, the unit assembled from o…
 │   │   ├── MouseWheelSettings.cs
 │   │   ├── MouseWheelSettingsService.cs
 │   │   └── RawInputHost.cs
@@ -1144,7 +1146,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   └── TrackpadViewModel.Settings.cs
 │   │   ├── Deckle.Input.Trackpad.csproj
 │   │   ├── DeckleTrackpadSource.cs
-│   │   ├── GLOSSARY.md  — glossary-deckle-input-trackpad Trackpad gesture vocabulary — the recognizer as the state machine that owns ges…
+│   │   ├── GLOSSARY.md  — glossary-deckle-input-trackpad Trackpad gesture vocabulary. It defines the recognizer, the state machine that…
 │   │   ├── SettingsSearch.cs
 │   │   ├── TrackpadSettings.cs
 │   │   ├── TrackpadSettingsModule.cs
@@ -1319,7 +1321,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   ├── LlmGeneralViewModel.cs
 │   │   │   └── LlmGeneralViewModel.Settings.cs
 │   │   ├── Deckle.Llm.Rewrite.csproj
-│   │   ├── GLOSSARY.md  — glossary-deckle-llm-rewrite Rewrite service vocabulary — the single service every rewrite goes through, who…
+│   │   ├── GLOSSARY.md  — glossary-deckle-llm-rewrite Rewrite service vocabulary, the single service every rewrite goes through, whoe…
 │   │   ├── LlmSettings.cs
 │   │   ├── LlmSettingsMigrations.cs
 │   │   ├── LlmSettingsModule.cs
@@ -1467,7 +1469,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   └── PresetFamily.cs
 │   ├── Deckle.Security/
 │   │   ├── Deckle.Security.csproj
-│   │   ├── GLOSSARY.md  — glossary-deckle-security Security vocabulary — the trusted-session boundary, captured content, and where…
+│   │   ├── GLOSSARY.md  — glossary-deckle-security Security vocabulary. It defines the trusted-session boundary, captured content,…
 │   │   ├── ISecretVault.cs
 │   │   ├── SecretVault.cs
 │   │   └── SecretVaultException.cs
@@ -1708,7 +1710,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── DeckleWhispSource.WarmupModel.cs
 │   │   ├── DecodingPage.xaml
 │   │   ├── DecodingPage.xaml.cs
-│   │   ├── GLOSSARY.md  — glossary-deckle-transcription Transcription vocabulary — the two entry points (dictation, file transcription)…
+│   │   ├── GLOSSARY.md  — glossary-deckle-transcription Transcription vocabulary. It names the two entry points (dictation, file transc…
 │   │   ├── ITranscriptionEngineHost.cs
 │   │   ├── SettingsSearch.cs
 │   │   ├── StreamingPage.xaml
@@ -2201,7 +2203,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── Deckle.Vision.Tests.csproj
 │   │   └── DeckleVisionSourceTests.cs
 │   ├── Directory.Build.props
-│   └── GLOSSARY.md  — glossary-deckle-tests Test taxonomy — the four categories inside the automatic scope (unit, integrati…
+│   └── GLOSSARY.md  — glossary-deckle-tests Test taxonomy. It names the four categories inside the automatic scope (unit, i…
 ├── .editorconfig
 ├── .gitattributes
 ├── .gitignore
@@ -2216,7 +2218,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 ├── Directory.Build.targets
 ├── Directory.Packages.props
 ├── GLOSSARY-MAP.md  — glossary-map-deckle Index of Deckle's bounded-context glossaries — where each module's GLOSSARY.md…
-├── GLOSSARY.md  — glossary-deckle System-wide Deckle vocabulary — terms that classify across modules and belong t…
+├── GLOSSARY.md  — glossary-deckle System-wide Deckle vocabulary. It holds the terms that classify across modules…
 ├── LICENSE
 ├── NOTICE.md
 ├── README.md
