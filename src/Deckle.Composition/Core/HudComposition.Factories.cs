@@ -63,8 +63,8 @@ public static partial class HudComposition
     // 12 o'clock, mirror 0.75 + 0.5 = 1.25 ≡ 0.25·τ = 90° math =
     // 6 o'clock. ✓
     //
-    // The cone is frozen too: Recording shows the grey material, on which
-    // a hue rotation shows nothing.
+    // The cone is frozen too: the outline is a still pose under the mic
+    // level, whichever material Recording shows.
     public static ProcessingStroke CreateRecordingStroke(
         Compositor compositor, Vector2 hostSize,
         ConicArcStrokeConfig? configOverride = null,
@@ -88,15 +88,16 @@ public static partial class HudComposition
     // values. All other fields come through unchanged — the Recording*
     // runtime fields are still read by ApplyVariant and by the
     // initialVariant seed. Shared by the Recording stroke, the utterance
-    // countdown and the Playground's countdown material view, so every
-    // visual that claims to be the Recording outline paints from one
-    // mapping instead of restating it.
+    // countdown and the Playground previews of them, so every visual that
+    // claims to be the Recording outline paints from one mapping instead of
+    // restating it.
     //
     // The cone stays frozen at HuePhaseTurns in every Recording visual: the
-    // outline, the countdown and the Playground's material view. A spinning
-    // cone was the first cause of a dark band in the gauge (2026-10-13), when
-    // the grey was still the wheel desaturated; the grey is now a flat
-    // material, so the pose is a matter of consistency, not of colour.
+    // outline and the countdown. A spinning cone was the first cause of a
+    // dark band in the gauge (2026-10-13), when the grey was still the wheel
+    // desaturated. On the grey material the pose shows nothing; on the
+    // colour material it decides which hues face the edges, so the outline
+    // and the gauge must share it.
     public static ConicArcStrokeConfig BuildRecordingPaintConfig(ConicArcStrokeConfig defaults)
         => defaults with
         {
@@ -169,7 +170,7 @@ public static partial class HudComposition
     // Three off-screen surfaces:
     //   1. Conic surface   — full 360° colour ring, painted once as pie
     //                        wedges in OKLCh, hue = angle / 2π. The colour
-    //                        material (Rewriting); the grey variants show a
+    //                        material; a state on the grey material shows a
     //                        flat colour source instead, see the effect graph.
     //   2. Arc mask        — white pie slice in [0, 2π·Span] with alpha
     //                        ramps at both ends (LeadFade, TailFade);

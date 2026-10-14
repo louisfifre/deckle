@@ -59,12 +59,11 @@ public sealed partial class HudPage
             return;
         }
 
-        bool maskOnly = ViewModel.CurrentTarget == HudTarget.CountdownMasks;
         float opacity = ViewModel.CurrentTarget == HudTarget.UtteranceCountdown
             ? _countdownTuning.MaterialOpacity : 1f;
         _utteranceCountdownPreview = HudComposition.CreateUtteranceCountdownVisual(
             compositor, new Vector2(NakedHostDim), NakedHudSize, material, isDark,
-            _countdownConfig, opacity, maskOnly, animations);
+            _countdownConfig, opacity, animationsEnabled: animations);
         ElementCompositionPreview.SetElementChildVisual(NakedPreviewHost, _utteranceCountdownPreview.Container);
         _utteranceCountdownPreview.SetProgress(_countdownTuning.Progress);
     }

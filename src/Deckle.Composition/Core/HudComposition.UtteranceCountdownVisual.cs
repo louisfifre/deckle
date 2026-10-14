@@ -15,7 +15,8 @@ public static partial class HudComposition
 
     // A progress-driven mirrored mask over the Recording outline's material:
     // the same baked cone, posed as the outline poses it (frozen at
-    // HuePhaseTurns), graded as Recording. One mask brush
+    // HuePhaseTurns), on Recording's material (RecordingMaterial: the wheel
+    // on Colour, the flat grey on Grey). One mask brush
     // lights two wedges, centred on 12 and 6 o'clock, that widen toward the
     // four corners and fade like the outline's lobes; only its transform reads
     // progress. The gauge is the outline opened by the pause, so the two are
@@ -243,7 +244,6 @@ public static partial class HudComposition
         bool isDark,
         UtteranceCountdownConfig countdown,
         float materialOpacity,
-        bool maskOnly = false,
         bool animationsEnabled = true)
     {
         float startReach = countdown.StartReach;
@@ -269,40 +269,31 @@ public static partial class HudComposition
             // pose, so a pause opens the very material the voice was lighting.
             var recording = BuildRecordingPaintConfig(config);
 
-            CompositionBrush materialSource;
-            if (maskOnly)
-            {
-                materialSource = visual.Own(compositor.CreateColorBrush(
-                    isDark ? Microsoft.UI.Colors.White : Microsoft.UI.Colors.Black));
-            }
-            else
-            {
-                int square = CoverageSquareSide(hostSize, centre);
-                var conic = visual.Own(PaintConicSurface(device, graphics, square, recording));
-                var conicBrush = visual.Own(compositor.CreateSurfaceBrush(conic));
-                conicBrush.Stretch = CompositionStretch.None;
-                // Frozen at the outline's phase: the one-shot pose
-                // CreateConicArcStroke bakes under freezeHueRotation. The
-                // Recording grading shows the flat grey, so the cone's
-                // orientation is invisible; it is kept for the day the
-                // gauge shows the colour.
-                conicBrush.TransformMatrix =
-                    Matrix3x2.CreateTranslation(-centre) *
-                    Matrix3x2.CreateRotation(MathF.Tau * recording.HuePhaseTurns) *
-                    Matrix3x2.CreateTranslation(centre);
+            int square = CoverageSquareSide(hostSize, centre);
+            var conic = visual.Own(PaintConicSurface(device, graphics, square, recording));
+            var conicBrush = visual.Own(compositor.CreateSurfaceBrush(conic));
+            conicBrush.Stretch = CompositionStretch.None;
+            // Frozen at the outline's phase: the one-shot pose
+            // CreateConicArcStroke bakes under freezeHueRotation. On Colour
+            // the pose decides which hues face the edges, so the gauge opens
+            // on the very hues the outline shows there; on Grey it shows
+            // nothing.
+            conicBrush.TransformMatrix =
+                Matrix3x2.CreateTranslation(-centre) *
+                Matrix3x2.CreateRotation(MathF.Tau * recording.HuePhaseTurns) *
+                Matrix3x2.CreateTranslation(centre);
 
-                // Recording's material and hue shift, the values
-                // ApplyVariant(Recording) gives the outline.
-                var (mix, hueShiftTurns) = recording.MaterialOf(ProcessingVariant.Recording);
-                using var gradingFactory = compositor.CreateEffectFactory(
-                    BuildMaterialMix(
-                        new CompositionEffectSourceParameter("Conic"),
-                        mix, hueShiftTurns,
-                        GreyMaterialColor(isDark ? recording.GreyLightnessDark : recording.GreyLightnessLight)));
-                var grading = visual.Own(gradingFactory.CreateBrush());
-                grading.SetSourceParameter("Conic", conicBrush);
-                materialSource = grading;
-            }
+            // Recording's material and hue shift, the values
+            // ApplyVariant(Recording) gives the outline.
+            var (mix, hueShiftTurns) = recording.MaterialOf(ProcessingVariant.Recording);
+            using var gradingFactory = compositor.CreateEffectFactory(
+                BuildMaterialMix(
+                    new CompositionEffectSourceParameter("Conic"),
+                    mix, hueShiftTurns,
+                    GreyMaterialColor(isDark ? recording.GreyLightnessDark : recording.GreyLightnessLight)));
+            var grading = visual.Own(gradingFactory.CreateBrush());
+            grading.SetSourceParameter("Conic", conicBrush);
+            CompositionBrush materialSource = grading;
 
             float offsetX = (hostSize.X - hudSize.X) / 2f;
             float offsetY = (hostSize.Y - hudSize.Y) / 2f;
@@ -355,8 +346,9 @@ public static partial class HudComposition
             maskBrush.Stretch = CompositionStretch.None;
             visual.BindProgressMask(maskBrush, centre, hudSize, startReach, endReach);
 
-            bool showMaterial = maskOnly || materialOpacity > 0f;
-            if (showMaterial)
+            // The cone behind the gauge, for inspection: the live HUD passes
+            // 0 and shows only the gauge.
+            if (materialOpacity > 0f)
             {
                 var materialGraph = new AlphaMaskEffect
                 {
@@ -371,8 +363,7 @@ public static partial class HudComposition
                 var materialSprite = visual.Own(compositor.CreateSpriteVisual());
                 materialSprite.Size = hostSize;
                 materialSprite.Brush = materialBrush;
-                materialSprite.Opacity = maskOnly
-                    ? 1f : Math.Clamp(materialOpacity, 0f, 1f);
+                materialSprite.Opacity = Math.Clamp(materialOpacity, 0f, 1f);
                 visual.Container.Children.InsertAtTop(materialSprite);
             }
 

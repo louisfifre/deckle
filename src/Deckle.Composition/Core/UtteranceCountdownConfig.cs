@@ -1,7 +1,7 @@
 namespace Deckle.Composition;
 
 // The gauge's own two knobs. Everything else about its look — the fade of its
-// two wedges, whether the cone spins, the greyscale grading — is the Recording
+// two wedges, whether the cone spins, the material — is the Recording
 // outline's, read from the Recording* fields of ConicArcStrokeConfig: the gauge
 // is that outline opened by the pause, so the two are tuned with one gesture
 // and cannot drift apart.
