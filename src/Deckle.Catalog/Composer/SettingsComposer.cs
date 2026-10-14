@@ -63,14 +63,30 @@ public sealed partial class SettingsComposer
     }
 
     // The surface is built once: changing showAdvanced means rebuilding the region.
-    public void Compose(IReadOnlyList<SettingDescriptor> settings, bool showAdvanced = true)
+    //
+    // inFold renders every setting as the child of a fold: a SettingsCard the
+    // page then moves into a hand-authored SettingsExpander's Items (the General
+    // page's "Settings backup" fold hosts its composed Location line this way).
+    // A Path is then the Location line alone, an advisory a second card, and a
+    // fold is refused, since folds never nest.
+    public void Compose(IReadOnlyList<SettingDescriptor> settings, bool showAdvanced = true, bool inFold = false)
     {
         _showAdvanced = showAdvanced;
 
         foreach (SettingDescriptor s in settings)
         {
             if (s.IsAdvanced && !showAdvanced) continue;
-            _host.Children.Add(BuildElement(s));
+            if (inFold)
+            {
+                if (s.Kind is SettingKind.Group or SettingKind.Section or SettingKind.Mode)
+                    throw new NotSupportedException(
+                        "A fold's children must be leaf settings — folds never nest.");
+                AddFoldChild(card => _host.Children.Add(card), s);
+            }
+            else
+            {
+                _host.Children.Add(BuildElement(s));
+            }
         }
 
         if (_source is not null && _refreshers.Count > 0)
@@ -136,15 +152,16 @@ public sealed partial class SettingsComposer
     }
 
     // A leaf with an advisory is wrapped so the message hangs beneath the card; a
-    // fold child gets its advisory through AddChildToExpander instead.
+    // fold child gets its advisory through AddFoldChild instead. A standalone
+    // Path is a fold of its own (BuildPathExpander), advised like a leaf.
     private FrameworkElement BuildElement(SettingDescriptor s)
     {
         if (s.Kind == SettingKind.Group) return BuildGroup(s);
         if (s.Kind == SettingKind.Section) return BuildSection(s);
         if (s.Kind == SettingKind.Mode) return BuildMode(s);
 
-        SettingsCard card = BuildCard(s);
-        return HasAdvisory(s) ? WrapWithAdvisory(card, s) : card;
+        Control element = s.Kind == SettingKind.Path ? BuildPathExpander(s) : BuildCard(s);
+        return HasAdvisory(s) ? WrapWithAdvisory(element, s) : element;
     }
 
     // A kind may speak through the advisory channel too: the Hotkey kind says
@@ -178,11 +195,12 @@ public sealed partial class SettingsComposer
 
     // ── Inline advisory ──────────────────────────────────────────────────────
     //
-    // Hangs an InfoBar under a fully wired card, re-evaluated on every refresh
-    // like EnabledWhen/VisibleWhen. VisibleWhen collapses only the card, so the
-    // refresher mirrors the card's Visibility onto the whole container: a hidden
-    // setting hides its advisory too.
-    private FrameworkElement WrapWithAdvisory(SettingsCard card, SettingDescriptor s)
+    // Hangs an InfoBar under a fully wired card (or the fold a standalone Path
+    // renders as), re-evaluated on every refresh like EnabledWhen/VisibleWhen.
+    // VisibleWhen collapses only the card, so the refresher mirrors the card's
+    // Visibility onto the whole container: a hidden setting hides its advisory
+    // too.
+    private FrameworkElement WrapWithAdvisory(Control card, SettingDescriptor s)
     {
         // Not closable: the message is a live state of the setting, not a
         // notification the user dismisses.
@@ -227,6 +245,11 @@ public sealed partial class SettingsComposer
 
     private SettingsCard BuildCard(SettingDescriptor s)
     {
+        // A Path's card is the Location line the host's control renders, with
+        // its own header and description (BuildPathLine); every other kind gets
+        // its card here.
+        if (s.Kind == SettingKind.Path) return BuildPathLine(s);
+
         // Tag carries the LabelKey as the card's runtime identity — the same key that
         // drives its .resw header doubles as the handle a cross-page search walks the
         // visual tree for, to bring THIS card into view. A code-created element gets no
@@ -248,9 +271,6 @@ public sealed partial class SettingsComposer
                 break;
             case SettingKind.Magnitude:
                 BuildMagnitude(card, s);
-                break;
-            case SettingKind.Path:
-                BuildPath(card, s);
                 break;
             case SettingKind.Choice:
                 BuildChoice(card, s);

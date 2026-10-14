@@ -1483,10 +1483,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   └── SecretVaultException.cs
 │   ├── Deckle.Settings/
 │   │   ├── Controls/
-│   │   │   ├── FolderPickerCard.xaml
-│   │   │   ├── FolderPickerCard.xaml.cs
-│   │   │   ├── FolderPickerEditableCard.xaml
-│   │   │   ├── FolderPickerEditableCard.xaml.cs
+│   │   │   ├── FolderPickerCard.cs
 │   │   │   ├── TunableRow.xaml
 │   │   │   ├── TunableRow.xaml.cs
 │   │   │   ├── TuningCard.xaml

@@ -8,7 +8,13 @@ namespace Deckle.Catalog;
 public enum SettingKind
 {
     Toggle,
+
+    // A folder on disk. Standing alone it renders as a SettingsExpander headed
+    // by the setting's title and description, holding the Location line; as a
+    // fold's child it is the Location line alone. PathArgs says what the line
+    // offers.
     Path,
+
     Choice,
 
     // An editable NumberBox over a double, with a Slider beside it when the value

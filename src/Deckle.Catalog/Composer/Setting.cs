@@ -127,7 +127,10 @@ public static class Setting
             Advisory = advisory,
         };
 
-    // PathArgs is required: the picker needs at least its mode.
+    // PathArgs is required: the Location line needs at least its mode. The
+    // .resw "<labelKey>.Header" and optional ".Description" head the fold a
+    // standalone Path renders as; a Path composed as a fold's child shows the
+    // Location line alone, so they are not read for it.
     public static SettingDescriptor Path(
         string labelKey,
         Func<string> get,

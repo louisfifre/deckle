@@ -50,7 +50,7 @@ public sealed partial class SettingsComposer
             {
                 VisibleWhen = () => MasterOn() && (childVisible?.Invoke() ?? true),
             };
-            AddChildToExpander(expander, gated);
+            AddFoldChild(card => expander.Items.Add(card), gated);
         }
 
         // The fold's header reset. The children keep their own per-card resets on
@@ -141,7 +141,7 @@ public sealed partial class SettingsComposer
 
             if (child.Default is not null) defaultedChildren.Add(child);
 
-            AddChildToExpander(expander, child);
+            AddFoldChild(card => expander.Items.Add(card), child);
         }
 
         Action? updateSectionReset = null;
@@ -241,10 +241,16 @@ public sealed partial class SettingsComposer
 
             if (child.Default is not null) defaultedChildren.Add(child);
 
-            // The child keeps its own VisibleWhen, which names its mode.
-            int before = expander.Items.Count;
-            AddChildToExpander(expander, child);
-            if (expander.Items[before] is SettingsCard card) childCards.Add(card);
+            // The child keeps its own VisibleWhen, which names its mode. The
+            // first card placed is the child's own; an advisory's note row
+            // follows it and is not a child card.
+            bool first = true;
+            AddFoldChild(card =>
+            {
+                expander.Items.Add(card);
+                if (first) childCards.Add(card);
+                first = false;
+            }, child);
         }
 
         // The information card: no header, one line of secondary text, no frame
@@ -330,16 +336,18 @@ public sealed partial class SettingsComposer
 
     // ── Child of a fold ────────────────────────────────────────────────────────
     //
-    // Shared by BuildGroup and BuildSection; the caller composes any master gating
-    // into the child's VisibleWhen first. SettingsExpander.Items accepts only
-    // SettingsCard children, not the StackPanel{card, InfoBar} WrapWithAdvisory
-    // returns, so a fold child's advisory goes in as a second Items entry: a
-    // borderless SettingsCard hosting the InfoBar, which hides with the advised
-    // card.
-    private void AddChildToExpander(SettingsExpander expander, SettingDescriptor child)
+    // Shared by the three folds and by Compose(inFold: true); the caller
+    // composes any master gating into the child's VisibleWhen first, and place
+    // puts each card where the fold holds it (an expander's Items, or a panel
+    // the page empties into a hand-authored fold). SettingsExpander.Items
+    // accepts only SettingsCard children, not the StackPanel{card, InfoBar}
+    // WrapWithAdvisory returns, so a fold child's advisory goes in as a second
+    // card: a borderless SettingsCard hosting the InfoBar, which hides with the
+    // advised card. A Path child is its Location line (BuildCard).
+    private void AddFoldChild(Action<SettingsCard> place, SettingDescriptor child)
     {
         SettingsCard card = BuildCard(child);
-        expander.Items.Add(card);
+        place(card);
 
         if (!HasAdvisory(child)) return;
 
@@ -358,7 +366,7 @@ public sealed partial class SettingsComposer
             Background = null,
             BorderThickness = new Thickness(0),
         };
-        expander.Items.Add(noteRow);
+        place(noteRow);
 
         void Refresh()
         {

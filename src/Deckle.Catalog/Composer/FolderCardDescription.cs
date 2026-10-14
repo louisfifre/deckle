@@ -14,10 +14,12 @@ namespace Deckle.Catalog;
 // earlier form put the path and the buttons on a row of their own under the
 // header, which left an empty band above them (Louis, 2026-10-14, on screen).
 //
-// Shared by the composed Path cards (SettingsComposer.BuildPath) and the
-// hand-authored Data folder card of the General page, so the two read the
-// same. The path line never wraps: a long path is trimmed with an ellipsis and
-// the tooltip carries it whole; the text can be selected to copy it.
+// Used by the hand-authored Data folder card of the General page alone: the
+// composed Path settings no longer put the path under the header, they render
+// it on a Location line of its own (SettingsComposer.BuildPathLine, Louis,
+// 2026-10-15). This class goes with that last usage. The path line never
+// wraps: a long path is trimmed with an ellipsis and the tooltip carries it
+// whole; the text can be selected to copy it.
 public static class FolderCardDescription
 {
     // Replaces the card's description with the sentence (when there is one)
