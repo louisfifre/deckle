@@ -36,12 +36,6 @@ public static class SettingsSearch
 
         new SettingSearchEntry
         {
-            LabelKey = "TrackpadPage_RecordFramesCard",
-            Keywords = ["telemetry", "capture", "jsonl", "diagnostics"],
-        },
-
-        new SettingSearchEntry
-        {
             LabelKey = "TrackpadPage_GesturesCard",
             Keywords = ["swipe", "neutralize", "virtual desktop", "task view"],
         },
@@ -54,6 +48,18 @@ public static class SettingsSearch
         {
             LabelKey = "TrackpadPage_ElevatedCard",
             Keywords = ["admin", "administrator", "uac", "privileges"],
+        },
+    ];
+
+    // The raw-frame recording, composed on Settings > Diagnostics
+    // (TrackpadTelemetryViewModel); registered under that page with this
+    // module's assembly, where its words live.
+    public static IReadOnlyList<SettingSearchEntry> TelemetryEntries { get; } =
+    [
+        new SettingSearchEntry
+        {
+            LabelKey = "TrackpadPage_RecordFramesCard",
+            Keywords = ["telemetry", "capture", "jsonl", "diagnostics", "trackpad"],
         },
     ];
 }

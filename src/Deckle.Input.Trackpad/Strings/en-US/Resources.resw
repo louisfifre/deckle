@@ -182,10 +182,8 @@
     <value>Lets the drag work over windows that run as administrator. Converts Deckle's startup into a highest-privileges scheduled task. Asks for administrator approval once.</value>
   </data>
 
-  <!-- Diagnostics -->
-  <data name="TrackpadPageDiagnosticsSection.Title" xml:space="preserve">
-    <value>Diagnostics</value>
-  </data>
+  <!-- Raw-frame recording, composed on Settings > Diagnostics
+       (TrackpadTelemetryViewModel); its words stay here. -->
   <data name="TrackpadPage_RecordFramesCard.Header" xml:space="preserve">
     <value>Record raw contact frames</value>
   </data>

@@ -1139,6 +1139,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   ├── TrackpadPage.xaml
 │   │   │   └── TrackpadPage.xaml.cs
 │   │   ├── ViewModels/
+│   │   │   ├── TrackpadTelemetryViewModel.cs
 │   │   │   ├── TrackpadViewModel.cs
 │   │   │   └── TrackpadViewModel.Settings.cs
 │   │   ├── CONTEXT.md  — context-deckle-input-trackpad Trackpad gesture vocabulary — the recognizer as the state machine that owns ges…

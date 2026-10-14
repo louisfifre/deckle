@@ -31,11 +31,9 @@
                                 Spacing="{StaticResource SettingsCardSpacing}" />
                 </catalog:SettingsSection>
 
-                <!-- ── Diagnostics ──────────────────────────────────────────── -->
-                <catalog:SettingsSection x:Uid="TrackpadPageDiagnosticsSection">
-                    <StackPanel x:Name="DiagnosticsHost"
-                                Spacing="{StaticResource SettingsCardSpacing}" />
-                </catalog:SettingsSection>
+                <!-- The raw-frame recording lives on Settings > Diagnostics, the
+                     one editor of what Deckle records (TrackpadTelemetryViewModel,
+                     2026-10-14). -->
 
                 <!-- ── Windows integration ──────────────────────────────────── -->
                 <!-- Hand-authored: imperative commands with their own success
