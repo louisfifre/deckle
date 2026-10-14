@@ -2,6 +2,7 @@ using System;
 using System.Diagnostics;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
+using Deckle.Hud;
 using Deckle.Transcription;
 
 namespace Deckle.Playground;
@@ -62,8 +63,10 @@ public sealed partial class HudPage
         stack.Children.Add(TuningHelp("Simulation changes the preview only. Nothing here is saved."));
         switch (ViewModel.CurrentTarget)
         {
-            case HudTarget.Recording: AddSpeechSimulationRows(stack); break;
-            case HudTarget.Gauge:     AddGaugeSimulationRows(stack);  break;
+            case HudTarget.Recording:    AddSpeechSimulationRows(stack);     break;
+            case HudTarget.Transcribing:
+            case HudTarget.Rewriting:    AddTransitionSimulationRows(stack); break;
+            case HudTarget.Gauge:        AddGaugeSimulationRows(stack);      break;
         }
     }
 
@@ -73,8 +76,10 @@ public sealed partial class HudPage
     {
         switch (ViewModel.CurrentTarget)
         {
-            case HudTarget.Recording: _speechSimulation = new(); break;
-            case HudTarget.Gauge:     ResetGaugeSimulation();    break;
+            case HudTarget.Recording:    _speechSimulation = new(); break;
+            case HudTarget.Transcribing: _transitionSimulation.TranscribingFrom = TransitionSimulation.DefaultTranscribingFrom; break;
+            case HudTarget.Rewriting:    _transitionSimulation.RewritingFrom    = TransitionSimulation.DefaultRewritingFrom;    break;
+            case HudTarget.Gauge:        ResetGaugeSimulation();    break;
         }
         RebuildTuningPanel();
     }
@@ -172,4 +177,132 @@ public sealed partial class HudPage
         ChronoPreview.UpdateUtteranceProgress(
             active: true, _utteranceCycle.Fraction, _utteranceCycle.CompletedUtterances);
     }
+
+    // ── Transition replay (Transcribing and Rewriting) ──────────────────────
+
+    // The state each processing target blends in from. The defaults follow
+    // the live order, Recording, then Transcribing, then Rewriting.
+    private sealed class TransitionSimulation
+    {
+        public const HudState DefaultTranscribingFrom = HudState.Recording;
+        public const HudState DefaultRewritingFrom    = HudState.Transcribing;
+
+        public HudState TranscribingFrom = DefaultTranscribingFrom;
+        public HudState RewritingFrom    = DefaultRewritingFrom;
+    }
+
+    private TransitionSimulation _transitionSimulation = new();
+
+    // One-shot: fires once, when the From state has settled.
+    private readonly DispatcherTimer _transitionTimer = new();
+    private HudState _transitionFrom;
+    private HudState _transitionTo;
+
+    private void AddTransitionSimulationRows(StackPanel stack)
+    {
+        var to = ProcessingStateOf(ViewModel.CurrentTarget);
+        HudState[] options = to == HudState.Transcribing
+            ? [HudState.Recording, HudState.Rewriting]
+            : [HudState.Recording, HudState.Transcribing];
+        var radios = AddRadioRow(stack, "From",
+            [options[0].ToString(), options[1].ToString()],
+            Math.Max(0, Array.IndexOf(options, TransitionFromOf(to))));
+        // Read when the button plays, so a choice rebuilds nothing.
+        radios.SelectionChanged += (_, _) =>
+        {
+            if (radios.SelectedIndex < 0) return;
+            var from = options[radios.SelectedIndex];
+            if (to == HudState.Transcribing) _transitionSimulation.TranscribingFrom = from;
+            else                             _transitionSimulation.RewritingFrom    = from;
+        };
+
+        stack.Children.Add(TuningHelp(
+            "Play transition shows the From state, then blends into this state with the current values."));
+        stack.Children.Add(TuningHelp(
+            "From Recording, the stroke is rebuilt as in the live HUD, so the blend starts from Transcribing's material and opacity."));
+        var transport = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8, Margin = new Thickness(0, 12, 0, 0) };
+        var play = new Button { Content = "Play transition" };
+        play.Click += (_, _) => PlayTransition();
+        transport.Children.Add(play);
+        stack.Children.Add(transport);
+    }
+
+    private void PlayTransition()
+    {
+        // Start a stopped preview, and land a knob edit still in the debounce
+        // first: the rebuild it is due would otherwise cut the replay.
+        if (!ViewModel.IsPlaying) ViewModel.IsPlaying = true;
+        FlushPendingRebuild();
+        CancelTransition();
+
+        var to = ProcessingStateOf(ViewModel.CurrentTarget);
+        var from = TransitionFromOf(to);
+
+        // From a fresh stroke, as ApplyTarget shows a state, so the From
+        // state looks as it does on its own target.
+        StopSpeechSimulation();
+        ChronoPreview.ApplyState(HudState.Hidden);
+        EnterTransitionState(from, buildsStroke: true);
+        // The Recording outline rises only with the level: without the
+        // speech simulation, From Recording would show no stroke at all.
+        if (from == HudState.Recording) StartSpeechSimulation();
+
+        // The settle wait. A stroke blends into a state over that state's own
+        // BlendSeconds, so the From blend is over by then; the half second
+        // shows From at rest before the blend under study starts.
+        var cfg = _tuning.ToConfig();
+        double settle = from switch
+        {
+            HudState.Recording    => cfg.RecordingBlendSeconds,
+            HudState.Transcribing => cfg.TranscribingBlendSeconds,
+            _                     => cfg.RewritingBlendSeconds,
+        };
+        _transitionFrom = from;
+        _transitionTo   = to;
+        _transitionTimer.Interval = TimeSpan.FromSeconds(settle + 0.5);
+        _transitionTimer.Tick -= TransitionTimerTick;
+        _transitionTimer.Tick += TransitionTimerTick;
+        _transitionTimer.Start();
+    }
+
+    private void TransitionTimerTick(object? sender, object e)
+    {
+        CancelTransition();
+        // The level and the gauge feed Recording only; HudChrono drops them
+        // past it.
+        StopSpeechSimulation();
+        // HudChrono rebuilds the stroke only across Recording and the
+        // processing states. Between Transcribing and Rewriting it keeps the
+        // stroke and blends it, so nothing is built there.
+        EnterTransitionState(_transitionTo, buildsStroke: _transitionFrom == HudState.Recording);
+    }
+
+    private void EnterTransitionState(HudState state, bool buildsStroke)
+    {
+        // The clock before ApplyState, in HudWindow.SetState's order:
+        // StopClock latches the last digit, which must land before the
+        // processing reveal starts.
+        if (state == HudState.Recording) ChronoPreview.StartClock();
+        else                             ChronoPreview.StopClock();
+        // One-shot, consumed by the next stroke ApplyState builds: armed only
+        // where one is built, so the state shows the current knobs and no
+        // config waits for an unrelated later build.
+        if (buildsStroke) ChronoPreview.SetNextStrokeConfig(_tuning.ToConfig());
+        ChronoPreview.ApplyState(state);
+    }
+
+    // ApplyTarget calls this first: any rebuild, Stop or target change ends
+    // a replay rather than letting its second half land on another preview.
+    private void CancelTransition()
+    {
+        _transitionTimer.Stop();
+        _transitionTimer.Tick -= TransitionTimerTick;
+    }
+
+    private HudState TransitionFromOf(HudState to) => to == HudState.Transcribing
+        ? _transitionSimulation.TranscribingFrom
+        : _transitionSimulation.RewritingFrom;
+
+    private static HudState ProcessingStateOf(HudTarget target) =>
+        target == HudTarget.Transcribing ? HudState.Transcribing : HudState.Rewriting;
 }

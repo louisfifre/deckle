@@ -176,6 +176,7 @@ public sealed partial class HudPage : Page
         SettingsService.Instance.OverlayAnimationsChanged -= OnOverlayAnimationsChanged;
         HudSettingsService.Instance.Changed -= OnHudSettingsChanged;
         StopSpeechSimulation();
+        CancelTransition();
         _rebuildDebounce.Stop();
         ElementCompositionPreview.SetElementChildVisual(NakedPreviewHost, null);
         _nakedPreview?.Dispose();
@@ -258,6 +259,7 @@ public sealed partial class HudPage : Page
 
     private void ApplyTarget()
     {
+        CancelTransition();
         SnapshotCountdownReplay();
         ChronoPreview.ApplyState(HudState.Hidden);
         ElementCompositionPreview.SetElementChildVisual(NakedPreviewHost, null);
@@ -416,6 +418,7 @@ public sealed partial class HudPage : Page
         _countdownConfig = new();
         ResetGaugeSimulation();
         _speechSimulation = new();
+        _transitionSimulation = new();
 
         BuildTuningPanel();
         ApplyTarget();
