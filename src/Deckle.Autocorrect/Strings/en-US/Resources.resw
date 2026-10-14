@@ -190,13 +190,9 @@
     <value>Autocorrect is off, so no vocabulary reaches the corrector. Turn it on in Autocorrect to pick your domains.</value>
   </data>
 
-  <!-- Diagnostics — the module's purpose-specific dataset consents.
-       Decisions and text are independent disk-persistence opt-ins.
-       Keys are flat SettingsCards composed by the SettingsComposer, so they bind
-       .Header / .Description. -->
-  <data name="AutocorrectPageDiagnosticsSection.Title" xml:space="preserve">
-    <value>Diagnostics</value>
-  </data>
+  <!-- The module's dataset consents, composed on Settings > Diagnostics
+       (AutocorrectTelemetryViewModel); their words stay here. Decisions and
+       text are independent disk-persistence opt-ins. -->
   <data name="AutocorrectDecisionsCard.Header" xml:space="preserve">
     <value>Autocorrect decisions</value>
   </data>

@@ -35,16 +35,22 @@ public static class SettingsSearch
             LiteralLabel = "Excluded words",
             Keywords = ["exclude", "exception", "ignore", "never correct", "stop correcting", "word"],
         },
+    ];
 
+    // The module's two dataset consents, composed on Settings > Diagnostics
+    // (AutocorrectTelemetryViewModel); registered under that page with this
+    // module's assembly, where their words live.
+    public static IReadOnlyList<SettingSearchEntry> TelemetryEntries { get; } =
+    [
         new SettingSearchEntry
         {
             LabelKey = "AutocorrectDecisionsCard",
-            Keywords = ["diagnostics", "telemetry", "logging"],
+            Keywords = ["diagnostics", "telemetry", "logging", "autocorrect"],
         },
         new SettingSearchEntry
         {
             LabelKey = "AutocorrectTextCard",
-            Keywords = ["corpus", "telemetry", "diagnostics", "keystrokes"],
+            Keywords = ["corpus", "telemetry", "diagnostics", "keystrokes", "autocorrect"],
         },
     ];
 

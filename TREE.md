@@ -729,6 +729,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   ├── AppsEnrolledViewModel.cs
 │   │   │   ├── AutocorrectAppRow.cs
 │   │   │   ├── AutocorrectExcludedWordRow.cs
+│   │   │   ├── AutocorrectTelemetryViewModel.cs
 │   │   │   ├── AutocorrectViewModel.cs
 │   │   │   ├── AutocorrectViewModel.Settings.cs
 │   │   │   ├── DomainLanguageRow.cs

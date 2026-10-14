@@ -95,14 +95,9 @@
                     </StackPanel>
                 </catalog:SettingsSection>
 
-                <!-- ── Diagnostics ───────────────────────────────────────────── -->
-                <!-- The module's two telemetry opt-ins, beside the engine they
-                     observe. NOT gated by the master switch: what the module
-                     records is a consent that outlives a switch flip. -->
-                <catalog:SettingsSection x:Uid="AutocorrectPageDiagnosticsSection">
-                    <StackPanel x:Name="DiagnosticsHost"
-                                Spacing="{StaticResource SettingsCardSpacing}" />
-                </catalog:SettingsSection>
+                <!-- The module's two dataset consents live on Settings >
+                     Diagnostics, the one editor of what Deckle records
+                     (AutocorrectTelemetryViewModel, 2026-10-14). -->
 
             </StackPanel>
         </Grid>

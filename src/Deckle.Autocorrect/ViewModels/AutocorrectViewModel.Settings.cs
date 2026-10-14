@@ -13,6 +13,9 @@ namespace Deckle.Autocorrect;
 // AutocorrectSettings().Enabled — the same literal AutocorrectSettingsService
 // persists), so the card gets a per-card reset that goes active exactly when
 // the value leaves that default.
+//
+// The module's two dataset consents live in AutocorrectTelemetryViewModel,
+// composed on the Diagnostics page.
 public partial class AutocorrectViewModel
 {
     public IReadOnlyList<SettingDescriptor> AutocorrectSettingsManifest =>
@@ -22,24 +25,5 @@ public partial class AutocorrectViewModel
             value => Enabled = value,
             glyph: Glyphs.Autocorrect,
             defaultValue: () => new AutocorrectSettings().Enabled),
-    ];
-
-    // The module's own Diagnostics section: two telemetry opt-ins, each gating
-    // its OFF→ON flip behind a consent dialog the composer runs. No defaultValue
-    // on either: like the other privacy opt-ins, a per-row "resettable default"
-    // affordance is wrong here. Text is NOT gated by Decisions, so they stay two
-    // independent leaves, never a masking Group.
-    public IReadOnlyList<SettingDescriptor> DiagnosticsSettings =>
-    [
-        Setting.Toggle("AutocorrectDecisionsCard",
-            () => AutocorrectDecisions,
-            value => AutocorrectDecisions = value,
-            glyph: Glyphs.Language,
-            confirmOnEnable: TelemetryConsent.RequestAutocorrectDecisions),
-        Setting.Toggle("AutocorrectTextCard",
-            () => AutocorrectText,
-            value => AutocorrectText = value,
-            glyph: Glyphs.Language,
-            confirmOnEnable: TelemetryConsent.RequestAutocorrectText),
     ];
 }
