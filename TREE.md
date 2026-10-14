@@ -1100,7 +1100,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   └── TouchpadReport.cs
 │   │   ├── Deckle.Input.csproj
 │   │   ├── DeckleInputSource.cs
-│   │   ├── GLOSSARY.md  — glossary-deckle-input Input-layer vocabulary — the contact frame as the unit assembled from Raw Input…
+│   │   ├── GLOSSARY.md  — glossary-deckle-input Input-layer vocabulary. It defines the contact frame, the unit assembled from o…
 │   │   ├── MouseWheelSettings.cs
 │   │   ├── MouseWheelSettingsService.cs
 │   │   └── RawInputHost.cs
