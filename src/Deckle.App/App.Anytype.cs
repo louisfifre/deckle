@@ -2,7 +2,6 @@ using Deckle.Anytype;
 using Deckle.Anytype.Mcp;
 using Deckle.Home;
 using Deckle.Security;
-using Deckle.Travel;
 
 namespace Deckle.App;
 
@@ -54,7 +53,7 @@ public partial class App
             }
 
             IReadOnlyList<McpClientProfile> clients =
-                [.. McpClients.All, HomeMcp.Client, TravelMcp.Client];
+                [.. McpClients.All, HomeMcp.Client];
             var tokens = new McpClientTokens(SecretVault.CreateDefault(), clients);
             try
             {
