@@ -35,11 +35,15 @@ public static partial class HudComposition
         {
             float centreTurns = (i + 0.5f) / wedges;
             float hue = cfg.HueStart + centreTurns * cfg.HueRange;
-            // In gamut: the chroma is a ceiling and each hue gets what sRGB
-            // can show at this lightness, so the wheel keeps one lightness
-            // and desaturates to one grey. The clamping conversion did not —
-            // see ColorSpace.OklchToRgbInGamut.
-            var c = ColorSpace.OklchToRgbInGamut(cfg.OklchLightness, cfg.OklchChroma, hue);
+            // Clamped, not gamut-mapped: the chroma is kept as far as sRGB
+            // goes and a hue that cannot carry it at this lightness loses
+            // lightness instead (a saturated, darker red at the default
+            // L 0.75 / C 0.3). The gamut-mapped conversion kept the
+            // lightness and bleached the red to pink, which the maintainer
+            // read as a hole in the wheel (2026-10-14). The mapping served
+            // the grey that was once derived from this wheel; the grey is a
+            // flat material now, so the wheel only has to be vivid.
+            var c = ColorSpace.OklchToRgb(cfg.OklchLightness, cfg.OklchChroma, hue);
             int p = i * 3;
             palette[p + 0] = c.B;
             palette[p + 1] = c.G;

@@ -1,6 +1,5 @@
 using System;
 using System.ComponentModel;
-using System.Diagnostics;
 using System.Numerics;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
@@ -38,23 +37,11 @@ public sealed partial class HudPage : Page
     private UtteranceCountdownConfig _savedCountdown = new();
     private bool _storeLoaded;
 
-    // Simulated conversational speech: 0.013 ≈ -38 dBFS, 0.100 ≈ -20 dBFS.
-    private float _simRmsMin           = 0.013f;
-    private float _simRmsMax           = 0.100f;
-    private float _simRmsPeriodSeconds = 2.0f;
-    private bool  _simManualOverride   = false;
-    private float _simManualValue      = 0.012f;
-
     // Paint-time changes rebuild the Win2D surfaces from scratch; one rebuild
     // per tick during a drag overloads the CanvasDevice, hence the debounce.
     private readonly DispatcherTimer _rebuildDebounce = new()
         { Interval = TimeSpan.FromMilliseconds(300) };
     private bool _rebuildPending;
-
-    // ── Simulated RMS pump ──────────────────────────────────────────────
-    private readonly DispatcherTimer _rmsTimer = new()
-        { Interval = TimeSpan.FromMilliseconds(50) };
-    private readonly Stopwatch _rmsClock = new();
 
     // Breaks the Slider ↔ NumberBox feedback loop in the row factories: each
     // programmatic write fires the paired control's ValueChanged.
@@ -68,12 +55,12 @@ public sealed partial class HudPage : Page
     private HudComposition.NakedPreview? _nakedPreview;
 
     // 272×78 is the HUD's stroke surface; the 300×300 host leaves room so the
-    // Conic primitive's outer radius doesn't clip at the corners.
+    // Cone target's outer radius doesn't clip at the corners.
     private static readonly Vector2 NakedHudSize = new(272f, 78f);
     private const           float   NakedHostDim = 300f;
 
     // Same disposal discipline as _nakedPreview.
-    private HudComposition.ConicClonePreview? _conicClonePreview;
+    private HudComposition.ConicClonePreview? _digitRevealPreview;
 
     public HudPage()
     {
@@ -188,16 +175,16 @@ public sealed partial class HudPage : Page
     {
         SettingsService.Instance.OverlayAnimationsChanged -= OnOverlayAnimationsChanged;
         HudSettingsService.Instance.Changed -= OnHudSettingsChanged;
-        _rmsTimer.Stop();
-        _rmsClock.Stop();
+        StopSpeechSimulation();
+        CancelTransition();
         _rebuildDebounce.Stop();
         ElementCompositionPreview.SetElementChildVisual(NakedPreviewHost, null);
         _nakedPreview?.Dispose();
         _nakedPreview = null;
-        _conicClonePreview?.Dispose();
-        _conicClonePreview = null;
-        _utteranceCountdownPreview?.Dispose();
-        _utteranceCountdownPreview = null;
+        _digitRevealPreview?.Dispose();
+        _digitRevealPreview = null;
+        _gaugePreview?.Dispose();
+        _gaugePreview = null;
     }
 
     private void OnOverlayAnimationsChanged(bool enabled)
@@ -227,7 +214,10 @@ public sealed partial class HudPage : Page
                 ApplyTarget();
                 break;
 
-            case nameof(HudViewModel.PreviewVariant):
+            // The parts' material picks their material section and whether a
+            // hue rotation shows, so the panel follows it.
+            case nameof(HudViewModel.PreviewMaterial):
+                BuildTuningPanel();
                 ApplyTarget();
                 break;
         }
@@ -244,13 +234,13 @@ public sealed partial class HudPage : Page
         ViewModel.CurrentTarget = next;
     }
 
-    // Fires once on load for the default-checked Rewriting radio; a no-op,
-    // the value already matches.
-    private void OnVariantRadioChecked(object sender, RoutedEventArgs e)
+    // May fire once on load for the XAML's default selection (Colour); a
+    // no-op, the value already matches. The items follow HudMaterial's
+    // order, so the index is the material.
+    private void OnPreviewMaterialChanged(object sender, SelectionChangedEventArgs e)
     {
-        if (sender is not RadioButton rb || rb.Tag is not string tag) return;
-        if (!Enum.TryParse<ProcessingVariant>(tag, out var variant)) return;
-        ViewModel.PreviewVariant = variant;
+        if (sender is not RadioButtons radios) return;
+        ViewModel.PreviewMaterial = radios.SelectedIndex == 0 ? HudMaterial.Grey : HudMaterial.Colour;
     }
 
     // ── Transport (Start / Stop) ─────────────────────────────────────────────
@@ -269,54 +259,56 @@ public sealed partial class HudPage : Page
 
     private void ApplyTarget()
     {
+        CancelTransition();
         SnapshotCountdownReplay();
         ChronoPreview.ApplyState(HudState.Hidden);
         ElementCompositionPreview.SetElementChildVisual(NakedPreviewHost, null);
         _nakedPreview?.Dispose();
         _nakedPreview = null;
-        _conicClonePreview?.Dispose();
-        _conicClonePreview = null;
-        _utteranceCountdownPreview?.Dispose();
-        _utteranceCountdownPreview = null;
-        StopRmsPump();
+        _digitRevealPreview?.Dispose();
+        _digitRevealPreview = null;
+        _gaugePreview?.Dispose();
+        _gaugePreview = null;
+        StopSpeechSimulation();
 
         if (!ViewModel.IsPlaying)
         {
             // Stop leaves only the substrate: no residual Charging-like card.
             ChronoPreview.Visibility    = Visibility.Collapsed;
             NakedPreviewHost.Visibility = Visibility.Collapsed;
-            VariantToggle.Visibility    = Visibility.Collapsed;
+            MaterialToggle.Visibility   = Visibility.Collapsed;
             return;
         }
 
         var currentTarget = ViewModel.CurrentTarget;
-        bool isNaked = ViewModel.IsCountdownTarget || currentTarget is HudTarget.Conic
-                                     or HudTarget.ArcMask
-                                     or HudTarget.Combined
-                                     or HudTarget.ConicClone;
+        bool isNaked = currentTarget is HudTarget.Cone
+                                     or HudTarget.SweepMask
+                                     or HudTarget.MaskedCone
+                                     or HudTarget.Gauge
+                                     or HudTarget.DigitReveal;
         ChronoPreview.Visibility    = isNaked ? Visibility.Collapsed : Visibility.Visible;
         NakedPreviewHost.Visibility = isNaked ? Visibility.Visible   : Visibility.Collapsed;
-        VariantToggle.Visibility    = ViewModel.IsVariantToggleVisible ? Visibility.Visible : Visibility.Collapsed;
+        MaterialToggle.Visibility   = ViewModel.IsMaterialToggleVisible ? Visibility.Visible : Visibility.Collapsed;
 
         if (isNaked)
         {
-            if (ViewModel.IsCountdownTarget)
+            if (currentTarget == HudTarget.Gauge)
             {
-                AttachUtteranceCountdownPreview();
+                AttachGaugePreview();
                 return;
             }
 
-            if (currentTarget == HudTarget.ConicClone)
+            if (currentTarget == HudTarget.DigitReveal)
             {
-                AttachConicClonePreview();
+                AttachDigitRevealPreview();
                 return;
             }
 
             var part = currentTarget switch
             {
-                HudTarget.Conic    => HudComposition.NakedMaskPart.Conic,
-                HudTarget.ArcMask  => HudComposition.NakedMaskPart.ArcMask,
-                _                  => HudComposition.NakedMaskPart.Combined,
+                HudTarget.Cone      => HudComposition.NakedMaskPart.Conic,
+                HudTarget.SweepMask => HudComposition.NakedMaskPart.ArcMask,
+                _                   => HudComposition.NakedMaskPart.Combined,
             };
             AttachNakedPreview(part);
             return;
@@ -330,13 +322,11 @@ public sealed partial class HudPage : Page
             _                      => HudState.Rewriting,
         };
 
-        // Armed before ApplyState, whose single stroke creation consumes it.
-        // Armed after, ApplyState would first build a shipping-default stroke.
         if (currentTarget is HudTarget.Recording
                           or HudTarget.Transcribing
                           or HudTarget.Rewriting)
         {
-            ChronoPreview.SetNextStrokeConfig(_tuning.ToConfig());
+            ArmPreviewConfigs();
         }
         ChronoPreview.ApplyState(state);
 
@@ -351,7 +341,17 @@ public sealed partial class HudPage : Page
         }
 
         if (currentTarget == HudTarget.Recording)
-            StartRmsPump();
+            StartSpeechSimulation();
+    }
+
+    // Armed before ApplyState, whose single stroke creation consumes the
+    // one-shot; armed after, it would first build a shipping-default stroke.
+    // The gauge opens at the first pause, after ApplyState, and reads the
+    // stroke's config and the held countdown override then.
+    private void ArmPreviewConfigs()
+    {
+        ChronoPreview.SetNextStrokeConfig(_tuning.ToConfig());
+        ChronoPreview.OverrideCountdownConfig(_countdownConfig);
     }
 
     private void AttachNakedPreview(HudComposition.NakedMaskPart part)
@@ -362,9 +362,10 @@ public sealed partial class HudPage : Page
 
         var compositor = ElementCompositionPreview.GetElementVisual(NakedPreviewHost).Compositor;
 
-        // Only the bare ArcMask shows the arc fill's colour, against a
+        // Only the bare sweep mask shows the arc fill's colour, against a
         // LayerFill that is near-white in light theme, so the fill turns black
-        // there. Combined goes through AlphaMaskEffect and ignores the arc RGB.
+        // there. The masked cone goes through AlphaMaskEffect and ignores the
+        // arc RGB.
         bool isLightTheme =
             Content is FrameworkElement fe &&
             fe.ActualTheme == ElementTheme.Light;
@@ -372,7 +373,7 @@ public sealed partial class HudPage : Page
 
         _nakedPreview = HudComposition.CreateNakedMaskPreview(
             compositor, NakedHudSize, _tuning.ToConfig(), part, arcFill,
-            ViewModel.PreviewVariant, isDark: !isLightTheme,
+            ViewModel.PreviewMaterial, isDark: !isLightTheme,
             animationsEnabled: SettingsService.Instance.Current.Overlay.Animations);
 
         float inset = (NakedHostDim - _nakedPreview.Container.Size.X) / 2f;
@@ -381,11 +382,11 @@ public sealed partial class HudPage : Page
         ElementCompositionPreview.SetElementChildVisual(NakedPreviewHost, _nakedPreview.Container);
     }
 
-    private void AttachConicClonePreview()
+    private void AttachDigitRevealPreview()
     {
         ElementCompositionPreview.SetElementChildVisual(NakedPreviewHost, null);
-        _conicClonePreview?.Dispose();
-        _conicClonePreview = null;
+        _digitRevealPreview?.Dispose();
+        _digitRevealPreview = null;
 
         var compositor = ElementCompositionPreview.GetElementVisual(NakedPreviewHost).Compositor;
 
@@ -393,17 +394,17 @@ public sealed partial class HudPage : Page
             Content is FrameworkElement fe &&
             fe.ActualTheme == ElementTheme.Light;
 
-        _conicClonePreview = HudComposition.CreateConicClonePreview(
+        _digitRevealPreview = HudComposition.CreateConicClonePreview(
             compositor, NakedHudSize, _tuning.ToConfig(),
-            ViewModel.PreviewVariant, isDark: !isLightTheme,
+            ViewModel.PreviewMaterial, isDark: !isLightTheme,
             animationsEnabled: SettingsService.Instance.Current.Overlay.Animations);
 
         // Same seat as the XAML reference border, where the live row would sit.
-        float insetX = (NakedHostDim - _conicClonePreview.Container.Size.X) / 2f;
-        float insetY = (NakedHostDim - _conicClonePreview.Container.Size.Y) / 2f;
-        _conicClonePreview.Container.Offset = new Vector3(insetX, insetY, 0f);
+        float insetX = (NakedHostDim - _digitRevealPreview.Container.Size.X) / 2f;
+        float insetY = (NakedHostDim - _digitRevealPreview.Container.Size.Y) / 2f;
+        _digitRevealPreview.Container.Offset = new Vector3(insetX, insetY, 0f);
 
-        ElementCompositionPreview.SetElementChildVisual(NakedPreviewHost, _conicClonePreview.Container);
+        ElementCompositionPreview.SetElementChildVisual(NakedPreviewHost, _digitRevealPreview.Container);
     }
 
     private void RequestRebuild()
@@ -411,42 +412,6 @@ public sealed partial class HudPage : Page
         _rebuildPending = true;
         _rebuildDebounce.Stop();
         _rebuildDebounce.Start();
-    }
-
-    // ── RMS pump (Recording only) ───────────────────────────────────────
-
-    private void StartRmsPump()
-    {
-        if (_rmsTimer.IsEnabled) return;
-        _rmsClock.Restart();
-        _rmsTimer.Tick -= RmsTimerTick;
-        _rmsTimer.Tick += RmsTimerTick;
-        _rmsTimer.Start();
-    }
-
-    private void StopRmsPump()
-    {
-        if (!_rmsTimer.IsEnabled) return;
-        _rmsTimer.Stop();
-        _rmsTimer.Tick -= RmsTimerTick;
-        _rmsClock.Stop();
-    }
-
-    private void RmsTimerTick(object? sender, object e)
-    {
-        float rms;
-        if (_simManualOverride)
-        {
-            rms = _simManualValue;
-        }
-        else
-        {
-            double t = _rmsClock.Elapsed.TotalSeconds;
-            float sweep = (float)(0.5 + 0.5 * Math.Sin(
-                2 * Math.PI * t / Math.Max(0.1, _simRmsPeriodSeconds)));
-            rms = _simRmsMin + sweep * (_simRmsMax - _simRmsMin);
-        }
-        ChronoPreview.UpdateAudioLevel(rms);
     }
 
     // ── Reset all ───────────────────────────────────────────────────────
@@ -458,16 +423,10 @@ public sealed partial class HudPage : Page
     private void OnResetAllClick(object sender, RoutedEventArgs e)
     {
         _tuning = new TuningModel();
-        _countdownReplayClock.Reset();
-        _countdownTuning = new();
         _countdownConfig = new();
-
-        // Keep in step with the field initialisers and ResetSimulatedRms.
-        _simRmsMin             = 0.013f;
-        _simRmsMax             = 0.100f;
-        _simRmsPeriodSeconds   = 2.0f;
-        _simManualOverride     = false;
-        _simManualValue        = 0.012f;
+        ResetGaugeSimulation();
+        _speechSimulation = new();
+        _transitionSimulation = new();
 
         BuildTuningPanel();
         ApplyTarget();
@@ -475,9 +434,8 @@ public sealed partial class HudPage : Page
 
     // ── Tuning panel dispatcher ─────────────────────────────────────────
     //
-    // Parked follows the active sections, except on the targets without a
-    // stroke: Charging (empty list, a placeholder line instead) and the
-    // countdown views.
+    // HudViewModel.ActiveTuningSections decides which sections show and in
+    // which order; this only maps each one to its expander.
 
     private void BuildTuningPanel()
     {
@@ -486,7 +444,7 @@ public sealed partial class HudPage : Page
         while (TuningStack.Children.Count > 1)
             TuningStack.Children.RemoveAt(TuningStack.Children.Count - 1);
 
-        var sections = ViewModel.ActiveTuningSections;
+        var sections = ViewModel.ActiveTuningSections(_tuning.ToConfig());
         if (sections.Count == 0)
         {
             // An empty column would read as a bug; say why there is nothing.
@@ -505,22 +463,21 @@ public sealed partial class HudPage : Page
         {
             switch (section)
             {
-                case HudTuningSection.Geometry:      AddHudGeometryExpander();    break;
-                case HudTuningSection.Palette:       AddPaletteExpander();        break;
-                case HudTuningSection.ConicFade:     AddConicFadeExpander();      break;
-                case HudTuningSection.HueRotation:   AddHueRotationExpander();    break;
-                case HudTuningSection.ArcRotation:   AddArcRotationExpander();    break;
-                case HudTuningSection.Recording:     AddRecordingExpander();      break;
-                case HudTuningSection.Transcribing:  AddTranscribingExpander();   break;
-                case HudTuningSection.Rewriting:     AddRewritingExpander();      break;
-                case HudTuningSection.SimulatedRms:  AddSimulatedRmsExpander();   break;
-                case HudTuningSection.UtteranceCountdown: AddUtteranceCountdownExpander(); break;
-                case HudTuningSection.ClonePlacement: AddClonePlacementExpander(); break;
+                case HudTuningSection.Geometry:       AddHudGeometryExpander();    break;
+                case HudTuningSection.ColourMaterial: AddColourMaterialExpander(); break;
+                case HudTuningSection.GreyMaterial:   AddGreyMaterialExpander();   break;
+                case HudTuningSection.SweepMask:      AddSweepMaskExpander();      break;
+                case HudTuningSection.HueRotation:    AddHueRotationExpander();    break;
+                case HudTuningSection.SweepRotation:  AddSweepRotationExpander();  break;
+                case HudTuningSection.Recording:      AddRecordingExpander();      break;
+                case HudTuningSection.Transcribing:   AddTranscribingExpander();   break;
+                case HudTuningSection.Rewriting:      AddRewritingExpander();      break;
+                case HudTuningSection.Gauge:          AddGaugeExpander();          break;
+                case HudTuningSection.DigitReveal:    AddDigitRevealExpander();    break;
+                case HudTuningSection.Simulation:     AddSimulationExpander();     break;
+                case HudTuningSection.Orientations:   AddOrientationsExpander();   break;
             }
         }
-
-        if (!ViewModel.IsCountdownTarget)
-            AddParkedExpander();
 
         // Every reset and revert path rebuilds the panel, so the bar follows
         // the knobs from here; the row factories cover the knob edits.

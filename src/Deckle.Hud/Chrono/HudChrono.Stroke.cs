@@ -52,6 +52,12 @@ public sealed partial class HudChrono
     // creation. Null in shipping Deckle, which builds from HudSettingsService.
     private HudComposition.ConicArcStrokeConfig? _nextStrokeConfig;
 
+    // The config the stroke on screen was built from, whatever it came from:
+    // the gauge paints on the same outline, so it reads this rather than the
+    // store, and the two can never disagree. Written under _strokeSync and
+    // read on the UI thread only (RebuildCountdownVisual).
+    private HudComposition.ConicArcStrokeConfig? _strokeConfig;
+
     // The mapping and its tunables live in Deckle.Audio.AudioLevelMapper; the
     // smoother state is per-consumer, so it stays here.
     private float _smoothedLevel;
@@ -89,9 +95,12 @@ public sealed partial class HudChrono
         // destroyed stroke.
         lock (_strokeSync)
         {
+            // The variant the new stroke replaces, read before the flip:
+            // after Recording the processing stroke blends in from it.
+            var previous = _currentVariant;
             bool crossingBoundary =
                 _processingStroke != null &&
-                IsRecording(variant) != IsRecording(_currentVariant);
+                IsRecording(variant) != IsRecording(previous);
 
             if (crossingBoundary)
             {
@@ -116,10 +125,12 @@ public sealed partial class HudChrono
 
                 var cfg = _nextStrokeConfig ?? HudSettingsService.Instance.EffectiveStroke();
                 _nextStrokeConfig = null;
+                _strokeConfig = cfg;
 
                 _processingStroke = variant == ProcessingVariant.Recording
-                    ? HudComposition.CreateRecordingStroke(compositor, size, cfg, _animationsEnabled)
-                    : HudComposition.CreateProcessingStroke(compositor, size, cfg, _animationsEnabled);
+                    ? HudComposition.CreateRecordingStroke(compositor, size, isDark, cfg, _animationsEnabled)
+                    : HudComposition.CreateProcessingStroke(compositor, size, isDark, cfg, _animationsEnabled,
+                                                            from: crossingBoundary ? previous : null);
                 ElementCompositionPreview.SetElementChildVisual(
                     ProcessingSurfaceHost, _processingStroke.Visual);
 
@@ -160,6 +171,7 @@ public sealed partial class HudChrono
                 "composition-visual", _processingStrokeHandle, ageMs, "hud-chrono-stroke");
             _processingStroke.Dispose();
             _processingStroke = null;
+            _strokeConfig     = null;
             _currentVariant   = null;
         }
     }
@@ -215,9 +227,11 @@ public sealed partial class HudChrono
             var size = new Vector2(w, h);
             log?.Invoke("REBUILD", $"size={w:F1}×{h:F1}{(fallback ? " (fallback)" : "")}");
 
+            bool isDark = ChronoRoot.ActualTheme == ElementTheme.Dark;
             _processingStroke = variant == ProcessingVariant.Recording
-                ? HudComposition.CreateRecordingStroke(compositor, size, config, _animationsEnabled)
-                : HudComposition.CreateProcessingStroke(compositor, size, config, _animationsEnabled);
+                ? HudComposition.CreateRecordingStroke(compositor, size, isDark, config, _animationsEnabled)
+                : HudComposition.CreateProcessingStroke(compositor, size, isDark, config, _animationsEnabled);
+            _strokeConfig = config;
             // A live count climbing above 1 means a Dispose path is leaking.
             log?.Invoke("REBUILD",
                 $"created {(variant == ProcessingVariant.Recording ? "Recording" : "Processing")}Stroke " +
@@ -232,7 +246,6 @@ public sealed partial class HudChrono
             DeckleResourceSource.Log.ResourceAcquired(
                 "composition-visual", _processingStrokeHandle, 0, "hud-chrono-stroke");
 
-            bool isDark = ChronoRoot.ActualTheme == ElementTheme.Dark;
             _processingStroke.ApplyVariant(variant, isDark);
             log?.Invoke("REBUILD", $"ApplyVariant {variant} isDark={isDark} — done");
         }

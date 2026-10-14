@@ -22,7 +22,7 @@ public static partial class HudComposition
     // footprint rotates in the open.
     public enum NakedMaskPart
     {
-        Conic    = 1,   // the conic surface, graded for the chosen variant, full square
+        Conic    = 1,   // the conic surface on the chosen material, full square
         ArcMask  = 2,   // alpha-ramped pie slice(s), monochrome
         Combined = 3,   // Conic ⊗ ArcMask, no stroke silhouette
     }
@@ -42,8 +42,7 @@ public static partial class HudComposition
         private readonly CompositionEffectBrush? _effectBrush;
         private readonly CompositionDrawingSurface _conicSurface;
         private readonly CompositionDrawingSurface _arcMaskSurface;
-        // Null when the cone is frozen (static TransformMatrix, no animation).
-        private readonly CompositionPropertySet? _conicRotationProps;
+        private readonly CompositionPropertySet _conicRotationProps;
         private readonly CompositionPropertySet _arcRotationProps;
 
         private bool _disposed;
@@ -56,7 +55,7 @@ public static partial class HudComposition
             CompositionEffectBrush? effectBrush,
             CompositionDrawingSurface conicSurface,
             CompositionDrawingSurface arcMaskSurface,
-            CompositionPropertySet? conicRotationProps,
+            CompositionPropertySet conicRotationProps,
             CompositionPropertySet arcRotationProps)
         {
             Container            = container;
@@ -80,10 +79,10 @@ public static partial class HudComposition
             try { _conicBrush.StopAnimation("TransformMatrix");   } catch { }
             try { _arcMaskBrush.StopAnimation("TransformMatrix"); } catch { }
 
-            try { _conicRotationProps?.StopAnimation("Linear"); } catch { }
-            try { _conicRotationProps?.StopAnimation("Eased");  } catch { }
-            try { _arcRotationProps.StopAnimation("Linear");    } catch { }
-            try { _arcRotationProps.StopAnimation("Eased");     } catch { }
+            try { _conicRotationProps.StopAnimation("Linear"); } catch { }
+            try { _conicRotationProps.StopAnimation("Eased");  } catch { }
+            try { _arcRotationProps.StopAnimation("Linear");   } catch { }
+            try { _arcRotationProps.StopAnimation("Eased");    } catch { }
 
             // Effect brush first: it binds the source brushes.
             try { _effectBrush?.Dispose();   } catch { }
@@ -93,8 +92,8 @@ public static partial class HudComposition
             try { _conicSurface.Dispose();   } catch { }
             try { _arcMaskSurface.Dispose(); } catch { }
 
-            try { _conicRotationProps?.Dispose(); } catch { }
-            try { _arcRotationProps.Dispose();    } catch { }
+            try { _conicRotationProps.Dispose(); } catch { }
+            try { _arcRotationProps.Dispose();   } catch { }
 
             try { _sprite.Dispose();    } catch { }
             try { Container.Dispose();  } catch { }
@@ -107,15 +106,12 @@ public static partial class HudComposition
     //
     // `arcFillColor` is a theme-legible opaque colour for the ArcMask part,
     // which draws the mask directly; Combined reads only its alpha.
-    // `freezeHueRotation` pins the cone at HuePhaseTurns, the pose
-    // CreateRecordingStroke takes when RecordingHuePeriodSeconds is 0.
     public static NakedPreview CreateNakedMaskPreview(
         Compositor compositor, Vector2 hudSize,
         ConicArcStrokeConfig cfg, NakedMaskPart part,
         Color arcFillColor,
-        ProcessingVariant gradeVariant, bool isDark,
-        bool animationsEnabled = true,
-        bool freezeHueRotation = false)
+        HudMaterial material, bool isDark,
+        bool animationsEnabled = true)
     {
         // Same pxSquare math as CreateConicArcStroke: a different footprint
         // would show a geometry the stroke never samples.
@@ -145,27 +141,15 @@ public static partial class HudComposition
 
         var centre = new Vector2(pxSquare / 2f, pxSquare / 2f);
 
-        CompositionPropertySet? conicRotationProps = null;
-        if (freezeHueRotation)
-        {
-            // Same one-shot pose as CreateConicArcStroke's freezeHueRotation.
-            conicBrush.TransformMatrix =
-                Matrix3x2.CreateTranslation(-centre) *
-                Matrix3x2.CreateRotation(MathF.Tau * cfg.HuePhaseTurns) *
-                Matrix3x2.CreateTranslation(centre);
-        }
-        else
-        {
-            conicRotationProps = StartRotation(
-                compositor, conicBrush, centre,
-                cfg.HuePeriodSeconds,
-                cfg.HueDirection,
-                cfg.HuePhaseTurns,
-                cfg.HueEaseP1X, cfg.HueEaseP1Y,
-                cfg.HueEaseP2X, cfg.HueEaseP2Y,
-                cfg.HueMinSpeedFraction,
-                animationsEnabled: animationsEnabled);
-        }
+        var conicRotationProps = StartRotation(
+            compositor, conicBrush, centre,
+            cfg.HuePeriodSeconds,
+            cfg.HueDirection,
+            cfg.HuePhaseTurns,
+            cfg.HueEaseP1X, cfg.HueEaseP1Y,
+            cfg.HueEaseP2X, cfg.HueEaseP2Y,
+            cfg.HueMinSpeedFraction,
+            animationsEnabled: animationsEnabled);
         var arcRotationProps = StartRotation(
             compositor, arcMaskBrush, centre,
             cfg.ArcPeriodSeconds,
@@ -184,8 +168,8 @@ public static partial class HudComposition
         {
             case NakedMaskPart.Conic:
             {
-                var graded = BuildVariantGrading(
-                    new CompositionEffectSourceParameter("Conic"), cfg, gradeVariant, isDark);
+                var graded = BuildMaterialGrading(
+                    new CompositionEffectSourceParameter("Conic"), cfg, material, isDark);
                 var ef = compositor.CreateEffectFactory(graded);
                 effectBrush = ef.CreateBrush();
                 effectBrush.SetSourceParameter("Conic", conicBrush);
@@ -193,14 +177,14 @@ public static partial class HudComposition
                 break;
             }
             case NakedMaskPart.ArcMask:
-                // Ungraded: the variant toggle leaves the monochrome mask
+                // Ungraded: the material leaves the monochrome mask
                 // untouched.
                 sprite.Brush = arcMaskBrush;
                 break;
             case NakedMaskPart.Combined:
             {
-                var graded = BuildVariantGrading(
-                    new CompositionEffectSourceParameter("Conic"), cfg, gradeVariant, isDark);
+                var graded = BuildMaterialGrading(
+                    new CompositionEffectSourceParameter("Conic"), cfg, material, isDark);
                 var effectGraph = new AlphaMaskEffect
                 {
                     Source    = graded,

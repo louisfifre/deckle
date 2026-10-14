@@ -15,9 +15,9 @@ public static partial class HudComposition
     // An independent double comet (own conic and arc surfaces, brushes and
     // rotations) built from the same config fields as the digit reveal: clone
     // placement, clone periods, clone palette. The sprite clips to the row
-    // frame, so it shows exactly the slice the digit row samples. The grading
-    // is a static seed for the chosen variant; toggling the variant rebuilds
-    // the preview.
+    // frame, so it shows exactly the slice the digit row samples. The material
+    // is a static seed for the chosen one; choosing the other rebuilds the
+    // preview.
     //
     // The caller holds the bundle and Disposes it before mounting a
     // replacement: it carries four Forever animations (see NakedPreview).
@@ -87,7 +87,7 @@ public static partial class HudComposition
     public static ConicClonePreview CreateConicClonePreview(
         Compositor compositor, Vector2 hudSize,
         ConicArcStrokeConfig cfg,
-        ProcessingVariant gradeVariant, bool isDark,
+        HudMaterial material, bool isDark,
         bool animationsEnabled = true)
     {
         var coneCentre = new Vector2(
@@ -135,8 +135,8 @@ public static partial class HudComposition
             placement: coneCentre,
             animationsEnabled: animationsEnabled);
 
-        var gradedGraph = BuildVariantGrading(
-            new CompositionEffectSourceParameter("Conic"), cfg, gradeVariant, isDark);
+        var gradedGraph = BuildMaterialGrading(
+            new CompositionEffectSourceParameter("Conic"), cfg, material, isDark);
         var maskedGraph = new AlphaMaskEffect
         {
             Source    = gradedGraph,
@@ -160,49 +160,13 @@ public static partial class HudComposition
             conicSurface, arcSurface, hueRotationProps, arcRotationProps);
     }
 
-    // The contour's Saturation → Hue → Exposure chain, seeded at a variant's
-    // resting values. Static: previews do not blend between states.
-    private static IGraphicsEffect BuildVariantGrading(
+    // The contour's material mix, frozen on one material: the full wheel or
+    // the theme's grey. A preview shows a material, not a state, so no state's
+    // hue shift applies. Static: previews do not blend between materials.
+    private static IGraphicsEffect BuildMaterialGrading(
         IGraphicsEffectSource conicSource,
-        ConicArcStrokeConfig cfg, ProcessingVariant variant, bool isDark)
-    {
-        float sat, hueTurns, exposure;
-        switch (variant)
-        {
-            case ProcessingVariant.Rewriting:
-                sat      = cfg.RewritingSaturation;
-                hueTurns = cfg.RewritingHueShiftTurns;
-                exposure = cfg.RewritingExposure;
-                break;
-            case ProcessingVariant.Recording:
-                sat      = isDark ? cfg.RecordingSaturationDark : cfg.RecordingSaturationLight;
-                hueTurns = cfg.RecordingHueShiftTurns;
-                exposure = isDark ? cfg.RecordingExposureDark   : cfg.RecordingExposureLight;
-                break;
-            default: // Transcribing — greyscale baseline
-                sat      = isDark ? cfg.TranscribingSaturationDark : cfg.TranscribingSaturationLight;
-                hueTurns = cfg.TranscribingHueShiftTurns;
-                exposure = isDark ? cfg.TranscribingExposureDark   : cfg.TranscribingExposureLight;
-                break;
-        }
-
-        var saturationEffect = new SaturationEffect
-        {
-            Name       = "Sat",
-            Saturation = sat,
-            Source     = conicSource,
-        };
-        var hueEffect = new HueRotationEffect
-        {
-            Name   = "Hue",
-            Angle  = hueTurns * MathF.Tau,
-            Source = saturationEffect,
-        };
-        return new ExposureEffect
-        {
-            Name     = "Exp",
-            Exposure = exposure,
-            Source   = hueEffect,
-        };
-    }
+        ConicArcStrokeConfig cfg, HudMaterial material, bool isDark)
+        => BuildMaterialMix(
+            conicSource, material == HudMaterial.Colour ? 1f : 0f, 0f,
+            GreyMaterialColor(isDark ? cfg.GreyLightnessDark : cfg.GreyLightnessLight));
 }

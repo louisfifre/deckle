@@ -2,7 +2,7 @@
 
 ## Transport actions recreated the tuning controls
 
-- **Trigger:** Replay pause or Resume speech in Utterance countdown; returning to the cached HUD page.
+- **Trigger:** Replay pause or Resume speech on the Gauge target; returning to the cached HUD page.
 - **Observed symptom:** sections reopened and buttons moved during interaction.
 - **Cause:** transport handlers rebuilt the entire panel to reset one number; Loaded rebuilt it despite page caching.
 - **Invariant:** preview transport must preserve control identity, focus, expansion state and placement.
@@ -23,7 +23,7 @@ Manual WinUI validation is still required for both visual issues: enter the page
 ## Countdown duplicated material controls and omitted the material rotation
 
 - **Trigger:** tune the full Transcribing material, then inspect the countdown.
-- **Observed symptom:** a separate palette section, no full material inspection and a static material behind the countdown masks. Sweep mask also offered color variants that had no effect.
+- **Observed symptom:** a separate palette section, no full material inspection and a static material behind the gauge's masks. Sweep mask also offered color variants that had no effect.
 - **Cause:** the countdown repainted the palette but omitted its hue rotation; it owned an independent config projection. Mask/simulation/material controls were mixed.
 - **Invariant:** one material source, independent mask geometry, and controls grouped by what they actually affect.
 - **Fix:** share palette, hue rotation and Transcribing grading through HudMaterialTuning; expose countdown geometry/fade and preview-only inspection separately. Sweep mask has no color variant.
@@ -71,4 +71,4 @@ Manual WinUI validation is still required for both visual issues: enter the page
 - **Regression coverage:** TuningModelTests.AnEditChangesItsOwnPreviewOnlyAndAFreshTabOpensOnTheShippingDefaults and TuningModelTests.TheLiveHudOffersNoProcessWideEntryForAHudConfig. That the live HUD stays unchanged while the tab is used remains a manual check.
 - **Recurrence cue:** any static tuning source with a setter reachable from Deckle.Playground. `AudioLevelMapper` (Deckle.Audio) was one: the Audio mapping knobs and Reset all wrote statics the live HUD reads on each audio sample.
 - 2026-10-12, later the same day: Louis applied the rule to `AudioLevelMapper` too ("la même règle pour tous, le moins de spécificités"). The Audio mapping section and the Reset all writes are gone; its three window values are Settings > Recording's, EmaAlpha stays a constant, and the Recording preview maps the simulated RMS through the live calibration. TuningModelTests.ThePlaygroundTouchesNoAudioType pins it: the Playground assembly references nothing from Deckle.Audio.
-- 2026-10-14: Louis asked for the opposite gesture, explicit this time: the tab opens on the values the live HUD uses and a floating bar saves what the knobs show, writing only what moved. The invariant narrows to: the Playground never writes what the live HUD reads *on its own*; the one path is `HudSettingsService.Save`, behind the bar's Save button. The live HUD builds its stroke and countdown from `HudSettingsService.Effective*()` (stored overrides over the compiled defaults) and rebuilds on `Changed`. The file holds only the fields that differ from the compiled defaults, so a field moved back to its default leaves it; pinned by HudSettingsOverridesTests in Deckle.Hud.Tests, and TuningModelTests.LoadCopiesEveryField keeps the tab's load complete. That the bar appears on a knob move and the live HUD follows a Save stay manual checks.
+- 2026-10-14: Louis asked for the opposite gesture, explicit this time: the tab opens on the values the live HUD uses and a floating bar saves what the knobs show, writing only what moved. The invariant narrows to: the Playground never writes what the live HUD reads *on its own*; the one path is `HudSettingsService.Save`, behind the bar's Save button. The live HUD builds its stroke and countdown from `HudSettingsService.Effective*()` (stored overrides over the compiled defaults) and rebuilds on `Changed`. The file holds only the fields that differ from the compiled defaults, so a field moved back to its default leaves it; pinned by HudSettingsOverridesTests in Deckle.Hud.Tests, and TuningModelTests.LoadCopiesEveryField keeps the tab's load complete. That the bar appears on a knob move (a Material choice included), never on a Simulation row, and that the live HUD follows a Save stay manual checks.

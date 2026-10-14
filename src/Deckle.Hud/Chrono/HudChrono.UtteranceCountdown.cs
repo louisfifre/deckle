@@ -19,6 +19,20 @@ public sealed partial class HudChrono
     private float _renderedCountdownValue = -1f;
     private long _countdownStarted;
 
+    // Playground-only override, held until replaced. Not a one-shot like
+    // _nextStrokeConfig: the gauge is built at the first pause, after the
+    // Recording entry, and again at every pause the engine reports after an
+    // inactive frame, so a one-shot would leave the later builds on the store.
+    // Null in shipping Deckle, which builds from HudSettingsService.
+    private UtteranceCountdownConfig? _countdownConfigOverride;
+
+    // Null lifts the override. A gauge on screen is rebuilt at once.
+    public void OverrideCountdownConfig(UtteranceCountdownConfig? config)
+    {
+        _countdownConfigOverride = config;
+        RebuildCountdownVisual();
+    }
+
     public void UpdateUtteranceProgress(bool active, float progress, int completed)
     {
         if (!Volatile.Read(ref _countdownListening)) return;
@@ -73,14 +87,17 @@ public sealed partial class HudChrono
         if (width <= 0 || height <= 0) return;
         var size = new Vector2(width, height);
         var compositor = ElementCompositionPreview.GetElementVisual(CountdownSurfaceHost).Compositor;
-        // The stored settings over the compiled defaults. The Playground tunes
-        // its own preview and reaches this visual only through its Save, which
-        // lands here via OnHudSettingsChanged.
-        var settings = HudSettingsService.Instance;
+        // The stroke's own config, so the gauge extends the outline on screen
+        // whatever that was built from: the store in shipping Deckle, the
+        // tab's knobs in the Playground. The countdown config has no stroke to
+        // follow, so the Playground overrides it directly; the store otherwise.
+        var settings  = HudSettingsService.Instance;
+        var stroke    = _strokeConfig            ?? settings.EffectiveStroke();
+        var countdown = _countdownConfigOverride ?? settings.EffectiveCountdown();
         _countdownVisual = HudComposition.CreateUtteranceCountdownVisual(
-            compositor, size, size, settings.EffectiveStroke(),
+            compositor, size, size, stroke,
             ChronoRoot.ActualTheme == ElementTheme.Dark,
-            settings.EffectiveCountdown(), materialOpacity: 0f, animationsEnabled: _animationsEnabled);
+            countdown, materialOpacity: 0f, animationsEnabled: _animationsEnabled);
         _renderedCountdownValue = _countdownState.ValueAt(Stopwatch.GetElapsedTime(_countdownStarted));
         _countdownVisual.SetProgress(_renderedCountdownValue);
         ElementCompositionPreview.SetElementChildVisual(CountdownSurfaceHost, _countdownVisual.Container);

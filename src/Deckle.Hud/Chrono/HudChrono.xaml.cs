@@ -45,14 +45,13 @@ public sealed partial class HudChrono : UserControl
             ReapplyRestToneForState();
             RebuildCountdownVisual();
 
-            // Transcribing exposure is theme-aware (Dark vs Light split) and
-            // Recording reuses those baselines for its greyscale palette, so
-            // re-apply the variant; Rewriting is palette-neutral. Under
-            // _strokeSync: the audio pump may be writing to the stroke.
+            // The grey material has one lightness per theme, and any state
+            // may show it, so every state re-applies its variant; on the
+            // colour material the blend lands on the values already shown.
+            // Under _strokeSync: the audio pump may be writing to the stroke.
             lock (_strokeSync)
             {
-                if (_processingStroke != null && _currentVariant is { } v
-                    && v != ProcessingVariant.Rewriting)
+                if (_processingStroke != null && _currentVariant is { } v)
                 {
                     _processingStroke.ApplyVariant(
                         v, ChronoRoot.ActualTheme == ElementTheme.Dark);
@@ -96,14 +95,16 @@ public sealed partial class HudChrono : UserControl
 
     private void ApplyStoredSettings()
     {
-        RebuildCountdownVisual();
-
         // Under _strokeSync: the audio pump may be writing to the stroke.
         lock (_strokeSync)
         {
             if (_processingStroke is not null)
                 RebuildStroke(HudSettingsService.Instance.EffectiveStroke());
         }
+
+        // After the stroke: the gauge reads the config the stroke was built
+        // from, so the other order would rebuild it on the old one.
+        RebuildCountdownVisual();
     }
 
     private void OnOverlayAnimationsChanged(bool enabled)

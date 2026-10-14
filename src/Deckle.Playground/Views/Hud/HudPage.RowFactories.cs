@@ -1,7 +1,9 @@
 using System;
 using Microsoft.UI.Xaml;
+using Microsoft.UI.Xaml.Automation;
 using Microsoft.UI.Xaml.Controls;
 using Deckle.Catalog;
+using Deckle.Composition;
 
 namespace Deckle.Playground;
 
@@ -92,8 +94,7 @@ public sealed partial class HudPage
     {
         // TuningModel stores floats; promoted to double they show binary
         // noise (0.4f as 0.4000006). Rounding to the step's decimals strips it.
-        int digits = Math.Max(0, (int)Math.Ceiling(-Math.Log10(step)));
-        double displayValue = Math.Round(value, digits);
+        double displayValue = Math.Round(value, StepDecimals(step));
 
         var slider = new Slider
         {
@@ -146,7 +147,7 @@ public sealed partial class HudPage
         };
 
         stack.Children.Add(WrapRow(label, slider, numberBox));
-        // Lets the countdown transport move the row in place, keeping its
+        // Lets the gauge transport move the row in place, keeping its
         // controls, focus and layout.
         return next =>
         {
@@ -158,6 +159,20 @@ public sealed partial class HudPage
             }
             finally { _syncing = previous; }
         };
+    }
+
+    // The decimals the step itself carries: 0.25 needs two, where its order
+    // of magnitude alone (-log10) would give one and show 0.25 as 0.2.
+    private static int StepDecimals(double step)
+    {
+        int digits = 0;
+        while (digits < 6)
+        {
+            double scaled = step * Math.Pow(10, digits);
+            if (Math.Abs(scaled - Math.Round(scaled)) < 1e-9) break;
+            digits++;
+        }
+        return digits;
     }
 
     private void AddIntRow(
@@ -285,6 +300,57 @@ public sealed partial class HudPage
         grid.Children.Add(labelTb);
         grid.Children.Add(toggle);
         stack.Children.Add(grid);
+    }
+
+    // A two-value choice, so RadioButtons rather than a toggle: both options
+    // stay readable by name. The material decides which rows the panel
+    // shows, so a choice rebuilds the panel (and through it the preview).
+    // The rebuild is queued: it would otherwise tear this control down
+    // inside its own SelectionChanged.
+    private void AddMaterialRow(StackPanel stack, HudMaterial value, Action<HudMaterial> setter)
+    {
+        // Items follow HudMaterial's order (Grey, Colour), so the index is
+        // the material. Anything but Colour selects Grey, as MaterialOf reads
+        // it: the settings file stores the material as a number, and an
+        // unknown one paints grey.
+        var radios = AddRadioRow(stack, "Material", ["Grey", "Colour"],
+            value == HudMaterial.Colour ? 1 : 0);
+        radios.SelectionChanged += (_, _) =>
+        {
+            var next = radios.SelectedIndex == 0 ? HudMaterial.Grey : HudMaterial.Colour;
+            // A late selection event for the initial index is not a change.
+            if (next == value) return;
+            setter(next);
+            UpdateUnsavedBar();
+            DispatcherQueue.TryEnqueue(RebuildTuningPanel);
+        };
+    }
+
+    // A labelled choice between a few named options, side by side. The
+    // caller subscribes SelectionChanged after this returns, so building the
+    // row fires nothing.
+    private static RadioButtons AddRadioRow(StackPanel stack, string label, string[] items, int selectedIndex)
+    {
+        var radios = new RadioButtons { MaxColumns = items.Length, VerticalAlignment = VerticalAlignment.Center };
+        foreach (var item in items) radios.Items.Add(item);
+        radios.SelectedIndex = selectedIndex;
+        AutomationProperties.SetName(radios, label);
+
+        var grid = new Grid { ColumnSpacing = 8, Margin = new Thickness(0, 4, 0, 4) };
+        grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(160) });
+        grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+        var labelTb = new TextBlock
+        {
+            Text = label,
+            VerticalAlignment = VerticalAlignment.Center,
+            TextTrimming = TextTrimming.CharacterEllipsis,
+        };
+        Grid.SetColumn(labelTb, 0);
+        Grid.SetColumn(radios, 1);
+        grid.Children.Add(labelTb);
+        grid.Children.Add(radios);
+        stack.Children.Add(grid);
+        return radios;
     }
 
     private static Grid WrapRow(string label, Slider slider, NumberBox numberBox)

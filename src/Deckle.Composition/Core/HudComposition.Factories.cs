@@ -6,6 +6,7 @@ using Microsoft.Graphics.Canvas.UI.Composition;
 using Microsoft.Graphics.DirectX;
 using Microsoft.UI;
 using Microsoft.UI.Composition;
+using Windows.Graphics.Effects;
 using Windows.UI;
 
 namespace Deckle.Composition;
@@ -13,16 +14,34 @@ namespace Deckle.Composition;
 public static partial class HudComposition
 {
     // Tweak the defaults to iterate on the visual.
+    //
+    // `from` is the variant the stroke replaces, when it replaces one. After
+    // Recording the stroke is seeded with Recording's material, invisible as
+    // the outline is after the silence that ends a take, so the ApplyVariant
+    // that follows blends it in over the new state's BlendSeconds: the
+    // "blend from the previous variant" the config promises. Without it the
+    // stroke is seeded at Transcribing's values and the blend has nothing
+    // to travel, so the state pops in.
+    //
+    // `isDark` is the theme the stroke is born under: its first frame paints
+    // the grey of that theme, the one ApplyVariant will keep. It has no
+    // default on purpose: a stroke seeded with the other theme's grey showed
+    // a white-to-dark ramp on every entry in light theme.
     public static ProcessingStroke CreateProcessingStroke(
-        Compositor compositor, Vector2 hostSize,
+        Compositor compositor, Vector2 hostSize, bool isDark,
         ConicArcStrokeConfig? configOverride = null,
-        bool animationsEnabled = true)
+        bool animationsEnabled = true,
+        ProcessingVariant? from = null)
     {
         // Optional override used by HudChrono.RebuildStroke (HudPlayground
         // slider wiring). Null keeps the shipping defaults.
+        bool afterRecording = from == ProcessingVariant.Recording;
         return CreateConicArcStroke(
             compositor, hostSize,
             configOverride ?? new ConicArcStrokeConfig(),
+            isDark,
+            initialOpacity:    afterRecording ? 0f : -1f,
+            initialVariant:    afterRecording ? ProcessingVariant.Recording : ProcessingVariant.Transcribing,
             animationsEnabled: animationsEnabled);
     }
 
@@ -62,23 +81,20 @@ public static partial class HudComposition
     // 12 o'clock, mirror 0.75 + 0.5 = 1.25 ≡ 0.25·τ = 90° math =
     // 6 o'clock. ✓
     //
-    // HuePhase doesn't matter at RecordingSaturation = 0 (uniform grey),
-    // kept at 0. RecordingHuePeriodSeconds > 0 overrides the generic
-    // HuePeriodSeconds to let the hue drift slowly under the frozen arc
-    // lobes — requires RecordingSaturation > 0 to be visible.
+    // The cone is frozen too: the outline is a still pose under the mic
+    // level, whichever material Recording shows.
     public static ProcessingStroke CreateRecordingStroke(
-        Compositor compositor, Vector2 hostSize,
+        Compositor compositor, Vector2 hostSize, bool isDark,
         ConicArcStrokeConfig? configOverride = null,
         bool animationsEnabled = true)
     {
         // HudPlayground passes a pre-customized config via configOverride
         // so its Recording* sliders land on the live struct before the
         // mapping bakes them into the generic slots.
-        var cfg = BuildRecordingPaintConfig(
-            configOverride ?? new ConicArcStrokeConfig(), out bool hueRotates);
+        var cfg = BuildRecordingPaintConfig(configOverride ?? new ConicArcStrokeConfig());
         return CreateConicArcStroke(
-            compositor, hostSize, cfg,
-            freezeHueRotation: !hueRotates,
+            compositor, hostSize, cfg, isDark,
+            freezeHueRotation: true,
             freezeArcRotation: true,
             initialOpacity:    animationsEnabled ? 0f : 1f,
             initialVariant:    ProcessingVariant.Recording,
@@ -90,24 +106,18 @@ public static partial class HudComposition
     // values. All other fields come through unchanged — the Recording*
     // runtime fields are still read by ApplyVariant and by the
     // initialVariant seed. Shared by the Recording stroke, the utterance
-    // countdown and the Playground's countdown material view, so every
-    // visual that claims to be the Recording outline paints from one
-    // mapping instead of restating it.
+    // countdown and the Playground previews of them, so every visual that
+    // claims to be the Recording outline paints from one mapping instead of
+    // restating it.
     //
-    // `hueRotates` — whether the cone spins (RecordingHuePeriodSeconds > 0)
-    // or stays frozen at HuePhaseTurns. The countdown follows this decision
-    // so it is the outline's cone in the outline's pose. Frozen was also the
-    // first fix for a dark band (2026-10-13): the wheel was then baked by a
-    // conversion that clipped out-of-gamut channels, so its greys ran from
-    // about 0.24 (red) to 0.69 (cyan) and a spinning cone walked that band
-    // through the lit lobes. The band itself is gone since the palette is
-    // gamut-mapped by chroma (ColorSpace.OklchToRgbInGamut): every hue keeps
-    // one lightness, so one grey.
-    public static ConicArcStrokeConfig BuildRecordingPaintConfig(
-        ConicArcStrokeConfig defaults, out bool hueRotates)
-    {
-        hueRotates = defaults.RecordingHuePeriodSeconds > 0;
-        return defaults with
+    // The cone stays frozen at HuePhaseTurns in every Recording visual: the
+    // outline and the countdown. A spinning cone was the first cause of a
+    // dark band in the gauge (2026-10-13), when the grey was still the wheel
+    // desaturated. On the grey material the pose shows nothing; on the
+    // colour material it decides which hues face the edges, so the outline
+    // and the gauge must share it.
+    public static ConicArcStrokeConfig BuildRecordingPaintConfig(ConicArcStrokeConfig defaults)
+        => defaults with
         {
             ConicSpanTurns     = defaults.RecordingConicSpanTurns,
             ConicLeadFadeTurns = defaults.RecordingConicLeadFadeTurns,
@@ -115,13 +125,54 @@ public static partial class HudComposition
             ConicFadeCurve     = defaults.RecordingConicFadeCurve,
             ArcMirror          = defaults.RecordingArcMirror,
             ArcPhaseTurns      = defaults.RecordingArcPhaseTurns,
-            // Only override the generic hue period when Recording wants
-            // live hue motion. Otherwise the value is ignored anyway
-            // (the caller freezes the rotation).
-            HuePeriodSeconds   = hueRotates
-                ? defaults.RecordingHuePeriodSeconds
-                : defaults.HuePeriodSeconds,
         };
+
+    // The material stage every cone-sampling visual shares: the contour, the
+    // digit reveals, the countdown and the Playground previews. One builder
+    // so the grey and the colour cannot drift between them.
+    //
+    // CrossFadeEffect weighs its FIRST input: Direct2D documents the
+    // cross-fade as output = weight · Destination + (1 − weight) · Source,
+    // and Win2D's Source1 is that Destination (seen on screen 2026-10-14:
+    // with the sources the other way round, mix 1 showed the grey). So the
+    // hue-rotated wheel is Source1 (mix 1 = colour) and the grey Source2
+    // (mix 0). The grey source has no bounds; the masks downstream clip it.
+    private static IGraphicsEffect BuildMaterialMix(
+        IGraphicsEffectSource conicSource, float mix, float hueShiftTurns, Color grey)
+        => new CrossFadeEffect
+        {
+            Name      = "Mix",
+            CrossFade = mix,
+            Source1   = new HueRotationEffect
+            {
+                Name   = "Hue",
+                Angle  = hueShiftTurns * MathF.Tau,
+                Source = conicSource,
+            },
+            Source2   = new ColorSourceEffect { Name = "Grey", Color = grey },
+        };
+
+    private static readonly string[] MaterialMixAnimableProperties =
+        { "Mix.CrossFade", "Hue.Angle", "Grey.Color" };
+
+    // Mirrors the stroke's live entries ("Mix", "HueAngle", "Grey") onto a
+    // brush built from BuildMaterialMix, so every visual bound to the same
+    // PropertySet greys and colours in lock-step with the contour.
+    private static void BindMaterialMix(
+        Compositor compositor, CompositionEffectBrush effectBrush, CompositionPropertySet effectProps)
+    {
+        BindEffectProperty(compositor, effectBrush, "Mix.CrossFade", effectProps, "Mix");
+        BindEffectProperty(compositor, effectBrush, "Hue.Angle",     effectProps, "HueAngle");
+        BindEffectProperty(compositor, effectBrush, "Grey.Color",    effectProps, "Grey");
+    }
+
+    // Stops the three expressions BindMaterialMix started; a render tick
+    // between a PropertySet's disposal and the brush's would otherwise
+    // evaluate them against freed memory.
+    private static void UnbindMaterialMix(CompositionEffectBrush effectBrush)
+    {
+        foreach (var property in MaterialMixAnimableProperties)
+            try { effectBrush.StopAnimation(property); } catch { }
     }
 
     // Implementation of the double-comet pipeline driven by
@@ -136,9 +187,9 @@ public static partial class HudComposition
     //
     // Three off-screen surfaces:
     //   1. Conic surface   — full 360° colour ring, painted once as pie
-    //                        wedges with HSV(hue, S, V), hue = angle / 2π.
-    //                        At saturation = 0 it collapses to a uniform
-    //                        greyscale surface (Transcribing).
+    //                        wedges in OKLCh, hue = angle / 2π. The colour
+    //                        material; a state on the grey material shows a
+    //                        flat colour source instead, see the effect graph.
     //   2. Arc mask        — white pie slice in [0, 2π·Span] with alpha
     //                        ramps at both ends (LeadFade, TailFade);
     //                        transparent outside. Optionally mirrored
@@ -200,10 +251,8 @@ public static partial class HudComposition
     // surfaces at their HuePhaseTurns / ArcPhaseTurns offsets via a static
     // TransformMatrix (no KeyFrameAnimation, no Composition-driven angular
     // motion). The two flags are independent so a variant can spin one
-    // brush while freezing the other. Recording uses
-    // freezeArcRotation=true (lobes parked at visual 12/6 o'clock) while
-    // freezeHueRotation toggles on RecordingHuePeriodSeconds: 0 = frozen
-    // grey, >0 = slow hue drift across the silhouette.
+    // brush while freezing the other. Recording freezes both (lobes parked
+    // at visual 12/6 o'clock, cone at HuePhaseTurns).
     //
     // `initialOpacity ≥ 0` overrides cfg.TranscribingOpacity for the
     // SpriteVisual's seed opacity. Sentinel value -1 falls back to the
@@ -212,15 +261,19 @@ public static partial class HudComposition
     // from there as mic RMS arrives.
     //
     // `initialVariant` picks which runtime-variant baseline seeds the
-    // initial Saturation / Hue / Exposure values (and the effectProps
-    // scalars that drive them). Transcribing is the default because a
-    // processing stroke always enters the graph in that state; Recording
-    // passes its own variant so cold-start paints with Recording*
-    // values from frame 1, avoiding a Transcribing-to-Recording flash
-    // before ApplyVariant runs. Rewriting is never seeded from cold —
-    // it only ever follows a prior Transcribing via ApplyVariant blend.
+    // initial mix / hue / grey values (and the effectProps entries that
+    // drive them). Transcribing is the default because a processing
+    // stroke built from cold enters the graph in that state; a processing
+    // stroke that replaces the Recording one passes Recording, so the
+    // ApplyVariant that follows blends from where Recording left off;
+    // the Recording stroke passes its own variant so cold-start paints
+    // with Recording* values from frame 1, avoiding a
+    // Transcribing-to-Recording flash before ApplyVariant runs. Rewriting
+    // is never seeded from cold — it only ever follows a prior Transcribing
+    // via ApplyVariant blend.
     private static ProcessingStroke CreateConicArcStroke(
         Compositor compositor, Vector2 hostSize, ConicArcStrokeConfig cfg,
+        bool              isDark,
         bool              freezeHueRotation = false,
         bool              freezeArcRotation = false,
         float             initialOpacity = -1f,
@@ -374,111 +427,78 @@ public static partial class HudComposition
         }
 
         // ── Effect graph ─────────────────────────────────────────────────
-        //   Conic ──► Sat ──► Hue ──► Exp ──► AlphaMask(Arc) ──► AlphaMask(Stroke)
+        //   Grey ─────────────────┐
+        //   Conic ──► Hue ──► Mix ──► AlphaMask(Arc) ──► AlphaMask(Stroke)
         //
-        // Three live colour knobs (SaturationEffect, HueRotationEffect,
-        // ExposureEffect) sit between the conic palette and the masking
-        // stage. Each has its animable property exposed on the brush under
-        // the name "<EffectName>.<PropertyName>", and bound (via a single
-        // ExpressionAnimation per property) to a scalar on `effectProps`.
-        // ProcessingStroke.ApplyVariant animates those scalars — never
-        // the effect properties directly — so a "start from current value"
-        // expression keyframe reads the PropertySet scalar, which always
-        // holds the last animated value (the effect-brush property is a
-        // derived mirror and `this.CurrentValue` on it is not reliable
-        // mid-binding).
+        // Two materials meet in a CrossFadeEffect: a flat grey colour
+        // source and the conic wheel through a HueRotationEffect. Three
+        // live knobs — the mix (0 = grey, 1 = colour), the hue angle and
+        // the grey colour — are exposed on the brush under
+        // "<EffectName>.<PropertyName>" and each bound, through one
+        // ExpressionAnimation, to an entry of `effectProps`.
+        // ProcessingStroke.ApplyVariant animates those entries — never the
+        // effect properties directly — so a "start from current value"
+        // expression keyframe reads the PropertySet, which always holds the
+        // last animated value (the effect-brush property is a derived
+        // mirror and `this.CurrentValue` on it is not reliable mid-binding).
         //
-        // Order rationale:
-        //   Saturation BEFORE HueRotation so a greyscale target (Sat=0)
-        //     already kills the palette — a HueRotation on grey is a no-op
-        //     and doesn't waste GPU. If HueRotation were first, going grey
-        //     would still shift hues on the way down.
-        //   Exposure LAST so brightness shifts apply to the already-tinted
-        //     colour. Putting it first would change the "source" brightness
-        //     before Saturation read it, shifting the desaturated grey
-        //     level away from the expected neutral.
+        // The mix replaces a Saturation → Exposure chain that derived the
+        // grey from the wheel: every hue had to share one lightness for the
+        // grey to be flat, and an exposure bias per theme pushed it toward
+        // the substrate. A grey set directly needs neither (Lexicon,
+        // Config.cs). Transcribing → Rewriting is now one scalar blend from
+        // grey to colour, which reads as the colour rising through the grey.
         //
         // AlphaMaskEffect semantics: output = (Source.RGB, Source.A * Mask.A).
-        // Both masks compound; the final pixel RGB is the (effect-modified)
-        // conic colour, alpha = conic.A · arc.A · stroke.A.
+        // Both masks compound; the final pixel RGB is the mixed material,
+        // alpha = material.A · arc.A · stroke.A.
         //
-        // Initial effect values follow initialVariant's (Dark) baseline.
-        // Processing strokes pass Transcribing (first processing state;
-        // Rewriting can only follow a prior Transcribing via ApplyVariant
-        // blend — seeding Rewriting values cold caused a visible rainbow
-        // flash we fixed by defaulting to Transcribing). Recording strokes
-        // pass their own variant so cold-start paints with Recording*
-        // values from frame 1, skipping any Transcribing-to-Recording
-        // flash before ApplyVariant runs.
-        float seedSaturation = initialVariant switch
-        {
-            ProcessingVariant.Recording    => cfg.RecordingSaturationDark,
-            ProcessingVariant.Rewriting    => cfg.RewritingSaturation,
-            _                              => cfg.TranscribingSaturationDark,
-        };
-        float seedHueShiftTurns = initialVariant switch
-        {
-            ProcessingVariant.Recording    => cfg.RecordingHueShiftTurns,
-            ProcessingVariant.Rewriting    => cfg.RewritingHueShiftTurns,
-            _                              => cfg.TranscribingHueShiftTurns,
-        };
-        float seedExposure = initialVariant switch
-        {
-            ProcessingVariant.Recording    => cfg.RecordingExposureDark,
-            ProcessingVariant.Rewriting    => cfg.RewritingExposure,
-            _                              => cfg.TranscribingExposureDark,
-        };
+        // Initial effect values follow initialVariant's baseline, with the
+        // grey of the theme the stroke is born under: ApplyVariant animates
+        // toward that same grey, so the first frame already shows it instead
+        // of ramping from the other theme's.
+        // Processing strokes built from cold pass Transcribing (first
+        // processing state; Rewriting can only follow a prior Transcribing
+        // via ApplyVariant blend — seeding Rewriting values cold caused a
+        // visible rainbow flash we fixed by defaulting to Transcribing);
+        // the one that replaces the Recording stroke passes Recording, so
+        // the blend into Transcribing starts from Recording's material.
+        // Recording strokes pass their own variant so cold-start paints
+        // with Recording* values from frame 1, skipping any
+        // Transcribing-to-Recording flash before ApplyVariant runs.
+        var (seedMix, seedHueShiftTurns) = cfg.MaterialOf(initialVariant);
+        Color seedGrey = GreyMaterialColor(isDark ? cfg.GreyLightnessDark : cfg.GreyLightnessLight);
 
-        var saturationEffect = new SaturationEffect
-        {
-            Name       = "Sat",
-            Saturation = seedSaturation,
-            Source     = new CompositionEffectSourceParameter("Conic"),
-        };
-        var hueEffect = new HueRotationEffect
-        {
-            Name   = "Hue",
-            Angle  = seedHueShiftTurns * MathF.Tau,
-            Source = saturationEffect,
-        };
-        var exposureEffect = new ExposureEffect
-        {
-            Name     = "Exp",
-            Exposure = seedExposure,
-            Source   = hueEffect,
-        };
         var effectGraph = new AlphaMaskEffect
         {
             Source = new AlphaMaskEffect
             {
-                Source    = exposureEffect,
+                Source    = BuildMaterialMix(
+                    new CompositionEffectSourceParameter("Conic"),
+                    seedMix, seedHueShiftTurns, seedGrey),
                 AlphaMask = new CompositionEffectSourceParameter("Arc"),
             },
             AlphaMask = new CompositionEffectSourceParameter("Stroke"),
         };
 
         // Declaring animable properties on the factory is what makes
-        // effectBrush.StartAnimation("Sat.Saturation", …) legal — without
+        // effectBrush.StartAnimation("Mix.CrossFade", …) legal — without
         // this list Composition rejects the property name.
         var effectFactory = compositor.CreateEffectFactory(
-            effectGraph,
-            new[] { "Sat.Saturation", "Hue.Angle", "Exp.Exposure" });
+            effectGraph, MaterialMixAnimableProperties);
         var effectBrush = effectFactory.CreateBrush();
         effectBrush.SetSourceParameter("Conic",  conicBrush);
         effectBrush.SetSourceParameter("Arc",    arcMaskBrush);
         effectBrush.SetSourceParameter("Stroke", strokeMaskBrush);
 
-        // PropertySet holds the live-animable scalars. ApplyVariant
+        // PropertySet holds the live-animable entries. ApplyVariant
         // animates these; the ExpressionAnimations below propagate their
         // values to the effect-brush properties every frame.
         var effectProps = compositor.CreatePropertySet();
-        effectProps.InsertScalar("Saturation", seedSaturation);
-        effectProps.InsertScalar("HueAngle",   seedHueShiftTurns * MathF.Tau);
-        effectProps.InsertScalar("Exposure",   seedExposure);
-
-        BindEffectProperty(compositor, effectBrush, "Sat.Saturation", effectProps, "Saturation");
-        BindEffectProperty(compositor, effectBrush, "Hue.Angle",      effectProps, "HueAngle");
-        BindEffectProperty(compositor, effectBrush, "Exp.Exposure",   effectProps, "Exposure");
+        effectProps.InsertScalar("Mix",      seedMix);
+        effectProps.InsertScalar("HueAngle", seedHueShiftTurns * MathF.Tau);
+        effectProps.InsertColor ("Grey",     seedGrey);
+        BindMaterialMix(compositor, effectBrush, effectProps);
 
         var strokeVisual = compositor.CreateSpriteVisual();
         strokeVisual.Size    = innerSize;

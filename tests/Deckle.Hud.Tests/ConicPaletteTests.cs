@@ -1,49 +1,125 @@
 using System;
 using Deckle.Composition;
+using Windows.UI;
 using Xunit;
 
 namespace Deckle.Hud.Tests;
 
-// The cone's promise: at one lightness, every hue desaturates to one grey.
-// sRGB cannot show every hue at the chroma the config asks for, so the
-// in-gamut conversion lowers the chroma per hue and keeps the lightness.
-// The clamping conversion kept the chroma instead and spread the greys of
-// the default wheel from about 0.24 to 0.69 (bug note beside this file).
+// The cone's two materials. Each state picks one, and the grey is a
+// flat colour from one lightness, never the colour wheel desaturated: the
+// desaturated wheel once carried a dark red band into the countdown gauge
+// (bug note beside this file). The wheel itself is baked by the clamping
+// conversion, so a hue past the sRGB gamut darkens rather than bleaches.
 public sealed class ConicPaletteTests
 {
-    private const float LightnessTolerance = 0.002f;
-
     [Fact]
     [Trait("Category", "regression")]
-    public void EveryHueKeepsTheRequestedLightnessWithinTheGamut()
+    public void TheGreyMaterialIsOneGreyAtAnyLightness()
     {
-        var config = new HudComposition.ConicArcStrokeConfig();
+        Assert.Equal(Color.FromArgb(0xFF, 0xFF, 0xFF, 0xFF), HudComposition.GreyMaterialColor(1f));
+        Assert.Equal(Color.FromArgb(0xFF, 0x00, 0x00, 0x00), HudComposition.GreyMaterialColor(0f));
 
-        for (int i = 0; i < 36; i++)
+        for (int i = 0; i <= 20; i++)
         {
-            float hue = i / 36f;
-            var (r, g, b) = ColorSpace.OklchToLinearRgbInGamut(
-                config.OklchLightness, config.OklchChroma, hue);
-
-            Assert.InRange(r, 0f, 1f);
-            Assert.InRange(g, 0f, 1f);
-            Assert.InRange(b, 0f, 1f);
-
-            var (lightness, _, _) = ColorSpace.LinearRgbToOklch(r, g, b);
-            Assert.InRange(MathF.Abs(lightness - config.OklchLightness), 0f, LightnessTolerance);
+            var grey = HudComposition.GreyMaterialColor(i / 20f);
+            Assert.Equal(0xFF, grey.A);
+            Assert.Equal(grey.R, grey.G);
+            Assert.Equal(grey.G, grey.B);
         }
     }
 
-    // A chroma the display can show is returned untouched: the mapping only
-    // acts past the gamut boundary.
+    // Perceptual steps: the middle of the range is a mid grey to the eye,
+    // which in sRGB bytes sits well above 128.
     [Fact]
-    public void AnInGamutColourIsNotChanged()
+    public void TheGreyMaterialRisesWithLightness()
     {
+        byte previous = 0;
+        for (int i = 1; i <= 10; i++)
+        {
+            byte value = HudComposition.GreyMaterialColor(i / 10f).R;
+            Assert.True(value > previous, $"lightness {i / 10f}: {value} is not above {previous}");
+            previous = value;
+        }
+        Assert.InRange(HudComposition.GreyMaterialColor(0.5f).R, 90, 140);
+    }
+
+    // The default wheel asks more chroma than sRGB carries at L 0.75. The
+    // clamp keeps the red saturated and lets it darken; the gamut mapping
+    // would keep the lightness and lose the chroma. This pins the choice.
+    [Fact]
+    public void TheWheelKeepsItsRedSaturatedPastTheGamut()
+    {
+        var config = new HudComposition.ConicArcStrokeConfig();
+        var red = ColorSpace.OklchToRgb(config.OklchLightness, config.OklchChroma, 0.08f);
+
+        Assert.True(red.R > 200, $"red channel {red.R} is not saturated");
+        Assert.True(red.G < 80 && red.B < 120, $"red carries too much green ({red.G}) or blue ({red.B})");
+    }
+
+    // The gamut-mapped conversion stays a pure primitive: lightness held
+    // for every hue, channels inside [0, 1], untouched when already in gamut.
+    [Fact]
+    public void TheInGamutConversionHoldsTheLightnessForEveryHue()
+    {
+        const float tolerance = 0.002f;
+        for (int i = 0; i < 36; i++)
+        {
+            var (r, g, b) = ColorSpace.OklchToLinearRgbInGamut(0.75f, 0.3f, i / 36f);
+            Assert.InRange(r, 0f, 1f);
+            Assert.InRange(g, 0f, 1f);
+            Assert.InRange(b, 0f, 1f);
+            var (lightness, _, _) = ColorSpace.LinearRgbToOklch(r, g, b);
+            Assert.InRange(MathF.Abs(lightness - 0.75f), 0f, tolerance);
+        }
+
         var clamped = ColorSpace.OklchToLinearRgb(0.75f, 0.05f, 0.1f);
         var mapped = ColorSpace.OklchToLinearRgbInGamut(0.75f, 0.05f, 0.1f);
-
         Assert.InRange(MathF.Abs(mapped.R - clamped.R), 0f, 1e-6f);
         Assert.InRange(MathF.Abs(mapped.G - clamped.G), 0f, 1e-6f);
         Assert.InRange(MathF.Abs(mapped.B - clamped.B), 0f, 1e-6f);
     }
+
+    // Recording and Transcribing open on the grey, Rewriting on the colour
+    // wheel: the look the HUD shipped with before the material became a
+    // per-state setting.
+    [Fact]
+    public void EachStateOpensOnItsShippingMaterial()
+    {
+        var config = new HudComposition.ConicArcStrokeConfig();
+
+        Assert.Equal(HudMaterial.Grey, config.RecordingMaterial);
+        Assert.Equal(HudMaterial.Grey, config.TranscribingMaterial);
+        Assert.Equal(HudMaterial.Colour, config.RewritingMaterial);
+    }
+
+    // A state on Colour shows the full wheel turned by its own hue shift; a
+    // state on Grey shows the flat grey, where a hue shift has nothing to
+    // turn. Each state answers from its own fields, never another state's.
+    [Theory]
+    [InlineData(ProcessingVariant.Recording)]
+    [InlineData(ProcessingVariant.Transcribing)]
+    [InlineData(ProcessingVariant.Rewriting)]
+    public void AStateShowsItsOwnMaterialAndHueShift(ProcessingVariant state)
+    {
+        const float shift = 0.3f;
+        var everyStateShifted = new HudComposition.ConicArcStrokeConfig
+        {
+            RecordingHueShiftTurns = 0.1f,
+            TranscribingHueShiftTurns = 0.2f,
+            RewritingHueShiftTurns = 0.4f,
+        };
+
+        Assert.Equal((1f, shift), WithMaterial(everyStateShifted, state, HudMaterial.Colour, shift).MaterialOf(state));
+        Assert.Equal((0f, 0f), WithMaterial(everyStateShifted, state, HudMaterial.Grey, shift).MaterialOf(state));
+    }
+
+    private static HudComposition.ConicArcStrokeConfig WithMaterial(
+        HudComposition.ConicArcStrokeConfig config, ProcessingVariant state, HudMaterial material, float hueShiftTurns)
+        => state switch
+        {
+            ProcessingVariant.Recording => config with { RecordingMaterial = material, RecordingHueShiftTurns = hueShiftTurns },
+            ProcessingVariant.Transcribing => config with { TranscribingMaterial = material, TranscribingHueShiftTurns = hueShiftTurns },
+            ProcessingVariant.Rewriting => config with { RewritingMaterial = material, RewritingHueShiftTurns = hueShiftTurns },
+            _ => throw new ArgumentOutOfRangeException(nameof(state)),
+        };
 }
