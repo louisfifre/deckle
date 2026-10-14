@@ -18,23 +18,14 @@
                                             x:Uid="GeneralPageHeader"
                                             ResetAllRequested="ResetAll_Click" />
 
-                <!-- ── Appearance ──────────────────────────────────────────── -->
-                <catalog:SettingsSection x:Name="AppearanceSection"
-                                         x:Uid="GeneralPageAppearanceSection"
-                                         HasReset="True"
-                                         ResetRequested="ResetAppearance_Click">
-                    <StackPanel x:Name="AppearanceHost"
-                                Spacing="{StaticResource SettingsCardSpacing}" />
-                </catalog:SettingsSection>
-
-                <!-- ── Startup ─────────────────────────────────────────────── -->
-                <catalog:SettingsSection x:Name="StartupSection"
-                                         x:Uid="GeneralPageStartupSection"
-                                         HasReset="True"
-                                         ResetRequested="ResetStartup_Click">
-                    <StackPanel x:Name="StartupHost"
-                                Spacing="{StaticResource SettingsCardSpacing}" />
-                </catalog:SettingsSection>
+                <!-- The theme and the start-with-Windows switch stand first,
+                     grouped under no title: a section of one card earns no
+                     heading, the cards simply open the page (Louis,
+                     2026-10-14). Composed: GeneralViewModel.AppearanceSettings
+                     then StartupSettings, into the same host. Each card keeps
+                     its own reset; there is no section to reset. -->
+                <StackPanel x:Name="TopHost"
+                            Spacing="{StaticResource SettingsCardSpacing}" />
 
                 <!-- ── Updates ─────────────────────────────────────────────── -->
                 <catalog:SettingsSection x:Name="UpdatesSection"

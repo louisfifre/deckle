@@ -34,25 +34,20 @@ public sealed partial class GeneralPage : Page
         LoadAndSync();
     }
 
-    // ── Composed Appearance section ───────────────────────────────────────────
+    // ── Composed top cards: theme, then start with Windows ────────────────────
     //
-    // Every composer is created before LoadAndSync so its subscription catches
-    // Load()'s PropertyChanged, and held in a field so it lives as long as the
-    // cached page.
+    // Both compose into TopHost, under no section title (one card each earns
+    // no heading). Every composer is created before LoadAndSync so its
+    // subscription catches Load()'s PropertyChanged, and held in a field so it
+    // lives as long as the cached page.
     private SettingsComposer? _appearanceComposer;
 
     private void ComposeAppearanceSection()
     {
-        _appearanceComposer = new SettingsComposer(AppearanceHost, ViewModel);
-        // Subscribed before Compose so its closing RefreshAll lands the initial
-        // gate too.
-        _appearanceComposer.DirtyChanged += (_, _) =>
-            AppearanceSection.IsResetEnabled = _appearanceComposer.IsDirty();
+        _appearanceComposer = new SettingsComposer(TopHost, ViewModel);
         _appearanceComposer.Compose(ViewModel.AppearanceSettings);
     }
 
-    // ── Composed Startup section ──────────────────────────────────────────────
-    //
     // The "start with Windows" toggle's registry write and revert-on-refusal live
     // in the VM setter, so it composes like any toggle: the composer's
     // subscription reflects the setter's own revert.
@@ -60,9 +55,7 @@ public sealed partial class GeneralPage : Page
 
     private void ComposeStartupSection()
     {
-        _startupComposer = new SettingsComposer(StartupHost, ViewModel);
-        _startupComposer.DirtyChanged += (_, _) =>
-            StartupSection.IsResetEnabled = _startupComposer.IsDirty();
+        _startupComposer = new SettingsComposer(TopHost, ViewModel);
         _startupComposer.Compose(ViewModel.StartupSettings);
     }
 
@@ -177,23 +170,10 @@ public sealed partial class GeneralPage : Page
     // ── Reset per section ───────────────────────────────────────────────────
     //
     // Each value goes back to its default through its own setter, which carries
-    // the side effects (Appearance's ApplyTheme in OnThemeChanged, Startup's
+    // the side effects (the theme's ApplyTheme in OnThemeChanged, the startup
     // registry write in OnAutostartEnabledChanged), so a handler only triggers
-    // the reset and logs it.
-
-    private void ResetAppearance_Click(object sender, RoutedEventArgs e)
-    {
-        _appearanceComposer?.ResetAll();
-        DeckleSettingsUxSource.Log.SectionReset();
-        DeckleSettingsUxSource.Log.SectionResetDetail("Appearance");
-    }
-
-    private void ResetStartup_Click(object sender, RoutedEventArgs e)
-    {
-        _startupComposer?.ResetAll();
-        DeckleSettingsUxSource.Log.SectionReset();
-        DeckleSettingsUxSource.Log.SectionResetDetail("Startup");
-    }
+    // the reset and logs it. The top cards have no section, so no section
+    // reset: each keeps its own, and Reset all covers them.
 
     private void ResetUpdates_Click(object sender, RoutedEventArgs e)
     {
