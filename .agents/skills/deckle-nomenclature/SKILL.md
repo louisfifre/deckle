@@ -5,7 +5,7 @@ description: Use when you give a name to anything in the Deckle repository or ch
 
 ## Why
 
-A name grounded in the world's conventions reads to anyone, and a name that says a responsibility shows what the thing is for. These habits are meant to carry across projects.
+A name grounded in the world's conventions reads to anyone, and a name that says a responsibility shows what the thing is for.
 
 ## Statement
 
@@ -17,6 +17,6 @@ Give a type the suffix that names its precise role. A suffix that would fit any 
 
 A namespace names a module's capability, never a file's location. One module exposes one namespace, and sub-folders organize files freely without shifting or splitting it. A file and a folder are still named for the responsibility they hold, and no two modules' capability names overlap. A name that would fit any module, such as Common or Shared, names no capability.
 
-Resources keep one marking scheme. `x:Name` names an element the code reaches, `x:Key` an entry in a resource dictionary and `x:Uid` the localized strings of an element, and each name serves its own role. An EventSource provider is named `Deckle-<Component>`, with a dash, because a dot collided in ETW. A theme resource is named for the function it serves, not for its value.
+Resources keep one marking scheme. `x:Name` names an element the code reaches, `x:Key` an entry in a resource dictionary and `x:Uid` the localized strings of an element, and each name serves its own role. An EventSource provider is named `Deckle-<Component>`, with the dash Microsoft's own providers use as separator. A theme resource is named for the function it serves, not for its value.
 
 A name that strays from the ordinary deserves a question. It usually shows a responsibility not yet clearly seen.
