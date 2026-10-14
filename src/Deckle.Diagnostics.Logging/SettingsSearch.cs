@@ -54,19 +54,21 @@ public static class SettingsSearch
             Keywords = ["journal", "debug", "troubleshoot"],
         },
 
-        // "Telemetry" section — composed toggle and Path cards (TelemetrySettings).
+        // "Telemetry" section — the page's own composed toggle (TelemetrySettings).
         new SettingSearchEntry
         {
             LabelKey = "TelemetryMouseWheelCard",
             Keywords = ["mouse", "scroll", "wheel", "jsonl", "capture"],
         },
+
+        // "Folders" section, last on the page: the composed telemetry folder
+        // (TelemetryStorageSettings) and the hand-authored diagnostics folder
+        // card, Tag'd in the XAML.
         new SettingSearchEntry
         {
             LabelKey = "GeneralStorageFolderCard",
-            Keywords = ["directory", "location", "path"],
+            Keywords = ["directory", "location", "path", "telemetry"],
         },
-
-        // "Diagnostic files" section — hand-authored card, Tag'd in the XAML.
         new SettingSearchEntry
         {
             LabelKey = "DiagnosticsFilesCard",

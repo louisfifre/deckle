@@ -108,7 +108,7 @@
     <value>Admit Raw Input summaries and Trackpad gesture details. Device presence, lifecycle events, incidents, warnings, errors, and recoveries remain available.</value>
   </data>
   <data name="LoggingWindowingCard.Description" xml:space="preserve">
-    <value>Verbose lines from window placement across every Deckle window — positioning and DPI, overlay stacking, popup anchoring, z-order checks, resize frames, and first-open construction timings. This provider emits nothing else, so leaving it off keeps these windows silent in the log.</value>
+    <value>Verbose lines from window placement across every Deckle window, covering positioning and DPI, overlay stacking, popup anchoring, z-order checks, resize frames, and first-open construction timings. This provider emits nothing else, so leaving it off keeps these windows silent in the log.</value>
   </data>
 
   <!-- Telemetry section (x:Uid header + composed card label keys). The General*
@@ -129,12 +129,6 @@
   <data name="GeneralAppLogCard.Description" xml:space="preserve">
     <value>Mirror admitted operational observations to diagnostics\app.jsonl. The file rotates every 8,000 lines into numbered generations under diagnostics\archive\.</value>
   </data>
-  <data name="GeneralStorageFolderCard.Header" xml:space="preserve">
-    <value>Storage folder</value>
-  </data>
-  <data name="GeneralStorageFolderCard.Description" xml:space="preserve">
-    <value>Root for telemetry datasets that support a custom folder. Leave empty to use %LOCALAPPDATA%\Deckle\telemetry\. This does not move the application log or mouse wheel captures.</value>
-  </data>
   <data name="TelemetryMouseWheelCard.Header" xml:space="preserve">
     <value>Record wheel events</value>
   </data>
@@ -142,15 +136,29 @@
     <value>Record wheel timing and delta data to JSONL files under telemetry\mouse-wheel. This capture is independent of Input activity.</value>
   </data>
 
-  <!-- Diagnostic files section (x:Uid) -->
-  <data name="DiagnosticsPageFilesSection.Title" xml:space="preserve">
-    <value>Diagnostic files</value>
+  <!-- Folders section, last on the page (x:Uid header + the composed storage
+       card's label key + the hand-authored diagnostics folder card). The
+       storage card's General* prefix is the same historical artifact as above.
+       A custom storage folder only receives what reads CorpusPaths (the
+       dictation audio); the other datasets keep writing under the default
+       telemetry folder, and the wording says so. -->
+  <data name="DiagnosticsPageFoldersSection.Title" xml:space="preserve">
+    <value>Folders</value>
+  </data>
+  <data name="DiagnosticsPageFoldersSection.Caption" xml:space="preserve">
+    <value>Where Deckle keeps what it records. Both folders stay on this device and nothing is sent anywhere.</value>
+  </data>
+  <data name="GeneralStorageFolderCard.Header" xml:space="preserve">
+    <value>Telemetry folder</value>
+  </data>
+  <data name="GeneralStorageFolderCard.Description" xml:space="preserve">
+    <value>Holds the datasets you turn on under Telemetry, from microphone level to wheel events. A folder you choose here receives only the dictation audio. Every other dataset stays in the default folder.</value>
   </data>
   <data name="DiagnosticsFilesCard.Header" xml:space="preserve">
-    <value>Setup and error logs</value>
+    <value>Diagnostics folder</value>
   </data>
   <data name="DiagnosticsFilesCard.Description" xml:space="preserve">
-    <value>Recorded automatically and kept on this device — never sent anywhere. Open the folder to find them when reporting a first-run or crash problem.</value>
+    <value>Holds the setup log, the error log and the application log. Deckle always writes the first two, so a failed first run or a crash leaves a trace. Open it when you report a problem.</value>
   </data>
 
   <!-- Shared log filter bar. The live Log Window and the app.jsonl settings

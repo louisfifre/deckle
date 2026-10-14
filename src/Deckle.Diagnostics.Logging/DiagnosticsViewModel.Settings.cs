@@ -12,8 +12,9 @@ namespace Deckle.Diagnostics.Logging;
 //
 // The page is the one editor of everything Deckle records about itself: the
 // module-owned datasets (microphone level, dictation latency and corpus,
-// autocorrect decisions and text, trackpad frames) compose between the two
-// lists below, from DiagnosticsRegistry, with their own models.
+// autocorrect decisions and text, trackpad frames) compose into the Telemetry
+// section beside TelemetrySettings, from DiagnosticsRegistry, with their own
+// models. The page sorts that section, folds first, then flat cards.
 public partial class DiagnosticsViewModel
 {
     public IReadOnlyList<SettingDescriptor> LoggingSettings =>
@@ -51,8 +52,9 @@ public partial class DiagnosticsViewModel
             confirmOnEnable: TelemetryConsent.RequestApplicationLog),
     ];
 
-    // The mouse-wheel dataset opt-in, first of the Telemetry section; the
-    // module datasets follow it.
+    // The mouse-wheel dataset opt-in, the page's own source in the Telemetry
+    // section. A flat card, so it leads the flat cards, under every module
+    // fold.
     public IReadOnlyList<SettingDescriptor> TelemetrySettings =>
     [
         Setting.Toggle("TelemetryMouseWheelCard",
@@ -61,10 +63,13 @@ public partial class DiagnosticsViewModel
             defaultValue: () => new Deckle.Input.MouseWheelSettings().RecordEvents),
     ];
 
-    // The shared JSONL root for every telemetry stream, last of the section:
-    // dataset capture and its storage location belong together, the location
-    // after the datasets it holds. The path's reset default is the POCO
-    // initializer (empty means AppPaths.TelemetryDirectory).
+    // The telemetry storage folder, first card of the Folders section that
+    // closes the page, above the diagnostics folder: each place Deckle writes
+    // to sits in one section, after everything that writes there. The override
+    // reaches only what reads CorpusPaths (today the dictation audio WAVs);
+    // the JSONL sinks, trackpad and wheel recorders write under
+    // AppPaths.TelemetryDirectory whatever it holds. The path's reset default
+    // is the POCO initializer (empty means AppPaths.TelemetryDirectory).
     public IReadOnlyList<SettingDescriptor> TelemetryStorageSettings =>
     [
         Setting.Path("GeneralStorageFolderCard",
