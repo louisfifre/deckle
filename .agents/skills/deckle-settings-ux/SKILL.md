@@ -19,7 +19,7 @@ A change applies at once and is written when its gesture ends, at the release of
 
 Confirmation is set by how reversible an action is, never by where the setting sits. When a setting must warn, it speaks through one inline channel whose wording carries the tone.
 
-First tell a setting from a command and from a diagnostic. A setting keeps a value. A command acts now, through a button or a menu. A diagnostic is read, never configured. The nature of a setting's value then picks its control, as the control catalogue says. A numeric magnitude is always one control, a number field for the exact value with a slider beside it when the value earns a gesture, sized by a chosen fineness rather than hand-numbered increments. Between two similar options, say what each does, not what it is.
+First tell a setting from a command and from a diagnostic. A setting keeps a value. A command acts now, through a button or a menu. A diagnostic is read, never configured. The nature of a setting's value then picks its control, as the control catalogue says. Every surface is built from the blocks the application already has, in Settings and in the Playground alike, and a need no block covers is discussed before a new form appears. A numeric magnitude is always one control, a number field for the exact value with a slider beside it when the value earns a gesture, its grain derived from its range rather than hand-numbered. Between two similar options, say what each does, not what it is.
 
 ## Reference
 

@@ -9,7 +9,7 @@ The annex of the deckle-settings-ux skill. It names natures of value and gesture
 The nature of the value picks the control.
 
 - An on/off value takes a switch. Its state shows on the control itself, in a shape legible in black and white, and its label stays fixed and names what it governs.
-- One of a few mutually exclusive options takes radio buttons, every option laid flat and visible. More than a few options take a dropdown.
+- Mutually exclusive options take radio buttons when seeing them all at once helps the choice, every option laid flat and visible, and a dropdown otherwise.
 - A numeric magnitude takes one control, a field with an optional slider, as the magnitude section says.
 - A relationship or a shape, a curve, an envelope, takes its values as fields, with a drawing that shows them, never the drawing alone.
 - Free text takes one shared input, multi-line only when the value wraps.
@@ -17,11 +17,11 @@ The nature of the value picks the control.
 - The fine configuration of something activatable takes an inline fold revealed only when it is on.
 - A heavy multi-step action takes its own page in the rail, reached from a card and left through the breadcrumb, never a dropdown or a modal.
 
-## Magnitude, one control with a chosen fineness
+## Magnitude, one control with a grain from its range
 
 One control, a number field that is also the readout, with a slider beside it when the value earns a gesture. A figure that is typed and never swept, a count or a duration nobody drags, keeps the field alone. It is the same control without its slider, not a second one. A count is declared as such, so its grain never drops below one.
 
-A linear magnitude is declared by its minimum, its maximum, its unit and a desired fineness, three levels from coarse to fine. Nothing else is hand-numbered. The fineness sets how many steps should span the range, an order of ten, a hundred or a thousand. The step grain is the value on the 1-2-5 ladder (0.05, 0.1, 0.2, 0.5, 1, 2, 5, 10 and so on) nearest, as a ratio, to the span divided by that target. From that grain the rest follows. The readout shows only the digits the grain implies. The slider steps by the grain. A fine nudge moves one grain and a coarse one ten. The field takes any multiple of the grain in range. Powers of ten are the ladder's round rungs, not the whole ladder.
+A linear magnitude is declared by its minimum, its maximum and its unit. Nothing else is hand-numbered. The grain is the value on the 1-2-5 ladder (0.05, 0.1, 0.2, 0.5, 1, 2, 5, 10 and so on) at or just above the span divided by about forty, so the slider has about forty detents and the grain reads as a round number. From that grain the rest follows. The readout shows only the digits the grain implies, the slider steps by the grain, and the field's arrows nudge by it. The field takes any value in range at the displayed precision.
 
 A geometric magnitude is one whose useful steps multiply rather than add, such as memory sizes or frequencies (1, 2, 4, up to 256). It is declared by its list of stops. The slider indexes the list and snaps to a stop, and the field shows the formatted value. The grain rule above does not apply.
 
@@ -43,7 +43,7 @@ One normalized picker. Its affordances follow who owns the location and how the 
 
 The same declaration feeds what the reset writes and the test that says whether the value changed, so the two can never disagree. When the default is resolved at runtime, such as the system device or an automatic path, the source is the sentinel that means "resolve at runtime", not the resolved value. The reset rewrites the sentinel, and change is tested against it.
 
-A single-value reset is instant. A group or surface reset writes many values at once, and a group reset returns its master too, which may switch the group off and hide its settings. So it is confirmed before it acts.
+A single-value reset is instant. A group or surface reset writes many values at once, and a group reset returns its master too, which may switch the group off and hide its settings. Whether it is confirmed first is carried by the settings it resets, never by the block.
 
 ## Confirmation, the finer rules
 
