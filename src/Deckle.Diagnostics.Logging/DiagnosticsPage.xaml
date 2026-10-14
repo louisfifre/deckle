@@ -81,8 +81,7 @@
                         <StackPanel x:Name="TelemetryStorageHost"
                                     Spacing="{StaticResource SettingsCardSpacing}" />
                         <controls:SettingsCard x:Uid="DiagnosticsFilesCard"
-                                               Tag="DiagnosticsFilesCard"
-                                               catalog:SettingsDescriptions.Toggled="True">
+                                               Tag="DiagnosticsFilesCard">
                             <Button x:Uid="FolderPickerCard_OpenButton"
                                     Click="OpenDiagnosticsFolder_Click" />
                         </controls:SettingsCard>
