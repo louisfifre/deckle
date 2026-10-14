@@ -36,10 +36,6 @@ _Avoid_ : profile (the earlier name), server (there is only one).
 The contract each tool states for an ambiguous response. It says whether the call is safe to retry, must be verified before a retry, needs durable deduplication, or stays uncertain. It describes what a caller may conclude about the effect on the domain. A JSON-RPC request id is never a receipt for an operation.
 _Avoid_ : HTTP retry policy (the lower transport decision), idempotency hint alone (only one projection of the fuller contract).
 
-**Home surface** :
-The MCP surface dedicated to structured home knowledge, such as rooms, infrastructure, equipment, observations and links, and later home-management functions. It writes to a dedicated Home Anytype space, separate from the Dev project-management space. Clients do not choose a space per call.
-_Avoid_ : Cartographie (too narrow for the intended long-term scope), Électrique (too narrow), Maison surface (French label rejected for the surface name), Maison générique (too broad).
-
 **Schema admin surface** :
 The MCP surface dedicated to schema administration. It inspects spaces, plans changes to types, properties, tags and templates, previews the diff against a live space, applies confirmed changes, and freezes the measured result into code. Its changes to a space are guarded. Its preview names every change before it applies.
 _Avoid_ : putting type/property creation inside Home tools (schema changes stay in this surface), generic Anytype MCP (too unconstrained for Deckle's guarded workflow).
@@ -73,18 +69,6 @@ The transport's rule for resending a failed HTTP request. It sits below the oper
 
 **Idempotency hint** :
 A flag that says whether repeating a call is harmless. Alone, it is only one projection of the operation recovery policy.
-
-**Cartographie** :
-A French word for mapping, once proposed as the surface name. It is too narrow for the long-term scope of the Home surface.
-
-**Électrique** :
-A French word for electrical, once proposed as the surface name. It covers only one part of the home.
-
-**Maison surface** :
-A French label once proposed for the Home surface and rejected as its name.
-
-**Maison générique** :
-A French name once proposed for the home surface, too broad for what the Home surface covers.
 
 **Putting type/property creation inside Home tools** :
 A design in which Home operations would also create Anytype types and properties. Deckle keeps schema changes in the schema admin surface.
