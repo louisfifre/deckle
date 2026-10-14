@@ -81,7 +81,7 @@ public sealed partial class HudPage
         // lerps reach freely and clamps the spread to its minimum.
         AddFloatRow(gauge, "Start reach (%)", -50, 100, 1, _countdownConfig.StartReach * 100,
             value => _countdownConfig = _countdownConfig with { StartReach = (float)value / 100f }, rebuild: true);
-        AddFloatRow(gauge, "End reach (%)", 0, 200, 1, _countdownConfig.EndReach * 100,
+        AddFloatRow(gauge, "End reach (%)", 0, 500, 1, _countdownConfig.EndReach * 100,
             value => _countdownConfig = _countdownConfig with { EndReach = (float)value / 100f }, rebuild: true);
         // The Gauge target shows no HUD geometry section; Recording does.
         gauge.Children.Add(TuningHelp("Thickness and inset follow HUD geometry, on the Recording target."));
