@@ -5,7 +5,7 @@ description: "Autocorrect vocabulary. It covers where correction may act (surfac
 
 # Deckle.Autocorrect, Glossary
 
-Vocabulary of the system-autocorrect workstream, which brings bounded correction to the whole machine, first when a word is committed and then by choosing among closed candidates in context. The Correction / Rewrite boundary, which decides what this module may do silently, is system-wide language and lives in the root `GLOSSARY.md`. The correction itself is defined here.
+Vocabulary of the system-autocorrect workstream, which brings bounded correction to the whole machine, first when a word is committed and then by choosing among closed candidates in context. The Correction / Rewrite boundary, which decides what this module may do silently, lives in `src/Deckle.Llm.Rewrite/GLOSSARY.md` beside the rewrite. The correction itself is defined here.
 
 ## The correction
 
@@ -14,7 +14,7 @@ A bounded text change that repairs a span in place, drawn from a closed set of p
 _Avoid_ : rewrite (regenerates text, a correction only repairs), autocorrect (the module name, not the operation).
 
 **Rewrite** :
-A generative text change that regenerates a span into new text, defined in the root `GLOSSARY.md`. A correction never generates text, it only repairs what is there.
+A generative text change that regenerates a span into new text, defined in `src/Deckle.Llm.Rewrite/GLOSSARY.md`. A correction never generates text, it only repairs what is there.
 
 **Autocorrect** :
 In ordinary use, a feature that fixes typing errors on its own. In Deckle it is the name of this module and of the product feature, while the operation they perform is a correction.
@@ -83,7 +83,7 @@ _Avoid_ : reranker (one possible engine of this stage, not the stage), second pa
 
 **Whole-sentence candidate transaction** :
 The indivisible unit of decision of the sentence stage. It holds the literal sentence and a closed set of sentences that each differ from it by one owned, bounded edit. The alternatives are compared together. No generated text and no cascade of word-by-word decisions enters it.
-_Avoid_ : sentence rewrite (no text is generated, see Rewrite in the root `GLOSSARY.md`), candidate cascade (one edit never changes what is judged next).
+_Avoid_ : sentence rewrite (no text is generated, see Rewrite in `src/Deckle.Llm.Rewrite/GLOSSARY.md`), candidate cascade (one edit never changes what is judged next).
 
 **Terminal-e agreement variant** :
 A pair of candidates backed by the lexicon whose forms differ only by a final `e`, used as evidence inside a whole-sentence candidate transaction. The pair alone does not prove gender and earns no correction right of its own.

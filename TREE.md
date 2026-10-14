@@ -1320,7 +1320,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   ├── LlmGeneralViewModel.cs
 │   │   │   └── LlmGeneralViewModel.Settings.cs
 │   │   ├── Deckle.Llm.Rewrite.csproj
-│   │   ├── GLOSSARY.md  — glossary-deckle-llm-rewrite Rewrite service vocabulary, the single service every rewrite goes through, whoe…
+│   │   ├── GLOSSARY.md  — glossary-deckle-llm-rewrite Rewrite vocabulary. It draws the Correction / Rewrite boundary, which decides w…
 │   │   ├── LlmSettings.cs
 │   │   ├── LlmSettingsMigrations.cs
 │   │   ├── LlmSettingsModule.cs
@@ -2194,7 +2194,6 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 ├── Directory.Build.targets
 ├── Directory.Packages.props
 ├── GLOSSARY-MAP.md  — glossary-map-deckle Index of Deckle's bounded-context glossaries — where each module's GLOSSARY.md…
-├── GLOSSARY.md  — glossary-deckle System-wide Deckle vocabulary. It holds the terms that classify across modules…
 ├── LICENSE
 ├── NOTICE.md
 ├── README.md
