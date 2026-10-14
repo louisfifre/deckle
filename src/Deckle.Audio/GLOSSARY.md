@@ -1,18 +1,30 @@
 ---
 name: glossary-deckle-audio
-description: "Audio vocabulary — display level vs transcription pre-processing, the two notions of « level » that must never be conflated. Read before touching level mapping or the DSP chain."
+description: "Audio vocabulary. It separates display level from transcription pre-processing, the two notions of « level » that must never be conflated. Read before touching level mapping or the DSP chain."
 ---
 
-# Deckle.Audio — Glossary
+# Deckle.Audio, Glossary
 
-Two distinct notions carry the word "level" and must never be conflated: one drives the real-time visual, the other drives the signal actually handed to the transcription engine. They are decoupled by design — display is computed live during capture, signal processing is a terminal transform applied to finished audio: once per utterance under the Streaming strategy, once over the whole take after Stop under Monolithic.
+Two distinct notions carry the word "level" and must never be conflated. One drives the live visual. The other shapes the signal handed to the transcription engine. They are separate by design. Display level follows the capture live, while pre-processing transforms audio that is already finished.
 
 ## Display level vs signal pre-processing
 
 **Display level** :
-The perceptual dBFS → [0, 1] mapping produced by `AudioLevelMapper`, calibrated over recent sessions, that drives the intensity of the recording outline while speaking. Concerns the visual render only; never alters the audio. Its calibration lives independently and stays outside the pre-processing scope.
-_Avoid_ : gain, volume (those are signal operations, not display).
+A perceptual mapping of the signal level, from dBFS to a value between 0 and 1, that drives the intensity of the recording outline while the user speaks. It concerns the visual only and never alters the audio.
+_Avoid_ : gain (a signal operation, not display), volume (a signal operation, not display).
 
 **Transcription pre-processing** :
-A transform of the captured signal (filtering, compression, gain) applied to the `float[]` buffer between `MicrophoneCapture.Record()` and the ASR backend, for the sole purpose of maximizing machine intelligibility — not listening quality. Operates on the samples themselves, downstream of capture and upstream of transcription. Distinct from display level, and independent of how the buffer is windowed for the backend. Implemented as a post-capture two-pass DSP chain in `Deckle.Audio.Preprocessing` (`TranscriptionPreprocessor`); off by default and user-toggled, with a mic level check on the Recording page that advises whether it helps.
-_Avoid_ : AGC (it is not real-time automatic gain — it runs on finished audio, an utterance or a whole take), normalization (it is a dynamics chain, not a single peak/RMS scale).
+A transform of the captured signal, such as filtering, compression or gain, whose sole purpose is to make the audio easier for the machine to transcribe, not better to listen to. It acts on the samples themselves, after capture and before transcription. It is distinct from display level and does not depend on how the audio is cut for the engine.
+_Avoid_ : AGC (it is not real-time automatic gain, it runs on finished audio, an utterance or a whole take), normalization (it is a dynamics chain, not a single peak or RMS scale).
+
+**Gain** :
+An amplification applied to the signal itself, which changes the audio. Display level never applies gain, while transcription pre-processing may.
+
+**Volume** :
+In ordinary use, how loud a sound is or is played back. It is a property of the signal or of playback, not of the display.
+
+**AGC** :
+Automatic gain control, a real-time adjustment of the gain while the signal is being captured. Transcription pre-processing works on finished audio, so it is not AGC.
+
+**Normalization** :
+A single scaling of the whole signal to a target peak or RMS level. Transcription pre-processing is a chain of several dynamics steps.

@@ -608,7 +608,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── CaptureSettingsService.cs
 │   │   ├── Deckle.Audio.csproj
 │   │   ├── DeckleAudioSource.cs
-│   │   ├── GLOSSARY.md  — glossary-deckle-audio Audio vocabulary — display level vs transcription pre-processing, the two notio…
+│   │   ├── GLOSSARY.md  — glossary-deckle-audio Audio vocabulary. It separates display level from transcription pre-processing,…
 │   │   ├── IAudioRecordingHost.cs
 │   │   ├── IMicrophoneCapture.cs
 │   │   ├── ListeningTake.cs
