@@ -903,7 +903,8 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   ├── HudComposition.UtteranceCountdownVisual.cs
 │   │   │   ├── HudMaterial.cs
 │   │   │   ├── ProcessingVariant.cs
-│   │   │   └── UtteranceCountdownConfig.cs
+│   │   │   ├── UtteranceCountdownConfig.cs
+│   │   │   └── UtteranceCountdownCourse.cs
 │   │   ├── Primitives/
 │   │   │   └── ColorSpace.cs
 │   │   └── Deckle.Composition.csproj
