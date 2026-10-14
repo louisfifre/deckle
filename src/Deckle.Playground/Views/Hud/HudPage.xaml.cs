@@ -17,8 +17,12 @@ namespace Deckle.Playground;
 //
 // The page is cached (NavigationCacheMode.Required), so its state survives
 // navigation; PlaygroundWindow calls DisposeResources on close so the
-// compositor never keeps dangling Forever animations. Tuning lives in memory
-// only.
+// compositor never keeps dangling Forever animations.
+//
+// The knobs open on the HUD settings the live HUD uses and edit the previews
+// only; the floating bar's Save is the one gesture that writes them back
+// (HudSettingsService), Revert puts the stored values back, Reset all returns
+// to the compiled defaults. The simulation knobs never count as a change.
 public sealed partial class HudPage : Page
 {
     public HudViewModel ViewModel { get; } = new();
@@ -26,6 +30,13 @@ public sealed partial class HudPage : Page
     // Not readonly: OnResetAllClick swaps in a fresh TuningModel. The row
     // lambdas read `_tuning` through `this`, so they write to the new instance.
     private TuningModel _tuning = new();
+
+    // What the store held when the knobs last matched it: the baseline the
+    // bar compares against. Loaded once; the page is cached, so unsaved edits
+    // survive a round-trip through another tab.
+    private HudComposition.ConicArcStrokeConfig _savedStroke;
+    private UtteranceCountdownConfig _savedCountdown = new();
+    private bool _storeLoaded;
 
     // Simulated conversational speech: 0.013 ≈ -38 dBFS, 0.100 ≈ -20 dBFS.
     private float _simRmsMin           = 0.013f;
@@ -79,6 +90,10 @@ public sealed partial class HudPage : Page
 
         ViewModel.PropertyChanged += OnViewModelPropertyChanged;
         SettingsService.Instance.OverlayAnimationsChanged += OnOverlayAnimationsChanged;
+        HudSettingsService.Instance.Changed += OnHudSettingsChanged;
+
+        // Keep the footer spacer as tall as the floating save bar.
+        UnsavedBar.SizeChanged += (_, e) => UnsavedSpacer.Height = e.NewSize.Height;
 
         if (this.Content is FrameworkElement root)
         {
@@ -86,13 +101,78 @@ public sealed partial class HudPage : Page
         }
     }
 
-    // Loaded re-fires on every return to the cached page: the panel is built
-    // once, the preview is re-projected each time.
+    // Loaded re-fires on every return to the cached page: the store is read
+    // and the panel built once, the preview is re-projected each time.
     private void OnPageLoaded(object sender, RoutedEventArgs e)
     {
+        if (!_storeLoaded) LoadFromStore();
         if (!_tuningPanelInitialized) BuildTuningPanel();
         ApplyTarget();
         DecklePlaygroundSource.Log.PageReady(nameof(HudPage), DecklePlaygroundSource.NavClock.ElapsedMilliseconds);
+    }
+
+    // ── Stored HUD settings: baseline, Save, Revert ──────────────────────────
+
+    private void LoadFromStore()
+    {
+        _storeLoaded = true;
+        _savedStroke    = HudSettingsService.Instance.EffectiveStroke();
+        _savedCountdown = HudSettingsService.Instance.EffectiveCountdown();
+        _tuning.Load(_savedStroke);
+        _countdownConfig = _savedCountdown;
+    }
+
+    private bool IsDirty =>
+        !_tuning.ToConfig().Equals(_savedStroke) || !_countdownConfig.Equals(_savedCountdown);
+
+    private void UpdateUnsavedBar()
+    {
+        bool dirty = IsDirty;
+        UnsavedBar.Visibility    = dirty ? Visibility.Visible : Visibility.Collapsed;
+        UnsavedSpacer.Visibility = dirty ? Visibility.Visible : Visibility.Collapsed;
+    }
+
+    private void OnSaveClick(object sender, RoutedEventArgs e)
+    {
+        _savedStroke    = _tuning.ToConfig();
+        _savedCountdown = _countdownConfig;
+        HudSettingsService.Instance.Save(_savedStroke, _savedCountdown);
+        UpdateUnsavedBar();
+    }
+
+    private void OnRevertClick(object sender, RoutedEventArgs e)
+    {
+        _tuning.Load(_savedStroke);
+        _countdownConfig = _savedCountdown;
+        BuildTuningPanel();
+        ApplyTarget();
+    }
+
+    // Changed fires on the store's writer thread, after the disk write: after
+    // this page's own Save (the knobs already match, nothing to do) or after a
+    // write from elsewhere. In the latter case the baseline moves; clean knobs
+    // follow it, unsaved edits stay and the bar keeps showing.
+    private void OnHudSettingsChanged()
+    {
+        if (!DispatcherQueue.HasThreadAccess)
+        {
+            DispatcherQueue.TryEnqueue(OnHudSettingsChanged);
+            return;
+        }
+        if (!_storeLoaded) return;
+
+        bool wasDirty = IsDirty;
+        _savedStroke    = HudSettingsService.Instance.EffectiveStroke();
+        _savedCountdown = HudSettingsService.Instance.EffectiveCountdown();
+        if (!wasDirty && IsDirty)
+        {
+            _tuning.Load(_savedStroke);
+            _countdownConfig = _savedCountdown;
+            BuildTuningPanel();
+            ApplyTarget();
+            return;
+        }
+        UpdateUnsavedBar();
     }
 
     // ── Public surface called by PlaygroundWindow ────────────────────────────
@@ -107,6 +187,7 @@ public sealed partial class HudPage : Page
     public void DisposeResources()
     {
         SettingsService.Instance.OverlayAnimationsChanged -= OnOverlayAnimationsChanged;
+        HudSettingsService.Instance.Changed -= OnHudSettingsChanged;
         _rmsTimer.Stop();
         _rmsClock.Stop();
         _rebuildDebounce.Stop();
@@ -371,7 +452,9 @@ public sealed partial class HudPage : Page
     // ── Reset all ───────────────────────────────────────────────────────
     //
     // Resets the fields directly rather than chaining the per-section
-    // Reset*() methods, which would each rebuild the panel.
+    // Reset*() methods, which would each rebuild the panel. The compiled
+    // defaults, not the stored values: Revert on the bar is the way back to
+    // those.
     private void OnResetAllClick(object sender, RoutedEventArgs e)
     {
         _tuning = new TuningModel();
@@ -438,6 +521,10 @@ public sealed partial class HudPage : Page
 
         if (!ViewModel.IsCountdownTarget)
             AddParkedExpander();
+
+        // Every reset and revert path rebuilds the panel, so the bar follows
+        // the knobs from here; the row factories cover the knob edits.
+        UpdateUnsavedBar();
     }
 
     // Rebuilt wholesale: tracking each row's controls would cost more code

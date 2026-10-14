@@ -180,7 +180,7 @@
     <value>HUD elements</value>
   </data>
   <data name="PlaygroundHudTunablesDescription.Text" xml:space="preserve">
-    <value>Tweak values live for the current session — nothing is saved. Reset all to start over; the next launch is fresh anyway.</value>
+    <value>Opens on the values the HUD uses. A change stays in the preview until you save it from the bar below; Reset all returns to the built-in defaults.</value>
   </data>
 
   <data name="PlaygroundAmbientHeader.Text" xml:space="preserve">

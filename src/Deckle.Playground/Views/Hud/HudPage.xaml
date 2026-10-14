@@ -183,17 +183,19 @@
         </Grid>
 
         <!-- ── Col 1 — tuning Expanders (built programmatically) ───── -->
-        <ScrollViewer Grid.Column="1"
-                      VerticalScrollBarVisibility="Auto"
+        <Grid Grid.Column="1"
+              MinWidth="480"
+              MaxWidth="600">
+        <ScrollViewer VerticalScrollBarVisibility="Auto"
                       HorizontalScrollBarVisibility="Disabled"
-                      Padding="12,24,24,24"
-                      MinWidth="480"
-                      MaxWidth="600">
+                      Padding="12,24,24,24">
+            <StackPanel>
             <StackPanel x:Name="TuningStack" Spacing="6">
 
-                <!-- HUD tuning is memory-only, so Reset all is the only
-                     action. BuildTuningPanel relies on this header staying
-                     child 0 of TuningStack. -->
+                <!-- Reset all returns every knob to the compiled defaults;
+                     the floating bar below saves what the knobs show.
+                     BuildTuningPanel relies on this header staying child 0
+                     of TuningStack. -->
                 <Grid Margin="0,0,0,8">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="*" />
@@ -228,6 +230,63 @@
                                Margin="0,4,0,0" />
                 </Grid>
             </StackPanel>
+
+            <!-- Footer breathing room, present only while the floating save
+                 bar is up, so the last row can scroll clear of it. Kept as
+                 tall as the bar in code-behind. -->
+            <Border x:Name="UnsavedSpacer" Height="56" Visibility="Collapsed" />
+            </StackPanel>
         </ScrollViewer>
+
+        <!-- Floating save bar, the Segmentation tab's: shown while a knob
+             differs from the stored HUD settings. Revert puts the stored
+             values back, Save writes the knobs to the HUD settings store;
+             both clear the difference, so the bar dismisses itself. Margins
+             overhang the column's padding by 12 on each side, as the
+             Segmentation bar does. -->
+        <Border x:Name="UnsavedBar"
+                Visibility="Collapsed"
+                VerticalAlignment="Bottom"
+                Margin="0,0,12,12"
+                Padding="16,14"
+                CornerRadius="{ThemeResource OverlayCornerRadius}"
+                Background="{ThemeResource SolidBackgroundFillColorBaseBrush}"
+                BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+                BorderThickness="1"
+                Translation="0,0,32">
+            <Border.Shadow>
+                <ThemeShadow />
+            </Border.Shadow>
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+                <TextBlock Grid.Column="0"
+                           Text="Unsaved changes"
+                           VerticalAlignment="Center"
+                           Style="{ThemeResource BodyStrongTextBlockStyle}" />
+                <StackPanel Grid.Column="1"
+                            Orientation="Horizontal"
+                            Spacing="8"
+                            VerticalAlignment="Center">
+                    <Button x:Name="RevertButton" Click="OnRevertClick">
+                        <StackPanel Orientation="Horizontal" Spacing="8">
+                            <FontIcon Glyph="{StaticResource Icon.Reset}" FontSize="14" />
+                            <TextBlock Text="Revert" />
+                        </StackPanel>
+                    </Button>
+                    <Button x:Name="SaveButton"
+                            Style="{ThemeResource AccentButtonStyle}"
+                            Click="OnSaveClick">
+                        <StackPanel Orientation="Horizontal" Spacing="8">
+                            <FontIcon Glyph="{StaticResource Icon.Save}" FontSize="14" />
+                            <TextBlock Text="Save" />
+                        </StackPanel>
+                    </Button>
+                </StackPanel>
+            </Grid>
+        </Border>
+        </Grid>
     </Grid>
 </Page>
