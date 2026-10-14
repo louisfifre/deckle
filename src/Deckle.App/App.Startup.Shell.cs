@@ -199,13 +199,28 @@ public partial class App
         };
         _tray.RightClickRequested += () => _trayMenu.Show();
 
-        // Left click: the quick actions, then the module switches as rows with
-        // a pill, grouped by use (TR-03): the rarely changed ones first, Ambient
-        // Light last, each group behind a separator. A click flips a module and
-        // closes the menu, like any menu item. Every entry follows module
-        // presence: an absent module has no Record item, no file action, no
-        // switch.
+        // Left click, three groups behind separators, read from the top: the
+        // background switches (set once, left on or off), then Ambient Light
+        // on its own (a visual thing one actually launches), then the actions
+        // (Record or Stop recording, Transcribe audio files…) at the bottom,
+        // nearest the icon on a taskbar at the bottom, so a command is one
+        // short move away (Louis, 2026-10-14). A switch is a row with a pill
+        // (TraySwitchMenuItem); a click flips its module and closes the menu,
+        // like any menu item. Every entry follows module presence: an absent
+        // module has no switch, no Record item, no file action.
+        //
+        // Module switches (App.TrayToggles.cs). Built once: the hotkey actions
+        // below derive from the same lists, so a toggle's hotkey runs exactly
+        // what its menu item runs.
+        IReadOnlyList<TrayToggle> trayToggles = BuildTrayToggles(context);
+        IReadOnlyList<TrayToggle> trayFooterToggles = BuildTrayFooterToggles(context);
         var actions = new List<TrayMenuEntry>();
+        foreach (IReadOnlyList<TrayToggle> group in new[] { trayToggles, trayFooterToggles })
+        {
+            if (group.Count == 0) continue;
+            if (actions.Count > 0) actions.Add(new TrayMenuSeparator());
+            actions.AddRange(group);
+        }
         if (context.TranscriptionPresent)
         {
             // Record runs the exact path of the transcription hotkey; the menu
@@ -213,6 +228,7 @@ public partial class App
             // was in. Its label follows the engine state at each open. File
             // transcription opens the system file picker and runs each file
             // through the dictation pipeline (see App.FileTranscription.cs).
+            if (actions.Count > 0) actions.Add(new TrayMenuSeparator());
             actions.Add(new TrayMenuCommand(
                 "record",
                 () => Loc.Get(_engine?.IsRecording == true ? "TrayPanel_StopRecording" : "TrayPanel_Record"),
@@ -221,17 +237,6 @@ public partial class App
                 "transcribe-files",
                 () => Loc.Get("TrayMenu_TranscribeFile"),
                 () => TranscribeFilesFromTray()));
-        }
-        // Module switches (App.TrayToggles.cs). Built once: the hotkey actions
-        // below derive from the same lists, so a toggle's hotkey runs exactly
-        // what its menu item runs.
-        IReadOnlyList<TrayToggle> trayToggles = BuildTrayToggles(context);
-        IReadOnlyList<TrayToggle> trayFooterToggles = BuildTrayFooterToggles(context);
-        foreach (IReadOnlyList<TrayToggle> group in new[] { trayToggles, trayFooterToggles })
-        {
-            if (group.Count == 0) continue;
-            if (actions.Count > 0) actions.Add(new TrayMenuSeparator());
-            actions.AddRange(group);
         }
         _trayActions = new TrayMenuHost(_messageHost.Hwnd, "tray-actions")
         {
