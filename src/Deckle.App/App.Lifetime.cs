@@ -54,6 +54,7 @@ public partial class App
         }
 
         TryShutdown("settings flush", () => Settings.SettingsService.Instance.Flush());
+        TryShutdown("hud settings flush", () => Hud.HudSettingsService.Instance.Flush());
         TryShutdown("hotkeys dispose", () => _hotkeyManager?.Dispose());
         TryShutdown("tray dispose", () => _tray?.Dispose());
         TryShutdown("tray menu dispose", () => _trayMenu?.Dispose());
