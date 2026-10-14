@@ -4,6 +4,7 @@ using System.Linq;
 using Microsoft.UI.Text;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
+using Microsoft.UI.Xaml.Markup;
 using Microsoft.UI.Xaml.Media;
 
 namespace Deckle.Catalog;
@@ -43,10 +44,16 @@ public sealed partial class SettingsPageHeader : UserControl
     {
         // The breadcrumb reads as the page title: TitleTextBlockStyle's size and
         // weight, applied through the control's lightweight-styling resources
-        // rather than a retemplate. The chevron scales with it.
+        // rather than a retemplate. The chevron scales with it, and gets room on
+        // both sides (the stock padding is 2 px) and a top padding: the glyph is
+        // centred on the item's line box, which puts it above the visual middle
+        // of 28 px lowercase text, and the asymmetric padding lowers it by half
+        // its own height (2026-10-14).
+        _crumbs.Resources = CrumbBrushes();
         _crumbs.Resources["BreadcrumbBarItemThemeFontSize"] = 28d;
         _crumbs.Resources["BreadcrumbBarItemFontWeight"] = FontWeights.SemiBold;
         _crumbs.Resources["BreadcrumbBarChevronFontSize"] = 16d;
+        _crumbs.Resources["BreadcrumbBarChevronPadding"] = new Thickness(8, 8, 8, 0);
         _crumbs.VerticalAlignment = VerticalAlignment.Center;
         _crumbs.ItemClicked += OnCrumbClicked;
 
@@ -191,6 +198,40 @@ public sealed partial class SettingsPageHeader : UserControl
     public bool ConfirmsReset { get; set; } = true;
 
     // ── Behaviour ────────────────────────────────────────────────────────────
+
+    // The stock control paints every segment in the primary text colour and
+    // only greys one on hover, so a parent read like the current page and a
+    // click on it looked like nothing. Windows Settings does the reverse: the
+    // parents in the secondary colour, the current page in the primary, and a
+    // parent lights up to primary under the pointer because it leads somewhere.
+    //
+    // The overrides are aliases in theme dictionaries (Default, Light,
+    // HighContrast), the documented lightweight-styling form, not brushes copied
+    // out of Application.Current.Resources: that lookup follows the application
+    // theme, while Deckle applies its Light/Dark choice on each window's root
+    // (FrameworkElement.RequestedTheme), so a copied brush took the wrong
+    // theme's grey whenever Deckle's theme differed from Windows'. In theme
+    // dictionaries, the template's ThemeResource lookups resolve against the
+    // element's own theme and follow it when it changes.
+    private const string CrumbBrushAliases = """
+        <StaticResource x:Key="BreadcrumbBarNormalForegroundBrush" ResourceKey="TextFillColorSecondaryBrush" />
+        <StaticResource x:Key="BreadcrumbBarHoverForegroundBrush" ResourceKey="TextFillColorPrimaryBrush" />
+        <StaticResource x:Key="BreadcrumbBarPressedForegroundBrush" ResourceKey="TextFillColorTertiaryBrush" />
+        <StaticResource x:Key="BreadcrumbBarCurrentNormalForegroundBrush" ResourceKey="TextFillColorPrimaryBrush" />
+        <StaticResource x:Key="BreadcrumbBarCurrentHoverForegroundBrush" ResourceKey="TextFillColorPrimaryBrush" />
+        """;
+
+    private static ResourceDictionary CrumbBrushes() => (ResourceDictionary)XamlReader.Load($"""
+        <ResourceDictionary
+            xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+            xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+          <ResourceDictionary.ThemeDictionaries>
+            <ResourceDictionary x:Key="Default">{CrumbBrushAliases}</ResourceDictionary>
+            <ResourceDictionary x:Key="Light">{CrumbBrushAliases}</ResourceDictionary>
+            <ResourceDictionary x:Key="HighContrast">{CrumbBrushAliases}</ResourceDictionary>
+          </ResourceDictionary.ThemeDictionaries>
+        </ResourceDictionary>
+        """);
 
     private void ResolveBreadcrumb()
     {

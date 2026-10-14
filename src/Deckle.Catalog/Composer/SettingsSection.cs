@@ -28,10 +28,13 @@ namespace Deckle.Catalog;
 [ContentProperty(Name = nameof(Body))]
 public sealed partial class SettingsSection : UserControl
 {
+    private const double TopGap = 28;
+
     private readonly TextBlock _title;
     private readonly TextBlock _caption;
     private readonly Button _reset;
     private readonly Border _bodySlot;
+    private readonly StackPanel _root;
 
     public event RoutedEventHandler? ResetRequested;
 
@@ -81,11 +84,13 @@ public sealed partial class SettingsSection : UserControl
         _bodySlot = new Border { Margin = new Thickness(0, 8, 0, 0) };
 
         // 28 px above plus the page's 4 px card spacing makes the 32 px gap.
-        var root = new StackPanel { Margin = new Thickness(0, 28, 0, 0) };
-        root.Children.Add(titleRow);
-        root.Children.Add(_caption);
-        root.Children.Add(_bodySlot);
-        Content = root;
+        _root = new StackPanel { Margin = new Thickness(0, TopGap, 0, 0) };
+        _root.Children.Add(titleRow);
+        _root.Children.Add(_caption);
+        _root.Children.Add(_bodySlot);
+        Content = _root;
+
+        Loaded += (_, _) => ApplyTopGap();
 
         // Reveal on the section's hover and the wheel's keyboard focus, like a
         // card's reset: either keeps it shown.
@@ -160,5 +165,30 @@ public sealed partial class SettingsSection : UserControl
     {
         _caption.Text = text ?? string.Empty;
         _caption.Visibility = string.IsNullOrEmpty(text) ? Visibility.Collapsed : Visibility.Visible;
+    }
+
+    // The gap above a section is the 32 px between a card and the next title.
+    // The first section of a page sits under the page header, whose 12 px
+    // bottom margin plus the page's card spacing already place it where a
+    // module's switch card goes: the same 16 px on every page, instead of the
+    // 44 px that stood over the first section and over nothing (2026-10-14).
+    // A sibling that takes no room (collapsed, or an InfoBar that is not open)
+    // does not count as something above.
+    private void ApplyTopGap()
+    {
+        bool underHeader = false;
+        if (VisualTreeHelper.GetParent(this) is Panel panel)
+        {
+            int index = panel.Children.IndexOf(this);
+            for (int i = index - 1; i >= 0; i--)
+            {
+                UIElement sibling = panel.Children[i];
+                if (sibling.Visibility == Visibility.Collapsed) continue;
+                if (sibling is InfoBar { IsOpen: false }) continue;
+                underHeader = sibling is SettingsPageHeader;
+                break;
+            }
+        }
+        _root.Margin = new Thickness(0, underHeader ? 0 : TopGap, 0, 0);
     }
 }

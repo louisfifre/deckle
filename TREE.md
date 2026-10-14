@@ -870,6 +870,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   └── Icons.xaml
 │   │   ├── ConfirmationService.cs
 │   │   ├── Deckle.Catalog.csproj
+│   │   ├── DiagnosticsRegistry.cs
 │   │   ├── Glyphs.cs
 │   │   ├── Loc.cs
 │   │   ├── SettingSearchEntry.cs

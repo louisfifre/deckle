@@ -22,7 +22,7 @@ public sealed partial class SettingsComposer
         IPathControl picker = PathControlFactory(args);
         picker.Path = AsString(s.GetValue());
 
-        card.ContentAlignment = ContentAlignment.Vertical;
+        HostVertically(card);
 
         picker.PathChanged += (_, _) =>
         {
@@ -45,27 +45,51 @@ public sealed partial class SettingsComposer
         });
     }
 
-    // The reset for a vertically hosted content, shared by Path and Editor.
-    // WrapWithReset puts the reset to the left of a trailing-edge control; a
-    // vertical row puts it at the trailing edge instead, in a [content* | reset]
-    // grid.
+    // A card whose content sits under the header, on its own row (a picker, an
+    // editor, a curve, a radio group, a multiline field). The Toolkit card's
+    // default style right-aligns its content (HorizontalContentAlignment =
+    // Right), and its Vertical state keeps that alignment while moving the
+    // presenter to the star column: a vertical content then hugs the trailing
+    // edge at its own width, which is how the curve sat half-width on the right
+    // (2026-10-14). Stretch hands the row's full width to the content.
+    private static void HostVertically(SettingsCard card)
+    {
+        card.ContentAlignment = ContentAlignment.Vertical;
+        card.HorizontalContentAlignment = HorizontalAlignment.Stretch;
+    }
+
+    // The reset for a vertically hosted content, shared by Path, Editor, Radio
+    // and Curve. WrapWithReset puts the reset to the left of a trailing-edge control;
+    // a vertical row puts it at the trailing edge instead, in a [content* | reset]
+    // grid. extraDirty and extraReset let a kind fold other values into the one
+    // wheel (the curve's anchors); a descriptor without a Default still gets the
+    // wheel when it has extras to reset.
     private (FrameworkElement Content, Action? UpdateState) WrapWithTrailingReset(
         SettingsCard card, FrameworkElement content, SettingDescriptor s,
-        Func<string?>? describeDefault = null)
+        Func<string?>? describeDefault = null,
+        Func<bool>? extraDirty = null,
+        Action? extraReset = null)
     {
-        if (s.Default is null) return (content, null);
+        if (s.Default is null && extraReset is null) return (content, null);
 
         Button reset = BuildResetButton();
 
         WireReveal(card, reset);
 
-        bool Dirty() => !DefaultEquals(s.GetValue(), s.Default!());
+        bool Dirty() =>
+            (s.Default is not null && !DefaultEquals(s.GetValue(), s.Default!()))
+            || (extraDirty?.Invoke() ?? false);
+        void Reset()
+        {
+            extraReset?.Invoke();
+            if (s.Default is not null) s.SetValue(s.Default!());
+        }
         _dirtyChecks.Add(Dirty);
-        _resetActions.Add(() => s.SetValue(s.Default!()));
+        _resetActions.Add(Reset);
 
         // The model's PropertyChanged re-syncs the content (the caller's refresher,
         // or the element's own binding), so no manual update is needed here.
-        reset.Click += (_, _) => s.SetValue(s.Default!());
+        reset.Click += (_, _) => Reset();
 
         // A two-column grid rather than a StackPanel so the content keeps the full
         // width it had as the card's sole content (star column) and the reset hugs
@@ -95,7 +119,7 @@ public sealed partial class SettingsComposer
     {
         var args = (EditorArgs)s.Args!;
 
-        card.ContentAlignment = ContentAlignment.Vertical;
+        HostVertically(card);
 
         FrameworkElement element = args.Build();
         (FrameworkElement content, Action? updateReset) = WrapWithTrailingReset(card, element, s);
@@ -132,7 +156,7 @@ public sealed partial class SettingsComposer
             box.MaxHeight = 160;
             // On its own row below the description, so a wrapping value is not
             // crammed onto the trailing edge.
-            card.ContentAlignment = ContentAlignment.Vertical;
+            HostVertically(card);
         }
         else
         {
@@ -217,10 +241,12 @@ public sealed partial class SettingsComposer
         };
 
         // A RadioButtons group stacks below the header, the Windows 11 pattern,
-        // rather than on the trailing edge.
-        card.ContentAlignment = ContentAlignment.Vertical;
+        // rather than on the trailing edge. A vertical row takes the trailing
+        // reset: WrapWithReset's [reset | radio] row, stretched, would indent the
+        // group behind the wheel's slot and show the wheel at the leading edge.
+        HostVertically(card);
 
-        (FrameworkElement content, Action? updateReset) = WrapWithReset(card, radio, s,
+        (FrameworkElement content, Action? updateReset) = WrapWithTrailingReset(card, radio, s,
             () => DefaultValueText.Choice(args, s.Default!(), ResolveOptionLabel));
         card.Content = content;
 
