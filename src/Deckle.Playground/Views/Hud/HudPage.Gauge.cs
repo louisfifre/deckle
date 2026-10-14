@@ -56,18 +56,14 @@ public sealed partial class HudPage
         _gaugePreview.SetProgress(_countdownTuning.Progress);
     }
 
-    // The gauge's own rows: the reach, stored in the countdown config. Its
-    // fades and material are the Recording section's, its thickness and inset
-    // the HUD geometry section's.
+    // The gauge's own rows, all stored in the countdown config: the reach, the
+    // course and the motions. Its fades and material are the Recording
+    // section's, its thickness and inset the HUD geometry section's.
     private void AddGaugeExpander()
     {
         var gauge = NewTuningSection("Gauge", () =>
         {
-            var defaults = new UtteranceCountdownConfig();
-            _countdownConfig = _countdownConfig with
-            {
-                StartReach = defaults.StartReach, EndReach = defaults.EndReach,
-            };
+            _countdownConfig = new UtteranceCountdownConfig();
             RebuildTuningPanel();
         });
         gauge.Children.Add(TuningHelp(
@@ -83,6 +79,37 @@ public sealed partial class HudPage
             value => _countdownConfig = _countdownConfig with { StartReach = (float)value / 100f }, rebuild: true);
         AddFloatRow(gauge, "End reach (%)", 0, 500, 5, _countdownConfig.EndReach * 100,
             value => _countdownConfig = _countdownConfig with { EndReach = (float)value / 100f }, rebuild: true);
+
+        gauge.Children.Add(TuningHelp(
+            "Course is how the pause's progress becomes reach, as a cubic bezier: " +
+            "P1 near (0.5, 0) starts slow, P2 near (0.9, 1) brakes only at the end. " +
+            "(0, 0, 1, 1) is a plain lerp."));
+        AddFloatRow(gauge, "Course P1.X", 0, 1, 0.05, _countdownConfig.CourseEaseP1X,
+            value => _countdownConfig = _countdownConfig with { CourseEaseP1X = (float)value }, rebuild: true);
+        AddFloatRow(gauge, "Course P1.Y", -0.5, 1.5, 0.05, _countdownConfig.CourseEaseP1Y,
+            value => _countdownConfig = _countdownConfig with { CourseEaseP1Y = (float)value }, rebuild: true);
+        AddFloatRow(gauge, "Course P2.X", 0, 1, 0.05, _countdownConfig.CourseEaseP2X,
+            value => _countdownConfig = _countdownConfig with { CourseEaseP2X = (float)value }, rebuild: true);
+        AddFloatRow(gauge, "Course P2.Y", -0.5, 1.5, 0.05, _countdownConfig.CourseEaseP2Y,
+            value => _countdownConfig = _countdownConfig with { CourseEaseP2Y = (float)value }, rebuild: true);
+
+        gauge.Children.Add(TuningHelp(
+            "Follow is how long the gauge takes to reach each capture sample, and the cut. " +
+            "Retreat is the one move back to rest when speech resumes, on its own curve. " +
+            "Windows names 0.167 s fast, 0.25 s normal and 0.333 s slow."));
+        AddFloatRow(gauge, "Follow (s)", 0.02, 1, 0.01, _countdownConfig.FollowSeconds,
+            value => _countdownConfig = _countdownConfig with { FollowSeconds = value }, rebuild: true);
+        AddFloatRow(gauge, "Retreat (s)", 0.02, 2, 0.01, _countdownConfig.RetreatSeconds,
+            value => _countdownConfig = _countdownConfig with { RetreatSeconds = value }, rebuild: true);
+        AddFloatRow(gauge, "Retreat P1.X", 0, 1, 0.05, _countdownConfig.RetreatEaseP1X,
+            value => _countdownConfig = _countdownConfig with { RetreatEaseP1X = (float)value }, rebuild: true);
+        AddFloatRow(gauge, "Retreat P1.Y", -0.5, 1.5, 0.05, _countdownConfig.RetreatEaseP1Y,
+            value => _countdownConfig = _countdownConfig with { RetreatEaseP1Y = (float)value }, rebuild: true);
+        AddFloatRow(gauge, "Retreat P2.X", 0, 1, 0.05, _countdownConfig.RetreatEaseP2X,
+            value => _countdownConfig = _countdownConfig with { RetreatEaseP2X = (float)value }, rebuild: true);
+        AddFloatRow(gauge, "Retreat P2.Y", -0.5, 1.5, 0.05, _countdownConfig.RetreatEaseP2Y,
+            value => _countdownConfig = _countdownConfig with { RetreatEaseP2Y = (float)value }, rebuild: true);
+
         // The Gauge target shows no HUD geometry section; Recording does.
         gauge.Children.Add(TuningHelp("Thickness and inset follow HUD geometry, on the Recording target."));
     }
