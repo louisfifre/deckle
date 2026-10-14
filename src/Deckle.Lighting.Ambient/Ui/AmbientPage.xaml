@@ -62,8 +62,8 @@
                                                 ResetAllRequested="ResetAll_Click" />
 
                     <!-- The module switch: the on/off card comes first on the page,
-                         alone and outside any section. Composed: Enabled
-                         (AmbientViewModel.StateSettings). -->
+                         outside any section, the preview tile right after it.
+                         Composed: Enabled (AmbientViewModel.StateSettings). -->
                     <StackPanel x:Name="StateHost"
                                 Spacing="{StaticResource SettingsCardSpacing}" />
 
