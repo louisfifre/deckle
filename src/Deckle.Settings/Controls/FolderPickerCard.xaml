@@ -4,30 +4,19 @@
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
 
-    <Grid ColumnSpacing="8">
-        <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="*" />
-            <ColumnDefinition Width="Auto" />
-            <ColumnDefinition Width="Auto" />
-        </Grid.ColumnDefinitions>
-
-        <TextBlock x:Name="PathTextBlock"
-                   Grid.Column="0"
-                   VerticalAlignment="Center"
-                   Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                   IsTextSelectionEnabled="True"
-                   Style="{StaticResource CaptionTextBlockStyle}"
-                   TextTrimming="CharacterEllipsis"
-                   TextWrapping="NoWrap"
-                   ToolTipService.ToolTip="{x:Bind PathTextBlock.Text, Mode=OneWay}" />
-
+    <!-- The actions of a folder card, at the card's trailing edge: the picker
+         behind an icon (its words live in the tooltip and the narrator name,
+         the PowerToys form) and Open in a word. The path itself reads under
+         the card's description, drawn by the composer (FolderCardDescription). -->
+    <StackPanel Orientation="Horizontal"
+                Spacing="8"
+                VerticalAlignment="Center">
         <Button x:Name="PickButton"
-                Grid.Column="1"
                 x:Uid="FolderPickerCard_PickButton"
-                Click="PickButton_Click" />
-
-        <Button Grid.Column="2"
-                x:Uid="FolderPickerCard_OpenButton"
+                Click="PickButton_Click">
+            <FontIcon Glyph="{StaticResource Icon.FolderBrowse}" FontSize="16" />
+        </Button>
+        <Button x:Uid="FolderPickerCard_OpenButton"
                 Click="OpenButton_Click" />
-    </Grid>
+    </StackPanel>
 </UserControl>

@@ -4,29 +4,22 @@
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
 
-    <Grid ColumnSpacing="8">
-        <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="*" />
-            <ColumnDefinition Width="Auto" />
-            <ColumnDefinition Width="Auto" />
-            <ColumnDefinition Width="Auto" />
-        </Grid.ColumnDefinitions>
-
+    <!-- The typeable folder card's row, at the card's trailing edge: the path
+         in a field (the Windows Terminal form, Starting directory), the picker
+         behind the same icon as the read-only card, then Open. The field is
+         wider than the composer's text field (200): a path is long. -->
+    <StackPanel Orientation="Horizontal"
+                Spacing="8"
+                VerticalAlignment="Center">
         <TextBox x:Name="PathBox"
-                 Grid.Column="0"
+                 MinWidth="240"
                  PlaceholderText="{x:Bind DefaultPath, Mode=OneWay}"
                  Text="{x:Bind Path, Mode=TwoWay}" />
-
-        <Button Grid.Column="1"
-                x:Uid="FolderPickerCard_PickButton"
-                Click="PickButton_Click" />
-
-        <Button Grid.Column="2"
-                x:Uid="FolderPickerCard_OpenButton"
+        <Button x:Uid="FolderPickerCard_PickButton"
+                Click="PickButton_Click">
+            <FontIcon Glyph="{StaticResource Icon.FolderBrowse}" FontSize="16" />
+        </Button>
+        <Button x:Uid="FolderPickerCard_OpenButton"
                 Click="OpenButton_Click" />
-
-        <ContentPresenter Grid.Column="3"
-                          Content="{x:Bind RightContent, Mode=OneWay}"
-                          VerticalAlignment="Center" />
-    </Grid>
+    </StackPanel>
 </UserControl>

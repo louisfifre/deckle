@@ -10,9 +10,11 @@ namespace Deckle.Settings;
 
 // ── FolderPickerEditableCard ────────────────────────────────────────────────
 //
-// Editable variant of FolderPickerCard: a TextBox replaces the read-only
-// TextBlock, for a folder typed or pasted from another machine rather than
-// picked. Lives inside a SettingsCard for the same reason as FolderPickerCard.
+// Typeable variant of FolderPickerCard: the path sits in a TextBox on the
+// same row as Change and Open, for a folder typed or pasted from another
+// machine rather than picked. The field shows the path, so the card keeps
+// its description alone (no FolderCardDescription line). Lives inside a
+// SettingsCard for the same reason as FolderPickerCard.
 public sealed partial class FolderPickerEditableCard : UserControl, IPathControl
 {
     public FrameworkElement View => this;
@@ -37,17 +39,6 @@ public sealed partial class FolderPickerEditableCard : UserControl, IPathControl
     {
         get => (string)GetValue(DefaultPathProperty);
         set => SetValue(DefaultPathProperty, value);
-    }
-
-    public static readonly DependencyProperty RightContentProperty =
-        DependencyProperty.Register(
-            nameof(RightContent), typeof(UIElement), typeof(FolderPickerEditableCard),
-            new PropertyMetadata(null));
-
-    public UIElement? RightContent
-    {
-        get => (UIElement?)GetValue(RightContentProperty);
-        set => SetValue(RightContentProperty, value);
     }
 
     public event EventHandler? PathChanged;

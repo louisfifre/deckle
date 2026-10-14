@@ -118,34 +118,24 @@
                             Click="ReRunSetupButton_Click" />
                 </controls:SettingsCard>
 
-                <controls:SettingsCard x:Uid="GeneralDataFolderCard"
-                                       Tag="GeneralDataFolderCard"
-                                       ContentAlignment="Vertical"
-                                       HorizontalContentAlignment="Stretch">
-                    <Grid ColumnSpacing="8">
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="*" />
-                            <ColumnDefinition Width="Auto" />
-                            <ColumnDefinition Width="Auto" />
-                        </Grid.ColumnDefinitions>
-                        <TextBlock x:Name="DataFolderPathText"
-                                   Grid.Column="0"
-                                   VerticalAlignment="Center"
-                                   Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                                   IsTextSelectionEnabled="True"
-                                   Style="{StaticResource CaptionTextBlockStyle}"
-                                   TextTrimming="CharacterEllipsis"
-                                   TextWrapping="NoWrap" />
-                        <Button Grid.Column="1"
-                                x:Name="MoveDataFolderButton"
+                <!-- The data folder, in the composed folder cards' form: the
+                     path on a line under the description (FolderCardDescription,
+                     attached in code-behind) and the actions at the trailing
+                     edge. Move keeps its word where the composed cards' Change
+                     is an icon: it copies the data and restarts the app, an
+                     act the button has to name. -->
+                <controls:SettingsCard x:Name="DataFolderCard"
+                                       x:Uid="GeneralDataFolderCard"
+                                       Tag="GeneralDataFolderCard">
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                        <Button x:Name="MoveDataFolderButton"
                                 x:Uid="GeneralDataFolderMoveButton"
                                 Visibility="Collapsed"
                                 Click="MoveDataFolderButton_Click" />
-                        <Button Grid.Column="2"
-                                x:Name="OpenDataFolderButton"
+                        <Button x:Name="OpenDataFolderButton"
                                 x:Uid="GeneralDataFolderOpenButton"
                                 Click="OpenDataFolderButton_Click" />
-                    </Grid>
+                    </StackPanel>
                 </controls:SettingsCard>
 
                 <!-- Pre-flight outcomes of a data move that never left this

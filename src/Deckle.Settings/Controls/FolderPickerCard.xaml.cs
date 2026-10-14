@@ -12,15 +12,18 @@ namespace Deckle.Settings;
 
 // ── FolderPickerCard ────────────────────────────────────────────────────────
 //
-// Read-only display of a folder path with two actions: Set (opens the
-// FolderPicker) and Open (opens the path in Explorer). Designed to live
-// inside a SettingsCard at the consumer site — that lets the SettingsCard
-// own Header / Description / HeaderIcon via x:Uid, and keeps the visual
-// tree compatible with SettingsExpander.Items (which rejects UserControl
-// wrappers around SettingsCard children).
+// The actions of a read-only folder card: Change (opens the FolderPicker)
+// and Open (opens the path in Explorer), a row the composer places at the
+// card's trailing edge. The path itself is not drawn here: the composer puts
+// it under the card's description (FolderCardDescription), so this control
+// only needs it to know what Open opens. Designed to live inside a
+// SettingsCard at the consumer site — that lets the SettingsCard own Header /
+// Description / HeaderIcon via x:Uid, and keeps the visual tree compatible
+// with SettingsExpander.Items (which rejects UserControl wrappers around
+// SettingsCard children).
 //
-// When Path is empty, the TextBlock shows DefaultPath at reduced opacity:
-// a placeholder without the misleading affordance of an editable field.
+// An empty Path means the default folder: Open goes to DefaultPath, where
+// the data actually lands.
 public sealed partial class FolderPickerCard : UserControl, IPathControl
 {
     public FrameworkElement View => this;
@@ -28,7 +31,7 @@ public sealed partial class FolderPickerCard : UserControl, IPathControl
     public static readonly DependencyProperty PathProperty =
         DependencyProperty.Register(
             nameof(Path), typeof(string), typeof(FolderPickerCard),
-            new PropertyMetadata(string.Empty, OnPathOrDefaultChanged));
+            new PropertyMetadata(string.Empty));
 
     public string Path
     {
@@ -39,7 +42,7 @@ public sealed partial class FolderPickerCard : UserControl, IPathControl
     public static readonly DependencyProperty DefaultPathProperty =
         DependencyProperty.Register(
             nameof(DefaultPath), typeof(string), typeof(FolderPickerCard),
-            new PropertyMetadata(string.Empty, OnPathOrDefaultChanged));
+            new PropertyMetadata(string.Empty));
 
     public string DefaultPath
     {
@@ -63,7 +66,6 @@ public sealed partial class FolderPickerCard : UserControl, IPathControl
     public FolderPickerCard()
     {
         InitializeComponent();
-        RefreshDisplay();
         ApplyMode();
     }
 
@@ -72,22 +74,11 @@ public sealed partial class FolderPickerCard : UserControl, IPathControl
         if (d is FolderPickerCard card) card.ApplyMode();
     }
 
+    // A folder the app owns offers no Change.
     private void ApplyMode()
     {
         PickButton.Visibility =
             Mode == FolderPickerMode.OpenOnly ? Visibility.Collapsed : Visibility.Visible;
-    }
-
-    private static void OnPathOrDefaultChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
-    {
-        if (d is FolderPickerCard card) card.RefreshDisplay();
-    }
-
-    private void RefreshDisplay()
-    {
-        string effective = string.IsNullOrEmpty(Path) ? (DefaultPath ?? string.Empty) : Path;
-        PathTextBlock.Text = effective;
-        PathTextBlock.Opacity = string.IsNullOrEmpty(Path) ? 0.6 : 1.0;
     }
 
     // Use the Windows App SDK picker (Microsoft.Windows.Storage.Pickers, 1.7+),
@@ -144,8 +135,6 @@ public sealed partial class FolderPickerCard : UserControl, IPathControl
             parent_x, parent_y, parent_w, parent_h);
     }
 
-    // An empty Path opens DefaultPath: that is where the data actually lands,
-    // not a placeholder.
     private void OpenButton_Click(object sender, RoutedEventArgs e)
     {
         string target = string.IsNullOrEmpty(Path) ? (DefaultPath ?? string.Empty) : Path;

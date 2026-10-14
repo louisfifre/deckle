@@ -17,10 +17,18 @@ public sealed partial class GeneralPage : Page
 {
     public GeneralViewModel ViewModel { get; } = new();
 
+    // The data folder's path line, under the card's description: the form
+    // the composer gives every folder card, attached here because this card
+    // is hand-authored (its Move runs the relocation pre-flight below).
+    private readonly TextBlock _dataFolderPath;
+
     public GeneralPage()
     {
         InitializeComponent();
         NavigationCacheMode = NavigationCacheMode.Required;
+
+        _dataFolderPath = FolderCardDescription.Attach(
+            DataFolderCard, Loc.Get("GeneralDataFolderCard/Description"));
 
         ComposeAppearanceSection();
         ComposeStartupSection();
@@ -114,7 +122,7 @@ public sealed partial class GeneralPage : Page
     private void LoadAndSync()
     {
         ViewModel.Load();
-        DataFolderPathText.Text = AppPaths.UserDataRoot;
+        FolderCardDescription.Show(_dataFolderPath, AppPaths.UserDataRoot);
         // The move rides the App's relocate hook; unwired (tests, partial
         // hosts) the affordance simply isn't there.
         MoveDataFolderButton.Visibility = SettingsHost.RelocateDataRoot is null

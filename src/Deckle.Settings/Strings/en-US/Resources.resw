@@ -127,13 +127,17 @@
   </data>
 
   <!-- ─── FolderPickerCard / FolderPickerEditableCard ────────────────
-       Shared tooltips for the Pick + Open buttons rendered by the two
-       UserControls under Deckle.Settings/. Header / Description for
-       each instance are passed in via the consumer's x:Uid (e.g.
-       GeneralBackupLocationCard.Header). These two strings stay
-       generic so a single key covers every folder picker in the app. -->
-  <data name="FolderPickerCard_PickButton.Content" xml:space="preserve">
-    <value>Set</value>
+       The Change and Open buttons rendered by the two UserControls under
+       Deckle.Settings/. Change is an icon-only button, so its words are
+       its tooltip and its narrator name. Header / Description for each
+       instance are passed in via the consumer's x:Uid (e.g.
+       GeneralBackupLocationCard.Header). These strings stay generic so a
+       single key covers every folder picker in the app. -->
+  <data name="FolderPickerCard_PickButton.ToolTipService.ToolTip" xml:space="preserve">
+    <value>Choose a folder</value>
+  </data>
+  <data name="FolderPickerCard_PickButton.AutomationProperties.Name" xml:space="preserve">
+    <value>Choose a folder</value>
   </data>
   <data name="FolderPickerCard_OpenButton.Content" xml:space="preserve">
     <value>Open</value>
