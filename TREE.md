@@ -616,6 +616,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── RecordingPage.xaml
 │   │   ├── RecordingPage.xaml.cs
 │   │   ├── RecordingSettingsModule.cs
+│   │   ├── RecordingTelemetryViewModel.cs
 │   │   ├── RecordingViewModel.cs
 │   │   ├── RecordingViewModel.ListeningTest.cs
 │   │   ├── RecordingViewModel.Settings.cs

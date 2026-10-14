@@ -1,7 +1,6 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Deckle.Diagnostics;
-using Deckle.Diagnostics.Telemetry;
 using System.Globalization;
 using System.Threading.Tasks;
 
@@ -176,22 +175,8 @@ public partial class RecordingViewModel : ObservableObject
         PushToSettings();
     }
 
-    // ── Telemetry (microphone RMS distribution opt-in) ──────────────────────
-    //
-    // A privacy opt-in that persists in its OWN store (TelemetrySettingsService,
-    // telemetry.json), not CaptureSettings, so it rides a dedicated
-    // PushTelemetryToSettings() rather than PushToSettings(). The enable is
-    // gated by a consent dialog in the manifest (confirmOnEnable).
-
-    [ObservableProperty]
-    public partial bool MicrophoneTelemetry { get; set; }
-
-    partial void OnMicrophoneTelemetryChanged(bool value)
-    {
-        if (_isSyncing) return;
-        DeckleSettingsUxSource.Log.SettingChanged("Telemetry.MicrophoneTelemetry", value.ToString());
-        PushTelemetryToSettings();
-    }
+    // The microphone-telemetry opt-in lives in RecordingTelemetryViewModel, the
+    // module's contribution to the Diagnostics page.
 
     // ── Sync with CaptureSettingsService ────────────────────────────────────
 
@@ -211,7 +196,6 @@ public partial class RecordingViewModel : ObservableObject
         LevelWindowExponent = levelWindow.DbfsCurveExponent;
         LevelWindowAutoCalibration = levelWindow.AutoCalibrationEnabled;
         PreprocessingEnabled = new PreprocessingSettings().Enabled;
-        MicrophoneTelemetry = false;
 
         // _isSyncing stays true — Load() will set it to false.
     }
@@ -230,8 +214,6 @@ public partial class RecordingViewModel : ObservableObject
             LevelWindowExponent = capture.LevelWindow.DbfsCurveExponent;
             LevelWindowAutoCalibration = capture.LevelWindow.AutoCalibrationEnabled;
             PreprocessingEnabled = capture.Preprocessing.Enabled;
-
-            MicrophoneTelemetry = TelemetrySettingsService.Instance.Current.MicrophoneTelemetry;
         }
         finally
         {
@@ -252,11 +234,5 @@ public partial class RecordingViewModel : ObservableObject
         capture.Preprocessing.Enabled = PreprocessingEnabled;
 
         CaptureSettingsService.Instance.Save();
-    }
-
-    private void PushTelemetryToSettings()
-    {
-        TelemetrySettingsService.Instance.Current.MicrophoneTelemetry = MicrophoneTelemetry;
-        TelemetrySettingsService.Instance.Save();
     }
 }

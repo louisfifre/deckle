@@ -241,10 +241,8 @@
     <value>Device {0}</value>
   </data>
 
-  <!-- Diagnostics section — microphone-telemetry opt-in (section header + composed card) -->
-  <data name="RecordingPageTelemetrySection.Title" xml:space="preserve">
-    <value>Diagnostics</value>
-  </data>
+  <!-- Microphone-telemetry opt-in, composed on Settings > Diagnostics
+       (RecordingTelemetryViewModel); its words stay here. -->
   <data name="RecordingMicrophoneTelemetryCard.Header" xml:space="preserve">
     <value>Log microphone level</value>
   </data>

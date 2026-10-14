@@ -56,19 +56,7 @@ public partial class RecordingViewModel
     // level check above measures the window, and three dBFS sliders without a
     // meter beside them were an expert override nobody could judge. The view
     // model keeps the LevelWindow* properties and LevelWindowSettings its defaults.
-
-    // Microphone telemetry — the per-recording RMS-distribution opt-in. One toggle,
-    // gated by the shell's consent dialog through the Catalog registry
-    // (TelemetryConsent.RequestMicrophone, a method group the App wires at boot) —
-    // so the module gates its enable behind consent without referencing the shell.
-    // No defaultValue: a privacy opt-in carries no per-card reset affordance, and
-    // this section hosts no section-reset link either.
-    public IReadOnlyList<SettingDescriptor> TelemetrySettings =>
-    [
-        Setting.Toggle("RecordingMicrophoneTelemetryCard",
-            () => MicrophoneTelemetry,
-            value => MicrophoneTelemetry = value,
-            glyph: Glyphs.Microphone,
-            confirmOnEnable: TelemetryConsent.RequestMicrophone),
-    ];
+    //
+    // The microphone-telemetry opt-in lives in RecordingTelemetryViewModel,
+    // composed on the Diagnostics page.
 }

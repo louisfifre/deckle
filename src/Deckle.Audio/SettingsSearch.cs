@@ -60,11 +60,17 @@ public static class SettingsSearch
             Keywords = ["listen", "playback", "hear", "speakers", "headphones"],
         },
 
-        // Microphone-telemetry opt-in (composed).
+    ];
+
+    // The microphone-telemetry opt-in, composed on Settings > Diagnostics
+    // (RecordingTelemetryViewModel); registered under that page with this
+    // module's assembly, where its words live.
+    public static IReadOnlyList<SettingSearchEntry> TelemetryEntries { get; } =
+    [
         new SettingSearchEntry
         {
             LabelKey = "RecordingMicrophoneTelemetryCard",
-            Keywords = ["diagnostics", "metrics", "stats"],
+            Keywords = ["diagnostics", "metrics", "stats", "microphone", "recording"],
         },
     ];
 }

@@ -27,7 +27,6 @@ public sealed partial class RecordingPage : Page
         NavigationCacheMode = NavigationCacheMode.Required;
         ComposeRecordingLimitSection();
         ComposePreprocessingSection();
-        ComposeTelemetrySection();
         LoadAndSync();
     }
 
@@ -60,18 +59,6 @@ public sealed partial class RecordingPage : Page
         // one going dirty must re-gate it. The composer raises DirtyChanged at the
         // end of every RefreshAll, so the handler reads the settled dirtiness.
         _preprocessingComposer.DirtyChanged += OnComposedDirtyChanged;
-    }
-
-    // ── Composed telemetry section ────────────────────────────────────────────
-    //
-    // Deliberately not wired into the section-reset link: a privacy opt-in is
-    // never reset from here.
-    private SettingsComposer? _telemetryComposer;
-
-    private void ComposeTelemetrySection()
-    {
-        _telemetryComposer = new SettingsComposer(TelemetryHost, ViewModel);
-        _telemetryComposer.Compose(ViewModel.TelemetrySettings);
     }
 
     private void OnComposedDirtyChanged(object? sender, EventArgs e) => GateResetLink();

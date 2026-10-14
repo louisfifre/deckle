@@ -146,14 +146,9 @@
                     </StackPanel>
                 </catalog:SettingsSection>
 
-                <!-- ── Diagnostics ─────────────────────────────────────────── -->
-                <!-- The microphone-telemetry opt-in sits here because it observes
-                     this module's capture pipeline. A privacy opt-in, so the
-                     section has no reset. -->
-                <catalog:SettingsSection x:Uid="RecordingPageTelemetrySection">
-                    <StackPanel x:Name="TelemetryHost"
-                                Spacing="{StaticResource SettingsCardSpacing}" />
-                </catalog:SettingsSection>
+                <!-- The microphone-telemetry opt-in lives on Settings > Diagnostics,
+                     the one editor of what Deckle records
+                     (RecordingTelemetryViewModel, 2026-10-14). -->
 
             </StackPanel>
         </Grid>
