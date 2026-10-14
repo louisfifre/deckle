@@ -23,11 +23,11 @@ Most terms are defined in the module vocabularies. This list gives one line each
 - **Streaming** is the value `PipelineStrategyKind.Streaming` in `src/Deckle.Transcription/TranscriptionSettings.cs`. It is the pipeline that cuts the dictation into utterances while you speak and transcribes each one as soon as it ends. The text of each utterance then appears in the live transcript panel beside the HUD; there is no word-by-word display inside an utterance.
 - **Monolithic** is the other value of the same enum. It captures the whole take, then makes one transcription call at the end.
 - The code default is Monolithic, and the comment above the enum says the monolithic path "is slated for removal once streaming proves out".
-- **Utterance** vs **segment**: an utterance is the audio span Deckle cuts and sends to Whisper in one call; a segment is a piece of text Whisper returns inside that call. See `src/Deckle.Transcription/CONTEXT.md`.
-- **Neural VAD** vs **energy segmenter**: the neural VAD (Silero) is a model that finds speech inside a finished buffer; the energy segmenter is a volume threshold that cuts the live stream. See `src/Deckle.Transcription/CONTEXT.md`.
+- **Utterance** vs **segment**: an utterance is the audio span Deckle cuts and sends to Whisper in one call; a segment is a piece of text Whisper returns inside that call. See `src/Deckle.Transcription/GLOSSARY.md`.
+- **Neural VAD** vs **energy segmenter**: the neural VAD (Silero) is a model that finds speech inside a finished buffer; the energy segmenter is a volume threshold that cuts the live stream. See `src/Deckle.Transcription/GLOSSARY.md`.
 - **Hangover** vs **margin**: the hangover is how long the segmenter waits in silence before it decides an utterance has ended; the margin is how much of that silence it keeps at the end of the cut. See the header comment of `src/Deckle.Transcription/Streaming/EnergySegmenter.cs`.
-- **Display level** vs **transcription pre-processing**: the display level only drives the HUD outline; pre-processing changes the audio sent to Whisper. See `src/Deckle.Audio/CONTEXT.md`.
-- **Dictation** vs **file transcription**: the two entry points into the same pipeline. See `src/Deckle.Transcription/CONTEXT.md`.
+- **Display level** vs **transcription pre-processing**: the display level only drives the HUD outline; pre-processing changes the audio sent to Whisper. See `src/Deckle.Audio/GLOSSARY.md`.
+- **Dictation** vs **file transcription**: the two entry points into the same pipeline. See `src/Deckle.Transcription/GLOSSARY.md`.
 
 ## Diagram 1 — the chain, step by step
 
@@ -85,7 +85,7 @@ Notes on the diagram:
 - The hotkey is a toggle. The first press starts a take, the second press stops it. It is not push-to-talk (`RequestToggle` in `src/Deckle.Transcription/Engine/TranscriptionEngine.StateMachine.cs`).
 - The fork is drawn after the frames for clarity. In the code, the strategy is chosen once per take in `WorkerRun`, before capture starts; the Monolithic path does not subscribe to frames.
 - In Streaming, the pre-processing and the Silero trim run once per utterance, inside the consumer. In Monolithic, the pre-processing runs once over the whole take, and the Silero trim does not run at all (`src/Deckle.Transcription/Engine/TranscriptionEngine.MonolithicPipeline.cs`).
-- File transcription is the second entry point: a tray command decodes an audio file and pushes its frames into the same energy segmenter, channel and consumer, then writes the text beside the file (`src/Deckle.Transcription/CONTEXT.md`, `src/Deckle.Transcription/Engine/TranscriptionEngine.FilePipeline.cs`). It is left out of the diagrams.
+- File transcription is the second entry point: a tray command decodes an audio file and pushes its frames into the same energy segmenter, channel and consumer, then writes the text beside the file (`src/Deckle.Transcription/GLOSSARY.md`, `src/Deckle.Transcription/Engine/TranscriptionEngine.FilePipeline.cs`). It is left out of the diagrams.
 
 ### Node → file
 
@@ -360,7 +360,7 @@ How to read it:
 - **Hangover**: an utterance is open, and the last frames were silent. The segmenter is not sure yet whether this is a short pause inside a sentence or the end. It counts the silent frames in a row. A voiced frame sets the count back to 0 and returns to Speech. When the count reaches the required hangover, the segmenter cuts and emits the utterance with `EndedOnSilence = true`.
 - **Flush at Stop**: when you press the hotkey to stop, the open utterance is emitted whatever its state, with `EndedOnSilence = false`. In Silence, Flush does nothing.
 - The step Speech → Hangover also checks the required hangover. With the defaults it never cuts there, because the minimum hangover is 10 frames. It only matters if a hangover rounds to one frame (under 75 ms: `FramesFromMs` uses `Math.Round`, which rounds 75 ms, 1.5 frames, to 2).
-- The segmenter has no maximum utterance length. An utterance only ends on a silence long enough, or at Stop. The header of `EnergySegmenter.cs` says so ("No hard cap"). Reading: `src/Deckle.Transcription/Streaming/Utterance.cs` and `src/Deckle.Transcription/CONTEXT.md` still mention a "safety ceiling"; the code has no such ceiling. The only cap is the optional capture limit (`MaxRecordingDurationSeconds`, off by default), which ends the whole take through the same Flush when the user has set one.
+- The segmenter has no maximum utterance length. An utterance only ends on a silence long enough, or at Stop. The header of `EnergySegmenter.cs` says so ("No hard cap"). Reading: `src/Deckle.Transcription/Streaming/Utterance.cs` and `src/Deckle.Transcription/GLOSSARY.md` still mention a "safety ceiling"; the code has no such ceiling. The only cap is the optional capture limit (`MaxRecordingDurationSeconds`, off by default), which ends the whole take through the same Flush when the user has set one.
 
 #### Node → file
 
@@ -442,7 +442,7 @@ The consumer takes the utterances one at a time, in order (`ConsumeUtterancesAsy
    - If the trim throws an error, the utterance goes to Whisper untrimmed and the trim is turned off for the rest of the take.
 3. **Whisper**, one call per utterance (see Diagram 1).
 
-Why two detectors: the energy segmenter must decide live, frame by frame, with only the volume to go on; the neural VAD can look at a finished buffer as a whole and tell speech from noise. The distinction is defined in `src/Deckle.Transcription/CONTEXT.md`, section [Segmentation — detection vs cutting](../src/Deckle.Transcription/CONTEXT.md#segmentation--detection-vs-cutting).
+Why two detectors: the energy segmenter must decide live, frame by frame, with only the volume to go on; the neural VAD can look at a finished buffer as a whole and tell speech from noise. The distinction is defined in `src/Deckle.Transcription/GLOSSARY.md`, section [Segmentation — detection vs cutting](../src/Deckle.Transcription/GLOSSARY.md#segmentation--detection-vs-cutting).
 
 Reading: the segmenter discards everything before the first voiced frame, and the Silero padding works inside the utterance it receives. So the padding cannot bring back a soft word onset that stayed under the energy threshold.
 

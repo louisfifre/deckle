@@ -81,5 +81,5 @@ guards. These seven shared operations plus the 28 typed commands make 35 tools.
   batch replay and the live manual app pass remain separate work.
 
 Local validation follows the repository's compile-only rule. Build the owning
-test project in Debug x64 with `/m:1`; do not infer a live probe or an executed
+test project in Debug x64 with `/m:4`; do not infer a live probe or an executed
 test suite from successful compilation.

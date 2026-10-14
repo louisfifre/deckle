@@ -32,8 +32,8 @@ public partial class App : Microsoft.UI.Xaml.Application
     private HudWindow? _hudWindow;
     private HudOverlayManager? _overlayManager;
     private TrayIconManager? _tray;
-    private TrayContextMenuHost? _trayMenu;
-    private TrayQuickActionsHost? _trayPanel;
+    private TrayMenuHost? _trayMenu;
+    private TrayMenuHost? _trayActions;
     private TranscriptionEngine? _engine;
     private SpeechEngine? _speechEngine;
     private AmbientEngine? _ambientEngine;

@@ -1,16 +1,22 @@
 ---
 name: deckle-testing
-description: Testing posture — test behavior not implementation, stay sober, grow coverage per workstream. Invoke before writing a test or extending coverage.
+description: Use when you write a Deckle test or extend coverage, whatever its category, to test what the code does through the seams the design already has.
 ---
 
-# Deckle — Testing
+## Why
 
-## Intent
+A test is worth keeping when it survives a refactor and follows a re-tune. Code bent only to be tested is harder to use, and that drift costs more than the test is worth.
 
-Code is built to be testable; the drift to avoid is "testable but unusable". Coverage grows per workstream: test what you touch, layer by layer, never the whole past at once.
+## Statement
 
-## How
+Test what the code does, so the test survives a change in how it does it.
 
-Test what the code does, not how it does it — so a test survives a refactor.
+Compare against the value the production code itself uses, so the test follows a re-tune. Write a fixed value in the test only when that value is the promise.
 
-Test against the value the code uses, not a copy of it — so a test follows a re-tune; a literal is fair only when it is itself the contract.
+Reach the code through a seam the design already has. When a test would need a seam the design does not want, change the test.
+
+Coverage grows with each workstream. A workstream tests the code it touches and leaves the rest for the workstream that reaches it.
+
+Every test class carries a Category trait whose value comes from the taxonomy in `tests/GLOSSARY.md`. A module's tests live in the suite that owns it, `Deckle.<Module>.Tests` for the application and `scripts/tests` for the scripts, and plumbing that several C# suites share lives in `Deckle.TestSupport`.
+
+A fixed bug gets a regression test when its failure can be reproduced through a seam the design already has. The test carries the `regression` category, recreates the failing conditions and is named for the behavior that must remain true. It fails on the faulty behavior and passes on the fixed one.

@@ -301,7 +301,7 @@ $publishExitCode = Invoke-DeckleConsoleProcess -FilePath 'dotnet' -ArgumentList 
     '-p:Platform=x64',
     '-o', $PublishDir,
     '-v:m', '-nologo',
-    '/m:1'
+    '/m:4'
 )
 if ($publishExitCode -ne 0) { throw "dotnet publish failed (code $publishExitCode)" }
 
@@ -354,7 +354,7 @@ $installerExitCode = Invoke-DeckleConsoleProcess -FilePath 'dotnet' -ArgumentLis
     '-r', 'win-x64',
     '-o', $InstallerPubDir,
     '-v:m', '-nologo',
-    '/m:1'
+    '/m:4'
 )
 if ($installerExitCode -ne 0) { throw "dotnet publish (installer) failed (code $installerExitCode)" }
 

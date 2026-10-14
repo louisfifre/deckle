@@ -1,9 +1,9 @@
 ---
-name: context-deckle-hud-chrono
+name: glossary-deckle-hud-chrono
 description: "Chrono HUD element vocabulary — the face's eight elements, accent twins, and the animated / at-rest / dot distinctions."
 ---
 
-# Deckle.Hud — Chrono context
+# Deckle.Hud — Chrono glossary
 
 Shared vocabulary for the chrono face (`HudChrono`). The face is the `MM.SS.cc` clock inside the HUD card. This file fixes the terms Louis and the agents use.
 

@@ -1,11 +1,11 @@
 ---
-name: context-deckle-autocorrect
+name: glossary-deckle-autocorrect
 description: "Autocorrect vocabulary — where correction may act (surfaces, enrollment), the two correction stages, protection tiers, datasets, and the learning surfaces. Read before touching correction logic, consent, or learning."
 ---
 
-# Deckle.Autocorrect — Context
+# Deckle.Autocorrect — Glossary
 
-Vocabulary of the system-autocorrect workstream (machine-wide bounded correction at word commit, then closed-candidate contextual correction). The Correction / Rewrite boundary that classifies what this module may do silently is system-wide language and lives in the root `CONTEXT.md`.
+Vocabulary of the system-autocorrect workstream (machine-wide bounded correction at word commit, then closed-candidate contextual correction). The Correction / Rewrite boundary that classifies what this module may do silently is system-wide language and lives in the root `GLOSSARY.md`.
 
 ## Where correction may act
 

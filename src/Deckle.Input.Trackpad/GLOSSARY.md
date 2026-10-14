@@ -1,9 +1,9 @@
 ---
-name: context-deckle-input-trackpad
+name: glossary-deckle-input-trackpad
 description: "Trackpad gesture vocabulary — the recognizer as the state machine that owns gesture quality, and the three-finger drag as the one gesture Deckle owns. Read before touching gesture recognition."
 ---
 
-# Deckle.Input.Trackpad — Context
+# Deckle.Input.Trackpad — Glossary
 
 Vocabulary of the trackpad workstream. This module sits at the top of the input chain: it consumes the contact frames assembled by `Deckle.Input` and turns them into gesture intentions.
 

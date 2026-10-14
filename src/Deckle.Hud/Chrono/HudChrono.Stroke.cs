@@ -49,7 +49,7 @@ public sealed partial class HudChrono
 
     // Playground-only one-shot config override, consumed by the next stroke
     // creation so a state comes up with its tuned config in a single stroke
-    // creation. Null in shipping Deckle.
+    // creation. Null in shipping Deckle, which builds from HudSettingsService.
     private HudComposition.ConicArcStrokeConfig? _nextStrokeConfig;
 
     // The mapping and its tunables live in Deckle.Audio.AudioLevelMapper; the
@@ -114,7 +114,7 @@ public sealed partial class HudChrono
                 if (w == 0f || h == 0f) { w = 272f; h = 78f; }
                 var size = new Vector2(w, h);
 
-                var cfg = _nextStrokeConfig ?? new HudComposition.ConicArcStrokeConfig();
+                var cfg = _nextStrokeConfig ?? HudSettingsService.Instance.EffectiveStroke();
                 _nextStrokeConfig = null;
 
                 _processingStroke = variant == ProcessingVariant.Recording

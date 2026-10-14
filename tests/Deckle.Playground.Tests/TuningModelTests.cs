@@ -61,10 +61,39 @@ public class TuningModelTests
         }
     }
 
+    // The page lays the stored HUD settings over a fresh model with Load; a
+    // field Load skips would silently open on the compiled default instead of
+    // the stored value.
+    [Fact]
+    public void LoadCopiesEveryField()
+    {
+        object boxed = new ConicArcStrokeConfig();
+        foreach (var property in typeof(ConicArcStrokeConfig).GetProperties(BindingFlags.Public | BindingFlags.Instance))
+        {
+            object current = property.GetValue(boxed)!;
+            property.SetValue(boxed, current switch
+            {
+                float f  => f + 0.5f,
+                double d => d + 0.25,
+                int i    => i + 1,
+                bool b   => !b,
+                _ => throw new Xunit.Sdk.XunitException(
+                    $"{property.Name} has an unhandled type {property.PropertyType.Name}; add a case for it"),
+            });
+        }
+        var stored = (ConicArcStrokeConfig)boxed;
+
+        var model = new TuningModel();
+        model.Load(stored);
+
+        Assert.Equal(stored, model.ToConfig());
+    }
+
     // The Playground is a sandbox: an edit reaches the preview config of the
-    // model that made it and nothing else. A bridge that publishes edits to
-    // the live HUD and reloads them into the next HUD tab breaks this: a
-    // fresh model then no longer opens on the compiled defaults.
+    // model that made it and nothing else, until the page's Save writes the
+    // HUD settings store. A fresh model opens on the compiled defaults; the
+    // stored values arrive through Load, never through a static bridge that
+    // would also carry unsaved edits across tabs.
     [Fact]
     [Trait("Category", "regression")]
     public void AnEditChangesItsOwnPreviewOnlyAndAFreshTabOpensOnTheShippingDefaults()
@@ -89,9 +118,11 @@ public class TuningModelTests
     }
 
     // The live HUD is a single process-wide instance, so the only way the
-    // Playground could reach it with a HUD config is a static entry point.
-    // There must be none: no static method that accepts a config without
-    // returning a visual, no static settable property or field of a config type.
+    // Playground could reach it with a HUD config without a gesture is a
+    // static entry point. There must be none: no static method that accepts a
+    // config without returning a visual, no static settable property or field
+    // of a config type. The sanctioned path is an instance method,
+    // HudSettingsService.Save, behind the bar's Save button.
     [Fact]
     [Trait("Category", "regression")]
     public void TheLiveHudOffersNoProcessWideEntryForAHudConfig()

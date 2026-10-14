@@ -1,9 +1,9 @@
 ---
-name: context-deckle-input
+name: glossary-deckle-input
 description: "Input-layer vocabulary — the contact frame as the unit assembled from Raw Input reads, and its place in the report → frame → intention chain. Read before touching touchpad parsing or frame assembly."
 ---
 
-# Deckle.Input — Context
+# Deckle.Input — Glossary
 
 Vocabulary of the input layer. The chain reads bottom-up: the device emits reports, the input layer assembles contact frames, the recognizer (in `Deckle.Input.Trackpad`) turns frames into intentions.
 

@@ -28,8 +28,8 @@ namespace Deckle.Diagnostics;
 //   "log"           — LogWindow
 //   "setup"         — SetupWindow first-run wizard
 //   "playground"    — PlaygroundWindow (Hud + Ambient tuning shell)
-//   "tray-popup"    — tray icon context popup
-//   "tray-panel"    — tray icon quick-actions panel (left click)
+//   "tray-popup"    — tray icon context menu anchor (right click)
+//   "tray-actions"  — tray icon quick-actions menu anchor (left click)
 //   "folder-picker" — system FolderPicker opened from Settings
 //   "taskbar-cover" — opaque band masking the taskbar (native, own thread)
 // Any new window added to the project must extend this vocabulary before

@@ -54,10 +54,11 @@ public partial class App
         }
 
         TryShutdown("settings flush", () => Settings.SettingsService.Instance.Flush());
+        TryShutdown("hud settings flush", () => Hud.HudSettingsService.Instance.Flush());
         TryShutdown("hotkeys dispose", () => _hotkeyManager?.Dispose());
         TryShutdown("tray dispose", () => _tray?.Dispose());
         TryShutdown("tray menu dispose", () => _trayMenu?.Dispose());
-        TryShutdown("tray panel dispose", () => _trayPanel?.Dispose());
+        TryShutdown("tray actions dispose", () => _trayActions?.Dispose());
         // Before _messageHost: the signal's subclass + Raw Input sink sit on the
         // host's HWND, which _messageHost.Dispose destroys.
         TryShutdown("cursor signal dispose", () => _cursorSignal?.Dispose());

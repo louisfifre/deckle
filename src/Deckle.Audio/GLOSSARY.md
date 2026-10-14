@@ -1,9 +1,9 @@
 ---
-name: context-deckle-audio
+name: glossary-deckle-audio
 description: "Audio vocabulary — display level vs transcription pre-processing, the two notions of « level » that must never be conflated. Read before touching level mapping or the DSP chain."
 ---
 
-# Deckle.Audio — Context
+# Deckle.Audio — Glossary
 
 Two distinct notions carry the word "level" and must never be conflated: one drives the real-time visual, the other drives the signal actually handed to the transcription engine. They are decoupled by design — display is computed live during capture, signal processing is a terminal transform applied to finished audio: once per utterance under the Streaming strategy, once over the whole take after Stop under Monolithic.
 

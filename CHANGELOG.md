@@ -139,6 +139,13 @@ doctrine). This file is generated from the Conventional-Commit history by
 - **transcription:** Split the settings into General, Decoding and Streaming
 - **composer:** Add the curve block
 - **composition:** Open the countdown at -15 % and run it to 175 %
+- **app:** Put the tray actions at the bottom of the left-click menu
+- **hud:** Add a settings store that keeps only what differs from the defaults
+- **hud:** Build the stroke and the countdown from the stored settings
+- **playground:** Open the HUD tab on the stored settings and save from a bar
+- **app:** Flush the HUD settings on quit
+- **scripts:** Route the breaking marker to Removed and cancel reverts within a range
+- **scripts:** Route the deprecate type to Deprecated
 
 ### Changed
 
@@ -219,6 +226,10 @@ doctrine). This file is generated from the Conventional-Commit history by
 - **tray-menu:** Open a tray flyout once its carrier reports its size
 - **tray-menu:** Give the quick-actions panel a popup window of its own
 - **composition:** Map the conic palette into the sRGB gamut by chroma
+- **tray-menu:** Open both tray menus as native menus at their natural size
+- **tray-menu:** Open the menus from the icon's corner, not its center
+- **tray-menu:** Show the module switches as rows with a pill
+- **scripts:** Regenerate the changelog from a single published tag
 
 ## [0.35.0](https://github.com/louisfifre/deckle/compare/v0.31.6...v0.35.0) — 2026-08-13
 
@@ -1353,7 +1364,6 @@ doctrine). This file is generated from the Conventional-Commit history by
 - **playground:** Nav layers + InvalidCastException on pipeline start
 - **vision:** Use MarshalInspectable.FromManaged for the WinRT ABI extract
 - **vision:** Copy mip 0 with CopySubresourceRegion, not CopyResource
-- **vision:** Switch to CPU stride sampling — GPU mip path was returning zeros
 - **playground:** Move RestoreHueFromSettings out of the constructor body
 - **playground:** Allocate one SolidColorBrush per preview cell
 - **diagnostics:** Logging toggle is per-module Ambient, not verbose level

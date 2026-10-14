@@ -14,7 +14,7 @@ Quality target: a Windows app at Microsoft first-party level. Sensory reference:
 
 ## Hard rules
 
-Local validation is compile-only `dotnet build` with `/m:1`, Debug x64 by default, without stopping or relaunching Deckle. `Directory.Build.rsp` runs every command-line build at low priority and disables MSBuild node reuse and Roslyn shared compilation; do not bypass it with `-noAutoResponse`. The .NET CLI applies its default maximum node count after response files, so every build or publish invocation must keep `/m:1` explicit. `publish` stays the maintainer's act, never triggered by agents.
+Local validation is compile-only `dotnet build` with `/m:4`, Debug x64 by default, without stopping or relaunching Deckle. `Directory.Build.rsp` runs every command-line build at low priority and disables MSBuild node reuse; do not bypass it with `-noAutoResponse`. The .NET CLI applies its default maximum node count after response files, so every build or publish invocation must keep `/m:4` explicit. Never run two builds at once, whatever the session: when another `dotnet build` is running on the machine, wait for it. `publish` stays the maintainer's act, never triggered by agents.
 
 Terminal-interface inspection uses deterministic `scripts/deckle-preview.ps1 -Snapshot ...` output. Agents MUST NOT start or drive the interactive `scripts/deckle.ps1` launcher or invoke its actions; that daily launcher may stop or relaunch the resident app by design.
 
@@ -28,11 +28,7 @@ Speech models, ASR and TTS alike, run in BF16 or FP16. A 4-bit quantization serv
 
 ## Bug notes and regression tests
 
-Once a confirmed bug's cause is established, invoke `deckle-bug-note` before closing the workstream. Keep the note beside the test project that owns the behavior and follow its local naming and format. Record established facts: trigger, observed symptom, cause, violated invariant, and recurrence cue. Remove secrets and personal data; mark uncertainty explicitly.
-
-When the workstream fixes the bug, add a `[Trait("Category", "regression")]` test if the failure can be reproduced automatically through a natural seam. Recreate the failing conditions and assert the public behavioral contract, not implementation details. Name the test for the behavior that must remain true. The encoded condition must distinguish the fixed contract from the known faulty behavior.
-
-Keep the test in the owning `*.Tests` project. If the note contains replayable input, store it as a test resource and make the regression test consume it; otherwise identify the regression test in the note. Declare the resource in the test project when the SDK does not include it in the required form. Validate by compiling the owning test project under the repository's x64 and no-build-server rules.
+Once a confirmed bug's cause is established, invoke `deckle-bug-note` before closing the workstream. The fix and its regression test follow `deckle-testing`.
 
 ## Name the hat
 

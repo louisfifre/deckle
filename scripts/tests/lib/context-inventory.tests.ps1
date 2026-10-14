@@ -9,10 +9,10 @@ function Assert-Equal($Expected, $Actual, [string]$Case) {
 
 Assert-Equal 'Automatic instructions' (Get-ContextLoadingMode 'src/Deckle.App/AGENTS.md') 'AGENTS loading mode'
 Assert-Equal 'Automatic instructions' (Get-ContextLoadingMode 'src/Deckle.App/CLAUDE.md') 'CLAUDE loading mode'
-Assert-Equal 'On-demand references' (Get-ContextLoadingMode 'CONTEXT-MAP.md') 'context loading mode'
+Assert-Equal 'On-demand references' (Get-ContextLoadingMode 'GLOSSARY-MAP.md') 'glossary loading mode'
 Assert-Equal 'AGENTS' (Get-ContextDocumentType 'src/Deckle.App/AGENTS.md') 'AGENTS type'
 Assert-Equal 'CLAUDE' (Get-ContextDocumentType 'src/Deckle.App/CLAUDE.md') 'CLAUDE type'
-Assert-Equal 'Context' (Get-ContextDocumentType 'CONTEXT-MAP.md') 'context type'
+Assert-Equal 'Glossary' (Get-ContextDocumentType 'GLOSSARY-MAP.md') 'glossary type'
 Assert-Equal 'Skill' (Get-ContextDocumentType '.agents/skills/winui-app/SKILL.md') 'skill type'
 Assert-Equal 'Skill reference' (Get-ContextDocumentType '.agents/skills/winui-app/references/foundation-setup.md') 'skill reference type'
 Assert-Equal 'ADR' (Get-ContextDocumentType 'docs/adr/0001-decision.md') 'ADR type'
@@ -59,16 +59,16 @@ Assert-Equal '2026-07-20' $dates['docs/older.md'] 'older modification retained'
 $fixture = Join-Path ([System.IO.Path]::GetTempPath()) ('deckle-context-' + [guid]::NewGuid())
 New-Item -ItemType Directory -Path $fixture | Out-Null
 try {
-    $path = Join-Path $fixture 'CONTEXT.md'
+    $path = Join-Path $fixture 'GLOSSARY.md'
     [System.IO.File]::WriteAllText($path, "one`ntwo", [System.Text.UTF8Encoding]::new($false))
-    $measured = Measure-ContextDocument -RepoRoot $fixture -RelativePath 'CONTEXT.md'
+    $measured = Measure-ContextDocument -RepoRoot $fixture -RelativePath 'GLOSSARY.md'
     Assert-Equal 2 $measured.Lines 'line count'
     Assert-Equal 0 $measured.Sections 'section count'
     Assert-Equal 2 $measured.EstimatedTokens 'estimated tokens'
     Assert-Equal 7 $measured.Bytes 'UTF-8 bytes'
 
     & git -C $fixture init --quiet
-    & git -C $fixture add -- CONTEXT.md
+    & git -C $fixture add -- GLOSSARY.md
     $uncommittedInventory = @(Get-ContextInventory -RepoRoot $fixture)
     Assert-Equal 1 $uncommittedInventory.Count 'a repository without HEAD still has a context inventory'
     Assert-Equal $null $uncommittedInventory[0].Modified 'missing Git history has no invented modification date'
