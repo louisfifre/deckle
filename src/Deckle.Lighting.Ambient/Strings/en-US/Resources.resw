@@ -167,14 +167,9 @@
   <data name="AmbientPageBehaviourSection.Title" xml:space="preserve">
     <value>Behaviour</value>
   </data>
-  <data name="AmbientPresetCard.Header" xml:space="preserve">
-    <value>Preset</value>
-  </data>
-  <data name="AmbientPresetCard.Description" xml:space="preserve">
-    <value>Game follows the screen quickly and keeps its colours as they are. Vivid adds a touch of saturation. Movie smooths colour changes for cinematic content. Ambient stays soft and slow as room mood lighting. Changing a fine-tuning setting below switches to Custom, which keeps your own values.</value>
-  </data>
-  <!-- Preset options: composed (Setting.Choice) from AmbientPresets, read as
-       "<key>.Content". The key is the preset's LabelKey. -->
+  <!-- Preset options, read as "<key>.Content" (the preset's LabelKey). The
+       Settings page no longer selects a preset; the Playground Ambient page
+       and the tray still do. -->
   <data name="AmbientPresetGame.Content" xml:space="preserve">
     <value>Game</value>
   </data>
@@ -249,12 +244,6 @@
   <data name="AmbientSmoothingCard.Description" xml:space="preserve">
     <value>How quickly the lights follow the screen. Lower values glide between colours; 1 follows every change at once.</value>
   </data>
-  <data name="AmbientChangeThresholdCard.Header" xml:space="preserve">
-    <value>Change threshold</value>
-  </data>
-  <data name="AmbientChangeThresholdCard.Description" xml:space="preserve">
-    <value>Ignores colour changes smaller than this, so the lights stay steady on still scenes. 0 follows every change.</value>
-  </data>
   <data name="AmbientExposureCard.Header" xml:space="preserve">
     <value>Exposure</value>
   </data>
@@ -277,21 +266,6 @@
   </data>
   <data name="AmbientMonitorCard.Description" xml:space="preserve">
     <value>Choose the display Ambient Light follows.</value>
-  </data>
-  <data name="AmbientCaptureRateCard.Header" xml:space="preserve">
-    <value>Capture rate</value>
-  </data>
-  <data name="AmbientCaptureRateCard.Description" xml:space="preserve">
-    <value>How often the screen is read. Higher rates keep the lights smooth and quick; lower rates ease the load on slower PCs.</value>
-  </data>
-  <data name="AmbientCaptureRate60.Content" xml:space="preserve">
-    <value>60 times per second</value>
-  </data>
-  <data name="AmbientCaptureRate30.Content" xml:space="preserve">
-    <value>30 times per second</value>
-  </data>
-  <data name="AmbientCaptureRate15.Content" xml:space="preserve">
-    <value>15 times per second</value>
   </data>
   <data name="AmbientMonitor_Primary" xml:space="preserve">
     <value>Primary display (follow Windows)</value>

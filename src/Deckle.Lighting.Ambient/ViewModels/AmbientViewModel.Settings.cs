@@ -65,102 +65,71 @@ public partial class AmbientViewModel
             defaultValue: () => new AmbientSettings().UseMultiLight),
     ];
 
-    // Fine tuning: the preset fold (settings design system, decision 12). The
-    // preset selector sits in the fold's header, the values it governs are its
-    // children — the brightness floor (its switch and its level, flat because
-    // folds never nest), smoothing, change threshold, exposure, saturation. Every
-    // child shows in every mode: a preset fills the values, and any hand edit
-    // turns the selection to Custom (AmbientViewModel reports it to the family).
-    // The preset options come from the family (each preset in declared order,
-    // then Custom); the fold's reset writes the children's defaults, then returns
-    // the selector to the default preset. The bespoke brightness curve stays
-    // beside the fold until it becomes a composer instrument.
+    // Fine tuning: flat cards, in order the brightness floor (its switch and its
+    // level), reaction speed, exposure, saturation, then the brightness curve
+    // last and full width (decision 12), with the floor drawn as a guide while
+    // it is on. The preset fold that held them (Game / Vivid / Movie / Ambient /
+    // Custom in its header) is set aside with every preset (settings design
+    // system, decision 22): the family still runs underneath (Preset,
+    // AmbientSettingsService.Presets), so a hand edit still records Custom, but
+    // nothing on the page selects a preset any more. The change threshold, an
+    // engine optimisation nobody tunes, keeps its AmbientSettings default and is
+    // no longer exposed (triage of 2026-10-14).
     public IReadOnlyList<SettingDescriptor> TuningSettings =>
     [
-        Setting.Mode<string>(
-            "AmbientPresetCard",
-            () => Preset,
-            value => Preset = value,
-            AmbientSettingsService.Instance.Presets.SelectorOptions("AmbientPresetCustom"),
-            [
-                Setting.Toggle(
-                    "AmbientMinBrightnessGroup",
-                    () => MinBrightnessEnabled,
-                    value => MinBrightnessEnabled = value,
-                    glyph: Glyphs.LightbulbFilled,
-                    defaultValue: () => new AmbientSettings().MinBrightnessEnabled),
-                Setting.Magnitude(
-                    "AmbientMinBrightnessCard",
-                    () => MinBrightness,
-                    value => MinBrightness = (int)Math.Round(value),
-                    new MagnitudeArgs(0, 254),
-                    visibleWhen: () => MinBrightnessEnabled,
-                    defaultValue: () => new AmbientSettings().MinBrightness),
-                Setting.Magnitude(
-                    "AmbientSmoothingCard",
-                    () => SmoothingAlpha,
-                    value => SmoothingAlpha = value,
-                    new MagnitudeArgs(0.05, 1),
-                    glyph: Glyphs.Latency,
-                    defaultValue: () => new AmbientSettings().SmoothingAlpha),
-                Setting.Magnitude(
-                    "AmbientChangeThresholdCard",
-                    () => ChangeThreshold,
-                    value => ChangeThreshold = (int)Math.Round(value),
-                    new MagnitudeArgs(0, 30),
-                    glyph: Glyphs.Filter,
-                    defaultValue: () => new AmbientSettings().ChangeThreshold),
-                Setting.Magnitude(
-                    "AmbientExposureCard",
-                    () => ExposureEv,
-                    value => ExposureEv = value,
-                    new MagnitudeArgs(-2, 2, Unit: "EV"),
-                    glyph: Glyphs.Lightning,
-                    defaultValue: () => new AmbientSettings().ExposureEv),
-                Setting.Magnitude(
-                    "AmbientSaturationCard",
-                    () => SaturationBoost,
-                    value => SaturationBoost = value,
-                    new MagnitudeArgs(0, 2, Unit: "×"),
-                    glyph: Glyphs.Sparkle,
-                    defaultValue: () => new AmbientSettings().SaturationBoost),
-                // The instrument last and full width (decision 12): the shared
-                // curve block (decision 21) over the brightness response, the unit
-                // square alone, with the brightness floor drawn as a guide while it
-                // is on.
-                Setting.Curve(
-                    "AmbientBrightnessCurveCard",
-                    () => new CurvePoints(BrightnessCurveX1, BrightnessCurveY1, BrightnessCurveX2, BrightnessCurveY2),
-                    p =>
-                    {
-                        BrightnessCurveX1 = p.X1; BrightnessCurveY1 = p.Y1;
-                        BrightnessCurveX2 = p.X2; BrightnessCurveY2 = p.Y2;
-                    },
-                    new CurveArgs(Floor: () => MinBrightnessEnabled ? MinBrightness / 254.0 : null),
-                    glyph: Glyphs.Tuning,
-                    defaultValue: () =>
-                    {
-                        var d = new AmbientSettings();
-                        return new CurvePoints(d.BrightnessCurveX1, d.BrightnessCurveY1, d.BrightnessCurveX2, d.BrightnessCurveY2);
-                    }),
-            ],
-            glyph: Glyphs.Theme,
-            defaultValue: () => AmbientPresets.Default),
+        Setting.Toggle(
+            "AmbientMinBrightnessGroup",
+            () => MinBrightnessEnabled,
+            value => MinBrightnessEnabled = value,
+            glyph: Glyphs.LightbulbFilled,
+            defaultValue: () => new AmbientSettings().MinBrightnessEnabled),
+        Setting.Magnitude(
+            "AmbientMinBrightnessCard",
+            () => MinBrightness,
+            value => MinBrightness = (int)Math.Round(value),
+            new MagnitudeArgs(0, 254),
+            visibleWhen: () => MinBrightnessEnabled,
+            defaultValue: () => new AmbientSettings().MinBrightness),
+        Setting.Magnitude(
+            "AmbientSmoothingCard",
+            () => SmoothingAlpha,
+            value => SmoothingAlpha = value,
+            new MagnitudeArgs(0.05, 1),
+            glyph: Glyphs.Latency,
+            defaultValue: () => new AmbientSettings().SmoothingAlpha),
+        Setting.Magnitude(
+            "AmbientExposureCard",
+            () => ExposureEv,
+            value => ExposureEv = value,
+            new MagnitudeArgs(-2, 2, Unit: "EV"),
+            glyph: Glyphs.Lightning,
+            defaultValue: () => new AmbientSettings().ExposureEv),
+        Setting.Magnitude(
+            "AmbientSaturationCard",
+            () => SaturationBoost,
+            value => SaturationBoost = value,
+            new MagnitudeArgs(0, 2, Unit: "×"),
+            glyph: Glyphs.Sparkle,
+            defaultValue: () => new AmbientSettings().SaturationBoost),
+        Setting.Curve(
+            "AmbientBrightnessCurveCard",
+            () => new CurvePoints(BrightnessCurveX1, BrightnessCurveY1, BrightnessCurveX2, BrightnessCurveY2),
+            p =>
+            {
+                BrightnessCurveX1 = p.X1; BrightnessCurveY1 = p.Y1;
+                BrightnessCurveX2 = p.X2; BrightnessCurveY2 = p.Y2;
+            },
+            new CurveArgs(Floor: () => MinBrightnessEnabled ? MinBrightness / 254.0 : null),
+            glyph: Glyphs.Tuning,
+            defaultValue: () =>
+            {
+                var d = new AmbientSettings();
+                return new CurvePoints(d.BrightnessCurveX1, d.BrightnessCurveY1, d.BrightnessCurveX2, d.BrightnessCurveY2);
+            }),
     ];
 
-    // Configuration: the capture rate, after the bespoke display picker.
-    public IReadOnlyList<SettingDescriptor> CaptureSettings =>
-    [
-        Setting.Radio<int>(
-            "AmbientCaptureRateCard",
-            () => CaptureFrameRateHz,
-            value => CaptureFrameRateHz = value,
-            [
-                (60, "AmbientCaptureRate60"),
-                (30, "AmbientCaptureRate30"),
-                (15, "AmbientCaptureRate15"),
-            ],
-            glyph: Glyphs.Gpu,
-            defaultValue: () => new AmbientSettings().CaptureFrameRateHz),
-    ];
+    // The capture rate (60 / 30 / 15 Hz) is no longer exposed (triage of
+    // 2026-10-14): the engine runs at AmbientCaptureRate.Default and the preview
+    // block reads the measured rate. CaptureFrameRateHz stays in the view model
+    // and the settings file for the engine.
 }

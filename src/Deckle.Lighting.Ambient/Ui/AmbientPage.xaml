@@ -84,9 +84,8 @@
 
                 <!-- ── Fine tuning ────────────────────────────────────────── -->
                 <catalog:SettingsSection x:Uid="AmbientPageTuningSection">
-                    <!-- Composed: the preset fold, with the brightness floor,
-                         smoothing, change threshold, exposure, saturation and the
-                         brightness curve as its children
+                    <!-- Composed: the brightness floor, reaction speed, exposure,
+                         saturation and the brightness curve, flat
                          (AmbientViewModel.TuningSettings). -->
                     <StackPanel x:Name="TuningHost"
                                 Spacing="{StaticResource SettingsCardSpacing}" />
@@ -106,10 +105,6 @@
                                       MinWidth="280"
                                       SelectionChanged="MonitorCombo_SelectionChanged" />
                         </controls:SettingsCard>
-
-                        <!-- Composed: capture rate (AmbientViewModel.CaptureSettings). -->
-                        <StackPanel x:Name="CaptureHost"
-                                    Spacing="{StaticResource SettingsCardSpacing}" />
 
                         <!-- bespoke: a multi-step pairing flow (discover, pair with the
                              link-button countdown, load rooms, forget behind a

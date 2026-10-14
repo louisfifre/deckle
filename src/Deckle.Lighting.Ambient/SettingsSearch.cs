@@ -29,16 +29,13 @@ public static class SettingsSearch
     public static IReadOnlyList<SettingSearchEntry> Entries { get; } =
     [
         new() { LabelKey = "AmbientEnabledCard", Keywords = ["ambilight", "bias lighting", "backlight"] },
-        new() { LabelKey = "AmbientPresetCard", Keywords = ["mode", "game", "vivid", "movie", "custom"] },
         new() { LabelKey = "AmbientZonesGroup", Keywords = ["multi light", "zones", "edges", "border", "depth", "band", "per light", "lamp", "identify"] },
         new() { LabelKey = "AmbientBrightnessCurveCard", Keywords = ["curve", "bezier", "response", "shadows"] },
         new() { LabelKey = "AmbientMinBrightnessGroup", Keywords = ["minimum brightness", "floor", "dark scenes"] },
         new() { LabelKey = "AmbientSmoothingCard", Keywords = ["smoothing", "speed", "fade", "lag"] },
-        new() { LabelKey = "AmbientChangeThresholdCard", Keywords = ["threshold", "flicker", "steady"] },
         new() { LabelKey = "AmbientExposureCard", Keywords = ["ev", "brightness", "hdr"] },
         new() { LabelKey = "AmbientSaturationCard", Keywords = ["vivid", "colour", "color", "chroma"] },
         new() { LabelKey = "AmbientMonitorCard", Keywords = ["monitor", "screen", "display"] },
-        new() { LabelKey = "AmbientCaptureRateCard", Keywords = ["fps", "frame rate", "hz", "performance"] },
         new() { LabelKey = "HueBridgeExpander", Keywords = ["philips", "pair", "connect"] },
         new() { LabelKey = "HueBridgeAddressCard", Keywords = ["ip", "discover", "network"] },
         new() { LabelKey = "HueBridgeGroupCard", Keywords = ["group", "entertainment", "lights"] },
