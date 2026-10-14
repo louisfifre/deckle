@@ -5,6 +5,9 @@ $LibDir = Join-Path $ScriptsDir 'lib'
 $LauncherDir = Join-Path $LibDir 'launcher'
 $MenuDir = Join-Path $LibDir 'menu'
 . (Join-Path $LauncherDir 'menu-layout.ps1')
+. (Join-Path $MenuDir 'chrome.ps1')
+. (Join-Path $MenuDir 'grid-layout.ps1')
+. (Join-Path $MenuDir 'grid-picker.ps1')
 
 function Assert-Equal($Expected, $Actual, [string]$Case) {
     if ($Expected -ne $Actual) { throw "${Case}: expected $Expected, got $Actual" }
@@ -61,5 +64,15 @@ Assert-Equal 'Maintenance…' $quitRow.Cells[0].Label 'quit shares the final wor
 Assert-Equal 'Setup…' $quitRow.Cells[1].Label 'setup precedes quit on the final row'
 Assert-Equal 'Quit' $quitRow.TrailingCell.Label 'quit occupies the small trailing column'
 Assert-Equal 'quit' $quitRow.TrailingCell.Role 'quit has a distinct visual role'
+
+# After a Run action the launcher seats the selection on Quit; prove through the
+# grid engine that the state it computes resolves to the trailing Quit cell.
+$quitSelection = Get-DeckleQuitSelection -MenuRows $mainRows
+$mainPlan = New-GridPlan -Rows $mainRows
+$quitPosition = Get-GridSelectionPosition -SelectableRows $mainPlan.SelectableRows -TrailingColumn $mainPlan.ColumnCount -State $quitSelection
+Assert-Equal ($mainPlan.SelectableRows.Count - 1) $quitPosition.Index 'the Quit selection seats on the last selectable row'
+Assert-Equal $mainPlan.ColumnCount $quitPosition.ActiveColumn 'the Quit selection lands on the trailing column'
+Assert-Equal 'quit' $mainPlan.Body[$mainPlan.SelectableRows[$quitPosition.Index].BodyIndex].TrailingCell.Value 'the selected trailing cell is Quit'
+Assert-Equal $null (Get-DeckleQuitSelection -MenuRows $rows) 'a menu without Quit yields no selection'
 
 Write-Host 'menu-layout.tests.ps1: PASS' -ForegroundColor Green

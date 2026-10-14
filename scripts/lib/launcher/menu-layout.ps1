@@ -51,3 +51,21 @@ function Get-DeckleMainMenuRows {
 
     return @($rows)
 }
+
+# Selection state that lands on Quit: the last selectable row, in the column
+# right after its regular cells, which the grid keeps for the trailing cell.
+# Computed from the rows alone so the launcher never needs the grid plan.
+function Get-DeckleQuitSelection {
+    param([Parameter(Mandatory)][object[]]$MenuRows)
+
+    $selectable = @($MenuRows | Where-Object { $_.ContainsKey('Cells') })
+    $quitIndex = [Array]::FindLastIndex($selectable, [Predicate[object]]{
+        param($row)
+        $row.ContainsKey('TrailingCell') -and $row['TrailingCell']['Value'] -eq 'quit'
+    })
+    if ($quitIndex -lt 0) { return $null }
+
+    $quitRow = $selectable[$quitIndex]
+    $columnOffset = if ($quitRow.ContainsKey('ColumnOffset')) { [int]$quitRow['ColumnOffset'] } else { 0 }
+    return @{ Index = $quitIndex; PreferredColumn = $columnOffset + @($quitRow['Cells']).Count }
+}
