@@ -49,15 +49,18 @@ public static class ColorSpace
     }
 
     // OKLCh → sRGB with the chroma lowered per hue until the colour fits
-    // the sRGB gamut, lightness and hue kept. This is the promise the HUD's
-    // cone is built on: one lightness for every hue, so one grey once a
-    // Saturation effect desaturates it, and in colour each hue at the
-    // largest chroma the display can show at that lightness — the CSS
-    // Color 4 gamut-mapping idea, by chroma reduction alone. The clamping
-    // conversion above broke that promise on the greyscale cone (2026-10-13):
-    // at L 0.75 / C 0.3 no sRGB hue carries the chroma, every channel was
-    // clipped, and the greys ran from 0.24 to 0.69 around the wheel. The
-    // chroma argument is therefore a ceiling, not a value every hue reaches.
+    // the sRGB gamut, lightness and hue kept — the CSS Color 4 gamut-mapping
+    // idea, by chroma reduction alone. One lightness for every hue, so one
+    // grey once the wheel is desaturated, and in colour each hue at the
+    // largest chroma the display can show at that lightness. The chroma
+    // argument is a ceiling, not a value every hue reaches.
+    //
+    // The HUD's cone used it for one day (2026-10-13): the clamping
+    // conversion had spread the desaturated wheel's greys from 0.24 to 0.69
+    // and this mapping flattened them. The next day the grey became a flat
+    // material and the cone went back to the clamp, whose saturated darker
+    // red the maintainer prefers to the mapped pink. Kept as a pure
+    // primitive: a wheel that must hold one lightness has no other route.
     public static Color OklchToRgbInGamut(float L, float C, float hTurns)
     {
         var (rLin, gLin, bLin) = OklchToLinearRgbInGamut(L, C, hTurns);

@@ -53,15 +53,15 @@ public static partial class HudComposition
     // asymmetry on the conic wheel. OKLCh removes that asymmetry.
     //   OklchLightness 0 = black, 1 = white. 0.75 is bright-but-not-
     //                  blinding, comparable to a vivid mid-tone.
-    //   OklchChroma    saturation ceiling in OKLab space. 0 = greyscale,
+    //   OklchChroma    saturation in OKLab space. 0 = greyscale,
     //                  ~0.15 = vivid pastel. sRGB cannot show every hue
     //                  at one chroma: at L=0.75 yellows and blues run
-    //                  out around 0.18, reds and greens further. The
-    //                  painter lowers the chroma per hue until the
-    //                  colour fits and keeps L (ColorSpace.
-    //                  OklchToRgbInGamut), so a high ceiling means "as
-    //                  vivid as each hue can be", never a clipped
-    //                  channel — and the wheel desaturates to one grey.
+    //                  out around 0.18, reds and greens further. Past
+    //                  that the painter clamps the channels (ColorSpace.
+    //                  OklchToRgb): the hue stays as saturated as asked
+    //                  and darkens instead, which is the vivid wheel the
+    //                  maintainer wants. The wheel is never desaturated
+    //                  any more, so its lightness spread costs nothing.
     //   HueStart       rotates hue 0 on the wheel (0 = red at 3 o'clock).
     //   HueRange       wheel slice. 1 = full rainbow, 0.5 = half, 0 = mono.
     //   WedgeCount     pie wedges. 360 = smooth ring, 12/24 = retro steps.
