@@ -8,8 +8,8 @@ namespace Deckle.Catalog;
 
 // ── PreviewBlock ──────────────────────────────────────────────────────────────
 //
-// The one preview component of the settings design system (decisions 17 and
-// 18): a card holding a stage with its commands above and its readouts below.
+// The one preview component of the settings surfaces: a card holding a stage
+// with its commands above and its readouts below.
 // A module gives it the three parts; the block owns the frame, so every
 // preview in the application has the same shape — the Ambient capture today,
 // the HUD and other scenes later.

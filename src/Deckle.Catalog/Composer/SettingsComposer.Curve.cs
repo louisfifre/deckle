@@ -9,21 +9,20 @@ namespace Deckle.Catalog;
 
 public sealed partial class SettingsComposer
 {
-    // The curve block (settings design system, decision 21): the one CurveEditor
-    // hosted vertically in the card, full width, with the Default-gated trailing
-    // reset shared with Path and Editor. The editor writes through the
-    // descriptor's setter when a gesture ends (a handle's release, a field's
-    // commit, a key nudge), never per tick, so the gesture rule holds here as for
-    // a slider. The frame and the sentence are re-read on every refresh, so the
-    // plot follows the anchors that set its bounds and the description says
-    // what the current points do.
+    // The curve block: the one CurveEditor hosted vertically in the card, full
+    // width, with the Default-gated trailing reset shared with Path and Editor.
+    // The editor writes through the descriptor's setter when a gesture ends (a
+    // handle's release, a field's commit, a key nudge), never per tick, so the
+    // gesture rule holds here as for a slider. The frame and the sentence are
+    // re-read on every refresh, so the plot follows the anchors that set its
+    // bounds and the description says what the current points do.
     //
     // The anchors (CurveArgs.Anchors) are the frame's values as fields in the
     // editor's legend, beside the plot: the doctrine's curve exception puts a
-    // curve's values in fields beside the drawing (decisions 21 and 25), and the
-    // legend slot is a first form of the still-open legend block (decision 20),
-    // to confirm with Louis. Each writes at its commit; the ones with a Default join the card's
-    // reset and dirtiness, so the one wheel restores the curve and its frame.
+    // curve's values in fields beside the drawing, and the legend slot is a first
+    // form of the still-open legend block, to confirm with Louis. Each writes at
+    // its commit; the ones with a Default join the card's reset and dirtiness, so
+    // the one wheel restores the curve and its frame.
     private void BuildCurve(SettingsCard card, SettingDescriptor s)
     {
         var args = (CurveArgs)s.Args!;

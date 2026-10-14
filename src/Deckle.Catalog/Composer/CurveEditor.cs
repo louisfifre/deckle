@@ -16,8 +16,8 @@ namespace Deckle.Catalog;
 
 // ── CurveEditor ───────────────────────────────────────────────────────────────
 //
-// The one curve component of the settings design system (decision 21, the
-// Playground Segmentation form): a plot of a two-point cubic Bézier with its two
+// The one curve component of the settings surfaces (the Playground
+// Segmentation form): a plot of a two-point cubic Bézier with its two
 // draggable handles, taking the width it is given, and beside it a legend: the
 // frame's own values when the owner fills the Legend slot (the cut's four
 // anchors), then the four control points as fields in a two-by-two grid with the
@@ -37,7 +37,7 @@ namespace Deckle.Catalog;
 // key on a focused handle nudges by a hundredth (a tenth with Shift) and writes
 // at once. X stays in [0,1] so the curve remains a function; Y may overshoot by a
 // quarter when AllowOutside is set. The drawing is a tree of XAML shapes updated
-// in place on every change, with no Win2D (decision 3).
+// in place on every change, with no Win2D.
 public sealed partial class CurveEditor : UserControl
 {
     private const int SampleCount = 96;

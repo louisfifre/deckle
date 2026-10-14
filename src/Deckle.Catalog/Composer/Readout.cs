@@ -8,7 +8,7 @@ namespace Deckle.Catalog;
 
 // ── Readout ───────────────────────────────────────────────────────────────────
 //
-// The diagnostic readout block of the settings design system: a value the user
+// The diagnostic readout block of the settings surfaces: a value the user
 // consults and never edits — a state, a measurement, a format. A label in
 // caption text over the value in body text, with an optional status dot before
 // the value in the system fill colour of its meaning. The value is text, or an

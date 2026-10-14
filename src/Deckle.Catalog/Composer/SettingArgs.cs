@@ -122,9 +122,8 @@ public sealed record ModeArgs(
 //
 // One value of the frame a curve is drawn in, edited as a field in the editor's
 // legend beside the plot: the curve exception of the settings-UX doctrine puts a
-// curve's values in fields beside the drawing (design system, decisions 21 and
-// 25). The legend slot is a first form of the legend block decision 20 leaves
-// open, still to confirm with Louis. LabelKey resolves
+// curve's values in fields beside the drawing. The legend slot is a first form
+// of the legend block left open, still to confirm with Louis. LabelKey resolves
 // "<LabelKey>/Header" as the field's caption and "<LabelKey>/Description" as its
 // tooltip, from the module's .resw like a card. The bounds clamp the field; the
 // value is written at the field's commit, the gesture rule. Default, when given,
@@ -141,14 +140,14 @@ public sealed record CurveAnchor(
 // ── CurveArgs ─────────────────────────────────────────────────────────────────
 //
 // Shape of a Curve setting's editor, the one curve component of the settings
-// design system (decision 21). Frame is read at compose time and on every
-// refresh, so the plot follows the bounds the anchors set; null draws the unit
-// square alone. Anchors are those bounds as legend fields beside the plot, in
-// display order; null shows the Bézier fields alone. Describe turns the points
-// into the sentence the card shows as its description, re-read on every refresh;
-// null keeps the .resw description. Floor is an optional horizontal guide in
-// data y (the Ambient brightness floor). AllowOutside lets a handle's Y leave
-// [0,1] by a quarter, for a curve that overshoots.
+// surfaces. Frame is read at compose time and on every refresh, so the plot
+// follows the bounds the anchors set; null draws the unit square alone.
+// Anchors are those bounds as legend fields beside the plot, in display order;
+// null shows the Bézier fields alone. Describe turns the points into the
+// sentence the card shows as its description, re-read on every refresh; null
+// keeps the .resw description. Floor is an optional horizontal guide in data y
+// (the Ambient brightness floor). AllowOutside lets a handle's Y leave [0,1] by
+// a quarter, for a curve that overshoots.
 public sealed record CurveArgs(
     Func<CurveFrame>? Frame = null,
     Func<CurvePoints, string?>? Describe = null,

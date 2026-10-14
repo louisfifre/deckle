@@ -7,11 +7,11 @@ namespace Deckle.Catalog;
 
 // ── SettingsSection ───────────────────────────────────────────────────────────
 //
-// The flat section block of a settings page (settings design system, decision
-// 11): a title, at most one line of caption, then the cards — the PowerToys
-// SettingsGroup form, with the title 32 px under what precedes it and the cards
-// 8 px under the title. No body paragraph: what a section has to say fits its
-// caption, or belongs to a card's description.
+// The flat section block of a settings page: a title, at most one line of
+// caption, then the cards — the PowerToys SettingsGroup form, with the title
+// 32 px under what precedes it and the cards 8 px under the title. No body
+// paragraph: what a section has to say fits its caption, or belongs to a
+// card's description.
 //
 // A section that holds resettable values carries the section-level reset of the
 // doctrine's three (the value, its group, the surface): the same wheel a card

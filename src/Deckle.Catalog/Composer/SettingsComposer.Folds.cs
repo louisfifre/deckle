@@ -192,18 +192,18 @@ public sealed partial class SettingsComposer
         return expander;
     }
 
-    // A choice that decides which settings exist — the mode fold (settings design
-    // system, decision 12). The same SettingsExpander as a Group, with a ComboBox
-    // in the header's trailing-edge slot where the master toggle would be; the
-    // children are the settings of the modes, each shown or hidden by its own
-    // VisibleWhen (the manifest names the mode there), so the composer adds no
-    // gating of its own. One information card closes the fold, shown only when
-    // the chosen mode leaves every child hidden, so the fold never opens on
-    // nothing. The combo wires like BuildCombo — seed the selection before
-    // subscribing, guard the write-back during a model refresh — and the fold's
-    // reset covers the choice and every defaulted child, children first so that
-    // a preset chosen by the reset is not turned back to Custom by the children's
-    // own writes landing after it.
+    // A choice that decides which settings exist — the mode fold. The same
+    // SettingsExpander as a Group, with a ComboBox in the header's trailing-edge
+    // slot where the master toggle would be; the children are the settings of
+    // the modes, each shown or hidden by its own VisibleWhen (the manifest names
+    // the mode there), so the composer adds no gating of its own. One
+    // information card closes the fold, shown only when the chosen mode leaves
+    // every child hidden, so the fold never opens on nothing. The combo wires
+    // like BuildCombo — seed the selection before subscribing, guard the
+    // write-back during a model refresh — and the fold's reset covers the choice
+    // and every defaulted child, children first so that a preset chosen by the
+    // reset is not turned back to Custom by the children's own writes landing
+    // after it.
     private SettingsExpander BuildMode(SettingDescriptor s)
     {
         var args = (ModeArgs)s.Args!;

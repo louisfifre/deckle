@@ -41,19 +41,19 @@ public enum SettingKind
 
     // A choice that decides which settings exist, rendered as a SettingsExpander
     // whose header carries the choice (a ComboBox) instead of a toggle — the mode
-    // fold of the settings design system (decision 12). The descriptor's own value
-    // is the chosen mode; the children in ModeArgs are the settings of the modes,
-    // each naming the mode that shows it through its VisibleWhen, and the fold
-    // shows one information card when the chosen mode has nothing to set. A
-    // preset selector is a mode fold too: Custom is the mode that reveals the
-    // hand values. Like the other folds it never nests.
+    // fold. The descriptor's own value is the chosen mode; the children in
+    // ModeArgs are the settings of the modes, each naming the mode that shows it
+    // through its VisibleWhen, and the fold shows one information card when the
+    // chosen mode has nothing to set. A preset selector is a mode fold too:
+    // Custom is the mode that reveals the hand values. Like the other folds it
+    // never nests.
     Mode,
 
-    // A two-point cubic Bézier over CurvePoints, drawn by the one curve editor
-    // (settings design system, decision 21): the drawing takes the card's width
-    // with its two handles, the four values are fields in a two-by-two grid
-    // beside it, and the card's description is the sentence computed from the
-    // points. A handle writes at its release, a field at its commit, a key nudge
-    // at once. CurveArgs carries the frame the curve is drawn in and the sentence.
+    // A two-point cubic Bézier over CurvePoints, drawn by the one curve editor:
+    // the drawing takes the card's width with its two handles, the four values
+    // are fields in a two-by-two grid beside it, and the card's description is
+    // the sentence computed from the points. A handle writes at its release, a
+    // field at its commit, a key nudge at once. CurveArgs carries the frame the
+    // curve is drawn in and the sentence.
     Curve,
 }

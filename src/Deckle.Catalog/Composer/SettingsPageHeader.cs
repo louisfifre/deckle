@@ -11,12 +11,12 @@ namespace Deckle.Catalog;
 
 // ── SettingsPageHeader ────────────────────────────────────────────────────────
 //
-// The one header block every settings page opens with (settings design system,
-// decisions 9 and 15): a breadcrumb in place of the title, one line of
-// description, an optional link, and on the trailing edge the Info toggle
-// that shows the cards' descriptions (SettingsDescriptions) then Reset all. Built in
-// code like the composer's cards, so it lives on the Catalog floor that every
-// settings-bearing module already references and no page draws its own.
+// The one header block every settings page opens with: a breadcrumb in place of
+// the title, one line of description, an optional link, and on the trailing
+// edge the Info toggle that shows the cards' descriptions (SettingsDescriptions)
+// then Reset all. Built in code like the composer's cards, so it lives on the
+// Catalog floor that every settings-bearing module already references and no
+// page draws its own.
 //
 // The breadcrumb is the page's path in the rail — the module, then the page —
 // resolved from the shell through SettingsNavigation.BreadcrumbFor once the

@@ -15,8 +15,8 @@ public sealed record CurvePoints(double X1, double Y1, double X2, double Y2);
 // maximum delay at the ramp start down to the minimum at the ramp end) and a
 // response (the Ambient brightness: from (0,0) up to (1,1)) share one mapping.
 // XMax and YMax bound the plot; Axes asks for rulers and unit labels (the wide
-// layout of decision 14, kept by decision 21); without them the plot is the
-// square unit box alone.
+// layout, with axes and guides); without them the plot is the square unit box
+// alone.
 public sealed record CurveFrame(
     double OriginX,
     double OriginY,
