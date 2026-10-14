@@ -14,8 +14,9 @@ public abstract record SettingArgs;
 // ── MagnitudeArgs ─────────────────────────────────────────────────────────────
 //
 // Bounds and shape of a Magnitude setting. There is no step: the grain is derived
-// from the range (MagnitudeGrain.StepFor). Unit is the optional suffix beside the
-// field ("ms", "x", "dBFS"). Slider false keeps the field alone, for a figure
+// from the range (MagnitudeGrain.StepFor). Unit ("ms", "×", "dBFS") joins the
+// card's header in parentheses and the reset tooltip's value, never the row,
+// so every field ends at the same edge. Slider false keeps the field alone, for a figure
 // that is typed rather than swept. Integer marks a count: the grain never drops
 // below one, so the field shows no decimals. An integer model still travels as a
 // double through the selectors.

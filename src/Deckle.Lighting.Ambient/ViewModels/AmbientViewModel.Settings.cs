@@ -114,7 +114,14 @@ public partial class AmbientViewModel
                 BrightnessCurveX1 = p.X1; BrightnessCurveY1 = p.Y1;
                 BrightnessCurveX2 = p.X2; BrightnessCurveY2 = p.Y2;
             },
-            new CurveArgs(Floor: () => MinBrightnessEnabled ? MinBrightness / 254.0 : null),
+            // The same wide form as the dictation's cut curve, with axes: the
+            // screen's brightness along X, the light's along Y, both in percent,
+            // and the floor drawn in those units while it is on. The square
+            // unit box drew the same curve in a different component next to
+            // the Transcription one, which Louis refused (2026-10-14).
+            new CurveArgs(
+                Frame: () => new CurveFrame(0, 0, 100, 100, 100, 100, Axes: true, XUnit: "%", YUnit: "%"),
+                Floor: () => MinBrightnessEnabled ? MinBrightness / 254.0 * 100.0 : null),
             defaultValue: () =>
             {
                 var d = new AmbientSettings();

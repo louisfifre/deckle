@@ -283,7 +283,9 @@ public sealed partial class CurveEditor : UserControl
         Grid.SetColumnSpan(_plotFrame, stack ? 2 : 1);
         Grid.SetRow(_side, stack ? 1 : 0);
         Grid.SetColumn(_side, stack ? 0 : 1);
-        _side.VerticalAlignment = stack ? VerticalAlignment.Top : VerticalAlignment.Center;
+        // Top in both layouts: centred beside a tall plot, the fields floated
+        // mid-height with nothing to align to (2026-10-14).
+        _side.VerticalAlignment = VerticalAlignment.Top;
         _legend.Visibility = _legend.Children.Count > 0 ? Visibility.Visible : Visibility.Collapsed;
     }
 

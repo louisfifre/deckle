@@ -261,6 +261,10 @@ public partial class WhisperViewModel
     // is for (2026-10-14). TemperatureIncrement carries the fallback-disabled
     // warning as an Advisory, rendered as a note row under the card when the
     // step is 0. All defaults read the DecodingSettings POCO initializer.
+    //
+    // Fields alone on this page, no slider: these are figures one types after
+    // reading, nothing moves on screen while they change, unlike the Ambient
+    // tuning where the light answers the thumb (2026-10-14).
     public IReadOnlyList<SettingDescriptor> DecodingSettingsManifest =>
     [
         Setting.Toggle("WhisperUseBeamSearchCard",
@@ -276,12 +280,12 @@ public partial class WhisperViewModel
         Setting.Magnitude("WhisperTemperatureCard",
             () => Temperature,
             value => Temperature = value,
-            new MagnitudeArgs(0, 1),
+            new MagnitudeArgs(0, 1, Slider: false),
             defaultValue: () => new DecodingSettings().Temperature),
         Setting.Magnitude("WhisperTemperatureIncrementCard",
             () => TemperatureIncrement,
             value => TemperatureIncrement = value,
-            new MagnitudeArgs(0, 1),
+            new MagnitudeArgs(0, 1, Slider: false),
             defaultValue: () => new DecodingSettings().TemperatureIncrement,
             advisory: () => TemperatureIncrement == 0
                 ? Loc.GetFromOptional("Deckle.Transcription", "WhisperTemperatureIncrementWarning/Message")
@@ -292,23 +296,24 @@ public partial class WhisperViewModel
     // Min/Max live in MagnitudeArgs, where a code-built control sets them without
     // the WinUI XAML parser ever seeing a Minimum above a default. Bounds
     // verbatim: Entropy 1.5..3.5; Logprob -1.5..-0.4; NoSpeech 0.05..0.80.
-    // Defaults read the ConfidenceSettings POCO initializer.
+    // Defaults read the ConfidenceSettings POCO initializer. Fields alone, as
+    // in the Decoding manifest above.
     public IReadOnlyList<SettingDescriptor> ConfidenceSettingsManifest =>
     [
         Setting.Magnitude("WhisperEntropyCard",
             () => EntropyThreshold,
             value => EntropyThreshold = value,
-            new MagnitudeArgs(1.5, 3.5),
+            new MagnitudeArgs(1.5, 3.5, Slider: false),
             defaultValue: () => new ConfidenceSettings().EntropyThreshold),
         Setting.Magnitude("WhisperLogprobCard",
             () => LogprobThreshold,
             value => LogprobThreshold = value,
-            new MagnitudeArgs(-1.5, -0.4),
+            new MagnitudeArgs(-1.5, -0.4, Slider: false),
             defaultValue: () => new ConfidenceSettings().LogprobThreshold),
         Setting.Magnitude("WhisperNoSpeechCard",
             () => NoSpeechThreshold,
             value => NoSpeechThreshold = value,
-            new MagnitudeArgs(0.05, 0.80),
+            new MagnitudeArgs(0.05, 0.80, Slider: false),
             defaultValue: () => new ConfidenceSettings().NoSpeechThreshold),
     ];
 
