@@ -38,6 +38,11 @@ public static class SettingsSearch
             LabelKey = "GeneralAutostartCard",
             Keywords = ["boot", "startup", "autostart", "login"],
         },
+        new SettingSearchEntry
+        {
+            LabelKey = "GeneralStartElevatedCard",
+            Keywords = ["admin", "administrator", "uac", "privileges"],
+        },
 
         // ── Application data, in the page's order ──
         new SettingSearchEntry

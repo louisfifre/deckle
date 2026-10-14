@@ -38,9 +38,9 @@ public sealed partial class GeneralPage : Page
         LoadAndSync();
     }
 
-    // ── Composed top cards: theme, then start with Windows ────────────────────
+    // ── Composed top cards: theme, then the two logon switches ────────────────
     //
-    // Both compose into TopHost, under no section title (one card each earns
+    // Both compose into TopHost, under no section title (a card or two earns
     // no heading). Every composer is created before LoadAndSync so its
     // subscription catches Load()'s PropertyChanged, and held in a field so it
     // lives as long as the cached page.
@@ -52,9 +52,10 @@ public sealed partial class GeneralPage : Page
         _appearanceComposer.Compose(ViewModel.AppearanceSettings);
     }
 
-    // The "start with Windows" toggle's registry write and revert-on-refusal live
-    // in the VM setter, so it composes like any toggle: the composer's
-    // subscription reflects the setter's own revert.
+    // The "start with Windows" and "start elevated" toggles' OS writes and
+    // revert-on-refusal live in the VM setters, so they compose like any
+    // toggle: the composer's subscription reflects the setters' own reverts
+    // and the way each one rides onto the other.
     private SettingsComposer? _startupComposer;
 
     private void ComposeStartupSection()

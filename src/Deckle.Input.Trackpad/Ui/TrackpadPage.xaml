@@ -56,11 +56,9 @@
                                     Click="RepairButton_Click" />
                         </controls:SettingsCard>
 
-                        <controls:SettingsCard x:Uid="TrackpadPage_ElevatedCard"
-                                               Tag="TrackpadPage_ElevatedCard">
-                            <ToggleSwitch x:Name="ElevatedToggle"
-                                          Toggled="ElevatedToggle_Toggled" />
-                        </controls:SettingsCard>
+                        <!-- "Start elevated" sits on Settings > General, under
+                             "Start with Windows": a logon task for the whole
+                             app, not a trackpad setting (2026-10-15). -->
                     </StackPanel>
                 </catalog:SettingsSection>
 

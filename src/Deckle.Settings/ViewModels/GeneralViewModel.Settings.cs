@@ -120,12 +120,24 @@ public partial class GeneralViewModel
     // autostart setter drives StartupService and, when the write is refused,
     // reverts the property under the sync guard; the reverted value rides back to
     // the toggle on PropertyChanged, the same path Load() and the section Reset use.
+    //
+    // "Start elevated" follows, a Windows logon task that starts the whole app as
+    // administrator (moved from the Trackpad page, 2026-10-15: the drag was its
+    // first reason, not its scope). Its default reads the vehicle's own, the way
+    // the autostart one reads the facade's, so each toggle has its reset wheel
+    // and Reset all reaches both. The resets run in this order: the autostart
+    // one removes every vehicle first (the task through one UAC prompt), so the
+    // elevated reset that follows finds its value already off and writes nothing.
     public IReadOnlyList<SettingDescriptor> StartupSettings =>
     [
         Setting.Toggle("GeneralAutostartCard",
             () => AutostartEnabled,
             value => AutostartEnabled = value,
             defaultValue: () => StartupService.DefaultEnabled),
+        Setting.Toggle("GeneralStartElevatedCard",
+            () => ElevatedStartupEnabled,
+            value => ElevatedStartupEnabled = value,
+            defaultValue: () => ElevatedStartupService.DefaultEnabled),
     ];
 
     // The App-side update loop reads the persisted value on each tick, so the

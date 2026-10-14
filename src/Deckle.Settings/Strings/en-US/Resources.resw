@@ -403,9 +403,9 @@
   </data>
 
   <!-- ─── GeneralPage ────────────────────────────────────────────────
-       Second page in the Settings nav, after Home. Page header, then
-       sections in order: Appearance, Startup, Updates, Application
-       data. -->
+       Second page in the Settings nav, after Home. Page header, then the
+       untitled top cards (theme, start with Windows, start elevated), the
+       Updates section and the Application data section. -->
   <data name="GeneralAppThemeCard.Header" xml:space="preserve">
     <value>App theme</value>
   </data>
@@ -420,6 +420,13 @@
   </data>
   <data name="GeneralAutostartCard.Header" xml:space="preserve">
     <value>Start with Windows</value>
+  </data>
+  <!-- The elevated logon task (moved from the Trackpad page, 2026-10-15). -->
+  <data name="GeneralStartElevatedCard.Header" xml:space="preserve">
+    <value>Start elevated</value>
+  </data>
+  <data name="GeneralStartElevatedCard.Description" xml:space="preserve">
+    <value>Starts Deckle as administrator so it also works over windows that run as administrator, after one approval.</value>
   </data>
   <data name="GeneralPageUpdatesSection.Title" xml:space="preserve">
     <value>Updates</value>

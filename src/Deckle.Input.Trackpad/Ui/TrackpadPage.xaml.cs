@@ -3,7 +3,6 @@ using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Navigation;
 using Deckle.Catalog;
 using Deckle.Input.Trackpad;
-using Deckle.Shell;
 
 namespace Deckle.Input.Trackpad;
 
@@ -13,18 +12,14 @@ namespace Deckle.Input.Trackpad;
 // via the item Tag "Deckle.Input.Trackpad.TrackpadPage, Deckle.Input.Trackpad".
 //
 // The Windows-integration acts (neutralize / restore gestures, repair the
-// Bluetooth pairing bug, toggle elevated startup) can fail or be UAC-cancelled,
-// so the page never assumes success: each handler guards against exceptions,
-// disables its control for the duration of the call, then re-reads the real
-// state back into the UI.
+// Bluetooth pairing bug) can fail or be UAC-cancelled, so the page never
+// assumes success: each handler guards against exceptions, disables its
+// control for the duration of the call, then re-reads the real state back
+// into the UI. The elevated logon task lives on Settings > General
+// (GeneralViewModel.StartupSettings): it starts the whole app, not the drag.
 public sealed partial class TrackpadPage : Page
 {
     public TrackpadViewModel ViewModel { get; } = new();
-
-    // Suppresses the elevated toggle's Toggled handler while we revert the
-    // switch to the real state after a failed / cancelled Enable/Disable —
-    // the revert would otherwise re-enter the handler.
-    private bool _suppressElevatedToggle;
 
     // Held in fields so their subscriptions to the ViewModel live as long as the
     // cached page.
@@ -36,7 +31,7 @@ public sealed partial class TrackpadPage : Page
         InitializeComponent();
         NavigationCacheMode = NavigationCacheMode.Required;
         ComposeSettings();
-        SyncImperativeControls();
+        RefreshGesturesLabel();
     }
 
     // ── Composed persisted settings ──────────────────────────────────────────
@@ -56,10 +51,10 @@ public sealed partial class TrackpadPage : Page
     protected override void OnNavigatedTo(NavigationEventArgs e)
     {
         base.OnNavigatedTo(e);
-        // Re-read the act-backed controls — a neutralize / elevated change
-        // could have happened elsewhere while the page was cached.
+        // Re-read the act-backed control — a neutralize could have happened
+        // elsewhere while the page was cached.
         ViewModel.Load();
-        SyncImperativeControls();
+        RefreshGesturesLabel();
         // Load() raises no PropertyChanged on a clean profile, so no composer
         // DirtyChanged fires and this call settles the gate.
         GateResetAll();
@@ -82,16 +77,6 @@ public sealed partial class TrackpadPage : Page
         _dragComposer?.ResetAll();
     }
 
-    // These two controls' state is owned by a service rather than by settings.
-    private void SyncImperativeControls()
-    {
-        RefreshGesturesLabel();
-
-        _suppressElevatedToggle = true;
-        try { ElevatedToggle.IsOn = SafeIsElevatedEnabled(); }
-        finally { _suppressElevatedToggle = false; }
-    }
-
     // ── Windows three-finger gestures : turn off / restore ──────────────────
 
     // Three states, because "restore" is only honest when Deckle holds the
@@ -99,6 +84,7 @@ public sealed partial class TrackpadPage : Page
     // Deckle backup → offer to restore that backup. Gestures off with no
     // backup (the user turned them off themselves, in Windows Settings) →
     // nothing Deckle can restore ; the button reports the state, disabled.
+    // The control's state is owned by a service rather than by settings.
     private void RefreshGesturesLabel()
     {
         bool neutralized = SafeAreNeutralized();
@@ -168,41 +154,9 @@ public sealed partial class TrackpadPage : Page
         }
     }
 
-    // ── Start elevated ──────────────────────────────────────────────────────
-
-    private void ElevatedToggle_Toggled(object sender, RoutedEventArgs e)
-    {
-        if (_suppressElevatedToggle) return;
-
-        ElevatedToggle.IsEnabled = false;
-        try
-        {
-            if (ElevatedToggle.IsOn)
-            {
-                ElevatedStartupService.Enable();
-            }
-            else
-            {
-                ElevatedStartupService.Disable();
-            }
-        }
-        catch
-        {
-            // Fall through to the re-read so the switch reflects reality.
-        }
-        finally
-        {
-            _suppressElevatedToggle = true;
-            try { ElevatedToggle.IsOn = SafeIsElevatedEnabled(); }
-            finally { _suppressElevatedToggle = false; }
-            ElevatedToggle.IsEnabled = true;
-        }
-    }
-
     // ── Defensive reads ─────────────────────────────────────────────────────
-    // Each act's state query can throw (registry / scheduled-task access) ;
-    // a query failure resolves to the safe "off" reading rather than
-    // bringing the page down.
+    // Each act's state query can throw (registry access) ; a query failure
+    // resolves to the safe "off" reading rather than bringing the page down.
 
     private static bool SafeAreNeutralized()
     {
@@ -213,12 +167,6 @@ public sealed partial class TrackpadPage : Page
     private static bool SafeHasBackup()
     {
         try { return WindowsGestureNeutralizer.HasBackup(); }
-        catch { return false; }
-    }
-
-    private static bool SafeIsElevatedEnabled()
-    {
-        try { return ElevatedStartupService.IsEnabled(); }
         catch { return false; }
     }
 }

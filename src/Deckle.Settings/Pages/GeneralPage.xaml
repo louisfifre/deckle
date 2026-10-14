@@ -18,12 +18,13 @@
                                             x:Uid="GeneralPageHeader"
                                             ResetAllRequested="ResetAll_Click" />
 
-                <!-- The theme and the start-with-Windows switch stand first,
-                     grouped under no title: a section of one card earns no
-                     heading, the cards simply open the page (Louis,
-                     2026-10-14). Composed: GeneralViewModel.AppearanceSettings
-                     then StartupSettings, into the same host. Each card keeps
-                     its own reset; there is no section to reset. -->
+                <!-- The theme, then the two logon switches (start with Windows,
+                     start elevated) stand first, grouped under no title: a
+                     section of one card earns no heading, the cards simply open
+                     the page (Louis, 2026-10-14). Composed:
+                     GeneralViewModel.AppearanceSettings then StartupSettings,
+                     into the same host. Each card keeps its own reset; there is
+                     no section to reset. -->
                 <StackPanel x:Name="TopHost"
                             Spacing="{StaticResource SettingsCardSpacing}" />
 
