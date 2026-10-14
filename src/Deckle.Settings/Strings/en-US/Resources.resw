@@ -361,7 +361,7 @@
     <value>Shortcuts</value>
   </data>
   <data name="HotkeysPageHeader.Description" xml:space="preserve">
-    <value>One key combination per action, active in every app. A combination two actions share goes to the first one registered.</value>
+    <value>One key combination per action, active in every app.</value>
   </data>
   <data name="HotkeysPageDictationSection.Title" xml:space="preserve">
     <value>Dictation</value>
@@ -373,46 +373,25 @@
     <value>Display and lights</value>
   </data>
   <data name="GeneralHotkeyRecordCard.Header" xml:space="preserve">
-    <value>Record</value>
-  </data>
-  <data name="GeneralHotkeyRecordCard.Description" xml:space="preserve">
-    <value>Start or stop dictation.</value>
+    <value>Start or stop dictation</value>
   </data>
   <data name="GeneralHotkeyPrecisionScrollCard.Header" xml:space="preserve">
-    <value>Precision scrolling</value>
-  </data>
-  <data name="GeneralHotkeyPrecisionScrollCard.Description" xml:space="preserve">
-    <value>Turn Precision scrolling on or off.</value>
+    <value>Turn Precision scrolling on or off</value>
   </data>
   <data name="GeneralHotkeyTrackpadCard.Header" xml:space="preserve">
-    <value>Trackpad</value>
-  </data>
-  <data name="GeneralHotkeyTrackpadCard.Description" xml:space="preserve">
-    <value>Turn Trackpad on or off.</value>
+    <value>Turn Trackpad on or off</value>
   </data>
   <data name="GeneralHotkeyTaskbarCoverCard.Header" xml:space="preserve">
-    <value>Taskbar cover</value>
-  </data>
-  <data name="GeneralHotkeyTaskbarCoverCard.Description" xml:space="preserve">
-    <value>Turn Taskbar cover on or off.</value>
+    <value>Turn Taskbar cover on or off</value>
   </data>
   <data name="GeneralHotkeyAutocorrectCard.Header" xml:space="preserve">
-    <value>Autocorrect</value>
-  </data>
-  <data name="GeneralHotkeyAutocorrectCard.Description" xml:space="preserve">
-    <value>Turn Autocorrect on or off.</value>
+    <value>Turn Autocorrect on or off</value>
   </data>
   <data name="GeneralHotkeyRewriteCard.Header" xml:space="preserve">
-    <value>Rewrite</value>
-  </data>
-  <data name="GeneralHotkeyRewriteCard.Description" xml:space="preserve">
-    <value>Turn Rewrite on or off.</value>
+    <value>Turn Rewrite on or off</value>
   </data>
   <data name="GeneralHotkeyAmbientLightCard.Header" xml:space="preserve">
-    <value>Ambient Light</value>
-  </data>
-  <data name="GeneralHotkeyAmbientLightCard.Description" xml:space="preserve">
-    <value>Turn Ambient Light on or off.</value>
+    <value>Turn Ambient Light on or off</value>
   </data>
   <!-- Advisory under a hotkey card whose chord another action already holds.
        {0} is that action's card header. -->
@@ -427,9 +406,6 @@
   <data name="GeneralAppThemeCard.Header" xml:space="preserve">
     <value>App theme</value>
   </data>
-  <data name="GeneralAppThemeCard.Description" xml:space="preserve">
-    <value>Light, dark, or follow your Windows theme.</value>
-  </data>
   <data name="GeneralThemeSystem.Content" xml:space="preserve">
     <value>System</value>
   </data>
@@ -442,9 +418,6 @@
   <data name="GeneralAutostartCard.Header" xml:space="preserve">
     <value>Start with Windows</value>
   </data>
-  <data name="GeneralAutostartCard.Description" xml:space="preserve">
-    <value>Launch Deckle automatically when you sign in.</value>
-  </data>
   <data name="GeneralPageUpdatesSection.Title" xml:space="preserve">
     <value>Updates</value>
   </data>
@@ -452,7 +425,7 @@
     <value>Check for updates automatically</value>
   </data>
   <data name="GeneralUpdateAutoCheckCard.Description" xml:space="preserve">
-    <value>Look for a new Deckle release at launch, then once a day.</value>
+    <value>Deckle looks at launch, then once a day.</value>
   </data>
   <data name="GeneralVersionCard.Header" xml:space="preserve">
     <value>Version</value>
@@ -485,10 +458,10 @@
     <value>Not enough space on {0}: {1} needed, {2} free.</value>
   </data>
   <data name="GeneralBackupExpander.Header" xml:space="preserve">
-    <value>Back up and restore your settings</value>
+    <value>Settings backup</value>
   </data>
   <data name="GeneralBackupExpander.Description" xml:space="preserve">
-    <value>Snapshot your settings to a file, or roll back to the last snapshot. Point the location at OneDrive or another cloud-synced folder to carry your settings across machines.</value>
+    <value>Point the location at a cloud-synced folder to carry your settings across machines.</value>
   </data>
   <data name="GeneralBackupCreateButton.Content" xml:space="preserve">
     <value>Back up</value>
@@ -500,7 +473,7 @@
     <value>Location</value>
   </data>
   <data name="GeneralBackupInfoCard.Header" xml:space="preserve">
-    <value>Backup information</value>
+    <value>Latest backup</value>
   </data>
   <data name="GeneralBackupFileNameLabel.Text" xml:space="preserve">
     <value>File name:</value>
@@ -512,19 +485,19 @@
     <value>Data folder</value>
   </data>
   <data name="GeneralDataFolderCard.Description" xml:space="preserve">
-    <value>Settings, telemetry, models, and native libraries. Everything mutable lives here.</value>
+    <value>Settings, telemetry, models and native libraries.</value>
   </data>
   <data name="GeneralDataFolderOpenButton.Content" xml:space="preserve">
     <value>Open</value>
   </data>
   <data name="GeneralRerunSetupCard.Header" xml:space="preserve">
-    <value>First-run setup</value>
+    <value>Setup wizard</value>
   </data>
   <data name="GeneralRerunSetupCard.Description" xml:space="preserve">
-    <value>Re-open the setup wizard to swap the speech model or replace the native runtime.</value>
+    <value>Swap the speech model or replace the native runtime.</value>
   </data>
   <data name="GeneralRerunSetupButton.Content" xml:space="preserve">
-    <value>Run setup...</value>
+    <value>Run setup…</value>
   </data>
 
   <!-- ─── WhisperPage ────────────────────────────────────────────────
@@ -551,13 +524,7 @@
     <value>General</value>
   </data>
   <data name="GeneralPageHeader.Description" xml:space="preserve">
-    <value>Appearance, startup, updates, backups and application data.</value>
-  </data>
-  <data name="GeneralPageAppearanceSection.Title" xml:space="preserve">
-    <value>Appearance</value>
-  </data>
-  <data name="GeneralPageStartupSection.Title" xml:space="preserve">
-    <value>Startup</value>
+    <value>Theme, startup, updates, backups and application data.</value>
   </data>
   <!-- ─── RecordingPage ───────────────────────────────────────────────
        Page extracted from GeneralPage in slice S3. Owns microphone

@@ -84,19 +84,19 @@
     <value>Ambient details</value>
   </data>
   <data name="LoggingAmbientCard.Description" xml:space="preserve">
-    <value>Admit frame analysis, calculated colours, individual light pushes, heartbeats, and related technical probes. Lifecycle events, incidents, and recoveries remain available.</value>
+    <value>Frame analysis, colours, light pushes and heartbeats.</value>
   </data>
   <data name="LoggingTranscriptionCard.Header" xml:space="preserve">
     <value>Transcription details</value>
   </data>
   <data name="LoggingTranscriptionCard.Description" xml:space="preserve">
-    <value>Admit technical detail across dictation and file transcription. Raw transcript text remains exclusive to the separately consented corpus dataset.</value>
+    <value>Technical detail of dictation and file transcription. Transcript text stays in the corpus only.</value>
   </data>
   <data name="LoggingAutocorrectCard.Header" xml:space="preserve">
     <value>Autocorrect details</value>
   </data>
   <data name="LoggingAutocorrectCard.Description" xml:space="preserve">
-    <value>Admit focus probes, decisions, reranking, learning, and activity summaries. Typed text remains exclusive to separately consented datasets.</value>
+    <value>Focus probes, decisions, reranking and learning. Typed text stays in its own datasets.</value>
   </data>
   <data name="LoggingWindowingCard.Header" xml:space="preserve">
     <value>Windowing details</value>
@@ -105,10 +105,10 @@
     <value>Input activity</value>
   </data>
   <data name="LoggingInputCard.Description" xml:space="preserve">
-    <value>Admit Raw Input summaries and Trackpad gesture details. Device presence, lifecycle events, incidents, warnings, errors, and recoveries remain available.</value>
+    <value>Raw Input summaries and Trackpad gesture details.</value>
   </data>
   <data name="LoggingWindowingCard.Description" xml:space="preserve">
-    <value>Verbose lines from window placement across every Deckle window, covering positioning and DPI, overlay stacking, popup anchoring, z-order checks, resize frames, and first-open construction timings. This provider emits nothing else, so leaving it off keeps these windows silent in the log.</value>
+    <value>Window placement, DPI, overlay stacking, popups and resize frames.</value>
   </data>
 
   <!-- Telemetry section (x:Uid header + composed card label keys). The General*
@@ -127,13 +127,13 @@
     <value>Application log</value>
   </data>
   <data name="GeneralAppLogCard.Description" xml:space="preserve">
-    <value>Mirror admitted operational observations to diagnostics\app.jsonl. The file rotates every 8,000 lines into numbered generations under diagnostics\archive\.</value>
+    <value>Every log line goes to diagnostics\app.jsonl, rotated every 8,000 lines into diagnostics\archive.</value>
   </data>
   <data name="TelemetryMouseWheelCard.Header" xml:space="preserve">
     <value>Record wheel events</value>
   </data>
   <data name="TelemetryMouseWheelCard.Description" xml:space="preserve">
-    <value>Record wheel timing and delta data to JSONL files under telemetry\mouse-wheel. This capture is independent of Input activity.</value>
+    <value>Wheel timing and deltas go to telemetry\mouse-wheel.</value>
   </data>
 
   <!-- Folders section, last on the page (x:Uid header + the composed storage
@@ -146,19 +146,19 @@
     <value>Folders</value>
   </data>
   <data name="DiagnosticsPageFoldersSection.Caption" xml:space="preserve">
-    <value>Where Deckle keeps what it records. Both folders stay on this device and nothing is sent anywhere.</value>
+    <value>Where Deckle keeps what it records.</value>
   </data>
   <data name="GeneralStorageFolderCard.Header" xml:space="preserve">
     <value>Telemetry folder</value>
   </data>
   <data name="GeneralStorageFolderCard.Description" xml:space="preserve">
-    <value>Holds the datasets you turn on under Telemetry, from microphone level to wheel events. A folder you choose here receives only the dictation audio. Every other dataset stays in the default folder.</value>
+    <value>The datasets you turn on under Telemetry. A folder you choose here receives only the dictation audio for now.</value>
   </data>
   <data name="DiagnosticsFilesCard.Header" xml:space="preserve">
     <value>Diagnostics folder</value>
   </data>
   <data name="DiagnosticsFilesCard.Description" xml:space="preserve">
-    <value>Holds the setup log, the error log and the application log. Deckle always writes the first two, so a failed first run or a crash leaves a trace. Open it when you report a problem.</value>
+    <value>The setup log, the error log and the application log. Open it when you report a problem.</value>
   </data>
 
   <!-- Shared log filter bar. The live Log Window and the app.jsonl settings
@@ -249,5 +249,8 @@
   </data>
   <data name="SettingsModuleNavLabel" xml:space="preserve">
     <value>Diagnostics</value>
+  </data>
+  <data name="DiagnosticsPageLoggingSection.Caption" xml:space="preserve">
+    <value>Verbose lines per module. Incidents, warnings and errors are always logged.</value>
   </data>
 </root>

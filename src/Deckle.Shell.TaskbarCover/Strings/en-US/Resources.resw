@@ -69,9 +69,6 @@
   <data name="TaskbarCoverPage_Group.Header" xml:space="preserve">
     <value>Taskbar cover</value>
   </data>
-  <data name="TaskbarCoverPage_Group.Description" xml:space="preserve">
-    <value>The band fades out as the mouse approaches the taskbar and comes back when it leaves. The tray switch and the shortcut flip the same setting.</value>
-  </data>
   <data name="TaskbarCoverPageRevealSection.Title" xml:space="preserve">
     <value>Reveal</value>
   </data>

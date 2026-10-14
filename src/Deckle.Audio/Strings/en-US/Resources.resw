@@ -124,7 +124,7 @@
     <value>Recording</value>
   </data>
   <data name="RecordingPageHeader.Description" xml:space="preserve">
-    <value>Microphone selection, maximum recording length, signal pre-processing with a listening test, and voice level window calibration.</value>
+    <value>Microphone, recording length and pre-processing, with a listening test.</value>
   </data>
   <data name="RecordingPageDefaultsSection.Title" xml:space="preserve">
     <value>Defaults</value>
@@ -134,16 +134,13 @@
   <data name="GeneralMicrophoneCard.Header" xml:space="preserve">
     <value>Microphone</value>
   </data>
-  <data name="GeneralMicrophoneCard.Description" xml:space="preserve">
-    <value>Audio input device used for recording.</value>
-  </data>
 
   <!-- Composed maximum-recording-length card (composer label key + Choice option keys) -->
   <data name="RecordingLimitCard.Header" xml:space="preserve">
     <value>Maximum recording length</value>
   </data>
   <data name="RecordingLimitCard.Description" xml:space="preserve">
-    <value>A recording stops on its own when it reaches this length, as if you'd pressed the hotkey. What you recorded is still transcribed.</value>
+    <value>Recording stops on its own at this length and is transcribed as usual.</value>
   </data>
   <data name="RecordingLimitNone.Content" xml:space="preserve">
     <value>No limit</value>
@@ -169,7 +166,7 @@
     <value>Microphone pre-processing</value>
   </data>
   <data name="RecordingPagePreprocessingCard.Description" xml:space="preserve">
-    <value>Lifts and evens out a quiet or uneven microphone before transcription, for better accuracy on soft passages. It only acts when your level is low. A microphone already at a good level passes through untouched.</value>
+    <value>Lifts and evens out a quiet microphone before transcription. A microphone already at a good level passes through untouched.</value>
   </data>
 
   <!-- Microphone level check (x:Uid) -->
@@ -177,7 +174,7 @@
     <value>Microphone level check</value>
   </data>
   <data name="RecordingPageMicCheckCard.Description" xml:space="preserve">
-    <value>Speak for a few seconds. Deckle reads your level, shows where pre-processing would bring it (around -20 dBFS, the range transcription handles best), and tells you whether turning it on is worth it. You decide.</value>
+    <value>Speak for a few seconds. Deckle reads your level and tells you whether pre-processing is worth turning on.</value>
   </data>
   <data name="RecordingPageMicCheckButton.Content" xml:space="preserve">
     <value>Measure</value>
@@ -203,7 +200,7 @@
     <value>Listening test</value>
   </data>
   <data name="RecordingPageListeningTestCard.Description" xml:space="preserve">
-    <value>Record a few seconds, then play them back on your speakers or headphones to hear what pre-processing does to your voice. Nothing is saved or transcribed.</value>
+    <value>Record a few seconds and play them back to hear what pre-processing does. Nothing is saved or transcribed.</value>
   </data>
   <data name="RecordingPageListeningRecordButton.Content" xml:space="preserve">
     <value>Record</value>
@@ -215,7 +212,7 @@
     <value>Play back</value>
   </data>
   <data name="RecordingPageListeningPlaybackCard.Description" xml:space="preserve">
-    <value>Off is your raw microphone. On applies pre-processing with your current parameters, whether the toggle above is on or not. 25 % and 75 % blend the two.</value>
+    <value>Off plays the raw microphone, On the pre-processed signal, 25 % and 75 % a blend.</value>
   </data>
   <data name="RecordingPageListeningPlayOff.Content" xml:space="preserve">
     <value>Off</value>
@@ -247,7 +244,7 @@
     <value>Log microphone level</value>
   </data>
   <data name="RecordingMicrophoneTelemetryCard.Description" xml:space="preserve">
-    <value>At the end of every recording, record the RMS distribution of your microphone (min, percentiles, max in dBFS) to microphone.jsonl in your telemetry folder. Kept on this device. Useful when calibrating the level window.</value>
+    <value>After each recording, the level distribution of your microphone goes to microphone.jsonl. Levels only, no audio.</value>
   </data>
   <data name="SettingsModuleNavLabel" xml:space="preserve">
     <value>Recording</value>

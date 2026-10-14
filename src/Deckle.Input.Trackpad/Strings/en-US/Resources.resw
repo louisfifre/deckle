@@ -127,7 +127,7 @@
     <value>Trackpad</value>
   </data>
   <data name="TrackpadPageHeader.Description" xml:space="preserve">
-    <value>Drag with three fingers on a Magic Trackpad 2. No click needed: move three fingers to pick something up, lift them to drop it.</value>
+    <value>Three-finger drag on a Magic Trackpad 2: move three fingers to pick something up, lift them to drop it.</value>
   </data>
 
   <!-- Three-finger drag -->
@@ -136,9 +136,6 @@
   </data>
   <data name="TrackpadPage_DragCard.Header" xml:space="preserve">
     <value>Three-finger drag</value>
-  </data>
-  <data name="TrackpadPage_DragCard.Description" xml:space="preserve">
-    <value>Move three fingers to drag what's under the pointer.</value>
   </data>
   <data name="TrackpadPage_SpeedCard.Header" xml:space="preserve">
     <value>Drag speed</value>
@@ -155,7 +152,7 @@
     <value>Windows three-finger gestures</value>
   </data>
   <data name="TrackpadPage_GesturesCard.Description" xml:space="preserve">
-    <value>Turns Windows' own three-finger gestures off so they can't fire during a drag. Your current choices are backed up first and come back exactly as they were.</value>
+    <value>Turns them off so they can't fire during a drag. Your choices are backed up and come back as they were.</value>
   </data>
   <data name="TrackpadPage_GesturesButton_Neutralize" xml:space="preserve">
     <value>Turn off gestures</value>
@@ -170,7 +167,7 @@
     <value>Repair Bluetooth connection</value>
   </data>
   <data name="TrackpadPage_RepairCard.Description" xml:space="preserve">
-    <value>Fixes the Apple driver pairing bug. It removes the driver from the store, re-pairs the trackpad, and reinstalls. Asks for administrator approval and runs in an interactive console.</value>
+    <value>Fixes the Apple driver pairing bug by re-pairing the trackpad. Asks for administrator approval.</value>
   </data>
   <data name="TrackpadPage_RepairButton.Content" xml:space="preserve">
     <value>Repair…</value>
@@ -179,7 +176,7 @@
     <value>Start elevated</value>
   </data>
   <data name="TrackpadPage_ElevatedCard.Description" xml:space="preserve">
-    <value>Lets the drag work over windows that run as administrator. Converts Deckle's startup into a highest-privileges scheduled task. Asks for administrator approval once.</value>
+    <value>Lets the drag work over windows that run as administrator. Asks for approval once.</value>
   </data>
 
   <!-- Raw-frame recording, composed on Settings > Diagnostics
@@ -188,7 +185,7 @@
     <value>Record raw contact frames</value>
   </data>
   <data name="TrackpadPage_RecordFramesCard.Description" xml:space="preserve">
-    <value>Writes every contact frame to a JSONL file in telemetry\trackpad. Works whether or not three-finger drag is on.</value>
+    <value>Every contact frame goes to telemetry\trackpad, whether or not the drag is on.</value>
   </data>
   <data name="SettingsModuleNavLabel" xml:space="preserve">
     <value>Trackpad</value>

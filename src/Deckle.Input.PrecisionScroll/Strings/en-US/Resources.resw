@@ -64,13 +64,10 @@
     <value>Precision scrolling</value>
   </data>
   <data name="PrecisionScrollPageHeader.Description" xml:space="preserve">
-    <value>Turn mouse-wheel steps into continuous native Precision Touchpad motion.</value>
+    <value>Turns each mouse-wheel step into smooth touchpad motion.</value>
   </data>
   <data name="PrecisionScrollPage_Group.Header" xml:space="preserve">
     <value>Precision scrolling</value>
-  </data>
-  <data name="PrecisionScrollPage_Group.Description" xml:space="preserve">
-    <value>Turn each mouse-wheel step into native touchpad movement.</value>
   </data>
   <data name="PrecisionScrollPageScrollingSection.Title" xml:space="preserve">
     <value>Scrolling</value>
@@ -79,7 +76,7 @@
     <value>Scroll distance</value>
   </data>
   <data name="PrecisionScrollPage_DistancePerDetentCard.Description" xml:space="preserve">
-    <value>Set the virtual finger travel added by each wheel step.</value>
+    <value>How far one wheel step scrolls.</value>
   </data>
   <data name="SettingsModuleNavLabel" xml:space="preserve">
     <value>Precision scrolling</value>

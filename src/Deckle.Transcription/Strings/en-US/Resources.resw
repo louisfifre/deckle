@@ -331,7 +331,7 @@
     <value>Auto-paste after transcription</value>
   </data>
   <data name="GeneralAutoPasteCard.Description" xml:space="preserve">
-    <value>Also tries to paste into the focused field. The paste is strict and only fires when the target can be safely confirmed, so it rarely triggers. The clipboard is always the reliable path.</value>
+    <value>Pastes into the focused field only when the target is certain. The text is always on the clipboard.</value>
   </data>
   <data name="WhisperPageBehaviourSection.Title" xml:space="preserve">
     <value>Overlay and pasting</value>
@@ -339,20 +339,14 @@
   <data name="GeneralOverlayExpander.Header" xml:space="preserve">
     <value>Show the overlay while recording</value>
   </data>
-  <data name="GeneralOverlayExpander.Description" xml:space="preserve">
-    <value>A small floating indicator shown at the bottom of your screen while Deckle captures and transcribes.</value>
-  </data>
   <data name="GeneralOverlayFadeCard.Header" xml:space="preserve">
     <value>Fade when your cursor is near</value>
   </data>
-  <data name="GeneralOverlayFadeCard.Description" xml:space="preserve">
-    <value>Make the overlay transparent when you move over it, so it never blocks what's underneath.</value>
-  </data>
   <data name="GeneralOverlayPositionCard.Header" xml:space="preserve">
-    <value>Screen position</value>
+    <value>Position</value>
   </data>
   <data name="GeneralOverlayPositionCard.Description" xml:space="preserve">
-    <value>Where the overlay appears on your primary display. Applied on the next recording.</value>
+    <value>Applies on the next recording.</value>
   </data>
   <data name="GeneralOverlayPositionTop.Content" xml:space="preserve">
     <value>Top</value>
@@ -361,10 +355,10 @@
     <value>Bottom</value>
   </data>
   <data name="GeneralTranscriptPanelSideCard.Header" xml:space="preserve">
-    <value>Transcript panel side</value>
+    <value>Live transcript side</value>
   </data>
   <data name="GeneralTranscriptPanelSideCard.Description" xml:space="preserve">
-    <value>Which side of your primary display shows the live text while you dictate. Applied on the next recording.</value>
+    <value>Applies on the next recording.</value>
   </data>
   <data name="GeneralTranscriptPanelSideLeft.Content" xml:space="preserve">
     <value>Left</value>
@@ -373,22 +367,22 @@
     <value>Right</value>
   </data>
   <data name="GeneralLatencyCard.Header" xml:space="preserve">
-    <value>Latency</value>
+    <value>Transcription timings</value>
   </data>
   <data name="GeneralLatencyCard.Description" xml:space="preserve">
-    <value>Record per-step timings of each transcription (voice detection, Whisper, rewrite, clipboard, paste) to latency.jsonl. Timings only, no transcript text.</value>
+    <value>Per-step timings of each transcription go to latency.jsonl. No transcript text.</value>
   </data>
   <data name="GeneralCorpusExpander.Header" xml:space="preserve">
-    <value>Corpus</value>
+    <value>Transcription corpus</value>
   </data>
   <data name="GeneralCorpusExpander.Description" xml:space="preserve">
-    <value>Save every transcription as a JSONL line under a per-profile subfolder (one corpus.jsonl per rewrite profile). Text only. For offline prompt tuning and analysis.</value>
+    <value>Every transcription as a line of corpus.jsonl, one file per rewrite profile. Text only.</value>
   </data>
   <data name="GeneralAudioCorpusCard.Header" xml:space="preserve">
-    <value>Also save audio (WAV)</value>
+    <value>Also save the audio</value>
   </data>
   <data name="GeneralAudioCorpusCard.Description" xml:space="preserve">
-    <value>Keep the raw 16 kHz mono audio of each recording alongside the JSONL, in an audio/ subfolder per profile. Roughly 2 MB per minute of speech.</value>
+    <value>A 16 kHz mono WAV per recording, about 2 MB per minute.</value>
   </data>
 
   <!-- ─── WhisperPage ────────────────────────────────────────────────
@@ -407,10 +401,10 @@
     <value>Set up</value>
   </data>
   <data name="WhisperModelCard.Header" xml:space="preserve">
-    <value>Whisper model (requires restart)</value>
+    <value>Speech model</value>
   </data>
   <data name="WhisperModelCard.Description" xml:space="preserve">
-    <value>The AI model that converts your voice to text. Larger models produce better results but take more time and memory.</value>
+    <value>Larger models are more accurate, slower and heavier.</value>
   </data>
   <data name="WhisperModelSuggest.PlaceholderText" xml:space="preserve">
     <value>Pick a model</value>
@@ -419,130 +413,130 @@
     <value>Language</value>
   </data>
   <data name="WhisperLanguageCard.Description" xml:space="preserve">
-    <value>The language you're speaking. Set it to match your language for best accuracy, or use 'auto' to let Deckle detect it.</value>
+    <value>The language you speak. Auto lets Deckle detect it.</value>
   </data>
   <data name="WhisperInitialPromptCard.Header" xml:space="preserve">
     <value>Initial prompt</value>
   </data>
   <data name="WhisperInitialPromptCard.Description" xml:space="preserve">
-    <value>A hint sentence that guides how your speech is transcribed. Use it to teach proper names, set the language tone, or fix recurring mistakes.</value>
+    <value>A sentence that teaches the model proper names, tone and recurring mistakes.</value>
   </data>
   <data name="WhisperInitialPromptBox.PlaceholderText" xml:space="preserve">
     <value>Je parle en français, je dis parfois des mots anglais. Claude, pas cloud.</value>
   </data>
   <data name="WhisperUseGpuCard.Header" xml:space="preserve">
-    <value>GPU acceleration (requires restart)</value>
+    <value>GPU acceleration</value>
   </data>
   <data name="WhisperUseGpuCard.Description" xml:space="preserve">
-    <value>Run Whisper on the GPU via Vulkan for faster transcription. Turn off if you see instability or crashes.</value>
+    <value>Faster transcription through Vulkan. Turn off if you see instability or crashes.</value>
   </data>
   <data name="WhisperVadEnabledCard.Header" xml:space="preserve">
-    <value>Voice activity detection</value>
+    <value>Trim silence around speech</value>
   </data>
   <data name="WhisperVadEnabledCard.Description" xml:space="preserve">
-    <value>Trims each utterance to its speech before it reaches the model. When off, the whole utterance is sent.</value>
+    <value>Silero keeps only the spoken part of each utterance before it reaches the model.</value>
   </data>
   <data name="WhisperVadThresholdCard.Header" xml:space="preserve">
     <value>Speech threshold</value>
   </data>
   <data name="WhisperVadThresholdCard.Description" xml:space="preserve">
-    <value>How sure the detector must be that a stretch of audio contains speech before keeping it. Higher trims more aggressively but can clip soft speech.</value>
+    <value>How sure the detector must be to keep a stretch as speech. Higher can clip soft speech.</value>
   </data>
   <data name="WhisperVadMinSpeechCard.Header" xml:space="preserve">
     <value>Minimum speech</value>
   </data>
   <data name="WhisperVadMinSpeechCard.Description" xml:space="preserve">
-    <value>Speech shorter than this is discarded as a blip, so a stray click or tap is not kept.</value>
+    <value>Shorter speech is dropped as a blip, like a click or a tap.</value>
   </data>
   <data name="WhisperVadMinSilenceCard.Header" xml:space="preserve">
     <value>Minimum silence</value>
   </data>
   <data name="WhisperVadMinSilenceCard.Description" xml:space="preserve">
-    <value>A pause shorter than this does not split speech, so a breath mid-sentence is bridged rather than cut.</value>
+    <value>A shorter pause does not split speech, so a breath is bridged.</value>
   </data>
   <data name="WhisperVadSpeechPadCard.Header" xml:space="preserve">
     <value>Speech padding</value>
   </data>
   <data name="WhisperVadSpeechPadCard.Description" xml:space="preserve">
-    <value>Audio kept on each side of a detected span, so a word's onset or tail is not clipped.</value>
+    <value>Audio kept on each side of speech, so a word's start or end is not clipped.</value>
   </data>
   <data name="WhisperSuppressNstCard.Header" xml:space="preserve">
-    <value>Suppress non-speech tokens</value>
+    <value>Remove sound tags</value>
   </data>
   <data name="WhisperSuppressNstCard.Description" xml:space="preserve">
-    <value>Remove tags like [Music] or (laughter) that Whisper sometimes adds to the transcription.</value>
+    <value>Tags like [Music] or (laughter) that Whisper sometimes adds.</value>
   </data>
   <data name="WhisperSuppressBlankCard.Header" xml:space="preserve">
-    <value>Suppress blank segments</value>
+    <value>Drop empty segments</value>
   </data>
   <data name="WhisperSuppressBlankCard.Description" xml:space="preserve">
-    <value>Drop segments that contain only whitespace or punctuation.</value>
+    <value>Segments of spaces or punctuation only.</value>
   </data>
   <data name="WhisperSuppressRegexCard.Header" xml:space="preserve">
-    <value>Custom regex filter</value>
+    <value>Remove a pattern</value>
   </data>
   <data name="WhisperSuppressRegexCard.Description" xml:space="preserve">
-    <value>A pattern to automatically remove unwanted text from the transcription. Uses regular expression syntax.</value>
+    <value>Text matching this regular expression is removed from every transcription.</value>
   </data>
   <data name="WhisperUseContextCard.Header" xml:space="preserve">
-    <value>Carry previous context</value>
+    <value>Carry context between segments</value>
   </data>
   <data name="WhisperUseContextCard.Description" xml:space="preserve">
-    <value>Pass each segment's result as context for the next one, improving consistency across sentences. Turn off if the transcription starts repeating itself.</value>
+    <value>Each segment primes the next, for consistent wording. Turn off if the text starts repeating itself.</value>
   </data>
   <data name="WhisperMaxTokensCard.Header" xml:space="preserve">
     <value>Maximum tokens per segment</value>
   </data>
   <data name="WhisperMaxTokensCard.Description" xml:space="preserve">
-    <value>Limit how much text can be generated for each segment. -1 removes the limit.</value>
+    <value>-1 removes the limit.</value>
   </data>
   <data name="WhisperUseBeamSearchCard.Header" xml:space="preserve">
-    <value>Beam search</value>
+    <value>Explore several hypotheses at once</value>
   </data>
   <data name="WhisperUseBeamSearchCard.Description" xml:space="preserve">
-    <value>Explore several hypotheses in parallel and keep the best overall sequence. Higher quality than greedy decoding, at the cost of latency.</value>
+    <value>Beam search keeps the best of several candidate sequences. More accurate, a little slower.</value>
   </data>
   <data name="WhisperBeamSizeCard.Header" xml:space="preserve">
-    <value>Beam size</value>
+    <value>Number of hypotheses</value>
   </data>
   <data name="WhisperBeamSizeCard.Description" xml:space="preserve">
-    <value>How many hypotheses beam search explores at once. Higher is slower but can recover more accurate phrasing.</value>
+    <value>Higher is more accurate and slower.</value>
   </data>
   <data name="WhisperTemperatureCard.Header" xml:space="preserve">
     <value>Temperature</value>
   </data>
   <data name="WhisperTemperatureCard.Description" xml:space="preserve">
-    <value>Randomness of the decoder. 0 is deterministic and safest. Raise only if the model gets stuck repeating the same phrase.</value>
+    <value>Randomness of the decoding. Raise it only if the model keeps repeating a phrase.</value>
   </data>
   <data name="WhisperTemperatureIncrementCard.Header" xml:space="preserve">
-    <value>Fallback temperature step</value>
+    <value>Retry temperature step</value>
   </data>
   <data name="WhisperTemperatureIncrementCard.Description" xml:space="preserve">
-    <value>When a segment seems uncertain, the model retries with increasing randomness in steps of this size. Set to 0 to disable retries.</value>
+    <value>An uncertain segment is retried with this much more randomness each time.</value>
   </data>
   <data name="WhisperEntropyCard.Header" xml:space="preserve">
     <value>Entropy threshold</value>
   </data>
   <data name="WhisperEntropyCard.Description" xml:space="preserve">
-    <value>Detects repetition loops by measuring token diversity. Low-diversity segments are retried at higher temperature. Raise to catch subtler repetitions.</value>
+    <value>A segment with less word diversity than this is retried at a higher temperature. Raise it to catch subtler repetitions.</value>
   </data>
   <data name="WhisperLogprobCard.Header" xml:space="preserve">
-    <value>Log-probability threshold</value>
+    <value>Minimum confidence</value>
   </data>
   <data name="WhisperLogprobCard.Description" xml:space="preserve">
-    <value>Average decoder confidence per segment. Low-confidence segments are retried at higher temperature. Also gates silence suppression with the no-speech check. Raise (toward 0) to be stricter.</value>
+    <value>A segment decoded below this average confidence is retried at a higher temperature. Closer to 0 is stricter.</value>
   </data>
   <data name="WhisperNoSpeechCard.Header" xml:space="preserve">
     <value>No-speech threshold</value>
   </data>
   <data name="WhisperNoSpeechCard.Description" xml:space="preserve">
-    <value>Controls silence suppression. When the model flags a segment as silence and confidence is also low, the segment is dropped. Lower values suppress more aggressively.</value>
+    <value>A segment the model hears as silence, with low confidence, is dropped. Lower drops more.</value>
   </data>
   <data name="WhisperModelsDirCard.Header" xml:space="preserve">
     <value>Models folder</value>
   </data>
   <data name="WhisperModelsDirCard.Description" xml:space="preserve">
-    <value>Where Whisper and Silero model files are stored on disk. Leave empty to use the default location next to the application.</value>
+    <value>Where the Whisper and Silero model files live.</value>
   </data>
   <data name="WhisperRestartDiscard.Content" xml:space="preserve">
     <value>Discard</value>
@@ -570,14 +564,14 @@
     <value>Transcription</value>
   </data>
   <data name="WhisperPageHeader.Description" xml:space="preserve">
-    <value>How Deckle turns your voice into text: the on-screen overlay and pasting, the model and the engine.</value>
+    <value>The on-screen overlay and pasting, the model and the engine.</value>
   </data>
   <!-- The module's two other pages, nested under it in the rail. -->
   <data name="DecodingPageHeader.Title" xml:space="preserve">
     <value>Decoding</value>
   </data>
   <data name="DecodingPageHeader.Description" xml:space="preserve">
-    <value>The Whisper parameters that shape the text in both pipelines: how the decoder searches, when it doubts itself, what it filters out and how much context carries over.</value>
+    <value>How Whisper searches for the text, when it doubts itself, what it filters out and how much context carries over.</value>
   </data>
   <data name="DecodingPageDecodingSection.Title" xml:space="preserve">
     <value>Decoding</value>
@@ -607,19 +601,19 @@
     <value>Streaming</value>
   </data>
   <data name="StreamingPageHeader.Description" xml:space="preserve">
-    <value>Transcribe as you speak: cut the live recording into utterances on silence instead of one pass at Stop, and tune how speech is filtered and where the cuts fall.</value>
+    <value>Transcribe as you speak, cutting the recording into utterances on silence instead of one pass at Stop.</value>
   </data>
   <data name="StreamingPageSegmentationSection.Title" xml:space="preserve">
     <value>Segmentation</value>
   </data>
   <data name="WhisperPageModelEngineSection.Title" xml:space="preserve">
-    <value>Model &amp; engine</value>
+    <value>Model and engine</value>
   </data>
   <data name="WhisperPageSpeechFilteringSection.Title" xml:space="preserve">
     <value>Speech filtering</value>
   </data>
   <data name="WhisperPageSpeechFilteringSection.Caption" xml:space="preserve">
-    <value>Removes silence and noise from each utterance before transcription, the main defense against phantom text.</value>
+    <value>Silence and noise are removed from each utterance before transcription, the main defence against phantom text.</value>
   </data>
   <data name="StreamingPageSegmentationSection.Caption" xml:space="preserve">
     <value>Where the live recording is cut into utterances: the level that counts as speech, then how long a pause must last.</value>
@@ -662,16 +656,16 @@
   <!-- ─── WhisperPage — Streaming pipeline (experimental) ─────────────
        Strategy selector + energy-segmenter parameters. -->
   <data name="WhisperStreamingEnabledCard.Header" xml:space="preserve">
-    <value>Use the streaming pipeline</value>
+    <value>Transcribe as you speak</value>
   </data>
   <data name="WhisperStreamingEnabledCard.Description" xml:space="preserve">
-    <value>Off keeps the delivered monolithic pipeline (one pass at Stop). Applies on your next recording.</value>
+    <value>Off transcribes in one pass at Stop. Applies on your next recording.</value>
   </data>
   <data name="WhisperSegThresholdCard.Header" xml:space="preserve">
     <value>Silence threshold</value>
   </data>
   <data name="WhisperSegThresholdCard.Description" xml:space="preserve">
-    <value>Audio at or above this raw level counts as speech. Lower is more sensitive; raise it if quiet background noise keeps a segment open.</value>
+    <value>Audio above this level counts as speech. Raise it if background noise keeps a segment open.</value>
   </data>
   <data name="WhisperCutPresetPatient.Content" xml:space="preserve">
     <value>Patient</value>
@@ -693,31 +687,31 @@
     <value>Pause before cutting</value>
   </data>
   <data name="WhisperCutCurveCard.Description" xml:space="preserve">
-    <value>Drag the two handles to shape how the wait shrinks as an utterance grows; the four fields beside the plot set its bounds.</value>
+    <value>How long a pause must last to cut, shrinking as the utterance grows.</value>
   </data>
   <data name="WhisperSegHangoverMaxCard.Header" xml:space="preserve">
     <value>Max wait, ms</value>
   </data>
   <data name="WhisperSegHangoverMaxCard.Description" xml:space="preserve">
-    <value>Trailing silence to wait after the last word at the start of an utterance, before deciding it has ended. Long enough, only a paragraph-break silence cuts.</value>
+    <value>The silence that ends a short utterance.</value>
   </data>
   <data name="WhisperSegHangoverMinCard.Header" xml:space="preserve">
     <value>Min wait, ms</value>
   </data>
   <data name="WhisperSegHangoverMinCard.Description" xml:space="preserve">
-    <value>Floor the wait decays to once the utterance has grown past the ramp end. A shorter pause is treated as intra-word.</value>
+    <value>The silence that ends a long utterance.</value>
   </data>
   <data name="WhisperSegHangoverRampStartCard.Header" xml:space="preserve">
     <value>Ramp start, ms</value>
   </data>
   <data name="WhisperSegHangoverRampStartCard.Description" xml:space="preserve">
-    <value>Utterance length at which the wait starts shrinking from the max. Below this, the wait stays at the max.</value>
+    <value>Utterance length where the wait starts shrinking.</value>
   </data>
   <data name="WhisperSegHangoverRampEndCard.Header" xml:space="preserve">
     <value>Ramp end, ms</value>
   </data>
   <data name="WhisperSegHangoverRampEndCard.Description" xml:space="preserve">
-    <value>Utterance length at and above which the wait equals the min. Between the two, the wait follows the curve.</value>
+    <value>Utterance length where the wait reaches its minimum.</value>
   </data>
 
   <!-- ─── Dataset consents (Settings > Diagnostics) ───────────────────
@@ -729,7 +723,7 @@
     <value>Recorded audio</value>
   </data>
   <data name="GeneralAudioCorpusContentCard.Description" xml:space="preserve">
-    <value>Choose which version of each take is saved. “Match the transcription” stores what the engine actually heard. It is the processed signal when pre-processing is on, the raw capture otherwise. “Always raw” keeps the untouched microphone signal, so you can re-process it later against a different model.</value>
+    <value>Match the transcription saves what the engine heard, Always raw saves the untouched microphone signal.</value>
   </data>
   <data name="GeneralAudioCorpusContentMatch.Content" xml:space="preserve">
     <value>Match the transcription</value>

@@ -244,16 +244,13 @@
     <value>General</value>
   </data>
   <data name="LlmEnableCard.Header" xml:space="preserve">
-    <value>Enable rewriting</value>
+    <value>Rewriting</value>
   </data>
   <data name="LlmEnableCard.Description" xml:space="preserve">
-    <value>Master switch for all LLM rewriting. When off, transcriptions are never sent to Ollama.</value>
+    <value>Off never sends a transcription to Ollama.</value>
   </data>
   <data name="LlmEndpointExpander.Header" xml:space="preserve">
-    <value>Ollama endpoint</value>
-  </data>
-  <data name="LlmEndpointExpander.Description" xml:space="preserve">
-    <value>The URL of your local Ollama instance.</value>
+    <value>Ollama address</value>
   </data>
 
   <!-- LlmModelsSection -->
@@ -261,7 +258,7 @@
     <value>Models</value>
   </data>
   <data name="LlmModelsBlock.Caption" xml:space="preserve">
-    <value>Models in your local Ollama instance; add or remove them with `ollama pull` or `ollama create`, then refresh.</value>
+    <value>Installed in Ollama. Add or remove them with ollama pull or ollama create, then refresh.</value>
   </data>
   <data name="LlmRefreshLabel.Text" xml:space="preserve">
     <value>Refresh</value>
@@ -272,7 +269,7 @@
     <value>Profiles</value>
   </data>
   <data name="LlmProfilesBlock.Caption" xml:space="preserve">
-    <value>Each profile pairs an Ollama model with a system prompt; expand one to edit it.</value>
+    <value>Each profile pairs a model with a system prompt.</value>
   </data>
   <data name="LlmProfile_NameBox.Header" xml:space="preserve">
     <value>Name</value>
@@ -293,19 +290,19 @@
     <value>System prompt sent with every rewrite request...</value>
   </data>
   <data name="LlmProfile_SystemPromptBody.Text" xml:space="preserve">
-    <value>Instructions sent with every request to define the model's behavior and rewriting style.</value>
+    <value>Instructions sent with every request.</value>
   </data>
   <data name="LlmProfile_TemperatureSlider.Header" xml:space="preserve">
     <value>Temperature</value>
   </data>
   <data name="LlmProfile_TemperatureBody.Text" xml:space="preserve">
-    <value>Controls randomness. Lower values produce more focused, deterministic output. Higher values increase creativity and variation.</value>
+    <value>Lower is more focused, higher more varied.</value>
   </data>
   <data name="LlmProfile_ContextSlider.Header" xml:space="preserve">
     <value>Context size</value>
   </data>
   <data name="LlmProfile_ContextBody.Text" xml:space="preserve">
-    <value>Maximum tokens the model considers at once. Larger context uses more memory and is slower.</value>
+    <value>Tokens the model considers at once. Larger is slower and heavier.</value>
   </data>
   <data name="LlmProfile_RemoveLabel.Text" xml:space="preserve">
     <value>Remove</value>
@@ -333,7 +330,7 @@
     <value>Rewriting</value>
   </data>
   <data name="LlmPageHeader.Description" xml:space="preserve">
-    <value>Clean up and restructure your transcriptions through a local language model via Ollama. Configure rewrite profiles with different models and prompts, then choose the one applied to every dictation.</value>
+    <value>Clean up your transcriptions through a local language model in Ollama, with a profile per model and prompt.</value>
   </data>
   <!-- No longer an x:Uid: ResetAll_Click reads it with Loc.Get for the
        confirmation dialog's primary button. -->
