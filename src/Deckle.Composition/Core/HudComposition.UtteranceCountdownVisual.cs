@@ -281,9 +281,10 @@ public static partial class HudComposition
             float offsetY = (hostSize.Y - hudSize.Y) / 2f;
             // Same silhouette as CreateConicArcStroke: an outline of width t
             // inside the HUD rect shrunk by the inset, clamped like the
-            // stroke's. A negative inset pushes the outer half past the
-            // surface, exactly as the live stroke's outer half falls
-            // outside the HWND.
+            // stroke's. A negative inset pushes the outer half past the HUD
+            // rect; whether it shows depends on the host the caller gives,
+            // and HudChrono oversizes its host so the contour overflows the
+            // card as the outline does.
             float inset = config.InsetDip;
             float silhouetteWidth = hudSize.X - 2f * inset;
             float silhouetteHeight = hudSize.Y - 2f * inset;

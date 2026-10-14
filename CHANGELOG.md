@@ -200,6 +200,8 @@ doctrine). This file is generated from the Conventional-Commit history by
 - **settings:** Lay the folder cards out on one row
 - **ambient:** Show the splitter grip on hover only
 - **core:** Add the broadcast and timer interop for a hidden window
+- **playground:** Let the gauge's End reach run to 500 %
+- **playground:** Step the gauge's End reach by 5 %
 
 ### Changed
 
@@ -312,6 +314,7 @@ doctrine). This file is generated from the Conventional-Commit history by
 - **playground:** Simulate speech inside the stroke's level window
 - **shell:** Add the tray icon back when Explorer recreates the taskbar
 - **shell:** Number the re-add attempts per sequence in the journal
+- **hud:** Let the gauge overflow the card as the outline does
 
 ## [0.35.0](https://github.com/louisfifre/deckle/compare/v0.31.6...v0.35.0) — 2026-08-13
 
