@@ -11,7 +11,7 @@ Vocabulary of the trackpad workstream. This module sits at the top of the input 
 
 **Recognizer** :
 The state machine of this module that turns the stream of contact frames into gesture intentions, such as drag start, drag continuation and release. It owns every decision that makes a gesture feel right, such as telling a tap from a drag, the grace delay when a finger lifts and the tolerance to the cadence of Bluetooth reports.
-_Avoid_ : detector, gesture engine.
+_Avoid_ : detector (signals a presence, the recognizer interprets), gesture engine (a loose name for the same component).
 
 **Three-finger drag** :
 A gesture, the only one Deckle owns, in which three fingers moving together hold the primary button and drag, and lifting them releases after a grace delay. Every other touchpad gesture stays native to Windows.
