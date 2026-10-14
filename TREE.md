@@ -476,7 +476,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   └── DevSpace.cs
 │   │   ├── Deckle.Anytype.csproj
 │   │   ├── DeckleAnytypeSource.cs
-│   │   └── GLOSSARY.md  — glossary-deckle-anytype Anytype integration vocabulary (covers Deckle.Anytype.Mcp) — backend vs MCP hos…
+│   │   └── GLOSSARY.md  — glossary-deckle-anytype Anytype integration vocabulary, Deckle.Anytype.Mcp included. It separates the b…
 │   ├── Deckle.Anytype.Mcp/
 │   │   ├── Http/
 │   │   │   ├── McpClients.cs
