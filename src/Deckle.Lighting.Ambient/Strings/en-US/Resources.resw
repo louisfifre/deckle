@@ -429,9 +429,51 @@
   <data name="AmbientPreviewExpander.Description" xml:space="preserve">
     <value>See what the capture samples and the colour each light receives, while Ambient Light runs.</value>
   </data>
+  <data name="AmbientPreviewZonesToggle.Content" xml:space="preserve">
+    <value>Zones</value>
+  </data>
+  <data name="AmbientPreviewPauseLabel.Text" xml:space="preserve">
+    <value>Pause</value>
+  </data>
+  <data name="AmbientPreviewCaptureReadout.Label" xml:space="preserve">
+    <value>Capture</value>
+  </data>
+  <data name="AmbientPreviewGridReadout.Label" xml:space="preserve">
+    <value>Sampling grid</value>
+  </data>
+  <data name="AmbientPreviewRateReadout.Label" xml:space="preserve">
+    <value>Measured rate</value>
+  </data>
+  <data name="AmbientPreviewOutputReadout.Label" xml:space="preserve">
+    <value>Output</value>
+  </data>
+  <data name="AmbientPreviewLightsReadout.Label" xml:space="preserve">
+    <value>Colours sent</value>
+  </data>
   <!-- AmbientPreviewCard code-behind (Loc.Get) — mirrored in Deckle.App. -->
   <data name="AmbientPreview_GroupSwatch" xml:space="preserve">
     <value>All lights</value>
+  </data>
+  <data name="AmbientPreview_Capture_Format" xml:space="preserve">
+    <value>{0} × {1}, {2}</value>
+  </data>
+  <data name="AmbientPreview_Hdr" xml:space="preserve">
+    <value>HDR</value>
+  </data>
+  <data name="AmbientPreview_Sdr" xml:space="preserve">
+    <value>SDR</value>
+  </data>
+  <data name="AmbientPreview_Grid_Format" xml:space="preserve">
+    <value>{0} × {1} cells</value>
+  </data>
+  <data name="AmbientPreview_Rate_Format" xml:space="preserve">
+    <value>{0} fps</value>
+  </data>
+  <data name="AmbientPreview_Output_Stream" xml:space="preserve">
+    <value>Streaming</value>
+  </data>
+  <data name="AmbientPreview_Output_Rest" xml:space="preserve">
+    <value>REST</value>
   </data>
 
   <!-- LightZonesCard (x:Uid). -->

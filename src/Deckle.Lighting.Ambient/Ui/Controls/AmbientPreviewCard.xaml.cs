@@ -1,30 +1,37 @@
 using System;
 using System.Collections.Generic;
-using CommunityToolkit.WinUI.Controls;
+using System.Diagnostics;
 using Deckle.Catalog;
 using Deckle.Lighting;
 using Deckle.Shell;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
+using Microsoft.UI.Xaml.Controls.Primitives;
 using Microsoft.UI.Xaml.Media;
 using Microsoft.UI.Xaml.Shapes;
 
 namespace Deckle.Lighting.Ambient;
 
-// Live preview of the running engine: the sampled grid mirroring the
-// screen, the colour each light receives (swatches), and the four zone
-// bands tinted with their light's colour.
+// Live preview of the running engine in the shared PreviewBlock: the sampled
+// grid mirroring the screen as the stage, the colour each light receives
+// (swatches) and the four zone bands tinted with their light's colour, with
+// the capture's format, grid, measured cadence and output transport as
+// readouts.
 //
 // A live instrument in Settings opens on a gesture, never on page open: the
-// expander starts collapsed (and is collapsed again on Unloaded, in case the
-// page is cached), and the 200 ms refresh runs only while it is open AND the
-// engine runs. While the engine is off the whole card hides — there is
-// nothing to show and nothing to configure here.
+// block starts collapsed (and is collapsed again on Unloaded, in case the page
+// is cached), and the 200 ms refresh runs only while it is open AND the engine
+// runs AND the user has not paused it. While the engine is off the whole card
+// hides — there is nothing to show and nothing to configure here.
 //
 // Ratio: each cell is sourceWidth / cols by sourceHeight / rows in source
 // pixels, and a uniform Viewbox scales the stage, so the preview has the
 // display's exact shape. Without a source size yet, cells fall back to
 // squares for one tick.
+//
+// Cadence: the engine counts the frames its capture delivers; two reads a
+// second or more apart give the rate the capture really holds, which is what
+// the readout shows — never the rate the user picked.
 //
 // Threading: AmbientEngine.StateChanged fires on the engine's thread and is
 // marshalled to the UI thread; everything else runs on the UI thread.
@@ -38,6 +45,8 @@ public sealed partial class AmbientPreviewCard : UserControl
     // the brush, not the rectangle, so a future stroke keeps full opacity.
     private const double ZoneFillOpacity = 0.4;
 
+    private const double RateWindowSeconds = 1.0;
+
     private readonly DispatcherTimer _timer = new() { Interval = RefreshInterval };
     private readonly Dictionary<string, (Rectangle Swatch, SolidColorBrush Fill)> _swatches = new();
     private readonly Dictionary<LightZone, SolidColorBrush> _zoneBrushes = new();
@@ -49,13 +58,14 @@ public sealed partial class AmbientPreviewCard : UserControl
     private Windows.Graphics.SizeInt32? _builtSize;
     private double _stageWidth;
     private double _stageHeight;
+    private long _rateFrames;
+    private long _rateTimestamp;
 
     public AmbientPreviewCard()
     {
         InitializeComponent();
         _timer.Tick += (_, _) => Refresh();
-        PreviewExpander.RegisterPropertyChangedCallback(
-            SettingsExpander.IsExpandedProperty, (_, _) => UpdateState());
+        Block.IsExpandedChanged += (_, _) => UpdateState();
         Loaded   += OnLoaded;
         Unloaded += OnUnloaded;
     }
@@ -72,7 +82,8 @@ public sealed partial class AmbientPreviewCard : UserControl
         if (_engine is not null) _engine.StateChanged -= OnEngineStateChanged;
         _engine = null;
         _timer.Stop();
-        PreviewExpander.IsExpanded = false;
+        PauseToggle.IsChecked = false;
+        Block.IsExpanded = false;
     }
 
     private void OnEngineStateChanged(AmbientEngineState state)
@@ -81,15 +92,25 @@ public sealed partial class AmbientPreviewCard : UserControl
             callback: UpdateState,
             rejectSource: "AMBIENT", rejectWhat: "preview state");
 
+    private void ZonesToggle_Click(object sender, RoutedEventArgs e)
+    {
+        if (_engine is { IsRunning: true } engine)
+            UpdateZoneOverlay(engine, engine.SnapshotEmittedColors());
+    }
+
+    private void PauseToggle_Click(object sender, RoutedEventArgs e) => UpdateState();
+
     private void UpdateState()
     {
         bool running = _engine is { IsRunning: true };
         Visibility = running ? Visibility.Visible : Visibility.Collapsed;
 
-        if (running && PreviewExpander.IsExpanded)
+        bool paused = PauseToggle.IsChecked == true;
+        if (running && Block.IsExpanded && !paused)
         {
             if (!_timer.IsEnabled)
             {
+                _rateTimestamp = 0;
                 _timer.Start();
                 Refresh();
             }
@@ -124,6 +145,7 @@ public sealed partial class AmbientPreviewCard : UserControl
         var emitted = engine.SnapshotEmittedColors();
         UpdateSwatches(engine, emitted);
         UpdateZoneOverlay(engine, emitted);
+        UpdateReadouts(engine, size);
     }
 
     private void BuildGrid(int cols, int rows, Windows.Graphics.SizeInt32? size)
@@ -166,6 +188,54 @@ public sealed partial class AmbientPreviewCard : UserControl
         ZoneOverlay.Height = _stageHeight;
     }
 
+    // ── Readouts ─────────────────────────────────────────────────────────
+
+    private void UpdateReadouts(AmbientEngine engine, Windows.Graphics.SizeInt32? size)
+    {
+        if (size is { Width: > 0, Height: > 0 } s)
+        {
+            CaptureReadout.Value = Loc.Format("AmbientPreview_Capture_Format",
+                s.Width, s.Height,
+                Loc.Get(engine.IsHdr ? "AmbientPreview_Hdr" : "AmbientPreview_Sdr"));
+        }
+
+        GridReadout.Value = Loc.Format("AmbientPreview_Grid_Format", _cols, _rows);
+
+        OutputReadout.Value = engine.OutputIsLiveStream switch
+        {
+            true  => Loc.Get("AmbientPreview_Output_Stream"),
+            false => Loc.Get("AmbientPreview_Output_Rest"),
+            null  => null,
+        };
+
+        UpdateRate(engine);
+    }
+
+    // Two reads of the engine's frame count at least a window apart. A count
+    // that went down means the capture restarted: start a new window.
+    private void UpdateRate(AmbientEngine engine)
+    {
+        long frames = engine.CapturedFrames;
+        long now = Stopwatch.GetTimestamp();
+
+        if (_rateTimestamp == 0 || frames < _rateFrames)
+        {
+            _rateFrames = frames;
+            _rateTimestamp = now;
+            return;
+        }
+
+        double elapsed = (now - _rateTimestamp) / (double)Stopwatch.Frequency;
+        if (elapsed < RateWindowSeconds) return;
+
+        double fps = (frames - _rateFrames) / elapsed;
+        RateReadout.Value = Loc.Format("AmbientPreview_Rate_Format", Math.Round(fps));
+        _rateFrames = frames;
+        _rateTimestamp = now;
+    }
+
+    // ── Swatches and zones ───────────────────────────────────────────────
+
     private void UpdateSwatches(AmbientEngine engine, IReadOnlyDictionary<string, LightColor> emitted)
     {
         bool sameSet = emitted.Count == _swatches.Count;
@@ -184,8 +254,8 @@ public sealed partial class AmbientPreviewCard : UserControl
                 var fill = new SolidColorBrush(ToColor(color));
                 var swatch = new Rectangle
                 {
-                    Width  = 32,
-                    Height = 32,
+                    Width  = 20,
+                    Height = 20,
                     RadiusX = 4,
                     RadiusY = 4,
                     Fill   = fill,
@@ -204,12 +274,13 @@ public sealed partial class AmbientPreviewCard : UserControl
     }
 
     // Tints each band that drives at least one light with that light's
-    // emitted colour; bands with no light stay hidden. Group mode has no
-    // bands: one colour goes to the whole group.
+    // emitted colour; bands with no light stay hidden, and every band hides
+    // while the Zones command is off. Group mode has no bands: one colour
+    // goes to the whole group.
     private void UpdateZoneOverlay(AmbientEngine engine, IReadOnlyDictionary<string, LightColor> emitted)
     {
         var settings = AmbientSettingsService.Instance.Current;
-        bool multi = engine.IsMultiLightActive;
+        bool multi = engine.IsMultiLightActive && ZonesToggle.IsChecked == true;
 
         LayoutZoneRects(settings);
         ApplyZone(LightZone.Top,    ZoneTopRect,    multi, settings, emitted);

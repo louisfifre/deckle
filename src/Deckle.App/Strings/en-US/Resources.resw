@@ -1031,6 +1031,27 @@
   <data name="AmbientPreview_GroupSwatch" xml:space="preserve">
     <value>All lights</value>
   </data>
+  <data name="AmbientPreview_Capture_Format" xml:space="preserve">
+    <value>{0} × {1}, {2}</value>
+  </data>
+  <data name="AmbientPreview_Hdr" xml:space="preserve">
+    <value>HDR</value>
+  </data>
+  <data name="AmbientPreview_Sdr" xml:space="preserve">
+    <value>SDR</value>
+  </data>
+  <data name="AmbientPreview_Grid_Format" xml:space="preserve">
+    <value>{0} × {1} cells</value>
+  </data>
+  <data name="AmbientPreview_Rate_Format" xml:space="preserve">
+    <value>{0} fps</value>
+  </data>
+  <data name="AmbientPreview_Output_Stream" xml:space="preserve">
+    <value>Streaming</value>
+  </data>
+  <data name="AmbientPreview_Output_Rest" xml:space="preserve">
+    <value>REST</value>
+  </data>
   <data name="AmbientLights_Zone_None" xml:space="preserve">
     <value>No zone</value>
   </data>
