@@ -14,7 +14,7 @@ Quality target: a Windows app at Microsoft first-party level. Sensory reference:
 
 ## Hard rules
 
-Local validation is compile-only `dotnet build` with `/m:1`, Debug x64 by default, without stopping or relaunching Deckle. `Directory.Build.rsp` runs every command-line build at low priority and disables MSBuild node reuse and Roslyn shared compilation; do not bypass it with `-noAutoResponse`. The .NET CLI applies its default maximum node count after response files, so every build or publish invocation must keep `/m:1` explicit. `publish` stays the maintainer's act, never triggered by agents.
+Local validation is compile-only `dotnet build` with `/m:4`, Debug x64 by default, without stopping or relaunching Deckle. `Directory.Build.rsp` runs every command-line build at low priority and disables MSBuild node reuse; do not bypass it with `-noAutoResponse`. The .NET CLI applies its default maximum node count after response files, so every build or publish invocation must keep `/m:4` explicit. Never run two builds at once, whatever the session: when another `dotnet build` is running on the machine, wait for it. `publish` stays the maintainer's act, never triggered by agents.
 
 Terminal-interface inspection uses deterministic `scripts/deckle-preview.ps1 -Snapshot ...` output. Agents MUST NOT start or drive the interactive `scripts/deckle.ps1` launcher or invoke its actions; that daily launcher may stop or relaunch the resident app by design.
 

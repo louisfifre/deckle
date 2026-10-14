@@ -113,7 +113,7 @@ The Run and Project commands sit at the root of `commands/`. The Release, Mainte
 |---|---|---|
 | [`commands/maintenance/reset-agent-state.ps1`](commands/maintenance/reset-agent-state.ps1) | Preview or reset current-account Codex and Claude Code sessions while keeping core configuration, credentials, authored context, plugins, repositories, and worktrees. | `-Scope Codex,Claude`; `-Apply -Confirmation 'RESET LOCAL AI SESSIONS'` |
 | [`commands/launch-app.ps1`](commands/launch-app.ps1) | Kill running `Deckle.exe` and launch the freshest already-built app executable. Does not build. | `-Configuration Debug\|Release`, `-Target <worktree>`, `-Pick`, `-Wait` |
-| [`commands/build-run.ps1`](commands/build-run.ps1) | Kill running `Deckle.exe`, build via `dotnet build` without persistent MSBuild/Roslyn build servers, and launch the freshly built exe through ShellExecute. With `-NoRun`, build only: the running instance is never stopped, and the build is refused before compiling when that instance runs from the build's own output directory (see *Running instance and build outputs*). | `-Configuration Debug\|Release`, `-NoRun`, `-Wait`, `-Target <worktree>`, `-Pick`, `-NoAutoRestart` |
+| [`commands/build-run.ps1`](commands/build-run.ps1) | Kill running `Deckle.exe`, build via `dotnet build` on four low-priority MSBuild nodes that exit with the build, and launch the freshly built exe through ShellExecute. With `-NoRun`, build only: the running instance is never stopped, and the build is refused before compiling when that instance runs from the build's own output directory (see *Running instance and build outputs*). | `-Configuration Debug\|Release`, `-NoRun`, `-Wait`, `-Target <worktree>`, `-Pick`, `-NoAutoRestart` |
 | [`commands/maintenance/clean.ps1`](commands/maintenance/clean.ps1) | Kill running `Deckle.exe` (it locks the output), stop .NET build servers left by manual/agent builds, then remove the consolidated `artifacts/{bin,obj,publish,package}/` plus any straggler `bin/`+`obj/` under `src/`, `tests/`, and benchmark study folders. Keeps `artifacts/Deckle-v*` release staging unless `-IncludeReleases`. Guards against symlinks / junctions. Reports total freed bytes. | `-Target <worktree>`, `-Pick`, `-IncludeReleases` |
 | [`commands/maintenance/stop-build-servers.ps1`](commands/maintenance/stop-build-servers.ps1) | Stop machine-wide .NET build servers left by local, menu, or agent builds. Useful when Task Manager shows lingering `.NET Host` / `VBCSCompiler` rows but you do not want to delete build outputs. | |
 | [`commands/maintenance/stats.ps1`](commands/maintenance/stats.ps1) | Walk every `.csproj` under `src/`, build a per-file inventory, highlight C# files over 400 / 600 effective LOC and other text files over 500 / 1000 raw lines, summarize modules by source LOC, list tracked repository file types dynamically, and print the per-file module table. Git defines the repository boundary, so ignored workspace data is excluded and tracked links are counted without traversal. Generated module files are also excluded. | `-Target <worktree>`, `-Pick`, `-Json <path>`; `-PassThru` for structured output |
@@ -142,7 +142,7 @@ The menu is built at every launch from the scripts folder by [`lib/script-discov
 .SYNOPSIS
     Build the app
 .DESCRIPTION
-    Build the chosen configuration without persistent build servers, then
+    Build the chosen configuration on four short-lived MSBuild nodes, then
     launch the freshly built executable.
 .NOTES
     section: Run

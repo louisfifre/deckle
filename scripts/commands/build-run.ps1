@@ -119,12 +119,13 @@ if ($NoRun) {
 # Restore stays implicit (separate evaluation phase before Build), so the
 # WindowsAppSDK targets (CompileXaml etc.) get imported from the regenerated
 # .nuget.g.targets — no CS5001 / CS0103 InitializeComponent surprise in a fresh
-# worktree. /m:1 stays explicit: the .NET CLI applies its default node count
-# after Directory.Build.rsp.
+# worktree. /m:4 stays explicit: the .NET CLI applies its default node count
+# (every logical CPU) after Directory.Build.rsp. Four nodes measured as the
+# knee on 2026-10-14: eight gained nothing, one doubled the wall time.
 Write-DeckleWorkflowStep -Output $WorkflowOutput -Message "dotnet build ($Configuration x64)"
 $buildExitCode = Invoke-DeckleConsoleProcess -FilePath 'dotnet' -ArgumentList @(
     'build', $Csproj, "-c:$Configuration", '-p:Platform=x64', '-v:m', '-nologo',
-    '/m:1'
+    '/m:4'
 )
 if ($buildExitCode -ne 0) { throw "dotnet build failed (code $buildExitCode)" }
 Write-DeckleWorkflowResult -Output $WorkflowOutput -Message 'Build succeeded'

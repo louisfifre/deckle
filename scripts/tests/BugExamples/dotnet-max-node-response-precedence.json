@@ -9,11 +9,11 @@
   },
   "symptom": "A Deckle build started sixteen MSBuild worker nodes and could fail with MSB4166 even though Directory.Build.rsp requested one node.",
   "cause": "The dotnet CLI appended its default maxCpuCount switch after Directory.Build.rsp was evaluated, so the later command-line value replaced the response-file limit.",
-  "violatedInvariant": "Every Deckle command-line build uses one low-priority MSBuild node and leaves no reusable MSBuild or Roslyn server.",
+  "violatedInvariant": "Every Deckle command-line build uses at most four low-priority MSBuild nodes and leaves no reusable MSBuild node behind; the Roslyn compiler server may stay for its ten-minute idle timeout.",
   "contract": {
     "must": [
-      "Pass /m:1 explicitly to every dotnet build or publish invocation.",
-      "Keep low priority, disabled node reuse, and disabled Roslyn shared compilation in Directory.Build.rsp."
+      "Pass /m:4 explicitly to every dotnet build or publish invocation (measured 2026-10-14: four nodes are the knee, eight gain nothing).",
+      "Keep low priority and disabled node reuse in Directory.Build.rsp; Roslyn shared compilation stays enabled, it halves a full rebuild and its server exits by itself after ten idle minutes."
     ],
     "mustNot": [
       "Rely on Directory.Build.rsp to override the dotnet CLI maximum node count."
