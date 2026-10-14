@@ -13,7 +13,8 @@
                              IsResetEnabled="True"
                              ResetRequested="ResetSection_Click">
         <controls:SettingsCard x:Uid="LlmActiveProfileCard"
-                               Tag="LlmActiveProfileCard">
+                               Tag="LlmActiveProfileCard"
+                               catalog:SettingsDescriptions.Toggled="True">
             <ComboBox x:Name="ActiveProfileCombo"
                       MinWidth="200"
                       SelectionChanged="ActiveProfileCombo_SelectionChanged" />

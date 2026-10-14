@@ -12,7 +12,8 @@
                      Severity="Error"
                      IsOpen="False"
                      IsClosable="True"
-                     Margin="0,0,0,4" />
+                     Margin="0,0,0,4"
+                     catalog:InfoBarLayout.CollapseWhenClosed="True" />
 
             <!-- Dynamic model cards are inserted here by code-behind -->
             <StackPanel x:Name="ModelsContainer"

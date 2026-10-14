@@ -68,7 +68,8 @@
                          x:Uid="WhisperSetupInfoBar"
                          IsClosable="False"
                          IsOpen="False"
-                         Margin="0,0,0,8">
+                         Margin="0,0,0,8"
+                         catalog:InfoBarLayout.CollapseWhenClosed="True">
                     <InfoBar.ActionButton>
                         <Button x:Uid="WhisperSetupButton"
                                 Click="OnSetupClick" />
@@ -89,11 +90,12 @@
 
                 <!-- ── Transcription ───────────────────────────────────────── -->
                 <!--
-                    Order : Language → Initial prompt → GPU acceleration →
-                    Whisper model. Model goes last because (a) it requires
-                    a restart and (b) it owns the storage location for
-                    downloaded weights, surfaced as an inline child of the
-                    SettingsExpander rather than a separate "Storage" section.
+                    Order : Initial prompt → Language → GPU acceleration →
+                    Whisper model → Models directory. The initial prompt leads
+                    because it is the section's only expander, and a card with
+                    a chevron sits above the plain cards. Model and its models
+                    directory close the section because the model requires a
+                    restart and the directory is where its weights are stored.
                     No section reset: Model / Language / InitialPrompt are
                     bespoke cards with per-card resets, and GPU / models
                     directory sit in two separate composers, so no single
@@ -102,9 +104,33 @@
                 <catalog:SettingsSection x:Uid="WhisperPageModelEngineSection">
                 <StackPanel Spacing="{StaticResource SettingsCardSpacing}">
 
+                <controls:SettingsExpander x:Name="InitialPromptCard"
+                                           x:Uid="WhisperInitialPromptCard"
+                                           Tag="WhisperInitialPromptCard"
+                                           catalog:SettingsDescriptions.Toggled="True">
+                    <Button x:Name="InitialPromptReset"
+                            Style="{StaticResource ResetButtonStyle}"
+                            Click="InitialPromptReset_Click">
+                        <FontIcon Glyph="{StaticResource Icon.Reset}" FontSize="14" />
+                    </Button>
+                    <controls:SettingsExpander.Items>
+                        <controls:SettingsCard ContentAlignment="Vertical">
+                            <StackPanel Spacing="8">
+                                <TextBox x:Name="InitialPromptBox"
+                                         x:Uid="WhisperInitialPromptBox"
+                                         MinHeight="80"
+                                         AcceptsReturn="True"
+                                         TextWrapping="Wrap"
+                                         Text="{x:Bind ViewModel.InitialPrompt, Mode=TwoWay}" />
+                            </StackPanel>
+                        </controls:SettingsCard>
+                    </controls:SettingsExpander.Items>
+                </controls:SettingsExpander>
+
                 <controls:SettingsCard x:Name="LanguageCard"
                                        x:Uid="WhisperLanguageCard"
-                                       Tag="WhisperLanguageCard">
+                                       Tag="WhisperLanguageCard"
+                                       catalog:SettingsDescriptions.Toggled="True">
                     <StackPanel Orientation="Horizontal" Spacing="4">
                         <ComboBox x:Name="LanguageCombo"
                                   MinWidth="160"
@@ -130,28 +156,6 @@
                     </StackPanel>
                 </controls:SettingsCard>
 
-                <controls:SettingsExpander x:Name="InitialPromptCard"
-                                           x:Uid="WhisperInitialPromptCard"
-                                           Tag="WhisperInitialPromptCard">
-                    <Button x:Name="InitialPromptReset"
-                            Style="{StaticResource ResetButtonStyle}"
-                            Click="InitialPromptReset_Click">
-                        <FontIcon Glyph="{StaticResource Icon.Reset}" FontSize="14" />
-                    </Button>
-                    <controls:SettingsExpander.Items>
-                        <controls:SettingsCard ContentAlignment="Vertical">
-                            <StackPanel Spacing="8">
-                                <TextBox x:Name="InitialPromptBox"
-                                         x:Uid="WhisperInitialPromptBox"
-                                         MinHeight="80"
-                                         AcceptsReturn="True"
-                                         TextWrapping="Wrap"
-                                         Text="{x:Bind ViewModel.InitialPrompt, Mode=TwoWay}" />
-                            </StackPanel>
-                        </controls:SettingsCard>
-                    </controls:SettingsExpander.Items>
-                </controls:SettingsExpander>
-
                 <!-- GPU acceleration — composed. The lone toggle (and its per-card
                      reset) is built by ComposeUseGpuSection() into this host; the VM's
                      UseGpu property is the same one the restart footer watches, so
@@ -168,7 +172,8 @@
                      this expander is now its own composed card below. -->
                 <controls:SettingsCard x:Name="ModelCard"
                                        x:Uid="WhisperModelCard"
-                                       Tag="WhisperModelCard">
+                                       Tag="WhisperModelCard"
+                                       catalog:SettingsDescriptions.Toggled="True">
                     <StackPanel Orientation="Horizontal" Spacing="4">
                         <AutoSuggestBox x:Name="ModelSuggest"
                                         x:Uid="WhisperModelSuggest"

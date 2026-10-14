@@ -45,7 +45,8 @@
                          x:Uid="AmbientNotPairedInfoBar"
                          IsClosable="False"
                          IsOpen="False"
-                         Severity="Warning">
+                         Severity="Warning"
+                         catalog:InfoBarLayout.CollapseWhenClosed="True">
                     <InfoBar.ActionButton>
                         <Button x:Name="ConfigureBridgeButton"
                                 x:Uid="AmbientNotPairedActionButton"
@@ -91,16 +92,6 @@
                 <catalog:SettingsSection x:Uid="AmbientPageConfigSection">
                     <StackPanel Spacing="{StaticResource SettingsCardSpacing}">
 
-                        <!-- bespoke: the options are the displays connected right now,
-                             labelled at runtime (number, resolution, primary); the
-                             composer's choices are fixed .resw keys. -->
-                        <controls:SettingsCard x:Uid="AmbientMonitorCard"
-                                               Tag="AmbientMonitorCard">
-                            <ComboBox x:Name="MonitorCombo"
-                                      MinWidth="280"
-                                      SelectionChanged="MonitorCombo_SelectionChanged" />
-                        </controls:SettingsCard>
-
                         <!-- bespoke: a multi-step pairing flow (discover, pair with the
                              link-button countdown, load rooms, forget behind a
                              confirmation), commands and live status rather than stored
@@ -109,7 +100,8 @@
                              effect everywhere. -->
                         <controls:SettingsExpander x:Uid="HueBridgeExpander"
                                                    x:Name="HueBridgeExpander"
-                                                   Tag="HueBridgeExpander">
+                                                   Tag="HueBridgeExpander"
+                                                   catalog:SettingsDescriptions.Toggled="True">
                             <!-- Header right-side : compact status text + dot. The
                                  expander shows / hides the per-section cards below
                                  on click. -->
@@ -205,6 +197,17 @@
                                 </StackPanel>
                             </controls:SettingsExpander.ItemsFooter>
                         </controls:SettingsExpander>
+
+                        <!-- bespoke: the options are the displays connected right now,
+                             labelled at runtime (number, resolution, primary); the
+                             composer's choices are fixed .resw keys. -->
+                        <controls:SettingsCard x:Uid="AmbientMonitorCard"
+                                               Tag="AmbientMonitorCard"
+                                               catalog:SettingsDescriptions.Toggled="True">
+                            <ComboBox x:Name="MonitorCombo"
+                                      MinWidth="280"
+                                      SelectionChanged="MonitorCombo_SelectionChanged" />
+                        </controls:SettingsCard>
                     </StackPanel>
                 </catalog:SettingsSection>
             </StackPanel>

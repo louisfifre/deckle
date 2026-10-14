@@ -41,7 +41,8 @@
 
                         <controls:SettingsCard x:Name="AudioInputCard"
                                                x:Uid="GeneralMicrophoneCard"
-                                               Tag="GeneralMicrophoneCard">
+                                               Tag="GeneralMicrophoneCard"
+                                               catalog:SettingsDescriptions.Toggled="True">
                             <ComboBox x:Name="AudioInputCombo"
                                       MinWidth="240"
                                       SelectionChanged="AudioInputCombo_SelectionChanged" />
@@ -63,7 +64,8 @@
                              nothing is switched on for them. -->
                         <controls:SettingsCard x:Name="MicCheckCard"
                                                x:Uid="RecordingPageMicCheckCard"
-                                               Tag="RecordingPageMicCheckCard">
+                                               Tag="RecordingPageMicCheckCard"
+                                               catalog:SettingsDescriptions.Toggled="True">
                             <Button x:Uid="RecordingPageMicCheckButton"
                                     MinWidth="120"
                                     Command="{x:Bind ViewModel.MeasureMicCommand}" />
@@ -72,7 +74,8 @@
                         <InfoBar x:Uid="RecordingPageMicCheckListening"
                                  IsClosable="False"
                                  Severity="Informational"
-                                 IsOpen="{x:Bind ViewModel.IsMeasuringMic, Mode=OneWay}">
+                                 IsOpen="{x:Bind ViewModel.IsMeasuringMic, Mode=OneWay}"
+                                 catalog:InfoBarLayout.CollapseWhenClosed="True">
                             <InfoBar.Content>
                                 <ProgressRing IsActive="True" Width="20" Height="20"
                                               HorizontalAlignment="Left" Margin="0,0,0,12" />
@@ -82,25 +85,30 @@
                         <InfoBar x:Uid="RecordingPageMicAdviceRecommended"
                                  IsClosable="False" Severity="Success"
                                  IsOpen="{x:Bind ViewModel.AdviceRecommended, Mode=OneWay}"
-                                 Message="{x:Bind ViewModel.MicResultDetail, Mode=OneWay}" />
+                                 Message="{x:Bind ViewModel.MicResultDetail, Mode=OneWay}"
+                                 catalog:InfoBarLayout.CollapseWhenClosed="True" />
                         <InfoBar x:Uid="RecordingPageMicAdviceMarginal"
                                  IsClosable="False" Severity="Warning"
                                  IsOpen="{x:Bind ViewModel.AdviceMarginal, Mode=OneWay}"
-                                 Message="{x:Bind ViewModel.MicResultDetail, Mode=OneWay}" />
+                                 Message="{x:Bind ViewModel.MicResultDetail, Mode=OneWay}"
+                                 catalog:InfoBarLayout.CollapseWhenClosed="True" />
                         <InfoBar x:Uid="RecordingPageMicAdviceNotNeeded"
                                  IsClosable="False" Severity="Informational"
                                  IsOpen="{x:Bind ViewModel.AdviceNotNeeded, Mode=OneWay}"
-                                 Message="{x:Bind ViewModel.MicResultDetail, Mode=OneWay}" />
+                                 Message="{x:Bind ViewModel.MicResultDetail, Mode=OneWay}"
+                                 catalog:InfoBarLayout.CollapseWhenClosed="True" />
                         <InfoBar x:Uid="RecordingPageMicAdviceError"
                                  IsClosable="False" Severity="Error"
-                                 IsOpen="{x:Bind ViewModel.AdviceError, Mode=OneWay}" />
+                                 IsOpen="{x:Bind ViewModel.AdviceError, Mode=OneWay}"
+                                 catalog:InfoBarLayout.CollapseWhenClosed="True" />
 
                         <!-- Listening test: one take played back on the default output
                              device in four pre-processing strengths. Nothing saved,
                              nothing transcribed. -->
                         <controls:SettingsCard x:Name="ListeningTestCard"
                                                x:Uid="RecordingPageListeningTestCard"
-                                               Tag="RecordingPageListeningTestCard">
+                                               Tag="RecordingPageListeningTestCard"
+                                               catalog:SettingsDescriptions.Toggled="True">
                             <Button x:Uid="RecordingPageListeningRecordButton"
                                     MinWidth="120"
                                     Command="{x:Bind ViewModel.RecordListeningTakeCommand}" />
@@ -109,7 +117,8 @@
                         <InfoBar x:Uid="RecordingPageListeningRecording"
                                  IsClosable="False"
                                  Severity="Informational"
-                                 IsOpen="{x:Bind ViewModel.IsRecordingListeningTake, Mode=OneWay}">
+                                 IsOpen="{x:Bind ViewModel.IsRecordingListeningTake, Mode=OneWay}"
+                                 catalog:InfoBarLayout.CollapseWhenClosed="True">
                             <InfoBar.Content>
                                 <ProgressRing IsActive="True" Width="20" Height="20"
                                               HorizontalAlignment="Left" Margin="0,0,0,12" />
@@ -119,6 +128,7 @@
                         <controls:SettingsCard x:Name="ListeningPlaybackCard"
                                                x:Uid="RecordingPageListeningPlaybackCard"
                                                Tag="RecordingPageListeningPlaybackCard"
+                                               catalog:SettingsDescriptions.Toggled="True"
                                                Visibility="{x:Bind ViewModel.HasListeningTake, Mode=OneWay}">
                             <StackPanel Orientation="Horizontal" Spacing="8">
                                 <Button x:Uid="RecordingPageListeningPlayOff"
@@ -139,7 +149,8 @@
                         <InfoBar x:Uid="RecordingPageListeningError"
                                  IsClosable="False"
                                  Severity="Error"
-                                 IsOpen="{x:Bind ViewModel.ListeningTestFailed, Mode=OneWay}" />
+                                 IsOpen="{x:Bind ViewModel.ListeningTestFailed, Mode=OneWay}"
+                                 catalog:InfoBarLayout.CollapseWhenClosed="True" />
                     </StackPanel>
                 </catalog:SettingsSection>
 
