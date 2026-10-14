@@ -235,7 +235,6 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   └── research--taskbar-sans-windhawk--2026-10-08.md  — Recherche vérifiée (2026-10-08) — remplacer Windhawk par un module Deckle pour…
 │   ├── inventaire-exposables.csv
 │   ├── inventaire-exposables.md
-│   ├── settings-design-system.md
 │   └── transcription-audio-chain.md  — How a dictation travels from the hotkey to the pasted text — vocabulary, three…
 ├── logo/
 │   ├── primary.png
@@ -619,6 +618,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── RecordingPage.xaml
 │   │   ├── RecordingPage.xaml.cs
 │   │   ├── RecordingSettingsModule.cs
+│   │   ├── RecordingTelemetryViewModel.cs
 │   │   ├── RecordingViewModel.cs
 │   │   ├── RecordingViewModel.ListeningTest.cs
 │   │   ├── RecordingViewModel.Settings.cs
@@ -731,6 +731,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   ├── AppsEnrolledViewModel.cs
 │   │   │   ├── AutocorrectAppRow.cs
 │   │   │   ├── AutocorrectExcludedWordRow.cs
+│   │   │   ├── AutocorrectTelemetryViewModel.cs
 │   │   │   ├── AutocorrectViewModel.cs
 │   │   │   ├── AutocorrectViewModel.Settings.cs
 │   │   │   ├── DomainLanguageRow.cs
@@ -846,11 +847,15 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   ├── CubicBezier.cs
 │   │   │   ├── CurveEditor.cs
 │   │   │   ├── DefaultValueText.cs
+│   │   │   ├── FolderCardDescription.cs
 │   │   │   ├── GestureHold.cs
 │   │   │   ├── HotkeyChordText.cs
 │   │   │   ├── HotkeyKeyNames.cs
+│   │   │   ├── InfoBarLayout.cs
 │   │   │   ├── IPathControl.cs
 │   │   │   ├── MagnitudeGrain.cs
+│   │   │   ├── PreviewBlock.cs
+│   │   │   ├── Readout.cs
 │   │   │   ├── Setting.cs
 │   │   │   ├── SettingArgs.cs
 │   │   │   ├── SettingDescriptor.cs
@@ -868,9 +873,11 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   ├── HotkeyChord.cs
 │   │   │   └── HotkeyModifiers.cs
 │   │   ├── Themes/
-│   │   │   └── Icons.xaml
+│   │   │   ├── Icons.xaml
+│   │   │   └── SettingsPageHeaderBrushes.xaml
 │   │   ├── ConfirmationService.cs
 │   │   ├── Deckle.Catalog.csproj
+│   │   ├── DiagnosticsRegistry.cs
 │   │   ├── Glyphs.cs
 │   │   ├── Loc.cs
 │   │   ├── SettingSearchEntry.cs
@@ -894,6 +901,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   ├── HudComposition.Painting.cs
 │   │   │   ├── HudComposition.ProcessingStroke.cs
 │   │   │   ├── HudComposition.UtteranceCountdownVisual.cs
+│   │   │   ├── HudMaterial.cs
 │   │   │   ├── ProcessingVariant.cs
 │   │   │   └── UtteranceCountdownConfig.cs
 │   │   ├── Primitives/
@@ -1141,6 +1149,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   ├── TrackpadPage.xaml
 │   │   │   └── TrackpadPage.xaml.cs
 │   │   ├── ViewModels/
+│   │   │   ├── TrackpadTelemetryViewModel.cs
 │   │   │   ├── TrackpadViewModel.cs
 │   │   │   └── TrackpadViewModel.Settings.cs
 │   │   ├── Deckle.Input.Trackpad.csproj
@@ -1421,7 +1430,8 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   ├── CorrectionApplicationEvidence.cs
 │   │   │   ├── CorrectionApplicationFixture.cs
 │   │   │   ├── CorrectionApplicationTrial.cs
-│   │   │   └── TuningModel.cs
+│   │   │   ├── TuningModel.cs
+│   │   │   └── UtteranceCycle.cs
 │   │   ├── Strings/
 │   │   │   └── en-US/
 │   │   │       └── Resources.resw
@@ -1443,9 +1453,10 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   │   └── RichEditCorrectionSurface.cs
 │   │   │   ├── Hud/
 │   │   │   │   ├── HudPage.Expanders.cs
+│   │   │   │   ├── HudPage.Gauge.cs
 │   │   │   │   ├── HudPage.RowFactories.cs
 │   │   │   │   ├── HudPage.SectionState.cs
-│   │   │   │   ├── HudPage.UtteranceCountdown.cs
+│   │   │   │   ├── HudPage.Simulation.cs
 │   │   │   │   ├── HudPage.xaml
 │   │   │   │   └── HudPage.xaml.cs
 │   │   │   ├── Segmentation/
@@ -1493,7 +1504,9 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   ├── GeneralPage.xaml
 │   │   │   ├── GeneralPage.xaml.cs
 │   │   │   ├── HomePage.xaml
-│   │   │   └── HomePage.xaml.cs
+│   │   │   ├── HomePage.xaml.cs
+│   │   │   ├── HotkeysPage.xaml
+│   │   │   └── HotkeysPage.xaml.cs
 │   │   ├── Persistence/
 │   │   │   ├── AppSettings.cs
 │   │   │   ├── SettingsBackupService.cs
@@ -1502,6 +1515,8 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── Strings/
 │   │   │   └── en-US/
 │   │   │       └── Resources.resw
+│   │   ├── Themes/
+│   │   │   └── RailBrushes.xaml
 │   │   ├── ViewModels/
 │   │   │   ├── GeneralViewModel.cs
 │   │   │   └── GeneralViewModel.Settings.cs
@@ -1602,6 +1617,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── ViewModels/
 │   │   │   ├── TaskbarCoverViewModel.cs
 │   │   │   └── TaskbarCoverViewModel.Settings.cs
+│   │   ├── ApproachDistance.cs
 │   │   ├── CoverGeometry.cs
 │   │   ├── CoverSuppression.cs
 │   │   ├── Deckle.Shell.TaskbarCover.csproj
@@ -1687,12 +1703,12 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │       └── Resources.resw
 │   │   ├── ViewModels/
 │   │   │   ├── CutPresetStore.cs
+│   │   │   ├── WhisperTelemetryViewModel.cs
 │   │   │   ├── WhisperViewModel.cs
 │   │   │   ├── WhisperViewModel.DictationExperience.cs
 │   │   │   ├── WhisperViewModel.Engine.cs
 │   │   │   ├── WhisperViewModel.Settings.cs
-│   │   │   ├── WhisperViewModel.Streaming.cs
-│   │   │   └── WhisperViewModel.Telemetry.cs
+│   │   │   └── WhisperViewModel.Streaming.cs
 │   │   ├── Deckle.Transcription.csproj
 │   │   ├── DeckleWhispSource.cs
 │   │   ├── DeckleWhispSource.Decode.cs
@@ -1933,7 +1949,8 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── MagnitudeGrainBugNotes.md
 │   │   ├── MagnitudeGrainIntegerTests.cs
 │   │   ├── MagnitudeGrainTests.cs
-│   │   └── SettingFactoryTests.cs
+│   │   ├── SettingFactoryTests.cs
+│   │   └── SettingsExpanderItemsBugNotes.md
 │   ├── Deckle.Chrono.Tests/
 │   │   ├── ChronoFormatterTests.cs
 │   │   ├── ChronoTimerTests.cs
@@ -2095,7 +2112,8 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── HudTuningBugNotes.md
 │   │   ├── HudTuningSectionsBugNotes.md
 │   │   ├── HudViewModelTests.cs
-│   │   └── TuningModelTests.cs
+│   │   ├── TuningModelTests.cs
+│   │   └── UtteranceCycleTests.cs
 │   ├── Deckle.Presets.Tests/
 │   │   ├── Deckle.Presets.Tests.csproj
 │   │   └── PresetFamilyTests.cs
