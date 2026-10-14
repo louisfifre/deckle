@@ -44,13 +44,24 @@
                                 Spacing="{StaticResource SettingsCardSpacing}" />
                 </catalog:SettingsSection>
 
-                <!-- ── Telemetry ───────────────────────────────────────────── -->
+                <!-- ── Telemetry ─────────────────────────────────────────────
+                     Every dataset Deckle records, in one place: the mouse-wheel
+                     capture, then the datasets each module contributes through
+                     DiagnosticsRegistry (microphone level, dictation latency and
+                     corpus, autocorrect decisions and text, trackpad frames),
+                     then the folder they are written to. -->
                 <catalog:SettingsSection x:Name="TelemetrySection"
                                          x:Uid="DiagnosticsPageTelemetrySection"
                                          HasReset="True"
                                          ResetRequested="ResetTelemetry_Click">
-                    <StackPanel x:Name="TelemetryHost"
-                                Spacing="{StaticResource SettingsCardSpacing}" />
+                    <StackPanel Spacing="{StaticResource SettingsCardSpacing}">
+                        <StackPanel x:Name="TelemetryHost"
+                                    Spacing="{StaticResource SettingsCardSpacing}" />
+                        <StackPanel x:Name="ContributionsHost"
+                                    Spacing="{StaticResource SettingsCardSpacing}" />
+                        <StackPanel x:Name="TelemetryStorageHost"
+                                    Spacing="{StaticResource SettingsCardSpacing}" />
+                    </StackPanel>
                 </catalog:SettingsSection>
 
                 <!-- ── Diagnostic files ──────────────────────────────────────
