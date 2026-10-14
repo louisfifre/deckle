@@ -10,18 +10,18 @@ public static partial class HudComposition
 {
     // ── Digit reveal — a chrono digit as glass onto a clone of the contour ───
     //
-    // Conic → Sat → Hue → Exp → AlphaMask(Arc) → AlphaMask(Glyph): the
+    // Grey ⊕ (Conic → Hue) → AlphaMask(Arc) → AlphaMask(Glyph): the
     // contour's pipeline (Factories.cs) with the digit glyph in place of the
     // rounded-rect silhouette.
     //
-    // Grading is shared: the three Sat/Hue/Exp slots bind to the stroke's
-    // EffectProps, so the digits grey and colour in lock-step with the
-    // contour. Surfaces and rotations are cloned (RevealConeMaterial), placed
-    // at the config apex, sized to cover every host corner from it, and shared
-    // across the six digits so they read one cone in phase.
+    // The material is shared: the mix, hue and grey slots bind to the
+    // stroke's EffectProps, so the digits grey and colour in lock-step with
+    // the contour. Surfaces and rotations are cloned (RevealConeMaterial),
+    // placed at the config apex, sized to cover every host corner from it,
+    // and shared across the six digits so they read one cone in phase.
     //
     // The arc mask is what makes the reveal visible in Transcribing: the
-    // greyscale OKLCh cone is a flat field whose rotation does not show.
+    // grey material is a flat field whose rotation does not show.
     //
     // The glyph mask is the readout TextBlock's own alpha
     // (TextBlock.GetAlphaMask), fed to the graph as its last AlphaMask source,
@@ -72,9 +72,7 @@ public static partial class HudComposition
             if (_disposed) return;
             _disposed = true;
 
-            try { _effectBrush.StopAnimation("Sat.Saturation"); } catch { }
-            try { _effectBrush.StopAnimation("Hue.Angle");      } catch { }
-            try { _effectBrush.StopAnimation("Exp.Exposure");   } catch { }
+            UnbindMaterialMix(_effectBrush);
             try { _conicBrush.StopAnimation("TransformMatrix"); } catch { }
             try { _arcBrush.StopAnimation("TransformMatrix");   } catch { }
 
@@ -110,27 +108,13 @@ public static partial class HudComposition
         BindPlacedRotation(compositor, arcBrush, material.ArcProps,
             negHalf, conicCentreInSpriteSpace, cfg.ArcMinSpeedFraction);
 
-        var saturationEffect = new SaturationEffect
-        {
-            Name       = "Sat",
-            Saturation = cfg.TranscribingSaturationDark,
-            Source     = new CompositionEffectSourceParameter("Conic"),
-        };
-        var hueEffect = new HueRotationEffect
-        {
-            Name   = "Hue",
-            Angle  = cfg.TranscribingHueShiftTurns * MathF.Tau,
-            Source = saturationEffect,
-        };
-        var exposureEffect = new ExposureEffect
-        {
-            Name     = "Exp",
-            Exposure = cfg.TranscribingExposureDark,
-            Source   = hueEffect,
-        };
+        // Seeded at the Transcribing resting values; the bindings below take
+        // over from the first frame.
         var arcMaskedGraph = new AlphaMaskEffect
         {
-            Source    = exposureEffect,
+            Source    = BuildMaterialMix(
+                new CompositionEffectSourceParameter("Conic"),
+                0f, 0f, GreyMaterialColor(cfg.GreyLightnessDark)),
             AlphaMask = new CompositionEffectSourceParameter("Arc"),
         };
         var glyphMaskedGraph = new AlphaMaskEffect
@@ -140,16 +124,13 @@ public static partial class HudComposition
         };
 
         var effectFactory = compositor.CreateEffectFactory(
-            glyphMaskedGraph,
-            new[] { "Sat.Saturation", "Hue.Angle", "Exp.Exposure" });
+            glyphMaskedGraph, MaterialMixAnimableProperties);
         var effectBrush = effectFactory.CreateBrush();
         effectBrush.SetSourceParameter("Conic", conicBrush);
         effectBrush.SetSourceParameter("Arc",   arcBrush);
         effectBrush.SetSourceParameter("Glyph", glyphAlphaMask);
 
-        BindEffectProperty(compositor, effectBrush, "Sat.Saturation", stroke.EffectProps, "Saturation");
-        BindEffectProperty(compositor, effectBrush, "Hue.Angle",      stroke.EffectProps, "HueAngle");
-        BindEffectProperty(compositor, effectBrush, "Exp.Exposure",   stroke.EffectProps, "Exposure");
+        BindMaterialMix(compositor, effectBrush, stroke.EffectProps);
 
         var sprite = compositor.CreateSpriteVisual();
         sprite.Size    = spriteSize;

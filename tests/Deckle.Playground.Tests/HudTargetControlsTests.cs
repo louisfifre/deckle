@@ -50,8 +50,8 @@ public sealed class HudTargetControlsTests
     {
         var expected = new Deckle.Composition.HudComposition.ConicArcStrokeConfig();
         var actual = new TuningModel().ToConfig();
-        Assert.Equal(expected.TranscribingExposureDark, actual.TranscribingExposureDark);
-        Assert.Equal(expected.TranscribingExposureLight, actual.TranscribingExposureLight);
+        Assert.Equal(expected.GreyLightnessDark, actual.GreyLightnessDark);
+        Assert.Equal(expected.GreyLightnessLight, actual.GreyLightnessLight);
         Assert.Equal(expected.HuePeriodSeconds, actual.HuePeriodSeconds);
         Assert.Equal(expected.StrokeThickness, actual.StrokeThickness);
         Assert.Equal(expected.InsetDip, actual.InsetDip);

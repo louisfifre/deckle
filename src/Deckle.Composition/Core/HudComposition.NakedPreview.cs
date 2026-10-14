@@ -108,7 +108,7 @@ public static partial class HudComposition
     // `arcFillColor` is a theme-legible opaque colour for the ArcMask part,
     // which draws the mask directly; Combined reads only its alpha.
     // `freezeHueRotation` pins the cone at HuePhaseTurns, the pose
-    // CreateRecordingStroke takes when RecordingHuePeriodSeconds is 0.
+    // CreateRecordingStroke takes.
     public static NakedPreview CreateNakedMaskPreview(
         Compositor compositor, Vector2 hudSize,
         ConicArcStrokeConfig cfg, NakedMaskPart part,

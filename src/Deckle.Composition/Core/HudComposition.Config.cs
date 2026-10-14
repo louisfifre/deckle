@@ -17,8 +17,8 @@ public static partial class HudComposition
     // ╚════════════════════════════════════════════════════════════════════╝
     // One stroke is created on HUD state entry and kept alive across
     // Transcribing ↔ Rewriting. Per-state differentiation runs LIVE on
-    // the same visual via Composition effects (SaturationEffect,
-    // HueRotationEffect, ExposureEffect on the colour pipeline + Opacity
+    // the same visual via Composition effects (the grey ↔ colour mix,
+    // HueRotationEffect and the grey colour on the effect graph + Opacity
     // on the visual). ProcessingStroke.ApplyVariant blends toward the
     // target values over BlendSeconds — no surface rebuild, no GC, no lag.
     //
@@ -34,9 +34,9 @@ public static partial class HudComposition
     //   1. "Baseline palette / rotations" — paint-time config, applies to
     //      all variants unless overridden (OklchLightness, HueRange,
     //      ConicSpan, ArcPeriod…).
-    //   2. Runtime variants (Rewriting* / Transcribing* / Recording*) —
-    //      the live knobs animated by ApplyVariant. Edit these to shape
-    //      each state's look.
+    //   2. Runtime variants (Rewriting* / Transcribing* / Recording*) and
+    //      the grey material (GreyLightness*) — the live values ApplyVariant
+    //      animates. Edit these to shape each state's look.
     //   3. Recording paint-time overrides (RecordingConic* /
     //      RecordingArcPhaseTurns / RecordingArcMirror) — consumed by
     //      CreateRecordingStroke to carve the frozen-rotation silhouette.
@@ -98,20 +98,26 @@ public static partial class HudComposition
     //                    StartRotation header for the closed-form
     //                    ω_min / ω_max expressions.
     //
+    // Two materials, one stroke. The masks sculpt whichever material the
+    // variant shows: Rewriting shows the colour wheel above, Transcribing
+    // and Recording show a flat grey. The grey is not the wheel desaturated
+    // — that route (SaturationEffect then ExposureEffect, until 2026-10-14)
+    // made the grey depend on the wheel's lightness and on an exposure
+    // bias per theme, two detours for one value the maintainer wanted to
+    // set directly: white on dark, black on light, with the full range of
+    // greys in between.
+    //   GreyLightnessDark / Light  OKLab lightness of the grey material per
+    //                  theme. 1 = white, 0 = black; the grey is the one
+    //                  OKLCh gives at that L and chroma 0 (GreyMaterialColor).
+    //
     // Runtime variant knobs (live properties on the SINGLE kept-alive
-    // stroke — SaturationEffect, HueRotationEffect, ExposureEffect on the
-    // colour pipeline, plus SpriteVisual.Opacity — animated by
+    // stroke — the material mix, the hue rotation and the grey colour on
+    // the effect graph, plus SpriteVisual.Opacity — animated by
     // ApplyVariant. Switching variants is a property animation on the
     // same GPU resources — no surface rebuild, no GC, no lag):
-    //   Saturation     multiplier on the baked conic. 0 = greyscale,
-    //                  1 = baseline colour. Combines with OklchChroma.
     //   HueShiftTurns  runtime rotation of the colour wheel.
     //                  0 = no shift, 0.5 = red↔cyan swap, 1 = no change.
-    //                  Negatives shift the other way.
-    //   Exposure       EV stops. 0 = no change, +1 ≈ 2× brighter,
-    //                  -1 ≈ half. Typical range [-2, +2]. Split
-    //                  Dark / Light for Transcribing so the greyscale
-    //                  stays readable against both substrates.
+    //                  Negatives shift the other way. Colour only.
     //   Opacity        SpriteVisual.Opacity in [0..1]. Dims the whole
     //                  stroke including the silhouette; 0.6-0.8 reads
     //                  as a subtle calm variant.
@@ -146,14 +152,20 @@ public static partial class HudComposition
 
         // ── Colour palette (paint-time, baked once) ──────────────────────
         // OKLCh replaces HSV so the baked conic wheel has perceptually
-        // uniform luminance across hues — critical for the
-        // Saturation=0 greyscale variants, which otherwise inherit
-        // HSV's top/bottom brightness asymmetry as a grey gradient.
+        // uniform luminance across hues: a full-saturation HSV rainbow
+        // reads with yellow far brighter than blue.
         public float  OklchLightness     { get; init; } = 0.75f;
         public float  OklchChroma        { get; init; } = 0.3f;
         public float  HueStart           { get; init; } = 0f;
         public float  HueRange           { get; init; } = 1f;
         public int    WedgeCount         { get; init; } = 360;
+
+        // ── Grey material (Transcribing and Recording) ───────────────────
+        // One flat grey per theme, see the Lexicon. Shared by the two
+        // black-and-white variants: they are the same material in two
+        // poses, so one knob moves both.
+        public float  GreyLightnessDark  { get; init; } = 1f;
+        public float  GreyLightnessLight { get; init; } = 0f;
 
         // ── Hue rotation — spins the conic under the fixed arc mask,
         //    so the colour at the arc head walks the wheel over time ─────
@@ -223,11 +235,9 @@ public static partial class HudComposition
         // ── Clone-cone palette — the reveal's OWN OKLCh lightness/chroma, decoupled
         //    from the contour's (OklchLightness/Chroma) so the swept digits can be
         //    pushed brighter / more chromatic for "peps" without touching the
-        //    contour. This is the peps knob: ExposureEffect caps at +2 EV — too low
-        //    for the lift the grey-on-Tertiary sweep needs — so the lift lives in the
-        //    baked surface instead. Lightness above the contour's 0.75 reads as a
-        //    brighter sweep in Transcribing (greyscale); chroma feeds the Rewriting
-        //    colour. Painted into the clone surface by CloneSurfaceConfig. ─────────
+        //    contour. Colour only, so Rewriting: in Transcribing the reveal shows
+        //    the grey material, the same as the contour's. Painted into the clone
+        //    surface by CloneSurfaceConfig. ─────────────────────────────────────
         public float  CloneOklchLightness   { get; init; } = 0.9f;
         public float  CloneOklchChroma      { get; init; } = 0.3f;
 
@@ -239,38 +249,25 @@ public static partial class HudComposition
         //    identical to the contour until you tune the speeds apart. The
         //    reveal is a DOUBLE-comet (conic ⊗ arc mask) like the visible
         //    contour, NOT the naked cone — critical in Transcribing, where the
-        //    greyscale (luminance-uniform OKLCh) cone shows no motion on its
-        //    own and only the swept comet SHAPE reads. ─────────────────────
+        //    flat grey material shows no motion on its own and only the swept
+        //    comet SHAPE reads. ────────────────────────────────────────────
         public double CloneHuePeriodSeconds { get; init; } = 7.0;
         public float  CloneHueDirection     { get; init; } = -1f;
         public double CloneArcPeriodSeconds { get; init; } = 4.0;
         public float  CloneArcDirection     { get; init; } = -1f;
 
-        // ── Rewriting variant — target values for the live effect
-        //    pipeline. Baseline neutrals leave the baked palette alone ──
-        public float  RewritingSaturation       { get; init; } = 1f;
+        // ── Rewriting variant — the colour wheel, at the palette's own
+        //    lightness and chroma ──────────────────────────────────────────
         public float  RewritingHueShiftTurns    { get; init; } = 0f;
-        public float  RewritingExposure         { get; init; } = 0f;
         public float  RewritingOpacity          { get; init; } = 1f;
         public double RewritingBlendSeconds     { get; init; } = 2;
 
-        // ── Transcribing variant — greyscale (Saturation 0) by default.
-        //    Saturation + Exposure are split Dark/Light because even with
-        //    OKLCh's uniform-luminance baseline, the greyscale target
-        //    still depends on the substrate (light on dark / dark on
-        //    light) — exposure biases the baked L=0.75 neutral up or
-        //    down to read against each theme. HueShift/Opacity stay
-        //    unified — widen later if per-theme control is needed ───────
-        public float  TranscribingSaturationDark  { get; init; } = 0f;
-        public float  TranscribingSaturationLight { get; init; } = 0f;
-        public float  TranscribingHueShiftTurns   { get; init; } = 0f;
-        public float  TranscribingExposureDark    { get; init; } = 0.7f;
-        public float  TranscribingExposureLight   { get; init; } = -1.2f;
+        // ── Transcribing variant — the grey material (GreyLightness*) ─────
         public float  TranscribingOpacity         { get; init; } = 1f;
         public double TranscribingBlendSeconds    { get; init; } = 2;
 
         // ── Recording variant — frozen-rotation stroke with RMS-driven
-        //    opacity. Two blocks:
+        //    opacity, on the grey material.
         //
         //    PAINT-TIME (baked into Win2D conic/arc surfaces when
         //    CreateRecordingStroke runs — cannot be animated live; edit
@@ -283,14 +280,10 @@ public static partial class HudComposition
         //        park the lobes at visual 12/6 o'clock (see
         //        CreateRecordingStroke header for the phase math).
         //
-        //    RUNTIME (consumed by ApplyVariant — animated via the same
-        //    live effect pipeline as Transcribing/Rewriting, so a theme
-        //    change mid-recording blends smoothly):
-        //      - Saturation Dark/Light, HueShift, Exposure Dark/Light,
-        //        BlendSeconds.
-        //      - Defaults mirror Transcribing so the out-of-box greyscale
-        //        stays theme-consistent; tune independently if Recording
-        //        needs a distinct palette.
+        //    The cone never spins in Recording: on a flat grey a hue
+        //    rotation shows nothing, so the knob that drove it
+        //    (RecordingHuePeriodSeconds, until 2026-10-14) is gone and the
+        //    countdown poses its cone frozen like the outline.
         //
         //    No RecordingOpacity — UpdateLevel owns that channel from
         //    the mic RMS stream. ApplyVariant(Recording) deliberately
@@ -301,22 +294,14 @@ public static partial class HudComposition
         public float  RecordingConicFadeCurve      { get; init; } = 2f;
         public bool   RecordingArcMirror           { get; init; } = true;
         public float  RecordingArcPhaseTurns       { get; init; } = 0f;
-        public float  RecordingSaturationDark      { get; init; } = 0f;
-        public float  RecordingSaturationLight     { get; init; } = 0f;
-        public float  RecordingHueShiftTurns       { get; init; } = 0f;
-        public float  RecordingExposureDark        { get; init; } = 0.7f;
-        public float  RecordingExposureLight       { get; init; } = -1.2f;
         public double RecordingBlendSeconds        { get; init; } = 2;
-
-        // Recording hue rotation — independent from arc rotation (which is
-        // always frozen in Recording). 0 = hue frozen on HuePhaseTurns
-        // (uniform grey at RecordingSaturation = 0, static tint at > 0).
-        // > 0 = slow hue drift across the silhouette; pair with
-        // RecordingSaturation Dark/Light > 0 for the chromatic effect to be
-        // visible — at Saturation = 0 strict, RGB = (V, V, V) irrespective
-        // of hue, so the hue rotates mathematically but reads identical.
-        // Typical drift period for a calm "chatoiement" effect: 20–30 s.
-        public double RecordingHuePeriodSeconds    { get; init; } = 0;
     }
+
+    // The grey material at an OKLab lightness: chroma 0 on the same
+    // conversion that bakes the wheel, so 1 is white, 0 is black and the
+    // steps in between are perceptually even. Pure, so the Playground and
+    // the tests read the very colour the stroke shows.
+    public static Color GreyMaterialColor(float lightness)
+        => ColorSpace.OklchToRgb(Math.Clamp(lightness, 0f, 1f), 0f, 0f);
 
 }

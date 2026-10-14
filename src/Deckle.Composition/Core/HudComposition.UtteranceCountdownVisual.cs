@@ -14,8 +14,8 @@ public static partial class HudComposition
     private const float CountdownCanonicalRotation = -3f * MathF.PI / 4f;
 
     // A progress-driven mirrored mask over the Recording outline's material:
-    // the same baked cone, posed as the outline poses it (frozen unless
-    // RecordingHuePeriodSeconds spins it), graded as Recording. One mask brush
+    // the same baked cone, posed as the outline poses it (frozen at
+    // HuePhaseTurns), graded as Recording. One mask brush
     // lights two wedges, centred on 12 and 6 o'clock, that widen toward the
     // four corners and fade like the outline's lobes; only its transform reads
     // progress. The gauge is the outline opened by the pause, so the two are
@@ -223,7 +223,7 @@ public static partial class HudComposition
     public static ConicArcStrokeConfig GetUtteranceCountdownMaskConfig(
         ConicArcStrokeConfig config)
     {
-        var recording = BuildRecordingPaintConfig(config, out _);
+        var recording = BuildRecordingPaintConfig(config);
         float sourceSpan = recording.ConicSpanTurns;
         float scale = sourceSpan > 0f ? CountdownCanonicalSpanTurns / sourceSpan : 0f;
         return recording with
@@ -267,7 +267,7 @@ public static partial class HudComposition
 
             // The gauge paints the Recording outline's cone, in the outline's
             // pose, so a pause opens the very material the voice was lighting.
-            var recording = BuildRecordingPaintConfig(config, out bool hueRotates);
+            var recording = BuildRecordingPaintConfig(config);
 
             CompositionBrush materialSource;
             if (maskOnly)
@@ -281,30 +281,15 @@ public static partial class HudComposition
                 var conic = visual.Own(PaintConicSurface(device, graphics, square, recording));
                 var conicBrush = visual.Own(compositor.CreateSurfaceBrush(conic));
                 conicBrush.Stretch = CompositionStretch.None;
-                if (hueRotates)
-                {
-                    rotationProps = StartRotation(
-                        compositor, conicBrush, centre,
-                        recording.HuePeriodSeconds, recording.HueDirection,
-                        recording.HuePhaseTurns, recording.HueEaseP1X, recording.HueEaseP1Y,
-                        recording.HueEaseP2X, recording.HueEaseP2Y,
-                        recording.HueMinSpeedFraction,
-                        animationsEnabled: animationsEnabled);
-                    visual.SetRotationProps(rotationProps, conicBrush);
-                }
-                else
-                {
-                    // Frozen at the outline's phase: the one-shot pose
-                    // CreateConicArcStroke bakes under freezeHueRotation. A
-                    // spinning cone is wrong here even at Saturation 0 — the
-                    // clipped OKLCh wheel desaturates to unequal greys (see
-                    // BuildRecordingPaintConfig) and its dark band would sweep
-                    // through the lit wedges.
-                    conicBrush.TransformMatrix =
-                        Matrix3x2.CreateTranslation(-centre) *
-                        Matrix3x2.CreateRotation(MathF.Tau * recording.HuePhaseTurns) *
-                        Matrix3x2.CreateTranslation(centre);
-                }
+                // Frozen at the outline's phase: the one-shot pose
+                // CreateConicArcStroke bakes under freezeHueRotation. The
+                // Recording grading shows the flat grey, so the cone's
+                // orientation is invisible; it is kept for the day the
+                // gauge shows the colour.
+                conicBrush.TransformMatrix =
+                    Matrix3x2.CreateTranslation(-centre) *
+                    Matrix3x2.CreateRotation(MathF.Tau * recording.HuePhaseTurns) *
+                    Matrix3x2.CreateTranslation(centre);
 
                 using var gradingFactory = compositor.CreateEffectFactory(
                     BuildVariantGrading(

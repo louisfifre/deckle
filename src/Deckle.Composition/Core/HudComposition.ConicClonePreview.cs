@@ -160,49 +160,18 @@ public static partial class HudComposition
             conicSurface, arcSurface, hueRotationProps, arcRotationProps);
     }
 
-    // The contour's Saturation → Hue → Exposure chain, seeded at a variant's
-    // resting values. Static: previews do not blend between states.
+    // The contour's material mix, frozen at a variant's resting values (the
+    // ones ApplyVariant animates toward). Static: previews do not blend
+    // between states.
     private static IGraphicsEffect BuildVariantGrading(
         IGraphicsEffectSource conicSource,
         ConicArcStrokeConfig cfg, ProcessingVariant variant, bool isDark)
     {
-        float sat, hueTurns, exposure;
-        switch (variant)
-        {
-            case ProcessingVariant.Rewriting:
-                sat      = cfg.RewritingSaturation;
-                hueTurns = cfg.RewritingHueShiftTurns;
-                exposure = cfg.RewritingExposure;
-                break;
-            case ProcessingVariant.Recording:
-                sat      = isDark ? cfg.RecordingSaturationDark : cfg.RecordingSaturationLight;
-                hueTurns = cfg.RecordingHueShiftTurns;
-                exposure = isDark ? cfg.RecordingExposureDark   : cfg.RecordingExposureLight;
-                break;
-            default: // Transcribing — greyscale baseline
-                sat      = isDark ? cfg.TranscribingSaturationDark : cfg.TranscribingSaturationLight;
-                hueTurns = cfg.TranscribingHueShiftTurns;
-                exposure = isDark ? cfg.TranscribingExposureDark   : cfg.TranscribingExposureLight;
-                break;
-        }
-
-        var saturationEffect = new SaturationEffect
-        {
-            Name       = "Sat",
-            Saturation = sat,
-            Source     = conicSource,
-        };
-        var hueEffect = new HueRotationEffect
-        {
-            Name   = "Hue",
-            Angle  = hueTurns * MathF.Tau,
-            Source = saturationEffect,
-        };
-        return new ExposureEffect
-        {
-            Name     = "Exp",
-            Exposure = exposure,
-            Source   = hueEffect,
-        };
+        bool colour = variant == ProcessingVariant.Rewriting;
+        return BuildMaterialMix(
+            conicSource,
+            mix: colour ? 1f : 0f,
+            hueShiftTurns: colour ? cfg.RewritingHueShiftTurns : 0f,
+            GreyMaterialColor(isDark ? cfg.GreyLightnessDark : cfg.GreyLightnessLight));
     }
 }

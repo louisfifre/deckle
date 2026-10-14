@@ -47,12 +47,12 @@ public sealed partial class HudPage
         if (ViewModel.CurrentTarget == HudTarget.CountdownMaterial)
         {
             // The cone the gauge samples: the Recording outline's, in its pose.
-            var recording = HudComposition.BuildRecordingPaintConfig(material, out bool hueRotates);
+            var recording = HudComposition.BuildRecordingPaintConfig(material);
             _nakedPreview = HudComposition.CreateNakedMaskPreview(
                 compositor, NakedHudSize, recording, HudComposition.NakedMaskPart.Conic,
                 isDark ? Microsoft.UI.Colors.White : Microsoft.UI.Colors.Black,
                 ProcessingVariant.Recording, isDark, animations,
-                freezeHueRotation: !hueRotates);
+                freezeHueRotation: true);
             float inset = (NakedHostDim - _nakedPreview.Container.Size.X) / 2f;
             _nakedPreview.Container.Offset = new Vector3(inset, inset, 0);
             ElementCompositionPreview.SetElementChildVisual(NakedPreviewHost, _nakedPreview.Container);

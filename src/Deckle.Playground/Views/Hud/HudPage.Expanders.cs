@@ -10,10 +10,9 @@ namespace Deckle.Playground;
 // defaults.
 //
 // Step-frequency convention:
-//   fractional [0..1, ease Y, saturation/opacity/hue]   → 0.05
+//   fractional [0..1, ease Y, lightness/opacity/hue]    → 0.05
 //   period seconds [0..60, 0.5..30]                     → 0.5
 //   short period (fade curve)                           → 0.1
-//   exposure [-2..2]                                    → 0.1
 //   blend seconds [0..5]                                → 0.1
 //   sim RMS values [0..0.3]                             → 0.001
 //   WedgeCount (int)                                    → 1
@@ -37,9 +36,15 @@ public sealed partial class HudPage
         RequestRebuild();
     }
 
+    // Two materials: the OKLCh wheel Rewriting shows and the flat grey
+    // Transcribing and Recording show. The grey rows read against the
+    // Playground's current theme, so one of the two is visible at a time.
     private void AddPaletteExpander()
     {
         var stack = NewTuningSection("Palette (OKLCh)", ResetPalette);
+        stack.Children.Add(TuningHelp(
+            "Lightness, chroma and hue paint the colour wheel of Rewriting. " +
+            "The grey lightness paints the flat material of Transcribing and Recording, one per theme."));
         AddFloatRow(stack, "OklchLightness", 0, 1, 0.05, _tuning.OklchLightness,
             v => _tuning.OklchLightness = (float)v, rebuild: true);
         AddFloatRow(stack, "OklchChroma", 0, 0.4, 0.05, _tuning.OklchChroma,
@@ -50,16 +55,22 @@ public sealed partial class HudPage
             v => _tuning.HueRange = (float)v, rebuild: true);
         AddIntRow(stack, "WedgeCount", 16, 720, _tuning.WedgeCount,
             v => _tuning.WedgeCount = v, rebuild: true);
+        AddFloatRow(stack, "GreyLightnessDark", 0, 1, 0.05, _tuning.GreyLightnessDark,
+            v => _tuning.GreyLightnessDark = (float)v, rebuild: true);
+        AddFloatRow(stack, "GreyLightnessLight", 0, 1, 0.05, _tuning.GreyLightnessLight,
+            v => _tuning.GreyLightnessLight = (float)v, rebuild: true);
     }
 
     private void ResetPalette()
     {
         var d = new TuningModel();
-        _tuning.OklchLightness = d.OklchLightness;
-        _tuning.OklchChroma    = d.OklchChroma;
-        _tuning.HueStart       = d.HueStart;
-        _tuning.HueRange       = d.HueRange;
-        _tuning.WedgeCount     = d.WedgeCount;
+        _tuning.OklchLightness     = d.OklchLightness;
+        _tuning.OklchChroma        = d.OklchChroma;
+        _tuning.HueStart           = d.HueStart;
+        _tuning.HueRange           = d.HueRange;
+        _tuning.WedgeCount         = d.WedgeCount;
+        _tuning.GreyLightnessDark  = d.GreyLightnessDark;
+        _tuning.GreyLightnessLight = d.GreyLightnessLight;
         RebuildTuningPanel();
     }
 
@@ -158,7 +169,7 @@ public sealed partial class HudPage
         var stack = NewTuningSection("Recording", ResetRecording);
         if (ViewModel.IsCountdownTarget)
             stack.Children.Add(TuningHelp(
-                "The countdown reads the fades, the hue period and the grading. " +
+                "The countdown reads the fades and the grey material. " +
                 "Span, mirror and arc phase change nothing there: the two wedges follow the pause."));
         AddFloatRow(stack, "RecordingConicSpanTurns", 0.05, 1, 0.05, _tuning.RecordingConicSpanTurns,
             v => _tuning.RecordingConicSpanTurns = (float)v, rebuild: true);
@@ -172,19 +183,6 @@ public sealed partial class HudPage
             v => _tuning.RecordingArcMirror = v, rebuild: true);
         AddFloatRow(stack, "RecordingArcPhaseTurns", 0, 1, 0.05, _tuning.RecordingArcPhaseTurns,
             v => _tuning.RecordingArcPhaseTurns = (float)v, rebuild: true);
-        AddFloatRow(stack, "RecordingHuePeriodSeconds", 0, 60, 0.5, _tuning.RecordingHuePeriodSeconds,
-            v => _tuning.RecordingHuePeriodSeconds = v, rebuild: true);
-        AddFloatRow(stack, "RecordingSaturationDark", 0, 1, 0.05, _tuning.RecordingSaturationDark,
-            v => _tuning.RecordingSaturationDark = (float)v, rebuild: true);
-        AddFloatRow(stack, "RecordingSaturationLight", 0, 1, 0.05, _tuning.RecordingSaturationLight,
-            v => _tuning.RecordingSaturationLight = (float)v, rebuild: true);
-        AddFloatRow(stack, "RecordingHueShiftTurns", 0, 1, 0.05, _tuning.RecordingHueShiftTurns,
-            v => _tuning.RecordingHueShiftTurns = (float)v, rebuild: true);
-        // Exposure clamped to D2D1_EXPOSURE spec [-2, +2].
-        AddFloatRow(stack, "RecordingExposureDark", -2, 2, 0.1, _tuning.RecordingExposureDark,
-            v => _tuning.RecordingExposureDark = (float)v, rebuild: true);
-        AddFloatRow(stack, "RecordingExposureLight", -2, 2, 0.1, _tuning.RecordingExposureLight,
-            v => _tuning.RecordingExposureLight = (float)v, rebuild: true);
     }
 
     private void ResetRecording()
@@ -196,28 +194,14 @@ public sealed partial class HudPage
         _tuning.RecordingConicFadeCurve     = d.RecordingConicFadeCurve;
         _tuning.RecordingArcMirror          = d.RecordingArcMirror;
         _tuning.RecordingArcPhaseTurns      = d.RecordingArcPhaseTurns;
-        _tuning.RecordingHuePeriodSeconds   = d.RecordingHuePeriodSeconds;
-        _tuning.RecordingSaturationDark     = d.RecordingSaturationDark;
-        _tuning.RecordingSaturationLight    = d.RecordingSaturationLight;
-        _tuning.RecordingHueShiftTurns      = d.RecordingHueShiftTurns;
-        _tuning.RecordingExposureDark       = d.RecordingExposureDark;
-        _tuning.RecordingExposureLight      = d.RecordingExposureLight;
         RebuildTuningPanel();
     }
 
+    // The grey these two variants show is tuned in the Palette section,
+    // shared with Recording.
     private void AddTranscribingExpander()
     {
         var stack = NewTuningSection("Transcribing", ResetTranscribing);
-        AddFloatRow(stack, "TranscribingSaturationDark", 0, 1, 0.05, _tuning.TranscribingSaturationDark,
-            v => _tuning.TranscribingSaturationDark = (float)v, rebuild: true);
-        AddFloatRow(stack, "TranscribingSaturationLight", 0, 1, 0.05, _tuning.TranscribingSaturationLight,
-            v => _tuning.TranscribingSaturationLight = (float)v, rebuild: true);
-        AddFloatRow(stack, "TranscribingHueShiftTurns", 0, 1, 0.05, _tuning.TranscribingHueShiftTurns,
-            v => _tuning.TranscribingHueShiftTurns = (float)v, rebuild: true);
-        AddFloatRow(stack, "TranscribingExposureDark", -2, 2, 0.1, _tuning.TranscribingExposureDark,
-            v => _tuning.TranscribingExposureDark = (float)v, rebuild: true);
-        AddFloatRow(stack, "TranscribingExposureLight", -2, 2, 0.1, _tuning.TranscribingExposureLight,
-            v => _tuning.TranscribingExposureLight = (float)v, rebuild: true);
         AddFloatRow(stack, "TranscribingOpacity", 0, 1, 0.05, _tuning.TranscribingOpacity,
             v => _tuning.TranscribingOpacity = (float)v, rebuild: true);
     }
@@ -225,24 +209,15 @@ public sealed partial class HudPage
     private void ResetTranscribing()
     {
         var d = new TuningModel();
-        _tuning.TranscribingSaturationDark  = d.TranscribingSaturationDark;
-        _tuning.TranscribingSaturationLight = d.TranscribingSaturationLight;
-        _tuning.TranscribingHueShiftTurns   = d.TranscribingHueShiftTurns;
-        _tuning.TranscribingExposureDark    = d.TranscribingExposureDark;
-        _tuning.TranscribingExposureLight   = d.TranscribingExposureLight;
-        _tuning.TranscribingOpacity         = d.TranscribingOpacity;
+        _tuning.TranscribingOpacity = d.TranscribingOpacity;
         RebuildTuningPanel();
     }
 
     private void AddRewritingExpander()
     {
         var stack = NewTuningSection("Rewriting", ResetRewriting);
-        AddFloatRow(stack, "RewritingSaturation", 0, 1, 0.05, _tuning.RewritingSaturation,
-            v => _tuning.RewritingSaturation = (float)v, rebuild: true);
         AddFloatRow(stack, "RewritingHueShiftTurns", 0, 1, 0.05, _tuning.RewritingHueShiftTurns,
             v => _tuning.RewritingHueShiftTurns = (float)v, rebuild: true);
-        AddFloatRow(stack, "RewritingExposure", -2, 2, 0.1, _tuning.RewritingExposure,
-            v => _tuning.RewritingExposure = (float)v, rebuild: true);
         AddFloatRow(stack, "RewritingOpacity", 0, 1, 0.05, _tuning.RewritingOpacity,
             v => _tuning.RewritingOpacity = (float)v, rebuild: true);
     }
@@ -250,9 +225,7 @@ public sealed partial class HudPage
     private void ResetRewriting()
     {
         var d = new TuningModel();
-        _tuning.RewritingSaturation    = d.RewritingSaturation;
         _tuning.RewritingHueShiftTurns = d.RewritingHueShiftTurns;
-        _tuning.RewritingExposure      = d.RewritingExposure;
         _tuning.RewritingOpacity       = d.RewritingOpacity;
         RebuildTuningPanel();
     }
@@ -301,8 +274,8 @@ public sealed partial class HudPage
             _tuning.CloneCentreYFraction * NakedHudSize.Y,
             v => _tuning.CloneCentreYFraction = (float)v / NakedHudSize.Y, rebuild: true);
         // The clone's own OKLCh lightness/chroma, decoupled from the contour's
-        // palette because exposure caps at +2 EV. Lightness brightens the
-        // Transcribing greyscale sweep; chroma feeds the Rewriting colour.
+        // palette. Colour only: in Transcribing the reveal shows the shared
+        // grey material.
         AddFloatRow(stack, "Clone OKLCh lightness", 0, 1, 0.05, _tuning.CloneOklchLightness,
             v => _tuning.CloneOklchLightness = (float)v, rebuild: true);
         AddFloatRow(stack, "Clone OKLCh chroma", 0, 0.4, 0.05, _tuning.CloneOklchChroma,

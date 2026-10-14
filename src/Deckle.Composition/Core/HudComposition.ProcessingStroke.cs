@@ -57,10 +57,10 @@ public static partial class HudComposition
         public ContainerVisual Visual { get; }
         public int CreationId { get; }
 
-        // The live Saturation / HueAngle / Exposure scalars ApplyVariant
-        // animates. The digit reveals bind their own grading to them: a built
-        // effect brush cannot be the source of another effect, so the share
-        // happens at the PropertySet.
+        // The live Mix / HueAngle / Grey entries ApplyVariant animates. The
+        // digit reveals bind their own material mix to them: a built effect
+        // brush cannot be the source of another effect, so the share happens
+        // at the PropertySet.
         public CompositionPropertySet EffectProps => _effectProps;
         public ConicArcStrokeConfig Config => _config;
 
@@ -129,60 +129,37 @@ public static partial class HudComposition
         // value ("this.CurrentValue").
         public void ApplyVariant(ProcessingVariant variant, bool isDark)
         {
-            float sat, hueShiftTurns, exposure, opacity;
-            double blendSeconds;
-
-            switch (variant)
+            // The grey follows the theme on every variant, colour included:
+            // a Rewriting → Transcribing blend then lands on the right grey
+            // instead of passing through the other theme's.
+            var grey = GreyMaterialColor(
+                isDark ? _config.GreyLightnessDark : _config.GreyLightnessLight);
+            var (mix, hueShiftTurns, opacity, blendSeconds) = variant switch
             {
-                case ProcessingVariant.Recording:
-                    sat           = isDark
-                        ? _config.RecordingSaturationDark
-                        : _config.RecordingSaturationLight;
-                    hueShiftTurns = _config.RecordingHueShiftTurns;
-                    exposure      = isDark
-                        ? _config.RecordingExposureDark
-                        : _config.RecordingExposureLight;
-                    opacity       = 0f;                 // unused, skipped below
-                    blendSeconds  = _config.RecordingBlendSeconds;
-                    break;
-                case ProcessingVariant.Transcribing:
-                    sat           = isDark
-                        ? _config.TranscribingSaturationDark
-                        : _config.TranscribingSaturationLight;
-                    hueShiftTurns = _config.TranscribingHueShiftTurns;
-                    exposure      = isDark
-                        ? _config.TranscribingExposureDark
-                        : _config.TranscribingExposureLight;
-                    opacity       = _config.TranscribingOpacity;
-                    blendSeconds  = _config.TranscribingBlendSeconds;
-                    break;
-                case ProcessingVariant.Rewriting:
-                    sat           = _config.RewritingSaturation;
-                    hueShiftTurns = _config.RewritingHueShiftTurns;
-                    exposure      = _config.RewritingExposure;
-                    opacity       = _config.RewritingOpacity;
-                    blendSeconds  = _config.RewritingBlendSeconds;
-                    break;
-                default:
-                    throw new ArgumentOutOfRangeException(nameof(variant));
-            }
+                // Opacity unused: UpdateLevel owns it, skipped below.
+                ProcessingVariant.Recording    => (0f, 0f, 0f, _config.RecordingBlendSeconds),
+                ProcessingVariant.Transcribing => (0f, 0f, _config.TranscribingOpacity, _config.TranscribingBlendSeconds),
+                ProcessingVariant.Rewriting    => (1f, _config.RewritingHueShiftTurns, _config.RewritingOpacity, _config.RewritingBlendSeconds),
+                _ => throw new ArgumentOutOfRangeException(nameof(variant)),
+            };
 
             var duration = TimeSpan.FromSeconds(Math.Max(0.001, blendSeconds));
             float hueAngleRadians = hueShiftTurns * MathF.Tau;
 
             if (!_animationsEnabled)
             {
-                SetScalar(_effectProps, "Saturation", sat);
+                SetScalar(_effectProps, "Mix", mix);
                 SetScalar(_effectProps, "HueAngle", hueAngleRadians);
-                SetScalar(_effectProps, "Exposure", exposure);
+                _effectProps.StopAnimation("Grey");
+                _effectProps.InsertColor("Grey", grey);
                 if (variant != ProcessingVariant.Recording)
                     SetScalar(_strokeVisual, "Opacity", opacity);
                 return;
             }
 
-            AnimateScalar(_effectProps,  "Saturation", sat,             duration);
-            AnimateScalar(_effectProps,  "HueAngle",   hueAngleRadians, duration);
-            AnimateScalar(_effectProps,  "Exposure",   exposure,        duration);
+            AnimateScalar(_effectProps, "Mix",      mix,             duration);
+            AnimateScalar(_effectProps, "HueAngle", hueAngleRadians, duration);
+            AnimateColor (_effectProps, "Grey",     grey,            duration);
 
             // Recording's Opacity belongs to UpdateLevel: a theme change
             // mid-recording must not knock the outline back to silence.
@@ -266,6 +243,19 @@ public static partial class HudComposition
             target.StartAnimation(property, anim);
         }
 
+        // Interpolated in RGB: between two greys every space gives greys,
+        // and RGB is the one Composition evaluates without a conversion.
+        private void AnimateColor(
+            CompositionPropertySet target, string property, Color value, TimeSpan duration)
+        {
+            var anim = _compositor.CreateColorKeyFrameAnimation();
+            anim.InterpolationColorSpace = CompositionColorSpace.Rgb;
+            anim.InsertExpressionKeyFrame(0f, "this.CurrentValue");
+            anim.InsertKeyFrame(1f, value);
+            anim.Duration = duration;
+            target.StartAnimation(property, anim);
+        }
+
         private static void SetScalar(
             CompositionObject target, string property, float value)
         {
@@ -296,17 +286,15 @@ public static partial class HudComposition
             // The three effect-brush expressions reference _effectProps. Sever
             // them first: otherwise a render tick between the disposals
             // evaluates an expression against a freed PropertySet and crashes.
-            try { _effectBrush.StopAnimation("Sat.Saturation"); } catch { }
-            try { _effectBrush.StopAnimation("Hue.Angle");      } catch { }
-            try { _effectBrush.StopAnimation("Exp.Exposure");   } catch { }
+            UnbindMaterialMix(_effectBrush);
 
             try { _conicBrush.StopAnimation("TransformMatrix");   } catch { }
             try { _arcMaskBrush.StopAnimation("TransformMatrix"); } catch { }
             try { _strokeVisual.StopAnimation("Opacity");         } catch { }
 
-            try { _effectProps.StopAnimation("Saturation"); } catch { }
-            try { _effectProps.StopAnimation("HueAngle");   } catch { }
-            try { _effectProps.StopAnimation("Exposure");   } catch { }
+            try { _effectProps.StopAnimation("Mix");      } catch { }
+            try { _effectProps.StopAnimation("HueAngle"); } catch { }
+            try { _effectProps.StopAnimation("Grey");     } catch { }
 
             if (_hueRotationProps is not null)
             {

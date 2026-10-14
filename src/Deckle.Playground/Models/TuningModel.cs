@@ -32,6 +32,10 @@ internal sealed class TuningModel
     public float HueRange       = Defaults.HueRange;
     public int   WedgeCount     = Defaults.WedgeCount;
 
+    // ── Grey material (Transcribing and Recording) ──────────────────────
+    public float GreyLightnessDark  = Defaults.GreyLightnessDark;
+    public float GreyLightnessLight = Defaults.GreyLightnessLight;
+
     // ── Hue rotation ────────────────────────────────────────────────────
     public double HuePeriodSeconds = Defaults.HuePeriodSeconds;
     public float  HueDirection     = Defaults.HueDirection;
@@ -75,18 +79,11 @@ internal sealed class TuningModel
     public float  CloneArcDirection     = Defaults.CloneArcDirection;
 
     // ── Rewriting variant ───────────────────────────────────────────────
-    public float  RewritingSaturation    = Defaults.RewritingSaturation;
     public float  RewritingHueShiftTurns = Defaults.RewritingHueShiftTurns;
-    public float  RewritingExposure      = Defaults.RewritingExposure;
     public float  RewritingOpacity       = Defaults.RewritingOpacity;
     public double RewritingBlendSeconds  = Defaults.RewritingBlendSeconds;
 
     // ── Transcribing variant ────────────────────────────────────────────
-    public float  TranscribingSaturationDark  = Defaults.TranscribingSaturationDark;
-    public float  TranscribingSaturationLight = Defaults.TranscribingSaturationLight;
-    public float  TranscribingHueShiftTurns   = Defaults.TranscribingHueShiftTurns;
-    public float  TranscribingExposureDark    = Defaults.TranscribingExposureDark;
-    public float  TranscribingExposureLight   = Defaults.TranscribingExposureLight;
     public float  TranscribingOpacity         = Defaults.TranscribingOpacity;
     public double TranscribingBlendSeconds    = Defaults.TranscribingBlendSeconds;
 
@@ -99,13 +96,7 @@ internal sealed class TuningModel
     public float RecordingArcPhaseTurns      = Defaults.RecordingArcPhaseTurns;
 
     // ── Recording variant — runtime ─────────────────────────────────────
-    public float  RecordingSaturationDark  = Defaults.RecordingSaturationDark;
-    public float  RecordingSaturationLight = Defaults.RecordingSaturationLight;
-    public float  RecordingHueShiftTurns   = Defaults.RecordingHueShiftTurns;
-    public float  RecordingExposureDark    = Defaults.RecordingExposureDark;
-    public float  RecordingExposureLight   = Defaults.RecordingExposureLight;
     public double RecordingBlendSeconds    = Defaults.RecordingBlendSeconds;
-    public double RecordingHuePeriodSeconds = Defaults.RecordingHuePeriodSeconds;
 
     // Explicit field-by-field, no reflection: a renamed or removed struct
     // property breaks the build, and TuningModelTests catches a field left
@@ -119,6 +110,9 @@ internal sealed class TuningModel
         HueStart          = HueStart,
         HueRange          = HueRange,
         WedgeCount        = WedgeCount,
+
+        GreyLightnessDark  = GreyLightnessDark,
+        GreyLightnessLight = GreyLightnessLight,
 
         HuePeriodSeconds  = HuePeriodSeconds,
         HueDirection      = HueDirection,
@@ -155,17 +149,10 @@ internal sealed class TuningModel
         CloneArcPeriodSeconds = CloneArcPeriodSeconds,
         CloneArcDirection     = CloneArcDirection,
 
-        RewritingSaturation    = RewritingSaturation,
         RewritingHueShiftTurns = RewritingHueShiftTurns,
-        RewritingExposure      = RewritingExposure,
         RewritingOpacity       = RewritingOpacity,
         RewritingBlendSeconds  = RewritingBlendSeconds,
 
-        TranscribingSaturationDark  = TranscribingSaturationDark,
-        TranscribingSaturationLight = TranscribingSaturationLight,
-        TranscribingHueShiftTurns   = TranscribingHueShiftTurns,
-        TranscribingExposureDark    = TranscribingExposureDark,
-        TranscribingExposureLight   = TranscribingExposureLight,
         TranscribingOpacity         = TranscribingOpacity,
         TranscribingBlendSeconds    = TranscribingBlendSeconds,
 
@@ -176,12 +163,6 @@ internal sealed class TuningModel
         RecordingArcMirror          = RecordingArcMirror,
         RecordingArcPhaseTurns      = RecordingArcPhaseTurns,
 
-        RecordingSaturationDark  = RecordingSaturationDark,
-        RecordingSaturationLight = RecordingSaturationLight,
-        RecordingHueShiftTurns   = RecordingHueShiftTurns,
-        RecordingExposureDark    = RecordingExposureDark,
-        RecordingExposureLight   = RecordingExposureLight,
         RecordingBlendSeconds    = RecordingBlendSeconds,
-        RecordingHuePeriodSeconds = RecordingHuePeriodSeconds,
     };
 }
