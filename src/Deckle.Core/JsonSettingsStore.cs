@@ -9,6 +9,13 @@ namespace Deckle.Core;
 // process mutex so two concurrent app instances don't clobber each
 // other's writes.
 //
+// The store also follows its file. A write made by another process, or by
+// hand in an editor, is picked up by a FileSystemWatcher, reloaded once it
+// settles, and announced through Changed, so every surface bound to the
+// store shows the new values without a restart. The store's own writes are
+// recognised by content and ignored, and a file caught half-written stays
+// ignored until the next notification brings a valid one.
+//
 // Logging is delegate-injected (logInfo / logVerbose / logWarning /
 // logError), so this class stays in Deckle.Core (the lowest-level lib,
 // no diagnostics-module dependency). Each caller passes lambdas that
@@ -19,14 +26,22 @@ namespace Deckle.Core;
 // JSON key renames) and rewrite the in-memory POCO after load
 // (postLoadMigration: e.g. fill missing ids on first launch). Either
 // hook reporting a change flags the load as migrated, and the
-// constructor and Reload then flush the cleanup back to disk.
+// constructor, Reload and the watcher then flush the cleanup back to disk.
 //
 // Thread-safety: Current is read under a lock; mutations to the POCO
 // graph itself are the caller's responsibility (the typical pattern is
 // to mutate then call Save — the debounce + serialize-under-lock is
-// what keeps the on-disk file consistent).
-public sealed class JsonSettingsStore<T> where T : class, new()
+// what keeps the on-disk file consistent). Changed is raised on a timer
+// or watcher thread, never on the caller's; UI consumers marshal.
+public sealed class JsonSettingsStore<T> : IDisposable where T : class, new()
 {
+    /// <summary>
+    /// How long the watcher waits after the last file notification before
+    /// reading. An editor saves in several steps (truncate, write, close),
+    /// and each one notifies; waiting lets them land as one reload.
+    /// </summary>
+    public static readonly TimeSpan ExternalWriteSettle = TimeSpan.FromMilliseconds(250);
+
     private readonly string _path;
     private readonly string _mutexName;
     private readonly JsonSerializerOptions _jsonOptions;
@@ -39,7 +54,15 @@ public sealed class JsonSettingsStore<T> where T : class, new()
 
     private readonly object _lock = new();
     private readonly System.Threading.Timer _debounceTimer;
+    private readonly System.Threading.Timer _followTimer;
+    private readonly FileSystemWatcher? _watcher;
     private T _current;
+
+    // The file's text as the store last wrote or read it. A notification
+    // whose content matches is the store's own write (or one already seen)
+    // and is not a reload. Content, not timestamps: the atomic temp + Move
+    // write gives the file a time the store never saw.
+    private string? _lastText;
 
     /// <summary>The live in-memory POCO, not a copy.</summary>
     public T Current
@@ -51,7 +74,8 @@ public sealed class JsonSettingsStore<T> where T : class, new()
 
     /// <summary>
     /// Raised after a successful disk write (Save → debounce → Flush, or
-    /// Reload). UI consumers subscribe to refresh bound state.
+    /// Reload) and after a reload triggered by a write from outside the
+    /// store. UI consumers subscribe to refresh bound state.
     /// </summary>
     public event Action? Changed;
 
@@ -81,10 +105,16 @@ public sealed class JsonSettingsStore<T> where T : class, new()
             _ => Flush(), null,
             System.Threading.Timeout.Infinite,
             System.Threading.Timeout.Infinite);
+        _followTimer = new System.Threading.Timer(
+            _ => FollowFile(), null,
+            System.Threading.Timeout.Infinite,
+            System.Threading.Timeout.Infinite);
 
         // Rewrite a migrated file now, so the obsolete shape is gone without
         // waiting for the user to change a setting.
         if (migrated) Flush();
+
+        _watcher = StartWatching();
     }
 
     /// <summary>
@@ -102,27 +132,20 @@ public sealed class JsonSettingsStore<T> where T : class, new()
             {
                 var defaults = new T();
                 _postLoadMigration?.Invoke(defaults);
-                File.WriteAllText(_path, JsonSerializer.Serialize(defaults, _jsonOptions));
+                string text = JsonSerializer.Serialize(defaults, _jsonOptions);
+                File.WriteAllText(_path, text);
+                lock (_lock) _lastText = text;
                 _logInfo?.Invoke("Settings initialized (defaults)");
                 _logVerbose?.Invoke($"load complete | source=defaults | path={_path} | reason=file_missing");
                 return defaults;
             }
 
-            string json = File.ReadAllText(_path);
-
-            if (_preDeserializeMigration is not null)
-            {
-                (json, bool preMigrated) = _preDeserializeMigration(json);
-                if (preMigrated) migrated = true;
-            }
-
-            var parsed = JsonSerializer.Deserialize<T>(json, _jsonOptions) ?? new T();
-
-            if (_postLoadMigration is not null && _postLoadMigration(parsed))
-                migrated = true;
+            string raw = File.ReadAllText(_path);
+            var parsed = Parse(raw, out migrated);
+            lock (_lock) _lastText = raw;
 
             _logInfo?.Invoke(migrated ? "Settings loaded (migrated)" : "Settings loaded");
-            _logVerbose?.Invoke($"load complete | source=disk | path={_path} | bytes={json.Length} | migrated={migrated}");
+            _logVerbose?.Invoke($"load complete | source=disk | path={_path} | bytes={raw.Length} | migrated={migrated}");
             return parsed;
         }
         catch (Exception ex)
@@ -139,6 +162,28 @@ public sealed class JsonSettingsStore<T> where T : class, new()
             _postLoadMigration?.Invoke(fallback);
             return fallback;
         }
+    }
+
+    // Run the file's text through the migration hooks and the serializer.
+    // Throws on invalid JSON; the callers decide what a failure means (Load
+    // falls back to defaults, the watcher waits for the next write).
+    private T Parse(string raw, out bool migrated)
+    {
+        migrated = false;
+        string json = raw;
+
+        if (_preDeserializeMigration is not null)
+        {
+            (json, bool preMigrated) = _preDeserializeMigration(json);
+            if (preMigrated) migrated = true;
+        }
+
+        var parsed = JsonSerializer.Deserialize<T>(json, _jsonOptions) ?? new T();
+
+        if (_postLoadMigration is not null && _postLoadMigration(parsed))
+            migrated = true;
+
+        return parsed;
     }
 
     /// <summary>
@@ -199,6 +244,9 @@ public sealed class JsonSettingsStore<T> where T : class, new()
             lock (_lock)
             {
                 json = JsonSerializer.Serialize(_current, _jsonOptions);
+                // Recorded before the write lands, so the watcher's read of
+                // the finished file matches whatever order the two threads run in.
+                _lastText = json;
             }
 
             // Temp file then Move: a process killed mid-write leaves no
@@ -236,5 +284,112 @@ public sealed class JsonSettingsStore<T> where T : class, new()
         if (migrated) Flush();
         _logInfo?.Invoke("reloaded from disk");
         Changed?.Invoke();
+    }
+
+    // ── Following the file ────────────────────────────────────────────────
+
+    // One watcher per store, hence one per file: the watcher looks at the
+    // file's folder and filters on its name. Created and Renamed matter as
+    // much as Changed, because editors and this store alike replace the
+    // file through a temp name rather than writing it in place.
+    private FileSystemWatcher? StartWatching()
+    {
+        string? folder = System.IO.Path.GetDirectoryName(_path);
+        string name = System.IO.Path.GetFileName(_path);
+        if (string.IsNullOrEmpty(folder) || !Directory.Exists(folder))
+        {
+            _logWarning?.Invoke($"file not followed, folder missing | path={_path}");
+            return null;
+        }
+
+        try
+        {
+            var watcher = new FileSystemWatcher(folder, name)
+            {
+                NotifyFilter = NotifyFilters.LastWrite | NotifyFilters.FileName | NotifyFilters.Size,
+            };
+            watcher.Changed += OnFileNotified;
+            watcher.Created += OnFileNotified;
+            watcher.Renamed += OnFileNotified;
+            watcher.Error += (_, e) =>
+                _logWarning?.Invoke($"file watcher error | path={_path} | error={e.GetException().GetType().Name}");
+            watcher.EnableRaisingEvents = true;
+            return watcher;
+        }
+        catch (Exception ex)
+        {
+            // The store still works without it: writes from outside are then
+            // seen at the next launch, as before.
+            _logWarning?.Invoke($"file not followed | path={_path} | error={ex.GetType().Name}: {ex.Message}");
+            return null;
+        }
+    }
+
+    // Every notification restarts the settle timer; the read happens once
+    // the burst is over.
+    private void OnFileNotified(object sender, FileSystemEventArgs e)
+    {
+        _followTimer.Change(ExternalWriteSettle, System.Threading.Timeout.InfiniteTimeSpan);
+    }
+
+    private void FollowFile()
+    {
+        string raw;
+        try
+        {
+            // A rename away from the name (an editor's temp step) or a
+            // deletion leaves nothing to read; the next notification will.
+            if (!File.Exists(_path)) return;
+            raw = File.ReadAllText(_path);
+        }
+        catch (IOException ex)
+        {
+            // The writer still holds the file; the close that follows notifies again.
+            _logVerbose?.Invoke($"follow deferred, file busy | path={_path} | error={ex.GetType().Name}");
+            return;
+        }
+
+        lock (_lock)
+        {
+            if (raw == _lastText) return;
+        }
+
+        T parsed;
+        bool migrated;
+        try
+        {
+            parsed = Parse(raw, out migrated);
+        }
+        catch (Exception ex)
+        {
+            // Half-written or hand-edited into invalid JSON: keep the current
+            // values and wait. The warning tells the person editing by hand
+            // why nothing moved.
+            _logWarning?.Invoke(
+                $"file changed on disk but could not be read, keeping current values | path={_path} | error={ex.GetType().Name}: {ex.Message}");
+            return;
+        }
+
+        lock (_lock)
+        {
+            _current = parsed;
+            _lastText = raw;
+        }
+
+        _logInfo?.Invoke("Settings reloaded (file changed on disk)");
+        _logVerbose?.Invoke($"follow complete | source=watcher | path={_path} | bytes={raw.Length} | migrated={migrated}");
+        if (migrated) Flush();
+        Changed?.Invoke();
+    }
+
+    public void Dispose()
+    {
+        if (_watcher is not null)
+        {
+            _watcher.EnableRaisingEvents = false;
+            _watcher.Dispose();
+        }
+        _followTimer.Dispose();
+        _debounceTimer.Dispose();
     }
 }
