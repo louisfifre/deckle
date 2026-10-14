@@ -145,7 +145,8 @@ function Get-RecordableCommitCountSinceVersion {
     if ($LASTEXITCODE -ne 0) { throw "git log since version record failed (code $LASTEXITCODE)" }
     $count = 0
     foreach ($subject in $subjects) {
-        if ($subject -cmatch '^(feat|fix|perf|refactor|revert)(?:\([^)]+\))?!?:\s+') { $count++ }
+        # Mirrors the types changelog.ps1 renders; keep both lists in step.
+        if ($subject -cmatch '^(feat|fix|perf|refactor|deprecate|revert)(?:\([^)]+\))?!?:\s+') { $count++ }
     }
     return $count
 }

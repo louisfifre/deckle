@@ -345,6 +345,8 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   ├── repository-portability.json
 │   │   │   └── terminal-cursor-positioning.json
 │   │   ├── commands/
+│   │   │   ├── changelog.tests.ps1
+│   │   │   ├── ChangelogBugNotes.md
 │   │   │   ├── check-script-headers.tests.ps1
 │   │   │   ├── CommitAttributionBugNotes.md
 │   │   │   ├── install-hooks.tests.ps1

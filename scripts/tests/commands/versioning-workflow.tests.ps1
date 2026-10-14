@@ -4,8 +4,8 @@ $CommandDir = Join-Path $ScriptsDir 'commands'
 $LibDir = Join-Path $ScriptsDir 'lib'
 
 function Invoke-Git([string]$Root, [string[]]$Arguments) {
-    & git -C $Root @Arguments *> $null
-    if ($LASTEXITCODE -ne 0) { throw "git $($Arguments -join ' ') failed (code $LASTEXITCODE)" }
+    $output = & git -C $Root @Arguments 2>&1
+    if ($LASTEXITCODE -ne 0) { throw "git $($Arguments -join ' ') failed (code $LASTEXITCODE): $($output -join [Environment]::NewLine)" }
 }
 
 function Add-Commit([string]$Root, [string]$Subject, [string]$Content) {
@@ -26,8 +26,10 @@ $root = Join-Path ([System.IO.Path]::GetTempPath()) "deckle-versioning-$([guid]:
 $null = New-Item -ItemType Directory -Path $root
 try {
     Invoke-Git $root @('init', '-q')
-    Invoke-Git $root @('config', 'user.name', 'Deckle Tests')
-    Invoke-Git $root @('config', 'user.email', 'deckle-tests@example.invalid')
+    # The global commit guard accepts the maintainer's identity alone, in
+    # every repository, fixtures included.
+    Invoke-Git $root @('config', 'user.name', 'Louis')
+    Invoke-Git $root @('config', 'user.email', 'git@louisfifre.com')
 
     Add-Commit $root 'feat: first public capability' 'one'
     Invoke-Git $root @('tag', 'v0.4.0')
