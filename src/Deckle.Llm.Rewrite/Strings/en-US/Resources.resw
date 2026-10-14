@@ -307,21 +307,6 @@
   <data name="LlmProfile_ContextBody.Text" xml:space="preserve">
     <value>Maximum tokens the model considers at once. Larger context uses more memory and is slower.</value>
   </data>
-  <data name="LlmProfile_AdvancedExpander.Header" xml:space="preserve">
-    <value>Advanced parameters</value>
-  </data>
-  <data name="LlmProfile_TopP.Header" xml:space="preserve">
-    <value>Top P</value>
-  </data>
-  <data name="LlmProfile_TopP.PlaceholderText" xml:space="preserve">
-    <value>Default (0.9)</value>
-  </data>
-  <data name="LlmProfile_RepeatPenalty.Header" xml:space="preserve">
-    <value>Repeat penalty</value>
-  </data>
-  <data name="LlmProfile_RepeatPenalty.PlaceholderText" xml:space="preserve">
-    <value>Default (1.1)</value>
-  </data>
   <data name="LlmProfile_RemoveLabel.Text" xml:space="preserve">
     <value>Remove</value>
   </data>
