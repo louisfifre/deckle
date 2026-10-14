@@ -1,26 +1,38 @@
 ---
 name: glossary-deckle
-description: "System-wide Deckle vocabulary — terms that classify across modules and belong to none, today exposables and the Correction / Rewrite boundary. Module vocabularies live next to their code; see GLOSSARY-MAP.md."
+description: "System-wide Deckle vocabulary. It holds the terms that classify across modules and belong to none of them, today the exposable and the Correction / Rewrite boundary. Module vocabularies live next to their code, indexed in GLOSSARY-MAP.md."
 ---
 
-# Deckle — Glossary
+# Deckle, Glossary
 
-System-wide glossary. This file holds only the language that classifies *across* modules — a term owned by one module lives in that module's `GLOSSARY.md`, indexed in [GLOSSARY-MAP.md](GLOSSARY-MAP.md).
+System-wide glossary. This file holds only the language that classifies *across* modules. A term owned by one module lives in that module's `GLOSSARY.md`, indexed in [GLOSSARY-MAP.md](GLOSSARY-MAP.md).
 
-## Settings — the exposable
+## Settings, the exposable
 
 **Exposable** :
-A code value someone could act on — a persisted setting, a hardcoded tuning constant, a default, a Playground memory-only parameter — regardless of whether any UI exposes it today. The settings inventory sweeps exposables across every module; arbitration then decides which become Settings (through the composer), which stay frozen in code, and which belong to the Playground. A *setting* is the narrower, delivered state: an exposable that is persisted and surfaced.
-_Avoid_ : setting (only the persisted, surfaced subset), parameter (too generic — any function argument).
+A value in the code that someone could act on, whether or not an interface shows it today, such as a persisted setting, a tuning constant, a default or a Playground parameter held in memory. A *setting* is the narrower case, an exposable that is persisted and surfaced.
+_Avoid_ : setting (only the persisted, surfaced subset), parameter (too generic, it names any function argument).
 
-## Text operations — correction vs rewrite
+**Setting** :
+In ordinary use, any value a user can change in an application. Deckle keeps the word for an exposable that is persisted and surfaced, and calls the wider family exposables.
 
-Two families of automated text change, told apart by the nature of the change — not by the surface it acts on (voice dictation or typed keyboard, which are orthogonal) nor by the engine behind it. The family decides the risk, and therefore whether the change is allowed to act silently. The perimeter of the *applied edit* is what classifies: a generative model may act as judge among bounded candidates and the change remains a Correction; the moment the applied output is free regeneration, it is a Rewrite — silence is never allowed, whatever computed it.
+**Parameter** :
+In ordinary use, any input that a function or a model receives. It is too generic to name a value someone could act on, which Deckle calls an exposable.
+
+## Text operations, correction vs rewrite
+
+Two families of automated text change, told apart by the nature of the change. The surface it acts on does not decide, whether dictated or typed, and neither does the engine behind it. The family sets the risk, and the risk sets whether the change may act silently. What classifies is the edit actually applied. A generative model may judge between bounded candidates and the change stays a Correction. When the applied text is freely regenerated, it is a Rewrite, and silence is never allowed, whatever produced it.
 
 **Correction** :
-A bounded, in-place edit drawn from a closed set of possible changes — restoring a missing diacritic, dropping a hesitation, fixing punctuation or casing. It repairs what was typed or said and cannot introduce content that was not there, so it carries no meaning-drift risk: it may apply itself silently and is taken back through the correction inlay (see *Correction undo* in `src/Deckle.Autocorrect/GLOSSARY.md`). Today: machine-wide diacritics restoration.
-_Avoid_ : rewrite (which regenerates text — correction only repairs a span), autocorrect (the product/module name, not the operation itself).
+A bounded edit that repairs a span in place, drawn from a closed set of possible changes, such as restoring a diacritic, dropping a hesitation or fixing casing. It cannot add content that was not there, so it may act silently and is taken back through the correction undo, defined in `src/Deckle.Autocorrect/GLOSSARY.md`.
+_Avoid_ : rewrite (regenerates text, a correction only repairs), autocorrect (the module name, not the operation).
 
 **Rewrite** :
-A generative regeneration of a span — a sentence or a paragraph — into new text: removing disfluencies and recomposing, restructuring into paragraphs, regrouping by theme. Because it rewrites the wording, it can drift from the original meaning, so it is offered after the fact (suggested or confirmed) rather than applied silently — until trust is earned. The same operation is meant to serve both finalized dictation and typed text. Every rewrite goes through the rewrite service (`src/Deckle.Llm.Rewrite/GLOSSARY.md`).
+A generative operation that regenerates a span, a sentence or a paragraph, into new text, for example to remove disfluencies, split into paragraphs or regroup by theme. Because it changes the wording, it can drift from the original meaning. It is therefore offered after the fact, suggested or confirmed, rather than applied silently, until trust is earned. The same operation is meant to serve finalized dictation and typed text alike. The rewrite service, defined in `src/Deckle.Llm.Rewrite/GLOSSARY.md`, carries every rewrite.
 _Avoid_ : correction (a bounded repair, not new text), reformulation (Rewrite is the Deckle term).
+
+**Autocorrect** :
+In ordinary use, a feature that fixes typing errors on its own. In Deckle it is the name of the module and of the product feature, while the operation they perform is a correction.
+
+**Reformulation** :
+In ordinary use, saying the same thing in other words. Deckle calls a generated reformulation of a span a rewrite. The plausible reformulation of `src/Deckle.Transcription/GLOSSARY.md` is a different thing, a fidelity defect.
