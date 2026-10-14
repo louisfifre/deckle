@@ -1,11 +1,11 @@
 ---
 name: glossary-deckle-diagnostics
-description: "Observability vocabulary for the Diagnostics family, .Logging and .Telemetry included. It separates admission from view and names the five controls that quiet the log stream, so that none is mistaken for another. Read before touching verbosity, filters, or sinks."
+description: "Observability vocabulary for the Diagnostics family, .Logging and .Telemetry included. It separates admission from view and names the controls, filters, logs and datasets that quiet or split the log stream, so that none is mistaken for another. Read before touching verbosity, filters, or sinks."
 ---
 
 # Deckle.Diagnostics, Glossary
 
-Observability vocabulary shared by `Deckle.Diagnostics`, `Deckle.Diagnostics.Logging` and `Deckle.Diagnostics.Telemetry`. Two controls can make the LogWindow quieter, but they act on opposite sides of the journal boundary. What tells them apart is whether an observation still exists after the control acts.
+Observability vocabulary shared by `Deckle.Diagnostics`, `Deckle.Diagnostics.Logging` and `Deckle.Diagnostics.Telemetry`. Several devices can make the LogWindow quieter, but they act on different sides of the journal boundary. What tells them apart is whether an observation still exists after the device acts. The words follow the kind of device, a control decides admission, a filter narrows what one reader sees, a log is a recorded stream and a dataset is a collection with its own purpose.
 
 ## Admission vs view
 
@@ -14,23 +14,23 @@ A control that decides, per activity and persistently, which observations Deckle
 _Avoid_ : capture control (capture already names audio and screen acquisition), view filter (which never removes an observation).
 
 **Application log** :
-An optional copy on disk of Deckle's admitted operational log stream. It may have its own recording filter. It is not a telemetry dataset.
+A log kept on disk, an optional copy of Deckle's admitted operational stream. It may have its own recording filter. It is not a telemetry dataset.
 _Avoid_ : telemetry (purpose-specific data collection), LogWindow log (the other sink of the same stream).
 
 **Telemetry dataset** :
-A machine-readable data channel with its own purpose and its own explicit consent, such as latency, microphone, corpus or autocorrect-decision data. It lies outside the operational log stream and its verbosity controls.
-_Avoid_ : application log, logs.
+A dataset collected for one purpose, machine-readable and under its own explicit consent, such as latency, microphone, corpus or autocorrect-decision data. It lies outside the operational log stream and its verbosity controls.
+_Avoid_ : application log (the operational stream on disk), logs (too loose).
 
 **View filter** :
-A control that narrows what the LogWindow shows among observations already admitted to the journal, for the life of the process. It changes only what the window shows and never changes or destroys the journalled observations.
-_Avoid_ : verbosity control (which acts before the journals), capture filter.
+A filter on what the LogWindow shows among observations already admitted to the journal, for the life of the process. It changes only what the window shows and never changes or destroys the journalled observations.
+_Avoid_ : verbosity control (which acts before the journals), capture filter (acts on audio or screen capture).
 
 **Recording filter** :
-A control that selects, persistently and for one sink only, which admitted operational observations that sink records. It affects only entries written after it changes.
+A filter on what one sink records among the admitted operational observations, persistent and for that sink only. It affects only entries written after it changes.
 _Avoid_ : view filter (temporary and display-only), verbosity control (prevents the observation from existing).
 
 **View condensation** :
-A control that groups recurring admitted `Verbose` observations into a summary in the LogWindow, reversibly, while every raw observation stays available. It improves reading only. Repetition at a higher level remains a defect of the producer, which the view does not hide.
+A grouping in the LogWindow of recurring admitted `Verbose` observations into one summary, reversible, while every raw observation stays available. It improves reading only. Repetition at a higher level remains a defect of the producer, which the view does not hide.
 _Avoid_ : deduplication (nothing is deleted), verbosity control (nothing is refused admission).
 
 **Capture control** :
