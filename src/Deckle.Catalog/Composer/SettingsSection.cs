@@ -48,13 +48,18 @@ public sealed partial class SettingsSection : UserControl
         };
 
         // The reset wheel in the form every card uses: subtle, 32×32, invisible
-        // at rest. The title row is 32 px tall so the wheel adds no height.
+        // at rest. The title row stays the height of its text line (BodyStrong,
+        // 20 px): the wheel overflows 6 px above and below through a negative
+        // margin instead of stretching the row. A 32 px row with the text at
+        // its bottom put 12 px of air over every section title, which Louis
+        // read as a gap too many against Windows Settings (2026-10-14).
         _reset = new Button
         {
             Style = Application.Current.Resources["SubtleButtonStyle"] as Style,
             Width = 32,
             Height = 32,
             Padding = new Thickness(0),
+            Margin = new Thickness(0, -6, 0, -6),
             VerticalAlignment = VerticalAlignment.Center,
             Opacity = 0,
             Visibility = Visibility.Collapsed,
@@ -64,7 +69,7 @@ public sealed partial class SettingsSection : UserControl
         ToolTipService.SetToolTip(_reset, Loc.Get("SettingsSection_ResetTooltip"));
         _reset.Click += (_, e) => ResetRequested?.Invoke(this, e);
 
-        var titleRow = new Grid { MinHeight = 32 };
+        var titleRow = new Grid();
         titleRow.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
         titleRow.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
         Grid.SetColumn(_title, 0);
