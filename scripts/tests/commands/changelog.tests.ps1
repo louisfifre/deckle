@@ -3,16 +3,18 @@ $ScriptsDir = Split-Path -Parent (Split-Path -Parent $PSScriptRoot)
 $CommandDir = Join-Path $ScriptsDir 'commands'
 
 function Invoke-Git([string]$Root, [string[]]$Arguments) {
-    & git -C $Root @Arguments *> $null
-    if ($LASTEXITCODE -ne 0) { throw "git $($Arguments -join ' ') failed (code $LASTEXITCODE)" }
+    $output = & git -C $Root @Arguments 2>&1
+    if ($LASTEXITCODE -ne 0) { throw "git $($Arguments -join ' ') failed (code $LASTEXITCODE): $($output -join [Environment]::NewLine)" }
 }
 
 function New-FixtureRepo([string]$Name) {
     $root = Join-Path ([System.IO.Path]::GetTempPath()) "deckle-changelog-$Name-$([guid]::NewGuid())"
     $null = New-Item -ItemType Directory -Path $root
     Invoke-Git $root @('init', '-q')
-    Invoke-Git $root @('config', 'user.name', 'Deckle Tests')
-    Invoke-Git $root @('config', 'user.email', 'deckle-tests@example.invalid')
+    # The global commit guard accepts the maintainer's identity alone, in
+    # every repository, fixtures included.
+    Invoke-Git $root @('config', 'user.name', 'Louis')
+    Invoke-Git $root @('config', 'user.email', 'git@louisfifre.com')
     return $root
 }
 
