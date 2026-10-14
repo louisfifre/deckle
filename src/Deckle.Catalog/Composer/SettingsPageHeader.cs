@@ -212,6 +212,12 @@ public sealed partial class SettingsPageHeader : UserControl
     // parents in the secondary colour, the current page in the primary, and a
     // parent lights up to primary under the pointer because it leads somewhere.
     //
+    // A parent segment rests in the item's own Foreground, keyed
+    // BreadcrumbBarForegroundBrush, not in BreadcrumbBarNormalForegroundBrush,
+    // which paints only the chevron (the dictionary's header says where that
+    // was read). Aliasing the Normal key alone left the parent primary while
+    // the hover alias did reach, so hovering changed nothing (2026-10-15).
+    //
     // The overrides are aliases in theme dictionaries (Default, Light,
     // HighContrast), the documented lightweight-styling form, not brushes copied
     // out of Application.Current.Resources: that lookup follows the application
