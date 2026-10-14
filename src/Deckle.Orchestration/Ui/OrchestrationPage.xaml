@@ -90,11 +90,6 @@
                                     Click="OnAddAppClick" />
                             <Button x:Uid="OrchestrationPage_AddRunningButton"
                                     Click="OnAddRunningClick" />
-                            <!-- Disabled while the scan runs: the one transient
-                                 "busy" grey the settings doctrine allows. -->
-                            <Button x:Name="ScanButton"
-                                    x:Uid="OrchestrationPage_ScanButton"
-                                    Click="OnScanClick" />
                         </StackPanel>
 
                         <!-- One inline channel for "already in your list"; closed on
@@ -103,46 +98,6 @@
                                  x:Uid="OrchestrationPage_DuplicateInfo"
                                  Severity="Informational"
                                  IsOpen="False" />
-
-                        <!-- The scan is silent; this line is its only outcome when
-                             nothing was added. Hidden again when the next scan starts. -->
-                        <TextBlock x:Name="NothingNew"
-                                   x:Uid="OrchestrationPage_NothingNew"
-                                   Style="{StaticResource BodyTextBlockStyle}"
-                                   Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                                   TextWrapping="Wrap"
-                                   Margin="0,0,0,8"
-                                   Visibility="Collapsed" />
-
-                        <!-- Folders the scan walks besides Steam. "Add folder…" sits
-                             on the header, as in Windows Settings' excluded-folders
-                             list, so it is reachable without expanding. Tag is the
-                             search index's scroll-to handle. -->
-                        <controls:SettingsExpander x:Name="FoldersExpander"
-                                                   x:Uid="OrchestrationPage_FoldersExpander"
-                                                   Tag="OrchestrationPage_FoldersExpander"
-                                                   ItemsSource="{x:Bind ViewModel.ScanFolders}"
-                                                   Margin="0,0,0,8">
-                            <controls:SettingsExpander.HeaderIcon>
-                                <FontIcon Glyph="{StaticResource Icon.Folder}" />
-                            </controls:SettingsExpander.HeaderIcon>
-
-                            <Button x:Uid="OrchestrationPage_AddFolderButton"
-                                    Click="OnAddFolderClick" />
-
-                            <controls:SettingsExpander.ItemTemplate>
-                                <DataTemplate x:DataType="local:ScanFolderRow">
-                                    <controls:SettingsCard Header="{x:Bind Path}">
-                                        <Button x:Uid="OrchestrationPage_RemoveFolderButton"
-                                                Style="{StaticResource SubtleButtonStyle}"
-                                                Command="{x:Bind RemoveCommand}">
-                                            <FontIcon Glyph="{StaticResource Icon.Delete}"
-                                                      FontSize="16" />
-                                        </Button>
-                                    </controls:SettingsCard>
-                                </DataTemplate>
-                            </controls:SettingsExpander.ItemTemplate>
-                        </controls:SettingsExpander>
 
                         <!-- Trades places with the list from code-behind, off
                              Entries.CollectionChanged. -->
@@ -172,10 +127,10 @@
                                                                Description="{x:Bind Description, Mode=OneWay}"
                                                                ItemsSource="{x:Bind Items}"
                                                                ItemTemplate="{StaticResource EntryItemTemplateSelector}">
-                                        <controls:SettingsExpander.HeaderIcon>
-                                            <FontIcon Glyph="{x:Bind Glyph, Mode=OneWay}" />
-                                        </controls:SettingsExpander.HeaderIcon>
-
+                                        <!-- No header icon, the app/game glyph
+                                             included: the rail carries the page
+                                             icon (2026-10-14), and the kind reads
+                                             in words on the Kind card inside. -->
                                         <StackPanel Orientation="Horizontal"
                                                     Spacing="8"
                                                     VerticalAlignment="Center">
@@ -192,6 +147,69 @@
                                 </DataTemplate>
                             </ItemsControl.ItemTemplate>
                         </ItemsControl>
+
+                    </StackPanel>
+                </catalog:SettingsSection>
+
+                <!-- The scan is a second question from the list above: where Deckle
+                     looks for apps and games, not which ones it knows. It sits after
+                     the list so the list reads first. Tag follows the same rule as
+                     the Apps section (the search entry's LabelKey). -->
+                <catalog:SettingsSection x:Name="ScanSection"
+                                         x:Uid="OrchestrationPageScanSection"
+                                         Tag="OrchestrationPage_Section_Scan">
+                    <StackPanel Spacing="{StaticResource SettingsCardSpacing}">
+
+                        <!-- A section is cards: the command sits in one, as Trackpad's
+                             Repair and General's Rerun setup do. The section caption
+                             already says what a scan adds, so the card has no
+                             description. -->
+                        <controls:SettingsCard x:Uid="OrchestrationPage_ScanCard">
+                            <StackPanel Orientation="Horizontal"
+                                        Spacing="12">
+                                <!-- The scan is silent; this line is its only outcome
+                                     when nothing was added, read as the card's status
+                                     beside the command. Hidden again when the next
+                                     scan starts. -->
+                                <TextBlock x:Name="NothingNew"
+                                           x:Uid="OrchestrationPage_NothingNew"
+                                           Style="{StaticResource BodyTextBlockStyle}"
+                                           Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                           VerticalAlignment="Center"
+                                           Visibility="Collapsed" />
+                                <!-- Disabled while the scan runs: the one transient
+                                     "busy" grey the settings doctrine allows. -->
+                                <Button x:Name="ScanButton"
+                                        x:Uid="OrchestrationPage_ScanButton"
+                                        Click="OnScanClick" />
+                            </StackPanel>
+                        </controls:SettingsCard>
+
+                        <!-- Folders the scan walks besides Steam. "Add folder…" sits
+                             on the header, as in Windows Settings' excluded-folders
+                             list, so it is reachable without expanding. Tag is the
+                             search index's scroll-to handle. No header icon: the rail
+                             carries the page icon. -->
+                        <controls:SettingsExpander x:Name="FoldersExpander"
+                                                   x:Uid="OrchestrationPage_FoldersExpander"
+                                                   Tag="OrchestrationPage_FoldersExpander"
+                                                   ItemsSource="{x:Bind ViewModel.ScanFolders}">
+                            <Button x:Uid="OrchestrationPage_AddFolderButton"
+                                    Click="OnAddFolderClick" />
+
+                            <controls:SettingsExpander.ItemTemplate>
+                                <DataTemplate x:DataType="local:ScanFolderRow">
+                                    <controls:SettingsCard Header="{x:Bind Path}">
+                                        <Button x:Uid="OrchestrationPage_RemoveFolderButton"
+                                                Style="{StaticResource SubtleButtonStyle}"
+                                                Command="{x:Bind RemoveCommand}">
+                                            <FontIcon Glyph="{StaticResource Icon.Delete}"
+                                                      FontSize="16" />
+                                        </Button>
+                                    </controls:SettingsCard>
+                                </DataTemplate>
+                            </controls:SettingsExpander.ItemTemplate>
+                        </controls:SettingsExpander>
 
                     </StackPanel>
                 </catalog:SettingsSection>

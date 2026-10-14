@@ -40,9 +40,6 @@ public sealed partial class AppEntryRow : ObservableObject
     [ObservableProperty]
     public partial int KindIndex { get; set; }
 
-    [ObservableProperty]
-    public partial string Glyph { get; set; } = Glyphs.Window;
-
     // The cards inside the expander: kind, executable, then one per
     // HDR-capable monitor.
     public ObservableCollection<object> Items { get; } = new();
@@ -95,7 +92,6 @@ public sealed partial class AppEntryRow : ObservableObject
             Description = entry.ExecutablePath ?? entry.InstallDirectory;
             Enabled = entry.Enabled;
             KindIndex = (int)entry.Kind;
-            Glyph = GlyphFor(entry.Kind);
             _hdrRules = new Dictionary<string, HdrRule>(entry.Rules.HdrByMonitor, StringComparer.OrdinalIgnoreCase);
             foreach (MonitorHdrRow monitor in Items.OfType<MonitorHdrRow>())
                 monitor.Apply(_hdrRules.GetValueOrDefault(monitor.Device, HdrRule.Leave));
@@ -116,14 +112,10 @@ public sealed partial class AppEntryRow : ObservableObject
     {
         if (value < 0) return;
         var kind = (AppKind)value;
-        Glyph = GlyphFor(kind);
         if (_syncing) return;
         _onKindChanged(this, kind);
     }
 
     [RelayCommand]
     private void Remove() => _onRemoved(this);
-
-    private static string GlyphFor(AppKind kind) =>
-        kind == AppKind.Game ? Glyphs.Games : Glyphs.Window;
 }

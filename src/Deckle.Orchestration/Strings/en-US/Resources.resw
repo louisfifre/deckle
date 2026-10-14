@@ -72,6 +72,12 @@
   <data name="OrchestrationPageAppsSection.Title" xml:space="preserve">
     <value>Your apps and games</value>
   </data>
+  <data name="OrchestrationPageScanSection.Title" xml:space="preserve">
+    <value>Scan</value>
+  </data>
+  <data name="OrchestrationPageScanSection.Caption" xml:space="preserve">
+    <value>Adds the apps and games found in your Steam libraries and in the folders below.</value>
+  </data>
   <data name="OrchestrationPage_AddAppButton.Content" xml:space="preserve">
     <value>Add app…</value>
   </data>
@@ -120,8 +126,11 @@
   <data name="OrchestrationPage_HdrOff.Content" xml:space="preserve">
     <value>Off</value>
   </data>
+  <data name="OrchestrationPage_ScanCard.Header" xml:space="preserve">
+    <value>Look for new apps and games</value>
+  </data>
   <data name="OrchestrationPage_ScanButton.Content" xml:space="preserve">
-    <value>Scan Steam and folders</value>
+    <value>Scan</value>
   </data>
   <data name="OrchestrationPage_NothingNew.Text" xml:space="preserve">
     <value>Nothing new found</value>
