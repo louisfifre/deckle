@@ -115,10 +115,6 @@ public sealed partial class HudPage
             v => _speechSimulation.Speed = v);
         stack.Children.Add(TuningHelp(
             "Pause starts at the silence dictation waits before a cut, set by Hangover (max) on the Utterance segmentation page."));
-        // HudChrono builds its gauge from the stored HUD settings and has no
-        // override for it, unlike the stroke (SetNextStrokeConfig).
-        stack.Children.Add(TuningHelp(
-            "The gauge here uses the saved HUD settings, so save to see a change in it."));
     }
 
     // ── Speech timer (Recording only) ───────────────────────────────────────
@@ -284,10 +280,9 @@ public sealed partial class HudPage
         // processing reveal starts.
         if (state == HudState.Recording) ChronoPreview.StartClock();
         else                             ChronoPreview.StopClock();
-        // One-shot, consumed by the next stroke ApplyState builds: armed only
-        // where one is built, so the state shows the current knobs and no
-        // config waits for an unrelated later build.
-        if (buildsStroke) ChronoPreview.SetNextStrokeConfig(_tuning.ToConfig());
+        // Armed only where a stroke is built, so the state shows the current
+        // knobs and no one-shot waits for an unrelated later build.
+        if (buildsStroke) ArmPreviewConfigs();
         ChronoPreview.ApplyState(state);
     }
 

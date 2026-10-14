@@ -322,13 +322,11 @@ public sealed partial class HudPage : Page
             _                      => HudState.Rewriting,
         };
 
-        // Armed before ApplyState, whose single stroke creation consumes it.
-        // Armed after, ApplyState would first build a shipping-default stroke.
         if (currentTarget is HudTarget.Recording
                           or HudTarget.Transcribing
                           or HudTarget.Rewriting)
         {
-            ChronoPreview.SetNextStrokeConfig(_tuning.ToConfig());
+            ArmPreviewConfigs();
         }
         ChronoPreview.ApplyState(state);
 
@@ -344,6 +342,16 @@ public sealed partial class HudPage : Page
 
         if (currentTarget == HudTarget.Recording)
             StartSpeechSimulation();
+    }
+
+    // Armed before ApplyState, whose single stroke creation consumes the
+    // one-shot; armed after, it would first build a shipping-default stroke.
+    // The gauge opens at the first pause, after ApplyState, and reads the
+    // stroke's config and the held countdown override then.
+    private void ArmPreviewConfigs()
+    {
+        ChronoPreview.SetNextStrokeConfig(_tuning.ToConfig());
+        ChronoPreview.OverrideCountdownConfig(_countdownConfig);
     }
 
     private void AttachNakedPreview(HudComposition.NakedMaskPart part)
