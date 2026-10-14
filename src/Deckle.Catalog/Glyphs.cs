@@ -78,6 +78,8 @@ public static class Glyphs
     public const string VoiceLevel = "";
 
     public const string Window = "";
+    // Segoe Fluent "View" (E890), the eye: the tile that opens a live preview.
+    public const string Preview = "";
 
     // Ambient / Hue specifics
     public const string Bridge = "";

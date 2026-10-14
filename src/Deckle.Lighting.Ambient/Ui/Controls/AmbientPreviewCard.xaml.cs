@@ -12,20 +12,18 @@ using Microsoft.UI.Xaml.Shapes;
 
 namespace Deckle.Lighting.Ambient;
 
-// Live preview of the running engine in the shared PreviewBlock: the sampled
-// grid mirroring the screen as the stage, the colour each light receives
-// (swatches) and the four zone bands tinted with their light's colour, with
-// the capture's format, grid, measured cadence and output transport as
-// readouts.
+// Live preview of the engine in the shared PreviewBlock, floating in the
+// page's pane: the sampled grid mirroring the screen as the stage, the colour
+// each light receives as swatches beside the commands, the four zone bands
+// tinted with their light's colour, and the capture's format, grid, measured
+// cadence and output transport as readouts under it.
 //
-// The gesture that starts this instrument is the module's own switch: the
-// preview mirrors an engine that already runs, so it shows as soon as the
-// engine does and stays open, never behind a fold (Louis, 2026-10-14: the
-// point is to watch it while the values change). The 200 ms refresh runs only
-// while the card is loaded AND the engine runs AND the user has not paused
-// it. While the engine is off the whole card hides — there is nothing to show
-// and nothing to configure here — and the page closes the pane that holds
-// it on that same Visibility (AmbientPage.SyncPreviewPane).
+// Live while the engine runs, so the user watches it while the values change
+// (Louis, 2026-10-14); off, the block shows its empty text, which says what to
+// turn on, and the swatches and readouts clear so nothing stale stays on
+// screen. The 200 ms refresh runs only while the control is loaded AND the
+// engine runs AND the user has not paused it. The pane around the control is
+// the page's: Close only asks the page to close it (CloseRequested).
 //
 // Ratio: each cell is sourceWidth / cols by sourceHeight / rows in source
 // pixels, and a uniform Viewbox scales the stage, so the preview has the
@@ -64,6 +62,10 @@ public sealed partial class AmbientPreviewCard : UserControl
     private long _rateFrames;
     private long _rateTimestamp;
 
+    // Raised by the Close command: the page that holds the control closes the
+    // pane.
+    public event RoutedEventHandler? CloseRequested;
+
     public AmbientPreviewCard()
     {
         InitializeComponent();
@@ -101,10 +103,14 @@ public sealed partial class AmbientPreviewCard : UserControl
 
     private void PauseToggle_Click(object sender, RoutedEventArgs e) => UpdateState();
 
+    private void CloseButton_Click(object sender, RoutedEventArgs e) => CloseRequested?.Invoke(this, e);
+
     private void UpdateState()
     {
         bool running = _engine is { IsRunning: true };
-        Visibility = running ? Visibility.Visible : Visibility.Collapsed;
+        Block.IsLive = running;
+        ZonesToggle.IsEnabled = running;
+        PauseToggle.IsEnabled = running;
 
         bool paused = PauseToggle.IsChecked == true;
         if (running && IsLoaded && !paused)
@@ -119,7 +125,22 @@ public sealed partial class AmbientPreviewCard : UserControl
         else
         {
             _timer.Stop();
+            if (!running) ClearLive();
         }
+    }
+
+    // Nothing stale once the engine stops: the swatches go, the readouts
+    // empty, a pause does not outlive the run, and the next start rebuilds the
+    // grid from its first sample.
+    private void ClearLive()
+    {
+        EmittedSwatches.Children.Clear();
+        _swatches.Clear();
+        CaptureReadout.Value = null;
+        GridReadout.Value = null;
+        RateReadout.Value = null;
+        OutputReadout.Value = null;
+        PauseToggle.IsChecked = false;
     }
 
     private void Refresh()
