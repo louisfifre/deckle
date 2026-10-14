@@ -225,9 +225,12 @@ public sealed partial class SettingsWindow : Window
     // ── Breadcrumb ───────────────────────────────────────────────────────────
     //
     // A page's path in the rail, for its header block: the module, then the page
-    // (`Autocorrect › General`). The module segment leads to the module's own
-    // page, listed as the node's General child. A page the registry does not know
-    // gets null, and the header shows its own title.
+    // (`Autocorrect › Lexical domains`). The module segment leads to the module's
+    // own page, listed as the node's General child. That page itself shows the
+    // module's name alone, as Windows Settings titles a category page: a
+    // `Module › General` crumb there would offer a grey segment that leads
+    // nowhere, since it is the current page (2026-10-14). A page the registry
+    // does not know gets null, and the header shows its own title.
     private static IReadOnlyList<SettingsBreadcrumbSegment>? ResolveBreadcrumb(Type pageType)
     {
         string general = Loc.GetFrom("Deckle.Settings", "SettingsNavGeneral/Content");
@@ -250,10 +253,7 @@ public sealed partial class SettingsWindow : Window
                 : [new(Label(parent), parent.PageTag), new(Label(self), null)];
         }
 
-        bool isNode = modules.Any(m => m.ParentId == self.Id);
-        return isNode
-            ? [new(Label(self), null), new(general, null)]
-            : [new(Label(self), null)];
+        return [new(Label(self), null)];
     }
 
     // Register / Unregister may be called from any thread, so marshal onto the UI
