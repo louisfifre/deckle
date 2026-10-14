@@ -1466,7 +1466,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   └── PresetFamily.cs
 │   ├── Deckle.Security/
 │   │   ├── Deckle.Security.csproj
-│   │   ├── GLOSSARY.md  — glossary-deckle-security Security vocabulary — the trusted-session boundary, captured content, and where…
+│   │   ├── GLOSSARY.md  — glossary-deckle-security Security vocabulary. It defines the trusted-session boundary, captured content,…
 │   │   ├── ISecretVault.cs
 │   │   ├── SecretVault.cs
 │   │   └── SecretVaultException.cs
