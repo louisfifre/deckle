@@ -146,7 +146,7 @@ public sealed partial class HudPage
         };
 
         stack.Children.Add(WrapRow(label, slider, numberBox));
-        // Lets the countdown transport move the row in place, keeping its
+        // Lets the gauge transport move the row in place, keeping its
         // controls, focus and layout.
         return next =>
         {

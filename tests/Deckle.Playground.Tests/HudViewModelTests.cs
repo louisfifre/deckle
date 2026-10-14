@@ -19,6 +19,16 @@ public sealed class HudViewModelTests
         Assert.Contains(HudTuningSection.Recording, sections);
     }
 
+    // A cone's placement is unreadable in flat grey, so the parts previews
+    // open on the colour wheel.
+    [Fact]
+    public void ThePartsPreviewsOpenOnTheColourMaterial()
+    {
+        var viewModel = new HudViewModel();
+
+        Assert.Equal(Deckle.Composition.HudMaterial.Colour, viewModel.PreviewMaterial);
+    }
+
     // The per-target map is the contract (a section is shown only where its
     // rows reach the preview), so the literal lists are the expectation.
     [Theory]
@@ -34,14 +44,14 @@ public sealed class HudViewModelTests
         HudTuningSection.Geometry, HudTuningSection.Palette, HudTuningSection.ConicFade,
         HudTuningSection.HueRotation, HudTuningSection.ArcRotation, HudTuningSection.Rewriting,
         HudTuningSection.ClonePlacement)]
-    [InlineData(HudTarget.Conic,
+    [InlineData(HudTarget.Cone,
         HudTuningSection.Geometry, HudTuningSection.Palette, HudTuningSection.HueRotation)]
-    [InlineData(HudTarget.ArcMask,
+    [InlineData(HudTarget.SweepMask,
         HudTuningSection.Geometry, HudTuningSection.ConicFade, HudTuningSection.ArcRotation)]
-    [InlineData(HudTarget.Combined,
+    [InlineData(HudTarget.MaskedCone,
         HudTuningSection.Geometry, HudTuningSection.Palette, HudTuningSection.ConicFade,
         HudTuningSection.HueRotation, HudTuningSection.ArcRotation)]
-    [InlineData(HudTarget.ConicClone,
+    [InlineData(HudTarget.DigitReveal,
         HudTuningSection.ConicFade, HudTuningSection.ClonePlacement)]
     public void EachTargetShowsOnlyTheSectionsItsPreviewConsumes(
         HudTarget target, params HudTuningSection[] expected)

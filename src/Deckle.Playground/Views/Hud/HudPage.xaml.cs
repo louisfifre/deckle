@@ -68,12 +68,12 @@ public sealed partial class HudPage : Page
     private HudComposition.NakedPreview? _nakedPreview;
 
     // 272×78 is the HUD's stroke surface; the 300×300 host leaves room so the
-    // Conic primitive's outer radius doesn't clip at the corners.
+    // Cone target's outer radius doesn't clip at the corners.
     private static readonly Vector2 NakedHudSize = new(272f, 78f);
     private const           float   NakedHostDim = 300f;
 
     // Same disposal discipline as _nakedPreview.
-    private HudComposition.ConicClonePreview? _conicClonePreview;
+    private HudComposition.ConicClonePreview? _digitRevealPreview;
 
     public HudPage()
     {
@@ -194,10 +194,10 @@ public sealed partial class HudPage : Page
         ElementCompositionPreview.SetElementChildVisual(NakedPreviewHost, null);
         _nakedPreview?.Dispose();
         _nakedPreview = null;
-        _conicClonePreview?.Dispose();
-        _conicClonePreview = null;
-        _utteranceCountdownPreview?.Dispose();
-        _utteranceCountdownPreview = null;
+        _digitRevealPreview?.Dispose();
+        _digitRevealPreview = null;
+        _gaugePreview?.Dispose();
+        _gaugePreview = null;
     }
 
     private void OnOverlayAnimationsChanged(bool enabled)
@@ -227,7 +227,7 @@ public sealed partial class HudPage : Page
                 ApplyTarget();
                 break;
 
-            case nameof(HudViewModel.PreviewVariant):
+            case nameof(HudViewModel.PreviewMaterial):
                 ApplyTarget();
                 break;
         }
@@ -244,13 +244,13 @@ public sealed partial class HudPage : Page
         ViewModel.CurrentTarget = next;
     }
 
-    // Fires once on load for the default-checked Rewriting radio; a no-op,
-    // the value already matches.
-    private void OnVariantRadioChecked(object sender, RoutedEventArgs e)
+    // May fire once on load for the XAML's default selection (Colour); a
+    // no-op, the value already matches. The items follow HudMaterial's
+    // order, so the index is the material.
+    private void OnPreviewMaterialChanged(object sender, SelectionChangedEventArgs e)
     {
-        if (sender is not RadioButton rb || rb.Tag is not string tag) return;
-        if (!Enum.TryParse<ProcessingVariant>(tag, out var variant)) return;
-        ViewModel.PreviewVariant = variant;
+        if (sender is not RadioButtons radios) return;
+        ViewModel.PreviewMaterial = radios.SelectedIndex == 0 ? HudMaterial.Grey : HudMaterial.Colour;
     }
 
     // ── Transport (Start / Stop) ─────────────────────────────────────────────
@@ -274,10 +274,10 @@ public sealed partial class HudPage : Page
         ElementCompositionPreview.SetElementChildVisual(NakedPreviewHost, null);
         _nakedPreview?.Dispose();
         _nakedPreview = null;
-        _conicClonePreview?.Dispose();
-        _conicClonePreview = null;
-        _utteranceCountdownPreview?.Dispose();
-        _utteranceCountdownPreview = null;
+        _digitRevealPreview?.Dispose();
+        _digitRevealPreview = null;
+        _gaugePreview?.Dispose();
+        _gaugePreview = null;
         StopRmsPump();
 
         if (!ViewModel.IsPlaying)
@@ -285,38 +285,39 @@ public sealed partial class HudPage : Page
             // Stop leaves only the substrate: no residual Charging-like card.
             ChronoPreview.Visibility    = Visibility.Collapsed;
             NakedPreviewHost.Visibility = Visibility.Collapsed;
-            VariantToggle.Visibility    = Visibility.Collapsed;
+            MaterialToggle.Visibility   = Visibility.Collapsed;
             return;
         }
 
         var currentTarget = ViewModel.CurrentTarget;
-        bool isNaked = ViewModel.IsCountdownTarget || currentTarget is HudTarget.Conic
-                                     or HudTarget.ArcMask
-                                     or HudTarget.Combined
-                                     or HudTarget.ConicClone;
+        bool isNaked = currentTarget is HudTarget.Cone
+                                     or HudTarget.SweepMask
+                                     or HudTarget.MaskedCone
+                                     or HudTarget.Gauge
+                                     or HudTarget.DigitReveal;
         ChronoPreview.Visibility    = isNaked ? Visibility.Collapsed : Visibility.Visible;
         NakedPreviewHost.Visibility = isNaked ? Visibility.Visible   : Visibility.Collapsed;
-        VariantToggle.Visibility    = ViewModel.IsVariantToggleVisible ? Visibility.Visible : Visibility.Collapsed;
+        MaterialToggle.Visibility   = ViewModel.IsMaterialToggleVisible ? Visibility.Visible : Visibility.Collapsed;
 
         if (isNaked)
         {
-            if (ViewModel.IsCountdownTarget)
+            if (currentTarget == HudTarget.Gauge)
             {
-                AttachUtteranceCountdownPreview();
+                AttachGaugePreview();
                 return;
             }
 
-            if (currentTarget == HudTarget.ConicClone)
+            if (currentTarget == HudTarget.DigitReveal)
             {
-                AttachConicClonePreview();
+                AttachDigitRevealPreview();
                 return;
             }
 
             var part = currentTarget switch
             {
-                HudTarget.Conic    => HudComposition.NakedMaskPart.Conic,
-                HudTarget.ArcMask  => HudComposition.NakedMaskPart.ArcMask,
-                _                  => HudComposition.NakedMaskPart.Combined,
+                HudTarget.Cone      => HudComposition.NakedMaskPart.Conic,
+                HudTarget.SweepMask => HudComposition.NakedMaskPart.ArcMask,
+                _                   => HudComposition.NakedMaskPart.Combined,
             };
             AttachNakedPreview(part);
             return;
@@ -354,11 +355,6 @@ public sealed partial class HudPage : Page
             StartRmsPump();
     }
 
-    // The material the geometry-only previews show, read from the grading
-    // radio until that radio offers the material itself.
-    private HudMaterial PreviewMaterial =>
-        ViewModel.PreviewVariant == ProcessingVariant.Rewriting ? HudMaterial.Colour : HudMaterial.Grey;
-
     private void AttachNakedPreview(HudComposition.NakedMaskPart part)
     {
         ElementCompositionPreview.SetElementChildVisual(NakedPreviewHost, null);
@@ -367,9 +363,10 @@ public sealed partial class HudPage : Page
 
         var compositor = ElementCompositionPreview.GetElementVisual(NakedPreviewHost).Compositor;
 
-        // Only the bare ArcMask shows the arc fill's colour, against a
+        // Only the bare sweep mask shows the arc fill's colour, against a
         // LayerFill that is near-white in light theme, so the fill turns black
-        // there. Combined goes through AlphaMaskEffect and ignores the arc RGB.
+        // there. The masked cone goes through AlphaMaskEffect and ignores the
+        // arc RGB.
         bool isLightTheme =
             Content is FrameworkElement fe &&
             fe.ActualTheme == ElementTheme.Light;
@@ -377,7 +374,7 @@ public sealed partial class HudPage : Page
 
         _nakedPreview = HudComposition.CreateNakedMaskPreview(
             compositor, NakedHudSize, _tuning.ToConfig(), part, arcFill,
-            PreviewMaterial, isDark: !isLightTheme,
+            ViewModel.PreviewMaterial, isDark: !isLightTheme,
             animationsEnabled: SettingsService.Instance.Current.Overlay.Animations);
 
         float inset = (NakedHostDim - _nakedPreview.Container.Size.X) / 2f;
@@ -386,11 +383,11 @@ public sealed partial class HudPage : Page
         ElementCompositionPreview.SetElementChildVisual(NakedPreviewHost, _nakedPreview.Container);
     }
 
-    private void AttachConicClonePreview()
+    private void AttachDigitRevealPreview()
     {
         ElementCompositionPreview.SetElementChildVisual(NakedPreviewHost, null);
-        _conicClonePreview?.Dispose();
-        _conicClonePreview = null;
+        _digitRevealPreview?.Dispose();
+        _digitRevealPreview = null;
 
         var compositor = ElementCompositionPreview.GetElementVisual(NakedPreviewHost).Compositor;
 
@@ -398,17 +395,17 @@ public sealed partial class HudPage : Page
             Content is FrameworkElement fe &&
             fe.ActualTheme == ElementTheme.Light;
 
-        _conicClonePreview = HudComposition.CreateConicClonePreview(
+        _digitRevealPreview = HudComposition.CreateConicClonePreview(
             compositor, NakedHudSize, _tuning.ToConfig(),
-            PreviewMaterial, isDark: !isLightTheme,
+            ViewModel.PreviewMaterial, isDark: !isLightTheme,
             animationsEnabled: SettingsService.Instance.Current.Overlay.Animations);
 
         // Same seat as the XAML reference border, where the live row would sit.
-        float insetX = (NakedHostDim - _conicClonePreview.Container.Size.X) / 2f;
-        float insetY = (NakedHostDim - _conicClonePreview.Container.Size.Y) / 2f;
-        _conicClonePreview.Container.Offset = new Vector3(insetX, insetY, 0f);
+        float insetX = (NakedHostDim - _digitRevealPreview.Container.Size.X) / 2f;
+        float insetY = (NakedHostDim - _digitRevealPreview.Container.Size.Y) / 2f;
+        _digitRevealPreview.Container.Offset = new Vector3(insetX, insetY, 0f);
 
-        ElementCompositionPreview.SetElementChildVisual(NakedPreviewHost, _conicClonePreview.Container);
+        ElementCompositionPreview.SetElementChildVisual(NakedPreviewHost, _digitRevealPreview.Container);
     }
 
     private void RequestRebuild()
@@ -481,8 +478,7 @@ public sealed partial class HudPage : Page
     // ── Tuning panel dispatcher ─────────────────────────────────────────
     //
     // Parked follows the active sections, except on the targets without a
-    // stroke: Charging (empty list, a placeholder line instead) and the
-    // countdown views.
+    // stroke: Charging (empty list, a placeholder line instead) and Gauge.
 
     private void BuildTuningPanel()
     {
@@ -519,12 +515,12 @@ public sealed partial class HudPage : Page
                 case HudTuningSection.Transcribing:  AddTranscribingExpander();   break;
                 case HudTuningSection.Rewriting:     AddRewritingExpander();      break;
                 case HudTuningSection.SimulatedRms:  AddSimulatedRmsExpander();   break;
-                case HudTuningSection.UtteranceCountdown: AddUtteranceCountdownExpander(); break;
+                case HudTuningSection.UtteranceCountdown: AddGaugeExpander(); break;
                 case HudTuningSection.ClonePlacement: AddClonePlacementExpander(); break;
             }
         }
 
-        if (!ViewModel.IsCountdownTarget)
+        if (ViewModel.CurrentTarget != HudTarget.Gauge)
             AddParkedExpander();
 
         // Every reset and revert path rebuilds the panel, so the bar follows

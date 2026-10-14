@@ -136,7 +136,7 @@ internal sealed class TuningModel
     public float  ArcEaseP2Y       = Defaults.ArcEaseP2Y;
     public float  ArcMinSpeedFraction = Defaults.ArcMinSpeedFraction;
 
-    // ── Clone-cone placement (digit reveal + ConicClone preview) ─────────
+    // ── Digit-reveal cone placement (live reveal + Digit reveal target) ──
     // Fraction of the host frame; (0.5, 0.5) = centred.
     public float CloneCentreXFraction = Defaults.CloneCentreXFraction;
     public float CloneCentreYFraction = Defaults.CloneCentreYFraction;

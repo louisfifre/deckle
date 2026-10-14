@@ -6,30 +6,32 @@ namespace Deckle.Playground.Tests;
 [Trait("Category", "regression")]
 public sealed class HudTargetControlsTests
 {
+    // Only the parts that paint the cone without a HUD state offer the
+    // material choice: the states show their own material, the sweep mask
+    // has none and the gauge shows Recording's.
     [Theory]
-    [InlineData(HudTarget.ArcMask)]
-    [InlineData(HudTarget.UtteranceCountdown)]
-    [InlineData(HudTarget.CountdownMaterial)]
-    [InlineData(HudTarget.CountdownMasks)]
-    [InlineData(HudTarget.MaskedCountdown)]
-    public void UncoloredMaskAndCountdownDoNotOfferAColorVariant(HudTarget target)
+    [InlineData(HudTarget.Charging, false)]
+    [InlineData(HudTarget.Recording, false)]
+    [InlineData(HudTarget.Transcribing, false)]
+    [InlineData(HudTarget.Rewriting, false)]
+    [InlineData(HudTarget.Cone, true)]
+    [InlineData(HudTarget.SweepMask, false)]
+    [InlineData(HudTarget.MaskedCone, true)]
+    [InlineData(HudTarget.Gauge, false)]
+    [InlineData(HudTarget.DigitReveal, true)]
+    public void OnlyTheConePartsOfferAMaterialChoice(HudTarget target, bool offered)
     {
         var model = new HudViewModel { CurrentTarget = target };
-        Assert.False(model.IsVariantToggleVisible);
+        Assert.Equal(offered, model.IsMaterialToggleVisible);
     }
 
-    [Theory]
-    [InlineData(HudTarget.UtteranceCountdown)]
-    [InlineData(HudTarget.CountdownMaterial)]
-    [InlineData(HudTarget.CountdownMasks)]
-    [InlineData(HudTarget.MaskedCountdown)]
-    public void CountdownViewsShareTheRecordingRowsAndOfferNoOtherPalette(HudTarget target)
+    [Fact]
+    public void TheGaugeSharesTheRecordingRowsAndOffersNoOtherPalette()
     {
-        var model = new HudViewModel { CurrentTarget = target };
-        Assert.True(model.IsCountdownTarget);
+        var model = new HudViewModel { CurrentTarget = HudTarget.Gauge };
         Assert.Contains(HudTuningSection.UtteranceCountdown, model.ActiveTuningSections);
-        // The gauge is the Recording outline opened by the pause: its fade,
-        // hue period and grading are the Recording rows, tuned beside it.
+        // The gauge is the Recording outline opened by the pause: its fades
+        // and material are the Recording rows, tuned beside it.
         Assert.Contains(HudTuningSection.Recording, model.ActiveTuningSections);
         Assert.DoesNotContain(HudTuningSection.Palette, model.ActiveTuningSections);
     }
@@ -37,10 +39,10 @@ public sealed class HudTargetControlsTests
     [Fact]
     public void BareMaterialOffersItsOwnRotationAndMaskOffersItsOwnShape()
     {
-        var model = new HudViewModel { CurrentTarget = HudTarget.Conic };
+        var model = new HudViewModel { CurrentTarget = HudTarget.Cone };
         Assert.Contains(HudTuningSection.HueRotation, model.ActiveTuningSections);
         Assert.DoesNotContain(HudTuningSection.ConicFade, model.ActiveTuningSections);
-        model.CurrentTarget = HudTarget.ArcMask;
+        model.CurrentTarget = HudTarget.SweepMask;
         Assert.Contains(HudTuningSection.ConicFade, model.ActiveTuningSections);
         Assert.Contains(HudTuningSection.ArcRotation, model.ActiveTuningSections);
         Assert.DoesNotContain(HudTuningSection.Palette, model.ActiveTuningSections);

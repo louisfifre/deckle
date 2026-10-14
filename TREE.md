@@ -1442,9 +1442,9 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   │   └── RichEditCorrectionSurface.cs
 │   │   │   ├── Hud/
 │   │   │   │   ├── HudPage.Expanders.cs
+│   │   │   │   ├── HudPage.Gauge.cs
 │   │   │   │   ├── HudPage.RowFactories.cs
 │   │   │   │   ├── HudPage.SectionState.cs
-│   │   │   │   ├── HudPage.UtteranceCountdown.cs
 │   │   │   │   ├── HudPage.xaml
 │   │   │   │   └── HudPage.xaml.cs
 │   │   │   ├── Segmentation/

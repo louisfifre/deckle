@@ -167,9 +167,9 @@ public sealed partial class HudPage
     private void AddRecordingExpander()
     {
         var stack = NewTuningSection("Recording", ResetRecording);
-        if (ViewModel.IsCountdownTarget)
+        if (ViewModel.CurrentTarget == HudTarget.Gauge)
             stack.Children.Add(TuningHelp(
-                "The countdown reads the fades and the grey material. " +
+                "The gauge reads the fades and Recording's material. " +
                 "Span, mirror and arc phase change nothing there: the two wedges follow the pause."));
         AddFloatRow(stack, "RecordingConicSpanTurns", 0.05, 1, 0.05, _tuning.RecordingConicSpanTurns,
             v => _tuning.RecordingConicSpanTurns = (float)v, rebuild: true);
@@ -261,7 +261,7 @@ public sealed partial class HudPage
     }
 
     // The clone is the material the pinned reveal shows behind the digits; these
-    // knobs drive the ConicClone preview and the digit reveal of the
+    // knobs drive the Digit reveal target and the digit reveal of the
     // Transcribing and Rewriting previews. The centre sliders read in px
     // against the 272×78 frame but store a fraction (CloneCentre*Fraction).
     private void AddClonePlacementExpander()

@@ -46,7 +46,7 @@
                 <DropDownButton x:Name="TargetDropDownButton"
                                 MinWidth="200"
                                 HorizontalContentAlignment="Left"
-                                ToolTipService.ToolTip="Pick the HUD state or primitive to preview">
+                                ToolTipService.ToolTip="Pick the HUD state or part to preview">
                     <DropDownButton.Content>
                         <StackPanel Orientation="Horizontal" Spacing="8">
                             <TextBlock Text="Target:"
@@ -59,8 +59,8 @@
                     </DropDownButton.Content>
 
                     <!-- Flat, so every target is one click away. Separators
-                         mark the groups (HUD states, sweep primitives, then
-                         the clone and the countdown views): MenuFlyout has no
+                         mark the groups (HUD states, the sweep parts, then
+                         the gauge and the digit reveal): MenuFlyout has no
                          native section header. Labels name what each target
                          shows, not the HudTarget member; the Tag carries the
                          member. -->
@@ -80,52 +80,41 @@
                                             Click="OnTargetMenuItemClick" />
                             <MenuFlyoutSeparator Margin="0,6,0,6" />
                             <MenuFlyoutItem Text="Cone"
-                                            Tag="Conic" MinHeight="36"
+                                            Tag="Cone" MinHeight="36"
                                             Click="OnTargetMenuItemClick" />
                             <MenuFlyoutItem Text="Sweep mask"
-                                            Tag="ArcMask" MinHeight="36"
+                                            Tag="SweepMask" MinHeight="36"
                                             Click="OnTargetMenuItemClick" />
                             <MenuFlyoutItem Text="Masked cone"
-                                            Tag="Combined" MinHeight="36"
+                                            Tag="MaskedCone" MinHeight="36"
                                             Click="OnTargetMenuItemClick" />
                             <MenuFlyoutSeparator Margin="0,6,0,6" />
-                            <MenuFlyoutItem Text="Cone clone"
-                                            Tag="ConicClone" MinHeight="36"
+                            <MenuFlyoutItem Text="Gauge"
+                                            Tag="Gauge" MinHeight="36"
                                             Click="OnTargetMenuItemClick" />
-                            <MenuFlyoutItem Text="Utterance countdown"
-                                            Tag="UtteranceCountdown" MinHeight="36"
-                                            Click="OnTargetMenuItemClick" />
-                            <MenuFlyoutItem Text="Countdown material"
-                                            Tag="CountdownMaterial" MinHeight="36"
-                                            Click="OnTargetMenuItemClick" />
-                            <MenuFlyoutItem Text="Countdown masks"
-                                            Tag="CountdownMasks" MinHeight="36"
-                                            Click="OnTargetMenuItemClick" />
-                            <MenuFlyoutItem Text="Masked countdown"
-                                            Tag="MaskedCountdown" MinHeight="36"
+                            <MenuFlyoutItem Text="Digit reveal"
+                                            Tag="DigitReveal" MinHeight="36"
                                             Click="OnTargetMenuItemClick" />
                         </MenuFlyout>
                     </DropDownButton.Flyout>
                 </DropDownButton>
 
-                    <!-- Grading for the geometry-only previews, which carry
-                         no HUD state; ApplyTarget shows it per
-                         HudViewModel.IsVariantToggleVisible. -->
-                    <StackPanel x:Name="VariantToggle"
-                                Orientation="Horizontal"
-                                Spacing="8"
-                                VerticalAlignment="Center"
-                                Visibility="Collapsed">
-                        <RadioButton Content="Transcribing"
-                                     GroupName="PreviewVariant"
-                                     Tag="Transcribing"
-                                     Checked="OnVariantRadioChecked" />
-                        <RadioButton Content="Rewriting"
-                                     GroupName="PreviewVariant"
-                                     Tag="Rewriting"
-                                     IsChecked="True"
-                                     Checked="OnVariantRadioChecked" />
-                    </StackPanel>
+                    <!-- The material of the parts previews, which carry no
+                         HUD state; ApplyTarget shows it per
+                         HudViewModel.IsMaterialToggleVisible. Two columns so
+                         the pair sits on the target's line. The items'
+                         order follows HudMaterial (Grey, Colour), which
+                         OnPreviewMaterialChanged maps by index. -->
+                    <RadioButtons x:Name="MaterialToggle"
+                                  AutomationProperties.Name="Material"
+                                  MaxColumns="2"
+                                  SelectedIndex="1"
+                                  VerticalAlignment="Center"
+                                  Visibility="Collapsed"
+                                  SelectionChanged="OnPreviewMaterialChanged">
+                        <x:String>Grey</x:String>
+                        <x:String>Colour</x:String>
+                    </RadioButtons>
                 </StackPanel>
 
                 <!-- Both buttons always show; the inactive one greys out
