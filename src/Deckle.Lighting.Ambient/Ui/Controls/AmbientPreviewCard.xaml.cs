@@ -48,6 +48,12 @@ public sealed partial class AmbientPreviewCard : UserControl
 
     private const double RateWindowSeconds = 1.0;
 
+    // Under this width the readouts stack in one column (the NarrowReadouts
+    // state in the XAML). The control's width is the pane's minus the page's
+    // 32 px padding on each side, so 240 here is a pane of about 300 px
+    // (Louis, 2026-10-15), and the pane's 240 px floor always stacks.
+    private const double NarrowReadoutsWidth = 240;
+
     private readonly DispatcherTimer _timer = new() { Interval = RefreshInterval };
     private readonly Dictionary<string, (Rectangle Swatch, SolidColorBrush Fill)> _swatches = new();
     private readonly Dictionary<LightZone, SolidColorBrush> _zoneBrushes = new();
@@ -72,7 +78,17 @@ public sealed partial class AmbientPreviewCard : UserControl
         _timer.Tick += (_, _) => Refresh();
         Loaded   += OnLoaded;
         Unloaded += OnUnloaded;
+        SizeChanged += OnSizeChanged;
     }
+
+    // The readouts' layout follows the control's own width, which the pane's
+    // splitter changes: AdaptiveTrigger would watch the window instead. No
+    // transition: the states only move elements between grid cells.
+    private void OnSizeChanged(object sender, SizeChangedEventArgs e)
+        => VisualStateManager.GoToState(
+            this,
+            e.NewSize.Width < NarrowReadoutsWidth ? "NarrowReadouts" : "WideReadouts",
+            useTransitions: false);
 
     private void OnLoaded(object sender, RoutedEventArgs e)
     {
