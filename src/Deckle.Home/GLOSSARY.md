@@ -1,55 +1,33 @@
 ---
-description: "Home inventory vocabulary — the public norm, personal room registry, point codes, and managed Home schema."
+name: glossary-deckle-home
+description: "Home inventory vocabulary. It defines the inventory code and the Home surface, the two notions the Home module owns today, and keeps the user's own inventory out of Deckle's source."
 ---
 
-# Deckle.Home — Glossary
+# Deckle.Home, Glossary
 
-This context names the boundary between Deckle's shareable home-inventory
-mechanism and the personal data held by each user's Anytype space.
+This glossary names what the Home module owns. The inventory itself, the rooms, the points and their relations, is the user's data and lives in their Anytype space, never in Deckle's source. The domain is still being built beside the code, so this file stays small until its words settle.
 
-## Norm and data
+## Codes and surface
 
-**Home norm**:
-The shareable vocabulary and constraints carried by `Deckle.Home`: point-code
-grammar, the frozen category vocabulary, closed lifecycle vocabularies, and
-invariants. It is the mechanism that may be published.
-_Avoid_: room registry (personal data), inventory (the user's recorded objects)
+**Inventory code** :
+The immutable code carried by the `code` property of a coded inventory object, never by its title. Titles are human names, written for the whole household. A circuit alone may use its code as a provisional title until someone renames it.
+_Avoid_ : object id (provider coordinate), label (human wording), object title (the human name, no longer the code).
 
-**Room registry**:
-The live set of room codes and room objects in the configured Home space. It is
-personal data and the authority used to decide whether a point-code prefix is
-known; it never becomes a compiled constant.
-_Avoid_: nomenclature (the registry instantiates the norm but is not the norm), configuration list (a second truth)
+**Home surface** :
+The MCP surface that exposes the guarded Home operations through Deckle's single resident MCP host. It adapts the Home module and does not own its rules.
+_Avoid_ : Home space (data store), Home module (domain implementation).
 
-**Home inventory**:
-The rooms, points, circuits, panels, and their relations stored in the Home
-space. The inventory belongs to the user and is never part of Deckle's source.
-_Avoid_: Home norm (shareable mechanism), schema (storage contract)
+**Object id** :
+The identifier Anytype gives an object at runtime, in one live space. It is a local coordinate, not a code that Deckle defines.
 
-## Codes and schema
+**Label** :
+In ordinary use, the human-readable text shown for something. It is wording for people, never an identifier like a code or a key.
 
-**Point code**:
-The immutable identifier of one physical point, composed of a room
-prefix, a category code, and a two-digit sequence. Its room prefix is accepted
-only when the room registry contains it; a point's category is the same code
-carried by its frozen `category` select, and its room membership derives from
-the same prefix — neither is writable on its own.
-_Avoid_: object id (Anytype runtime coordinate), room code (only the location prefix)
+**Object title** :
+The human name an Anytype object shows, written for the household. It no longer carries the inventory code.
 
-**Home schema**:
-The public managed Anytype contract required by the Home domain. Its type and
-property keys are stable; ids and tag keys are local realizations resolved from
-the live space.
-_Avoid_: Home inventory (values stored under the schema), space id (local coordinate)
+**Home space** :
+The user's Anytype space that stores their inventory. It holds the data, while the Home surface exposes operations on it.
 
-**Inventory code**:
-The immutable code carried by a coded inventory object's `code` property —
-never the title. Titles are human names, written for the whole household; a
-circuit alone may fall back to its code as a provisional title until it is
-renamed.
-_Avoid_: object id (provider coordinate), label (human wording), object title (the human name, no longer the code)
-
-**Home surface**:
-The MCP capability exposing the guarded Home operations through Deckle's single
-resident MCP host. It is an adapter over `Deckle.Home`, not the owner of its rules.
-_Avoid_: Home space (data store), Home module (domain implementation)
+**Home module** :
+The `Deckle.Home` code that implements the Home domain and its rules. The Home surface is only an adapter over it.
