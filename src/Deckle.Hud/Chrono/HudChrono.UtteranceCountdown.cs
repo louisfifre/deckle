@@ -94,10 +94,19 @@ public sealed partial class HudChrono
         var settings  = HudSettingsService.Instance;
         var stroke    = _strokeConfig            ?? settings.EffectiveStroke();
         var countdown = _countdownConfigOverride ?? settings.EffectiveCountdown();
+        // The gauge's surface is its host, so a host the size of the card cut
+        // the outer half of a negative-inset contour while the outline, a
+        // visual, overflowed the card untouched. Oversizing the host by that
+        // overflow and pulling the container back by it draws the whole
+        // contour at the outline's place: in the Playground both overflow
+        // alike, and in the HUD window the HWND crops both alike.
+        float overflow = MathF.Max(0f, -stroke.InsetDip);
+        var hostSize = new Vector2(width + 2f * overflow, height + 2f * overflow);
         _countdownVisual = HudComposition.CreateUtteranceCountdownVisual(
-            compositor, size, size, stroke,
+            compositor, hostSize, size, stroke,
             ChronoRoot.ActualTheme == ElementTheme.Dark,
             countdown, materialOpacity: 0f, animationsEnabled: _animationsEnabled);
+        _countdownVisual.Container.Offset = new Vector3(-overflow, -overflow, 0f);
         _renderedCountdownValue = _countdownState.ValueAt(Stopwatch.GetElapsedTime(_countdownStarted));
         _countdownVisual.SetProgress(_renderedCountdownValue);
         ElementCompositionPreview.SetElementChildVisual(CountdownSurfaceHost, _countdownVisual.Container);
