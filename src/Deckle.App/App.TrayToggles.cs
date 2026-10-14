@@ -87,8 +87,9 @@ public partial class App
         return toggles;
     }
 
-    // Ambient Light last, after a divider: the most frequent switch, nearest
-    // the icon since the panel opens upward from the taskbar.
+    // Ambient Light in a group of its own, after the background switches: a
+    // visual thing one launches, not a setting left on (Louis, 2026-10-14);
+    // the actions follow it at the bottom of the menu.
     private static IReadOnlyList<TrayToggle> BuildTrayFooterToggles(StartupContext context)
     {
         if (!context.AmbientPresent)

@@ -7,10 +7,9 @@ namespace Deckle.Shell;
 // The notification-area icon, through Shell_NotifyIcon (Shell32) with no
 // WinForms dependency.
 //
-// Both surfaces live in the sibling Deckle.Shell.TrayMenu module: the
-// quick-actions panel (TrayQuickActionsHost) on left click, the context menu
-// (TrayContextMenuHost) on right click. This module stays Win32-pure: it does
-// not know what either surface contains.
+// Both menus live in the sibling Deckle.Shell.TrayMenu module as two
+// TrayMenuHost instances the App composes. This module stays Win32-pure: it
+// does not know what either menu contains.
 //
 // A double click is delivered by the shell as WM_LBUTTONUP, WM_LBUTTONDBLCLK,
 // WM_LBUTTONUP: the single-click subscriber runs first, then the double-click
@@ -78,9 +77,9 @@ public sealed class TrayIconManager : IDisposable
     //
     // The icon rect in physical pixels (screen coordinates), or null if the
     // icon could not be located (not yet registered, hidden in overflow, or
-    // the shell unavailable during an explorer.exe restart). The tray surfaces
-    // anchor on it through CalculatePopupWindowPosition, which works for any
-    // taskbar orientation and any click point.
+    // the shell unavailable during an explorer.exe restart). TrayMenuHost puts
+    // its anchor window on it, so the menu opens beside the icon on the side
+    // facing the work area, whatever the taskbar edge and the click point.
     public NativeMethods.RECT? GetIconRect()
     {
         if (!_iconAdded) return null;
