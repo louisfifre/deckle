@@ -1954,6 +1954,9 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── ChronoTimerTests.cs
 │   │   ├── Deckle.Chrono.Tests.csproj
 │   │   └── DeckleChronoSourceTests.cs
+│   ├── Deckle.Core.Tests/
+│   │   ├── Deckle.Core.Tests.csproj
+│   │   └── JsonSettingsStoreTests.cs
 │   ├── Deckle.Diagnostics.Logging.Tests/
 │   │   ├── Deckle.Diagnostics.Logging.Tests.csproj
 │   │   ├── LogFilterSelectionTests.cs
