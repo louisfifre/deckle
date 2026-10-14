@@ -199,6 +199,7 @@ doctrine). This file is generated from the Conventional-Commit history by
 - **catalog:** Read a folder path under its card description
 - **settings:** Lay the folder cards out on one row
 - **ambient:** Show the splitter grip on hover only
+- **core:** Add the broadcast and timer interop for a hidden window
 
 ### Changed
 
@@ -309,6 +310,8 @@ doctrine). This file is generated from the Conventional-Commit history by
 - **settings:** Compose the backup location into the fold's own items
 - **composition:** Seed the stroke with the grey of its own theme
 - **playground:** Simulate speech inside the stroke's level window
+- **shell:** Add the tray icon back when Explorer recreates the taskbar
+- **shell:** Number the re-add attempts per sequence in the journal
 
 ## [0.35.0](https://github.com/louisfifre/deckle/compare/v0.31.6...v0.35.0) — 2026-08-13
 
