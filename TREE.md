@@ -2010,6 +2010,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── TranscriptPanelBugNotes.md
 │   │   ├── TranscriptPanelLayoutTests.cs
 │   │   ├── UtteranceCountdownBugNotes.md
+│   │   ├── UtteranceCountdownCourseTests.cs
 │   │   ├── UtteranceCountdownGeometryTests.cs
 │   │   └── UtteranceCountdownStateTests.cs
 │   ├── Deckle.Input.PrecisionScroll.Tests/
