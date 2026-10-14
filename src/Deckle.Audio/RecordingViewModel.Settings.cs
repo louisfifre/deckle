@@ -10,9 +10,10 @@ namespace Deckle.Audio;
 // its kind, its localization key, its glyph, and typed selectors onto this VM's
 // own properties — and SettingsComposer turns the list into SettingsCards.
 //
-// The microphone ComboBox (runtime waveIn enumeration) and the mic-check and
-// listening-test commands + InfoBars (diagnostic readouts, not values) stay
-// hand-authored in the page — neither fits the flat get/set descriptor model.
+// The microphone ComboBox (runtime waveIn enumeration, the page's untitled top
+// card) and the mic-check and listening-test commands + InfoBars (diagnostic
+// readouts in the Checks section, not values) stay hand-authored in the page —
+// neither fits the flat get/set descriptor model.
 public partial class RecordingViewModel
 {
     // Maximum recording length — a ComboBox of fixed durations, the Windows 11

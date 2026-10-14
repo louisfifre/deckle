@@ -32,8 +32,7 @@ public sealed partial class RecordingPage : Page
 
     // ── Composed maximum-recording-length card ────────────────────────────────
     //
-    // Composed into its own host so it can sit right under the bespoke
-    // microphone card.
+    // Composed into its own host, the first card of the Recording section.
     private SettingsComposer? _recordingLimitComposer;
 
     private void ComposeRecordingLimitSection()
@@ -65,14 +64,14 @@ public sealed partial class RecordingPage : Page
 
     // The device id is deliberately not folded in: it is hardware enumeration, not
     // a defaulted setting, so a non-default device leaves the link greyed. The
-    // header's "Reset all" shares this gate, since the page has a single resettable
-    // section.
+    // header's "Reset all" shares this gate, since the Recording section is the
+    // page's single resettable section; the Checks section keeps no value.
     private void GateResetLink()
     {
         bool dirty =
             (_recordingLimitComposer?.IsDirty() ?? false) ||
             (_preprocessingComposer?.IsDirty() ?? false);
-        DefaultsSection.IsResetEnabled = dirty;
+        RecordingSection.IsResetEnabled = dirty;
         Header.IsResetAllEnabled = dirty;
     }
 
@@ -140,11 +139,23 @@ public sealed partial class RecordingPage : Page
         ViewModel.AudioInputDeviceId = deviceId;
     }
 
+    // The Recording section's reset: its two composed settings only. The
+    // microphone card stands above every section, so the section wheel leaves
+    // it alone; only the header's "Reset all" returns it to the system default.
+    private void ResetRecording_Click(object sender, RoutedEventArgs e)
+    {
+        _recordingLimitComposer?.ResetAll();
+        _preprocessingComposer?.ResetAll();
+
+        DeckleSettingsUxSource.Log.SectionReset();
+        DeckleSettingsUxSource.Log.SectionResetDetail("Recording");
+    }
+
     // The microphone device is not composed, so its reset is written here. The VM
     // assignment is the write that persists (system default, -1); the combo then
     // follows under the _initializing guard so SelectedIndex = 0 does not re-enter
     // the VM and fight the value just set.
-    private void ResetRecording_Click(object sender, RoutedEventArgs e)
+    private void ResetAll_Click(object sender, RoutedEventArgs e)
     {
         _recordingLimitComposer?.ResetAll();
         _preprocessingComposer?.ResetAll();
@@ -158,9 +169,6 @@ public sealed partial class RecordingPage : Page
         finally { _initializing = false; }
 
         DeckleSettingsUxSource.Log.SectionReset();
-        DeckleSettingsUxSource.Log.SectionResetDetail("Recording");
+        DeckleSettingsUxSource.Log.SectionResetDetail("Recording (all)");
     }
-
-    private void ResetAll_Click(object sender, RoutedEventArgs e) =>
-        ResetRecording_Click(sender, e);
 }

@@ -32,23 +32,30 @@
                 <!-- No module switch card on this page: recording is the core
                      capture pipeline, not a module that can be turned off. -->
 
-                <!-- ── Defaults ────────────────────────────────────────────── -->
-                <catalog:SettingsSection x:Name="DefaultsSection"
-                                         x:Uid="RecordingPageDefaultsSection"
+                <!-- The microphone stands first, under no title: it is the base
+                     setting of the page, and a block of one card earns no heading,
+                     the same form as the General page's top block (maintainer,
+                     2026-10-15). Bespoke: runtime waveIn enumeration, not a
+                     composed value, so it has no card reset of its own; the
+                     header's "Reset all" returns it to the system default. -->
+                <controls:SettingsCard x:Name="AudioInputCard"
+                                       x:Uid="GeneralMicrophoneCard"
+                                       Tag="GeneralMicrophoneCard">
+                    <ComboBox x:Name="AudioInputCombo"
+                              MinWidth="240"
+                              SelectionChanged="AudioInputCombo_SelectionChanged" />
+                </controls:SettingsCard>
+
+                <!-- ── Recording ───────────────────────────────────────────── -->
+                <!-- Title provisional: the maintainer names the sections at the
+                     end. The section reset spans its two composed settings. -->
+                <catalog:SettingsSection x:Name="RecordingSection"
+                                         x:Uid="RecordingPageRecordingSection"
                                          HasReset="True"
                                          ResetRequested="ResetRecording_Click">
                     <StackPanel Spacing="{StaticResource SettingsCardSpacing}">
 
-                        <controls:SettingsCard x:Name="AudioInputCard"
-                                               x:Uid="GeneralMicrophoneCard"
-                                               Tag="GeneralMicrophoneCard">
-                            <ComboBox x:Name="AudioInputCombo"
-                                      MinWidth="240"
-                                      SelectionChanged="AudioInputCombo_SelectionChanged" />
-                        </controls:SettingsCard>
-
-                        <!-- Maximum recording length, composed. It sits under the
-                             microphone because both shape every take. -->
+                        <!-- Maximum recording length, composed. -->
                         <StackPanel x:Name="RecordingLimitHost"
                                     Spacing="{StaticResource SettingsCardSpacing}" />
 
@@ -57,6 +64,15 @@
                              cards can interleave in the same StackPanel. -->
                         <StackPanel x:Name="PreprocessingHost"
                                     Spacing="{StaticResource SettingsCardSpacing}" />
+                    </StackPanel>
+                </catalog:SettingsSection>
+
+                <!-- ── Checks ──────────────────────────────────────────────── -->
+                <!-- Title provisional, see above. Two commands with their
+                     readouts: nothing here keeps a value, so no reset. -->
+                <catalog:SettingsSection x:Name="ChecksSection"
+                                         x:Uid="RecordingPageChecksSection">
+                    <StackPanel Spacing="{StaticResource SettingsCardSpacing}">
 
                         <!-- Microphone level check: it advises whether the
                              pre-processing toggle is worth turning on; the user decides,
