@@ -31,6 +31,11 @@
          SettingsCard/SettingsExpander (the Windows 11 settings-page pattern). -->
     <PackageVersion Include="CommunityToolkit.Mvvm" Version="8.4.2" />
     <PackageVersion Include="CommunityToolkit.WinUI.Controls.SettingsControls" Version="8.2.250402" />
+    <!-- GridSplitter for the Ambient page's preview pane. Same build as
+         SettingsControls on purpose: both pull CommunityToolkit.WinUI.Extensions
+         and Helpers transitively, and one Toolkit build per process keeps those
+         shared assemblies at one version. Bump the two together. -->
+    <PackageVersion Include="CommunityToolkit.WinUI.Controls.Sizers" Version="8.2.250402" />
 
     <!-- Direct2D-backed drawing on a CompositionDrawingSurface (HUD rewriting stroke). -->
     <PackageVersion Include="Microsoft.Graphics.Win2D" Version="1.4.0" />

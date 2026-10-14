@@ -15,12 +15,15 @@ namespace Deckle.Lighting.Ambient;
 //
 // Surface : most cards are composed by SettingsComposer from the manifests in
 // AmbientViewModel.Settings.cs, one composer per host panel (StateHost,
-// BehaviourHost, TuningHost, CaptureHost). Five parts stay hand-authored
+// BehaviourHost, TuningHost, CaptureHost). Four parts stay hand-authored
 // because the composer cannot express them, each marked "bespoke" in the
-// XAML: the NotPaired InfoBar, the live preview (AmbientPreviewCard), the
-// per-light rows (LightZonesCard), the display picker (runtime labels) and
-// the Hue bridge expander (AmbientPage.Hue.cs). The brightness curve is a
-// composed Curve card, first of the fine-tuning cards.
+// XAML: the NotPaired InfoBar, the per-light rows (LightZonesCard), the
+// display picker (runtime labels) and the Hue bridge expander
+// (AmbientPage.Hue.cs). The brightness curve is a composed Curve card, first
+// of the fine-tuning cards. The live preview (AmbientPreviewCard) sits in a
+// pane at the right of the page, behind a splitter, so it stays in view
+// while the values below change; the page opens and closes that pane on the
+// card's own visibility (SyncPreviewPane).
 //
 // Sync : the view model writes every edit straight to AmbientSettingsService
 // and saves. The page observes AmbientSettingsService.Changed and reloads the
@@ -58,8 +61,51 @@ public sealed partial class AmbientPage : Page
         ViewModel.PropertyChanged += OnViewModelPropertyChanged;
         Header.IsResetAllEnabled = ViewModel.CanReset;
 
+        // The XAML column carries the pane's default width and floor; read
+        // once, then the pane follows the card (SyncPreviewPane).
+        _paneWidth    = PreviewColumn.Width;
+        _paneMinWidth = PreviewColumn.MinWidth;
+        Preview.RegisterPropertyChangedCallback(VisibilityProperty, (_, _) => SyncPreviewPane());
+        SyncPreviewPane();
+
         Loaded   += AmbientPage_Loaded;
         Unloaded += AmbientPage_Unloaded;
+    }
+
+    // ── Preview pane ───────────────────────────────────────────────────
+    //
+    // The preview card decides alone whether there is something live to
+    // show: it collapses while the engine is off (AmbientPreviewCard.
+    // UpdateState). The page follows that one signal to open or close the
+    // whole column, splitter and divider included, so the rule is written
+    // once. The column's width is the user's, written on the
+    // ColumnDefinition by the splitter at each drag, and kept for the page's
+    // lifetime only: nothing is persisted in this pass.
+
+    private GridLength _paneWidth;
+    private double _paneMinWidth;
+
+    private void SyncPreviewPane()
+    {
+        bool shown = Preview.Visibility == Visibility.Visible;
+        if (shown)
+        {
+            PreviewColumn.MinWidth = _paneMinWidth;
+            PreviewColumn.Width    = _paneWidth;
+        }
+        else
+        {
+            // Keep the dragged width before closing, so the pane reopens
+            // where the user left it.
+            if (PreviewColumn.Width.IsAbsolute && PreviewColumn.Width.Value > 0)
+                _paneWidth = PreviewColumn.Width;
+            PreviewColumn.MinWidth = 0;
+            PreviewColumn.Width    = new GridLength(0);
+        }
+
+        var visibility = shown ? Visibility.Visible : Visibility.Collapsed;
+        PreviewDivider.Visibility  = visibility;
+        PreviewSplitter.Visibility = visibility;
     }
 
     private void ComposeRegion(Panel host, IReadOnlyList<SettingDescriptor> settings)

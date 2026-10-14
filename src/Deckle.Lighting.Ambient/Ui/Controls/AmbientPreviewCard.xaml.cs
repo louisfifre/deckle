@@ -24,7 +24,8 @@ namespace Deckle.Lighting.Ambient;
 // point is to watch it while the values change). The 200 ms refresh runs only
 // while the card is loaded AND the engine runs AND the user has not paused
 // it. While the engine is off the whole card hides — there is nothing to show
-// and nothing to configure here.
+// and nothing to configure here — and the page closes the pane that holds
+// it on that same Visibility (AmbientPage.SyncPreviewPane).
 //
 // Ratio: each cell is sourceWidth / cols by sourceHeight / rows in source
 // pixels, and a uniform Viewbox scales the stage, so the preview has the
