@@ -21,8 +21,8 @@ public sealed partial class SettingsComposer
         // Tag carries the LabelKey as this fold's runtime identity — see BuildCard.
         var expander = new SettingsExpander { Header = ResolveHeader(s.LabelKey), Tag = s.LabelKey };
 
-        string? description = ResolveDescription(s.LabelKey);
-        if (description is not null) expander.Description = description;
+        // Through the page-wide Info switch, like a card's (see BuildCard).
+        SettingsDescriptions.Attach(expander, ResolveDescription(s.LabelKey));
 
         IconElement? icon = BuildIcon(s.Glyph);
         if (icon is not null) expander.HeaderIcon = icon;
@@ -126,8 +126,7 @@ public sealed partial class SettingsComposer
         // Tag carries the LabelKey as this fold's runtime identity — see BuildCard.
         var expander = new SettingsExpander { Header = ResolveHeader(s.LabelKey), Tag = s.LabelKey };
 
-        string? description = ResolveDescription(s.LabelKey);
-        if (description is not null) expander.Description = description;
+        SettingsDescriptions.Attach(expander, ResolveDescription(s.LabelKey));
 
         IconElement? icon = BuildIcon(s.Glyph);
         if (icon is not null) expander.HeaderIcon = icon;
@@ -213,8 +212,7 @@ public sealed partial class SettingsComposer
         // Tag carries the LabelKey as this fold's runtime identity — see BuildCard.
         var expander = new SettingsExpander { Header = ResolveHeader(s.LabelKey), Tag = s.LabelKey };
 
-        string? description = ResolveDescription(s.LabelKey);
-        if (description is not null) expander.Description = description;
+        SettingsDescriptions.Attach(expander, ResolveDescription(s.LabelKey));
 
         IconElement? icon = BuildIcon(s.Glyph);
         if (icon is not null) expander.HeaderIcon = icon;

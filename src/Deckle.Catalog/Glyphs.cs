@@ -89,6 +89,9 @@ public static class Glyphs
     // itself is the intent.
     public const string LightbulbFilled = "";
 
+    // The page header's Info toggle (SettingsDescriptions): the circled "i".
+    public const string Info = "";
+
     public static class Transport
     {
         public const string Play = "";

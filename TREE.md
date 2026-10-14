@@ -851,6 +851,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   ├── GestureHold.cs
 │   │   │   ├── HotkeyChordText.cs
 │   │   │   ├── HotkeyKeyNames.cs
+│   │   │   ├── InfoBarLayout.cs
 │   │   │   ├── IPathControl.cs
 │   │   │   ├── MagnitudeGrain.cs
 │   │   │   ├── PreviewBlock.cs
@@ -866,14 +867,15 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   ├── SettingsComposer.Hotkey.cs
 │   │   │   ├── SettingsComposer.Inputs.cs
 │   │   │   ├── SettingsComposer.Numeric.cs
+│   │   │   ├── SettingsDescriptions.cs
 │   │   │   ├── SettingsPageHeader.cs
 │   │   │   └── SettingsSection.cs
 │   │   ├── Hotkeys/
 │   │   │   ├── HotkeyChord.cs
 │   │   │   └── HotkeyModifiers.cs
 │   │   ├── Themes/
-│   │   │   ├── BreadcrumbBrushes.xaml
-│   │   │   └── Icons.xaml
+│   │   │   ├── Icons.xaml
+│   │   │   └── SettingsPageHeaderBrushes.xaml
 │   │   ├── ConfirmationService.cs
 │   │   ├── Deckle.Catalog.csproj
 │   │   ├── DiagnosticsRegistry.cs

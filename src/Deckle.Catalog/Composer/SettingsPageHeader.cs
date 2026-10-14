@@ -4,6 +4,7 @@ using System.Linq;
 using Microsoft.UI.Text;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
+using Microsoft.UI.Xaml.Controls.Primitives;
 using Microsoft.UI.Xaml.Media;
 
 namespace Deckle.Catalog;
@@ -12,7 +13,8 @@ namespace Deckle.Catalog;
 //
 // The one header block every settings page opens with (settings design system,
 // decisions 9 and 15): a breadcrumb in place of the title, one line of
-// description, an optional link, and Reset all on the trailing edge. Built in
+// description, an optional link, and on the trailing edge the Info toggle
+// that shows the cards' descriptions (SettingsDescriptions) then Reset all. Built in
 // code like the composer's cards, so it lives on the Catalog floor that every
 // settings-bearing module already references and no page draws its own.
 //
@@ -34,6 +36,7 @@ public sealed partial class SettingsPageHeader : UserControl
     private readonly TextBlock _fallbackTitle;
     private readonly TextBlock _description;
     private readonly HyperlinkButton _link;
+    private readonly ToggleButton _info;
     private readonly Button _resetAll;
     private IReadOnlyList<SettingsBreadcrumbSegment>? _segments;
 
@@ -86,6 +89,37 @@ public sealed partial class SettingsPageHeader : UserControl
         ToolTipService.SetToolTip(_resetAll, Loc.Get("SettingsPageHeader_ResetAllTooltip"));
         _resetAll.Click += OnResetAllClick;
 
+        // The Info toggle, left of Reset all: shows or hides every description
+        // on every page (SettingsDescriptions). A toggle, not a command, so its
+        // pressed look says the long form is on; its state is process-wide, so
+        // the button follows a click made on another page through Changed.
+        _info = new ToggleButton
+        {
+            Style = Application.Current.Resources["SubtleButtonStyle"] as Style,
+            Width = 32,
+            Height = 32,
+            Padding = new Thickness(0),
+            VerticalAlignment = VerticalAlignment.Center,
+            IsChecked = SettingsDescriptions.IsShown,
+            Content = new FontIcon { Glyph = Glyphs.Info, FontSize = 16 },
+        };
+        _info.Click += (_, _) => SettingsDescriptions.IsShown = _info.IsChecked == true;
+        // Subscribed while in a tree only: a cached page's header outlives its
+        // visits, and a static event would otherwise hold it for good.
+        Loaded += (_, _) => { SettingsDescriptions.Changed += OnDescriptionsChanged; SyncInfo(); };
+        Unloaded += (_, _) => SettingsDescriptions.Changed -= OnDescriptionsChanged;
+        ActualThemeChanged += (_, _) => SyncInfo();
+        SyncInfo();
+
+        var commands = new StackPanel
+        {
+            Orientation = Orientation.Horizontal,
+            Spacing = 4,
+            VerticalAlignment = VerticalAlignment.Center,
+        };
+        commands.Children.Add(_info);
+        commands.Children.Add(_resetAll);
+
         var titleRow = new Grid();
         titleRow.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
         titleRow.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
@@ -93,9 +127,9 @@ public sealed partial class SettingsPageHeader : UserControl
         titleSlot.Children.Add(_crumbs);
         titleSlot.Children.Add(_fallbackTitle);
         Grid.SetColumn(titleSlot, 0);
-        Grid.SetColumn(_resetAll, 1);
+        Grid.SetColumn(commands, 1);
         titleRow.Children.Add(titleSlot);
-        titleRow.Children.Add(_resetAll);
+        titleRow.Children.Add(commands);
 
         _description = new TextBlock
         {
@@ -216,13 +250,17 @@ public sealed partial class SettingsPageHeader : UserControl
     // theme's grey whenever Deckle's theme differed from Windows'. In theme
     // dictionaries, the template's ThemeResource lookups resolve against the
     // element's own theme and follow it when it changes. The dictionary is
-    // compiled XAML (Themes/BreadcrumbBrushes.xaml), not a XamlReader string:
-    // XamlReader.Load parses without Application.Resources in sight, so the
-    // StaticResource aliases would fail at parse time, in this constructor.
-    private static ResourceDictionary CrumbBrushes() => new()
+    // compiled XAML (Themes/SettingsPageHeaderBrushes.xaml), not a XamlReader
+    // string: XamlReader.Load parses without Application.Resources in sight, so
+    // the StaticResource aliases would fail at parse time, in this constructor.
+    // One instance per header, shared by the breadcrumb (merged into its
+    // Resources) and the Info toggle (read by theme in ThemeBrush).
+    private readonly ResourceDictionary _headerBrushes = new()
     {
-        Source = new Uri("ms-appx:///Deckle.Catalog/Themes/BreadcrumbBrushes.xaml"),
+        Source = new Uri("ms-appx:///Deckle.Catalog/Themes/SettingsPageHeaderBrushes.xaml"),
     };
+
+    private ResourceDictionary CrumbBrushes() => _headerBrushes;
 
     private void ResolveBreadcrumb()
     {
@@ -282,6 +320,43 @@ public sealed partial class SettingsPageHeader : UserControl
     }
 
     private void OnLinkClick(object sender, RoutedEventArgs e) => LinkClicked?.Invoke(this, e);
+
+    private void OnDescriptionsChanged(object? sender, EventArgs e) => SyncInfo();
+
+    // The SubtleButtonStyle is a Button style; a ToggleButton accepts it
+    // (ButtonBase setters) but draws no checked state from it, so the checked
+    // look is given here: the accent colour on the glyph while the
+    // descriptions are shown. The brush is read from the header's own theme
+    // dictionary by the element's ActualTheme, not from Application.Resources,
+    // which follows the application theme rather than the window's (see
+    // CrumbBrushes).
+    private void SyncInfo()
+    {
+        bool shown = SettingsDescriptions.IsShown;
+        if (_info.IsChecked != shown) _info.IsChecked = shown;
+        if (_info.Content is FontIcon icon)
+        {
+            if (shown)
+                icon.Foreground = ThemeBrush("SettingsPageHeaderInfoCheckedForeground");
+            else
+                icon.ClearValue(IconElement.ForegroundProperty);
+        }
+        ToolTipService.SetToolTip(_info, Loc.Get(shown
+            ? "SettingsPageHeader_HideDescriptionsTooltip"
+            : "SettingsPageHeader_ShowDescriptionsTooltip"));
+    }
+
+    // A brush of the header's compiled dictionary for this element's theme. A
+    // StaticResource alias inside a theme dictionary resolves in that theme's
+    // scope, so each theme's copy carries the right colour; HighContrast is
+    // taken as Default here, as no element API tells it apart.
+    private Brush? ThemeBrush(string key)
+    {
+        string theme = ActualTheme == ElementTheme.Light ? "Light" : "Default";
+        return _headerBrushes.ThemeDictionaries[theme] is ResourceDictionary dictionary
+            ? dictionary[key] as Brush
+            : null;
+    }
 
     private async void OnResetAllClick(object sender, RoutedEventArgs e)
     {

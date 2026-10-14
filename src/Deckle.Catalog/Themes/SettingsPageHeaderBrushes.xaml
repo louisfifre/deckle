@@ -1,13 +1,14 @@
 <!--
-    BreadcrumbBrushes.xaml — the settings page header's breadcrumb colours.
+    SettingsPageHeaderBrushes.xaml — the settings page header's brushes.
 
-    SettingsPageHeader sets this dictionary as its BreadcrumbBar's Resources
-    (ms-appx:///Deckle.Catalog/Themes/BreadcrumbBrushes.xaml). The stock
-    control paints every segment in the primary text colour and only greys one
-    on hover, so a parent read like the current page. Windows Settings does the
-    reverse: parents in the secondary colour, the current page in the primary,
-    and a parent lights up to primary under the pointer because it leads
-    somewhere (2026-10-14).
+    SettingsPageHeader merges this dictionary into its BreadcrumbBar's
+    Resources (ms-appx:///Deckle.Catalog/Themes/SettingsPageHeaderBrushes.xaml)
+    and reads the Info toggle's checked colour from it by theme. The stock
+    breadcrumb paints every segment in the primary text colour and only greys
+    one on hover, so a parent read like the current page. Windows Settings does
+    the reverse: parents in the secondary colour, the current page in the
+    primary, and a parent lights up to primary under the pointer because it
+    leads somewhere (2026-10-14).
 
     The overrides are aliases in theme dictionaries, the documented
     lightweight-styling form, duplicated for Default, Light and HighContrast as
@@ -28,6 +29,7 @@
             <StaticResource x:Key="BreadcrumbBarPressedForegroundBrush" ResourceKey="TextFillColorTertiaryBrush" />
             <StaticResource x:Key="BreadcrumbBarCurrentNormalForegroundBrush" ResourceKey="TextFillColorPrimaryBrush" />
             <StaticResource x:Key="BreadcrumbBarCurrentHoverForegroundBrush" ResourceKey="TextFillColorPrimaryBrush" />
+            <StaticResource x:Key="SettingsPageHeaderInfoCheckedForeground" ResourceKey="AccentTextFillColorPrimaryBrush" />
         </ResourceDictionary>
         <ResourceDictionary x:Key="Light">
             <StaticResource x:Key="BreadcrumbBarNormalForegroundBrush" ResourceKey="TextFillColorSecondaryBrush" />
@@ -35,6 +37,7 @@
             <StaticResource x:Key="BreadcrumbBarPressedForegroundBrush" ResourceKey="TextFillColorTertiaryBrush" />
             <StaticResource x:Key="BreadcrumbBarCurrentNormalForegroundBrush" ResourceKey="TextFillColorPrimaryBrush" />
             <StaticResource x:Key="BreadcrumbBarCurrentHoverForegroundBrush" ResourceKey="TextFillColorPrimaryBrush" />
+            <StaticResource x:Key="SettingsPageHeaderInfoCheckedForeground" ResourceKey="AccentTextFillColorPrimaryBrush" />
         </ResourceDictionary>
         <ResourceDictionary x:Key="HighContrast">
             <StaticResource x:Key="BreadcrumbBarNormalForegroundBrush" ResourceKey="TextFillColorSecondaryBrush" />
@@ -42,6 +45,7 @@
             <StaticResource x:Key="BreadcrumbBarPressedForegroundBrush" ResourceKey="TextFillColorTertiaryBrush" />
             <StaticResource x:Key="BreadcrumbBarCurrentNormalForegroundBrush" ResourceKey="TextFillColorPrimaryBrush" />
             <StaticResource x:Key="BreadcrumbBarCurrentHoverForegroundBrush" ResourceKey="TextFillColorPrimaryBrush" />
+            <StaticResource x:Key="SettingsPageHeaderInfoCheckedForeground" ResourceKey="AccentTextFillColorPrimaryBrush" />
         </ResourceDictionary>
     </ResourceDictionary.ThemeDictionaries>
 </ResourceDictionary>

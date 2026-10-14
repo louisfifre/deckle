@@ -233,8 +233,10 @@ public sealed partial class SettingsComposer
         // x:Name in the page's NameScope, so Tag is the one stable id it can carry.
         var card = new SettingsCard { Header = ResolveHeader(s.LabelKey), Tag = s.LabelKey };
 
-        string? description = ResolveDescription(s.LabelKey);
-        if (description is not null) card.Description = description;
+        // The description goes through the page-wide Info switch
+        // (SettingsDescriptions): the card keeps its text and shows it only
+        // while the switch is on.
+        SettingsDescriptions.Attach(card, ResolveDescription(s.LabelKey));
 
         IconElement? icon = BuildIcon(s.Glyph);
         if (icon is not null) card.HeaderIcon = icon;

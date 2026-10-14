@@ -94,8 +94,10 @@ public sealed partial class SettingsComposer
             editor.Floor = args.Floor?.Invoke();
             if (args.Describe is not null)
             {
+                // The sentence is a legend in words: it goes through the
+                // page-wide Info switch like the .resw description it replaces.
                 string? sentence = args.Describe(points);
-                card.Description = sentence ?? ResolveDescription(s.LabelKey) ?? string.Empty;
+                SettingsDescriptions.Attach(card, sentence ?? ResolveDescription(s.LabelKey));
             }
             updateReset?.Invoke();
             ApplyReactiveState(card, s);
