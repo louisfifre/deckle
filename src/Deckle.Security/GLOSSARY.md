@@ -10,7 +10,7 @@ Vocabulary for the protection boundary shared across Deckle. It classifies conte
 ## Trust boundary
 
 **Trusted Windows session** :
-The security perimeter Deckle assumes while it runs, a signed-in Windows session that no hostile process already controls under the same identity. Deckle's protection covers someone reading its data from outside that session, and unintended disclosure through Deckle's outputs. It makes no claim against a process of the same user that inspects Deckle, reads the clipboard or uses the user's own decryption authority.
+The security perimeter Deckle assumes while it runs, that is a signed-in Windows session that no hostile process already controls under the same identity. Deckle's protection covers someone reading its data from outside that session, and unintended disclosure through Deckle's outputs. It makes no claim against a process of the same user that inspects Deckle, reads the clipboard or uses the user's own decryption authority.
 _Avoid_ : secure session (absolute and therefore misleading), same-user malware protection (explicitly outside the boundary).
 
 **Secure session** :
@@ -21,7 +21,7 @@ Protection against a hostile program that runs under the user's own identity. De
 
 ## Content and custody
 
-Captured content is classified by where it came from. Custody is classified separately, by who controls the persisted copy.
+Captured content is classified by where it came from. Custody is classified separately, by who controls the persisted copy, and it takes two forms, the managed copy and the user-directed output. Protection failure is a state that only a managed copy can be in.
 
 **Captured content** :
 Content that comes from the user and that Deckle retains because it observed, recorded, transcribed, transformed or reconstructed it, such as voice audio, verbatim or rewritten text, typing corpora, and future screen-derived content. What makes it captured content is its origin, never a detector's verdict on sensitivity. A credential a detector missed is still captured content, and a setting or a measurement that holds no content does not become captured content because Deckle stores it.
