@@ -1,30 +1,30 @@
 ---
 name: glossary-deckle-hud-chrono
-description: "Chrono HUD element vocabulary — the face's eight elements, accent twins, and the animated / at-rest / dot distinctions."
+description: "Chrono HUD element vocabulary. It names the face's eight elements and the accent twins, and tells animated digits, at-rest digits and dots apart."
 ---
 
-# Deckle.Hud — Chrono glossary
+# Deckle.Hud, Chrono glossary
 
-Shared vocabulary for the chrono face (`HudChrono`). The face is the `MM.SS.cc` clock inside the HUD card. This file fixes the terms Louis and the agents use.
+Shared vocabulary for the chrono face, `HudChrono`. The face is the `MM.SS.cc` clock inside the HUD card. This file fixes the terms that Louis and the agents use.
 
-## Elements — the chrono face
+## Elements, the chrono face
 
-The face reads `MM.SS.cc` as **8 separate TextBlocks** (each digit cell can carry its own Composition reveal visual), left to right:
+The face shows `MM.SS.cc` as eight separate elements, from left to right.
 
-- **Min1, Min2** — the two minute digits
-- **DotA** — the minutes / seconds separator (`.`)
-- **Sec1, Sec2** — the two seconds digits
-- **DotB** — the seconds / centiseconds separator (`.`)
-- **Cs1, Cs2** — the two centisecond digits (*centiseconds*, hundredths)
+- **Min1** and **Min2** are the two minute digits.
+- **DotA** is the separator between minutes and seconds (`.`).
+- **Sec1** and **Sec2** are the two seconds digits.
+- **DotB** is the separator between seconds and centiseconds (`.`).
+- **Cs1** and **Cs2** are the two centisecond digits, the hundredths of a second.
 
 **Accent twin** :
-The overlay each digit carries in the same cell (`Min1Accent`, `Sec2Accent`, …), holding the exact Windows accent colour at `Opacity=0`. Recording uses it for the instant advance flash; Stop uses it only if the Composition reveal cannot be built. The six-digit index is `0→5`: Min1, Min2, Sec1, Sec2, Cs1, Cs2.
+An overlay that each digit carries in its own cell, named after it, such as `Min1Accent` or `Sec2Accent`. It holds the exact Windows accent colour and stays invisible until the digit flashes in that colour.
 
 **Animated digit** :
-A digit that *advanced* during the take (Recording). The animated / at-rest distinction is **live only during Recording**. No per-digit history survives Stop; all six digits receive the same static reveal treatment.
+A digit that *advanced* during the take, while recording. The difference between animated and at-rest digits exists **only during Recording**.
 
 **At-rest digit** :
-A digit not currently advancing.
+A digit that is not advancing at this moment.
 
 **Dot** :
-DotA, DotB. Never animated; **always takes the at-rest tone**.
+A separator of the face, DotA or DotB. It is never animated and **always takes the at-rest tone**.
