@@ -11,9 +11,10 @@
          GridSplitter between them (Louis, 2026-10-14, on screen). The preview is
          there to be watched while the tuning values move; as a card in the flow
          it left the screen as soon as the user scrolled to the tuning section.
-         The pane opens from the Live preview tile of the Fine tuning section
-         and closes from its own Close; while it is closed the page takes the
-         full width (code-behind, SyncPreviewPane).
+         The pane opens from the Live preview tile under the module switch and
+         from the title links of the Behaviour and Fine tuning sections, and
+         closes from its own Close; while it is closed the page takes the full
+         width (code-behind, SyncPreviewPane).
 
          The header stays in the left column rather than spanning both. The
          left column is the page as every settings page lays it out, a
@@ -65,6 +66,21 @@
                          (AmbientViewModel.StateSettings). -->
                     <StackPanel x:Name="StateHost"
                                 Spacing="{StaticResource SettingsCardSpacing}" />
+
+                    <!-- The way to the live preview: a tile that opens the pane
+                         at the right of the page, right under the module switch
+                         so the pane sits beside everything the page tunes, the
+                         configuration included (Louis, 2026-10-15; it opened the
+                         Fine tuning section before). A clickable card with the
+                         stock chevron: it leads somewhere, the way a drill-in
+                         card does. The Behaviour and Fine tuning titles repeat
+                         the way in as a text link. -->
+                    <controls:SettingsCard x:Name="PreviewTile"
+                                           x:Uid="AmbientPreviewTile"
+                                           Tag="AmbientPreviewTile"
+                                           HeaderIcon="{ui:FontIcon Glyph={StaticResource Icon.Preview}}"
+                                           IsClickEnabled="True"
+                                           Click="OpenPreview_Click" />
 
                     <!-- bespoke: a state banner, not a setting. It opens while the
                          persisted Hue bridge state is incomplete (no IP / username /
@@ -216,7 +232,10 @@
                     </catalog:SettingsSection>
 
                     <!-- ── Behaviour ──────────────────────────────────────────── -->
-                    <catalog:SettingsSection x:Uid="AmbientPageBehaviourSection">
+                    <!-- The title link (LinkText from the .resw) opens the same
+                         preview pane as the tile above. -->
+                    <catalog:SettingsSection x:Uid="AmbientPageBehaviourSection"
+                                             LinkClicked="OpenPreview_Click">
                         <StackPanel Spacing="{StaticResource SettingsCardSpacing}">
 
                             <!-- Composed: Mode, per-zone colours with the band shape
@@ -234,22 +253,11 @@
                     </catalog:SettingsSection>
 
                     <!-- ── Fine tuning ────────────────────────────────────────── -->
-                    <!-- Last, after what the module runs on and how it behaves. -->
-                    <catalog:SettingsSection x:Uid="AmbientPageTuningSection">
+                    <!-- Last, after what the module runs on and how it behaves.
+                         The title link opens the preview pane, like Behaviour's. -->
+                    <catalog:SettingsSection x:Uid="AmbientPageTuningSection"
+                                             LinkClicked="OpenPreview_Click">
                         <StackPanel Spacing="{StaticResource SettingsCardSpacing}">
-
-                            <!-- The way to the live preview: a tile that opens the
-                                 pane at the right of the page, first under the
-                                 section title so it is found before the values it
-                                 serves (Louis, 2026-10-14). A clickable card with the
-                                 stock chevron: it leads somewhere, the way a drill-in
-                                 card does. -->
-                            <controls:SettingsCard x:Name="PreviewTile"
-                                                   x:Uid="AmbientPreviewTile"
-                                                   Tag="AmbientPreviewTile"
-                                                   HeaderIcon="{ui:FontIcon Glyph={StaticResource Icon.Preview}}"
-                                                   IsClickEnabled="True"
-                                                   Click="PreviewTile_Click" />
 
                             <!-- Composed: the brightness curve first, then the floor,
                                  reaction speed, exposure and saturation, flat
@@ -292,8 +300,8 @@
         <!-- The preview, floating in its column: the shared block takes the
              column's height so the stage scales to the room, the Playground's
              form, with the page's padding around it and nothing else. Opened
-             by the Live preview tile, closed by its own Close; its width is
-             the user's (SyncPreviewPane). Collapsed with the column, so the
+             by the Live preview tile and the section links, closed by its own
+             Close; its width is the user's (SyncPreviewPane). Collapsed with the column, so the
              control inside refreshes nothing while the pane is closed. -->
         <Grid x:Name="PreviewPane"
               Grid.Column="2"
