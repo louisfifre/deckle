@@ -1,5 +1,7 @@
+using Deckle.Composition;
 using Deckle.Playground;
 using Xunit;
+using static Deckle.Composition.HudComposition;
 
 namespace Deckle.Playground.Tests;
 
@@ -25,27 +27,36 @@ public sealed class HudTargetControlsTests
         Assert.Equal(offered, model.IsMaterialToggleVisible);
     }
 
-    [Fact]
-    public void TheGaugeSharesTheRecordingRowsAndOffersNoOtherPalette()
+    // The gauge is the Recording outline opened by the pause: its fades and
+    // material are the Recording rows, tuned beside it, and the material
+    // section shown is Recording's, whatever the parts' radio says.
+    [Theory]
+    [InlineData(HudMaterial.Grey, HudMaterial.Colour, HudTuningSection.GreyMaterial)]
+    [InlineData(HudMaterial.Colour, HudMaterial.Grey, HudTuningSection.ColourMaterial)]
+    public void TheGaugeSharesTheRecordingRowsAndShowsRecordingsMaterial(
+        HudMaterial recording, HudMaterial radio, HudTuningSection expected)
     {
-        var model = new HudViewModel { CurrentTarget = HudTarget.Gauge };
-        Assert.Contains(HudTuningSection.UtteranceCountdown, model.ActiveTuningSections);
-        // The gauge is the Recording outline opened by the pause: its fades
-        // and material are the Recording rows, tuned beside it.
-        Assert.Contains(HudTuningSection.Recording, model.ActiveTuningSections);
-        Assert.DoesNotContain(HudTuningSection.Palette, model.ActiveTuningSections);
+        var model = new HudViewModel { CurrentTarget = HudTarget.Gauge, PreviewMaterial = radio };
+        var sections = model.ActiveTuningSections(new ConicArcStrokeConfig { RecordingMaterial = recording });
+
+        Assert.Contains(HudTuningSection.Gauge, sections);
+        Assert.Contains(HudTuningSection.Recording, sections);
+        Assert.Contains(expected, sections);
+        Assert.Single(sections, s => s is HudTuningSection.GreyMaterial or HudTuningSection.ColourMaterial);
     }
 
     [Fact]
     public void BareMaterialOffersItsOwnRotationAndMaskOffersItsOwnShape()
     {
+        var tuning = new ConicArcStrokeConfig();
         var model = new HudViewModel { CurrentTarget = HudTarget.Cone };
-        Assert.Contains(HudTuningSection.HueRotation, model.ActiveTuningSections);
-        Assert.DoesNotContain(HudTuningSection.ConicFade, model.ActiveTuningSections);
+        Assert.Contains(HudTuningSection.HueRotation, model.ActiveTuningSections(tuning));
+        Assert.DoesNotContain(HudTuningSection.SweepMask, model.ActiveTuningSections(tuning));
         model.CurrentTarget = HudTarget.SweepMask;
-        Assert.Contains(HudTuningSection.ConicFade, model.ActiveTuningSections);
-        Assert.Contains(HudTuningSection.ArcRotation, model.ActiveTuningSections);
-        Assert.DoesNotContain(HudTuningSection.Palette, model.ActiveTuningSections);
+        Assert.Contains(HudTuningSection.SweepMask, model.ActiveTuningSections(tuning));
+        Assert.Contains(HudTuningSection.SweepRotation, model.ActiveTuningSections(tuning));
+        Assert.DoesNotContain(HudTuningSection.ColourMaterial, model.ActiveTuningSections(tuning));
+        Assert.DoesNotContain(HudTuningSection.GreyMaterial, model.ActiveTuningSections(tuning));
     }
     [Fact]
     public void FreshTuningUsesTheProductionTranscribingMaterialDefaults()

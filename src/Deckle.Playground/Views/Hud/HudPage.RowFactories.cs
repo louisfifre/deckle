@@ -1,7 +1,9 @@
 using System;
 using Microsoft.UI.Xaml;
+using Microsoft.UI.Xaml.Automation;
 using Microsoft.UI.Xaml.Controls;
 using Deckle.Catalog;
+using Deckle.Composition;
 
 namespace Deckle.Playground;
 
@@ -284,6 +286,47 @@ public sealed partial class HudPage
         Grid.SetColumn(toggle, 1);
         grid.Children.Add(labelTb);
         grid.Children.Add(toggle);
+        stack.Children.Add(grid);
+    }
+
+    // A two-value choice, so RadioButtons rather than a toggle: both options
+    // stay readable by name. The material decides which rows the panel
+    // shows, so a choice rebuilds the panel (and through it the preview).
+    // The rebuild is queued: it would otherwise tear this control down
+    // inside its own SelectionChanged.
+    private void AddMaterialRow(StackPanel stack, HudMaterial value, Action<HudMaterial> setter)
+    {
+        var radios = new RadioButtons { MaxColumns = 2, VerticalAlignment = VerticalAlignment.Center };
+        // Items follow HudMaterial's order (Grey, Colour), so the index is
+        // the material.
+        radios.Items.Add("Grey");
+        radios.Items.Add("Colour");
+        // Selected before subscribing, so building the row fires nothing.
+        radios.SelectedIndex = value == HudMaterial.Grey ? 0 : 1;
+        AutomationProperties.SetName(radios, "Material");
+        radios.SelectionChanged += (_, _) =>
+        {
+            var next = radios.SelectedIndex == 0 ? HudMaterial.Grey : HudMaterial.Colour;
+            // A late selection event for the initial index is not a change.
+            if (next == value) return;
+            setter(next);
+            UpdateUnsavedBar();
+            DispatcherQueue.TryEnqueue(RebuildTuningPanel);
+        };
+
+        var grid = new Grid { ColumnSpacing = 8, Margin = new Thickness(0, 4, 0, 4) };
+        grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(160) });
+        grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+        var labelTb = new TextBlock
+        {
+            Text = "Material",
+            VerticalAlignment = VerticalAlignment.Center,
+            TextTrimming = TextTrimming.CharacterEllipsis,
+        };
+        Grid.SetColumn(labelTb, 0);
+        Grid.SetColumn(radios, 1);
+        grid.Children.Add(labelTb);
+        grid.Children.Add(radios);
         stack.Children.Add(grid);
     }
 

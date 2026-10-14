@@ -23,23 +23,23 @@ public enum HudTarget
 }
 
 // Logical groups of tuning expanders. The panel shows only the sections whose
-// rows reach the active target's preview. Parked follows them so the
-// transition-only defaults stay reachable, except on the targets without a
-// stroke: Charging (empty list) and Gauge.
+// rows reach the active target's preview, in the order ActiveTuningSections
+// lists them. Simulation drives the preview only and is never saved.
 public enum HudTuningSection
 {
     Geometry,
-    Palette,
-    ConicFade,
+    ColourMaterial,
+    GreyMaterial,
+    SweepMask,
     HueRotation,
-    ArcRotation,
+    SweepRotation,
     Recording,
     Transcribing,
     Rewriting,
-    SimulatedRms,
-    ClonePlacement,
-    UtteranceCountdown,
-    Parked,
+    Gauge,
+    DigitReveal,
+    Simulation,
+    Orientations,
 }
 
 // Transport and target state only. The stroke tuning lives in the mutable
@@ -117,94 +117,97 @@ public partial class HudViewModel : ObservableObject
         IsPlaying = false;
     }
 
-    // The sections whose rows reach the active target's preview. A generic
-    // section replaced by the target's own section is hidden; its rows stay
-    // reachable from another target because the page holds one shared
-    // TuningModel.
-    public IReadOnlyCollection<HudTuningSection> ActiveTuningSections =>
+    // The material the active target paints its cone with. A HUD state shows
+    // its own state's material, the gauge shows Recording's (it is the
+    // Recording outline opened by the pause), and the cone parts show the
+    // header radio's. The state materials are read from the tuning the page
+    // passes in, never mirrored here: the page's TuningModel stays their one
+    // source, and the Save bar compares that model alone. Charging and the
+    // sweep mask paint no cone; they fall through to the radio unused.
+    public HudMaterial MaterialInPlay(HudComposition.ConicArcStrokeConfig tuning) =>
         CurrentTarget switch
+        {
+            HudTarget.Recording or HudTarget.Gauge => tuning.RecordingMaterial,
+            HudTarget.Transcribing                 => tuning.TranscribingMaterial,
+            HudTarget.Rewriting                    => tuning.RewritingMaterial,
+            _                                      => PreviewMaterial,
+        };
+
+    // The sections whose rows reach the active target's preview, in panel
+    // order: the one map of which section shows where. It takes the page's
+    // tuning because the material in play decides between the two material
+    // sections and whether a hue rotation can show at all; a section replaced
+    // by the target's own stays reachable from another target, since the page
+    // holds one shared TuningModel.
+    public IReadOnlyList<HudTuningSection> ActiveTuningSections(HudComposition.ConicArcStrokeConfig tuning)
+    {
+        bool colour = MaterialInPlay(tuning) == HudMaterial.Colour;
+        var material = colour ? HudTuningSection.ColourMaterial : HudTuningSection.GreyMaterial;
+        // On the flat grey a hue rotation changes nothing on screen.
+        HudTuningSection[] hueRotation = colour ? [HudTuningSection.HueRotation] : [];
+
+        return CurrentTarget switch
         {
             // Charging: HudChrono.ApplyCharging detaches the stroke and no
             // config is armed, so no row reaches the preview.
-            HudTarget.Charging => System.Array.Empty<HudTuningSection>(),
-            // No ConicFade nor HueRotation: CreateRecordingStroke replaces the
-            // generic sweep slots with the Recording* fields and freezes the
-            // hue rotation, so those rows would change nothing. The Recording
-            // expander carries the rows that act.
+            HudTarget.Charging => [],
+            // No SweepMask nor HueRotation: CreateRecordingStroke replaces the
+            // generic sweep slots with the Recording* fields and freezes both
+            // rotations, so those rows would change nothing. The Recording
+            // section carries the rows that act; the gauge opens during
+            // Recording, so its reach shows here too.
             HudTarget.Recording =>
-                new[]
-                {
-                    HudTuningSection.Geometry,
-                    HudTuningSection.Palette,
-                    HudTuningSection.Recording,
-                    HudTuningSection.SimulatedRms,
-                },
-            // Transcribing: CreateProcessingStroke spins the arc mask with the
-            // Arc* fields (the visible sweep) and the digit reveal reads Clone*.
+            [
+                HudTuningSection.Geometry, material, HudTuningSection.Recording,
+                HudTuningSection.Gauge, HudTuningSection.Simulation, HudTuningSection.Orientations,
+            ],
+            // CreateProcessingStroke spins the cone with the Hue* fields and
+            // the sweep with the Arc* fields; the digit reveal reads Clone*.
             HudTarget.Transcribing =>
-                new[]
-                {
-                    HudTuningSection.Geometry,
-                    HudTuningSection.Palette,
-                    HudTuningSection.ConicFade,
-                    HudTuningSection.HueRotation,
-                    HudTuningSection.ArcRotation,
-                    HudTuningSection.Transcribing,
-                    HudTuningSection.ClonePlacement,
-                },
-            // Rewriting: same CreateProcessingStroke as Transcribing, own material.
+            [
+                HudTuningSection.Geometry, material, .. hueRotation,
+                HudTuningSection.SweepMask, HudTuningSection.SweepRotation, HudTuningSection.Transcribing,
+                HudTuningSection.DigitReveal, HudTuningSection.Simulation, HudTuningSection.Orientations,
+            ],
             HudTarget.Rewriting =>
-                new[]
-                {
-                    HudTuningSection.Geometry,
-                    HudTuningSection.Palette,
-                    HudTuningSection.ConicFade,
-                    HudTuningSection.HueRotation,
-                    HudTuningSection.ArcRotation,
-                    HudTuningSection.Rewriting,
-                    HudTuningSection.ClonePlacement,
-                },
-            // Cone: CreateNakedMaskPreview shows only the conic brush, which
-            // spins with the Hue* fields; the arc fade never shows.
+            [
+                HudTuningSection.Geometry, material, .. hueRotation,
+                HudTuningSection.SweepMask, HudTuningSection.SweepRotation, HudTuningSection.Rewriting,
+                HudTuningSection.DigitReveal, HudTuningSection.Simulation, HudTuningSection.Orientations,
+            ],
+            // CreateNakedMaskPreview shows only the cone brush, which spins
+            // with the Hue* fields; the sweep never shows.
             HudTarget.Cone =>
-                new[]
-                {
-                    HudTuningSection.Geometry,
-                    HudTuningSection.Palette,
-                    HudTuningSection.HueRotation,
-                },
-            // SweepMask: CreateNakedMaskPreview shows only the arc brush,
-            // painted from the ConicFade fields and spun by the Arc* fields.
+            [
+                HudTuningSection.Geometry, material, .. hueRotation, HudTuningSection.Orientations,
+            ],
+            // CreateNakedMaskPreview shows only the sweep brush: no material.
             HudTarget.SweepMask =>
-                new[]
-                {
-                    HudTuningSection.Geometry,
-                    HudTuningSection.ConicFade,
-                    HudTuningSection.ArcRotation,
-                },
-            // Gauge: its own reach rows, then the Recording rows it shares —
-            // fades and material (span, mirror and arc phase in that section
-            // do not reach it: the two wedges follow the pause).
+            [
+                HudTuningSection.Geometry, HudTuningSection.SweepMask,
+                HudTuningSection.SweepRotation, HudTuningSection.Orientations,
+            ],
+            HudTarget.MaskedCone =>
+            [
+                HudTuningSection.Geometry, material, .. hueRotation,
+                HudTuningSection.SweepMask, HudTuningSection.SweepRotation, HudTuningSection.Orientations,
+            ],
+            // Its own reach rows, then the Recording rows it shares (fades and
+            // material) and the material itself. Its cone is frozen like the
+            // Recording outline's, so no hue rotation.
             HudTarget.Gauge =>
-                new[] { HudTuningSection.UtteranceCountdown, HudTuningSection.Recording },
-            // DigitReveal: CreateConicClonePreview ignores InsetDip and replaces
-            // Lightness/Chroma and the hue period/direction with the Clone* fields.
+            [
+                HudTuningSection.Gauge, HudTuningSection.Recording, material, HudTuningSection.Simulation,
+            ],
+            // CreateConicClonePreview paints the clone through
+            // CloneSurfaceConfig: on the Colour material only the wheel's hue
+            // layout reaches it (the page shows that subset), on the Grey
+            // material the grey rows do.
             HudTarget.DigitReveal =>
-                new[]
-                {
-                    HudTuningSection.ConicFade,
-                    HudTuningSection.ClonePlacement,
-                },
-            // MaskedCone: CreateNakedMaskPreview shows the masked cone, so
-            // every generic section acts.
-            _ /* MaskedCone */ =>
-                new[]
-                {
-                    HudTuningSection.Geometry,
-                    HudTuningSection.Palette,
-                    HudTuningSection.ConicFade,
-                    HudTuningSection.HueRotation,
-                    HudTuningSection.ArcRotation,
-                },
+            [
+                HudTuningSection.DigitReveal, material, HudTuningSection.SweepMask,
+            ],
+            _ => throw new System.ArgumentOutOfRangeException(nameof(CurrentTarget), CurrentTarget, null),
         };
+    }
 }

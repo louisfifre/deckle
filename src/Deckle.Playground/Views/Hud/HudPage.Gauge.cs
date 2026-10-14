@@ -14,6 +14,7 @@ namespace Deckle.Playground;
 //
 // The gauge the pause opens in Recording, built from the page's own model,
 // with the cone it samples shown behind it at the simulation's visibility.
+// The Gauge section's reach rows are saved; the Simulation rows here are not.
 public sealed partial class HudPage
 {
     private HudComposition.UtteranceCountdownVisual? _gaugePreview;
@@ -55,9 +56,12 @@ public sealed partial class HudPage
         _gaugePreview.SetProgress(_countdownTuning.Progress);
     }
 
+    // The gauge's own rows: the reach, stored in the countdown config. Its
+    // fades and material are the Recording section's, its thickness and inset
+    // the HUD geometry section's.
     private void AddGaugeExpander()
     {
-        var geometry = NewTuningSection("Countdown geometry", () =>
+        var gauge = NewTuningSection("Gauge", () =>
         {
             var defaults = new UtteranceCountdownConfig();
             _countdownConfig = _countdownConfig with
@@ -66,36 +70,34 @@ public sealed partial class HudPage
             };
             RebuildTuningPanel();
         });
-        geometry.Children.Add(TuningHelp(
+        gauge.Children.Add(TuningHelp(
             "The gauge is the Recording outline opened by the pause. " +
             "It takes its fades and its material from the Recording section."));
-        geometry.Children.Add(TuningHelp(
+        gauge.Children.Add(TuningHelp(
             "Reach is how far the light runs along the top and bottom edges, from their centre. " +
             "0 % is the centre and 100 % the corners. Above 100 %, the light runs past the corners. " +
             "Below 0 %, the gauge waits before it opens."));
         // Wider than the useful range on purpose, for testing: the renderer
         // lerps reach freely and clamps the spread to its minimum.
-        AddFloatRow(geometry, "Start reach (%)", -50, 100, 1, _countdownConfig.StartReach * 100,
+        AddFloatRow(gauge, "Start reach (%)", -50, 100, 1, _countdownConfig.StartReach * 100,
             value => _countdownConfig = _countdownConfig with { StartReach = (float)value / 100f }, rebuild: true);
-        AddFloatRow(geometry, "End reach (%)", 0, 200, 1, _countdownConfig.EndReach * 100,
+        AddFloatRow(gauge, "End reach (%)", 0, 200, 1, _countdownConfig.EndReach * 100,
             value => _countdownConfig = _countdownConfig with { EndReach = (float)value / 100f }, rebuild: true);
-        geometry.Children.Add(TuningHelp("Thickness and inset follow the HUD geometry section."));
-
-        AddGaugePreviewSection();
+        // The Gauge target shows no HUD geometry section; Recording does.
+        gauge.Children.Add(TuningHelp("Thickness and inset follow HUD geometry, on the Recording target."));
     }
 
-    private void AddGaugePreviewSection()
+    private void ResetGaugeSimulation()
     {
-        var preview = NewTuningSection("Preview only", () =>
-        {
-            _countdownReplayClock.Reset();
-            _countdownTuning = new();
-            RebuildTuningPanel();
-        });
-        preview.Children.Add(TuningHelp("Simulation does not affect dictation."));
+        _countdownReplayClock.Reset();
+        _countdownTuning = new();
+    }
 
+    // The Gauge target's rows of the Simulation section.
+    private void AddGaugeSimulationRows(StackPanel stack)
+    {
         var simulation = new StackPanel { Spacing = 4 };
-        preview.Children.Add(simulation);
+        stack.Children.Add(simulation);
         _setCountdownPosition = AddFloatRow(simulation, "Manual position (%)", 0, 100, 1, _countdownTuning.Progress * 100,
             value =>
             {

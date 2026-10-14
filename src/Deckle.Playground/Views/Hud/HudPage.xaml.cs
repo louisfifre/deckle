@@ -38,13 +38,6 @@ public sealed partial class HudPage : Page
     private UtteranceCountdownConfig _savedCountdown = new();
     private bool _storeLoaded;
 
-    // Simulated conversational speech: 0.013 ≈ -38 dBFS, 0.100 ≈ -20 dBFS.
-    private float _simRmsMin           = 0.013f;
-    private float _simRmsMax           = 0.100f;
-    private float _simRmsPeriodSeconds = 2.0f;
-    private bool  _simManualOverride   = false;
-    private float _simManualValue      = 0.012f;
-
     // Paint-time changes rebuild the Win2D surfaces from scratch; one rebuild
     // per tick during a drag overloads the CanvasDevice, hence the debounce.
     private readonly DispatcherTimer _rebuildDebounce = new()
@@ -227,7 +220,10 @@ public sealed partial class HudPage : Page
                 ApplyTarget();
                 break;
 
+            // The parts' material picks their material section and whether a
+            // hue rotation shows, so the panel follows it.
             case nameof(HudViewModel.PreviewMaterial):
+                BuildTuningPanel();
                 ApplyTarget();
                 break;
         }
@@ -436,17 +432,18 @@ public sealed partial class HudPage : Page
 
     private void RmsTimerTick(object? sender, object e)
     {
+        var speech = _speechSimulation;
         float rms;
-        if (_simManualOverride)
+        if (speech.ManualOverride)
         {
-            rms = _simManualValue;
+            rms = speech.ManualValue;
         }
         else
         {
             double t = _rmsClock.Elapsed.TotalSeconds;
             float sweep = (float)(0.5 + 0.5 * Math.Sin(
-                2 * Math.PI * t / Math.Max(0.1, _simRmsPeriodSeconds)));
-            rms = _simRmsMin + sweep * (_simRmsMax - _simRmsMin);
+                2 * Math.PI * t / Math.Max(0.1, speech.RmsPeriodSeconds)));
+            rms = speech.RmsMin + sweep * (speech.RmsMax - speech.RmsMin);
         }
         ChronoPreview.UpdateAudioLevel(rms);
     }
@@ -460,16 +457,9 @@ public sealed partial class HudPage : Page
     private void OnResetAllClick(object sender, RoutedEventArgs e)
     {
         _tuning = new TuningModel();
-        _countdownReplayClock.Reset();
-        _countdownTuning = new();
         _countdownConfig = new();
-
-        // Keep in step with the field initialisers and ResetSimulatedRms.
-        _simRmsMin             = 0.013f;
-        _simRmsMax             = 0.100f;
-        _simRmsPeriodSeconds   = 2.0f;
-        _simManualOverride     = false;
-        _simManualValue        = 0.012f;
+        ResetGaugeSimulation();
+        _speechSimulation = new();
 
         BuildTuningPanel();
         ApplyTarget();
@@ -477,8 +467,8 @@ public sealed partial class HudPage : Page
 
     // ── Tuning panel dispatcher ─────────────────────────────────────────
     //
-    // Parked follows the active sections, except on the targets without a
-    // stroke: Charging (empty list, a placeholder line instead) and Gauge.
+    // HudViewModel.ActiveTuningSections decides which sections show and in
+    // which order; this only maps each one to its expander.
 
     private void BuildTuningPanel()
     {
@@ -487,7 +477,7 @@ public sealed partial class HudPage : Page
         while (TuningStack.Children.Count > 1)
             TuningStack.Children.RemoveAt(TuningStack.Children.Count - 1);
 
-        var sections = ViewModel.ActiveTuningSections;
+        var sections = ViewModel.ActiveTuningSections(_tuning.ToConfig());
         if (sections.Count == 0)
         {
             // An empty column would read as a bug; say why there is nothing.
@@ -506,22 +496,21 @@ public sealed partial class HudPage : Page
         {
             switch (section)
             {
-                case HudTuningSection.Geometry:      AddHudGeometryExpander();    break;
-                case HudTuningSection.Palette:       AddPaletteExpander();        break;
-                case HudTuningSection.ConicFade:     AddConicFadeExpander();      break;
-                case HudTuningSection.HueRotation:   AddHueRotationExpander();    break;
-                case HudTuningSection.ArcRotation:   AddArcRotationExpander();    break;
-                case HudTuningSection.Recording:     AddRecordingExpander();      break;
-                case HudTuningSection.Transcribing:  AddTranscribingExpander();   break;
-                case HudTuningSection.Rewriting:     AddRewritingExpander();      break;
-                case HudTuningSection.SimulatedRms:  AddSimulatedRmsExpander();   break;
-                case HudTuningSection.UtteranceCountdown: AddGaugeExpander(); break;
-                case HudTuningSection.ClonePlacement: AddClonePlacementExpander(); break;
+                case HudTuningSection.Geometry:       AddHudGeometryExpander();    break;
+                case HudTuningSection.ColourMaterial: AddColourMaterialExpander(); break;
+                case HudTuningSection.GreyMaterial:   AddGreyMaterialExpander();   break;
+                case HudTuningSection.SweepMask:      AddSweepMaskExpander();      break;
+                case HudTuningSection.HueRotation:    AddHueRotationExpander();    break;
+                case HudTuningSection.SweepRotation:  AddSweepRotationExpander();  break;
+                case HudTuningSection.Recording:      AddRecordingExpander();      break;
+                case HudTuningSection.Transcribing:   AddTranscribingExpander();   break;
+                case HudTuningSection.Rewriting:      AddRewritingExpander();      break;
+                case HudTuningSection.Gauge:          AddGaugeExpander();          break;
+                case HudTuningSection.DigitReveal:    AddDigitRevealExpander();    break;
+                case HudTuningSection.Simulation:     AddSimulationExpander();     break;
+                case HudTuningSection.Orientations:   AddOrientationsExpander();   break;
             }
         }
-
-        if (ViewModel.CurrentTarget != HudTarget.Gauge)
-            AddParkedExpander();
 
         // Every reset and revert path rebuilds the panel, so the bar follows
         // the knobs from here; the row factories cover the knob edits.

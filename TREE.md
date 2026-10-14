@@ -1445,6 +1445,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   │   ├── HudPage.Gauge.cs
 │   │   │   │   ├── HudPage.RowFactories.cs
 │   │   │   │   ├── HudPage.SectionState.cs
+│   │   │   │   ├── HudPage.Simulation.cs
 │   │   │   │   ├── HudPage.xaml
 │   │   │   │   └── HudPage.xaml.cs
 │   │   │   ├── Segmentation/

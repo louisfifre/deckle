@@ -18,7 +18,7 @@ internal sealed class TuningModel
 {
     private static readonly ConicArcStrokeConfig Defaults = new();
 
-    // ── HUD geometry (shared by the stroke and the countdown previews) ──
+    // ── HUD geometry (shared by the stroke and the gauge) ──
     public float StrokeThickness = Defaults.StrokeThickness;
     public float InsetDip        = Defaults.InsetDip;
 
@@ -98,7 +98,7 @@ internal sealed class TuningModel
         RecordingBlendSeconds       = source.RecordingBlendSeconds;
     }
 
-    // ── Colour palette (paint-time, OKLCh) ──────────────────────────────
+    // ── Colour material (paint-time, OKLCh) ─────────────────────────────
     public float OklchLightness = Defaults.OklchLightness;
     public float OklchChroma    = Defaults.OklchChroma;
     public float HueStart       = Defaults.HueStart;
@@ -119,14 +119,14 @@ internal sealed class TuningModel
     public float  HueEaseP2Y       = Defaults.HueEaseP2Y;
     public float  HueMinSpeedFraction = Defaults.HueMinSpeedFraction;
 
-    // ── Arc mask shape ──────────────────────────────────────────────────
+    // ── Sweep mask shape ────────────────────────────────────────────────
     public float ConicSpanTurns     = Defaults.ConicSpanTurns;
     public float ConicLeadFadeTurns = Defaults.ConicLeadFadeTurns;
     public float ConicTailFadeTurns = Defaults.ConicTailFadeTurns;
     public float ConicFadeCurve     = Defaults.ConicFadeCurve;
     public bool  ArcMirror          = Defaults.ArcMirror;
 
-    // ── Arc rotation ────────────────────────────────────────────────────
+    // ── Sweep rotation ──────────────────────────────────────────────────
     public double ArcPeriodSeconds = Defaults.ArcPeriodSeconds;
     public float  ArcDirection     = Defaults.ArcDirection;
     public float  ArcPhaseTurns    = Defaults.ArcPhaseTurns;
