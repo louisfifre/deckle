@@ -17,4 +17,4 @@ Dependencies point one way, toward the more fundamental module. A cycle means a 
 
 Ask on every change whether this could live in its own file. The answer is usually yes. Give each cohesive group of functions its own small file named for its responsibility, and keep no function stranded alone. A tree of named files shows what changed at a glance, so it takes the place of section comments inside a file and of thousand-line files. Keep code together only when separating it would cost real load or runtime.
 
-Settings are modular too. Each module carries its own settings page and its own persistence.
+Settings are modular too. Each module carries its own settings page and its own persistence. An engine meant to be reused stays free of interface code, and the module that presents it carries the page.
