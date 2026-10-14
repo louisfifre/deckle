@@ -10,7 +10,7 @@ Vocabulary of the Anytype and MCP integration, shared with `Deckle.Anytype.Mcp`.
 ## Runtime, host, surfaces
 
 **Anytype backend** :
-The live, headless `anytype-cli` runtime that holds the data and serves the local REST API. Deckle orchestrates its lifecycle and access but never owns or reimplements it.
+The live, headless Anytype runtime that holds the data and serves the local REST API. Deckle orchestrates its lifecycle and access but never owns or reimplements it.
 _Avoid_ : Anytype Desktop (the GUI, no longer a runtime dependency), MCP server (a different layer).
 
 **Anytype provider** :
@@ -22,11 +22,11 @@ The single decision, shared across processes, that inspects the Anytype endpoint
 _Avoid_ : health check (one observation inside reconciliation), supervision (the longer-lived watch and restart loop).
 
 **MCP host** :
-The single stateless adapter that exposes the `Deckle.Anytype` gestures to external clients over HTTP, from Deckle's resident core. Each request is authenticated by its client token and opens the matching capability surface, so no transport session carries domain state.
-_Avoid_ : backend, Anytype server.
+The single stateless adapter that exposes the `Deckle.Anytype` gestures to external clients over HTTP, from Deckle's resident core. Each request is authenticated by its client token and opens the matching capability surface. No transport session carries domain state.
+_Avoid_ : backend (the data runtime, a different layer), Anytype server (could mean the backend or the host).
 
 **Deckle resident core** :
-The Deckle process that is always on and starts at login, holding the global hotkeys and the orchestration. It hosts the MCP host and the library, and it differs from the visible windows, such as the HUD or Settings, that come and go.
+The Deckle process that is always on and starts at login, holding the global hotkeys and the orchestration. It hosts the MCP host and the library. It differs from the visible windows that come and go, such as the HUD or Settings.
 
 **MCP surface** :
 A capability graph that the host opens for one authenticated request, such as PM, Dialogue or Home. The unit of separation is the *capability*, never a transport session.
@@ -37,21 +37,21 @@ The contract each tool states for an ambiguous response. It says whether the cal
 _Avoid_ : HTTP retry policy (the lower transport decision), idempotency hint alone (only one projection of the fuller contract).
 
 **Home surface** :
-The MCP surface dedicated to structured home knowledge, such as rooms, infrastructure, equipment, observations and links, and later home-management functions. It writes to a dedicated Home Anytype space, separate from the Dev project-management space, and clients do not choose a space per call.
+The MCP surface dedicated to structured home knowledge, such as rooms, infrastructure, equipment, observations and links, and later home-management functions. It writes to a dedicated Home Anytype space, separate from the Dev project-management space. Clients do not choose a space per call.
 _Avoid_ : Cartographie (too narrow for the intended long-term scope), Électrique (too narrow), Maison surface (French label rejected for the surface name), Maison générique (too broad).
 
 **Schema admin surface** :
-The MCP surface dedicated to schema administration. It inspects spaces, plans changes to types, properties, tags and templates, previews the diff against a live space, applies confirmed changes, and freezes the measured result into code. Its changes to a space are guarded, and its preview names every change before it applies.
-_Avoid_ : putting type/property creation inside Home tools, generic Anytype MCP (too unconstrained for Deckle's guarded workflow).
+The MCP surface dedicated to schema administration. It inspects spaces, plans changes to types, properties, tags and templates, previews the diff against a live space, applies confirmed changes, and freezes the measured result into code. Its changes to a space are guarded. Its preview names every change before it applies.
+_Avoid_ : putting type/property creation inside Home tools (schema changes stay in this surface), generic Anytype MCP (too unconstrained for Deckle's guarded workflow).
 
 **Anytype Desktop** :
 The graphical Anytype application. Deckle no longer depends on it at runtime, and the runtime it uses is the Anytype backend.
 
 **MCP server** :
-In ordinary MCP use, any program that serves tools to clients. In Deckle the layer that exposes Anytype operations is the MCP host, and the data runtime is the Anytype backend.
+In ordinary MCP use, any program that serves tools to clients. In Deckle, the layer that exposes Anytype operations is the MCP host. The data runtime is the Anytype backend.
 
 **Application payload** :
-The files of Deckle itself, replaced when Deckle updates. The Anytype provider lives outside it, so an update leaves it in place.
+The files of Deckle itself, replaced when Deckle updates. The Anytype provider lives outside it, so an update leaves the provider in place.
 
 **Health check** :
 A single probe that asks whether a service answers. It is one observation inside backend reconciliation, not the whole decision.
@@ -95,23 +95,23 @@ An MCP server that exposes every Anytype operation without limits. Deckle's guar
 ## Space provisioning
 
 **Space plan** :
-The versioned, declarative source of truth for one specialized Anytype space. It names the intended domain vocabulary through stable plan keys, and composes shared plan fragments with definitions that only this space owns. It holds no opaque id discovered from a live installation, and no native Anytype template or view definition.
+The versioned, declarative source of truth for one specialized Anytype space. It names the intended domain vocabulary through stable plan keys. It composes shared plan fragments with definitions that only this space owns. It holds no opaque id discovered from a live installation, and no native Anytype template or view definition.
 _Avoid_ : template (an Anytype-native concept the local API cannot write), schema snapshot (describes what was measured, not what Deckle intends to install), space manifest (too generic to carry the source-of-truth meaning).
 
 **Plan fragment** :
-A composable unit of domain vocabulary shared by more than one space plan. It represents one transverse concept, without owning a space or absorbing definitions that only look alike.
+A unit of domain vocabulary that more than one space plan shares and composes. It represents one transverse concept, without owning a space or absorbing definitions that only look alike.
 _Avoid_ : base plan (implies inheritance and one privileged parent), shared schema (suggests one live schema rather than reuse at definition time).
 
 **Space-local definition** :
-A planned concept, such as a type, a property or an option, that exactly one specialized space owns. It stays beside that space plan. A second definition that looks similar does not make it transverse until the two meanings are truly the same.
+A unit of domain vocabulary, such as a type, a property or an option, that exactly one specialized space owns. It stays beside that space plan. A second definition that looks similar does not make it transverse until the two meanings are truly the same.
 _Avoid_ : special case (it is the normal home of domain-specific vocabulary), fragment (reserved for concepts intentionally shared across plans).
 
 **Plan key** :
-A stable English identifier written in a space plan and used by code and localization resources. It identifies an intended concept across languages, and it is neither the label users see nor an opaque Anytype id.
+A stable English identifier written in a space plan and used by code and localization resources. It identifies an intended concept across languages. It is neither the label users see nor an opaque Anytype id.
 _Avoid_ : Anytype key (may mean the live API key), label (localized presentation, see `src/Deckle.Home/GLOSSARY.md`), id (resolved from the installed space).
 
 **Space provisioner** :
-The setup capability that turns a selected space plan into an installed specialized Anytype space and records the live identities it discovers. It is a deterministic installation path, distinct from the schema admin surface, which serves interactive inspection and guarded maintenance.
+The setup capability that turns a selected space plan into an installed specialized Anytype space and records the live identities it discovers. It is a deterministic installation path. It differs from the schema admin surface, which serves interactive inspection and guarded maintenance.
 _Avoid_ : schema admin (different workflow), space generator (suggests throwaway output rather than a versioned installation contract).
 
 **Template** :
@@ -150,12 +150,12 @@ The first spatial level of the Home space. An étage contains one or more pièce
 The second spatial level of the Home space. A pièce belongs to one étage and contains one or more emplacements.
 
 **Emplacement** :
-The third spatial level of the Home space, a precise physical place where equipment can be installed, observed, fixed, embedded or linked. An emplacement belongs to one pièce.
+The third spatial level of the Home space. It is a precise physical place where equipment can be installed, observed, fixed, embedded or linked. An emplacement belongs to one pièce.
 _Avoid_ : Endroit (too vague), Zone (rejected as a catch-all spatial type).
 
 **Home object type** :
 An Anytype type of the Home space that represents a stable spatial or material family, never a catch-all inventory bucket. Variants inside a family stay properties or categories. Families with distinct properties and links become distinct types.
-_Avoid_ : Element (rejected as too generic for the Home inventory), one type per tiny variant.
+_Avoid_ : Element (rejected as too generic for the Home inventory), one type per tiny variant (variants stay properties or categories).
 
 **Endroit** :
 A French word for any place. It is too vague for the third spatial level, which is the emplacement.
@@ -172,12 +172,12 @@ A schema that creates a new type for every small difference. Deckle keeps such v
 ## Authorship
 
 **Bot** :
-An Anytype account distinct from Louis, under which the headless backend writes, invited into each space. One headless backend means one account and one author. There is one bot to start.
-_Avoid_ : user, API key (an access credential, not the identity).
+An Anytype account distinct from Louis, under which the headless backend writes. It is invited into each space. One headless backend means one account and one author. There is one bot to start.
+_Avoid_ : user (the person who uses Deckle, a separate account), API key (an access credential, not the identity).
 
 **Client token** :
-The bearer credential each client presents to the host. It carries *access*, meaning which surfaces and spaces are allowed, and never *authorship*, since the author is always the backend's bot.
-_Avoid_ : identity, account key.
+The bearer credential each client presents to the MCP host. It carries *access*, meaning which surfaces and spaces are allowed. It never carries *authorship*, since the author is always the backend's bot.
+_Avoid_ : identity (the bot signs writes, not the token), account key (tied to an account, while the token is tied to access).
 
 **User** :
 The person who uses Deckle, here Louis. The bot is a separate account, so it is never called a user.
@@ -186,7 +186,7 @@ The person who uses Deckle, here Louis. The bot is a separate account, so it is 
 A credential that grants access to an API. It carries access, not identity, so it never names the bot.
 
 **Identity** :
-Who someone is to a system. A client token carries access only, and the identity that signs writes is the bot.
+In ordinary use, the attribute that tells a system who someone is. A client token carries access only, and the identity that signs writes is the bot.
 
 **Account key** :
 A key tied to an account and its identity. A client token is tied to access, not to an account.
