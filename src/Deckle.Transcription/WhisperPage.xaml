@@ -198,19 +198,10 @@
 
                 <!-- The decoding parameters and the streaming pipeline live on their
                      own pages, DecodingPage and StreamingPage, nested under this
-                     module in the rail (settings design system, decision 16). -->
-
-                <!-- ── Diagnostics ─────────────────────────────────────────────
-                     The dictation-scoped observability opt-ins relocated from the
-                     shared Diagnostics page: the streaming-transcription log filter,
-                     the latency telemetry toggle, and the audio-corpus consent fold.
-                     Composed from WhisperViewModel.DiagnosticsSettings into the host
-                     below. No section reset — these observability opt-ins carry
-                     no resettable default (a privacy opt-in has no per-row reset). -->
-                <catalog:SettingsSection x:Uid="WhisperPageDiagnosticsSection">
-                    <StackPanel x:Name="DiagnosticsHost"
-                                Spacing="{StaticResource SettingsCardSpacing}" />
-                </catalog:SettingsSection>
+                     module in the rail (settings design system, decision 16). The
+                     dictation's dataset consents (latency, audio corpus) live on
+                     Settings > Diagnostics, the one editor of what Deckle records
+                     (WhisperTelemetryViewModel, 2026-10-14). -->
 
             </StackPanel>
             </Grid>

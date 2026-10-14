@@ -143,9 +143,9 @@ public sealed partial class WhisperPage : Page
 
         ComposeRegion(UseGpuHost, ViewModel.UseGpuSettingsManifest);
         ComposeRegion(ModelsDirectoryHost, ViewModel.ModelsDirectorySettingsManifest);
-        ComposeRegion(DiagnosticsHost, ViewModel.DiagnosticsSettings);
         // The decoding and streaming manifests compose on DecodingPage and
-        // StreamingPage, this module's other two pages.
+        // StreamingPage, this module's other two pages; the dataset consents
+        // compose on the Diagnostics page (WhisperTelemetryViewModel).
     }
 
     private SettingsComposer ComposeRegion(

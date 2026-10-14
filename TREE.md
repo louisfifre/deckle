@@ -1683,12 +1683,12 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │       └── Resources.resw
 │   │   ├── ViewModels/
 │   │   │   ├── CutPresetStore.cs
+│   │   │   ├── WhisperTelemetryViewModel.cs
 │   │   │   ├── WhisperViewModel.cs
 │   │   │   ├── WhisperViewModel.DictationExperience.cs
 │   │   │   ├── WhisperViewModel.Engine.cs
 │   │   │   ├── WhisperViewModel.Settings.cs
-│   │   │   ├── WhisperViewModel.Streaming.cs
-│   │   │   └── WhisperViewModel.Telemetry.cs
+│   │   │   └── WhisperViewModel.Streaming.cs
 │   │   ├── CONTEXT.md  — context-deckle-transcription Transcription vocabulary — the two entry points (dictation, file transcription)…
 │   │   ├── Deckle.Transcription.csproj
 │   │   ├── DeckleWhispSource.cs

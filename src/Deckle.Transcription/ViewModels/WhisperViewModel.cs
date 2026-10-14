@@ -1,5 +1,4 @@
 using CommunityToolkit.Mvvm.ComponentModel;
-using Deckle.Diagnostics.Telemetry;
 using Deckle.Presets;
 using Deckle.Settings;
 
@@ -77,11 +76,8 @@ public partial class WhisperViewModel : ObservableObject
         OverlayPosition = (overlay.Position ?? "").StartsWith("Top") ? "TopCenter" : "BottomCenter";
         TranscriptPanelSide = NormalizeTranscriptPanelSide(overlay.TranscriptPanelSide);
 
-        // Dataset opt-ins seed closed until the user consents. Overwritten by Load().
-        TelemetryLatencyEnabled = false;
-        TelemetryCorpusEnabled = false;
-        RecordAudioCorpus = false;
-        AudioCorpusContentIndex = 0;
+        // The dataset consents (latency, corpus) live in WhisperTelemetryViewModel,
+        // composed on the Diagnostics page.
 
         // _isSyncing stays true until Load(), so no setter saves the seeds.
     }
@@ -135,12 +131,6 @@ public partial class WhisperViewModel : ObservableObject
             OverlayAnimations = shell.Overlay.Animations;
             OverlayPosition = (shell.Overlay.Position ?? "").StartsWith("Top") ? "TopCenter" : "BottomCenter";
             TranscriptPanelSide = NormalizeTranscriptPanelSide(shell.Overlay.TranscriptPanelSide);
-
-            var t = TelemetrySettingsService.Instance.Current;
-            TelemetryLatencyEnabled = t.LatencyEnabled;
-            TelemetryCorpusEnabled = t.CorpusEnabled;
-            RecordAudioCorpus = t.RecordAudioCorpus;
-            AudioCorpusContentIndex = (int)t.AudioCorpusContent;
 
             // Last: when the file holds no selection, the real family derives one
             // from the hangover values read above and stores it.
