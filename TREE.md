@@ -1023,6 +1023,10 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   ├── HudPalette.cs
 │   │   │   ├── HudState.cs
 │   │   │   └── MessageKind.cs
+│   │   ├── Settings/
+│   │   │   ├── ConfigOverrides.cs
+│   │   │   ├── HudSettings.cs
+│   │   │   └── HudSettingsService.cs
 │   │   ├── Transcript/
 │   │   │   ├── TranscriptHistory.cs
 │   │   │   ├── TranscriptPanelLayout.cs
@@ -1989,6 +1993,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── ConicPaletteTests.cs
 │   │   ├── Deckle.Hud.Tests.csproj
 │   │   ├── DeckleHudSourceTests.cs
+│   │   ├── HudSettingsOverridesTests.cs
 │   │   ├── ProximityFadeTests.cs
 │   │   ├── ProximityRollupAggregatorTests.cs
 │   │   ├── TranscriptHistoryTests.cs
