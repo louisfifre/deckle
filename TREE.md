@@ -1595,7 +1595,8 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── ResizeCoalescer.cs
 │   │   ├── ResizeGesture.cs
 │   │   ├── StartupService.cs
-│   │   └── TrayIconManager.cs
+│   │   ├── TrayIconManager.cs
+│   │   └── TrayIconRegistration.cs
 │   ├── Deckle.Shell.Foreground/
 │   │   ├── Interop/
 │   │   │   └── ForegroundNativeMethods.cs
@@ -2139,7 +2140,9 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── Deckle.Shell.Tests.csproj
 │   │   ├── DispatcherQueueExtensionsTests.cs
 │   │   ├── GlobalHotkeyBindingsTests.cs
-│   │   └── ResizeGestureTests.cs
+│   │   ├── ResizeGestureTests.cs
+│   │   ├── TrayIconBugNotes.md
+│   │   └── TrayIconRegistrationTests.cs
 │   ├── Deckle.Shell.TrayMenu.Tests/
 │   │   ├── Deckle.Shell.TrayMenu.Tests.csproj
 │   │   ├── TrayMenuBugNotes.md

@@ -45,4 +45,34 @@ public static partial class NativeMethods
     [DllImport("kernel32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
     public static extern IntPtr GetModuleHandle(string? lpModuleName);
 
+    // ── Hidden top-level window ──────────────────────────────────────────────
+    //
+    // A top-level window that is never shown dispatches messages like a
+    // message-only one and, unlike it, receives the broadcasts the shell
+    // sends to every top-level window (TaskbarCreated among them).
+    // WS_EX_TOOLWINDOW keeps it out of Alt+Tab and the taskbar if it is ever
+    // shown by mistake.
+
+    public const uint WS_POPUP = 0x80000000;
+
+    // A message registered by name gets one id per session, the same for
+    // every process that asks for that name: this is how Explorer's
+    // broadcasts reach windows it has never met.
+    [DllImport("user32.dll", CharSet = CharSet.Unicode, EntryPoint = "RegisterWindowMessageW")]
+    public static extern uint RegisterWindowMessage(string lpString);
+
+    // ── Window timer ─────────────────────────────────────────────────────────
+    //
+    // WM_TIMER lands in the window's own pump: a retry scheduled with
+    // SetTimer runs on the thread that owns the window, without blocking it.
+    // Calling SetTimer again with the same id restarts that timer.
+
+    public const uint WM_TIMER = 0x0113;
+
+    [DllImport("user32.dll", SetLastError = true)]
+    public static extern UIntPtr SetTimer(IntPtr hWnd, UIntPtr nIDEvent, uint uElapse, IntPtr lpTimerFunc);
+
+    [DllImport("user32.dll", SetLastError = true)]
+    public static extern bool KillTimer(IntPtr hWnd, UIntPtr uIDEvent);
+
 }

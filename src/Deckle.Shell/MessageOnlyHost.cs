@@ -3,19 +3,21 @@ using Deckle.Core;
 
 namespace Deckle.Shell;
 
-// Invisible native Win32 host window (HWND_MESSAGE parent) for tray callbacks,
-// RegisterHotKey and the cursor signal. WinUI 3 has no canonical "tray-only,
-// no flash" window (PowerToys #11010, microsoft-ui-xaml #6723); a hidden XAML
-// Window moved off-screen is a hack.
+// Invisible native Win32 host window (HWND_MESSAGE parent) for RegisterHotKey,
+// the cursor signal and the tray menus' anchor windows. WinUI 3 has no
+// canonical "tray-only, no flash" window (PowerToys #11010, microsoft-ui-xaml
+// #6723); a hidden XAML Window moved off-screen is a hack.
 //
 // Created with HWND_MESSAGE as its parent, it is invisible by construction: no
 // z-order, no enumeration, no broadcast messages, just a message dispatcher.
-// RegisterHotKey posts WM_HOTKEY to the thread that created it, and
-// Shell_NotifyIcon posts its callback message to it. TrayIconManager,
-// HotkeyManager and CursorMovementSignal attach through SetWindowSubclass.
+// RegisterHotKey posts WM_HOTKEY to the thread that created it. HotkeyManager
+// and CursorMovementSignal attach through SetWindowSubclass. The tray icon
+// does not live here: it needs the TaskbarCreated broadcast, which a
+// message-only window never receives, so TrayIconManager owns a hidden
+// top-level window of its own.
 //
-// Created on the UI thread so WM_HOTKEY and tray callbacks arrive on the
-// DispatcherQueue's thread, invoked directly without marshaling.
+// Created on the UI thread so WM_HOTKEY arrives on the DispatcherQueue's
+// thread, invoked directly without marshaling.
 //
 // References:
 //   learn.microsoft.com/windows/win32/winmsg/window-features#window-types
