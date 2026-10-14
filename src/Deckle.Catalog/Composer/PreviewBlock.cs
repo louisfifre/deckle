@@ -1,4 +1,3 @@
-using System;
 using CommunityToolkit.WinUI.Controls;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
@@ -10,17 +9,20 @@ namespace Deckle.Catalog;
 // ── PreviewBlock ──────────────────────────────────────────────────────────────
 //
 // The one preview component of the settings design system (decisions 17 and
-// 18): a fold the user opens, holding a stage with its commands above and its
-// readouts below. A module gives it the three parts; the block owns the frame,
-// so every preview in the application has the same shape — the Ambient capture
-// today, the HUD and other scenes later.
+// 18): a card holding a stage with its commands above and its readouts below.
+// A module gives it the three parts; the block owns the frame, so every
+// preview in the application has the same shape — the Ambient capture today,
+// the HUD and other scenes later.
 //
-// The fold is the gesture that starts a live instrument; nothing runs on page
-// open. The owner reads IsExpanded (or IsExpandedChanged) and refreshes its
-// stage only while the fold is open. The stage sits on a bordered layer at the
-// control corner radius; the stage content sizes itself (a Viewbox keeps a
-// scene's ratio). Commands are a row at the stage's leading edge; readouts are
-// Readout blocks in a row under it. An empty slot takes no room.
+// A card, never a fold: the preview is there to be looked at while the values
+// beside it change, and a fold hid it behind a click and a chevron (Louis,
+// 2026-10-14: "je veux pas qu'on collapse"). The owner shows the block only
+// while there is something live to show (the engine runs) and refreshes it
+// while the block is loaded; nothing runs on a page whose instrument is
+// hidden. The stage sits on a bordered layer at the control corner radius;
+// the stage content sizes itself (a Viewbox keeps a scene's ratio). Commands
+// are a row at the stage's leading edge; readouts are Readout blocks in a row
+// under it. An empty slot takes no room.
 //
 // Built in code like the section and the page header, on the Catalog floor
 // every settings-bearing module references. Stage is the content property, so
@@ -28,19 +30,21 @@ namespace Deckle.Catalog;
 [ContentProperty(Name = nameof(Stage))]
 public sealed partial class PreviewBlock : UserControl
 {
-    private readonly SettingsExpander _expander = new() { IsExpanded = false };
+    private readonly SettingsCard _card = new()
+    {
+        ContentAlignment = ContentAlignment.Vertical,
+        HorizontalContentAlignment = HorizontalAlignment.Stretch,
+    };
     private readonly Border _commandsSlot;
     private readonly Border _stageSlot;
     private readonly Border _readoutsSlot;
-
-    public event EventHandler? IsExpandedChanged;
 
     public PreviewBlock()
     {
         _commandsSlot = new Border { Visibility = Visibility.Collapsed };
 
         // The stage's layer: the same materials as a card's content area, so the
-        // scene reads as a surface inside the fold rather than a second card.
+        // scene reads as a surface inside the card rather than a second card.
         _stageSlot = new Border
         {
             Background = Application.Current.Resources["LayerFillColorDefaultBrush"] as Brush,
@@ -52,25 +56,20 @@ public sealed partial class PreviewBlock : UserControl
 
         _readoutsSlot = new Border { Visibility = Visibility.Collapsed };
 
-        var footer = new StackPanel { Spacing = 12, Margin = new Thickness(16, 12, 16, 16) };
-        footer.Children.Add(_commandsSlot);
-        footer.Children.Add(_stageSlot);
-        footer.Children.Add(_readoutsSlot);
-        _expander.ItemsFooter = footer;
+        var body = new StackPanel { Spacing = 12, Margin = new Thickness(0, 8, 0, 0) };
+        body.Children.Add(_commandsSlot);
+        body.Children.Add(_stageSlot);
+        body.Children.Add(_readoutsSlot);
+        _card.Content = body;
 
-        _expander.RegisterPropertyChangedCallback(SettingsExpander.IsExpandedProperty, (_, _) =>
-        {
-            if (IsExpanded != _expander.IsExpanded) IsExpanded = _expander.IsExpanded;
-        });
-
-        Content = _expander;
+        Content = _card;
     }
 
     // ── Properties (dependency properties so x:Uid can set them from .resw) ──
 
     public static readonly DependencyProperty HeaderProperty = DependencyProperty.Register(
         nameof(Header), typeof(string), typeof(PreviewBlock),
-        new PropertyMetadata(string.Empty, (d, e) => ((PreviewBlock)d)._expander.Header = e.NewValue));
+        new PropertyMetadata(string.Empty, (d, e) => ((PreviewBlock)d)._card.Header = e.NewValue));
 
     // What the preview shows, in a few words.
     public string Header
@@ -81,7 +80,7 @@ public sealed partial class PreviewBlock : UserControl
 
     public static readonly DependencyProperty DescriptionProperty = DependencyProperty.Register(
         nameof(Description), typeof(string), typeof(PreviewBlock),
-        new PropertyMetadata(string.Empty, (d, e) => ((PreviewBlock)d)._expander.Description = e.NewValue));
+        new PropertyMetadata(string.Empty, (d, e) => ((PreviewBlock)d)._card.Description = e.NewValue));
 
     // One line under the header; empty hides it.
     public string Description
@@ -136,25 +135,8 @@ public sealed partial class PreviewBlock : UserControl
         set => SetValue(ReadoutsProperty, value);
     }
 
-    public static readonly DependencyProperty IsExpandedProperty = DependencyProperty.Register(
-        nameof(IsExpanded), typeof(bool), typeof(PreviewBlock),
-        new PropertyMetadata(false, (d, e) => ((PreviewBlock)d).ApplyExpanded((bool)e.NewValue)));
-
-    // True while the fold is open: the owner's cue to refresh the stage.
-    public bool IsExpanded
-    {
-        get => (bool)GetValue(IsExpandedProperty);
-        set => SetValue(IsExpandedProperty, value);
-    }
-
     private void ApplyHeaderIcon(string? glyph)
-        => _expander.HeaderIcon = string.IsNullOrEmpty(glyph) ? null! : new FontIcon { Glyph = glyph };
-
-    private void ApplyExpanded(bool expanded)
-    {
-        if (_expander.IsExpanded != expanded) _expander.IsExpanded = expanded;
-        IsExpandedChanged?.Invoke(this, EventArgs.Empty);
-    }
+        => _card.HeaderIcon = string.IsNullOrEmpty(glyph) ? null! : new FontIcon { Glyph = glyph };
 
     private static void Fill(Border slot, UIElement? element)
     {

@@ -18,11 +18,13 @@ namespace Deckle.Lighting.Ambient;
 // the capture's format, grid, measured cadence and output transport as
 // readouts.
 //
-// A live instrument in Settings opens on a gesture, never on page open: the
-// block starts collapsed (and is collapsed again on Unloaded, in case the page
-// is cached), and the 200 ms refresh runs only while it is open AND the engine
-// runs AND the user has not paused it. While the engine is off the whole card
-// hides — there is nothing to show and nothing to configure here.
+// The gesture that starts this instrument is the module's own switch: the
+// preview mirrors an engine that already runs, so it shows as soon as the
+// engine does and stays open, never behind a fold (Louis, 2026-10-14: the
+// point is to watch it while the values change). The 200 ms refresh runs only
+// while the card is loaded AND the engine runs AND the user has not paused
+// it. While the engine is off the whole card hides — there is nothing to show
+// and nothing to configure here.
 //
 // Ratio: each cell is sourceWidth / cols by sourceHeight / rows in source
 // pixels, and a uniform Viewbox scales the stage, so the preview has the
@@ -65,7 +67,6 @@ public sealed partial class AmbientPreviewCard : UserControl
     {
         InitializeComponent();
         _timer.Tick += (_, _) => Refresh();
-        Block.IsExpandedChanged += (_, _) => UpdateState();
         Loaded   += OnLoaded;
         Unloaded += OnUnloaded;
     }
@@ -83,7 +84,6 @@ public sealed partial class AmbientPreviewCard : UserControl
         _engine = null;
         _timer.Stop();
         PauseToggle.IsChecked = false;
-        Block.IsExpanded = false;
     }
 
     private void OnEngineStateChanged(AmbientEngineState state)
@@ -106,7 +106,7 @@ public sealed partial class AmbientPreviewCard : UserControl
         Visibility = running ? Visibility.Visible : Visibility.Collapsed;
 
         bool paused = PauseToggle.IsChecked == true;
-        if (running && Block.IsExpanded && !paused)
+        if (running && IsLoaded && !paused)
         {
             if (!_timer.IsEnabled)
             {

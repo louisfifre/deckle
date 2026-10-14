@@ -57,8 +57,8 @@
                 <!-- The preview block (settings design system, decision 18): the
                      sampled grid at the display's exact ratio as the stage, its
                      commands above, the engine's readouts and the colour each
-                     light receives below. Shown while the engine runs, opened by
-                     the user, refreshed only while open. -->
+                     light receives below. Shown while the engine runs, open,
+                     never folded (2026-10-14). -->
                 <ambientControls:AmbientPreviewCard />
 
                 <!-- ── Behaviour ──────────────────────────────────────────── -->
