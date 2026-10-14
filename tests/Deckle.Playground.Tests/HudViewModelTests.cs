@@ -109,18 +109,53 @@ public sealed class HudViewModelTests
         }
     }
 
-    // A state target reads its own state's material, never the parts' radio;
-    // a part reads the radio, never a state's material.
-    [Fact]
-    public void AStateShowsItsOwnMaterialAndAPartShowsTheRadios()
+    // Only the named state carries `material`; the two other states and the
+    // parts' radio carry the other one, so any wrong source shows.
+    private static ConicArcStrokeConfig OnlyStateOn(ProcessingVariant state, HudMaterial material)
     {
-        var states = new HudViewModel { CurrentTarget = HudTarget.Transcribing, PreviewMaterial = HudMaterial.Colour };
-        var tuning = AllStatesOn(HudMaterial.Grey) with { RewritingMaterial = HudMaterial.Colour };
-        Assert.Equal(HudMaterial.Grey, states.MaterialInPlay(tuning));
-        states.CurrentTarget = HudTarget.Rewriting;
-        Assert.Equal(HudMaterial.Colour, states.MaterialInPlay(tuning with { TranscribingMaterial = HudMaterial.Grey }));
+        var other = Other(material);
+        return AllStatesOn(other) with
+        {
+            RecordingMaterial    = state == ProcessingVariant.Recording    ? material : other,
+            TranscribingMaterial = state == ProcessingVariant.Transcribing ? material : other,
+            RewritingMaterial    = state == ProcessingVariant.Rewriting    ? material : other,
+        };
+    }
 
-        var part = new HudViewModel { CurrentTarget = HudTarget.Cone, PreviewMaterial = HudMaterial.Grey };
-        Assert.Equal(HudMaterial.Grey, part.MaterialInPlay(AllStatesOn(HudMaterial.Colour)));
+    private static HudMaterial Other(HudMaterial material)
+        => material == HudMaterial.Colour ? HudMaterial.Grey : HudMaterial.Colour;
+
+    // A state target reads its own state's material, never another state's
+    // nor the parts' radio. The gauge opens during Recording, so it reads
+    // Recording's.
+    [Theory]
+    [InlineData(HudTarget.Recording, ProcessingVariant.Recording)]
+    [InlineData(HudTarget.Transcribing, ProcessingVariant.Transcribing)]
+    [InlineData(HudTarget.Rewriting, ProcessingVariant.Rewriting)]
+    [InlineData(HudTarget.Gauge, ProcessingVariant.Recording)]
+    public void AStateTargetShowsItsOwnStatesMaterial(HudTarget target, ProcessingVariant state)
+    {
+        foreach (var material in new[] { HudMaterial.Grey, HudMaterial.Colour })
+        {
+            var viewModel = new HudViewModel { CurrentTarget = target, PreviewMaterial = Other(material) };
+
+            Assert.Equal(material, viewModel.MaterialInPlay(OnlyStateOn(state, material)));
+        }
+    }
+
+    // A part reads the radio, never a state's material.
+    [Theory]
+    [InlineData(HudTarget.Cone)]
+    [InlineData(HudTarget.SweepMask)]
+    [InlineData(HudTarget.MaskedCone)]
+    [InlineData(HudTarget.DigitReveal)]
+    public void APartShowsTheRadiosMaterial(HudTarget target)
+    {
+        foreach (var material in new[] { HudMaterial.Grey, HudMaterial.Colour })
+        {
+            var viewModel = new HudViewModel { CurrentTarget = target, PreviewMaterial = material };
+
+            Assert.Equal(material, viewModel.MaterialInPlay(AllStatesOn(Other(material))));
+        }
     }
 }
