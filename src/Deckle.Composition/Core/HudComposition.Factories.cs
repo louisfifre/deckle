@@ -112,22 +112,25 @@ public static partial class HudComposition
     // digit reveals, the countdown and the Playground previews. One builder
     // so the grey and the colour cannot drift between them.
     //
-    // CrossFadeEffect: output = (1 − CrossFade) · Source1 + CrossFade · Source2,
-    // so Source1 is the grey (mix 0) and Source2 the hue-rotated wheel
-    // (mix 1). The grey source has no bounds; the masks downstream clip it.
+    // CrossFadeEffect weighs its FIRST input: Direct2D documents the
+    // cross-fade as output = weight · Destination + (1 − weight) · Source,
+    // and Win2D's Source1 is that Destination (seen on screen 2026-10-14:
+    // with the sources the other way round, mix 1 showed the grey). So the
+    // hue-rotated wheel is Source1 (mix 1 = colour) and the grey Source2
+    // (mix 0). The grey source has no bounds; the masks downstream clip it.
     private static IGraphicsEffect BuildMaterialMix(
         IGraphicsEffectSource conicSource, float mix, float hueShiftTurns, Color grey)
         => new CrossFadeEffect
         {
             Name      = "Mix",
             CrossFade = mix,
-            Source1   = new ColorSourceEffect { Name = "Grey", Color = grey },
-            Source2   = new HueRotationEffect
+            Source1   = new HueRotationEffect
             {
                 Name   = "Hue",
                 Angle  = hueShiftTurns * MathF.Tau,
                 Source = conicSource,
             },
+            Source2   = new ColorSourceEffect { Name = "Grey", Color = grey },
         };
 
     private static readonly string[] MaterialMixAnimableProperties =
