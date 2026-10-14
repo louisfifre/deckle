@@ -97,15 +97,45 @@ public partial class App
             Settings.SettingsSearchIndex.Register(page, entries);
         }
 
+        // Diagnostics is the one editor of what Deckle records about itself. A
+        // module hands it its dataset opt-ins through the registry, beside its own
+        // page and under the same presence test, and the search lists those cards
+        // under the Diagnostics page with the module's assembly, where their words
+        // live. Described once here because every contribution needs its page
+        // coordinates before the page itself registers, further down.
+        var diagnostics = Diagnostics.Logging.DiagnosticsSettingsModule.Describe(order: 600);
+
+        void ContributeDiagnostics(
+            Catalog.DiagnosticsContribution contribution,
+            string owningAssembly,
+            System.Collections.Generic.IReadOnlyList<Catalog.SettingSearchEntry> entries)
+        {
+            Catalog.DiagnosticsRegistry.Register(contribution);
+            Settings.SettingsSearchIndex.RegisterPage(
+                diagnostics.PageTag,
+                owningAssembly,
+                diagnostics.Glyph,
+                Deckle.Catalog.Loc.GetFrom(diagnostics.OwningAssembly, diagnostics.LabelKey),
+                entries);
+        }
+
         if (context.TranscriptionPresent)
         {
             RegisterSettingsModule(Audio.RecordingSettingsModule.Describe(order: 50), Audio.SettingsSearch.Entries);
+            ContributeDiagnostics(
+                Audio.RecordingTelemetryViewModel.Contribution(order: 50),
+                "Deckle.Audio",
+                Audio.SettingsSearch.TelemetryEntries);
             // One module, three rail entries: the module's page (General under the
             // node) then Decoding and Streaming nested under it, each registered on
             // its own so the search index resolves page coordinates per page.
             RegisterSettingsModule(Transcription.WhisperSettingsModule.Describe(order: 100), Transcription.SettingsSearch.Entries);
             RegisterSettingsModule(Transcription.WhisperSettingsModule.DescribeDecoding(order: 110), Transcription.SettingsSearch.DecodingEntries);
             RegisterSettingsModule(Transcription.WhisperSettingsModule.DescribeStreaming(order: 120), Transcription.SettingsSearch.StreamingEntries);
+            ContributeDiagnostics(
+                Transcription.WhisperTelemetryViewModel.Contribution(order: 100),
+                "Deckle.Transcription",
+                Transcription.SettingsSearch.TelemetryEntries);
         }
         if (context.RewritePresent)
             RegisterSettingsModule(Llm.Rewrite.LlmSettingsModule.Describe(order: 200), Llm.Rewrite.SettingsSearch.Entries);
@@ -123,11 +153,21 @@ public partial class App
             RegisterSettingsModule(
                 Autocorrect.AutocorrectSettingsModule.DescribeAppsEnrolled(order: 320),
                 Autocorrect.SettingsSearch.AppsEnrolledEntries);
+            ContributeDiagnostics(
+                Autocorrect.AutocorrectTelemetryViewModel.Contribution(order: 300),
+                "Deckle.Autocorrect",
+                Autocorrect.SettingsSearch.TelemetryEntries);
         }
         if (context.AmbientPresent)
             RegisterSettingsModule(Lighting.Ambient.AmbientSettingsModule.Describe(order: 400), Lighting.Ambient.SettingsSearch.Entries);
         if (context.TrackpadPresent)
+        {
             RegisterSettingsModule(Input.Trackpad.TrackpadSettingsModule.Describe(order: 500), Input.Trackpad.SettingsSearch.Entries);
+            ContributeDiagnostics(
+                Input.Trackpad.TrackpadTelemetryViewModel.Contribution(order: 500),
+                "Deckle.Input.Trackpad",
+                Input.Trackpad.SettingsSearch.TelemetryEntries);
+        }
         RegisterSettingsModule(Input.PrecisionScroll.PrecisionScrollSettingsModule.Describe(order: 550), Input.PrecisionScroll.SettingsSearch.Entries);
         // Apps and games is not a presence module: nothing to provision, so it
         // is always registered, like precision scrolling.
@@ -136,17 +176,24 @@ public partial class App
         RegisterSettingsModule(Shell.TaskbarCover.TaskbarCoverSettingsModule.Describe(order: 580), Shell.TaskbarCover.SettingsSearch.Entries);
         // Diagnostics is shell-level observability, not a presence module —
         // always registered.
-        RegisterSettingsModule(Diagnostics.Logging.DiagnosticsSettingsModule.Describe(order: 600), Diagnostics.Logging.SettingsSearch.Entries);
+        RegisterSettingsModule(diagnostics, Diagnostics.Logging.SettingsSearch.Entries);
 
-        // General is a static nav anchor of the shell, not a registry module, so its
-        // cards register with the values its NavigationViewItem carries in
-        // SettingsWindow.xaml: tag, glyph and x:Uid must stay in step with it.
+        // General and Shortcuts are static nav anchors of the shell, not registry
+        // modules, so their cards register with the values their NavigationViewItems
+        // carry in SettingsWindow.xaml: tag, glyph and x:Uid must stay in step with
+        // them.
         Settings.SettingsSearchIndex.RegisterPage(
             "Deckle.Settings.GeneralPage",
             "Deckle.Settings",
             Deckle.Catalog.Glyphs.Settings,
             Deckle.Catalog.Loc.GetFrom("Deckle.Settings", "SettingsNavGeneral/Content"),
             Settings.SettingsSearch.Entries);
+        Settings.SettingsSearchIndex.RegisterPage(
+            "Deckle.Settings.HotkeysPage",
+            "Deckle.Settings",
+            Deckle.Catalog.Glyphs.Shortcut,
+            Deckle.Catalog.Loc.GetFrom("Deckle.Settings", "SettingsNavHotkeys/Content"),
+            Settings.SettingsSearch.HotkeyEntries);
     }
 }
 
