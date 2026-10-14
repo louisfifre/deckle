@@ -140,14 +140,65 @@ doctrine). This file is generated from the Conventional-Commit history by
 - **composer:** Add the curve block
 - **composition:** Open the countdown at -15 % and run it to 175 %
 - **app:** Put the tray actions at the bottom of the left-click menu
+- **catalog:** Add the preview block and the readout
+- **ambient:** Expose the captured frame count and the output transport
+- **ambient:** Show the preview in the shared block
+- **transcription:** Drop the settings nobody tunes from Decoding and Streaming
+- **audio:** Drop the manual voice-level window from Recording
+- **ambient:** Flatten Fine tuning and drop the change threshold and capture rate
 - **hud:** Add a settings store that keeps only what differs from the defaults
+- **precision-scroll:** Keep the scroll distance alone, drop the calibration fold
 - **hud:** Build the stroke and the countdown from the stored settings
+- **autocorrect:** Drop the drill-in cards that doubled the rail children
 - **playground:** Open the HUD tab on the stored settings and save from a bar
+- **rewrite:** Drop Top P and the repeat penalty from the profile editor
 - **app:** Flush the HUD settings on quit
+- **composition:** Paint the grey variants from a flat material
+- **composition:** Bake the colour wheel with the clamping conversion again
+- **composition:** Probe the colour material on Transcribing
 - **scripts:** Route the breaking marker to Removed and cancel reverts within a range
 - **scripts:** Route the deprecate type to Deprecated
+- **composition:** Give each HUD state its own material
+- **composition:** Paint the gauge on Recording's material
+- **catalog:** Add curve legend fields and DiagnosticsRegistry
+- **transcription:** Restore VAD and filter settings, flatten Decoding
+- **playground:** Name the HUD tab's targets after the parts they show
+- **diagnostics:** Compose the modules' datasets in Telemetry
+- **settings:** Give the shortcuts their own page
+- **taskbar-cover:** Choose the approach distance by name
+- **orchestration:** Move the scan and its folders to a section
+- **app:** Register the Diagnostics contributions and Shortcuts page
+- **playground:** Show the HUD tab's sections by the material in play
 - **core:** Follow the settings file and reload on a write from outside
+- **playground:** Play a dictation's utterance cycle on the Recording preview
+- **playground:** Replay the blend into Transcribing and Rewriting
 - **scripts:** Seat the selection on Quit after a Run action
+- **catalog:** Info toggle that shows or hides every card description
+- **diagnostics:** Folds first in Telemetry, folders section last
+- **settings:** Highlight a collapsed rail node that holds the current page
+- **hud:** Build the chrono's gauge from the stroke's config
+- **playground:** Drive the Recording preview's gauge from the tab's knobs
+- **settings:** Open General on the theme and startup cards, no section
+- **ambient:** Put the brightness curve first and bring the capture rate back
+- **catalog:** Make the preview block a card that never folds
+- **ambient:** Put the live preview in a pane at the right of the page
+- **audio:** Show the card descriptions at all times
+- **autocorrect:** Show the card descriptions at all times
+- **diagnostics:** Show the card descriptions at all times
+- **trackpad:** Show the card descriptions at all times
+- **rewrite:** Show the card descriptions at all times
+- **orchestration:** Show the card descriptions at all times
+- **settings:** Show the card descriptions at all times
+- **transcription:** Show the card descriptions at all times
+- **ambient:** Show the card descriptions at all times
+- **app:** Stop seeding the descriptions toggle
+- **settings:** Drop ShowDescriptions from the appearance settings
+- **catalog:** Remove the Info toggle from the page header
+- **catalog:** Make the preview block float
+- **ambient:** Open the live preview from a tile in Fine tuning
+- **catalog:** Read a folder path under its card description
+- **settings:** Lay the folder cards out on one row
+- **ambient:** Show the splitter grip on hover only
 
 ### Changed
 
@@ -175,6 +226,14 @@ doctrine). This file is generated from the Conventional-Commit history by
 - **settings:** Put the preset selectors in the header of their fold
 - **settings:** Open every section with the shared block
 - **settings:** Draw every curve with the shared curve block
+- **composition:** Make the previews take a material
+- **transcription:** Move telemetry opt-ins to Diagnostics
+- **audio:** Move the telemetry opt-in to Diagnostics
+- **autocorrect:** Move the dataset consents to Diagnostics
+- **trackpad:** Move the frame recording to Diagnostics
+- **playground:** Build the HUD tab's choice rows from one factory
+- **composition:** Drop the gauge's unused rotation plumbing
+- **composition:** Always spin the naked preview's cone
 
 ### Removed
 
@@ -232,7 +291,24 @@ doctrine). This file is generated from the Conventional-Commit history by
 - **tray-menu:** Open both tray menus as native menus at their natural size
 - **tray-menu:** Open the menus from the icon's corner, not its center
 - **tray-menu:** Show the module switches as rows with a pill
+- **ambient:** Drop the State section title that stood over nothing
+- **settings:** Show the module name alone on a node's General page
+- **precision-scroll:** Give the switch its own host and the distance a section
+- **composition:** Weigh the colour wheel as the cross-fade's first source
 - **scripts:** Regenerate the changelog from a single published tag
+- **playground:** Load the stored HUD settings into the material fields
+- **hud:** Re-apply the grey on a theme switch in every state
+- **settings:** Fit the rail to its labels, sharpen the title icon
+- **catalog:** Load the breadcrumb brushes from compiled XAML
+- **playground:** Round a HUD row to the decimals its step carries
+- **catalog:** Merge the breadcrumb brushes instead of replacing Resources
+- **playground:** Word the HUD tab's help lines as the reader sees them
+- **playground:** Read an unknown stored material as Grey in the Material row
+- **catalog:** Give the Info toggle the stock ToggleButton style
+- **composition:** Blend the processing stroke in from Recording
+- **settings:** Compose the backup location into the fold's own items
+- **composition:** Seed the stroke with the grey of its own theme
+- **playground:** Simulate speech inside the stroke's level window
 
 ## [0.35.0](https://github.com/louisfifre/deckle/compare/v0.31.6...v0.35.0) — 2026-08-13
 
