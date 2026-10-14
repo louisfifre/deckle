@@ -21,10 +21,10 @@ The face shows `MM.SS.cc` as eight separate elements, from left to right.
 An overlay that each digit carries in its own cell, named after it, such as `Min1Accent` or `Sec2Accent`. It holds the exact Windows accent colour and stays invisible until the digit flashes in that colour.
 
 **Animated digit** :
-A digit that *advanced* during the take, while recording. The difference between animated and at-rest digits exists **only during Recording**.
+A digit that advanced during the take, while recording. The difference between animated and at-rest digits exists only during Recording.
 
 **At-rest digit** :
-A digit that is not advancing at this moment.
+A digit that is not advancing at this moment. Outside Recording, every digit is at rest.
 
 **Dot** :
-A separator of the face, DotA or DotB. It is never animated and **always takes the at-rest tone**.
+A separator of the face, DotA or DotB. It is never animated and always takes the at-rest tone.
