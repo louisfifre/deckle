@@ -741,7 +741,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── AutocorrectSettingsService.cs
 │   │   ├── Deckle.Autocorrect.csproj
 │   │   ├── DeckleAutocorrectSource.cs
-│   │   ├── GLOSSARY.md  — glossary-deckle-autocorrect Autocorrect vocabulary — where correction may act (surfaces, enrollment), the t…
+│   │   ├── GLOSSARY.md  — glossary-deckle-autocorrect Autocorrect vocabulary. It covers where correction may act (surfaces, enrollmen…
 │   │   └── SettingsSearch.cs
 │   ├── Deckle.Autocorrect.Lab/
 │   │   ├── Mining/
