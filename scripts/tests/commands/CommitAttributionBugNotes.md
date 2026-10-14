@@ -19,3 +19,13 @@ Regression coverage: `scripts/tests/commands/install-hooks.tests.ps1` proves tha
 - **Recurrence cue:** A clone, worktree, laptop, automation, or temporary `git -c` override can commit without first proving the effective author and committer identities.
 
 Regression coverage: `scripts/tests/commands/install-hooks.tests.ps1` proves that the configured guard accepts the canonical identity and rejects wrong author or committer names and emails.
+
+## Test fixtures committed under a throwaway identity
+
+- **Trigger:** The maintainer ran `changelog.tests.ps1` from his own terminal.
+- **Observed symptom:** The first fixture commit failed with exit code 1 and no reason, since the test discarded git's output.
+- **Cause:** The fixture configured `Deckle Tests <deckle-tests@example.invalid>`, which the global commit guard rejects in every repository. The agent shell that wrote the test carries `GIT_AUTHOR_NAME` and `GIT_COMMITTER_NAME` set to the maintainer, and those variables outrank repository config, so the test passed there.
+- **Violated invariant:** A fixture commit records the maintainer's identity like any other commit.
+- **Recurrence cue:** A test passes in an agent shell and fails in the maintainer's terminal; a test discards git's stderr on failure.
+
+Regression coverage: `scripts/tests/commands/changelog.tests.ps1` and `versioning-workflow.tests.ps1` commit their fixtures under the canonical identity and surface git's output when a command fails.
