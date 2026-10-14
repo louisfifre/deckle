@@ -848,6 +848,8 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   ├── HotkeyKeyNames.cs
 │   │   │   ├── IPathControl.cs
 │   │   │   ├── MagnitudeGrain.cs
+│   │   │   ├── PreviewBlock.cs
+│   │   │   ├── Readout.cs
 │   │   │   ├── Setting.cs
 │   │   │   ├── SettingArgs.cs
 │   │   │   ├── SettingDescriptor.cs
