@@ -81,12 +81,28 @@ public sealed partial class GeneralPage : Page
     //
     // The "Application data" section has no section reset, so no section gating
     // here; the composed card carries its own inline reset.
+    //
+    // The card lives in the backup fold's Items, which accepts SettingsCards
+    // only: the SettingsExpander applies its SettingsCard item style to every
+    // item when the fold opens, and a StackPanel host there threw at that
+    // moment (the crash of 2026-10-14 19:09). The composer needs a Panel, so
+    // it composes into a panel of its own, then the cards move into the fold
+    // ahead of the bespoke information card. The composer keeps driving them:
+    // it holds the controls, not the panel.
     private SettingsComposer? _applicationDataComposer;
 
     private void ComposeApplicationDataSection()
     {
-        _applicationDataComposer = new SettingsComposer(BackupLocationHost, ViewModel);
+        var host = new StackPanel();
+        _applicationDataComposer = new SettingsComposer(host, ViewModel);
         _applicationDataComposer.Compose(ViewModel.ApplicationDataSettings);
+
+        for (int i = host.Children.Count - 1; i >= 0; i--)
+        {
+            UIElement card = host.Children[i];
+            host.Children.RemoveAt(i);
+            BackupExpander.Items.Insert(0, card);
+        }
     }
 
     // NavigationCacheMode.Required reuses the page instance — the constructor

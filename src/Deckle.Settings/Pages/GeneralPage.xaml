@@ -69,7 +69,8 @@
                 <catalog:SettingsSection x:Uid="GeneralPageApplicationDataSection">
                 <StackPanel Spacing="{StaticResource SettingsCardSpacing}">
 
-                <controls:SettingsExpander x:Uid="GeneralBackupExpander"
+                <controls:SettingsExpander x:Name="BackupExpander"
+                                           x:Uid="GeneralBackupExpander"
                                            Tag="GeneralBackupExpander"
                                            catalog:SettingsDescriptions.Toggled="True">
                     <!-- Bespoke: Create/Restore are ACTIONS, not settings — the
@@ -83,12 +84,13 @@
                                 Click="RestoreBackupButton_Click"
                                 IsEnabled="{x:Bind ViewModel.HasBackup, Mode=OneWay}" />
                     </StackPanel>
+                    <!-- Items holds SettingsCards only: the expander styles every
+                         item with its SettingsCard item style, so any other
+                         element here throws when the fold opens (the crash of
+                         2026-10-14 19:09, a StackPanel host in this slot). The
+                         composed location card is moved in from code, first
+                         (ComposeApplicationDataSection). -->
                     <controls:SettingsExpander.Items>
-                        <!-- A StackPanel host, not a bare SettingsCard, because the
-                             composer needs a Panel. -->
-                        <StackPanel x:Name="BackupLocationHost"
-                                    Spacing="{StaticResource SettingsCardSpacing}" />
-
                         <!-- Bespoke: a live status projection, not a settable
                              value. -->
                         <controls:SettingsCard x:Uid="GeneralBackupInfoCard"
