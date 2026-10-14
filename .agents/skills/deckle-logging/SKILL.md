@@ -5,7 +5,7 @@ description: Use when you add or change an observation point in Deckle code, an 
 
 ## Why
 
-A person follows the running application through its log and acts on what they read. Every observation has to reach that log, and every line has to read as a step of the story.
+A person follows the running application through its log and acts on what they read. Every operational observation has to reach that log, and every line has to read as a step of the story. An observation collected for a dataset takes its own consented route, which the Diagnostics glossary defines.
 
 ## Statement
 
