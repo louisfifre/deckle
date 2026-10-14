@@ -941,7 +941,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── DeckleWindowingSource.cs
 │   │   ├── DispatchEventListener.cs
 │   │   ├── EventEntry.cs
-│   │   ├── GLOSSARY.md  — glossary-deckle-diagnostics Observability vocabulary for the Diagnostics family (.Logging, .Telemetry inclu…
+│   │   ├── GLOSSARY.md  — glossary-deckle-diagnostics Observability vocabulary for the Diagnostics family, .Logging and .Telemetry in…
 │   │   ├── IFlushableLogSink.cs
 │   │   ├── IHudFeedbackSink.cs
 │   │   ├── ILogSink.cs
