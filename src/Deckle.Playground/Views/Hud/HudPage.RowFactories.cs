@@ -94,8 +94,7 @@ public sealed partial class HudPage
     {
         // TuningModel stores floats; promoted to double they show binary
         // noise (0.4f as 0.4000006). Rounding to the step's decimals strips it.
-        int digits = Math.Max(0, (int)Math.Ceiling(-Math.Log10(step)));
-        double displayValue = Math.Round(value, digits);
+        double displayValue = Math.Round(value, StepDecimals(step));
 
         var slider = new Slider
         {
@@ -160,6 +159,20 @@ public sealed partial class HudPage
             }
             finally { _syncing = previous; }
         };
+    }
+
+    // The decimals the step itself carries: 0.25 needs two, where its order
+    // of magnitude alone (-log10) would give one and show 0.25 as 0.2.
+    private static int StepDecimals(double step)
+    {
+        int digits = 0;
+        while (digits < 6)
+        {
+            double scaled = step * Math.Pow(10, digits);
+            if (Math.Abs(scaled - Math.Round(scaled)) < 1e-9) break;
+            digits++;
+        }
+        return digits;
     }
 
     private void AddIntRow(
