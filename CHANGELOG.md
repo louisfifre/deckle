@@ -139,6 +139,7 @@ doctrine). This file is generated from the Conventional-Commit history by
 - **transcription:** Split the settings into General, Decoding and Streaming
 - **composer:** Add the curve block
 - **composition:** Open the countdown at -15 % and run it to 175 %
+- **app:** Put the tray actions at the bottom of the left-click menu
 
 ### Changed
 
@@ -219,6 +220,9 @@ doctrine). This file is generated from the Conventional-Commit history by
 - **tray-menu:** Open a tray flyout once its carrier reports its size
 - **tray-menu:** Give the quick-actions panel a popup window of its own
 - **composition:** Map the conic palette into the sRGB gamut by chroma
+- **tray-menu:** Open both tray menus as native menus at their natural size
+- **tray-menu:** Open the menus from the icon's corner, not its center
+- **tray-menu:** Show the module switches as rows with a pill
 
 ## [0.35.0](https://github.com/louisfifre/deckle/compare/v0.31.6...v0.35.0) — 2026-08-13
 
