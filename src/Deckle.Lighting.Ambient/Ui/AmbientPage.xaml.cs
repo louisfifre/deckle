@@ -122,14 +122,13 @@ public sealed partial class AmbientPage : Page
         }
 
         var visibility = _paneOpen ? Visibility.Visible : Visibility.Collapsed;
-        PreviewDivider.Visibility  = visibility;
         PreviewSplitter.Visibility = visibility;
         PreviewPane.Visibility     = visibility;
     }
 
     // The grip shows while the pointer is over the splitter, while it is
-    // pressed and while it holds keyboard focus; at rest the divider line is
-    // the edge. The splitter marks its pointer events handled, so the press
+    // pressed and while it holds keyboard focus; at rest nothing shows, the
+    // pane floats. The splitter marks its pointer events handled, so the press
     // and release are taken with handledEventsToo; the pointer may leave the
     // 12 px strip mid-drag, so the pressed state keeps the grip until the
     // release or the capture's loss. Pointer focus does not count: a click

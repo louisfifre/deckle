@@ -270,21 +270,13 @@
             </Grid>
         </ScrollViewer>
 
-        <!-- The line under the splitter, the page's edge and the pane's: the
-             divider stroke, so it follows the theme, inset to the content's
-             vertical padding. The splitter's 12 px hit zone is centred on it. -->
-        <Rectangle x:Name="PreviewDivider"
-                   Grid.Column="1"
-                   Width="1"
-                   Margin="0,24,0,24"
-                   Fill="{ThemeResource DividerStrokeColorDefaultBrush}"
-                   Visibility="Collapsed" />
-
         <!-- The Toolkit's GridSplitter: the strip tinted under the pointer and
              while dragging, its grip thumb shown only then (and under
-             keyboard focus), so at rest the divider line alone marks the edge
-             (Louis, 2026-10-14: a line, a small icon on hover). Code-behind
-             drives IsThumbVisible (WireSplitterReveal). PreviousAndNext
+             keyboard focus). At rest nothing marks the edge: the pane floats
+             beside the page, with the page's padding as the only gap (Louis,
+             2026-10-15, after a night with the line: no line, the grip on
+             hover alone). Code-behind drives IsThumbVisible
+             (WireSplitterReveal). PreviousAndNext
              resizes the two columns around it. It writes a pixel width on the
              pane column (the page column stays star-sized) and refuses a drag
              past either column's MinWidth; Left and Right move it by its
