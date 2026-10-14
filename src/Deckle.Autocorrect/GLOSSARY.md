@@ -5,7 +5,19 @@ description: "Autocorrect vocabulary. It covers where correction may act (surfac
 
 # Deckle.Autocorrect, Glossary
 
-Vocabulary of the system-autocorrect workstream, which brings bounded correction to the whole machine, first when a word is committed and then by choosing among closed candidates in context. The Correction / Rewrite boundary, which decides what this module may do silently, is system-wide language and lives in the root `GLOSSARY.md`.
+Vocabulary of the system-autocorrect workstream, which brings bounded correction to the whole machine, first when a word is committed and then by choosing among closed candidates in context. The Correction / Rewrite boundary, which decides what this module may do silently, is system-wide language and lives in the root `GLOSSARY.md`. The correction itself is defined here.
+
+## The correction
+
+**Correction** :
+A bounded text change that repairs a span in place, drawn from a closed set of possible edits, such as restoring a diacritic, dropping a hesitation or fixing casing. It cannot add content that was not there, so it may act silently and is taken back through the correction undo.
+_Avoid_ : rewrite (regenerates text, a correction only repairs), autocorrect (the module name, not the operation).
+
+**Rewrite** :
+A generative text change that regenerates a span into new text, defined in the root `GLOSSARY.md`. A correction never generates text, it only repairs what is there.
+
+**Autocorrect** :
+In ordinary use, a feature that fixes typing errors on its own. In Deckle it is the name of this module and of the product feature, while the operation they perform is a correction.
 
 ## Where correction may act
 
