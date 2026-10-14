@@ -1,24 +1,22 @@
 ---
 name: deckle-nomenclature
-description: One normalized way to name files, folders, symbols, resources and providers. Invoke before naming or renaming.
+description: Use when you give a name to anything in the Deckle repository or change one, a file, a folder, a symbol, a resource or a provider, to choose a name that says its responsibility and follows the conventions the .NET world already uses.
 ---
 
-# Deckle — Naming
+## Why
 
-## Intent
+A name grounded in the world's conventions reads to anyone, and a name that says a responsibility shows what the thing is for.
 
-Agree one normalized way to name everything — symbols, files, folders, resources, providers — grounded in world conventions so the name reads to anyone and its responsibility shows. Habits meant to carry across projects, not only this one.
+## Statement
 
-## How
+A name says what the thing is responsible for, never how it does it. A name that carries a framework, a call pattern or an internal mechanism expires at the next change, so name one level above the mechanism. An internal change invisible to consumers renames nothing. A change in public responsibility does.
 
-A name says what the thing is responsible for, never how it does it. A name carrying a framework, a call pattern, or an internal mechanism expires at the next change — step up a level. So an internal change invisible to consumers forces no rename; a change in public responsibility does.
+Casing, structural prefixes, boolean prefixes, the `Async` suffix and event tense follow the .NET Framework Design Guidelines and the dotnet/runtime field conventions. This skill does not restate them, and the repository's `.editorconfig` turns them into IDE warnings.
 
-Casing, structural prefixes, boolean prefixes, the `Async` suffix and event tense follow the .NET Framework Design Guidelines and the dotnet/runtime field conventions — the world convention, not restated here.
+Give a type the suffix that names its precise role. A suffix that would fit any type, such as Manager, Helper or Util, names no responsibility, so look for the role it hides. Two suffixes fitting one type mean two responsibilities, so split. Two names so alike they get confused signal a missing factorization or a fuzzy role, so rename to make the difference explicit.
 
-Prefer a suffix that names the precise role over the overflow ones — Manager, Helper, Util(s), a generic Wrapper — which name an unowned dump rather than a responsibility. Two suffixes fitting one type means two responsibilities — split. And two names so alike they get confused signal a missing factorization or a fuzzy role — rename to make the difference explicit.
+A namespace names a module's capability, never a file's location. One module exposes one namespace, and sub-folders organize files freely without shifting or splitting it. A file and a folder are still named for the responsibility they hold, and no two modules' capability names overlap. A name that would fit any module, such as Common or Shared, names no capability.
 
-A namespace names a module's capability, never a file's location: one module exposes one namespace, and sub-folders organize files freely without ever shifting or splitting it. A file and a folder are still named for the responsibility they hold, and no two modules' capability names overlap. Avoid the fuzzy generic namespaces (Common, Shared, Utilities) — name the real capability.
+Resources keep one marking scheme. `x:Name` names an element the code reaches, `x:Key` an entry in a resource dictionary and `x:Uid` the localized strings of an element, and each name serves its own role. An EventSource provider is named `Deckle-<Component>`, with the dash Microsoft's own providers use as separator. A theme resource is named for the function it serves, not for its value.
 
-Mark resources consistently: the `x:Name`/`x:Key`/`x:Uid` split kept distinct, a `.resw` key frozen once sent for translation, an EventSource provider as `Deckle-<Component>` (dash, never dot — ETW collision). Theme resources are named by function, not value — that rule lives in `deckle-interface`.
-
-A name that strays from the ordinary deserves questioning — it usually flags a responsibility not yet clearly seen.
+A name that strays from the ordinary deserves a question. It usually shows a responsibility not yet clearly seen.

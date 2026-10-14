@@ -28,11 +28,7 @@ Speech models, ASR and TTS alike, run in BF16 or FP16. A 4-bit quantization serv
 
 ## Bug notes and regression tests
 
-Once a confirmed bug's cause is established, invoke `deckle-bug-note` before closing the workstream. Keep the note beside the test project that owns the behavior and follow its local naming and format. Record established facts: trigger, observed symptom, cause, violated invariant, and recurrence cue. Remove secrets and personal data; mark uncertainty explicitly.
-
-When the workstream fixes the bug, add a `[Trait("Category", "regression")]` test if the failure can be reproduced automatically through a natural seam. Recreate the failing conditions and assert the public behavioral contract, not implementation details. Name the test for the behavior that must remain true. The encoded condition must distinguish the fixed contract from the known faulty behavior.
-
-Keep the test in the owning `*.Tests` project. If the note contains replayable input, store it as a test resource and make the regression test consume it; otherwise identify the regression test in the note. Declare the resource in the test project when the SDK does not include it in the required form. Validate by compiling the owning test project under the repository's x64 and no-build-server rules.
+Once a confirmed bug's cause is established, invoke `deckle-bug-note` before closing the workstream. The fix and its regression test follow `deckle-testing`.
 
 ## Name the hat
 

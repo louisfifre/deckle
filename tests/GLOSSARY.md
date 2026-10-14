@@ -5,7 +5,7 @@ description: "Test taxonomy — the four categories inside the automatic scope (
 
 # Deckle tests — Glossary
 
-Vocabulary of the test taxonomy. Four categories fall within the automatic test scope, runnable by an agent or by Louis via `dotnet test` without human interaction. Three categories are outside the automatic scope: they exist and are useful, but require an explicit maintainer action or an interactive workstation.
+Vocabulary of the test taxonomy. Four categories fall within the automatic test scope, which `dotnet test` runs without human interaction. Three categories are outside the automatic scope: they exist and are useful, but require an explicit maintainer action or an interactive workstation.
 
 ## In the automatic scope
 
@@ -17,7 +17,7 @@ Test that exercises a boundary with a mockable local service. The partner is sim
 _Avoid_ : end-to-end, e2e (they cover different things elsewhere).
 
 **observability** :
-Test that exercises a sequence of EventSource events via an internal `TestEventListener`. Verifies that the code emits the right providers, the right event names, the right levels and keywords, and carries the expected payloads. Category native to Deckle given the weight of the EventSource pipeline (see `src/Deckle.Diagnostics/CLAUDE.md`).
+Test that exercises a sequence of EventSource events via an internal `TestEventListener`. Verifies that the code emits the right providers, the right event names, the right levels and keywords, and carries the expected payloads. Category native to Deckle given the weight of the EventSource pipeline. The listener and its traps live in `tests/Deckle.TestSupport/TestEventListener.cs`.
 _Avoid_ : log assertion, telemetry test.
 
 **regression** :
@@ -29,7 +29,7 @@ Test added in reaction to a specific bug already fixed. Reproduces the condition
 Test that exercises a heavy native runtime in a realistic condition — loading a 1 GB Whisper model, transcribing a reference audio file stored in the test repo, reading a Hue Entertainment payload on a real bridge. Possible to automate locally, but slow, demanding, and conditional on the availability of native artifacts and hardware. Stays in the hands of Louis or a dedicated workstation.
 
 **interactive** :
-Test that requires an interactive Windows workstation and a human or a fake human capable of presenting real conditions to the system — a real mic that picks up sound, a global hotkey that does not conflict with another app, a UIAutomation target window to validate the paste, a physical display for DXGI Output Duplication. Not automatable by an agent; Louis validates it manually via the `verify` skill in the Claude harness.
+Test that requires an interactive Windows workstation and a human or a fake human capable of presenting real conditions to the system — a real mic that picks up sound, a global hotkey that does not conflict with another app, a UIAutomation target window to validate the paste, a physical display for DXGI Output Duplication.
 
 **maintenance** :
 Explicit maintainer operation hosted by the test runner because it composes existing library modules and benefits from assertions — regenerate a derived lexicon, mine a collected corpus, refresh a calibrated artifact. It may read local maintainer data or write versioned/runtime artifacts, so it MUST use xUnit's `Explicit` flag and never run during an ordinary `dotnet test`. Run it deliberately from Test Explorer or with explicit tests enabled and a narrow method filter.
