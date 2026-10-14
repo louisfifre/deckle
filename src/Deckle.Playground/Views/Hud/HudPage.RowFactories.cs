@@ -309,14 +309,10 @@ public sealed partial class HudPage
     // inside its own SelectionChanged.
     private void AddMaterialRow(StackPanel stack, HudMaterial value, Action<HudMaterial> setter)
     {
-        var radios = new RadioButtons { MaxColumns = 2, VerticalAlignment = VerticalAlignment.Center };
         // Items follow HudMaterial's order (Grey, Colour), so the index is
         // the material.
-        radios.Items.Add("Grey");
-        radios.Items.Add("Colour");
-        // Selected before subscribing, so building the row fires nothing.
-        radios.SelectedIndex = value == HudMaterial.Grey ? 0 : 1;
-        AutomationProperties.SetName(radios, "Material");
+        var radios = AddRadioRow(stack, "Material", ["Grey", "Colour"],
+            value == HudMaterial.Grey ? 0 : 1);
         radios.SelectionChanged += (_, _) =>
         {
             var next = radios.SelectedIndex == 0 ? HudMaterial.Grey : HudMaterial.Colour;
@@ -326,13 +322,24 @@ public sealed partial class HudPage
             UpdateUnsavedBar();
             DispatcherQueue.TryEnqueue(RebuildTuningPanel);
         };
+    }
+
+    // A labelled choice between a few named options, side by side. The
+    // caller subscribes SelectionChanged after this returns, so building the
+    // row fires nothing.
+    private static RadioButtons AddRadioRow(StackPanel stack, string label, string[] items, int selectedIndex)
+    {
+        var radios = new RadioButtons { MaxColumns = items.Length, VerticalAlignment = VerticalAlignment.Center };
+        foreach (var item in items) radios.Items.Add(item);
+        radios.SelectedIndex = selectedIndex;
+        AutomationProperties.SetName(radios, label);
 
         var grid = new Grid { ColumnSpacing = 8, Margin = new Thickness(0, 4, 0, 4) };
         grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(160) });
         grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
         var labelTb = new TextBlock
         {
-            Text = "Material",
+            Text = label,
             VerticalAlignment = VerticalAlignment.Center,
             TextTrimming = TextTrimming.CharacterEllipsis,
         };
@@ -341,6 +348,7 @@ public sealed partial class HudPage
         grid.Children.Add(labelTb);
         grid.Children.Add(radios);
         stack.Children.Add(grid);
+        return radios;
     }
 
     private static Grid WrapRow(string label, Slider slider, NumberBox numberBox)
