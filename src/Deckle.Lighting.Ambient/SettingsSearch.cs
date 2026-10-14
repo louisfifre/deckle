@@ -36,6 +36,7 @@ public static class SettingsSearch
         new() { LabelKey = "AmbientExposureCard", Keywords = ["ev", "brightness", "hdr"] },
         new() { LabelKey = "AmbientSaturationCard", Keywords = ["vivid", "colour", "color", "chroma"] },
         new() { LabelKey = "AmbientMonitorCard", Keywords = ["monitor", "screen", "display"] },
+        new() { LabelKey = "AmbientCaptureRateCard", Keywords = ["fps", "frame rate", "hz", "performance"] },
         new() { LabelKey = "HueBridgeExpander", Keywords = ["philips", "pair", "connect"] },
         new() { LabelKey = "HueBridgeAddressCard", Keywords = ["ip", "discover", "network"] },
         new() { LabelKey = "HueBridgeGroupCard", Keywords = ["group", "entertainment", "lights"] },

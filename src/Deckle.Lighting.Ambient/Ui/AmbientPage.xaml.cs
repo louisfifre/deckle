@@ -15,12 +15,12 @@ namespace Deckle.Lighting.Ambient;
 //
 // Surface : most cards are composed by SettingsComposer from the manifests in
 // AmbientViewModel.Settings.cs, one composer per host panel (StateHost,
-// BehaviourHost, TuningHost). Five parts stay hand-authored because the
-// composer cannot express them, each marked "bespoke" in the XAML: the
-// NotPaired InfoBar, the live preview (AmbientPreviewCard), the per-light
-// rows (LightZonesCard), the display picker (runtime labels) and the Hue
-// bridge expander (AmbientPage.Hue.cs). The brightness curve is a composed
-// Curve card, last of the fine-tuning cards.
+// BehaviourHost, TuningHost, CaptureHost). Five parts stay hand-authored
+// because the composer cannot express them, each marked "bespoke" in the
+// XAML: the NotPaired InfoBar, the live preview (AmbientPreviewCard), the
+// per-light rows (LightZonesCard), the display picker (runtime labels) and
+// the Hue bridge expander (AmbientPage.Hue.cs). The brightness curve is a
+// composed Curve card, first of the fine-tuning cards.
 //
 // Sync : the view model writes every edit straight to AmbientSettingsService
 // and saves. The page observes AmbientSettingsService.Changed and reloads the
@@ -53,6 +53,7 @@ public sealed partial class AmbientPage : Page
         ComposeRegion(StateHost, ViewModel.StateSettings);
         ComposeRegion(BehaviourHost, ViewModel.BehaviourSettings);
         ComposeRegion(TuningHost, ViewModel.TuningSettings);
+        ComposeRegion(CaptureHost, ViewModel.CaptureSettings);
 
         ViewModel.PropertyChanged += OnViewModelPropertyChanged;
         Header.IsResetAllEnabled = ViewModel.CanReset;
