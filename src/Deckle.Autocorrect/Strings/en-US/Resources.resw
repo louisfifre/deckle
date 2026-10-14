@@ -91,21 +91,6 @@
     <value>Master switch. When off, no text is corrected in any app, whatever you've chosen.</value>
   </data>
 
-  <!-- Navigation cards — the two drill-ins to the child pages. Icon-less
-       SettingsCards, so only .Header / .Description; the chevron says the rest. -->
-  <data name="AutocorrectPage_DomainsCard.Header" xml:space="preserve">
-    <value>Lexical domains</value>
-  </data>
-  <data name="AutocorrectPage_DomainsCard.Description" xml:space="preserve">
-    <value>Teach Deckle the vocabulary of the fields you write about.</value>
-  </data>
-  <data name="AutocorrectPage_AppsCard.Header" xml:space="preserve">
-    <value>Apps enrolled</value>
-  </data>
-  <data name="AutocorrectPage_AppsCard.Description" xml:space="preserve">
-    <value>Where correction runs, app by app.</value>
-  </data>
-
   <!-- Excluded words — the settings mirror of the exclusion register. It sits on
        this page rather than on a child because an exclusion holds against every
        domain and every app at once. The caption states both halves of what an

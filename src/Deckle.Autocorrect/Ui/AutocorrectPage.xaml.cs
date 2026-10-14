@@ -117,14 +117,4 @@ public sealed partial class AutocorrectPage : Page
         ExclusionsList.Visibility = any ? Visibility.Visible : Visibility.Collapsed;
         ExclusionsEmptyState.Visibility = any ? Visibility.Collapsed : Visibility.Visible;
     }
-
-    // Drill-in: hand the destination's page tag to the shell, which selects the
-    // matching rail item and navigates. The module cannot reference the settings
-    // shell, so the hop goes through the Catalog delegate the App wires at boot;
-    // unwired, the card is inert rather than broken.
-    private void OnDomainsCardClick(object sender, RoutedEventArgs e)
-        => SettingsNavigation.GoToPage?.Invoke(AutocorrectSettingsModule.LexicalDomainsPageTag);
-
-    private void OnAppsCardClick(object sender, RoutedEventArgs e)
-        => SettingsNavigation.GoToPage?.Invoke(AutocorrectSettingsModule.AppsEnrolledPageTag);
 }
