@@ -19,12 +19,18 @@ public sealed partial class HudPage
     // is one `new()` and the defaults are written once.
     private sealed class SpeechSimulation
     {
-        // 0.013 ≈ -38 dBFS, 0.100 ≈ -20 dBFS.
-        public float RmsMin           = 0.013f;
-        public float RmsMax           = 0.100f;
+        // The stroke maps the RMS through the shipping level window, −55 to
+        // −32 dBFS by default (AudioLevelMapper). The floor must be silence:
+        // the first default, 0.013, is −38 dBFS, three quarters of the way
+        // up that window, so a pause left the outline at 75 % and the sweep
+        // barely moved. 0 is the one value every window reads as silence.
+        // 0.030 ≈ −30 dBFS clears the window's top, so the sweep spans the
+        // whole visible range.
+        public float RmsMin           = 0f;
+        public float RmsMax           = 0.030f;
         public float RmsPeriodSeconds = 2.0f;
         public bool  ManualOverride   = false;
-        public float ManualValue      = 0.012f;
+        public float ManualValue      = 0.006f;
 
         public double SpeechSeconds = 4;
         public double PauseSeconds  = EnginePauseSeconds();
@@ -91,16 +97,19 @@ public sealed partial class HudPage
     // the take, its clock and its gauge.
     private void AddSpeechSimulationRows(StackPanel stack)
     {
-        // Step 0.001: the defaults (0.013, 0.100) need three decimals.
-        AddFloatRow(stack, "SimRmsMin", 0, 0.3, 0.001, _speechSimulation.RmsMin,
+        // Range 0.05: the default window reads everything above 0.025
+        // (−32 dBFS) as full level, so a wider slider spent most of its
+        // travel on values that all look the same. Step 0.001: silence sits
+        // under 0.002 in that window, so the floor needs three decimals.
+        AddFloatRow(stack, "SimRmsMin", 0, 0.05, 0.001, _speechSimulation.RmsMin,
             v => _speechSimulation.RmsMin = (float)v);
-        AddFloatRow(stack, "SimRmsMax", 0, 0.3, 0.001, _speechSimulation.RmsMax,
+        AddFloatRow(stack, "SimRmsMax", 0, 0.05, 0.001, _speechSimulation.RmsMax,
             v => _speechSimulation.RmsMax = (float)v);
         AddFloatRow(stack, "SimRmsPeriodSeconds", 0.2, 10, 0.1, _speechSimulation.RmsPeriodSeconds,
             v => _speechSimulation.RmsPeriodSeconds = (float)v);
         AddToggleRow(stack, "Manual override", _speechSimulation.ManualOverride,
             v => _speechSimulation.ManualOverride = v);
-        AddFloatRow(stack, "SimRmsManualValue", 0, 0.3, 0.001, _speechSimulation.ManualValue,
+        AddFloatRow(stack, "SimRmsManualValue", 0, 0.05, 0.001, _speechSimulation.ManualValue,
             v => _speechSimulation.ManualValue = (float)v);
 
         stack.Children.Add(TuningHelp(
