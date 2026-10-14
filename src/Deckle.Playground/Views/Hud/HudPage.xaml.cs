@@ -1,6 +1,5 @@
 using System;
 using System.ComponentModel;
-using System.Diagnostics;
 using System.Numerics;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
@@ -43,11 +42,6 @@ public sealed partial class HudPage : Page
     private readonly DispatcherTimer _rebuildDebounce = new()
         { Interval = TimeSpan.FromMilliseconds(300) };
     private bool _rebuildPending;
-
-    // ── Simulated RMS pump ──────────────────────────────────────────────
-    private readonly DispatcherTimer _rmsTimer = new()
-        { Interval = TimeSpan.FromMilliseconds(50) };
-    private readonly Stopwatch _rmsClock = new();
 
     // Breaks the Slider ↔ NumberBox feedback loop in the row factories: each
     // programmatic write fires the paired control's ValueChanged.
@@ -181,8 +175,7 @@ public sealed partial class HudPage : Page
     {
         SettingsService.Instance.OverlayAnimationsChanged -= OnOverlayAnimationsChanged;
         HudSettingsService.Instance.Changed -= OnHudSettingsChanged;
-        _rmsTimer.Stop();
-        _rmsClock.Stop();
+        StopSpeechSimulation();
         _rebuildDebounce.Stop();
         ElementCompositionPreview.SetElementChildVisual(NakedPreviewHost, null);
         _nakedPreview?.Dispose();
@@ -274,7 +267,7 @@ public sealed partial class HudPage : Page
         _digitRevealPreview = null;
         _gaugePreview?.Dispose();
         _gaugePreview = null;
-        StopRmsPump();
+        StopSpeechSimulation();
 
         if (!ViewModel.IsPlaying)
         {
@@ -348,7 +341,7 @@ public sealed partial class HudPage : Page
         }
 
         if (currentTarget == HudTarget.Recording)
-            StartRmsPump();
+            StartSpeechSimulation();
     }
 
     private void AttachNakedPreview(HudComposition.NakedMaskPart part)
@@ -409,43 +402,6 @@ public sealed partial class HudPage : Page
         _rebuildPending = true;
         _rebuildDebounce.Stop();
         _rebuildDebounce.Start();
-    }
-
-    // ── RMS pump (Recording only) ───────────────────────────────────────
-
-    private void StartRmsPump()
-    {
-        if (_rmsTimer.IsEnabled) return;
-        _rmsClock.Restart();
-        _rmsTimer.Tick -= RmsTimerTick;
-        _rmsTimer.Tick += RmsTimerTick;
-        _rmsTimer.Start();
-    }
-
-    private void StopRmsPump()
-    {
-        if (!_rmsTimer.IsEnabled) return;
-        _rmsTimer.Stop();
-        _rmsTimer.Tick -= RmsTimerTick;
-        _rmsClock.Stop();
-    }
-
-    private void RmsTimerTick(object? sender, object e)
-    {
-        var speech = _speechSimulation;
-        float rms;
-        if (speech.ManualOverride)
-        {
-            rms = speech.ManualValue;
-        }
-        else
-        {
-            double t = _rmsClock.Elapsed.TotalSeconds;
-            float sweep = (float)(0.5 + 0.5 * Math.Sin(
-                2 * Math.PI * t / Math.Max(0.1, speech.RmsPeriodSeconds)));
-            rms = speech.RmsMin + sweep * (speech.RmsMax - speech.RmsMin);
-        }
-        ChronoPreview.UpdateAudioLevel(rms);
     }
 
     // ── Reset all ───────────────────────────────────────────────────────
