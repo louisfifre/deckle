@@ -18,10 +18,10 @@ An application where autocorrect is active because the user accepted enrollment.
 
 **Enrollment prompt** :
 A passive notification that asks whether to enroll an application, raised only when a correction would otherwise be possible there. It asks for consent. Its appearance does not enroll the app, and it applies no correction itself.
-_Avoid_ : popup, dialog (it is a passive notification, not a modal).
+_Avoid_ : popup (it is a passive notification, not a window over the content), dialog (it is passive, not a modal).
 
 **Blocklist-only framing** :
-A way of describing correction as acting everywhere except where a blocklist excludes it. In Deckle the exclusion classes are only a safety net, and enrollment is the gate that turns correction on.
+A framing of correction as acting everywhere except where a blocklist excludes it. In Deckle the exclusion classes are only a safety net, and enrollment is the gate that turns correction on.
 
 **Popup** :
 A small window that appears over the current content and often takes focus. Neither the enrollment prompt nor the correction inlay is a popup.
@@ -37,13 +37,13 @@ _Avoid_ : revert (the retired implicit-Backspace model), Ctrl+Z (never intercept
 
 **Correction inlay** :
 The companion surface that shows an applied correction with its undo and redo, without taking focus or interrupting typing. It is how silent corrections become visible, and it is the only surface that carries correction undo.
-_Avoid_ : popup, toast, notification (it never steals focus or announces itself).
+_Avoid_ : popup (it never takes focus), toast (it never announces itself), notification (it never announces itself).
 
 **Revert** :
-In ordinary use, going back to an earlier state. Here it names the retired model in which Backspace implicitly undid a correction. The explicit act is correction undo.
+In ordinary use, a return to an earlier state. Here it names the retired model in which Backspace implicitly undid a correction. The explicit act is correction undo.
 
 **Ctrl+Z** :
-The undo shortcut of the application being used. Deckle never intercepts it, because it belongs to the apps, so it never means correction undo.
+The undo shortcut of the application being used. It belongs to the apps, and Deckle never intercepts it. So it never means correction undo.
 
 **Toast** :
 A short notification that slides in and leaves on its own. The correction inlay never announces itself, so it is not a toast.
@@ -58,8 +58,8 @@ The correction stage that acts at once on the last committed word, from the lite
 _Avoid_ : first pass (scope is the point, not order).
 
 **Protected literal** :
-A form that the commit stage must leave untouched because it belongs to the primary-language lexicon, the restricted global-English layer or the personal vocabulary. Protection works one way. It preserves a recognized literal but does not make the protected English layer a correction target.
-_Avoid_ : whitelist (protection gates correction, not observation), English lexicon as spelling authority.
+A word form that the commit stage must leave untouched because it belongs to the primary-language lexicon, the restricted global-English layer or the personal vocabulary. Protection works one way. It preserves a recognized literal but does not make the protected English layer a correction target.
+_Avoid_ : whitelist (protection gates correction, not observation), English lexicon as spelling authority (the English layer only protects and is never a correction target).
 
 **Candidate ownership** :
 The link of provenance between a set of candidates and the correction policy that earned the right to propose it. Ownership keeps alternatives inside the policy that justified them, rather than treating every bounded form as interchangeable. The typed literal remains the explicit choice to keep.
@@ -67,7 +67,7 @@ _Avoid_ : global candidate pool (candidate provenance determines correction righ
 
 **Sentence stage** :
 The correction stage that waits for a complete sentence to settle bounded alternatives that the commit stage could not settle. It judges one whole-sentence candidate transaction and may keep the literal, select at most one supplied edit, or abstain. Free regeneration belongs to Rewrite, not to this stage.
-_Avoid_ : reranker (one possible engine of this layer, not the layer), second pass.
+_Avoid_ : reranker (one possible engine of this stage, not the stage), second pass (scope is the point, not order).
 
 **Whole-sentence candidate transaction** :
 The indivisible unit of decision of the sentence stage. It holds the literal sentence and a closed set of sentences that each differ from it by one owned, bounded edit. The alternatives are compared together. No generated text and no cascade of word-by-word decisions enters it.
@@ -79,7 +79,7 @@ _Avoid_ : gender rule (the surface pair does not prove grammatical category), in
 
 **Verified caret sentence** :
 A sentence read back from the focused surface after the observed typing stream lost continuity. It is accepted only when repeated reads and a local left boundary give the same exact text. It may supply evidence for correction, but never observation history, authorship or learning provenance.
-_Avoid_ : observed sentence (its provenance is weaker), document context (the surrounding UIA range may cross editor and interface boundaries).
+_Avoid_ : observed sentence (its provenance is weaker), document context (the surrounding text may cross editor and interface boundaries).
 
 **First pass** :
 In ordinary use, the first of several passes over the same material. The commit stage is defined by its scope, the last committed word, not by coming first.
@@ -88,7 +88,7 @@ In ordinary use, the first of several passes over the same material. The commit 
 In ordinary use, a list of allowed items. Protection decides only what correction leaves alone, not what Deckle observes.
 
 **English lexicon as spelling authority** :
-The idea that the English layer decides how words must be spelled. That layer only protects English forms from correction and is never a correction target.
+A framing of the English lexicon layer as the authority that decides how words must be spelled. That layer only protects English forms from correction and is never a correction target.
 
 **Global candidate pool** :
 One shared pool in which every candidate competes, whatever policy proposed it. In Deckle the provenance of a candidate decides its right to correct, so there is no such pool.
@@ -112,13 +112,13 @@ A component that fixes word endings by itself. A terminal-e agreement variant pr
 A sentence built from the typing stream Deckle observed as it was typed. A sentence read back from the surface has weaker provenance and is a verified caret sentence.
 
 **Document context** :
-The text around the caret in the whole document. Read through UI Automation, it may cross editor and interface boundaries, so it is not a verified caret sentence.
+The text around the caret in the whole document. It may cross editor and interface boundaries, so it is not a verified caret sentence.
 
 ## Lexicon composition
 
 **Domain pack** :
 An activatable set of surface forms for one lexical domain and one language. It extends the base lexicon of that language, so its forms become both valid literals and correction targets. It does more than protect.
-_Avoid_ : dictionary (overloaded, the personal dictionary is something else), protected list (a pack corrects, not only protects).
+_Avoid_ : dictionary (the word belongs to the personal dictionary), protected list (a pack corrects, not only protects).
 
 **Effective lexicon** :
 The single lexicon a language has at runtime, once its base forms, active domain packs and word exclusions are composed. Correction works on this one result, never on an ordered stack of dictionaries.
@@ -130,7 +130,7 @@ _Avoid_ : runtime conflict resolution (sanitization happens before a pack ships,
 
 **Word exclusion** :
 The user's reversible removal of one shipped form from the reach of correction, without disabling its domain pack or its language. It subtracts from the effective lexicon and takes precedence over pack and base forms.
-_Avoid_ : blocklist entry (that names the personal dictionary's suppression mechanism, while exclusion targets shipped lexicon content).
+_Avoid_ : blocklist entry (it names a personal dictionary suppression, not shipped lexicon content).
 
 **Dictionary** :
 In ordinary use, a list of the words of a language. Here the word belongs to the personal dictionary, so a shipped set of domain forms is a domain pack.
@@ -142,10 +142,10 @@ A list of forms that correction must leave untouched. A domain pack also makes i
 Several dictionaries combined but still thought of as many. The result of composition is one lexicon, the effective lexicon.
 
 **Runtime conflict resolution** :
-Settling conflicts between lexicon forms while correcting. Deckle settles them before a pack ships, through pack sanitization.
+A correction-time step that settles conflicts between lexicon forms. Deckle settles them before a pack ships, through pack sanitization.
 
 **Blocklist entry** :
-An entry of the personal dictionary's suppression mechanism. A word exclusion targets shipped lexicon content instead.
+An entry of the personal dictionary that suppresses one correction. A word exclusion targets shipped lexicon content instead.
 
 ## Datasets and mining
 
@@ -158,27 +158,27 @@ A recurring class of mechanical keyboard error, mined from the typing corpus and
 _Avoid_ : typo (the broader spelling-fault class), fat-finger (informal).
 
 **Surface profile** :
-A measured portrait of how typing behaves in a correction environment, drawn from observed closure and timing patterns. It is evidence that characterizes that environment, not a policy the user chooses.
+A measured description of how typing behaves in a correction environment, drawn from observed closure and timing patterns. It is evidence that characterizes that environment, not a policy the user chooses.
 _Avoid_ : configuration (a profile records observed behavior, it does not prescribe it).
 
 **Personal dictionary** :
 The collection of learned vocabulary and correction suppressions that the user can see. An adopted word becomes a protected literal, and a suppression stops one correction from coming back. Entries stay inspectable and removable, unlike the internal evidence that earned them.
-_Avoid_ : learning store (the internal mechanism, this term names the visible surface).
+_Avoid_ : learning store (the internal storage, this term names the visible surface).
 
 **Keylogger** :
 A program that records every key pressed, usually without consent. The typing stream records word-shaped runs on consented surfaces.
 
 **Raw stream** :
-A name for data kept as it arrived. It says how the data is stored, not what it is, and Deckle calls this dataset the typing stream.
+In ordinary use, a stream of data kept exactly as it arrived. The name says how the data is stored, not what it is. Deckle calls this dataset the typing stream.
 
 **Typo** :
 In ordinary use, any spelling fault made while typing. It is broader than a mistouch family, which names one mechanical class of error.
 
 **Fat-finger** :
-An informal name for pressing a key next to the intended one. Deckle calls such a recurring class of error a mistouch family.
+In informal use, a keyboard error in which the finger hits the key next to the intended one. Deckle calls such a recurring class of error a mistouch family.
 
 **Configuration** :
 A set of values chosen to make a system behave a certain way. A surface profile records behavior it observed, so it is not a configuration.
 
 **Learning store** :
-The internal mechanism that keeps what Deckle learns. The surface the user sees is the personal dictionary.
+The internal storage that keeps what Deckle learns. The surface the user sees is the personal dictionary.
