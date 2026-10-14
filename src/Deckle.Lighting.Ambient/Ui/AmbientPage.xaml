@@ -11,8 +11,9 @@
          GridSplitter between them (Louis, 2026-10-14, on screen). The preview is
          there to be watched while the tuning values move; as a card in the flow
          it left the screen as soon as the user scrolled to the tuning section.
-         The pane follows the card's own rule: it opens while the engine runs and
-         the page takes the full width otherwise (code-behind, SyncPreviewPane).
+         The pane opens from the Live preview tile of the Fine tuning section
+         and closes from its own Close; while it is closed the page takes the
+         full width (code-behind, SyncPreviewPane).
 
          The header stays in the left column rather than spanning both. The
          left column is the page as every settings page lays it out, a
@@ -31,7 +32,7 @@
             <!-- The splitter, sized by its content, 0 while the pane is closed. -->
             <ColumnDefinition Width="Auto" />
             <!-- The pane. These widths are the defaults the code-behind reads
-                 once: the column closes to 0 while the card is hidden and
+                 once: the column closes to 0 while the pane is closed and
                  reopens at the width the user last dragged. -->
             <ColumnDefinition x:Name="PreviewColumn" Width="360" MinWidth="240" />
         </Grid.ColumnDefinitions>
@@ -84,34 +85,12 @@
                         </InfoBar.ActionButton>
                     </InfoBar>
 
-                    <!-- ── Behaviour ──────────────────────────────────────────── -->
-                    <catalog:SettingsSection x:Uid="AmbientPageBehaviourSection">
-                        <StackPanel Spacing="{StaticResource SettingsCardSpacing}">
-
-                            <!-- Composed: Mode, per-zone colours with the band shape
-                                 (AmbientViewModel.BehaviourSettings). -->
-                            <StackPanel x:Name="BehaviourHost"
-                                        Spacing="{StaticResource SettingsCardSpacing}" />
-
-                            <!-- bespoke: one row per light of the selected Hue group
-                                 (zone, brightness, Identify) — the set of lights is only
-                                 known at runtime, from the bridge. Shown under the
-                                 per-zone group, only while it is on and a group is
-                                 selected in the Hue bridge expander below. -->
-                            <ambientControls:LightZonesCard />
-                        </StackPanel>
-                    </catalog:SettingsSection>
-
-                    <!-- ── Fine tuning ────────────────────────────────────────── -->
-                    <catalog:SettingsSection x:Uid="AmbientPageTuningSection">
-                        <!-- Composed: the brightness curve first, then the floor,
-                             reaction speed, exposure and saturation, flat
-                             (AmbientViewModel.TuningSettings). -->
-                        <StackPanel x:Name="TuningHost"
-                                    Spacing="{StaticResource SettingsCardSpacing}" />
-                    </catalog:SettingsSection>
-
                     <!-- ── Configuration ──────────────────────────────────────── -->
+                    <!-- First section, before the behaviour and the tuning: the
+                         bridge, the display and the capture rate are what the
+                         module runs on, and Louis looks for them at the top
+                         (2026-10-14, on screen: the capture rate and the Hue
+                         bridge were still at the bottom). -->
                     <catalog:SettingsSection x:Uid="AmbientPageConfigSection">
                         <StackPanel Spacing="{StaticResource SettingsCardSpacing}">
 
@@ -235,6 +214,50 @@
                                         Spacing="{StaticResource SettingsCardSpacing}" />
                         </StackPanel>
                     </catalog:SettingsSection>
+
+                    <!-- ── Behaviour ──────────────────────────────────────────── -->
+                    <catalog:SettingsSection x:Uid="AmbientPageBehaviourSection">
+                        <StackPanel Spacing="{StaticResource SettingsCardSpacing}">
+
+                            <!-- Composed: Mode, per-zone colours with the band shape
+                                 (AmbientViewModel.BehaviourSettings). -->
+                            <StackPanel x:Name="BehaviourHost"
+                                        Spacing="{StaticResource SettingsCardSpacing}" />
+
+                            <!-- bespoke: one row per light of the selected Hue group
+                                 (zone, brightness, Identify) — the set of lights is only
+                                 known at runtime, from the bridge. Shown under the
+                                 per-zone group, only while it is on and a group is
+                                 selected in the Hue bridge expander above. -->
+                            <ambientControls:LightZonesCard />
+                        </StackPanel>
+                    </catalog:SettingsSection>
+
+                    <!-- ── Fine tuning ────────────────────────────────────────── -->
+                    <!-- Last, after what the module runs on and how it behaves. -->
+                    <catalog:SettingsSection x:Uid="AmbientPageTuningSection">
+                        <StackPanel Spacing="{StaticResource SettingsCardSpacing}">
+
+                            <!-- The way to the live preview: a tile that opens the
+                                 pane at the right of the page, first under the
+                                 section title so it is found before the values it
+                                 serves (Louis, 2026-10-14). A clickable card with the
+                                 stock chevron: it leads somewhere, the way a drill-in
+                                 card does. -->
+                            <controls:SettingsCard x:Name="PreviewTile"
+                                                   x:Uid="AmbientPreviewTile"
+                                                   Tag="AmbientPreviewTile"
+                                                   HeaderIcon="{ui:FontIcon Glyph={StaticResource Icon.Preview}}"
+                                                   IsClickEnabled="True"
+                                                   Click="PreviewTile_Click" />
+
+                            <!-- Composed: the brightness curve first, then the floor,
+                                 reaction speed, exposure and saturation, flat
+                                 (AmbientViewModel.TuningSettings). -->
+                            <StackPanel x:Name="TuningHost"
+                                        Spacing="{StaticResource SettingsCardSpacing}" />
+                        </StackPanel>
+                    </catalog:SettingsSection>
                 </StackPanel>
             </Grid>
         </ScrollViewer>
@@ -262,18 +285,18 @@
                                ResizeBehavior="PreviousAndNext"
                                Visibility="Collapsed" />
 
-        <!-- The preview block: the sampled grid at the display's exact ratio as
-             the stage, its commands above, the engine's readouts and the colour
-             each light receives below. Shown while the engine runs, never folded
-             (2026-10-14). Its own scroller, so a short window still reaches
-             the readouts; the same page padding as the left column, so the
-             two columns share their top edge and the line sits at the same
-             distance from each. -->
-        <ScrollViewer Grid.Column="2"
-                      Padding="32,24,32,24"
-                      VerticalScrollBarVisibility="Auto"
-                      HorizontalScrollBarVisibility="Disabled">
-            <ambientControls:AmbientPreviewCard x:Name="Preview" />
-        </ScrollViewer>
+        <!-- The preview, floating in its column: the shared block takes the
+             column's height so the stage scales to the room, the Playground's
+             form, with the page's padding around it and nothing else. Opened
+             by the Live preview tile, closed by its own Close; its width is
+             the user's (SyncPreviewPane). Collapsed with the column, so the
+             control inside refreshes nothing while the pane is closed. -->
+        <Grid x:Name="PreviewPane"
+              Grid.Column="2"
+              Padding="32,24,32,24"
+              Visibility="Collapsed">
+            <ambientControls:AmbientPreviewCard x:Name="Preview"
+                                                CloseRequested="Preview_CloseRequested" />
+        </Grid>
     </Grid>
 </Page>

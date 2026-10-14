@@ -22,8 +22,8 @@ namespace Deckle.Lighting.Ambient;
 // (AmbientPage.Hue.cs). The brightness curve is a composed Curve card, first
 // of the fine-tuning cards. The live preview (AmbientPreviewCard) sits in a
 // pane at the right of the page, behind a splitter, so it stays in view
-// while the values below change; the page opens and closes that pane on the
-// card's own visibility (SyncPreviewPane).
+// while the values change; the Live preview tile of the Fine tuning section
+// opens that pane and the preview's Close closes it (SyncPreviewPane).
 //
 // Sync : the view model writes every edit straight to AmbientSettingsService
 // and saves. The page observes AmbientSettingsService.Changed and reloads the
@@ -62,10 +62,10 @@ public sealed partial class AmbientPage : Page
         Header.IsResetAllEnabled = ViewModel.CanReset;
 
         // The XAML column carries the pane's default width and floor; read
-        // once, then the pane follows the card (SyncPreviewPane).
+        // once, then the pane opens and closes on the user's word
+        // (SyncPreviewPane). Closed until the tile is clicked.
         _paneWidth    = PreviewColumn.Width;
         _paneMinWidth = PreviewColumn.MinWidth;
-        Preview.RegisterPropertyChangedCallback(VisibilityProperty, (_, _) => SyncPreviewPane());
         SyncPreviewPane();
 
         Loaded   += AmbientPage_Loaded;
@@ -74,21 +74,32 @@ public sealed partial class AmbientPage : Page
 
     // ── Preview pane ───────────────────────────────────────────────────
     //
-    // The preview card decides alone whether there is something live to
-    // show: it collapses while the engine is off (AmbientPreviewCard.
-    // UpdateState). The page follows that one signal to open or close the
-    // whole column, splitter and divider included, so the rule is written
-    // once. The column's width is the user's, written on the
+    // The pane is the user's: the Live preview tile under the Fine tuning
+    // title opens it, the preview's own Close closes it, and nothing else
+    // does; the control inside says on its own whether the engine gives it
+    // something live. The column's width is the user's too, written on the
     // ColumnDefinition by the splitter at each drag, and kept for the page's
     // lifetime only: nothing is persisted in this pass.
 
     private GridLength _paneWidth;
     private double _paneMinWidth;
+    private bool _paneOpen;
+
+    private void PreviewTile_Click(object sender, RoutedEventArgs e)
+    {
+        _paneOpen = true;
+        SyncPreviewPane();
+    }
+
+    private void Preview_CloseRequested(object sender, RoutedEventArgs e)
+    {
+        _paneOpen = false;
+        SyncPreviewPane();
+    }
 
     private void SyncPreviewPane()
     {
-        bool shown = Preview.Visibility == Visibility.Visible;
-        if (shown)
+        if (_paneOpen)
         {
             PreviewColumn.MinWidth = _paneMinWidth;
             PreviewColumn.Width    = _paneWidth;
@@ -103,9 +114,10 @@ public sealed partial class AmbientPage : Page
             PreviewColumn.Width    = new GridLength(0);
         }
 
-        var visibility = shown ? Visibility.Visible : Visibility.Collapsed;
+        var visibility = _paneOpen ? Visibility.Visible : Visibility.Collapsed;
         PreviewDivider.Visibility  = visibility;
         PreviewSplitter.Visibility = visibility;
+        PreviewPane.Visibility     = visibility;
     }
 
     private void ComposeRegion(Panel host, IReadOnlyList<SettingDescriptor> settings)

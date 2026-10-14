@@ -384,18 +384,34 @@
     <value>Deckle is already paired with a bridge. Pairing again replaces the current address and credentials with the new ones.</value>
   </data>
 
-  <!-- AmbientPreviewCard (x:Uid). -->
-  <data name="AmbientPreviewExpander.Header" xml:space="preserve">
+  <!-- The Live preview tile of the Fine tuning section (AmbientPage, x:Uid):
+       it opens the preview pane beside the page. -->
+  <data name="AmbientPreviewTile.Header" xml:space="preserve">
     <value>Live preview</value>
   </data>
-  <data name="AmbientPreviewExpander.Description" xml:space="preserve">
-    <value>What the capture samples and the colour each light receives.</value>
+  <data name="AmbientPreviewTile.Description" xml:space="preserve">
+    <value>Watch what the capture samples and the colour each light receives, beside the page, while you tune.</value>
+  </data>
+
+  <!-- AmbientPreviewCard (x:Uid). The block's empty text shows while the
+       engine is off. -->
+  <data name="AmbientPreviewBlock.EmptyHeader" xml:space="preserve">
+    <value>Live preview</value>
+  </data>
+  <data name="AmbientPreviewBlock.EmptyDescription" xml:space="preserve">
+    <value>Turn Ambient Light on to see what the capture samples and the colour each light receives.</value>
   </data>
   <data name="AmbientPreviewZonesToggle.Content" xml:space="preserve">
     <value>Zones</value>
   </data>
   <data name="AmbientPreviewPauseLabel.Text" xml:space="preserve">
     <value>Pause</value>
+  </data>
+  <data name="AmbientPreviewCloseButton.ToolTipService.ToolTip" xml:space="preserve">
+    <value>Close the preview</value>
+  </data>
+  <data name="AmbientPreviewCloseButton.AutomationProperties.Name" xml:space="preserve">
+    <value>Close the preview</value>
   </data>
   <data name="AmbientPreviewCaptureReadout.Label" xml:space="preserve">
     <value>Capture</value>
@@ -408,9 +424,6 @@
   </data>
   <data name="AmbientPreviewOutputReadout.Label" xml:space="preserve">
     <value>Output</value>
-  </data>
-  <data name="AmbientPreviewLightsReadout.Label" xml:space="preserve">
-    <value>Colours sent</value>
   </data>
   <!-- AmbientPreviewCard code-behind (Loc.Get) — mirrored in Deckle.App. -->
   <data name="AmbientPreview_GroupSwatch" xml:space="preserve">
