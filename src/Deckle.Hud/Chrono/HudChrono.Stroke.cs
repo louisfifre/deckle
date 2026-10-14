@@ -95,9 +95,12 @@ public sealed partial class HudChrono
         // destroyed stroke.
         lock (_strokeSync)
         {
+            // The variant the new stroke replaces, read before the flip:
+            // after Recording the processing stroke blends in from it.
+            var previous = _currentVariant;
             bool crossingBoundary =
                 _processingStroke != null &&
-                IsRecording(variant) != IsRecording(_currentVariant);
+                IsRecording(variant) != IsRecording(previous);
 
             if (crossingBoundary)
             {
@@ -126,7 +129,8 @@ public sealed partial class HudChrono
 
                 _processingStroke = variant == ProcessingVariant.Recording
                     ? HudComposition.CreateRecordingStroke(compositor, size, cfg, _animationsEnabled)
-                    : HudComposition.CreateProcessingStroke(compositor, size, cfg, _animationsEnabled);
+                    : HudComposition.CreateProcessingStroke(compositor, size, cfg, _animationsEnabled,
+                                                            from: crossingBoundary ? previous : null);
                 ElementCompositionPreview.SetElementChildVisual(
                     ProcessingSurfaceHost, _processingStroke.Visual);
 

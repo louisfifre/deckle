@@ -215,7 +215,7 @@ public sealed partial class HudPage
         stack.Children.Add(TuningHelp(
             "Play transition shows the From state, then blends into this state with the current values."));
         stack.Children.Add(TuningHelp(
-            "From Recording, the stroke is rebuilt as in the live HUD, so the blend starts from Transcribing's material and opacity."));
+            "From Recording, the stroke is rebuilt as in the live HUD: it starts on Recording's material, invisible as after a silence, and blends in over this state's Blend."));
         var transport = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8, Margin = new Thickness(0, 12, 0, 0) };
         var play = new Button { Content = "Play transition" };
         play.Click += (_, _) => PlayTransition();

@@ -14,16 +14,28 @@ namespace Deckle.Composition;
 public static partial class HudComposition
 {
     // Tweak the defaults to iterate on the visual.
+    //
+    // `from` is the variant the stroke replaces, when it replaces one. After
+    // Recording the stroke is seeded with Recording's material, invisible as
+    // the outline is after the silence that ends a take, so the ApplyVariant
+    // that follows blends it in over the new state's BlendSeconds: the
+    // "blend from the previous variant" the config promises. Without it the
+    // stroke is seeded at Transcribing's values and the blend has nothing
+    // to travel, so the state pops in.
     public static ProcessingStroke CreateProcessingStroke(
         Compositor compositor, Vector2 hostSize,
         ConicArcStrokeConfig? configOverride = null,
-        bool animationsEnabled = true)
+        bool animationsEnabled = true,
+        ProcessingVariant? from = null)
     {
         // Optional override used by HudChrono.RebuildStroke (HudPlayground
         // slider wiring). Null keeps the shipping defaults.
+        bool afterRecording = from == ProcessingVariant.Recording;
         return CreateConicArcStroke(
             compositor, hostSize,
             configOverride ?? new ConicArcStrokeConfig(),
+            initialOpacity:    afterRecording ? 0f : -1f,
+            initialVariant:    afterRecording ? ProcessingVariant.Recording : ProcessingVariant.Transcribing,
             animationsEnabled: animationsEnabled);
     }
 
@@ -244,12 +256,15 @@ public static partial class HudComposition
     //
     // `initialVariant` picks which runtime-variant baseline seeds the
     // initial mix / hue / grey values (and the effectProps entries that
-    // drive them). Transcribing is the default because a
-    // processing stroke always enters the graph in that state; Recording
-    // passes its own variant so cold-start paints with Recording*
-    // values from frame 1, avoiding a Transcribing-to-Recording flash
-    // before ApplyVariant runs. Rewriting is never seeded from cold —
-    // it only ever follows a prior Transcribing via ApplyVariant blend.
+    // drive them). Transcribing is the default because a processing
+    // stroke built from cold enters the graph in that state; a processing
+    // stroke that replaces the Recording one passes Recording, so the
+    // ApplyVariant that follows blends from where Recording left off;
+    // the Recording stroke passes its own variant so cold-start paints
+    // with Recording* values from frame 1, avoiding a
+    // Transcribing-to-Recording flash before ApplyVariant runs. Rewriting
+    // is never seeded from cold — it only ever follows a prior Transcribing
+    // via ApplyVariant blend.
     private static ProcessingStroke CreateConicArcStroke(
         Compositor compositor, Vector2 hostSize, ConicArcStrokeConfig cfg,
         bool              freezeHueRotation = false,
@@ -432,13 +447,15 @@ public static partial class HudComposition
         // alpha = material.A · arc.A · stroke.A.
         //
         // Initial effect values follow initialVariant's (Dark) baseline.
-        // Processing strokes pass Transcribing (first processing state;
-        // Rewriting can only follow a prior Transcribing via ApplyVariant
-        // blend — seeding Rewriting values cold caused a visible rainbow
-        // flash we fixed by defaulting to Transcribing). Recording strokes
-        // pass their own variant so cold-start paints with Recording*
-        // values from frame 1, skipping any Transcribing-to-Recording
-        // flash before ApplyVariant runs.
+        // Processing strokes built from cold pass Transcribing (first
+        // processing state; Rewriting can only follow a prior Transcribing
+        // via ApplyVariant blend — seeding Rewriting values cold caused a
+        // visible rainbow flash we fixed by defaulting to Transcribing);
+        // the one that replaces the Recording stroke passes Recording, so
+        // the blend into Transcribing starts from Recording's material.
+        // Recording strokes pass their own variant so cold-start paints
+        // with Recording* values from frame 1, skipping any
+        // Transcribing-to-Recording flash before ApplyVariant runs.
         var (seedMix, seedHueShiftTurns) = cfg.MaterialOf(initialVariant);
         Color seedGrey = GreyMaterialColor(cfg.GreyLightnessDark);
 
