@@ -11,26 +11,53 @@ namespace Deckle.Shell;
 // TrayMenuHost instances the App composes. This module stays Win32-pure: it
 // does not know what either menu contains.
 //
+// The icon's owner is a hidden top-level window of its own, created here on
+// the thread that calls Register (the UI thread, so every tray callback
+// arrives on the DispatcherQueue's thread). Not the message-only host: a
+// message-only window receives no broadcast, and the one broadcast this
+// icon lives by is TaskbarCreated, which Explorer sends to every top-level
+// window when it rebuilds the taskbar. The shell starts that taskbar with an
+// empty notification area, so the icon has to be added again, with the icon
+// and tip of the last UpdateStatus. Explorer restarts happen (Windhawk, a
+// crash, a manual restart) and the icon was lost each time until 2026-10-14.
+//
 // A double click is delivered by the shell as WM_LBUTTONUP, WM_LBUTTONDBLCLK,
 // WM_LBUTTONUP: the single-click subscriber runs first, then the double-click
 // one, then a trailing left click. Each subscriber copes with that order
 // itself; the manager does not delay the single click to tell them apart.
 public sealed class TrayIconManager : IDisposable
 {
+    private const string ClassName = "DeckleTrayIconHost";
+
+    // One re-add attempt every half second while the shell refuses it, up to
+    // TrayIconRegistration.MaxReaddAttempts.
+    private const uint ReaddRetryDelayMs = 500;
+    private static readonly UIntPtr ReaddTimerId = new(1);
+
+    private IntPtr _hInstance;
+    private ushort _classAtom;
     private IntPtr _hwnd;
+    private uint   _wmTaskbarCreated;
+
     private IntPtr _hIconIdle;
     private IntPtr _hIconRecording;
     private bool   _iconsOwned;   // false if fallback LoadIcon (shared icon: no DestroyIcon)
-    private bool   _iconAdded;
     private bool   _disposed;
 
-    // SubclassProc delegate: must live in a field to avoid GC collection.
-    private NativeMethods.SubclassProc? _subclassDelegate;
-    private static readonly UIntPtr SubclassId = new(0x5752_4159); // "WRAY"
+    private TrayIconRegistration? _registration;
+
+    // The WndProc delegate must live in a field for the GC not to collect it
+    // while native code holds its function pointer.
+    private NativeMethods.WndProc? _wndProcDelegate;
+
+    // Status kept before Register, so the add carries it: the App sets the
+    // initial status before the icon goes live.
+    private string _tip = "";
+    private bool   _isRecording;
 
     /// <summary>
     /// Raised on left-click of the tray icon, on the message pump thread of
-    /// the host HWND; marshaling elsewhere is the subscriber's responsibility.
+    /// the owner window; marshaling elsewhere is the subscriber's responsibility.
     /// </summary>
     public event Action? LeftClickRequested;
 
@@ -49,77 +76,82 @@ public sealed class TrayIconManager : IDisposable
 
     // ── Initialization ───────────────────────────────────────────────────────
 
-    public void Register(IntPtr hwnd)
+    // Creates the owner window and adds the icon with the current status.
+    // Throws when the window cannot be created or the shell refuses the
+    // first add: without an icon the app has no surface at all.
+    public void Register()
     {
-        _hwnd = hwnd;
         (_hIconIdle,      _iconsOwned) = LoadIconFromFile(active: false);
         (_hIconRecording, _)           = LoadIconFromFile(active: true);
 
-        var data = BuildNotifyIconData(Loc.Format("Tray_Tooltip_Format", Loc.Get("Status_Ready")), _hIconIdle);
-        bool ok = NativeMethods.Shell_NotifyIcon(NativeMethods.NIM_ADD, ref data);
-        if (!ok)
-            throw new InvalidOperationException(
-                $"Shell_NotifyIcon(NIM_ADD) failed — hWnd={_hwnd}, hIcon={_hIconIdle}");
-        _iconAdded = true;
+        CreateOwnerWindow();
 
-        _subclassDelegate = SubclassCallback;
-        if (!NativeMethods.SetWindowSubclass(
-                _hwnd, _subclassDelegate, SubclassId, IntPtr.Zero))
+        _registration = new TrayIconRegistration(_hwnd, new Win32NotifyIconApi());
+        _registration.Update(_tip, _isRecording ? _hIconRecording : _hIconIdle);
+        if (!_registration.Add())
         {
             int error = Marshal.GetLastWin32Error();
             Dispose();
             throw new InvalidOperationException(
-                $"SetWindowSubclass failed for the tray icon (Win32 err {error}).");
+                $"Shell_NotifyIcon(NIM_ADD) failed — hWnd={_hwnd}, hIcon={_hIconIdle} (Win32 err {error})");
         }
     }
 
-    // ── Position rect ─────────────────────────────────────────────────────────
+    // ── Owner window ─────────────────────────────────────────────────────────
     //
-    // The icon rect in physical pixels (screen coordinates), or null if the
-    // icon could not be located (not yet registered, hidden in overflow, or
-    // the shell unavailable during an explorer.exe restart). TrayMenuHost puts
-    // its anchor window on it, so the menu opens beside the icon on the side
-    // facing the work area, whatever the taskbar edge and the click point.
-    public NativeMethods.RECT? GetIconRect()
-    {
-        if (!_iconAdded) return null;
+    // WS_POPUP, never shown: no z-order on screen, no flash, no taskbar
+    // button. Top-level, so Explorer's broadcasts reach its WndProc.
 
-        var id = new NOTIFYICONIDENTIFIER
+    private void CreateOwnerWindow()
+    {
+        _hInstance = NativeMethods.GetModuleHandle(null);
+        if (_hInstance == IntPtr.Zero)
+            throw new InvalidOperationException(
+                $"GetModuleHandle failed (Win32 err {Marshal.GetLastWin32Error()})");
+
+        _wmTaskbarCreated = NativeMethods.RegisterWindowMessage("TaskbarCreated");
+
+        _wndProcDelegate = WndProc;
+
+        var wc = new WNDCLASSEX
         {
-            cbSize = (uint)Marshal.SizeOf<NOTIFYICONIDENTIFIER>(),
-            hWnd = _hwnd,
-            uID = 1,
-            guidItem = Guid.Empty,
+            cbSize        = (uint)Marshal.SizeOf<WNDCLASSEX>(),
+            lpfnWndProc   = Marshal.GetFunctionPointerForDelegate(_wndProcDelegate),
+            hInstance     = _hInstance,
+            lpszClassName = ClassName,
         };
 
-        int hr = NativeMethods.Shell_NotifyIconGetRect(ref id, out NativeMethods.RECT rect);
-        return hr >= 0 ? rect : null;
+        _classAtom = NativeMethods.RegisterClassEx(ref wc);
+        if (_classAtom == 0)
+            throw new InvalidOperationException(
+                $"RegisterClassEx('{ClassName}') failed (Win32 err {Marshal.GetLastWin32Error()})");
+
+        _hwnd = NativeMethods.CreateWindowEx(
+            dwExStyle:    NativeMethods.WS_EX_TOOLWINDOW,
+            lpClassName:  ClassName,
+            lpWindowName: null,
+            dwStyle:      NativeMethods.WS_POPUP,
+            x: 0, y: 0, nWidth: 0, nHeight: 0,
+            hWndParent:   IntPtr.Zero,
+            hMenu:        IntPtr.Zero,
+            hInstance:    _hInstance,
+            lpParam:      IntPtr.Zero);
+
+        if (_hwnd == IntPtr.Zero)
+        {
+            int error = Marshal.GetLastWin32Error();
+            NativeMethods.UnregisterClass(ClassName, _hInstance);
+            _classAtom = 0;
+            throw new InvalidOperationException(
+                $"CreateWindowEx('{ClassName}') failed (Win32 err {error})");
+        }
+
+        DeckleShellSource.Log.TrayIconHostCreated(_hwnd.ToInt64(), _wmTaskbarCreated);
     }
 
-    // ── Status update ───────────────────────────────────────────────────────
-    //
-    // Tip caps at 127 chars (Shell_NotifyIcon szTip limit). The host supplies
-    // the semantic state separately: this shell primitive never interprets
-    // the localized status text.
-    public void UpdateStatus(string status, bool isRecording)
+    private IntPtr WndProc(IntPtr hWnd, uint msg, IntPtr wParam, IntPtr lParam)
     {
-        IntPtr icon = isRecording ? _hIconRecording : _hIconIdle;
-
-        string tip = Loc.Format("Tray_Tooltip_Format", status);
-        if (tip.Length > 127) tip = tip[..127];
-
-        var data = BuildNotifyIconData(tip, icon);
-        data.uFlags = NativeMethods.NIF_ICON | NativeMethods.NIF_TIP;
-        NativeMethods.Shell_NotifyIcon(NativeMethods.NIM_MODIFY, ref data);
-    }
-
-    // ── Tray message interception ────────────────────────────────────────────
-
-    private IntPtr SubclassCallback(
-        IntPtr hWnd, uint uMsg, IntPtr wParam, IntPtr lParam,
-        UIntPtr uIdSubclass, IntPtr dwRefData)
-    {
-        if (uMsg == NativeMethods.WM_TRAY)
+        if (msg == NativeMethods.WM_TRAY)
         {
             uint mouseEvent = (uint)(lParam.ToInt64() & 0xFFFF);
 
@@ -140,28 +172,96 @@ public sealed class TrayIconManager : IDisposable
                 DoubleClickRequested?.Invoke();
                 return IntPtr.Zero;
             }
+
+            return IntPtr.Zero;
         }
 
-        return NativeMethods.DefSubclassProc(hWnd, uMsg, wParam, lParam);
+        if (_wmTaskbarCreated != 0 && msg == _wmTaskbarCreated)
+        {
+            DeckleShellSource.Log.TaskbarRecreated();
+            TryReadd();
+            return IntPtr.Zero;
+        }
+
+        if (msg == NativeMethods.WM_TIMER && unchecked((nuint)(nint)wParam) == ReaddTimerId)
+        {
+            TryReadd();
+            return IntPtr.Zero;
+        }
+
+        return NativeMethods.DefWindowProc(hWnd, msg, wParam, lParam);
+    }
+
+    // ── Re-add after an Explorer restart ─────────────────────────────────────
+    //
+    // Runs on the owner window's thread, once per TaskbarCreated and once per
+    // timer tick. A refused add is tried again after a pause, never by
+    // sleeping this thread: the timer puts the next attempt in the pump.
+
+    private void TryReadd()
+    {
+        if (_registration is null || _disposed) return;
+
+        TrayIconReaddOutcome outcome = _registration.Readd();
+        int error = outcome == TrayIconReaddOutcome.Added ? 0 : Marshal.GetLastWin32Error();
+        DeckleShellSource.Log.TrayIconReaddAttempt(
+            _registration.ReaddAttempts, TrayIconRegistration.MaxReaddAttempts, outcome.ToString(), error);
+
+        switch (outcome)
+        {
+            case TrayIconReaddOutcome.Added:
+                NativeMethods.KillTimer(_hwnd, ReaddTimerId);
+                DeckleShellSource.Log.TrayIconRestored();
+                break;
+
+            case TrayIconReaddOutcome.RetryLater:
+                NativeMethods.SetTimer(_hwnd, ReaddTimerId, ReaddRetryDelayMs, IntPtr.Zero);
+                break;
+
+            case TrayIconReaddOutcome.GaveUp:
+                NativeMethods.KillTimer(_hwnd, ReaddTimerId);
+                DeckleShellSource.Log.TrayIconRestoreFailed();
+                break;
+        }
+    }
+
+    // ── Position rect ─────────────────────────────────────────────────────────
+    //
+    // The icon rect in physical pixels (screen coordinates), or null if the
+    // icon could not be located (not yet registered, hidden in overflow, or
+    // the shell unavailable during an explorer.exe restart). TrayMenuHost puts
+    // its anchor window on it, so the menu opens beside the icon on the side
+    // facing the work area, whatever the taskbar edge and the click point.
+    public NativeMethods.RECT? GetIconRect()
+    {
+        if (_registration is not { IsAdded: true }) return null;
+
+        var id = new NOTIFYICONIDENTIFIER
+        {
+            cbSize = (uint)Marshal.SizeOf<NOTIFYICONIDENTIFIER>(),
+            hWnd = _hwnd,
+            uID = TrayIconRegistration.IconId,
+            guidItem = Guid.Empty,
+        };
+
+        int hr = NativeMethods.Shell_NotifyIconGetRect(ref id, out NativeMethods.RECT rect);
+        return hr >= 0 ? rect : null;
+    }
+
+    // ── Status update ───────────────────────────────────────────────────────
+    //
+    // The host supplies the semantic state separately: this shell primitive
+    // never interprets the localized status text. Before Register the status
+    // is only kept; the add then carries it.
+    public void UpdateStatus(string status, bool isRecording)
+    {
+        _tip = Loc.Format("Tray_Tooltip_Format", status);
+        _isRecording = isRecording;
+
+        _registration?.Update(_tip, isRecording ? _hIconRecording : _hIconIdle);
     }
 
     // ── Helpers ───────────────────────────────────────────────────────────────
-
-    private NOTIFYICONDATA BuildNotifyIconData(string tip, IntPtr hIcon)
-    {
-        return new NOTIFYICONDATA
-        {
-            cbSize          = (uint)Marshal.SizeOf<NOTIFYICONDATA>(),
-            hWnd            = _hwnd,
-            uID             = 1,
-            uFlags          = NativeMethods.NIF_MESSAGE | NativeMethods.NIF_ICON | NativeMethods.NIF_TIP,
-            uCallbackMessage = NativeMethods.WM_TRAY,
-            hIcon           = hIcon,
-            szTip           = tip,
-            szInfo          = "",
-            szInfoTitle     = "",
-        };
-    }
 
     // Returns (hIcon, owned): owned=true if loaded from file (DestroyIcon
     // required), owned=false if shared system icon (DO NOT call DestroyIcon).
@@ -192,13 +292,21 @@ public sealed class TrayIconManager : IDisposable
         if (_disposed) return;
         _disposed = true;
 
-        if (_subclassDelegate is not null && _hwnd != IntPtr.Zero)
-            NativeMethods.RemoveWindowSubclass(_hwnd, _subclassDelegate, SubclassId);
+        if (_hwnd != IntPtr.Zero)
+            NativeMethods.KillTimer(_hwnd, ReaddTimerId);
 
-        if (_iconAdded)
+        _registration?.Delete();
+
+        if (_hwnd != IntPtr.Zero)
         {
-            var data = BuildNotifyIconData("", IntPtr.Zero);
-            NativeMethods.Shell_NotifyIcon(NativeMethods.NIM_DELETE, ref data);
+            NativeMethods.DestroyWindow(_hwnd);
+            _hwnd = IntPtr.Zero;
+        }
+
+        if (_classAtom != 0)
+        {
+            NativeMethods.UnregisterClass(ClassName, _hInstance);
+            _classAtom = 0;
         }
 
         if (_iconsOwned)

@@ -1595,7 +1595,8 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── ResizeCoalescer.cs
 │   │   ├── ResizeGesture.cs
 │   │   ├── StartupService.cs
-│   │   └── TrayIconManager.cs
+│   │   ├── TrayIconManager.cs
+│   │   └── TrayIconRegistration.cs
 │   ├── Deckle.Shell.Foreground/
 │   │   ├── Interop/
 │   │   │   └── ForegroundNativeMethods.cs

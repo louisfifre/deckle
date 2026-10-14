@@ -201,7 +201,10 @@ public partial class App
         _tray.DoubleClickRequested += () => ShowSettingsWindowLazy();
 
         // Last: the icon goes live here, so every tray callback is wired first.
-        _tray.Register(_messageHost.Hwnd);
+        // The manager creates the icon's own owner window, a hidden top-level
+        // one: it has to receive TaskbarCreated, which never reaches the
+        // message-only host.
+        _tray.Register();
 
         // An absent module has no action, so its chord is never registered and
         // stays free for other apps.

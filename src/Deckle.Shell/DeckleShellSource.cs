@@ -43,6 +43,59 @@ public sealed class DeckleShellSource : DeckleEventSource
     public const int EvtCursorSignalArmed                  = 30;
     public const int EvtCursorSignalRegistrationFailed     = 31;
     public const int EvtCursorSignalRegistrationFailedDetail = 32;
+    public const int EvtTrayIconHostCreated                = 33;
+    public const int EvtTaskbarRecreated                   = 34;
+    public const int EvtTrayIconReaddAttempt               = 35;
+    public const int EvtTrayIconRestored                   = 36;
+    public const int EvtTrayIconRestoreFailed              = 37;
+
+    // ── Tray icon ───────────────────────────────────────────────────────
+
+    [Event(EvtTrayIconHostCreated,
+           Level = EventLevel.Verbose,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Message = "tray icon owner window created | hwnd={0} | taskbar_created_msg={1}")]
+    public void TrayIconHostCreated(long hwnd, uint taskbar_created_msg)
+    {
+        if (IsEnabled()) WriteEvent(EvtTrayIconHostCreated, hwnd, taskbar_created_msg);
+    }
+
+    [Event(EvtTaskbarRecreated,
+           Level = EventLevel.Verbose,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Message = "TaskbarCreated received — adding the tray icon again")]
+    public void TaskbarRecreated()
+    {
+        if (IsEnabled()) WriteEvent(EvtTaskbarRecreated);
+    }
+
+    // One row per attempt; the incident is the Warning below, once.
+    [Event(EvtTrayIconReaddAttempt,
+           Level = EventLevel.Verbose,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Message = "tray icon re-add | attempt={0}/{1} | outcome={2} | error={3}")]
+    public void TrayIconReaddAttempt(int attempt, int max_attempts, string outcome, int error)
+    {
+        if (IsEnabled()) WriteEvent(EvtTrayIconReaddAttempt, attempt, max_attempts, outcome, error);
+    }
+
+    [Event(EvtTrayIconRestored,
+           Level = EventLevel.Informational,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Message = "Taskbar recreated, tray icon added again")]
+    public void TrayIconRestored()
+    {
+        if (IsEnabled()) WriteEvent(EvtTrayIconRestored);
+    }
+
+    [Event(EvtTrayIconRestoreFailed,
+           Level = EventLevel.Warning,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Message = "Taskbar recreated, but the tray icon could not be added again — restart Deckle to get it back")]
+    public void TrayIconRestoreFailed()
+    {
+        if (IsEnabled()) WriteEvent(EvtTrayIconRestoreFailed);
+    }
 
     // ── Message-only host ───────────────────────────────────────────────
 
