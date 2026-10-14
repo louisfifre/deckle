@@ -72,6 +72,9 @@
   <data name="PrecisionScrollPage_Group.Description" xml:space="preserve">
     <value>Turn each mouse-wheel step into native touchpad movement.</value>
   </data>
+  <data name="PrecisionScrollPageScrollingSection.Title" xml:space="preserve">
+    <value>Scrolling</value>
+  </data>
   <data name="PrecisionScrollPage_DistancePerDetentCard.Header" xml:space="preserve">
     <value>Scroll distance</value>
   </data>
