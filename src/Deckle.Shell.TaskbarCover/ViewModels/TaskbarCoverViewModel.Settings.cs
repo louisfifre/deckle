@@ -19,12 +19,14 @@ public partial class TaskbarCoverViewModel
             defaultValue: () => new TaskbarCoverSettings().Enabled),
     ];
 
-    // Named levels rather than a pixel slider: the depth each stands for is a
-    // multiple of the band thickness (CoverGeometry.ZoneFactor), so one level
-    // reads the same on every taskbar size.
+    // Named levels rather than a pixel slider: each stands for a fixed distance
+    // in device-independent pixels (CoverGeometry.ApproachSpanDip), so one
+    // level is one hand movement on every monitor. A ComboBox rather than
+    // radio buttons (Louis, 2026-10-15): one line on the card's trailing edge,
+    // the Windows Settings shape for a short list of named values.
     public IReadOnlyList<SettingDescriptor> RevealManifest =>
     [
-        Setting.Radio<ApproachDistance>(
+        Setting.Choice<ApproachDistance>(
             "TaskbarCoverPage_ApproachCard",
             () => Approach,
             value => Approach = value,

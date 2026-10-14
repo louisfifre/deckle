@@ -86,6 +86,20 @@ internal static class TaskbarCoverNativeMethods
     [DllImport("user32.dll")]
     public static extern IntPtr MonitorFromRect(ref NativeMethods.RECT lprc, uint dwFlags);
 
+    // ── Band monitor DPI ─────────────────────────────────────────────────────
+    //
+    // The approach span is set in device-independent pixels while the band
+    // rect and the cursor are physical pixels, so the host scales it by the
+    // band monitor's effective DPI. Read from the monitor handle the layout
+    // already holds rather than from the band window: the window sits on the
+    // old rect until SetWindowPos moves it, and the scale is wanted before.
+    // Returns an HRESULT, S_OK (0) on success.
+
+    public const int MDT_EFFECTIVE_DPI = 0;
+
+    [DllImport("shcore.dll")]
+    public static extern int GetDpiForMonitor(IntPtr hmonitor, int dpiType, out uint dpiX, out uint dpiY);
+
     // ── Cursor WinEvent hook ─────────────────────────────────────────────────
     //
     // EVENT_OBJECT_LOCATIONCHANGE filtered on OBJID_CURSOR is the global

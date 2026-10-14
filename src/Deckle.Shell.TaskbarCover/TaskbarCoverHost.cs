@@ -78,5 +78,8 @@ public sealed partial class TaskbarCoverHost : IDisposable
     // Monitor the band sits on, re-read on every successful layout query;
     // fullscreen suppression only applies to a window on this monitor.
     private IntPtr _bandMonitor;
+    // That monitor's DPI over 96, the factor the approach span (set in
+    // device-independent pixels) is scaled by; 1.0 until the first layout.
+    private double _dpiScale = 1.0;
 
 }

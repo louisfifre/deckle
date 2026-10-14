@@ -79,13 +79,13 @@
     <value>How close the mouse must come before the taskbar starts to show.</value>
   </data>
   <data name="TaskbarCoverPage_ApproachNear.Content" xml:space="preserve">
-    <value>Near · 1 band thickness</value>
+    <value>Near · 32 px</value>
   </data>
   <data name="TaskbarCoverPage_ApproachStandard.Content" xml:space="preserve">
-    <value>Standard · 3 band thicknesses</value>
+    <value>Standard · 64 px</value>
   </data>
   <data name="TaskbarCoverPage_ApproachFar.Content" xml:space="preserve">
-    <value>Far · 5 band thicknesses</value>
+    <value>Far · 128 px</value>
   </data>
   <data name="SettingsModuleNavLabel" xml:space="preserve">
     <value>Taskbar cover</value>
