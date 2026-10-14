@@ -10,7 +10,6 @@ public partial class TaskbarCoverViewModel
             "TaskbarCoverPage_Group",
             () => Enabled,
             value => Enabled = value,
-            glyph: Glyphs.Taskbar,
             defaultValue: () => new TaskbarCoverSettings().Enabled),
     ];
 }

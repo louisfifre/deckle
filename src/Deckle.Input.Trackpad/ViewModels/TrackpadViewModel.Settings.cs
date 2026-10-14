@@ -25,7 +25,6 @@ public partial class TrackpadViewModel
         Setting.Toggle("TrackpadPage_DragCard",
             () => Enabled,
             value => Enabled = value,
-            glyph: Glyphs.Trackpad,
             defaultValue: () => new TrackpadSettings().Enabled),
     ];
 
@@ -35,7 +34,6 @@ public partial class TrackpadViewModel
             () => DragSpeed,
             value => DragSpeed = value,
             new MagnitudeArgs(0.25, 3.0, Unit: "×"),
-            glyph: Glyphs.Tuning,
             defaultValue: () => new TrackpadSettings().DragSpeed),
     ];
 }

@@ -41,8 +41,7 @@
 
                         <controls:SettingsCard x:Name="AudioInputCard"
                                                x:Uid="GeneralMicrophoneCard"
-                                               Tag="GeneralMicrophoneCard"
-                                               HeaderIcon="{ui:FontIcon Glyph={StaticResource Icon.Microphone}}">
+                                               Tag="GeneralMicrophoneCard">
                             <ComboBox x:Name="AudioInputCombo"
                                       MinWidth="240"
                                       SelectionChanged="AudioInputCombo_SelectionChanged" />
@@ -64,8 +63,7 @@
                              nothing is switched on for them. -->
                         <controls:SettingsCard x:Name="MicCheckCard"
                                                x:Uid="RecordingPageMicCheckCard"
-                                               Tag="RecordingPageMicCheckCard"
-                                               HeaderIcon="{ui:FontIcon Glyph={StaticResource Icon.VoiceLevel}}">
+                                               Tag="RecordingPageMicCheckCard">
                             <Button x:Uid="RecordingPageMicCheckButton"
                                     MinWidth="120"
                                     Command="{x:Bind ViewModel.MeasureMicCommand}" />
@@ -102,8 +100,7 @@
                              nothing transcribed. -->
                         <controls:SettingsCard x:Name="ListeningTestCard"
                                                x:Uid="RecordingPageListeningTestCard"
-                                               Tag="RecordingPageListeningTestCard"
-                                               HeaderIcon="{ui:FontIcon Glyph={StaticResource Icon.Transport.Play}}">
+                                               Tag="RecordingPageListeningTestCard">
                             <Button x:Uid="RecordingPageListeningRecordButton"
                                     MinWidth="120"
                                     Command="{x:Bind ViewModel.RecordListeningTakeCommand}" />

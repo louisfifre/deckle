@@ -42,8 +42,7 @@
                     <StackPanel Spacing="{StaticResource SettingsCardSpacing}">
 
                         <controls:SettingsCard x:Uid="TrackpadPage_GesturesCard"
-                                               Tag="TrackpadPage_GesturesCard"
-                                               HeaderIcon="{ui:FontIcon Glyph={StaticResource Icon.Trackpad}}">
+                                               Tag="TrackpadPage_GesturesCard">
                             <Button x:Name="GesturesButton"
                                     Click="GesturesButton_Click">
                                 <TextBlock x:Name="GesturesButtonLabel" />
@@ -51,16 +50,14 @@
                         </controls:SettingsCard>
 
                         <controls:SettingsCard x:Uid="TrackpadPage_RepairCard"
-                                               Tag="TrackpadPage_RepairCard"
-                                               HeaderIcon="{ui:FontIcon Glyph={StaticResource Icon.Refresh}}">
+                                               Tag="TrackpadPage_RepairCard">
                             <Button x:Name="RepairButton"
                                     x:Uid="TrackpadPage_RepairButton"
                                     Click="RepairButton_Click" />
                         </controls:SettingsCard>
 
                         <controls:SettingsCard x:Uid="TrackpadPage_ElevatedCard"
-                                               Tag="TrackpadPage_ElevatedCard"
-                                               HeaderIcon="{ui:FontIcon Glyph={StaticResource Icon.Lightning}}">
+                                               Tag="TrackpadPage_ElevatedCard">
                             <ToggleSwitch x:Name="ElevatedToggle"
                                           Toggled="ElevatedToggle_Toggled" />
                         </controls:SettingsCard>

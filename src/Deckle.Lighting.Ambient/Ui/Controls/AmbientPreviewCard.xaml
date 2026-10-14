@@ -13,8 +13,7 @@
          engine is not running. -->
     <catalog:PreviewBlock x:Name="Block"
                           x:Uid="AmbientPreviewExpander"
-                          Tag="AmbientPreviewExpander"
-                          HeaderIcon="{StaticResource Icon.Overlay}">
+                          Tag="AmbientPreviewExpander">
 
         <!-- Commands act on the preview itself, never on a setting: show the
              zone bands over the grid, freeze the refresh to look at a frame. -->

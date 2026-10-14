@@ -9,7 +9,8 @@ namespace Deckle.Lighting.Ambient;
 // cards the composer cannot express). Every leaf reads its default from a fresh
 // AmbientSettings, the single source the per-card and per-fold resets write back.
 // Headers, descriptions and option labels resolve from this module's .resw as
-// "<LabelKey>.Header" / ".Description" and "<OptionKey>.Content".
+// "<LabelKey>.Header" / ".Description" and "<OptionKey>.Content". No glyph on
+// any card: the rail carries the module's icon (2026-10-14).
 //
 // The setters are the view model's own properties, so the composed cards keep the
 // contracts of AmbientViewModel exactly: a tuning edit reports itself to the preset
@@ -24,7 +25,6 @@ public partial class AmbientViewModel
             "AmbientEnabledCard",
             () => Enabled,
             value => Enabled = value,
-            glyph: Glyphs.Lightbulb,
             defaultValue: () => new AmbientSettings().Enabled),
     ];
 
@@ -61,7 +61,6 @@ public partial class AmbientViewModel
                     visibleWhen: () => BorderMode == BorderThicknessMode.Cells,
                     defaultValue: () => new AmbientSettings().BorderCells),
             ],
-            glyph: Glyphs.Pattern,
             defaultValue: () => new AmbientSettings().UseMultiLight),
     ];
 
@@ -81,7 +80,6 @@ public partial class AmbientViewModel
             "AmbientMinBrightnessGroup",
             () => MinBrightnessEnabled,
             value => MinBrightnessEnabled = value,
-            glyph: Glyphs.LightbulbFilled,
             defaultValue: () => new AmbientSettings().MinBrightnessEnabled),
         Setting.Magnitude(
             "AmbientMinBrightnessCard",
@@ -95,21 +93,18 @@ public partial class AmbientViewModel
             () => SmoothingAlpha,
             value => SmoothingAlpha = value,
             new MagnitudeArgs(0.05, 1),
-            glyph: Glyphs.Latency,
             defaultValue: () => new AmbientSettings().SmoothingAlpha),
         Setting.Magnitude(
             "AmbientExposureCard",
             () => ExposureEv,
             value => ExposureEv = value,
             new MagnitudeArgs(-2, 2, Unit: "EV"),
-            glyph: Glyphs.Lightning,
             defaultValue: () => new AmbientSettings().ExposureEv),
         Setting.Magnitude(
             "AmbientSaturationCard",
             () => SaturationBoost,
             value => SaturationBoost = value,
             new MagnitudeArgs(0, 2, Unit: "×"),
-            glyph: Glyphs.Sparkle,
             defaultValue: () => new AmbientSettings().SaturationBoost),
         Setting.Curve(
             "AmbientBrightnessCurveCard",
@@ -120,7 +115,6 @@ public partial class AmbientViewModel
                 BrightnessCurveX2 = p.X2; BrightnessCurveY2 = p.Y2;
             },
             new CurveArgs(Floor: () => MinBrightnessEnabled ? MinBrightness / 254.0 : null),
-            glyph: Glyphs.Tuning,
             defaultValue: () =>
             {
                 var d = new AmbientSettings();

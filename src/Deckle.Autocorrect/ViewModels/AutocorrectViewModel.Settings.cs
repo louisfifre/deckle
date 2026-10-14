@@ -23,7 +23,6 @@ public partial class AutocorrectViewModel
         Setting.Toggle("AutocorrectPage_MasterCard",
             () => Enabled,
             value => Enabled = value,
-            glyph: Glyphs.Autocorrect,
             defaultValue: () => new AutocorrectSettings().Enabled),
     ];
 }

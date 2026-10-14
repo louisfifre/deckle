@@ -34,7 +34,6 @@ public partial class RecordingViewModel
                 (3600, "RecordingLimit1Hour"),
                 (7200, "RecordingLimit2Hours"),
             ],
-            glyph: Glyphs.Latency,
             defaultValue: () => new CaptureSettings().MaxRecordingDurationSeconds),
     ];
 
@@ -47,7 +46,6 @@ public partial class RecordingViewModel
         Setting.Toggle("RecordingPagePreprocessingCard",
             () => PreprocessingEnabled,
             value => PreprocessingEnabled = value,
-            glyph: Glyphs.AudioRecording,
             defaultValue: () => new PreprocessingSettings().Enabled),
     ];
 

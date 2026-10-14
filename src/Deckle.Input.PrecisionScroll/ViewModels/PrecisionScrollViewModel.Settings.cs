@@ -17,7 +17,6 @@ public partial class PrecisionScrollViewModel
             "PrecisionScrollPage_Group",
             () => Enabled,
             value => Enabled = value,
-            glyph: Glyphs.Mouse,
             defaultValue: () => new PrecisionScrollSettings().Enabled),
     ];
 
