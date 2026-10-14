@@ -45,7 +45,7 @@ public sealed partial class HudPage
     // HangoverMaxMs while the open utterance is no longer than
     // HangoverRampStartMs (15 s by default), then shortens the wait. Speech
     // and pause at their defaults stay under that, so this is the real wait.
-    // The stored value, which the Segmentation page edits; the compiled
+    // The stored value, which the Utterance segmentation page edits; the compiled
     // default when nothing is stored.
     private static double EnginePauseSeconds()
     {
@@ -53,7 +53,7 @@ public sealed partial class HudPage
         return Math.Clamp(ms / 1000.0, PauseMinSeconds, PauseMaxSeconds);
     }
 
-    // The Segmentation page's range for the same setting.
+    // The Utterance segmentation page's range for the same setting.
     private const double PauseMinSeconds = 0.5;
     private const double PauseMaxSeconds = 15;
 
@@ -114,7 +114,7 @@ public sealed partial class HudPage
         AddFloatRow(stack, "Speed", 0.25, 4, 0.25, _speechSimulation.Speed,
             v => _speechSimulation.Speed = v);
         stack.Children.Add(TuningHelp(
-            "Pause starts at the silence dictation waits before a cut, set by Hangover (max) on the Segmentation page."));
+            "Pause starts at the silence dictation waits before a cut, set by Hangover (max) on the Utterance segmentation page."));
         // HudChrono builds its gauge from the stored HUD settings and has no
         // override for it, unlike the stroke (SetNextStrokeConfig).
         stack.Children.Add(TuningHelp(

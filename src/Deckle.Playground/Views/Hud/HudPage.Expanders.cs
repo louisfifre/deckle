@@ -47,7 +47,7 @@ public sealed partial class HudPage
         var stack = NewTuningSection("Colour material", ResetColourMaterial);
         if (ColourMaterialHueLayoutOnly)
         {
-            stack.Children.Add(TuningHelp("The clone takes its lightness and chroma from the Digit reveal section."));
+            stack.Children.Add(TuningHelp("On this target, lightness and chroma come from the Digit reveal section."));
         }
         else
         {
@@ -215,7 +215,8 @@ public sealed partial class HudPage
         if (ViewModel.CurrentTarget == HudTarget.Gauge)
             stack.Children.Add(TuningHelp(
                 "The gauge reads the fades and the material. " +
-                "Span, mirror and arc phase don't reach it, because the two wedges follow the pause."));
+                "Mirror and arc phase don't reach it, because the two wedges follow the pause. " +
+                "Span only rescales the fades."));
         AddFloatRow(stack, "RecordingConicSpanTurns", 0.05, 1, 0.05, _tuning.RecordingConicSpanTurns,
             v => _tuning.RecordingConicSpanTurns = (float)v, rebuild: true);
         AddFloatRow(stack, "RecordingConicLeadFadeTurns", 0, 1, 0.05, _tuning.RecordingConicLeadFadeTurns,
