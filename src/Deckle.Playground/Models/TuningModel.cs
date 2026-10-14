@@ -86,6 +86,7 @@ internal sealed class TuningModel
     // ── Transcribing variant ────────────────────────────────────────────
     public float  TranscribingOpacity         = Defaults.TranscribingOpacity;
     public double TranscribingBlendSeconds    = Defaults.TranscribingBlendSeconds;
+    public bool   TranscribingInColour        = Defaults.TranscribingInColour;
 
     // ── Recording variant — paint-time ──────────────────────────────────
     public float RecordingConicSpanTurns     = Defaults.RecordingConicSpanTurns;
@@ -155,6 +156,7 @@ internal sealed class TuningModel
 
         TranscribingOpacity         = TranscribingOpacity,
         TranscribingBlendSeconds    = TranscribingBlendSeconds,
+        TranscribingInColour        = TranscribingInColour,
 
         RecordingConicSpanTurns     = RecordingConicSpanTurns,
         RecordingConicLeadFadeTurns = RecordingConicLeadFadeTurns,

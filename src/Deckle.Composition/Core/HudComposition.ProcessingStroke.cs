@@ -134,12 +134,13 @@ public static partial class HudComposition
             // instead of passing through the other theme's.
             var grey = GreyMaterialColor(
                 isDark ? _config.GreyLightnessDark : _config.GreyLightnessLight);
-            var (mix, hueShiftTurns, opacity, blendSeconds) = variant switch
+            var (mix, hueShiftTurns) = _config.MaterialOf(variant);
+            var (opacity, blendSeconds) = variant switch
             {
                 // Opacity unused: UpdateLevel owns it, skipped below.
-                ProcessingVariant.Recording    => (0f, 0f, 0f, _config.RecordingBlendSeconds),
-                ProcessingVariant.Transcribing => (0f, 0f, _config.TranscribingOpacity, _config.TranscribingBlendSeconds),
-                ProcessingVariant.Rewriting    => (1f, _config.RewritingHueShiftTurns, _config.RewritingOpacity, _config.RewritingBlendSeconds),
+                ProcessingVariant.Recording    => (0f, _config.RecordingBlendSeconds),
+                ProcessingVariant.Transcribing => (_config.TranscribingOpacity, _config.TranscribingBlendSeconds),
+                ProcessingVariant.Rewriting    => (_config.RewritingOpacity, _config.RewritingBlendSeconds),
                 _ => throw new ArgumentOutOfRangeException(nameof(variant)),
             };
 

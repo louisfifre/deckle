@@ -204,12 +204,18 @@ public sealed partial class HudPage
         var stack = NewTuningSection("Transcribing", ResetTranscribing);
         AddFloatRow(stack, "TranscribingOpacity", 0, 1, 0.05, _tuning.TranscribingOpacity,
             v => _tuning.TranscribingOpacity = (float)v, rebuild: true);
+        stack.Children.Add(TuningHelp(
+            "Probe: paints Transcribing with the colour wheel instead of the grey, " +
+            "until the Grey / Colour split per state is decided."));
+        AddToggleRow(stack, "TranscribingInColour", _tuning.TranscribingInColour,
+            v => _tuning.TranscribingInColour = v, rebuild: true);
     }
 
     private void ResetTranscribing()
     {
         var d = new TuningModel();
-        _tuning.TranscribingOpacity = d.TranscribingOpacity;
+        _tuning.TranscribingOpacity  = d.TranscribingOpacity;
+        _tuning.TranscribingInColour = d.TranscribingInColour;
         RebuildTuningPanel();
     }
 

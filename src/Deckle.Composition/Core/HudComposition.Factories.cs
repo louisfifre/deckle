@@ -438,9 +438,7 @@ public static partial class HudComposition
         // pass their own variant so cold-start paints with Recording*
         // values from frame 1, skipping any Transcribing-to-Recording
         // flash before ApplyVariant runs.
-        float seedMix = initialVariant == ProcessingVariant.Rewriting ? 1f : 0f;
-        float seedHueShiftTurns = initialVariant == ProcessingVariant.Rewriting
-            ? cfg.RewritingHueShiftTurns : 0f;
+        var (seedMix, seedHueShiftTurns) = cfg.MaterialOf(initialVariant);
         Color seedGrey = GreyMaterialColor(cfg.GreyLightnessDark);
 
         var effectGraph = new AlphaMaskEffect

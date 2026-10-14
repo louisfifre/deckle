@@ -266,6 +266,23 @@ public static partial class HudComposition
         public float  TranscribingOpacity         { get; init; } = 1f;
         public double TranscribingBlendSeconds    { get; init; } = 2;
 
+        // A probe, not a design: shows the colour material in Transcribing
+        // so the maintainer can judge colour on the state he actually uses
+        // (Rewriting is not wired yet). Which state shows which material is
+        // the open "Grey / Colour" question of the Playground rework; this
+        // flag goes away with its answer.
+        public bool   TranscribingInColour        { get; init; } = false;
+
+        // The material a variant shows: mix 1 is the colour wheel with its
+        // hue shift, mix 0 the flat grey. One answer for the seed of a new
+        // stroke, the live blend (ApplyVariant) and the Playground previews,
+        // so the three cannot disagree.
+        public (float Mix, float HueShiftTurns) MaterialOf(ProcessingVariant variant)
+            => variant == ProcessingVariant.Rewriting
+            || (variant == ProcessingVariant.Transcribing && TranscribingInColour)
+                ? (1f, RewritingHueShiftTurns)
+                : (0f, 0f);
+
         // ── Recording variant — frozen-rotation stroke with RMS-driven
         //    opacity, on the grey material.
         //

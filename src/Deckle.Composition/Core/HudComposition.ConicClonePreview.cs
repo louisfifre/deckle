@@ -167,11 +167,9 @@ public static partial class HudComposition
         IGraphicsEffectSource conicSource,
         ConicArcStrokeConfig cfg, ProcessingVariant variant, bool isDark)
     {
-        bool colour = variant == ProcessingVariant.Rewriting;
+        var (mix, hueShiftTurns) = cfg.MaterialOf(variant);
         return BuildMaterialMix(
-            conicSource,
-            mix: colour ? 1f : 0f,
-            hueShiftTurns: colour ? cfg.RewritingHueShiftTurns : 0f,
+            conicSource, mix, hueShiftTurns,
             GreyMaterialColor(isDark ? cfg.GreyLightnessDark : cfg.GreyLightnessLight));
     }
 }
