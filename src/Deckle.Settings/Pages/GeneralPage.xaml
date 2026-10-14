@@ -3,7 +3,6 @@
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:controls="using:CommunityToolkit.WinUI.Controls"
-    xmlns:ui="using:CommunityToolkit.WinUI"
     xmlns:vm="using:Deckle.Settings"
     xmlns:catalog="using:Deckle.Catalog">
 
@@ -19,32 +18,14 @@
                                             x:Uid="GeneralPageHeader"
                                             ResetAllRequested="ResetAll_Click" />
 
-                <!-- ── Hotkeys ─────────────────────────────────────────────── -->
-                <catalog:SettingsSection x:Name="HotkeysSection"
-                                         x:Uid="GeneralPageHotkeysSection"
-                                         HasReset="True"
-                                         ResetRequested="ResetHotkeys_Click">
-                    <StackPanel x:Name="HotkeysHost"
-                                Spacing="{StaticResource SettingsCardSpacing}" />
-                </catalog:SettingsSection>
-
-                <!-- ── Appearance ──────────────────────────────────────────── -->
-                <catalog:SettingsSection x:Name="AppearanceSection"
-                                         x:Uid="GeneralPageAppearanceSection"
-                                         HasReset="True"
-                                         ResetRequested="ResetAppearance_Click">
-                    <StackPanel x:Name="AppearanceHost"
-                                Spacing="{StaticResource SettingsCardSpacing}" />
-                </catalog:SettingsSection>
-
-                <!-- ── Startup ─────────────────────────────────────────────── -->
-                <catalog:SettingsSection x:Name="StartupSection"
-                                         x:Uid="GeneralPageStartupSection"
-                                         HasReset="True"
-                                         ResetRequested="ResetStartup_Click">
-                    <StackPanel x:Name="StartupHost"
-                                Spacing="{StaticResource SettingsCardSpacing}" />
-                </catalog:SettingsSection>
+                <!-- The theme and the start-with-Windows switch stand first,
+                     grouped under no title: a section of one card earns no
+                     heading, the cards simply open the page (Louis,
+                     2026-10-14). Composed: GeneralViewModel.AppearanceSettings
+                     then StartupSettings, into the same host. Each card keeps
+                     its own reset; there is no section to reset. -->
+                <StackPanel x:Name="TopHost"
+                            Spacing="{StaticResource SettingsCardSpacing}" />
 
                 <!-- ── Updates ─────────────────────────────────────────────── -->
                 <catalog:SettingsSection x:Name="UpdatesSection"
@@ -59,8 +40,7 @@
                              and "Install now" is an action; neither composes. -->
                         <controls:SettingsCard x:Name="VersionCard"
                                                x:Uid="GeneralVersionCard"
-                                               Tag="GeneralVersionCard"
-                                               HeaderIcon="{ui:FontIcon Glyph={StaticResource Icon.Download}}">
+                                               Tag="GeneralVersionCard">
                             <StackPanel Orientation="Horizontal" Spacing="12" VerticalAlignment="Center">
                                 <TextBlock x:Name="UpdateAvailableText"
                                            VerticalAlignment="Center"
@@ -80,54 +60,9 @@
                 <catalog:SettingsSection x:Uid="GeneralPageApplicationDataSection">
                 <StackPanel Spacing="{StaticResource SettingsCardSpacing}">
 
-                <controls:SettingsCard x:Uid="GeneralRerunSetupCard"
-                                       Tag="GeneralRerunSetupCard"
-                                       HeaderIcon="{ui:FontIcon Glyph={StaticResource Icon.Setup}}">
-                    <Button x:Name="ReRunSetupButton"
-                            x:Uid="GeneralRerunSetupButton"
-                            Click="ReRunSetupButton_Click" />
-                </controls:SettingsCard>
-
-                <controls:SettingsCard x:Uid="GeneralDataFolderCard"
-                                       Tag="GeneralDataFolderCard"
-                                       HeaderIcon="{ui:FontIcon Glyph={StaticResource Icon.Folder}}"
-                                       ContentAlignment="Vertical">
-                    <Grid ColumnSpacing="8">
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="*" />
-                            <ColumnDefinition Width="Auto" />
-                            <ColumnDefinition Width="Auto" />
-                        </Grid.ColumnDefinitions>
-                        <TextBlock x:Name="DataFolderPathText"
-                                   Grid.Column="0"
-                                   VerticalAlignment="Center"
-                                   Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                                   IsTextSelectionEnabled="True"
-                                   Style="{StaticResource CaptionTextBlockStyle}"
-                                   TextTrimming="CharacterEllipsis"
-                                   TextWrapping="NoWrap" />
-                        <Button Grid.Column="1"
-                                x:Name="MoveDataFolderButton"
-                                x:Uid="GeneralDataFolderMoveButton"
-                                Visibility="Collapsed"
-                                Click="MoveDataFolderButton_Click" />
-                        <Button Grid.Column="2"
-                                x:Name="OpenDataFolderButton"
-                                x:Uid="GeneralDataFolderOpenButton"
-                                Click="OpenDataFolderButton_Click" />
-                    </Grid>
-                </controls:SettingsCard>
-
-                <!-- Pre-flight outcomes of a data move that never left this
-                     page; the move itself runs in the dedicated relocate
-                     process. -->
-                <InfoBar x:Name="DataMoveInfoBar"
-                         IsOpen="False"
-                         IsClosable="True" />
-
-                <controls:SettingsExpander x:Uid="GeneralBackupExpander"
-                                           Tag="GeneralBackupExpander"
-                                           HeaderIcon="{ui:FontIcon Glyph={StaticResource Icon.Reset}}">
+                <controls:SettingsExpander x:Name="BackupExpander"
+                                           x:Uid="GeneralBackupExpander"
+                                           Tag="GeneralBackupExpander">
                     <!-- Bespoke: Create/Restore are ACTIONS, not settings — the
                          composer drives values, not command buttons. -->
                     <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
@@ -139,12 +74,13 @@
                                 Click="RestoreBackupButton_Click"
                                 IsEnabled="{x:Bind ViewModel.HasBackup, Mode=OneWay}" />
                     </StackPanel>
+                    <!-- Items holds SettingsCards only: the expander styles every
+                         item with its SettingsCard item style, so any other
+                         element here throws when the fold opens (the crash of
+                         2026-10-14 19:09, a StackPanel host in this slot). The
+                         composed location card is moved in from code, first
+                         (ComposeApplicationDataSection). -->
                     <controls:SettingsExpander.Items>
-                        <!-- A StackPanel host, not a bare SettingsCard, because the
-                             composer needs a Panel. -->
-                        <StackPanel x:Name="BackupLocationHost"
-                                    Spacing="{StaticResource SettingsCardSpacing}" />
-
                         <!-- Bespoke: a live status projection, not a settable
                              value. -->
                         <controls:SettingsCard x:Uid="GeneralBackupInfoCard"
@@ -174,6 +110,41 @@
                         </controls:SettingsCard>
                     </controls:SettingsExpander.Items>
                 </controls:SettingsExpander>
+
+                <controls:SettingsCard x:Uid="GeneralRerunSetupCard"
+                                       Tag="GeneralRerunSetupCard">
+                    <Button x:Name="ReRunSetupButton"
+                            x:Uid="GeneralRerunSetupButton"
+                            Click="ReRunSetupButton_Click" />
+                </controls:SettingsCard>
+
+                <!-- The data folder, in the composed folder cards' form: the
+                     path on a line under the description (FolderCardDescription,
+                     attached in code-behind) and the actions at the trailing
+                     edge. Move keeps its word where the composed cards' Change
+                     is an icon: it copies the data and restarts the app, an
+                     act the button has to name. -->
+                <controls:SettingsCard x:Name="DataFolderCard"
+                                       x:Uid="GeneralDataFolderCard"
+                                       Tag="GeneralDataFolderCard">
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                        <Button x:Name="MoveDataFolderButton"
+                                x:Uid="GeneralDataFolderMoveButton"
+                                Visibility="Collapsed"
+                                Click="MoveDataFolderButton_Click" />
+                        <Button x:Name="OpenDataFolderButton"
+                                x:Uid="GeneralDataFolderOpenButton"
+                                Click="OpenDataFolderButton_Click" />
+                    </StackPanel>
+                </controls:SettingsCard>
+
+                <!-- Pre-flight outcomes of a data move that never left this
+                     page; the move itself runs in the dedicated relocate
+                     process. -->
+                <InfoBar x:Name="DataMoveInfoBar"
+                         IsOpen="False"
+                         IsClosable="True"
+                         catalog:InfoBarLayout.CollapseWhenClosed="True" />
 
                 </StackPanel>
                 </catalog:SettingsSection>

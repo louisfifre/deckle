@@ -10,7 +10,9 @@ namespace Deckle.Catalog;
 // live in Deckle.Settings: they anchor the OS folder picker to the Settings window
 // and log through that module's ETW source, neither of which belongs in Catalog.
 // So the composer builds them through SettingsComposer.PathControlFactory and
-// drives them through this surface.
+// drives them through this surface. View is the row of actions the composer
+// places at the card's trailing edge; the path line under the description is
+// the composer's own (FolderCardDescription).
 public interface IPathControl
 {
     string Path { get; set; }

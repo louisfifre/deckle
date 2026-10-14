@@ -5,9 +5,8 @@
     xmlns:catalog="using:Deckle.Catalog">
 
     <!-- Home is the first node of the rail and, for now, only its header: the
-         page earns content later (settings design system, decision 15). The
-         frame is the one every page shares: a scroll area, a 1000-wide column,
-         the header block first. -->
+         page earns content later. The frame is the one every page shares: a
+         scroll area, a 1000-wide column, the header block first. -->
     <ScrollViewer Padding="32,24,32,24"
                   VerticalScrollBarVisibility="Auto"
                   HorizontalScrollBarVisibility="Disabled">

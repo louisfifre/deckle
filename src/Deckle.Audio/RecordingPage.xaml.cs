@@ -27,8 +27,6 @@ public sealed partial class RecordingPage : Page
         NavigationCacheMode = NavigationCacheMode.Required;
         ComposeRecordingLimitSection();
         ComposePreprocessingSection();
-        ComposeVoiceLevelSection();
-        ComposeTelemetrySection();
         LoadAndSync();
     }
 
@@ -63,28 +61,6 @@ public sealed partial class RecordingPage : Page
         _preprocessingComposer.DirtyChanged += OnComposedDirtyChanged;
     }
 
-    // ── Composed voice-level group ────────────────────────────────────────────
-    private SettingsComposer? _voiceLevelComposer;
-
-    private void ComposeVoiceLevelSection()
-    {
-        _voiceLevelComposer = new SettingsComposer(VoiceLevelHost, ViewModel);
-        _voiceLevelComposer.Compose(ViewModel.VoiceLevelSettings);
-        _voiceLevelComposer.DirtyChanged += OnComposedDirtyChanged;
-    }
-
-    // ── Composed telemetry section ────────────────────────────────────────────
-    //
-    // Deliberately not wired into the section-reset link: a privacy opt-in is
-    // never reset from here.
-    private SettingsComposer? _telemetryComposer;
-
-    private void ComposeTelemetrySection()
-    {
-        _telemetryComposer = new SettingsComposer(TelemetryHost, ViewModel);
-        _telemetryComposer.Compose(ViewModel.TelemetrySettings);
-    }
-
     private void OnComposedDirtyChanged(object? sender, EventArgs e) => GateResetLink();
 
     // The device id is deliberately not folded in: it is hardware enumeration, not
@@ -95,8 +71,7 @@ public sealed partial class RecordingPage : Page
     {
         bool dirty =
             (_recordingLimitComposer?.IsDirty() ?? false) ||
-            (_preprocessingComposer?.IsDirty() ?? false) ||
-            (_voiceLevelComposer?.IsDirty() ?? false);
+            (_preprocessingComposer?.IsDirty() ?? false);
         DefaultsSection.IsResetEnabled = dirty;
         Header.IsResetAllEnabled = dirty;
     }
@@ -173,7 +148,6 @@ public sealed partial class RecordingPage : Page
     {
         _recordingLimitComposer?.ResetAll();
         _preprocessingComposer?.ResetAll();
-        _voiceLevelComposer?.ResetAll();
 
         ViewModel.AudioInputDeviceId = -1;
         _initializing = true;

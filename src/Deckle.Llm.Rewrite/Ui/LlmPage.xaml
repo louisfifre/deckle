@@ -32,7 +32,8 @@
                          Severity="Warning"
                          IsOpen="False"
                          IsClosable="False"
-                         Margin="0,0,0,8" />
+                         Margin="0,0,0,8"
+                         catalog:InfoBarLayout.CollapseWhenClosed="True" />
 
                 <llm:LlmGeneralSection x:Name="GeneralSection" />
 

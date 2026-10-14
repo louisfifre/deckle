@@ -201,7 +201,7 @@ Where the files live:
 
 Where the settings are shown:
 
-- **Settings ▸ Dictation**: `src/Deckle.Transcription/ViewModels/WhisperViewModel.Settings.cs` (composed cards, including the cut-preset selector and the curve editor `src/Deckle.Transcription/Ui/Controls/CutCurveEditor.xaml.cs`), plus the hand-written cards of `src/Deckle.Transcription/WhisperPage.xaml` and `src/Deckle.Transcription/WhisperPage.xaml.cs` (model, language, initial prompt).
+- **Settings ▸ Dictation**: `src/Deckle.Transcription/ViewModels/WhisperViewModel.Settings.cs` (composed cards, including the cut curve card with its anchors and the curve editor `src/Deckle.Catalog/Composer/CurveEditor.cs`; no preset selector), plus the hand-written cards of `src/Deckle.Transcription/WhisperPage.xaml` and `src/Deckle.Transcription/WhisperPage.xaml.cs` (model, language, initial prompt).
 - **Playground ▸ Segmentation**: `src/Deckle.Playground/ViewModels/SegmentationViewModel.cs`, with the curve plot `src/Deckle.Transcription/Ui/Controls/HangoverCurveCanvas.xaml.cs` on `src/Deckle.Playground/Views/Segmentation/SegmentationPage.xaml`. Edits there wait for a Save button.
 - **Settings ▸ Recording**: `src/Deckle.Audio/RecordingViewModel.Settings.cs`, plus the microphone picker in `src/Deckle.Audio/RecordingPage.xaml.cs`.
 
@@ -221,30 +221,30 @@ Where the settings are shown:
 | `Decoding.TemperatureIncrement` | same | `0.2` | `decoding` | Dictation (`WhisperTemperatureIncrementCard`) |
 | `Decoding.UseBeamSearch` | same | `true` | `decoding` | Dictation (`WhisperUseBeamSearchCard`) |
 | `Decoding.BeamSize` | same | `5` | `decoding` | Dictation (`WhisperBeamSizeCard`, visible when beam search is on) |
-| `Context.UseContext` | same (`no_context`) | `true` | `context` | Dictation (`WhisperUseContextCard`) |
-| `Context.MaxTokens` | same (`n_max_text_ctx`) | `-1` (auto) | `context` | Dictation (`WhisperMaxTokensCard`) |
-| `OutputFilters.SuppressNonSpeechTokens` | same | `true` | `outputFilters` | Dictation (`WhisperSuppressNstCard`) |
-| `OutputFilters.SuppressBlank` | same | `true` | `outputFilters` | Dictation (`WhisperSuppressBlankCard`) |
-| `OutputFilters.SuppressRegex` | same | `""` | `outputFilters` | Dictation (`WhisperSuppressRegexCard`) |
+| `Context.UseContext` | same (`no_context`) | `true` | `context` | Decoding page (Context section, `WhisperUseContextCard`) |
+| `Context.MaxTokens` | same (`n_max_text_ctx`) | `-1` (auto) | `context` | Decoding page (Context section, `WhisperMaxTokensCard`) |
+| `OutputFilters.SuppressNonSpeechTokens` | same | `true` | `outputFilters` | Decoding page (Output filters section, `WhisperSuppressNstCard`) |
+| `OutputFilters.SuppressBlank` | same | `true` | `outputFilters` | Decoding page (Output filters section, `WhisperSuppressBlankCard`) |
+| `OutputFilters.SuppressRegex` | same | `""` | `outputFilters` | Decoding page (Output filters section, `WhisperSuppressRegexCard`) |
 | `Streaming.Strategy` | `src/Deckle.Transcription/Engine/TranscriptionEngine.StateMachine.cs` → `WorkerRun` | `Monolithic` | `streaming` | Dictation (`WhisperStreamingEnabledCard` toggle: on = Streaming) |
-| `Streaming.Segmenter.ThresholdDbfs` | `src/Deckle.Transcription/Streaming/EnergySegmenter.cs` | `-45.0` | `streaming.segmenter` | Dictation (number field) and Playground |
-| `Streaming.Segmenter.HangoverMaxMs` | same | `5000` | `streaming.segmenter` | Dictation (Custom cut preset) and Playground |
-| `Streaming.Segmenter.HangoverMinMs` | same | `500` | `streaming.segmenter` | Dictation (Custom cut preset) and Playground |
-| `Streaming.Segmenter.HangoverRampStartMs` | same | `15000` | `streaming.segmenter` | Dictation (Custom cut preset) and Playground |
-| `Streaming.Segmenter.HangoverRampEndMs` | same | `120000` | `streaming.segmenter` | Dictation (Custom cut preset) and Playground |
-| `Streaming.Segmenter.HangoverCurveX1` | same (via `src/Deckle.Transcription/Curves/UnitBezier.cs`) | `0.85` | `streaming.segmenter` | Dictation (curve editor, Custom cut preset) and Playground |
-| `Streaming.Segmenter.HangoverCurveY1` | same | `0.10` | `streaming.segmenter` | Dictation (curve editor, Custom cut preset) and Playground |
-| `Streaming.Segmenter.HangoverCurveX2` | same | `0.90` | `streaming.segmenter` | Dictation (curve editor, Custom cut preset) and Playground |
-| `Streaming.Segmenter.HangoverCurveY2` | same | `0.25` | `streaming.segmenter` | Dictation (curve editor, Custom cut preset) and Playground |
-| `Streaming.Segmenter.MarginMs` | same | `150` | `streaming.segmenter` | Dictation and Playground |
-| `Streaming.Segmenter.MinUtteranceMs` | same | `250` | `streaming.segmenter` | Dictation and Playground |
-| `Streaming.SpeechTrim.Enabled` | `src/Deckle.Transcription/Engine/TranscriptionEngine.StreamingPipeline.cs` → `StartSegmentedTranscription` | `true` | `streaming.speechTrim` | Dictation (`WhisperVadEnabledCard`, visible only when Streaming is on) |
-| `Streaming.SpeechTrim.Threshold` | `src/Deckle.Vad/SileroSpeechTimestamps.cs` (via `src/Deckle.Vad/SileroVadOptions.cs`) | `0.5` | `streaming.speechTrim` | Dictation slider, same visibility |
-| `Streaming.SpeechTrim.MinSpeechDurationMs` | same | `250` | `streaming.speechTrim` | Dictation slider, same visibility |
-| `Streaming.SpeechTrim.MinSilenceDurationMs` | same | `100` | `streaming.speechTrim` | Dictation slider, same visibility |
-| `Streaming.SpeechTrim.SpeechPadMs` | same | `30` | `streaming.speechTrim` | Dictation slider, same visibility |
+| `Streaming.Segmenter.ThresholdDbfs` | `src/Deckle.Transcription/Streaming/EnergySegmenter.cs` | `-45.0` | `streaming.segmenter` | Streaming page (`WhisperSegThresholdCard`, magnitude field in dBFS) and Playground |
+| `Streaming.Segmenter.HangoverMaxMs` | same | `5000` | `streaming.segmenter` | Streaming page (cut curve card, legend field "Max wait", ms) and Playground |
+| `Streaming.Segmenter.HangoverMinMs` | same | `500` | `streaming.segmenter` | Streaming page (cut curve card, legend field "Min wait", ms) and Playground |
+| `Streaming.Segmenter.HangoverRampStartMs` | same | `15000` | `streaming.segmenter` | Streaming page (cut curve card, legend field "Ramp start", ms) and Playground |
+| `Streaming.Segmenter.HangoverRampEndMs` | same | `120000` | `streaming.segmenter` | Streaming page (cut curve card, legend field "Ramp end", ms) and Playground |
+| `Streaming.Segmenter.HangoverCurveX1` | same (via `src/Deckle.Transcription/Curves/UnitBezier.cs`) | `0.85` | `streaming.segmenter` | Streaming page (cut curve card, full-width editor, `WhisperCutCurveCard`) and Playground |
+| `Streaming.Segmenter.HangoverCurveY1` | same | `0.10` | `streaming.segmenter` | Streaming page (cut curve card) and Playground |
+| `Streaming.Segmenter.HangoverCurveX2` | same | `0.90` | `streaming.segmenter` | Streaming page (cut curve card) and Playground |
+| `Streaming.Segmenter.HangoverCurveY2` | same | `0.25` | `streaming.segmenter` | Streaming page (cut curve card) and Playground |
+| `Streaming.Segmenter.MarginMs` | same | `150` | `streaming.segmenter` | Playground only (removed from the Streaming page, 2026-10-14) |
+| `Streaming.Segmenter.MinUtteranceMs` | same | `250` | `streaming.segmenter` | Playground only (removed from the Streaming page, 2026-10-14) |
+| `Streaming.SpeechTrim.Enabled` | `src/Deckle.Transcription/Engine/TranscriptionEngine.StreamingPipeline.cs` → `StartSegmentedTranscription` | `true` | `streaming.speechTrim` | Streaming page (`WhisperVadEnabledCard`, the VAD group's switch, visible only when Streaming is on) |
+| `Streaming.SpeechTrim.Threshold` | `src/Deckle.Vad/SileroSpeechTimestamps.cs` (via `src/Deckle.Vad/SileroVadOptions.cs`) | `0.5` | `streaming.speechTrim` | Streaming page (`WhisperVadThresholdCard`, child of the VAD group, shown while the group is on) |
+| `Streaming.SpeechTrim.MinSpeechDurationMs` | same | `250` | `streaming.speechTrim` | Streaming page (`WhisperVadMinSpeechCard`, child of the VAD group) |
+| `Streaming.SpeechTrim.MinSilenceDurationMs` | same | `100` | `streaming.speechTrim` | Streaming page (`WhisperVadMinSilenceCard`, child of the VAD group) |
+| `Streaming.SpeechTrim.SpeechPadMs` | same | `30` | `streaming.speechTrim` | Streaming page (`WhisperVadSpeechPadCard`, child of the VAD group) |
 
-On the Dictation page, the segmenter values sit in the Streaming fold, shown when the Streaming toggle is on. The threshold, the margin and the minimum utterance are always-visible number fields. The four hangover values and the four curve control points are set together by a cut preset (Patient, Balanced or Quick; Balanced equals the code defaults, `src/Deckle.Transcription/Streaming/CutPresets.cs`). Choosing Custom reveals the curve editor and the four hangover number fields, which edit all eight. The four Silero values are sliders shown when both Streaming and the VAD toggle are on.
+On the Streaming page, everything under the Streaming switch shows only while the switch is on. Speech filtering comes first: the VAD group, its switch and its four children (threshold, minimum speech, minimum silence, padding), the children hidden while the group is off. Segmentation follows: the silence threshold as a magnitude field, then the cut curve card at full width, whose legend carries the four hangover anchors (Max wait, Min wait, Ramp start, Ramp end, in ms) beside the curve editor over the four control points. The cut presets (Patient, Balanced, Quick; `src/Deckle.Transcription/Streaming/CutPresets.cs`) still exist in code and the stored selection still flips to Custom on a hand edit, but no page selects one since 2026-10-14.
 
 ### Audio module — `modules/audio/settings.json`
 
@@ -252,10 +252,10 @@ On the Dictation page, the segmenter values sit in the Streaming fold, shown whe
 |---|---|---|---|---|
 | `AudioInputDeviceId` | `src/Deckle.Audio/MicrophoneCapture.cs` (`Probe`, `Record`) | `-1` (system default device) | root | Recording (microphone picker, `RecordingPage.xaml.cs`) |
 | `MaxRecordingDurationSeconds` | `src/Deckle.Audio/Internal/WaveInLoop.cs` (cap check, skipped at 0) | `0` (no limit); a file still holding the former 20 min default is migrated to 0 (`src/Deckle.Audio/CaptureSettingsService.cs`) | root | Recording (`RecordingLimitCard`, "Maximum recording length": No limit, 10, 20, 30 min, 1 h, 2 h) |
-| `LevelWindow.MinDbfs` | `src/Deckle.Audio/AudioLevelMapper.cs` (HUD display only) | `-55` | `levelWindow` | Recording (`GeneralVoiceLevelFloorCard`) |
-| `LevelWindow.MaxDbfs` | same | `-32` | `levelWindow` | Recording (`GeneralVoiceLevelCeilingCard`) |
-| `LevelWindow.DbfsCurveExponent` | same | `1.0` | `levelWindow` | Recording (`GeneralVoiceLevelCurveCard`) |
-| `LevelWindow.AutoCalibrationEnabled` | `src/Deckle.Transcription/Engine/TranscriptionEngine.Telemetry.cs` → `TryAutoCalibrate` | `false` | `levelWindow` | Recording (master of `GeneralVoiceLevelExpander`, inverted: on = manual) |
+| `LevelWindow.MinDbfs` | `src/Deckle.Audio/AudioLevelMapper.cs` (HUD display only) | `-55` | `levelWindow` | Not exposed (removed from Recording, 2026-10-14) |
+| `LevelWindow.MaxDbfs` | same | `-32` | `levelWindow` | Not exposed (removed from Recording, 2026-10-14) |
+| `LevelWindow.DbfsCurveExponent` | same | `1.0` | `levelWindow` | Not exposed (removed from Recording, 2026-10-14) |
+| `LevelWindow.AutoCalibrationEnabled` | `src/Deckle.Transcription/Engine/TranscriptionEngine.Telemetry.cs` → `TryAutoCalibrate` | `false` | `levelWindow` | Not exposed (removed from Recording, 2026-10-14) |
 | `LevelWindow.AutoCalibrationSamples` | same | `5` | `levelWindow` | Not exposed |
 | `Preprocessing.Enabled` | `src/Deckle.Audio/Preprocessing/TranscriptionPreprocessor.cs` | `false` | `preprocessing` | Recording (`RecordingPagePreprocessingCard`) |
 | `Preprocessing.HighPassEnabled`, `HighPassHz` | same | `true`, `90` Hz | `preprocessing` | Not exposed |

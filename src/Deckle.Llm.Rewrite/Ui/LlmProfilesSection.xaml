@@ -122,24 +122,10 @@
                                                TextWrapping="Wrap"
                                                Margin="0,-4,0,0" />
 
-                                    <Expander x:Uid="LlmProfile_AdvancedExpander"
-                                              HorizontalAlignment="Stretch"
-                                              HorizontalContentAlignment="Stretch">
-                                        <StackPanel Spacing="12">
-                                            <NumberBox x:Uid="LlmProfile_TopP"
-                                                       Minimum="0" Maximum="1"
-                                                       SmallChange="0.05" LargeChange="0.1"
-                                                       SpinButtonPlacementMode="Compact"
-                                                       Value="{x:Bind TopP, Mode=TwoWay}"
-                                                       MinWidth="160" />
-                                            <NumberBox x:Uid="LlmProfile_RepeatPenalty"
-                                                       Minimum="0.5" Maximum="2"
-                                                       SmallChange="0.05" LargeChange="0.1"
-                                                       SpinButtonPlacementMode="Compact"
-                                                       Value="{x:Bind RepeatPenalty, Mode=TwoWay}"
-                                                       MinWidth="160" />
-                                        </StackPanel>
-                                    </Expander>
+                                    <!-- Top P and the repeat penalty (the former
+                                         "Advanced parameters" expander) are no longer
+                                         exposed (triage of 2026-10-14): a profile keeps
+                                         the model's defaults for them. -->
                                 </StackPanel>
                             </controls:SettingsCard>
                         </controls:SettingsExpander.Items>

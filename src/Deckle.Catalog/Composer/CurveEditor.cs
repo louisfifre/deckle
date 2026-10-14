@@ -16,11 +16,13 @@ namespace Deckle.Catalog;
 
 // ── CurveEditor ───────────────────────────────────────────────────────────────
 //
-// The one curve component of the settings design system (decision 21, the
-// Playground Segmentation form): a plot of a two-point cubic Bézier with its two
-// draggable handles, taking the width it is given, and beside it the four values
-// as fields in a two-by-two grid with the `cubic-bezier(…)` readout under them.
-// Below a comfortable width the fields move under the plot.
+// The one curve component of the settings surfaces (the Playground
+// Segmentation form): a plot of a two-point cubic Bézier with its two
+// draggable handles, taking the width it is given, and beside it a legend: the
+// frame's own values when the owner fills the Legend slot (the cut's four
+// anchors), then the four control points as fields in a two-by-two grid with the
+// `cubic-bezier(…)` readout under them. Below a comfortable width the legend
+// moves under the plot.
 //
 // Two layouts from one frame (CurveFrame): with axes, the plot spans the data
 // space (rulers on "nice" steps, unit labels, dashed guides at the box's edges)
@@ -35,7 +37,7 @@ namespace Deckle.Catalog;
 // key on a focused handle nudges by a hundredth (a tenth with Shift) and writes
 // at once. X stays in [0,1] so the curve remains a function; Y may overshoot by a
 // quarter when AllowOutside is set. The drawing is a tree of XAML shapes updated
-// in place on every change, with no Win2D (decision 3).
+// in place on every change, with no Win2D.
 public sealed partial class CurveEditor : UserControl
 {
     private const int SampleCount = 96;
@@ -46,12 +48,13 @@ public sealed partial class CurveEditor : UserControl
     private const double PadTop = 12.0;
     private const double PadRight = 14.0;
     private const double Pad = 6.0;
-    private const double WideHeight = 280.0;
     private const double SquareSide = 220.0;
     private const double StackBelowWidth = 560.0;
     private const double Outside = 0.25;
 
     private readonly Grid _root = new();
+    private readonly StackPanel _side = new() { Spacing = 12 };
+    private readonly StackPanel _legend = new() { Spacing = 8, Visibility = Visibility.Collapsed };
     private readonly Border _plotFrame;
     private readonly Canvas _plot = new();
     private readonly Polyline _curve;
@@ -132,6 +135,10 @@ public sealed partial class CurveEditor : UserControl
         };
         BuildFieldGrid();
 
+        // The side column: the owner's legend first, the control points under it.
+        _side.Children.Add(_legend);
+        _side.Children.Add(_fields);
+
         _root.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
         _root.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
         _root.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
@@ -139,7 +146,7 @@ public sealed partial class CurveEditor : UserControl
         _root.ColumnSpacing = 16;
         _root.RowSpacing = 12;
         _root.Children.Add(_plotFrame);
-        _root.Children.Add(_fields);
+        _root.Children.Add(_side);
         Content = _root;
 
         SizeChanged += (_, e) => Reflow(e.NewSize.Width);
@@ -213,6 +220,40 @@ public sealed partial class CurveEditor : UserControl
         set => SetValue(AllowOutsideProperty, value);
     }
 
+    private double _wideHeight = 280.0;
+
+    // The plot's height when the frame carries axes. 280 is the Playground's;
+    // the Settings composer raises it to 320, where the plot is the
+    // segmentation's main instrument at full card width (2026-10-14). A plain
+    // property, set once by the owner after construction: nothing binds it.
+    public double WideHeight
+    {
+        get => _wideHeight;
+        set
+        {
+            _wideHeight = value;
+            if (Frame.Axes) _plotFrame.Height = value;
+        }
+    }
+
+    // The slot above the control points for the values that frame the curve. The
+    // owner fills it with fields it builds and wires itself; empty takes no room.
+    public Panel Legend => _legend;
+
+    // Caption over a field, the form the four control points use, so an owner's
+    // legend field looks like them.
+    public static FrameworkElement LabelledField(string caption, FrameworkElement field)
+    {
+        var stack = new StackPanel { Spacing = 4 };
+        stack.Children.Add(new TextBlock
+        {
+            Text = caption,
+            Style = Application.Current.Resources["CaptionTextBlockStyle"] as Style,
+        });
+        stack.Children.Add(field);
+        return stack;
+    }
+
     private static void OnPointChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
     {
         var self = (CurveEditor)d;
@@ -240,9 +281,12 @@ public sealed partial class CurveEditor : UserControl
         Grid.SetRow(_plotFrame, 0);
         Grid.SetColumn(_plotFrame, 0);
         Grid.SetColumnSpan(_plotFrame, stack ? 2 : 1);
-        Grid.SetRow(_fields, stack ? 1 : 0);
-        Grid.SetColumn(_fields, stack ? 0 : 1);
-        _fields.VerticalAlignment = stack ? VerticalAlignment.Top : VerticalAlignment.Center;
+        Grid.SetRow(_side, stack ? 1 : 0);
+        Grid.SetColumn(_side, stack ? 0 : 1);
+        // Top in both layouts: centred beside a tall plot, the fields floated
+        // mid-height with nothing to align to (2026-10-14).
+        _side.VerticalAlignment = VerticalAlignment.Top;
+        _legend.Visibility = _legend.Children.Count > 0 ? Visibility.Visible : Visibility.Collapsed;
     }
 
     private void BuildFieldGrid()
@@ -265,13 +309,7 @@ public sealed partial class CurveEditor : UserControl
 
     private void AddField(string label, NumberBox box, int row, int column)
     {
-        var stack = new StackPanel { Spacing = 4 };
-        stack.Children.Add(new TextBlock
-        {
-            Text = label,
-            Style = Application.Current.Resources["CaptionTextBlockStyle"] as Style,
-        });
-        stack.Children.Add(box);
+        FrameworkElement stack = LabelledField(label, box);
         Grid.SetRow(stack, row);
         Grid.SetColumn(stack, column);
         _fields.Children.Add(stack);

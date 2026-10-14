@@ -19,7 +19,6 @@ public sealed partial class AutocorrectPage : Page
     public AutocorrectViewModel ViewModel { get; } = new();
 
     private SettingsComposer? _settingsComposer;
-    private SettingsComposer? _diagnosticsComposer;
 
     public AutocorrectPage()
     {
@@ -27,12 +26,9 @@ public sealed partial class AutocorrectPage : Page
         NavigationCacheMode = NavigationCacheMode.Required;
 
         ComposeSettings();
-        ComposeDiagnostics();
 
-        // The page-level "Reset all" gate spans both composers; re-gate it
-        // whenever either goes dirty.
+        // The page-level "Reset all" gate follows the composer's dirtiness.
         _settingsComposer!.DirtyChanged += (_, _) => GateResetAll();
-        _diagnosticsComposer!.DirtyChanged += (_, _) => GateResetAll();
 
         ViewModel.ExcludedWords.CollectionChanged += OnExclusionsChanged;
         ViewModel.PropertyChanged += OnViewModelChanged;
@@ -46,12 +42,6 @@ public sealed partial class AutocorrectPage : Page
     {
         _settingsComposer = new SettingsComposer(MasterHost, ViewModel);
         _settingsComposer.Compose(ViewModel.AutocorrectSettingsManifest);
-    }
-
-    private void ComposeDiagnostics()
-    {
-        _diagnosticsComposer = new SettingsComposer(DiagnosticsHost, ViewModel);
-        _diagnosticsComposer.Compose(ViewModel.DiagnosticsSettings);
     }
 
     protected override void OnNavigatedTo(NavigationEventArgs e)
@@ -68,22 +58,19 @@ public sealed partial class AutocorrectPage : Page
 
     // ── Whole-page "Reset all" ────────────────────────────────────────────────
     //
-    // Drives the master switch and the Diagnostics opt-ins back to their defaults
-    // in one gesture. Active-when-dirty: enabled only while a composed value
-    // differs from its default. The excluded-words register is not touched — it
-    // is a list the user authors, not a setting with a default. The header block
-    // asks before firing ResetAllRequested (the generic wording).
+    // Drives the master switch back to its default. Active-when-dirty: enabled
+    // only while a composed value differs from its default. The excluded-words
+    // register is not touched — it is a list the user authors, not a setting
+    // with a default. The header block asks before firing ResetAllRequested
+    // (the generic wording).
     private void GateResetAll()
     {
-        Header.IsResetAllEnabled =
-            (_settingsComposer?.IsDirty() ?? false) ||
-            (_diagnosticsComposer?.IsDirty() ?? false);
+        Header.IsResetAllEnabled = _settingsComposer?.IsDirty() ?? false;
     }
 
     private void ResetAll_Click(object sender, RoutedEventArgs e)
     {
         _settingsComposer?.ResetAll();
-        _diagnosticsComposer?.ResetAll();
     }
 
     private void OnExclusionsChanged(object? sender, NotifyCollectionChangedEventArgs e)
@@ -117,14 +104,4 @@ public sealed partial class AutocorrectPage : Page
         ExclusionsList.Visibility = any ? Visibility.Visible : Visibility.Collapsed;
         ExclusionsEmptyState.Visibility = any ? Visibility.Collapsed : Visibility.Visible;
     }
-
-    // Drill-in: hand the destination's page tag to the shell, which selects the
-    // matching rail item and navigates. The module cannot reference the settings
-    // shell, so the hop goes through the Catalog delegate the App wires at boot;
-    // unwired, the card is inert rather than broken.
-    private void OnDomainsCardClick(object sender, RoutedEventArgs e)
-        => SettingsNavigation.GoToPage?.Invoke(AutocorrectSettingsModule.LexicalDomainsPageTag);
-
-    private void OnAppsCardClick(object sender, RoutedEventArgs e)
-        => SettingsNavigation.GoToPage?.Invoke(AutocorrectSettingsModule.AppsEnrolledPageTag);
 }

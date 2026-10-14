@@ -122,11 +122,15 @@
                         IsBackButtonVisible="Collapsed"
                         IsPaneToggleButtonVisible="False"
                         IsSettingsVisible="False"
-                        SelectionChanged="OnNavSelectionChanged">
+                        SelectionChanged="OnNavSelectionChanged"
+                        Collapsed="OnNavCollapsed"
+                        Expanding="OnNavExpanding">
 
-            <!-- Home and General are the shell's two static anchors; every module
-                 page is materialised from SettingsModuleRegistry in the code-behind,
-                 so a module can appear or disappear without editing this file. -->
+            <!-- Home, General and Shortcuts are the shell's static anchors; every
+                 module page is materialised from SettingsModuleRegistry in the
+                 code-behind, so a module can appear or disappear without editing
+                 this file. Shortcuts is a shell page because a key combination is
+                 global: it spans every module and belongs to none. -->
             <NavigationView.MenuItems>
                 <NavigationViewItem x:Uid="SettingsNavHome"
                                     Tag="Deckle.Settings.HomePage">
@@ -138,6 +142,12 @@
                                     Tag="Deckle.Settings.GeneralPage">
                     <NavigationViewItem.Icon>
                         <FontIcon Glyph="{StaticResource Icon.Settings}" />
+                    </NavigationViewItem.Icon>
+                </NavigationViewItem>
+                <NavigationViewItem x:Uid="SettingsNavHotkeys"
+                                    Tag="Deckle.Settings.HotkeysPage">
+                    <NavigationViewItem.Icon>
+                        <FontIcon Glyph="{StaticResource Icon.Shortcut}" />
                     </NavigationViewItem.Icon>
                 </NavigationViewItem>
                 <NavigationViewItemSeparator />

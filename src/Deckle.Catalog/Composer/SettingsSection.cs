@@ -7,11 +7,11 @@ namespace Deckle.Catalog;
 
 // ── SettingsSection ───────────────────────────────────────────────────────────
 //
-// The flat section block of a settings page (settings design system, decision
-// 11): a title, at most one line of caption, then the cards — the PowerToys
-// SettingsGroup form, with the title 32 px under what precedes it and the cards
-// 8 px under the title. No body paragraph: what a section has to say fits its
-// caption, or belongs to a card's description.
+// The flat section block of a settings page: a title, at most one line of
+// caption, then the cards — the PowerToys SettingsGroup form, with the title
+// 32 px under what precedes it and the cards 8 px under the title. No body
+// paragraph: what a section has to say fits its caption, or belongs to a
+// card's description.
 //
 // A section that holds resettable values carries the section-level reset of the
 // doctrine's three (the value, its group, the surface): the same wheel a card
@@ -28,10 +28,13 @@ namespace Deckle.Catalog;
 [ContentProperty(Name = nameof(Body))]
 public sealed partial class SettingsSection : UserControl
 {
+    private const double TopGap = 28;
+
     private readonly TextBlock _title;
     private readonly TextBlock _caption;
     private readonly Button _reset;
     private readonly Border _bodySlot;
+    private readonly StackPanel _root;
 
     public event RoutedEventHandler? ResetRequested;
 
@@ -45,13 +48,18 @@ public sealed partial class SettingsSection : UserControl
         };
 
         // The reset wheel in the form every card uses: subtle, 32×32, invisible
-        // at rest. The title row is 32 px tall so the wheel adds no height.
+        // at rest. The title row stays the height of its text line (BodyStrong,
+        // 20 px): the wheel overflows 6 px above and below through a negative
+        // margin instead of stretching the row. A 32 px row with the text at
+        // its bottom put 12 px of air over every section title, which Louis
+        // read as a gap too many against Windows Settings (2026-10-14).
         _reset = new Button
         {
             Style = Application.Current.Resources["SubtleButtonStyle"] as Style,
             Width = 32,
             Height = 32,
             Padding = new Thickness(0),
+            Margin = new Thickness(0, -6, 0, -6),
             VerticalAlignment = VerticalAlignment.Center,
             Opacity = 0,
             Visibility = Visibility.Collapsed,
@@ -61,7 +69,7 @@ public sealed partial class SettingsSection : UserControl
         ToolTipService.SetToolTip(_reset, Loc.Get("SettingsSection_ResetTooltip"));
         _reset.Click += (_, e) => ResetRequested?.Invoke(this, e);
 
-        var titleRow = new Grid { MinHeight = 32 };
+        var titleRow = new Grid();
         titleRow.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
         titleRow.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
         Grid.SetColumn(_title, 0);
@@ -81,11 +89,13 @@ public sealed partial class SettingsSection : UserControl
         _bodySlot = new Border { Margin = new Thickness(0, 8, 0, 0) };
 
         // 28 px above plus the page's 4 px card spacing makes the 32 px gap.
-        var root = new StackPanel { Margin = new Thickness(0, 28, 0, 0) };
-        root.Children.Add(titleRow);
-        root.Children.Add(_caption);
-        root.Children.Add(_bodySlot);
-        Content = root;
+        _root = new StackPanel { Margin = new Thickness(0, TopGap, 0, 0) };
+        _root.Children.Add(titleRow);
+        _root.Children.Add(_caption);
+        _root.Children.Add(_bodySlot);
+        Content = _root;
+
+        Loaded += (_, _) => ApplyTopGap();
 
         // Reveal on the section's hover and the wheel's keyboard focus, like a
         // card's reset: either keeps it shown.
@@ -160,5 +170,30 @@ public sealed partial class SettingsSection : UserControl
     {
         _caption.Text = text ?? string.Empty;
         _caption.Visibility = string.IsNullOrEmpty(text) ? Visibility.Collapsed : Visibility.Visible;
+    }
+
+    // The gap above a section is the 32 px between a card and the next title.
+    // The first section of a page sits under the page header, whose 12 px
+    // bottom margin plus the page's card spacing already place it where a
+    // module's switch card goes: the same 16 px on every page, instead of the
+    // 44 px that stood over the first section and over nothing (2026-10-14).
+    // A sibling that takes no room (collapsed, or an InfoBar that is not open)
+    // does not count as something above.
+    private void ApplyTopGap()
+    {
+        bool underHeader = false;
+        if (VisualTreeHelper.GetParent(this) is Panel panel)
+        {
+            int index = panel.Children.IndexOf(this);
+            for (int i = index - 1; i >= 0; i--)
+            {
+                UIElement sibling = panel.Children[i];
+                if (sibling.Visibility == Visibility.Collapsed) continue;
+                if (sibling is InfoBar { IsOpen: false }) continue;
+                underHeader = sibling is SettingsPageHeader;
+                break;
+            }
+        }
+        _root.Margin = new Thickness(0, underHeader ? 0 : TopGap, 0, 0);
     }
 }

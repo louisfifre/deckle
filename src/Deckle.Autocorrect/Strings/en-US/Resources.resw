@@ -85,25 +85,7 @@
 
   <!-- Master switch -->
   <data name="AutocorrectPage_MasterCard.Header" xml:space="preserve">
-    <value>Enable autocorrect</value>
-  </data>
-  <data name="AutocorrectPage_MasterCard.Description" xml:space="preserve">
-    <value>Master switch. When off, no text is corrected in any app, whatever you've chosen.</value>
-  </data>
-
-  <!-- Navigation cards — the two drill-ins to the child pages. Icon-less
-       SettingsCards, so only .Header / .Description; the chevron says the rest. -->
-  <data name="AutocorrectPage_DomainsCard.Header" xml:space="preserve">
-    <value>Lexical domains</value>
-  </data>
-  <data name="AutocorrectPage_DomainsCard.Description" xml:space="preserve">
-    <value>Teach Deckle the vocabulary of the fields you write about.</value>
-  </data>
-  <data name="AutocorrectPage_AppsCard.Header" xml:space="preserve">
-    <value>Apps enrolled</value>
-  </data>
-  <data name="AutocorrectPage_AppsCard.Description" xml:space="preserve">
-    <value>Where correction runs, app by app.</value>
+    <value>Autocorrect</value>
   </data>
 
   <!-- Excluded words — the settings mirror of the exclusion register. It sits on
@@ -117,13 +99,13 @@
     <value>Excluded words</value>
   </data>
   <data name="AutocorrectPageExclusionsSection.Caption" xml:space="preserve">
-    <value>A word listed here is no longer corrected into, nor left alone when you type it.</value>
+    <value>A word listed here is never produced by a correction, and never corrected when you type it.</value>
   </data>
   <data name="AutocorrectPage_ExcludeCard.Header" xml:space="preserve">
     <value>Exclude a word</value>
   </data>
   <data name="AutocorrectPage_ExcludeCard.Description" xml:space="preserve">
-    <value>An exclusion applies whatever the word came from — a lexical domain or Deckle's own French.</value>
+    <value>Applies to every vocabulary, lexical domains included.</value>
   </data>
   <data name="AutocorrectPage_ExclusionBox.PlaceholderText" xml:space="preserve">
     <value>One word</value>
@@ -143,7 +125,7 @@
     <value>Apps enrolled</value>
   </data>
   <data name="AppsEnrolledPageHeader.Description" xml:space="preserve">
-    <value>Autocorrect runs only where you've allowed it. Deckle offers to enable it the first time a correction could help in a new app.</value>
+    <value>Autocorrect runs only in the apps you allow. Deckle asks the first time a correction could help in a new app.</value>
   </data>
   <data name="AppsEnrolledPageAppsSection.Title" xml:space="preserve">
     <value>Apps</value>
@@ -152,7 +134,7 @@
     <value>Turn correction on or off for each app, or forget one to be asked again.</value>
   </data>
   <data name="AppsEnrolledPage_Empty.Text" xml:space="preserve">
-    <value>No apps yet. Deckle will offer to turn autocorrect on the first time a correction could help in an app — your choices show up here.</value>
+    <value>No apps yet. Deckle will offer to turn autocorrect on the first time a correction could help in an app. Your choices show up here.</value>
   </data>
   <data name="AppsEnrolledPage_ForgetButton.ToolTipService.ToolTip" xml:space="preserve">
     <value>Forget this app</value>
@@ -172,7 +154,7 @@
     <value>Lexical domains</value>
   </data>
   <data name="LexicalDomainsPageHeader.Description" xml:space="preserve">
-    <value>Specialized vocabularies that extend correction to the fields you write about. Pick a domain, then enable the languages you write in.</value>
+    <value>Vocabularies for the fields you write about. Pick a domain, then the languages you write in.</value>
   </data>
 
   <!-- One pair per shipped domain, keyed by LexicalDomain.ResourceKey. Built in
@@ -189,13 +171,13 @@
   <!-- A language row names itself: the language as Windows spells it, and how
        many terms turning it on would add. -->
   <data name="LexicalDomainsPage_LanguageRow_Format" xml:space="preserve">
-    <value>{0} — {1:N0} terms</value>
+    <value>{0} ({1:N0} terms)</value>
   </data>
   <!-- The indications block, in prose under the list: what the domain ships and
        what fabrication turned away to keep base corrections working. The counts
        come from each shipped manifest, so the line is formatted at runtime. -->
   <data name="LexicalDomainsPage_Indications_Format" xml:space="preserve">
-    <value>{0:N0} {1} terms shipped — {2:N0} candidates withheld to protect everyday words.</value>
+    <value>{0:N0} {1} terms shipped. {2:N0} candidates withheld to protect everyday words.</value>
   </data>
 
   <!-- Shown instead of the whole section while the master switch is off: no
@@ -205,24 +187,20 @@
     <value>Autocorrect is off, so no vocabulary reaches the corrector. Turn it on in Autocorrect to pick your domains.</value>
   </data>
 
-  <!-- Diagnostics — the module's purpose-specific dataset consents.
-       Decisions and text are independent disk-persistence opt-ins.
-       Keys are flat SettingsCards composed by the SettingsComposer, so they bind
-       .Header / .Description. -->
-  <data name="AutocorrectPageDiagnosticsSection.Title" xml:space="preserve">
-    <value>Diagnostics</value>
-  </data>
+  <!-- The module's dataset consents, composed on Settings > Diagnostics
+       (AutocorrectTelemetryViewModel); their words stay here. Decisions and
+       text are independent disk-persistence opt-ins. -->
   <data name="AutocorrectDecisionsCard.Header" xml:space="preserve">
     <value>Autocorrect decisions</value>
   </data>
   <data name="AutocorrectDecisionsCard.Description" xml:space="preserve">
-    <value>Record every corrected or left-alone word on an enrolled app to autocorrect.decisions.jsonl — its candidates, scores, margins and the rule that decided it. The deep view for tuning the corrector. Includes the words you type.</value>
+    <value>One line per word weighed in an enrolled app, with its candidates, scores and the rule that decided. Includes the words you type.</value>
   </data>
   <data name="AutocorrectTextCard.Header" xml:space="preserve">
     <value>Keep the text I type</value>
   </data>
   <data name="AutocorrectTextCard.Description" xml:space="preserve">
-    <value>Also record each sentence you type in enrolled apps to autocorrect.text.jsonl, verbatim and paired with the corrected form, to build a corpus of your own writing and mistakes. Heavier: a full record of typed input. Password fields, paste and dictation are never recorded.</value>
+    <value>Each sentence you type in enrolled apps, verbatim, paired with its corrected form. Password fields, paste and dictation are never recorded.</value>
   </data>
   <!-- Rail labels: the module's own entry, then its two nested children. -->
   <data name="SettingsModuleNavLabel" xml:space="preserve">

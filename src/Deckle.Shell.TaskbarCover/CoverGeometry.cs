@@ -20,20 +20,39 @@ public enum TaskbarEdge
 // the band, opaque again at the zone's outer boundary.
 public static class CoverGeometry
 {
-    // Depth of the approach zone, as a multiple of the band thickness,
-    // measured inward from the anchored screen edge with the band included.
+    // Depth of the approach zone at the Standard level, as a multiple of the
+    // band thickness, measured inward from the anchored screen edge with the
+    // band included. The overloads without a level keep reading it.
     public const int ApproachZoneFactor = 4;
+
+    // The zone depth of each named level, in band thicknesses rather than
+    // pixels, so a level feels the same on a thin and a thick taskbar.
+    // Standard is the former fixed factor: the default changes nothing. Near
+    // and Far sit two thicknesses either side of it, a symmetric first guess
+    // nobody has judged on screen yet: provisional until Louis checks them.
+    // The fade starts (factor - 1) thicknesses before the band (Opacity), the
+    // figure the page's option labels show. A number outside the enum (the converter accepts integers from a
+    // hand-edited settings file) falls back to Standard.
+    public static int ZoneFactor(ApproachDistance level) => level switch
+    {
+        ApproachDistance.Near => 2,
+        ApproachDistance.Far  => 6,
+        _                     => ApproachZoneFactor,
+    };
 
     public static int Thickness(NativeMethods.RECT band, TaskbarEdge edge)
         => edge is TaskbarEdge.Left or TaskbarEdge.Right
             ? band.right - band.left
             : band.bottom - band.top;
 
+    public static NativeMethods.RECT ApproachZone(NativeMethods.RECT band, TaskbarEdge edge)
+        => ApproachZone(band, edge, ApproachDistance.Standard);
+
     // The approach zone spans only the band's extent along the edge: a cursor
     // near the same screen edge on another monitor stays out of it.
-    public static NativeMethods.RECT ApproachZone(NativeMethods.RECT band, TaskbarEdge edge)
+    public static NativeMethods.RECT ApproachZone(NativeMethods.RECT band, TaskbarEdge edge, ApproachDistance level)
     {
-        int depth = ApproachZoneFactor * Thickness(band, edge);
+        int depth = ZoneFactor(level) * Thickness(band, edge);
         return edge switch
         {
             TaskbarEdge.Left   => new() { left = band.left,           top = band.top,            right = band.left + depth, bottom = band.bottom },
@@ -62,10 +81,13 @@ public static class CoverGeometry
     // Smoothstep over the zone's span beyond the band, the same curve as the
     // HUD's proximity fade, so both surfaces ease the same way.
     public static double Opacity(NativeMethods.RECT band, TaskbarEdge edge, POINT p)
-    {
-        if (!Contains(ApproachZone(band, edge), p)) return 1.0;
+        => Opacity(band, edge, p, ApproachDistance.Standard);
 
-        int span = (ApproachZoneFactor - 1) * Thickness(band, edge);
+    public static double Opacity(NativeMethods.RECT band, TaskbarEdge edge, POINT p, ApproachDistance level)
+    {
+        if (!Contains(ApproachZone(band, edge, level), p)) return 1.0;
+
+        int span = (ZoneFactor(level) - 1) * Thickness(band, edge);
         if (span <= 0) return 1.0;
 
         double t = (double)DistanceToBand(band, edge, p) / span;

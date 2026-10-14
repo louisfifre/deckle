@@ -41,8 +41,7 @@
 
                         <controls:SettingsCard x:Name="AudioInputCard"
                                                x:Uid="GeneralMicrophoneCard"
-                                               Tag="GeneralMicrophoneCard"
-                                               HeaderIcon="{ui:FontIcon Glyph={StaticResource Icon.Microphone}}">
+                                               Tag="GeneralMicrophoneCard">
                             <ComboBox x:Name="AudioInputCombo"
                                       MinWidth="240"
                                       SelectionChanged="AudioInputCombo_SelectionChanged" />
@@ -64,8 +63,7 @@
                              nothing is switched on for them. -->
                         <controls:SettingsCard x:Name="MicCheckCard"
                                                x:Uid="RecordingPageMicCheckCard"
-                                               Tag="RecordingPageMicCheckCard"
-                                               HeaderIcon="{ui:FontIcon Glyph={StaticResource Icon.VoiceLevel}}">
+                                               Tag="RecordingPageMicCheckCard">
                             <Button x:Uid="RecordingPageMicCheckButton"
                                     MinWidth="120"
                                     Command="{x:Bind ViewModel.MeasureMicCommand}" />
@@ -74,7 +72,8 @@
                         <InfoBar x:Uid="RecordingPageMicCheckListening"
                                  IsClosable="False"
                                  Severity="Informational"
-                                 IsOpen="{x:Bind ViewModel.IsMeasuringMic, Mode=OneWay}">
+                                 IsOpen="{x:Bind ViewModel.IsMeasuringMic, Mode=OneWay}"
+                                 catalog:InfoBarLayout.CollapseWhenClosed="True">
                             <InfoBar.Content>
                                 <ProgressRing IsActive="True" Width="20" Height="20"
                                               HorizontalAlignment="Left" Margin="0,0,0,12" />
@@ -84,26 +83,29 @@
                         <InfoBar x:Uid="RecordingPageMicAdviceRecommended"
                                  IsClosable="False" Severity="Success"
                                  IsOpen="{x:Bind ViewModel.AdviceRecommended, Mode=OneWay}"
-                                 Message="{x:Bind ViewModel.MicResultDetail, Mode=OneWay}" />
+                                 Message="{x:Bind ViewModel.MicResultDetail, Mode=OneWay}"
+                                 catalog:InfoBarLayout.CollapseWhenClosed="True" />
                         <InfoBar x:Uid="RecordingPageMicAdviceMarginal"
                                  IsClosable="False" Severity="Warning"
                                  IsOpen="{x:Bind ViewModel.AdviceMarginal, Mode=OneWay}"
-                                 Message="{x:Bind ViewModel.MicResultDetail, Mode=OneWay}" />
+                                 Message="{x:Bind ViewModel.MicResultDetail, Mode=OneWay}"
+                                 catalog:InfoBarLayout.CollapseWhenClosed="True" />
                         <InfoBar x:Uid="RecordingPageMicAdviceNotNeeded"
                                  IsClosable="False" Severity="Informational"
                                  IsOpen="{x:Bind ViewModel.AdviceNotNeeded, Mode=OneWay}"
-                                 Message="{x:Bind ViewModel.MicResultDetail, Mode=OneWay}" />
+                                 Message="{x:Bind ViewModel.MicResultDetail, Mode=OneWay}"
+                                 catalog:InfoBarLayout.CollapseWhenClosed="True" />
                         <InfoBar x:Uid="RecordingPageMicAdviceError"
                                  IsClosable="False" Severity="Error"
-                                 IsOpen="{x:Bind ViewModel.AdviceError, Mode=OneWay}" />
+                                 IsOpen="{x:Bind ViewModel.AdviceError, Mode=OneWay}"
+                                 catalog:InfoBarLayout.CollapseWhenClosed="True" />
 
                         <!-- Listening test: one take played back on the default output
                              device in four pre-processing strengths. Nothing saved,
                              nothing transcribed. -->
                         <controls:SettingsCard x:Name="ListeningTestCard"
                                                x:Uid="RecordingPageListeningTestCard"
-                                               Tag="RecordingPageListeningTestCard"
-                                               HeaderIcon="{ui:FontIcon Glyph={StaticResource Icon.Transport.Play}}">
+                                               Tag="RecordingPageListeningTestCard">
                             <Button x:Uid="RecordingPageListeningRecordButton"
                                     MinWidth="120"
                                     Command="{x:Bind ViewModel.RecordListeningTakeCommand}" />
@@ -112,7 +114,8 @@
                         <InfoBar x:Uid="RecordingPageListeningRecording"
                                  IsClosable="False"
                                  Severity="Informational"
-                                 IsOpen="{x:Bind ViewModel.IsRecordingListeningTake, Mode=OneWay}">
+                                 IsOpen="{x:Bind ViewModel.IsRecordingListeningTake, Mode=OneWay}"
+                                 catalog:InfoBarLayout.CollapseWhenClosed="True">
                             <InfoBar.Content>
                                 <ProgressRing IsActive="True" Width="20" Height="20"
                                               HorizontalAlignment="Left" Margin="0,0,0,12" />
@@ -142,25 +145,14 @@
                         <InfoBar x:Uid="RecordingPageListeningError"
                                  IsClosable="False"
                                  Severity="Error"
-                                 IsOpen="{x:Bind ViewModel.ListeningTestFailed, Mode=OneWay}" />
-
-                        <!-- Voice level window, composed. The master toggle reads "set
-                             the window manually", so it projects the inverse of
-                             LevelWindowAutoCalibration. The VM setters push the sliders
-                             live into AudioLevelMapper. -->
-                        <StackPanel x:Name="VoiceLevelHost"
-                                    Spacing="{StaticResource SettingsCardSpacing}" />
+                                 IsOpen="{x:Bind ViewModel.ListeningTestFailed, Mode=OneWay}"
+                                 catalog:InfoBarLayout.CollapseWhenClosed="True" />
                     </StackPanel>
                 </catalog:SettingsSection>
 
-                <!-- ── Diagnostics ─────────────────────────────────────────── -->
-                <!-- The microphone-telemetry opt-in sits here because it observes
-                     this module's capture pipeline. A privacy opt-in, so the
-                     section has no reset. -->
-                <catalog:SettingsSection x:Uid="RecordingPageTelemetrySection">
-                    <StackPanel x:Name="TelemetryHost"
-                                Spacing="{StaticResource SettingsCardSpacing}" />
-                </catalog:SettingsSection>
+                <!-- The microphone-telemetry opt-in lives on Settings > Diagnostics,
+                     the one editor of what Deckle records
+                     (RecordingTelemetryViewModel, 2026-10-14). -->
 
             </StackPanel>
         </Grid>

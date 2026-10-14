@@ -5,14 +5,13 @@ namespace Deckle.Catalog;
 
 // The default of a setting as the words its reset tooltip shows ("Reset to
 // 0.50", "Reset to 250 ms", "Reset to No limit"). The description of a card no
-// longer states the default (settings design system, decision 13), so the
-// tooltip is the one place the user reads it, and it must read exactly like
-// the control beside it: the magnitude on its display grain with its unit, the
-// choice by its option label, the chord as Windows writes it. Pure formatting,
-// kept apart from the WinUI composer so each form can be tested without a
-// control. A null result means the default has no readable form (an empty
-// text, an option the set no longer exposes) and the composer falls back to the
-// generic "Reset to default".
+// longer states the default, so the tooltip is the one place the user reads
+// it, and it must read exactly like the control beside it: the magnitude on its
+// display grain with its unit, the choice by its option label, the chord as
+// Windows writes it. Pure formatting, kept apart from the WinUI composer so each
+// form can be tested without a control. A null result means the default has no
+// readable form (an empty text, an option the set no longer exposes) and the
+// composer falls back to the generic "Reset to default".
 public static class DefaultValueText
 {
     // The magnitude written as its field shows it: snapped to the display grain,

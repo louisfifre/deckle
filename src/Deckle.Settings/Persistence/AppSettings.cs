@@ -46,7 +46,8 @@ public sealed class PasteSettings
     public bool AutoPasteEnabled { get; set; } = false;
 }
 
-// Theme = "System" | "Light" | "Dark".
+// Theme = "System" | "Light" | "Dark". A ShowDescriptions key in an older
+// file is ignored: the Info toggle it drove is gone (2026-10-14).
 public sealed class AppearanceSettings
 {
     public string Theme { get; set; } = "System";

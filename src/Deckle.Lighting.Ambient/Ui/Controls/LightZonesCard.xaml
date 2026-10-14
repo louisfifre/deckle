@@ -5,6 +5,7 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:controls="using:CommunityToolkit.WinUI.Controls"
     xmlns:ui="using:CommunityToolkit.WinUI"
+    xmlns:catalog="using:Deckle.Catalog"
     Visibility="Collapsed">
 
     <!-- One SettingsCard per light of the selected Hue group, built in
@@ -14,8 +15,7 @@
     <controls:SettingsExpander x:Name="LightsExpander"
                                x:Uid="AmbientLightsExpander"
                                Tag="AmbientLightsExpander"
-                               IsExpanded="True"
-                               HeaderIcon="{ui:FontIcon Glyph={StaticResource Icon.LightbulbFilled}}">
+                               IsExpanded="True">
         <ProgressRing x:Name="ResolvingRing"
                       Width="20"
                       Height="20"

@@ -13,13 +13,8 @@ public static class SettingsSearch
         },
         new SettingSearchEntry
         {
-            LabelKey = "PrecisionScrollPage_BehaviorSection",
+            LabelKey = "PrecisionScrollPage_DistancePerDetentCard",
             Keywords = ["distance", "wheel step", "sensitivity"],
-        },
-        new SettingSearchEntry
-        {
-            LabelKey = "PrecisionScrollPage_CalibrationSection",
-            Keywords = ["first step", "pacing", "release", "cadence", "quiet period"],
         },
     ];
 }

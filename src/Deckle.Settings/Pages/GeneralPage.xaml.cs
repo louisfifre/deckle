@@ -17,57 +17,45 @@ public sealed partial class GeneralPage : Page
 {
     public GeneralViewModel ViewModel { get; } = new();
 
+    // The data folder's path line, under the card's description: the form
+    // the composer gives every folder card, attached here because this card
+    // is hand-authored (its Move runs the relocation pre-flight below).
+    private readonly TextBlock _dataFolderPath;
+
     public GeneralPage()
     {
         InitializeComponent();
         NavigationCacheMode = NavigationCacheMode.Required;
 
-        ComposeHotkeysSection();
+        _dataFolderPath = FolderCardDescription.Attach(
+            DataFolderCard, Loc.Get("GeneralDataFolderCard/Description"));
+
         ComposeAppearanceSection();
         ComposeStartupSection();
         ComposeUpdatesSection();
         ComposeApplicationDataSection();
 
         foreach (var composer in new[]
-                 { _hotkeysComposer, _appearanceComposer, _startupComposer, _updatesComposer, _applicationDataComposer })
+                 { _appearanceComposer, _startupComposer, _updatesComposer, _applicationDataComposer })
             composer!.DirtyChanged += (_, _) => GateResetAll();
 
         LoadAndSync();
     }
 
-    // ── Composed Hotkeys section ──────────────────────────────────────────────
+    // ── Composed top cards: theme, then start with Windows ────────────────────
     //
-    // Each card is hidden when the App did not build its action. The App rebinds
-    // the global hotkeys itself when the saved settings change.
-    private SettingsComposer? _hotkeysComposer;
-
-    private void ComposeHotkeysSection()
-    {
-        _hotkeysComposer = new SettingsComposer(HotkeysHost, ViewModel);
-        _hotkeysComposer.DirtyChanged += (_, _) =>
-            HotkeysSection.IsResetEnabled = _hotkeysComposer.IsDirty();
-        _hotkeysComposer.Compose(ViewModel.HotkeySettings);
-    }
-
-    // ── Composed Appearance section ───────────────────────────────────────────
-    //
-    // Every composer is created before LoadAndSync so its subscription catches
-    // Load()'s PropertyChanged, and held in a field so it lives as long as the
-    // cached page.
+    // Both compose into TopHost, under no section title (one card each earns
+    // no heading). Every composer is created before LoadAndSync so its
+    // subscription catches Load()'s PropertyChanged, and held in a field so it
+    // lives as long as the cached page.
     private SettingsComposer? _appearanceComposer;
 
     private void ComposeAppearanceSection()
     {
-        _appearanceComposer = new SettingsComposer(AppearanceHost, ViewModel);
-        // Subscribed before Compose so its closing RefreshAll lands the initial
-        // gate too.
-        _appearanceComposer.DirtyChanged += (_, _) =>
-            AppearanceSection.IsResetEnabled = _appearanceComposer.IsDirty();
+        _appearanceComposer = new SettingsComposer(TopHost, ViewModel);
         _appearanceComposer.Compose(ViewModel.AppearanceSettings);
     }
 
-    // ── Composed Startup section ──────────────────────────────────────────────
-    //
     // The "start with Windows" toggle's registry write and revert-on-refusal live
     // in the VM setter, so it composes like any toggle: the composer's
     // subscription reflects the setter's own revert.
@@ -75,9 +63,7 @@ public sealed partial class GeneralPage : Page
 
     private void ComposeStartupSection()
     {
-        _startupComposer = new SettingsComposer(StartupHost, ViewModel);
-        _startupComposer.DirtyChanged += (_, _) =>
-            StartupSection.IsResetEnabled = _startupComposer.IsDirty();
+        _startupComposer = new SettingsComposer(TopHost, ViewModel);
         _startupComposer.Compose(ViewModel.StartupSettings);
     }
 
@@ -96,18 +82,35 @@ public sealed partial class GeneralPage : Page
     //
     // The "Application data" section has no section reset, so no section gating
     // here; the composed card carries its own inline reset.
+    //
+    // The card lives in the backup fold's Items, which accepts SettingsCards
+    // only: the SettingsExpander applies its SettingsCard item style to every
+    // item when the fold opens, and a StackPanel host there threw at that
+    // moment (the crash of 2026-10-14 19:09). The composer needs a Panel, so
+    // it composes into a panel of its own, then the cards move into the fold
+    // ahead of the bespoke information card. The composer keeps driving them:
+    // it holds the controls, not the panel.
     private SettingsComposer? _applicationDataComposer;
 
     private void ComposeApplicationDataSection()
     {
-        _applicationDataComposer = new SettingsComposer(BackupLocationHost, ViewModel);
+        var host = new StackPanel();
+        _applicationDataComposer = new SettingsComposer(host, ViewModel);
         _applicationDataComposer.Compose(ViewModel.ApplicationDataSettings);
+
+        for (int i = host.Children.Count - 1; i >= 0; i--)
+        {
+            UIElement card = host.Children[i];
+            host.Children.RemoveAt(i);
+            BackupExpander.Items.Insert(0, card);
+        }
     }
 
     // NavigationCacheMode.Required reuses the page instance — the constructor
     // and Loaded only fire once. Without this override, navigating away then
-    // back would show stale values, and PushToSettings() (which writes ALL VM
-    // properties) would silently overwrite any changes made from another page.
+    // back would show stale values, and PushToSettings() (which writes every
+    // value this page shows) would silently overwrite a change made elsewhere,
+    // such as the theme from the tray.
     protected override void OnNavigatedTo(NavigationEventArgs e)
     {
         base.OnNavigatedTo(e);
@@ -119,7 +122,7 @@ public sealed partial class GeneralPage : Page
     private void LoadAndSync()
     {
         ViewModel.Load();
-        DataFolderPathText.Text = AppPaths.UserDataRoot;
+        FolderCardDescription.Show(_dataFolderPath, AppPaths.UserDataRoot);
         // The move rides the App's relocate hook; unwired (tests, partial
         // hosts) the affordance simply isn't there.
         MoveDataFolderButton.Visibility = SettingsHost.RelocateDataRoot is null
@@ -156,7 +159,6 @@ public sealed partial class GeneralPage : Page
     private void GateResetAll()
     {
         Header.IsResetAllEnabled =
-            (_hotkeysComposer?.IsDirty() ?? false) ||
             (_appearanceComposer?.IsDirty() ?? false) ||
             (_startupComposer?.IsDirty() ?? false) ||
             (_updatesComposer?.IsDirty() ?? false) ||
@@ -165,7 +167,6 @@ public sealed partial class GeneralPage : Page
 
     private void ResetAll_Click(object sender, RoutedEventArgs e)
     {
-        _hotkeysComposer?.ResetAll();
         _appearanceComposer?.ResetAll();
         _startupComposer?.ResetAll();
         _updatesComposer?.ResetAll();
@@ -177,30 +178,10 @@ public sealed partial class GeneralPage : Page
     // ── Reset per section ───────────────────────────────────────────────────
     //
     // Each value goes back to its default through its own setter, which carries
-    // the side effects (Appearance's ApplyTheme in OnThemeChanged, Startup's
+    // the side effects (the theme's ApplyTheme in OnThemeChanged, the startup
     // registry write in OnAutostartEnabledChanged), so a handler only triggers
-    // the reset and logs it.
-
-    private void ResetHotkeys_Click(object sender, RoutedEventArgs e)
-    {
-        _hotkeysComposer?.ResetAll();
-        DeckleSettingsUxSource.Log.SectionReset();
-        DeckleSettingsUxSource.Log.SectionResetDetail("Hotkeys");
-    }
-
-    private void ResetAppearance_Click(object sender, RoutedEventArgs e)
-    {
-        _appearanceComposer?.ResetAll();
-        DeckleSettingsUxSource.Log.SectionReset();
-        DeckleSettingsUxSource.Log.SectionResetDetail("Appearance");
-    }
-
-    private void ResetStartup_Click(object sender, RoutedEventArgs e)
-    {
-        _startupComposer?.ResetAll();
-        DeckleSettingsUxSource.Log.SectionReset();
-        DeckleSettingsUxSource.Log.SectionResetDetail("Startup");
-    }
+    // the reset and logs it. The top cards have no section, so no section
+    // reset: each keeps its own, and Reset all covers them.
 
     private void ResetUpdates_Click(object sender, RoutedEventArgs e)
     {

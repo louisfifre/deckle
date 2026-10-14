@@ -3,7 +3,6 @@ using System.Collections.ObjectModel;
 using System.Linq;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
-using Deckle.Diagnostics.Telemetry;
 
 namespace Deckle.Autocorrect;
 
@@ -27,30 +26,12 @@ public sealed partial class AutocorrectViewModel : ObservableObject
     [ObservableProperty]
     public partial string NewExclusion { get; set; } = string.Empty;
 
-    // ── Observability ────────────────────────────────────────────────────────
-    //
-    // The module owns only its purpose-specific dataset consents here.
-    // Operational-detail admission is edited centrally on DiagnosticsPage.
-
-    // Autocorrect decisions — the per-word decision dataset
-    // (autocorrect.decisions.jsonl). Consent-gated, off by default.
-    [ObservableProperty]
-    public partial bool AutocorrectDecisions { get; set; }
-
-    // Autocorrect text — one consent envelope over the two verbatim captures:
-    // the typed-sentence corpus (autocorrect.text.jsonl) and, on enrolled
-    // surfaces only, the typing stream (autocorrect.stream.jsonl). The heaviest
-    // text capture; consent-gated, independent of Decisions, off by default.
-    [ObservableProperty]
-    public partial bool AutocorrectText { get; set; }
+    // The module's dataset consents live in AutocorrectTelemetryViewModel, its
+    // contribution to the Diagnostics page.
 
     public AutocorrectViewModel()
     {
         _isSyncing = true;
-
-        AutocorrectDecisions = false;
-        AutocorrectText = false;
-
         Load();
     }
 
@@ -61,10 +42,6 @@ public sealed partial class AutocorrectViewModel : ObservableObject
         {
             var settings = AutocorrectSettingsService.Instance.Current;
             Enabled = settings.Enabled;
-
-            var telemetry = TelemetrySettingsService.Instance.Current;
-            AutocorrectDecisions = telemetry.AutocorrectDecisions;
-            AutocorrectText = telemetry.AutocorrectText;
 
             ExcludedWords.Clear();
             foreach (string word in settings.ExcludedWords)
@@ -80,26 +57,6 @@ public sealed partial class AutocorrectViewModel : ObservableObject
     {
         if (_isSyncing) return;
         AutocorrectSettingsService.Instance.SetEnabled(value);
-    }
-
-    partial void OnAutocorrectDecisionsChanged(bool value)
-    {
-        if (_isSyncing) return;
-        PushTelemetryToSettings();
-    }
-
-    partial void OnAutocorrectTextChanged(bool value)
-    {
-        if (_isSyncing) return;
-        PushTelemetryToSettings();
-    }
-
-    private void PushTelemetryToSettings()
-    {
-        var telemetry = TelemetrySettingsService.Instance.Current;
-        telemetry.AutocorrectDecisions = AutocorrectDecisions;
-        telemetry.AutocorrectText = AutocorrectText;
-        TelemetrySettingsService.Instance.Save();
     }
 
     // The service owns the normalization and answers with the form it

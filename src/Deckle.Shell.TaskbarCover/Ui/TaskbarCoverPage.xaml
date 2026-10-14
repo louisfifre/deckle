@@ -19,8 +19,20 @@
                                             x:Uid="TaskbarCoverPageHeader"
                                             ResetAllRequested="ResetAll_Click" />
 
-                <StackPanel x:Name="SettingsHost"
+                <!-- The module switch, first and alone, in its own host so the
+                     section below keeps its distance from it (the same shape as
+                     Precision scroll). -->
+                <StackPanel x:Name="SwitchHost"
                             Spacing="{StaticResource SettingsCardSpacing}" />
+
+                <!-- ── Reveal ────────────────────────────────────────────────── -->
+                <!-- Hidden with its title while the cover is off (mask, never
+                     grey); the code-behind follows ViewModel.Enabled. -->
+                <catalog:SettingsSection x:Name="RevealSection"
+                                         x:Uid="TaskbarCoverPageRevealSection">
+                    <StackPanel x:Name="RevealHost"
+                                Spacing="{StaticResource SettingsCardSpacing}" />
+                </catalog:SettingsSection>
             </StackPanel>
         </Grid>
     </ScrollViewer>

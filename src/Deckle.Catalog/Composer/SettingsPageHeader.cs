@@ -4,17 +4,20 @@ using System.Linq;
 using Microsoft.UI.Text;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
+using Microsoft.UI.Xaml.Controls.Primitives;
 using Microsoft.UI.Xaml.Media;
 
 namespace Deckle.Catalog;
 
 // ── SettingsPageHeader ────────────────────────────────────────────────────────
 //
-// The one header block every settings page opens with (settings design system,
-// decisions 9 and 15): a breadcrumb in place of the title, one line of
-// description, an optional link, and Reset all on the trailing edge. Built in
-// code like the composer's cards, so it lives on the Catalog floor that every
-// settings-bearing module already references and no page draws its own.
+// The one header block every settings page opens with: a breadcrumb in place of
+// the title, one line of description, an optional link, and Reset all on the
+// trailing edge. Built in code like the composer's cards, so it lives on the
+// Catalog floor that every settings-bearing module already references and no
+// page draws its own. The Info toggle that once hid every card description
+// is gone: the descriptions are always shown, as Windows Settings shows them
+// (Louis, 2026-10-14).
 //
 // The breadcrumb is the page's path in the rail — the module, then the page —
 // resolved from the shell through SettingsNavigation.BreadcrumbFor once the
@@ -43,10 +46,21 @@ public sealed partial class SettingsPageHeader : UserControl
     {
         // The breadcrumb reads as the page title: TitleTextBlockStyle's size and
         // weight, applied through the control's lightweight-styling resources
-        // rather than a retemplate. The chevron scales with it.
+        // rather than a retemplate. The chevron scales with it, and gets room on
+        // both sides (the stock padding is 2 px) and a top padding: the glyph is
+        // centred on the item's line box, which puts it above the visual middle
+        // of 28 px lowercase text, and the asymmetric padding lowers it by half
+        // its own height (2026-10-14).
+        // The brushes come as a dictionary merged into the header's Resources,
+        // not as any element's Resources themselves: a dictionary with Source
+        // set refuses local values, and the sizes below are set locally
+        // (2026-10-14, every page threw at navigation when the compiled
+        // dictionary was the Resources).
+        Resources.MergedDictionaries.Add(_headerBrushes);
         _crumbs.Resources["BreadcrumbBarItemThemeFontSize"] = 28d;
         _crumbs.Resources["BreadcrumbBarItemFontWeight"] = FontWeights.SemiBold;
         _crumbs.Resources["BreadcrumbBarChevronFontSize"] = 16d;
+        _crumbs.Resources["BreadcrumbBarChevronPadding"] = new Thickness(8, 8, 8, 0);
         _crumbs.VerticalAlignment = VerticalAlignment.Center;
         _crumbs.ItemClicked += OnCrumbClicked;
 
@@ -191,6 +205,28 @@ public sealed partial class SettingsPageHeader : UserControl
     public bool ConfirmsReset { get; set; } = true;
 
     // ── Behaviour ────────────────────────────────────────────────────────────
+
+    // The stock control paints every segment in the primary text colour and
+    // only greys one on hover, so a parent read like the current page and a
+    // click on it looked like nothing. Windows Settings does the reverse: the
+    // parents in the secondary colour, the current page in the primary, and a
+    // parent lights up to primary under the pointer because it leads somewhere.
+    //
+    // The overrides are aliases in theme dictionaries (Default, Light,
+    // HighContrast), the documented lightweight-styling form, not brushes copied
+    // out of Application.Current.Resources: that lookup follows the application
+    // theme, while Deckle applies its Light/Dark choice on each window's root
+    // (FrameworkElement.RequestedTheme), so a copied brush took the wrong
+    // theme's grey whenever Deckle's theme differed from Windows'. In theme
+    // dictionaries, the template's ThemeResource lookups resolve against the
+    // element's own theme and follow it when it changes. The dictionary is
+    // compiled XAML (Themes/SettingsPageHeaderBrushes.xaml), not a XamlReader
+    // string: XamlReader.Load parses without Application.Resources in sight, so
+    // the StaticResource aliases would fail at parse time, in this constructor.
+    private readonly ResourceDictionary _headerBrushes = new()
+    {
+        Source = new Uri("ms-appx:///Deckle.Catalog/Themes/SettingsPageHeaderBrushes.xaml"),
+    };
 
     private void ResolveBreadcrumb()
     {

@@ -25,19 +25,6 @@ public static class SettingsSearch
             Keywords = ["spelling", "typo", "accents", "correction"],
         },
 
-        // The drill-in cards are findable in their own right: a search for "apps"
-        // should land on the card that leads there, not only on the destination page.
-        new SettingSearchEntry
-        {
-            LabelKey = "AutocorrectPage_DomainsCard",
-            Keywords = ["domain", "vocabulary", "dictionary", "lexicon", "jargon", "terms"],
-        },
-        new SettingSearchEntry
-        {
-            LabelKey = "AutocorrectPage_AppsCard",
-            Keywords = ["application", "program", "per-app", "enrol", "enroll", "forget"],
-        },
-
         // The exclusion register sits on this page, not on a child, because an
         // exclusion holds against every domain and every app at once. Its title is
         // a SettingsSection title the index does not probe, so the label is
@@ -48,16 +35,22 @@ public static class SettingsSearch
             LiteralLabel = "Excluded words",
             Keywords = ["exclude", "exception", "ignore", "never correct", "stop correcting", "word"],
         },
+    ];
 
+    // The module's two dataset consents, composed on Settings > Diagnostics
+    // (AutocorrectTelemetryViewModel); registered under that page with this
+    // module's assembly, where their words live.
+    public static IReadOnlyList<SettingSearchEntry> TelemetryEntries { get; } =
+    [
         new SettingSearchEntry
         {
             LabelKey = "AutocorrectDecisionsCard",
-            Keywords = ["diagnostics", "telemetry", "logging"],
+            Keywords = ["diagnostics", "telemetry", "logging", "autocorrect"],
         },
         new SettingSearchEntry
         {
             LabelKey = "AutocorrectTextCard",
-            Keywords = ["corpus", "telemetry", "diagnostics", "keystrokes"],
+            Keywords = ["corpus", "telemetry", "diagnostics", "keystrokes", "autocorrect"],
         },
     ];
 
@@ -65,9 +58,8 @@ public static class SettingsSearch
     public static IReadOnlyList<SettingSearchEntry> LexicalDomainsEntries { get; } =
     [
         // The label names the section, not the page: "Lexical domains" is already
-        // the drill-in card on AutocorrectPage, the rail entry and this page's own
-        // title, so reusing it here would put two hits with the same words in the
-        // list.
+        // the rail entry and this page's own title, so reusing it here would put
+        // two hits with the same words in the list.
         new SettingSearchEntry
         {
             LabelKey = "LexicalDomainsPage_Section_Domains",

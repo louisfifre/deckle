@@ -7,6 +7,7 @@ using Deckle.Shell;
 using Deckle.Vision;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
+using Microsoft.UI.Xaml.Input;
 
 namespace Deckle.Lighting.Ambient;
 
@@ -15,12 +16,15 @@ namespace Deckle.Lighting.Ambient;
 //
 // Surface : most cards are composed by SettingsComposer from the manifests in
 // AmbientViewModel.Settings.cs, one composer per host panel (StateHost,
-// BehaviourHost, TuningHost, CaptureHost). Five parts stay hand-authored
+// BehaviourHost, TuningHost, CaptureHost). Four parts stay hand-authored
 // because the composer cannot express them, each marked "bespoke" in the
-// XAML: the NotPaired InfoBar, the live preview (AmbientPreviewCard), the
-// per-light rows (LightZonesCard), the display picker (runtime labels) and
-// the Hue bridge expander (AmbientPage.Hue.cs). The brightness curve is a
-// composed Curve card inside the preset fold.
+// XAML: the NotPaired InfoBar, the per-light rows (LightZonesCard), the
+// display picker (runtime labels) and the Hue bridge expander
+// (AmbientPage.Hue.cs). The brightness curve is a composed Curve card, first
+// of the fine-tuning cards. The live preview (AmbientPreviewCard) sits in a
+// pane at the right of the page, behind a splitter, so it stays in view
+// while the values change; the Live preview tile of the Fine tuning section
+// opens that pane and the preview's Close closes it (SyncPreviewPane).
 //
 // Sync : the view model writes every edit straight to AmbientSettingsService
 // and saves. The page observes AmbientSettingsService.Changed and reloads the
@@ -58,8 +62,88 @@ public sealed partial class AmbientPage : Page
         ViewModel.PropertyChanged += OnViewModelPropertyChanged;
         Header.IsResetAllEnabled = ViewModel.CanReset;
 
+        // The XAML column carries the pane's default width and floor; read
+        // once, then the pane opens and closes on the user's word
+        // (SyncPreviewPane). Closed until the tile is clicked.
+        _paneWidth    = PreviewColumn.Width;
+        _paneMinWidth = PreviewColumn.MinWidth;
+        SyncPreviewPane();
+        WireSplitterReveal();
+
         Loaded   += AmbientPage_Loaded;
         Unloaded += AmbientPage_Unloaded;
+    }
+
+    // ── Preview pane ───────────────────────────────────────────────────
+    //
+    // The pane is the user's: the Live preview tile under the Fine tuning
+    // title opens it, the preview's own Close closes it, and nothing else
+    // does; the control inside says on its own whether the engine gives it
+    // something live. The column's width is the user's too, written on the
+    // ColumnDefinition by the splitter at each drag, and kept for the page's
+    // lifetime only: nothing is persisted in this pass.
+
+    private GridLength _paneWidth;
+    private double _paneMinWidth;
+    private bool _paneOpen;
+
+    private void PreviewTile_Click(object sender, RoutedEventArgs e)
+    {
+        _paneOpen = true;
+        SyncPreviewPane();
+    }
+
+    private void Preview_CloseRequested(object sender, RoutedEventArgs e)
+    {
+        _paneOpen = false;
+        SyncPreviewPane();
+    }
+
+    private void SyncPreviewPane()
+    {
+        if (_paneOpen)
+        {
+            PreviewColumn.MinWidth = _paneMinWidth;
+            PreviewColumn.Width    = _paneWidth;
+        }
+        else
+        {
+            // Keep the dragged width before closing, so the pane reopens
+            // where the user left it.
+            if (PreviewColumn.Width.IsAbsolute && PreviewColumn.Width.Value > 0)
+                _paneWidth = PreviewColumn.Width;
+            PreviewColumn.MinWidth = 0;
+            PreviewColumn.Width    = new GridLength(0);
+        }
+
+        var visibility = _paneOpen ? Visibility.Visible : Visibility.Collapsed;
+        PreviewDivider.Visibility  = visibility;
+        PreviewSplitter.Visibility = visibility;
+        PreviewPane.Visibility     = visibility;
+    }
+
+    // The grip shows while the pointer is over the splitter, while it is
+    // pressed and while it holds keyboard focus; at rest the divider line is
+    // the edge. The splitter marks its pointer events handled, so the press
+    // and release are taken with handledEventsToo; the pointer may leave the
+    // 12 px strip mid-drag, so the pressed state keeps the grip until the
+    // release or the capture's loss. Pointer focus does not count: a click
+    // focuses the splitter too, and the grip would stay after the drag.
+    private void WireSplitterReveal()
+    {
+        bool over = false, pressed = false, focused = false;
+        void Update() => PreviewSplitter.IsThumbVisible = over || pressed || focused;
+
+        PreviewSplitter.PointerEntered += (_, _) => { over = true;  Update(); };
+        PreviewSplitter.PointerExited  += (_, _) => { over = false; Update(); };
+        PreviewSplitter.AddHandler(PointerPressedEvent,
+            new PointerEventHandler((_, _) => { pressed = true;  Update(); }), handledEventsToo: true);
+        PreviewSplitter.AddHandler(PointerReleasedEvent,
+            new PointerEventHandler((_, _) => { pressed = false; Update(); }), handledEventsToo: true);
+        PreviewSplitter.AddHandler(PointerCaptureLostEvent,
+            new PointerEventHandler((_, _) => { pressed = false; Update(); }), handledEventsToo: true);
+        PreviewSplitter.GotFocus  += (_, _) => { focused = PreviewSplitter.FocusState == FocusState.Keyboard; Update(); };
+        PreviewSplitter.LostFocus += (_, _) => { focused = false; Update(); };
     }
 
     private void ComposeRegion(Panel host, IReadOnlyList<SettingDescriptor> settings)

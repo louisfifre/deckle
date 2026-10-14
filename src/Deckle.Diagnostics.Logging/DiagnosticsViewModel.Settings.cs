@@ -7,32 +7,34 @@ namespace Deckle.Diagnostics.Logging;
 
 // The page's settings manifest, kept beside the ViewModel that owns the
 // values. SettingsComposer turns each list into SettingsCards; adding or
-// moving a setting edits this list, never a card in XAML.
+// moving a setting edits this list, never a card in XAML. No glyph on any
+// card: the rail carries the page's icon (2026-10-14).
+//
+// The page is the one editor of everything Deckle records about itself: the
+// module-owned datasets (microphone level, dictation latency and corpus,
+// autocorrect decisions and text, trackpad frames) compose into the Telemetry
+// section beside TelemetrySettings, from DiagnosticsRegistry, with their own
+// models. The page sorts that section, folds first, then flat cards.
 public partial class DiagnosticsViewModel
 {
     public IReadOnlyList<SettingDescriptor> LoggingSettings =>
     [
         Setting.Toggle("LoggingAmbientCard",
             () => LogAmbientCaptureActivity,
-            value => LogAmbientCaptureActivity = value,
-            glyph: Glyphs.Lightbulb),
+            value => LogAmbientCaptureActivity = value),
         Setting.Toggle("LoggingTranscriptionCard",
             () => LogTranscriptionActivity,
-            value => LogTranscriptionActivity = value,
-            glyph: Glyphs.Speech),
+            value => LogTranscriptionActivity = value),
         Setting.Toggle("LoggingAutocorrectCard",
             () => LogAutocorrectActivity,
-            value => LogAutocorrectActivity = value,
-            glyph: Glyphs.Language),
+            value => LogAutocorrectActivity = value),
         Setting.Toggle("LoggingInputCard",
             () => LogInputActivity,
             value => LogInputActivity = value,
-            glyph: Glyphs.Mouse,
             defaultValue: () => new LoggingSettings().LogInputActivity),
         Setting.Toggle("LoggingWindowingCard",
             () => LogWindowingActivity,
-            value => LogWindowingActivity = value,
-            glyph: Glyphs.Window),
+            value => LogWindowingActivity = value),
     ];
 
     // The confirmOnEnable gate holds the OFF→ON write behind the consent
@@ -47,29 +49,35 @@ public partial class DiagnosticsViewModel
         Setting.Toggle("GeneralAppLogCard",
             () => ApplicationLogToDisk,
             value => ApplicationLogToDisk = value,
-            glyph: Glyphs.AppLog,
             confirmOnEnable: TelemetryConsent.RequestApplicationLog),
     ];
 
-    // The mouse-wheel dataset opt-in and the shared JSONL root for every
-    // telemetry stream, in their own host: dataset capture and its storage
-    // location belong together, apart from the application-log consent. The
-    // path's reset default is the POCO initializer (empty means
-    // AppPaths.TelemetryDirectory).
+    // The mouse-wheel dataset opt-in, the page's own source in the Telemetry
+    // section. A flat card, so it leads the flat cards, under every module
+    // fold.
     public IReadOnlyList<SettingDescriptor> TelemetrySettings =>
     [
         Setting.Toggle("TelemetryMouseWheelCard",
             () => RecordWheelEvents,
             value => RecordWheelEvents = value,
-            glyph: Glyphs.Mouse,
             defaultValue: () => new Deckle.Input.MouseWheelSettings().RecordEvents),
+    ];
+
+    // The telemetry storage folder, first card of the Folders section that
+    // closes the page, above the diagnostics folder: each place Deckle writes
+    // to sits in one section, after everything that writes there. The override
+    // reaches only what reads CorpusPaths (today the dictation audio WAVs);
+    // the JSONL sinks, trackpad and wheel recorders write under
+    // AppPaths.TelemetryDirectory whatever it holds. The path's reset default
+    // is the POCO initializer (empty means AppPaths.TelemetryDirectory).
+    public IReadOnlyList<SettingDescriptor> TelemetryStorageSettings =>
+    [
         Setting.Path("GeneralStorageFolderCard",
             () => TelemetryStorageDirectory,
             value => TelemetryStorageDirectory = value,
             new PathArgs(
                 FolderPickerMode.Configure,
                 DefaultPath: () => AppPaths.TelemetryDirectory),
-            glyph: Glyphs.Folder,
             defaultValue: () => new TelemetrySettings().StorageDirectory),
     ];
 }

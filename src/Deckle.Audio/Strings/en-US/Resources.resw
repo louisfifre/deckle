@@ -124,7 +124,7 @@
     <value>Recording</value>
   </data>
   <data name="RecordingPageHeader.Description" xml:space="preserve">
-    <value>Microphone selection, maximum recording length, signal pre-processing with a listening test, and voice level window calibration.</value>
+    <value>Microphone, recording length and pre-processing, with a listening test.</value>
   </data>
   <data name="RecordingPageDefaultsSection.Title" xml:space="preserve">
     <value>Defaults</value>
@@ -134,16 +134,13 @@
   <data name="GeneralMicrophoneCard.Header" xml:space="preserve">
     <value>Microphone</value>
   </data>
-  <data name="GeneralMicrophoneCard.Description" xml:space="preserve">
-    <value>Audio input device used for recording.</value>
-  </data>
 
   <!-- Composed maximum-recording-length card (composer label key + Choice option keys) -->
   <data name="RecordingLimitCard.Header" xml:space="preserve">
     <value>Maximum recording length</value>
   </data>
   <data name="RecordingLimitCard.Description" xml:space="preserve">
-    <value>A recording stops on its own when it reaches this length, as if you'd pressed the hotkey. What you recorded is still transcribed.</value>
+    <value>Recording stops on its own at this length and is transcribed as usual.</value>
   </data>
   <data name="RecordingLimitNone.Content" xml:space="preserve">
     <value>No limit</value>
@@ -169,7 +166,7 @@
     <value>Microphone pre-processing</value>
   </data>
   <data name="RecordingPagePreprocessingCard.Description" xml:space="preserve">
-    <value>Lifts and evens out a quiet or uneven microphone before transcription, for better accuracy on soft passages. It only acts when your level is low — a microphone already at a good level passes through untouched.</value>
+    <value>Lifts and evens out a quiet microphone before transcription. A microphone already at a good level passes through untouched.</value>
   </data>
 
   <!-- Microphone level check (x:Uid) -->
@@ -177,22 +174,22 @@
     <value>Microphone level check</value>
   </data>
   <data name="RecordingPageMicCheckCard.Description" xml:space="preserve">
-    <value>Speak for a few seconds. Deckle reads your level, shows where pre-processing would bring it (around -20 dBFS, the range transcription handles best), and tells you whether turning it on is worth it. You decide.</value>
+    <value>Speak for a few seconds. Deckle reads your level and tells you whether pre-processing is worth turning on.</value>
   </data>
   <data name="RecordingPageMicCheckButton.Content" xml:space="preserve">
     <value>Measure</value>
   </data>
   <data name="RecordingPageMicCheckListening.Title" xml:space="preserve">
-    <value>Listening — speak now…</value>
+    <value>Listening. Speak now…</value>
   </data>
   <data name="RecordingPageMicAdviceRecommended.Title" xml:space="preserve">
-    <value>Your microphone is quiet — turning pre-processing on is recommended.</value>
+    <value>Your microphone is quiet. Turning pre-processing on is recommended.</value>
   </data>
   <data name="RecordingPageMicAdviceMarginal.Title" xml:space="preserve">
-    <value>Borderline — pre-processing would help a little.</value>
+    <value>Borderline. Pre-processing would help a little.</value>
   </data>
   <data name="RecordingPageMicAdviceNotNeeded.Title" xml:space="preserve">
-    <value>Your microphone is already at a good level — pre-processing isn't needed.</value>
+    <value>Your microphone is already at a good level. Pre-processing isn't needed.</value>
   </data>
   <data name="RecordingPageMicAdviceError.Title" xml:space="preserve">
     <value>Couldn't read the microphone. Check the device above and try again.</value>
@@ -203,19 +200,19 @@
     <value>Listening test</value>
   </data>
   <data name="RecordingPageListeningTestCard.Description" xml:space="preserve">
-    <value>Record a few seconds, then play them back on your speakers or headphones to hear what pre-processing does to your voice. Nothing is saved or transcribed.</value>
+    <value>Record a few seconds and play them back to hear what pre-processing does. Nothing is saved or transcribed.</value>
   </data>
   <data name="RecordingPageListeningRecordButton.Content" xml:space="preserve">
     <value>Record</value>
   </data>
   <data name="RecordingPageListeningRecording.Title" xml:space="preserve">
-    <value>Recording — speak now…</value>
+    <value>Recording. Speak now…</value>
   </data>
   <data name="RecordingPageListeningPlaybackCard.Header" xml:space="preserve">
     <value>Play back</value>
   </data>
   <data name="RecordingPageListeningPlaybackCard.Description" xml:space="preserve">
-    <value>Off is your raw microphone. On applies pre-processing with your current parameters, whether the toggle above is on or not. 25 % and 75 % blend the two.</value>
+    <value>Off plays the raw microphone, On the pre-processed signal, 25 % and 75 % a blend.</value>
   </data>
   <data name="RecordingPageListeningPlayOff.Content" xml:space="preserve">
     <value>Off</value>
@@ -233,32 +230,6 @@
     <value>Couldn't record or play back. Check the microphone above and your output device, then try again.</value>
   </data>
 
-  <!-- Composed voice-level group + sliders (composer label keys) -->
-  <data name="GeneralVoiceLevelExpander.Header" xml:space="preserve">
-    <value>Set the level window manually</value>
-  </data>
-  <data name="GeneralVoiceLevelExpander.Description" xml:space="preserve">
-    <value>The dBFS range the recording HUD uses to map your microphone signal onto the on-screen level. Leave this off to let auto-calibration set the range from your measured percentiles; turn it on to set the floor, ceiling, and curve yourself.</value>
-  </data>
-  <data name="GeneralVoiceLevelFloorCard.Header" xml:space="preserve">
-    <value>Floor</value>
-  </data>
-  <data name="GeneralVoiceLevelFloorCard.Description" xml:space="preserve">
-    <value>Below this level, the HUD reads silence. Set just under the percentile of your normal pauses (typical: -55 dBFS).</value>
-  </data>
-  <data name="GeneralVoiceLevelCeilingCard.Header" xml:space="preserve">
-    <value>Ceiling</value>
-  </data>
-  <data name="GeneralVoiceLevelCeilingCard.Description" xml:space="preserve">
-    <value>At or above this level, the HUD saturates. Set just below your loudest peaks (typical: -32 dBFS).</value>
-  </data>
-  <data name="GeneralVoiceLevelCurveCard.Header" xml:space="preserve">
-    <value>Curve</value>
-  </data>
-  <data name="GeneralVoiceLevelCurveCard.Description" xml:space="preserve">
-    <value>Shape of the response between floor and ceiling. 1.0 = linear (recommended). Higher = compress quiet, expand loud. Lower = the opposite.</value>
-  </data>
-
   <!-- Audio input device combo (Loc.Get / Loc.Format from code-behind) -->
   <data name="Settings_AudioInput_SystemDefault" xml:space="preserve">
     <value>System default</value>
@@ -267,15 +238,13 @@
     <value>Device {0}</value>
   </data>
 
-  <!-- Diagnostics section — microphone-telemetry opt-in (section header + composed card) -->
-  <data name="RecordingPageTelemetrySection.Title" xml:space="preserve">
-    <value>Diagnostics</value>
-  </data>
+  <!-- Microphone-telemetry opt-in, composed on Settings > Diagnostics
+       (RecordingTelemetryViewModel); its words stay here. -->
   <data name="RecordingMicrophoneTelemetryCard.Header" xml:space="preserve">
     <value>Log microphone level</value>
   </data>
   <data name="RecordingMicrophoneTelemetryCard.Description" xml:space="preserve">
-    <value>At the end of every recording, record the RMS distribution of your microphone (min, percentiles, max in dBFS) to microphone.jsonl in your telemetry folder. Kept on this device. Useful when calibrating the level window.</value>
+    <value>After each recording, the level distribution of your microphone goes to microphone.jsonl. Levels only, no audio.</value>
   </data>
   <data name="SettingsModuleNavLabel" xml:space="preserve">
     <value>Recording</value>

@@ -11,5 +11,10 @@ public static class SettingsSearch
             LabelKey = "TaskbarCoverPage_Group",
             Keywords = ["taskbar", "cover", "hide", "black band", "mouse"],
         },
+        new SettingSearchEntry
+        {
+            LabelKey = "TaskbarCoverPage_ApproachCard",
+            Keywords = ["approach", "distance", "reveal", "hover", "near", "far"],
+        },
     ];
 }

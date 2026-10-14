@@ -23,7 +23,6 @@ public partial class LlmGeneralViewModel
         Setting.Toggle("LlmEnableCard",
             () => Enabled,
             value => Enabled = value,
-            glyph: Glyphs.Lightning,
             defaultValue: () => new LlmSettings().Enabled),
     ];
 
@@ -33,7 +32,6 @@ public partial class LlmGeneralViewModel
             () => OllamaEndpoint,
             value => OllamaEndpoint = value,
             new TextArgs(Placeholder: "http://localhost:11434/api/generate"),
-            glyph: Glyphs.Endpoint,
             // Mask-not-grey: the endpoint hides with the rest of the page when
             // rewriting is off, rather than greying.
             visibleWhen: () => Enabled,

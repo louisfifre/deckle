@@ -84,6 +84,11 @@ public sealed partial class TaskbarCoverHost
             // handler only posts to it. A switch landing before this line is
             // not lost — BootstrapState reads the watcher's snapshot itself.
             _foreground.Changed += OnForegroundChanged;
+            // A level relayed while the worker booted found _running false and
+            // posted nothing, and the boot rebuild may have read the one
+            // before it. This post reconciles the two; it lands after
+            // BootstrapState, once the pump runs.
+            PostMessage(_hwnd, WM_APP_APPROACH, IntPtr.Zero, IntPtr.Zero);
             return true;
         }
     }

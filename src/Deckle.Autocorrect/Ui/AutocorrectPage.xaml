@@ -24,21 +24,10 @@
                 <StackPanel x:Name="MasterHost"
                             Spacing="{StaticResource SettingsCardSpacing}" />
 
-                <!-- ── Drill-ins ─────────────────────────────────────────────── -->
-                <!-- The two child pages of this family. Deliberately icon-less:
-                     the rail children are icon-less too, and a glyph would claim a
-                     second identity for the page. Not gated on the master switch:
-                     they are doors, not settings, and each child page masks its
-                     own settings while the master is off. Tag matches the search
-                     entry's LabelKey, the scroll-to handle. -->
-                <controls:SettingsCard x:Uid="AutocorrectPage_DomainsCard"
-                                       Tag="AutocorrectPage_DomainsCard"
-                                       IsClickEnabled="True"
-                                       Click="OnDomainsCardClick" />
-                <controls:SettingsCard x:Uid="AutocorrectPage_AppsCard"
-                                       Tag="AutocorrectPage_AppsCard"
-                                       IsClickEnabled="True"
-                                       Click="OnAppsCardClick" />
+                <!-- The two child pages (Lexical domains, Apps enrolled) are
+                     reached from the rail, which expands this module's node;
+                     the drill-in cards that doubled them are gone (triage of
+                     2026-10-14). -->
 
                 <!-- ── Excluded words ────────────────────────────────────────── -->
                 <!-- On the family's landing page: an exclusion crosses every domain
@@ -52,8 +41,7 @@
                                          Tag="AutocorrectPage_Section_Exclusions">
                     <StackPanel Spacing="{StaticResource SettingsCardSpacing}">
 
-                        <controls:SettingsCard x:Uid="AutocorrectPage_ExcludeCard"
-                                               HeaderIcon="{ui:FontIcon Glyph={StaticResource Icon.Filter}}">
+                        <controls:SettingsCard x:Uid="AutocorrectPage_ExcludeCard">
                             <StackPanel Orientation="Horizontal"
                                         Spacing="8"
                                         VerticalAlignment="Center">
@@ -106,14 +94,9 @@
                     </StackPanel>
                 </catalog:SettingsSection>
 
-                <!-- ── Diagnostics ───────────────────────────────────────────── -->
-                <!-- The module's two telemetry opt-ins, beside the engine they
-                     observe. NOT gated by the master switch: what the module
-                     records is a consent that outlives a switch flip. -->
-                <catalog:SettingsSection x:Uid="AutocorrectPageDiagnosticsSection">
-                    <StackPanel x:Name="DiagnosticsHost"
-                                Spacing="{StaticResource SettingsCardSpacing}" />
-                </catalog:SettingsSection>
+                <!-- The module's two dataset consents live on Settings >
+                     Diagnostics, the one editor of what Deckle records
+                     (AutocorrectTelemetryViewModel, 2026-10-14). -->
 
             </StackPanel>
         </Grid>

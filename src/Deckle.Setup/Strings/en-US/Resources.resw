@@ -252,7 +252,7 @@
     <value>Connecting...</value>
   </data>
   <data name="Setup_Install_Done_Format" xml:space="preserve">
-    <value>Done — {0}</value>
+    <value>Done. {0}</value>
   </data>
   <data name="Setup_Install_Done" xml:space="preserve">
     <value>Done.</value>
@@ -410,7 +410,7 @@
     <value>Rewrite</value>
   </data>
   <data name="Setup_Module_rewrite_Description" xml:space="preserve">
-    <value>Cleans up dictated text with a local language model — needs Dictation</value>
+    <value>Cleans up dictated text with a local language model. Needs Dictation</value>
   </data>
   <data name="Setup_Module_autocorrect_Label" xml:space="preserve">
     <value>Autocorrect</value>
@@ -443,7 +443,7 @@
     <value>Contextual correction model (CamemBERT)</value>
   </data>
   <data name="Setup_Install_StepOfTotal_Format" xml:space="preserve">
-    <value>Step {0} of {1} — {2}</value>
+    <value>Step {0} of {1}. {2}</value>
   </data>
   <data name="Setup_TotalEstimate_Pending_Format" xml:space="preserve">
     <value>~{0} to download for the selected modules.</value>
@@ -455,7 +455,7 @@
     <value>Choose the folders</value>
   </data>
   <data name="Setup_StepSubtitle_Folders" xml:space="preserve">
-    <value>Where the app and its data will live. Models can grow large — the data folder can go on another drive.</value>
+    <value>Where the app and its data will live. Models can grow large. The data folder can go on another drive.</value>
   </data>
   <data name="SetupFoldersAppCard.Header" xml:space="preserve">
     <value>Application folder</value>
@@ -470,7 +470,7 @@
     <value>Models, settings and logs</value>
   </data>
   <data name="Setup_Folders_DriveLine_Format" xml:space="preserve">
-    <value>{0} needs about {1} — {2} free</value>
+    <value>{0} needs about {1}, {2} free</value>
   </data>
   <data name="Setup_Folders_DriveUnknown" xml:space="preserve">
     <value>unknown</value>
@@ -500,7 +500,7 @@
     <value>Retry</value>
   </data>
   <data name="Setup_Deploy_Failed_Format" xml:space="preserve">
-    <value>Installation failed — {0}</value>
+    <value>Installation failed. {0}</value>
   </data>
   <data name="Setup_StepTitle_Update" xml:space="preserve">
     <value>Updating Deckle</value>
@@ -518,7 +518,7 @@
     <value>Restarting Deckle…</value>
   </data>
   <data name="Setup_Update_Failed_Format" xml:space="preserve">
-    <value>Update failed — {0}</value>
+    <value>Update failed. {0}</value>
   </data>
   <data name="Setup_Update_PayloadMissingExe" xml:space="preserve">
     <value>the downloaded package did not contain Deckle.exe</value>
@@ -551,7 +551,7 @@
     <value>Checking free space…</value>
   </data>
   <data name="Setup_Relocate_Failed_Format" xml:space="preserve">
-    <value>Move failed — {0}</value>
+    <value>Move failed. {0}</value>
   </data>
   <data name="Setup_Relocate_InsufficientSpace_Format" xml:space="preserve">
     <value>not enough space on {0} ({1} needed, {2} free)</value>

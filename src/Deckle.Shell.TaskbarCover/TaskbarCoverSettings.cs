@@ -8,6 +8,11 @@ public sealed class TaskbarCoverSettings
     /// </summary>
     public bool Enabled { get; set; } = false;
 
-    // The approach-zone factor and the fade curve stay constants in
-    // CoverGeometry until the approach levels (near, standard, far) are decided.
+    /// <summary>
+    /// How far from the taskbar the pointer starts to reveal it. Written by the
+    /// Settings page; the App relays a change to the running cover host.
+    /// </summary>
+    public ApproachDistance Approach { get; set; } = ApproachDistance.Standard;
+
+    // The fade curve stays a constant in CoverGeometry.
 }

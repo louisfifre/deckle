@@ -30,7 +30,6 @@ public sealed partial class TrackpadPage : Page
     // cached page.
     private SettingsComposer? _enabledComposer;
     private SettingsComposer? _dragComposer;
-    private SettingsComposer? _diagnosticsComposer;
 
     public TrackpadPage()
     {
@@ -49,12 +48,8 @@ public sealed partial class TrackpadPage : Page
         _dragComposer = new SettingsComposer(DragHost, ViewModel);
         _dragComposer.Compose(ViewModel.TrackpadDragSettingsManifest);
 
-        _diagnosticsComposer = new SettingsComposer(DiagnosticsHost, ViewModel);
-        _diagnosticsComposer.Compose(ViewModel.TrackpadDiagnosticsSettingsManifest);
-
         _enabledComposer.DirtyChanged += (_, _) => GateResetAll();
         _dragComposer.DirtyChanged += (_, _) => GateResetAll();
-        _diagnosticsComposer.DirtyChanged += (_, _) => GateResetAll();
         GateResetAll();
     }
 
@@ -78,15 +73,13 @@ public sealed partial class TrackpadPage : Page
     {
         Header.IsResetAllEnabled =
             (_enabledComposer?.IsDirty() ?? false) ||
-            (_dragComposer?.IsDirty() ?? false) ||
-            (_diagnosticsComposer?.IsDirty() ?? false);
+            (_dragComposer?.IsDirty() ?? false);
     }
 
     private void ResetAll_Click(object sender, RoutedEventArgs e)
     {
         _enabledComposer?.ResetAll();
         _dragComposer?.ResetAll();
-        _diagnosticsComposer?.ResetAll();
     }
 
     // These two controls' state is owned by a service rather than by settings.

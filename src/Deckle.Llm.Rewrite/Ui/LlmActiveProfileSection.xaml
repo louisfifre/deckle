@@ -13,8 +13,7 @@
                              IsResetEnabled="True"
                              ResetRequested="ResetSection_Click">
         <controls:SettingsCard x:Uid="LlmActiveProfileCard"
-                               Tag="LlmActiveProfileCard"
-                               HeaderIcon="{ui:FontIcon Glyph={StaticResource Icon.Sparkle}}">
+                               Tag="LlmActiveProfileCard">
             <ComboBox x:Name="ActiveProfileCombo"
                       MinWidth="200"
                       SelectionChanged="ActiveProfileCombo_SelectionChanged" />

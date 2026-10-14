@@ -34,7 +34,6 @@ public partial class RecordingViewModel
                 (3600, "RecordingLimit1Hour"),
                 (7200, "RecordingLimit2Hours"),
             ],
-            glyph: Glyphs.Latency,
             defaultValue: () => new CaptureSettings().MaxRecordingDurationSeconds),
     ];
 
@@ -47,63 +46,15 @@ public partial class RecordingViewModel
         Setting.Toggle("RecordingPagePreprocessingCard",
             () => PreprocessingEnabled,
             value => PreprocessingEnabled = value,
-            glyph: Glyphs.AudioRecording,
             defaultValue: () => new PreprocessingSettings().Enabled),
     ];
 
-    // Voice level window — the calibration group, with INVERTED master semantics.
-    // The fold's reveal model shows children when the master is ON, hides them when
-    // OFF. Here the three sliders are the MANUAL window, and they matter precisely
-    // when auto-calibration is OFF (auto overwrites them from measured percentiles).
-    // So the master is "set the level window manually" — true when auto is off — and
-    // the selectors project the inverse of LevelWindowAutoCalibration. Only this
-    // projection flips the bool; the VM property keeps auto-calibration semantics.
-    // The child setters carry the live AudioLevelMapper push.
+    // The manual voice-level window (floor, ceiling, curve, behind a "set the
+    // window manually" master) is no longer exposed (triage of 2026-10-14): the
+    // level check above measures the window, and three dBFS sliders without a
+    // meter beside them were an expert override nobody could judge. The view
+    // model keeps the LevelWindow* properties and LevelWindowSettings its defaults.
     //
-    // Defaults read the POCO initializer (new LevelWindowSettings().<Field>) — the
-    // single source of truth. The master default mirrors the master's own inversion:
-    // master = "set manually" = !AutoCalibrationEnabled, so its default is
-    // !new LevelWindowSettings().AutoCalibrationEnabled. The group's reset thus
-    // restores the shipping calibration window and the POCO's auto-calibration
-    // default (off) in one gesture.
-    public IReadOnlyList<SettingDescriptor> VoiceLevelSettings =>
-    [
-        Setting.Group("GeneralVoiceLevelExpander",
-            () => !LevelWindowAutoCalibration,
-            value => LevelWindowAutoCalibration = !value,
-            [
-                Setting.Magnitude("GeneralVoiceLevelFloorCard",
-                    () => LevelWindowMinDbfs,
-                    value => LevelWindowMinDbfs = value,
-                    new MagnitudeArgs(-90, -10, Unit: "dBFS"),
-                    defaultValue: () => new LevelWindowSettings().MinDbfs),
-                Setting.Magnitude("GeneralVoiceLevelCeilingCard",
-                    () => LevelWindowMaxDbfs,
-                    value => LevelWindowMaxDbfs = value,
-                    new MagnitudeArgs(-60, -10, Unit: "dBFS"),
-                    defaultValue: () => new LevelWindowSettings().MaxDbfs),
-                Setting.Magnitude("GeneralVoiceLevelCurveCard",
-                    () => LevelWindowExponent,
-                    value => LevelWindowExponent = value,
-                    new MagnitudeArgs(0.3, 3.0),
-                    defaultValue: () => new LevelWindowSettings().DbfsCurveExponent),
-            ],
-            glyph: Glyphs.VoiceLevel,
-            defaultValue: () => !new LevelWindowSettings().AutoCalibrationEnabled),
-    ];
-
-    // Microphone telemetry — the per-recording RMS-distribution opt-in. One toggle,
-    // gated by the shell's consent dialog through the Catalog registry
-    // (TelemetryConsent.RequestMicrophone, a method group the App wires at boot) —
-    // so the module gates its enable behind consent without referencing the shell.
-    // No defaultValue: a privacy opt-in carries no per-card reset affordance, and
-    // this section hosts no section-reset link either.
-    public IReadOnlyList<SettingDescriptor> TelemetrySettings =>
-    [
-        Setting.Toggle("RecordingMicrophoneTelemetryCard",
-            () => MicrophoneTelemetry,
-            value => MicrophoneTelemetry = value,
-            glyph: Glyphs.Microphone,
-            confirmOnEnable: TelemetryConsent.RequestMicrophone),
-    ];
+    // The microphone-telemetry opt-in lives in RecordingTelemetryViewModel,
+    // composed on the Diagnostics page.
 }

@@ -127,13 +127,17 @@
   </data>
 
   <!-- ─── FolderPickerCard / FolderPickerEditableCard ────────────────
-       Shared tooltips for the Pick + Open buttons rendered by the two
-       UserControls under Deckle.Settings/. Header / Description for
-       each instance are passed in via the consumer's x:Uid (e.g.
-       GeneralBackupLocationCard.Header). These two strings stay
-       generic so a single key covers every folder picker in the app. -->
-  <data name="FolderPickerCard_PickButton.Content" xml:space="preserve">
-    <value>Set</value>
+       The Change and Open buttons rendered by the two UserControls under
+       Deckle.Settings/. Change is an icon-only button, so its words are
+       its tooltip and its narrator name. Header / Description for each
+       instance are passed in via the consumer's x:Uid (e.g.
+       GeneralBackupLocationCard.Header). These strings stay generic so a
+       single key covers every folder picker in the app. -->
+  <data name="FolderPickerCard_PickButton.ToolTipService.ToolTip" xml:space="preserve">
+    <value>Choose a folder</value>
+  </data>
+  <data name="FolderPickerCard_PickButton.AutomationProperties.Name" xml:space="preserve">
+    <value>Choose a folder</value>
   </data>
   <data name="FolderPickerCard_OpenButton.Content" xml:space="preserve">
     <value>Open</value>
@@ -163,7 +167,7 @@
     <value>Enable corpus logging</value>
   </data>
   <data name="CorpusConsent_Body_Intro" xml:space="preserve">
-    <value>Deckle will append every transcription to a local JSONL file — one folder per rewrite profile, one corpus.jsonl inside each — so you can iterate on your rewrite prompts offline.</value>
+    <value>Deckle will append every transcription to a local JSONL file, with one folder per rewrite profile and one corpus.jsonl inside each, so you can iterate on your rewrite prompts offline.</value>
   </data>
   <data name="CorpusConsent_Body_What" xml:space="preserve">
     <value>Raw transcription text, rewritten text, timing, model and prompt identifiers. Nothing is sent over the network.</value>
@@ -180,10 +184,10 @@
     <value>Deckle will mirror every in-app log line to a local JSONL file (app.jsonl) so you can diagnose a specific issue across restarts.</value>
   </data>
   <data name="ApplicationLogConsent_Body_What" xml:space="preserve">
-    <value>Every log line from every subsystem — capture, VAD, Whisper, rewriting, clipboard, paste, UI — at every verbosity level. Log messages can include partial transcription text when a pipeline step logs what it just produced. Nothing is sent over the network.</value>
+    <value>Every log line from every subsystem (capture, VAD, Whisper, rewriting, clipboard, paste, UI) at every verbosity level. Log messages can include partial transcription text when a pipeline step logs what it just produced. Nothing is sent over the network.</value>
   </data>
   <data name="ApplicationLogConsent_Body_Remind" xml:space="preserve">
-    <value>The log is chatty — expect roughly 2 MB per 30 minutes of active use. It rotates every 5000 lines (app-1.jsonl, app-2.jsonl, …) with no cap on archives, so turn it off once you have what you need and prune the archives by hand.</value>
+    <value>The log is chatty. Expect roughly 2 MB per 30 minutes of active use. It rotates every 5000 lines (app-1.jsonl, app-2.jsonl, …) with no cap on archives, so turn it off once you have what you need and prune the archives by hand.</value>
   </data>
 
   <!-- Autocorrect decisions consent — per-word decision dataset, clear text. -->
@@ -191,13 +195,13 @@
     <value>Enable autocorrect decision log</value>
   </data>
   <data name="AutocorrectDecisionsConsent_Body_Intro" xml:space="preserve">
-    <value>Deckle will write one line for every word the autocorrect engine weighs on an enrolled app — corrected or left as you typed it — to a local JSONL file (autocorrect.decisions.jsonl), so you can see exactly why it did or did not act.</value>
+    <value>Deckle will write one line for every word the autocorrect engine weighs on an enrolled app, corrected or left as you typed it, to a local JSONL file (autocorrect.decisions.jsonl), so you can see exactly why it did or did not act.</value>
   </data>
   <data name="AutocorrectDecisionsConsent_Body_What" xml:space="preserve">
     <value>Each word you type on an enrolled surface, its preceding context words, the candidate forms with their frequencies and scores, the safety margins, and the rule that made the call. Nothing is sent over the network. Password fields are never seen.</value>
   </data>
   <data name="AutocorrectDecisionsConsent_Body_Remind" xml:space="preserve">
-    <value>This records the words you type on enrolled apps in clear text. Keep it on only while diagnosing the corrector, turn it off when you are done, and purge the file — it is not rotated.</value>
+    <value>This records the words you type on enrolled apps in clear text. Keep it on only while diagnosing the corrector, turn it off when you are done, and purge the file, because it is not rotated.</value>
   </data>
 
   <!-- Autocorrect text consent — the typed-sentence corpus, verbatim input. -->
@@ -208,10 +212,10 @@
     <value>Deckle will save each sentence you physically type on an enrolled editable surface to a local JSONL file (autocorrect.text.jsonl): the text exactly as you typed it, paired with the corrected version. It also keeps the typing stream (autocorrect.stream.jsonl): the raw flow of your typing, including what you erased and retyped. Together they build a corpus of your writing, and your mistakes, to make the corrector better at the way you type.</value>
   </data>
   <data name="AutocorrectTextConsent_Body_What" xml:space="preserve">
-    <value>The full text you physically type on enrolled editable surfaces, verbatim — including errors the corrector did not catch. The typing stream additionally records what you erased with Backspace and what you retyped over it. Password fields are never seen, and text you paste or dictate is not recorded. Nothing is sent over the network.</value>
+    <value>The full text you physically type on enrolled editable surfaces, verbatim, including errors the corrector did not catch. The typing stream additionally records what you erased with Backspace and what you retyped over it. Password fields are never seen, and text you paste or dictate is not recorded. Nothing is sent over the network.</value>
   </data>
   <data name="AutocorrectTextConsent_Body_Remind" xml:space="preserve">
-    <value>This is the most complete text capture in Deckle — a verbatim record of what you type in enrolled apps. It stays on this device. Turn it off when you have gathered enough, and delete the files when you no longer need them — they are not rotated.</value>
+    <value>This is the most complete text capture in Deckle, a verbatim record of what you type in enrolled apps. It stays on this device. Turn it off when you have gathered enough, and delete the files when you no longer need them, because they are not rotated.</value>
   </data>
 
   <!-- Audio corpus consent — raw WAV next to the text JSONL, per profile. -->
@@ -222,7 +226,7 @@
     <value>Deckle will save the raw microphone audio of every transcription as a 16 kHz mono WAV file, next to the JSONL text corpus under an audio/ subfolder per profile. Useful for replaying a past session against a different Whisper model or prompt.</value>
   </data>
   <data name="AudioCorpusConsent_Body_What" xml:space="preserve">
-    <value>The exact audio passed to whisper.cpp — including any silence and background noise picked up by the microphone. One WAV per transcription. Nothing is sent over the network.</value>
+    <value>The exact audio passed to whisper.cpp, including any silence and background noise picked up by the microphone. One WAV per transcription. Nothing is sent over the network.</value>
   </data>
   <data name="AudioCorpusConsent_Body_Remind" xml:space="preserve">
     <value>Voice recordings are biometric-adjacent and the files can be replayed verbatim. Review and purge the folder regularly, and exclude it from any backup target you don't control.</value>
@@ -236,10 +240,10 @@
     <value>Deckle will log your microphone level distribution after every recording, so you can calibrate the HUD level window against the dBFS range your microphone actually produces.</value>
   </data>
   <data name="MicrophoneTelemetryConsent_Body_What" xml:space="preserve">
-    <value>Only level statistics — minimum, percentiles (p10, p25, p50, p75, p90), maximum, and mean RMS — in dBFS. No audio. No transcription. No words. Nothing is sent over the network.</value>
+    <value>Only level statistics in dBFS, namely minimum, percentiles (p10, p25, p50, p75, p90), maximum, and mean RMS. No audio. No transcription. No words. Nothing is sent over the network.</value>
   </data>
   <data name="MicrophoneTelemetryConsent_Body_Remind" xml:space="preserve">
-    <value>One short JSON line per recording — small file. Useful when calibrating, then turn it off. The same data also appears in the LogWindow under [CAPTURE] for live inspection.</value>
+    <value>One short JSON line per recording. Small file. Useful when calibrating, then turn it off. The same data also appears in the LogWindow under [CAPTURE] for live inspection.</value>
   </data>
 
   <!-- ─── Engine status ──────────────────────────────────────────────
@@ -288,10 +292,11 @@
 
   <!-- ─── Settings shell ─────────────────────────────────────────────
        NavigationView host with a native TitleBar. The TitleBar carries
-       the pane toggle and the Logs command (RightHeader); the General
-       nav item is the sole static entry, every other page comes from
-       SettingsModuleRegistry. Window.Title XAML attribute is overridden
-       in code-behind, only the TitleBar control title is loc'd. -->
+       the pane toggle and the Logs command (RightHeader); Home, General
+       and Shortcuts are the static nav entries, every other page comes
+       from SettingsModuleRegistry. Window.Title XAML attribute is
+       overridden in code-behind, only the TitleBar control title is
+       loc'd. -->
   <data name="SettingsTitleBar.Title" xml:space="preserve">
     <value>Deckle Settings</value>
   </data>
@@ -301,7 +306,10 @@
   <data name="SettingsNavGeneral.Content" xml:space="preserve">
     <value>General</value>
   </data>
-  <!-- The Home page: empty until it earns content (decision 15). -->
+  <data name="SettingsNavHotkeys.Content" xml:space="preserve">
+    <value>Shortcuts</value>
+  </data>
+  <!-- The Home page: empty until it earns content. -->
   <data name="HomePageHeader.Title" xml:space="preserve">
     <value>Home</value>
   </data>
@@ -342,69 +350,65 @@
     <value>No results found</value>
   </data>
   <data name="Settings_Search_MoreResults_Format" xml:space="preserve">
-    <value>+{0} more — refine your search</value>
+    <value>+{0} more. Refine your search</value>
   </data>
 
 
 
-  <!-- ─── GeneralPage ────────────────────────────────────────────────
-       First page in the Settings nav. Page title, page subtitle, then
-       sections in order: Shortcuts, Appearance, Startup, Recording,
-       Telemetry, Back up & restore, Application data. -->
-  <!-- Hotkeys section: one composed card per hotkey action
-       (GeneralViewModel.HotkeySettings). Module names as the code names them. -->
+  <!-- ─── HotkeysPage ────────────────────────────────────────────────
+       The Shortcuts page: one composed card per hotkey action, in three
+       sections (GeneralViewModel.DictationHotkeys, InputHotkeys,
+       DisplayHotkeys). The card keys keep their GeneralHotkey* prefix from
+       the time the cards sat on GeneralPage. Module names as the code
+       names them. -->
+  <data name="HotkeysPageHeader.Title" xml:space="preserve">
+    <value>Shortcuts</value>
+  </data>
+  <data name="HotkeysPageHeader.Description" xml:space="preserve">
+    <value>One key combination per action, active in every app.</value>
+  </data>
+  <data name="HotkeysPageDictationSection.Title" xml:space="preserve">
+    <value>Dictation</value>
+  </data>
+  <data name="HotkeysPageInputSection.Title" xml:space="preserve">
+    <value>Input</value>
+  </data>
+  <data name="HotkeysPageDisplaySection.Title" xml:space="preserve">
+    <value>Display and lights</value>
+  </data>
   <data name="GeneralHotkeyRecordCard.Header" xml:space="preserve">
-    <value>Record</value>
-  </data>
-  <data name="GeneralHotkeyRecordCard.Description" xml:space="preserve">
-    <value>Start or stop dictation.</value>
+    <value>Start or stop dictation</value>
   </data>
   <data name="GeneralHotkeyPrecisionScrollCard.Header" xml:space="preserve">
-    <value>Precision scrolling</value>
-  </data>
-  <data name="GeneralHotkeyPrecisionScrollCard.Description" xml:space="preserve">
-    <value>Turn Precision scrolling on or off.</value>
+    <value>Turn Precision scrolling on or off</value>
   </data>
   <data name="GeneralHotkeyTrackpadCard.Header" xml:space="preserve">
-    <value>Trackpad</value>
-  </data>
-  <data name="GeneralHotkeyTrackpadCard.Description" xml:space="preserve">
-    <value>Turn Trackpad on or off.</value>
+    <value>Turn Trackpad on or off</value>
   </data>
   <data name="GeneralHotkeyTaskbarCoverCard.Header" xml:space="preserve">
-    <value>Taskbar cover</value>
-  </data>
-  <data name="GeneralHotkeyTaskbarCoverCard.Description" xml:space="preserve">
-    <value>Turn Taskbar cover on or off.</value>
+    <value>Turn Taskbar cover on or off</value>
   </data>
   <data name="GeneralHotkeyAutocorrectCard.Header" xml:space="preserve">
-    <value>Autocorrect</value>
-  </data>
-  <data name="GeneralHotkeyAutocorrectCard.Description" xml:space="preserve">
-    <value>Turn Autocorrect on or off.</value>
+    <value>Turn Autocorrect on or off</value>
   </data>
   <data name="GeneralHotkeyRewriteCard.Header" xml:space="preserve">
-    <value>Rewrite</value>
-  </data>
-  <data name="GeneralHotkeyRewriteCard.Description" xml:space="preserve">
-    <value>Turn Rewrite on or off.</value>
+    <value>Turn Rewrite on or off</value>
   </data>
   <data name="GeneralHotkeyAmbientLightCard.Header" xml:space="preserve">
-    <value>Ambient Light</value>
-  </data>
-  <data name="GeneralHotkeyAmbientLightCard.Description" xml:space="preserve">
-    <value>Turn Ambient Light on or off.</value>
+    <value>Turn Ambient Light on or off</value>
   </data>
   <!-- Advisory under a hotkey card whose chord another action already holds.
        {0} is that action's card header. -->
   <data name="GeneralHotkeyAlreadyUsed_Format" xml:space="preserve">
     <value>Already used by {0}</value>
   </data>
+
+  <!-- ─── GeneralPage ────────────────────────────────────────────────
+       Second page in the Settings nav, after Home. Page header, then
+       sections in order: Appearance, Startup, Updates, Application
+       data. -->
   <data name="GeneralAppThemeCard.Header" xml:space="preserve">
     <value>App theme</value>
-  </data>
-  <data name="GeneralAppThemeCard.Description" xml:space="preserve">
-    <value>Light, dark, or follow your Windows theme.</value>
   </data>
   <data name="GeneralThemeSystem.Content" xml:space="preserve">
     <value>System</value>
@@ -418,9 +422,6 @@
   <data name="GeneralAutostartCard.Header" xml:space="preserve">
     <value>Start with Windows</value>
   </data>
-  <data name="GeneralAutostartCard.Description" xml:space="preserve">
-    <value>Launch Deckle automatically when you sign in.</value>
-  </data>
   <data name="GeneralPageUpdatesSection.Title" xml:space="preserve">
     <value>Updates</value>
   </data>
@@ -428,7 +429,7 @@
     <value>Check for updates automatically</value>
   </data>
   <data name="GeneralUpdateAutoCheckCard.Description" xml:space="preserve">
-    <value>Look for a new Deckle release at launch, then once a day.</value>
+    <value>Deckle looks at launch, then once a day.</value>
   </data>
   <data name="GeneralVersionCard.Header" xml:space="preserve">
     <value>Version</value>
@@ -461,10 +462,10 @@
     <value>Not enough space on {0}: {1} needed, {2} free.</value>
   </data>
   <data name="GeneralBackupExpander.Header" xml:space="preserve">
-    <value>Back up and restore your settings</value>
+    <value>Settings backup</value>
   </data>
   <data name="GeneralBackupExpander.Description" xml:space="preserve">
-    <value>Snapshot your settings to a file, or roll back to the last snapshot. Point the location at OneDrive or another cloud-synced folder to carry your settings across machines.</value>
+    <value>Point the location at a cloud-synced folder to carry your settings across machines.</value>
   </data>
   <data name="GeneralBackupCreateButton.Content" xml:space="preserve">
     <value>Back up</value>
@@ -476,7 +477,7 @@
     <value>Location</value>
   </data>
   <data name="GeneralBackupInfoCard.Header" xml:space="preserve">
-    <value>Backup information</value>
+    <value>Latest backup</value>
   </data>
   <data name="GeneralBackupFileNameLabel.Text" xml:space="preserve">
     <value>File name:</value>
@@ -488,19 +489,19 @@
     <value>Data folder</value>
   </data>
   <data name="GeneralDataFolderCard.Description" xml:space="preserve">
-    <value>Settings, telemetry, models, and native libraries — everything mutable lives here. Defaults to %LOCALAPPDATA%\Deckle\.</value>
+    <value>Settings, telemetry, models and native libraries.</value>
   </data>
   <data name="GeneralDataFolderOpenButton.Content" xml:space="preserve">
     <value>Open</value>
   </data>
   <data name="GeneralRerunSetupCard.Header" xml:space="preserve">
-    <value>First-run setup</value>
+    <value>Setup wizard</value>
   </data>
   <data name="GeneralRerunSetupCard.Description" xml:space="preserve">
-    <value>Re-open the setup wizard to swap the speech model or replace the native runtime.</value>
+    <value>Swap the speech model or replace the native runtime.</value>
   </data>
   <data name="GeneralRerunSetupButton.Content" xml:space="preserve">
-    <value>Run setup...</value>
+    <value>Run setup…</value>
   </data>
 
   <!-- ─── WhisperPage ────────────────────────────────────────────────
@@ -527,23 +528,14 @@
     <value>General</value>
   </data>
   <data name="GeneralPageHeader.Description" xml:space="preserve">
-    <value>Hotkeys, appearance, behaviour, startup, backups and application data.</value>
-  </data>
-  <data name="GeneralPageHotkeysSection.Title" xml:space="preserve">
-    <value>Hotkeys</value>
-  </data>
-  <data name="GeneralPageAppearanceSection.Title" xml:space="preserve">
-    <value>Appearance</value>
-  </data>
-  <data name="GeneralPageStartupSection.Title" xml:space="preserve">
-    <value>Startup</value>
+    <value>Theme, startup, updates, backups and application data.</value>
   </data>
   <!-- ─── RecordingPage ───────────────────────────────────────────────
        Page extracted from GeneralPage in slice S3. Owns microphone
-       device, auto-paste, voice level window calibration, overlay HUD.
-       Card-level x:Uid keys (GeneralMicrophoneCard, GeneralVoiceLevel*,
-       GeneralOverlay*) reused as-is — General* prefix is a historical
-       naming artifact, renaming would touch every translation file. -->
+       device, auto-paste, overlay HUD. Card-level x:Uid keys
+       (GeneralMicrophoneCard, GeneralOverlay*) reused as-is — General*
+       prefix is a historical naming artifact, renaming would touch every
+       translation file. -->
 
   <data name="GeneralPageApplicationDataSection.Title" xml:space="preserve">
     <value>Application data</value>

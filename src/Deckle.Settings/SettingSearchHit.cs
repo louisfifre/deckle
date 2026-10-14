@@ -18,6 +18,12 @@ public sealed record SettingSearchHit
 
     public required string PageLabel { get; init; }
 
+    // The assembly whose .resw the card's words resolve from. Usually the page's
+    // own, but a page can show cards other assemblies lend it (the Diagnostics
+    // page holds each module's dataset opt-ins), so the index keys a
+    // registration on the page and this assembly together.
+    public string OwningAssembly { get; init; } = "";
+
     // The card's own runtime identity (== the entry's LabelKey), stamped by the
     // composer onto the built card's Tag. After navigating to PageTag, the scroll-to
     // finds the element whose Tag equals this.

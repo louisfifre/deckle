@@ -21,6 +21,15 @@ public static class SettingsSearch
                 "hdr", "per-app", "profile",
             ],
         },
+        // The scan section is bespoke like the list: inline label, same key as
+        // its Tag. The folders entry below stays on the expander, a finer target
+        // inside this section.
+        new SettingSearchEntry
+        {
+            LabelKey = "OrchestrationPage_Section_Scan",
+            LiteralLabel = "Scan",
+            Keywords = ["steam", "library", "find", "discover", "import", "games", "apps"],
+        },
         new SettingSearchEntry
         {
             LabelKey = "OrchestrationPage_FoldersExpander",

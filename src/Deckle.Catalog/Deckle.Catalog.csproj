@@ -1,9 +1,10 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <RootNamespace>Deckle.Catalog</RootNamespace>
-    <!-- UseWinUI compiles Themes/Icons.xaml as a XAML resource so the
-         host App.xaml can merge it via
-         ms-appx:///Deckle.Catalog/Themes/Icons.xaml. The module hosts
+    <!-- UseWinUI compiles the Themes/*.xaml dictionaries as XAML resources so
+         the host App.xaml can merge Icons.xaml via
+         ms-appx:///Deckle.Catalog/Themes/Icons.xaml and SettingsPageHeader can
+         load SettingsPageHeaderBrushes.xaml by the same kind of URI. The module hosts
          no XAML page: its controls are built in code. -->
     <UseWinUI>true</UseWinUI>
     <EnableMsixTooling>true</EnableMsixTooling>

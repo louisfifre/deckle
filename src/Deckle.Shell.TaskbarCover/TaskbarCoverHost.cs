@@ -49,6 +49,11 @@ public sealed partial class TaskbarCoverHost : IDisposable
 
     private volatile bool _running;
 
+    // Level asked for by the App, written from its thread and read by the
+    // cover thread at each layout rebuild. Kept across Stop/Start, so a
+    // restart builds its zone at the last level relayed.
+    private volatile ApproachDistance _requestedApproach = ApproachDistance.Standard;
+
     // ── State machine — worker thread only ───────────────────────────────
     // _coverVisible    : current band window state (sole writer: UpdateCover)
     // _coverAlpha      : band opacity from the cursor (sole writer:
@@ -67,6 +72,9 @@ public sealed partial class TaskbarCoverHost : IDisposable
     private TaskbarEdge _edge;
     private NativeMethods.RECT _band;
     private NativeMethods.RECT _zone;
+    // Level _zone was built at; differs from _requestedApproach until the
+    // cover thread rebuilds the layout.
+    private ApproachDistance _approach = ApproachDistance.Standard;
     // Monitor the band sits on, re-read on every successful layout query;
     // fullscreen suppression only applies to a window on this monitor.
     private IntPtr _bandMonitor;

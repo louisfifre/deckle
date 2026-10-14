@@ -2,15 +2,19 @@ using CommunityToolkit.Mvvm.ComponentModel;
 
 namespace Deckle.Shell.TaskbarCover;
 
-// The page's only state is the master switch. Saving it is enough: the
-// App's settings observer starts or stops the cover host, exactly as it does
-// when the tray switch or the hotkey flips the same flag.
+// The page's state is the master switch and the approach level. Saving is
+// enough: the App's settings observer starts or stops the cover host and
+// relays the level to it, exactly as it does when the tray switch or the
+// hotkey flips the same flag.
 public partial class TaskbarCoverViewModel : ObservableObject
 {
     private bool _isSyncing;
 
     [ObservableProperty]
     public partial bool Enabled { get; set; }
+
+    [ObservableProperty]
+    public partial ApproachDistance Approach { get; set; }
 
     public TaskbarCoverViewModel() => Load();
 
@@ -19,7 +23,9 @@ public partial class TaskbarCoverViewModel : ObservableObject
         _isSyncing = true;
         try
         {
-            Enabled = TaskbarCoverSettingsService.Instance.Current.Enabled;
+            TaskbarCoverSettings settings = TaskbarCoverSettingsService.Instance.Current;
+            Enabled = settings.Enabled;
+            Approach = settings.Approach;
         }
         finally
         {
@@ -31,6 +37,13 @@ public partial class TaskbarCoverViewModel : ObservableObject
     {
         if (_isSyncing) return;
         TaskbarCoverSettingsService.Instance.Current.Enabled = value;
+        TaskbarCoverSettingsService.Instance.Save();
+    }
+
+    partial void OnApproachChanged(ApproachDistance value)
+    {
+        if (_isSyncing) return;
+        TaskbarCoverSettingsService.Instance.Current.Approach = value;
         TaskbarCoverSettingsService.Instance.Save();
     }
 }

@@ -56,7 +56,10 @@ public sealed partial class TaskbarCoverHost
 
         var edge = (TaskbarEdge)abd.uEdge;
         var band = abd.rc;
-        bool changed = !_layoutKnown || edge != _edge
+        // The approach level is part of the layout: a new level rebuilds the
+        // zone and re-reads the alpha like a moved taskbar does.
+        var approach = _requestedApproach;
+        bool changed = !_layoutKnown || edge != _edge || approach != _approach
             || band.left != _band.left || band.top != _band.top
             || band.right != _band.right || band.bottom != _band.bottom;
 
@@ -84,7 +87,8 @@ public sealed partial class TaskbarCoverHost
 
         _edge = edge;
         _band = band;
-        _zone = CoverGeometry.ApproachZone(band, edge);
+        _approach = approach;
+        _zone = CoverGeometry.ApproachZone(band, edge, approach);
 
         NativeMethods.SetWindowPos(_hwnd, NativeMethods.HWND_TOPMOST,
             band.left, band.top, band.right - band.left, band.bottom - band.top,

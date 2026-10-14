@@ -300,13 +300,12 @@ public static class Setting
         };
 
     // A choice that decides which settings exist — a fold whose header carries
-    // the choice (settings design system, decision 12). The get/set selectors are
-    // the chosen mode, over any value type T like Choice; the children are the
-    // settings of the modes, each naming the mode that shows it through its own
-    // visibleWhen. A preset family's selector is declared this way, with
-    // SelectorOptions() as the options and the hand values as Custom-only
-    // children. The fold's reset returns the choice to its default and every
-    // defaulted child to its own.
+    // the choice. The get/set selectors are the chosen mode, over any value type
+    // T like Choice; the children are the settings of the modes, each naming the
+    // mode that shows it through its own visibleWhen. A preset family's selector
+    // is declared this way, with SelectorOptions() as the options and the hand
+    // values as Custom-only children. The fold's reset returns the choice to its
+    // default and every defaulted child to its own.
     public static SettingDescriptor Mode<T>(
         string labelKey,
         Func<T> get,
@@ -338,11 +337,10 @@ public static class Setting
         };
     }
 
-    // A two-point cubic Bézier, edited by the one curve component (settings
-    // design system, decision 21). The selectors read and write the four control
-    // point values as one CurvePoints; CurveArgs says what frame the curve is
-    // drawn in and how to say what it does. The default, when given, is the
-    // points the per-card reset writes back.
+    // A two-point cubic Bézier, edited by the one curve component. The selectors
+    // read and write the four control point values as one CurvePoints; CurveArgs
+    // says what frame the curve is drawn in and how to say what it does. The
+    // default, when given, is the points the per-card reset writes back.
     public static SettingDescriptor Curve(
         string labelKey,
         Func<CurvePoints> get,

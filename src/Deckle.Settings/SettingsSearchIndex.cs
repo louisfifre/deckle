@@ -30,14 +30,18 @@ public static class SettingsSearchIndex
         RegisterPage(page.PageTag, page.OwningAssembly, page.Glyph, pageLabel, entries);
     }
 
-    // For the static General page, which has no module descriptor: the caller
-    // supplies the coordinates directly.
+    // For a page without its own module descriptor (the static General and
+    // Shortcuts pages), or for cards an assembly lends another module's page (the
+    // dataset opt-ins each module hands the Diagnostics page): the caller supplies
+    // the coordinates directly.
     public static void RegisterPage(
         string pageTag, string owningAssembly, string glyph, string pageLabel,
         IReadOnlyList<SettingSearchEntry> entries)
     {
-        // Re-registering a page replaces its cards rather than doubling them, so a
-        // second boot pass cannot duplicate hits.
+        // Re-registering replaces the cards rather than doubling them, so a second
+        // boot pass cannot duplicate hits. The key is the page AND the owning
+        // assembly: several assemblies register cards under the Diagnostics page,
+        // and a page-only key would let each registration wipe the one before.
         var resolved = new List<SettingSearchHit>(entries.Count);
         foreach (SettingSearchEntry entry in entries)
         {
@@ -61,6 +65,7 @@ public static class SettingsSearchIndex
                 PageTag = pageTag,
                 PageGlyph = glyph,
                 PageLabel = pageLabel,
+                OwningAssembly = owningAssembly,
                 CardTag = entry.LabelKey,
                 Label = label,
                 Description = description,
@@ -70,7 +75,7 @@ public static class SettingsSearchIndex
 
         lock (_gate)
         {
-            _entries.RemoveAll(h => h.PageTag == pageTag);
+            _entries.RemoveAll(h => h.PageTag == pageTag && h.OwningAssembly == owningAssembly);
             _entries.AddRange(resolved);
         }
     }

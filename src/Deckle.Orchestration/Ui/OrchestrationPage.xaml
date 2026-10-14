@@ -65,71 +65,33 @@
                                             x:Uid="OrchestrationPageHeader"
                                             HasResetAll="False" />
 
-                <!-- Tag is the search index's scroll-to handle for this bespoke
-                     section; it matches the SettingSearchEntry's LabelKey. -->
-                <catalog:SettingsSection x:Name="AppsSection"
-                                         x:Uid="OrchestrationPageAppsSection"
-                                         Tag="OrchestrationPage_Section_Apps">
+                <!-- The scan opens the page (Louis, 2026-10-14): where Deckle
+                     looks for apps and games comes before the list it fills.
+                     Inside the section the card with a chevron, the folders
+                     expander, sits above the flat Scan card, the order every
+                     section follows. Tag is the search index's scroll-to handle
+                     for this bespoke section; it matches the SettingSearchEntry's
+                     LabelKey. -->
+                <catalog:SettingsSection x:Name="ScanSection"
+                                         x:Uid="OrchestrationPageScanSection"
+                                         Tag="OrchestrationPage_Section_Scan">
                     <StackPanel Spacing="{StaticResource SettingsCardSpacing}">
-
-                        <!-- Without the process trace (elevation) or a foreground
-                             monitor, a listed app is noticed only when the list
-                             changes, not when it starts. Not closable, because it
-                             describes a state, not an event. -->
-                        <InfoBar x:Name="ElevationAdvisory"
-                                 x:Uid="OrchestrationPage_ElevationAdvisory"
-                                 Severity="Warning"
-                                 IsClosable="False"
-                                 IsOpen="False"
-                                 Margin="0,0,0,8" />
-
-                        <StackPanel Orientation="Horizontal"
-                                    Spacing="8"
-                                    Margin="0,0,0,8">
-                            <Button x:Uid="OrchestrationPage_AddAppButton"
-                                    Click="OnAddAppClick" />
-                            <Button x:Uid="OrchestrationPage_AddRunningButton"
-                                    Click="OnAddRunningClick" />
-                            <!-- Disabled while the scan runs: the one transient
-                                 "busy" grey the settings doctrine allows. -->
-                            <Button x:Name="ScanButton"
-                                    x:Uid="OrchestrationPage_ScanButton"
-                                    Click="OnScanClick" />
-                        </StackPanel>
-
-                        <!-- One inline channel for "already in your list"; closed on
-                             the next successful gesture or navigation. -->
-                        <InfoBar x:Name="DuplicateInfo"
-                                 x:Uid="OrchestrationPage_DuplicateInfo"
-                                 Severity="Informational"
-                                 IsOpen="False" />
-
-                        <!-- The scan is silent; this line is its only outcome when
-                             nothing was added. Hidden again when the next scan starts. -->
-                        <TextBlock x:Name="NothingNew"
-                                   x:Uid="OrchestrationPage_NothingNew"
-                                   Style="{StaticResource BodyTextBlockStyle}"
-                                   Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                                   TextWrapping="Wrap"
-                                   Margin="0,0,0,8"
-                                   Visibility="Collapsed" />
 
                         <!-- Folders the scan walks besides Steam. "Add folder…" sits
                              on the header, as in Windows Settings' excluded-folders
                              list, so it is reachable without expanding. Tag is the
-                             search index's scroll-to handle. -->
+                             search index's scroll-to handle. No header icon: the rail
+                             carries the page icon. Its description explains, so the
+                             page's Info switch decides whether it shows. -->
                         <controls:SettingsExpander x:Name="FoldersExpander"
                                                    x:Uid="OrchestrationPage_FoldersExpander"
                                                    Tag="OrchestrationPage_FoldersExpander"
-                                                   ItemsSource="{x:Bind ViewModel.ScanFolders}"
-                                                   Margin="0,0,0,8">
-                            <controls:SettingsExpander.HeaderIcon>
-                                <FontIcon Glyph="{StaticResource Icon.Folder}" />
-                            </controls:SettingsExpander.HeaderIcon>
-
+                                                   ItemsSource="{x:Bind ViewModel.ScanFolders}">
                             <Button x:Uid="OrchestrationPage_AddFolderButton"
                                     Click="OnAddFolderClick" />
 
+                            <!-- The row's header is the folder path, data, and the
+                                 row has no description. -->
                             <controls:SettingsExpander.ItemTemplate>
                                 <DataTemplate x:DataType="local:ScanFolderRow">
                                     <controls:SettingsCard Header="{x:Bind Path}">
@@ -143,6 +105,72 @@
                                 </DataTemplate>
                             </controls:SettingsExpander.ItemTemplate>
                         </controls:SettingsExpander>
+
+                        <!-- A section is cards: the command sits in one, as Trackpad's
+                             Repair and General's Rerun setup do. The section caption
+                             already says what a scan adds, so the card has no
+                             description. -->
+                        <controls:SettingsCard x:Uid="OrchestrationPage_ScanCard">
+                            <StackPanel Orientation="Horizontal"
+                                        Spacing="12">
+                                <!-- The scan is silent; this line is its only outcome
+                                     when nothing was added, read as the card's status
+                                     beside the command. Hidden again when the next
+                                     scan starts. -->
+                                <TextBlock x:Name="NothingNew"
+                                           x:Uid="OrchestrationPage_NothingNew"
+                                           Style="{StaticResource BodyTextBlockStyle}"
+                                           Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                           VerticalAlignment="Center"
+                                           Visibility="Collapsed" />
+                                <!-- Disabled while the scan runs: the one transient
+                                     "busy" grey the settings doctrine allows. -->
+                                <Button x:Name="ScanButton"
+                                        x:Uid="OrchestrationPage_ScanButton"
+                                        Click="OnScanClick" />
+                            </StackPanel>
+                        </controls:SettingsCard>
+
+                    </StackPanel>
+                </catalog:SettingsSection>
+
+                <!-- The list the scan and the add buttons fill. Tag follows the
+                     same rule as the Scan section (the search entry's LabelKey). -->
+                <catalog:SettingsSection x:Name="AppsSection"
+                                         x:Uid="OrchestrationPageAppsSection"
+                                         Tag="OrchestrationPage_Section_Apps">
+                    <StackPanel Spacing="{StaticResource SettingsCardSpacing}">
+
+                        <!-- Without the process trace (elevation) or a foreground
+                             monitor, a listed app is noticed only when the list
+                             changes, not when it starts. Not closable, because it
+                             describes a state, not an event. Collapsed while
+                             closed, so the panel's spacing skips it; its bottom
+                             margin only counts while it shows. -->
+                        <InfoBar x:Name="ElevationAdvisory"
+                                 x:Uid="OrchestrationPage_ElevationAdvisory"
+                                 Severity="Warning"
+                                 IsClosable="False"
+                                 IsOpen="False"
+                                 catalog:InfoBarLayout.CollapseWhenClosed="True"
+                                 Margin="0,0,0,8" />
+
+                        <StackPanel Orientation="Horizontal"
+                                    Spacing="8"
+                                    Margin="0,0,0,8">
+                            <Button x:Uid="OrchestrationPage_AddAppButton"
+                                    Click="OnAddAppClick" />
+                            <Button x:Uid="OrchestrationPage_AddRunningButton"
+                                    Click="OnAddRunningClick" />
+                        </StackPanel>
+
+                        <!-- One inline channel for "already in your list"; closed on
+                             the next successful gesture or navigation. -->
+                        <InfoBar x:Name="DuplicateInfo"
+                                 x:Uid="OrchestrationPage_DuplicateInfo"
+                                 Severity="Informational"
+                                 IsOpen="False"
+                                 catalog:InfoBarLayout.CollapseWhenClosed="True" />
 
                         <!-- Trades places with the list from code-behind, off
                              Entries.CollectionChanged. -->
@@ -168,14 +196,17 @@
                             </ItemsControl.ItemsPanel>
                             <ItemsControl.ItemTemplate>
                                 <DataTemplate x:DataType="local:AppEntryRow">
+                                    <!-- Description is the entry's executable path
+                                         or install folder, data, so the page's
+                                         Info switch leaves it shown. -->
                                     <controls:SettingsExpander Header="{x:Bind DisplayName}"
                                                                Description="{x:Bind Description, Mode=OneWay}"
                                                                ItemsSource="{x:Bind Items}"
                                                                ItemTemplate="{StaticResource EntryItemTemplateSelector}">
-                                        <controls:SettingsExpander.HeaderIcon>
-                                            <FontIcon Glyph="{x:Bind Glyph, Mode=OneWay}" />
-                                        </controls:SettingsExpander.HeaderIcon>
-
+                                        <!-- No header icon, the app/game glyph
+                                             included: the rail carries the page
+                                             icon (2026-10-14), and the kind reads
+                                             in words on the Kind card inside. -->
                                         <StackPanel Orientation="Horizontal"
                                                     Spacing="8"
                                                     VerticalAlignment="Center">

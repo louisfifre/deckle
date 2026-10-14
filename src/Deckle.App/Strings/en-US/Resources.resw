@@ -162,6 +162,12 @@
   <data name="SettingsPageHeader_ResetAllDialogBody" xml:space="preserve">
     <value>Every setting on this page goes back to its default value.</value>
   </data>
+  <!-- A Magnitude card's header when its value has a unit: the unit joins the
+       header, PowerToys style, so the field beside the slider ends at the same
+       edge on every row (2026-10-14). -->
+  <data name="SettingsComposer_HeaderWithUnit" xml:space="preserve">
+    <value>{0} ({1})</value>
+  </data>
   <!-- The section block (SettingsSection, Catalog): the tooltip of its reset
        wheel. Same ownership as the page header's strings. -->
   <data name="SettingsSection_ResetTooltip" xml:space="preserve">
@@ -234,7 +240,7 @@
     <value>Enable corpus logging</value>
   </data>
   <data name="CorpusConsent_Body_Intro" xml:space="preserve">
-    <value>Deckle will append every transcription to a local JSONL file — one folder per rewrite profile, one corpus.jsonl inside each — so you can iterate on your rewrite prompts offline.</value>
+    <value>Deckle will append every transcription to a local JSONL file, with one folder per rewrite profile and one corpus.jsonl inside each, so you can iterate on your rewrite prompts offline.</value>
   </data>
   <data name="CorpusConsent_Body_What" xml:space="preserve">
     <value>Raw transcription text, rewritten text, timing, model and prompt identifiers. Nothing is sent over the network.</value>
@@ -251,10 +257,10 @@
     <value>Deckle will mirror every in-app log line to a local JSONL file (app.jsonl) so you can diagnose a specific issue across restarts.</value>
   </data>
   <data name="ApplicationLogConsent_Body_What" xml:space="preserve">
-    <value>Every log line from every subsystem — capture, VAD, Whisper, rewriting, clipboard, paste, UI — at every verbosity level. Log messages can include partial transcription text when a pipeline step logs what it just produced. Nothing is sent over the network.</value>
+    <value>Every log line from every subsystem (capture, VAD, Whisper, rewriting, clipboard, paste, UI) at every verbosity level. Log messages can include partial transcription text when a pipeline step logs what it just produced. Nothing is sent over the network.</value>
   </data>
   <data name="ApplicationLogConsent_Body_Remind" xml:space="preserve">
-    <value>The log is chatty — expect roughly 2 MB per 30 minutes of active use. It rotates every 5000 lines (app-1.jsonl, app-2.jsonl, …) with no cap on archives, so turn it off once you have what you need and prune the archives by hand.</value>
+    <value>The log is chatty. Expect roughly 2 MB per 30 minutes of active use. It rotates every 5000 lines (app-1.jsonl, app-2.jsonl, …) with no cap on archives, so turn it off once you have what you need and prune the archives by hand.</value>
   </data>
 
   <!-- Autocorrect consent dialogs use Loc.Get from code-behind. Their source
@@ -264,13 +270,13 @@
     <value>Enable autocorrect decision log</value>
   </data>
   <data name="AutocorrectDecisionsConsent_Body_Intro" xml:space="preserve">
-    <value>Deckle will write one line for every word the autocorrect engine weighs on an enrolled app — corrected or left as you typed it — to a local JSONL file (autocorrect.decisions.jsonl), so you can see exactly why it did or did not act.</value>
+    <value>Deckle will write one line for every word the autocorrect engine weighs on an enrolled app, corrected or left as you typed it, to a local JSONL file (autocorrect.decisions.jsonl), so you can see exactly why it did or did not act.</value>
   </data>
   <data name="AutocorrectDecisionsConsent_Body_What" xml:space="preserve">
     <value>Each word you type on an enrolled surface, its preceding context words, the candidate forms with their frequencies and scores, the safety margins, and the rule that made the call. Nothing is sent over the network. Password fields are never seen.</value>
   </data>
   <data name="AutocorrectDecisionsConsent_Body_Remind" xml:space="preserve">
-    <value>This records the words you type on enrolled apps in clear text. Keep it on only while diagnosing the corrector, turn it off when you are done, and purge the file — it is not rotated.</value>
+    <value>This records the words you type on enrolled apps in clear text. Keep it on only while diagnosing the corrector, turn it off when you are done, and purge the file, because it is not rotated.</value>
   </data>
   <data name="AutocorrectTextConsent_Title" xml:space="preserve">
     <value>Keep a record of text typed in enrolled apps</value>
@@ -279,10 +285,10 @@
     <value>Deckle will save each sentence you physically type on an enrolled editable surface to a local JSONL file (autocorrect.text.jsonl): the text exactly as you typed it, paired with the corrected version. It also keeps the typing stream (autocorrect.stream.jsonl): the raw flow of your typing, including what you erased and retyped. Together they build a corpus of your writing, and your mistakes, to make the corrector better at the way you type.</value>
   </data>
   <data name="AutocorrectTextConsent_Body_What" xml:space="preserve">
-    <value>The full text you physically type on enrolled editable surfaces, verbatim — including errors the corrector did not catch. The typing stream additionally records what you erased with Backspace and what you retyped over it. Password fields are never seen, and text you paste or dictate is not recorded. Nothing is sent over the network.</value>
+    <value>The full text you physically type on enrolled editable surfaces, verbatim, including errors the corrector did not catch. The typing stream additionally records what you erased with Backspace and what you retyped over it. Password fields are never seen, and text you paste or dictate is not recorded. Nothing is sent over the network.</value>
   </data>
   <data name="AutocorrectTextConsent_Body_Remind" xml:space="preserve">
-    <value>This is the most complete text capture in Deckle — a verbatim record of what you type in enrolled apps. It stays on this device. Turn it off when you have gathered enough, and delete the files when you no longer need them — they are not rotated.</value>
+    <value>This is the most complete text capture in Deckle, a verbatim record of what you type in enrolled apps. It stays on this device. Turn it off when you have gathered enough, and delete the files when you no longer need them, because they are not rotated.</value>
   </data>
 
   <!-- Audio corpus consent — raw WAV next to the text JSONL, per profile. -->
@@ -293,7 +299,7 @@
     <value>Deckle will save the raw microphone audio of every transcription as a 16 kHz mono WAV file, next to the JSONL text corpus under an audio/ subfolder per profile. Useful for replaying a past session against a different Whisper model or prompt.</value>
   </data>
   <data name="AudioCorpusConsent_Body_What" xml:space="preserve">
-    <value>The exact audio passed to whisper.cpp — including any silence and background noise picked up by the microphone. One WAV per transcription. Nothing is sent over the network.</value>
+    <value>The exact audio passed to whisper.cpp, including any silence and background noise picked up by the microphone. One WAV per transcription. Nothing is sent over the network.</value>
   </data>
   <data name="AudioCorpusConsent_Body_Remind" xml:space="preserve">
     <value>Voice recordings are biometric-adjacent and the files can be replayed verbatim. Review and purge the folder regularly, and exclude it from any backup target you don't control.</value>
@@ -307,10 +313,10 @@
     <value>Deckle will log your microphone level distribution after every recording, so you can calibrate the HUD level window against the dBFS range your microphone actually produces.</value>
   </data>
   <data name="MicrophoneTelemetryConsent_Body_What" xml:space="preserve">
-    <value>Only level statistics — minimum, percentiles (p10, p25, p50, p75, p90), maximum, and mean RMS — in dBFS. No audio. No transcription. No words. Nothing is sent over the network.</value>
+    <value>Only level statistics in dBFS, namely minimum, percentiles (p10, p25, p50, p75, p90), maximum, and mean RMS. No audio. No transcription. No words. Nothing is sent over the network.</value>
   </data>
   <data name="MicrophoneTelemetryConsent_Body_Remind" xml:space="preserve">
-    <value>One short JSON line per recording — small file. Useful when calibrating, then turn it off. The same data also appears in the LogWindow under [CAPTURE] for live inspection.</value>
+    <value>One short JSON line per recording. Small file. Useful when calibrating, then turn it off. The same data also appears in the LogWindow under [CAPTURE] for live inspection.</value>
   </data>
 
   <!-- ─── Engine status ──────────────────────────────────────────────
@@ -463,7 +469,7 @@
        invisible to the default loader. The {0} placeholder receives a
        Status_* string from TranscriptionEngine. -->
   <data name="Tray_Tooltip_Format" xml:space="preserve">
-    <value>Deckle — {0}</value>
+    <value>Deckle - {0}</value>
   </data>
   <data name="TrayMenu_TranscribeFile" xml:space="preserve">
     <value>Transcribe audio files…</value>
@@ -598,7 +604,7 @@
     <value>Connecting...</value>
   </data>
   <data name="Setup_Install_Done_Format" xml:space="preserve">
-    <value>Done — {0}</value>
+    <value>Done. {0}</value>
   </data>
   <data name="Setup_Install_Done" xml:space="preserve">
     <value>Done.</value>
@@ -679,7 +685,7 @@
     <value>Importing…</value>
   </data>
   <data name="Setup_ImportChecksumMismatch" xml:space="preserve">
-    <value>That file doesn't match the expected model — pick the one from the link above.</value>
+    <value>That file doesn't match the expected model. Pick the one from the link above.</value>
   </data>
   <data name="Setup_ImportFailed_Format" xml:space="preserve">
     <value>Import failed: {0}</value>
@@ -802,7 +808,7 @@
     <value>Remove this profile?</value>
   </data>
   <data name="Settings_RemoveProfileDialog_Content_Format" xml:space="preserve">
-    <value>"{0}" will be removed. Any rule or shortcut that pointed to it will need a new profile picked — they're not deleted, they go blank until you reassign them.</value>
+    <value>"{0}" will be removed. Any rule or shortcut that pointed to it will need a new profile picked. They're not deleted, they go blank until you reassign them.</value>
   </data>
   <data name="Settings_ResetProfilesDialog_Title" xml:space="preserve">
     <value>Reset profiles to defaults?</value>
@@ -915,7 +921,7 @@
     <value>No results found</value>
   </data>
   <data name="Settings_Search_MoreResults_Format" xml:space="preserve">
-    <value>+{0} more — refine your search</value>
+    <value>+{0} more. Refine your search</value>
   </data>
 
   <!-- ── AmbientPage code-behind (Loc.Get / Loc.Format) ──────
@@ -974,13 +980,13 @@
     <value>Primary display (follow Windows)</value>
   </data>
   <data name="AmbientMonitor_CurrentPrimarySuffix" xml:space="preserve">
-    <value> — current primary</value>
+    <value>, current primary</value>
   </data>
   <data name="AmbientMonitor_DisplayFormat" xml:space="preserve">
-    <value>Display {0} — {1} × {2}{3}</value>
+    <value>Display {0}, {1} × {2}{3}</value>
   </data>
   <data name="AmbientMonitor_UnavailableFormat" xml:space="preserve">
-    <value>Unavailable display — {0}</value>
+    <value>Unavailable display, {0}</value>
   </data>
   <data name="AmbientHue_PairStatus_PressLink" xml:space="preserve">
     <value>Press the link button on the bridge within 30 seconds.</value>
@@ -1031,6 +1037,27 @@
        Resources.resw, which stays the source of truth for wording. -->
   <data name="AmbientPreview_GroupSwatch" xml:space="preserve">
     <value>All lights</value>
+  </data>
+  <data name="AmbientPreview_Capture_Format" xml:space="preserve">
+    <value>{0} × {1}, {2}</value>
+  </data>
+  <data name="AmbientPreview_Hdr" xml:space="preserve">
+    <value>HDR</value>
+  </data>
+  <data name="AmbientPreview_Sdr" xml:space="preserve">
+    <value>SDR</value>
+  </data>
+  <data name="AmbientPreview_Grid_Format" xml:space="preserve">
+    <value>{0} × {1} cells</value>
+  </data>
+  <data name="AmbientPreview_Rate_Format" xml:space="preserve">
+    <value>{0} fps</value>
+  </data>
+  <data name="AmbientPreview_Output_Stream" xml:space="preserve">
+    <value>Streaming</value>
+  </data>
+  <data name="AmbientPreview_Output_Rest" xml:space="preserve">
+    <value>REST</value>
   </data>
   <data name="AmbientLights_Zone_None" xml:space="preserve">
     <value>No zone</value>
@@ -1087,7 +1114,7 @@
     <value>Deckle test notification</value>
   </data>
   <data name="PlaygroundNotifications_TestPrompt_Body" xml:space="preserve">
-    <value>Interactive prompt from the Playground — reply or pick an action.</value>
+    <value>Interactive prompt from the Playground. Reply or pick an action.</value>
   </data>
   <data name="PlaygroundNotifications_TestPrompt_Accept" xml:space="preserve">
     <value>Accept</value>
@@ -1131,7 +1158,7 @@
     <value>Contextual correction model (CamemBERT)</value>
   </data>
   <data name="Setup_Install_StepOfTotal_Format" xml:space="preserve">
-    <value>Step {0} of {1} — {2}</value>
+    <value>Step {0} of {1}. {2}</value>
   </data>
   <data name="Setup_TotalEstimate_Pending_Format" xml:space="preserve">
     <value>~{0} to download for the selected modules.</value>
@@ -1143,10 +1170,10 @@
     <value>Choose the folders</value>
   </data>
   <data name="Setup_StepSubtitle_Folders" xml:space="preserve">
-    <value>Where the app and its data will live. Models can grow large — the data folder can go on another drive.</value>
+    <value>Where the app and its data will live. Models can grow large. The data folder can go on another drive.</value>
   </data>
   <data name="Setup_Folders_DriveLine_Format" xml:space="preserve">
-    <value>{0} needs about {1} — {2} free</value>
+    <value>{0} needs about {1}, {2} free</value>
   </data>
   <data name="Setup_Folders_DriveUnknown" xml:space="preserve">
     <value>unknown</value>
@@ -1176,7 +1203,7 @@
     <value>Retry</value>
   </data>
   <data name="Setup_Deploy_Failed_Format" xml:space="preserve">
-    <value>Installation failed — {0}</value>
+    <value>Installation failed. {0}</value>
   </data>
   <data name="Setup_StepTitle_Update" xml:space="preserve">
     <value>Updating Deckle</value>
@@ -1194,7 +1221,7 @@
     <value>Restarting Deckle…</value>
   </data>
   <data name="Setup_Update_Failed_Format" xml:space="preserve">
-    <value>Update failed — {0}</value>
+    <value>Update failed. {0}</value>
   </data>
   <data name="Setup_Update_PayloadMissingExe" xml:space="preserve">
     <value>the downloaded package did not contain Deckle.exe</value>
@@ -1227,7 +1254,7 @@
     <value>Checking free space…</value>
   </data>
   <data name="Setup_Relocate_Failed_Format" xml:space="preserve">
-    <value>Move failed — {0}</value>
+    <value>Move failed. {0}</value>
   </data>
   <data name="Setup_Relocate_InsufficientSpace_Format" xml:space="preserve">
     <value>not enough space on {0} ({1} needed, {2} free)</value>
@@ -1243,7 +1270,7 @@
     <value>Rewrite</value>
   </data>
   <data name="Setup_Module_rewrite_Description" xml:space="preserve">
-    <value>Cleans up dictated text with a local language model — needs Dictation</value>
+    <value>Cleans up dictated text with a local language model. Needs Dictation</value>
   </data>
   <data name="Setup_Module_autocorrect_Label" xml:space="preserve">
     <value>Autocorrect</value>

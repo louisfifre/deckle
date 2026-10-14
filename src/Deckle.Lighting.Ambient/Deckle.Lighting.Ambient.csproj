@@ -16,6 +16,9 @@
     <PackageReference Include="Microsoft.WindowsAppSDK" />
     <PackageReference Include="Microsoft.Windows.SDK.BuildTools" />
     <PackageReference Include="CommunityToolkit.Mvvm" />
+    <!-- GridSplitter between the Ambient page and its preview pane. Referenced
+         here, not from Catalog: Ambient is the only page with a pane today. -->
+    <PackageReference Include="CommunityToolkit.WinUI.Controls.Sizers" />
   </ItemGroup>
 
   <ItemGroup>

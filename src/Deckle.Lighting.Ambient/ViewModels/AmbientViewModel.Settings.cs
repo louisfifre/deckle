@@ -9,7 +9,8 @@ namespace Deckle.Lighting.Ambient;
 // cards the composer cannot express). Every leaf reads its default from a fresh
 // AmbientSettings, the single source the per-card and per-fold resets write back.
 // Headers, descriptions and option labels resolve from this module's .resw as
-// "<LabelKey>.Header" / ".Description" and "<OptionKey>.Content".
+// "<LabelKey>.Header" / ".Description" and "<OptionKey>.Content". No glyph on
+// any card: the rail carries the module's icon (2026-10-14).
 //
 // The setters are the view model's own properties, so the composed cards keep the
 // contracts of AmbientViewModel exactly: a tuning edit reports itself to the preset
@@ -24,7 +25,6 @@ public partial class AmbientViewModel
             "AmbientEnabledCard",
             () => Enabled,
             value => Enabled = value,
-            glyph: Glyphs.Lightbulb,
             defaultValue: () => new AmbientSettings().Enabled),
     ];
 
@@ -61,94 +61,80 @@ public partial class AmbientViewModel
                     visibleWhen: () => BorderMode == BorderThicknessMode.Cells,
                     defaultValue: () => new AmbientSettings().BorderCells),
             ],
-            glyph: Glyphs.Pattern,
             defaultValue: () => new AmbientSettings().UseMultiLight),
     ];
 
-    // Fine tuning: the preset fold (settings design system, decision 12). The
-    // preset selector sits in the fold's header, the values it governs are its
-    // children — the brightness floor (its switch and its level, flat because
-    // folds never nest), smoothing, change threshold, exposure, saturation. Every
-    // child shows in every mode: a preset fills the values, and any hand edit
-    // turns the selection to Custom (AmbientViewModel reports it to the family).
-    // The preset options come from the family (each preset in declared order,
-    // then Custom); the fold's reset writes the children's defaults, then returns
-    // the selector to the default preset. The bespoke brightness curve stays
-    // beside the fold until it becomes a composer instrument.
+    // Fine tuning: flat cards, the brightness curve first at full width (the
+    // value the section is about, so it opens it: Louis, 2026-10-14, reversing
+    // the "instrument last" order for this page), then the
+    // brightness floor (its switch and its level, drawn on the curve as a guide
+    // while it is on), reaction speed, exposure, saturation. The preset fold
+    // that held them (Game / Vivid / Movie / Ambient / Custom in its header) is
+    // set aside with every preset: the family still runs underneath (Preset,
+    // AmbientSettingsService.Presets), so a hand edit still records Custom, but
+    // nothing on the page selects a preset any more. The change threshold, an
+    // engine optimisation nobody tunes, keeps its AmbientSettings default and is
+    // no longer exposed (triage of 2026-10-14).
     public IReadOnlyList<SettingDescriptor> TuningSettings =>
     [
-        Setting.Mode<string>(
-            "AmbientPresetCard",
-            () => Preset,
-            value => Preset = value,
-            AmbientSettingsService.Instance.Presets.SelectorOptions("AmbientPresetCustom"),
-            [
-                Setting.Toggle(
-                    "AmbientMinBrightnessGroup",
-                    () => MinBrightnessEnabled,
-                    value => MinBrightnessEnabled = value,
-                    glyph: Glyphs.LightbulbFilled,
-                    defaultValue: () => new AmbientSettings().MinBrightnessEnabled),
-                Setting.Magnitude(
-                    "AmbientMinBrightnessCard",
-                    () => MinBrightness,
-                    value => MinBrightness = (int)Math.Round(value),
-                    new MagnitudeArgs(0, 254),
-                    visibleWhen: () => MinBrightnessEnabled,
-                    defaultValue: () => new AmbientSettings().MinBrightness),
-                Setting.Magnitude(
-                    "AmbientSmoothingCard",
-                    () => SmoothingAlpha,
-                    value => SmoothingAlpha = value,
-                    new MagnitudeArgs(0.05, 1),
-                    glyph: Glyphs.Latency,
-                    defaultValue: () => new AmbientSettings().SmoothingAlpha),
-                Setting.Magnitude(
-                    "AmbientChangeThresholdCard",
-                    () => ChangeThreshold,
-                    value => ChangeThreshold = (int)Math.Round(value),
-                    new MagnitudeArgs(0, 30),
-                    glyph: Glyphs.Filter,
-                    defaultValue: () => new AmbientSettings().ChangeThreshold),
-                Setting.Magnitude(
-                    "AmbientExposureCard",
-                    () => ExposureEv,
-                    value => ExposureEv = value,
-                    new MagnitudeArgs(-2, 2, Unit: "EV"),
-                    glyph: Glyphs.Lightning,
-                    defaultValue: () => new AmbientSettings().ExposureEv),
-                Setting.Magnitude(
-                    "AmbientSaturationCard",
-                    () => SaturationBoost,
-                    value => SaturationBoost = value,
-                    new MagnitudeArgs(0, 2, Unit: "×"),
-                    glyph: Glyphs.Sparkle,
-                    defaultValue: () => new AmbientSettings().SaturationBoost),
-                // The instrument last and full width (decision 12): the shared
-                // curve block (decision 21) over the brightness response, the unit
-                // square alone, with the brightness floor drawn as a guide while it
-                // is on.
-                Setting.Curve(
-                    "AmbientBrightnessCurveCard",
-                    () => new CurvePoints(BrightnessCurveX1, BrightnessCurveY1, BrightnessCurveX2, BrightnessCurveY2),
-                    p =>
-                    {
-                        BrightnessCurveX1 = p.X1; BrightnessCurveY1 = p.Y1;
-                        BrightnessCurveX2 = p.X2; BrightnessCurveY2 = p.Y2;
-                    },
-                    new CurveArgs(Floor: () => MinBrightnessEnabled ? MinBrightness / 254.0 : null),
-                    glyph: Glyphs.Tuning,
-                    defaultValue: () =>
-                    {
-                        var d = new AmbientSettings();
-                        return new CurvePoints(d.BrightnessCurveX1, d.BrightnessCurveY1, d.BrightnessCurveX2, d.BrightnessCurveY2);
-                    }),
-            ],
-            glyph: Glyphs.Theme,
-            defaultValue: () => AmbientPresets.Default),
+        Setting.Curve(
+            "AmbientBrightnessCurveCard",
+            () => new CurvePoints(BrightnessCurveX1, BrightnessCurveY1, BrightnessCurveX2, BrightnessCurveY2),
+            p =>
+            {
+                BrightnessCurveX1 = p.X1; BrightnessCurveY1 = p.Y1;
+                BrightnessCurveX2 = p.X2; BrightnessCurveY2 = p.Y2;
+            },
+            // The same wide form as the dictation's cut curve, with axes: the
+            // screen's brightness along X, the light's along Y, both in percent,
+            // and the floor drawn in those units while it is on. The square
+            // unit box drew the same curve in a different component next to
+            // the Transcription one, which Louis refused (2026-10-14).
+            new CurveArgs(
+                Frame: () => new CurveFrame(0, 0, 100, 100, 100, 100, Axes: true, XUnit: "%", YUnit: "%"),
+                Floor: () => MinBrightnessEnabled ? MinBrightness / 254.0 * 100.0 : null),
+            defaultValue: () =>
+            {
+                var d = new AmbientSettings();
+                return new CurvePoints(d.BrightnessCurveX1, d.BrightnessCurveY1, d.BrightnessCurveX2, d.BrightnessCurveY2);
+            }),
+        Setting.Toggle(
+            "AmbientMinBrightnessGroup",
+            () => MinBrightnessEnabled,
+            value => MinBrightnessEnabled = value,
+            defaultValue: () => new AmbientSettings().MinBrightnessEnabled),
+        Setting.Magnitude(
+            "AmbientMinBrightnessCard",
+            () => MinBrightness,
+            value => MinBrightness = (int)Math.Round(value),
+            new MagnitudeArgs(0, 254),
+            visibleWhen: () => MinBrightnessEnabled,
+            defaultValue: () => new AmbientSettings().MinBrightness),
+        Setting.Magnitude(
+            "AmbientSmoothingCard",
+            () => SmoothingAlpha,
+            value => SmoothingAlpha = value,
+            new MagnitudeArgs(0.05, 1),
+            defaultValue: () => new AmbientSettings().SmoothingAlpha),
+        Setting.Magnitude(
+            "AmbientExposureCard",
+            () => ExposureEv,
+            value => ExposureEv = value,
+            new MagnitudeArgs(-2, 2, Unit: "EV"),
+            defaultValue: () => new AmbientSettings().ExposureEv),
+        Setting.Magnitude(
+            "AmbientSaturationCard",
+            () => SaturationBoost,
+            value => SaturationBoost = value,
+            new MagnitudeArgs(0, 2, Unit: "×"),
+            defaultValue: () => new AmbientSettings().SaturationBoost),
     ];
 
-    // Configuration: the capture rate, after the bespoke display picker.
+    // Configuration: the capture rate (60 / 30 / 15 per second), after the
+    // bespoke display picker. Dropped by the triage of 2026-10-14 and put back
+    // the same evening: Louis looked for the 60 fps choice and found nothing
+    // ("j'ai plus d'options"). The preview block still reads the rate the
+    // capture really holds, which may sit under the one chosen here.
     public IReadOnlyList<SettingDescriptor> CaptureSettings =>
     [
         Setting.Radio<int>(
@@ -160,7 +146,6 @@ public partial class AmbientViewModel
                 (30, "AmbientCaptureRate30"),
                 (15, "AmbientCaptureRate15"),
             ],
-            glyph: Glyphs.Gpu,
             defaultValue: () => new AmbientSettings().CaptureFrameRateHz),
     ];
 }

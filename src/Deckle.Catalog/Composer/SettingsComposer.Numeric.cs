@@ -138,15 +138,13 @@ public sealed partial class SettingsComposer
         if (slider is not null) content.Children.Add(slider);
         content.Children.Add(box);
 
+        // The unit joins the header, "Exposure (EV)", the PowerToys form, not a
+        // suffix after the field: a suffix pushed the field left by the unit's
+        // width, so the fields of one page ended at different edges, "%" rows
+        // against "EV" rows against unit-less rows (2026-10-14). The reset
+        // tooltip still writes the unit after the value.
         if (!string.IsNullOrEmpty(args.Unit))
-        {
-            content.Children.Add(new TextBlock
-            {
-                Text = args.Unit,
-                VerticalAlignment = VerticalAlignment.Center,
-                Foreground = SecondaryBrush(),
-            });
-        }
+            card.Header = Loc.Format("SettingsComposer_HeaderWithUnit", ResolveHeader(s.LabelKey), args.Unit);
 
         // The tooltip writes the default as the field writes the value: same grain,
         // same unit.
