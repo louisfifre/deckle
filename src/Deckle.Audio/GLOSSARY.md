@@ -10,11 +10,11 @@ Two distinct notions carry the word "level" and must never be conflated. One dri
 ## Display level vs signal pre-processing
 
 **Display level** :
-A perceptual mapping of the signal level, from dBFS to a value between 0 and 1, that drives the intensity of the recording outline while the user speaks. It concerns the visual only and never alters the audio.
+A displayed level of the signal, mapped from dBFS to a value between 0 and 1 as the ear would hear it, that drives the intensity of the recording outline while the user speaks. It concerns the visual only and never alters the audio.
 _Avoid_ : gain (a signal operation, not display), volume (a signal operation, not display).
 
 **Transcription pre-processing** :
-A transform of the captured signal, such as filtering, compression or gain, whose sole purpose is to make the audio easier for the machine to transcribe, not better to listen to. It acts on the samples themselves, after capture and before transcription. It is distinct from display level and does not depend on how the audio is cut for the engine.
+A signal transform, such as filtering, compression or gain, applied to the captured audio so that the machine transcribes it more easily, not so that a person hears it better. It acts on the samples themselves, after capture and before transcription. It is distinct from display level and does not depend on how the audio is cut for the engine.
 _Avoid_ : AGC (it is not real-time automatic gain, it runs on finished audio, an utterance or a whole take), normalization (it is a dynamics chain, not a single peak or RMS scale).
 
 **Gain** :
