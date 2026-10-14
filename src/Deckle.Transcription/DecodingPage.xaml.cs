@@ -27,6 +27,8 @@ public sealed partial class DecodingPage : Page
         // the cached page.
         Compose(DecodingHost, ViewModel.DecodingSettingsManifest);
         Compose(ConfidenceHost, ViewModel.ConfidenceSettingsManifest);
+        Compose(OutputFiltersHost, ViewModel.OutputFilterSettingsManifest);
+        Compose(ContextHost, ViewModel.ContextSettingsManifest);
     }
 
     private void Compose(Panel host, IReadOnlyList<SettingDescriptor> settings)

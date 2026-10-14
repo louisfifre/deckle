@@ -2,33 +2,29 @@ using System;
 using System.Collections.Generic;
 using Deckle.Catalog;
 using Deckle.Core;
-using Deckle.Presets;
 using Deckle.Settings;
 
 namespace Deckle.Transcription;
 
 // ── WhisperViewModel — settings manifest ──────────────────────────────────────
 //
-// The declarative half of WhisperPage's two activatable folds, kept beside the
-// ViewModel that owns the values rather than in the page code-behind. Each entry
-// declares one setting — its kind, its localization key (the SAME x:Uid the
-// hand-authored card carried, so the composer resolves the identical Header and
-// Description from this module's .resw), its glyph, and typed selectors onto this
-// VM's own properties — and SettingsComposer turns the list into the expander's
-// master toggle plus its child cards.
+// The declarative half of the module's three pages (General, Decoding,
+// Streaming), kept beside the ViewModel that owns the values rather than in the
+// page code-behind. Each entry declares one setting — its kind, its
+// localization key (the x:Uid the hand-authored card carried, so the composer
+// resolves the identical Header and Description from this module's .resw) and
+// typed selectors onto this VM's own properties — and SettingsComposer turns
+// each list into cards. No glyph on any card: the rail carries the module's
+// icon, a card carries its words (2026-10-14).
 //
-// Only the VAD and Streaming folds migrate. The flat cards and the other groups
-// (Language, Model, Decoding, Confidence, output filters, MaxTokens) stay
-// hand-authored — their selectors don't fit the flat get/set descriptor model, or
-// they carry bespoke chrome (the model AutoSuggestBox, the restart footer).
+// The flat cards with bespoke chrome (Language, Model with its AutoSuggestBox,
+// the initial prompt, the restart footer) stay hand-authored on WhisperPage.
 //
-// Single-source defaults on EVERY descriptor (master and children) read the POCO
-// initializer (new SpeechTrimSettings().<Field>, new EnergySegmenterSettings()
-// .<Field>) — the same literal SettingsService persists — so each migrated card
-// gets a per-card reset that goes active exactly when the value leaves that
-// default. The Seg* fields are int in the POCO; the int→double widening into the
-// Func<double> default is implicit, the same way RecordingViewModel feeds its
-// float LevelWindow fields.
+// Single-source defaults on EVERY descriptor read the POCO initializer (new
+// SpeechTrimSettings().<Field>, new EnergySegmenterSettings().<Field>) — the
+// same literal SettingsService persists — so each card's reset goes active
+// exactly when the value leaves that default. The Seg* fields are int in the
+// POCO; the int→double widening into the Func<double> default is implicit.
 public partial class WhisperViewModel
 {
     // Dictation experience — the overlay HUD group then the flat auto-paste toggle,
@@ -76,69 +72,85 @@ public partial class WhisperViewModel
                     ],
                     defaultValue: () => new OverlaySettings().TranscriptPanelSide),
             ],
-            glyph: Glyphs.Overlay,
             defaultValue: () => new OverlaySettings().Enabled),
 
         Setting.Toggle("GeneralAutoPasteCard",
             () => AutoPasteEnabled,
             value => AutoPasteEnabled = value,
-            glyph: Glyphs.Paste,
             defaultValue: () => new PasteSettings().AutoPasteEnabled),
     ];
 
-    // GPU acceleration — the flat toggle under the "Model engine" header. It was
-    // hand-authored as a lone SettingsCard with its own reset; it composes as a
-    // single leaf Toggle into a host, exactly the shape it had. The default reads
-    // the EngineSettings POCO initializer (the single source SettingsService
-    // persists), so the composed per-card reset goes active exactly when the value
-    // leaves that default. The x:Uid is the same the hand-authored card carried, so
-    // the composer resolves the identical Header/Description from this module's
-    // .resw. UseGpu is restart-coupled, but the RESTART FOOTER stays bespoke: it
-    // watches VM.UseGpu directly, and the composer drives that same VM property, so
-    // a composed toggle still trips the footer.
+    // GPU acceleration — the flat toggle under the "Model & engine" header. The
+    // default reads the EngineSettings POCO initializer. UseGpu is
+    // restart-coupled, but the RESTART FOOTER stays bespoke: it watches VM.UseGpu
+    // directly, and the composer drives that same VM property, so a composed
+    // toggle still trips the footer.
     public IReadOnlyList<SettingDescriptor> UseGpuSettingsManifest =>
     [
         Setting.Toggle("WhisperUseGpuCard",
             () => UseGpu,
             value => UseGpu = value,
-            glyph: Glyphs.Gpu,
             defaultValue: () => new EngineSettings().UseGpu),
     ];
 
-    // Models directory — the editable folder path that was hand-authored as a
-    // FolderPickerEditableCard nested in the Model expander, with a RightContent
-    // reset and a code-behind-set DefaultPath. It composes as a single Path leaf
-    // with FolderPickerMode.Editable: the composer's own Path reset replaces the
-    // hand-authored RightContent reset + its hover wiring, and PathArgs.DefaultPath
-    // carries the deferred AppPaths lookup the code-behind used to set imperatively
-    // (resolved once at compose time). The default value is the TranscriptionSettings
-    // POCO initializer ("" = fall back to AppPaths.ModelsDirectory), so the reset
-    // goes active exactly when the user has repointed the folder. The x:Uid reuses
-    // the hand-authored WhisperModelsDirCard, so the Header/Description resolve from
-    // this module's .resw unchanged.
+    // Models directory — a Path leaf with FolderPickerMode.Editable; PathArgs
+    // .DefaultPath carries the deferred AppPaths lookup (resolved once at compose
+    // time). The default value is the TranscriptionSettings POCO initializer ("" =
+    // fall back to AppPaths.ModelsDirectory), so the reset goes active exactly
+    // when the user has repointed the folder.
     public IReadOnlyList<SettingDescriptor> ModelsDirectorySettingsManifest =>
     [
         Setting.Path("WhisperModelsDirCard",
             () => ModelsDirectory,
             value => ModelsDirectory = value,
             new PathArgs(FolderPickerMode.Editable, DefaultPath: () => AppPaths.ModelsDirectory),
-            glyph: Glyphs.Folder,
             defaultValue: () => new TranscriptionSettings().ModelsDirectory),
     ];
 
-    // Voice activity detection — the Silero pre-trim, one on/off toggle. Its four
-    // detection parameters (threshold, minimum speech, minimum silence, padding)
-    // keep the SpeechTrimSettings defaults and are no longer exposed: they are
-    // tuned once against the model, not per user (triage of 2026-10-14).
+    // Voice activity detection — the Silero pre-trim fold. The master is the
+    // VadEnabled toggle; the four detection parameters are its children, hidden by
+    // the composer while the master is off (it composes the master into each
+    // child's VisibleWhen — native masking, no per-child gate here). The bounds
+    // are the former hand-authored sliders'.
     //
-    // Gates on StreamingEnabled: the Silero trim runs only on the streaming path,
-    // so the card hides when streaming is off.
+    // Back on the page after the 2026-10-14 triage removed them: the Silero trim
+    // is the second detector of the streaming chain, not a detail of the
+    // segmenter. The energy segmenter cuts the live stream on volume alone; the
+    // neural VAD then keeps the speech inside each finished utterance and drops
+    // an utterance with none (docs/transcription-audio-chain.md, "Why two
+    // detectors"). Its threshold and paddings decide what reaches the model, so
+    // they are the module's own parameters, exposed with the switch.
+    //
+    // The whole fold gates on StreamingEnabled at the GROUP's visibleWhen: the
+    // Silero trim runs only on the streaming path, so the entire expander collapses
+    // when streaming is off.
     public IReadOnlyList<SettingDescriptor> VadSettings =>
     [
-        Setting.Toggle("WhisperVadEnabledCard",
+        Setting.Group("WhisperVadEnabledCard",
             () => VadEnabled,
             value => VadEnabled = value,
-            glyph: Glyphs.Microphone,
+            [
+                Setting.Magnitude("WhisperVadThresholdCard",
+                    () => VadThreshold,
+                    value => VadThreshold = value,
+                    new MagnitudeArgs(0.1, 0.9),
+                    defaultValue: () => new SpeechTrimSettings().Threshold),
+                Setting.Magnitude("WhisperVadMinSpeechCard",
+                    () => VadMinSpeechDurationMs,
+                    value => VadMinSpeechDurationMs = value,
+                    new MagnitudeArgs(0, 1000, Unit: "ms", Integer: true),
+                    defaultValue: () => new SpeechTrimSettings().MinSpeechDurationMs),
+                Setting.Magnitude("WhisperVadMinSilenceCard",
+                    () => VadMinSilenceDurationMs,
+                    value => VadMinSilenceDurationMs = value,
+                    new MagnitudeArgs(0, 1000, Unit: "ms", Integer: true),
+                    defaultValue: () => new SpeechTrimSettings().MinSilenceDurationMs),
+                Setting.Magnitude("WhisperVadSpeechPadCard",
+                    () => VadSpeechPadMs,
+                    value => VadSpeechPadMs = value,
+                    new MagnitudeArgs(0, 200, Unit: "ms", Integer: true),
+                    defaultValue: () => new SpeechTrimSettings().SpeechPadMs),
+            ],
             visibleWhen: () => StreamingEnabled,
             defaultValue: () => new SpeechTrimSettings().Enabled),
     ];
@@ -146,20 +158,7 @@ public partial class WhisperViewModel
     // Streaming pipeline — the energy segmenter. The switch is StreamingEnabled
     // (the user-facing on/off projected onto PipelineStrategyKind), a plain card
     // first and alone (settings design system, decision 10); everything under it
-    // hides while streaming is off. In order: the silence threshold, then the cut
-    // fold. The numeric cards are field-only magnitudes (exact figures typed, not
-    // swept), their bounds copied verbatim from the hand-authored NumberBoxes; the
-    // grain derives from each range.
-    //
-    // The cut fold is a master-less Section: the four hangover anchors (max, min,
-    // ramp start, ramp end) then the curve editor, always shown. The preset
-    // selector it carried (Patient / Balanced / Quick / Custom) is set aside with
-    // every preset (settings design system, decision 22): the family still runs
-    // underneath (CutPreset, CutPresetStore), so a hand edit still records
-    // Custom, but nothing on the page selects a preset any more. The cut margin
-    // and the minimum utterance, two blip rules nobody tunes, keep their
-    // EnergySegmenterSettings defaults and are no longer exposed (triage of
-    // 2026-10-14).
+    // hides while streaming is off.
     //
     // The switch's default mirrors the VM's own projection of the segmenter Strategy
     // onto the bool (Load/Push: StreamingEnabled = Strategy == Streaming), read off a
@@ -170,58 +169,64 @@ public partial class WhisperViewModel
         Setting.Toggle("WhisperStreamingEnabledCard",
             () => StreamingEnabled,
             value => StreamingEnabled = value,
-            glyph: Glyphs.Tuning,
             defaultValue: () => new StreamingSettings().Strategy == PipelineStrategyKind.Streaming),
     ];
 
     // The segmentation cards of the Streaming page, under the switch and the
-    // speech-filtering toggle (decision 16): the threshold, then the cut fold.
+    // speech-filtering fold (decision 16): the silence threshold, the one value
+    // that depends on the microphone, as a card; then the cut curve, the
+    // segmentation's instrument, last and at full width, with no fold around it
+    // (2026-10-14). The four hangover anchors (max, min, ramp start, ramp end)
+    // are the curve's frame and live in its legend, beside the plot, as fields:
+    // the doctrine's curve exception puts a curve's values in fields beside the
+    // drawing (decisions 21 and 25). They keep the bounds the former
+    // cards had, in the view model's milliseconds; the plot reads seconds.
+    //
+    // The preset selector (Patient / Balanced / Quick / Custom) is set aside
+    // with every preset (decision 22): the family still runs underneath
+    // (CutPreset, CutPresetStore), so a hand edit still records Custom, but
+    // nothing on the page selects a preset. The cut margin and the minimum
+    // utterance, two blip rules nobody tunes, keep their EnergySegmenterSettings
+    // defaults and stay in the Playground only.
     public IReadOnlyList<SettingDescriptor> SegmentationSettings =>
     [
         Setting.Magnitude("WhisperSegThresholdCard",
             () => SegThresholdDbfs,
             value => SegThresholdDbfs = value,
-            new MagnitudeArgs(-90, 0, Slider: false),
+            new MagnitudeArgs(-90, 0, Unit: "dBFS", Slider: false),
             visibleWhen: () => StreamingEnabled,
             defaultValue: () => new EnergySegmenterSettings().ThresholdDbfs),
-        Setting.Section("WhisperCutPresetCard",
-            [
-                Setting.Magnitude("WhisperSegHangoverMaxCard",
-                    () => SegHangoverMaxMs,
-                    value => SegHangoverMaxMs = value,
-                    new MagnitudeArgs(500, 15000, Slider: false, Integer: true),
-                    defaultValue: () => new EnergySegmenterSettings().HangoverMaxMs),
-                Setting.Magnitude("WhisperSegHangoverMinCard",
-                    () => SegHangoverMinMs,
-                    value => SegHangoverMinMs = value,
-                    new MagnitudeArgs(100, 2000, Slider: false, Integer: true),
-                    defaultValue: () => new EnergySegmenterSettings().HangoverMinMs),
-                Setting.Magnitude("WhisperSegHangoverRampStartCard",
-                    () => SegHangoverRampStartMs,
-                    value => SegHangoverRampStartMs = value,
-                    new MagnitudeArgs(0, 600000, Slider: false, Integer: true),
-                    defaultValue: () => new EnergySegmenterSettings().HangoverRampStartMs),
-                Setting.Magnitude("WhisperSegHangoverRampEndCard",
-                    () => SegHangoverRampEndMs,
-                    value => SegHangoverRampEndMs = value,
-                    new MagnitudeArgs(30000, 900000, Slider: false, Integer: true),
-                    defaultValue: () => new EnergySegmenterSettings().HangoverRampEndMs),
-                // The instrument last and full width (decision 12): the shared
-                // curve block (decision 21) over the four control points, drawn in
-                // the frame the four anchor cards above set, with the sentence that
-                // says what the curve does as its description.
-                Setting.Curve("WhisperCutCurveCard",
-                    () => new CurvePoints(SegCurveX1, SegCurveY1, SegCurveX2, SegCurveY2),
-                    p => { SegCurveX1 = p.X1; SegCurveY1 = p.Y1; SegCurveX2 = p.X2; SegCurveY2 = p.Y2; },
-                    new CurveArgs(Frame: CutCurveFrame, Describe: _ => CutCurveSentence()),
-                    defaultValue: () =>
-                    {
-                        var d = new EnergySegmenterSettings();
-                        return new CurvePoints(d.HangoverCurveX1, d.HangoverCurveY1, d.HangoverCurveX2, d.HangoverCurveY2);
-                    }),
-            ],
-            glyph: Glyphs.Tuning,
-            visibleWhen: () => StreamingEnabled),
+        Setting.Curve("WhisperCutCurveCard",
+            () => new CurvePoints(SegCurveX1, SegCurveY1, SegCurveX2, SegCurveY2),
+            p => { SegCurveX1 = p.X1; SegCurveY1 = p.Y1; SegCurveX2 = p.X2; SegCurveY2 = p.Y2; },
+            new CurveArgs(
+                Frame: CutCurveFrame,
+                Describe: _ => CutCurveSentence(),
+                Anchors:
+                [
+                    new CurveAnchor("WhisperSegHangoverMaxCard",
+                        () => SegHangoverMaxMs, value => SegHangoverMaxMs = value,
+                        500, 15000, Integer: true,
+                        Default: () => new EnergySegmenterSettings().HangoverMaxMs),
+                    new CurveAnchor("WhisperSegHangoverMinCard",
+                        () => SegHangoverMinMs, value => SegHangoverMinMs = value,
+                        100, 2000, Integer: true,
+                        Default: () => new EnergySegmenterSettings().HangoverMinMs),
+                    new CurveAnchor("WhisperSegHangoverRampStartCard",
+                        () => SegHangoverRampStartMs, value => SegHangoverRampStartMs = value,
+                        0, 600000, Integer: true,
+                        Default: () => new EnergySegmenterSettings().HangoverRampStartMs),
+                    new CurveAnchor("WhisperSegHangoverRampEndCard",
+                        () => SegHangoverRampEndMs, value => SegHangoverRampEndMs = value,
+                        30000, 900000, Integer: true,
+                        Default: () => new EnergySegmenterSettings().HangoverRampEndMs),
+                ]),
+            visibleWhen: () => StreamingEnabled,
+            defaultValue: () =>
+            {
+                var d = new EnergySegmenterSettings();
+                return new CurvePoints(d.HangoverCurveX1, d.HangoverCurveY1, d.HangoverCurveX2, d.HangoverCurveY2);
+            }),
     ];
 
     // The frame of the cut curve: X is the open-utterance length in seconds, from
@@ -249,131 +254,104 @@ public partial class WhisperViewModel
                $"then tightens to {SegHangoverMinMs / 1000.0:F1} s by {end:F0} s.";
     }
 
-    // The output filters (suppress non-speech tokens, suppress blank segments, a
-    // regex filter) and the context pair (carry previous context, maximum tokens
-    // per segment) are no longer exposed (triage of 2026-10-14): the two
-    // suppressions are always wanted, filtering text is Autocorrect's job, and
-    // the context pair had no OFF a user would choose. The view model keeps the
-    // properties and OutputFilterSettings / ContextSettings keep their defaults.
-
-    // Decoding — the master-less fold that was hand-authored as a SettingsExpander
-    // with no toggle (WhisperDecodingExpander), now a Section: a header+chevron
-    // grouping whose children are composed cards, with no master to gate them.
-    // UseBeamSearch and BeamSize were runtime-only until now — surfaced as VM
-    // properties above and exposed here; BeamSize is hidden by its VisibleWhen while
-    // beam search is off (mask, never grey), its 1..10 range a sensible default
-    // (the hand-authored UI never exposed it). Temperature/TemperatureIncrement are
-    // magnitudes over the verbatim 0..1 bounds the hand-authored sliders carried.
-    // TemperatureIncrement carries the EXISTING fallback-disabled
-    // warning as an Advisory: the composer renders it as a flat note row under the
-    // card when the step is 0, reusing the WhisperTemperatureIncrementWarning copy
-    // (the former standalone InfoBar). All defaults read the DecodingSettings POCO
-    // initializer — the single source SettingsService persists. The section's
-    // header/description reuse the hand-authored WhisperDecodingExpander x:Uid.
+    // Decoding — four flat cards under the page's "Decoding" section: beam
+    // search, its size (hidden by its VisibleWhen while beam search is off:
+    // mask, never grey), the temperature and the fallback step. No fold: every
+    // card of the page is always shown, so a fold would only hide what the page
+    // is for (2026-10-14). TemperatureIncrement carries the fallback-disabled
+    // warning as an Advisory, rendered as a note row under the card when the
+    // step is 0. All defaults read the DecodingSettings POCO initializer.
     public IReadOnlyList<SettingDescriptor> DecodingSettingsManifest =>
     [
-        Setting.Section("WhisperDecodingExpander",
-            [
-                Setting.Toggle("WhisperUseBeamSearchCard",
-                    () => UseBeamSearch,
-                    value => UseBeamSearch = value,
-                    defaultValue: () => new DecodingSettings().UseBeamSearch),
-                Setting.Magnitude("WhisperBeamSizeCard",
-                    () => BeamSize,
-                    value => BeamSize = value,
-                    new MagnitudeArgs(1, 10, Slider: false, Integer: true),
-                    visibleWhen: () => UseBeamSearch,
-                    defaultValue: () => new DecodingSettings().BeamSize),
-                Setting.Magnitude("WhisperTemperatureCard",
-                    () => Temperature,
-                    value => Temperature = value,
-                    new MagnitudeArgs(0, 1),
-                    defaultValue: () => new DecodingSettings().Temperature),
-                Setting.Magnitude("WhisperTemperatureIncrementCard",
-                    () => TemperatureIncrement,
-                    value => TemperatureIncrement = value,
-                    new MagnitudeArgs(0, 1),
-                    defaultValue: () => new DecodingSettings().TemperatureIncrement,
-                    advisory: () => TemperatureIncrement == 0
-                        ? Loc.GetFromOptional("Deckle.Transcription", "WhisperTemperatureIncrementWarning/Message")
-                        : null),
-            ],
-            glyph: Glyphs.Tuning),
+        Setting.Toggle("WhisperUseBeamSearchCard",
+            () => UseBeamSearch,
+            value => UseBeamSearch = value,
+            defaultValue: () => new DecodingSettings().UseBeamSearch),
+        Setting.Magnitude("WhisperBeamSizeCard",
+            () => BeamSize,
+            value => BeamSize = value,
+            new MagnitudeArgs(1, 10, Slider: false, Integer: true),
+            visibleWhen: () => UseBeamSearch,
+            defaultValue: () => new DecodingSettings().BeamSize),
+        Setting.Magnitude("WhisperTemperatureCard",
+            () => Temperature,
+            value => Temperature = value,
+            new MagnitudeArgs(0, 1),
+            defaultValue: () => new DecodingSettings().Temperature),
+        Setting.Magnitude("WhisperTemperatureIncrementCard",
+            () => TemperatureIncrement,
+            value => TemperatureIncrement = value,
+            new MagnitudeArgs(0, 1),
+            defaultValue: () => new DecodingSettings().TemperatureIncrement,
+            advisory: () => TemperatureIncrement == 0
+                ? Loc.GetFromOptional("Deckle.Transcription", "WhisperTemperatureIncrementWarning/Message")
+                : null),
     ];
 
-    // Confidence thresholds — the second master-less fold (WhisperConfidenceExpander),
-    // now a Section. The three thresholds are magnitudes; the Min/Max the
-    // code-behind set imperatively to dodge the WinUI XAML-trimming parser crash
-    // (Minimum > defaultValue in XAML) move INTO MagnitudeArgs here, where a
-    // code-built control sets them without that parser ever seeing them — so the
-    // workaround retires. Bounds verbatim: Entropy 1.5..3.5; Logprob -1.5..-0.4;
-    // NoSpeech 0.05..0.80. Defaults read the ConfidenceSettings POCO initializer;
-    // the section's header/description reuse the WhisperConfidenceExpander x:Uid.
+    // Confidence — three flat cards under the page's "Confidence" section. The
+    // Min/Max live in MagnitudeArgs, where a code-built control sets them without
+    // the WinUI XAML parser ever seeing a Minimum above a default. Bounds
+    // verbatim: Entropy 1.5..3.5; Logprob -1.5..-0.4; NoSpeech 0.05..0.80.
+    // Defaults read the ConfidenceSettings POCO initializer.
     public IReadOnlyList<SettingDescriptor> ConfidenceSettingsManifest =>
     [
-        Setting.Section("WhisperConfidenceExpander",
-            [
-                Setting.Magnitude("WhisperEntropyCard",
-                    () => EntropyThreshold,
-                    value => EntropyThreshold = value,
-                    new MagnitudeArgs(1.5, 3.5),
-                    defaultValue: () => new ConfidenceSettings().EntropyThreshold),
-                Setting.Magnitude("WhisperLogprobCard",
-                    () => LogprobThreshold,
-                    value => LogprobThreshold = value,
-                    new MagnitudeArgs(-1.5, -0.4),
-                    defaultValue: () => new ConfidenceSettings().LogprobThreshold),
-                Setting.Magnitude("WhisperNoSpeechCard",
-                    () => NoSpeechThreshold,
-                    value => NoSpeechThreshold = value,
-                    new MagnitudeArgs(0.05, 0.80),
-                    defaultValue: () => new ConfidenceSettings().NoSpeechThreshold),
-            ],
-            glyph: Glyphs.Diagnostics),
+        Setting.Magnitude("WhisperEntropyCard",
+            () => EntropyThreshold,
+            value => EntropyThreshold = value,
+            new MagnitudeArgs(1.5, 3.5),
+            defaultValue: () => new ConfidenceSettings().EntropyThreshold),
+        Setting.Magnitude("WhisperLogprobCard",
+            () => LogprobThreshold,
+            value => LogprobThreshold = value,
+            new MagnitudeArgs(-1.5, -0.4),
+            defaultValue: () => new ConfidenceSettings().LogprobThreshold),
+        Setting.Magnitude("WhisperNoSpeechCard",
+            () => NoSpeechThreshold,
+            value => NoSpeechThreshold = value,
+            new MagnitudeArgs(0.05, 0.80),
+            defaultValue: () => new ConfidenceSettings().NoSpeechThreshold),
     ];
 
-    // Diagnostics — the dictation-scoped observability opt-ins relocated from the
-    // shared Diagnostics page, in on-screen order: the streaming-transcription log
-    // filter, the latency telemetry toggle, then the audio-corpus consent fold.
-    //
-    // Neither the log toggle nor the latency toggle carries a defaultValue: a
-    // privacy/observability opt-in has no per-row "resettable default" affordance,
-    // so the composer renders no per-card reset wheel — the same posture the
-    // Diagnostics page's cards had.
-    //
-    // The corpus fold is the Setting.Group copied from DiagnosticsViewModel.CorpusSettings,
-    // but its consent dialogs now ride the Catalog registry (TelemetryConsent.RequestCorpus
-    // on the master, .RequestAudioCorpus on the audio child) rather than the shell's
-    // ContentDialog types — so this module gates its enables behind consent without
-    // referencing the shell. The master → record → content chain masks (never greys)
-    // via the child radio's VisibleWhen on RecordAudioCorpus. No defaultValue anywhere:
-    // a privacy opt-in carries no per-row reset.
-    public IReadOnlyList<SettingDescriptor> DiagnosticsSettings =>
+    // Output filters — three flat cards under the page's "Output filters"
+    // section, after Decoding and Confidence: what the model's text loses before
+    // it is pasted. Not decoding, so not under that title; still the module's
+    // own, so still on the page (2026-10-14). SuppressRegex is a one-line
+    // free-text field; its placeholder reuses the WhisperSuppressRegexBox
+    // .PlaceholderText entry. Defaults read the OutputFilterSettings POCO
+    // initializer.
+    public IReadOnlyList<SettingDescriptor> OutputFilterSettingsManifest =>
     [
-        Setting.Toggle("GeneralLatencyCard",
-            () => TelemetryLatencyEnabled,
-            value => TelemetryLatencyEnabled = value,
-            glyph: Glyphs.Latency),
-        Setting.Group("GeneralCorpusExpander",
-            () => TelemetryCorpusEnabled,
-            value => TelemetryCorpusEnabled = value,
-            glyph: Glyphs.AudioRecording,
-            confirmOnEnable: TelemetryConsent.RequestCorpus,
-            children:
-            [
-                Setting.Toggle("GeneralAudioCorpusCard",
-                    () => RecordAudioCorpus,
-                    value => RecordAudioCorpus = value,
-                    confirmOnEnable: TelemetryConsent.RequestAudioCorpus),
-                Setting.Radio("GeneralAudioCorpusContentCard",
-                    () => AudioCorpusContentIndex,
-                    value => AudioCorpusContentIndex = value,
-                    options:
-                    [
-                        (0, "GeneralAudioCorpusContentMatch"),
-                        (1, "GeneralAudioCorpusContentRaw"),
-                    ],
-                    visibleWhen: () => RecordAudioCorpus),
-            ]),
+        Setting.Toggle("WhisperSuppressNstCard",
+            () => SuppressNonSpeechTokens,
+            value => SuppressNonSpeechTokens = value,
+            defaultValue: () => new OutputFilterSettings().SuppressNonSpeechTokens),
+        Setting.Toggle("WhisperSuppressBlankCard",
+            () => SuppressBlank,
+            value => SuppressBlank = value,
+            defaultValue: () => new OutputFilterSettings().SuppressBlank),
+        Setting.Text("WhisperSuppressRegexCard",
+            () => SuppressRegex,
+            value => SuppressRegex = value,
+            new TextArgs(Placeholder: Loc.GetFromOptional("Deckle.Transcription", "WhisperSuppressRegexBox/PlaceholderText")),
+            defaultValue: () => new OutputFilterSettings().SuppressRegex),
+    ];
+
+    // Context — two flat cards under the page's "Context" section, last:
+    // whether each segment primes the next and how much text a segment may
+    // produce. UseContext is a Toggle; MaxTokens is a field-only magnitude over
+    // the -1..448 range (the VM's OnMaxTokensChanged NaN-guard is the same guard
+    // the composer applies, so a cleared field never persists). Defaults read
+    // the ContextSettings POCO initializer.
+    public IReadOnlyList<SettingDescriptor> ContextSettingsManifest =>
+    [
+        Setting.Toggle("WhisperUseContextCard",
+            () => UseContext,
+            value => UseContext = value,
+            defaultValue: () => new ContextSettings().UseContext),
+        Setting.Magnitude("WhisperMaxTokensCard",
+            () => MaxTokens,
+            value => MaxTokens = value,
+            new MagnitudeArgs(-1, 448, Slider: false, Integer: true),
+            defaultValue: () => new ContextSettings().MaxTokens),
     ];
 }
