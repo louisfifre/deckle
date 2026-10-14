@@ -86,7 +86,6 @@
                         <controls:SettingsExpander x:Name="FoldersExpander"
                                                    x:Uid="OrchestrationPage_FoldersExpander"
                                                    Tag="OrchestrationPage_FoldersExpander"
-                                                   catalog:SettingsDescriptions.Toggled="True"
                                                    ItemsSource="{x:Bind ViewModel.ScanFolders}">
                             <Button x:Uid="OrchestrationPage_AddFolderButton"
                                     Click="OnAddFolderClick" />
