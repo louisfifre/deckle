@@ -15,7 +15,7 @@ Every design value comes from a theme resource, so it follows light, dark, contr
 
 The material follows the surface's lifetime. A window the user works in for a long time wears Mica. A surface that appears briefly over other work wears Acrylic. DWM draws the shadows and rounds the corners, not XAML.
 
-Animations run on a linear curve. Another curve enters only when the maintainer asks for it, and each one is validated on its own.
+Animations run on a linear curve. Another curve enters only when the maintainer asks for it, and each one is validated on its own. Every animation follows the Windows animation preference and snaps to its end when the person has turned animations off.
 
 One `x:Uid` serves one element type. MRT applies every property of the `.resw` entry to each element that carries the Uid, and a property the element does not have crashes the page at load.
 
