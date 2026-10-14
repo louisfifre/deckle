@@ -1,28 +1,27 @@
 ---
 name: deckle-settings-ux
-description: What to expose in settings surfaces and how to organize it. Invoke before exposing a setting, organizing a page, or reworking a settings surface.
+description: Use when you add a setting, place one on a page or rework a settings surface, so that each setting earns its place, sits at the right depth and gets the control its value calls for.
 ---
 
-# Deckle — Settings UX
+## Why
 
-## Intent
+Every exposed setting is a debt. It costs findability, testing and a real fix postponed. A surface carries only what a good default cannot decide, organized the same way everywhere, so a person finds a setting where they expect it.
 
-Build a settings surface on transferable good practice — what to expose, how to organize it, and which control fits each kind of setting.
+## Statement
 
-## How
+Each setting earns its place against a default that just works. If a value can be decided for the user, decide it. Exposing depth is legitimate when the audience wants it. Good defaults, clear grouping and search pay for it, and nothing the user came for is hidden.
 
-Every exposed setting is a debt — findability, testing, a real fix postponed — so each earns its place against a default that just works. If a value can be decided for the user, decide it. Exposing depth is legitimate when the audience wants it, but the cost is paid by good defaults and discoverability — grouping, search, a modified-only view — never by hiding what the user came for.
+A setting is reached in three levels at most, and the last two are earned. First the module. Under it a page, only once the module's surface no longer fits one. Then an in-page fold, for what configures a switch or depends on a choice. A fourth level means rework, and folds never nest. A module split into pages is a rail node that expands, its pages at one level and the first named General. Every page shows a breadcrumb in place of its title, the way up when the rail is closed. Settings are organized by module, so a setting is found under the module that acts on it. A setting that does not apply in the current state is hidden. Greying only marks an action in progress.
 
-Three levels at most to reach a setting, and the last two are earned. A module, under it a page only once the module's surface no longer fits one, then an in-page fold for what configures a switch or depends on a choice. A fourth means rework, not more depth, and folds never nest. A module split into pages is a rail node that expands, its pages at one level and the first named General. Every page shows a breadcrumb in place of its title, the way up when the rail is closed. Organize by module rather than by loosely related theme. A setting that does not apply in the current state is hidden, not greyed. Greying is only a transient busy signal while an action runs, never a substitute for hiding.
+A page is a header, then sections of cards. The header carries the breadcrumb, one line of description and the reset of the whole surface. A module that can be off has its switch as the first card, alone. A section is a title, at most one line of caption, then cards. A card's description says the effect, as long as understanding needs, or is absent. It never says the default, which the reset tooltip carries. Reference values belong to a legend beside the instrument, not to a description. A choice that decides which settings exist sits in the header of the fold that holds them. A preview or a meter shows and never writes, and the values it draws are fields beside it. A drawing whose points are the value itself, such as a curve, also writes through its handles, each at its release, with its values as fields beside it.
 
-A page is a header, then sections of cards. The header carries the breadcrumb, one line of description and the reset of the whole surface. A module that can be off has its switch as the first card, alone. A section is a title, at most one line of caption, cards. A card's description says the effect, as long as understanding needs, or is absent; never the default, which the reset tooltip carries. Reference values belong to a legend beside the instrument, not to a description. A choice that decides which settings exist sits in the header of the fold that holds them. A preview or a meter shows and never writes, and the values it draws are fields beside it. The curve editor is the one exception: its handles write at their release, with its values as fields beside the drawing. The third round of decisions in `docs/settings-design-system.md` is marked provisional; a problem met against it reopens the decision.
+A change applies at once and is written when its gesture ends, at the release of a slider or the commit of a field. A setting has no OK or Apply button. Its reset to the default is the way back. The default has one source. A reset exists for a value, for its group and for the whole surface, and each becomes active once something differs from its default. Two changes break the rule. One hard to undo is held until confirmed. One that needs a restart is confirmed first, then offered the restart.
 
-A change applies at once and is written when its gesture ends, at the release of a slider or the commit of a field, never on every step. A reset to its default replaces any OK to confirm. The default has one source, and the reset appears on hover, only once the value has changed, at three levels, the value, its group, the whole surface. Two changes break the rule. One hard to undo is held until confirmed, not applied then reversed. One that needs a restart is confirmed first, then offered the restart.
+Confirmation is set by how reversible an action is, never by where the setting sits. When a setting must warn, it speaks through one inline channel whose wording carries the tone.
 
-Confirmation is set by how reversible an action is, never by where the setting sits. And when a setting must warn, it speaks through one inline channel whose wording carries the tone — no ladder of severities.
+First tell a setting from a command and from a diagnostic. A setting keeps a value. A command acts now, through a button or a menu. A diagnostic is read, never configured. The nature of a setting's value then picks its control, as the control catalogue says. A numeric magnitude is always one control, a number field for the exact value with a slider beside it when the value earns a gesture, sized by a chosen fineness rather than hand-numbered increments. Between two similar options, say what each does, not what it is.
 
-## Categories and controls
+## Reference
 
-First sort what you're looking at: a persistent setting, a command (an immediate action — a button or menu, not the list), or a diagnostic (consulted, not configured). Then a setting's value-nature picks its control — see the control catalogue in `references/controls-and-behaviour.md` for the full mapping and the finer kinds. The one worth stating here. A numeric magnitude is always one control, a number field for the exact value with a slider beside it when the value earns a gesture, sized by a chosen fineness, not by hand-numbered increments.
-
-For two similar options, say what each does (its effect), not what it is (its mechanism).
+- [controls-and-behaviour.md](references/controls-and-behaviour.md), the control for each nature of value and the finer magnitude, path, fold, reset and confirmation rules, when choosing a control or wiring a reset.
+- `docs/settings-design-system.md`, the blocks, the decisions behind them and which decisions are still provisional, before building or reshaping a block.

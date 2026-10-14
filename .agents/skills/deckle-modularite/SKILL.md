@@ -1,22 +1,20 @@
 ---
 name: deckle-modularite
-description: When and along which lines to separate code into modules and files. Invoke before growing a module, judging a new one, or splitting a file or surface.
+description: Use when code is about to grow a module, add a new one, or split a file or a surface, to decide where the boundary falls and which way the dependencies point.
 ---
 
-# Deckle — Modularity
+## Why
 
-## Intent
+Modules keep the application legible and easy to grow. Each capability is a separable unit, and dependencies run one way.
 
-Modularize an application so it stays legible and easy to grow: each capability a separable unit, with clean one-way dependencies.
+## Statement
 
-## How
+A module carries one responsibility that one sentence can name, and it exposes a narrow public surface. When the sentence needs more, or the surface keeps spreading, the module holds several responsibilities. Separate them.
 
-A module carries one responsibility nameable in a single sentence, and exposes a narrow public surface. More than one sentence, or a sprawling surface, means it is really several — separate them.
+Know which kind of module you are writing before you grow it, because the kind sets the rules. The dividing question is whether it holds an active runtime state that acts on the system. If it does, it is a domain module. It owns that state and everything attached to it, settings and persistence included. If it does not, it is support, pure code that others call, the bottom layer, referenced widely and depending on almost nothing. A module that owns no domain and assembles others is a shell when it only presents them, and a host when its whole job is to aggregate them by role. A host references widely, because that is its job.
 
-Know which kind of module you're writing before you grow it — the kind sets the rules. The dividing question: does it hold an active runtime state that acts on the system? If so, it's a domain module — it owns that state and everything attached to it, settings and persistence included. If not, it's support: pure code others call, the reusable bottom layer, referenced widely and depending on almost nothing. A module that owns no domain but assembles others is a shell when it only presents them, a host when its whole job is to aggregate by role — and for a host, referencing widely is the point, not a flaw.
+Dependencies point one way, toward the more fundamental module. A cycle means a shared notion should rise into a common module, or the two modules are one.
 
-Dependencies point one way only, toward the more fundamental — never sideways or up. A cycle means a shared notion must rise into a common module, or two modules are really one.
+Ask on every change whether this could live in its own file. The answer is usually yes. Give each cohesive group of functions its own small file named for its responsibility, and keep no function stranded alone. A tree of named files shows what changed at a glance, so it takes the place of section comments inside a file and of thousand-line files. Keep code together only when separating it would cost real load or runtime.
 
-Make "could this live in its own file?" a reflex on every change — the answer is usually yes. Group related functions into small, cohesive, well-named files (a coherent cluster, never a single function stranded alone), many to a folder, subfolders for depth. A tree of named files shows what changed at a glance, and replaces both in-file section comments and thousand-line files. The only brake is performance: don't separate files when it would cost real load or runtime.
-
-Settings are modular too: each module carries its own settings page and its persistence, instead of piling them into a central settings shell.
+Settings are modular too. Each module carries its own settings page and its own persistence.

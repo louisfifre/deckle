@@ -1,18 +1,18 @@
 ---
 name: deckle-versioning
-description: How versions are numbered and the changelog written. Invoke before cutting a version, writing a CHANGELOG entry, or drafting release notes.
+description: Use when you record a Deckle version, touch CHANGELOG.md or prepare release notes, to choose the bump and let the commit history write the text.
 ---
 
-# Deckle — Versioning
+## Why
 
-## Intent
+The commit history is the only source of the changelog and the release notes, generated offline with plain git. The record stays as local and autonomous as the app, and the two texts can never disagree.
 
-Decide which number to bump and what goes in the changelog.
+## Statement
 
-## How
+The version lives in one place, the `<Version>` of `src/Deckle.App/Deckle.App.csproj`. A version record is one `chore(version): vX.Y.Z` commit, made by `scripts/commands/record-version.ps1`, and the global instructions say when it happens, at each merge into main. A git tag marks a public release only, created after the release artifacts build successfully. The native runtime bundle has its own version and its own `native-vX.Y.Z` tags, released apart from the app by `scripts/commands/release/publish-native-runtime.ps1`.
 
-A version record is a `chore(version): vX.Y.Z` commit, not a tag; when it happens is the global convention's call. Git tags are public-release boundaries only and are created after the release artifacts build successfully. Magnitude follows the user-facing change rather than API compatibility: MAJOR is an overhaul, MINOR a real cycle (a feature or engine change), and PATCH is a fix, internal change, documentation workstream, or other small step. Stay in 0.x until the behaviour surface is stable enough to promise.
+Magnitude follows what the user sees, not API compatibility. MAJOR is an overhaul. MINOR is a real cycle, a feature or an engine change. PATCH is everything else, a fix, an internal change, a documentation workstream or another small step. Deckle stays in 0.x until its behaviour surface is stable enough to promise, and every 0.x release is published as a pre-release.
 
-The changelog follows keepachangelog — six categories in order (Added, Changed, Deprecated, Removed, Fixed, Security), newest first, ISO date. It is generated from the Conventional-Commit history by `scripts/commands/changelog.ps1` (the `deckle.ps1` Release menu), with no external tool and no network: plain `git log` keeps the changelog as local and autonomous as the app itself. `release-history.json` is the offline source of truth for public release tags; historical internal tags are deliberately ignored. Between releases, every version record refreshes one `[Unreleased]` accumulator from the latest public release to `HEAD`. A successful public release appends its tag to the ledger and freezes that accumulator into the new version section. Types route to categories — feat→Added, fix→Fixed, perf/refactor→Changed, revert→Removed; housekeeping (chore/docs/test/ci/build/style), merges and non-conventional subjects are dropped, so a change surfaces only if its commit is written conventionally. The file is regenerated wholesale from the `v0.4.0` floor forward and is not hand-edited; earlier history predates the discipline and is summarised, not itemised. A capability is announced Deprecated in a MINOR and only Removed in a MAJOR, never cold.
+The changelog follows Keep a Changelog. Its six categories keep their standard order, and the newest version comes first, with an ISO date. `scripts/commands/changelog.ps1` regenerates the whole file from the Conventional Commits history, from the `v0.4.0` floor forward, with no external tool and no network. Earlier history is summarised, not itemised. `release-history.json` is the offline ledger of public release tags, and historical internal tags are ignored. Between releases, each version record refreshes one `[Unreleased]` accumulator from the latest public release to `HEAD`. A public release appends its tag to the ledger and freezes the accumulator into the new version section. Only feat, fix, perf, refactor and revert reach the changelog, under Added, Fixed, Changed, Changed and Removed. Any other subject is dropped, so a change surfaces only when its commit is written conventionally. A capability is announced Deprecated in a MINOR and only Removed in a MAJOR, never cold.
 
-Release notes are the same accumulator's output: at publish time `publish-app.ps1` calls `changelog.ps1 -NotesFor <version>` and feeds the result to `gh release create --notes-file`. No hand authoring, no GitHub auto-notes. Pushes have no changelog or release semantics by themselves.
+Release notes are the same accumulator's output. At publish time `publish-app.ps1` asks `changelog.ps1` for the notes of the version and feeds them to the GitHub release. The `-Notes` parameter is the maintainer's override for a release whose history cannot speak for itself. A push has no changelog or release meaning by itself.
