@@ -148,7 +148,7 @@
     <value>Ambient Light</value>
   </data>
   <data name="AmbientEnabledCard.Description" xml:space="preserve">
-    <value>When on, your Hue lights follow what's on screen. Capture runs locally on your selected display — nothing leaves your machine.</value>
+    <value>When on, your Hue lights follow what's on screen. Capture runs locally on your selected display. Nothing leaves your machine.</value>
   </data>
   <data name="AmbientNotPairedInfoBar.Title" xml:space="preserve">
     <value>Hue bridge not configured</value>
@@ -268,13 +268,13 @@
     <value>Primary display (follow Windows)</value>
   </data>
   <data name="AmbientMonitor_CurrentPrimarySuffix" xml:space="preserve">
-    <value> — current primary</value>
+    <value>, current primary</value>
   </data>
   <data name="AmbientMonitor_DisplayFormat" xml:space="preserve">
-    <value>Display {0} — {1} × {2}{3}</value>
+    <value>Display {0}, {1} × {2}{3}</value>
   </data>
   <data name="AmbientMonitor_UnavailableFormat" xml:space="preserve">
-    <value>Unavailable display — {0}</value>
+    <value>Unavailable display, {0}</value>
   </data>
   <data name="HueBridgeExpander.Header" xml:space="preserve">
     <value>Hue bridge</value>

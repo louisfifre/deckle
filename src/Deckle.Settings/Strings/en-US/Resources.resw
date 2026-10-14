@@ -163,7 +163,7 @@
     <value>Enable corpus logging</value>
   </data>
   <data name="CorpusConsent_Body_Intro" xml:space="preserve">
-    <value>Deckle will append every transcription to a local JSONL file — one folder per rewrite profile, one corpus.jsonl inside each — so you can iterate on your rewrite prompts offline.</value>
+    <value>Deckle will append every transcription to a local JSONL file, with one folder per rewrite profile and one corpus.jsonl inside each, so you can iterate on your rewrite prompts offline.</value>
   </data>
   <data name="CorpusConsent_Body_What" xml:space="preserve">
     <value>Raw transcription text, rewritten text, timing, model and prompt identifiers. Nothing is sent over the network.</value>
@@ -180,10 +180,10 @@
     <value>Deckle will mirror every in-app log line to a local JSONL file (app.jsonl) so you can diagnose a specific issue across restarts.</value>
   </data>
   <data name="ApplicationLogConsent_Body_What" xml:space="preserve">
-    <value>Every log line from every subsystem — capture, VAD, Whisper, rewriting, clipboard, paste, UI — at every verbosity level. Log messages can include partial transcription text when a pipeline step logs what it just produced. Nothing is sent over the network.</value>
+    <value>Every log line from every subsystem (capture, VAD, Whisper, rewriting, clipboard, paste, UI) at every verbosity level. Log messages can include partial transcription text when a pipeline step logs what it just produced. Nothing is sent over the network.</value>
   </data>
   <data name="ApplicationLogConsent_Body_Remind" xml:space="preserve">
-    <value>The log is chatty — expect roughly 2 MB per 30 minutes of active use. It rotates every 5000 lines (app-1.jsonl, app-2.jsonl, …) with no cap on archives, so turn it off once you have what you need and prune the archives by hand.</value>
+    <value>The log is chatty. Expect roughly 2 MB per 30 minutes of active use. It rotates every 5000 lines (app-1.jsonl, app-2.jsonl, …) with no cap on archives, so turn it off once you have what you need and prune the archives by hand.</value>
   </data>
 
   <!-- Autocorrect decisions consent — per-word decision dataset, clear text. -->
@@ -191,13 +191,13 @@
     <value>Enable autocorrect decision log</value>
   </data>
   <data name="AutocorrectDecisionsConsent_Body_Intro" xml:space="preserve">
-    <value>Deckle will write one line for every word the autocorrect engine weighs on an enrolled app — corrected or left as you typed it — to a local JSONL file (autocorrect.decisions.jsonl), so you can see exactly why it did or did not act.</value>
+    <value>Deckle will write one line for every word the autocorrect engine weighs on an enrolled app, corrected or left as you typed it, to a local JSONL file (autocorrect.decisions.jsonl), so you can see exactly why it did or did not act.</value>
   </data>
   <data name="AutocorrectDecisionsConsent_Body_What" xml:space="preserve">
     <value>Each word you type on an enrolled surface, its preceding context words, the candidate forms with their frequencies and scores, the safety margins, and the rule that made the call. Nothing is sent over the network. Password fields are never seen.</value>
   </data>
   <data name="AutocorrectDecisionsConsent_Body_Remind" xml:space="preserve">
-    <value>This records the words you type on enrolled apps in clear text. Keep it on only while diagnosing the corrector, turn it off when you are done, and purge the file — it is not rotated.</value>
+    <value>This records the words you type on enrolled apps in clear text. Keep it on only while diagnosing the corrector, turn it off when you are done, and purge the file, because it is not rotated.</value>
   </data>
 
   <!-- Autocorrect text consent — the typed-sentence corpus, verbatim input. -->
@@ -208,10 +208,10 @@
     <value>Deckle will save each sentence you physically type on an enrolled editable surface to a local JSONL file (autocorrect.text.jsonl): the text exactly as you typed it, paired with the corrected version. It also keeps the typing stream (autocorrect.stream.jsonl): the raw flow of your typing, including what you erased and retyped. Together they build a corpus of your writing, and your mistakes, to make the corrector better at the way you type.</value>
   </data>
   <data name="AutocorrectTextConsent_Body_What" xml:space="preserve">
-    <value>The full text you physically type on enrolled editable surfaces, verbatim — including errors the corrector did not catch. The typing stream additionally records what you erased with Backspace and what you retyped over it. Password fields are never seen, and text you paste or dictate is not recorded. Nothing is sent over the network.</value>
+    <value>The full text you physically type on enrolled editable surfaces, verbatim, including errors the corrector did not catch. The typing stream additionally records what you erased with Backspace and what you retyped over it. Password fields are never seen, and text you paste or dictate is not recorded. Nothing is sent over the network.</value>
   </data>
   <data name="AutocorrectTextConsent_Body_Remind" xml:space="preserve">
-    <value>This is the most complete text capture in Deckle — a verbatim record of what you type in enrolled apps. It stays on this device. Turn it off when you have gathered enough, and delete the files when you no longer need them — they are not rotated.</value>
+    <value>This is the most complete text capture in Deckle, a verbatim record of what you type in enrolled apps. It stays on this device. Turn it off when you have gathered enough, and delete the files when you no longer need them, because they are not rotated.</value>
   </data>
 
   <!-- Audio corpus consent — raw WAV next to the text JSONL, per profile. -->
@@ -222,7 +222,7 @@
     <value>Deckle will save the raw microphone audio of every transcription as a 16 kHz mono WAV file, next to the JSONL text corpus under an audio/ subfolder per profile. Useful for replaying a past session against a different Whisper model or prompt.</value>
   </data>
   <data name="AudioCorpusConsent_Body_What" xml:space="preserve">
-    <value>The exact audio passed to whisper.cpp — including any silence and background noise picked up by the microphone. One WAV per transcription. Nothing is sent over the network.</value>
+    <value>The exact audio passed to whisper.cpp, including any silence and background noise picked up by the microphone. One WAV per transcription. Nothing is sent over the network.</value>
   </data>
   <data name="AudioCorpusConsent_Body_Remind" xml:space="preserve">
     <value>Voice recordings are biometric-adjacent and the files can be replayed verbatim. Review and purge the folder regularly, and exclude it from any backup target you don't control.</value>
@@ -236,10 +236,10 @@
     <value>Deckle will log your microphone level distribution after every recording, so you can calibrate the HUD level window against the dBFS range your microphone actually produces.</value>
   </data>
   <data name="MicrophoneTelemetryConsent_Body_What" xml:space="preserve">
-    <value>Only level statistics — minimum, percentiles (p10, p25, p50, p75, p90), maximum, and mean RMS — in dBFS. No audio. No transcription. No words. Nothing is sent over the network.</value>
+    <value>Only level statistics in dBFS, namely minimum, percentiles (p10, p25, p50, p75, p90), maximum, and mean RMS. No audio. No transcription. No words. Nothing is sent over the network.</value>
   </data>
   <data name="MicrophoneTelemetryConsent_Body_Remind" xml:space="preserve">
-    <value>One short JSON line per recording — small file. Useful when calibrating, then turn it off. The same data also appears in the LogWindow under [CAPTURE] for live inspection.</value>
+    <value>One short JSON line per recording. Small file. Useful when calibrating, then turn it off. The same data also appears in the LogWindow under [CAPTURE] for live inspection.</value>
   </data>
 
   <!-- ─── Engine status ──────────────────────────────────────────────
@@ -346,7 +346,7 @@
     <value>No results found</value>
   </data>
   <data name="Settings_Search_MoreResults_Format" xml:space="preserve">
-    <value>+{0} more — refine your search</value>
+    <value>+{0} more. Refine your search</value>
   </data>
 
 
@@ -512,7 +512,7 @@
     <value>Data folder</value>
   </data>
   <data name="GeneralDataFolderCard.Description" xml:space="preserve">
-    <value>Settings, telemetry, models, and native libraries — everything mutable lives here.</value>
+    <value>Settings, telemetry, models, and native libraries. Everything mutable lives here.</value>
   </data>
   <data name="GeneralDataFolderOpenButton.Content" xml:space="preserve">
     <value>Open</value>

@@ -83,7 +83,7 @@
     <value>Deckle Playground</value>
   </data>
   <data name="PlaygroundHomeSubheader.Text" xml:space="preserve">
-    <value>Tuning surface for the running pipelines. Pick a section below to start adjusting — values apply live, no restart needed.</value>
+    <value>Tuning surface for the running pipelines. Pick a section below to start adjusting. Values apply live, no restart needed.</value>
   </data>
   <data name="PlaygroundHomeHudCard.Header" xml:space="preserve">
     <value>HUD stroke</value>
@@ -218,7 +218,7 @@
     <value>Deckle test notification</value>
   </data>
   <data name="PlaygroundNotifications_TestPrompt_Body" xml:space="preserve">
-    <value>Interactive prompt from the Playground — reply or pick an action.</value>
+    <value>Interactive prompt from the Playground. Reply or pick an action.</value>
   </data>
   <data name="PlaygroundNotifications_TestPrompt_Accept" xml:space="preserve">
     <value>Accept</value>

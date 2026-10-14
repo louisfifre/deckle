@@ -127,7 +127,7 @@
     <value>Trackpad</value>
   </data>
   <data name="TrackpadPageHeader.Description" xml:space="preserve">
-    <value>Drag with three fingers on a Magic Trackpad 2 — no click needed: move three fingers to pick something up, lift them to drop it.</value>
+    <value>Drag with three fingers on a Magic Trackpad 2. No click needed: move three fingers to pick something up, lift them to drop it.</value>
   </data>
 
   <!-- Three-finger drag -->
@@ -170,7 +170,7 @@
     <value>Repair Bluetooth connection</value>
   </data>
   <data name="TrackpadPage_RepairCard.Description" xml:space="preserve">
-    <value>Fixes the Apple driver pairing bug — removes the driver from the store, re-pairs the trackpad, and reinstalls. Asks for administrator approval and runs in an interactive console.</value>
+    <value>Fixes the Apple driver pairing bug. It removes the driver from the store, re-pairs the trackpad, and reinstalls. Asks for administrator approval and runs in an interactive console.</value>
   </data>
   <data name="TrackpadPage_RepairButton.Content" xml:space="preserve">
     <value>Repair…</value>

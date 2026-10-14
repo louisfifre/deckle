@@ -331,7 +331,7 @@
     <value>Auto-paste after transcription</value>
   </data>
   <data name="GeneralAutoPasteCard.Description" xml:space="preserve">
-    <value>Also tries to paste into the focused field. The paste is strict and only fires when the target can be safely confirmed — so it rarely triggers. The clipboard is always the reliable path.</value>
+    <value>Also tries to paste into the focused field. The paste is strict and only fires when the target can be safely confirmed, so it rarely triggers. The clipboard is always the reliable path.</value>
   </data>
   <data name="WhisperPageBehaviourSection.Title" xml:space="preserve">
     <value>Overlay and pasting</value>
@@ -376,13 +376,13 @@
     <value>Latency</value>
   </data>
   <data name="GeneralLatencyCard.Description" xml:space="preserve">
-    <value>Record per-step timings of each transcription — voice detection, Whisper, rewrite, clipboard, paste — to latency.jsonl. Timings only, no transcript text.</value>
+    <value>Record per-step timings of each transcription (voice detection, Whisper, rewrite, clipboard, paste) to latency.jsonl. Timings only, no transcript text.</value>
   </data>
   <data name="GeneralCorpusExpander.Header" xml:space="preserve">
     <value>Corpus</value>
   </data>
   <data name="GeneralCorpusExpander.Description" xml:space="preserve">
-    <value>Save every transcription as a JSONL line under a per-profile subfolder (one corpus.jsonl per rewrite profile). Text only — for offline prompt tuning and analysis.</value>
+    <value>Save every transcription as a JSONL line under a per-profile subfolder (one corpus.jsonl per rewrite profile). Text only. For offline prompt tuning and analysis.</value>
   </data>
   <data name="GeneralAudioCorpusCard.Header" xml:space="preserve">
     <value>Also save audio (WAV)</value>
@@ -512,7 +512,7 @@
     <value>Temperature</value>
   </data>
   <data name="WhisperTemperatureCard.Description" xml:space="preserve">
-    <value>Randomness of the decoder. 0 is deterministic and safest — raise only if the model gets stuck repeating the same phrase.</value>
+    <value>Randomness of the decoder. 0 is deterministic and safest. Raise only if the model gets stuck repeating the same phrase.</value>
   </data>
   <data name="WhisperTemperatureIncrementCard.Header" xml:space="preserve">
     <value>Fallback temperature step</value>
@@ -729,7 +729,7 @@
     <value>Recorded audio</value>
   </data>
   <data name="GeneralAudioCorpusContentCard.Description" xml:space="preserve">
-    <value>Choose which version of each take is saved. “Match the transcription” stores what the engine actually heard — the processed signal when pre-processing is on, the raw capture otherwise. “Always raw” keeps the untouched microphone signal, so you can re-process it later against a different model.</value>
+    <value>Choose which version of each take is saved. “Match the transcription” stores what the engine actually heard. It is the processed signal when pre-processing is on, the raw capture otherwise. “Always raw” keeps the untouched microphone signal, so you can re-process it later against a different model.</value>
   </data>
   <data name="GeneralAudioCorpusContentMatch.Content" xml:space="preserve">
     <value>Match the transcription</value>

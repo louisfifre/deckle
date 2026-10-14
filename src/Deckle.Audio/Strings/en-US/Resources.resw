@@ -169,7 +169,7 @@
     <value>Microphone pre-processing</value>
   </data>
   <data name="RecordingPagePreprocessingCard.Description" xml:space="preserve">
-    <value>Lifts and evens out a quiet or uneven microphone before transcription, for better accuracy on soft passages. It only acts when your level is low — a microphone already at a good level passes through untouched.</value>
+    <value>Lifts and evens out a quiet or uneven microphone before transcription, for better accuracy on soft passages. It only acts when your level is low. A microphone already at a good level passes through untouched.</value>
   </data>
 
   <!-- Microphone level check (x:Uid) -->
@@ -183,16 +183,16 @@
     <value>Measure</value>
   </data>
   <data name="RecordingPageMicCheckListening.Title" xml:space="preserve">
-    <value>Listening — speak now…</value>
+    <value>Listening. Speak now…</value>
   </data>
   <data name="RecordingPageMicAdviceRecommended.Title" xml:space="preserve">
-    <value>Your microphone is quiet — turning pre-processing on is recommended.</value>
+    <value>Your microphone is quiet. Turning pre-processing on is recommended.</value>
   </data>
   <data name="RecordingPageMicAdviceMarginal.Title" xml:space="preserve">
-    <value>Borderline — pre-processing would help a little.</value>
+    <value>Borderline. Pre-processing would help a little.</value>
   </data>
   <data name="RecordingPageMicAdviceNotNeeded.Title" xml:space="preserve">
-    <value>Your microphone is already at a good level — pre-processing isn't needed.</value>
+    <value>Your microphone is already at a good level. Pre-processing isn't needed.</value>
   </data>
   <data name="RecordingPageMicAdviceError.Title" xml:space="preserve">
     <value>Couldn't read the microphone. Check the device above and try again.</value>
@@ -209,7 +209,7 @@
     <value>Record</value>
   </data>
   <data name="RecordingPageListeningRecording.Title" xml:space="preserve">
-    <value>Recording — speak now…</value>
+    <value>Recording. Speak now…</value>
   </data>
   <data name="RecordingPageListeningPlaybackCard.Header" xml:space="preserve">
     <value>Play back</value>

@@ -372,7 +372,7 @@
     <value>Remove this profile?</value>
   </data>
   <data name="Settings_RemoveProfileDialog_Content_Format" xml:space="preserve">
-    <value>"{0}" will be removed. Any rule or shortcut that pointed to it will need a new profile picked — they're not deleted, they go blank until you reassign them.</value>
+    <value>"{0}" will be removed. Any rule or shortcut that pointed to it will need a new profile picked. They're not deleted, they go blank until you reassign them.</value>
   </data>
   <data name="Settings_ResetProfilesDialog_Title" xml:space="preserve">
     <value>Reset profiles to defaults?</value>
