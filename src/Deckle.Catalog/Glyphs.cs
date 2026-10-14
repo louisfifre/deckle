@@ -46,6 +46,8 @@ public static class Glyphs
     public const string Lightning = "";
     public const string Setup = "";
     public const string Folder = "";
+    // Segoe Fluent "OpenLocal" (E8DA): the icon-only button that opens the folder picker.
+    public const string FolderBrowse = "";
     public const string Speaker = "";
     public const string Latency = "";
 

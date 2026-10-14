@@ -51,6 +51,7 @@
     <x:String x:Key="Icon.Lightning">&#xE945;</x:String>
     <x:String x:Key="Icon.Setup">&#xE9F5;</x:String>
     <x:String x:Key="Icon.Folder">&#xE8B7;</x:String>
+    <x:String x:Key="Icon.FolderBrowse">&#xE8DA;</x:String>
     <x:String x:Key="Icon.Speaker">&#xE916;</x:String>
     <x:String x:Key="Icon.Latency">&#xE916;</x:String>
 

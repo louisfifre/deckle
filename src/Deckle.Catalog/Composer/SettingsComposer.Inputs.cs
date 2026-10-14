@@ -10,6 +10,11 @@ public sealed partial class SettingsComposer
     // The picker owns the folder dialog and the Explorer affordances; the composer
     // only bridges its Path to the descriptor selectors. Path is set before
     // PathChanged is subscribed, so the seed does not write back.
+    //
+    // One row, like any other value: the path reads under the description
+    // (FolderCardDescription) and the picker's actions sit at the trailing
+    // edge with the reset. The typeable picker shows the path in its own
+    // field, so it keeps the description alone.
     private void BuildPath(SettingsCard card, SettingDescriptor s)
     {
         var args = (PathArgs)s.Args!;
@@ -22,17 +27,26 @@ public sealed partial class SettingsComposer
         IPathControl picker = PathControlFactory(args);
         picker.Path = AsString(s.GetValue());
 
-        HostVertically(card);
-
         picker.PathChanged += (_, _) =>
         {
             if (_syncingFromModel) return;
             s.SetValue(picker.Path);
         };
 
+        // An empty value means the default folder, resolved once here like the
+        // picker's own fallback (PathArgs.DefaultPath): the line shows where
+        // the data really lands, and the reset's state says it is the default.
+        TextBlock? line = null;
+        string fallback = string.Empty;
+        if (args.Mode != FolderPickerMode.Editable)
+        {
+            fallback = args.DefaultPath?.Invoke() ?? string.Empty;
+            line = FolderCardDescription.Attach(card, card.Description as string);
+        }
+
         // An empty default path has no readable form (the picker shows its own
         // computed fallback), so the tooltip stays generic for it.
-        (FrameworkElement content, Action? updateReset) = WrapWithTrailingReset(card, picker.View, s,
+        (FrameworkElement content, Action? updateReset) = WrapWithReset(card, picker.View, s,
             () => DefaultValueText.Text(AsString(s.Default!())));
         card.Content = content;
 
@@ -40,6 +54,8 @@ public sealed partial class SettingsComposer
         {
             string value = AsString(s.GetValue());
             if (picker.Path != value) picker.Path = value;
+            if (line is not null)
+                FolderCardDescription.Show(line, string.IsNullOrEmpty(value) ? fallback : value);
             updateReset?.Invoke();
             ApplyReactiveState(card, s);
         });
@@ -58,8 +74,8 @@ public sealed partial class SettingsComposer
         card.HorizontalContentAlignment = HorizontalAlignment.Stretch;
     }
 
-    // The reset for a vertically hosted content, shared by Path, Editor, Radio
-    // and Curve. WrapWithReset puts the reset to the left of a trailing-edge control;
+    // The reset for a vertically hosted content, shared by Editor, Radio and
+    // Curve. WrapWithReset puts the reset to the left of a trailing-edge control;
     // a vertical row puts it at the trailing edge instead, in a [content* | reset]
     // grid. extraDirty and extraReset let a kind fold other values into the one
     // wheel (the curve's anchors); a descriptor without a Default still gets the

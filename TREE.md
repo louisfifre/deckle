@@ -847,6 +847,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   ├── CubicBezier.cs
 │   │   │   ├── CurveEditor.cs
 │   │   │   ├── DefaultValueText.cs
+│   │   │   ├── FolderCardDescription.cs
 │   │   │   ├── GestureHold.cs
 │   │   │   ├── HotkeyChordText.cs
 │   │   │   ├── HotkeyKeyNames.cs
