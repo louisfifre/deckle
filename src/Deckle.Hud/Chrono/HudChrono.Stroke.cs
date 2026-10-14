@@ -52,6 +52,12 @@ public sealed partial class HudChrono
     // creation. Null in shipping Deckle, which builds from HudSettingsService.
     private HudComposition.ConicArcStrokeConfig? _nextStrokeConfig;
 
+    // The config the stroke on screen was built from, whatever it came from:
+    // the gauge paints on the same outline, so it reads this rather than the
+    // store, and the two can never disagree. Written under _strokeSync and
+    // read on the UI thread only (RebuildCountdownVisual).
+    private HudComposition.ConicArcStrokeConfig? _strokeConfig;
+
     // The mapping and its tunables live in Deckle.Audio.AudioLevelMapper; the
     // smoother state is per-consumer, so it stays here.
     private float _smoothedLevel;
@@ -116,6 +122,7 @@ public sealed partial class HudChrono
 
                 var cfg = _nextStrokeConfig ?? HudSettingsService.Instance.EffectiveStroke();
                 _nextStrokeConfig = null;
+                _strokeConfig = cfg;
 
                 _processingStroke = variant == ProcessingVariant.Recording
                     ? HudComposition.CreateRecordingStroke(compositor, size, cfg, _animationsEnabled)
@@ -160,6 +167,7 @@ public sealed partial class HudChrono
                 "composition-visual", _processingStrokeHandle, ageMs, "hud-chrono-stroke");
             _processingStroke.Dispose();
             _processingStroke = null;
+            _strokeConfig     = null;
             _currentVariant   = null;
         }
     }
@@ -218,6 +226,7 @@ public sealed partial class HudChrono
             _processingStroke = variant == ProcessingVariant.Recording
                 ? HudComposition.CreateRecordingStroke(compositor, size, config, _animationsEnabled)
                 : HudComposition.CreateProcessingStroke(compositor, size, config, _animationsEnabled);
+            _strokeConfig = config;
             // A live count climbing above 1 means a Dispose path is leaking.
             log?.Invoke("REBUILD",
                 $"created {(variant == ProcessingVariant.Recording ? "Recording" : "Processing")}Stroke " +

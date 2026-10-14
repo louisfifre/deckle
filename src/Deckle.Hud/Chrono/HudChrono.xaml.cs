@@ -95,14 +95,16 @@ public sealed partial class HudChrono : UserControl
 
     private void ApplyStoredSettings()
     {
-        RebuildCountdownVisual();
-
         // Under _strokeSync: the audio pump may be writing to the stroke.
         lock (_strokeSync)
         {
             if (_processingStroke is not null)
                 RebuildStroke(HudSettingsService.Instance.EffectiveStroke());
         }
+
+        // After the stroke: the gauge reads the config the stroke was built
+        // from, so the other order would rebuild it on the old one.
+        RebuildCountdownVisual();
     }
 
     private void OnOverlayAnimationsChanged(bool enabled)
