@@ -51,11 +51,13 @@ public sealed partial class SettingsPageHeader : UserControl
         // centred on the item's line box, which puts it above the visual middle
         // of 28 px lowercase text, and the asymmetric padding lowers it by half
         // its own height (2026-10-14).
-        // The brushes come as a merged dictionary, not as the Resources
-        // themselves: a dictionary with Source set refuses local values, and the
-        // sizes below are set locally (2026-10-14, every page threw at
-        // navigation when the compiled dictionary was the Resources).
-        _crumbs.Resources.MergedDictionaries.Add(CrumbBrushes());
+        // The brushes come as a dictionary merged into the header's Resources,
+        // not as any element's Resources themselves: a dictionary with Source
+        // set refuses local values, and the sizes below are set locally
+        // (2026-10-14, every page threw at navigation when the compiled
+        // dictionary was the Resources). Merged once, here, so the breadcrumb
+        // and the Info toggle below both resolve their aliases from it.
+        Resources.MergedDictionaries.Add(_headerBrushes);
         _crumbs.Resources["BreadcrumbBarItemThemeFontSize"] = 28d;
         _crumbs.Resources["BreadcrumbBarItemFontWeight"] = FontWeights.SemiBold;
         _crumbs.Resources["BreadcrumbBarChevronFontSize"] = 16d;
@@ -91,11 +93,18 @@ public sealed partial class SettingsPageHeader : UserControl
 
         // The Info toggle, left of Reset all: shows or hides every description
         // on every page (SettingsDescriptions). A toggle, not a command, so its
-        // pressed look says the long form is on; its state is process-wide, so
+        // checked look says the long form is on; its state is process-wide, so
         // the button follows a click made on another page through Changed.
+        //
+        // It keeps the stock ToggleButton style: SubtleButtonStyle targets
+        // Button, and XAML refuses a style on a type its TargetType does not
+        // cover (2026-10-14, every page threw at navigation with it). The
+        // subtle look while unchecked, flat beside Reset all, comes from the
+        // header's dictionary instead, which aliases the ToggleButton's
+        // unchecked brushes to the SubtleButton ones; checked, the stock
+        // accent fill says the descriptions are on.
         _info = new ToggleButton
         {
-            Style = Application.Current.Resources["SubtleButtonStyle"] as Style,
             Width = 32,
             Height = 32,
             Padding = new Thickness(0),
@@ -108,7 +117,6 @@ public sealed partial class SettingsPageHeader : UserControl
         // visits, and a static event would otherwise hold it for good.
         Loaded += (_, _) => { SettingsDescriptions.Changed += OnDescriptionsChanged; SyncInfo(); };
         Unloaded += (_, _) => SettingsDescriptions.Changed -= OnDescriptionsChanged;
-        ActualThemeChanged += (_, _) => SyncInfo();
         SyncInfo();
 
         var commands = new StackPanel
@@ -253,14 +261,12 @@ public sealed partial class SettingsPageHeader : UserControl
     // compiled XAML (Themes/SettingsPageHeaderBrushes.xaml), not a XamlReader
     // string: XamlReader.Load parses without Application.Resources in sight, so
     // the StaticResource aliases would fail at parse time, in this constructor.
-    // One instance per header, shared by the breadcrumb (merged into its
-    // Resources) and the Info toggle (read by theme in ThemeBrush).
+    // The same dictionary carries the Info toggle's unchecked brushes; it is
+    // merged once into the header's Resources, where both controls find it.
     private readonly ResourceDictionary _headerBrushes = new()
     {
         Source = new Uri("ms-appx:///Deckle.Catalog/Themes/SettingsPageHeaderBrushes.xaml"),
     };
-
-    private ResourceDictionary CrumbBrushes() => _headerBrushes;
 
     private void ResolveBreadcrumb()
     {
@@ -323,39 +329,15 @@ public sealed partial class SettingsPageHeader : UserControl
 
     private void OnDescriptionsChanged(object? sender, EventArgs e) => SyncInfo();
 
-    // The SubtleButtonStyle is a Button style; a ToggleButton accepts it
-    // (ButtonBase setters) but draws no checked state from it, so the checked
-    // look is given here: the accent colour on the glyph while the
-    // descriptions are shown. The brush is read from the header's own theme
-    // dictionary by the element's ActualTheme, not from Application.Resources,
-    // which follows the application theme rather than the window's (see
-    // CrumbBrushes).
+    // The checked look is the ToggleButton's own (accent fill, text on accent),
+    // so the button only has to follow the state and name it in its tooltip.
     private void SyncInfo()
     {
         bool shown = SettingsDescriptions.IsShown;
         if (_info.IsChecked != shown) _info.IsChecked = shown;
-        if (_info.Content is FontIcon icon)
-        {
-            if (shown)
-                icon.Foreground = ThemeBrush("SettingsPageHeaderInfoCheckedForeground");
-            else
-                icon.ClearValue(IconElement.ForegroundProperty);
-        }
         ToolTipService.SetToolTip(_info, Loc.Get(shown
             ? "SettingsPageHeader_HideDescriptionsTooltip"
             : "SettingsPageHeader_ShowDescriptionsTooltip"));
-    }
-
-    // A brush of the header's compiled dictionary for this element's theme. A
-    // StaticResource alias inside a theme dictionary resolves in that theme's
-    // scope, so each theme's copy carries the right colour; HighContrast is
-    // taken as Default here, as no element API tells it apart.
-    private Brush? ThemeBrush(string key)
-    {
-        string theme = ActualTheme == ElementTheme.Light ? "Light" : "Default";
-        return _headerBrushes.ThemeDictionaries[theme] is ResourceDictionary dictionary
-            ? dictionary[key] as Brush
-            : null;
     }
 
     private async void OnResetAllClick(object sender, RoutedEventArgs e)
