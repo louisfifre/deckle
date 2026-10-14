@@ -1,6 +1,6 @@
 ---
 name: glossary-deckle-transcription
-description: "Transcription vocabulary. It names the two entry points (dictation, file transcription), the T1 fidelity criteria, and the segmentation devices and units (neural VAD and energy segmenter, utterance and segment). Read before touching the pipeline or judging output quality."
+description: "Transcription vocabulary. It names the two entry points (dictation, file transcription) and their delivery edges, the T1 fidelity criteria, and the segmentation devices and units (neural VAD and energy segmenter, utterance and segment). Read before touching the pipeline or judging output quality."
 ---
 
 # Deckle.Transcription, Glossary
@@ -9,11 +9,11 @@ Vocabulary of the transcription pipeline. It covers how audio enters the pipelin
 
 ## Entry points
 
-Two ways into the same transcription pipeline, told apart by where the audio comes from and where the text lands. They share the engine, the model and the HUD states. Only the edges differ.
+Two ways into the same transcription pipeline, told apart by where the audio comes from and where the text lands. They share the engine, the model and the HUD states. Only the edges differ, and each entry point ends in its own delivery.
 
 **Dictation** :
-The entry point driven by a hotkey, in which Deckle captures the microphone live and delivers the text to the clipboard, with optional paste and rewrite. It is the historical and primary path, and the T1 fidelity contract below describes it.
-_Avoid_ : recording (the capture phase, not the whole path).
+The entry point in which the person dictates. A hotkey starts it, Deckle captures the microphone live, and the text leaves through the dictation delivery. It is the historical and primary path, and the T1 fidelity contract below describes it. The word also names the feature as the interface shows it.
+_Avoid_ : recording (the capture phase, not the whole path), dictation delivery (only the last edge of the path).
 
 **File transcription** :
 The entry point that transcribes one pre-recorded audio file chosen from the tray, through the same pipeline as dictation. What sets it apart is its edges. Delivery is an explicit command, the text is written beside the audio and copied to the clipboard, and paste and rewrite never run.
@@ -23,11 +23,22 @@ _Avoid_ : import (nothing enters a library).
 The unit of work made of one tray selection, indivisible. Its file transcriptions keep the order of the selection, and a later selection is another batch that never joins the active one.
 _Avoid_ : file transcription (one file's run), import (nothing enters a library).
 
+**Dictation delivery** :
+The delivery edge of dictation, which writes the text to the clipboard, may rewrite it first and may paste it. It is one of the two deliveries the pipeline can be told to end in, and it says nothing about how the text was produced.
+_Avoid_ : dictation (the whole entry point, not its last edge).
+
+**Adjacent file delivery** :
+The delivery edge of file transcription, which writes the text beside the audio file and copies it to the clipboard. Paste and rewrite never run here.
+_Avoid_ : file transcription (the whole entry point, not its last edge), export (nothing is converted for another tool, the text lands beside its source).
+
 **Recording** :
 The capture phase of dictation, while the microphone records, and also the HUD state of the same name. It is only one part of the path, not dictation as a whole.
 
 **Import** :
 In ordinary use, bringing a file into an application's library. File transcription keeps nothing in a library. It reads a file and writes its text beside it.
+
+**Export** :
+In ordinary use, writing data out in a format another tool can read. The adjacent file delivery converts nothing, it writes the plain text beside its source.
 
 ## Fidelity criteria
 
