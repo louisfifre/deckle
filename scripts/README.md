@@ -8,7 +8,7 @@ module: scripts
 
 Everything here runs under PowerShell 7. The stable entry point lives at [`deckle.ps1`](deckle.ps1); the commands it dispatches to live under [`commands/`](commands/) and stay usable on their own CLI for automation. Tracked workflows resolve the repository from their own location, so the checkout drive and the terminal's current directory are not part of their contract. Every command carries a Header, the comment-based help block that the launcher reads to build its menu: see *Adding a script* below before writing one.
 
-The reusable launcher's vocabulary lives in [`CONTEXT.md`](CONTEXT.md), and its normative module, composition, state, and rendering contracts live in [`TERMINAL-INTERACTION-SPEC.md`](TERMINAL-INTERACTION-SPEC.md). Narrower engine requirements are declared per Action when necessary.
+The reusable launcher's vocabulary lives in [`GLOSSARY.md`](GLOSSARY.md), and its normative module, composition, state, and rendering contracts live in [`TERMINAL-INTERACTION-SPEC.md`](TERMINAL-INTERACTION-SPEC.md). Narrower engine requirements are declared per Action when necessary.
 
 ## Parallel interaction preview
 
