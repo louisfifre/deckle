@@ -869,6 +869,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   ├── HotkeyChord.cs
 │   │   │   └── HotkeyModifiers.cs
 │   │   ├── Themes/
+│   │   │   ├── BreadcrumbBrushes.xaml
 │   │   │   └── Icons.xaml
 │   │   ├── ConfirmationService.cs
 │   │   ├── Deckle.Catalog.csproj

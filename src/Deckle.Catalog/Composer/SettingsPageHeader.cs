@@ -4,7 +4,6 @@ using System.Linq;
 using Microsoft.UI.Text;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
-using Microsoft.UI.Xaml.Markup;
 using Microsoft.UI.Xaml.Media;
 
 namespace Deckle.Catalog;
@@ -212,26 +211,14 @@ public sealed partial class SettingsPageHeader : UserControl
     // (FrameworkElement.RequestedTheme), so a copied brush took the wrong
     // theme's grey whenever Deckle's theme differed from Windows'. In theme
     // dictionaries, the template's ThemeResource lookups resolve against the
-    // element's own theme and follow it when it changes.
-    private const string CrumbBrushAliases = """
-        <StaticResource x:Key="BreadcrumbBarNormalForegroundBrush" ResourceKey="TextFillColorSecondaryBrush" />
-        <StaticResource x:Key="BreadcrumbBarHoverForegroundBrush" ResourceKey="TextFillColorPrimaryBrush" />
-        <StaticResource x:Key="BreadcrumbBarPressedForegroundBrush" ResourceKey="TextFillColorTertiaryBrush" />
-        <StaticResource x:Key="BreadcrumbBarCurrentNormalForegroundBrush" ResourceKey="TextFillColorPrimaryBrush" />
-        <StaticResource x:Key="BreadcrumbBarCurrentHoverForegroundBrush" ResourceKey="TextFillColorPrimaryBrush" />
-        """;
-
-    private static ResourceDictionary CrumbBrushes() => (ResourceDictionary)XamlReader.Load($"""
-        <ResourceDictionary
-            xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-            xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
-          <ResourceDictionary.ThemeDictionaries>
-            <ResourceDictionary x:Key="Default">{CrumbBrushAliases}</ResourceDictionary>
-            <ResourceDictionary x:Key="Light">{CrumbBrushAliases}</ResourceDictionary>
-            <ResourceDictionary x:Key="HighContrast">{CrumbBrushAliases}</ResourceDictionary>
-          </ResourceDictionary.ThemeDictionaries>
-        </ResourceDictionary>
-        """);
+    // element's own theme and follow it when it changes. The dictionary is
+    // compiled XAML (Themes/BreadcrumbBrushes.xaml), not a XamlReader string:
+    // XamlReader.Load parses without Application.Resources in sight, so the
+    // StaticResource aliases would fail at parse time, in this constructor.
+    private static ResourceDictionary CrumbBrushes() => new()
+    {
+        Source = new Uri("ms-appx:///Deckle.Catalog/Themes/BreadcrumbBrushes.xaml"),
+    };
 
     private void ResolveBreadcrumb()
     {
