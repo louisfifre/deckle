@@ -41,8 +41,7 @@
 
                         <controls:SettingsCard x:Name="AudioInputCard"
                                                x:Uid="GeneralMicrophoneCard"
-                                               Tag="GeneralMicrophoneCard"
-                                               catalog:SettingsDescriptions.Toggled="True">
+                                               Tag="GeneralMicrophoneCard">
                             <ComboBox x:Name="AudioInputCombo"
                                       MinWidth="240"
                                       SelectionChanged="AudioInputCombo_SelectionChanged" />
@@ -64,8 +63,7 @@
                              nothing is switched on for them. -->
                         <controls:SettingsCard x:Name="MicCheckCard"
                                                x:Uid="RecordingPageMicCheckCard"
-                                               Tag="RecordingPageMicCheckCard"
-                                               catalog:SettingsDescriptions.Toggled="True">
+                                               Tag="RecordingPageMicCheckCard">
                             <Button x:Uid="RecordingPageMicCheckButton"
                                     MinWidth="120"
                                     Command="{x:Bind ViewModel.MeasureMicCommand}" />
@@ -107,8 +105,7 @@
                              nothing transcribed. -->
                         <controls:SettingsCard x:Name="ListeningTestCard"
                                                x:Uid="RecordingPageListeningTestCard"
-                                               Tag="RecordingPageListeningTestCard"
-                                               catalog:SettingsDescriptions.Toggled="True">
+                                               Tag="RecordingPageListeningTestCard">
                             <Button x:Uid="RecordingPageListeningRecordButton"
                                     MinWidth="120"
                                     Command="{x:Bind ViewModel.RecordListeningTakeCommand}" />
@@ -128,7 +125,6 @@
                         <controls:SettingsCard x:Name="ListeningPlaybackCard"
                                                x:Uid="RecordingPageListeningPlaybackCard"
                                                Tag="RecordingPageListeningPlaybackCard"
-                                               catalog:SettingsDescriptions.Toggled="True"
                                                Visibility="{x:Bind ViewModel.HasListeningTake, Mode=OneWay}">
                             <StackPanel Orientation="Horizontal" Spacing="8">
                                 <Button x:Uid="RecordingPageListeningPlayOff"
