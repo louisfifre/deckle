@@ -9,17 +9,26 @@ public sealed partial class TaskbarCoverPage : Page
 {
     public TaskbarCoverViewModel ViewModel { get; } = new();
 
-    private SettingsComposer? _composer;
+    private readonly SettingsComposer _switchComposer;
+    private readonly SettingsComposer _revealComposer;
 
     public TaskbarCoverPage()
     {
         InitializeComponent();
         NavigationCacheMode = NavigationCacheMode.Required;
-        _composer = new SettingsComposer(SettingsHost, ViewModel);
-        _composer.Compose(ViewModel.SettingsManifest);
+        _switchComposer = new SettingsComposer(SwitchHost, ViewModel);
+        _switchComposer.Compose(ViewModel.SwitchManifest);
+        _revealComposer = new SettingsComposer(RevealHost, ViewModel);
+        _revealComposer.Compose(ViewModel.RevealManifest);
 
         // Reset all is active only while a composed value differs from its default.
-        _composer.DirtyChanged += (_, _) => GateResetAll();
+        _switchComposer.DirtyChanged += (_, _) => GateResetAll();
+        _revealComposer.DirtyChanged += (_, _) => GateResetAll();
+        ViewModel.PropertyChanged += (_, args) =>
+        {
+            if (args.PropertyName == nameof(TaskbarCoverViewModel.Enabled)) SyncSectionVisibility();
+        };
+        SyncSectionVisibility();
         GateResetAll();
     }
 
@@ -30,19 +39,27 @@ public sealed partial class TaskbarCoverPage : Page
         base.OnNavigatedTo(e);
         ViewModel.Load();
         // Load() may raise no PropertyChanged on a clean profile, so no composer
-        // DirtyChanged would fire — settle the gate off the freshly-loaded values.
+        // DirtyChanged would fire — settle the gate and the section off the
+        // freshly-loaded values.
+        SyncSectionVisibility();
         GateResetAll();
     }
 
+    // Settings-UX doctrine: what does not apply while the cover is off is
+    // hidden, title included, not greyed.
+    private void SyncSectionVisibility() =>
+        RevealSection.Visibility = ViewModel.Enabled ? Visibility.Visible : Visibility.Collapsed;
+
     private void GateResetAll()
     {
-        Header.IsResetAllEnabled = _composer?.IsDirty() ?? false;
+        Header.IsResetAllEnabled = _switchComposer.IsDirty() || _revealComposer.IsDirty();
     }
 
     // The header asks before firing (generic wording: nothing user-authored is
     // lost here).
     private void ResetAll_Click(object sender, RoutedEventArgs e)
     {
-        _composer?.ResetAll();
+        _switchComposer.ResetAll();
+        _revealComposer.ResetAll();
     }
 }

@@ -17,12 +17,18 @@ public partial class App
     }
 
     // Start and Stop are idempotent, so unrelated settings changes cost nothing.
+    // The approach level is relayed first, so a Start builds its zone at the
+    // saved level; on a running host a level that differs from the one it
+    // holds posts WM_APP_APPROACH to the cover thread, an equal one does nothing.
     private void ReconcileTaskbarCover()
     {
         if (_taskbarCover is null) return;
 
-        if (TaskbarCoverSettingsService.Instance.Current.Enabled) _taskbarCover.Start();
-        else                                                      _taskbarCover.Stop();
+        TaskbarCoverSettings settings = TaskbarCoverSettingsService.Instance.Current;
+        _taskbarCover.Approach = settings.Approach;
+
+        if (settings.Enabled) _taskbarCover.Start();
+        else                  _taskbarCover.Stop();
     }
 
     // Unhook before disposing: a debounced settings flush landing during

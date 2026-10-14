@@ -124,6 +124,11 @@ internal static class TaskbarCoverNativeMethods
 
     public const uint WM_APP_FOREGROUND = 0x8000 + 1;
 
+    // Same hand-off for the approach level: the App writes it through
+    // TaskbarCoverHost.Approach from its own thread, the cover thread reads
+    // it when this message lands and rebuilds the zone.
+    public const uint WM_APP_APPROACH = 0x8000 + 2;
+
     [DllImport("user32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
     public static extern bool PostMessage(IntPtr hWnd, uint msg, IntPtr wParam, IntPtr lParam);
 

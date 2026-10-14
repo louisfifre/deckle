@@ -77,6 +77,51 @@ public class CoverGeometryTests
     }
 
     [Fact]
+    public void StandardApproachKeepsTheFormerFixedFactor()
+    {
+        // The default level must change nothing for a profile saved before
+        // the levels existed.
+        Assert.Equal(CoverGeometry.ApproachZoneFactor, CoverGeometry.ZoneFactor(ApproachDistance.Standard));
+        foreach (var edge in new[] { TaskbarEdge.Left, TaskbarEdge.Top, TaskbarEdge.Right, TaskbarEdge.Bottom })
+        {
+            Assert.Equal(
+                CoverGeometry.ApproachZone(Band(edge), edge),
+                CoverGeometry.ApproachZone(Band(edge), edge, ApproachDistance.Standard));
+        }
+    }
+
+    [Theory]
+    [InlineData(ApproachDistance.Near,     2)]
+    [InlineData(ApproachDistance.Standard, 4)]
+    [InlineData(ApproachDistance.Far,      6)]
+    public void ApproachZoneOfEachLevelReachesItsFactorTimesTheBandThickness(ApproachDistance level, int factor)
+    {
+        // Left 44 px band: the zone ends at factor × 44, one pixel past it is out.
+        var band = Band(TaskbarEdge.Left);
+        var zone = CoverGeometry.ApproachZone(band, TaskbarEdge.Left, level);
+        int depth = factor * CoverGeometry.Thickness(band, TaskbarEdge.Left);
+
+        Assert.Equal(factor, CoverGeometry.ZoneFactor(level));
+        Assert.True(CoverGeometry.Contains(zone, Point(depth - 1, 700)));
+        Assert.False(CoverGeometry.Contains(zone, Point(depth, 700)));
+    }
+
+    [Theory]
+    [InlineData(ApproachDistance.Near)]
+    [InlineData(ApproachDistance.Standard)]
+    [InlineData(ApproachDistance.Far)]
+    public void OpacityOfEachLevelIsZeroOnTheBandAndOneAtItsZoneBoundary(ApproachDistance level)
+    {
+        // Bottom 48 px band: the fade spans (factor − 1) band thicknesses past it.
+        var band = Band(TaskbarEdge.Bottom);
+        int span = (CoverGeometry.ZoneFactor(level) - 1) * CoverGeometry.Thickness(band, TaskbarEdge.Bottom);
+
+        Assert.Equal(0.0, CoverGeometry.Opacity(band, TaskbarEdge.Bottom, FromBand(TaskbarEdge.Bottom, 0), level));
+        Assert.Equal(0.5, CoverGeometry.Opacity(band, TaskbarEdge.Bottom, FromBand(TaskbarEdge.Bottom, span / 2), level), precision: 9);
+        Assert.Equal(1.0, CoverGeometry.Opacity(band, TaskbarEdge.Bottom, FromBand(TaskbarEdge.Bottom, span), level));
+    }
+
+    [Fact]
     public void ApproachZoneStaysBoundedToTheBandExtentAlongTheEdge()
     {
         // Vertical taskbar on the primary monitor; a second monitor above it

@@ -82,6 +82,15 @@ public sealed partial class TaskbarCoverHost
                 ApplyForeground(_foreground.Current);
                 return IntPtr.Zero;
 
+            case WM_APP_APPROACH:
+                // Posted by the Approach setter and by Start; the level is
+                // read here, so a burst of posts converges on the latest one
+                // and a post that finds the zone already at that level costs
+                // nothing. The zone is rebuilt through the layout path, the
+                // one place that computes it.
+                if (_requestedApproach != _approach) RebuildLayout("approach_change");
+                return IntPtr.Zero;
+
             case WM_SETTINGCHANGE:
                 RebuildLayout("setting_change");
                 return IntPtr.Zero;

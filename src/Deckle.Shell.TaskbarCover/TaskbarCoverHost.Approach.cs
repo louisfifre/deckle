@@ -5,6 +5,25 @@ namespace Deckle.Shell.TaskbarCover;
 
 public sealed partial class TaskbarCoverHost
 {
+    /// <summary>
+    /// How far from the taskbar the pointer starts to reveal it. Safe from any
+    /// thread: a change on a running host posts WM_APP_APPROACH and the cover
+    /// thread rebuilds its zone; a stopped host builds it at this level on
+    /// its next Start.
+    /// </summary>
+    public ApproachDistance Approach
+    {
+        get => _requestedApproach;
+        set
+        {
+            if (_requestedApproach == value) return;
+            _requestedApproach = value;
+            // Same hand-off as OnForegroundChanged: only the band handle is
+            // read here, and a post racing a Stop fails harmlessly.
+            if (_running) PostMessage(_hwnd, WM_APP_APPROACH, IntPtr.Zero, IntPtr.Zero);
+        }
+    }
+
     // The process's single global EVENT_OBJECT_LOCATIONCHANGE hook. It runs at
     // input cadence, so it stays trivial: outside the zone with the band
     // opaque it costs one GetCursorPos, one rect test and one byte compare.
@@ -31,7 +50,7 @@ public sealed partial class TaskbarCoverHost
     }
 
     private byte CoverAlphaAt(POINT p) =>
-        (byte)Math.Round(CoverGeometry.Opacity(_band, _edge, p) * 255);
+        (byte)Math.Round(CoverGeometry.Opacity(_band, _edge, p, _approach) * 255);
 
     // The one entry point that moves the band's opacity. Applies the alpha
     // before UpdateCover may show the window, so it never flashes at a stale

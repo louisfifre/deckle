@@ -1602,6 +1602,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── ViewModels/
 │   │   │   ├── TaskbarCoverViewModel.cs
 │   │   │   └── TaskbarCoverViewModel.Settings.cs
+│   │   ├── ApproachDistance.cs
 │   │   ├── CoverGeometry.cs
 │   │   ├── CoverSuppression.cs
 │   │   ├── Deckle.Shell.TaskbarCover.csproj
