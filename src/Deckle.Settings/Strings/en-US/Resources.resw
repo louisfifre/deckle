@@ -305,7 +305,7 @@
   <data name="SettingsNavHotkeys.Content" xml:space="preserve">
     <value>Shortcuts</value>
   </data>
-  <!-- The Home page: empty until it earns content (decision 15). -->
+  <!-- The Home page: empty until it earns content. -->
   <data name="HomePageHeader.Title" xml:space="preserve">
     <value>Home</value>
   </data>
