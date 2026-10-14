@@ -162,13 +162,6 @@
   <data name="SettingsPageHeader_ResetAllDialogBody" xml:space="preserve">
     <value>Every setting on this page goes back to its default value.</value>
   </data>
-  <!-- The header's Info toggle (SettingsDescriptions): one tooltip per state. -->
-  <data name="SettingsPageHeader_ShowDescriptionsTooltip" xml:space="preserve">
-    <value>Show what each setting does</value>
-  </data>
-  <data name="SettingsPageHeader_HideDescriptionsTooltip" xml:space="preserve">
-    <value>Hide the descriptions</value>
-  </data>
   <!-- A Magnitude card's header when its value has a unit: the unit joins the
        header, PowerToys style, so the field beside the slider ends at the same
        edge on every row (2026-10-14). -->

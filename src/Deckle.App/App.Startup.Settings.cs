@@ -31,15 +31,6 @@ public partial class App
         Settings.SettingsHost.RestartApp       = RestartApp;
         Settings.SettingsHost.GetSettingsWindow = () => _settingsWindow;
         Catalog.SettingsNavigation.GoToPage = tag => _settingsWindow?.SelectPage(tag);
-        // The Info toggle's state lives with the shell's appearance settings;
-        // seeded here before any page composes, persisted on every click.
-        Catalog.SettingsDescriptions.IsShown =
-            Settings.SettingsService.Instance.Current.Appearance.ShowDescriptions;
-        Catalog.SettingsDescriptions.Persist = shown =>
-        {
-            Settings.SettingsService.Instance.Current.Appearance.ShowDescriptions = shown;
-            Settings.SettingsService.Instance.Save();
-        };
         // The folder picker lives in Deckle.Settings (it needs the Settings window
         // and its ETW source), so the Catalog composer builds it through this
         // factory. DefaultPath is invoked here, at compose time, never captured
