@@ -50,8 +50,8 @@ public sealed partial class TrayMenuHost
 
         // The anchor window sits exactly on the icon; the menu opens on the
         // side of it that faces the work area, at its natural size, in its own
-        // popup window. WinUI keeps it inside the work area when the icon is
-        // near a corner.
+        // popup window, its near corner on the icon (see ToPlacement). WinUI
+        // keeps it inside the work area when the icon is near a corner.
         _isVisible = true;
         _carrier.ShowAt(anchor);
         _flyout.ShowAt(_carrier.Frame, new FlyoutShowOptions
@@ -95,12 +95,20 @@ public sealed partial class TrayMenuHost
             (work.X, work.Y, work.X + work.Width, work.Y + work.Height));
     }
 
+    // Edge-aligned, not centered: a native tray menu (TrackPopupMenu with
+    // TPM_LEFTALIGN | TPM_BOTTOMALIGN, what the carrier used before the
+    // 2026-10 rewrite) grows from the icon's corner, its bottom-left corner on
+    // the icon for a taskbar at the bottom. The centered modes (Top, Left...)
+    // put the menu's middle on the icon, which reads as "opened at the
+    // click" rather than "opened from the icon" (Louis, 2026-10-14). Above a
+    // bottom bar and below a top bar the menu keeps the icon's left edge; beside
+    // a side bar it keeps the icon's bottom edge.
     private static FlyoutPlacementMode ToPlacement(TrayMenuSide side) => side switch
     {
-        TrayMenuSide.Below   => FlyoutPlacementMode.Bottom,
-        TrayMenuSide.LeftOf  => FlyoutPlacementMode.Left,
-        TrayMenuSide.RightOf => FlyoutPlacementMode.Right,
-        _                    => FlyoutPlacementMode.Top,
+        TrayMenuSide.Below   => FlyoutPlacementMode.BottomEdgeAlignedLeft,
+        TrayMenuSide.LeftOf  => FlyoutPlacementMode.LeftEdgeAlignedBottom,
+        TrayMenuSide.RightOf => FlyoutPlacementMode.RightEdgeAlignedBottom,
+        _                    => FlyoutPlacementMode.TopEdgeAlignedLeft,
     };
 
     // ── Hide ──────────────────────────────────────────────────────────────────
