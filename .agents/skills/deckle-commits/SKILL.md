@@ -11,6 +11,6 @@ The global git convention, `personal-conventions/references/git.md`, leaves the 
 
 A commit carries one intent that its subject can name. A workstream splits into as many commits as it has intents, and each commit leaves the repository compiling and coherent.
 
-A commit has one scope, the module or repository area it touches. A given module always takes the same scope.
+A commit has one scope, the name a reader of the history looks the change up under, a module, a surface or a repository area. A given module always takes the same scope.
 
 The type comes from the Conventional Commits set the Angular convention lists, feat, fix, docs, style, refactor, perf, test, build, ci, chore and revert, and no type is invented beyond it. The type decides whether the change reaches the changelog, and `deckle-versioning` says which types do.
