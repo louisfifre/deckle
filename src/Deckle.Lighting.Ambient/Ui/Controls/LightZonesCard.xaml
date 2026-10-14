@@ -15,8 +15,7 @@
     <controls:SettingsExpander x:Name="LightsExpander"
                                x:Uid="AmbientLightsExpander"
                                Tag="AmbientLightsExpander"
-                               IsExpanded="True"
-                               catalog:SettingsDescriptions.Toggled="True">
+                               IsExpanded="True">
         <ProgressRing x:Name="ResolvingRing"
                       Width="20"
                       Height="20"

@@ -123,8 +123,7 @@
                                  effect everywhere. -->
                             <controls:SettingsExpander x:Uid="HueBridgeExpander"
                                                        x:Name="HueBridgeExpander"
-                                                       Tag="HueBridgeExpander"
-                                                       catalog:SettingsDescriptions.Toggled="True">
+                                                       Tag="HueBridgeExpander">
                                 <!-- Header right-side : compact status text + dot. The
                                      expander shows / hides the per-section cards below
                                      on click. -->
@@ -225,8 +224,7 @@
                                  labelled at runtime (number, resolution, primary); the
                                  composer's choices are fixed .resw keys. -->
                             <controls:SettingsCard x:Uid="AmbientMonitorCard"
-                                                   Tag="AmbientMonitorCard"
-                                                   catalog:SettingsDescriptions.Toggled="True">
+                                                   Tag="AmbientMonitorCard">
                                 <ComboBox x:Name="MonitorCombo"
                                           MinWidth="280"
                                           SelectionChanged="MonitorCombo_SelectionChanged" />
