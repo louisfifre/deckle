@@ -354,6 +354,11 @@ public sealed partial class HudPage : Page
             StartRmsPump();
     }
 
+    // The material the geometry-only previews show, read from the grading
+    // radio until that radio offers the material itself.
+    private HudMaterial PreviewMaterial =>
+        ViewModel.PreviewVariant == ProcessingVariant.Rewriting ? HudMaterial.Colour : HudMaterial.Grey;
+
     private void AttachNakedPreview(HudComposition.NakedMaskPart part)
     {
         ElementCompositionPreview.SetElementChildVisual(NakedPreviewHost, null);
@@ -372,7 +377,7 @@ public sealed partial class HudPage : Page
 
         _nakedPreview = HudComposition.CreateNakedMaskPreview(
             compositor, NakedHudSize, _tuning.ToConfig(), part, arcFill,
-            ViewModel.PreviewVariant, isDark: !isLightTheme,
+            PreviewMaterial, isDark: !isLightTheme,
             animationsEnabled: SettingsService.Instance.Current.Overlay.Animations);
 
         float inset = (NakedHostDim - _nakedPreview.Container.Size.X) / 2f;
@@ -395,7 +400,7 @@ public sealed partial class HudPage : Page
 
         _conicClonePreview = HudComposition.CreateConicClonePreview(
             compositor, NakedHudSize, _tuning.ToConfig(),
-            ViewModel.PreviewVariant, isDark: !isLightTheme,
+            PreviewMaterial, isDark: !isLightTheme,
             animationsEnabled: SettingsService.Instance.Current.Overlay.Animations);
 
         // Same seat as the XAML reference border, where the live row would sit.

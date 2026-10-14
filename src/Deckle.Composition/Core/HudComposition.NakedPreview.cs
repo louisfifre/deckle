@@ -22,7 +22,7 @@ public static partial class HudComposition
     // footprint rotates in the open.
     public enum NakedMaskPart
     {
-        Conic    = 1,   // the conic surface, graded for the chosen variant, full square
+        Conic    = 1,   // the conic surface on the chosen material, full square
         ArcMask  = 2,   // alpha-ramped pie slice(s), monochrome
         Combined = 3,   // Conic ⊗ ArcMask, no stroke silhouette
     }
@@ -113,7 +113,7 @@ public static partial class HudComposition
         Compositor compositor, Vector2 hudSize,
         ConicArcStrokeConfig cfg, NakedMaskPart part,
         Color arcFillColor,
-        ProcessingVariant gradeVariant, bool isDark,
+        HudMaterial material, bool isDark,
         bool animationsEnabled = true,
         bool freezeHueRotation = false)
     {
@@ -184,23 +184,23 @@ public static partial class HudComposition
         {
             case NakedMaskPart.Conic:
             {
-                var graded = BuildVariantGrading(
-                    new CompositionEffectSourceParameter("Conic"), cfg, gradeVariant, isDark);
-                var ef = compositor.CreateEffectFactory(graded);
+                var graded = BuildMaterialGrading(
+                    new CompositionEffectSourceParameter("Conic"), cfg, material, isDark);
+                var ef =compositor.CreateEffectFactory(graded);
                 effectBrush = ef.CreateBrush();
                 effectBrush.SetSourceParameter("Conic", conicBrush);
                 sprite.Brush = effectBrush;
                 break;
             }
             case NakedMaskPart.ArcMask:
-                // Ungraded: the variant toggle leaves the monochrome mask
+                // Ungraded: the material leaves the monochrome mask
                 // untouched.
                 sprite.Brush = arcMaskBrush;
                 break;
             case NakedMaskPart.Combined:
             {
-                var graded = BuildVariantGrading(
-                    new CompositionEffectSourceParameter("Conic"), cfg, gradeVariant, isDark);
+                var graded = BuildMaterialGrading(
+                    new CompositionEffectSourceParameter("Conic"), cfg, material, isDark);
                 var effectGraph = new AlphaMaskEffect
                 {
                     Source    = graded,

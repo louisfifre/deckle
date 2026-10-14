@@ -51,7 +51,7 @@ public sealed partial class HudPage
             _nakedPreview = HudComposition.CreateNakedMaskPreview(
                 compositor, NakedHudSize, recording, HudComposition.NakedMaskPart.Conic,
                 isDark ? Microsoft.UI.Colors.White : Microsoft.UI.Colors.Black,
-                ProcessingVariant.Recording, isDark, animations,
+                recording.RecordingMaterial, isDark, animations,
                 freezeHueRotation: true);
             float inset = (NakedHostDim - _nakedPreview.Container.Size.X) / 2f;
             _nakedPreview.Container.Offset = new Vector3(inset, inset, 0);

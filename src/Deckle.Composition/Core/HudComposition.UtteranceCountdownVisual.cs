@@ -291,10 +291,14 @@ public static partial class HudComposition
                     Matrix3x2.CreateRotation(MathF.Tau * recording.HuePhaseTurns) *
                     Matrix3x2.CreateTranslation(centre);
 
+                // Recording's material and hue shift, the values
+                // ApplyVariant(Recording) gives the outline.
+                var (mix, hueShiftTurns) = recording.MaterialOf(ProcessingVariant.Recording);
                 using var gradingFactory = compositor.CreateEffectFactory(
-                    BuildVariantGrading(
+                    BuildMaterialMix(
                         new CompositionEffectSourceParameter("Conic"),
-                        recording, ProcessingVariant.Recording, isDark));
+                        mix, hueShiftTurns,
+                        GreyMaterialColor(isDark ? recording.GreyLightnessDark : recording.GreyLightnessLight)));
                 var grading = visual.Own(gradingFactory.CreateBrush());
                 grading.SetSourceParameter("Conic", conicBrush);
                 materialSource = grading;
