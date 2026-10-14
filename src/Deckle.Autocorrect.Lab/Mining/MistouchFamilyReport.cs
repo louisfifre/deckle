@@ -16,7 +16,7 @@ public static class MistouchFamilyReport
         md.AppendLine("# Mistouch families — mined from the typed-sentence corpus");
         md.AppendLine();
         md.AppendLine(
-            "Recurrent mechanical keyboard slips (CONTEXT.md § Mistouch family), mined offline: "
+            "Recurrent mechanical keyboard slips (GLOSSARY.md § Mistouch family), mined offline: "
             + "repaired = evidenced by a user backspace-and-retype in the corpus history; residue = "
             + "a non-word still standing in the final text that exactly one bounded mechanical repair "
             + "reads (flagged ambiguous when several do — the sentence-stage routing case). Validity "
