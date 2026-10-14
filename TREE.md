@@ -2140,7 +2140,9 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── Deckle.Shell.Tests.csproj
 │   │   ├── DispatcherQueueExtensionsTests.cs
 │   │   ├── GlobalHotkeyBindingsTests.cs
-│   │   └── ResizeGestureTests.cs
+│   │   ├── ResizeGestureTests.cs
+│   │   ├── TrayIconBugNotes.md
+│   │   └── TrayIconRegistrationTests.cs
 │   ├── Deckle.Shell.TrayMenu.Tests/
 │   │   ├── Deckle.Shell.TrayMenu.Tests.csproj
 │   │   ├── TrayMenuBugNotes.md
