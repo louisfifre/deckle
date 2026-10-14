@@ -93,7 +93,10 @@ public partial class WhisperViewModel
             defaultValue: () => new EngineSettings().UseGpu),
     ];
 
-    // Models directory — a Path leaf with FolderPickerMode.Editable; PathArgs
+    // Models folder — a standalone Path, so the composer renders it as the
+    // folder fold ("Models folder" and its sentence in the header, the Location
+    // line inside), with FolderPickerMode.Editable: a typeable field in the
+    // path's place, for a path pasted from another machine. PathArgs
     // .DefaultPath carries the deferred AppPaths lookup (resolved once at compose
     // time). The default value is the TranscriptionSettings POCO initializer ("" =
     // fall back to AppPaths.ModelsDirectory), so the reset goes active exactly
