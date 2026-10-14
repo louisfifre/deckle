@@ -39,7 +39,6 @@ public static partial class HudComposition
         private readonly List<CompositionSurfaceBrush> _movingBrushes = new();
         private readonly Compositor _compositor;
         private readonly CompositionPropertySet _progress;
-        private CompositionPropertySet? _rotationProps;
         private bool _disposed;
 
         public ContainerVisual Container { get; }
@@ -47,8 +46,7 @@ public static partial class HudComposition
         internal UtteranceCountdownVisual(
             Compositor compositor,
             Vector2 size,
-            CompositionPropertySet progress,
-            CompositionPropertySet? rotationProps)
+            CompositionPropertySet progress)
         {
             _compositor = compositor;
             Container = Own(compositor.CreateContainerVisual());
@@ -57,21 +55,12 @@ public static partial class HudComposition
             using var visibility = compositor.CreateExpressionAnimation("progress.Value > 0 ? 1 : 0");
             visibility.SetReferenceParameter("progress", _progress);
             Container.StartAnimation("Opacity", visibility);
-            _rotationProps = rotationProps;
-            if (_rotationProps is not null)
-                Own(_rotationProps);
         }
 
         internal T Own<T>(T resource) where T : IDisposable
         {
             _resources.Add(resource);
             return resource;
-        }
-
-        internal void SetRotationProps(CompositionPropertySet rotationProps, CompositionSurfaceBrush brush)
-        {
-            _rotationProps = Own(rotationProps);
-            _movingBrushes.Add(brush);
         }
 
         internal void BindProgressMask(
@@ -167,11 +156,6 @@ public static partial class HudComposition
 
             Container.StopAnimation("Opacity");
             _progress.StopAnimation("Value");
-            if (_rotationProps is not null)
-            {
-                _rotationProps.StopAnimation("Linear");
-                _rotationProps.StopAnimation("Eased");
-            }
 
             foreach (var brush in _movingBrushes)
                 brush.StopAnimation("TransformMatrix");
@@ -253,9 +237,7 @@ public static partial class HudComposition
         var progress = compositor.CreatePropertySet();
         progress.InsertScalar("Value", 0f);
 
-        CompositionPropertySet? rotationProps = null;
-        var visual = new UtteranceCountdownVisual(
-            compositor, hostSize, progress, rotationProps);
+        var visual = new UtteranceCountdownVisual(compositor, hostSize, progress);
 
         try
         {
