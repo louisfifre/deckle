@@ -1,9 +1,9 @@
 ---
-name: context-deckle-transcription
+name: glossary-deckle-transcription
 description: "Transcription vocabulary — the two entry points (dictation, file transcription), the T1 fidelity criteria, and the segmentation units (neural VAD vs energy segmenter, utterance vs segment). Read before touching the pipeline or judging output quality."
 ---
 
-# Deckle.Transcription — Context
+# Deckle.Transcription — Glossary
 
 Vocabulary of the transcription pipeline: how audio enters it, what fidelity means for its output, and the units its segmentation devices produce.
 

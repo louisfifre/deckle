@@ -2,7 +2,7 @@
 description: "Trip-preparation vocabulary — the seven types, their French labels, and the terms file boundary."
 ---
 
-# Deckle.Travel — Context
+# Deckle.Travel — Glossary
 
 This context fixes the trip-preparation vocabulary. Code speaks English; the
 space speaks French — the mapping below is normative.

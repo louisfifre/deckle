@@ -1,9 +1,9 @@
 ---
-name: context-deckle-tests
+name: glossary-deckle-tests
 description: "Test taxonomy — the four categories inside the automatic scope (unit, integration, observability, regression) and the three outside it (system, interactive, maintenance). Read when classifying or naming a test."
 ---
 
-# Deckle tests — Context
+# Deckle tests — Glossary
 
 Vocabulary of the test taxonomy. Four categories fall within the automatic test scope, runnable by an agent or by Louis via `dotnet test` without human interaction. Three categories are outside the automatic scope: they exist and are useful, but require an explicit maintainer action or an interactive workstation.
 
