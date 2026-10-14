@@ -2,7 +2,7 @@
 
 ## Transport actions recreated the tuning controls
 
-- **Trigger:** Replay pause or Resume speech in Utterance countdown; returning to the cached HUD page.
+- **Trigger:** Replay pause or Resume speech on the Gauge target; returning to the cached HUD page.
 - **Observed symptom:** sections reopened and buttons moved during interaction.
 - **Cause:** transport handlers rebuilt the entire panel to reset one number; Loaded rebuilt it despite page caching.
 - **Invariant:** preview transport must preserve control identity, focus, expansion state and placement.
@@ -23,7 +23,7 @@ Manual WinUI validation is still required for both visual issues: enter the page
 ## Countdown duplicated material controls and omitted the material rotation
 
 - **Trigger:** tune the full Transcribing material, then inspect the countdown.
-- **Observed symptom:** a separate palette section, no full material inspection and a static material behind the countdown masks. Sweep mask also offered color variants that had no effect.
+- **Observed symptom:** a separate palette section, no full material inspection and a static material behind the gauge's masks. Sweep mask also offered color variants that had no effect.
 - **Cause:** the countdown repainted the palette but omitted its hue rotation; it owned an independent config projection. Mask/simulation/material controls were mixed.
 - **Invariant:** one material source, independent mask geometry, and controls grouped by what they actually affect.
 - **Fix:** share palette, hue rotation and Transcribing grading through HudMaterialTuning; expose countdown geometry/fade and preview-only inspection separately. Sweep mask has no color variant.
