@@ -7,10 +7,9 @@
     Visibility="Collapsed">
 
     <!-- The Ambient preview in the shared preview block: commands above the
-         stage, the sampled grid as the stage, readouts under it. Collapsed
-         until the user opens it: the fold is the gesture that starts the
-         refresh, and closing it stops it. The whole card hides while the
-         engine is not running. -->
+         stage, the sampled grid as the stage, readouts under it. The whole
+         card hides while the engine is not running, and the page's pane
+         follows that visibility (AmbientPage.SyncPreviewPane). -->
     <catalog:PreviewBlock x:Name="Block"
                           x:Uid="AmbientPreviewExpander"
                           Tag="AmbientPreviewExpander"
@@ -54,21 +53,39 @@
 
         <!-- Readouts come from the engine, never typed: the captured format,
              the sampling grid, the cadence the capture really holds, the
-             output transport, and the colour each light receives. -->
+             output transport, and the colour each light receives. Two
+             columns, not one row: the card lives in a pane the user can
+             narrow to 240 px, where five readouts in a row ran past the
+             card's edge (2026-10-14). The swatches take the last row whole,
+             since a group can hold any number of lights. -->
         <catalog:PreviewBlock.Readouts>
-            <StackPanel Orientation="Horizontal" Spacing="24">
-                <catalog:Readout x:Name="CaptureReadout" x:Uid="AmbientPreviewCaptureReadout" />
-                <catalog:Readout x:Name="GridReadout"    x:Uid="AmbientPreviewGridReadout" />
-                <catalog:Readout x:Name="RateReadout"    x:Uid="AmbientPreviewRateReadout" />
-                <catalog:Readout x:Name="OutputReadout"  x:Uid="AmbientPreviewOutputReadout" />
-                <catalog:Readout x:Uid="AmbientPreviewLightsReadout">
+            <Grid ColumnSpacing="24" RowSpacing="12">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                </Grid.RowDefinitions>
+                <catalog:Readout x:Name="CaptureReadout" x:Uid="AmbientPreviewCaptureReadout"
+                                 Grid.Row="0" Grid.Column="0" />
+                <catalog:Readout x:Name="GridReadout"    x:Uid="AmbientPreviewGridReadout"
+                                 Grid.Row="0" Grid.Column="1" />
+                <catalog:Readout x:Name="RateReadout"    x:Uid="AmbientPreviewRateReadout"
+                                 Grid.Row="1" Grid.Column="0" />
+                <catalog:Readout x:Name="OutputReadout"  x:Uid="AmbientPreviewOutputReadout"
+                                 Grid.Row="1" Grid.Column="1" />
+                <catalog:Readout x:Uid="AmbientPreviewLightsReadout"
+                                 Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="2">
                     <!-- One swatch per light (or one for the group): the colour
                          the engine wants to send on the latest tick. -->
                     <StackPanel x:Name="EmittedSwatches"
                                 Orientation="Horizontal"
                                 Spacing="6" />
                 </catalog:Readout>
-            </StackPanel>
+            </Grid>
         </catalog:PreviewBlock.Readouts>
     </catalog:PreviewBlock>
 </UserControl>
