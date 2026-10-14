@@ -82,16 +82,17 @@ public sealed partial class HudPage
 
         gauge.Children.Add(TuningHelp(
             "Course is how the pause's progress becomes reach, as a cubic bezier: " +
-            "P1 near (0.5, 0) starts slow, P2 near (0.9, 1) brakes only at the end. " +
-            "(0, 0, 1, 1) is a plain lerp."));
-        AddFloatRow(gauge, "Course P1.X", 0, 1, 0.05, _countdownConfig.CourseEaseP1X,
-            value => _countdownConfig = _countdownConfig with { CourseEaseP1X = (float)value }, rebuild: true);
-        AddFloatRow(gauge, "Course P1.Y", -0.5, 1.5, 0.05, _countdownConfig.CourseEaseP1Y,
-            value => _countdownConfig = _countdownConfig with { CourseEaseP1Y = (float)value }, rebuild: true);
-        AddFloatRow(gauge, "Course P2.X", 0, 1, 0.05, _countdownConfig.CourseEaseP2X,
-            value => _countdownConfig = _countdownConfig with { CourseEaseP2X = (float)value }, rebuild: true);
-        AddFloatRow(gauge, "Course P2.Y", -0.5, 1.5, 0.05, _countdownConfig.CourseEaseP2Y,
-            value => _countdownConfig = _countdownConfig with { CourseEaseP2Y = (float)value }, rebuild: true);
+            "x is the pause's time, y the light's reach. A first handle low and right " +
+            "starts slow, a second handle high and right brakes only at the end. " +
+            "The dashed diagonal is a plain lerp."));
+        AddCurveRow(gauge, "Course",
+            new(_countdownConfig.CourseEaseP1X, _countdownConfig.CourseEaseP1Y,
+                _countdownConfig.CourseEaseP2X, _countdownConfig.CourseEaseP2Y),
+            points => _countdownConfig = _countdownConfig with
+            {
+                CourseEaseP1X = (float)points.X1, CourseEaseP1Y = (float)points.Y1,
+                CourseEaseP2X = (float)points.X2, CourseEaseP2Y = (float)points.Y2,
+            });
 
         gauge.Children.Add(TuningHelp(
             "Follow is how long the gauge takes to reach each capture sample, and the cut. " +
@@ -101,14 +102,14 @@ public sealed partial class HudPage
             value => _countdownConfig = _countdownConfig with { FollowSeconds = value }, rebuild: true);
         AddFloatRow(gauge, "Retreat (s)", 0.02, 2, 0.01, _countdownConfig.RetreatSeconds,
             value => _countdownConfig = _countdownConfig with { RetreatSeconds = value }, rebuild: true);
-        AddFloatRow(gauge, "Retreat P1.X", 0, 1, 0.05, _countdownConfig.RetreatEaseP1X,
-            value => _countdownConfig = _countdownConfig with { RetreatEaseP1X = (float)value }, rebuild: true);
-        AddFloatRow(gauge, "Retreat P1.Y", -0.5, 1.5, 0.05, _countdownConfig.RetreatEaseP1Y,
-            value => _countdownConfig = _countdownConfig with { RetreatEaseP1Y = (float)value }, rebuild: true);
-        AddFloatRow(gauge, "Retreat P2.X", 0, 1, 0.05, _countdownConfig.RetreatEaseP2X,
-            value => _countdownConfig = _countdownConfig with { RetreatEaseP2X = (float)value }, rebuild: true);
-        AddFloatRow(gauge, "Retreat P2.Y", -0.5, 1.5, 0.05, _countdownConfig.RetreatEaseP2Y,
-            value => _countdownConfig = _countdownConfig with { RetreatEaseP2Y = (float)value }, rebuild: true);
+        AddCurveRow(gauge, "Retreat ease",
+            new(_countdownConfig.RetreatEaseP1X, _countdownConfig.RetreatEaseP1Y,
+                _countdownConfig.RetreatEaseP2X, _countdownConfig.RetreatEaseP2Y),
+            points => _countdownConfig = _countdownConfig with
+            {
+                RetreatEaseP1X = (float)points.X1, RetreatEaseP1Y = (float)points.Y1,
+                RetreatEaseP2X = (float)points.X2, RetreatEaseP2Y = (float)points.Y2,
+            });
 
         // The Gauge target shows no HUD geometry section; Recording does.
         gauge.Children.Add(TuningHelp("Thickness and inset follow HUD geometry, on the Recording target."));

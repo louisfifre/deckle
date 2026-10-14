@@ -161,6 +161,33 @@ public sealed partial class HudPage
         };
     }
 
+    // A two-point cubic Bézier drawn and dragged, not typed as four sliders:
+    // the Catalog's CurveEditor in its unit-square form, the one the Ambient
+    // page gives its brightness response, with the four fields beside the
+    // plot. The editor writes at a handle's release or a field's commit, so a
+    // drag redraws the curve without rebuilding the preview at every pixel.
+    // AllowOutside lets a Y leave [0, 1] by a quarter, enough for an
+    // overshoot or a backswing; the renderer clamps the course's output.
+    private void AddCurveRow(StackPanel stack, string label, CurvePoints points, Action<CurvePoints> setter)
+    {
+        var editor = new CurveEditor
+        {
+            AllowOutside = true,
+            Points = points,
+            Margin = new Thickness(0, 0, 0, 8),
+        };
+        AutomationProperties.SetName(editor, label);
+        editor.PointsCommitted += (_, _) =>
+        {
+            setter(editor.Points);
+            UpdateUnsavedBar();
+            RequestRebuild();
+        };
+
+        stack.Children.Add(new TextBlock { Text = label, Margin = new Thickness(0, 8, 0, 4) });
+        stack.Children.Add(editor);
+    }
+
     // The decimals the step itself carries: 0.25 needs two, where its order
     // of magnitude alone (-log10) would give one and show 0.25 as 0.2.
     private static int StepDecimals(double step)
