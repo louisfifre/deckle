@@ -157,8 +157,7 @@ public partial class WhisperViewModel
 
     // Streaming pipeline — the energy segmenter. The switch is StreamingEnabled
     // (the user-facing on/off projected onto PipelineStrategyKind), a plain card
-    // first and alone (settings design system, decision 10); everything under it
-    // hides while streaming is off.
+    // first and alone; everything under it hides while streaming is off.
     //
     // The switch's default mirrors the VM's own projection of the segmenter Strategy
     // onto the bool (Load/Push: StreamingEnabled = Strategy == Streaming), read off a
@@ -173,17 +172,17 @@ public partial class WhisperViewModel
     ];
 
     // The segmentation cards of the Streaming page, under the switch and the
-    // speech-filtering fold (decision 16): the silence threshold, the one value
-    // that depends on the microphone, as a card; then the cut curve, the
-    // segmentation's instrument, last and at full width, with no fold around it
-    // (2026-10-14). The four hangover anchors (max, min, ramp start, ramp end)
-    // are the curve's frame and live in its legend, beside the plot, as fields:
-    // the doctrine's curve exception puts a curve's values in fields beside the
-    // drawing (decisions 21 and 25). They keep the bounds the former
-    // cards had, in the view model's milliseconds; the plot reads seconds.
+    // speech-filtering fold: the silence threshold, the one value that depends
+    // on the microphone, as a card; then the cut curve, the segmentation's
+    // instrument, last and at full width, with no fold around it (2026-10-14).
+    // The four hangover anchors (max, min, ramp start, ramp end) are the curve's
+    // frame and live in its legend, beside the plot, as fields: the doctrine's
+    // curve exception puts a curve's values in fields beside the drawing. They
+    // keep the bounds the former cards had, in the view model's milliseconds;
+    // the plot reads seconds.
     //
     // The preset selector (Patient / Balanced / Quick / Custom) is set aside
-    // with every preset (decision 22): the family still runs underneath
+    // with every preset: the family still runs underneath
     // (CutPreset, CutPresetStore), so a hand edit still records Custom, but
     // nothing on the page selects a preset. The cut margin and the minimum
     // utterance, two blip rules nobody tunes, keep their EnergySegmenterSettings

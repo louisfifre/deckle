@@ -8,11 +8,11 @@ namespace Deckle.Transcription;
 // declares its pages, their icons and their label keys here; the composition root
 // supplies only the Order. Registered from App.OnLaunched via SettingsModuleRegistry.
 //
-// Three pages, one module (settings design system, decision 16): the module's own
-// page, which the rail shows as General under the Transcription node (overlay and
-// pasting, model and engine, diagnostics, the restart footer), then Decoding (the
-// Whisper parameters that apply in both pipelines) and Streaming (the pipeline
-// switch, speech filtering, segmentation) nested under it.
+// Three pages, one module: the module's own page, which the rail shows as
+// General under the Transcription node (overlay and pasting, model and engine,
+// diagnostics, the restart footer), then Decoding (the Whisper parameters that
+// apply in both pipelines) and Streaming (the pipeline switch, speech
+// filtering, segmentation) nested under it.
 public static class WhisperSettingsModule
 {
     public const string ResourceLibrary = "Deckle.Transcription";

@@ -4,14 +4,13 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:catalog="using:Deckle.Catalog">
 
-    <!-- The Streaming page of the Transcription module (settings design system,
-         decision 16): the pipeline switch alone at the top, then speech
-         filtering (the Silero detector and its four parameters), then
-         segmentation (the silence threshold, then the cut curve with its
-         anchors in its legend). Everything under the switch hides while
+    <!-- The Streaming page of the Transcription module: the pipeline switch
+         alone at the top, then speech filtering (the Silero detector and its four
+         parameters), then segmentation (the silence threshold, then the cut curve
+         with its anchors in its legend). Everything under the switch hides while
          streaming is off (mask, never grey): the cards through their own
-         VisibleWhen, the section titles through the binds below. Every card
-         is composed from WhisperViewModel's manifests. -->
+         VisibleWhen, the section titles through the binds below. Every card is
+         composed from WhisperViewModel's manifests. -->
     <ScrollViewer Padding="32,24,32,24"
                   VerticalScrollBarVisibility="Auto"
                   HorizontalScrollBarVisibility="Disabled">
@@ -27,7 +26,7 @@
                                             x:Uid="StreamingPageHeader"
                                             ResetAllRequested="ResetAll_Click" />
 
-                <!-- The pipeline switch, first and alone (decision 10). Composed:
+                <!-- The pipeline switch, first and alone. Composed:
                      WhisperViewModel.StreamingSwitch. -->
                 <StackPanel x:Name="SwitchHost"
                             Spacing="{StaticResource SettingsCardSpacing}" />

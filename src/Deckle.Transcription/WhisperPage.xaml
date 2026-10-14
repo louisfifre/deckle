@@ -203,10 +203,9 @@
 
                 <!-- The decoding parameters and the streaming pipeline live on their
                      own pages, DecodingPage and StreamingPage, nested under this
-                     module in the rail (settings design system, decision 16). The
-                     dictation's dataset consents (latency, audio corpus) live on
-                     Settings > Diagnostics, the one editor of what Deckle records
-                     (WhisperTelemetryViewModel, 2026-10-14). -->
+                     module in the rail. The dictation's dataset consents (latency,
+                     audio corpus) live on Settings > Diagnostics, the one editor of
+                     what Deckle records (WhisperTelemetryViewModel, 2026-10-14). -->
 
             </StackPanel>
             </Grid>

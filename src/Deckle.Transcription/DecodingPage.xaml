@@ -4,13 +4,12 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:catalog="using:Deckle.Catalog">
 
-    <!-- The Decoding page of the Transcription module (settings design system,
-         decision 16): the Whisper parameters that apply in both pipelines, in
-         four flat sections — Decoding and Confidence first, the two that
-         matter most, then Output filters and Context. No fold anywhere: every
-         card is always shown, so a fold would only hide what the page is for
-         (2026-10-14). Every card is composed from WhisperViewModel's
-         manifests into a host; the page only hosts. -->
+    <!-- The Decoding page of the Transcription module: the Whisper parameters
+         that apply in both pipelines, in four flat sections — Decoding and
+         Confidence first, the two that matter most, then Output filters and
+         Context. No fold anywhere: every card is always shown, so a fold would
+         only hide what the page is for (2026-10-14). Every card is composed from
+         WhisperViewModel's manifests into a host; the page only hosts. -->
     <ScrollViewer Padding="32,24,32,24"
                   VerticalScrollBarVisibility="Auto"
                   HorizontalScrollBarVisibility="Disabled">
