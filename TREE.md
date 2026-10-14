@@ -1735,22 +1735,6 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── WhisperBackend.NativeLogging.cs
 │   │   ├── WhisperBackend.Transcribe.cs
 │   │   └── WhisperNativeLogCompactor.cs
-│   ├── Deckle.Travel/
-│   │   ├── Terms/
-│   │   │   └── terms.fr.json
-│   │   ├── Deckle.Travel.csproj
-│   │   ├── DeckleTravelSource.cs
-│   │   ├── GLOSSARY.md  — Trip-preparation vocabulary — the seven types, their French labels, and the ter…
-│   │   ├── TravelGestures.cs
-│   │   ├── TravelMcp.cs
-│   │   ├── TravelObjects.cs
-│   │   ├── TravelPropertyWriter.cs
-│   │   ├── TravelRequests.cs
-│   │   ├── TravelRuntimeProvider.cs
-│   │   ├── TravelSchema.cs
-│   │   ├── TravelSchemaRuntime.cs
-│   │   ├── TravelTerms.cs
-│   │   └── TravelToolCatalog.cs
 │   ├── Deckle.Vad/
 │   │   ├── Deckle.Vad.csproj
 │   │   ├── DeckleVadSource.cs
@@ -2182,14 +2166,6 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── SpeechModelResolverTests.cs
 │   │   ├── WhisperParamsMapperTests.cs
 │   │   └── WhisperReferenceAudioSystemTests.cs
-│   ├── Deckle.Travel.Tests/
-│   │   ├── Deckle.Travel.Tests.csproj
-│   │   ├── FakeTravelSpace.cs
-│   │   ├── TravelAttachTests.cs
-│   │   ├── TravelGesturesBugNotes.md
-│   │   ├── TravelSchemaTests.cs
-│   │   ├── TravelToolCatalogTests.cs
-│   │   └── TravelUpdateTests.cs
 │   ├── Deckle.Vad.Tests/
 │   │   ├── Deckle.Vad.Tests.csproj
 │   │   └── SileroSpeechTimestampsTests.cs

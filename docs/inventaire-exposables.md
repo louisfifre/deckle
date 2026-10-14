@@ -50,7 +50,6 @@ Total : **693 entrées** réparties sur **41 modules**.
 | Deckle.Speech | 5 |
 | Deckle.Transcription | 62 |
 | Deckle.Transcription.Whisper | 1 |
-| Deckle.Travel | 59 |
 | Deckle.Vad | 4 |
 | Deckle.Vision | 10 |
 
@@ -868,70 +867,6 @@ Total : **693 entrées** réparties sur **41 modules**.
 |---|---|---|---|---|---|
 | DefaultModelFileName | tuning-constant | `"ggml-base.bin"` | src/Deckle.Transcription.Whisper/Setup/SpeechModels.cs:29 | non | Two defaults coexist and agree: this one is the no-override install target, EngineSettings.Model = ggml-base.bin (Deckle.Transcription) is the persisted setting. Base on purpose so the first-run path is not a 3 GB download. |
 
-## Deckle.Travel
-
-| Nom | Type | Valeur actuelle | Fichier:ligne | Juin | Doute |
-|---|---|---|---|---|---|
-| language | json-default | `"fr"` | src/Deckle.Travel/Terms/terms.fr.json:2 | non |  |
-| properties.start_date | json-default | `"Début"` | src/Deckle.Travel/Terms/terms.fr.json:13 | non |  |
-| properties.end_date | json-default | `"Fin"` | src/Deckle.Travel/Terms/terms.fr.json:14 | non |  |
-| properties.date | json-default | `"Date"` | src/Deckle.Travel/Terms/terms.fr.json:15 | non |  |
-| properties.appointment | json-default | `"RDV"` | src/Deckle.Travel/Terms/terms.fr.json:16 | non |  |
-| properties.arrival | json-default | `"Arrivée"` | src/Deckle.Travel/Terms/terms.fr.json:17 | non |  |
-| properties.departure | json-default | `"Départ"` | src/Deckle.Travel/Terms/terms.fr.json:18 | non |  |
-| properties.duration | json-default | `"Durée"` | src/Deckle.Travel/Terms/terms.fr.json:19 | non |  |
-| properties.visit_duration | json-default | `"Durée de visite"` | src/Deckle.Travel/Terms/terms.fr.json:20 | non |  |
-| properties.accessibility | json-default | `"Accessibilité"` | src/Deckle.Travel/Terms/terms.fr.json:21 | non |  |
-| properties.address | json-default | `"Adresse"` | src/Deckle.Travel/Terms/terms.fr.json:22 | non |  |
-| properties.official_site | json-default | `"Site officiel"` | src/Deckle.Travel/Terms/terms.fr.json:23 | non |  |
-| properties.confirmation | json-default | `"Référence"` | src/Deckle.Travel/Terms/terms.fr.json:24 | non |  |
-| properties.files | json-default | `"Fichiers"` | src/Deckle.Travel/Terms/terms.fr.json:25 | non |  |
-| properties.amount | json-default | `"Montant"` | src/Deckle.Travel/Terms/terms.fr.json:26 | non |  |
-| properties.activity_category | json-default | `"Catégorie"` | src/Deckle.Travel/Terms/terms.fr.json:27 | non |  |
-| properties.expense_category | json-default | `"Catégorie"` | src/Deckle.Travel/Terms/terms.fr.json:28 | non |  |
-| properties.place_category | json-default | `"Catégorie"` | src/Deckle.Travel/Terms/terms.fr.json:29 | non |  |
-| properties.mode | json-default | `"Mode"` | src/Deckle.Travel/Terms/terms.fr.json:30 | non |  |
-| properties.stay | json-default | `"Séjour"` | src/Deckle.Travel/Terms/terms.fr.json:31 | non |  |
-| properties.stage | json-default | `"Étape"` | src/Deckle.Travel/Terms/terms.fr.json:32 | non |  |
-| properties.place | json-default | `"Lieu"` | src/Deckle.Travel/Terms/terms.fr.json:33 | non |  |
-| properties.expense | json-default | `"Dépense"` | src/Deckle.Travel/Terms/terms.fr.json:34 | non |  |
-| options.activity_category.walk | json-default | `"Marche"` | src/Deckle.Travel/Terms/terms.fr.json:38 | non |  |
-| options.activity_category.visit | json-default | `"Visite"` | src/Deckle.Travel/Terms/terms.fr.json:39 | non |  |
-| options.activity_category.evening | json-default | `"Soirée"` | src/Deckle.Travel/Terms/terms.fr.json:40 | non |  |
-| options.activity_category.sport | json-default | `"Sport"` | src/Deckle.Travel/Terms/terms.fr.json:41 | non |  |
-| options.activity_category.meal | json-default | `"Repas"` | src/Deckle.Travel/Terms/terms.fr.json:42 | non |  |
-| options.activity_category.other | json-default | `"Autre"` | src/Deckle.Travel/Terms/terms.fr.json:43 | non |  |
-| options.expense_category.transport | json-default | `"Transport"` | src/Deckle.Travel/Terms/terms.fr.json:46 | non |  |
-| options.expense_category.lodging | json-default | `"Hébergement"` | src/Deckle.Travel/Terms/terms.fr.json:47 | non |  |
-| options.expense_category.food | json-default | `"Restauration"` | src/Deckle.Travel/Terms/terms.fr.json:48 | non |  |
-| options.expense_category.activity | json-default | `"Activité"` | src/Deckle.Travel/Terms/terms.fr.json:49 | non |  |
-| options.expense_category.purchase | json-default | `"Achat"` | src/Deckle.Travel/Terms/terms.fr.json:50 | non |  |
-| options.expense_category.fees | json-default | `"Frais"` | src/Deckle.Travel/Terms/terms.fr.json:51 | non |  |
-| options.expense_category.other | json-default | `"Autre"` | src/Deckle.Travel/Terms/terms.fr.json:52 | non |  |
-| options.mode.plane | json-default | `"Avion"` | src/Deckle.Travel/Terms/terms.fr.json:55 | non |  |
-| options.mode.train | json-default | `"Train"` | src/Deckle.Travel/Terms/terms.fr.json:56 | non |  |
-| options.mode.bus | json-default | `"Bus"` | src/Deckle.Travel/Terms/terms.fr.json:57 | non |  |
-| options.mode.ferry | json-default | `"Ferry"` | src/Deckle.Travel/Terms/terms.fr.json:58 | non |  |
-| options.mode.car | json-default | `"Voiture"` | src/Deckle.Travel/Terms/terms.fr.json:59 | non |  |
-| MaxBatchSize | tuning-constant | `100` | src/Deckle.Travel/TravelGestures.cs:14 | non | caps a single batched gesture; user-perceivable only at the ceiling |
-| PageLimit | tuning-constant | `1000` | src/Deckle.Travel/TravelObjects.cs:105 | non | pagination page size; perf-only unless a ceiling becomes user-perceivable |
-| ReadTagsAsync.limit | tuning-constant | `100` | src/Deckle.Travel/TravelPropertyWriter.cs:135 | non | local pagination page size inside ReadTagsAsync; perf-only, kept per doubt rule |
-| DefaultLanguage | tuning-constant | `"fr"` | src/Deckle.Travel/TravelTerms.cs:13 | non |  |
-| types.stay.name | json-default | `"Séjour"` | src/Deckle.Travel/Terms/terms.fr.json:4 | non | missed by the sweep, which flattened the nested types block |
-| types.stay.plural | json-default | `"Séjours"` | src/Deckle.Travel/Terms/terms.fr.json:4 | non | missed by the sweep, which flattened the nested types block |
-| types.stage.name | json-default | `"Étape"` | src/Deckle.Travel/Terms/terms.fr.json:5 | non | missed by the sweep, which flattened the nested types block |
-| types.stage.plural | json-default | `"Étapes"` | src/Deckle.Travel/Terms/terms.fr.json:5 | non | missed by the sweep, which flattened the nested types block |
-| types.place.name | json-default | `"Lieu"` | src/Deckle.Travel/Terms/terms.fr.json:6 | non | missed by the sweep, which flattened the nested types block |
-| types.place.plural | json-default | `"Lieux"` | src/Deckle.Travel/Terms/terms.fr.json:6 | non | missed by the sweep, which flattened the nested types block |
-| types.activity.name | json-default | `"Activité"` | src/Deckle.Travel/Terms/terms.fr.json:7 | non | missed by the sweep, which flattened the nested types block |
-| types.activity.plural | json-default | `"Activités"` | src/Deckle.Travel/Terms/terms.fr.json:7 | non | missed by the sweep, which flattened the nested types block |
-| types.transfer.name | json-default | `"Déplacement"` | src/Deckle.Travel/Terms/terms.fr.json:8 | non | missed by the sweep, which flattened the nested types block |
-| types.transfer.plural | json-default | `"Déplacements"` | src/Deckle.Travel/Terms/terms.fr.json:8 | non | missed by the sweep, which flattened the nested types block |
-| types.lodging.name | json-default | `"Hébergement"` | src/Deckle.Travel/Terms/terms.fr.json:9 | non | missed by the sweep, which flattened the nested types block |
-| types.lodging.plural | json-default | `"Hébergements"` | src/Deckle.Travel/Terms/terms.fr.json:9 | non | missed by the sweep, which flattened the nested types block |
-| types.expense.name | json-default | `"Dépense"` | src/Deckle.Travel/Terms/terms.fr.json:10 | non | missed by the sweep, which flattened the nested types block |
-| types.expense.plural | json-default | `"Dépenses"` | src/Deckle.Travel/Terms/terms.fr.json:10 | non | missed by the sweep, which flattened the nested types block |
-
 ## Deckle.Vad
 
 | Nom | Type | Valeur actuelle | Fichier:ligne | Juin | Doute |
@@ -995,7 +930,7 @@ Ce que la passe automatique ne voit pas, confirmé par les quarante-et-une véri
 - **Heuristique `kind` peu fiable.** Le suffixe du nom de type décide seul : n'importe quel type finissant par `Settings`/`Options`/`Source` est marqué `persisted-setting`. Faux positifs corrigés en masse (18 dans `Deckle.Autocorrect`, plus les `*SettingsService.Current`/`.Path` de six modules). L'inverse existe aussi : des DTO de résultats de recherche dans `Deckle.Settings` comptés comme persistés.
 - **XAML non balayé.** Les bornes des sliders (`Minimum`, `Maximum`, `StepFrequency`) définissent l'amplitude admissible de chaque paramètre et vivent hors de cette liste. Si l'arbitrage a besoin des plages, c'est une passe séparée.
 - **Champs préfixés `_` exclus par conception.** Les tables lexicales figées de `GateLexicon.cs` (`_functionWords`, `_fillers`, `_fillerPhrases`, `_insertablePunctuation`) sont de vraies données de tuning, hors périmètre.
-- **Encodage.** Les valeurs non-ASCII reviennent en mojibake du balayage : les 42 libellés de `Deckle.Travel/Terms/terms.fr.json` (`"D�but"`), et le `'…'` des jeux de terminateurs de phrase de `Deckle.Autocorrect.Lab`/`.Mlm`. Relues à la source et corrigées ici, mais toute reprise directe du balayage les réintroduit.
+- **Encodage.** Les valeurs non-ASCII reviennent en mojibake du balayage, comme le `'…'` des jeux de terminateurs de phrase de `Deckle.Autocorrect.Lab`/`.Mlm`. Relues à la source et corrigées ici, mais toute reprise directe du balayage les réintroduit.
 - **Blocs JSON imbriqués aplatis.** Le balayage ne descend pas dans un objet imbriqué : les 14 feuilles `types.<clé>.name` / `.plural` de `terms.fr.json` ont disparu, dont `transfer`, `lodging` et `activity` qui n'ont pas de jumeau dans le bloc `properties`. Rattrapées à la main.
 - **Initialiseurs de collection et propriétés statiques calculées.** Même angle mort que les initialiseurs multi-lignes : `BackendSupervisor.RestartBackoff` (l'échelle de redémarrage), `McpServer.SupportedProtocols`, `McpHttpHost.MaxBodyBytes` sont absents alors que leurs voisins scalaires sont pris.
 - **Défauts écrits en corps d'expression.** Le filtre qui retire (à raison) les accesseurs `=> _champ` retire aussi les vrais défauts écrits sous la même forme : `AutostartService.DefaultEnabled => false`, réglage réel de l'inventaire de juin, n'apparaît que parce qu'un agent l'a rajouté. Un `=> false` / `=> true` littéral est une valeur, pas un accesseur.

@@ -22,7 +22,7 @@ The commit ships under the maintainer's sole identity — no `Co-Authored-By: Cl
 
 A context element that will come back into every later session (an `AGENTS.md`, a skill, an ADR, a memory) is written to disk only once the maintainer has agreed to it.
 
-Personal data read from an Anytype space (Home, Travel) is runtime data. It is never compiled into code, never copied into a fixture, a documentation example or a log, and never sent to a remote model or service: only local inference and the Anytype backend's own sync process it.
+Personal data read from an Anytype space (Home) is runtime data. It is never compiled into code, never copied into a fixture, a documentation example or a log, and never sent to a remote model or service: only local inference and the Anytype backend's own sync process it.
 
 Speech models, ASR and TTS alike, run in BF16 or FP16. A 4-bit quantization serves a smoke test only, never a shipping candidate: on French speech it loses a fidelity the automatic metrics barely register.
 

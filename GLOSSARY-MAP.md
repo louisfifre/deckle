@@ -23,7 +23,6 @@ The nearest `GLOSSARY.md` up the tree governs the code you're touching. This map
 - [Anytype](src/Deckle.Anytype/GLOSSARY.md) — backend / host / surfaces, bot vs token, Home types (covers `.Mcp`)
 - [Home](src/Deckle.Home/GLOSSARY.md) — public home-inventory norm vs personal room registry and inventory
 - [Hud Chrono](src/Deckle.Hud/Chrono/GLOSSARY.md) — the chrono face elements and their states
-- [Travel](src/Deckle.Travel/GLOSSARY.md) — trip-preparation types and their French Anytype vocabulary
 
 ## Relationships
 
