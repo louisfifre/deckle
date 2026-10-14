@@ -24,4 +24,3 @@ First tell a setting from a command and from a diagnostic. A setting keeps a val
 ## Reference
 
 - [controls-and-behaviour.md](references/controls-and-behaviour.md), the control for each nature of value and the finer magnitude, path, fold, reset and confirmation rules, when choosing a control or wiring a reset.
-- `docs/settings-design-system.md`, the blocks, the decisions behind them and which decisions are still provisional, before building or reshaping a block.

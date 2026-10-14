@@ -235,7 +235,6 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   └── research--taskbar-sans-windhawk--2026-10-08.md  — Recherche vérifiée (2026-10-08) — remplacer Windhawk par un module Deckle pour…
 │   ├── inventaire-exposables.csv
 │   ├── inventaire-exposables.md
-│   ├── settings-design-system.md
 │   └── transcription-audio-chain.md  — How a dictation travels from the hotkey to the pasted text — vocabulary, three…
 ├── logo/
 │   ├── primary.png
