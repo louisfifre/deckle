@@ -48,7 +48,11 @@ public sealed partial class SettingsPageHeader : UserControl
         // centred on the item's line box, which puts it above the visual middle
         // of 28 px lowercase text, and the asymmetric padding lowers it by half
         // its own height (2026-10-14).
-        _crumbs.Resources = CrumbBrushes();
+        // The brushes come as a merged dictionary, not as the Resources
+        // themselves: a dictionary with Source set refuses local values, and the
+        // sizes below are set locally (2026-10-14, every page threw at
+        // navigation when the compiled dictionary was the Resources).
+        _crumbs.Resources.MergedDictionaries.Add(CrumbBrushes());
         _crumbs.Resources["BreadcrumbBarItemThemeFontSize"] = 28d;
         _crumbs.Resources["BreadcrumbBarItemFontWeight"] = FontWeights.SemiBold;
         _crumbs.Resources["BreadcrumbBarChevronFontSize"] = 16d;

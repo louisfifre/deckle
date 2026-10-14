@@ -5,25 +5,25 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 ├── .agents/
 │   └── skills/
 │       ├── deckle-bug-note/
-│       │   └── SKILL.md  — deckle-bug-note Preserve what a confirmed bug teaches for future tests and reviews. Invoke auto…
+│       │   └── SKILL.md  — deckle-bug-note Use when a confirmed bug has its cause established and its workstream is still…
 │       ├── deckle-commits/
-│       │   └── SKILL.md  — deckle-commits Commit grain and the few deviations from the universal convention. Invoke befor…
+│       │   └── SKILL.md  — deckle-commits Use when you commit in Deckle, split a workstream into commits or read its hist…
 │       ├── deckle-interface/
-│       │   └── SKILL.md  — deckle-interface Render the visual interface at Microsoft first-party level — native primitives,…
+│       │   └── SKILL.md  — deckle-interface Use when you build or change anything a person sees in a Deckle window, from a…
 │       ├── deckle-logging/
-│       │   └── SKILL.md  — deckle-logging What to observe in code, and how to write it readable and actionable. Invoke be…
+│       │   └── SKILL.md  — deckle-logging Use when you add or change an observation point in Deckle code, an event on a p…
 │       ├── deckle-modularite/
-│       │   └── SKILL.md  — deckle-modularite When and along which lines to separate code into modules and files. Invoke befo…
+│       │   └── SKILL.md  — deckle-modularite Use when code is about to grow a module, add a new one, or split a file or a su…
 │       ├── deckle-nomenclature/
-│       │   └── SKILL.md  — deckle-nomenclature One normalized way to name files, folders, symbols, resources and providers. In…
+│       │   └── SKILL.md  — deckle-nomenclature Use when you give a name to anything in the Deckle repository or change one, a…
 │       ├── deckle-settings-ux/
 │       │   ├── references/
-│       │   │   └── controls-and-behaviour.md
-│       │   └── SKILL.md  — deckle-settings-ux What to expose in settings surfaces and how to organize it. Invoke before expos…
+│       │   │   └── controls-and-behaviour.md  — the control for each nature of value and the finer magnitude, path, fold, reset…
+│       │   └── SKILL.md  — deckle-settings-ux Use when you add a setting, place one on a page or rework a settings surface, s…
 │       ├── deckle-testing/
-│       │   └── SKILL.md  — deckle-testing Testing posture — test behavior not implementation, stay sober, grow coverage p…
+│       │   └── SKILL.md  — deckle-testing Use when you write a Deckle test or extend coverage, whatever its category, to…
 │       ├── deckle-versioning/
-│       │   └── SKILL.md  — deckle-versioning How versions are numbered and the changelog written. Invoke before cutting a ve…
+│       │   └── SKILL.md  — deckle-versioning Use when you record a Deckle version, touch CHANGELOG.md or prepare release not…
 │       ├── microsoft-docs/
 │       │   └── SKILL.md  — microsoft-docs Find official Microsoft documentation and code samples. Use for Microsoft techn…
 │       ├── ux-copy/
@@ -230,6 +230,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   ├── taskbar-probe.ps1
 │   │   │   ├── taskbar-strings.ps1
 │   │   │   └── tray-uia.ps1
+│   │   ├── research--cerveau-llm--2026-10-13.md  — Cadrage vérifié (2026-10-13) — un cerveau LLM dans Deckle.Llm : les crédits API…
 │   │   ├── research--settings-ux--2026-10-13.md  — Recherche vérifiée (2026-10-13), la direction Settings de Louis passée au cribl…
 │   │   └── research--taskbar-sans-windhawk--2026-10-08.md  — Recherche vérifiée (2026-10-08) — remplacer Windhawk par un module Deckle pour…
 │   ├── inventaire-exposables.csv
@@ -344,6 +345,8 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   ├── repository-portability.json
 │   │   │   └── terminal-cursor-positioning.json
 │   │   ├── commands/
+│   │   │   ├── changelog.tests.ps1
+│   │   │   ├── ChangelogBugNotes.md
 │   │   │   ├── check-script-headers.tests.ps1
 │   │   │   ├── CommitAttributionBugNotes.md
 │   │   │   ├── install-hooks.tests.ps1
@@ -418,9 +421,9 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │       ├── RenderingBugNotes.md
 │   │       ├── SemanticBugNotes.md
 │   │       └── theme.tests.ps1
-│   ├── CONTEXT.md  — Deckle Scripts interaction vocabulary — launcher choices, action runs, detailed…
 │   ├── deckle-preview.ps1
 │   ├── deckle.ps1
+│   ├── GLOSSARY.md  — Deckle Scripts interaction vocabulary — launcher choices, action runs, detailed…
 │   ├── README.md  — readme-scripts Dev workflows entry point for Deckle: the deckle.ps1 menu, the commands under c…
 │   ├── resource-validation.allowlist.json
 │   └── TERMINAL-INTERACTION-SPEC.md  — Behavior and composition contracts of the reusable terminal launcher beneath De…
@@ -471,9 +474,9 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── Schema/
 │   │   │   ├── AnytypeSpaceAliases.cs
 │   │   │   └── DevSpace.cs
-│   │   ├── CONTEXT.md  — context-deckle-anytype Anytype integration vocabulary (covers Deckle.Anytype.Mcp) — backend vs MCP hos…
 │   │   ├── Deckle.Anytype.csproj
-│   │   └── DeckleAnytypeSource.cs
+│   │   ├── DeckleAnytypeSource.cs
+│   │   └── GLOSSARY.md  — glossary-deckle-anytype Anytype integration vocabulary (covers Deckle.Anytype.Mcp) — backend vs MCP hos…
 │   ├── Deckle.Anytype.Mcp/
 │   │   ├── Http/
 │   │   │   ├── McpClients.cs
@@ -603,9 +606,9 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── CaptureResult.cs
 │   │   ├── CaptureSettings.cs
 │   │   ├── CaptureSettingsService.cs
-│   │   ├── CONTEXT.md  — context-deckle-audio Audio vocabulary — display level vs transcription pre-processing, the two notio…
 │   │   ├── Deckle.Audio.csproj
 │   │   ├── DeckleAudioSource.cs
+│   │   ├── GLOSSARY.md  — glossary-deckle-audio Audio vocabulary — display level vs transcription pre-processing, the two notio…
 │   │   ├── IAudioRecordingHost.cs
 │   │   ├── IMicrophoneCapture.cs
 │   │   ├── ListeningTake.cs
@@ -738,9 +741,9 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── AutocorrectSettings.cs
 │   │   ├── AutocorrectSettingsModule.cs
 │   │   ├── AutocorrectSettingsService.cs
-│   │   ├── CONTEXT.md  — context-deckle-autocorrect Autocorrect vocabulary — where correction may act (surfaces, enrollment), the t…
 │   │   ├── Deckle.Autocorrect.csproj
 │   │   ├── DeckleAutocorrectSource.cs
+│   │   ├── GLOSSARY.md  — glossary-deckle-autocorrect Autocorrect vocabulary — where correction may act (surfaces, enrollment), the t…
 │   │   └── SettingsSearch.cs
 │   ├── Deckle.Autocorrect.Lab/
 │   │   ├── Mining/
@@ -933,7 +936,6 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   ├── JsonlSink.cs
 │   │   │   ├── LogWindowSink.cs
 │   │   │   └── RoutedJsonlSink.cs
-│   │   ├── CONTEXT.md  — context-deckle-diagnostics Observability vocabulary for the Diagnostics family (.Logging, .Telemetry inclu…
 │   │   ├── Deckle.Diagnostics.csproj
 │   │   ├── DeckleCancellationSource.cs
 │   │   ├── DeckleEventSource.cs
@@ -945,6 +947,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── DeckleWindowingSource.cs
 │   │   ├── DispatchEventListener.cs
 │   │   ├── EventEntry.cs
+│   │   ├── GLOSSARY.md  — glossary-deckle-diagnostics Observability vocabulary for the Diagnostics family (.Logging, .Telemetry inclu…
 │   │   ├── IFlushableLogSink.cs
 │   │   ├── IHudFeedbackSink.cs
 │   │   ├── ILogSink.cs
@@ -993,9 +996,9 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   └── schema-manifest.json
 │   │   ├── Terms/
 │   │   │   └── terms.fr.json
-│   │   ├── CONTEXT.md  — Home inventory vocabulary — the public norm, personal room registry, point code…
 │   │   ├── Deckle.Home.csproj
 │   │   ├── DeckleHomeSource.cs
+│   │   ├── GLOSSARY.md  — Home inventory vocabulary — the public norm, personal room registry, point code…
 │   │   ├── HomeBodyEditor.cs
 │   │   ├── HomeCode.cs
 │   │   ├── HomeCollectionWriter.cs
@@ -1016,7 +1019,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   └── OPERATIONS.md
 │   ├── Deckle.Hud/
 │   │   ├── Chrono/
-│   │   │   ├── CONTEXT.md  — context-deckle-hud-chrono Chrono HUD element vocabulary — the face's eight elements, accent twins, and th…
+│   │   │   ├── GLOSSARY.md  — glossary-deckle-hud-chrono Chrono HUD element vocabulary — the face's eight elements, accent twins, and th…
 │   │   │   ├── HudChrono.Clock.cs
 │   │   │   ├── HudChrono.Reveal.cs
 │   │   │   ├── HudChrono.RevealMask.cs
@@ -1029,6 +1032,10 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   ├── HudPalette.cs
 │   │   │   ├── HudState.cs
 │   │   │   └── MessageKind.cs
+│   │   ├── Settings/
+│   │   │   ├── ConfigOverrides.cs
+│   │   │   ├── HudSettings.cs
+│   │   │   └── HudSettingsService.cs
 │   │   ├── Transcript/
 │   │   │   ├── TranscriptHistory.cs
 │   │   │   ├── TranscriptPanelLayout.cs
@@ -1097,9 +1104,9 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   ├── TouchpadDevice.cs
 │   │   │   ├── TouchpadParser.cs
 │   │   │   └── TouchpadReport.cs
-│   │   ├── CONTEXT.md  — context-deckle-input Input-layer vocabulary — the contact frame as the unit assembled from Raw Input…
 │   │   ├── Deckle.Input.csproj
 │   │   ├── DeckleInputSource.cs
+│   │   ├── GLOSSARY.md  — glossary-deckle-input Input-layer vocabulary — the contact frame as the unit assembled from Raw Input…
 │   │   ├── MouseWheelSettings.cs
 │   │   ├── MouseWheelSettingsService.cs
 │   │   └── RawInputHost.cs
@@ -1143,9 +1150,9 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   ├── TrackpadTelemetryViewModel.cs
 │   │   │   ├── TrackpadViewModel.cs
 │   │   │   └── TrackpadViewModel.Settings.cs
-│   │   ├── CONTEXT.md  — context-deckle-input-trackpad Trackpad gesture vocabulary — the recognizer as the state machine that owns ges…
 │   │   ├── Deckle.Input.Trackpad.csproj
 │   │   ├── DeckleTrackpadSource.cs
+│   │   ├── GLOSSARY.md  — glossary-deckle-input-trackpad Trackpad gesture vocabulary — the recognizer as the state machine that owns ges…
 │   │   ├── SettingsSearch.cs
 │   │   ├── TrackpadSettings.cs
 │   │   ├── TrackpadSettingsModule.cs
@@ -1319,8 +1326,8 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── ViewModels/
 │   │   │   ├── LlmGeneralViewModel.cs
 │   │   │   └── LlmGeneralViewModel.Settings.cs
-│   │   ├── CONTEXT.md  — context-deckle-llm-rewrite Rewrite service vocabulary — the single service every rewrite goes through, who…
 │   │   ├── Deckle.Llm.Rewrite.csproj
+│   │   ├── GLOSSARY.md  — glossary-deckle-llm-rewrite Rewrite service vocabulary — the single service every rewrite goes through, who…
 │   │   ├── LlmSettings.cs
 │   │   ├── LlmSettingsMigrations.cs
 │   │   ├── LlmSettingsModule.cs
@@ -1465,8 +1472,8 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── Preset.cs
 │   │   └── PresetFamily.cs
 │   ├── Deckle.Security/
-│   │   ├── CONTEXT.md  — context-deckle-security Security vocabulary — the trusted-session boundary, captured content, and where…
 │   │   ├── Deckle.Security.csproj
+│   │   ├── GLOSSARY.md  — glossary-deckle-security Security vocabulary — the trusted-session boundary, captured content, and where…
 │   │   ├── ISecretVault.cs
 │   │   ├── SecretVault.cs
 │   │   └── SecretVaultException.cs
@@ -1621,18 +1628,17 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   ├── Deckle.Shell.TrayMenu/
 │   │   ├── Interop/
 │   │   │   └── TrayMenuNativeMethods.cs
+│   │   ├── Themes/
+│   │   │   └── Generic.xaml
 │   │   ├── Deckle.Shell.TrayMenu.csproj
 │   │   ├── DeckleShellTrayMenuSource.cs
 │   │   ├── TrayCarrierWindow.cs
-│   │   ├── TrayContextMenuHost.cs
-│   │   ├── TrayContextMenuHost.Flyout.cs
-│   │   ├── TrayContextMenuHost.Measure.cs
-│   │   ├── TrayContextMenuHost.Show.cs
-│   │   ├── TrayIslandSizing.cs
-│   │   ├── TrayMenuSizing.cs
-│   │   ├── TrayQuickActionsHost.Build.cs
-│   │   ├── TrayQuickActionsHost.cs
-│   │   ├── TrayQuickActionsHost.Show.cs
+│   │   ├── TrayMenuEntry.cs
+│   │   ├── TrayMenuHost.cs
+│   │   ├── TrayMenuHost.Items.cs
+│   │   ├── TrayMenuHost.Show.cs
+│   │   ├── TrayMenuPlacement.cs
+│   │   ├── TraySwitchMenuItem.cs
 │   │   ├── TrayToggle.cs
 │   │   └── TrayWindowOwnership.cs
 │   ├── Deckle.Shell.WindowChrome/
@@ -1696,7 +1702,6 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   ├── WhisperViewModel.Engine.cs
 │   │   │   ├── WhisperViewModel.Settings.cs
 │   │   │   └── WhisperViewModel.Streaming.cs
-│   │   ├── CONTEXT.md  — context-deckle-transcription Transcription vocabulary — the two entry points (dictation, file transcription)…
 │   │   ├── Deckle.Transcription.csproj
 │   │   ├── DeckleWhispSource.cs
 │   │   ├── DeckleWhispSource.Decode.cs
@@ -1712,6 +1717,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── DeckleWhispSource.WarmupModel.cs
 │   │   ├── DecodingPage.xaml
 │   │   ├── DecodingPage.xaml.cs
+│   │   ├── GLOSSARY.md  — glossary-deckle-transcription Transcription vocabulary — the two entry points (dictation, file transcription)…
 │   │   ├── ITranscriptionEngineHost.cs
 │   │   ├── SettingsSearch.cs
 │   │   ├── StreamingPage.xaml
@@ -1742,9 +1748,9 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   ├── Deckle.Travel/
 │   │   ├── Terms/
 │   │   │   └── terms.fr.json
-│   │   ├── CONTEXT.md  — Trip-preparation vocabulary — the seven types, their French labels, and the ter…
 │   │   ├── Deckle.Travel.csproj
 │   │   ├── DeckleTravelSource.cs
+│   │   ├── GLOSSARY.md  — Trip-preparation vocabulary — the seven types, their French labels, and the ter…
 │   │   ├── TravelGestures.cs
 │   │   ├── TravelMcp.cs
 │   │   ├── TravelObjects.cs
@@ -2000,6 +2006,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── ConicPaletteTests.cs
 │   │   ├── Deckle.Hud.Tests.csproj
 │   │   ├── DeckleHudSourceTests.cs
+│   │   ├── HudSettingsOverridesTests.cs
 │   │   ├── ProximityFadeTests.cs
 │   │   ├── ProximityRollupAggregatorTests.cs
 │   │   ├── TranscriptHistoryTests.cs
@@ -2139,9 +2146,8 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   └── ResizeGestureTests.cs
 │   ├── Deckle.Shell.TrayMenu.Tests/
 │   │   ├── Deckle.Shell.TrayMenu.Tests.csproj
-│   │   ├── TrayIslandSizingTests.cs
 │   │   ├── TrayMenuBugNotes.md
-│   │   ├── TrayMenuSizingTests.cs
+│   │   ├── TrayMenuPlacementTests.cs
 │   │   └── TrayWindowOwnershipTests.cs
 │   ├── Deckle.Speech.Tests/
 │   │   ├── Deckle.Speech.Tests.csproj
@@ -2202,16 +2208,14 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── ContentPeakReleaseTests.cs
 │   │   ├── Deckle.Vision.Tests.csproj
 │   │   └── DeckleVisionSourceTests.cs
-│   ├── CONTEXT.md  — context-deckle-tests Test taxonomy — the four categories inside the automatic scope (unit, integrati…
-│   └── Directory.Build.props
+│   ├── Directory.Build.props
+│   └── GLOSSARY.md  — glossary-deckle-tests Test taxonomy — the four categories inside the automatic scope (unit, integrati…
 ├── .editorconfig
 ├── .gitattributes
 ├── .gitignore
 ├── AGENTS.md  — Root agent-instructions for Deckle — identity, hard rules, posture, and where t…
 ├── CHANGELOG.md
 ├── CLAUDE.md
-├── CONTEXT-MAP.md  — context-map-deckle Index of Deckle's bounded-context glossaries — where each module's CONTEXT.md l…
-├── CONTEXT.md  — context-deckle System-wide Deckle vocabulary — terms that classify across modules and belong t…
 ├── CONTRIBUTING.md
 ├── deckle.code-workspace
 ├── Deckle.Tests.sln
@@ -2219,6 +2223,8 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 ├── Directory.Build.rsp
 ├── Directory.Build.targets
 ├── Directory.Packages.props
+├── GLOSSARY-MAP.md  — glossary-map-deckle Index of Deckle's bounded-context glossaries — where each module's GLOSSARY.md…
+├── GLOSSARY.md  — glossary-deckle System-wide Deckle vocabulary — terms that classify across modules and belong t…
 ├── LICENSE
 ├── NOTICE.md
 ├── README.md
