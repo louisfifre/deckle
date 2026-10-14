@@ -140,13 +140,10 @@
     <value>Reset all settings?</value>
   </data>
   <data name="Settings_ResetAmbientDialog_Content" xml:space="preserve">
-    <value>This will restore the preset, the fine tuning, the colour per zone with its edge band, and the capture rate to their default values. Your Hue bridge pairing, light group, display, per-light zones and brightness, your Custom values, and whether Ambient Light is on stay as they are.</value>
+    <value>This will restore the fine tuning and the colour per zone with its edge band to their default values. Your Hue bridge pairing, light group, display, per-light zones and brightness, and whether Ambient Light is on stay as they are.</value>
   </data>
 
-  <!-- ── State ─────────────────────────────────────────────── -->
-  <data name="AmbientPageStateSection.Title" xml:space="preserve">
-    <value>State</value>
-  </data>
+  <!-- ── Switch, banner and preview ────────────────────────── -->
   <data name="AmbientEnabledCard.Header" xml:space="preserve">
     <value>Ambient Light</value>
   </data>

@@ -35,34 +35,30 @@
                 <StackPanel x:Name="StateHost"
                             Spacing="{StaticResource SettingsCardSpacing}" />
 
-                <!-- ── State ──────────────────────────────────────────────── -->
-                <catalog:SettingsSection x:Uid="AmbientPageStateSection">
-                    <StackPanel Spacing="{StaticResource SettingsCardSpacing}">
+                <!-- bespoke: a state banner, not a setting. It opens while the
+                     persisted Hue bridge state is incomplete (no IP / username /
+                     group) and its action opens the Hue bridge expander below.
+                     Under the switch, with no section title: a title over a
+                     banner and a preview that both hide while the module is off
+                     left an empty heading (2026-10-14). -->
+                <InfoBar x:Name="NotPairedInfoBar"
+                         x:Uid="AmbientNotPairedInfoBar"
+                         IsClosable="False"
+                         IsOpen="False"
+                         Severity="Warning">
+                    <InfoBar.ActionButton>
+                        <Button x:Name="ConfigureBridgeButton"
+                                x:Uid="AmbientNotPairedActionButton"
+                                Click="ConfigureBridgeButton_Click" />
+                    </InfoBar.ActionButton>
+                </InfoBar>
 
-                        <!-- bespoke: a state banner, not a setting. It opens while the
-                             persisted Hue bridge state is incomplete (no IP / username /
-                             group) and its action opens the Hue bridge expander below. -->
-                        <InfoBar x:Name="NotPairedInfoBar"
-                                 x:Uid="AmbientNotPairedInfoBar"
-                                 IsClosable="False"
-                                 IsOpen="False"
-                                 Severity="Warning"
-                                 Margin="0,0,0,8">
-                            <InfoBar.ActionButton>
-                                <Button x:Name="ConfigureBridgeButton"
-                                        x:Uid="AmbientNotPairedActionButton"
-                                        Click="ConfigureBridgeButton_Click" />
-                            </InfoBar.ActionButton>
-                        </InfoBar>
-
-                        <!-- The preview block (settings design system, decision 18):
-                             the sampled grid at the display's exact ratio as the
-                             stage, its commands above, the engine's readouts and the
-                             colour each light receives below. Shown while the engine
-                             runs, opened by the user, refreshed only while open. -->
-                        <ambientControls:AmbientPreviewCard />
-                    </StackPanel>
-                </catalog:SettingsSection>
+                <!-- The preview block (settings design system, decision 18): the
+                     sampled grid at the display's exact ratio as the stage, its
+                     commands above, the engine's readouts and the colour each
+                     light receives below. Shown while the engine runs, opened by
+                     the user, refreshed only while open. -->
+                <ambientControls:AmbientPreviewCard />
 
                 <!-- ── Behaviour ──────────────────────────────────────────── -->
                 <catalog:SettingsSection x:Uid="AmbientPageBehaviourSection">
