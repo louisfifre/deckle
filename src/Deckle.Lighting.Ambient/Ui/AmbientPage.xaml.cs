@@ -7,6 +7,7 @@ using Deckle.Shell;
 using Deckle.Vision;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
+using Microsoft.UI.Xaml.Input;
 
 namespace Deckle.Lighting.Ambient;
 
@@ -67,6 +68,7 @@ public sealed partial class AmbientPage : Page
         _paneWidth    = PreviewColumn.Width;
         _paneMinWidth = PreviewColumn.MinWidth;
         SyncPreviewPane();
+        WireSplitterReveal();
 
         Loaded   += AmbientPage_Loaded;
         Unloaded += AmbientPage_Unloaded;
@@ -118,6 +120,30 @@ public sealed partial class AmbientPage : Page
         PreviewDivider.Visibility  = visibility;
         PreviewSplitter.Visibility = visibility;
         PreviewPane.Visibility     = visibility;
+    }
+
+    // The grip shows while the pointer is over the splitter, while it is
+    // pressed and while it holds keyboard focus; at rest the divider line is
+    // the edge. The splitter marks its pointer events handled, so the press
+    // and release are taken with handledEventsToo; the pointer may leave the
+    // 12 px strip mid-drag, so the pressed state keeps the grip until the
+    // release or the capture's loss. Pointer focus does not count: a click
+    // focuses the splitter too, and the grip would stay after the drag.
+    private void WireSplitterReveal()
+    {
+        bool over = false, pressed = false, focused = false;
+        void Update() => PreviewSplitter.IsThumbVisible = over || pressed || focused;
+
+        PreviewSplitter.PointerEntered += (_, _) => { over = true;  Update(); };
+        PreviewSplitter.PointerExited  += (_, _) => { over = false; Update(); };
+        PreviewSplitter.AddHandler(PointerPressedEvent,
+            new PointerEventHandler((_, _) => { pressed = true;  Update(); }), handledEventsToo: true);
+        PreviewSplitter.AddHandler(PointerReleasedEvent,
+            new PointerEventHandler((_, _) => { pressed = false; Update(); }), handledEventsToo: true);
+        PreviewSplitter.AddHandler(PointerCaptureLostEvent,
+            new PointerEventHandler((_, _) => { pressed = false; Update(); }), handledEventsToo: true);
+        PreviewSplitter.GotFocus  += (_, _) => { focused = PreviewSplitter.FocusState == FocusState.Keyboard; Update(); };
+        PreviewSplitter.LostFocus += (_, _) => { focused = false; Update(); };
     }
 
     private void ComposeRegion(Panel host, IReadOnlyList<SettingDescriptor> settings)
