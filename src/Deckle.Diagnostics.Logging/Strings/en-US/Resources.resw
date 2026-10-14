@@ -133,7 +133,7 @@
   <!-- Folders section, last on the page (x:Uid header + the two composed
        folder folds' label keys, DiagnosticsViewModel.FoldersSettings; each
        heads its fold, the Location line inside uses the Settings shell's
-       FolderPickerCard_* words). The storage card's General* prefix is the
+       FolderLocationLine_* words). The storage card's General* prefix is the
        same historical artifact as above. A custom storage folder only
        receives what reads CorpusPaths (the dictation audio); the other
        datasets keep writing under the default telemetry folder, and the

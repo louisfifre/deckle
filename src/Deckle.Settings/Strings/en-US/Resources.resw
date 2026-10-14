@@ -126,19 +126,19 @@
     <value>Enable</value>
   </data>
 
-  <!-- ─── FolderPickerCard ───────────────────────────────────────────
+  <!-- ─── FolderLocationLine ─────────────────────────────────────────
        The Location line every folder setting renders (Controls/
-       FolderPickerCard.cs, built in code, so code-style keys): its header
+       FolderLocationLine.cs, built in code, so code-style keys): its header
        and its two actions, words only. Generic on purpose: one set of keys
        covers every folder in the app, and the setting's own title and
        description head the fold around the line. -->
-  <data name="FolderPickerCard_Location" xml:space="preserve">
+  <data name="FolderLocationLine_Location" xml:space="preserve">
     <value>Location</value>
   </data>
-  <data name="FolderPickerCard_ChooseFolder" xml:space="preserve">
+  <data name="FolderLocationLine_ChooseFolder" xml:space="preserve">
     <value>Choose a folder</value>
   </data>
-  <data name="FolderPickerCard_Open" xml:space="preserve">
+  <data name="FolderLocationLine_Open" xml:space="preserve">
     <value>Open</value>
   </data>
 
@@ -480,7 +480,7 @@
     <value>Restore</value>
   </data>
   <!-- The backup folder's Location line (composed inside the fold) shows the
-       generic FolderPickerCard_Location header; this entry serves the search
+       generic FolderLocationLine_Location header; this entry serves the search
        index alone, which names the card by it. -->
   <data name="GeneralBackupLocationCard.Header" xml:space="preserve">
     <value>Backup location</value>
@@ -499,7 +499,7 @@
   </data>
   <!-- The data folder fold (composed, GeneralViewModel.DataFolderSettings):
        these two head the fold, the Location line inside uses the
-       FolderPickerCard_* words. -->
+       FolderLocationLine_* words. -->
   <data name="GeneralDataFolderCard.Header" xml:space="preserve">
     <value>Data folder</value>
   </data>

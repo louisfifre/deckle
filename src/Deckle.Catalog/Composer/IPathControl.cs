@@ -10,7 +10,7 @@ namespace Deckle.Catalog;
 // line of a Path setting: a SettingsCard headed "Location", the folder's path
 // as its description (or a field in its place, in the Editable mode) and the
 // actions at its trailing edge, "Choose a folder" then "Open" as words. The
-// concrete control (FolderPickerCard) lives in Deckle.Settings: it anchors the
+// concrete control (FolderLocationLine) lives in Deckle.Settings: it anchors the
 // OS folder picker to the Settings window and logs through that module's ETW
 // source, neither of which belongs in Catalog. So the composer builds it
 // through SettingsComposer.PathControlFactory and drives it through this

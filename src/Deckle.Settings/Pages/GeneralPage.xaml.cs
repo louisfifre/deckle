@@ -199,7 +199,7 @@ public sealed partial class GeneralPage : Page
 
     // ── Data-root move ──────────────────────────────────────────────────────
     //
-    // The folder dialog belongs to the Location line (FolderPickerCard); the
+    // The folder dialog belongs to the Location line (FolderLocationLine); the
     // page owns the pre-flight only: normalize the pick (a non-empty pick lands
     // in a Deckle subfolder, so the later cleanup never entangles foreign
     // files), refuse nesting and same-target, gate on the target drive's free

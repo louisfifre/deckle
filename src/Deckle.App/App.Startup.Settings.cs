@@ -37,7 +37,7 @@ public partial class App
         // compose time, never captured earlier: the fallback shown for an empty
         // value must be current.
         Catalog.SettingsComposer.PathControlFactory = args =>
-            new Settings.FolderPickerCard(args.Mode, args.DefaultPath?.Invoke() ?? string.Empty);
+            new Settings.FolderLocationLine(args.Mode, args.DefaultPath?.Invoke() ?? string.Empty);
         // Fills the shell's consent dialogs into Catalog.TelemetryConsent. Must run
         // before any module settings page is created: its manifest reads the
         // registry through confirmOnEnable.

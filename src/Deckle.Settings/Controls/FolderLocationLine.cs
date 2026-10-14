@@ -11,7 +11,7 @@ using Deckle.Diagnostics;
 
 namespace Deckle.Settings;
 
-// ── FolderPickerCard ────────────────────────────────────────────────────────
+// ── FolderLocationLine ──────────────────────────────────────────────────────
 //
 // The Location line of a folder setting, the one folder component of the
 // settings surfaces (the General page's "Settings backup" form, Louis,
@@ -34,7 +34,7 @@ namespace Deckle.Settings;
 // goes there, where the data actually lands. PathChanged is raised on the
 // person's gesture only (a pick, a field commit), never on a Path the composer
 // pushes, so a model refresh cannot write back.
-public sealed class FolderPickerCard : IPathControl
+public sealed class FolderLocationLine : IPathControl
 {
     private const string Library = "Deckle.Settings";
 
@@ -49,12 +49,12 @@ public sealed class FolderPickerCard : IPathControl
 
     public event EventHandler? PathChanged;
 
-    public FolderPickerCard(FolderPickerMode mode, string defaultPath)
+    public FolderLocationLine(FolderPickerMode mode, string defaultPath)
     {
         _mode = mode;
         _defaultPath = defaultPath ?? string.Empty;
 
-        Line = new SettingsCard { Header = Loc.GetFrom(Library, "FolderPickerCard_Location") };
+        Line = new SettingsCard { Header = Loc.GetFrom(Library, "FolderLocationLine_Location") };
 
         var actions = new StackPanel
         {
@@ -101,12 +101,12 @@ public sealed class FolderPickerCard : IPathControl
 
         if (mode != FolderPickerMode.OpenOnly)
         {
-            var choose = new Button { Content = Loc.GetFrom(Library, "FolderPickerCard_ChooseFolder") };
+            var choose = new Button { Content = Loc.GetFrom(Library, "FolderLocationLine_ChooseFolder") };
             choose.Click += ChooseButton_Click;
             actions.Children.Add(choose);
         }
 
-        var open = new Button { Content = Loc.GetFrom(Library, "FolderPickerCard_Open") };
+        var open = new Button { Content = Loc.GetFrom(Library, "FolderLocationLine_Open") };
         open.Click += OpenButton_Click;
         actions.Children.Add(open);
 
@@ -160,9 +160,13 @@ public sealed class FolderPickerCard : IPathControl
             // button's rect as the anchoring intent, dialog rect at zero.
             EmitFolderPickerAnchor(sender as FrameworkElement, window);
 
+            // This PC, not Documents: the folders chosen here (data root,
+            // models, telemetry, backups) are storage locations, and the data
+            // root in particular usually goes to another drive, where the old
+            // Move button already opened.
             var picker = new Microsoft.Windows.Storage.Pickers.FolderPicker(window.AppWindow.Id)
             {
-                SuggestedStartLocation = Microsoft.Windows.Storage.Pickers.PickerLocationId.DocumentsLibrary,
+                SuggestedStartLocation = Microsoft.Windows.Storage.Pickers.PickerLocationId.ComputerFolder,
             };
 
             var result = await picker.PickSingleFolderAsync();
