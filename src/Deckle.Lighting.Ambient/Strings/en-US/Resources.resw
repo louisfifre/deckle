@@ -191,6 +191,9 @@
   <data name="AmbientBorderModeCard.Header" xml:space="preserve">
     <value>How depth is measured</value>
   </data>
+  <data name="AmbientBorderModeCard.Description" xml:space="preserve">
+    <value>A share of the screen makes the side bands deeper than the top and bottom ones, a count of cells gives every edge the same depth.</value>
+  </data>
   <data name="AmbientBorderModeShare.Content" xml:space="preserve">
     <value>As a share of the screen</value>
   </data>
@@ -497,10 +500,10 @@
     <value>Ambient Light</value>
   </data>
   <data name="AmbientCaptureRate15.Content" xml:space="preserve">
-    <value>15 per second</value>
+    <value>15 fps</value>
   </data>
   <data name="AmbientCaptureRate60.Content" xml:space="preserve">
-    <value>60 per second</value>
+    <value>60 fps</value>
   </data>
   <data name="AmbientCaptureRateCard.Description" xml:space="preserve">
     <value>Higher is smoother and quicker, lower eases the load on a slower PC.</value>
@@ -509,6 +512,6 @@
     <value>Capture rate</value>
   </data>
   <data name="AmbientCaptureRate30.Content" xml:space="preserve">
-    <value>30 per second</value>
+    <value>30 fps</value>
   </data>
 </root>

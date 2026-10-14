@@ -29,7 +29,10 @@ public partial class AmbientViewModel
     ];
 
     // Behaviour: per-zone colours with their band shape. The two band sliders
-    // share one place and show only the one the chosen band mode reads.
+    // share one place and show only the one the chosen band mode reads. The
+    // measure is a dropdown, not radio buttons: two options the eye need not
+    // compare at a glance, and the card's description says what each does
+    // (Louis, 2026-10-15).
     public IReadOnlyList<SettingDescriptor> BehaviourSettings =>
     [
         Setting.Group(
@@ -37,7 +40,7 @@ public partial class AmbientViewModel
             () => UseMultiLight,
             value => UseMultiLight = value,
             [
-                Setting.Radio<BorderThicknessMode>(
+                Setting.Choice<BorderThicknessMode>(
                     "AmbientBorderModeCard",
                     () => BorderMode,
                     value => BorderMode = value,
@@ -130,14 +133,16 @@ public partial class AmbientViewModel
             defaultValue: () => new AmbientSettings().SaturationBoost),
     ];
 
-    // Configuration: the capture rate (60 / 30 / 15 per second), after the
-    // bespoke display picker. Dropped by the triage of 2026-10-14 and put back
-    // the same evening: Louis looked for the 60 fps choice and found nothing
-    // ("j'ai plus d'options"). The preview block still reads the rate the
+    // Configuration: the capture rate (60 / 30 / 15 fps), after the bespoke
+    // display picker. Dropped by the triage of 2026-10-14 and put back the
+    // same evening: Louis looked for the 60 fps choice and found nothing
+    // ("j'ai plus d'options"). A dropdown, not radio buttons: three figures
+    // nobody compares at a glance, and the flat group read loud for what it
+    // decides (Louis, 2026-10-15). The preview block still reads the rate the
     // capture really holds, which may sit under the one chosen here.
     public IReadOnlyList<SettingDescriptor> CaptureSettings =>
     [
-        Setting.Radio<int>(
+        Setting.Choice<int>(
             "AmbientCaptureRateCard",
             () => CaptureFrameRateHz,
             value => CaptureFrameRateHz = value,
