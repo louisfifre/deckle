@@ -12,11 +12,12 @@ namespace Deckle.Catalog;
 // ── SettingsPageHeader ────────────────────────────────────────────────────────
 //
 // The one header block every settings page opens with: a breadcrumb in place of
-// the title, one line of description, an optional link, and on the trailing
-// edge the Info toggle that shows the cards' descriptions (SettingsDescriptions)
-// then Reset all. Built in code like the composer's cards, so it lives on the
+// the title, one line of description, an optional link, and Reset all on the
+// trailing edge. Built in code like the composer's cards, so it lives on the
 // Catalog floor that every settings-bearing module already references and no
-// page draws its own.
+// page draws its own. The Info toggle that once hid every card description
+// is gone: the descriptions are always shown, as Windows Settings shows them
+// (Louis, 2026-10-14).
 //
 // The breadcrumb is the page's path in the rail — the module, then the page —
 // resolved from the shell through SettingsNavigation.BreadcrumbFor once the
@@ -36,7 +37,6 @@ public sealed partial class SettingsPageHeader : UserControl
     private readonly TextBlock _fallbackTitle;
     private readonly TextBlock _description;
     private readonly HyperlinkButton _link;
-    private readonly ToggleButton _info;
     private readonly Button _resetAll;
     private IReadOnlyList<SettingsBreadcrumbSegment>? _segments;
 
@@ -55,8 +55,7 @@ public sealed partial class SettingsPageHeader : UserControl
         // not as any element's Resources themselves: a dictionary with Source
         // set refuses local values, and the sizes below are set locally
         // (2026-10-14, every page threw at navigation when the compiled
-        // dictionary was the Resources). Merged once, here, so the breadcrumb
-        // and the Info toggle below both resolve their aliases from it.
+        // dictionary was the Resources).
         Resources.MergedDictionaries.Add(_headerBrushes);
         _crumbs.Resources["BreadcrumbBarItemThemeFontSize"] = 28d;
         _crumbs.Resources["BreadcrumbBarItemFontWeight"] = FontWeights.SemiBold;
@@ -91,43 +90,6 @@ public sealed partial class SettingsPageHeader : UserControl
         ToolTipService.SetToolTip(_resetAll, Loc.Get("SettingsPageHeader_ResetAllTooltip"));
         _resetAll.Click += OnResetAllClick;
 
-        // The Info toggle, left of Reset all: shows or hides every description
-        // on every page (SettingsDescriptions). A toggle, not a command, so its
-        // checked look says the long form is on; its state is process-wide, so
-        // the button follows a click made on another page through Changed.
-        //
-        // It keeps the stock ToggleButton style: SubtleButtonStyle targets
-        // Button, and XAML refuses a style on a type its TargetType does not
-        // cover (2026-10-14, every page threw at navigation with it). The
-        // subtle look while unchecked, flat beside Reset all, comes from the
-        // header's dictionary instead, which aliases the ToggleButton's
-        // unchecked brushes to the SubtleButton ones; checked, the stock
-        // accent fill says the descriptions are on.
-        _info = new ToggleButton
-        {
-            Width = 32,
-            Height = 32,
-            Padding = new Thickness(0),
-            VerticalAlignment = VerticalAlignment.Center,
-            IsChecked = SettingsDescriptions.IsShown,
-            Content = new FontIcon { Glyph = Glyphs.Info, FontSize = 16 },
-        };
-        _info.Click += (_, _) => SettingsDescriptions.IsShown = _info.IsChecked == true;
-        // Subscribed while in a tree only: a cached page's header outlives its
-        // visits, and a static event would otherwise hold it for good.
-        Loaded += (_, _) => { SettingsDescriptions.Changed += OnDescriptionsChanged; SyncInfo(); };
-        Unloaded += (_, _) => SettingsDescriptions.Changed -= OnDescriptionsChanged;
-        SyncInfo();
-
-        var commands = new StackPanel
-        {
-            Orientation = Orientation.Horizontal,
-            Spacing = 4,
-            VerticalAlignment = VerticalAlignment.Center,
-        };
-        commands.Children.Add(_info);
-        commands.Children.Add(_resetAll);
-
         var titleRow = new Grid();
         titleRow.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
         titleRow.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
@@ -135,9 +97,9 @@ public sealed partial class SettingsPageHeader : UserControl
         titleSlot.Children.Add(_crumbs);
         titleSlot.Children.Add(_fallbackTitle);
         Grid.SetColumn(titleSlot, 0);
-        Grid.SetColumn(commands, 1);
+        Grid.SetColumn(_resetAll, 1);
         titleRow.Children.Add(titleSlot);
-        titleRow.Children.Add(commands);
+        titleRow.Children.Add(_resetAll);
 
         _description = new TextBlock
         {
@@ -261,8 +223,6 @@ public sealed partial class SettingsPageHeader : UserControl
     // compiled XAML (Themes/SettingsPageHeaderBrushes.xaml), not a XamlReader
     // string: XamlReader.Load parses without Application.Resources in sight, so
     // the StaticResource aliases would fail at parse time, in this constructor.
-    // The same dictionary carries the Info toggle's unchecked brushes; it is
-    // merged once into the header's Resources, where both controls find it.
     private readonly ResourceDictionary _headerBrushes = new()
     {
         Source = new Uri("ms-appx:///Deckle.Catalog/Themes/SettingsPageHeaderBrushes.xaml"),
@@ -326,19 +286,6 @@ public sealed partial class SettingsPageHeader : UserControl
     }
 
     private void OnLinkClick(object sender, RoutedEventArgs e) => LinkClicked?.Invoke(this, e);
-
-    private void OnDescriptionsChanged(object? sender, EventArgs e) => SyncInfo();
-
-    // The checked look is the ToggleButton's own (accent fill, text on accent),
-    // so the button only has to follow the state and name it in its tooltip.
-    private void SyncInfo()
-    {
-        bool shown = SettingsDescriptions.IsShown;
-        if (_info.IsChecked != shown) _info.IsChecked = shown;
-        ToolTipService.SetToolTip(_info, Loc.Get(shown
-            ? "SettingsPageHeader_HideDescriptionsTooltip"
-            : "SettingsPageHeader_ShowDescriptionsTooltip"));
-    }
 
     private async void OnResetAllClick(object sender, RoutedEventArgs e)
     {

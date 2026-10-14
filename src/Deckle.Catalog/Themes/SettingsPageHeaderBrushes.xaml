@@ -3,19 +3,13 @@
 
     SettingsPageHeader merges this dictionary into its Resources
     (ms-appx:///Deckle.Catalog/Themes/SettingsPageHeaderBrushes.xaml), where
-    its breadcrumb and its Info toggle both find it.
+    its breadcrumb finds it.
 
     Breadcrumb: the stock control paints every segment in the primary text
     colour and only greys one on hover, so a parent read like the current page.
     Windows Settings does the reverse: parents in the secondary colour, the
     current page in the primary, and a parent lights up to primary under the
     pointer because it leads somewhere (2026-10-14).
-
-    Info toggle: a ToggleButton cannot take SubtleButtonStyle, a Button style,
-    so its unchecked brushes are aliased to the SubtleButton ones WinUI ships,
-    which gives it the flat look of the Reset all button beside it. The checked
-    brushes are left to the stock control: the accent fill is Windows' own way
-    of saying a toggle is on (2026-10-14).
 
     The overrides are aliases in theme dictionaries, the documented
     lightweight-styling form, duplicated for Default, Light and HighContrast as
@@ -36,15 +30,6 @@
             <StaticResource x:Key="BreadcrumbBarPressedForegroundBrush" ResourceKey="TextFillColorTertiaryBrush" />
             <StaticResource x:Key="BreadcrumbBarCurrentNormalForegroundBrush" ResourceKey="TextFillColorPrimaryBrush" />
             <StaticResource x:Key="BreadcrumbBarCurrentHoverForegroundBrush" ResourceKey="TextFillColorPrimaryBrush" />
-            <StaticResource x:Key="ToggleButtonBackground" ResourceKey="SubtleButtonBackground" />
-            <StaticResource x:Key="ToggleButtonBackgroundPointerOver" ResourceKey="SubtleButtonBackgroundPointerOver" />
-            <StaticResource x:Key="ToggleButtonBackgroundPressed" ResourceKey="SubtleButtonBackgroundPressed" />
-            <StaticResource x:Key="ToggleButtonBorderBrush" ResourceKey="SubtleButtonBorderBrush" />
-            <StaticResource x:Key="ToggleButtonBorderBrushPointerOver" ResourceKey="SubtleButtonBorderBrushPointerOver" />
-            <StaticResource x:Key="ToggleButtonBorderBrushPressed" ResourceKey="SubtleButtonBorderBrushPressed" />
-            <StaticResource x:Key="ToggleButtonForeground" ResourceKey="SubtleButtonForeground" />
-            <StaticResource x:Key="ToggleButtonForegroundPointerOver" ResourceKey="SubtleButtonForegroundPointerOver" />
-            <StaticResource x:Key="ToggleButtonForegroundPressed" ResourceKey="SubtleButtonForegroundPressed" />
         </ResourceDictionary>
         <ResourceDictionary x:Key="Light">
             <StaticResource x:Key="BreadcrumbBarNormalForegroundBrush" ResourceKey="TextFillColorSecondaryBrush" />
@@ -52,15 +37,6 @@
             <StaticResource x:Key="BreadcrumbBarPressedForegroundBrush" ResourceKey="TextFillColorTertiaryBrush" />
             <StaticResource x:Key="BreadcrumbBarCurrentNormalForegroundBrush" ResourceKey="TextFillColorPrimaryBrush" />
             <StaticResource x:Key="BreadcrumbBarCurrentHoverForegroundBrush" ResourceKey="TextFillColorPrimaryBrush" />
-            <StaticResource x:Key="ToggleButtonBackground" ResourceKey="SubtleButtonBackground" />
-            <StaticResource x:Key="ToggleButtonBackgroundPointerOver" ResourceKey="SubtleButtonBackgroundPointerOver" />
-            <StaticResource x:Key="ToggleButtonBackgroundPressed" ResourceKey="SubtleButtonBackgroundPressed" />
-            <StaticResource x:Key="ToggleButtonBorderBrush" ResourceKey="SubtleButtonBorderBrush" />
-            <StaticResource x:Key="ToggleButtonBorderBrushPointerOver" ResourceKey="SubtleButtonBorderBrushPointerOver" />
-            <StaticResource x:Key="ToggleButtonBorderBrushPressed" ResourceKey="SubtleButtonBorderBrushPressed" />
-            <StaticResource x:Key="ToggleButtonForeground" ResourceKey="SubtleButtonForeground" />
-            <StaticResource x:Key="ToggleButtonForegroundPointerOver" ResourceKey="SubtleButtonForegroundPointerOver" />
-            <StaticResource x:Key="ToggleButtonForegroundPressed" ResourceKey="SubtleButtonForegroundPressed" />
         </ResourceDictionary>
         <ResourceDictionary x:Key="HighContrast">
             <StaticResource x:Key="BreadcrumbBarNormalForegroundBrush" ResourceKey="TextFillColorSecondaryBrush" />
@@ -68,15 +44,6 @@
             <StaticResource x:Key="BreadcrumbBarPressedForegroundBrush" ResourceKey="TextFillColorTertiaryBrush" />
             <StaticResource x:Key="BreadcrumbBarCurrentNormalForegroundBrush" ResourceKey="TextFillColorPrimaryBrush" />
             <StaticResource x:Key="BreadcrumbBarCurrentHoverForegroundBrush" ResourceKey="TextFillColorPrimaryBrush" />
-            <StaticResource x:Key="ToggleButtonBackground" ResourceKey="SubtleButtonBackground" />
-            <StaticResource x:Key="ToggleButtonBackgroundPointerOver" ResourceKey="SubtleButtonBackgroundPointerOver" />
-            <StaticResource x:Key="ToggleButtonBackgroundPressed" ResourceKey="SubtleButtonBackgroundPressed" />
-            <StaticResource x:Key="ToggleButtonBorderBrush" ResourceKey="SubtleButtonBorderBrush" />
-            <StaticResource x:Key="ToggleButtonBorderBrushPointerOver" ResourceKey="SubtleButtonBorderBrushPointerOver" />
-            <StaticResource x:Key="ToggleButtonBorderBrushPressed" ResourceKey="SubtleButtonBorderBrushPressed" />
-            <StaticResource x:Key="ToggleButtonForeground" ResourceKey="SubtleButtonForeground" />
-            <StaticResource x:Key="ToggleButtonForegroundPointerOver" ResourceKey="SubtleButtonForegroundPointerOver" />
-            <StaticResource x:Key="ToggleButtonForegroundPressed" ResourceKey="SubtleButtonForegroundPressed" />
         </ResourceDictionary>
     </ResourceDictionary.ThemeDictionaries>
 </ResourceDictionary>
