@@ -21,20 +21,24 @@ public partial class DiagnosticsViewModel
     [
         Setting.Toggle("LoggingAmbientCard",
             () => LogAmbientCaptureActivity,
-            value => LogAmbientCaptureActivity = value),
+            value => LogAmbientCaptureActivity = value,
+            defaultValue: () => new LoggingSettings().LogAmbientCaptureActivity),
         Setting.Toggle("LoggingTranscriptionCard",
             () => LogTranscriptionActivity,
-            value => LogTranscriptionActivity = value),
+            value => LogTranscriptionActivity = value,
+            defaultValue: () => new LoggingSettings().LogTranscriptionActivity),
         Setting.Toggle("LoggingAutocorrectCard",
             () => LogAutocorrectActivity,
-            value => LogAutocorrectActivity = value),
+            value => LogAutocorrectActivity = value,
+            defaultValue: () => new LoggingSettings().LogAutocorrectActivity),
         Setting.Toggle("LoggingInputCard",
             () => LogInputActivity,
             value => LogInputActivity = value,
             defaultValue: () => new LoggingSettings().LogInputActivity),
         Setting.Toggle("LoggingWindowingCard",
             () => LogWindowingActivity,
-            value => LogWindowingActivity = value),
+            value => LogWindowingActivity = value,
+            defaultValue: () => new LoggingSettings().LogWindowingActivity),
     ];
 
     // The confirmOnEnable gate holds the OFF→ON write behind the consent
@@ -42,13 +46,17 @@ public partial class DiagnosticsViewModel
     // (TelemetryConsent.RequestApplicationLog, wired by the App at boot) so this
     // module does not reference Deckle.Settings.
     //
-    // No defaultValue: a privacy opt-in gets no per-card reset; the section
-    // "Reset" clears it.
+    // A default exists, so the card has its reset (Louis, 2026-10-15: every
+    // setting with a default gets its reset). The default is off, so the reset
+    // only turns the opt-in off, a write the consent gate does not hold; the
+    // composer's reset writes past the gate, so a default that turned an
+    // opt-in on would skip the consent.
     public IReadOnlyList<SettingDescriptor> ApplicationLogSettings =>
     [
         Setting.Toggle("GeneralAppLogCard",
             () => ApplicationLogToDisk,
             value => ApplicationLogToDisk = value,
+            defaultValue: () => new LoggingSettings().ApplicationLogToDisk,
             confirmOnEnable: TelemetryConsent.RequestApplicationLog),
     ];
 
