@@ -44,4 +44,25 @@ public sealed record UtteranceCountdownConfig
     public float RetreatEaseP1Y { get; init; } = 0f;
     public float RetreatEaseP2X { get; init; } = 0f;
     public float RetreatEaseP2Y { get; init; } = 1f;
+
+    // The cut's release: the move back to rest once the completion hold has
+    // shown the full gauge. The retreat's opposite, short and accelerating,
+    // the gesture of coming back to talking (Louis, 2026-10-15: "le geste
+    // arrière en accélérant, mais très très vite cette fois"). An ease-in
+    // where the retreat is an ease-out, over a little more than half the
+    // retreat's time.
+    public double CutSeconds { get; init; } = 0.1;
+    public float CutEaseP1X { get; init; } = 0.7f;
+    public float CutEaseP1Y { get; init; } = 0f;
+    public float CutEaseP2X { get; init; } = 1f;
+    public float CutEaseP2Y { get; init; } = 1f;
+}
+
+// Which of the two moves back to rest a SetProgress(0) plays: speech
+// resuming retreats, a cut's hold ending releases. The renderer tells them
+// apart from the capture's completed count, never from the value alone.
+public enum UtteranceCountdownRelease
+{
+    Retreat,
+    Cut,
 }
