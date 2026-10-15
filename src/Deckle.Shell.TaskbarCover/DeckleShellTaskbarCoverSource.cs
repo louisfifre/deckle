@@ -6,7 +6,9 @@ namespace Deckle.Shell.TaskbarCover;
 // TaskbarCover module provider. Cursor movement itself is never logged, nor
 // is each opacity step of the approach-zone fade: the WinEvent stream runs at
 // input cadence and only visibility transitions carry diagnostic value;
-// those surface through CoverShown / CoverHidden.
+// those surface through CoverShown / CoverHidden. Per-band events carry the
+// band ordinal: 0 is the primary taskbar's band, the others follow the
+// desktop top to bottom, left to right.
 [EventSource(Name = "Deckle-TaskbarCover")]
 public sealed class DeckleShellTaskbarCoverSource : DeckleEventSource
 {
@@ -21,28 +23,31 @@ public sealed class DeckleShellTaskbarCoverSource : DeckleEventSource
     // ── Event IDs ─────────────────────────────────────────────────────────────
     // Sequential from 1. IDs are public in the ETW manifest; do not reuse an
     // ID after deleting an event.
-    public const int EvtHostStarted           = 1;
-    public const int EvtHostStartedDetail     = 2;
-    public const int EvtHostStartFailed       = 3;
-    public const int EvtHostStartFailedDetail = 4;
-    public const int EvtHostStopped           = 5;
-    public const int EvtHostStopTimedOut      = 6;
-    public const int EvtLayoutRebuilt         = 7;
-    public const int EvtLayoutRebuiltDetail   = 8;
-    public const int EvtLayoutQueryFailed     = 9;
-    public const int EvtCoverShown            = 10;
-    public const int EvtCoverHidden           = 11;
-    public const int EvtCoverSuppressed       = 12;
-    public const int EvtCoverSuppressedDetail = 13;
-    public const int EvtCoverUnsuppressed     = 14;
-    public const int EvtSystemSuspended       = 15;
-    public const int EvtSystemSuspendedDetail = 16;
-    public const int EvtSystemResumed         = 17;
-    public const int EvtSystemResumedDetail   = 18;
-    public const int EvtCursorHookFailed      = 19;
-    public const int EvtSessionNotifyFailed   = 20;
+    public const int EvtHostStarted             = 1;
+    public const int EvtHostStartedDetail       = 2;
+    public const int EvtHostStartFailed         = 3;
+    public const int EvtHostStartFailedDetail   = 4;
+    public const int EvtHostStopped             = 5;
+    public const int EvtHostStopTimedOut        = 6;
+    public const int EvtLayoutRebuilt           = 7;
+    public const int EvtLayoutRebuiltDetail     = 8;
+    public const int EvtLayoutQueryFailed       = 9;
+    public const int EvtCoverShown              = 10;
+    public const int EvtCoverHidden             = 11;
+    public const int EvtCoverSuppressed         = 12;
+    public const int EvtCoverSuppressedDetail   = 13;
+    public const int EvtCoverUnsuppressed       = 14;
+    public const int EvtSystemSuspended         = 15;
+    public const int EvtSystemSuspendedDetail   = 16;
+    public const int EvtSystemResumed           = 17;
+    public const int EvtSystemResumedDetail     = 18;
+    public const int EvtCursorHookFailed        = 19;
+    public const int EvtSessionNotifyFailed     = 20;
     // 21, 22, 23 and 25 belong to retired events: reserved, never reuse.
-    public const int EvtLayoutQueryRecovered  = 24;
+    public const int EvtLayoutQueryRecovered    = 24;
+    public const int EvtCoverUnsuppressedDetail = 26;
+    public const int EvtBandCreateFailed        = 27;
+    public const int EvtBandCreateFailedDetail  = 28;
 
     // ── Host lifecycle ────────────────────────────────────────────────────────
 
@@ -114,14 +119,16 @@ public sealed class DeckleShellTaskbarCoverSource : DeckleEventSource
             WriteEvent(EvtLayoutRebuilt);
     }
 
+    // One line per band the rebuild placed; taskbars is the count the layout
+    // found, so a reader sees at once whether every monitor got its band.
     [Event(EvtLayoutRebuiltDetail,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Windowing,
-           Message = "layout | edge={0} | band=({1},{2})-({3},{4}) | reason={5}")]
-    public void LayoutRebuiltDetail(string edge, int left, int top, int right, int bottom, string reason)
+           Message = "layout | band={0} | taskbars={1} | edge={2} | rect=({3},{4})-({5},{6}) | reason={7}")]
+    public void LayoutRebuiltDetail(int band, int taskbars, string edge, int left, int top, int right, int bottom, string reason)
     {
         if (!IsWindowingDetailEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Windowing)) return;
-        WriteEvent(EvtLayoutRebuiltDetail, edge, left, top, right, bottom, reason);
+        WriteEvent(EvtLayoutRebuiltDetail, band, taskbars, edge, left, top, right, bottom, reason);
     }
 
     [Event(EvtLayoutQueryFailed,
@@ -142,6 +149,25 @@ public sealed class DeckleShellTaskbarCoverSource : DeckleEventSource
         if (IsEnabled()) WriteEvent(EvtLayoutQueryRecovered);
     }
 
+    [Event(EvtBandCreateFailed,
+           Level = EventLevel.Warning,
+           Keywords = (EventKeywords)Keywords.Windowing,
+           Message = "A band window could not be created — that taskbar stays uncovered")]
+    public void BandCreateFailed()
+    {
+        if (IsEnabled()) WriteEvent(EvtBandCreateFailed);
+    }
+
+    [Event(EvtBandCreateFailedDetail,
+           Level = EventLevel.Verbose,
+           Keywords = (EventKeywords)Keywords.Windowing,
+           Message = "band create failed | band={0} | win32_error={1}")]
+    public void BandCreateFailedDetail(int band, int win32_error)
+    {
+        if (!IsWindowingDetailEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Windowing)) return;
+        WriteEvent(EvtBandCreateFailedDetail, band, win32_error);
+    }
+
     // ── Cover visibility ──────────────────────────────────────────────────────
     //
     // Verbose: these flip on every approach and retreat of the cursor, noise
@@ -150,21 +176,21 @@ public sealed class DeckleShellTaskbarCoverSource : DeckleEventSource
     [Event(EvtCoverShown,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "cover shown | reason={0}")]
-    public void CoverShown(string reason)
+           Message = "cover shown | band={0} | reason={1}")]
+    public void CoverShown(int band, string reason)
     {
         if (!IsWindowingDetailEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Lifecycle)) return;
-        WriteEvent(EvtCoverShown, reason);
+        WriteEvent(EvtCoverShown, band, reason);
     }
 
     [Event(EvtCoverHidden,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "cover hidden | reason={0}")]
-    public void CoverHidden(string reason)
+           Message = "cover hidden | band={0} | reason={1}")]
+    public void CoverHidden(int band, string reason)
     {
         if (!IsWindowingDetailEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Lifecycle)) return;
-        WriteEvent(EvtCoverHidden, reason);
+        WriteEvent(EvtCoverHidden, band, reason);
     }
 
     // ── Gates ─────────────────────────────────────────────────────────────────
@@ -172,7 +198,7 @@ public sealed class DeckleShellTaskbarCoverSource : DeckleEventSource
     [Event(EvtCoverSuppressed,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "A fullscreen app is foreground — the cover stands down")]
+           Message = "A fullscreen app is foreground — the cover on its screen stands down")]
     public void CoverSuppressed()
     {
         if (IsWindowingDetailEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Lifecycle))
@@ -182,21 +208,31 @@ public sealed class DeckleShellTaskbarCoverSource : DeckleEventSource
     [Event(EvtCoverSuppressedDetail,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "suppressed | stage={0}")]
-    public void CoverSuppressedDetail(string stage)
+           Message = "suppressed | band={0} | stage={1}")]
+    public void CoverSuppressedDetail(int band, string stage)
     {
         if (!IsWindowingDetailEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Lifecycle)) return;
-        WriteEvent(EvtCoverSuppressedDetail, stage);
+        WriteEvent(EvtCoverSuppressedDetail, band, stage);
     }
 
     [Event(EvtCoverUnsuppressed,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "The fullscreen app is gone — the cover is back")]
+           Message = "The fullscreen app is gone — the cover on its screen is back")]
     public void CoverUnsuppressed()
     {
         if (IsWindowingDetailEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Lifecycle))
             WriteEvent(EvtCoverUnsuppressed);
+    }
+
+    [Event(EvtCoverUnsuppressedDetail,
+           Level = EventLevel.Verbose,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Message = "unsuppressed | band={0}")]
+    public void CoverUnsuppressedDetail(int band)
+    {
+        if (!IsWindowingDetailEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Lifecycle)) return;
+        WriteEvent(EvtCoverUnsuppressedDetail, band);
     }
 
     [Event(EvtSystemSuspended,

@@ -1648,6 +1648,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   ├── TaskbarCoverViewModel.cs
 │   │   │   └── TaskbarCoverViewModel.Settings.cs
 │   │   ├── ApproachDistance.cs
+│   │   ├── CoverBand.cs
 │   │   ├── CoverGeometry.cs
 │   │   ├── CoverSuppression.cs
 │   │   ├── Deckle.Shell.TaskbarCover.csproj
@@ -1661,7 +1662,9 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── TaskbarCoverHost.Visibility.cs
 │   │   ├── TaskbarCoverSettings.cs
 │   │   ├── TaskbarCoverSettingsModule.cs
-│   │   └── TaskbarCoverSettingsService.cs
+│   │   ├── TaskbarCoverSettingsService.cs
+│   │   ├── TaskbarLocator.cs
+│   │   └── TaskbarPlacement.cs
 │   ├── Deckle.Shell.TrayMenu/
 │   │   ├── Interop/
 │   │   │   └── TrayMenuNativeMethods.cs
@@ -2171,7 +2174,8 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── CoverGeometryTests.cs
 │   │   ├── CoverSuppressionTests.cs
 │   │   ├── Deckle.Shell.TaskbarCover.Tests.csproj
-│   │   └── TaskbarCoverBugNotes.md
+│   │   ├── TaskbarCoverBugNotes.md
+│   │   └── TaskbarPlacementTests.cs
 │   ├── Deckle.Shell.Tests/
 │   │   ├── Deckle.Shell.Tests.csproj
 │   │   ├── DispatcherQueueExtensionsTests.cs

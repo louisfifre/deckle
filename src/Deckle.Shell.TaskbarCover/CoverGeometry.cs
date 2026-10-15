@@ -2,9 +2,10 @@ using Deckle.Core;
 
 namespace Deckle.Shell.TaskbarCover;
 
-// Edge the taskbar is anchored to. Ordinals match the ABE_* values
-// returned in APPBARDATA.uEdge by SHAppBarMessage(ABM_GETTASKBARPOS),
-// so the native value casts straight into this enum.
+// Edge a taskbar is anchored to. Ordinals equal the ABE_* values of the
+// appbar API, the historical source of the primary's edge, so a value read
+// from an older log keeps its meaning; the edge is now read from geometry
+// (EdgeOf) for every taskbar alike.
 public enum TaskbarEdge
 {
     Left   = 0,
@@ -48,6 +49,24 @@ public static class CoverGeometry
         => edge is TaskbarEdge.Left or TaskbarEdge.Right
             ? band.right - band.left
             : band.bottom - band.top;
+
+    // The edge a taskbar hugs, read from its rect against its monitor's: the
+    // long side says whether it lies along the top/bottom or the left/right,
+    // and the nearer monitor side says which of the two. Nearer rather than
+    // equal, so a taskbar slid mostly off-screen by auto-hide, or a rect one
+    // pixel off its monitor, still resolves to the edge it belongs to.
+    public static TaskbarEdge EdgeOf(NativeMethods.RECT taskbar, NativeMethods.RECT monitor)
+    {
+        int width  = taskbar.right - taskbar.left;
+        int height = taskbar.bottom - taskbar.top;
+
+        if (width >= height)
+            return Math.Abs(taskbar.top - monitor.top) <= Math.Abs(monitor.bottom - taskbar.bottom)
+                ? TaskbarEdge.Top : TaskbarEdge.Bottom;
+
+        return Math.Abs(taskbar.left - monitor.left) <= Math.Abs(monitor.right - taskbar.right)
+            ? TaskbarEdge.Left : TaskbarEdge.Right;
+    }
 
     // The zone is the band plus the span, measured inward from the anchored
     // screen edge. It spans only the band's extent along the edge: a cursor

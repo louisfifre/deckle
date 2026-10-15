@@ -53,47 +53,52 @@ internal static class TaskbarCoverNativeMethods
     [DllImport("gdi32.dll")]
     public static extern bool DeleteObject(IntPtr hObject);
 
-    // ── Taskbar position (SHAppBarMessage) ───────────────────────────────────
+    // ── Taskbar windows ──────────────────────────────────────────────────────
     //
-    // ABM_GETTASKBARPOS fills uEdge (ABE_* — the TaskbarEdge ordinals) and rc
-    // (taskbar rect in physical pixels). Returns zero on failure (no taskbar,
-    // shell not ready).
+    // Explorer owns one top-level window per taskbar: Shell_TrayWnd on the
+    // primary monitor and a Shell_SecondaryTrayWnd on every other monitor that
+    // shows one. SHAppBarMessage(ABM_GETTASKBARPOS), the former source, only
+    // ever described the primary, which is why the cover used to stop at one
+    // monitor. Walking the top-level windows by class with FindWindowEx(NULL,
+    // after, class, NULL) reaches them all without sending Explorer anything,
+    // so a hung shell cannot block the cover thread here.
 
-    public const uint ABM_GETTASKBARPOS = 0x00000005;
+    public const string PrimaryTaskbarClass   = "Shell_TrayWnd";
+    public const string SecondaryTaskbarClass = "Shell_SecondaryTrayWnd";
 
-    [StructLayout(LayoutKind.Sequential)]
-    public struct APPBARDATA
-    {
-        public uint   cbSize;
-        public IntPtr hWnd;
-        public uint   uCallbackMessage;
-        public uint   uEdge;
-        public NativeMethods.RECT rc;
-        public IntPtr lParam;
-    }
+    [DllImport("user32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
+    public static extern IntPtr FindWindowEx(IntPtr hWndParent, IntPtr hWndChildAfter, string lpszClass, string? lpszWindow);
 
-    [DllImport("shell32.dll")]
-    public static extern IntPtr SHAppBarMessage(uint dwMessage, ref APPBARDATA pData);
+    [DllImport("user32.dll")]
+    public static extern bool IsWindowVisible(IntPtr hWnd);
 
-    // ── Band monitor ─────────────────────────────────────────────────────────
+    // ── Monitor of a taskbar ─────────────────────────────────────────────────
     //
-    // Compared with the foreground window's monitor to decide fullscreen
-    // suppression. DEFAULTTONEAREST: a taskbar rect always yields a monitor,
-    // never NULL.
+    // The monitor gives the band its edge (the taskbar rect against the
+    // monitor rect), its DPI and the handle compared with the foreground
+    // window's monitor for fullscreen suppression. DEFAULTTONEAREST: a taskbar
+    // window always yields a monitor, even one slid off-screen by auto-hide.
 
     public const uint MONITOR_DEFAULTTONEAREST = 0x00000002;
 
     [DllImport("user32.dll")]
-    public static extern IntPtr MonitorFromRect(ref NativeMethods.RECT lprc, uint dwFlags);
+    public static extern IntPtr MonitorFromWindow(IntPtr hWnd, uint dwFlags);
 
-    // ── Band monitor DPI ─────────────────────────────────────────────────────
-    //
+    [StructLayout(LayoutKind.Sequential)]
+    public struct MONITORINFO
+    {
+        public uint cbSize;
+        public NativeMethods.RECT rcMonitor;
+        public NativeMethods.RECT rcWork;
+        public uint dwFlags;
+    }
+
+    [DllImport("user32.dll", CharSet = CharSet.Unicode, EntryPoint = "GetMonitorInfoW")]
+    public static extern bool GetMonitorInfo(IntPtr hMonitor, ref MONITORINFO lpmi);
+
     // The approach span is set in device-independent pixels while the band
-    // rect and the cursor are physical pixels, so the host scales it by the
-    // band monitor's effective DPI. Read from the monitor handle the layout
-    // already holds rather than from the band window: the window sits on the
-    // old rect until SetWindowPos moves it, and the scale is wanted before.
-    // Returns an HRESULT, S_OK (0) on success.
+    // rect and the cursor are physical pixels, so each band scales it by its
+    // monitor's effective DPI. Returns an HRESULT, S_OK (0) on success.
 
     public const int MDT_EFFECTIVE_DPI = 0;
 
@@ -132,21 +137,21 @@ internal static class TaskbarCoverNativeMethods
     // ── Foreground hand-off ──────────────────────────────────────────────────
     //
     // The ForegroundWatcher raises Changed on the UI thread; the host posts
-    // this private message to its band so the cover thread, which owns every
-    // state field, reads the snapshot itself. WM_APP range: private to the
-    // window class, never sent by the system.
+    // this private message to its anchor window so the cover thread, which
+    // owns every state field, reads the snapshot itself. WM_APP range: private
+    // to the window class, never sent by the system.
 
     public const uint WM_APP_FOREGROUND = 0x8000 + 1;
 
     // Same hand-off for the approach level: the App writes it through
     // TaskbarCoverHost.Approach from its own thread, the cover thread reads
-    // it when this message lands and rebuilds the zone.
+    // it when this message lands and rebuilds the zones.
     public const uint WM_APP_APPROACH = 0x8000 + 2;
 
     [DllImport("user32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
     public static extern bool PostMessage(IntPtr hWnd, uint msg, IntPtr wParam, IntPtr lParam);
 
-    // ── System messages the band window reacts to ────────────────────────────
+    // ── System messages the anchor window reacts to ──────────────────────────
 
     public const uint WM_DESTROY       = 0x0002;
     public const uint WM_SETTINGCHANGE = 0x001A; // taskbar moved/resized, DPI, work area
