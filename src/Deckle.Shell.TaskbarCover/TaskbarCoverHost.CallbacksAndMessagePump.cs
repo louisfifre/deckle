@@ -8,17 +8,13 @@ namespace Deckle.Shell.TaskbarCover;
 
 public sealed partial class TaskbarCoverHost
 {
-    // First layout and gate probes, off Start()'s critical path: the gated
-    // section (SetupWindow) makes local calls only, while SHAppBarMessage is
-    // a synchronous send to Explorer's tray window. Against a hung Explorer
-    // it blocks this thread only, never the caller of Start().
+    // First layout off Start()'s critical path: the gated section
+    // (SetupWindow) makes local calls only, and the layout walks the taskbar
+    // windows, places each band, reads its alpha from the cursor and applies
+    // the foreground verdict in one pass.
     private void BootstrapState()
     {
         RebuildLayout("boot");
-        ResetZoneStateFromCursor();
-        UpdateAppSuppressed(_foreground.Current);
-
-        UpdateCover("boot");
     }
 
     private void RunPump()
@@ -38,6 +34,9 @@ public sealed partial class TaskbarCoverHost
             UnhookWinEvent(_cursorHook);
             _cursorHook = IntPtr.Zero;
         }
+        foreach (var band in _bands)
+            NativeMethods.DestroyWindow(band.Hwnd);
+        _bands.Clear();
         if (_hwnd != IntPtr.Zero)
         {
             WTSUnRegisterSessionNotification(_hwnd);
@@ -56,19 +55,23 @@ public sealed partial class TaskbarCoverHost
             _brush = IntPtr.Zero;
         }
 
-        // Restore the boot-pessimistic state for a potential restart.
-        _coverVisible        = false;
-        _coverAlpha          = 0;
-        _appSuppressed       = false;
+        // Restore the boot-pessimistic state for a potential restart; the
+        // per-band state left with the bands.
         _systemSuspended     = false;
         _layoutKnown         = false;
         _layoutFailureLogged = false;
-        _bandMonitor         = IntPtr.Zero;
-        _dpiScale            = 1.0;
     }
 
     private IntPtr WndProc(IntPtr hWnd, uint msg, IntPtr wParam, IntPtr lParam)
     {
+        // The bands share the class and receive the same broadcasts; only
+        // the anchor acts on them, so one WM_SETTINGCHANGE rebuilds the
+        // layout once, not once per band. _hwnd is still zero while the
+        // anchor itself is being created, and its creation messages take
+        // the default path like any other.
+        if (hWnd != _hwnd)
+            return NativeMethods.DefWindowProc(hWnd, msg, wParam, lParam);
+
         if (_wmTaskbarCreated != 0 && msg == _wmTaskbarCreated)
         {
             RebuildLayout("taskbar_created");
@@ -86,9 +89,9 @@ public sealed partial class TaskbarCoverHost
             case WM_APP_APPROACH:
                 // Posted by the Approach setter and by Start; the level is
                 // read here, so a burst of posts converges on the latest one
-                // and a post that finds the zone already at that level costs
-                // nothing. The zone is rebuilt through the layout path, the
-                // one place that computes it.
+                // and a post that finds the zones already at that level costs
+                // nothing. The zones are rebuilt through the layout path, the
+                // one place that computes them.
                 if (_requestedApproach != _approach) RebuildLayout("approach_change");
                 return IntPtr.Zero;
 
@@ -113,5 +116,4 @@ public sealed partial class TaskbarCoverHost
 
         return NativeMethods.DefWindowProc(hWnd, msg, wParam, lParam);
     }
-
 }
