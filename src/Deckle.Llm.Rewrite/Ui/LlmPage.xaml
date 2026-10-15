@@ -27,6 +27,7 @@
                                             x:Uid="LlmPageHeader"
                                             ResetAllRequested="ResetAll_Click" />
 
+                <!-- Open only while an enabled Ollama provider does not answer. -->
                 <InfoBar x:Name="OllamaStatusBar"
                          x:Uid="LlmPage_OllamaStatusBar"
                          Severity="Warning"
@@ -37,16 +38,21 @@
 
                 <llm:LlmGeneralSection x:Name="GeneralSection" />
 
-                <!-- Mask-not-grey: the three dependent sections collapse out of
-                     layout when rewriting is off, driven by the General master
-                     toggle. The Enabled toggle itself (in GeneralSection) stays
-                     always visible. -->
+                <!-- Mask-not-grey: the dependent sections collapse out of layout
+                     when rewriting is off, driven by the module switch. The
+                     switch itself (in GeneralSection) stays always visible.
+                     Order: what a dictation uses first, then the profiles it
+                     picks from, then the providers they send to, then the
+                     Ollama models (shown by code, only while an Ollama provider
+                     is on). -->
                 <llm:LlmActiveProfileSection x:Name="ActiveProfileSection"
                                             Visibility="{x:Bind GeneralSection.IsRewritingEnabled, Mode=OneWay, Converter={StaticResource BoolToVisibility}}" />
                 <llm:LlmProfilesSection x:Name="ProfilesSection"
                                         Visibility="{x:Bind GeneralSection.IsRewritingEnabled, Mode=OneWay, Converter={StaticResource BoolToVisibility}}" />
+                <llm:LlmProvidersSection x:Name="ProvidersSection"
+                                         Visibility="{x:Bind GeneralSection.IsRewritingEnabled, Mode=OneWay, Converter={StaticResource BoolToVisibility}}" />
                 <llm:LlmModelsSection x:Name="ModelsSection"
-                                      Visibility="{x:Bind GeneralSection.IsRewritingEnabled, Mode=OneWay, Converter={StaticResource BoolToVisibility}}" />
+                                      Visibility="Collapsed" />
 
             </StackPanel>
         </Grid>

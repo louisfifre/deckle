@@ -21,5 +21,8 @@
     <ProjectReference Include="..\Deckle.Core\Deckle.Core.csproj" />
     <ProjectReference Include="..\Deckle.Diagnostics\Deckle.Diagnostics.csproj" />
     <ProjectReference Include="..\Deckle.Llm\Deckle.Llm.csproj" />
+    <!-- ISecretVault: the Providers section writes a provider's API key to
+         the vault and never to settings.json. -->
+    <ProjectReference Include="..\Deckle.Security\Deckle.Security.csproj" />
   </ItemGroup>
 </Project>

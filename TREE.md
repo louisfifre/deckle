@@ -1336,7 +1336,10 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   ├── LlmPage.xaml.cs
 │   │   │   ├── LlmProfilesSection.xaml
 │   │   │   ├── LlmProfilesSection.xaml.cs
+│   │   │   ├── LlmProvidersSection.xaml
+│   │   │   ├── LlmProvidersSection.xaml.cs
 │   │   │   ├── ProfileViewModel.cs
+│   │   │   ├── ProviderViewModel.cs
 │   │   │   ├── RewriteChangeView.cs
 │   │   │   ├── RewriteOfferWindow.xaml
 │   │   │   └── RewriteOfferWindow.xaml.cs

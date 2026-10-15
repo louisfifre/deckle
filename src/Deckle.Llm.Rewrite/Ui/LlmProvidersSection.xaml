@@ -1,0 +1,136 @@
+<UserControl
+    x:Class="Deckle.Llm.Rewrite.LlmProvidersSection"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:controls="using:CommunityToolkit.WinUI.Controls"
+    xmlns:vm="using:Deckle.Llm.Rewrite"
+    xmlns:catalog="using:Deckle.Catalog"
+    x:Name="Root">
+
+    <UserControl.Resources>
+        <vm:BoolToVisibilityConverter x:Key="BoolToVisibility" />
+    </UserControl.Resources>
+
+    <!-- Tag is the search index's scroll-to handle (LabelKey "LlmProvidersSection").
+         The reset is a command with its own confirmation, not a dirty-tracked
+         value, so the wheel stays enabled. -->
+    <catalog:SettingsSection x:Uid="LlmProvidersBlock"
+                             Tag="LlmProvidersSection"
+                             HasReset="True"
+                             IsResetEnabled="True"
+                             ResetRequested="ResetSection_Click">
+    <StackPanel Spacing="{StaticResource SettingsCardSpacing}">
+
+        <InfoBar x:Name="ErrorBar"
+                 Severity="Error"
+                 IsOpen="False"
+                 IsClosable="True"
+                 Margin="0,0,0,4"
+                 catalog:InfoBarLayout.CollapseWhenClosed="True" />
+
+        <ItemsRepeater ItemsSource="{x:Bind Providers}">
+            <ItemsRepeater.Layout>
+                <StackLayout Spacing="4" />
+            </ItemsRepeater.Layout>
+            <ItemsRepeater.ItemTemplate>
+                <DataTemplate x:DataType="vm:ProviderViewModel">
+                    <controls:SettingsExpander
+                        Header="{x:Bind Name, Mode=OneWay}"
+                        Description="{x:Bind Summary, Mode=OneWay}"
+                        IsExpanded="{x:Bind IsNew, Mode=OneWay}">
+
+                        <!-- The switch keeps a disabled provider in the list, so a
+                             profile pointing at it fails visibly instead of
+                             silently moving to another. -->
+                        <StackPanel Orientation="Horizontal"
+                                    Spacing="8"
+                                    VerticalAlignment="Center">
+                            <ToggleSwitch IsOn="{x:Bind Enabled, Mode=TwoWay}"
+                                          MinWidth="0" />
+                            <Button Tag="{x:Bind}"
+                                    Click="DeleteProvider_Click">
+                                <StackPanel Orientation="Horizontal" Spacing="6">
+                                    <FontIcon Glyph="{StaticResource Icon.Delete}" FontSize="14" />
+                                    <TextBlock x:Uid="LlmProvider_RemoveLabel" />
+                                </StackPanel>
+                            </Button>
+                        </StackPanel>
+
+                        <controls:SettingsExpander.Items>
+                            <controls:SettingsCard ContentAlignment="Vertical"
+                                                   HorizontalContentAlignment="Stretch">
+                                <StackPanel Spacing="12"
+                                            HorizontalAlignment="Stretch">
+                                    <TextBox x:Uid="LlmProvider_NameBox"
+                                             Text="{x:Bind Name, Mode=TwoWay}"
+                                             Tag="{x:Bind}"
+                                             TextChanged="NameBox_TextChanged"
+                                             HorizontalAlignment="Stretch" />
+
+                                    <!-- Item order mirrors ProviderViewModel.Kinds. -->
+                                    <ComboBox x:Uid="LlmProvider_KindBox"
+                                              SelectedIndex="{x:Bind KindIndex, Mode=TwoWay}"
+                                              MinWidth="280">
+                                        <ComboBoxItem x:Uid="LlmProviderKind_OllamaItem" />
+                                        <ComboBoxItem x:Uid="LlmProviderKind_OpenAiCompatibleItem" />
+                                        <ComboBoxItem x:Uid="LlmProviderKind_ClaudeItem" />
+                                    </ComboBox>
+
+                                    <TextBlock x:Uid="LlmProvider_KindBody"
+                                               Style="{StaticResource CaptionTextBlockStyle}"
+                                               Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                               TextWrapping="Wrap"
+                                               Margin="0,-4,0,0" />
+
+                                    <TextBox x:Uid="LlmProvider_EndpointBox"
+                                             Text="{x:Bind Endpoint, Mode=TwoWay}"
+                                             PlaceholderText="{x:Bind EndpointPlaceholder, Mode=OneWay}"
+                                             Tag="{x:Bind}"
+                                             TextChanged="EndpointBox_TextChanged"
+                                             Visibility="{x:Bind ShowsEndpoint, Mode=OneWay, Converter={StaticResource BoolToVisibility}}"
+                                             HorizontalAlignment="Stretch" />
+
+                                    <!-- The key is a command on the vault, not a value
+                                         in settings: typed, saved, and the box clears.
+                                         The caption says whether one is stored. -->
+                                    <StackPanel Spacing="8"
+                                                Visibility="{x:Bind ShowsKey, Mode=OneWay, Converter={StaticResource BoolToVisibility}}">
+                                        <StackPanel Orientation="Horizontal"
+                                                    Spacing="8"
+                                                    VerticalAlignment="Bottom">
+                                            <PasswordBox x:Uid="LlmProvider_KeyBox"
+                                                         Tag="{x:Bind}"
+                                                         MinWidth="360"
+                                                         KeyDown="KeyBox_KeyDown" />
+                                            <Button Tag="{x:Bind}"
+                                                    Click="SaveKey_Click"
+                                                    VerticalAlignment="Bottom">
+                                                <TextBlock x:Uid="LlmProvider_SaveKeyLabel" />
+                                            </Button>
+                                            <Button Tag="{x:Bind}"
+                                                    Click="RemoveKey_Click"
+                                                    VerticalAlignment="Bottom"
+                                                    Visibility="{x:Bind HasKeyStored, Mode=OneWay, Converter={StaticResource BoolToVisibility}}">
+                                                <TextBlock x:Uid="LlmProvider_RemoveKeyLabel" />
+                                            </Button>
+                                        </StackPanel>
+                                        <TextBlock Text="{x:Bind KeyStatus, Mode=OneWay}"
+                                                   Style="{StaticResource CaptionTextBlockStyle}"
+                                                   Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                                   TextWrapping="Wrap"
+                                                   Margin="0,-4,0,0" />
+                                    </StackPanel>
+                                </StackPanel>
+                            </controls:SettingsCard>
+                        </controls:SettingsExpander.Items>
+                    </controls:SettingsExpander>
+                </DataTemplate>
+            </ItemsRepeater.ItemTemplate>
+        </ItemsRepeater>
+
+        <Button x:Uid="LlmAddProviderButton"
+                Click="AddProvider_Click"
+                Margin="0,4,0,0" />
+    </StackPanel>
+    </catalog:SettingsSection>
+</UserControl>

@@ -10,6 +10,7 @@
     <UserControl.Resources>
         <vm:CtxTooltipConverter x:Key="CtxTooltipConverter" />
         <vm:TempTooltipConverter x:Key="TempTooltipConverter" />
+        <vm:BoolToVisibilityConverter x:Key="BoolToVisibility" />
     </UserControl.Resources>
 
     <!-- Tag is the search index's scroll-to handle (LabelKey "LlmProfilesSection").
@@ -52,6 +53,18 @@
                                              TextChanged="NameBox_TextChanged"
                                              HorizontalAlignment="Stretch" />
 
+                                    <!-- Items come from the Providers section, set on
+                                         Loaded so the template needs no outer binding;
+                                         the choice decides which model names the box
+                                         below suggests and whether the hints show. -->
+                                    <ComboBox x:Uid="LlmProfile_ProviderBox"
+                                              Tag="{x:Bind}"
+                                              DisplayMemberPath="Name"
+                                              SelectedValuePath="Id"
+                                              MinWidth="280"
+                                              Loaded="ProviderCombo_Loaded"
+                                              SelectionChanged="ProviderCombo_SelectionChanged" />
+
                                     <AutoSuggestBox x:Uid="LlmProfile_ModelBox"
                                                     Tag="{x:Bind}"
                                                     Text="{x:Bind Model, Mode=OneWay}"
@@ -77,6 +90,10 @@
                                                TextWrapping="Wrap"
                                                Margin="0,-4,0,0" />
 
+                                    <!-- Hidden, not greyed, for a hosted provider that
+                                         takes no sampling hints. -->
+                                    <StackPanel Spacing="12"
+                                                Visibility="{x:Bind ShowsGenerationHints, Mode=OneWay, Converter={StaticResource BoolToVisibility}}">
                                     <StackPanel Orientation="Horizontal"
                                                 Spacing="12"
                                                 VerticalAlignment="Bottom">
@@ -121,6 +138,7 @@
                                                Foreground="{ThemeResource TextFillColorSecondaryBrush}"
                                                TextWrapping="Wrap"
                                                Margin="0,-4,0,0" />
+                                    </StackPanel>
 
                                     <!-- Top P and the repeat penalty (the former
                                          "Advanced parameters" expander) are no longer
