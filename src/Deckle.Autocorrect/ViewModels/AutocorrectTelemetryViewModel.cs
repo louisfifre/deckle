@@ -19,8 +19,10 @@ namespace Deckle.Autocorrect;
 // typed-sentence corpus (autocorrect.text.jsonl) and, on enrolled surfaces
 // only, the typing stream (autocorrect.stream.jsonl). Text is NOT gated by
 // Decisions, so they stay two independent leaves, never a masking Group. Both
-// are consent-gated through the Catalog registry and off by default; no
-// defaultValue, a privacy opt-in carries no per-row reset.
+// are consent-gated through the Catalog registry and off by default. Each
+// reads its default from TelemetrySettings, so each card has its reset (Louis,
+// 2026-10-15: every setting with a default gets its reset); the reset only
+// turns an opt-in off, a write the consent gate does not hold.
 public sealed partial class AutocorrectTelemetryViewModel : ObservableObject
 {
     private bool _isSyncing;
@@ -78,10 +80,12 @@ public sealed partial class AutocorrectTelemetryViewModel : ObservableObject
         Setting.Toggle("AutocorrectDecisionsCard",
             () => AutocorrectDecisions,
             value => AutocorrectDecisions = value,
+            defaultValue: () => new TelemetrySettings().AutocorrectDecisions,
             confirmOnEnable: TelemetryConsent.RequestAutocorrectDecisions),
         Setting.Toggle("AutocorrectTextCard",
             () => AutocorrectText,
             value => AutocorrectText = value,
+            defaultValue: () => new TelemetrySettings().AutocorrectText,
             confirmOnEnable: TelemetryConsent.RequestAutocorrectText),
     ];
 

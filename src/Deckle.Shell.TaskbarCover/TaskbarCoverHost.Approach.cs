@@ -50,7 +50,7 @@ public sealed partial class TaskbarCoverHost
     }
 
     private byte CoverAlphaAt(POINT p) =>
-        (byte)Math.Round(CoverGeometry.Opacity(_band, _edge, p, _approach) * 255);
+        (byte)Math.Round(CoverGeometry.Opacity(_band, _edge, p, _approach, _dpiScale) * 255);
 
     // The one entry point that moves the band's opacity. Applies the alpha
     // before UpdateCover may show the window, so it never flashes at a stale

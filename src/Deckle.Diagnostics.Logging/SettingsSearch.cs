@@ -61,9 +61,8 @@ public static class SettingsSearch
             Keywords = ["mouse", "scroll", "wheel", "jsonl", "capture"],
         },
 
-        // "Folders" section, last on the page: the composed telemetry folder
-        // (TelemetryStorageSettings) and the hand-authored diagnostics folder
-        // card, Tag'd in the XAML.
+        // "Folders" section, last on the page: the two composed folder folds
+        // (FoldersSettings), the telemetry folder then the diagnostics folder.
         new SettingSearchEntry
         {
             LabelKey = "GeneralStorageFolderCard",

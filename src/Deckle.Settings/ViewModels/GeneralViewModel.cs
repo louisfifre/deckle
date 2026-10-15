@@ -89,16 +89,80 @@ public partial class GeneralViewModel : ObservableObject
     {
         if (_isSyncing) return;
         bool ok = value ? StartupService.StartStartup() : StartupService.StopStartup();
-        if (ok)
-        {
-            DeckleSettingsUxSource.Log.SettingChanged("Start with Windows", value.ToString());
-            return;
-        }
 
         _isSyncing = true;
-        try { AutostartEnabled = !value; }
+        try
+        {
+            if (ok)
+            {
+                DeckleSettingsUxSource.Log.SettingChanged("Start with Windows", value.ToString());
+                // StopStartup removes every vehicle, the elevated task included.
+                if (!value) ElevatedStartupEnabled = false;
+            }
+            else
+            {
+                AutostartEnabled = !value;
+            }
+        }
         finally { _isSyncing = false; }
     }
+
+    // "Start elevated" chooses the logon vehicle: the scheduled task that starts
+    // Deckle as administrator, in place of the Run key. OS-backed like
+    // AutostartEnabled, probed by Load(), written through ElevatedStartupService
+    // and reverted when the write is refused (a declined UAC prompt). Its two
+    // outcomes ride back onto the other toggle under the sync guard: enabling
+    // the task starts the app at logon, so AutostartEnabled reads ON; disabling
+    // it restores the Run key, so AutostartEnabled stays ON. The reverse lives
+    // in OnAutostartEnabledChanged: StopStartup removes the task too.
+    [ObservableProperty]
+    public partial bool ElevatedStartupEnabled { get; set; }
+
+    partial void OnElevatedStartupEnabledChanged(bool value)
+    {
+        if (_isSyncing) return;
+        bool ok = value ? ElevatedStartupService.Enable() : ElevatedStartupService.Disable();
+
+        _isSyncing = true;
+        try
+        {
+            if (ok)
+            {
+                DeckleSettingsUxSource.Log.SettingChanged("Start elevated", value.ToString());
+                AutostartEnabled = true;
+            }
+            else
+            {
+                ElevatedStartupEnabled = !value;
+            }
+        }
+        finally { _isSyncing = false; }
+    }
+
+    // ── Data folder ──────────────────────────────────────────────────────────
+    //
+    // The data root is not a stored value: AppPaths answers it, and a change is
+    // a relocation the page pre-flights (target rules, free space, confirmation)
+    // and the App performs in a restart. The property exists so the folder
+    // composes like any Path: the getter reads the live root, and the setter
+    // only relays the pick through DataFolderMoveRequested, after raising
+    // PropertyChanged so the Location line snaps back to the root the data is
+    // still in; a confirmed move restarts the app, a refused one leaves it.
+
+    public string DataFolder => AppPaths.UserDataRoot;
+
+    public event EventHandler<string>? DataFolderMoveRequested;
+
+    private void RequestDataFolderMove(string target)
+    {
+        OnPropertyChanged(nameof(DataFolder));
+        DataFolderMoveRequested?.Invoke(this, target);
+    }
+
+    // True while the page scans the data root's size before confirming; the
+    // Location line is greyed for that span, the one meaning greying has.
+    [ObservableProperty]
+    public partial bool DataFolderMoveInFlight { get; set; }
 
     // ── Updates ──────────────────────────────────────────────────────────────
 
@@ -126,13 +190,16 @@ public partial class GeneralViewModel : ObservableObject
 
     public bool HasBackup => LatestBackup is not null;
 
-    public string LatestBackupFileName => LatestBackup is null
-        ? "—"
-        : Path.GetFileName(LatestBackup.Path);
-
-    public string LatestBackupCreatedAt => LatestBackup is null
-        ? "No backup yet"
-        : LatestBackup.Timestamp.LocalDateTime.ToString("g");
+    // The "Latest backup" card's description: the file name and its creation
+    // time on one line, or the no-backup sentence. Read from this module's own
+    // .resw, as the manifest's strings are.
+    public string LatestBackupSummary => LatestBackup is null
+        ? Loc.GetFrom("Deckle.Settings", "GeneralBackupInfo_None")
+        : string.Format(
+            System.Globalization.CultureInfo.CurrentCulture,
+            Loc.GetFrom("Deckle.Settings", "GeneralBackupInfo_Summary_Format"),
+            Path.GetFileName(LatestBackup.Path),
+            LatestBackup.DisplayName);
 
     partial void OnBackupDirectoryChanged(string value)
     {
@@ -150,8 +217,7 @@ public partial class GeneralViewModel : ObservableObject
 
         OnPropertyChanged(nameof(LatestBackup));
         OnPropertyChanged(nameof(HasBackup));
-        OnPropertyChanged(nameof(LatestBackupFileName));
-        OnPropertyChanged(nameof(LatestBackupCreatedAt));
+        OnPropertyChanged(nameof(LatestBackupSummary));
     }
 
     // ── Sync with SettingsService ────────────────────────────────────────────
@@ -169,8 +235,10 @@ public partial class GeneralViewModel : ObservableObject
 
         Theme = appearance.Theme;
         // Autostart is OS-backed (registry + scheduled task), not an AppSettings
-        // POCO — its conceptual default lives on the startup facade.
+        // POCO — its conceptual default lives on the startup facade, and the
+        // elevated vehicle's on its own service; both read off until Load() probes.
         AutostartEnabled = StartupService.DefaultEnabled;
+        ElevatedStartupEnabled = ElevatedStartupService.DefaultEnabled;
         BackupDirectory = paths.BackupDirectory;
         UpdateAutoCheckEnabled = updates.AutoCheckEnabled;
         LoadHotkeys(new HotkeysSettings());
@@ -185,7 +253,13 @@ public partial class GeneralViewModel : ObservableObject
         {
             var shell = SettingsService.Instance.Current;
             Theme = shell.Appearance.Theme;
-            AutostartEnabled = StartupService.StartsAtLogon();
+            // The task probe runs schtasks.exe on the UI thread; read it once,
+            // and ask the Run key alone for the other vehicle. The facade's
+            // StartsAtLogon would probe the task a second time whenever the Run
+            // key is absent, one schtasks spawn too many on every visit.
+            bool elevated = ElevatedStartupService.IsEnabled();
+            ElevatedStartupEnabled = elevated;
+            AutostartEnabled = elevated || AutostartService.IsEnabled();
             BackupDirectory = shell.Paths.BackupDirectory;
             UpdateAutoCheckEnabled = shell.Updates.AutoCheckEnabled;
             LoadHotkeys(shell.Hotkeys);

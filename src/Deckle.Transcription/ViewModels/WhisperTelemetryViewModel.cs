@@ -104,22 +104,29 @@ public sealed partial class WhisperTelemetryViewModel : ObservableObject
     // their OFF→ON flip behind a consent dialog reached through the Catalog
     // registry (TelemetryConsent.RequestCorpus, .RequestAudioCorpus), so the
     // module asks without referencing the shell. The master → record → content
-    // chain masks (never greys) via the child radio's VisibleWhen. No
-    // defaultValue anywhere: a privacy opt-in carries no per-row reset.
+    // chain masks (never greys) via the child radio's VisibleWhen.
+    //
+    // Every value reads its default from TelemetrySettings, so each card has
+    // its reset (Louis, 2026-10-15: every setting with a default gets its
+    // reset). The opt-ins default to off, so a reset only turns them off, a
+    // write the consent gates do not hold.
     public IReadOnlyList<SettingDescriptor> Settings =>
     [
         Setting.Toggle("GeneralLatencyCard",
             () => TelemetryLatencyEnabled,
-            value => TelemetryLatencyEnabled = value),
+            value => TelemetryLatencyEnabled = value,
+            defaultValue: () => new TelemetrySettings().LatencyEnabled),
         Setting.Group("GeneralCorpusExpander",
             () => TelemetryCorpusEnabled,
             value => TelemetryCorpusEnabled = value,
+            defaultValue: () => new TelemetrySettings().CorpusEnabled,
             confirmOnEnable: TelemetryConsent.RequestCorpus,
             children:
             [
                 Setting.Toggle("GeneralAudioCorpusCard",
                     () => RecordAudioCorpus,
                     value => RecordAudioCorpus = value,
+                    defaultValue: () => new TelemetrySettings().RecordAudioCorpus,
                     confirmOnEnable: TelemetryConsent.RequestAudioCorpus),
                 Setting.Radio("GeneralAudioCorpusContentCard",
                     () => AudioCorpusContentIndex,
@@ -129,13 +136,15 @@ public sealed partial class WhisperTelemetryViewModel : ObservableObject
                         (0, "GeneralAudioCorpusContentMatch"),
                         (1, "GeneralAudioCorpusContentRaw"),
                     ],
-                    visibleWhen: () => RecordAudioCorpus),
+                    visibleWhen: () => RecordAudioCorpus,
+                    defaultValue: () => (int)new TelemetrySettings().AudioCorpusContent),
             ]),
     ];
 
     // Called by the Diagnostics page's Reset all: every dataset off. Outside
     // the sync guard, so each change pushes and saves like a user's flip. The
-    // audio-content choice is not an opt-in and stays as the user set it.
+    // audio-content choice is not an opt-in, so it is not touched here; the
+    // page's composers return it to its default beside this call.
     public void TurnOff()
     {
         TelemetryLatencyEnabled = false;

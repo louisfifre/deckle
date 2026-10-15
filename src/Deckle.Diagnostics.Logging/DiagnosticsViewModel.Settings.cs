@@ -21,20 +21,24 @@ public partial class DiagnosticsViewModel
     [
         Setting.Toggle("LoggingAmbientCard",
             () => LogAmbientCaptureActivity,
-            value => LogAmbientCaptureActivity = value),
+            value => LogAmbientCaptureActivity = value,
+            defaultValue: () => new LoggingSettings().LogAmbientCaptureActivity),
         Setting.Toggle("LoggingTranscriptionCard",
             () => LogTranscriptionActivity,
-            value => LogTranscriptionActivity = value),
+            value => LogTranscriptionActivity = value,
+            defaultValue: () => new LoggingSettings().LogTranscriptionActivity),
         Setting.Toggle("LoggingAutocorrectCard",
             () => LogAutocorrectActivity,
-            value => LogAutocorrectActivity = value),
+            value => LogAutocorrectActivity = value,
+            defaultValue: () => new LoggingSettings().LogAutocorrectActivity),
         Setting.Toggle("LoggingInputCard",
             () => LogInputActivity,
             value => LogInputActivity = value,
             defaultValue: () => new LoggingSettings().LogInputActivity),
         Setting.Toggle("LoggingWindowingCard",
             () => LogWindowingActivity,
-            value => LogWindowingActivity = value),
+            value => LogWindowingActivity = value,
+            defaultValue: () => new LoggingSettings().LogWindowingActivity),
     ];
 
     // The confirmOnEnable gate holds the OFF→ON write behind the consent
@@ -42,13 +46,17 @@ public partial class DiagnosticsViewModel
     // (TelemetryConsent.RequestApplicationLog, wired by the App at boot) so this
     // module does not reference Deckle.Settings.
     //
-    // No defaultValue: a privacy opt-in gets no per-card reset; the section
-    // "Reset" clears it.
+    // A default exists, so the card has its reset (Louis, 2026-10-15: every
+    // setting with a default gets its reset). The default is off, so the reset
+    // only turns the opt-in off, a write the consent gate does not hold; the
+    // composer's reset writes past the gate, so a default that turned an
+    // opt-in on would skip the consent.
     public IReadOnlyList<SettingDescriptor> ApplicationLogSettings =>
     [
         Setting.Toggle("GeneralAppLogCard",
             () => ApplicationLogToDisk,
             value => ApplicationLogToDisk = value,
+            defaultValue: () => new LoggingSettings().ApplicationLogToDisk,
             confirmOnEnable: TelemetryConsent.RequestApplicationLog),
     ];
 
@@ -63,14 +71,22 @@ public partial class DiagnosticsViewModel
             defaultValue: () => new Deckle.Input.MouseWheelSettings().RecordEvents),
     ];
 
-    // The telemetry storage folder, first card of the Folders section that
-    // closes the page, above the diagnostics folder: each place Deckle writes
-    // to sits in one section, after everything that writes there. The override
-    // reaches only what reads CorpusPaths (today the dictation audio WAVs);
-    // the JSONL sinks, trackpad and wheel recorders write under
+    // The Folders section that closes the page: each place Deckle writes to
+    // sits in one section, after everything that writes there. Both are
+    // folder folds (a standalone Path renders as one), their Location line
+    // inside.
+    //
+    // The telemetry storage folder first, configurable. The override reaches
+    // only what reads CorpusPaths (today the dictation audio WAVs); the JSONL
+    // sinks, trackpad and wheel recorders write under
     // AppPaths.TelemetryDirectory whatever it holds. The path's reset default
     // is the POCO initializer (empty means AppPaths.TelemetryDirectory).
-    public IReadOnlyList<SettingDescriptor> TelemetryStorageSettings =>
+    //
+    // Then the diagnostics folder, which the app owns and never moves: OpenOnly,
+    // so the line shows the path and offers Open alone, and the setter is
+    // never called. No defaultValue, so the section reset covers the storage
+    // folder alone.
+    public IReadOnlyList<SettingDescriptor> FoldersSettings =>
     [
         Setting.Path("GeneralStorageFolderCard",
             () => TelemetryStorageDirectory,
@@ -79,5 +95,11 @@ public partial class DiagnosticsViewModel
                 FolderPickerMode.Configure,
                 DefaultPath: () => AppPaths.TelemetryDirectory),
             defaultValue: () => new TelemetrySettings().StorageDirectory),
+        Setting.Path("DiagnosticsFilesCard",
+            () => AppPaths.DiagnosticsDirectory,
+            _ => { },
+            new PathArgs(
+                FolderPickerMode.OpenOnly,
+                DefaultPath: () => AppPaths.DiagnosticsDirectory)),
     ];
 }

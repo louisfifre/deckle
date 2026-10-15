@@ -31,21 +31,13 @@ public partial class App
         Settings.SettingsHost.RestartApp       = RestartApp;
         Settings.SettingsHost.GetSettingsWindow = () => _settingsWindow;
         Catalog.SettingsNavigation.GoToPage = tag => _settingsWindow?.SelectPage(tag);
-        // The folder picker lives in Deckle.Settings (it needs the Settings window
-        // and its ETW source), so the Catalog composer builds it through this
-        // factory. DefaultPath is invoked here, at compose time, never captured
-        // earlier: the fallback shown for an empty value must be current.
+        // The Location line of a folder setting lives in Deckle.Settings (it
+        // needs the Settings window and its ETW source), so the Catalog composer
+        // builds it through this factory. DefaultPath is invoked here, at
+        // compose time, never captured earlier: the fallback shown for an empty
+        // value must be current.
         Catalog.SettingsComposer.PathControlFactory = args =>
-            args.Mode == Catalog.FolderPickerMode.Editable
-                ? new Settings.FolderPickerEditableCard
-                {
-                    DefaultPath = args.DefaultPath?.Invoke() ?? string.Empty,
-                }
-                : new Settings.FolderPickerCard
-                {
-                    Mode = args.Mode,
-                    DefaultPath = args.DefaultPath?.Invoke() ?? string.Empty,
-                };
+            new Settings.FolderLocationLine(args.Mode, args.DefaultPath?.Invoke() ?? string.Empty);
         // Fills the shell's consent dialogs into Catalog.TelemetryConsent. Must run
         // before any module settings page is created: its manifest reads the
         // registry through confirmOnEnable.

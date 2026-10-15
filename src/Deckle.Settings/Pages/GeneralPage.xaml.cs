@@ -1,5 +1,4 @@
 using System;
-using System.Diagnostics;
 using System.IO;
 using Microsoft.UI.Dispatching;
 using Microsoft.UI.Xaml;
@@ -17,34 +16,30 @@ public sealed partial class GeneralPage : Page
 {
     public GeneralViewModel ViewModel { get; } = new();
 
-    // The data folder's path line, under the card's description: the form
-    // the composer gives every folder card, attached here because this card
-    // is hand-authored (its Move runs the relocation pre-flight below).
-    private readonly TextBlock _dataFolderPath;
-
     public GeneralPage()
     {
         InitializeComponent();
         NavigationCacheMode = NavigationCacheMode.Required;
 
-        _dataFolderPath = FolderCardDescription.Attach(
-            DataFolderCard, Loc.Get("GeneralDataFolderCard/Description"));
-
         ComposeAppearanceSection();
         ComposeStartupSection();
         ComposeUpdatesSection();
         ComposeApplicationDataSection();
+        ComposeDataFolderSection();
 
         foreach (var composer in new[]
-                 { _appearanceComposer, _startupComposer, _updatesComposer, _applicationDataComposer })
+                 { _appearanceComposer, _startupComposer, _updatesComposer,
+                   _applicationDataComposer, _dataFolderComposer })
             composer!.DirtyChanged += (_, _) => GateResetAll();
+
+        ViewModel.DataFolderMoveRequested += OnDataFolderMoveRequested;
 
         LoadAndSync();
     }
 
-    // ── Composed top cards: theme, then start with Windows ────────────────────
+    // ── Composed top cards: theme, then the two logon switches ────────────────
     //
-    // Both compose into TopHost, under no section title (one card each earns
+    // Both compose into TopHost, under no section title (a card or two earns
     // no heading). Every composer is created before LoadAndSync so its
     // subscription catches Load()'s PropertyChanged, and held in a field so it
     // lives as long as the cached page.
@@ -56,9 +51,10 @@ public sealed partial class GeneralPage : Page
         _appearanceComposer.Compose(ViewModel.AppearanceSettings);
     }
 
-    // The "start with Windows" toggle's registry write and revert-on-refusal live
-    // in the VM setter, so it composes like any toggle: the composer's
-    // subscription reflects the setter's own revert.
+    // The "start with Windows" and "start elevated" toggles' OS writes and
+    // revert-on-refusal live in the VM setters, so they compose like any
+    // toggle: the composer's subscription reflects the setters' own reverts
+    // and the way each one rides onto the other.
     private SettingsComposer? _startupComposer;
 
     private void ComposeStartupSection()
@@ -78,25 +74,27 @@ public sealed partial class GeneralPage : Page
         _updatesComposer.Compose(ViewModel.UpdatesSettings);
     }
 
-    // ── Composed backup-location card ─────────────────────────────────────────
+    // ── Composed backup Location line ─────────────────────────────────────────
     //
     // The "Application data" section has no section reset, so no section gating
-    // here; the composed card carries its own inline reset.
+    // here; the composed line carries its own inline reset.
     //
-    // The card lives in the backup fold's Items, which accepts SettingsCards
+    // The line lives in the backup fold's Items, which accepts SettingsCards
     // only: the SettingsExpander applies its SettingsCard item style to every
     // item when the fold opens, and a StackPanel host there threw at that
     // moment (the crash of 2026-10-14 19:09). The composer needs a Panel, so
-    // it composes into a panel of its own, then the cards move into the fold
-    // ahead of the bespoke information card. The composer keeps driving them:
-    // it holds the controls, not the panel.
+    // it composes into a panel of its own, as a fold's child (inFold: a Path
+    // is then the Location line alone, a SettingsCard, where standing alone it
+    // would be a SettingsExpander, which Items refuses), then the cards move
+    // into the fold ahead of the bespoke information card. The composer keeps
+    // driving them: it holds the controls, not the panel.
     private SettingsComposer? _applicationDataComposer;
 
     private void ComposeApplicationDataSection()
     {
         var host = new StackPanel();
         _applicationDataComposer = new SettingsComposer(host, ViewModel);
-        _applicationDataComposer.Compose(ViewModel.ApplicationDataSettings);
+        _applicationDataComposer.Compose(ViewModel.ApplicationDataSettings, inFold: true);
 
         for (int i = host.Children.Count - 1; i >= 0; i--)
         {
@@ -104,6 +102,19 @@ public sealed partial class GeneralPage : Page
             host.Children.RemoveAt(i);
             BackupExpander.Items.Insert(0, card);
         }
+    }
+
+    // ── Composed data folder fold ─────────────────────────────────────────────
+    //
+    // Standing alone in its host, the Path renders as the folder fold. Its
+    // "Choose a folder" relays the pick to the VM, which raises
+    // DataFolderMoveRequested; the pre-flight below answers it.
+    private SettingsComposer? _dataFolderComposer;
+
+    private void ComposeDataFolderSection()
+    {
+        _dataFolderComposer = new SettingsComposer(DataFolderHost, ViewModel);
+        _dataFolderComposer.Compose(ViewModel.DataFolderSettings);
     }
 
     // NavigationCacheMode.Required reuses the page instance — the constructor
@@ -122,11 +133,6 @@ public sealed partial class GeneralPage : Page
     private void LoadAndSync()
     {
         ViewModel.Load();
-        FolderCardDescription.Show(_dataFolderPath, AppPaths.UserDataRoot);
-        // The move rides the App's relocate hook; unwired (tests, partial
-        // hosts) the affordance simply isn't there.
-        MoveDataFolderButton.Visibility = SettingsHost.RelocateDataRoot is null
-            ? Visibility.Collapsed : Visibility.Visible;
         RefreshVersionCard();
         // Load() raises no PropertyChanged on a clean profile, so no composer
         // DirtyChanged fires and this call settles the gate.
@@ -162,15 +168,20 @@ public sealed partial class GeneralPage : Page
             (_appearanceComposer?.IsDirty() ?? false) ||
             (_startupComposer?.IsDirty() ?? false) ||
             (_updatesComposer?.IsDirty() ?? false) ||
-            (_applicationDataComposer?.IsDirty() ?? false);
+            (_applicationDataComposer?.IsDirty() ?? false) ||
+            (_dataFolderComposer?.IsDirty() ?? false);
     }
 
+    // The data folder goes last. Its reset is a move back to the default root,
+    // which asks its own confirmation and restarts the app, so every other
+    // value is already back to its default and saved in the root being moved.
     private void ResetAll_Click(object sender, RoutedEventArgs e)
     {
         _appearanceComposer?.ResetAll();
         _startupComposer?.ResetAll();
         _updatesComposer?.ResetAll();
         _applicationDataComposer?.ResetAll();
+        _dataFolderComposer?.ResetAll();
         DeckleSettingsUxSource.Log.SectionReset();
         DeckleSettingsUxSource.Log.SectionResetDetail("General (all)");
     }
@@ -190,63 +201,36 @@ public sealed partial class GeneralPage : Page
         DeckleSettingsUxSource.Log.SectionResetDetail("Updates");
     }
 
-    private void OpenDataFolderButton_Click(object sender, RoutedEventArgs e)
-    {
-        string path = AppPaths.UserDataRoot;
-
-        try
-        {
-            Directory.CreateDirectory(path);
-            Process.Start(new ProcessStartInfo
-            {
-                FileName = path,
-                UseShellExecute = true,
-            });
-        }
-        catch (Exception ex)
-        {
-            DeckleSettingsUxSource.Log.FolderPickerFailed();
-            DeckleSettingsUxSource.Log.FolderPickerFailedDetail(ex.GetType().Name, ex.Message);
-        }
-    }
-
     // ── Data-root move ──────────────────────────────────────────────────────
     //
-    // The page owns the pre-flight only: pick a target, normalize it (a
-    // non-empty pick lands in a Deckle subfolder, so the later cleanup never
-    // entangles foreign files), refuse nesting and same-target, gate on the
-    // target drive's free space, then confirm — the restart makes this a
-    // held-until-confirmed action. The actual move runs in the dedicated
-    // relocate process behind SettingsHost.RelocateDataRoot, which re-checks
-    // space authoritatively before copying.
+    // The folder dialog belongs to the Location line (FolderLocationLine); the
+    // page owns the pre-flight only: normalize the pick (a non-empty pick lands
+    // in a Deckle subfolder, so the later cleanup never entangles foreign
+    // files), refuse nesting and same-target, gate on the target drive's free
+    // space, then confirm — the restart makes this a held-until-confirmed
+    // action. The actual move runs in the dedicated relocate process behind
+    // SettingsHost.RelocateDataRoot, which re-checks space authoritatively
+    // before copying.
 
-    private async void MoveDataFolderButton_Click(object sender, RoutedEventArgs e)
+    private async void OnDataFolderMoveRequested(object? sender, string picked)
     {
         if (SettingsHost.RelocateDataRoot is null) return;
 
+        // Transient busy while the size scan runs — a data root can hold
+        // gigabytes across thousands of files. The VM flag greys the line.
+        ViewModel.DataFolderMoveInFlight = true;
         try
         {
-            var window = SettingsHost.GetSettingsWindow?.Invoke()
-                ?? throw new InvalidOperationException("Settings window not initialized");
-            FolderPickerCard.EmitFolderPickerAnchor(sender as FrameworkElement, window);
-
-            var picker = new Microsoft.Windows.Storage.Pickers.FolderPicker(window.AppWindow.Id)
-            {
-                SuggestedStartLocation = Microsoft.Windows.Storage.Pickers.PickerLocationId.ComputerFolder,
-            };
-            var result = await picker.PickSingleFolderAsync();
-            if (result is null) return;
-
-            // Transient busy while the size scan runs — a data root can hold
-            // gigabytes across thousands of files.
-            MoveDataFolderButton.IsEnabled = false;
-            try { await BeginDataMoveAsync(result.Path); }
-            finally { MoveDataFolderButton.IsEnabled = true; }
+            await BeginDataMoveAsync(picked);
         }
         catch (Exception ex)
         {
             DeckleSettingsUxSource.Log.FolderPickerFailed();
             DeckleSettingsUxSource.Log.FolderPickerFailedDetail(ex.GetType().Name, ex.Message);
+        }
+        finally
+        {
+            ViewModel.DataFolderMoveInFlight = false;
         }
     }
 
@@ -257,8 +241,13 @@ public sealed partial class GeneralPage : Page
         string current = System.IO.Path.GetFullPath(AppPaths.UserDataRoot);
         string target  = System.IO.Path.GetFullPath(picked);
 
+        // The default root is the reset's target and is taken as it is: a Deckle
+        // subfolder of it would be another custom root, not the default. If it
+        // still holds files, the nesting check below refuses it like any
+        // occupied folder.
         if (Directory.Exists(target) && Directory.EnumerateFileSystemEntries(target).Any()
-            && !PathsEqual(target, current))
+            && !PathsEqual(target, current)
+            && !PathsEqual(target, AppPaths.DefaultUserDataRoot))
             target = System.IO.Path.Combine(target, "Deckle");
 
         if (PathsEqual(target, current))

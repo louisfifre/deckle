@@ -11,20 +11,35 @@
     current page in the primary, and a parent lights up to primary under the
     pointer because it leads somewhere (2026-10-14).
 
+    Which key paints what, read in WinUI 1.8.260224000's generic.xaml
+    (DefaultBreadcrumbBarItemStyle): a parent segment rests in the item's own
+    Foreground, which the item style sets to BreadcrumbBarForegroundBrush, and
+    the inner PART_ItemButton binds that Foreground as a local value, so the
+    button style's BreadcrumbBarNormalForegroundBrush setter never wins and the
+    Normal visual state sets nothing. BreadcrumbBarNormalForegroundBrush paints
+    only the chevron. Hover, pressed and the current segment do go through the
+    keys their names say. So the parent's resting colour is
+    BreadcrumbBarForegroundBrush, aliased here; the first version of this file
+    aliased only the Normal key and the parent stayed primary (2026-10-15).
+
     The overrides are aliases in theme dictionaries, the documented
     lightweight-styling form, duplicated for Default, Light and HighContrast as
     generic.xaml does. Each alias resolves in its own theme, so the template's
     ThemeResource lookups follow the element's theme, the one Deckle sets per
-    window root, not the application's. This file is compiled XAML on purpose:
-    a dictionary built through XamlReader.Load cannot see Application.Resources
-    and would fail to resolve these aliases at parse time (Microsoft Learn,
-    "ResourceDictionary and XamlReader.Load").
+    window root, not the application's. HighContrast repeats the stock values:
+    that theme has one text colour and a highlight, no secondary, so the
+    parents-grey idea has no translation there and the system's own contrast
+    stays. This file is compiled XAML on purpose: a dictionary built through
+    XamlReader.Load cannot see Application.Resources and would fail to resolve
+    these aliases at parse time (Microsoft Learn, "ResourceDictionary and
+    XamlReader.Load").
 -->
 <ResourceDictionary
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
     <ResourceDictionary.ThemeDictionaries>
         <ResourceDictionary x:Key="Default">
+            <StaticResource x:Key="BreadcrumbBarForegroundBrush" ResourceKey="TextFillColorSecondaryBrush" />
             <StaticResource x:Key="BreadcrumbBarNormalForegroundBrush" ResourceKey="TextFillColorSecondaryBrush" />
             <StaticResource x:Key="BreadcrumbBarHoverForegroundBrush" ResourceKey="TextFillColorPrimaryBrush" />
             <StaticResource x:Key="BreadcrumbBarPressedForegroundBrush" ResourceKey="TextFillColorTertiaryBrush" />
@@ -32,6 +47,7 @@
             <StaticResource x:Key="BreadcrumbBarCurrentHoverForegroundBrush" ResourceKey="TextFillColorPrimaryBrush" />
         </ResourceDictionary>
         <ResourceDictionary x:Key="Light">
+            <StaticResource x:Key="BreadcrumbBarForegroundBrush" ResourceKey="TextFillColorSecondaryBrush" />
             <StaticResource x:Key="BreadcrumbBarNormalForegroundBrush" ResourceKey="TextFillColorSecondaryBrush" />
             <StaticResource x:Key="BreadcrumbBarHoverForegroundBrush" ResourceKey="TextFillColorPrimaryBrush" />
             <StaticResource x:Key="BreadcrumbBarPressedForegroundBrush" ResourceKey="TextFillColorTertiaryBrush" />
@@ -39,11 +55,12 @@
             <StaticResource x:Key="BreadcrumbBarCurrentHoverForegroundBrush" ResourceKey="TextFillColorPrimaryBrush" />
         </ResourceDictionary>
         <ResourceDictionary x:Key="HighContrast">
-            <StaticResource x:Key="BreadcrumbBarNormalForegroundBrush" ResourceKey="TextFillColorSecondaryBrush" />
-            <StaticResource x:Key="BreadcrumbBarHoverForegroundBrush" ResourceKey="TextFillColorPrimaryBrush" />
-            <StaticResource x:Key="BreadcrumbBarPressedForegroundBrush" ResourceKey="TextFillColorTertiaryBrush" />
-            <StaticResource x:Key="BreadcrumbBarCurrentNormalForegroundBrush" ResourceKey="TextFillColorPrimaryBrush" />
-            <StaticResource x:Key="BreadcrumbBarCurrentHoverForegroundBrush" ResourceKey="TextFillColorPrimaryBrush" />
+            <StaticResource x:Key="BreadcrumbBarForegroundBrush" ResourceKey="SystemColorButtonTextColorBrush" />
+            <StaticResource x:Key="BreadcrumbBarNormalForegroundBrush" ResourceKey="SystemColorButtonTextColorBrush" />
+            <StaticResource x:Key="BreadcrumbBarHoverForegroundBrush" ResourceKey="SystemColorHighlightColorBrush" />
+            <StaticResource x:Key="BreadcrumbBarPressedForegroundBrush" ResourceKey="SystemColorHighlightColorBrush" />
+            <StaticResource x:Key="BreadcrumbBarCurrentNormalForegroundBrush" ResourceKey="SystemColorButtonTextColorBrush" />
+            <StaticResource x:Key="BreadcrumbBarCurrentHoverForegroundBrush" ResourceKey="SystemColorHighlightColorBrush" />
         </ResourceDictionary>
     </ResourceDictionary.ThemeDictionaries>
 </ResourceDictionary>

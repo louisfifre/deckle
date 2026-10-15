@@ -7,15 +7,47 @@ namespace Deckle.Catalog;
 
 public sealed partial class SettingsComposer
 {
-    // The picker owns the folder dialog and the Explorer affordances; the composer
-    // only bridges its Path to the descriptor selectors. Path is set before
-    // PathChanged is subscribed, so the seed does not write back.
+    // ── Path ──────────────────────────────────────────────────────────────────
     //
-    // One row, like any other value: the path reads under the description
-    // (FolderCardDescription) and the picker's actions sit at the trailing
-    // edge with the reset. The typeable picker shows the path in its own
-    // field, so it keeps the description alone.
-    private void BuildPath(SettingsCard card, SettingDescriptor s)
+    // A folder setting is one component wherever it appears, in the form of the
+    // General page's "Settings backup" fold (Louis, 2026-10-15): a fold whose
+    // header is the setting's title, with its description when it has one, and
+    // whose content is the Location line. The line is a SettingsCard the host's
+    // control renders (IPathControl): "Location" as its header, the folder's
+    // path as its description, and at the trailing edge the reset, then "Choose
+    // a folder" and "Open" as words. The path never sits under the fold's
+    // header. Standing alone, the setting is that fold (BuildPathExpander). As
+    // the child of a fold it is the line alone (BuildPathLine): the parent fold
+    // already carries the header, and folds never nest.
+    //
+    // The control owns the folder dialog, the Explorer affordance and the path
+    // display, with its own fallback for an empty value (PathArgs.DefaultPath);
+    // the composer only bridges its Path to the descriptor selectors. Path is
+    // seeded before PathChanged is subscribed, so the seed does not write back.
+
+    // The standalone form. The fold carries the Tag, the glyph and the reactive
+    // state, so a search lands on it and VisibleWhen hides it whole; the line
+    // inside carries the reset.
+    private SettingsExpander BuildPathExpander(SettingDescriptor s)
+    {
+        // Tag carries the LabelKey as this fold's runtime identity — see BuildCard.
+        var expander = new SettingsExpander { Header = ResolveHeader(s.LabelKey), Tag = s.LabelKey };
+
+        // SettingsExpander hides the description row on null, so a setting
+        // without one shows its title alone.
+        expander.Description = ResolveDescription(s.LabelKey);
+
+        IconElement? icon = BuildIcon(s.Glyph);
+        if (icon is not null) expander.HeaderIcon = icon;
+
+        expander.Items.Add(BuildPathLine(s, expander));
+        return expander;
+    }
+
+    // The Location line. stateTarget is the element VisibleWhen and EnabledWhen
+    // apply to: the standalone fold, or the line itself when it is a fold's
+    // child (then it also carries the Tag, as any child card does).
+    private SettingsCard BuildPathLine(SettingDescriptor s, Control? stateTarget = null)
     {
         var args = (PathArgs)s.Args!;
 
@@ -25,6 +57,9 @@ public sealed partial class SettingsComposer
                 "register the folder-picker control before a Path setting is composed.");
 
         IPathControl picker = PathControlFactory(args);
+        SettingsCard line = picker.Line;
+        if (stateTarget is null) line.Tag = s.LabelKey;
+
         picker.Path = AsString(s.GetValue());
 
         picker.PathChanged += (_, _) =>
@@ -33,32 +68,28 @@ public sealed partial class SettingsComposer
             s.SetValue(picker.Path);
         };
 
-        // An empty value means the default folder, resolved once here like the
-        // picker's own fallback (PathArgs.DefaultPath): the line shows where
-        // the data really lands, and the reset's state says it is the default.
-        TextBlock? line = null;
-        string fallback = string.Empty;
-        if (args.Mode != FolderPickerMode.Editable)
-        {
-            fallback = args.DefaultPath?.Invoke() ?? string.Empty;
-            line = FolderCardDescription.Attach(card, card.Description as string);
-        }
-
-        // An empty default path has no readable form (the picker shows its own
+        // The reset goes ahead of the actions, [reset | actions] like every
+        // card. The actions row is the line's content at rest; it leaves that
+        // slot first, since an element belongs to one parent only, and the
+        // wrapped row takes it. Without a Default the row comes back unwrapped.
+        //
+        // An empty default path has no readable form (the control shows its own
         // computed fallback), so the tooltip stays generic for it.
-        (FrameworkElement content, Action? updateReset) = WrapWithReset(card, picker.View, s,
+        FrameworkElement actions = picker.Actions;
+        line.Content = null;
+        (FrameworkElement content, Action? updateReset) = WrapWithReset(line, actions, s,
             () => DefaultValueText.Text(AsString(s.Default!())));
-        card.Content = content;
+        line.Content = content;
 
         _refreshers.Add(() =>
         {
             string value = AsString(s.GetValue());
             if (picker.Path != value) picker.Path = value;
-            if (line is not null)
-                FolderCardDescription.Show(line, string.IsNullOrEmpty(value) ? fallback : value);
             updateReset?.Invoke();
-            ApplyReactiveState(card, s);
+            ApplyReactiveState(stateTarget ?? line, s);
         });
+
+        return line;
     }
 
     // A card whose content sits under the header, on its own row (a picker, an

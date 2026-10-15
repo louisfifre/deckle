@@ -56,14 +56,6 @@ public sealed partial class TaskbarCoverHost
 
         var edge = (TaskbarEdge)abd.uEdge;
         var band = abd.rc;
-        // The approach level is part of the layout: a new level rebuilds the
-        // zone and re-reads the alpha like a moved taskbar does.
-        var approach = _requestedApproach;
-        bool changed = !_layoutKnown || edge != _edge || approach != _approach
-            || band.left != _band.left || band.top != _band.top
-            || band.right != _band.right || band.bottom != _band.bottom;
-
-        _layoutKnown = true;
 
         // Re-read even when the rect is unchanged: a WM_DISPLAYCHANGE can
         // invalidate monitor handles under the same taskbar rect. The verdict
@@ -72,6 +64,18 @@ public sealed partial class TaskbarCoverHost
         // changed — re-evaluates suppression now rather than at the next
         // foreground change.
         _bandMonitor = MonitorFromRect(ref band, MONITOR_DEFAULTTONEAREST);
+
+        // The approach level and the monitor's DPI are part of the layout: a
+        // new level, or a scale change under the same rect, rebuilds the zone
+        // and re-reads the alpha like a moved taskbar does.
+        var approach = _requestedApproach;
+        double dpiScale = BandDpiScale();
+        bool changed = !_layoutKnown || edge != _edge || approach != _approach
+            || dpiScale != _dpiScale
+            || band.left != _band.left || band.top != _band.top
+            || band.right != _band.right || band.bottom != _band.bottom;
+
+        _layoutKnown = true;
 
         if (!changed)
         {
@@ -88,7 +92,8 @@ public sealed partial class TaskbarCoverHost
         _edge = edge;
         _band = band;
         _approach = approach;
-        _zone = CoverGeometry.ApproachZone(band, edge, approach);
+        _dpiScale = dpiScale;
+        _zone = CoverGeometry.ApproachZone(band, edge, approach, dpiScale);
 
         NativeMethods.SetWindowPos(_hwnd, NativeMethods.HWND_TOPMOST,
             band.left, band.top, band.right - band.left, band.bottom - band.top,
@@ -103,6 +108,16 @@ public sealed partial class TaskbarCoverHost
         ResetZoneStateFromCursor();
         UpdateAppSuppressed(_foreground.Current);
         UpdateCover("layout_rebuilt");
+    }
+
+    // The band monitor's effective DPI over 96. A failed query (an HRESULT
+    // other than S_OK, or a zero DPI) falls back to 1.0: a zone at 96 DPI
+    // scale on a scaled monitor is a shorter reach, never a wrong band.
+    private double BandDpiScale()
+    {
+        if (GetDpiForMonitor(_bandMonitor, MDT_EFFECTIVE_DPI, out uint dpiX, out _) != 0 || dpiX == 0)
+            return 1.0;
+        return dpiX / 96.0;
     }
 
     // Boot, layout change and resume re-read the alpha from the cursor, since

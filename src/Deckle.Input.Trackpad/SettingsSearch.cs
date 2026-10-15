@@ -44,11 +44,8 @@ public static class SettingsSearch
             LabelKey = "TrackpadPage_RepairCard",
             Keywords = ["pairing", "driver", "reconnect", "apple"],
         },
-        new SettingSearchEntry
-        {
-            LabelKey = "TrackpadPage_ElevatedCard",
-            Keywords = ["admin", "administrator", "uac", "privileges"],
-        },
+        // "Start elevated" is a General page card now (Deckle.Settings
+        // SettingsSearch, GeneralStartElevatedCard).
     ];
 
     // The raw-frame recording, composed on Settings > Diagnostics

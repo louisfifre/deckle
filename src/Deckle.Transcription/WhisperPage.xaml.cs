@@ -163,13 +163,18 @@ public sealed partial class WhisperPage : Page
     }
 
     // The page-level "Reset all" is active-when-dirty: enabled only while some
-    // composed value differs from its default. Re-gated off every composer's
-    // DirtyChanged and once after Load() (OnNavigatedTo) — Load() raises no
-    // PropertyChanged on a clean profile, so no DirtyChanged would settle it.
-    // The bespoke Model / Language / InitialPrompt cards have no composer, so they
-    // do not feed this gate.
+    // value on the page differs from its default. Re-gated off every composer's
+    // DirtyChanged, off the VM for the three bespoke cards (Model, Language,
+    // Initial prompt, which have no composer and read their defaults from the
+    // engine's), and once after Load() (OnNavigatedTo), since Load() raises no
+    // PropertyChanged on a clean profile. Louis saw the gate stay off while
+    // Language and Initial prompt offered their own reset (2026-10-15).
     private void GateResetAll() =>
-        Header.IsResetAllEnabled = _composers.Any(c => c.IsDirty());
+        Header.IsResetAllEnabled =
+            _composers.Any(c => c.IsDirty()) ||
+            ViewModel.Model != _engineDefaults.Model ||
+            ViewModel.Language != _engineDefaults.Language ||
+            ViewModel.InitialPrompt != _engineDefaults.InitialPrompt;
 
     // NavigationCacheMode.Required reuses the page instance. On every navigation
     // we reload settings from the POCO via the VM; constructor-time hover wiring
@@ -219,6 +224,13 @@ public sealed partial class WhisperPage : Page
                 try { RefreshModelNames(); } finally { _initializing = false; }
                 break;
         }
+
+        // The bespoke cards feed the Reset all gate through the VM, where the
+        // composed ones feed it through DirtyChanged.
+        if (e.PropertyName is nameof(WhisperViewModel.Model)
+            or nameof(WhisperViewModel.Language)
+            or nameof(WhisperViewModel.InitialPrompt))
+            GateResetAll();
     }
 
     // ── Combo handlers (Model, Language) ────────────────────────────────────

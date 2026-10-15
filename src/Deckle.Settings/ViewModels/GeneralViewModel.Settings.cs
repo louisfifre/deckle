@@ -120,12 +120,24 @@ public partial class GeneralViewModel
     // autostart setter drives StartupService and, when the write is refused,
     // reverts the property under the sync guard; the reverted value rides back to
     // the toggle on PropertyChanged, the same path Load() and the section Reset use.
+    //
+    // "Start elevated" follows, a Windows logon task that starts the whole app as
+    // administrator (moved from the Trackpad page, 2026-10-15: the drag was its
+    // first reason, not its scope). Its default reads the vehicle's own, the way
+    // the autostart one reads the facade's, so each toggle has its reset wheel
+    // and Reset all reaches both. The resets run in this order: the autostart
+    // one removes every vehicle first (the task through one UAC prompt), so the
+    // elevated reset that follows finds its value already off and writes nothing.
     public IReadOnlyList<SettingDescriptor> StartupSettings =>
     [
         Setting.Toggle("GeneralAutostartCard",
             () => AutostartEnabled,
             value => AutostartEnabled = value,
             defaultValue: () => StartupService.DefaultEnabled),
+        Setting.Toggle("GeneralStartElevatedCard",
+            () => ElevatedStartupEnabled,
+            value => ElevatedStartupEnabled = value,
+            defaultValue: () => ElevatedStartupService.DefaultEnabled),
     ];
 
     // The App-side update loop reads the persisted value on each tick, so the
@@ -138,6 +150,9 @@ public partial class GeneralViewModel
             defaultValue: () => new UpdatesSettings().AutoCheckEnabled),
     ];
 
+    // The backup folder, composed as the child of the page's hand-authored
+    // "Settings backup" fold (Compose inFold), so it renders as the Location
+    // line alone; the fold carries the title and the sentence.
     public IReadOnlyList<SettingDescriptor> ApplicationDataSettings =>
     [
         Setting.Path("GeneralBackupLocationCard",
@@ -147,5 +162,33 @@ public partial class GeneralViewModel
                 FolderPickerMode.Configure,
                 DefaultPath: () => AppPaths.SettingsBackupDirectory),
             defaultValue: () => new PathsSettings().BackupDirectory),
+    ];
+
+    // The data folder, standing alone, so the composer renders it as the folder
+    // fold: "Data folder" and its sentence in the header, the Location line
+    // inside. Choosing a folder is the relocation (DataFolderMoveRequested), so
+    // the mode follows the App's relocate hook: unwired, the line offers Open
+    // alone, as the Move button used to hide.
+    //
+    // The default is the root AppPaths uses when DECKLE_DATA_ROOT is unset.
+    // The reset writes through the same setter as a pick, so it is a move back
+    // to that root: the page's pre-flight, its confirmation and the restart,
+    // never a path written silently while the data stays where it is. The
+    // relocation clears DECKLE_DATA_ROOT when the target is the default root.
+    // Unwired, there is no move to run, so there is no reset either.
+    public IReadOnlyList<SettingDescriptor> DataFolderSettings =>
+    [
+        Setting.Path("GeneralDataFolderCard",
+            () => DataFolder,
+            RequestDataFolderMove,
+            new PathArgs(
+                SettingsHost.RelocateDataRoot is null
+                    ? FolderPickerMode.OpenOnly
+                    : FolderPickerMode.Configure,
+                DefaultPath: () => AppPaths.UserDataRoot),
+            enabledWhen: () => !DataFolderMoveInFlight,
+            defaultValue: SettingsHost.RelocateDataRoot is null
+                ? null
+                : () => AppPaths.DefaultUserDataRoot),
     ];
 }

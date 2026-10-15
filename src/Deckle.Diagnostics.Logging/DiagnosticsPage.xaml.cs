@@ -1,13 +1,10 @@
 using System.Collections.Generic;
 using System.ComponentModel;
-using System.Diagnostics;
-using System.IO;
 using System.Linq;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Navigation;
 using Deckle.Catalog;
-using Deckle.Core;
 using Deckle.Diagnostics;
 
 namespace Deckle.Diagnostics.Logging;
@@ -124,15 +121,15 @@ public sealed partial class DiagnosticsPage : Page
 
     // ── Composed Folders section ──────────────────────────────────────────────
     //
-    // The telemetry storage folder, composed above the hand-authored
-    // diagnostics folder card. Its own composer, so the section reset and gate
-    // cover exactly this one value.
-    private SettingsComposer? _telemetryStorageComposer;
+    // The telemetry storage folder and the diagnostics folder, two folder
+    // folds. Their own composer, so the section reset and gate cover exactly
+    // the storage folder, the one value with a default.
+    private SettingsComposer? _foldersComposer;
 
     private void ComposeFoldersSection()
     {
-        _telemetryStorageComposer = new SettingsComposer(TelemetryStorageHost, ViewModel);
-        _telemetryStorageComposer.Compose(ViewModel.TelemetryStorageSettings);
+        _foldersComposer = new SettingsComposer(FoldersHost, ViewModel);
+        _foldersComposer.Compose(ViewModel.FoldersSettings);
     }
 
     private IEnumerable<SettingsComposer> AllComposers()
@@ -140,7 +137,7 @@ public sealed partial class DiagnosticsPage : Page
         if (_loggingComposer is not null) yield return _loggingComposer;
         if (_applicationLogComposer is not null) yield return _applicationLogComposer;
         foreach (SettingsComposer composer in TelemetryComposers()) yield return composer;
-        if (_telemetryStorageComposer is not null) yield return _telemetryStorageComposer;
+        if (_foldersComposer is not null) yield return _foldersComposer;
     }
 
     private IEnumerable<SettingsComposer> TelemetryComposers()
@@ -165,10 +162,10 @@ public sealed partial class DiagnosticsPage : Page
         GateResetAll();
     }
 
-    // The section reset clears the wheel capture and the contributed datasets
-    // that carry a default (a consent-gated one carries none and stays as the
-    // user left it), through the composers, never the storage folder, which
-    // the Folders section resets. ViewModel.ResetTelemetryDefaults clears both
+    // The section reset returns the wheel capture and every contributed
+    // dataset to its default, consent-gated ones included (each default is
+    // off, so the reset turns them off), through the composers, never the
+    // storage folder, which the Folders section resets. ViewModel.ResetTelemetryDefaults clears both
     // values, so only the page-wide reset calls it.
     private void ResetTelemetry_Click(object sender, RoutedEventArgs e)
     {
@@ -179,7 +176,7 @@ public sealed partial class DiagnosticsPage : Page
 
     private void ResetFolders_Click(object sender, RoutedEventArgs e)
     {
-        _telemetryStorageComposer?.ResetAll();
+        _foldersComposer?.ResetAll();
         DeckleSettingsUxSource.Log.SectionReset();
         DeckleSettingsUxSource.Log.SectionResetDetail("Folders");
     }
@@ -200,7 +197,7 @@ public sealed partial class DiagnosticsPage : Page
         bool logging = _loggingComposer?.IsDirty() ?? false;
         bool applicationLog = _applicationLogComposer?.IsDirty() ?? false;
         bool telemetry = TelemetryComposers().Any(c => c.IsDirty());
-        bool folders = _telemetryStorageComposer?.IsDirty() ?? false;
+        bool folders = _foldersComposer?.IsDirty() ?? false;
 
         LoggingSection.IsResetEnabled = logging;
         ApplicationLogSection.IsResetEnabled = applicationLog;
@@ -212,8 +209,9 @@ public sealed partial class DiagnosticsPage : Page
     // Clears recorded consents (the application-log opt-in and every
     // contributed dataset), so it goes through the destructive confirmation,
     // whose words promise every opt-in on the page goes off. The composers'
-    // ResetAll skips a consent, which carries no default, so each contribution
-    // also turns its own datasets off. The composers re-sync off the resulting
+    // ResetAll returns each consent to its default, off; each contribution
+    // also turns its own datasets off, so the promise holds whatever a
+    // contribution declares. The composers re-sync off the resulting
     // PropertyChanged.
     private async void ResetAllDiagnostics_Click(object sender, RoutedEventArgs e)
     {
@@ -236,26 +234,6 @@ public sealed partial class DiagnosticsPage : Page
         {
             foreach (SettingsComposer composer in composers) composer.ResetAll();
             source.TurnOff();
-        }
-    }
-
-    // Best effort, like FolderPickerCard's Open button: a failure is logged, not
-    // surfaced.
-    private void OpenDiagnosticsFolder_Click(object sender, RoutedEventArgs e)
-    {
-        try
-        {
-            Directory.CreateDirectory(AppPaths.DiagnosticsDirectory);
-            Process.Start(new ProcessStartInfo
-            {
-                FileName = AppPaths.DiagnosticsDirectory,
-                UseShellExecute = true,
-            });
-        }
-        catch (System.Exception ex)
-        {
-            DeckleSettingsUxSource.Log.FolderPickerFailed();
-            DeckleSettingsUxSource.Log.FolderPickerFailedDetail(ex.GetType().Name, ex.Message);
         }
     }
 }

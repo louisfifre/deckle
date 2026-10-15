@@ -15,44 +15,47 @@ public enum TaskbarEdge
 
 // Pure geometry of the cover band and its approach zone — no Win32 call,
 // no state. The band is exactly the taskbar rect; the approach zone is the
-// band extended inward from the anchored screen edge. Inside the zone the
-// band's opacity follows the cursor's distance to the band: transparent on
-// the band, opaque again at the zone's outer boundary.
+// band extended inward from the anchored screen edge by the approach span.
+// Inside the zone the band's opacity follows the cursor's distance to the
+// band: transparent on the band, opaque again at the zone's outer boundary.
 public static class CoverGeometry
 {
-    // Depth of the approach zone at the Standard level, as a multiple of the
-    // band thickness, measured inward from the anchored screen edge with the
-    // band included. The overloads without a level keep reading it.
-    public const int ApproachZoneFactor = 4;
-
-    // The zone depth of each named level, in band thicknesses rather than
-    // pixels, so a level feels the same on a thin and a thick taskbar.
-    // Standard is the former fixed factor: the default changes nothing. Near
-    // and Far sit two thicknesses either side of it, a symmetric first guess
-    // nobody has judged on screen yet: provisional until Louis checks them.
-    // The fade starts (factor - 1) thicknesses before the band (Opacity), the
-    // figure the page's option labels show. A number outside the enum (the converter accepts integers from a
+    // The approach span of each named level: how far past the band the zone
+    // reaches and the distance the fade runs over, in device-independent
+    // pixels (96 DPI). A fixed distance rather than a multiple of the band
+    // thickness (Louis, 2026-10-15): a reveal gesture is a mouse movement,
+    // and a movement of 64 px should feel the same whether the taskbar is
+    // 40 or 60 px thick. The three values are steps of the design-system
+    // scale, provisional until Louis checks them on screen. The span is set
+    // in DIP so a level means one hand movement on every monitor; the pixel
+    // figure comes from ApproachSpan, scaled by the band monitor's DPI. A
+    // number outside the enum (the converter accepts integers from a
     // hand-edited settings file) falls back to Standard.
-    public static int ZoneFactor(ApproachDistance level) => level switch
+    public static int ApproachSpanDip(ApproachDistance level) => level switch
     {
-        ApproachDistance.Near => 2,
-        ApproachDistance.Far  => 6,
-        _                     => ApproachZoneFactor,
+        ApproachDistance.Near => 32,
+        ApproachDistance.Far  => 128,
+        _                     => 64,
     };
+
+    // The span in physical pixels for a monitor at dpiScale (1.0 at 96 DPI,
+    // 1.5 at 144), rounded to the nearest pixel: the cursor and the band
+    // rect are physical pixels, so the zone must be too.
+    public static int ApproachSpan(ApproachDistance level, double dpiScale)
+        => (int)Math.Round(ApproachSpanDip(level) * dpiScale);
 
     public static int Thickness(NativeMethods.RECT band, TaskbarEdge edge)
         => edge is TaskbarEdge.Left or TaskbarEdge.Right
             ? band.right - band.left
             : band.bottom - band.top;
 
-    public static NativeMethods.RECT ApproachZone(NativeMethods.RECT band, TaskbarEdge edge)
-        => ApproachZone(band, edge, ApproachDistance.Standard);
-
-    // The approach zone spans only the band's extent along the edge: a cursor
+    // The zone is the band plus the span, measured inward from the anchored
+    // screen edge. It spans only the band's extent along the edge: a cursor
     // near the same screen edge on another monitor stays out of it.
-    public static NativeMethods.RECT ApproachZone(NativeMethods.RECT band, TaskbarEdge edge, ApproachDistance level)
+    public static NativeMethods.RECT ApproachZone(
+        NativeMethods.RECT band, TaskbarEdge edge, ApproachDistance level, double dpiScale)
     {
-        int depth = ZoneFactor(level) * Thickness(band, edge);
+        int depth = Thickness(band, edge) + ApproachSpan(level, dpiScale);
         return edge switch
         {
             TaskbarEdge.Left   => new() { left = band.left,           top = band.top,            right = band.left + depth, bottom = band.bottom },
@@ -65,7 +68,7 @@ public static class CoverGeometry
     // Perpendicular distance in pixels from the band's inner edge, 0 on or
     // behind the band. The first pixel past the band is at distance 0 on
     // every edge, so the last pixel inside the zone sits one pixel short of
-    // the full span and the first pixel outside lands exactly on it.
+    // the span and the first pixel outside lands exactly on it.
     public static int DistanceToBand(NativeMethods.RECT band, TaskbarEdge edge, POINT p)
     {
         int d = edge switch
@@ -78,16 +81,14 @@ public static class CoverGeometry
         return d < 0 ? 0 : d;
     }
 
-    // Smoothstep over the zone's span beyond the band, the same curve as the
-    // HUD's proximity fade, so both surfaces ease the same way.
-    public static double Opacity(NativeMethods.RECT band, TaskbarEdge edge, POINT p)
-        => Opacity(band, edge, p, ApproachDistance.Standard);
-
-    public static double Opacity(NativeMethods.RECT band, TaskbarEdge edge, POINT p, ApproachDistance level)
+    // Smoothstep over the span beyond the band, the same curve as the HUD's
+    // proximity fade, so both surfaces ease the same way.
+    public static double Opacity(
+        NativeMethods.RECT band, TaskbarEdge edge, POINT p, ApproachDistance level, double dpiScale)
     {
-        if (!Contains(ApproachZone(band, edge, level), p)) return 1.0;
+        if (!Contains(ApproachZone(band, edge, level, dpiScale), p)) return 1.0;
 
-        int span = (ZoneFactor(level) - 1) * Thickness(band, edge);
+        int span = ApproachSpan(level, dpiScale);
         if (span <= 0) return 1.0;
 
         double t = (double)DistanceToBand(band, edge, p) / span;

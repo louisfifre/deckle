@@ -161,8 +161,15 @@
   </data>
 
   <!-- ── Behaviour ─────────────────────────────────────────── -->
+  <!-- The Behaviour and Fine tuning sections carry the same title link
+       (SettingsSection.LinkText): it opens the live preview pane, the same
+       way the Live preview tile under the module switch does, so the pane is
+       one click away from the values it shows. -->
   <data name="AmbientPageBehaviourSection.Title" xml:space="preserve">
     <value>Behaviour</value>
+  </data>
+  <data name="AmbientPageBehaviourSection.LinkText" xml:space="preserve">
+    <value>Live preview</value>
   </data>
   <!-- Preset options, read as "<key>.Content" (the preset's LabelKey). The
        Settings page no longer selects a preset; the Playground Ambient page
@@ -191,6 +198,9 @@
   <data name="AmbientBorderModeCard.Header" xml:space="preserve">
     <value>How depth is measured</value>
   </data>
+  <data name="AmbientBorderModeCard.Description" xml:space="preserve">
+    <value>A share of the screen makes the side bands deeper than the top and bottom ones, a count of cells gives every edge the same depth.</value>
+  </data>
   <data name="AmbientBorderModeShare.Content" xml:space="preserve">
     <value>As a share of the screen</value>
   </data>
@@ -213,6 +223,9 @@
   <!-- ── Fine tuning ───────────────────────────────────────── -->
   <data name="AmbientPageTuningSection.Title" xml:space="preserve">
     <value>Fine tuning</value>
+  </data>
+  <data name="AmbientPageTuningSection.LinkText" xml:space="preserve">
+    <value>Live preview</value>
   </data>
   <data name="AmbientBrightnessCurveCard.Header" xml:space="preserve">
     <value>Brightness response</value>
@@ -384,7 +397,7 @@
     <value>Deckle is already paired with a bridge. Pairing again replaces the current address and credentials with the new ones.</value>
   </data>
 
-  <!-- The Live preview tile of the Fine tuning section (AmbientPage, x:Uid):
+  <!-- The Live preview tile under the module switch (AmbientPage, x:Uid):
        it opens the preview pane beside the page. -->
   <data name="AmbientPreviewTile.Header" xml:space="preserve">
     <value>Live preview</value>
@@ -497,10 +510,10 @@
     <value>Ambient Light</value>
   </data>
   <data name="AmbientCaptureRate15.Content" xml:space="preserve">
-    <value>15 per second</value>
+    <value>15 fps</value>
   </data>
   <data name="AmbientCaptureRate60.Content" xml:space="preserve">
-    <value>60 per second</value>
+    <value>60 fps</value>
   </data>
   <data name="AmbientCaptureRateCard.Description" xml:space="preserve">
     <value>Higher is smoother and quicker, lower eases the load on a slower PC.</value>
@@ -509,6 +522,6 @@
     <value>Capture rate</value>
   </data>
   <data name="AmbientCaptureRate30.Content" xml:space="preserve">
-    <value>30 per second</value>
+    <value>30 fps</value>
   </data>
 </root>

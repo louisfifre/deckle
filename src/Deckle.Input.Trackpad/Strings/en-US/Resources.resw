@@ -118,11 +118,13 @@
 
   <!-- ─── TrackpadPage ───────────────────────────────────────────────
        Settings page for the Trackpad module. Title + subtitle, then
-       three sections in order: Three-finger drag, Windows integration,
-       Diagnostics. x:Uid keys follow TrackpadPage_<Element>.<Property>
+       two sections in order: Three-finger drag, Windows integration.
+       x:Uid keys follow TrackpadPage_<Element>.<Property>
        (plain TextBlocks bind .Text); code-behind flip-labels use the
        Surface_Purpose form resolved via Loc.Get — those three are
-       mirrored in Deckle.App's resw (Loc-mirror-pattern). -->
+       mirrored in Deckle.App's resw (Loc-mirror-pattern). The elevated
+       logon task's words live with its card on Settings > General
+       (GeneralStartElevatedCard, 2026-10-15). -->
   <data name="TrackpadPageHeader.Title" xml:space="preserve">
     <value>Trackpad</value>
   </data>
@@ -171,12 +173,6 @@
   </data>
   <data name="TrackpadPage_RepairButton.Content" xml:space="preserve">
     <value>Repair…</value>
-  </data>
-  <data name="TrackpadPage_ElevatedCard.Header" xml:space="preserve">
-    <value>Start elevated</value>
-  </data>
-  <data name="TrackpadPage_ElevatedCard.Description" xml:space="preserve">
-    <value>Lets the drag work over windows that run as administrator. Asks for approval once.</value>
   </data>
 
   <!-- Raw-frame recording, composed on Settings > Diagnostics

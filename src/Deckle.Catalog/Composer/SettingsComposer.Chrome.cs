@@ -57,7 +57,10 @@ public sealed partial class SettingsComposer
     }
 
     // Built to match the hand-authored per-card reset (WhisperPage's
-    // ResetButtonStyle); keep the two in step.
+    // ResetButtonStyle); keep the two in step. The glyph is Reset, the one the
+    // page header's Reset all and the hand-authored cards draw: the Refresh
+    // arrow runs the other way and read as a redo beside them (Louis,
+    // 2026-10-15).
     private static Button BuildResetButton() => new()
     {
         Style = Application.Current.Resources["SubtleButtonStyle"] as Style,
@@ -66,7 +69,7 @@ public sealed partial class SettingsComposer
         Padding = new Thickness(0),
         VerticalAlignment = VerticalAlignment.Center,
         Opacity = 0,
-        Content = new FontIcon { Glyph = Glyphs.Refresh, FontSize = 14 },
+        Content = new FontIcon { Glyph = Glyphs.Reset, FontSize = 14 },
     };
 
     // Either the host's hover or the button's keyboard focus keeps it shown. A flat

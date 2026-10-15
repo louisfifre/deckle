@@ -23,8 +23,9 @@ namespace Deckle.Lighting.Ambient;
 // (AmbientPage.Hue.cs). The brightness curve is a composed Curve card, first
 // of the fine-tuning cards. The live preview (AmbientPreviewCard) sits in a
 // pane at the right of the page, behind a splitter, so it stays in view
-// while the values change; the Live preview tile of the Fine tuning section
-// opens that pane and the preview's Close closes it (SyncPreviewPane).
+// while the values change; the Live preview tile under the module switch and
+// the Behaviour and Fine tuning title links open that pane, the preview's
+// Close closes it (SyncPreviewPane).
 //
 // Sync : the view model writes every edit straight to AmbientSettingsService
 // and saves. The page observes AmbientSettingsService.Changed and reloads the
@@ -64,7 +65,7 @@ public sealed partial class AmbientPage : Page
 
         // The XAML column carries the pane's default width and floor; read
         // once, then the pane opens and closes on the user's word
-        // (SyncPreviewPane). Closed until the tile is clicked.
+        // (SyncPreviewPane). Closed until the tile or a section link is clicked.
         _paneWidth    = PreviewColumn.Width;
         _paneMinWidth = PreviewColumn.MinWidth;
         SyncPreviewPane();
@@ -76,18 +77,22 @@ public sealed partial class AmbientPage : Page
 
     // ── Preview pane ───────────────────────────────────────────────────
     //
-    // The pane is the user's: the Live preview tile under the Fine tuning
-    // title opens it, the preview's own Close closes it, and nothing else
-    // does; the control inside says on its own whether the engine gives it
-    // something live. The column's width is the user's too, written on the
-    // ColumnDefinition by the splitter at each drag, and kept for the page's
-    // lifetime only: nothing is persisted in this pass.
+    // The pane is the user's: the Live preview tile under the module switch
+    // and the title links of the Behaviour and Fine tuning sections open it,
+    // the preview's own Close closes it, and nothing else does; the control
+    // inside says on its own whether the engine gives it something live. The
+    // column's width is the user's too, written on the ColumnDefinition by the
+    // splitter at each drag, and kept for the page's lifetime only: nothing is
+    // persisted in this pass.
 
     private GridLength _paneWidth;
     private double _paneMinWidth;
     private bool _paneOpen;
 
-    private void PreviewTile_Click(object sender, RoutedEventArgs e)
+    // One handler for the tile's Click and the sections' LinkClicked. A click
+    // while the pane is already open changes nothing: SyncPreviewPane rewrites
+    // the same state (Louis, 2026-10-15: keep it simple).
+    private void OpenPreview_Click(object sender, RoutedEventArgs e)
     {
         _paneOpen = true;
         SyncPreviewPane();
@@ -117,14 +122,13 @@ public sealed partial class AmbientPage : Page
         }
 
         var visibility = _paneOpen ? Visibility.Visible : Visibility.Collapsed;
-        PreviewDivider.Visibility  = visibility;
         PreviewSplitter.Visibility = visibility;
         PreviewPane.Visibility     = visibility;
     }
 
     // The grip shows while the pointer is over the splitter, while it is
-    // pressed and while it holds keyboard focus; at rest the divider line is
-    // the edge. The splitter marks its pointer events handled, so the press
+    // pressed and while it holds keyboard focus; at rest nothing shows, the
+    // pane floats. The splitter marks its pointer events handled, so the press
     // and release are taken with handledEventsToo; the pointer may leave the
     // 12 px strip mid-drag, so the pressed state keeps the grip until the
     // release or the capture's loss. Pointer focus does not count: a click

@@ -40,6 +40,10 @@ public static class AppPaths
     // as a user variable. Empty/unset → default location.
     public const string DataRootEnvVar = "DECKLE_DATA_ROOT";
 
+    // The root the app uses when DECKLE_DATA_ROOT is unset: the default the
+    // data folder's reset moves back to, and the one source UserDataRoot
+    // falls back on.
+    public static string DefaultUserDataRoot          { get; }
     public static string UserDataRoot                 { get; }
     public static string SettingsFilePath             { get; }
     public static string SecretsFilePath              { get; }
@@ -74,6 +78,7 @@ public static class AppPaths
 
     static AppPaths()
     {
+        DefaultUserDataRoot          = ResolveDefaultUserDataRoot();
         UserDataRoot                 = ResolveUserDataRoot();
         SettingsFilePath             = Path.Combine(UserDataRoot, "settings.json");
         SecretsFilePath              = Path.Combine(UserDataRoot, "secrets.dat");
@@ -132,14 +137,19 @@ public static class AppPaths
         }
     }
 
-    // The exe-folder fallback covers sandboxed runs where LOCALAPPDATA isn't
-    // available.
     private static string ResolveUserDataRoot()
     {
         string? overrideRoot = Environment.GetEnvironmentVariable(DataRootEnvVar);
         if (!string.IsNullOrWhiteSpace(overrideRoot))
             return Path.GetFullPath(overrideRoot);
 
+        return DefaultUserDataRoot;
+    }
+
+    // The exe-folder fallback covers sandboxed runs where LOCALAPPDATA isn't
+    // available.
+    private static string ResolveDefaultUserDataRoot()
+    {
         string localAppData = Environment.GetFolderPath(
             Environment.SpecialFolder.LocalApplicationData,
             Environment.SpecialFolderOption.Create);

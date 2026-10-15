@@ -23,6 +23,11 @@ public static class ElevatedStartupService
 {
     private const string TaskName = "Deckle";
 
+    // Task Scheduler is the source of truth, so the default is "no task": off.
+    // Exposed so the "Start elevated" toggle resets to the state a fresh profile
+    // starts from, the way AutostartService.DefaultEnabled serves the Run key.
+    public static bool DefaultEnabled => false;
+
     public static bool IsEnabled()
     {
         try

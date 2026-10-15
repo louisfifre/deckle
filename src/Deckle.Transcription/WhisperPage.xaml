@@ -90,16 +90,16 @@
 
                 <!-- ── Transcription ───────────────────────────────────────── -->
                 <!--
-                    Order : Initial prompt → Language → GPU acceleration →
-                    Whisper model → Models directory. The initial prompt leads
-                    because it is the section's only expander, and a card with
-                    a chevron sits above the plain cards. Model and its models
-                    directory close the section because the model requires a
-                    restart and the directory is where its weights are stored.
+                    Order : Initial prompt → Models folder → Language → GPU
+                    acceleration → Whisper model. The two cards with a chevron
+                    lead, since a chevron sits above the plain cards: the
+                    initial prompt's expander, then the models folder, a folder
+                    fold since 2026-10-15 (a standalone Path renders as one).
+                    The model closes the section because it requires a restart.
                     No section reset: Model / Language / InitialPrompt are
-                    bespoke cards with per-card resets, and GPU / models
-                    directory sit in two separate composers, so no single
-                    dirtiness could gate one.
+                    bespoke cards with per-card resets, and GPU / models folder
+                    sit in two separate composers, so no single dirtiness could
+                    gate one.
                 -->
                 <catalog:SettingsSection x:Uid="WhisperPageModelEngineSection">
                 <StackPanel Spacing="{StaticResource SettingsCardSpacing}">
@@ -125,6 +125,15 @@
                         </controls:SettingsCard>
                     </controls:SettingsExpander.Items>
                 </controls:SettingsExpander>
+
+                <!-- Models folder — composed. The folder fold (its title and
+                     sentence in the header, the Location line inside with the
+                     typeable path field, "Choose a folder" and "Open", and its
+                     own reset) is built by ComposeSettings() into this host,
+                     with FolderPickerMode.Editable and the AppPaths fallback
+                     carried in PathArgs. -->
+                <StackPanel x:Name="ModelsDirectoryHost"
+                            Spacing="{StaticResource SettingsCardSpacing}" />
 
                 <controls:SettingsCard x:Name="LanguageCard"
                                        x:Uid="WhisperLanguageCard"
@@ -166,8 +175,8 @@
                      disk, and picking a model trips the restart footer), so it stays
                      hand-authored rather than composed as a flat descriptor. Its
                      per-card reset is bespoke too, syncing the un-bound AutoSuggestBox
-                     alongside the VM. The models directory that used to nest inside
-                     this expander is now its own composed card below. -->
+                     alongside the VM. The models folder that used to nest inside
+                     this expander is its own composed fold above. -->
                 <controls:SettingsCard x:Name="ModelCard"
                                        x:Uid="WhisperModelCard"
                                        Tag="WhisperModelCard">
@@ -186,14 +195,6 @@
                         </Button>
                     </StackPanel>
                 </controls:SettingsCard>
-
-                <!-- Models directory — composed. The editable folder path (with its
-                     own reset) is built by ComposeModelsDirectorySection() into this
-                     host, with FolderPickerMode.Editable and the AppPaths fallback
-                     carried in PathArgs. It reads as its own card under the model
-                     selector, where it used to nest as an inline expander child. -->
-                <StackPanel x:Name="ModelsDirectoryHost"
-                            Spacing="{StaticResource SettingsCardSpacing}" />
 
                 </StackPanel>
                 </catalog:SettingsSection>

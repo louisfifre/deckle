@@ -53,9 +53,11 @@ public sealed record HotkeyArgs(bool AllowUnbound) : SettingArgs;
 
 // ── FolderPickerMode ──────────────────────────────────────────────────────────
 //
-// Configure: a read-only path with Change and Open. Editable: the same with a
-// typeable TextBox, for a path pasted from another machine rather than browsed
-// to. OpenOnly: a path the app owns; the row shows it and offers Open, no Change.
+// What the Location line of a Path setting offers. Configure: the path as the
+// line's description, with "Choose a folder" and "Open". Editable: a typeable
+// field in the path's place, for a path pasted from another machine rather than
+// browsed to, with the same two actions. OpenOnly: a path the app owns; the line
+// shows it and offers Open alone.
 public enum FolderPickerMode
 {
     Configure,
@@ -67,7 +69,7 @@ public enum FolderPickerMode
 //
 // DefaultPath is a deferred lookup, not a stored string: the fallback shown when
 // the value is empty comes from AppPaths and would be wrong if captured earlier.
-// The host's PathControlFactory invokes it once when building the card.
+// The host's PathControlFactory invokes it once when building the line.
 public sealed record PathArgs(
     FolderPickerMode Mode = FolderPickerMode.Configure,
     Func<string>? DefaultPath = null) : SettingArgs;
