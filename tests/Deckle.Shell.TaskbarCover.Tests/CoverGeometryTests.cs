@@ -64,13 +64,14 @@ public class CoverGeometryTests
     // ── The span of each level ───────────────────────────────────────────────
 
     [Theory]
-    [InlineData(ApproachDistance.Near,     32)]
-    [InlineData(ApproachDistance.Standard, 64)]
-    [InlineData(ApproachDistance.Far,      128)]
-    public void EachLevelStandsForItsDistanceInDip(ApproachDistance level, int dip)
+    [InlineData(ApproachDistance.Near,     Spacing.Medium)]
+    [InlineData(ApproachDistance.Standard, Spacing.Large)]
+    [InlineData(ApproachDistance.Far,      Spacing.XLarge)]
+    public void EachLevelStandsForAStepOfTheScale(ApproachDistance level, int dip)
     {
-        // The provisional values of 2026-10-15, pinned so a change is a
-        // decision and not a slip.
+        // Three consecutive steps, the provisional choice of 2026-10-15,
+        // pinned so a change is a decision and not a slip. The steps' own
+        // numbers are the scale's promise, pinned in Deckle.Core.Tests.
         Assert.Equal(dip, CoverGeometry.ApproachSpanDip(level));
         Assert.Equal(dip, CoverGeometry.ApproachSpan(level, Dpi100));
     }
