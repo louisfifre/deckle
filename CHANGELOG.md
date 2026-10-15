@@ -11,6 +11,16 @@ doctrine). This file is generated from the Conventional-Commit history by
 
 ## [Unreleased]
 
+### Added
+
+- **core:** Name the spacing scale and the DIP to pixel conversion
+- **taskbar-cover:** Log the display scale of each band
+
+### Changed
+
+- **taskbar-cover:** Take the approach levels from the spacing scale
+- **hud:** Scale the overlay gap through Dpi
+
 ### Fixed
 
 - **taskbar-cover:** Cover the taskbar on every monitor
