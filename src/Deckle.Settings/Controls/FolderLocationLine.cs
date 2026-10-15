@@ -189,7 +189,7 @@ public sealed class FolderLocationLine : IPathControl
         if (trigger is null) { WindowingProbe.EmitPopupAnchored(IntPtr.Zero, "folder-picker", 0, 0, 0, 0); return; }
 
         IntPtr hwnd = WindowNative.GetWindowHandle(window);
-        double scale = NativeMethods.GetDpiForWindow(hwnd) / 96.0;
+        double scale = Dpi.ScaleOf(NativeMethods.GetDpiForWindow(hwnd));
         var transform = trigger.TransformToVisual(null);
         var pt = transform.TransformPoint(default);
 

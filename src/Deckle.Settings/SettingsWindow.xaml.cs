@@ -78,7 +78,7 @@ public sealed partial class SettingsWindow : Window
         // Window sizes are PHYSICAL pixels — scale the intended DIPs (or a
         // 200 % display opens a half-size window), clamped to the display's
         // work area so the scaled height never overflows the screen.
-        double dpiScale = NativeMethods.GetDpiForWindow(_hwnd) / 96.0;
+        double dpiScale = Dpi.ScaleOf(NativeMethods.GetDpiForWindow(_hwnd));
         var workArea = DisplayArea.GetFromWindowId(AppWindow.Id, DisplayAreaFallback.Nearest).WorkArea;
         AppWindow.Resize(new Windows.Graphics.SizeInt32(
             Math.Min((int)(960 * dpiScale), workArea.Width),
