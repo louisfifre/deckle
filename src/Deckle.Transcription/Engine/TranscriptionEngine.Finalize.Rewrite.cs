@@ -5,8 +5,15 @@ namespace Deckle.Transcription;
 
 public sealed partial class TranscriptionEngine
 {
-    private FinalizeRewrite ApplyRewrite(string rawText, bool isFileRun)
+    // batchRewrite is the live take's batch run, when it had one: its batches
+    // were already sent during the recording, so the take is assembled from
+    // them (TranscriptionEngine.BatchRewrite.cs) instead of rewritten whole.
+    private FinalizeRewrite ApplyRewrite(
+        string rawText, bool isFileRun, BatchRewriteRun? batchRewrite = null)
     {
+        if (batchRewrite is not null && !isFileRun)
+            return ApplyBatchRewrite(rawText, batchRewrite);
+
         var llmSettings = _host.Llm;
         RewriteProfile? profile = isFileRun
             ? null

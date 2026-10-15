@@ -1706,6 +1706,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   ├── TextMetrics.cs
 │   │   │   ├── TranscriptFileWriter.cs
 │   │   │   ├── TranscriptionDelivery.cs
+│   │   │   ├── TranscriptionEngine.BatchRewrite.cs
 │   │   │   ├── TranscriptionEngine.cs
 │   │   │   ├── TranscriptionEngine.FilePipeline.cs
 │   │   │   ├── TranscriptionEngine.Finalize.cs

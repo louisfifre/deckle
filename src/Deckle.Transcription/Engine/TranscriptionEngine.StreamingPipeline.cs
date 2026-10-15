@@ -36,6 +36,16 @@ public sealed partial class TranscriptionEngine
     private async Task<PipelineProduction?> ProduceStreamingAsync(
         CancellationToken producerCt, CancellationToken drainCt, Task<bool> primeTask)
     {
+        // Opt-in batch rewriting (TranscriptionEngine.BatchRewrite.cs). The feed
+        // is subscribed before the consumer starts and disposed when this method
+        // exits, which every exit path reaches only after the consumer drain has
+        // ended, so no utterance is missed and the subscription never outlives
+        // the take. On an abandoned production (a null return) the batches
+        // already sent finish on their own and their results are dropped with
+        // the rewriter.
+        BatchRewriteRun? batchRewrite = StartBatchRewrite();
+        using IDisposable? batchFeed = FeedBatchRewrite(batchRewrite);
+
         var policy = new SegmentedTranscriptionPolicy(
             FixedPrompt: _host.Transcription.Engine.InitialPrompt ?? "",
             ApplyPreprocessing: true,
@@ -208,13 +218,20 @@ public sealed partial class TranscriptionEngine
 
         if (consumed.BackendAudio is not null) EmitPreprocessedTelemetry(consumed.BackendAudio);
 
+        // Sends the last open batch now rather than at Assemble, so its request
+        // runs while the finalize copies the raw text. Only here, on the path
+        // that finalizes: an abandoned take must not send a request whose
+        // result nobody reads.
+        batchRewrite?.Rewriter.Complete();
+
         return new PipelineProduction(
             RawText:           consumed.Text,
             RawAudio:          raw,
             BackendAudio:      backendAudio,
             TotalTranscribeMs: consumed.TotalMs,
             InitMs:            consumed.InitMs,
-            NSegments:         consumed.NSegments);
+            NSegments:         consumed.NSegments,
+            BatchRewrite:      batchRewrite);
     }
 
     // Creates the source-neutral segmenter/channel/consumer core shared by live

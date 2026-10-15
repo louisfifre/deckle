@@ -8,10 +8,15 @@ namespace Deckle.Transcription;
 // A producer returns null to mean "already handled, do not finalize": an early
 // exit (mic error, empty audio, backend failure, lost CAS) it reported on its
 // own. A dictation strategy also raises Finished itself on that path.
+//
+// BatchRewrite is set only by the streaming strategy when the take was
+// rewritten batch by batch during the recording; the finalize then assembles
+// those batches instead of rewriting the whole take. Null everywhere else.
 internal readonly record struct PipelineProduction(
     string RawText,
     ReadOnlyMemory<float> RawAudio,
     ReadOnlyMemory<float> BackendAudio,
     long TotalTranscribeMs,
     long InitMs,
-    int NSegments);
+    int NSegments,
+    TranscriptionEngine.BatchRewriteRun? BatchRewrite = null);

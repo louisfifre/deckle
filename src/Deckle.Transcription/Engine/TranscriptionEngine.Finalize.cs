@@ -79,7 +79,7 @@ public sealed partial class TranscriptionEngine
             return TranscriptionOutcome.None;
         }
 
-        FinalizeRewrite rewrite = ApplyRewrite(rawText, isFileRun);
+        FinalizeRewrite rewrite = ApplyRewrite(rawText, isFileRun, production.BatchRewrite);
         FinalizeDelivery delivered = DeliverTranscript(rewrite.Text, delivery);
 
         RecordPipelineMetrics(
