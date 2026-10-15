@@ -17,8 +17,10 @@ namespace Deckle.Audio;
 //
 // The opt-in persists in its own store (TelemetrySettingsService), not in
 // CaptureSettings. The enable is gated by the shell's consent dialog through
-// the Catalog registry (TelemetryConsent.RequestMicrophone). No defaultValue: a
-// privacy opt-in carries no per-row reset.
+// the Catalog registry (TelemetryConsent.RequestMicrophone). Its default reads
+// TelemetrySettings, so the card has its reset (Louis, 2026-10-15: every
+// setting with a default gets its reset); the default is off, so the reset only
+// turns the opt-in off, a write the consent gate does not hold.
 public sealed partial class RecordingTelemetryViewModel : ObservableObject
 {
     private bool _isSyncing;
@@ -58,6 +60,7 @@ public sealed partial class RecordingTelemetryViewModel : ObservableObject
         Setting.Toggle("RecordingMicrophoneTelemetryCard",
             () => MicrophoneTelemetry,
             value => MicrophoneTelemetry = value,
+            defaultValue: () => new TelemetrySettings().MicrophoneTelemetry,
             confirmOnEnable: TelemetryConsent.RequestMicrophone),
     ];
 

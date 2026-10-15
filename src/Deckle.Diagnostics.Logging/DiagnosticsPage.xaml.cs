@@ -162,10 +162,10 @@ public sealed partial class DiagnosticsPage : Page
         GateResetAll();
     }
 
-    // The section reset clears the wheel capture and the contributed datasets
-    // that carry a default (a consent-gated one carries none and stays as the
-    // user left it), through the composers, never the storage folder, which
-    // the Folders section resets. ViewModel.ResetTelemetryDefaults clears both
+    // The section reset returns the wheel capture and every contributed
+    // dataset to its default, consent-gated ones included (each default is
+    // off, so the reset turns them off), through the composers, never the
+    // storage folder, which the Folders section resets. ViewModel.ResetTelemetryDefaults clears both
     // values, so only the page-wide reset calls it.
     private void ResetTelemetry_Click(object sender, RoutedEventArgs e)
     {
@@ -209,8 +209,9 @@ public sealed partial class DiagnosticsPage : Page
     // Clears recorded consents (the application-log opt-in and every
     // contributed dataset), so it goes through the destructive confirmation,
     // whose words promise every opt-in on the page goes off. The composers'
-    // ResetAll skips a consent, which carries no default, so each contribution
-    // also turns its own datasets off. The composers re-sync off the resulting
+    // ResetAll returns each consent to its default, off; each contribution
+    // also turns its own datasets off, so the promise holds whatever a
+    // contribution declares. The composers re-sync off the resulting
     // PropertyChanged.
     private async void ResetAllDiagnostics_Click(object sender, RoutedEventArgs e)
     {
