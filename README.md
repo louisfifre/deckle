@@ -12,30 +12,22 @@ Press the hotkey, speak, and press it again when you are done. Deckle cuts your 
 
 > **Personal project, early public release.** Windows 11 x64, unpackaged, and installed per user without administrator privileges.
 
-<p align="center">
-  <img src="docs/media/readme/hud-recording.png" alt="Deckle's HUD while dictating" width="900">
-</p>
-
 ## Dictation, how it works
 
-- **One hotkey, pressed twice.** Win + the key left of 1 starts a take; the same key stops it. It is a toggle, so your hands are free while you speak. Every hotkey, this one included, can be changed in **Settings › General**.
+- **One hotkey, pressed twice.** Win + the key left of 1 starts a take; the same key stops it. It is a toggle, so your hands are free while you speak. Every hotkey, this one included, can be changed in **Settings › Shortcuts**.
 - **Utterances cut on your pauses.** An energy threshold watches the microphone level and cuts an utterance when you pause long enough. A Silero voice-activity model then trims each utterance down to the speech it contains.
 - **A local Whisper model.** Speech recognition runs through [whisper.cpp](https://github.com/ggerganov/whisper.cpp) on your GPU through Vulkan, with a CPU fallback. The default model is Whisper base (`ggml-base`, about 150 MB); Whisper large-v3 (about 3 GB) is available for better accuracy.
 - **Transcription while you speak.** Each utterance is transcribed as soon as it is cut, so pressing stop only waits for the utterances still in the queue.
-- **The text as it comes.** A panel beside the HUD shows each utterance's text as soon as it is transcribed. You pick its side, left or right, in **Settings › Dictation**.
+- **The text as it comes.** A panel beside the HUD shows each utterance's text as soon as it is transcribed. You pick its side, left or right, in **Settings › Transcription**.
 - **A countdown before each cut.** While you pause, the HUD outline shows how much of the pause is left before the utterance is cut, and draws back when you speak again.
 - **A pause becomes a paragraph.** Each utterance cut on a pause starts a new paragraph in the text.
 - **Clipboard first, paste on request.** The text always goes to the clipboard. Paste is off by default; when you turn it on, Deckle pastes only into a field that UI Automation confirms is editable.
-- **Optional rewrite.** A local [Ollama](https://ollama.com/) model can clean up the transcript before it is delivered, with the profile you choose once on the **Rewriting** page.
+- **Optional rewrite.** A language model can clean up the transcript before it is delivered. You pick the provider on the **Rewriting** page: a local [Ollama](https://ollama.com/) or [LM Studio](https://lmstudio.ai/), any OpenAI-compatible endpoint, or Claude through its API. Nothing is rewritten until you choose a profile, and a hosted provider receives the transcript text. With **Rewrite while you speak** on, the dictation is rewritten in batches while you are still recording.
 - **No length limit by default.** A **Maximum recording length** can be set on the **Recording** page.
 
-Cutting into utterances is the Streaming pipeline, which you turn on in **Settings › Dictation**. With it off, the default for now, Deckle records the whole take and transcribes it in one pass after you press stop.
+Cutting into utterances is the Streaming pipeline, the **Transcribe as you speak** switch in **Settings › Transcription › Streaming**. With it off, the default for now, Deckle records the whole take and transcribes it in one pass after you press stop.
 
 The full chain, step by step, is described in [docs/transcription-audio-chain.md](docs/transcription-audio-chain.md).
-
-<p align="center">
-  <img src="docs/media/readme/settings-dictation.png" alt="Deckle Settings, Dictation page" width="720">
-</p>
 
 ## Also in the box
 
@@ -44,19 +36,15 @@ Deckle is one app with several modules. You choose them at setup and can change 
 | Module | What it adds | Status |
 |---|---|---|
 | **Dictation** | Voice transcription on a hotkey or from an audio file, through a local Whisper model. | Delivered, the most established module |
-| **Rewrite** | A cleanup pass on the transcript through an Ollama model. Requires Dictation and a local Ollama. | Delivered; richer rewrite flows are still taking shape |
+| **Rewrite** | A cleanup pass on the transcript through a language model, local (Ollama, LM Studio, any OpenAI-compatible endpoint) or hosted (Claude). Requires Dictation. | Delivered; richer rewrite flows are still taking shape |
 | **Autocorrect** | French-first accent restoration and conservative typo correction, in the apps you enroll. | Delivered |
 | **Ambient light** | Screen color mapped to Philips Hue lights over the local network. | In progress |
 | **Trackpad gestures** | Three-finger drag on a Windows precision touchpad. | Available |
 | **Anytype workspace** | A local Anytype backend and an MCP surface that AI assistants can read and write. | Available |
 
-A left click on the tray icon opens a quick-actions panel: Record, transcribe audio files, and one switch per module. A right click opens the classic menu for Settings, logs, restart and quit.
+A left click on the tray icon opens a menu with a switch per background feature, Ambient Light, Record and Transcribe audio files. A right click opens the classic menu for Logs, Settings, the Playground, restart and quit. A double click opens Settings.
 
 Smaller touches outside the module list: a **taskbar cover** that masks the taskbar with an opaque band (in progress); an **Apps and games** page, still foundations: a registry of your apps, filled by hand or from your Steam libraries and chosen folders, with an HDR rule per monitor applied while an app runs; **read-aloud**, scaffolded but dormant; and **precision scrolling** for finer mouse-wheel control, still groundwork.
-
-<p align="center">
-  <img src="docs/media/readme/module-selection.png" alt="Deckle setup showing the selectable modules" width="720">
-</p>
 
 ---
 
@@ -76,7 +64,7 @@ Smaller touches outside the module list: a **taskbar cover** that masks the task
 - Autocorrect never observes password fields and acts only in apps you enroll.
 - Deckle sends no analytics. Optional diagnostic datasets are consent-gated and stored locally.
 - Internet access is used to install and update Deckle, and to download once the models and native runtimes your modules need. Hue discovery can use Philips' service when you ask for it.
-- Rewrite contacts the Ollama endpoint you configure, which defaults to the local machine.
+- Rewrite contacts the provider you choose. Ollama and LM Studio default to the local machine. Claude is a hosted API: it receives the transcript text only once you store a key and select a Claude profile.
 
 ## Install
 

@@ -1278,20 +1278,43 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── IAmbientEngineHost.cs
 │   │   └── SettingsSearch.cs
 │   ├── Deckle.Llm/
+│   │   ├── Engines/
+│   │   │   ├── ClaudeEngine.cs
+│   │   │   ├── OllamaEngine.cs
+│   │   │   └── OpenAiCompatibleEngine.cs
+│   │   ├── Generation/
+│   │   │   ├── GenerationDeadline.cs
+│   │   │   ├── GenerationRequest.cs
+│   │   │   ├── GenerationResult.cs
+│   │   │   ├── IGenerationEngine.cs
+│   │   │   └── PromptTemplates.cs
+│   │   ├── Providers/
+│   │   │   ├── IGenerationEngineResolver.cs
+│   │   │   ├── LlmProvider.cs
+│   │   │   ├── LlmProviderEngines.cs
+│   │   │   ├── LlmProviderKind.cs
+│   │   │   ├── LlmProviderSecrets.cs
+│   │   │   └── ProviderModelCatalog.cs
 │   │   ├── Deckle.Llm.csproj
+│   │   ├── DeckleLlmSource.Batches.cs
 │   │   ├── DeckleLlmSource.cs
 │   │   ├── DeckleLlmSource.FeedbackAndUi.cs
 │   │   ├── DeckleLlmSource.OllamaService.cs
 │   │   ├── DeckleLlmSource.Persistence.cs
+│   │   ├── DeckleLlmSource.Providers.cs
 │   │   ├── DeckleLlmSource.Rewrite.cs
 │   │   ├── DeckleLlmSource.RuntimeStatus.cs
 │   │   └── OllamaService.cs
 │   ├── Deckle.Llm.Rewrite/
+│   │   ├── Batching/
+│   │   │   ├── DictationBatch.cs
+│   │   │   ├── DictationBatcher.cs
+│   │   │   ├── DictationBatchResult.cs
+│   │   │   ├── DictationBatchRewriter.cs
+│   │   │   └── SentenceBoundary.cs
 │   │   ├── Engine/
-│   │   │   ├── OllamaEngine.cs
 │   │   │   ├── ParagraphRewrite.cs
-│   │   │   ├── PromptTemplates.cs
-│   │   │   ├── RewriteEngine.cs
+│   │   │   ├── RewriteFailureMessage.cs
 │   │   │   ├── RewriteService.cs
 │   │   │   └── SentenceRewrite.cs
 │   │   ├── Gate/
@@ -1313,6 +1336,8 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   ├── BoolToVisibilityConverter.cs
 │   │   │   ├── LlmActiveProfileSection.xaml
 │   │   │   ├── LlmActiveProfileSection.xaml.cs
+│   │   │   ├── LlmDictationSection.xaml
+│   │   │   ├── LlmDictationSection.xaml.cs
 │   │   │   ├── LlmGeneralSection.xaml
 │   │   │   ├── LlmGeneralSection.xaml.cs
 │   │   │   ├── LlmModelsSection.xaml
@@ -1322,17 +1347,23 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   ├── LlmPage.xaml.cs
 │   │   │   ├── LlmProfilesSection.xaml
 │   │   │   ├── LlmProfilesSection.xaml.cs
+│   │   │   ├── LlmProvidersSection.xaml
+│   │   │   ├── LlmProvidersSection.xaml.cs
 │   │   │   ├── ProfileViewModel.cs
+│   │   │   ├── ProviderViewModel.cs
 │   │   │   ├── RewriteChangeView.cs
 │   │   │   ├── RewriteOfferWindow.xaml
 │   │   │   └── RewriteOfferWindow.xaml.cs
 │   │   ├── ViewModels/
+│   │   │   ├── LlmDictationViewModel.cs
+│   │   │   ├── LlmDictationViewModel.Settings.cs
 │   │   │   ├── LlmGeneralViewModel.cs
 │   │   │   └── LlmGeneralViewModel.Settings.cs
 │   │   ├── Deckle.Llm.Rewrite.csproj
 │   │   ├── GLOSSARY.md  — glossary-deckle-llm-rewrite Rewrite vocabulary. It draws the Correction / Rewrite boundary, which decides w…
 │   │   ├── LlmSettings.cs
 │   │   ├── LlmSettingsMigrations.cs
+│   │   ├── LlmSettingsMigrations.Providers.cs
 │   │   ├── LlmSettingsModule.cs
 │   │   ├── LlmSettingsService.cs
 │   │   └── SettingsSearch.cs
@@ -1674,6 +1705,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   ├── TextMetrics.cs
 │   │   │   ├── TranscriptFileWriter.cs
 │   │   │   ├── TranscriptionDelivery.cs
+│   │   │   ├── TranscriptionEngine.BatchRewrite.cs
 │   │   │   ├── TranscriptionEngine.cs
 │   │   │   ├── TranscriptionEngine.FilePipeline.cs
 │   │   │   ├── TranscriptionEngine.Finalize.cs
@@ -2071,10 +2103,15 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   └── LightingObservabilityCollection.cs
 │   ├── Deckle.Llm.Rewrite.Tests/
 │   │   ├── Deckle.Llm.Rewrite.Tests.csproj
+│   │   ├── DictationBatcherTests.cs
+│   │   ├── DictationBatchRewriterTests.cs
 │   │   ├── LlmSettingsMigrationsTests.cs
 │   │   ├── ParagraphDraftTests.cs
 │   │   ├── ParagraphRewriteCoordinatorTests.cs
 │   │   ├── RewriteDiffGateTests.cs
+│   │   ├── RewriteFailureMessageTests.cs
+│   │   ├── RewriteServiceFeedbackTests.cs
+│   │   ├── SentenceBoundaryTests.cs
 │   │   └── SentenceRewriteTests.cs
 │   ├── Deckle.Modules.Tests/
 │   │   ├── Deckle.Modules.Tests.csproj
