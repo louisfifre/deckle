@@ -209,12 +209,22 @@ doctrine). This file is generated from the Conventional-Commit history by
 - **ambient:** Open the live preview from the module switch and section titles
 - **taskbar-cover:** Measure the approach distance in screen pixels
 - **playground:** Draw the gauge's course and retreat ease as curves
+- **llm:** Name a provider per rewrite profile behind the generation seam
+- **llm:** Claude engine on the official SDK
+- **llm:** Chat-completions engine for LM Studio, llama.cpp and hosted APIs
+- **llm:** List the models a provider serves
+- **rewrite:** Providers list, API key and provider per profile in Settings
+- **rewrite:** Two default profiles on Claude, Lissage and Réécriture
 - **hud:** Release the gauge on its own fast curve at the cut
 - **playground:** Expose the gauge's cut release and a Cut button
 - **diagnostics:** Give the logging and application-log toggles their reset
 - **diagnostics:** Give every telemetry opt-in its reset
 - **settings:** Reset the data folder through a move back to the default root
+- **rewrite:** Batch a dictation into rewrites that overlap the recording
+- **rewrite:** "While you dictate" section with the batch rewriting switch
+- **transcription:** Rewrite dictation batches as they close
 - **settings:** Give the Application data section its reset
+- **rewrite:** Failure overlay names the provider and the cause
 
 ### Changed
 
