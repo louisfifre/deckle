@@ -98,7 +98,7 @@ public sealed partial class HudWindow : Window
         _hwnd = WindowNative.GetWindowHandle(this);
         SystemAnimationPreference.Instance.Changed += OnSystemAnimationsChanged;
 
-        _dpiScale = NativeMethods.GetDpiForWindow(_hwnd) / 96.0;
+        _dpiScale = Dpi.ScaleOf(NativeMethods.GetDpiForWindow(_hwnd));
 
         // Explicit null defeats any auto-applied Mica / Acrylic backdrop on
         // recent WindowsAppSDK versions. Paired with DWMWA_SYSTEMBACKDROP_TYPE
@@ -244,7 +244,7 @@ public sealed partial class HudWindow : Window
         // lets WinUI 3 run its own DPI-change layout.
         if (uMsg == NativeMethods.WM_DPICHANGED)
         {
-            _dpiScale = (wParam.ToInt32() & 0xFFFF) / 96.0;
+            _dpiScale = Dpi.ScaleOf((uint)(wParam.ToInt32() & 0xFFFF));
         }
 
         // Erase the non-client area. With wParam=TRUE, lParam points to a

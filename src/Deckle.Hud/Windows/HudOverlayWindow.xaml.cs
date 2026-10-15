@@ -60,7 +60,7 @@ public sealed partial class HudOverlayWindow : Window
         InitializeComponent();
         _hwnd = WindowNative.GetWindowHandle(this);
 
-        _dpiScale = NativeMethods.GetDpiForWindow(_hwnd) / 96.0;
+        _dpiScale = Dpi.ScaleOf(NativeMethods.GetDpiForWindow(_hwnd));
 
         SystemBackdrop = null;
         Title = Loc.Get("HudOverlay_WindowTitle");
@@ -177,10 +177,10 @@ public sealed partial class HudOverlayWindow : Window
     public (int Width, int Height) GetSizePx()
     {
         uint dpi = NativeMethods.GetDpiForWindow(_hwnd);
-        double scale = dpi / 96.0;
+        double scale = Dpi.ScaleOf(dpi);
         return (
-            (int)Math.Round(HUD_WIDTH  * scale),
-            (int)Math.Round(HUD_HEIGHT * scale));
+            Dpi.ToPixels(HUD_WIDTH, scale),
+            Dpi.ToPixels(HUD_HEIGHT, scale));
     }
 
     // Shows without activation and reasserts HWND_TOPMOST so the newest
@@ -298,7 +298,7 @@ public sealed partial class HudOverlayWindow : Window
         // layout through DefSubclassProc.
         if (uMsg == NativeMethods.WM_DPICHANGED)
         {
-            _dpiScale = (wParam.ToInt32() & 0xFFFF) / 96.0;
+            _dpiScale = Dpi.ScaleOf((uint)(wParam.ToInt32() & 0xFFFF));
         }
 
         // WinUI 3 reapplies WS_DLGFRAME / WS_EX_WINDOWEDGE on the top-level;
