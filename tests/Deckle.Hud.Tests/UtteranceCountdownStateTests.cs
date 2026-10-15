@@ -1,10 +1,40 @@
 using System;
+using Deckle.Composition;
 using Xunit;
 
 namespace Deckle.Hud.Tests;
 
 public sealed class UtteranceCountdownStateTests
 {
+    // Louis, 2026-10-15: the cut comes back "en accélérant, très très vite",
+    // unlike speech resuming. The state tells the two apart by the count.
+    [Fact]
+    [Trait("Category", "regression")]
+    public void TheMoveLeavingACutsHoldIsTheCutsReleaseOnce()
+    {
+        var state = new UtteranceCountdownState();
+        state.Accept(0.4f, 0, TimeSpan.Zero);
+        state.Accept(0f, 0, TimeSpan.FromMilliseconds(50));
+        Assert.Equal(UtteranceCountdownRelease.Retreat, state.TakeRelease(TimeSpan.FromMilliseconds(50)));
+
+        var cut = TimeSpan.FromSeconds(1);
+        state.Accept(0f, 1, cut);
+        Assert.Equal(UtteranceCountdownRelease.Retreat, state.TakeRelease(cut + UtteranceCountdownState.CompletionDuration / 2));
+
+        var held = cut + UtteranceCountdownState.CompletionDuration;
+        Assert.Equal(UtteranceCountdownRelease.Cut, state.TakeRelease(held));
+        Assert.Equal(UtteranceCountdownRelease.Retreat, state.TakeRelease(held));
+    }
+
+    [Fact]
+    public void StoppingDropsAPendingCutRelease()
+    {
+        var state = new UtteranceCountdownState();
+        state.Accept(0f, 1, TimeSpan.Zero);
+        state.Reset();
+        Assert.Equal(UtteranceCountdownRelease.Retreat, state.TakeRelease(UtteranceCountdownState.CompletionDuration));
+    }
+
     [Fact]
     public void PauseTracksProgressAndResumedSpeechClearsIt()
     {
