@@ -97,6 +97,7 @@ public sealed partial class HudPage
         gauge.Children.Add(TuningHelp(
             "Follow is how long the gauge takes to reach each capture sample, and the cut. " +
             "Retreat is the one move back to rest when speech resumes, on its own curve. " +
+            "Cut is the move back to rest once the cut has held the gauge full, on its own curve too. " +
             "Windows names 0.167 s fast, 0.25 s normal and 0.333 s slow."));
         AddFloatRow(gauge, "Follow (s)", 0.02, 1, 0.01, _countdownConfig.FollowSeconds,
             value => _countdownConfig = _countdownConfig with { FollowSeconds = value }, rebuild: true);
@@ -109,6 +110,16 @@ public sealed partial class HudPage
             {
                 RetreatEaseP1X = (float)points.X1, RetreatEaseP1Y = (float)points.Y1,
                 RetreatEaseP2X = (float)points.X2, RetreatEaseP2Y = (float)points.Y2,
+            });
+        AddFloatRow(gauge, "Cut (s)", 0.02, 1, 0.01, _countdownConfig.CutSeconds,
+            value => _countdownConfig = _countdownConfig with { CutSeconds = value }, rebuild: true);
+        AddCurveRow(gauge, "Cut ease",
+            new(_countdownConfig.CutEaseP1X, _countdownConfig.CutEaseP1Y,
+                _countdownConfig.CutEaseP2X, _countdownConfig.CutEaseP2Y),
+            points => _countdownConfig = _countdownConfig with
+            {
+                CutEaseP1X = (float)points.X1, CutEaseP1Y = (float)points.Y1,
+                CutEaseP2X = (float)points.X2, CutEaseP2Y = (float)points.Y2,
             });
 
         // The Gauge target shows no HUD geometry section; Recording does.
@@ -138,7 +149,9 @@ public sealed partial class HudPage
         AddFloatRow(simulation, "Cone visibility (%)", 0, 100, 5, _countdownTuning.MaterialOpacity * 100,
             value => _countdownTuning.MaterialOpacity = (float)value / 100f, rebuild: true);
 
-        simulation.Children.Add(TuningHelp("Replay holds at the end. Resume speech plays the retreat to the edge centre."));
+        simulation.Children.Add(TuningHelp(
+            "Replay holds at the end. Cut plays the cut's release from where the gauge stands, " +
+            "Resume speech the retreat; both end at the edge centre."));
         var transport = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8, Margin = new Thickness(0, 12, 0, 0) };
         var replay = new Button { Content = "Replay pause" };
         replay.Click += (_, _) =>
@@ -161,20 +174,24 @@ public sealed partial class HudPage
                 _setCountdownPosition?.Invoke(100);
             }
         };
-        var resume = new Button { Content = "Resume speech" };
-        resume.Click += (_, _) =>
+        // Rebuild first so the move runs on a visual that carries the latest
+        // knobs. ApplyTarget snapshots the replay clock, so the new visual
+        // starts where the gauge stands and moves to rest from there.
+        void PlayRelease(UtteranceCountdownRelease release)
         {
-            // Rebuild first so the retreat runs on a visual that carries the
-            // latest knobs. ApplyTarget snapshots the replay clock, so the new
-            // visual starts where the gauge stands and retreats from there.
             FlushPendingRebuild();
             _countdownReplayClock.Reset();
             _countdownTuning.Progress = 0;
             _setCountdownPosition?.Invoke(0);
             _gaugePreview?.SetProgress(
-                0, interpolate: SettingsService.Instance.Current.Overlay.Animations);
-        };
+                0, interpolate: SettingsService.Instance.Current.Overlay.Animations, release);
+        }
+        var cut = new Button { Content = "Cut" };
+        cut.Click += (_, _) => PlayRelease(UtteranceCountdownRelease.Cut);
+        var resume = new Button { Content = "Resume speech" };
+        resume.Click += (_, _) => PlayRelease(UtteranceCountdownRelease.Retreat);
         transport.Children.Add(replay);
+        transport.Children.Add(cut);
         transport.Children.Add(resume);
         simulation.Children.Add(transport);
     }
