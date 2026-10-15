@@ -81,6 +81,21 @@ public class HudSettingsOverridesTests
         Assert.Equal(edited, restored);
     }
 
+    [Fact]
+    public void ApplyRestoresEveryWrittenCountdownField()
+    {
+        var edited = (UtteranceCountdownConfig)EveryFieldMoved(new UtteranceCountdownConfig());
+
+        var overrides = ConfigOverrides.Diff(new UtteranceCountdownConfig(), edited, Options);
+        var restored = ConfigOverrides.Apply(new UtteranceCountdownConfig(), overrides, Options);
+
+        Assert.NotNull(overrides);
+        Assert.Equal(
+            typeof(UtteranceCountdownConfig).GetProperties(BindingFlags.Public | BindingFlags.Instance).Length,
+            overrides.Count);
+        Assert.Equal(edited, restored);
+    }
+
     // A property renamed or removed in code leaves a stale key behind in the
     // user's file; it must not break the load.
     [Fact]
@@ -97,9 +112,11 @@ public class HudSettingsOverridesTests
     // Every property nudged off its default, through the init accessors the
     // serializer itself uses.
     private static ConicArcStrokeConfig EveryFieldMoved()
+        => (ConicArcStrokeConfig)EveryFieldMoved(new ConicArcStrokeConfig());
+
+    private static object EveryFieldMoved(object boxed)
     {
-        object boxed = new ConicArcStrokeConfig();
-        foreach (var property in typeof(ConicArcStrokeConfig).GetProperties(BindingFlags.Public | BindingFlags.Instance))
+        foreach (var property in boxed.GetType().GetProperties(BindingFlags.Public | BindingFlags.Instance))
         {
             object current = property.GetValue(boxed)!;
             property.SetValue(boxed, current switch
@@ -113,6 +130,6 @@ public class HudSettingsOverridesTests
                     $"{property.Name} has an unhandled type {property.PropertyType.Name}; add a case for it"),
             });
         }
-        return (ConicArcStrokeConfig)boxed;
+        return boxed;
     }
 }

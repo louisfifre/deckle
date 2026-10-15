@@ -72,7 +72,9 @@ public sealed partial class HudChrono
         if (_countdownVisual is null) RebuildCountdownVisual();
         float value = _countdownState.ValueAt(now);
         if (value == _renderedCountdownValue || _countdownVisual is null) return;
-        _countdownVisual.SetProgress(value, interpolate: _animationsEnabled);
+        // Asked only once the value moves, so a pending cut release is spent
+        // by the move that leaves the hold and by nothing before it.
+        _countdownVisual.SetProgress(value, interpolate: _animationsEnabled, _countdownState.TakeRelease(now));
         _renderedCountdownValue = value;
     }
 

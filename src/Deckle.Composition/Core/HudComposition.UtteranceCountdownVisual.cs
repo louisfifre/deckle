@@ -23,17 +23,22 @@ public static partial class HudComposition
     // tuned together through the Recording* fields.
     public sealed class UtteranceCountdownVisual : IDisposable
     {
-        // The gauge's one motion. Every move — following a capture sample,
-        // reaching full at a cut, retreating when speech resumes — takes the
-        // Windows "fast" duration (167 ms), so the gauge has one feel. The
-        // rest curve is the "fast out, slow in" Windows documents for an
-        // object quickly returning to rest; following uses no curve, see
-        // SetProgress. These two values belong to the design-system holder
-        // of named durations and curves once it exists; until then the
-        // countdown names them here.
-        private static readonly TimeSpan MotionDuration = TimeSpan.FromMilliseconds(167);
-        private static readonly Vector2 RestEaseControlPoint1 = new(0f, 0f);
-        private static readonly Vector2 RestEaseControlPoint2 = new(0f, 1f);
+        // The gauge's motions and course come from the config: the follow
+        // and retreat durations, the retreat's curve, and the course the
+        // capture's linear progress runs through. Their defaults are the
+        // Windows "fast" duration and "fast out, slow in" curve; the
+        // design-system holder of named durations and curves, once it
+        // exists, is where those defaults belong.
+        private readonly TimeSpan _followDuration;
+        private readonly TimeSpan _retreatDuration;
+        private readonly Vector2 _retreatEaseControlPoint1;
+        private readonly Vector2 _retreatEaseControlPoint2;
+        private readonly TimeSpan _cutDuration;
+        private readonly Vector2 _cutEaseControlPoint1;
+        private readonly Vector2 _cutEaseControlPoint2;
+        private readonly UtteranceCountdownCourse _course;
+        private readonly Vector2 _courseEaseControlPoint1;
+        private readonly Vector2 _courseEaseControlPoint2;
 
         private readonly List<IDisposable> _resources = new();
         private readonly List<CompositionSurfaceBrush> _movingBrushes = new();
@@ -46,9 +51,22 @@ public static partial class HudComposition
         internal UtteranceCountdownVisual(
             Compositor compositor,
             Vector2 size,
-            CompositionPropertySet progress)
+            CompositionPropertySet progress,
+            UtteranceCountdownConfig countdown)
         {
             _compositor = compositor;
+            // A zero duration lands on its end state on frame 0, which reads
+            // as a jump; the Playground sliders reach it.
+            _followDuration  = TimeSpan.FromSeconds(Math.Max(0.016, countdown.FollowSeconds));
+            _retreatDuration = TimeSpan.FromSeconds(Math.Max(0.016, countdown.RetreatSeconds));
+            _retreatEaseControlPoint1 = new Vector2(countdown.RetreatEaseP1X, countdown.RetreatEaseP1Y);
+            _retreatEaseControlPoint2 = new Vector2(countdown.RetreatEaseP2X, countdown.RetreatEaseP2Y);
+            _cutDuration = TimeSpan.FromSeconds(Math.Max(0.016, countdown.CutSeconds));
+            _cutEaseControlPoint1 = new Vector2(countdown.CutEaseP1X, countdown.CutEaseP1Y);
+            _cutEaseControlPoint2 = new Vector2(countdown.CutEaseP2X, countdown.CutEaseP2Y);
+            _course = UtteranceCountdownCourse.Of(countdown);
+            _courseEaseControlPoint1 = new Vector2(countdown.CourseEaseP1X, countdown.CourseEaseP1Y);
+            _courseEaseControlPoint2 = new Vector2(countdown.CourseEaseP2X, countdown.CourseEaseP2Y);
             Container = Own(compositor.CreateContainerVisual());
             Container.Size = size;
             _progress = Own(progress);
@@ -93,11 +111,17 @@ public static partial class HudComposition
             _movingBrushes.Add(brush);
         }
 
-        public void SetProgress(float progress, bool interpolate = false)
+        // `progress` is the capture's linear progress through the pause; the
+        // course turns it into the value the mask reads. `release` only
+        // matters for a move to rest: which of the two it is.
+        public void SetProgress(
+            float progress,
+            bool interpolate = false,
+            UtteranceCountdownRelease release = UtteranceCountdownRelease.Retreat)
         {
             if (_disposed) return;
 
-            float value = Math.Clamp(progress, 0f, 1f);
+            float value = _course.Solve(progress);
             if (!interpolate)
             {
                 _progress.StopAnimation("Value");
@@ -109,24 +133,28 @@ public static partial class HudComposition
             //
             // A live sample is followed linearly: the next sample, 50 ms
             // later, restarts the move from the point reached, so the gauge
-            // glides about one MotionDuration behind the capture with a
+            // glides about one follow duration behind the capture with a
             // continuous velocity and a soft onset (each early sample moves
             // only a part of a small gap). An eased curve restarted every
             // sample would lurch — fast then slow, fast then slow. Reaching
             // full at a cut is the same move; the completion hold outlasts it.
             //
-            // Speech resuming is one move to rest, so it alone takes the
-            // "fast out, slow in" curve. The container opacity expression
-            // keeps the visual shown while Value > 0 and hides it when the
-            // retreat lands.
-            using CompositionEasingFunction easing = value == 0f
+            // A move to rest is one of two: speech resuming retreats on the
+            // retreat's duration and curve; a cut's hold ending releases on
+            // the cut's, shorter and accelerating. The container opacity
+            // expression keeps the visual shown while Value > 0 and hides it
+            // when either lands.
+            bool rest = value == 0f;
+            bool cut = rest && release == UtteranceCountdownRelease.Cut;
+            using CompositionEasingFunction easing = rest
                 ? _compositor.CreateCubicBezierEasingFunction(
-                    RestEaseControlPoint1, RestEaseControlPoint2)
+                    cut ? _cutEaseControlPoint1 : _retreatEaseControlPoint1,
+                    cut ? _cutEaseControlPoint2 : _retreatEaseControlPoint2)
                 : _compositor.CreateLinearEasingFunction();
             using var move = _compositor.CreateScalarKeyFrameAnimation();
             move.InsertExpressionKeyFrame(0f, "this.CurrentValue");
             move.InsertKeyFrame(1f, value, easing);
-            move.Duration = MotionDuration;
+            move.Duration = cut ? _cutDuration : rest ? _retreatDuration : _followDuration;
             _progress.StartAnimation("Value", move);
         }
 
@@ -141,10 +169,13 @@ public static partial class HudComposition
                 return;
             }
 
+            // The pause replayed at the capture's pace: linear progress run
+            // through the course, which the compositor evaluates itself.
             using var animation = _compositor.CreateScalarKeyFrameAnimation();
-            using var linear = _compositor.CreateLinearEasingFunction();
+            using var course = _compositor.CreateCubicBezierEasingFunction(
+                _courseEaseControlPoint1, _courseEaseControlPoint2);
             animation.InsertKeyFrame(0f, 0f);
-            animation.InsertKeyFrame(1f, 1f, linear);
+            animation.InsertKeyFrame(1f, 1f, course);
             animation.Duration = TimeSpan.FromSeconds(Math.Clamp(seconds, 0.1, 30));
             _progress.StartAnimation("Value", animation);
         }
@@ -237,7 +268,7 @@ public static partial class HudComposition
         var progress = compositor.CreatePropertySet();
         progress.InsertScalar("Value", 0f);
 
-        var visual = new UtteranceCountdownVisual(compositor, hostSize, progress);
+        var visual = new UtteranceCountdownVisual(compositor, hostSize, progress, countdown);
 
         try
         {
