@@ -166,13 +166,13 @@ public sealed partial class HudPage
     // page gives its brightness response, with the four fields beside the
     // plot. The editor writes at a handle's release or a field's commit, so a
     // drag redraws the curve without rebuilding the preview at every pixel.
-    // AllowOutside lets a Y leave [0, 1] by a quarter, enough for an
-    // overshoot or a backswing; the renderer clamps the course's output.
+    // The handles stay inside the frame, as the Ambient's do: a handle let
+    // out by a quarter was lost beyond the plot's edge (Louis, 2026-10-15),
+    // and the renderer clamps the course's output to [0, 1] anyway.
     private void AddCurveRow(StackPanel stack, string label, CurvePoints points, Action<CurvePoints> setter)
     {
         var editor = new CurveEditor
         {
-            AllowOutside = true,
             Points = points,
             Margin = new Thickness(0, 0, 0, 8),
         };
