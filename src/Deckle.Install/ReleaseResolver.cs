@@ -8,8 +8,8 @@ namespace Deckle.Install;
 // consumers of the release convention: the download stub ("get me the newest
 // Deckle" — the decoupling that spares the stub a rebuild per release) and the
 // installed app's update check (compare the newest tag against the registered
-// version). Lives here, below both, under this module's dependency-free and
-// AOT-safe contract — HttpClient and source-generated JSON only.
+// version). Lives here, below both, under this module's light and AOT-safe
+// contract — HttpClient and source-generated JSON only.
 //
 // Why the REST API and not /releases/latest: every 0.x release is published as a
 // pre-release, and GitHub's "latest" endpoint deliberately skips pre-releases. The

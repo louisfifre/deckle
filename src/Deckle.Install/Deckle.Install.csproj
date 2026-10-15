@@ -7,11 +7,19 @@
     <InternalsVisibleTo Include="Deckle.Install.Tests" />
   </ItemGroup>
 
+  <!-- Deckle.Core is the one reference, for the default data root: the app and
+       the installer must agree on that folder, and Core is the support layer
+       that owns where Deckle keeps its data. Core references nothing itself,
+       and the NativeAOT stub trims everything of it except what it calls. -->
+  <ItemGroup>
+    <ProjectReference Include="..\Deckle.Core\Deckle.Core.csproj" />
+  </ItemGroup>
+
   <!-- Windows integration of an installed Deckle — the primitives shared by the
        download stub (Deckle.Installer, NativeAOT) and the install-mode wizard
        (Deckle.Setup): install locations, Start Menu shortcut, Installed-apps
        registration, DECKLE_DATA_ROOT, the running-process gate, and the GitHub
        release resolver (stub download + in-app update check). Deliberately
-       dependency-free and AOT-safe: no WinUI, no Deckle.* reference — Win32,
-       registry, source-generated COM and source-generated JSON only. -->
+       light and AOT-safe: no WinUI, no Deckle.* reference beyond Deckle.Core —
+       Win32, registry, source-generated COM and source-generated JSON only. -->
 </Project>
