@@ -1334,6 +1334,8 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   ├── BoolToVisibilityConverter.cs
 │   │   │   ├── LlmActiveProfileSection.xaml
 │   │   │   ├── LlmActiveProfileSection.xaml.cs
+│   │   │   ├── LlmDictationSection.xaml
+│   │   │   ├── LlmDictationSection.xaml.cs
 │   │   │   ├── LlmGeneralSection.xaml
 │   │   │   ├── LlmGeneralSection.xaml.cs
 │   │   │   ├── LlmModelsSection.xaml
@@ -1351,6 +1353,8 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   ├── RewriteOfferWindow.xaml
 │   │   │   └── RewriteOfferWindow.xaml.cs
 │   │   ├── ViewModels/
+│   │   │   ├── LlmDictationViewModel.cs
+│   │   │   ├── LlmDictationViewModel.Settings.cs
 │   │   │   ├── LlmGeneralViewModel.cs
 │   │   │   └── LlmGeneralViewModel.Settings.cs
 │   │   ├── Deckle.Llm.Rewrite.csproj

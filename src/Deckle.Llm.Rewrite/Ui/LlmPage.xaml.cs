@@ -15,7 +15,7 @@ namespace Deckle.Llm.Rewrite;
 
 // ─── LlmPage — thin host ───────────────────────────────────────────────────
 //
-// The five sections are autonomous UserControls. The page owns only the
+// The six sections are autonomous UserControls. The page owns only the
 // orchestration: hydration, the provider refresh (what each provider serves,
 // the Ollama status), the shared Ollama state (LlmOllamaContext), the
 // inter-section events that retrigger a refresh or a targeted Reload, and
@@ -38,8 +38,9 @@ public sealed partial class LlmPage : Page
         Header.ConfirmsReset = false;
 
         // The reset spans profiles, providers and slots that no composer
-        // models, so a dirty check cannot be computed from the page's composer
-        // (the only one lives inside LlmGeneralSection and covers the switch).
+        // models, so a dirty check cannot be computed from the page's composers
+        // (they live inside LlmGeneralSection and LlmDictationSection and cover
+        // only the switch and the batch rewriting).
         // Reset all stays enabled, as it was before the shared header.
         Header.IsResetAllEnabled = true;
 
@@ -128,6 +129,7 @@ public sealed partial class LlmPage : Page
         ProvidersSection.Reload();
         ProfilesSection.Reload();
         ActiveProfileSection.Reload();
+        DictationSection.Reload();
     }
 
     // Asks every enabled provider what it serves (the profiles' model

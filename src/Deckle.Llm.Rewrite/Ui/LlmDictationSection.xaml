@@ -1,0 +1,15 @@
+<UserControl
+    x:Class="Deckle.Llm.Rewrite.LlmDictationSection"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:catalog="using:Deckle.Catalog">
+
+    <!-- No section reset: the section holds one fold, and the fold's header
+         already carries the reset of everything in it, so a section wheel
+         would repeat it (the same reading as the Precision scroll page). -->
+    <catalog:SettingsSection x:Uid="LlmDictationBlock"
+                             Tag="LlmDictationSection">
+        <StackPanel x:Name="BatchHost"
+                    Spacing="{StaticResource SettingsCardSpacing}" />
+    </catalog:SettingsSection>
+</UserControl>

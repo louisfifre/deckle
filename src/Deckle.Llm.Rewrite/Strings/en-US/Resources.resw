@@ -232,8 +232,9 @@
        tooltip in the Page resources). -->
 
   <!-- ─── LlmPage + sections ─────────────────────────────────────────
-       Third page in the Settings nav. Hosts five sections rendered as
-       UserControls (General, ActiveProfile, Profiles, Providers, Models).
+       Third page in the Settings nav. Hosts six sections rendered as
+       UserControls (General, ActiveProfile, Dictation, Profiles,
+       Providers, Models).
        The Ollama InfoBar is inline on the page. -->
   <data name="LlmPage_OllamaStatusBar.Title" xml:space="preserve">
     <value>Ollama is not reachable</value>
@@ -367,6 +368,26 @@
   </data>
   <data name="LlmActiveProfileCard.Description" xml:space="preserve">
     <value>Applied to every dictation. (None) keeps the transcript as spoken.</value>
+  </data>
+
+  <!-- LlmDictationSection -->
+  <data name="LlmDictationBlock.Title" xml:space="preserve">
+    <value>While you dictate</value>
+  </data>
+  <data name="LlmDictationBlock.Caption" xml:space="preserve">
+    <value>What the active profile does before you stop.</value>
+  </data>
+  <data name="LlmBatchRewriteGroup.Header" xml:space="preserve">
+    <value>Rewrite while you speak</value>
+  </data>
+  <data name="LlmBatchRewriteGroup.Description" xml:space="preserve">
+    <value>Sends each stretch of speech to the active profile as soon as you pause, so little is left to rewrite when you stop. Each batch is rewritten on its own, so a profile that regroups a whole text by subject does not suit it.</value>
+  </data>
+  <data name="LlmBatchSizeCard.Header" xml:space="preserve">
+    <value>Batch size</value>
+  </data>
+  <data name="LlmBatchSizeCard.Description" xml:space="preserve">
+    <value>How much raw transcript a batch gathers before the next pause closes it.</value>
   </data>
 
   <!-- ─── Settings — TextBlock labels for x:Uid ──────────────────────

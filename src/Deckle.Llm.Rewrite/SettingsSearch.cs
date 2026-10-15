@@ -21,6 +21,9 @@ namespace Deckle.Llm.Rewrite;
 //   • runtime lists (profiles, providers, models) — no per-item card to index;
 //     each is one section-level entry with a LiteralLabel, targeting the Tag
 //     on its section block.
+//   • the "While you dictate" section — composed (LlmDictationViewModel), but
+//     its batch-size card is hidden while the group is off, so the entry
+//     targets the section block, always shown with the module, the same way.
 //
 // Maintenance contract: a card added to this page is a card added here. LabelKey
 // must equal the card's Tag, the handle the post-navigation scroll-to looks for.
@@ -37,6 +40,13 @@ public static class SettingsSearch
         {
             LabelKey = "LlmActiveProfileCard",
             Keywords = ["profile", "rewrite", "default"],
+        },
+
+        new SettingSearchEntry
+        {
+            LabelKey = "LlmDictationSection",
+            LiteralLabel = "While you dictate",
+            Keywords = ["batch", "pause", "speak", "live", "stream"],
         },
 
         new SettingSearchEntry
