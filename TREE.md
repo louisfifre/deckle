@@ -1279,7 +1279,8 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   ├── Deckle.Llm/
 │   │   ├── Engines/
 │   │   │   ├── ClaudeEngine.cs
-│   │   │   └── OllamaEngine.cs
+│   │   │   ├── OllamaEngine.cs
+│   │   │   └── OpenAiCompatibleEngine.cs
 │   │   ├── Generation/
 │   │   │   ├── GenerationDeadline.cs
 │   │   │   ├── GenerationRequest.cs
