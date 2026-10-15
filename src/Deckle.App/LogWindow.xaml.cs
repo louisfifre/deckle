@@ -84,7 +84,7 @@ public sealed partial class LogWindow : Window, ILogWindowSink
         Title = Loc.Get("LogWindow_WindowTitle");
         // AppWindow sizes are physical pixels: scale the intended DIPs, clamped to
         // the work area so the scaled height never overflows the screen.
-        double dpiScale = NativeMethods.GetDpiForWindow(_hwnd) / 96.0;
+        double dpiScale = Dpi.ScaleOf(NativeMethods.GetDpiForWindow(_hwnd));
         var workArea = DisplayArea.GetFromWindowId(AppWindow.Id, DisplayAreaFallback.Nearest).WorkArea;
         AppWindow.Resize(new Windows.Graphics.SizeInt32(
             Math.Min((int)(960 * dpiScale), workArea.Width),

@@ -72,7 +72,7 @@ public sealed partial class TranscriptPanelWindow : Window
 
         InitializeComponent();
         _hwnd = WindowNative.GetWindowHandle(this);
-        _dpiScale = NativeMethods.GetDpiForWindow(_hwnd) / 96.0;
+        _dpiScale = Dpi.ScaleOf(NativeMethods.GetDpiForWindow(_hwnd));
 
         // Same shell as HudOverlayWindow, in the same order. Title is not
         // visible (no title bar) but surfaces in Task View and debuggers.
@@ -190,7 +190,7 @@ public sealed partial class TranscriptPanelWindow : Window
         // The side is read once per show, so a settings change applies to the
         // next appearance and never moves a panel being read.
         _rightSide = Settings.SettingsService.Instance.Current.Overlay.TranscriptPanelSide != "Left";
-        _dpiScale = NativeMethods.GetDpiForWindow(_hwnd) / 96.0;
+        _dpiScale = Dpi.ScaleOf(NativeMethods.GetDpiForWindow(_hwnd));
 
         Render();
 
@@ -314,7 +314,7 @@ public sealed partial class TranscriptPanelWindow : Window
         // DPI layout through DefSubclassProc.
         if (uMsg == NativeMethods.WM_DPICHANGED)
         {
-            _dpiScale = (wParam.ToInt32() & 0xFFFF) / 96.0;
+            _dpiScale = Dpi.ScaleOf((uint)(wParam.ToInt32() & 0xFFFF));
         }
 
         // Zero non-client area: the WS_DLGFRAME / WS_EX_WINDOWEDGE bits WinUI 3

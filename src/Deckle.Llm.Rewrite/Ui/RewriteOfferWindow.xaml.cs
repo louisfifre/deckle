@@ -74,7 +74,7 @@ public sealed partial class RewriteOfferWindow : Window
             .ToArray();
         AutomationProperties.SetName(ProposalText, offer.Rewritten);
 
-        double scale = Math.Max(1.0, NativeMethods.GetDpiForWindow(targetHwnd) / 96.0);
+        double scale = Math.Max(1.0, Dpi.ScaleOf(NativeMethods.GetDpiForWindow(targetHwnd)));
         int width = (int)Math.Round(WidthDip * scale);
         int height = (int)Math.Round(HeightDip * scale);
         int gap = (int)Math.Round(AnchorGapDip * scale);

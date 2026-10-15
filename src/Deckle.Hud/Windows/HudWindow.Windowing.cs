@@ -23,11 +23,11 @@ public sealed partial class HudWindow : Window
         var wa = DisplayArea.Primary.WorkArea;
 
         uint dpi = NativeMethods.GetDpiForWindow(_hwnd);
-        double scale = dpi / 96.0;
+        double scale = Dpi.ScaleOf(dpi);
 
-        int w = (int)Math.Round(HUD_WIDTH  * scale);
-        int h = (int)Math.Round(HUD_HEIGHT * scale);
-        int margin = (int)Math.Round(HUD_BOTTOM_MARGIN * scale);
+        int w = Dpi.ToPixels(HUD_WIDTH, scale);
+        int h = Dpi.ToPixels(HUD_HEIGHT, scale);
+        int margin = Dpi.ToPixels(HUD_BOTTOM_MARGIN, scale);
 
         // HUD centered horizontally by design (mirrors native Win11 HUDs —
         // volume, brightness, screen capture). Only vertical anchor is user-

@@ -124,7 +124,7 @@ public sealed partial class SetupWindow : Window
             if (area is not null)
             {
                 IntPtr hwnd  = WindowNative.GetWindowHandle(this);
-                double scale = NativeMethods.GetDpiForWindow(hwnd) / 96.0;
+                double scale = Dpi.ScaleOf(NativeMethods.GetDpiForWindow(hwnd));
                 int w = (int)Math.Round(560 * scale);
                 int h = (int)Math.Round(720 * scale);
                 int x = area.WorkArea.X + (area.WorkArea.Width  - w) / 2;
