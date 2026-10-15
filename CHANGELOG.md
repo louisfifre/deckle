@@ -20,6 +20,13 @@ doctrine). This file is generated from the Conventional-Commit history by
 
 - **taskbar-cover:** Take the approach levels from the spacing scale
 - **hud:** Scale the overlay gap through Dpi
+- **hud:** Scale through Dpi
+- **settings:** Scale through Dpi
+- **setup:** Scale through Dpi
+- **playground:** Scale through Dpi
+- **llm-rewrite:** Scale through Dpi
+- **app:** Scale through Dpi
+- **installer:** Scale through Dpi
 
 ### Fixed
 
