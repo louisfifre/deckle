@@ -194,10 +194,9 @@ public sealed class HudOverlayManager : IDisposable
     private (int X, int Y) ComputeSlotPositionPx(int slot)
     {
         var mainRect = _mainHud.GetRectPx();
-        uint dpi = NativeMethods.GetDpiForWindow(_mainHud.Hwnd);
-        double scale = dpi / 96.0;
+        double scale = Dpi.ScaleOf(NativeMethods.GetDpiForWindow(_mainHud.Hwnd));
 
-        int gapPx = (int)Math.Round(GapDip * scale);
+        int gapPx = Dpi.ToPixels(GapDip, scale);
         int stride = gapPx + mainRect.Height;
 
         int offset = slot + (_mainHudVisible ? 1 : 0);
