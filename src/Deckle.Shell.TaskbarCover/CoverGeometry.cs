@@ -26,24 +26,25 @@ public static class CoverGeometry
     // pixels (96 DPI). A fixed distance rather than a multiple of the band
     // thickness (Louis, 2026-10-15): a reveal gesture is a mouse movement,
     // and a movement of 64 px should feel the same whether the taskbar is
-    // 40 or 60 px thick. The three values are steps of the design-system
-    // scale, provisional until Louis checks them on screen. The span is set
-    // in DIP so a level means one hand movement on every monitor; the pixel
-    // figure comes from ApproachSpan, scaled by the band monitor's DPI. A
-    // number outside the enum (the converter accepts integers from a
-    // hand-edited settings file) falls back to Standard.
+    // 40 or 60 px thick. Each level is a step of the design-system scale
+    // (Spacing), three consecutive ones, provisional until Louis checks them
+    // on screen. The span is set in DIP so a level means one hand movement
+    // on every monitor; the pixel figure comes from ApproachSpan, scaled by
+    // the band monitor's DPI. A number outside the enum (the converter
+    // accepts integers from a hand-edited settings file) falls back to
+    // Standard.
     public static int ApproachSpanDip(ApproachDistance level) => level switch
     {
-        ApproachDistance.Near => 32,
-        ApproachDistance.Far  => 128,
-        _                     => 64,
+        ApproachDistance.Near => Spacing.Medium,
+        ApproachDistance.Far  => Spacing.XLarge,
+        _                     => Spacing.Large,
     };
 
     // The span in physical pixels for a monitor at dpiScale (1.0 at 96 DPI,
-    // 1.5 at 144), rounded to the nearest pixel: the cursor and the band
-    // rect are physical pixels, so the zone must be too.
+    // 1.5 at 144): the cursor and the band rect are physical pixels, so the
+    // zone must be too.
     public static int ApproachSpan(ApproachDistance level, double dpiScale)
-        => (int)Math.Round(ApproachSpanDip(level) * dpiScale);
+        => Dpi.ToPixels(ApproachSpanDip(level), dpiScale);
 
     public static int Thickness(NativeMethods.RECT band, TaskbarEdge edge)
         => edge is TaskbarEdge.Left or TaskbarEdge.Right

@@ -64,6 +64,6 @@ internal static class TaskbarLocator
     {
         if (GetDpiForMonitor(monitor, MDT_EFFECTIVE_DPI, out uint dpiX, out _) != 0 || dpiX == 0)
             return 1.0;
-        return dpiX / 96.0;
+        return Dpi.ScaleOf(dpiX);
     }
 }
