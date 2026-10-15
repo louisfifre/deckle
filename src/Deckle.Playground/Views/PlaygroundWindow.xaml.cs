@@ -89,7 +89,7 @@ public sealed partial class PlaygroundWindow : Window
         // pixels — scale the intended DIPs (or a 200 % display opens a
         // half-size window), clamped to the display's work area so the
         // scaled size never overflows the screen.
-        double dpiScale = NativeMethods.GetDpiForWindow(_hwnd) / 96.0;
+        double dpiScale = Dpi.ScaleOf(NativeMethods.GetDpiForWindow(_hwnd));
         var workArea = DisplayArea.GetFromWindowId(AppWindow.Id, DisplayAreaFallback.Nearest).WorkArea;
         AppWindow.Resize(new Windows.Graphics.SizeInt32(
             Math.Min((int)(1800 * dpiScale), workArea.Width),
