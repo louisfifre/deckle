@@ -46,7 +46,7 @@ public sealed partial class HudPage
         headerGrid.Children.Add(titleTb);
 
         var resetContent = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8 };
-        resetContent.Children.Add(new FontIcon { Glyph = Glyphs.Refresh, FontSize = 14 });
+        resetContent.Children.Add(new FontIcon { Glyph = Glyphs.Reset, FontSize = 14 });
         resetContent.Children.Add(new TextBlock { Text = "Reset section" });
 
         var resetBtn = new Button

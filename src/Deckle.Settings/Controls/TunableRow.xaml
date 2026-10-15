@@ -43,7 +43,7 @@
                     Click="OnResetClick"
                     GotFocus="OnResetGotFocus"
                     LostFocus="OnResetLostFocus">
-                <FontIcon Glyph="{StaticResource Icon.Refresh}" FontSize="12" />
+                <FontIcon Glyph="{StaticResource Icon.Reset}" FontSize="12" />
             </Button>
         </Grid>
 

@@ -77,7 +77,7 @@ public sealed partial class SettingsSection : UserControl
             Opacity = 0,
             Visibility = Visibility.Collapsed,
             IsEnabled = false,
-            Content = new FontIcon { Glyph = Glyphs.Refresh, FontSize = 14 },
+            Content = new FontIcon { Glyph = Glyphs.Reset, FontSize = 14 },
         };
         ToolTipService.SetToolTip(_reset, Loc.Get("SettingsSection_ResetTooltip"));
         _reset.Click += (_, e) => ResetRequested?.Invoke(this, e);
@@ -119,21 +119,29 @@ public sealed partial class SettingsSection : UserControl
 
         _bodySlot = new Border { Margin = new Thickness(0, 8, 0, 0) };
 
+        // The heading, title row and caption together: the wheel's hover zone.
+        // A transparent background so the pointer counts over the whole band,
+        // the air between the words and the wheel included.
+        var heading = new StackPanel { Background = new SolidColorBrush(Microsoft.UI.Colors.Transparent) };
+        heading.Children.Add(titleRow);
+        heading.Children.Add(_caption);
+
         // 28 px above plus the page's 4 px card spacing makes the 32 px gap.
         _root = new StackPanel { Margin = new Thickness(0, TopGap, 0, 0) };
-        _root.Children.Add(titleRow);
-        _root.Children.Add(_caption);
+        _root.Children.Add(heading);
         _root.Children.Add(_bodySlot);
         Content = _root;
 
         Loaded += (_, _) => ApplyTopGap();
 
-        // Reveal on the section's hover and the wheel's keyboard focus, like a
-        // card's reset: either keeps it shown.
+        // Reveal on the heading's hover and the wheel's keyboard focus, like a
+        // card's reset: either keeps it shown. The heading, not the whole
+        // section: a wheel that appeared while the pointer sat on a card lower
+        // down read as a stray refresh (Louis, 2026-10-15, on Updates).
         bool pointerOver = false, focused = false;
         void Update() => _reset.Opacity = pointerOver || focused ? 1 : 0;
-        PointerEntered += (_, _) => { pointerOver = true; Update(); };
-        PointerExited += (_, _) => { pointerOver = false; Update(); };
+        heading.PointerEntered += (_, _) => { pointerOver = true; Update(); };
+        heading.PointerExited += (_, _) => { pointerOver = false; Update(); };
         _reset.GotFocus += (_, _) => { focused = true; Update(); };
         _reset.LostFocus += (_, _) => { focused = false; Update(); };
     }
