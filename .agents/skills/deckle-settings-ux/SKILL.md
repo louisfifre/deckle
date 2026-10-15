@@ -9,7 +9,7 @@ Every exposed setting is a debt. It costs findability, testing and a real fix po
 
 ## Statement
 
-Each setting earns its place against a default that just works. If a value can be decided for the user, decide it. Exposing depth is legitimate when the audience wants it. Good defaults, clear grouping and search pay for it, and nothing the user came for is hidden.
+Each setting earns its place against a default that just works. If a value can be decided for the user, decide it. A setting stays when someone may need to move it for another model or for their own use. Exposing depth is legitimate when the audience wants it. Good defaults, clear grouping and search pay for it, and nothing the user came for is hidden.
 
 A setting is reached in three levels at most, and the last two are earned. First the module. Under it a page, only once the module's surface no longer fits one. Then an in-page fold, for what configures a switch or depends on a choice. A fourth level means rework, and folds never nest. A module split into pages is a rail node that expands, its pages at one level and the first named General. Every page shows a breadcrumb in place of its title, the way up when the rail is closed. Settings are organized by module, so a setting is found under the module that acts on it. A setting that does not apply in the current state is hidden. Greying only marks an action in progress.
 
