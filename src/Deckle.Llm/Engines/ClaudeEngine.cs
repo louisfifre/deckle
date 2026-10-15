@@ -1,4 +1,6 @@
+using System.Net.Http;
 using Anthropic;
+using Anthropic.Exceptions;
 using Anthropic.Models.Messages;
 
 namespace Deckle.Llm;
@@ -24,6 +26,10 @@ public sealed class ClaudeEngine : IGenerationEngine
     // room for a long dictation: 16 K output tokens covers an hour of speech.
     const int MaxOutputTokens = 16_000;
 
+    // Public so the consumer that words the failure for the user can tell a
+    // missing key from any other InvalidOperationException by exact match.
+    public const string MissingApiKeyMessage = "No API key is stored for this Claude provider.";
+
     private readonly Func<string?> _apiKey;
     private readonly object _lock = new();
     private AnthropicClient? _client;
@@ -37,7 +43,7 @@ public sealed class ClaudeEngine : IGenerationEngine
 
         string? key = _apiKey();
         if (string.IsNullOrWhiteSpace(key))
-            throw new InvalidOperationException("No API key is stored for this Claude provider.");
+            throw new InvalidOperationException(MissingApiKeyMessage);
 
         AnthropicClient client = ClientFor(key);
 
@@ -54,8 +60,21 @@ public sealed class ClaudeEngine : IGenerationEngine
             Messages = [new() { Role = Role.User, Content = request.UserText }],
         };
 
-        Message response = client.Messages.Create(parameters, cancellationToken: cancellationToken)
-            .GetAwaiter().GetResult();
+        Message response;
+        try
+        {
+            response = client.Messages.Create(parameters, cancellationToken: cancellationToken)
+                .GetAwaiter().GetResult();
+        }
+        catch (AnthropicApiException ex)
+        {
+            // The seam's callers read a refusal's status from
+            // HttpRequestException.StatusCode, whatever the transport, so the
+            // SDK's own exception type never leaks past this engine.
+            // AnthropicIOException passes through: it already wraps the
+            // HttpRequestException and SocketException a caller looks for.
+            throw new HttpRequestException(ex.Message, inner: ex, statusCode: ex.StatusCode);
+        }
 
         if (response.StopReason == "refusal")
             throw new InvalidOperationException("Claude declined the request (refusal).");

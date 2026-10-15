@@ -77,10 +77,14 @@ public sealed class OpenAiCompatibleEngine : IGenerationEngine
         if (!response.IsSuccessStatusCode)
         {
             // The body usually says why (unknown model, bad key); the status
-            // alone would send the user guessing.
+            // alone would send the user guessing. The status also rides on
+            // the exception so the consumer can word a rejected key or an
+            // unknown model without parsing the message.
             string error = response.Content.ReadAsStringAsync(cancellationToken).GetAwaiter().GetResult();
             throw new HttpRequestException(
-                $"{(int)response.StatusCode} {response.ReasonPhrase}: {Trim(error, 300)}");
+                $"{(int)response.StatusCode} {response.ReasonPhrase}: {Trim(error, 300)}",
+                inner: null,
+                statusCode: response.StatusCode);
         }
 
         string responseJson = response.Content.ReadAsStringAsync(cancellationToken).GetAwaiter().GetResult();

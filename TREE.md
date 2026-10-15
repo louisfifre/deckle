@@ -1313,6 +1313,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   └── SentenceBoundary.cs
 │   │   ├── Engine/
 │   │   │   ├── ParagraphRewrite.cs
+│   │   │   ├── RewriteFailureMessage.cs
 │   │   │   ├── RewriteService.cs
 │   │   │   └── SentenceRewrite.cs
 │   │   ├── Gate/
@@ -2109,6 +2110,8 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── ParagraphDraftTests.cs
 │   │   ├── ParagraphRewriteCoordinatorTests.cs
 │   │   ├── RewriteDiffGateTests.cs
+│   │   ├── RewriteFailureMessageTests.cs
+│   │   ├── RewriteServiceFeedbackTests.cs
 │   │   ├── SentenceBoundaryTests.cs
 │   │   └── SentenceRewriteTests.cs
 │   ├── Deckle.Modules.Tests/

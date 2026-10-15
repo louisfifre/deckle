@@ -24,13 +24,35 @@ public interface IRewriteService
 public class RewriteService : IRewriteService
 {
     readonly IGenerationEngineResolver _engines;
+    readonly Func<string, LlmProvider?> _findProvider;
 
     /// <summary>The production service: engines resolved from the provider
     /// list the Settings page edits, keys read from the default vault.</summary>
     public RewriteService()
-        : this(LlmProviderEngines.CreateDefault(() => LlmSettingsService.Instance.Current.Providers)) { }
+        : this(() => LlmSettingsService.Instance.Current.Providers) { }
 
-    public RewriteService(IGenerationEngineResolver engines) => _engines = engines;
+    // The resolver and the lookup read the same list, so the provider a
+    // failure message names is the one the engine was built from.
+    RewriteService(Func<IReadOnlyList<LlmProvider>> providers)
+        : this(LlmProviderEngines.CreateDefault(providers), id => FindProvider(providers(), id)) { }
+
+    /// <param name="findProvider">Looks a provider up by id so a failure
+    /// message can name it; without it the message says "The provider".</param>
+    public RewriteService(IGenerationEngineResolver engines, Func<string, LlmProvider?>? findProvider = null)
+    {
+        _engines = engines;
+        _findProvider = findProvider ?? (_ => null);
+    }
+
+    // Same match as LlmProviderEngines.Resolve: exact Id, first wins.
+    static LlmProvider? FindProvider(IReadOnlyList<LlmProvider> providers, string id)
+    {
+        foreach (var p in providers)
+        {
+            if (p.Id == id) return p;
+        }
+        return null;
+    }
 
     public GenerationResult Rewrite(string text, RewriteProfile profile)
     {
@@ -46,10 +68,11 @@ public class RewriteService : IRewriteService
         {
             DeckleLlmSource.Log.RewriteSkippedNoProvider();
             DeckleLlmSource.Log.RewriteSkippedNoProviderDetail(profile.Name, profile.ProviderId);
+            var unresolved = RewriteFailureMessage.ForUnresolvedProvider(profile, _findProvider(profile.ProviderId));
             DeckleLlmSource.Log.UserFeedbackEmitted(
                 severity: 1,
-                title:    "Rewriter not configured",
-                body:     "The profile's provider is missing or disabled. Raw transcript copied.",
+                title:    unresolved.Title,
+                body:     unresolved.Body,
                 role:     1);
             return default;
         }
@@ -89,10 +112,11 @@ public class RewriteService : IRewriteService
             sw.Stop();
             DeckleLlmSource.Log.RewriteUnavailable();
             DeckleLlmSource.Log.RewriteUnavailableDetail(ex.GetType().Name, ex.Message, profile.Name, profile.Model);
+            var failure = RewriteFailureMessage.ForException(profile, _findProvider(profile.ProviderId), ex);
             DeckleLlmSource.Log.UserFeedbackEmitted(
                 severity: 1,
-                title:    "Rewriter unavailable",
-                body:     "The provider did not answer. Raw transcript copied.",
+                title:    failure.Title,
+                body:     failure.Body,
                 role:     1);
             return new GenerationResult(null, sw.ElapsedMilliseconds, 0, 0, 0, 0, 0);
         }
