@@ -924,7 +924,8 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   ├── Downloader.cs
 │   │   │   └── ProvisioningResult.cs
 │   │   ├── Paths/
-│   │   │   └── AppPaths.cs
+│   │   │   ├── AppPaths.cs
+│   │   │   └── DefaultDataRoot.cs
 │   │   ├── CorpusPaths.cs
 │   │   ├── Deckle.Core.csproj
 │   │   └── JsonSettingsStore.cs

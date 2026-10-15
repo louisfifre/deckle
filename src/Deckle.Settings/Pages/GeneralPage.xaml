@@ -59,8 +59,13 @@
 
                 <!-- ── Application data ────────────────────────────────────── -->
                 <!-- The two folder folds first (settings backup, then the data
-                     folder), the setup wizard card last (Louis, 2026-10-15). -->
-                <catalog:SettingsSection x:Uid="GeneralPageApplicationDataSection">
+                     folder), the setup wizard card last (Louis, 2026-10-15). The
+                     section reset covers both folders; the data folder's own
+                     move asks its confirmation, so the wheel asks nothing. -->
+                <catalog:SettingsSection x:Name="ApplicationDataSection"
+                                         x:Uid="GeneralPageApplicationDataSection"
+                                         HasReset="True"
+                                         ResetRequested="ResetApplicationData_Click">
                 <StackPanel Spacing="{StaticResource SettingsCardSpacing}">
 
                 <controls:SettingsExpander x:Name="BackupExpander"

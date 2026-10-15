@@ -76,8 +76,9 @@ public sealed partial class GeneralPage : Page
 
     // ── Composed backup Location line ─────────────────────────────────────────
     //
-    // The "Application data" section has no section reset, so no section gating
-    // here; the composed line carries its own inline reset.
+    // The "Application data" section holds two composers, this line and the
+    // data folder fold below, so its section reset is gated off both
+    // (GateApplicationDataSection). The line also keeps its own inline reset.
     //
     // The line lives in the backup fold's Items, which accepts SettingsCards
     // only: the SettingsExpander applies its SettingsCard item style to every
@@ -94,6 +95,7 @@ public sealed partial class GeneralPage : Page
     {
         var host = new StackPanel();
         _applicationDataComposer = new SettingsComposer(host, ViewModel);
+        _applicationDataComposer.DirtyChanged += (_, _) => GateApplicationDataSection();
         _applicationDataComposer.Compose(ViewModel.ApplicationDataSettings, inFold: true);
 
         for (int i = host.Children.Count - 1; i >= 0; i--)
@@ -114,7 +116,17 @@ public sealed partial class GeneralPage : Page
     private void ComposeDataFolderSection()
     {
         _dataFolderComposer = new SettingsComposer(DataFolderHost, ViewModel);
+        _dataFolderComposer.DirtyChanged += (_, _) => GateApplicationDataSection();
         _dataFolderComposer.Compose(ViewModel.DataFolderSettings);
+    }
+
+    // The backup line is composed first, so the data folder composer is still
+    // null on the line's first DirtyChanged and counts as clean until its own.
+    private void GateApplicationDataSection()
+    {
+        ApplicationDataSection.IsResetEnabled =
+            (_applicationDataComposer?.IsDirty() ?? false) ||
+            (_dataFolderComposer?.IsDirty() ?? false);
     }
 
     // NavigationCacheMode.Required reuses the page instance — the constructor
@@ -199,6 +211,18 @@ public sealed partial class GeneralPage : Page
         _updatesComposer?.ResetAll();
         DeckleSettingsUxSource.Log.SectionReset();
         DeckleSettingsUxSource.Log.SectionResetDetail("Updates");
+    }
+
+    // The same order as Reset all, for the same reason: the backup location
+    // goes back first and is saved, then the data folder's reset starts the
+    // move back to the default root. That move asks its own confirmation and
+    // restarts the app, so the section wheel asks nothing before it.
+    private void ResetApplicationData_Click(object sender, RoutedEventArgs e)
+    {
+        _applicationDataComposer?.ResetAll();
+        _dataFolderComposer?.ResetAll();
+        DeckleSettingsUxSource.Log.SectionReset();
+        DeckleSettingsUxSource.Log.SectionResetDetail("ApplicationData");
     }
 
     // ── Data-root move ──────────────────────────────────────────────────────

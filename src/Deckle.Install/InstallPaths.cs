@@ -1,3 +1,5 @@
+using Deckle.Core;
+
 namespace Deckle.Install;
 
 // The two locations the installer reasons about, and their defaults. The split
@@ -33,7 +35,11 @@ public static class InstallPaths
     public static string[] ProviderDirectories =>
         [DefaultProvidersDir, LegacyAnytypeProviderDir];
 
-    public static string DefaultDataDir => Path.Combine(LocalAppData, "Deckle");
+    // The app's own default data root, read from Deckle.Core rather than
+    // rebuilt here, so that clearing DECKLE_DATA_ROOT, the wizard's prefill and
+    // the uninstaller's data prompt all name the folder the app really uses,
+    // the exe-folder fallback included.
+    public static string DefaultDataDir => DefaultDataRoot.Resolve();
 
     private static string LocalAppData =>
         Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
