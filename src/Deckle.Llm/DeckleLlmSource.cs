@@ -69,5 +69,7 @@ public sealed partial class DeckleLlmSource : DeckleEventSource
     public const int EvtGgufImportFailedDetail       = 43;
     public const int EvtRewriteSkippedNoProvider     = 44;
     public const int EvtRewriteSkippedNoProviderDetail = 45;
+    public const int EvtProviderListModelsFailed     = 46;
+    public const int EvtProviderListModelsFailedDetail = 47;
 
 }

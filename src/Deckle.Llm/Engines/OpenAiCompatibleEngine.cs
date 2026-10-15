@@ -121,15 +121,20 @@ public sealed class OpenAiCompatibleEngine : IGenerationEngine
 
     /// <summary>A stored endpoint may be the server root, its /v1 base, or
     /// the full chat URL; all three land on /v1/chat/completions.</summary>
-    internal static string NormalizeChatUrl(string endpoint)
+    internal static string NormalizeChatUrl(string endpoint) => NormalizeUrl(endpoint, "chat/completions");
+
+    /// <summary>Resolves <paramref name="path"/> under the /v1 base a stored
+    /// endpoint names, whether it was given as the server root, the /v1 base
+    /// or the full chat URL.</summary>
+    internal static string NormalizeUrl(string endpoint, string path)
     {
         string trimmed = (endpoint ?? "").Trim().TrimEnd('/');
         if (trimmed.Length == 0) return trimmed;
         if (trimmed.EndsWith("/chat/completions", StringComparison.OrdinalIgnoreCase))
-            return trimmed;
-        if (trimmed.EndsWith("/v1", StringComparison.OrdinalIgnoreCase))
-            return trimmed + "/chat/completions";
-        return trimmed + "/v1/chat/completions";
+            trimmed = trimmed[..^"/chat/completions".Length];
+        if (!trimmed.EndsWith("/v1", StringComparison.OrdinalIgnoreCase))
+            trimmed += "/v1";
+        return trimmed + "/" + path;
     }
 
     static string FormatOptions(GenerationRequest request)

@@ -1292,12 +1292,14 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   ├── LlmProvider.cs
 │   │   │   ├── LlmProviderEngines.cs
 │   │   │   ├── LlmProviderKind.cs
-│   │   │   └── LlmProviderSecrets.cs
+│   │   │   ├── LlmProviderSecrets.cs
+│   │   │   └── ProviderModelCatalog.cs
 │   │   ├── Deckle.Llm.csproj
 │   │   ├── DeckleLlmSource.cs
 │   │   ├── DeckleLlmSource.FeedbackAndUi.cs
 │   │   ├── DeckleLlmSource.OllamaService.cs
 │   │   ├── DeckleLlmSource.Persistence.cs
+│   │   ├── DeckleLlmSource.Providers.cs
 │   │   ├── DeckleLlmSource.Rewrite.cs
 │   │   ├── DeckleLlmSource.RuntimeStatus.cs
 │   │   └── OllamaService.cs
