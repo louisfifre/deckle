@@ -1,4 +1,5 @@
 using System.Runtime.InteropServices;
+using Deckle.Core;
 
 namespace Deckle.Installer;
 
@@ -89,7 +90,7 @@ internal sealed partial class ProgressWindow
         // us: size every dimension off the system DPI at creation. Good enough for a
         // window that never moves between monitors.
         uint dpi = GetDpiForSystem();
-        double scale = dpi / 96.0;
+        double scale = Dpi.ScaleOf(dpi);
         int Scaled(int logical) => (int)Math.Round(logical * scale);
 
         int clientWidth = Scaled(432);
