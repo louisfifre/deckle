@@ -30,7 +30,7 @@ public sealed class LlmSettingsMigrationsTests
         var settings = new LlmSettings();
         LlmSettingsMigrations.RepairProfileReferences(settings);
         RewriteProfile active = settings.Profiles[0];
-        RewriteProfile legacy = settings.Profiles[2];
+        RewriteProfile legacy = settings.Profiles[1];
         settings.ActiveProfileId = active.Id;
         settings.ActiveProfileName = active.Name;
         settings.PrimaryRewriteProfileId = legacy.Id;

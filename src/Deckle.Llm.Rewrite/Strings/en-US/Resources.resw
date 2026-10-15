@@ -454,7 +454,7 @@
     <value>Reset profiles to defaults?</value>
   </data>
   <data name="Settings_ResetProfilesDialog_Content" xml:space="preserve">
-    <value>Every profile will be replaced with the three defaults (Lissage, Affinage, Arrangement), each with its full pre-written prompt and parameters. Your custom profiles and any prompts you've written will be lost.</value>
+    <value>Every profile will be replaced with the two defaults (Lissage, Réécriture), each with its pre-written prompt, sent to Claude. Your custom profiles and any prompts you've written will be lost.</value>
   </data>
 
   <!-- LlmModelsSection Remove dialog + ErrorBar -->
