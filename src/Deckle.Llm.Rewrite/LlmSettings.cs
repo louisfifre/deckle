@@ -49,9 +49,31 @@ public sealed class AutoRewriteRuleByWords
     public string ProfileName { get; set; } = "";
 }
 
+// Rewriting while the dictation runs, batch by batch, instead of once at Stop.
+// Off by default: it costs one request per batch and the seams between
+// batches are a quality risk the whole-take rewrite does not have. The
+// threshold is in characters of raw transcript: a batch closes at the first
+// pause once the accumulated text reaches it (DictationBatcher). 600 is about
+// a hundred French words, forty seconds of speech: enough context for the
+// profile to condense a repeated idea, short enough that the last batch at
+// Stop is a quick one. The bounds keep a batch between a long sentence and
+// a page.
+public sealed class BatchRewriteSettings
+{
+    public const int MinThresholdChars = 200;
+    public const int MaxThresholdChars = 2000;
+
+    public bool Enabled { get; set; } = false;
+    public int ThresholdChars { get; set; } = 600;
+}
+
 public sealed class LlmSettings
 {
     public bool Enabled { get; set; } = true;
+
+    // Per-batch rewriting during a dictation; applies the active profile to
+    // each batch, then the pasted text is the batches' rewrites in order.
+    public BatchRewriteSettings BatchRewriting { get; set; } = new();
 
     // Legacy: the one endpoint of the Ollama-only era. Kept so an older
     // settings.json deserializes without loss; RepairProviders copies it into

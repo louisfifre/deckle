@@ -25,4 +25,8 @@
          the vault and never to settings.json. -->
     <ProjectReference Include="..\Deckle.Security\Deckle.Security.csproj" />
   </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="Deckle.Llm.Rewrite.Tests" />
+  </ItemGroup>
 </Project>

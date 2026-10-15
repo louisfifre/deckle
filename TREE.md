@@ -1295,6 +1295,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   ├── LlmProviderSecrets.cs
 │   │   │   └── ProviderModelCatalog.cs
 │   │   ├── Deckle.Llm.csproj
+│   │   ├── DeckleLlmSource.Batches.cs
 │   │   ├── DeckleLlmSource.cs
 │   │   ├── DeckleLlmSource.FeedbackAndUi.cs
 │   │   ├── DeckleLlmSource.OllamaService.cs
@@ -1304,6 +1305,12 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── DeckleLlmSource.RuntimeStatus.cs
 │   │   └── OllamaService.cs
 │   ├── Deckle.Llm.Rewrite/
+│   │   ├── Batching/
+│   │   │   ├── DictationBatch.cs
+│   │   │   ├── DictationBatcher.cs
+│   │   │   ├── DictationBatchResult.cs
+│   │   │   ├── DictationBatchRewriter.cs
+│   │   │   └── SentenceBoundary.cs
 │   │   ├── Engine/
 │   │   │   ├── ParagraphRewrite.cs
 │   │   │   ├── RewriteService.cs
@@ -2091,10 +2098,13 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   └── LightingObservabilityCollection.cs
 │   ├── Deckle.Llm.Rewrite.Tests/
 │   │   ├── Deckle.Llm.Rewrite.Tests.csproj
+│   │   ├── DictationBatcherTests.cs
+│   │   ├── DictationBatchRewriterTests.cs
 │   │   ├── LlmSettingsMigrationsTests.cs
 │   │   ├── ParagraphDraftTests.cs
 │   │   ├── ParagraphRewriteCoordinatorTests.cs
 │   │   ├── RewriteDiffGateTests.cs
+│   │   ├── SentenceBoundaryTests.cs
 │   │   └── SentenceRewriteTests.cs
 │   ├── Deckle.Modules.Tests/
 │   │   ├── Deckle.Modules.Tests.csproj

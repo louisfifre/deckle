@@ -71,5 +71,11 @@ public sealed partial class DeckleLlmSource : DeckleEventSource
     public const int EvtRewriteSkippedNoProviderDetail = 45;
     public const int EvtProviderListModelsFailed     = 46;
     public const int EvtProviderListModelsFailedDetail = 47;
+    public const int EvtBatchRewriteSent             = 48;
+    public const int EvtBatchRewriteSentDetail       = 49;
+    public const int EvtBatchRewriteReturned         = 50;
+    public const int EvtBatchRewriteReturnedDetail   = 51;
+    public const int EvtBatchRewriteFellBack         = 52;
+    public const int EvtBatchRewriteFellBackDetail   = 53;
 
 }
