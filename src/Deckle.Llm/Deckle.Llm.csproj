@@ -4,16 +4,21 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <!-- No WinUI / Settings dependencies — this module is the bare-bones
-         Ollama HTTP wrapper (model administration + health-check). The
-         rewrite-specific layer and its Settings UI live in
-         Deckle.Llm.Rewrite, so another Ollama consumer can depend on this
-         module without dragging the rewrite UI in. -->
+    <!-- No WinUI / Settings dependencies — this module is the inference
+         brain: the generation seam (IGenerationEngine), the engines behind it
+         (Ollama raw, chat-completions, Claude), the provider list that names
+         them, and the Ollama administration calls. The rewrite-specific layer
+         and its Settings UI live in Deckle.Llm.Rewrite, so another consumer
+         can depend on this module without dragging the rewrite UI in. -->
+    <!-- Official Anthropic C# SDK: the Claude engine's transport. -->
+    <PackageReference Include="Anthropic" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\Deckle.Core\Deckle.Core.csproj" />
     <ProjectReference Include="..\Deckle.Diagnostics\Deckle.Diagnostics.csproj" />
+    <!-- ISecretVault: a provider's API key is read from the vault per request. -->
+    <ProjectReference Include="..\Deckle.Security\Deckle.Security.csproj" />
   </ItemGroup>
 
   <PropertyGroup>

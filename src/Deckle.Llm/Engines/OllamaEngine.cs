@@ -5,9 +5,8 @@ using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using Deckle.Diagnostics;
-using Deckle.Llm;
 
-namespace Deckle.Llm.Rewrite;
+namespace Deckle.Llm;
 
 // ─── Ollama engine (RAW mode) ────────────────────────────────────────────────
 //
@@ -15,14 +14,19 @@ namespace Deckle.Llm.Rewrite;
 // client-side. This bypasses Ollama's TEMPLATE system because models imported
 // from HuggingFace as GGUF often come with a generic Modelfile
 // (TEMPLATE {{ .Prompt }}), which silently breaks the input format the model
-// expects: it then produces gibberish, echoes or loops.
+// expects: it then produces gibberish, echoes or loops. A model with a sound
+// template is better served through Ollama's /v1 by OpenAiCompatibleEngine.
 //
-// Transport only: the profile lookup, the hard cap, and the human-facing
-// failure outcomes live above the seam in RewriteService. This engine throws
+// Transport only: the provider lookup, the hard cap, and the human-facing
+// failure outcomes live above the seam in the consumer. This engine throws
 // and lets the caller decide.
 
-public sealed class OllamaEngine : IRewriteEngine
+public sealed class OllamaEngine : IGenerationEngine
 {
+    private readonly string _endpoint;
+
+    public OllamaEngine(string endpoint) => _endpoint = endpoint;
+
     // HttpClient's default 100 s timeout is too short for large rewrites (long
     // transcriptions, big context, CPU-only Ollama). The caller's
     // CancellationToken is the only deadline.
@@ -36,12 +40,12 @@ public sealed class OllamaEngine : IRewriteEngine
         DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
     };
 
-    public RewriteResult Generate(RewriteEngineRequest request, CancellationToken cancellationToken)
+    public GenerationResult Generate(GenerationRequest request, CancellationToken cancellationToken)
     {
         var sw = System.Diagnostics.Stopwatch.StartNew();
 
         var (prompt, stops, family) = PromptTemplates.Build(request.Model, request.SystemPrompt, request.UserText);
-        string generateUrl = NormalizeGenerateUrl(request.Endpoint);
+        string generateUrl = NormalizeGenerateUrl(_endpoint);
         var options = BuildOptions(request, stops);
 
         DeckleLlmSource.Log.RewriteStarted();
@@ -71,7 +75,7 @@ public sealed class OllamaEngine : IRewriteEngine
             var probeCts = new CancellationTokenSource();
             pollDone = probeCts;
             pollingTask = Task.Run(
-                () => PollOllamaWhileBusy(request.Endpoint, sw, probeCts.Token));
+                () => PollOllamaWhileBusy(_endpoint, sw, probeCts.Token));
         }
 
         HttpResponseMessage response;
@@ -107,10 +111,10 @@ public sealed class OllamaEngine : IRewriteEngine
             DeckleLlmSource.Log.RewriteMetrics(FormatMetrics(doc.RootElement));
 
             var m = ExtractMetrics(doc.RootElement);
-            return new RewriteResult(
+            return new GenerationResult(
                 Text:         trimmed,
                 TotalMs:      sw.ElapsedMilliseconds,
-                OllamaLoadMs: m.LoadMs,
+                LoadMs:       m.LoadMs,
                 PromptEvalMs: m.PromptEvalMs,
                 EvalMs:       m.EvalMs,
                 PromptTokens: m.PromptTokens,
@@ -176,7 +180,7 @@ public sealed class OllamaEngine : IRewriteEngine
                     }
 
                     double waitedSeconds = requestElapsed.Elapsed.TotalSeconds;
-                    double capMinutes    = RewriteService.REWRITE_HARD_CAP.TotalMinutes;
+                    double capMinutes    = GenerationDeadline.HardCap.TotalMinutes;
                     DeckleLlmSource.Log.OllamaBusyDetail(name, vramGb, unloadSuffix, waitedSeconds, capMinutes);
                 }
                 catch (OperationCanceledException) { throw; }
@@ -304,7 +308,7 @@ public sealed class OllamaEngine : IRewriteEngine
     /// Family stops are always sent so the model never continues past its
     /// end-of-turn token.
     /// </summary>
-    static Dictionary<string, object>? BuildOptions(RewriteEngineRequest request, string[] stops)
+    static Dictionary<string, object>? BuildOptions(GenerationRequest request, string[] stops)
     {
         Dictionary<string, object>? opts = null;
 

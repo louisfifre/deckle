@@ -8,22 +8,24 @@ using Microsoft.UI.Xaml.Input;
 using Microsoft.UI.Xaml.Media;
 using Microsoft.UI.Xaml.Navigation;
 using Deckle.Catalog;
+using Deckle.Llm;
+using Deckle.Security;
 
 namespace Deckle.Llm.Rewrite;
 
 // ─── LlmPage — thin host ───────────────────────────────────────────────────
 //
-// The four sections are autonomous UserControls. The page owns only the
-// orchestration: hydration, the Ollama refresh, the shared Ollama state
-// (LlmOllamaContext), the inter-section events that retrigger a refresh or a
-// targeted Reload, and Reset all.
+// The six sections are autonomous UserControls. The page owns only the
+// orchestration: hydration, the provider refresh (what each provider serves,
+// the Ollama status), the shared Ollama state (LlmOllamaContext), the
+// inter-section events that retrigger a refresh or a targeted Reload, and
+// Reset all.
 
 public sealed partial class LlmPage : Page
 {
-    // Without a token, the shared OllamaService HttpClient waits out its long
-    // timeout. If Ollama is saturated (concurrent GPU job, crashing model),
-    // the page falls into the "unavailable" state instead of freezing.
-    private static readonly TimeSpan OllamaAdminTimeout = TimeSpan.FromSeconds(5);
+    // Without a token, a provider that is saturated or asleep would hold the
+    // page; with it the page falls into "unavailable" instead of freezing.
+    private static readonly TimeSpan ProviderAdminTimeout = TimeSpan.FromSeconds(5);
 
     private readonly LlmOllamaContext _context = new();
 
@@ -35,10 +37,11 @@ public sealed partial class LlmPage : Page
         // the header does not add its generic confirmation on top.
         Header.ConfirmsReset = false;
 
-        // The reset spans profiles, rules and slots that no composer models, so a
-        // dirty check cannot be computed from the page's composers (the only one
-        // lives inside LlmGeneralSection and covers two values). Reset all stays
-        // enabled, as it was before the shared header.
+        // The reset spans profiles, providers and slots that no composer
+        // models, so a dirty check cannot be computed from the page's composers
+        // (they live inside LlmGeneralSection and LlmDictationSection and cover
+        // only the switch and the batch rewriting).
+        // Reset all stays enabled, as it was before the shared header.
         Header.IsResetAllEnabled = true;
 
         IsTabStop = true;
@@ -49,7 +52,9 @@ public sealed partial class LlmPage : Page
         // Named handlers, not inline async lambdas: such a lambda compiles as
         // async void and any unhandled exception bubbles to the dispatcher.
         // The named methods below carry their try/catch.
-        GeneralSection.EndpointChanged += OnEndpointChanged;
+        GeneralSection.ViewModel.PropertyChanged += OnGeneralChanged;
+        ProvidersSection.ProviderNamesChanged += OnProviderNamesChanged;
+        ProvidersSection.ProvidersChanged += OnProvidersChanged;
         ProfilesSection.ProfilesChanged += OnProfilesChanged;
         ModelsSection.RefreshRequested += OnRefreshRequested;
     }
@@ -63,7 +68,7 @@ public sealed partial class LlmPage : Page
         try
         {
             Hydrate();
-            await RefreshOllamaStateAsync();
+            await RefreshProvidersAsync();
         }
         catch (Exception ex)
         {
@@ -72,9 +77,28 @@ public sealed partial class LlmPage : Page
         }
     }
 
-    private async void OnEndpointChanged(object? sender, EventArgs e)
+    // The Models section hides with the rest when rewriting is off, and also
+    // when no Ollama provider is on, so it follows the switch from code rather
+    // than from the page's x:Bind.
+    private void OnGeneralChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
     {
-        try { await RefreshOllamaStateAsync(); }
+        if (e.PropertyName is nameof(LlmGeneralViewModel.Enabled))
+            GateModelsSection();
+    }
+
+    private void OnProviderNamesChanged(object? sender, EventArgs e)
+    {
+        // Synchronous and in-memory, like OnProfilesChanged.
+        ProfilesSection.SetProviders();
+    }
+
+    private async void OnProvidersChanged(object? sender, EventArgs e)
+    {
+        try
+        {
+            ProfilesSection.SetProviders();
+            await RefreshProvidersAsync();
+        }
         catch (Exception ex)
         {
             DeckleLlmSource.Log.EndpointRefreshFailed();
@@ -84,7 +108,7 @@ public sealed partial class LlmPage : Page
 
     private async void OnRefreshRequested(object? sender, EventArgs e)
     {
-        try { await RefreshOllamaStateAsync(); }
+        try { await RefreshProvidersAsync(); }
         catch (Exception ex)
         {
             DeckleLlmSource.Log.ManualRefreshFailed();
@@ -102,50 +126,86 @@ public sealed partial class LlmPage : Page
     private void Hydrate()
     {
         GeneralSection.Reload();
+        ProvidersSection.Reload();
         ProfilesSection.Reload();
         ActiveProfileSection.Reload();
+        DictationSection.Reload();
     }
 
-    private async Task RefreshOllamaStateAsync()
+    // Asks every enabled provider what it serves (the profiles' model
+    // suggestions), and keeps the Ollama administration state for the first
+    // enabled Ollama provider, the one the Models section manages.
+    private async Task RefreshProvidersAsync()
     {
-        var service = new OllamaService(() => LlmSettingsService.Instance.Current.OllamaEndpoint);
+        var settings = LlmSettingsService.Instance.Current;
+        ISecretVault vault = SecretVault.CreateDefault();
 
+        LlmProvider? ollama = settings.Providers.Find(p => p.Enabled && p.Kind == LlmProviderKind.Ollama);
+        await RefreshOllamaStateAsync(ollama);
+
+        // A snapshot: the list may be edited while a listing is in flight.
+        foreach (var provider in settings.Providers.ToArray())
+        {
+            if (!provider.Enabled) continue;
+
+            string? apiKey = null;
+            try { vault.TryGet(LlmProviderSecrets.ApiKeyName(provider.Id), out apiKey); }
+            catch (SecretVaultException) { /* no key: the catalog answers what it can */ }
+
+            using var cts = new CancellationTokenSource(ProviderAdminTimeout);
+            IReadOnlyList<string> names = await ProviderModelCatalog.ListAsync(provider, apiKey, cts.Token);
+            ProfilesSection.SetAvailableModelNames(provider.Id, names);
+        }
+    }
+
+    private async Task RefreshOllamaStateAsync(LlmProvider? ollama)
+    {
         bool available = false;
         IReadOnlyList<OllamaModel> models = Array.Empty<OllamaModel>();
+        OllamaService? service = null;
 
-        // Broad catch: IsAvailableAsync is fail-soft, but ListModelsAsync can
-        // throw (HttpRequest, TaskCanceled when the token expires, JsonException
-        // when Ollama returns an HTML error). "Unavailable" covers every case.
-        try
+        if (ollama is not null)
         {
-            available = await service.IsAvailableAsync();
-            if (available)
+            string endpoint = ollama.Endpoint;
+            service = new OllamaService(() => endpoint);
+
+            // Broad catch: IsAvailableAsync is fail-soft, but ListModelsAsync can
+            // throw (HttpRequest, TaskCanceled when the token expires, JsonException
+            // when Ollama returns an HTML error). "Unavailable" covers every case.
+            try
             {
-                using var cts = new CancellationTokenSource(OllamaAdminTimeout);
-                models = await service.ListModelsAsync(cts.Token);
+                available = await service.IsAvailableAsync();
+                if (available)
+                {
+                    using var cts = new CancellationTokenSource(ProviderAdminTimeout);
+                    models = await service.ListModelsAsync(cts.Token);
+                }
             }
-        }
-        catch (Exception ex)
-        {
-            DeckleLlmSource.Log.OllamaRefreshSkipped();
-            DeckleLlmSource.Log.OllamaRefreshSkippedDetail(ex.GetType().Name, ex.Message);
-            available = false;
-            models = Array.Empty<OllamaModel>();
+            catch (Exception ex)
+            {
+                DeckleLlmSource.Log.OllamaRefreshSkipped();
+                DeckleLlmSource.Log.OllamaRefreshSkippedDetail(ex.GetType().Name, ex.Message);
+                available = false;
+                models = Array.Empty<OllamaModel>();
+            }
+
+            OllamaStatusBar.Message = Loc.Format("Settings_OllamaStatusMessage_Format", ollama.Endpoint);
         }
 
         _context.Service = service;
         _context.Available = available;
         _context.Models = models;
 
-        string ep = LlmSettingsService.Instance.Current.OllamaEndpoint;
-        OllamaStatusBar.Message = Loc.Format("Settings_OllamaStatusMessage_Format", ep);
-        OllamaStatusBar.IsOpen = !available;
+        OllamaStatusBar.IsOpen = ollama is not null && !available;
+        GateModelsSection();
 
         _context.RaiseStateChanged();
+    }
 
-        var modelNames = new List<string>();
-        foreach (var m in models) modelNames.Add(m.Name);
-        ProfilesSection.SetAvailableModelNames(modelNames);
+    private void GateModelsSection()
+    {
+        bool shown = GeneralSection.IsRewritingEnabled && _context.Service is not null;
+        ModelsSection.Visibility = shown ? Visibility.Visible : Visibility.Collapsed;
     }
 
     private void OnBackgroundTapped(object sender, TappedRoutedEventArgs e)
@@ -188,10 +248,10 @@ public sealed partial class LlmPage : Page
             // Fresh defaults carry no profile ids: reconcile them before the
             // instance goes live.
             var fresh = new LlmSettings();
-            LlmSettingsMigrations.RepairProfileReferences(fresh);
+            LlmSettingsMigrations.Apply(fresh);
             LlmSettingsService.Instance.Replace(fresh);
             Hydrate();
-            await RefreshOllamaStateAsync();
+            await RefreshProvidersAsync();
         }
         catch (Exception ex)
         {

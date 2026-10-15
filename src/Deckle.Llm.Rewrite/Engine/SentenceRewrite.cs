@@ -1,3 +1,5 @@
+using Deckle.Llm;
+
 namespace Deckle.Llm.Rewrite;
 
 // Whole-sentence correction proposal. This remains a Rewrite at the engine
@@ -7,6 +9,7 @@ namespace Deckle.Llm.Rewrite;
 public static class SentenceRewrite
 {
     public const string Label = "sentence_correction_proposal";
+    public const string ProviderId = ParagraphRewrite.ProviderId;
     public const string Model = ParagraphRewrite.Model;
     public static readonly TimeSpan Deadline = TimeSpan.FromSeconds(5);
 
@@ -29,8 +32,7 @@ public static class SentenceRewrite
         Sortie : Regarde les logs et la telemetry pour jauger.
         """;
 
-    public static RewriteEngineRequest BuildRequest(string sentence, string endpoint) => new(
-        Endpoint: endpoint,
+    public static GenerationRequest BuildRequest(string sentence) => new(
         Model: Model,
         SystemPrompt: SystemPrompt,
         UserText: sentence,

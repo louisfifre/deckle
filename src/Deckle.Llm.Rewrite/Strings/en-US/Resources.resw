@@ -232,25 +232,20 @@
        tooltip in the Page resources). -->
 
   <!-- ─── LlmPage + sections ─────────────────────────────────────────
-       Third page in the Settings nav. Hosts four sections rendered as
-       UserControls (General, ActiveProfile, Profiles, Models).
+       Third page in the Settings nav. Hosts six sections rendered as
+       UserControls (General, ActiveProfile, Dictation, Profiles,
+       Providers, Models).
        The Ollama InfoBar is inline on the page. -->
   <data name="LlmPage_OllamaStatusBar.Title" xml:space="preserve">
     <value>Ollama is not reachable</value>
   </data>
 
   <!-- LlmGeneralSection -->
-  <data name="LlmGeneralBlock.Title" xml:space="preserve">
-    <value>General</value>
-  </data>
   <data name="LlmEnableCard.Header" xml:space="preserve">
     <value>Rewriting</value>
   </data>
   <data name="LlmEnableCard.Description" xml:space="preserve">
-    <value>Off never sends a transcription to Ollama.</value>
-  </data>
-  <data name="LlmEndpointExpander.Header" xml:space="preserve">
-    <value>Ollama address</value>
+    <value>Off never sends a transcription to a language model.</value>
   </data>
 
   <!-- LlmModelsSection -->
@@ -269,7 +264,7 @@
     <value>Profiles</value>
   </data>
   <data name="LlmProfilesBlock.Caption" xml:space="preserve">
-    <value>Each profile pairs a model with a system prompt.</value>
+    <value>Each profile sends a system prompt to one model at one provider.</value>
   </data>
   <data name="LlmProfile_NameBox.Header" xml:space="preserve">
     <value>Name</value>
@@ -277,11 +272,14 @@
   <data name="LlmProfile_NameBox.PlaceholderText" xml:space="preserve">
     <value>Profile name</value>
   </data>
+  <data name="LlmProfile_ProviderBox.Header" xml:space="preserve">
+    <value>Provider</value>
+  </data>
   <data name="LlmProfile_ModelBox.Header" xml:space="preserve">
     <value>Model</value>
   </data>
   <data name="LlmProfile_ModelBox.PlaceholderText" xml:space="preserve">
-    <value>Ollama model name</value>
+    <value>Model name as the provider lists it</value>
   </data>
   <data name="LlmProfile_SystemPromptBox.Header" xml:space="preserve">
     <value>System prompt</value>
@@ -311,6 +309,56 @@
     <value>Add profile</value>
   </data>
 
+  <!-- LlmProvidersSection -->
+  <data name="LlmProvidersBlock.Title" xml:space="preserve">
+    <value>Providers</value>
+  </data>
+  <data name="LlmProvidersBlock.Caption" xml:space="preserve">
+    <value>Where the models are served from: a local runtime or a hosted API. A switched-off provider stays listed and serves nothing.</value>
+  </data>
+  <data name="LlmProvider_NameBox.Header" xml:space="preserve">
+    <value>Name</value>
+  </data>
+  <data name="LlmProvider_NameBox.PlaceholderText" xml:space="preserve">
+    <value>Provider name</value>
+  </data>
+  <data name="LlmProvider_KindBox.Header" xml:space="preserve">
+    <value>Protocol</value>
+  </data>
+  <data name="LlmProviderKind_OllamaItem.Content" xml:space="preserve">
+    <value>Ollama</value>
+  </data>
+  <data name="LlmProviderKind_OpenAiCompatibleItem.Content" xml:space="preserve">
+    <value>Chat completions (LM Studio, llama.cpp, OpenAI, Mistral…)</value>
+  </data>
+  <data name="LlmProviderKind_ClaudeItem.Content" xml:space="preserve">
+    <value>Claude</value>
+  </data>
+  <data name="LlmProvider_KindBody.Text" xml:space="preserve">
+    <value>Chat completions is the shape most servers and hosted APIs speak; pick it unless the provider is Ollama or Claude.</value>
+  </data>
+  <data name="LlmProvider_EndpointBox.Header" xml:space="preserve">
+    <value>Address</value>
+  </data>
+  <data name="LlmProvider_KeyBox.Header" xml:space="preserve">
+    <value>API key</value>
+  </data>
+  <data name="LlmProvider_KeyBox.PlaceholderText" xml:space="preserve">
+    <value>Paste a key, then save it</value>
+  </data>
+  <data name="LlmProvider_SaveKeyLabel.Text" xml:space="preserve">
+    <value>Save key</value>
+  </data>
+  <data name="LlmProvider_RemoveKeyLabel.Text" xml:space="preserve">
+    <value>Forget key</value>
+  </data>
+  <data name="LlmProvider_RemoveLabel.Text" xml:space="preserve">
+    <value>Remove</value>
+  </data>
+  <data name="LlmAddProviderButton.Content" xml:space="preserve">
+    <value>Add provider</value>
+  </data>
+
   <!-- LlmActiveProfileSection -->
   <data name="LlmActiveProfileBlock.Title" xml:space="preserve">
     <value>Dictation</value>
@@ -322,6 +370,26 @@
     <value>Applied to every dictation. (None) keeps the transcript as spoken.</value>
   </data>
 
+  <!-- LlmDictationSection -->
+  <data name="LlmDictationBlock.Title" xml:space="preserve">
+    <value>While you dictate</value>
+  </data>
+  <data name="LlmDictationBlock.Caption" xml:space="preserve">
+    <value>What the active profile does before you stop.</value>
+  </data>
+  <data name="LlmBatchRewriteGroup.Header" xml:space="preserve">
+    <value>Rewrite while you speak</value>
+  </data>
+  <data name="LlmBatchRewriteGroup.Description" xml:space="preserve">
+    <value>Sends each stretch of speech to the active profile as soon as you pause, so little is left to rewrite when you stop. Each batch is rewritten on its own, so a profile that regroups a whole text by subject does not suit it.</value>
+  </data>
+  <data name="LlmBatchSizeCard.Header" xml:space="preserve">
+    <value>Batch size</value>
+  </data>
+  <data name="LlmBatchSizeCard.Description" xml:space="preserve">
+    <value>How much raw transcript a batch gathers before the next pause closes it.</value>
+  </data>
+
   <!-- ─── Settings — TextBlock labels for x:Uid ──────────────────────
        Page titles, subtitles, and section headers rendered as plain
        TextBlocks (not Cards). x:Uid resolves <Uid>.Text automatically.
@@ -330,7 +398,7 @@
     <value>Rewriting</value>
   </data>
   <data name="LlmPageHeader.Description" xml:space="preserve">
-    <value>Clean up your transcriptions through a local language model in Ollama, with a profile per model and prompt.</value>
+    <value>Clean up your transcriptions through a language model, local or hosted, with a profile per model and prompt.</value>
   </data>
   <!-- No longer an x:Uid: ResetAll_Click reads it with Loc.Get for the
        confirmation dialog's primary button. -->
@@ -354,14 +422,46 @@
     <value>Reset all rewriting settings?</value>
   </data>
   <data name="Settings_ResetLlmDialog_Content" xml:space="preserve">
-    <value>This wipes the Ollama endpoint, profiles, rules, and shortcut bindings, then puts the three default profiles (Lissage, Affinage, Arrangement) and the matching duration / word-count rules back. Your custom prompts and parameters will be lost.</value>
+    <value>This wipes the providers, profiles, rules, and shortcut bindings, then puts the default providers and profiles back. API keys stay saved. Your custom prompts and parameters will be lost.</value>
   </data>
   <data name="Settings_OllamaStatusMessage_Format" xml:space="preserve">
-    <value>Start Ollama or check the endpoint setting ({0}).</value>
+    <value>Start Ollama or check the provider's address ({0}).</value>
   </data>
 
   <data name="Settings_RemoveLabel" xml:space="preserve">
     <value>Remove</value>
+  </data>
+
+  <!-- LlmProvidersSection dialogs, captions and protocol names (code-read) -->
+  <data name="Settings_RemoveProviderDialog_Title" xml:space="preserve">
+    <value>Remove this provider?</value>
+  </data>
+  <data name="Settings_RemoveProviderDialog_Content_Format" xml:space="preserve">
+    <value>"{0}" and its saved API key will be removed. Profiles that sent to it keep pointing at it and fail until you pick them another provider.</value>
+  </data>
+  <data name="Settings_ResetProvidersDialog_Title" xml:space="preserve">
+    <value>Reset providers to defaults?</value>
+  </data>
+  <data name="Settings_ResetProvidersDialog_Content" xml:space="preserve">
+    <value>Every provider will be replaced with the three defaults (Ollama, LM Studio, Claude). API keys stay saved.</value>
+  </data>
+  <data name="Settings_VaultError_Title" xml:space="preserve">
+    <value>The key could not be stored</value>
+  </data>
+  <data name="Settings_KeyStored" xml:space="preserve">
+    <value>A key is saved, encrypted for this Windows account.</value>
+  </data>
+  <data name="Settings_NoKeyStored" xml:space="preserve">
+    <value>No key saved. Hosted APIs refuse requests without one.</value>
+  </data>
+  <data name="LlmProviderKind_Ollama" xml:space="preserve">
+    <value>Ollama</value>
+  </data>
+  <data name="LlmProviderKind_OpenAiCompatible" xml:space="preserve">
+    <value>Chat completions</value>
+  </data>
+  <data name="LlmProviderKind_Claude" xml:space="preserve">
+    <value>Claude</value>
   </data>
 
   <!-- LlmProfilesSection Remove + Reset dialogs -->
@@ -375,7 +475,7 @@
     <value>Reset profiles to defaults?</value>
   </data>
   <data name="Settings_ResetProfilesDialog_Content" xml:space="preserve">
-    <value>Every profile will be replaced with the three defaults (Lissage, Affinage, Arrangement), each with its full pre-written prompt and parameters. Your custom profiles and any prompts you've written will be lost.</value>
+    <value>Every profile will be replaced with the two defaults (Lissage, Réécriture), each with its pre-written prompt, sent to Claude. Your custom profiles and any prompts you've written will be lost.</value>
   </data>
 
   <!-- LlmModelsSection Remove dialog + ErrorBar -->

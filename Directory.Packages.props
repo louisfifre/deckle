@@ -75,6 +75,10 @@
          Hue driver so the transport dependency does not leak into Ambient. -->
     <PackageVersion Include="BouncyCastle.Cryptography" Version="2.6.2" />
 
+    <!-- Official Anthropic C# SDK: Deckle.Llm's Claude engine calls the
+         Messages API through it. Plain .NET, no WinUI. -->
+    <PackageVersion Include="Anthropic" Version="12.57.0" />
+
     <!-- Official MCP C# SDK. The ASP.NET Core transport hosts the resident
          stateless Streamable HTTP endpoint; tests use the protocol package's
          client directly to pin current and down-level negotiation. -->

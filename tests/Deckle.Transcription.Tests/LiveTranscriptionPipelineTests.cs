@@ -3,6 +3,7 @@ using Deckle.Audio;
 using Deckle.Catalog;
 using Deckle.Core;
 using Deckle.Diagnostics.Telemetry;
+using Deckle.Llm;
 using Deckle.Llm.Rewrite;
 using Deckle.Transcription;
 using Xunit;
@@ -125,6 +126,134 @@ public sealed class LiveTranscriptionPipelineTests
         Assert.True(published[0].EndedOnSilence);
         Assert.Equal(1, published[1].Index);
         Assert.Equal("Deckle", published[1].Text);
+    }
+
+    // Each utterance is longer than the minimum threshold and ends on a full
+    // stop, so each one closes a batch on its own, with no carried fragment.
+    private static readonly string FirstLongUtterance = string.Concat(
+        Enumerable.Repeat("Je commence par le premier sujet de cette dictée. ", 5)).Trim();
+    private static readonly string SecondLongUtterance = string.Concat(
+        Enumerable.Repeat("Puis je passe au second sujet, qui est différent. ", 5)).Trim();
+
+    [Fact]
+    public async Task BatchRewritingRewritesEachBatchAndDeliversTheirJoinedRewrites()
+    {
+        CancellationToken testCancellation = TestContext.Current.CancellationToken;
+        var capture = new ScriptedMicrophoneCapture(utteranceCount: 2);
+        var backend = new SequencedBackend([FirstLongUtterance, SecondLongUtterance]);
+        var clipboard = new RecordingClipboardWriter();
+        var rewrite = new BracketingRewriteService();
+        using var engine = new TranscriptionEngine(
+            RewritingHost(batchRewriting: true),
+            backend,
+            capture,
+            clipboard,
+            rewrite);
+
+        await RunOneTakeAsync(engine, backend, testCancellation);
+
+        // The batches run in parallel on the thread pool, so the calls are
+        // compared without their order; the assembly order is checked on the
+        // clipboard text below.
+        Assert.Equal(
+            new[] { FirstLongUtterance, SecondLongUtterance }.Order(),
+            rewrite.Inputs.Order());
+        // Raw copy, then the assembled rewrite: one copy per take, never one
+        // per batch. The first utterance ended on silence, so its batch ends on
+        // a pause and the seam is a paragraph break.
+        Assert.Equal(2, clipboard.WriteCount);
+        Assert.Equal(
+            "[" + FirstLongUtterance + "]\n\n[" + SecondLongUtterance + "]",
+            clipboard.Text);
+    }
+
+    [Fact]
+    public async Task WithBatchRewritingOffTheWholeTakeIsRewrittenOnce()
+    {
+        CancellationToken testCancellation = TestContext.Current.CancellationToken;
+        var capture = new ScriptedMicrophoneCapture(utteranceCount: 2);
+        var backend = new SequencedBackend([FirstLongUtterance, SecondLongUtterance]);
+        var clipboard = new RecordingClipboardWriter();
+        var rewrite = new BracketingRewriteService();
+        using var engine = new TranscriptionEngine(
+            RewritingHost(batchRewriting: false),
+            backend,
+            capture,
+            clipboard,
+            rewrite);
+
+        await RunOneTakeAsync(engine, backend, testCancellation);
+
+        string rawTake = FirstLongUtterance + "\n\n" + SecondLongUtterance;
+        Assert.Equal([rawTake], rewrite.Inputs);
+        Assert.Equal(2, clipboard.WriteCount);
+        Assert.Equal("[" + rawTake + "]", clipboard.Text);
+    }
+
+    // Starts a take, stops it once the backend has transcribed both scripted
+    // utterances, and waits until the engine is back to Ready.
+    private static async Task RunOneTakeAsync(
+        TranscriptionEngine engine, SequencedBackend backend, CancellationToken testCancellation)
+    {
+        var finished = new TaskCompletionSource<TranscriptionOutcome>(
+            TaskCreationOptions.RunContinuationsAsynchronously);
+        var ready = new TaskCompletionSource(
+            TaskCreationOptions.RunContinuationsAsynchronously);
+        engine.StatusChanged += status =>
+        {
+            if (status == Loc.Get("Status_Ready"))
+                ready.TrySetResult();
+        };
+        engine.TranscriptionFinished += outcome => finished.TrySetResult(outcome);
+
+        Assert.Equal(
+            ToggleResult.Started,
+            engine.RequestToggle(shouldPaste: false));
+        await backend.TwoCallsCompleted.Task.WaitAsync(
+            TimeSpan.FromSeconds(5), testCancellation);
+        Assert.Equal(
+            ToggleResult.Stopped,
+            engine.RequestToggle(shouldPaste: false));
+
+        Assert.Equal(
+            TranscriptionOutcome.ClipboardOnly,
+            await finished.Task.WaitAsync(TimeSpan.FromSeconds(5), testCancellation));
+        await ready.Task.WaitAsync(TimeSpan.FromSeconds(5), testCancellation);
+    }
+
+    // Rewriting on, with the first default profile active and the batch
+    // threshold at its minimum.
+    private static StreamingHost RewritingHost(bool batchRewriting)
+    {
+        var host = new StreamingHost();
+        LlmSettings llm = host.Llm;
+        llm.Enabled = true;
+        RewriteProfile profile = llm.Profiles[0];
+        profile.Id = "test-profile";
+        llm.ActiveProfileId = profile.Id;
+        llm.ActiveProfileName = profile.Name;
+        llm.BatchRewriting.Enabled = batchRewriting;
+        llm.BatchRewriting.ThresholdChars = BatchRewriteSettings.MinThresholdChars;
+        return host;
+    }
+
+    // Records every Rewrite input and returns it in brackets, so the delivered
+    // text shows which pieces were rewritten and how they were joined.
+    private sealed class BracketingRewriteService : IRewriteService
+    {
+        private readonly ConcurrentQueue<string> _inputs = new();
+
+        public string[] Inputs => _inputs.ToArray();
+
+        public GenerationResult Rewrite(string text, RewriteProfile profile)
+        {
+            _inputs.Enqueue(text);
+            return new GenerationResult("[" + text + "]", 1, 0, 0, 0, 0, 0);
+        }
+
+        public GenerationResult RewriteParagraph(string paragraph, CancellationToken cancellationToken) => default;
+
+        public GenerationResult RewriteSentence(string sentence, CancellationToken cancellationToken) => default;
     }
 
     private sealed class StreamingHost : ITranscriptionEngineHost

@@ -67,13 +67,13 @@ Console.WriteLine($"model={model} endpoint={endpoint} samples={samples.Count} ti
     + (promptFile is null ? "" : $" prompt={Path.GetFileName(promptFile)}"));
 Console.WriteLine();
 
-RewriteEngineRequest BuildRequest(string paragraph)
+GenerationRequest BuildRequest(string paragraph)
 {
-    var request = ParagraphRewrite.BuildRequest(paragraph, endpoint, model!);
+    var request = ParagraphRewrite.BuildRequest(paragraph, model!);
     return promptOverride is null ? request : request with { SystemPrompt = promptOverride };
 }
 
-var engine = new OllamaEngine();
+var engine = new OllamaEngine(endpoint);
 
 // Warm-up prime: pays the model load once, measured but kept out of the
 // aggregates — the offer-latency question is about the warm path (the
@@ -82,7 +82,7 @@ var engine = new OllamaEngine();
 {
     using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(Math.Max(timeoutS, 300)));
     var prime = engine.Generate(BuildRequest("ca marche"), cts.Token);
-    Console.WriteLine($"warm-up: total={prime.TotalMs}ms load={prime.OllamaLoadMs}ms");
+    Console.WriteLine($"warm-up: total={prime.TotalMs}ms load={prime.LoadMs}ms");
     Console.WriteLine();
 }
 
@@ -90,7 +90,7 @@ var rows = new List<Row>();
 foreach (var sample in samples)
 {
     using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(timeoutS));
-    RewriteResult result;
+    GenerationResult result;
     try
     {
         result = engine.Generate(BuildRequest(sample.Text), cts.Token);
@@ -119,7 +119,7 @@ foreach (var sample in samples)
     double ratio = sample.Text.Length > 0 ? (double)(result.Text?.Length ?? 0) / sample.Text.Length : 0;
     rows.Add(new Row(
         Id: sample.Id, Expect: sample.Expect, Outcome: outcome, ExpectMet: expectMet,
-        TotalMs: result.TotalMs, LoadMs: result.OllamaLoadMs,
+        TotalMs: result.TotalMs, LoadMs: result.LoadMs,
         PromptTokens: result.PromptTokens, EvalTokens: result.EvalTokens,
         LengthRatio: Math.Round(ratio, 2),
         Violations: violations,

@@ -1,3 +1,4 @@
+using Deckle.Llm;
 using Deckle.Llm.Rewrite;
 using Xunit;
 
@@ -45,7 +46,7 @@ public sealed class ParagraphRewriteCoordinatorTests
     {
         using var release = new ManualResetEventSlim();
         using var service = new BlockingRewriteService("Ça marche.", release);
-        using var coordinator = new ParagraphRewriteCoordinator(service, () => "local");
+        using var coordinator = new ParagraphRewriteCoordinator(service);
         using var offered = new ManualResetEventSlim();
         coordinator.OfferReady += _ => offered.Set();
 
@@ -61,22 +62,20 @@ public sealed class ParagraphRewriteCoordinatorTests
     }
 
     private static ParagraphRewriteCoordinator CoordinatorReturning(string rewritten)
-        => new(new ImmediateRewriteService(rewritten), () => "local");
+        => new(new ImmediateRewriteService(rewritten));
 
     private sealed class ImmediateRewriteService(string rewritten) : IRewriteService
     {
-        public RewriteResult Rewrite(string text, string endpoint, RewriteProfile profile)
+        public GenerationResult Rewrite(string text, RewriteProfile profile)
             => throw new NotSupportedException();
 
-        public RewriteResult RewriteParagraph(
+        public GenerationResult RewriteParagraph(
             string paragraph,
-            string endpoint,
             CancellationToken cancellationToken)
             => new(rewritten, 1, 0, 0, 0, 0, 0);
 
-        public RewriteResult RewriteSentence(
+        public GenerationResult RewriteSentence(
             string sentence,
-            string endpoint,
             CancellationToken cancellationToken)
             => throw new NotSupportedException();
     }
@@ -87,12 +86,11 @@ public sealed class ParagraphRewriteCoordinatorTests
     {
         public ManualResetEventSlim Started { get; } = new();
 
-        public RewriteResult Rewrite(string text, string endpoint, RewriteProfile profile)
+        public GenerationResult Rewrite(string text, RewriteProfile profile)
             => throw new NotSupportedException();
 
-        public RewriteResult RewriteParagraph(
+        public GenerationResult RewriteParagraph(
             string paragraph,
-            string endpoint,
             CancellationToken cancellationToken)
         {
             Started.Set();
@@ -100,9 +98,8 @@ public sealed class ParagraphRewriteCoordinatorTests
             return new(rewritten, 1, 0, 0, 0, 0, 0);
         }
 
-        public RewriteResult RewriteSentence(
+        public GenerationResult RewriteSentence(
             string sentence,
-            string endpoint,
             CancellationToken cancellationToken)
             => throw new NotSupportedException();
 

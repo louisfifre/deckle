@@ -1,3 +1,5 @@
+using Deckle.Llm;
+
 namespace Deckle.Llm.Rewrite;
 
 // Owns the asynchronous offer lifecycle. Every input mutation advances the
@@ -6,17 +8,15 @@ namespace Deckle.Llm.Rewrite;
 public sealed class ParagraphRewriteCoordinator : IDisposable
 {
     private readonly IRewriteService _service;
-    private readonly Func<string> _endpoint;
     private readonly object _lock = new();
 
     private CancellationTokenSource? _request;
     private long _revision;
     private bool _disposed;
 
-    public ParagraphRewriteCoordinator(IRewriteService service, Func<string> endpoint)
+    public ParagraphRewriteCoordinator(IRewriteService service)
     {
         _service = service;
-        _endpoint = endpoint;
     }
 
     public event Action<ParagraphRewriteOffer>? OfferReady;
@@ -64,7 +64,7 @@ public sealed class ParagraphRewriteCoordinator : IDisposable
     {
         try
         {
-            RewriteResult result = _service.RewriteParagraph(paragraph, _endpoint(), token);
+            GenerationResult result = _service.RewriteParagraph(paragraph, token);
             if (result.Text is null) return;
 
             DiffGateVerdict verdict = RewriteDiffGate.Evaluate(paragraph, result.Text);

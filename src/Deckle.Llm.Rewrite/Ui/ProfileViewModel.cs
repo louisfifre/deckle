@@ -23,6 +23,22 @@ public partial class ProfileViewModel : ObservableObject
     [NotifyPropertyChangedFor(nameof(Summary))]
     public partial string Name { get; set; }
 
+    // The provider by Id; ProviderName is what the summary shows and the
+    // section keeps it current from the provider list.
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(Summary))]
+    public partial string ProviderId { get; set; }
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(Summary))]
+    public partial string ProviderName { get; set; }
+
+    // Temperature and context size are hints a local runtime takes and a
+    // hosted API ignores or rejects, so the sliders hide for a hosted provider.
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(Summary))]
+    public partial bool ShowsGenerationHints { get; set; }
+
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(Summary))]
     public partial string Model { get; set; }
@@ -58,8 +74,11 @@ public partial class ProfileViewModel : ObservableObject
         get
         {
             string model = string.IsNullOrWhiteSpace(Model) ? "(no model)" : Model;
+            string provider = string.IsNullOrWhiteSpace(ProviderName) ? "(no provider)" : ProviderName;
+            if (!ShowsGenerationHints)
+                return $"{provider}  ·  {model}";
             int idx = Math.Clamp((int)CtxIndex, 0, CtxKSteps.Length - 1);
-            return $"{model}  ·  {CtxKSteps[idx]}K ctx  ·  temp {Temperature:F2}";
+            return $"{provider}  ·  {model}  ·  {CtxKSteps[idx]}K ctx  ·  temp {Temperature:F2}";
         }
     }
 
@@ -77,6 +96,7 @@ public partial class ProfileViewModel : ObservableObject
     // ── OnChanged → auto-save ────────────────────────────────────────────────
 
     partial void OnNameChanged(string value) { if (!_isSyncing) PushToSettings(); }
+    partial void OnProviderIdChanged(string value) { if (!_isSyncing) PushToSettings(); }
     partial void OnModelChanged(string value) { if (!_isSyncing) PushToSettings(); }
     partial void OnSystemPromptChanged(string value) { if (!_isSyncing) PushToSettings(); }
     partial void OnTemperatureChanged(double value) { if (!_isSyncing) PushToSettings(); }
@@ -90,6 +110,9 @@ public partial class ProfileViewModel : ObservableObject
     {
         _isSyncing = true;
         Name = "";
+        ProviderId = "";
+        ProviderName = "";
+        ShowsGenerationHints = true;
         Model = "";
         SystemPrompt = "";
         Temperature = DefaultTemperature;
@@ -108,6 +131,7 @@ public partial class ProfileViewModel : ObservableObject
         IsNew = isNew;
 
         Name = profile.Name;
+        ProviderId = profile.ProviderId;
         Model = profile.Model;
         SystemPrompt = profile.SystemPrompt;
         Temperature = profile.Temperature ?? DefaultTemperature;
@@ -132,6 +156,7 @@ public partial class ProfileViewModel : ObservableObject
 
         var p = profiles[ProfileIndex];
         p.Name = Name.Trim();
+        p.ProviderId = ProviderId;
         p.Model = Model.Trim();
         p.SystemPrompt = SystemPrompt;
         p.Temperature = Temperature;

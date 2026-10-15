@@ -29,8 +29,9 @@ public sealed class SentenceProposalReplayMaintenanceTests
         string judgeDir = Path.Combine(AppPaths.ModelsDirectory, "sentence-judge");
         Assert.SkipUnless(Directory.Exists(judgeDir), "sentence judge not staged");
 
-        string endpoint = LlmSettingsService.Instance.Current.OllamaEndpoint;
-        Assert.SkipUnless(!string.IsNullOrWhiteSpace(endpoint), "Ollama endpoint not configured");
+        bool providerConfigured = LlmSettingsService.Instance.Current.Providers
+            .Exists(p => p.Id == SentenceRewrite.ProviderId && p.Enabled);
+        Assert.SkipUnless(providerConfigured, "Ollama provider not configured");
 
         int limit = ReplayLimit();
         string executionProvider = Environment.GetEnvironmentVariable("DECKLE_ONNX_JUDGE_EP")

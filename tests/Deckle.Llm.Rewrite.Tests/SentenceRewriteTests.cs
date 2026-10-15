@@ -1,3 +1,4 @@
+using Deckle.Llm;
 using Deckle.Llm.Rewrite;
 using Xunit;
 
@@ -10,15 +11,13 @@ public sealed class SentenceRewriteTests
     public void BuildsAZeroTemperatureMinimalCorrectionRequest()
     {
         var engine = new CapturingEngine();
-        var service = new RewriteService(engine);
+        var service = new RewriteService(new SingleEngine(SentenceRewrite.ProviderId, engine));
 
-        RewriteResult result = service.RewriteSentence(
+        GenerationResult result = service.RewriteSentence(
             "Il faut prepare le terrain.",
-            "http://localhost:11434",
             TestContext.Current.CancellationToken);
 
         Assert.Equal("Il faut préparer le terrain.", result.Text);
-        Assert.Equal("http://localhost:11434", engine.Request.Endpoint);
         Assert.Equal("Il faut prepare le terrain.", engine.Request.UserText);
         Assert.Equal(SentenceRewrite.Label, engine.Request.Label);
         Assert.Equal(SentenceRewrite.Model, engine.Request.Model);
@@ -32,33 +31,73 @@ public sealed class SentenceRewriteTests
     {
         using var cancellation = new CancellationTokenSource();
         cancellation.Cancel();
-        var service = new RewriteService(new CancellingEngine());
+        var service = new RewriteService(
+            new SingleEngine(SentenceRewrite.ProviderId, new CancellingEngine()));
 
-        RewriteResult result = service.RewriteSentence(
+        GenerationResult result = service.RewriteSentence(
             "Phrase.",
-            "local",
             cancellation.Token);
 
         Assert.Null(result.Text);
     }
 
-    private sealed class CapturingEngine : IRewriteEngine
+    [Fact]
+    public void MissingProviderReturnsNoProposal()
     {
-        public RewriteEngineRequest Request { get; private set; }
+        var engine = new CapturingEngine();
+        var service = new RewriteService(new SingleEngine("another-provider", engine));
 
-        public RewriteResult Generate(
-            RewriteEngineRequest request,
+        GenerationResult result = service.RewriteSentence(
+            "Phrase.",
+            TestContext.Current.CancellationToken);
+
+        Assert.Null(result.Text);
+        Assert.Equal(default, engine.Request);
+    }
+
+    [Fact]
+    public void TranscriptRewriteSendsTheProfileToItsProvider()
+    {
+        var engine = new CapturingEngine();
+        var service = new RewriteService(new SingleEngine("claude", engine));
+        var profile = new RewriteProfile
+        {
+            Name = "Lissage",
+            ProviderId = "claude",
+            Model = "claude-sonnet-5-5",
+            SystemPrompt = "Lisse.",
+        };
+
+        GenerationResult result = service.Rewrite("euh bonjour", profile);
+
+        Assert.Equal("Il faut préparer le terrain.", result.Text);
+        Assert.Equal("euh bonjour", engine.Request.UserText);
+        Assert.Equal("claude-sonnet-5-5", engine.Request.Model);
+        Assert.Equal("Lissage", engine.Request.Label);
+    }
+
+    private sealed class SingleEngine(string providerId, IGenerationEngine engine) : IGenerationEngineResolver
+    {
+        public IGenerationEngine? Resolve(string id) => id == providerId ? engine : null;
+    }
+
+    private sealed class CapturingEngine : IGenerationEngine
+    {
+        public GenerationRequest Request { get; private set; }
+
+        public GenerationResult Generate(
+            GenerationRequest request,
             CancellationToken cancellationToken)
         {
             Request = request;
-            return new RewriteResult("Il faut préparer le terrain.", 1, 0, 0, 0, 0, 0);
+            return new GenerationResult("Il faut préparer le terrain.", 1, 0, 0, 0, 0, 0);
         }
     }
 
-    private sealed class CancellingEngine : IRewriteEngine
+    private sealed class CancellingEngine : IGenerationEngine
     {
-        public RewriteResult Generate(
-            RewriteEngineRequest request,
+        public GenerationResult Generate(
+            GenerationRequest request,
             CancellationToken cancellationToken) =>
             throw new OperationCanceledException(cancellationToken);
     }

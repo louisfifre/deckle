@@ -3,9 +3,11 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Linq;
+using CommunityToolkit.Mvvm.ComponentModel;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Deckle.Catalog;
+using Deckle.Llm;
 
 namespace Deckle.Llm.Rewrite;
 
@@ -13,15 +15,13 @@ public sealed partial class LlmProfilesSection : UserControl
 {
     public ObservableCollection<ProfileViewModel> Profiles { get; } = new();
 
-    // FilterModels rebuilds each AutoSuggestBox's ItemsSource from this list,
-    // so a refresh shows on the next keystroke or focus.
-    public ObservableCollection<string> AvailableModelNames { get; } = new();
+    // What each profile's provider ComboBox offers. Updated in place by
+    // SetProviders so an open ComboBox keeps its selection through a rename.
+    public ObservableCollection<ProviderOption> ProviderOptions { get; } = new();
 
-    internal void SetAvailableModelNames(IEnumerable<string> names)
-    {
-        AvailableModelNames.Clear();
-        foreach (var n in names) AvailableModelNames.Add(n);
-    }
+    // Model names per provider id. FilterModels reads the profile's provider
+    // entry, so a refresh shows on the next keystroke or focus.
+    private readonly Dictionary<string, List<string>> _modelNamesByProvider = new();
 
     public event EventHandler? ProfilesChanged;
 
@@ -32,15 +32,55 @@ public sealed partial class LlmProfilesSection : UserControl
 
     public void Reload()
     {
+        SetProviders();
         Profiles.Clear();
         var s = LlmSettingsService.Instance.Current;
         for (int i = 0; i < s.Profiles.Count; i++)
         {
             var vm = new ProfileViewModel();
             vm.LoadFrom(i, s.Profiles[i], isNew: false);
+            ApplyProvider(vm);
             TrackProfile(vm);
             Profiles.Add(vm);
         }
+    }
+
+    /// <summary>The provider list changed: refresh the choices every card
+    /// offers and the provider name each summary shows.</summary>
+    internal void SetProviders()
+    {
+        var providers = LlmSettingsService.Instance.Current.Providers;
+
+        for (int i = ProviderOptions.Count - 1; i >= 0; i--)
+        {
+            if (!providers.Exists(p => p.Id == ProviderOptions[i].Id))
+                ProviderOptions.RemoveAt(i);
+        }
+        foreach (var p in providers)
+        {
+            string name = string.IsNullOrWhiteSpace(p.Name) ? p.Id : p.Name;
+            var option = ProviderOptions.FirstOrDefault(o => o.Id == p.Id);
+            if (option is null) ProviderOptions.Add(new ProviderOption(p.Id) { Name = name });
+            else option.Name = name;
+        }
+
+        foreach (var vm in Profiles) ApplyProvider(vm);
+    }
+
+    internal void SetAvailableModelNames(string providerId, IEnumerable<string> names)
+    {
+        _modelNamesByProvider[providerId] = names.ToList();
+    }
+
+    // The name and the hint visibility derive from the provider the profile
+    // names; a provider no longer in the list leaves the name blank, which the
+    // summary shows as "(no provider)".
+    private static void ApplyProvider(ProfileViewModel vm)
+    {
+        LlmProvider? provider = LlmSettingsService.Instance.Current.Providers
+            .Find(p => p.Id == vm.ProviderId);
+        vm.ProviderName = provider?.Name ?? "";
+        vm.ShowsGenerationHints = provider is null || provider.Kind != LlmProviderKind.Claude;
     }
 
     // Only a Name change raises ProfilesChanged: the name is the only profile
@@ -114,18 +154,35 @@ public sealed partial class LlmProfilesSection : UserControl
             vm.SystemPrompt = tb.Text;
     }
 
+    // ── Provider picker ─────────────────────────────────────────────────────
+
+    private void ProviderCombo_Loaded(object sender, RoutedEventArgs e)
+    {
+        if (sender is not ComboBox combo || combo.Tag is not ProfileViewModel vm) return;
+        combo.ItemsSource = ProviderOptions;
+        combo.SelectedValue = vm.ProviderId;
+    }
+
+    private void ProviderCombo_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        if (sender is not ComboBox combo || combo.Tag is not ProfileViewModel vm) return;
+        if (combo.SelectedItem is not ProviderOption option || option.Id == vm.ProviderId) return;
+        vm.ProviderId = option.Id;
+        ApplyProvider(vm);
+    }
+
     // ── Model picker (AutoSuggestBox) ──────────────────────────────────────
     //
     // Not an editable ComboBox: its dropdown-arrow mouse interaction is
     // unreliable in WinUI 3. Text is OneWay (VM → UI) so the stored model name
-    // shows even when it is not in the suggestion list (Ollama offline, model
+    // shows even when it is not in the suggestion list (provider offline, model
     // renamed); the handlers below carry UI → VM.
 
     private void ModelSuggest_GotFocus(object sender, RoutedEventArgs e)
     {
-        if (sender is not AutoSuggestBox box) return;
+        if (sender is not AutoSuggestBox box || box.Tag is not ProfileViewModel vm) return;
 
-        box.ItemsSource = FilterModels(box.Text);
+        box.ItemsSource = FilterModels(vm, box.Text);
         box.IsSuggestionListOpen = true;
     }
 
@@ -137,10 +194,9 @@ public sealed partial class LlmProfilesSection : UserControl
         if (args.Reason != AutoSuggestionBoxTextChangeReason.UserInput)
             return;
 
-        if (sender.Tag is ProfileViewModel vm)
-            vm.Model = sender.Text ?? string.Empty;
-
-        sender.ItemsSource = FilterModels(sender.Text);
+        if (sender.Tag is not ProfileViewModel vm) return;
+        vm.Model = sender.Text ?? string.Empty;
+        sender.ItemsSource = FilterModels(vm, sender.Text);
     }
 
     private void ModelSuggest_SuggestionChosen(AutoSuggestBox sender, AutoSuggestBoxSuggestionChosenEventArgs args)
@@ -157,12 +213,15 @@ public sealed partial class LlmProfilesSection : UserControl
         vm.Model = text ?? string.Empty;
     }
 
-    private List<string> FilterModels(string? query)
+    private List<string> FilterModels(ProfileViewModel vm, string? query)
     {
-        if (string.IsNullOrWhiteSpace(query))
-            return AvailableModelNames.ToList();
+        if (!_modelNamesByProvider.TryGetValue(vm.ProviderId, out var names))
+            return new List<string>();
 
-        return AvailableModelNames
+        if (string.IsNullOrWhiteSpace(query))
+            return names.ToList();
+
+        return names
             .Where(n => n.Contains(query, StringComparison.OrdinalIgnoreCase))
             .ToList();
     }
@@ -176,6 +235,7 @@ public sealed partial class LlmProfilesSection : UserControl
         {
             Id = Guid.NewGuid().ToString("N").Substring(0, 12),
             Name = "",
+            ProviderId = s.Providers.Find(p => p.Enabled)?.Id ?? "",
             Model = "",
             SystemPrompt = ""
         });
@@ -184,15 +244,16 @@ public sealed partial class LlmProfilesSection : UserControl
         int index = s.Profiles.Count - 1;
         var vm = new ProfileViewModel();
         vm.LoadFrom(index, s.Profiles[index], isNew: true);
+        ApplyProvider(vm);
         TrackProfile(vm);
         Profiles.Add(vm);
 
         ProfilesChanged?.Invoke(this, EventArgs.Empty);
     }
 
-    // Scope: the Profiles list only, replaced by the defaults.
-    // RepairProfileReferences gives the fresh defaults their ids and re-pairs
-    // the active profile and legacy references to them by name.
+    // Scope: the Profiles list only, replaced by the defaults. The migration
+    // gives the fresh defaults their ids, points them at their provider and
+    // re-pairs the active profile and legacy references to them by name.
     private async void ResetSection_Click(object sender, RoutedEventArgs e)
     {
         bool confirmed = await ConfirmationService.RequestAsync(
@@ -207,9 +268,26 @@ public sealed partial class LlmProfilesSection : UserControl
 
         var defaults = new LlmSettings();
         LlmSettingsService.Instance.Current.Profiles = defaults.Profiles;
-        LlmSettingsMigrations.RepairProfileReferences(LlmSettingsService.Instance.Current);
+        LlmSettingsMigrations.Apply(LlmSettingsService.Instance.Current);
         LlmSettingsService.Instance.Save();
         Reload();
         ProfilesChanged?.Invoke(this, EventArgs.Empty);
+    }
+}
+
+// What a profile's provider ComboBox lists: the id it stores and the name it
+// shows. Observable so a rename reaches an open ComboBox without rebuilding
+// the list, which would drop its selection.
+public sealed partial class ProviderOption : ObservableObject
+{
+    public string Id { get; }
+
+    [ObservableProperty]
+    public partial string Name { get; set; }
+
+    public ProviderOption(string id)
+    {
+        Id = id;
+        Name = "";
     }
 }
