@@ -1278,6 +1278,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   └── SettingsSearch.cs
 │   ├── Deckle.Llm/
 │   │   ├── Engines/
+│   │   │   ├── ClaudeEngine.cs
 │   │   │   └── OllamaEngine.cs
 │   │   ├── Generation/
 │   │   │   ├── GenerationDeadline.cs

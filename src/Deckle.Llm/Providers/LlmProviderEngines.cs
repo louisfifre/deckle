@@ -62,6 +62,7 @@ public sealed class LlmProviderEngines : IGenerationEngineResolver
         return provider.Kind switch
         {
             LlmProviderKind.Ollama           => new OllamaEngine(endpoint),
+            LlmProviderKind.Claude           => new ClaudeEngine(ApiKey),
             _ => throw new NotSupportedException($"Provider kind {provider.Kind} has no engine."),
         };
     }
