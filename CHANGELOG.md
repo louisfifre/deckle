@@ -204,9 +204,16 @@ doctrine). This file is generated from the Conventional-Commit history by
 - **playground:** Step the gauge's End reach by 5 %
 - **composition:** Give the gauge a course and its own motions
 - **playground:** Expose the gauge's course and motions on the Gauge target
+- **catalog:** Render a folder setting as a fold with a Location line
+- **catalog:** Add a title link to the settings section
+- **ambient:** Open the live preview from the module switch and section titles
+- **taskbar-cover:** Measure the approach distance in screen pixels
 - **playground:** Draw the gauge's course and retreat ease as curves
 - **hud:** Release the gauge on its own fast curve at the cut
 - **playground:** Expose the gauge's cut release and a Cut button
+- **diagnostics:** Give the logging and application-log toggles their reset
+- **diagnostics:** Give every telemetry opt-in its reset
+- **settings:** Reset the data folder through a move back to the default root
 
 ### Changed
 
@@ -242,6 +249,15 @@ doctrine). This file is generated from the Conventional-Commit history by
 - **playground:** Build the HUD tab's choice rows from one factory
 - **composition:** Drop the gauge's unused rotation plumbing
 - **composition:** Always spin the naked preview's cone
+- **settings:** Reorder the General page and fold its folders
+- **settings:** Move Start elevated from Trackpad to General
+- **diagnostics:** Fold the Folders section into two folder folds
+- **transcription:** Render the models folder as a folder fold
+- **audio:** Put the microphone first and split the Recording page
+- **ambient:** Use dropdowns for the depth measure and capture rate
+- **ambient:** Lay the preview readouts out on the pane width
+- **settings:** Name the folder line after what it builds
+- **core:** Expose the default data root apart from its override
 
 ### Removed
 
@@ -320,6 +336,9 @@ doctrine). This file is generated from the Conventional-Commit history by
 - **shell:** Add the tray icon back when Explorer recreates the taskbar
 - **shell:** Number the re-add attempts per sequence in the journal
 - **hud:** Let the gauge overflow the card as the outline does
+- **catalog:** Paint the breadcrumb parents in the secondary colour
+- **ambient:** Snap the capture rate the dropdown shows
+- **transcription:** Count the bespoke cards in the Reset all gate
 - **playground:** Keep the gauge's curve handles inside the frame
 
 ## [0.35.0](https://github.com/louisfifre/deckle/compare/v0.31.6...v0.35.0) — 2026-08-13
