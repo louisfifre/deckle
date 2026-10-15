@@ -202,6 +202,11 @@ doctrine). This file is generated from the Conventional-Commit history by
 - **core:** Add the broadcast and timer interop for a hidden window
 - **playground:** Let the gauge's End reach run to 500 %
 - **playground:** Step the gauge's End reach by 5 %
+- **composition:** Give the gauge a course and its own motions
+- **playground:** Expose the gauge's course and motions on the Gauge target
+- **playground:** Draw the gauge's course and retreat ease as curves
+- **hud:** Release the gauge on its own fast curve at the cut
+- **playground:** Expose the gauge's cut release and a Cut button
 
 ### Changed
 
@@ -315,6 +320,7 @@ doctrine). This file is generated from the Conventional-Commit history by
 - **shell:** Add the tray icon back when Explorer recreates the taskbar
 - **shell:** Number the re-add attempts per sequence in the journal
 - **hud:** Let the gauge overflow the card as the outline does
+- **playground:** Keep the gauge's curve handles inside the frame
 
 ## [0.35.0](https://github.com/louisfifre/deckle/compare/v0.31.6...v0.35.0) — 2026-08-13
 
