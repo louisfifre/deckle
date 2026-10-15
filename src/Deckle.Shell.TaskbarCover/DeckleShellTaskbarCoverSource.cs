@@ -120,15 +120,18 @@ public sealed class DeckleShellTaskbarCoverSource : DeckleEventSource
     }
 
     // One line per band the rebuild placed; taskbars is the count the layout
-    // found, so a reader sees at once whether every monitor got its band.
+    // found, so a reader sees at once whether every monitor got its band,
+    // and scale is the monitor's DPI scale in percent (150 at 144 DPI), the
+    // figure the band's approach span was multiplied by, so a reader can
+    // check from the log alone that a span followed the display scale.
     [Event(EvtLayoutRebuiltDetail,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Windowing,
-           Message = "layout | band={0} | taskbars={1} | edge={2} | rect=({3},{4})-({5},{6}) | reason={7}")]
-    public void LayoutRebuiltDetail(int band, int taskbars, string edge, int left, int top, int right, int bottom, string reason)
+           Message = "layout | band={0} | taskbars={1} | edge={2} | rect=({3},{4})-({5},{6}) | scale={7}% | reason={8}")]
+    public void LayoutRebuiltDetail(int band, int taskbars, string edge, int left, int top, int right, int bottom, int scalePercent, string reason)
     {
         if (!IsWindowingDetailEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Windowing)) return;
-        WriteEvent(EvtLayoutRebuiltDetail, band, taskbars, edge, left, top, right, bottom, reason);
+        WriteEvent(EvtLayoutRebuiltDetail, band, taskbars, edge, left, top, right, bottom, scalePercent, reason);
     }
 
     [Event(EvtLayoutQueryFailed,

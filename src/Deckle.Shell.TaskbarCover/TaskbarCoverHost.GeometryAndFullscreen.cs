@@ -106,7 +106,8 @@ public sealed partial class TaskbarCoverHost
             anyPlaced = true;
             DeckleShellTaskbarCoverSource.Log.LayoutRebuiltDetail(
                 band.Index, placements.Count, band.Edge.ToString(),
-                band.Rect.left, band.Rect.top, band.Rect.right, band.Rect.bottom, reason);
+                band.Rect.left, band.Rect.top, band.Rect.right, band.Rect.bottom,
+                (int)Math.Round(band.DpiScale * 100), reason);
 
             // Suppression after the band is in place, so a show it triggers
             // never lands on the old rect or a stale alpha.
