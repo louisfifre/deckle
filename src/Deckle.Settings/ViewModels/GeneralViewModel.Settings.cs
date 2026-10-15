@@ -168,8 +168,14 @@ public partial class GeneralViewModel
     // fold: "Data folder" and its sentence in the header, the Location line
     // inside. Choosing a folder is the relocation (DataFolderMoveRequested), so
     // the mode follows the App's relocate hook: unwired, the line offers Open
-    // alone, as the Move button used to hide. No defaultValue: there is no
-    // default root to go back to, a reset would be another move.
+    // alone, as the Move button used to hide.
+    //
+    // The default is the root AppPaths uses when DECKLE_DATA_ROOT is unset.
+    // The reset writes through the same setter as a pick, so it is a move back
+    // to that root: the page's pre-flight, its confirmation and the restart,
+    // never a path written silently while the data stays where it is. The
+    // relocation clears DECKLE_DATA_ROOT when the target is the default root.
+    // Unwired, there is no move to run, so there is no reset either.
     public IReadOnlyList<SettingDescriptor> DataFolderSettings =>
     [
         Setting.Path("GeneralDataFolderCard",
@@ -180,6 +186,9 @@ public partial class GeneralViewModel
                     ? FolderPickerMode.OpenOnly
                     : FolderPickerMode.Configure,
                 DefaultPath: () => AppPaths.UserDataRoot),
-            enabledWhen: () => !DataFolderMoveInFlight),
+            enabledWhen: () => !DataFolderMoveInFlight,
+            defaultValue: SettingsHost.RelocateDataRoot is null
+                ? null
+                : () => AppPaths.DefaultUserDataRoot),
     ];
 }

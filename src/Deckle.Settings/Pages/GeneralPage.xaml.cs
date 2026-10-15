@@ -27,10 +27,9 @@ public sealed partial class GeneralPage : Page
         ComposeApplicationDataSection();
         ComposeDataFolderSection();
 
-        // The data folder composer has nothing to reset (no default), so it
-        // stays out of the gate.
         foreach (var composer in new[]
-                 { _appearanceComposer, _startupComposer, _updatesComposer, _applicationDataComposer })
+                 { _appearanceComposer, _startupComposer, _updatesComposer,
+                   _applicationDataComposer, _dataFolderComposer })
             composer!.DirtyChanged += (_, _) => GateResetAll();
 
         ViewModel.DataFolderMoveRequested += OnDataFolderMoveRequested;
@@ -169,15 +168,20 @@ public sealed partial class GeneralPage : Page
             (_appearanceComposer?.IsDirty() ?? false) ||
             (_startupComposer?.IsDirty() ?? false) ||
             (_updatesComposer?.IsDirty() ?? false) ||
-            (_applicationDataComposer?.IsDirty() ?? false);
+            (_applicationDataComposer?.IsDirty() ?? false) ||
+            (_dataFolderComposer?.IsDirty() ?? false);
     }
 
+    // The data folder goes last. Its reset is a move back to the default root,
+    // which asks its own confirmation and restarts the app, so every other
+    // value is already back to its default and saved in the root being moved.
     private void ResetAll_Click(object sender, RoutedEventArgs e)
     {
         _appearanceComposer?.ResetAll();
         _startupComposer?.ResetAll();
         _updatesComposer?.ResetAll();
         _applicationDataComposer?.ResetAll();
+        _dataFolderComposer?.ResetAll();
         DeckleSettingsUxSource.Log.SectionReset();
         DeckleSettingsUxSource.Log.SectionResetDetail("General (all)");
     }
@@ -237,8 +241,13 @@ public sealed partial class GeneralPage : Page
         string current = System.IO.Path.GetFullPath(AppPaths.UserDataRoot);
         string target  = System.IO.Path.GetFullPath(picked);
 
+        // The default root is the reset's target and is taken as it is: a Deckle
+        // subfolder of it would be another custom root, not the default. If it
+        // still holds files, the nesting check below refuses it like any
+        // occupied folder.
         if (Directory.Exists(target) && Directory.EnumerateFileSystemEntries(target).Any()
-            && !PathsEqual(target, current))
+            && !PathsEqual(target, current)
+            && !PathsEqual(target, AppPaths.DefaultUserDataRoot))
             target = System.IO.Path.Combine(target, "Deckle");
 
         if (PathsEqual(target, current))
