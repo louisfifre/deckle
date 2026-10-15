@@ -214,6 +214,7 @@ doctrine). This file is generated from the Conventional-Commit history by
 - **diagnostics:** Give the logging and application-log toggles their reset
 - **diagnostics:** Give every telemetry opt-in its reset
 - **settings:** Reset the data folder through a move back to the default root
+- **settings:** Give the Application data section its reset
 
 ### Changed
 
@@ -258,6 +259,8 @@ doctrine). This file is generated from the Conventional-Commit history by
 - **ambient:** Lay the preview readouts out on the pane width
 - **settings:** Name the folder line after what it builds
 - **core:** Expose the default data root apart from its override
+- **install:** Read the default data root from Deckle.Core
+- **diagnostics:** Read the section resets' defaults from the settings classes
 
 ### Removed
 
