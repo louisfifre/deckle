@@ -847,7 +847,6 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   ├── CubicBezier.cs
 │   │   │   ├── CurveEditor.cs
 │   │   │   ├── DefaultValueText.cs
-│   │   │   ├── FolderCardDescription.cs
 │   │   │   ├── GestureHold.cs
 │   │   │   ├── HotkeyChordText.cs
 │   │   │   ├── HotkeyKeyNames.cs
@@ -1484,10 +1483,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   └── SecretVaultException.cs
 │   ├── Deckle.Settings/
 │   │   ├── Controls/
-│   │   │   ├── FolderPickerCard.xaml
-│   │   │   ├── FolderPickerCard.xaml.cs
-│   │   │   ├── FolderPickerEditableCard.xaml
-│   │   │   ├── FolderPickerEditableCard.xaml.cs
+│   │   │   ├── FolderLocationLine.cs
 │   │   │   ├── TunableRow.xaml
 │   │   │   ├── TunableRow.xaml.cs
 │   │   │   ├── TuningCard.xaml
