@@ -1277,6 +1277,20 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── IAmbientEngineHost.cs
 │   │   └── SettingsSearch.cs
 │   ├── Deckle.Llm/
+│   │   ├── Engines/
+│   │   │   └── OllamaEngine.cs
+│   │   ├── Generation/
+│   │   │   ├── GenerationDeadline.cs
+│   │   │   ├── GenerationRequest.cs
+│   │   │   ├── GenerationResult.cs
+│   │   │   ├── IGenerationEngine.cs
+│   │   │   └── PromptTemplates.cs
+│   │   ├── Providers/
+│   │   │   ├── IGenerationEngineResolver.cs
+│   │   │   ├── LlmProvider.cs
+│   │   │   ├── LlmProviderEngines.cs
+│   │   │   ├── LlmProviderKind.cs
+│   │   │   └── LlmProviderSecrets.cs
 │   │   ├── Deckle.Llm.csproj
 │   │   ├── DeckleLlmSource.cs
 │   │   ├── DeckleLlmSource.FeedbackAndUi.cs
@@ -1287,10 +1301,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   └── OllamaService.cs
 │   ├── Deckle.Llm.Rewrite/
 │   │   ├── Engine/
-│   │   │   ├── OllamaEngine.cs
 │   │   │   ├── ParagraphRewrite.cs
-│   │   │   ├── PromptTemplates.cs
-│   │   │   ├── RewriteEngine.cs
 │   │   │   ├── RewriteService.cs
 │   │   │   └── SentenceRewrite.cs
 │   │   ├── Gate/
@@ -1332,6 +1343,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── GLOSSARY.md  — glossary-deckle-llm-rewrite Rewrite vocabulary. It draws the Correction / Rewrite boundary, which decides w…
 │   │   ├── LlmSettings.cs
 │   │   ├── LlmSettingsMigrations.cs
+│   │   ├── LlmSettingsMigrations.Providers.cs
 │   │   ├── LlmSettingsModule.cs
 │   │   ├── LlmSettingsService.cs
 │   │   └── SettingsSearch.cs

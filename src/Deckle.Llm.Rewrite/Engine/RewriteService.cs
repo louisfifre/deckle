@@ -5,47 +5,34 @@ namespace Deckle.Llm.Rewrite;
 
 // ─── Rewrite service ─────────────────────────────────────────────────────────
 //
-// Owns what sits above the engine seam: the profile-driven request, the hard
-// deadline, and the human-facing outcome of a failure. The overlay feedback
-// belongs to the service, not to whichever engine happened to run.
+// Owns what sits above the generation seam: the profile-driven request, the
+// provider lookup, the hard deadline, and the human-facing outcome of a
+// failure. The overlay feedback belongs to the service, not to whichever
+// engine happened to run.
 //
 // Call it from a background thread: the engines block, and
 // .GetAwaiter().GetResult() inside them is safe there (no synchronization
 // context on those threads).
 
-// Text is null when Rewrite short-circuits (no model configured, timeout,
-// exception). The engine metrics are then zero, and only TotalMs may carry the
-// elapsed wait, so check Text before reading them.
-public readonly record struct RewriteResult(
-    string?      Text,
-    long         TotalMs,
-    long         OllamaLoadMs,
-    long         PromptEvalMs,
-    long         EvalMs,
-    int          PromptTokens,
-    int          EvalTokens);
-
 public interface IRewriteService
 {
-    RewriteResult Rewrite(string text, string endpoint, RewriteProfile profile);
-    RewriteResult RewriteParagraph(string paragraph, string endpoint, CancellationToken cancellationToken);
-    RewriteResult RewriteSentence(string sentence, string endpoint, CancellationToken cancellationToken);
+    GenerationResult Rewrite(string text, RewriteProfile profile);
+    GenerationResult RewriteParagraph(string paragraph, CancellationToken cancellationToken);
+    GenerationResult RewriteSentence(string sentence, CancellationToken cancellationToken);
 }
 
 public class RewriteService : IRewriteService
 {
-    // Generous enough for slow CPU-only Ollama setups on long transcripts, but
-    // still guards against a stuck worker. Internal because the Ollama
-    // busy-poll log line quotes it next to the elapsed wait.
-    internal static readonly TimeSpan REWRITE_HARD_CAP = TimeSpan.FromMinutes(15);
+    readonly IGenerationEngineResolver _engines;
 
-    readonly IRewriteEngine _engine;
+    /// <summary>The production service: engines resolved from the provider
+    /// list the Settings page edits, keys read from the default vault.</summary>
+    public RewriteService()
+        : this(LlmProviderEngines.CreateDefault(() => LlmSettingsService.Instance.Current.Providers)) { }
 
-    public RewriteService() : this(new OllamaEngine()) { }
+    public RewriteService(IGenerationEngineResolver engines) => _engines = engines;
 
-    public RewriteService(IRewriteEngine engine) => _engine = engine;
-
-    public RewriteResult Rewrite(string text, string endpoint, RewriteProfile profile)
+    public GenerationResult Rewrite(string text, RewriteProfile profile)
     {
         if (string.IsNullOrWhiteSpace(profile.Model))
         {
@@ -54,12 +41,24 @@ public class RewriteService : IRewriteService
             return default;
         }
 
+        IGenerationEngine? engine = _engines.Resolve(profile.ProviderId);
+        if (engine is null)
+        {
+            DeckleLlmSource.Log.RewriteSkippedNoProvider();
+            DeckleLlmSource.Log.RewriteSkippedNoProviderDetail(profile.Name, profile.ProviderId);
+            DeckleLlmSource.Log.UserFeedbackEmitted(
+                severity: 1,
+                title:    "Rewriter not configured",
+                body:     "The profile's provider is missing or disabled. Raw transcript copied.",
+                role:     1);
+            return default;
+        }
+
         var sw = System.Diagnostics.Stopwatch.StartNew();
-        using var cts = new CancellationTokenSource(REWRITE_HARD_CAP);
+        using var cts = new CancellationTokenSource(GenerationDeadline.HardCap);
         try
         {
-            var request = new RewriteEngineRequest(
-                Endpoint:      endpoint,
+            var request = new GenerationRequest(
                 Model:         profile.Model,
                 SystemPrompt:  profile.SystemPrompt,
                 UserText:      text,
@@ -68,7 +67,7 @@ public class RewriteService : IRewriteService
                 NumCtx:        profile.NumCtxK * 1024,   // stored in K
                 TopP:          profile.TopP,
                 RepeatPenalty: profile.RepeatPenalty);
-            return _engine.Generate(request, cts.Token);
+            return engine.Generate(request, cts.Token);
         }
         catch (OperationCanceledException) when (cts.IsCancellationRequested)
         {
@@ -76,14 +75,14 @@ public class RewriteService : IRewriteService
             DeckleCancellationSource.Log.OperationCancelled(
                 "llm-rewrite", "timeout", (int)sw.ElapsedMilliseconds);
             DeckleLlmSource.Log.RewriteTimeout();
-            DeckleLlmSource.Log.RewriteTimeoutDetail(REWRITE_HARD_CAP.TotalMinutes, profile.Name, profile.Model);
+            DeckleLlmSource.Log.RewriteTimeoutDetail(GenerationDeadline.HardCap.TotalMinutes, profile.Name, profile.Model);
             // severity 1 = Warning, role 1 = Overlay.
             DeckleLlmSource.Log.UserFeedbackEmitted(
                 severity: 1,
                 title:    "Rewriter took too long",
-                body:     $"Over {REWRITE_HARD_CAP.TotalMinutes:F0} min. Raw transcript copied.",
+                body:     $"Over {GenerationDeadline.HardCap.TotalMinutes:F0} min. Raw transcript copied.",
                 role:     1);
-            return new RewriteResult(null, sw.ElapsedMilliseconds, 0, 0, 0, 0, 0);
+            return new GenerationResult(null, sw.ElapsedMilliseconds, 0, 0, 0, 0, 0);
         }
         catch (Exception ex)
         {
@@ -93,24 +92,31 @@ public class RewriteService : IRewriteService
             DeckleLlmSource.Log.UserFeedbackEmitted(
                 severity: 1,
                 title:    "Rewriter unavailable",
-                body:     "Ollama unreachable. Raw transcript copied.",
+                body:     "The provider did not answer. Raw transcript copied.",
                 role:     1);
-            return new RewriteResult(null, sw.ElapsedMilliseconds, 0, 0, 0, 0, 0);
+            return new GenerationResult(null, sw.ElapsedMilliseconds, 0, 0, 0, 0, 0);
         }
     }
 
     /// <summary>Runs the fixed paragraph-retaille contract. Unlike transcript
     /// rewriting, failures stay silent at the UI boundary: an interactive
     /// suggestion is optional and the caller simply offers nothing.</summary>
-    public RewriteResult RewriteParagraph(
+    public GenerationResult RewriteParagraph(
         string paragraph,
-        string endpoint,
         CancellationToken cancellationToken)
     {
+        IGenerationEngine? engine = _engines.Resolve(ParagraphRewrite.ProviderId);
+        if (engine is null)
+        {
+            DeckleLlmSource.Log.RewriteSkippedNoProvider();
+            DeckleLlmSource.Log.RewriteSkippedNoProviderDetail(ParagraphRewrite.Label, ParagraphRewrite.ProviderId);
+            return default;
+        }
+
         try
         {
-            return _engine.Generate(
-                ParagraphRewrite.BuildRequest(paragraph, endpoint, ParagraphRewrite.Model),
+            return engine.Generate(
+                ParagraphRewrite.BuildRequest(paragraph, ParagraphRewrite.Model),
                 cancellationToken);
         }
         catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
@@ -134,15 +140,22 @@ public class RewriteService : IRewriteService
     /// <summary>Generates one minimal whole-sentence correction proposal. The
     /// result is untrusted model output: callers must gate and verify it before
     /// treating any edit as a Correction.</summary>
-    public RewriteResult RewriteSentence(
+    public GenerationResult RewriteSentence(
         string sentence,
-        string endpoint,
         CancellationToken cancellationToken)
     {
+        IGenerationEngine? engine = _engines.Resolve(SentenceRewrite.ProviderId);
+        if (engine is null)
+        {
+            DeckleLlmSource.Log.RewriteSkippedNoProvider();
+            DeckleLlmSource.Log.RewriteSkippedNoProviderDetail(SentenceRewrite.Label, SentenceRewrite.ProviderId);
+            return default;
+        }
+
         try
         {
-            return _engine.Generate(
-                SentenceRewrite.BuildRequest(sentence, endpoint),
+            return engine.Generate(
+                SentenceRewrite.BuildRequest(sentence),
                 cancellationToken);
         }
         catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)

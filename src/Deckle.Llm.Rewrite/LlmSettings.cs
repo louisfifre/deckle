@@ -1,8 +1,9 @@
 using System.Collections.Generic;
+using Deckle.Llm;
 
 namespace Deckle.Llm.Rewrite;
 
-// ── LLM rewriting through Ollama ─────────────────────────────────────────────
+// ── LLM rewriting settings ───────────────────────────────────────────────────
 
 public sealed class RewriteProfile
 {
@@ -12,10 +13,17 @@ public sealed class RewriteProfile
     public string Id { get; set; } = "";
 
     public string Name { get; set; } = "";
+
+    // The LlmProvider this profile sends to, by Id. Empty on a settings file
+    // written before providers existed; LlmSettingsMigrations.RepairProviders
+    // points it at the Ollama provider, the only engine that era had.
+    public string ProviderId { get; set; } = "";
+
     public string Model { get; set; } = "";
     public string SystemPrompt { get; set; } = "";
 
-    // Generation parameters: null = Ollama's Modelfile default (not sent).
+    // Generation hints: null = the provider's default (not sent). A hosted
+    // provider may ignore them (ClaudeEngine drops them).
     public double? Temperature { get; set; }
     public int? NumCtxK { get; set; }            // in K (×1024 when sent)
     public double? TopP { get; set; }
@@ -44,7 +52,22 @@ public sealed class AutoRewriteRuleByWords
 public sealed class LlmSettings
 {
     public bool Enabled { get; set; } = true;
+
+    // Legacy: the one endpoint of the Ollama-only era. Kept so an older
+    // settings.json deserializes without loss; RepairProviders copies it into
+    // the Ollama provider once. Never read at runtime.
     public string OllamaEndpoint { get; set; } = "http://localhost:11434/api/generate";
+
+    // Where a model is served from. A profile names one by Id. These defaults
+    // are the three shapes the market has (a local Ollama, a chat-completions
+    // server, Claude); the user renames, repoints, disables or deletes them in
+    // Settings, and a Claude key goes to the vault, never here.
+    public List<LlmProvider> Providers { get; set; } = new()
+    {
+        new() { Id = "ollama",    Name = "Ollama",    Kind = LlmProviderKind.Ollama,           Endpoint = "http://localhost:11434/api/generate" },
+        new() { Id = "lm-studio", Name = "LM Studio", Kind = LlmProviderKind.OpenAiCompatible, Endpoint = "http://localhost:1234/v1" },
+        new() { Id = "claude",    Name = "Claude",    Kind = LlmProviderKind.Claude },
+    };
 
     // The one persisted choice applied to every dictation when Enabled.
     // null = plain transcription (opt-in by default). Lookup prefers the Id

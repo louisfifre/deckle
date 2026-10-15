@@ -25,6 +25,24 @@ public sealed partial class DeckleLlmSource
         if (IsEnabled()) WriteEvent(EvtRewriteSkippedNoModelDetail, profile);
     }
 
+    [Event(EvtRewriteSkippedNoProvider,
+           Level = EventLevel.Warning,
+           Keywords = (EventKeywords)Keywords.Pipeline,
+           Message = "A rewrite was skipped because the profile's provider is missing or disabled — check Settings → LLM")]
+    public void RewriteSkippedNoProvider()
+    {
+        if (IsEnabled()) WriteEvent(EvtRewriteSkippedNoProvider);
+    }
+
+    [Event(EvtRewriteSkippedNoProviderDetail,
+           Level = EventLevel.Verbose,
+           Keywords = (EventKeywords)Keywords.Pipeline,
+           Message = "rewrite skipped no provider | profile={0} | provider={1}")]
+    public void RewriteSkippedNoProviderDetail(string profile, string provider)
+    {
+        if (IsEnabled()) WriteEvent(EvtRewriteSkippedNoProviderDetail, profile, provider);
+    }
+
     [Event(EvtRewriteStarted,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Pipeline,

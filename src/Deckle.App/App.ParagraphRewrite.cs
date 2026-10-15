@@ -35,9 +35,7 @@ public partial class App
         _paragraphSurfaceProber = new SurfaceProber();
         _paragraphInjector = new TextInjector();
         _paragraphCaretTextReader = new UIAutomationCaretTextReader();
-        _paragraphRewriteCoordinator = new ParagraphRewriteCoordinator(
-            new RewriteService(),
-            () => LlmSettingsService.Instance.Current.OllamaEndpoint);
+        _paragraphRewriteCoordinator = new ParagraphRewriteCoordinator(new RewriteService());
         _paragraphRewriteWindow = new RewriteOfferWindow();
 
         _paragraphRewriteCoordinator.OfferReady += OnParagraphOfferReady;

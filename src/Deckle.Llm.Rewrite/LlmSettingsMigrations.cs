@@ -18,7 +18,7 @@ namespace Deckle.Llm.Rewrite;
 //
 // Returns true if anything was mutated: as the postLoadMigration hook of
 // LlmSettingsService's JsonSettingsStore, that flushes the repair to disk.
-public static class LlmSettingsMigrations
+public static partial class LlmSettingsMigrations
 {
     public static bool RepairProfileReferences(LlmSettings s)
     {

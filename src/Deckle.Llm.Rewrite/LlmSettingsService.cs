@@ -43,7 +43,7 @@ public sealed class LlmSettingsService
             jsonOptions: _jsonOptions,
             logWarning:  msg => DeckleLlmSource.Log.SettingsLoadWarning(msg),
             logError:    msg => DeckleLlmSource.Log.SettingsLoadError(msg),
-            postLoadMigration: LlmSettingsMigrations.RepairProfileReferences);
+            postLoadMigration: LlmSettingsMigrations.Apply);
     }
 
     public void Save()                  => _store.Save();

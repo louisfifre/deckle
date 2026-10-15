@@ -43,7 +43,7 @@ public sealed partial class TranscriptionEngine
             stopToPipelineMs, whisperInitMs, whisperMs, rewrite.LlmMs,
             clipboardMs, delivery.PasteMs);
         DeckleWhispSource.Log.PipelineLlmMetrics(
-            rewrite.OllamaLoadMs,
+            rewrite.LlmLoadMs,
             rewrite.LlmPromptEvalMs,
             rewrite.LlmEvalMs,
             rewrite.LlmPromptTokens,
@@ -71,7 +71,7 @@ public sealed partial class TranscriptionEngine
                 whisper_init_ms:      whisperInitMs,
                 whisper_ms:           whisperMs,
                 llm_ms:               rewrite.LlmMs,
-                ollama_load_ms:       rewrite.OllamaLoadMs,
+                ollama_load_ms:       rewrite.LlmLoadMs,
                 llm_prompt_eval_ms:   rewrite.LlmPromptEvalMs,
                 llm_eval_ms:          rewrite.LlmEvalMs,
                 llm_prompt_tokens:    rewrite.LlmPromptTokens,
@@ -149,7 +149,9 @@ public sealed partial class TranscriptionEngine
             bucket:                rewriteBucket,
             rewrite_profile_id:    rewrite.Profile.Id,
             rewrite_profile_name:  rewrite.Profile.Name,
-            ollama_endpoint:       _host.Llm.OllamaEndpoint,
+            // The event fields keep their Ollama-era names (ETW manifest); the
+            // values are the profile's provider endpoint and model.
+            ollama_endpoint:       _host.Llm.Providers.Find(p => p.Id == rewrite.Profile.ProviderId)?.Endpoint ?? "",
             ollama_model:          rewrite.Profile.Model ?? "",
             prompt_template_hash:  PromptTemplateHash.Of(rewrite.Profile),
             text:                  rewrite.Text,

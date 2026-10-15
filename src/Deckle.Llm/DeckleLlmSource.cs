@@ -3,9 +3,10 @@ using Deckle.Diagnostics;
 
 namespace Deckle.Llm;
 
-// LLM module provider, shared with Deckle.Llm.Rewrite. Covers transcript
-// rewriting through Ollama (RewriteService), the Settings → LLM surface
-// (LlmPage) and the Ollama administration calls (OllamaService). Module
+// LLM module provider, shared with Deckle.Llm.Rewrite. Covers the generation
+// engines (Ollama, chat-completions, Claude) and the rewrite service above
+// them, the Settings → LLM surface (LlmPage) and the Ollama administration
+// calls (OllamaService). Module
 // settings persistence (LlmSettingsService) goes through the four Settings*
 // events.
 //
@@ -66,5 +67,7 @@ public sealed partial class DeckleLlmSource : DeckleEventSource
     public const int EvtEndpointSchemeNotAllowedDetail = 41;
     public const int EvtEndpointNonLoopbackHostDetail  = 42;
     public const int EvtGgufImportFailedDetail       = 43;
+    public const int EvtRewriteSkippedNoProvider     = 44;
+    public const int EvtRewriteSkippedNoProviderDetail = 45;
 
 }

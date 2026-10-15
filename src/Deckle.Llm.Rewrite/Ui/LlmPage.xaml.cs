@@ -188,7 +188,7 @@ public sealed partial class LlmPage : Page
             // Fresh defaults carry no profile ids: reconcile them before the
             // instance goes live.
             var fresh = new LlmSettings();
-            LlmSettingsMigrations.RepairProfileReferences(fresh);
+            LlmSettingsMigrations.Apply(fresh);
             LlmSettingsService.Instance.Replace(fresh);
             Hydrate();
             await RefreshOllamaStateAsync();

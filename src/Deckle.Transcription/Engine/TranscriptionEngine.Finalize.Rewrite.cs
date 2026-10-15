@@ -27,7 +27,7 @@ public sealed partial class TranscriptionEngine
 
         RaiseStatus(Loc.Format("Status_Rewriting_Format", profile.Name));
         var stopwatch = System.Diagnostics.Stopwatch.StartNew();
-        var result = _rewrite.Rewrite(rawText, llmSettings.OllamaEndpoint, profile);
+        var result = _rewrite.Rewrite(rawText, profile);
         stopwatch.Stop();
 
         string finalText = rawText;
@@ -43,7 +43,7 @@ public sealed partial class TranscriptionEngine
             finalText,
             profile,
             stopwatch.ElapsedMilliseconds,
-            result.OllamaLoadMs,
+            result.LoadMs,
             result.PromptEvalMs,
             result.EvalMs,
             result.PromptTokens,
@@ -54,7 +54,7 @@ public sealed partial class TranscriptionEngine
         string Text,
         RewriteProfile? Profile,
         long LlmMs,
-        long OllamaLoadMs,
+        long LlmLoadMs,
         long LlmPromptEvalMs,
         long LlmEvalMs,
         int LlmPromptTokens,

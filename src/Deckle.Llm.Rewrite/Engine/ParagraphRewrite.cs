@@ -1,3 +1,5 @@
+using Deckle.Llm;
+
 namespace Deckle.Llm.Rewrite;
 
 // ─── Paragraph rewrite (retaille) ────────────────────────────────────────────
@@ -17,6 +19,12 @@ namespace Deckle.Llm.Rewrite;
 public static class ParagraphRewrite
 {
     public const string Label = "paragraph";
+
+    /// <summary>Typed text in any enrolled app stays on the local provider,
+    /// whatever the dictation profiles point at: it is private by nature and
+    /// the offer deadline leaves no room for a network round trip. The id is
+    /// the one the settings migration gives the Ollama provider.</summary>
+    public const string ProviderId = "ollama";
 
     /// <summary>The capacity floor for the interactive retaille. The 3B
     /// variant is deliberately not a fallback: it produces too few faithful
@@ -71,8 +79,7 @@ public static class ParagraphRewrite
 
     /// <summary>The caller owns the deadline and must pass the result through
     /// <see cref="RewriteDiffGate"/> before any offer.</summary>
-    public static RewriteEngineRequest BuildRequest(string paragraph, string endpoint, string model) => new(
-        Endpoint:     endpoint,
+    public static GenerationRequest BuildRequest(string paragraph, string model) => new(
         Model:        model,
         SystemPrompt: SystemPrompt,
         UserText:     paragraph,
