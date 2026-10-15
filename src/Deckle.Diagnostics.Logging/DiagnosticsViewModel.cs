@@ -106,14 +106,17 @@ public partial class DiagnosticsViewModel : ObservableObject
         // save these placeholders over the stored settings.
         _isSyncing = true;
 
-        LogAmbientCaptureActivity = false;
-        LogTranscriptionActivity = false;
-        LogAutocorrectActivity = false;
-        LogInputActivity = false;
-        LogWindowingActivity = false;
-        ApplicationLogToDisk = false;
-        RecordWheelEvents = false;
-        TelemetryStorageDirectory = "";
+        // The placeholders read the defaults from the settings classes that
+        // own them, the same source the resets below use.
+        var logging = new LoggingSettings();
+        LogAmbientCaptureActivity = logging.LogAmbientCaptureActivity;
+        LogTranscriptionActivity = logging.LogTranscriptionActivity;
+        LogAutocorrectActivity = logging.LogAutocorrectActivity;
+        LogInputActivity = logging.LogInputActivity;
+        LogWindowingActivity = logging.LogWindowingActivity;
+        ApplicationLogToDisk = logging.ApplicationLogToDisk;
+        RecordWheelEvents = new Deckle.Input.MouseWheelSettings().RecordEvents;
+        TelemetryStorageDirectory = new TelemetrySettings().StorageDirectory;
 
         // _isSyncing stays true — Load() will set it to false.
     }
@@ -162,16 +165,21 @@ public partial class DiagnosticsViewModel : ObservableObject
 
     // ── Reset ───────────────────────────────────────────────────────────────
 
+    // Each reset reads its defaults from a fresh settings object, the same
+    // source the descriptors' defaultValue reads. A default changed in the
+    // settings class then moves the section reset and the value reset together.
+
     public void ResetLoggingDefaults()
     {
+        var defaults = new LoggingSettings();
         _isSyncing = true;
         try
         {
-            LogAmbientCaptureActivity = false;
-            LogTranscriptionActivity = false;
-            LogAutocorrectActivity = false;
-            LogInputActivity = false;
-            LogWindowingActivity = false;
+            LogAmbientCaptureActivity = defaults.LogAmbientCaptureActivity;
+            LogTranscriptionActivity = defaults.LogTranscriptionActivity;
+            LogAutocorrectActivity = defaults.LogAutocorrectActivity;
+            LogInputActivity = defaults.LogInputActivity;
+            LogWindowingActivity = defaults.LogWindowingActivity;
         }
         finally { _isSyncing = false; }
         PushLoggingToSettings();
@@ -181,16 +189,18 @@ public partial class DiagnosticsViewModel : ObservableObject
 
     public void ResetTelemetryDefaults()
     {
+        var telemetryDefaults = new TelemetrySettings();
+        var mouseWheelDefaults = new Deckle.Input.MouseWheelSettings();
         _isSyncing = true;
         try
         {
-            TelemetryStorageDirectory = "";
-            RecordWheelEvents = false;
+            TelemetryStorageDirectory = telemetryDefaults.StorageDirectory;
+            RecordWheelEvents = mouseWheelDefaults.RecordEvents;
         }
         finally { _isSyncing = false; }
         PushTelemetryToSettings();
         var mouseWheel = Deckle.Input.MouseWheelSettingsService.Instance.Current;
-        mouseWheel.RecordEvents = false;
+        mouseWheel.RecordEvents = mouseWheelDefaults.RecordEvents;
         Deckle.Input.MouseWheelSettingsService.Instance.Save();
         DeckleSettingsUxSource.Log.SectionReset();
         DeckleSettingsUxSource.Log.SectionResetDetail("Telemetry");
@@ -198,10 +208,11 @@ public partial class DiagnosticsViewModel : ObservableObject
 
     public void ResetApplicationLogDefaults()
     {
+        var defaults = new LoggingSettings();
         _isSyncing = true;
         try
         {
-            ApplicationLogToDisk = false;
+            ApplicationLogToDisk = defaults.ApplicationLogToDisk;
         }
         finally { _isSyncing = false; }
         PushLoggingToSettings();
