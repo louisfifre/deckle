@@ -38,6 +38,11 @@ public sealed partial class TaskbarCoverHost
             UnhookWinEvent(_cursorHook);
             _cursorHook = IntPtr.Zero;
         }
+        if (_reorderHook != IntPtr.Zero)
+        {
+            UnhookWinEvent(_reorderHook);
+            _reorderHook = IntPtr.Zero;
+        }
         if (_hwnd != IntPtr.Zero)
         {
             WTSUnRegisterSessionNotification(_hwnd);
@@ -64,6 +69,7 @@ public sealed partial class TaskbarCoverHost
         _layoutKnown         = false;
         _layoutFailureLogged = false;
         _bandMonitor         = IntPtr.Zero;
+        _taskbar             = IntPtr.Zero;
         _dpiScale            = 1.0;
     }
 

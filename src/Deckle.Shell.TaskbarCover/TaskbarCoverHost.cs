@@ -41,11 +41,13 @@ public sealed partial class TaskbarCoverHost : IDisposable
     private IntPtr _hInstance;
     private IntPtr _brush;
     private IntPtr _cursorHook;
+    private IntPtr _reorderHook;
     private uint _wmTaskbarCreated;
 
     // Rooted for the GC while native code holds their function pointers.
     private NativeMethods.WndProc? _wndProcDelegate;
     private WinEventProc? _cursorHookDelegate;
+    private WinEventProc? _reorderHookDelegate;
 
     private volatile bool _running;
 
@@ -78,6 +80,9 @@ public sealed partial class TaskbarCoverHost : IDisposable
     // Monitor the band sits on, re-read on every successful layout query;
     // fullscreen suppression only applies to a window on this monitor.
     private IntPtr _bandMonitor;
+    // The taskbar window, re-found on every successful layout query; the
+    // desktop reorder hook climbs the z-order looking for it above the band.
+    private IntPtr _taskbar;
     // That monitor's DPI over 96, the factor the approach span (set in
     // device-independent pixels) is scaled by; 1.0 until the first layout.
     private double _dpiScale = 1.0;

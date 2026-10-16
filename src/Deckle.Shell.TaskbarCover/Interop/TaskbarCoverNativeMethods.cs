@@ -129,6 +129,32 @@ internal static class TaskbarCoverNativeMethods
     [DllImport("user32.dll")]
     public static extern bool UnhookWinEvent(IntPtr hWinEventHook);
 
+    // ── Desktop reorder WinEvent hook ────────────────────────────────────────
+    //
+    // EVENT_OBJECT_REORDER is "sent by a parent window when the Z-order for
+    // the child windows changes" (Microsoft Learn, Event Constants); for
+    // top-level windows that parent is the desktop window, so a REORDER whose
+    // hwnd is GetDesktopWindow() is the signal that the top-level stack
+    // moved. Observed on Windows 11 24H2: the desktop raises it with
+    // idObject = OBJID_CLIENT and idChild = 0, hence the filter on the hwnd
+    // alone. Same hook mechanics as the cursor hook above: out of context,
+    // delivered on the registering thread, which pumps.
+
+    public const uint EVENT_OBJECT_REORDER = 0x8004;
+
+    [DllImport("user32.dll")]
+    public static extern IntPtr GetDesktopWindow();
+
+    // The taskbar window, re-found at each layout rebuild since Explorer
+    // re-creates it on restart; compared against the band's z-order climb.
+    public const string TaskbarClassName = "Shell_TrayWnd";
+
+    [DllImport("user32.dll", CharSet = CharSet.Unicode)]
+    public static extern IntPtr FindWindow(string? lpClassName, string? lpWindowName);
+
+    // GetWindow command: the window above in the z-order, zero at the top.
+    public const uint GW_HWNDPREV = 3;
+
     // ── Foreground hand-off ──────────────────────────────────────────────────
     //
     // The ForegroundWatcher raises Changed on the UI thread; the host posts

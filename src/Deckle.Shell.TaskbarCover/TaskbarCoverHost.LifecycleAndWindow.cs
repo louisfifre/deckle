@@ -195,6 +195,17 @@ public sealed partial class TaskbarCoverHost
             throw new InvalidOperationException("SetWinEventHook(EVENT_OBJECT_LOCATIONCHANGE) failed");
         }
 
+        // The desktop reorder signal catches the taskbar restacking itself
+        // above the band outside every other reconciliation point. Without it
+        // the cover still works, it only reconciles later — a dead hook is
+        // logged, not fatal.
+        _reorderHookDelegate = OnDesktopReorder;
+        _reorderHook = SetWinEventHook(
+            EVENT_OBJECT_REORDER, EVENT_OBJECT_REORDER,
+            IntPtr.Zero, _reorderHookDelegate, 0, 0, WINEVENT_OUTOFCONTEXT);
+        if (_reorderHook == IntPtr.Zero)
+            DeckleShellTaskbarCoverSource.Log.ReorderHookFailed();
+
         if (!WTSRegisterSessionNotification(_hwnd, NOTIFY_FOR_THIS_SESSION))
             DeckleShellTaskbarCoverSource.Log.SessionNotifyFailed();
 

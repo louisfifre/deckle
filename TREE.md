@@ -1649,6 +1649,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   └── TaskbarCoverViewModel.Settings.cs
 │   │   ├── ApproachDistance.cs
 │   │   ├── CoverGeometry.cs
+│   │   ├── CoverStacking.cs
 │   │   ├── CoverSuppression.cs
 │   │   ├── Deckle.Shell.TaskbarCover.csproj
 │   │   ├── DeckleShellTaskbarCoverSource.cs
@@ -2169,6 +2170,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   └── FullscreenGeometryTests.cs
 │   ├── Deckle.Shell.TaskbarCover.Tests/
 │   │   ├── CoverGeometryTests.cs
+│   │   ├── CoverStackingTests.cs
 │   │   ├── CoverSuppressionTests.cs
 │   │   ├── Deckle.Shell.TaskbarCover.Tests.csproj
 │   │   └── TaskbarCoverBugNotes.md

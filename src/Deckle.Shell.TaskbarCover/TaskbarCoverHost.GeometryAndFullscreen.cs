@@ -64,6 +64,10 @@ public sealed partial class TaskbarCoverHost
         // changed — re-evaluates suppression now rather than at the next
         // foreground change.
         _bandMonitor = MonitorFromRect(ref band, MONITOR_DEFAULTTONEAREST);
+        // Re-found here because every event that can replace the taskbar
+        // window (TaskbarCreated first) also lands in this rebuild. A
+        // position query that just succeeded means the window exists.
+        _taskbar = FindWindow(TaskbarClassName, null);
 
         // The approach level and the monitor's DPI are part of the layout: a
         // new level, or a scale change under the same rect, rebuilds the zone

@@ -43,6 +43,8 @@ public sealed class DeckleShellTaskbarCoverSource : DeckleEventSource
     public const int EvtSessionNotifyFailed   = 20;
     // 21, 22, 23 and 25 belong to retired events: reserved, never reuse.
     public const int EvtLayoutQueryRecovered  = 24;
+    public const int EvtCoverRestacked        = 26;
+    public const int EvtReorderHookFailed     = 27;
 
     // ── Host lifecycle ────────────────────────────────────────────────────────
 
@@ -167,6 +169,19 @@ public sealed class DeckleShellTaskbarCoverSource : DeckleEventSource
         WriteEvent(EvtCoverHidden, reason);
     }
 
+    // The band found the taskbar above it and climbed back. Verbose and
+    // gated like the other cover transitions: it fires at the cadence of
+    // Explorer's restacks, a diagnosis signal rather than a milestone.
+    [Event(EvtCoverRestacked,
+           Level = EventLevel.Verbose,
+           Keywords = (EventKeywords)Keywords.Windowing,
+           Message = "cover restacked above the taskbar | reason={0}")]
+    public void CoverRestacked(string reason)
+    {
+        if (!IsWindowingDetailEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Windowing)) return;
+        WriteEvent(EvtCoverRestacked, reason);
+    }
+
     // ── Gates ─────────────────────────────────────────────────────────────────
 
     [Event(EvtCoverSuppressed,
@@ -248,6 +263,15 @@ public sealed class DeckleShellTaskbarCoverSource : DeckleEventSource
     public void CursorHookFailed()
     {
         if (IsEnabled()) WriteEvent(EvtCursorHookFailed);
+    }
+
+    [Event(EvtReorderHookFailed,
+           Level = EventLevel.Warning,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Message = "The desktop reorder hook failed — a taskbar restacked above the cover is only caught later")]
+    public void ReorderHookFailed()
+    {
+        if (IsEnabled()) WriteEvent(EvtReorderHookFailed);
     }
 
     [Event(EvtSessionNotifyFailed,
