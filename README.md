@@ -4,9 +4,9 @@
 
 # Deckle
 
-**Local voice dictation for Windows 11. Your words land in the app you are typing in, and nothing leaves your machine.**
+**A local companion for Windows 11: one app, many modules, each turned on or off as you like. Nothing leaves your machine.**
 
-Press the hotkey, speak, and press it again when you are done. Deckle cuts your speech into utterances on your pauses and transcribes each one with a local Whisper model while you keep talking. A long pause becomes a new paragraph. The text goes to the clipboard, or straight into the focused field when you turn paste on.
+Voice dictation is the first module and the most established one. Press the hotkey, speak, and press it again when you are done. Deckle cuts your speech into utterances on your pauses and transcribes each one with a local Whisper model while you keep talking. A long pause becomes a new paragraph. The text goes to the clipboard, or straight into the focused field when you turn paste on.
 
 **[Get the newest release](https://github.com/louisfifre/deckle/releases)**
 
@@ -44,7 +44,7 @@ Deckle is one app with several modules. You choose them at setup and can change 
 
 A left click on the tray icon opens a menu with a switch per background feature, Ambient Light, Record and Transcribe audio files. A right click opens the classic menu for Logs, Settings, the Playground, restart and quit. A double click opens Settings.
 
-Smaller touches outside the module list: a **taskbar cover** that masks the taskbar with an opaque band (in progress); an **Apps and games** page, still foundations: a registry of your apps, filled by hand or from your Steam libraries and chosen folders, with an HDR rule per monitor applied while an app runs; **read-aloud**, scaffolded but dormant; and **precision scrolling** for finer mouse-wheel control, still groundwork.
+Smaller touches outside the module list: a **taskbar cover** that masks the taskbar with an opaque band (in progress); an **Apps and games** page, still foundations: a registry of your apps, filled by hand or from your Steam libraries and chosen folders, with an HDR rule per monitor applied while an app runs; **read-aloud**, scaffolded but dormant; and **smooth scrolling** for the mouse wheel, still groundwork.
 
 ---
 
