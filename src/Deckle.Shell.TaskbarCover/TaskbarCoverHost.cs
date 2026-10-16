@@ -48,11 +48,13 @@ public sealed partial class TaskbarCoverHost : IDisposable
     private IntPtr _hInstance;
     private IntPtr _brush;
     private IntPtr _cursorHook;
+    private IntPtr _reorderHook;
     private uint _wmTaskbarCreated;
 
     // Rooted for the GC while native code holds their function pointers.
     private NativeMethods.WndProc? _wndProcDelegate;
     private WinEventProc? _cursorHookDelegate;
+    private WinEventProc? _reorderHookDelegate;
 
     private volatile bool _running;
 

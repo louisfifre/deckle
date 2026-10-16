@@ -908,6 +908,9 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   └── ColorSpace.cs
 │   │   └── Deckle.Composition.csproj
 │   ├── Deckle.Core/
+│   │   ├── Design/
+│   │   │   ├── Dpi.cs
+│   │   │   └── Spacing.cs
 │   │   ├── Interop/
 │   │   │   ├── NativeMethods.Audio.cs
 │   │   │   ├── NativeMethods.cs
@@ -1650,6 +1653,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── ApproachDistance.cs
 │   │   ├── CoverBand.cs
 │   │   ├── CoverGeometry.cs
+│   │   ├── CoverStacking.cs
 │   │   ├── CoverSuppression.cs
 │   │   ├── Deckle.Shell.TaskbarCover.csproj
 │   │   ├── DeckleShellTaskbarCoverSource.cs
@@ -1992,7 +1996,9 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   └── DeckleChronoSourceTests.cs
 │   ├── Deckle.Core.Tests/
 │   │   ├── Deckle.Core.Tests.csproj
-│   │   └── JsonSettingsStoreTests.cs
+│   │   ├── DpiTests.cs
+│   │   ├── JsonSettingsStoreTests.cs
+│   │   └── SpacingTests.cs
 │   ├── Deckle.Diagnostics.Logging.Tests/
 │   │   ├── Deckle.Diagnostics.Logging.Tests.csproj
 │   │   ├── LogFilterSelectionTests.cs
@@ -2172,6 +2178,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   └── FullscreenGeometryTests.cs
 │   ├── Deckle.Shell.TaskbarCover.Tests/
 │   │   ├── CoverGeometryTests.cs
+│   │   ├── CoverStackingTests.cs
 │   │   ├── CoverSuppressionTests.cs
 │   │   ├── Deckle.Shell.TaskbarCover.Tests.csproj
 │   │   ├── TaskbarCoverBugNotes.md

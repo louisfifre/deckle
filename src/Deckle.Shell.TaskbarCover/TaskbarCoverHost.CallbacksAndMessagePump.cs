@@ -34,6 +34,11 @@ public sealed partial class TaskbarCoverHost
             UnhookWinEvent(_cursorHook);
             _cursorHook = IntPtr.Zero;
         }
+        if (_reorderHook != IntPtr.Zero)
+        {
+            UnhookWinEvent(_reorderHook);
+            _reorderHook = IntPtr.Zero;
+        }
         foreach (var band in _bands)
             NativeMethods.DestroyWindow(band.Hwnd);
         _bands.Clear();

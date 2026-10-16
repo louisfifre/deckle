@@ -110,7 +110,8 @@ internal sealed class CoverBand
     // The taskbar is topmost too and among topmost windows the most recently
     // positioned wins, so the band re-asserts its place on show and, while
     // visible, on every foreground change, every layout message (even with an
-    // unchanged rect) and every return to full opacity.
+    // unchanged rect), every return to full opacity, and whenever the desktop
+    // reorders its taskbar above it.
     public void ReassertTopmost() =>
         NativeMethods.SetWindowPos(Hwnd, NativeMethods.HWND_TOPMOST, 0, 0, 0, 0,
             NativeMethods.SWP_NOMOVE | NativeMethods.SWP_NOSIZE | NativeMethods.SWP_NOACTIVATE);
