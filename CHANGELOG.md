@@ -31,6 +31,7 @@ doctrine). This file is generated from the Conventional-Commit history by
 ### Fixed
 
 - **taskbar-cover:** Cover the taskbar on every monitor
+- **taskbar-cover:** Climb back above a taskbar the desktop reordered over the band
 
 ## [0.57.0](https://github.com/louisfifre/deckle/compare/v0.35.0...v0.57.0) — 2026-10-15
 
