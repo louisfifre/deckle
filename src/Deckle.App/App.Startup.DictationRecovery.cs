@@ -37,7 +37,7 @@ public partial class App
             return;
         }
 
-        _hudWindow.ShowDictationRecovered();
+        _hudWindow?.ShowDictationRecovered();
         DeckleAppSource.Log.DictationRecovered();
         DeckleAppSource.Log.DictationRecoveredDetail(text.Length);
         store.Delete();
