@@ -450,10 +450,10 @@
     <value>Ctrl+V where you want it.</value>
   </data>
   <!-- Shown once at launch when the previous run died mid-dictation and its
-    text was put back on the clipboard. The wording is French on purpose, as
-    the maintainer wrote it; every other string here is English. -->
+    text was put back on the clipboard. It names the dictation because the
+    clipboard changed with no action from the user. -->
   <data name="Hud_DictationRecovered_Title" xml:space="preserve">
-    <value>Texte copié dans le presse-papiers</value>
+    <value>Recovered dictation copied to clipboard</value>
   </data>
   <!-- File transcription completion. The saved .txt file is the primary
        outcome; the hint reminds the user it's also on the clipboard. -->
