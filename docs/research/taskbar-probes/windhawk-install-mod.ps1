@@ -6,9 +6,11 @@
 # no Windhawk restart.
 #
 # Usage: pwsh -File windhawk-install-mod.ps1 -Dll <mod.dll> -Source <mod.wh.cpp>
-#        [-Set TaskbarHeight=44 -Set IconSize=16] [-AppData <Windhawk AppData>]
-#        [-BackupDir <dir>]
-#        pwsh -File windhawk-install-mod.ps1 -Source <mod.wh.cpp> -Set TaskbarHeight=24
+#        [-AppData <Windhawk AppData>] [-BackupDir <dir>] [TaskbarHeight=44 IconSize=16]
+#        pwsh -File windhawk-install-mod.ps1 -Source <mod.wh.cpp> TaskbarHeight=24
+#
+# The settings are the bare trailing arguments, one key=value each, after the
+# named parameters. A value may hold ';' or '%' but not a leading '-'.
 #        pwsh -File windhawk-install-mod.ps1 -Source <mod.wh.cpp> -Restore
 #
 # Without -Dll only the settings change: the INI keeps its DLL, SettingsChangeTime
@@ -18,10 +20,12 @@
 #
 # -Restore puts back the INI and the source saved by the first install of that
 # mod. The DLL copied in stays, the INI no longer names it.
+[CmdletBinding(PositionalBinding = $false)]
 param(
     [string] $Dll,
     [Parameter(Mandatory)] [string] $Source,
-    [string[]] $Set = @(),
+    # The bare trailing arguments, so that `pwsh -File` can pass several pairs.
+    [Parameter(Position = 0, ValueFromRemainingArguments = $true)] [string[]] $Set = @(),
     [string] $AppData = 'D:\bin\scoop\persist\windhawk\AppData',
     [string] $BackupDir = (Join-Path $env:LOCALAPPDATA 'Deckle\windhawk-backup'),
     [switch] $Restore

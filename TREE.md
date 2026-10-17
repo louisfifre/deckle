@@ -219,6 +219,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   └── 0005-serve-anytype-mcp-stateless-with-explicit-recovery.md  — The resident Anytype gateway uses stateless MCP requests and advertises an expl…
 │   ├── research/
 │   │   ├── taskbar-probes/
+│   │   │   ├── clock-uia.ps1
 │   │   │   ├── explorer-restart.ps1
 │   │   │   ├── feature-flags.ps1
 │   │   │   ├── late-inject-repro.ps1
