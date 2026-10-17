@@ -128,6 +128,58 @@ public sealed class LiveTranscriptionPipelineTests
         Assert.Equal("Deckle", published[1].Text);
     }
 
+    [Fact]
+    public async Task RecoveryFileHoldsTheRawTextDuringTheTakeAndIsGoneOnceDelivered()
+    {
+        CancellationToken testCancellation = TestContext.Current.CancellationToken;
+        string root = Path.Combine(AppContext.BaseDirectory, $"live-recovery-{Guid.NewGuid():N}");
+        try
+        {
+            var store = new DictationRecoveryStore(Path.Combine(root, "dictation.dat"));
+            var capture = new ScriptedMicrophoneCapture(utteranceCount: 2);
+            var backend = new SequencedBackend(["bonjour", "Deckle"]);
+            using var engine = new TranscriptionEngine(
+                new StreamingHost(),
+                backend,
+                capture,
+                new RecordingClipboardWriter(),
+                recovery: store);
+            var finished = new TaskCompletionSource<TranscriptionOutcome>(
+                TaskCreationOptions.RunContinuationsAsynchronously);
+            var ready = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+            engine.StatusChanged += status =>
+            {
+                if (status == Loc.Get("Status_Ready")) ready.TrySetResult();
+            };
+            engine.TranscriptionFinished += outcome => finished.TrySetResult(outcome);
+
+            Assert.Equal(ToggleResult.Started, engine.RequestToggle(shouldPaste: false));
+            await backend.TwoCallsCompleted.Task.WaitAsync(
+                TimeSpan.FromSeconds(5), testCancellation);
+
+            // The write follows the backend call on the consumer task, so poll.
+            string text = string.Empty;
+            for (int i = 0; i < 100 && text != "bonjour\n\nDeckle"; i++)
+            {
+                store.TryRead(out text);
+                if (text != "bonjour\n\nDeckle")
+                    await Task.Delay(50, testCancellation);
+            }
+            Assert.Equal("bonjour\n\nDeckle", text);
+
+            Assert.Equal(ToggleResult.Stopped, engine.RequestToggle(shouldPaste: false));
+            // Finished is raised inside finalize, before the file is cleared;
+            // Ready comes after the worker has settled.
+            await finished.Task.WaitAsync(TimeSpan.FromSeconds(5), testCancellation);
+            await ready.Task.WaitAsync(TimeSpan.FromSeconds(5), testCancellation);
+
+            Assert.False(store.Exists);
+        }
+        finally
+        {
+            if (Directory.Exists(root)) Directory.Delete(root, recursive: true);
+        }
+    }
     // Each utterance is longer than the minimum threshold and ends on a full
     // stop, so each one closes a batch on its own, with no carried fragment.
     private static readonly string FirstLongUtterance = string.Concat(

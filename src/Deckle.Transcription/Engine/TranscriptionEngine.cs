@@ -263,6 +263,10 @@ public sealed partial class TranscriptionEngine : IDisposable
 
     private readonly RecordingHostAdapter _recordingHost;
 
+    // Crash-safety copy of the live dictation (TranscriptionEngine.Recovery.cs).
+    // Null switches it off.
+    private readonly DictationRecoveryStore? _recovery;
+
     // Silero VAD lifecycle, owned by Deckle.Vad. Resolved lazily per segmented
     // session.
     private readonly VadService _vadService;
@@ -270,13 +274,15 @@ public sealed partial class TranscriptionEngine : IDisposable
     public TranscriptionEngine(
         ITranscriptionEngineHost host,
         IAsrBackend backend,
-        IRewriteService? rewrite = null)
+        IRewriteService? rewrite = null,
+        DictationRecoveryStore? recovery = null)
         : this(
             host,
             backend,
             new MicrophoneCapture(),
             Win32ClipboardWriter.Instance,
-            rewrite)
+            rewrite,
+            recovery)
     {
     }
 
@@ -285,7 +291,8 @@ public sealed partial class TranscriptionEngine : IDisposable
         IAsrBackend backend,
         IMicrophoneCapture capture,
         IClipboardWriter clipboard,
-        IRewriteService? rewrite = null)
+        IRewriteService? rewrite = null,
+        DictationRecoveryStore? recovery = null)
     {
         ArgumentNullException.ThrowIfNull(host);
         ArgumentNullException.ThrowIfNull(backend);
@@ -296,6 +303,7 @@ public sealed partial class TranscriptionEngine : IDisposable
         _backend = backend;
         _capture = capture;
         _clipboard = clipboard;
+        _recovery = recovery;
         _vadService = new VadService(_host.ResolveModelsDirectory);
 
         _rewrite = rewrite ?? new RewriteService();

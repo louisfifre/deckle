@@ -1725,6 +1725,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   ├── TranscriptionEngine.Lifecycle.cs
 │   │   │   ├── TranscriptionEngine.MonolithicPipeline.cs
 │   │   │   ├── TranscriptionEngine.Pipeline.cs
+│   │   │   ├── TranscriptionEngine.Recovery.cs
 │   │   │   ├── TranscriptionEngine.StateMachine.cs
 │   │   │   ├── TranscriptionEngine.StreamingPipeline.cs
 │   │   │   ├── TranscriptionEngine.Telemetry.cs

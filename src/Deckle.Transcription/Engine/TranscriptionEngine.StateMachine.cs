@@ -371,7 +371,17 @@ public sealed partial class TranscriptionEngine
 
             if (produced is not null)
             {
-                FinalizeTranscription(produced.Value, TranscriptionDelivery.Dictation);
+                TranscriptionOutcome outcome =
+                    FinalizeTranscription(produced.Value, TranscriptionDelivery.Dictation);
+
+                // None means the raw copy to the clipboard failed: the recovery
+                // file is then the only copy of the text, so it stays.
+                if (outcome != TranscriptionOutcome.None) ClearRecovery();
+            }
+            else
+            {
+                // Cancelled, aborted or empty take: nothing to recover.
+                ClearRecovery();
             }
         }
         catch (Exception ex)
