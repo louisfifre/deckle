@@ -32,7 +32,10 @@ public partial class App
         {
             var host = new AppTranscriptionEngineHost();
             var backend = new WhisperBackend(host);
-            _engine = new TranscriptionEngine(host, backend);
+            _engine = new TranscriptionEngine(
+                host,
+                backend,
+                recovery: new DictationRecoveryStore(AppPaths.DictationRecoveryFilePath));
             context.Milestone("engine");
         }
         else

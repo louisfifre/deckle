@@ -46,6 +46,10 @@ public sealed partial class TranscriptionEngine
         BatchRewriteRun? batchRewrite = StartBatchRewrite();
         using IDisposable? batchFeed = FeedBatchRewrite(batchRewrite);
 
+        // Crash-safety copy of the raw text (TranscriptionEngine.Recovery.cs),
+        // with the same lifetime as the batch feed.
+        using IDisposable? recoveryFeed = FeedRecovery();
+
         var policy = new SegmentedTranscriptionPolicy(
             FixedPrompt: _host.Transcription.Engine.InitialPrompt ?? "",
             ApplyPreprocessing: true,

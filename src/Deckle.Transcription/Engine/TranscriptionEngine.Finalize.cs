@@ -79,6 +79,11 @@ public sealed partial class TranscriptionEngine
             return TranscriptionOutcome.None;
         }
 
+        // The clipboard now holds the text, so the recovery file is no longer
+        // its only copy. Cleared here rather than after delivery, so a failure
+        // in the rewrite or the paste cannot leave a stale file behind.
+        ClearRecovery();
+
         FinalizeRewrite rewrite = ApplyRewrite(rawText, isFileRun, production.BatchRewrite);
         FinalizeDelivery delivered = DeliverTranscript(rewrite.Text, delivery);
 

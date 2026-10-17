@@ -369,10 +369,11 @@ public sealed partial class TranscriptionEngine
                     : ProduceMonolithicAsync(recordCts.Token, primeTask))
                 .GetAwaiter().GetResult();
 
+            // The recovery file is cleared inside finalize, once the raw copy
+            // has landed (TranscriptionEngine.Recovery.cs). A take that ends
+            // here without that copy keeps it.
             if (produced is not null)
-            {
                 FinalizeTranscription(produced.Value, TranscriptionDelivery.Dictation);
-            }
         }
         catch (Exception ex)
         {

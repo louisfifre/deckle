@@ -16,6 +16,15 @@ namespace Deckle.App;
 // provision into a custom root. Both phases skip the normal boot.
 public partial class App
 {
+    // The flags of the modes that coordinate overlapping processes by design.
+    // Program's crash-dump relaunch checks them: the process that spawned one
+    // of these follows its PID, so it must not hand over to another.
+    internal static readonly string[] TransactionalModeFlags =
+        { "--install", "--install-continue", "--update-apply", "--relocate-data" };
+
+    internal static bool IsTransactionalMode(string[] args)
+        => Array.Exists(args, a => Array.IndexOf(TransactionalModeFlags, a) >= 0);
+
     // True when one of these modes owns the process and OnLaunched must stop.
     private bool TryEnterInstallMode()
     {

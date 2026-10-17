@@ -230,6 +230,9 @@ public partial class App
         Settings.SettingsService.Instance.Changed += OnShellSettingsChangedForHotkeys;
         context.Milestone("hotkeys");
 
+        // After the HUD exists: the restore shows its message there.
+        RestoreInterruptedDictation();
+
         // No model warmup at boot: nothing sits in VRAM while the app is idle.
         // The engine primes the model on the first hotkey press.
     }

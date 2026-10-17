@@ -209,6 +209,10 @@ public sealed partial class DeckleWhispSource : DeckleEventSource
     public const int EvtFileTranscriptionBatchStartedDetail = 182;
     public const int EvtFileTranscriptionBatchCompleted  = 183;
     public const int EvtFileTranscriptionBatchCompletedDetail = 184;
+    public const int EvtDictationRecoveryWriteFailed     = 185;
+    public const int EvtDictationRecoveryWriteFailedDetail = 186;
+    public const int EvtDictationRecoveryDeleteFailed    = 187;
+    public const int EvtDictationRecoveryDeleteFailedDetail = 188;
 
     // ── Per-provider keywords ───────────────────────────────────────────
     // Bits 0x400+ are provider-local (Deckle.Diagnostics.Keywords). No live

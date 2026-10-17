@@ -23,6 +23,9 @@
          publish\ and all compiled XAML resources (.xbf embedded in .pri since 1.8)
          become unreachable. Cf. microsoft/WindowsAppSDK#3451. -->
     <EnableMsixTooling>true</EnableMsixTooling>
+    <!-- Program.cs owns Main: the crash dump capture is decided before XAML
+         hosts anything. -->
+    <DefineConstants>$(DefineConstants);DISABLE_XAML_GENERATED_MAIN</DefineConstants>
   </PropertyGroup>
 
   <!-- Publish-only options, gated on _IsPublishing (set only by the Publish

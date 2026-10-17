@@ -12,9 +12,12 @@ namespace Deckle.Core;
 //   • settings.json — the shell's settings file, at the root
 //   • secrets.dat   — Deckle.Security vault, DPAPI-sealed single file
 //   • backups/      — settings backup snapshots
+//   • recovery/     — the sealed raw text of a dictation in progress,
+//                     present only while a take runs or after a crash
 //   • telemetry/    — JSONL files (latency, microphone), raw-capture
 //                     subfolders, and per-profile corpus
 //   • diagnostics/  — local logs (setup, errors, app.jsonl); never transmitted
+//   • diagnostics/dumps/ — minidumps of fatal runtime errors, newest few kept
 //   • models/       — Whisper ggml-*.bin and the other downloaded models
 //   • native/       — libwhisper.dll, ggml*.dll
 //   • benchmark/    — optional
@@ -48,10 +51,16 @@ public static class AppPaths
     public static string SettingsFilePath             { get; }
     public static string SecretsFilePath              { get; }
     public static string SettingsBackupDirectory      { get; }
+    // Holds dictation.dat while a take runs; created by the store on its first write.
+    public static string RecoveryDirectory            { get; }
+    public static string DictationRecoveryFilePath    { get; }
     public static string TelemetryDirectory           { get; }
     public static string TrackpadTelemetryDirectory   { get; }
     public static string MouseWheelTelemetryDirectory { get; }
     public static string DiagnosticsDirectory         { get; }
+    // Minidumps createdump writes on a fatal runtime error; created by the
+    // host's entry point before it arms the capture, not here.
+    public static string CrashDumpsDirectory          { get; }
     public static string ModelsDirectory              { get; }
     public static string NativeDirectory              { get; }
     public static string BenchmarkDirectory           { get; }
@@ -83,11 +92,14 @@ public static class AppPaths
         SettingsFilePath             = Path.Combine(UserDataRoot, "settings.json");
         SecretsFilePath              = Path.Combine(UserDataRoot, "secrets.dat");
         SettingsBackupDirectory      = Path.Combine(UserDataRoot, "backups");
+        RecoveryDirectory            = Path.Combine(UserDataRoot, "recovery");
+        DictationRecoveryFilePath    = Path.Combine(RecoveryDirectory, "dictation.dat");
         TelemetryDirectory           = Path.Combine(UserDataRoot, "telemetry");
         TrackpadTelemetryDirectory   = Path.Combine(TelemetryDirectory, "trackpad");
         MouseWheelTelemetryDirectory = Path.Combine(TelemetryDirectory, "mouse-wheel");
         DiagnosticsDirectory         = Path.Combine(UserDataRoot, "diagnostics");
-        ModelsDirectory              = Path.Combine(UserDataRoot, "models");
+        CrashDumpsDirectory          = Path.Combine(DiagnosticsDirectory, "dumps");
+        ModelsDirectory            = Path.Combine(UserDataRoot, "models");
         NativeDirectory              = Path.Combine(UserDataRoot, "native");
         BenchmarkDirectory           = Path.Combine(UserDataRoot, "benchmark");
         ModulesDirectory             = Path.Combine(UserDataRoot, "modules");

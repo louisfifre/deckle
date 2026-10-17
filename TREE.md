@@ -519,7 +519,9 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   ├── DeckleAppSource.BootAndStatus.cs
 │   │   │   ├── DeckleAppSource.CommandLine.cs
 │   │   │   ├── DeckleAppSource.Crash.cs
+│   │   │   ├── DeckleAppSource.CrashDumps.cs
 │   │   │   ├── DeckleAppSource.cs
+│   │   │   ├── DeckleAppSource.DictationRecovery.cs
 │   │   │   ├── DeckleAppSource.Hotkeys.cs
 │   │   │   ├── DeckleAppSource.Lifecycle.cs
 │   │   │   ├── DeckleAppSource.Shutdown.cs
@@ -552,6 +554,8 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── App.PrecisionScroll.cs
 │   │   ├── App.Relocate.cs
 │   │   ├── App.Startup.CommandLine.cs
+│   │   ├── App.Startup.CrashDumps.cs
+│   │   ├── App.Startup.DictationRecovery.cs
 │   │   ├── App.Startup.Foundation.cs
 │   │   ├── App.Startup.Modules.cs
 │   │   ├── App.Startup.Settings.cs
@@ -567,6 +571,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── App.xaml.cs
 │   │   ├── AppModules.cs
 │   │   ├── AutocorrectNotifications.cs
+│   │   ├── CrashSupervisor.cs
 │   │   ├── Deckle.App.csproj
 │   │   ├── global.json
 │   │   ├── LogWindow.Chrome.cs
@@ -574,6 +579,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── LogWindow.Model.cs
 │   │   ├── LogWindow.xaml
 │   │   ├── LogWindow.xaml.cs
+│   │   ├── Program.cs
 │   │   └── SecondaryWindowPlacement.cs
 │   ├── Deckle.Audio/
 │   │   ├── Internal/
@@ -942,6 +948,9 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   ├── JsonlSink.cs
 │   │   │   ├── LogWindowSink.cs
 │   │   │   └── RoutedJsonlSink.cs
+│   │   ├── CrashDumpCapture.cs
+│   │   ├── CrashRelaunchBudget.cs
+│   │   ├── CrashRelaunchPolicy.cs
 │   │   ├── Deckle.Diagnostics.csproj
 │   │   ├── DeckleCancellationSource.cs
 │   │   ├── DeckleEventSource.cs
@@ -1721,10 +1730,13 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   ├── TranscriptionEngine.Lifecycle.cs
 │   │   │   ├── TranscriptionEngine.MonolithicPipeline.cs
 │   │   │   ├── TranscriptionEngine.Pipeline.cs
+│   │   │   ├── TranscriptionEngine.Recovery.cs
 │   │   │   ├── TranscriptionEngine.StateMachine.cs
 │   │   │   ├── TranscriptionEngine.StreamingPipeline.cs
 │   │   │   ├── TranscriptionEngine.Telemetry.cs
 │   │   │   └── TranscriptionEngine.Utterances.cs
+│   │   ├── Recovery/
+│   │   │   └── DictationRecoveryStore.cs
 │   │   ├── Setup/
 │   │   │   └── ModelEntry.cs
 │   │   ├── Streaming/
@@ -1754,6 +1766,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── DeckleWhispSource.FileTranscription.cs
 │   │   ├── DeckleWhispSource.PipelineCompletion.cs
 │   │   ├── DeckleWhispSource.Preprocessing.cs
+│   │   ├── DeckleWhispSource.Recovery.cs
 │   │   ├── DeckleWhispSource.Segments.cs
 │   │   ├── DeckleWhispSource.Streaming.cs
 │   │   ├── DeckleWhispSource.Telemetry.cs
@@ -2010,6 +2023,8 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── Deckle.Diagnostics.Telemetry.Tests.csproj
 │   │   └── TelemetryListenerBootstrapTests.cs
 │   ├── Deckle.Diagnostics.Tests/
+│   │   ├── CrashDumpCaptureTests.cs
+│   │   ├── CrashRelaunchPolicyTests.cs
 │   │   ├── Deckle.Diagnostics.Tests.csproj
 │   │   ├── DeckleCancellationSourceTests.cs
 │   │   ├── DeckleNetworkSourceTests.cs
@@ -2211,6 +2226,8 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── Deckle.Transcription.Tests.csproj
 │   │   ├── DeckleLlmSourceTests.cs
 │   │   ├── DeckleWhispSourceTests.cs
+│   │   ├── DictationRecoveryBugNotes.md
+│   │   ├── DictationRecoveryStoreTests.cs
 │   │   ├── EnergySegmenterTests.cs
 │   │   ├── FileBatchLifecycleTests.cs
 │   │   ├── FileTranscriptionQueueTests.cs
