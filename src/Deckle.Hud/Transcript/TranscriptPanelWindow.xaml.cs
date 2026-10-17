@@ -274,7 +274,6 @@ public sealed partial class TranscriptPanelWindow : Window
 
         TranscriptText.LineStackingStrategy = LineStackingStrategy.BlockLineHeight;
         TranscriptText.LineHeight = _lineHeightDip;
-        MoreAboveHint.Height = _lineHeightDip;
     }
 
     private void ScrollToEnd()
@@ -282,11 +281,15 @@ public sealed partial class TranscriptPanelWindow : Window
         double scrollable = TranscriptScroller.ScrollableHeight;
         TranscriptScroller.ChangeView(null, scrollable, null, disableAnimation: true);
 
-        // Half a line, not 0: px rounding of the window height can leave a
-        // sub-pixel overflow that is not hidden text.
-        MoreAboveHint.Visibility = scrollable > _lineHeightDip / 2
-            ? Visibility.Visible
-            : Visibility.Collapsed;
+        // The fade ramp spans the first visible line, which starts at the
+        // scroll offset in TextBlock coordinates. Half a line, not 0: px
+        // rounding of the window height can leave a sub-pixel overflow that is
+        // not hidden text. With nothing above, the ramp sits above the text
+        // and every line pads with the solid end colour.
+        bool moreAbove = scrollable > _lineHeightDip / 2;
+        double rampTop = moreAbove ? scrollable : -_lineHeightDip;
+        MoreAboveFade.StartPoint = new Point(0, rampTop);
+        MoreAboveFade.EndPoint = new Point(0, rampTop + _lineHeightDip);
     }
 
     // ── Plumbing ─────────────────────────────────────────────────────────────

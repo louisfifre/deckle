@@ -13,6 +13,25 @@
          TextBlock to the viewport height and leave nothing to scroll. -->
     <Grid x:Name="RootGrid"
           Background="{ThemeResource LayerFillColorDefaultBrush}">
+        <!-- Start of the "more above" fade: the primary text colour with zero
+             alpha, so the gradient only ramps alpha and never shifts hue
+             mid-way. High Contrast keeps the text solid: no fade there. -->
+        <Grid.Resources>
+            <ResourceDictionary>
+                <ResourceDictionary.ThemeDictionaries>
+                    <ResourceDictionary x:Key="Light">
+                        <Color x:Key="TranscriptFadeStartColor">#00000000</Color>
+                    </ResourceDictionary>
+                    <ResourceDictionary x:Key="Default">
+                        <Color x:Key="TranscriptFadeStartColor">#00FFFFFF</Color>
+                    </ResourceDictionary>
+                    <ResourceDictionary x:Key="HighContrast">
+                        <StaticResource x:Key="TranscriptFadeStartColor" ResourceKey="SystemColorWindowTextColor" />
+                    </ResourceDictionary>
+                </ResourceDictionary.ThemeDictionaries>
+            </ResourceDictionary>
+        </Grid.Resources>
+
         <Border Background="{ThemeResource LayerFillColorDefaultBrush}"
                 CornerRadius="{ThemeResource OverlayCornerRadius}" />
 
@@ -25,28 +44,29 @@
                           VerticalScrollBarVisibility="Hidden"
                           HorizontalScrollBarVisibility="Disabled"
                           ZoomMode="Disabled">
+                <!-- "There is more above": the oldest visible line fades out
+                     through the text's own alpha, not under a veil painted in
+                     the card's colour. The card is a translucent layer, so no
+                     single colour matches what it renders in both themes; a
+                     fade of the text itself reads the same on any background.
+                     Absolute mapping, in TextBlock coordinates: the code moves
+                     the ramp onto the first visible line (ScrollToEnd), and
+                     past either end the brush pads with its end colours. -->
                 <TextBlock x:Name="TranscriptText"
                            Style="{StaticResource BodyTextBlockStyle}"
-                           Foreground="{ThemeResource TextFillColorPrimaryBrush}"
                            TextWrapping="Wrap"
-                           IsTextSelectionEnabled="False" />
+                           IsTextSelectionEnabled="False">
+                    <TextBlock.Foreground>
+                        <LinearGradientBrush x:Name="MoreAboveFade"
+                                             MappingMode="Absolute"
+                                             StartPoint="0,-1"
+                                             EndPoint="0,0">
+                            <GradientStop Offset="0" Color="{ThemeResource TranscriptFadeStartColor}" />
+                            <GradientStop Offset="1" Color="{ThemeResource TextFillColorPrimary}" />
+                        </LinearGradientBrush>
+                    </TextBlock.Foreground>
+                </TextBlock>
             </ScrollViewer>
-
-            <!-- "There is more above": one line tall (height set in code from
-                 the measured line height), the card's own fill fading to
-                 transparent over the oldest visible line. Shown only while
-                 the text overflows the viewport. -->
-            <Rectangle x:Name="MoreAboveHint"
-                       VerticalAlignment="Top"
-                       IsHitTestVisible="False"
-                       Visibility="Collapsed">
-                <Rectangle.Fill>
-                    <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
-                        <GradientStop Offset="0" Color="{ThemeResource LayerFillColorDefault}" />
-                        <GradientStop Offset="1" Color="{ThemeResource SubtleFillColorTransparent}" />
-                    </LinearGradientBrush>
-                </Rectangle.Fill>
-            </Rectangle>
         </Grid>
     </Grid>
 </Window>
