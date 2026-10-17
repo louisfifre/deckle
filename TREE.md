@@ -942,6 +942,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   ├── JsonlSink.cs
 │   │   │   ├── LogWindowSink.cs
 │   │   │   └── RoutedJsonlSink.cs
+│   │   ├── CrashDumpCapture.cs
 │   │   ├── Deckle.Diagnostics.csproj
 │   │   ├── DeckleCancellationSource.cs
 │   │   ├── DeckleEventSource.cs
@@ -2010,6 +2011,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── Deckle.Diagnostics.Telemetry.Tests.csproj
 │   │   └── TelemetryListenerBootstrapTests.cs
 │   ├── Deckle.Diagnostics.Tests/
+│   │   ├── CrashDumpCaptureTests.cs
 │   │   ├── Deckle.Diagnostics.Tests.csproj
 │   │   ├── DeckleCancellationSourceTests.cs
 │   │   ├── DeckleNetworkSourceTests.cs
