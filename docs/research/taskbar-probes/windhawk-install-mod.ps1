@@ -8,7 +8,13 @@
 # Usage: pwsh -File windhawk-install-mod.ps1 -Dll <mod.dll> -Source <mod.wh.cpp>
 #        [-Set TaskbarHeight=44 -Set IconSize=16] [-AppData <Windhawk AppData>]
 #        [-BackupDir <dir>]
+#        pwsh -File windhawk-install-mod.ps1 -Source <mod.wh.cpp> -Set TaskbarHeight=24
 #        pwsh -File windhawk-install-mod.ps1 -Source <mod.wh.cpp> -Restore
+#
+# Without -Dll only the settings change: the INI keeps its DLL, SettingsChangeTime
+# moves and the engine calls the mod's Wh_ModSettingsChanged, the way the UI does
+# when a setting is saved. A loaded DLL cannot be overwritten (explorer holds it),
+# which is why the UI compiles every build under a new file name.
 #
 # -Restore puts back the INI and the source saved by the first install of that
 # mod. The DLL copied in stays, the INI no longer names it.
@@ -41,7 +47,7 @@ if ($Restore) {
     exit 0
 }
 
-if (-not $Dll) { throw 'Give -Dll, or -Restore' }
+if (-not $Dll -and $Set.Count -eq 0) { throw 'Give -Dll, -Set, or -Restore' }
 if (-not (Test-Path -LiteralPath $iniPath)) { throw "$modId is not installed: no $iniPath" }
 
 New-Item -ItemType Directory -Force $BackupDir | Out-Null
@@ -55,12 +61,20 @@ $enc = if ($utf16) { [Text.Encoding]::Unicode } else { [Text.UTF8Encoding]::new(
 $text = $enc.GetString($raw)
 if ($utf16 -and $text.Length -gt 0 -and $text[0] -eq [char]0xFEFF) { $text = $text.Substring(1) }
 
-$dllName = Split-Path -Leaf $Dll
-Copy-Item -LiteralPath $Dll -Destination (Join-Path $modsDir $dllName) -Force
-Copy-Item -LiteralPath $Source -Destination $srcPath -Force
-
 $now = [DateTimeOffset]::UtcNow.ToUnixTimeSeconds()
-$text = [regex]::Replace($text, '(?m)^LibraryFileName=.*$', "LibraryFileName=$dllName")
+if ($Dll) {
+    $dllName = Split-Path -Leaf $Dll
+    $dllTarget = Join-Path $modsDir $dllName
+    if ((Test-Path -LiteralPath $dllTarget) -and
+        (Get-FileHash -LiteralPath $dllTarget).Hash -eq (Get-FileHash -LiteralPath $Dll).Hash) {
+        "$dllName is already in place, not copied"
+    }
+    else {
+        Copy-Item -LiteralPath $Dll -Destination $dllTarget -Force
+    }
+    Copy-Item -LiteralPath $Source -Destination $srcPath -Force
+    $text = [regex]::Replace($text, '(?m)^LibraryFileName=.*$', "LibraryFileName=$dllName")
+}
 $text = [regex]::Replace($text, '(?m)^SettingsChangeTime=.*$', "SettingsChangeTime=$now")
 foreach ($pair in $Set) {
     $k, $v = $pair -split '=', 2
@@ -74,5 +88,6 @@ $outBytes = $enc.GetBytes($text)
 if ($utf16) { $outBytes = [byte[]](0xFF, 0xFE) + $outBytes }
 [IO.File]::WriteAllBytes($iniPath, $outBytes)
 
-"installed $modId as $dllName, backups in $BackupDir"
+if ($Dll) { "installed $modId as $dllName, backups in $BackupDir" }
+else { "settings of $modId changed, backups in $BackupDir" }
 $text
