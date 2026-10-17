@@ -15,6 +15,14 @@ doctrine). This file is generated from the Conventional-Commit history by
 
 - **core:** Name the spacing scale and the DIP to pixel conversion
 - **taskbar-cover:** Log the display scale of each band
+- **scripts:** Publish 0.x cuts as releases that claim Latest
+- **diagnostics:** Decide and name the crash dump capture
+- **app:** Arm the crash dump capture at startup and relaunch once
+- **whisp:** Add a sealed recovery store for the dictation in progress
+- **whisp:** Keep a sealed copy of the live dictation after every utterance
+- **app:** Restore an interrupted dictation to the clipboard at launch
+- **diagnostics:** Add the crash relaunch policy and its budget
+- **app:** Relaunch Deckle after a crash through a supervising launcher
 
 ### Changed
 
@@ -32,6 +40,9 @@ doctrine). This file is generated from the Conventional-Commit history by
 
 - **taskbar-cover:** Cover the taskbar on every monitor
 - **taskbar-cover:** Climb back above a taskbar the desktop reordered over the band
+- **app:** Word the recovered dictation message in English like every HUD string
+- **whisp:** Clear the dictation recovery file once the raw copy lands
+- **app:** Guard the recovered dictation message against a missing HUD
 
 ## [0.57.0](https://github.com/louisfifre/deckle/compare/v0.35.0...v0.57.0) — 2026-10-15
 
