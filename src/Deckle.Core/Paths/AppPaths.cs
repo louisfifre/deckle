@@ -12,6 +12,8 @@ namespace Deckle.Core;
 //   • settings.json — the shell's settings file, at the root
 //   • secrets.dat   — Deckle.Security vault, DPAPI-sealed single file
 //   • backups/      — settings backup snapshots
+//   • recovery/     — the sealed raw text of a dictation in progress,
+//                     present only while a take runs or after a crash
 //   • telemetry/    — JSONL files (latency, microphone), raw-capture
 //                     subfolders, and per-profile corpus
 //   • diagnostics/  — local logs (setup, errors, app.jsonl); never transmitted
@@ -49,6 +51,9 @@ public static class AppPaths
     public static string SettingsFilePath             { get; }
     public static string SecretsFilePath              { get; }
     public static string SettingsBackupDirectory      { get; }
+    // Holds dictation.dat while a take runs; created by the store on its first write.
+    public static string RecoveryDirectory            { get; }
+    public static string DictationRecoveryFilePath    { get; }
     public static string TelemetryDirectory           { get; }
     public static string TrackpadTelemetryDirectory   { get; }
     public static string MouseWheelTelemetryDirectory { get; }
@@ -87,6 +92,8 @@ public static class AppPaths
         SettingsFilePath             = Path.Combine(UserDataRoot, "settings.json");
         SecretsFilePath              = Path.Combine(UserDataRoot, "secrets.dat");
         SettingsBackupDirectory      = Path.Combine(UserDataRoot, "backups");
+        RecoveryDirectory            = Path.Combine(UserDataRoot, "recovery");
+        DictationRecoveryFilePath    = Path.Combine(RecoveryDirectory, "dictation.dat");
         TelemetryDirectory           = Path.Combine(UserDataRoot, "telemetry");
         TrackpadTelemetryDirectory   = Path.Combine(TelemetryDirectory, "trackpad");
         MouseWheelTelemetryDirectory = Path.Combine(TelemetryDirectory, "mouse-wheel");

@@ -1729,6 +1729,8 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   ├── TranscriptionEngine.StreamingPipeline.cs
 │   │   │   ├── TranscriptionEngine.Telemetry.cs
 │   │   │   └── TranscriptionEngine.Utterances.cs
+│   │   ├── Recovery/
+│   │   │   └── DictationRecoveryStore.cs
 │   │   ├── Setup/
 │   │   │   └── ModelEntry.cs
 │   │   ├── Streaming/
@@ -1758,6 +1760,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── DeckleWhispSource.FileTranscription.cs
 │   │   ├── DeckleWhispSource.PipelineCompletion.cs
 │   │   ├── DeckleWhispSource.Preprocessing.cs
+│   │   ├── DeckleWhispSource.Recovery.cs
 │   │   ├── DeckleWhispSource.Segments.cs
 │   │   ├── DeckleWhispSource.Streaming.cs
 │   │   ├── DeckleWhispSource.Telemetry.cs
@@ -2216,6 +2219,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── Deckle.Transcription.Tests.csproj
 │   │   ├── DeckleLlmSourceTests.cs
 │   │   ├── DeckleWhispSourceTests.cs
+│   │   ├── DictationRecoveryStoreTests.cs
 │   │   ├── EnergySegmenterTests.cs
 │   │   ├── FileBatchLifecycleTests.cs
 │   │   ├── FileTranscriptionQueueTests.cs

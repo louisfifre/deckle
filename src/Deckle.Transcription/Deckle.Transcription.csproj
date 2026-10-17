@@ -27,6 +27,8 @@
          curve is drawn by the Catalog's shared CurveEditor in XAML shapes, so
          Win2D stays confined to Deckle.Composition. -->
     <PackageReference Include="CommunityToolkit.WinUI.Controls.SettingsControls" />
+    <!-- DPAPI seal of the dictation recovery file (DictationRecoveryStore). -->
+    <PackageReference Include="System.Security.Cryptography.ProtectedData" />
   </ItemGroup>
 
   <ItemGroup>
