@@ -11,11 +11,11 @@ namespace Deckle.Install;
 // version). Lives here, below both, under this module's light and AOT-safe
 // contract — HttpClient and source-generated JSON only.
 //
-// Why the REST API and not /releases/latest: every 0.x release is published as a
-// pre-release, and GitHub's "latest" endpoint deliberately skips pre-releases. The
-// /releases list also contains the native runtime's independent `native-v*`
-// releases. App releases are therefore selected by their strict vX.Y.Z tag and
-// compared semantically instead of trusting API order.
+// Why the REST API and not /releases/latest: the "latest" endpoint returns one
+// release chosen by GitHub, and the /releases list also contains the native
+// runtime's independent `native-v*` releases. App releases are therefore selected
+// by their strict vX.Y.Z tag and compared semantically instead of trusting either
+// GitHub's badge or API order.
 //
 // Asset names are part of the frozen release contract. A published app release
 // missing either exact asset is rejected: synthesizing a plausible URL would
