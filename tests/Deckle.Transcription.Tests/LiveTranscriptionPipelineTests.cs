@@ -180,6 +180,103 @@ public sealed class LiveTranscriptionPipelineTests
             if (Directory.Exists(root)) Directory.Delete(root, recursive: true);
         }
     }
+
+    // The microphone dropped after two utterances were transcribed. Nothing
+    // reached the clipboard, so the file is the only copy of what was said.
+    [Fact]
+    [Trait("Category", "regression")]
+    public async Task RecoveryFileSurvivesAMicrophoneErrorAfterTranscribedUtterances()
+    {
+        CancellationToken testCancellation = TestContext.Current.CancellationToken;
+        string root = Path.Combine(AppContext.BaseDirectory, $"live-recovery-{Guid.NewGuid():N}");
+        try
+        {
+            var store = new DictationRecoveryStore(Path.Combine(root, "dictation.dat"));
+            var clipboard = new RecordingClipboardWriter();
+            using var engine = new TranscriptionEngine(
+                new StreamingHost(),
+                new SequencedBackend(["bonjour", "Deckle"]),
+                new ScriptedMicrophoneCapture(utteranceCount: 2, CaptureOutcome.MicError),
+                clipboard,
+                recovery: store);
+
+            await RunTakeToIdleAsync(engine, store, "bonjour\n\nDeckle", shouldPaste: false, testCancellation);
+
+            Assert.Equal(0, clipboard.WriteCount);
+            Assert.Equal(DictationRecoveryReadStatus.Restored, store.TryRead(out string kept));
+            Assert.Equal("bonjour\n\nDeckle", kept);
+        }
+        finally
+        {
+            if (Directory.Exists(root)) Directory.Delete(root, recursive: true);
+        }
+    }
+
+    // The raw copy landed, then the paste step failed. A file kept here would
+    // overwrite the clipboard with this old text at the next launch.
+    [Fact]
+    [Trait("Category", "regression")]
+    public async Task RecoveryFileIsGoneWhenDeliveryFailsAfterTheRawCopy()
+    {
+        CancellationToken testCancellation = TestContext.Current.CancellationToken;
+        string root = Path.Combine(AppContext.BaseDirectory, $"live-recovery-{Guid.NewGuid():N}");
+        try
+        {
+            var store = new DictationRecoveryStore(Path.Combine(root, "dictation.dat"));
+            var clipboard = new RecordingClipboardWriter();
+            using var engine = new TranscriptionEngine(
+                new StreamingHost(),
+                new SequencedBackend(["bonjour", "Deckle"]),
+                new ScriptedMicrophoneCapture(utteranceCount: 2),
+                clipboard,
+                recovery: store);
+            engine.OnReadyToPaste = () => throw new InvalidOperationException("paste failed");
+
+            await RunTakeToIdleAsync(engine, store, "bonjour\n\nDeckle", shouldPaste: true, testCancellation);
+
+            Assert.Equal("bonjour\n\nDeckle", clipboard.Text);
+            Assert.False(store.Exists);
+        }
+        finally
+        {
+            if (Directory.Exists(root)) Directory.Delete(root, recursive: true);
+        }
+    }
+
+    // Starts a take, waits until the recovery file holds the expected text,
+    // stops it, and returns once the worker has settled back to idle.
+    private static async Task RunTakeToIdleAsync(
+        TranscriptionEngine engine,
+        DictationRecoveryStore store,
+        string expectedText,
+        bool shouldPaste,
+        CancellationToken testCancellation)
+    {
+        int stopped = 0;
+        var ready = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        engine.StatusChanged += status =>
+        {
+            // Only the Ready the worker raises once it has settled counts.
+            if (Volatile.Read(ref stopped) == 1 && status == Loc.Get("Status_Ready"))
+                ready.TrySetResult();
+        };
+
+        Assert.Equal(ToggleResult.Started, engine.RequestToggle(shouldPaste));
+
+        // The write follows the backend call on the consumer task, so poll.
+        string text = string.Empty;
+        for (int i = 0; i < 100 && text != expectedText; i++)
+        {
+            store.TryRead(out text);
+            if (text != expectedText)
+                await Task.Delay(50, testCancellation);
+        }
+        Assert.Equal(expectedText, text);
+
+        Volatile.Write(ref stopped, 1);
+        Assert.Equal(ToggleResult.Stopped, engine.RequestToggle(shouldPaste));
+        await ready.Task.WaitAsync(TimeSpan.FromSeconds(5), testCancellation);
+    }
     // Each utterance is longer than the minimum threshold and ends on a full
     // stop, so each one closes a batch on its own, with no carried fragment.
     private static readonly string FirstLongUtterance = string.Concat(
@@ -337,9 +434,15 @@ public sealed class LiveTranscriptionPipelineTests
     {
         private const int FrameSamples = 800;
         private readonly int _utteranceCount;
+        private readonly CaptureOutcome _outcome;
 
-        public ScriptedMicrophoneCapture(int utteranceCount) =>
+        public ScriptedMicrophoneCapture(
+            int utteranceCount,
+            CaptureOutcome outcome = CaptureOutcome.Completed)
+        {
             _utteranceCount = utteranceCount;
+            _outcome = outcome;
+        }
 
         public event Action<float>? AudioLevel { add { } remove { } }
         public event Action<CaptureFrame>? Frame;
@@ -376,7 +479,7 @@ public sealed class LiveTranscriptionPipelineTests
             return new CaptureResult(
                 captured.ToArray(),
                 Telemetry: null,
-                CaptureOutcome.Completed,
+                _outcome,
                 TimeSpan.Zero,
                 MmsysErr: 0);
         }

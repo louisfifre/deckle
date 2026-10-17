@@ -14,14 +14,19 @@ public sealed partial class TranscriptionEngine
     //
     // Lifecycle, in the order it happens:
     //   1. ProduceStreamingAsync subscribes FeedRecovery for the take. The file
-    //      is written by the first utterance, so a take that never gets a word
-    //      leaves nothing behind.
-    //   2. WorkerRun deletes it once FinalizeTranscription has delivered the
-    //      text (pasted or clipboard only), and also when the take produced
-    //      nothing: cancelled, aborted, or empty.
-    //   3. When the raw copy to the clipboard itself failed (outcome None), the
-    //      file is the only copy left, so it stays for the next launch to
-    //      restore. A crash of the pipeline keeps it for the same reason.
+    //      is written by the first utterance that carries text, so a take that
+    //      never gets a word leaves nothing behind.
+    //   2. FinalizeTranscription deletes it the moment the raw copy lands on
+    //      the clipboard, before the rewrite and the paste: from there the
+    //      clipboard holds the text, and a later failure cannot leave a file
+    //      that would overwrite the clipboard at the next launch.
+    //   3. Every other ending keeps it for the next launch to restore: the raw
+    //      copy failed, the microphone dropped after words were transcribed,
+    //      the app quit or restarted mid-take, or the pipeline crashed. Each of
+    //      these leaves the file as the only copy of what was said.
+    //
+    // Known limit: while the app keeps running, the next dictation's first
+    // utterance overwrites a kept file. Only one take is ever recoverable.
     //
     // Scope: live dictation only. UtteranceTranscribed also fires for a file
     // transcription, which has its own saved .txt and must not touch the
@@ -50,13 +55,16 @@ public sealed partial class TranscriptionEngine
             if (buffer.Length > 0) buffer.Append(pendingParagraphBreak ? "\n\n" : " ");
             buffer.Append(u.Text);
             pendingParagraphBreak = u.EndedOnSilence;
-            store.TryWrite(buffer.ToString());
+            // Blank text would only replace a kept file from an earlier take
+            // with nothing worth restoring.
+            string text = buffer.ToString();
+            if (!string.IsNullOrWhiteSpace(text)) store.TryWrite(text);
         };
         UtteranceTranscribed += handler;
         return new UtteranceSubscription(this, handler);
     }
 
-    // The take is over and its text reached its destination, or there was
-    // nothing to keep. Never throws: the store logs its own failure.
+    // The clipboard holds the take's text. Never throws: the store logs its
+    // own failure.
     private void ClearRecovery() => _recovery?.Delete();
 }

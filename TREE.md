@@ -2226,6 +2226,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── Deckle.Transcription.Tests.csproj
 │   │   ├── DeckleLlmSourceTests.cs
 │   │   ├── DeckleWhispSourceTests.cs
+│   │   ├── DictationRecoveryBugNotes.md
 │   │   ├── DictationRecoveryStoreTests.cs
 │   │   ├── EnergySegmenterTests.cs
 │   │   ├── FileBatchLifecycleTests.cs
