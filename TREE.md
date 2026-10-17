@@ -948,6 +948,8 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   ├── LogWindowSink.cs
 │   │   │   └── RoutedJsonlSink.cs
 │   │   ├── CrashDumpCapture.cs
+│   │   ├── CrashRelaunchBudget.cs
+│   │   ├── CrashRelaunchPolicy.cs
 │   │   ├── Deckle.Diagnostics.csproj
 │   │   ├── DeckleCancellationSource.cs
 │   │   ├── DeckleEventSource.cs
@@ -2021,6 +2023,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   └── TelemetryListenerBootstrapTests.cs
 │   ├── Deckle.Diagnostics.Tests/
 │   │   ├── CrashDumpCaptureTests.cs
+│   │   ├── CrashRelaunchPolicyTests.cs
 │   │   ├── Deckle.Diagnostics.Tests.csproj
 │   │   ├── DeckleCancellationSourceTests.cs
 │   │   ├── DeckleNetworkSourceTests.cs
