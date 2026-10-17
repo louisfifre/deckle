@@ -122,6 +122,8 @@ public partial class App
 
         NetworkStatusEmitter.Start();
 
+        ReportCrashDumpCapture();
+
         // Checked here so the path payloads are not even read when Verbose is
         // not admitted.
         if (DeckleAppSource.Log.IsEnabled(

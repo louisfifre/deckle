@@ -519,6 +519,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   ├── DeckleAppSource.BootAndStatus.cs
 │   │   │   ├── DeckleAppSource.CommandLine.cs
 │   │   │   ├── DeckleAppSource.Crash.cs
+│   │   │   ├── DeckleAppSource.CrashDumps.cs
 │   │   │   ├── DeckleAppSource.cs
 │   │   │   ├── DeckleAppSource.Hotkeys.cs
 │   │   │   ├── DeckleAppSource.Lifecycle.cs
@@ -552,6 +553,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── App.PrecisionScroll.cs
 │   │   ├── App.Relocate.cs
 │   │   ├── App.Startup.CommandLine.cs
+│   │   ├── App.Startup.CrashDumps.cs
 │   │   ├── App.Startup.Foundation.cs
 │   │   ├── App.Startup.Modules.cs
 │   │   ├── App.Startup.Settings.cs
@@ -574,6 +576,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── LogWindow.Model.cs
 │   │   ├── LogWindow.xaml
 │   │   ├── LogWindow.xaml.cs
+│   │   ├── Program.cs
 │   │   └── SecondaryWindowPlacement.cs
 │   ├── Deckle.Audio/
 │   │   ├── Internal/

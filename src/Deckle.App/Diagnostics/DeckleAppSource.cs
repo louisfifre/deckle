@@ -62,5 +62,11 @@ public sealed partial class DeckleAppSource : DeckleEventSource
     public const int EvtHotkeyRegistrationFailedDetail = 47;
     public const int EvtHotkeyToggle                   = 48;
     public const int EvtHotkeyToggleDetail             = 49;
+    public const int EvtCrashDumpCaptureArmed          = 50;
+    public const int EvtCrashDumpCaptureArmedDetail    = 51;
+    public const int EvtCrashDumpCaptureOff            = 52;
+    public const int EvtCrashDumpCaptureOffDetail      = 53;
+    public const int EvtCrashDumpFound                 = 54;
+    public const int EvtCrashDumpFoundDetail           = 55;
 
 }
