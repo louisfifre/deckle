@@ -456,11 +456,13 @@ if ($Publish) {
     Publish-DeckleReleaseTag -RepoRoot $RepoRoot -Tag $tag -HeadSha $HeadSha
     Write-DeckleWorkflowMessage -Output $WorkflowOutput -Message "GitHub tag $tag published at release HEAD"
 
-    if ($remoteRelease.isDraft) {
-        & gh release edit $tag --repo $OwnerRepo --draft=false
-        if ($LASTEXITCODE -ne 0) {
-            throw "GitHub draft finalization failed (code $LASTEXITCODE); the verified draft remains hidden"
-        }
+    # Always refuse the repo's "Latest" badge: it belongs to the app's vX.Y.Z
+    # releases, and GitHub's automatic rule is not trusted to order native-v*
+    # tags below them. The edit is run even on a resumed, already public
+    # release so the badge is set either way.
+    & gh release edit $tag --repo $OwnerRepo --draft=false --latest=false
+    if ($LASTEXITCODE -ne 0) {
+        throw "GitHub release finalization failed (code $LASTEXITCODE); the verified release may remain hidden"
     }
     $publishedJson = (& gh release view $tag --repo $OwnerRepo --json isDraft,assets,tagName,targetCommitish) -join "`n"
     if ($LASTEXITCODE -ne 0) { throw "Published GitHub release $tag could not be read back" }

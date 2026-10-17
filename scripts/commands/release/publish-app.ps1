@@ -399,11 +399,8 @@ if ($Publish) {
         '--repo', $OwnerRepo,
         '--title', $title,
         '--target', $headSha,
-        '--draft')
-    # Every 0.x cut is a pre-release (versioning convention): the phase is
-    # pre-stable, so the release must not claim the repo's "Latest" badge.
-    if ($Version -like '0.*') { $ghArgs += '--prerelease' }
-    $ghArgs += @('--notes-file', $Notes)
+        '--draft',
+        '--notes-file', $Notes)
     $remoteReleaseJson = (& gh release view $tag --repo $OwnerRepo --json isDraft,assets,tagName,targetCommitish 2>$null) -join "`n"
     $releaseExists = $LASTEXITCODE -eq 0
     if (-not $releaseExists) {
@@ -436,9 +433,12 @@ if ($Publish) {
     Write-DeckleWorkflowMessage -Output $WorkflowOutput -Message "GitHub tag $tag published at release HEAD"
 
     Write-DeckleWorkflowStep -Output $WorkflowOutput -Message 'Make the verified GitHub release public'
-    $finalizeArgs = @('release', 'edit', $tag, '--repo', $OwnerRepo, '--draft=false')
-    if ($Version -like '0.*') { $finalizeArgs += '--prerelease' }
-    & gh @finalizeArgs
+    # A 0.x cut is a release, not a GitHub pre-release: SemVer's 0.x already says
+    # the surface may still move, and the pre-release flag (versioning convention)
+    # is kept for a suffixed build sent out for testing. "Latest" is claimed
+    # explicitly because the repo also carries native-v* tags, whose ordering
+    # against vX.Y.Z under GitHub's automatic rule is not something to rely on.
+    & gh release edit $tag --repo $OwnerRepo --draft=false --latest
     if ($LASTEXITCODE -ne 0) {
         throw "GitHub draft finalization failed (code $LASTEXITCODE); the verified draft remains hidden"
     }
