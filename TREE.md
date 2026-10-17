@@ -571,6 +571,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── App.xaml.cs
 │   │   ├── AppModules.cs
 │   │   ├── AutocorrectNotifications.cs
+│   │   ├── CrashSupervisor.cs
 │   │   ├── Deckle.App.csproj
 │   │   ├── global.json
 │   │   ├── LogWindow.Chrome.cs

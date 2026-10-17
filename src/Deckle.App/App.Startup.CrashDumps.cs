@@ -26,6 +26,13 @@ public partial class App
             DeckleAppSource.Log.CrashDumpCaptureOffDetail(CrashDumpCapture.EnableVariable, enabled ?? "(unset)");
         }
 
+        // Told by the launcher that supervised the process which died.
+        if (CrashSupervisor.FollowsCrash is { } crash)
+        {
+            DeckleAppSource.Log.CrashRelaunched();
+            DeckleAppSource.Log.CrashRelaunchedDetail($"{crash.ExitCode:X8}", crash.Relaunch, CrashRelaunchPolicy.MaxRelaunches);
+        }
+
         var kept = CrashDumpCapture.Prune(AppPaths.CrashDumpsDirectory);
         if (kept.Count == 0) return;
 
