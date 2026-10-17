@@ -521,6 +521,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   ├── DeckleAppSource.Crash.cs
 │   │   │   ├── DeckleAppSource.CrashDumps.cs
 │   │   │   ├── DeckleAppSource.cs
+│   │   │   ├── DeckleAppSource.DictationRecovery.cs
 │   │   │   ├── DeckleAppSource.Hotkeys.cs
 │   │   │   ├── DeckleAppSource.Lifecycle.cs
 │   │   │   ├── DeckleAppSource.Shutdown.cs
@@ -554,6 +555,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── App.Relocate.cs
 │   │   ├── App.Startup.CommandLine.cs
 │   │   ├── App.Startup.CrashDumps.cs
+│   │   ├── App.Startup.DictationRecovery.cs
 │   │   ├── App.Startup.Foundation.cs
 │   │   ├── App.Startup.Modules.cs
 │   │   ├── App.Startup.Settings.cs

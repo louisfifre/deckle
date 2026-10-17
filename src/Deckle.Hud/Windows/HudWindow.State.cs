@@ -54,6 +54,15 @@ public sealed partial class HudWindow : Window
                 SuccessDuration),
             reason: "show_copied"));
 
+    // A dictation the previous run left unfinished was put back on the
+    // clipboard at launch. Title only: the clipboard is the whole message.
+    public void ShowDictationRecovered() =>
+        EnqueueUI(() => SetState(HudState.Message,
+            new MessagePayload(MessageKind.Success,
+                Loc.Get("Hud_DictationRecovered_Title"), string.Empty,
+                SuccessDuration),
+            reason: "show_dictation_recovered"));
+
     // The saved .txt file is the primary outcome, so this is a *success*
     // message; the clipboard copy is a next-step hint, as in ShowCopied.
     public void ShowFileSaved() =>

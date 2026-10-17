@@ -449,6 +449,12 @@
   <data name="Hud_Copied_Hint" xml:space="preserve">
     <value>Ctrl+V where you want it.</value>
   </data>
+  <!-- Shown once at launch when the previous run died mid-dictation and its
+    text was put back on the clipboard. The wording is French on purpose, as
+    the maintainer wrote it; every other string here is English. -->
+  <data name="Hud_DictationRecovered_Title" xml:space="preserve">
+    <value>Texte copié dans le presse-papiers</value>
+  </data>
   <!-- File transcription completion. The saved .txt file is the primary
        outcome; the hint reminds the user it's also on the clipboard. -->
   <data name="Hud_FileSaved_Title" xml:space="preserve">
