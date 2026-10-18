@@ -427,6 +427,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │       ├── RenderingBugNotes.md
 │   │       ├── SemanticBugNotes.md
 │   │       └── theme.tests.ps1
+│   ├── build-locked.ps1  — Run one dotnet build or test under the machine-wide Deckle build lock. AGENTS.md forbids two builds at once on this machine, whatever the session. Par…
 │   ├── deckle-preview.ps1
 │   ├── deckle.ps1
 │   ├── GLOSSARY.md  — Deckle Scripts interaction vocabulary. It names the launcher's choices, action…
