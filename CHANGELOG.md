@@ -36,6 +36,7 @@ doctrine). This file is generated from the Conventional-Commit history by
 - **app:** Scale through Dpi
 - **installer:** Scale through Dpi
 - **anytype:** Use a synthetic Dev space id as the documentation anchor
+- **license:** Relicense Deckle under GPL-3.0-only with a linking permission
 
 ### Fixed
 
