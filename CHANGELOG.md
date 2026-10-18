@@ -35,6 +35,7 @@ doctrine). This file is generated from the Conventional-Commit history by
 - **llm-rewrite:** Scale through Dpi
 - **app:** Scale through Dpi
 - **installer:** Scale through Dpi
+- **anytype:** Use a synthetic Dev space id as the documentation anchor
 
 ### Fixed
 
