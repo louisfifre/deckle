@@ -7,13 +7,13 @@ Deckle depends on the following third-party components and data sources. This fi
 ### whisper.cpp
 
 - Repository : https://github.com/ggerganov/whisper.cpp
-- License : MIT
+- License : MIT. Read from the bundle notes that `scripts/commands/release/publish-native-runtime.ps1` writes, which point to the upstream `LICENSE`.
 - Used as : pre-built native DLLs (`libwhisper.dll`, `ggml.dll`, `ggml-base.dll`, `ggml-cpu.dll`, `ggml-vulkan.dll`) loaded at runtime.
 
 ### MinGW-w64 runtime
 
 - Project : https://www.mingw-w64.org/
-- License : public domain / various permissive (see upstream).
+- License : GPL-3.0 with the GCC Runtime Library Exception for `libgcc_s_seh-1.dll` and `libstdc++-6.dll`; MIT for `libwinpthread-1.dll`. The runtime exception permits redistributing these DLLs as a dynamically linked runtime. Read from the bundle notes that `scripts/commands/release/publish-native-runtime.ps1` writes into each native runtime release.
 - Used as : runtime DLLs (`libgcc_s_seh-1.dll`, `libstdc++-6.dll`, `libwinpthread-1.dll`) shipped alongside the whisper.cpp build that was produced with the GCC toolchain.
 
 ### Vulkan loader
@@ -36,23 +36,46 @@ Deckle depends on the following third-party components and data sources. This fi
 - License : MIT — Copyright (c) Clément Grennerat.
 - Used as : studied reference for the three-finger drag mechanics (relative SendInput injection, fractional delta accumulation). Deckle's recognizer is an independent design; no source file is vendored.
 
+## Reserved: GPLv3 code planned for the taskbar module
+
+Not yet included. The taskbar module is planned to port GPLv3 code from the projects below. No file from them is in the repository today; when one lands, its entry here gains the copyright line and the path of the ported files.
+
+- TranslucentTB, the ExplorerTAP component — https://github.com/TranslucentTB/TranslucentTB — GPL-3.0, as recorded (version 2026.2) in `docs/research/taskbar-briefs-2026-10-18/taskbar-research-2026-10-17.md`.
+- Windhawk, the engine and the taskbar mods — https://github.com/ramensoftware/windhawk and https://github.com/ramensoftware/windhawk-mods — by Michael Maltsev (m417z) and the mod authors — GPL-3.0, as recorded in `docs/research/taskbar-briefs-2026-10-18/taskbar-research-2026-10-17.md`.
+
 ## .NET / NuGet packages
 
-The following third-party packages are referenced across the projects under `src/`. Versions are pinned centrally in `Directory.Packages.props`. Each package ships under its own license — see its NuGet metadata or upstream repository for the authoritative text.
+The following third-party packages are referenced across the projects under `src/`. Versions are pinned centrally in `Directory.Packages.props`. Each package ships under its own license. Every license below was read from the package's `.nuspec` (its `license` element, or its `licenseUrl` when no element is present) and, where the nuspec names a license file, from that file, in the local NuGet cache at the pinned version. The package's own files carry the authoritative text.
 
-- `Microsoft.WindowsAppSDK` — MIT — Microsoft.
-- `Microsoft.Windows.SDK.BuildTools` — MIT — Microsoft.
-- `Microsoft.Graphics.Win2D` — MIT — Microsoft.
-- `CommunityToolkit.Mvvm` — MIT — Microsoft / .NET Foundation.
-- `CommunityToolkit.WinUI.Controls.SettingsControls` — MIT — .NET Foundation / Microsoft.
-- `Microsoft.ML.OnnxRuntime.DirectML` — MIT — Microsoft. Runs the external Silero VAD on the CPU execution provider of this build.
-- `Microsoft.ML.OnnxRuntimeGenAI.DirectML` — MIT — Microsoft. Runs the local closed-candidate sentence judge through ONNX Runtime GenAI, using DirectML or CPU as selected.
-- `Microsoft.ML.Tokenizers` — MIT — Microsoft. Tokenizes text for the CamemBERT masked-language-model probe.
-- `System.Security.Cryptography.ProtectedData` — MIT — .NET Foundation / Microsoft. Protects local autocorrect observation data with Windows DPAPI.
-- `BouncyCastle.Cryptography` — Bouncy Castle License (MIT X Consortium-based) — Legion of the Bouncy Castle. Provides the DTLS-PSK transport used for Philips Hue Entertainment.
-- `ModelContextProtocol.AspNetCore` — Apache-2.0 — ModelContextProtocol. Serves the MCP HTTP endpoint of `Deckle.Anytype.Mcp`.
-- `JsonSchema.Net` — Open Source Maintenance Fee EULA (nuspec license file `OSMFEULA.txt`, which states the source is MIT) — Greg Dennis. Builds the JSON Schema contract of the MCP surface in `Deckle.Anytype.Mcp`.
-- `System.Management` — MIT — Microsoft. Watches process starts through WMI in `Deckle.Orchestration`.
+Microsoft runtime components under Microsoft license terms. They are not open source; Deckle's GPLv3 section 7 additional permission in `LICENSE` covers combining Deckle with them.
+
+- `Microsoft.WindowsAppSDK` 1.8.260317003 — Microsoft Software License Terms, Microsoft Windows App SDK — Microsoft. Read from the nuspec license file `license.txt`. The packages it pulls in (`Microsoft.WindowsAppSDK.Base`, `.Foundation`, `.InteractiveExperiences`, `.WinUI`, `.DWrite`, `.Widgets`, `.AI`, `.ML`, `.Runtime`) carry the same `license.txt`.
+- `Microsoft.Windows.SDK.BuildTools` 10.0.26100.4654 — Microsoft Windows SDK license terms — Microsoft. Read from the nuspec `licenseUrl`, `https://aka.ms/WinSDKLicenseURL`. Its companion `Microsoft.Windows.SDK.BuildTools.MSIX` names the license file `sdk_license.txt`, titled Microsoft Software License Terms, Microsoft Windows Software Development Kit (SDK) for Windows 10.
+- `Microsoft.Graphics.Win2D` 1.4.0 — Microsoft license terms for the Win2D package — Microsoft. Read from the nuspec `licenseUrl`, `http://www.microsoft.com/web/webpi/eula/eula_win2d_10012014.htm`; the package carries no license file. Draws the HUD rewriting stroke on a Direct2D-backed composition surface.
+- `Microsoft.AI.DirectML` 1.15.4 — Microsoft Software License Terms, Microsoft DirectX Machine Learning (DirectML) — Microsoft. Read from the nuspec license file `LICENSE.txt`. Not referenced directly: `Microsoft.ML.OnnxRuntime.DirectML` depends on it, and it ships `DirectML.dll`, a Microsoft redistributable.
+
+Open-source packages.
+
+- `CommunityToolkit.Mvvm` 8.4.2 — MIT — .NET Foundation and Contributors. Read from the nuspec license expression.
+- `CommunityToolkit.WinUI.Controls.SettingsControls` 8.2.250402 — MIT — .NET Foundation and Contributors. Read from the nuspec license expression.
+- `CommunityToolkit.WinUI.Controls.Sizers` 8.2.250402 — MIT — .NET Foundation and Contributors. Read from the nuspec license expression. Provides the GridSplitter of the Ambient page's preview pane.
+- `Microsoft.ML.OnnxRuntime.DirectML` 1.23.0 — MIT — Microsoft. Read from the nuspec license file `LICENSE`. Runs the external Silero VAD on the CPU execution provider of this build.
+- `Microsoft.ML.OnnxRuntimeGenAI.DirectML` 0.13.0 — MIT — Microsoft. Read from the nuspec license file `LICENSE`. Runs the local closed-candidate sentence judge through ONNX Runtime GenAI, using DirectML or CPU as selected.
+- `Microsoft.ML.Tokenizers` 2.0.0 — MIT — Microsoft. Read from the nuspec license expression. Tokenizes text for the CamemBERT masked-language-model probe.
+- `System.Security.Cryptography.ProtectedData` 6.0.0 — MIT — Microsoft. Read from the nuspec license expression. Protects local autocorrect observation data with Windows DPAPI.
+- `System.Management` 10.0.12 — MIT — Microsoft. Read from the nuspec license expression. Watches process starts through WMI in `Deckle.Orchestration`.
+- `BouncyCastle.Cryptography` 2.6.2 — MIT — Legion of the Bouncy Castle Inc. Read from the nuspec license expression. Provides the DTLS-PSK transport used for Philips Hue Entertainment.
+- `Anthropic` 12.57.0 — MIT — Anthropic. Read from the nuspec license expression. The official C# SDK through which `Deckle.Llm`'s Claude engine calls the Messages API.
+- `ModelContextProtocol` 2.1.0 and `ModelContextProtocol.AspNetCore` 2.1.0 — Apache-2.0 — Model Context Protocol a Series of LF Projects, LLC. Read from the nuspec license expressions; `ModelContextProtocol.Core`, which they pull in, has the same expression. Serve the MCP HTTP endpoint of `Deckle.Anytype.Mcp`.
+- `JsonSchema.Net` 9.4.0 — Open Source Maintenance Fee EULA — Greg Dennis. Read from the nuspec license file `OSMFEULA.txt`, which states the source is MIT. Builds the JSON Schema contract of the MCP surface in `Deckle.Anytype.Mcp`. `Json.More.Net` 3.0.1 and `JsonPointer.Net` 7.0.2, which it pulls in, name the same file.
+
+Other third-party packages pulled in transitively by `Deckle.App`, read from its restored `project.assets.json` and from each nuspec:
+
+- `CommunityToolkit.Common` 8.2.1, `CommunityToolkit.WinUI.Extensions`, `.Helpers` and `.Triggers` 8.2.250402 — MIT — nuspec license expressions.
+- `Microsoft.ML.OnnxRuntime.Managed` 1.23.0 and `Microsoft.ML.OnnxRuntimeGenAI.Managed` 0.13.0 — MIT — nuspec license files.
+- `Microsoft.Web.WebView2` 1.0.3179.45 — BSD-style license, Copyright (C) Microsoft Corporation — nuspec license file `LICENSE.txt`. Pulled in by `Microsoft.WindowsAppSDK.WinUI`.
+- `Google.Protobuf` 3.30.2 — BSD-3-Clause — Google Inc. — nuspec license expression. Pulled in by `Microsoft.ML.Tokenizers`.
+- `Humanizer.Core` 3.0.10 — MIT — Claire Novotny, Mehdi Khalili — nuspec license expression. Pulled in by `JsonPointer.Net`.
 
 ## Bundled assets
 

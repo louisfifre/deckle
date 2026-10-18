@@ -104,4 +104,6 @@ Built on [whisper.cpp](https://github.com/ggerganov/whisper.cpp), [WinUI 3](http
 
 ## License
 
-MIT — see [LICENSE](LICENSE).
+GPL-3.0-only, with an additional permission under section 7 to combine Deckle with the Microsoft runtime components it links (Windows App SDK, Win2D, DirectML, ONNX Runtime and the Windows system libraries). See [LICENSE](LICENSE) for the full text and the exact list.
+
+Releases up to and including v0.58.3 were published under the MIT License and remain available under it.
