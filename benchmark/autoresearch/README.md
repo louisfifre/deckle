@@ -6,7 +6,7 @@ module: benchmark/autoresearch
 
 # `autoresearch/` — iterative experiment loops
 
-This folder is for the reusable shape of autoresearch, not for a specific ASR candidate. The `autoresearch` skill names the contract: define a goal, define an exact metric command and extraction, bound the editable scope, establish a baseline, then run experiments that are committed, measured, kept or discarded.
+This folder is for the reusable shape of autoresearch, not for a specific candidate. The `autoresearch` skill names the contract: define a goal, define an exact metric command and extraction, bound the editable scope, establish a baseline, then run experiments that are committed, measured, kept or discarded.
 
 Typical Deckle uses:
 
@@ -15,16 +15,16 @@ Typical Deckle uses:
 - diagram/image generation: generate an artifact, inspect it with a visual or multimodal judge, iterate against explicit criteria;
 - performance work: edit code, run a benchmark, compare the metric.
 
-Put domain-specific inputs in subfolders named by the thing being optimized (`rewrite-prompts/`, `diagram-skills/`, `site-performance/`, ...). Keep ASR model studies under [`../asr/studies/`](../asr/studies/) unless the primary artifact is the autoresearch loop itself.
+Put domain-specific inputs in subfolders named by the thing being optimized (`rewrite-prompts/`, `diagram-skills/`, `site-performance/`, ...).
 
 ## Layout
 
 | Folder | Responsibility |
 |---|---|
 | [`campaigns/`](campaigns/) | One folder per measurable optimization loop. |
-| `prompts/` | Prompt templates that drive generic rewrite or judging loops, and rewrite candidates owned by autoresearch campaigns. Prompts that mention Whisper, Voxtral, audio transcription, ASR regimes or ASR references belong under `../asr/prompts/`. |
-| `metrics/` | Metric extractors or wrappers when the measurement belongs to the loop itself: score extraction, comparison, thresholding, aggregation. Domain metrics such as WER, hallucination leakage or ASR looping belong under `../asr/lib/metrics/`. |
-| `judges/` | Domain-neutral judge wrappers or rubrics that decide whether a generated candidate satisfies explicit criteria. ASR judges that compare audio or transcription output belong under `../asr/lib/judges/`. |
-| `runners/` | Small orchestration helpers for candidate generation, metric execution, baseline comparison and keep/discard logging. Keep them generic: a runner that knows about Voxtral, Whisper or Deckle ASR corpora belongs in `../asr/`. |
+| `prompts/` | Prompt templates that drive generic rewrite or judging loops, and rewrite candidates owned by autoresearch campaigns. |
+| `metrics/` | Metric extractors or wrappers when the measurement belongs to the loop itself: score extraction, comparison, thresholding, aggregation. |
+| `judges/` | Domain-neutral judge wrappers or rubrics that decide whether a generated candidate satisfies explicit criteria. |
+| `runners/` | Small orchestration helpers for candidate generation, metric execution, baseline comparison and keep/discard logging. Keep them generic. |
 
-Use [`../lib/`](../lib/) for shared benchmark plumbing. Keep ASR-specific corpora, transcription judges, WER metrics, and Voxtral/Whisper prompts in [`../asr/`](../asr/).
+Use [`../lib/`](../lib/) for shared benchmark plumbing.

@@ -42,7 +42,7 @@ public static class DevSpace
     // Documentation / test anchor only. The id the gestures actually target at
     // runtime comes from credentials.json (space_id), never from this constant.
     public const string DevSpaceId =
-        "bafyreibaltekf6yw32suoj3g57ot7gxgmpjwi37k7mx5y6mdd4f3i7p4fa.54yhp4w3lgp";
+        "bafyreiaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa.aaaaaaaaaaa";
 
     // ── Default templates ─────────────────────────────────────────────────────
     //

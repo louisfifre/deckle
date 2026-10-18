@@ -162,10 +162,10 @@ public class DeckleAmbientSourceTests
 
         DeckleAmbientSource.Log.BridgeEndpointRecovered();
         DeckleAmbientSource.Log.BridgeEndpointRecoveredDetail(
-            "ECB5FAFFFE25B9B5", "192.168.1.14", "192.168.1.10", true);
+            "001788FFFE00B1D6", "192.168.1.14", "192.168.1.10", true);
         DeckleAmbientSource.Log.BridgeEndpointRecoveryFailed();
         DeckleAmbientSource.Log.BridgeEndpointRecoveryFailedDetail(
-            "ECB5FAFFFE25B9B5", "192.168.1.14", 1, 0, "connection refused");
+            "001788FFFE00B1D6", "192.168.1.14", 1, 0, "connection refused");
 
         Assert.Collection(
             listener.Events,

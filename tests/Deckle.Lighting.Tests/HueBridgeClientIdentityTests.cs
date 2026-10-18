@@ -11,14 +11,14 @@ public sealed class HueBridgeClientIdentityTests
     [Fact]
     public async Task ReadsCanonicalBridgeIdFromConfiguration()
     {
-        using var http = CreateHttpClient("""{"bridgeid":" ECB5FAFFFE25B9B5 "}""");
+        using var http = CreateHttpClient("""{"bridgeid":" 001788FFFE00B1D6 "}""");
         using var client = new HueBridgeClient(
             new HueBridge("manual", "192.168.1.10", 443),
             http);
 
         var bridgeId = await client.GetBridgeIdAsync(TestContext.Current.CancellationToken);
 
-        Assert.Equal("ECB5FAFFFE25B9B5", bridgeId);
+        Assert.Equal("001788FFFE00B1D6", bridgeId);
     }
 
     [Fact]
