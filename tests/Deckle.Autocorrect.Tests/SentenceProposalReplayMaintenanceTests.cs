@@ -2,6 +2,7 @@ using System.Text;
 using Deckle.Autocorrect.Lab;
 using Deckle.Autocorrect.Onnx;
 using Deckle.Core;
+using Deckle.Llm;
 using Deckle.Llm.Rewrite;
 using Xunit;
 
@@ -88,7 +89,7 @@ public sealed class SentenceProposalReplayMaintenanceTests
                 TestContext.Current.CancellationToken);
             deadline.CancelAfter(SentenceRewrite.Deadline);
 
-            RewriteResult generated = proposer.RewriteSentence(original, endpoint, deadline.Token);
+            GenerationResult generated = proposer.RewriteSentence(original, deadline.Token);
             string? proposed = generated.Text?.Trim();
             if (string.IsNullOrWhiteSpace(proposed))
             {
