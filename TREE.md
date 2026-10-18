@@ -218,7 +218,14 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── 0004-reconcile-anytype-backend-by-listener-owner.md  — Deckle reconciles one externally versioned Anytype provider by proving which tr…
 │   │   └── 0005-serve-anytype-mcp-stateless-with-explicit-recovery.md  — The resident Anytype gateway uses stateless MCP requests and advertises an expl…
 │   ├── research/
+│   │   ├── taskbar-briefs-2026-10-18/
+│   │   │   ├── brief-csharp-socle.md
+│   │   │   ├── brief-native-foundation.md
+│   │   │   ├── brief-tier2-xaml.md
+│   │   │   ├── brief-tier3-symbols.md
+│   │   │   └── taskbar-research-2026-10-17.md
 │   │   ├── taskbar-probes/
+│   │   │   ├── bar-2026-10-18-native-small-left.webp
 │   │   │   ├── explorer-restart.ps1
 │   │   │   ├── feature-flags.ps1
 │   │   │   ├── late-inject-repro.ps1
