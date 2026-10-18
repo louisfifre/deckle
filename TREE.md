@@ -73,120 +73,13 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 ├── .vscode/
 │   └── launch.json
 ├── benchmark/
-│   ├── asr/
-│   │   ├── lib/
-│   │   │   ├── judges/
-│   │   │   │   ├── __init__.py
-│   │   │   │   ├── _base.py
-│   │   │   │   ├── claude.py
-│   │   │   │   └── gemini.py
-│   │   │   ├── metrics/
-│   │   │   │   ├── __init__.py
-│   │   │   │   ├── leak.py
-│   │   │   │   ├── looping.py
-│   │   │   │   └── wer.py
-│   │   │   ├── sources/
-│   │   │   │   ├── __init__.py
-│   │   │   │   ├── _base.py
-│   │   │   │   ├── _voxtral_common.py
-│   │   │   │   ├── gemini_audio.py
-│   │   │   │   ├── voxtral_chat.py
-│   │   │   │   ├── voxtral_llamacpp.py
-│   │   │   │   ├── voxtral_transcribe.py
-│   │   │   │   ├── voxtral_transformers.py
-│   │   │   │   └── whisper_cpp.py
-│   │   │   ├── __init__.py
-│   │   │   └── corpus.py
-│   │   ├── prompts/
-│   │   │   ├── judges/
-│   │   │   │   ├── claude_per_row.md
-│   │   │   │   └── gemini_per_row.md
-│   │   │   ├── transcription/
-│   │   │   │   ├── gemini_audio.toml
-│   │   │   │   ├── voxtral_chat.toml
-│   │   │   │   ├── voxtral_transcribe.toml
-│   │   │   │   └── voxtral_validation.toml
-│   │   │   └── whisper_initial.txt
-│   │   ├── studies/
-│   │   │   ├── perf-cap/
-│   │   │   │   ├── download-models.ps1
-│   │   │   │   ├── parse_vulkan_log.py
-│   │   │   │   ├── profile-config.ps1
-│   │   │   │   ├── profile-server-text.ps1
-│   │   │   │   ├── README.md  — readme-study-perf-cap Frozen Voxtral GGUF performance-characterization session (2026-05-26) over llam…
-│   │   │   │   └── run-all.ps1
-│   │   │   ├── PhiBench/
-│   │   │   │   ├── Models/
-│   │   │   │   │   ├── Regime.cs
-│   │   │   │   │   ├── Sample.cs
-│   │   │   │   │   └── TranscriptionResult.cs
-│   │   │   │   ├── CorpusLoader.cs
-│   │   │   │   ├── CorpusRunner.cs
-│   │   │   │   ├── JsonlWriter.cs
-│   │   │   │   ├── Phi4Transcriber.cs
-│   │   │   │   ├── PhiBench.csproj
-│   │   │   │   ├── Program.cs
-│   │   │   │   ├── README.md  — readme-study-phibench Suspended C# bench for Phi-4 multimodal audio via ONNX Runtime GenAI (OGA). Blo…
-│   │   │   │   ├── RegimesLoader.cs
-│   │   │   │   ├── SingleRunner.cs
-│   │   │   │   └── WavHeader.cs
-│   │   │   ├── tts-audition/
-│   │   │   │   ├── _harness.py
-│   │   │   │   ├── .gitignore
-│   │   │   │   ├── build_player.py
-│   │   │   │   ├── chatterbox_synth.py
-│   │   │   │   ├── f5_synth.py
-│   │   │   │   ├── orpheus_synth.py
-│   │   │   │   ├── README.md  — readme-bench-tts-audition Local French TTS audition — a by-ear comparison of ONNX-local TTS engines on th…
-│   │   │   │   ├── supertonic_synth.py
-│   │   │   │   └── synth_onnx.py
-│   │   │   ├── voxtral-onnx-poc/
-│   │   │   │   ├── README.md  — readme-study-voxtral-onnx Completed POC — Voxtral Mini 3B via ONNX Runtime + DirectML. Smoke pipeline kep…
-│   │   │   │   └── smoke_test.py
-│   │   │   ├── voxtral-poc/
-│   │   │   │   ├── bench.py
-│   │   │   │   └── README.md  — readme-bench-voxtral-poc Bench scenario evaluating Voxtral Mini 3B as a Whisper alternative in the Deckl…
-│   │   │   ├── voxtral-transformers/
-│   │   │   │   ├── perf_rtf.py
-│   │   │   │   ├── README.md  — readme-study-voxtral-transformers Completed study — Voxtral Mini 3B BF16 via Transformers + torch-ROCm on Windows…
-│   │   │   │   ├── sanity_check.py
-│   │   │   │   └── smoke_chat_regimes.py
-│   │   │   ├── voxtral-validation/
-│   │   │   │   ├── aggregate_verdicts.py
-│   │   │   │   ├── bench.py
-│   │   │   │   ├── README.md  — bench-voxtral-validation Étude Q4 archivée : smoke fonctionnel et comparaison historique, impropre à une…
-│   │   │   │   └── validate_judge_prompt.py
-│   │   │   └── README.md  — readme-studies Index of frozen benchmark studies — completed or abandoned ASR/TTS spikes kept…
-│   │   ├── __init__.py
-│   │   ├── build_corpus.py
-│   │   └── README.md  — readme-benchmark-asr Human-facing entry point for benchmark/asr — ASR-specific harness pieces and fr…
 │   ├── autoresearch/
 │   │   ├── campaigns/
 │   │   │   ├── interactive-autocorrect/
-│   │   │   │   ├── probes/
-│   │   │   │   │   ├── ACX-0004-modifier-authorization-v2.patch
-│   │   │   │   │   ├── ACX-0004-modifier-authorization.patch
-│   │   │   │   │   ├── ACX-0022-generate.py
-│   │   │   │   │   ├── ACX-0022-verify.py
-│   │   │   │   │   ├── ACX-0023-negative-artifacts.py
-│   │   │   │   │   └── ACX-0023-verify-export.py
-│   │   │   │   ├── ACX-0021-DESIGN.md  — acx-0021-delayed-range-owned-correction Frozen design and safety matrix for delayed correction of a closed sentence whi…
-│   │   │   │   ├── ACX-0022-DESIGN.md  — acx-0022-one-qwen-multi-adapter Frozen compatibility design for one resident Qwen base with per-task LoRA adapt…
-│   │   │   │   ├── ACX-0023-DESIGN.md
-│   │   │   │   ├── compute-queue.jsonl
-│   │   │   │   ├── experiment-log.jsonl
-│   │   │   │   ├── FAMILIES.md
 │   │   │   │   ├── PROTOCOL.md  — interactive-autocorrect-protocol Metric, latency, integrity, and data contract for the interactive autocorrect c…
-│   │   │   │   ├── README.md  — interactive-autocorrect-research Reproducible campaign for safe, local, interactive whole-sentence autocorrectio…
-│   │   │   │   └── RESULTS.md  — interactive-autocorrect-results Evidence synthesis and provisional Pareto frontier for the interactive autocorr…
+│   │   │   │   └── README.md  — interactive-autocorrect-research Reproducible campaign for safe, local, interactive whole-sentence autocorrectio…
 │   │   │   └── README.md  — readme-autoresearch-campaigns How to store individual autoresearch campaign folders.
 │   │   └── README.md  — readme-autoresearch Generic autoresearch workspace for measurable iterative generation, editing, ju…
-│   ├── input/
-│   │   └── precision-scroll/
-│   │       ├── analyze.py
-│   │       ├── capture_analysis.py
-│   │       ├── README.md
-│   │       └── test_capture_analysis.py
 │   ├── lib/
 │   │   ├── monitor/
 │   │   │   ├── gpu_monitor.ps1
@@ -208,7 +101,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   └── build_html.py
 │   ├── Directory.Build.props
 │   ├── Directory.Packages.props
-│   └── README.md  — readme-benchmark Index for Deckle benchmark workspaces — routes ASR evaluation and generic autor…
+│   └── README.md  — readme-benchmark Index for Deckle benchmark workspaces — routes autoresearch, paragraph-rewrite…
 ├── docs/
 │   ├── adr/
 │   │   ├── 0000-template.md  — Fill-in template for a Deckle ADR — copy it to start one, record no decision he…

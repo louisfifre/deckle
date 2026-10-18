@@ -58,7 +58,7 @@ Positive values mean the decision existed before punctuation. Also record `safe_
 - Freeze inventory membership before model prediction or truth review.
 - Keep parent sentences, close variants, punctuation variants, shared candidate families, and source sessions in one split.
 - Use visible development data, sparse selection validation, and a sealed final holdout.
-- Preserve a forward-time evaluation and Louis's morning physical captures as separate temporal tests.
+- Preserve a forward-time evaluation and the maintainer's physical captures as separate temporal tests.
 - Truth may contain several acceptable exact targets or `unresolved`.
 - Synthetic safety stress sets retain veto power but are never prevalence-weighted into representative quality.
 - Every attempted configuration increments the validation-query count; the sealed holdout is reserved for a fixed finalist set.

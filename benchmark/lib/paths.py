@@ -63,9 +63,9 @@ def _resolve_models_dir() -> Path:
     override = os.environ.get("DECKLE_MODELS_DIR")
     if override:
         return Path(override)
-    # Heavy models live beside the Ollama store, outside any worktree, so
-    # worktrees never duplicate them.
-    return Path(r"D:\models\llm")
+    # Heavy models live in the app data root, outside any worktree, so
+    # worktrees never duplicate them (same folder as AppPaths.ModelsDirectory).
+    return DECKLE_DATA_DIR / "models"
 
 
 MODELS_DIR = _resolve_models_dir()

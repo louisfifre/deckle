@@ -1,1 +1,0 @@
-"""ASR benchmark workspace package."""

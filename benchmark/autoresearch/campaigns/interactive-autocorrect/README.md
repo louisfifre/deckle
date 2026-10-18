@@ -20,23 +20,18 @@ The product objective prioritizes precision among applied corrections over cover
 
 ## Campaign state
 
-- Worktree: `D:\worktrees\deckle\paragraph-correction-apply`
-- Branch: `fix/paragraph-correction-apply`
-- Starting HEAD: `5f8acc6a5f72db6934858d78128c4f984b381f6f`
 - Compute owner: root orchestrator only
 - Compute policy: one heavy task at a time
-- Raw runs: `benchmark/runs/interactive-autocorrect/<experiment-id>/`
-- Experiment record: [`experiment-log.jsonl`](experiment-log.jsonl), append-only
-- Compute queue: [`compute-queue.jsonl`](compute-queue.jsonl), append-only events
-- Result synthesis: [`RESULTS.md`](RESULTS.md)
-- Architecture map: [`FAMILIES.md`](FAMILIES.md)
+- Raw runs: `<data-root>/benchmark/runs/interactive-autocorrect/<experiment-id>/` (local, not versioned)
+- Experiment record, compute queue, result synthesis and architecture map: kept locally, not versioned
+- Protocol: [`PROTOCOL.md`](PROTOCOL.md)
 
-Raw runs are local, ignored, potentially private, and retained for the full campaign; a hash never substitutes for the raw artifact. They are never staged. Any later privacy purge requires Louis's explicit decision, is recorded as a retention event, and downgrades the affected run's reproducibility. Tracked campaign artifacts contain aggregate measurements, content-free metadata, and synthetic examples only.
+Raw runs are local, ignored, potentially private, and retained for the full campaign; a hash never substitutes for the raw artifact. They are never staged. Any later privacy purge requires the maintainer's explicit decision, is recorded as a retention event, and downgrades the affected run's reproducibility. Tracked campaign artifacts contain aggregate measurements, content-free metadata, and synthetic examples only.
 
 ## Established starting evidence
 
-- Commit `1082aa9b` introduced exact closed-sentence global judgment, positional edits, active-selection rejection, and content-free outcome/reason logs.
-- Commit `5f8acc6a` records a warm Qwen3-1.7B DirectML judgment at approximately 945 ms on the local machine.
+- An earlier change introduced exact closed-sentence global judgment, positional edits, active-selection rejection, and content-free outcome/reason logs.
+- A later change records a warm Qwen3-1.7B DirectML judgment at approximately 945 ms on the local machine.
 - Verified-caret recovery has a configured 110 ms stable-read floor before judgment and performs another complete stable read before an edit is applied: a changing recovered verdict therefore pays at least 220 ms of configured sleeps, plus four UIA calls.
 - The autocorrect test project previously passed 725/725; the full suite had seven reproducible out-of-scope failures involving Home and locked JSONL Diagnostics/Telemetry/Logging files.
 - `Il y a une seul erreur.` is corrected by the current global transaction.
@@ -69,6 +64,6 @@ A technical failure is recorded as `invalid`, never as evidence against a techni
 
 ## Data discipline
 
-Use three levels: visible development/synthetic cases, sparse consulted selection validation, and a sealed final holdout. Parent sentences, close variants, and associated punctuation stay in one split. Physical captures made by Louis form a separate temporal test and never leak into tuning data.
+Use three levels: visible development/synthetic cases, sparse consulted selection validation, and a sealed final holdout. Parent sentences, close variants, and associated punctuation stay in one split. Physical captures made by the maintainer form a separate temporal test and never leak into tuning data.
 
 The Pareto view keeps non-dominated alternatives across applied precision, coverage, latency, integrity, resource cost, and compatibility. No scalar score is allowed to hide an integrity failure.
