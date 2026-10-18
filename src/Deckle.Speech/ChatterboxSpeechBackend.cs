@@ -8,9 +8,8 @@ namespace Deckle.Speech;
 // ignores text / voice / temperature and returns a short 440 Hz tone at
 // 24 kHz — audible, asset-free, and unmistakably a stub.
 //
-// The real implementation ports the 4-graph pure-ONNX decode of
-// benchmark/asr/studies/tts-audition/chatterbox_synth.py: speech_encoder,
-// embed_tokens, language_model_fp16, conditional_decoder.
+// The real implementation will run the 4-graph pure-ONNX Chatterbox decode:
+// speech_encoder, embed_tokens, language_model_fp16, conditional_decoder.
 public sealed class ChatterboxSpeechBackend : ISpeechBackend
 {
     private const int SampleRate = 24000; // Chatterbox S3Gen output rate

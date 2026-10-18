@@ -168,21 +168,18 @@ if (Test-Path -LiteralPath $ArtifactsDir) {
 }
 
 # =============================================================================
-# 2. Per-project bin/obj: benchmark/ has its own Directory.Build.props and
-#    keeps that layout; src/ and tests/ may still hold leftovers of it.
+# 2. Per-project bin/obj: src/ and tests/ may still hold leftovers of the
+#    old per-project layout.
 # =============================================================================
 $stragglerRoots = @(
     (Join-Path $RepoRoot 'src'),
-    (Join-Path $RepoRoot 'tests'),
-    (Join-Path $RepoRoot 'benchmark\asr\studies')
+    (Join-Path $RepoRoot 'tests')
 ) | Where-Object { Test-Path -LiteralPath $_ }
 
 Write-Host ""
-Write-Host "Cleaning straggler bin/ and obj/ under src/, tests/, benchmark/asr/studies/ ..." -ForegroundColor Cyan
+Write-Host "Cleaning straggler bin/ and obj/ under src/, tests/ ..." -ForegroundColor Cyan
 foreach ($root in $stragglerRoots) {
     $rootName = Split-Path $root -Leaf
-    $rootParent = Split-Path $root -Parent
-    if ((Split-Path $rootParent -Leaf) -eq 'asr') { $rootName = "benchmark\asr\$rootName" }
     foreach ($module in (Get-ChildItem -LiteralPath $root -Directory -ErrorAction SilentlyContinue)) {
         foreach ($name in @('bin', 'obj')) {
             $dir = Join-Path $module.FullName $name

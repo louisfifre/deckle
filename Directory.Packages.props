@@ -52,9 +52,9 @@
          — the only onnxruntime-genai GPU path on this AMD RDNA3 machine — while still
          exposing the CPU EP as a selectable fallback. Pinned to 0.13.0, NOT 0.14.x:
          genai 0.14 wants ORT API 24 but bundles ORT 1.23, a mismatch that throws
-         DllNotFoundException on init (see benchmark/asr/studies/PhiBench). 0.13.0 is
+         DllNotFoundException on init (observed in a throwaway benchmark). 0.13.0 is
          self-consistent when the whole process resolves the same ORT 1.23 binary,
-         and is the version proven in-repo by PhiBench. -->
+         and is the version that was verified to load. -->
     <PackageVersion Include="Microsoft.ML.OnnxRuntimeGenAI.DirectML" Version="0.13.0" />
 
     <!-- Managed SentencePiece/BPE tokenizers (no native lib, no Python) — used by
