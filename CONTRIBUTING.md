@@ -24,4 +24,4 @@ Bug reports are welcome. Include what you did, what you expected, what happened,
 
 Open an issue before a pull request to describe what you want to change and why. Contributions that align with the project's local-first direction are evaluated case by case.
 
-By contributing, you agree that your contribution is distributed under Deckle's [MIT license](LICENSE).
+By contributing, you agree that your contribution is distributed under Deckle's license, the [GNU General Public License version 3 only](LICENSE), together with the section 7 additional permission stated in that file. Releases up to and including v0.58.3 were published under the MIT License and remain available under it.
