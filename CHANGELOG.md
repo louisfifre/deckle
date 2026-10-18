@@ -44,6 +44,7 @@ doctrine). This file is generated from the Conventional-Commit history by
 - **whisp:** Clear the dictation recovery file once the raw copy lands
 - **app:** Guard the recovered dictation message against a missing HUD
 - **hud:** Fade the transcript panel's top line through text alpha
+- **autocorrect:** Follow the generation seam in the proposal replay test
 
 ## [0.57.0](https://github.com/louisfifre/deckle/compare/v0.35.0...v0.57.0) — 2026-10-15
 
