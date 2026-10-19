@@ -1,6 +1,7 @@
 using Microsoft.UI.Windowing;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
+using Microsoft.UI.Xaml.Media;
 using Windows.Foundation;
 using WinRT.Interop;
 using Deckle.Core;
@@ -236,14 +237,16 @@ public sealed partial class TranscriptPanelWindow : Window
     {
         EnsureLineHeight();
         TranscriptText.Text = _history.Text;
+        TranscriptFadeText.Text = _history.Text;
 
         // The text column width, set on the TextBlock so the layout wraps at
         // exactly the width the line count below is measured at. Redundant
         // with HorizontalScrollBarVisibility="Disabled" (same width) on
         // purpose: the window height must not depend on that ScrollViewer
-        // rule alone.
+        // rule alone. The faded copy gets the same width so both wrap alike.
         const int TEXT_WIDTH_DIP = PANEL_WIDTH_DIP - HORIZONTAL_PADDING_DIP;
         TranscriptText.Width = TEXT_WIDTH_DIP;
+        TranscriptFadeText.Width = TEXT_WIDTH_DIP;
         TranscriptText.Measure(new Size(TEXT_WIDTH_DIP, double.PositiveInfinity));
         int contentLines = (int)Math.Round(TranscriptText.DesiredSize.Height / _lineHeightDip);
 
@@ -274,6 +277,8 @@ public sealed partial class TranscriptPanelWindow : Window
 
         TranscriptText.LineStackingStrategy = LineStackingStrategy.BlockLineHeight;
         TranscriptText.LineHeight = _lineHeightDip;
+        TranscriptFadeText.LineStackingStrategy = LineStackingStrategy.BlockLineHeight;
+        TranscriptFadeText.LineHeight = _lineHeightDip;
     }
 
     private void ScrollToEnd()
@@ -281,15 +286,32 @@ public sealed partial class TranscriptPanelWindow : Window
         double scrollable = TranscriptScroller.ScrollableHeight;
         TranscriptScroller.ChangeView(null, scrollable, null, disableAnimation: true);
 
-        // The fade ramp spans the first visible line, which starts at the
-        // scroll offset in TextBlock coordinates. Half a line, not 0: px
-        // rounding of the window height can leave a sub-pixel overflow that is
-        // not hidden text. With nothing above, the ramp sits above the text
-        // and every line pads with the solid end colour.
+        // The first visible line starts at the scroll offset in TextBlock
+        // coordinates. Half a line, not 0: px rounding of the window height
+        // can leave a sub-pixel overflow that is not hidden text. The faded
+        // copy shows that line alone; the solid copy shows everything below
+        // it. With nothing above, the faded copy shows nothing and the solid
+        // copy everything (a clip of null means "no clip").
         bool moreAbove = scrollable > _lineHeightDip / 2;
-        double rampTop = moreAbove ? scrollable : -_lineHeightDip;
-        MoreAboveFade.StartPoint = new Point(0, rampTop);
-        MoreAboveFade.EndPoint = new Point(0, rampTop + _lineHeightDip);
+        double width = TranscriptText.ActualWidth;
+        double height = TranscriptText.ActualHeight;
+        if (moreAbove)
+        {
+            double solidTop = scrollable + _lineHeightDip;
+            TranscriptText.Clip = new RectangleGeometry
+            {
+                Rect = new Rect(0, solidTop, width, Math.Max(0, height - solidTop)),
+            };
+            TranscriptFadeText.Clip = new RectangleGeometry
+            {
+                Rect = new Rect(0, scrollable, width, _lineHeightDip),
+            };
+        }
+        else
+        {
+            TranscriptText.Clip = null;
+            TranscriptFadeText.Clip = new RectangleGeometry { Rect = new Rect(0, 0, 0, 0) };
+        }
     }
 
     // ── Plumbing ─────────────────────────────────────────────────────────────

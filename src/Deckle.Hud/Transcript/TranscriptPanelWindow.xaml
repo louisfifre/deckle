@@ -49,23 +49,35 @@
                      the card's colour. The card is a translucent layer, so no
                      single colour matches what it renders in both themes; a
                      fade of the text itself reads the same on any background.
-                     Absolute mapping, in TextBlock coordinates: the code moves
-                     the ramp onto the first visible line (ScrollToEnd), and
-                     past either end the brush pads with its end colours. -->
-                <TextBlock x:Name="TranscriptText"
-                           Style="{StaticResource BodyTextBlockStyle}"
-                           TextWrapping="Wrap"
-                           IsTextSelectionEnabled="False">
-                    <TextBlock.Foreground>
-                        <LinearGradientBrush x:Name="MoreAboveFade"
-                                             MappingMode="Absolute"
-                                             StartPoint="0,-1"
-                                             EndPoint="0,0">
-                            <GradientStop Offset="0" Color="{ThemeResource TranscriptFadeStartColor}" />
-                            <GradientStop Offset="1" Color="{ThemeResource TextFillColorPrimary}" />
-                        </LinearGradientBrush>
-                    </TextBlock.Foreground>
-                </TextBlock>
+
+                     XAML maps a gradient Foreground onto each text line, not
+                     onto the TextBlock: both mapping modes take the line box
+                     as the bounding box, so a ramp on one line of a block
+                     lands on every line of it (seen 2026-10-20 in a probe app:
+                     Absolute ramp y 80..100 left all text transparent, Relative
+                     0.4..0.5 cut the top of every line). So the fade is a
+                     second copy of the text that carries the per-line ramp,
+                     and the code clips the two copies to complementary bands
+                     in TextBlock coordinates (ScrollToEnd): the solid copy
+                     from the second visible line down, the faded copy to the
+                     first visible line alone. -->
+                <Grid>
+                    <TextBlock x:Name="TranscriptText"
+                               Style="{StaticResource BodyTextBlockStyle}"
+                               TextWrapping="Wrap"
+                               IsTextSelectionEnabled="False" />
+                    <TextBlock x:Name="TranscriptFadeText"
+                               Style="{StaticResource BodyTextBlockStyle}"
+                               TextWrapping="Wrap"
+                               IsTextSelectionEnabled="False">
+                        <TextBlock.Foreground>
+                            <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
+                                <GradientStop Offset="0" Color="{ThemeResource TranscriptFadeStartColor}" />
+                                <GradientStop Offset="1" Color="{ThemeResource TextFillColorPrimary}" />
+                            </LinearGradientBrush>
+                        </TextBlock.Foreground>
+                    </TextBlock>
+                </Grid>
             </ScrollViewer>
         </Grid>
     </Grid>
