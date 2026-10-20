@@ -138,7 +138,8 @@ public sealed partial class TranscriptionEngine
         {
             if (!File.Exists(path))
             {
-                DeckleWhispSource.Log.WarmupClipMissing(path);
+                DeckleWhispSource.Log.WarmupClipMissing();
+                DeckleWhispSource.Log.WarmupClipMissingDetail(path);
                 return null;
             }
 
