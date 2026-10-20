@@ -49,12 +49,70 @@ public class TaskGesturesTests
 
         JsonObject created = server.LastBodyFor("POST");
         Assert.Equal(DevSpace.Templates.Task, created["template_id"]!.GetValue<string>());
+        // No body on the POST: it would land under the template's last section.
+        Assert.False(created.ContainsKey("body"));
+        Assert.DoesNotContain(server.Requests, r => r.Method == "PATCH");
+    }
+
+    // A checklist or notes passed at creation fill the template's own sections,
+    // written as a second step once the template has shaped the object.
+    [Fact]
+    [Trait("Category", "regression")]
+    public async Task CreateWritesChecklistAndNotesIntoTheTemplateSections()
+    {
+        using var server = new FakeAnytypeServer();
+        server.OnPostObject(TaskObject(""));
+        server.OnPatchObject(TaskId, TaskObject(""));
+
+        string digest = await NewGestures(server).CreateAsync(
+            ProjectId, "Ma tâche", type: "production",
+            checklist: ["relire", "livrer"], notes: "Attention au cache.", ct: Ct);
+
+        JsonObject patched = server.LastBodyFor("PATCH");
+        Assert.Equal(
+            $"## {ReadGestures.ChecklistHeading}\n- [ ] relire\n- [ ] livrer\n\n## {ReadGestures.NotesHeading}\nAttention au cache.",
+            patched["markdown"]!.GetValue<string>());
+        Assert.Contains($"id : {TaskId}", digest);
     }
 
     // ── SubtaskAsync ──────────────────────────────────────────────────────────
 
+    // The task template ships an empty `- [ ] ` slot under its checklist
+    // heading; the first subtask fills it instead of leaving it behind.
     [Fact]
-    public async Task SubtaskSetFalseWithNoMatchAppendsAnUncheckedItemAtTheEnd()
+    [Trait("Category", "regression")]
+    public async Task SubtaskFillsTheTemplatesEmptySlotBeforeAddingALine()
+    {
+        using var server = new FakeAnytypeServer();
+        string body = $"## {ReadGestures.ChecklistHeading}\n---\n- [ ] \n## {ReadGestures.NotesHeading}\n---";
+        server.OnGetObject(TaskId, TaskObject(body));
+        server.OnPatchObject(TaskId, TaskObject(body));
+
+        await NewGestures(server).SubtaskAsync(TaskId, "première", done: false, ct: Ct);
+
+        string next = server.LastBodyFor("PATCH")["markdown"]!.GetValue<string>();
+        Assert.Equal($"## {ReadGestures.ChecklistHeading}\n---\n- [ ] première\n## {ReadGestures.NotesHeading}\n---", next);
+    }
+
+    // A new item joins the checklist after its last item, never the end of the
+    // body, where it would sit under the notes section.
+    [Fact]
+    [Trait("Category", "regression")]
+    public async Task SubtaskWithNoMatchFollowsTheLastItemNotTheNotes()
+    {
+        using var server = new FakeAnytypeServer();
+        string body = $"## {ReadGestures.ChecklistHeading}\n- [x] une\n\n## {ReadGestures.NotesHeading}\nUne note.";
+        server.OnGetObject(TaskId, TaskObject(body));
+        server.OnPatchObject(TaskId, TaskObject(body));
+
+        await NewGestures(server).SubtaskAsync(TaskId, "deux", done: false, ct: Ct);
+
+        string next = server.LastBodyFor("PATCH")["markdown"]!.GetValue<string>();
+        Assert.Equal($"## {ReadGestures.ChecklistHeading}\n- [x] une\n- [ ] deux\n\n## {ReadGestures.NotesHeading}\nUne note.", next);
+    }
+
+    [Fact]
+    public async Task SubtaskSetFalseWithNoMatchAddsAnUncheckedItemAfterTheLastOne()
     {
         using var server = new FakeAnytypeServer();
         string body = "# Notes\n\n- [ ] déjà là";
