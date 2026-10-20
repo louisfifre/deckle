@@ -120,10 +120,10 @@ public sealed partial class DeckleWhispSource
     [Event(EvtModelLoadStart,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "load start | file={0} | file_mb={1:F1} | use_gpu=1")]
-    public void ModelLoadStart(string file, double file_mb)
+           Message = "load start | file={0} | file_mb={1:F1} | use_gpu={2}")]
+    public void ModelLoadStart(string file, double file_mb, int use_gpu)
     {
-        if (IsEnabled()) WriteEvent(EvtModelLoadStart, file, file_mb);
+        if (IsEnabled()) WriteEvent(EvtModelLoadStart, file, file_mb, use_gpu);
     }
 
     [Event(EvtModelLoadAborted,

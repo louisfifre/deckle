@@ -1688,6 +1688,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   └── WhisperSettingsModule.cs
 │   ├── Deckle.Transcription.Whisper/
 │   │   ├── Engine/
+│   │   │   ├── WhisperContextParamsMapper.cs
 │   │   │   └── WhisperParamsMapper.cs
 │   │   ├── Pinvoke/
 │   │   │   ├── WhisperPInvoke.cs
