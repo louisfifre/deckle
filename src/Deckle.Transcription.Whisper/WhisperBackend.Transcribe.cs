@@ -49,6 +49,9 @@ public sealed partial class WhisperBackend
     // position in the take; 0 for a standalone call.
     private double _timelineOffsetSec;
     private readonly RepetitionDetector _repetitionDetector = new();
+    // Outlives the call on purpose: it describes the native decoder context the
+    // next call would inherit.
+    private bool _previousCallFilteredText;
 
     private TranscriptionResult TranscribeSync(
         ReadOnlyMemory<float> pcmSamples,
@@ -88,9 +91,17 @@ public sealed partial class WhisperBackend
         wparams.print_realtime = 0;
         wparams.print_timestamps = 0;
 
+        // A segment the filter left out of the previous call is still in the
+        // native decoder context; continuing from it would prime this call with
+        // the very credit line Deckle refused to deliver.
+        bool continuesPreviousCall =
+            (context?.ContinuesPreviousCall ?? false) && !_previousCallFilteredText;
+
         var TranscriptionSettings = _host.Transcription;
         WhisperParamsMapper.NativeAllocations nativeAllocs =
-            WhisperParamsMapper.Apply(ref wparams, TranscriptionSettings, _host.ResolveModelsDirectory(), context?.PrimingText);
+            WhisperParamsMapper.Apply(
+                ref wparams, TranscriptionSettings, _host.ResolveModelsDirectory(),
+                context?.PrimingText, continuesPreviousCall);
 
         _tokenBeg = WhisperPInvoke.whisper_token_beg(ctx);
 
@@ -129,7 +140,8 @@ public sealed partial class WhisperBackend
                     $"strategy={strategyVerbose} | temp={wparams.temperature:F2}+{wparams.temperature_inc:F2}" +
                     $" | logprob_thold={wparams.logprob_thold:F2} | entropy_thold={wparams.entropy_thold:F2}" +
                     $" | no_speech_thold={wparams.no_speech_thold:F2} | suppress_nst={wparams.suppress_nst}" +
-                    $" | carry_prompt={wparams.carry_initial_prompt} | n_threads={wparams.n_threads}");
+                    $" | carry_prompt={wparams.carry_initial_prompt} | no_context={wparams.no_context}" +
+                    $" | n_threads={wparams.n_threads}");
 
                 string prompt = context?.PrimingText ?? TranscriptionSettings.Engine.InitialPrompt;
                 bool carry = TranscriptionSettings.Engine.CarryInitialPrompt;
@@ -182,17 +194,21 @@ public sealed partial class WhisperBackend
         {
             segments = _segmentsLocal.ToArray();
         }
-        var sb = new System.Text.StringBuilder();
-        foreach (var seg in segments) sb.Append(seg.Text);
-        string fullText = sb.ToString().Trim();
-
-        // A hit blanks the text; the segments stay for telemetry, and an empty
-        // FullText already reads as "no text" to both the streaming consumer and
-        // the monolithic finalize.
-        if (KnownHallucinations.Matches(fullText))
+        // FullText is the only text every pipeline delivers, so the filter sits
+        // here once. A hit leaves its segment out of FullText; the segments stay
+        // whole for telemetry, and an empty FullText already reads as "no text"
+        // to both the streaming consumer and the monolithic finalize.
+        string fullText = KnownHallucinations.StripFrom(
+            segments, out IReadOnlyList<FilteredHallucination> filtered);
+        _previousCallFilteredText = filtered.Count > 0;
+        if (filtered.Count > 0)
         {
             DeckleWhispSource.Log.TranscribeHallucinationFiltered();
-            fullText = "";
+            foreach (FilteredHallucination hit in filtered)
+            {
+                DeckleWhispSource.Log.TranscribeHallucinationFilteredMetrics(
+                    hit.SegmentIndex + 1, segments.Length, hit.Characters, hit.Entry);
+            }
         }
 
         return new TranscriptionResult(segments, fullText, totalMs, whisperInitMs, aborted, result);

@@ -7,13 +7,25 @@ public sealed partial class DeckleWhispSource
 {
     // ── Warmup clip ──────────────────────────────────────────────────────
 
+    // The clip ships with the app, so its absence is an incomplete install or a
+    // build without its assets. The warm-up then runs on silence, the input on
+    // which Whisper decodes subtitle credits: a reader must see it.
     [Event(EvtWarmupClipMissing,
+           Level = EventLevel.Warning,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Message = "The warmup clip is missing, the model warms up on silence")]
+    public void WarmupClipMissing()
+    {
+        if (IsEnabled()) WriteEvent(EvtWarmupClipMissing);
+    }
+
+    [Event(EvtWarmupClipMissingDetail,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Lifecycle,
            Message = "warmup clip missing | path={0}")]
-    public void WarmupClipMissing(string path)
+    public void WarmupClipMissingDetail(string path)
     {
-        if (IsEnabled()) WriteEvent(EvtWarmupClipMissing, path);
+        if (IsEnabled()) WriteEvent(EvtWarmupClipMissingDetail, path);
     }
 
     [Event(EvtWarmupClipHeaderInvalid,

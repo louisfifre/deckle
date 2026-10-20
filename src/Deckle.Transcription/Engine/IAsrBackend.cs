@@ -59,13 +59,18 @@ public interface IAsrBackend : IDisposable
 //
 // Optional per-call priming, model-agnostic so the contract outlives Whisper.
 // The streaming pipeline builds it to carry continuity across the separate
-// backend calls of consecutive utterances (Whisper has no cross-call context:
-// carry_initial_prompt and no_context both stay within one call).
+// backend calls of consecutive utterances.
 //
 //   • PrimingText — the Whisper backend maps it onto initial_prompt,
 //     overriding the configured stylistic prompt for that call. Null keeps the
 //     configured prompt; empty explicitly suppresses priming for an
 //     independent file.
+//   • ContinuesPreviousCall — whether this call may build on what the backend
+//     decoded in its previous call. A backend can keep that text in its own
+//     state (Whisper does), so only the caller knows where a take starts: false
+//     makes this call start from nothing but its PrimingText. False by default,
+//     so a standalone call, the warm-up and the first call of a take never
+//     inherit text from another take or from the warm-up.
 //   • EmitPreamble — whether this call logs its configuration preamble (the
 //     "Transcribing" milestone, the resolved params, the prompt). False for
 //     every streaming utterance after the first, so a take logs them once.
@@ -76,7 +81,8 @@ public interface IAsrBackend : IDisposable
 public sealed record TranscriptionContext(
     string? PrimingText,
     bool EmitPreamble = true,
-    double TimelineOffsetSec = 0);
+    double TimelineOffsetSec = 0,
+    bool ContinuesPreviousCall = false);
 
 // ── ModelLoadResult ──────────────────────────────────────────────────────────
 //

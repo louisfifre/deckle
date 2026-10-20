@@ -28,6 +28,33 @@ public sealed class WhisperParamsMapperTests
         }
     }
 
+    // whisper.cpp primes a call with what the previous call decoded unless
+    // no_context is set. On 2026-10-21 the warm-up's credit line came back in
+    // the first take that way.
+    [Theory]
+    [InlineData(true, false, 1)]  // first call of a take, warm-up, standalone call
+    [InlineData(true, true, 0)]   // later call of a take, carry wanted
+    [InlineData(false, true, 1)]  // carry turned off in settings
+    [InlineData(false, false, 1)]
+    public void OnlyACallThatContinuesThePreviousOneKeepsItsDecodedContext(
+        bool useContext, bool continuesPreviousCall, byte expectedNoContext)
+    {
+        var settings = new TranscriptionSettings();
+        settings.Context.UseContext = useContext;
+        var native = new WhisperFullParams();
+
+        WhisperParamsMapper.NativeAllocations allocations = WhisperParamsMapper.Apply(
+            ref native, settings, "unused", continuesPreviousCall: continuesPreviousCall);
+        try
+        {
+            Assert.Equal(expectedNoContext, native.no_context);
+        }
+        finally
+        {
+            allocations.Free();
+        }
+    }
+
     [Fact]
     public void NullOverrideKeepsConfiguredPromptAndCarry()
     {

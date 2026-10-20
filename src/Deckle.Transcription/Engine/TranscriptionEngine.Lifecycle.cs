@@ -138,7 +138,8 @@ public sealed partial class TranscriptionEngine
         {
             if (!File.Exists(path))
             {
-                DeckleWhispSource.Log.WarmupClipMissing(path);
+                DeckleWhispSource.Log.WarmupClipMissing();
+                DeckleWhispSource.Log.WarmupClipMissingDetail(path);
                 return null;
             }
 
@@ -261,6 +262,16 @@ public sealed partial class TranscriptionEngine
 
         float[] warmupBuffer = TryLoadWarmupClip() ?? new float[25_600];
 
+        // The discarded result is not enough to keep the prime out of the take.
+        // whisper.cpp keeps the tokens a call decoded in the decoder state of
+        // the context and primes the next call with them unless no_context is
+        // set (checked in v1.9.1, the shipped bundle; see WhisperParamsMapper).
+        // On the silent fallback Whisper decodes a subtitle credit, and on
+        // 2026-10-21 that credit came back in the first real take. Setting
+        // no_context on the prime would not help: it clears the context before
+        // the prime decodes, not after. The isolation sits on the other side,
+        // where it covers the end of a previous take too: the first call of
+        // every take leaves ContinuesPreviousCall false, which sets no_context.
         try
         {
             _backend.TranscribeAsync(

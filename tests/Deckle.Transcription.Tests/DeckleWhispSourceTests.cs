@@ -73,6 +73,23 @@ public sealed class DeckleWhispSourceTests : IDisposable
     }
 
     [Fact]
+    public void FilteredHallucinationMetricsRemainWhenDetailsAreDisabled()
+    {
+        // The metrics explain why text went missing from a take, so the
+        // Transcription detail control does not hold them back.
+        using var listener = new TestEventListener("Deckle-Whisp");
+
+        DeckleWhispSource.Log.TranscribeHallucinationFiltered();
+        DeckleWhispSource.Log.TranscribeHallucinationFilteredMetrics(
+            1, 3, 34, "Sous-titrage Société Radio-Canada");
+
+        Assert.Collection(
+            listener.Events,
+            e => Assert.Equal(DeckleWhispSource.EvtTranscribeHallucinationFiltered, e.EventId),
+            e => Assert.Equal(DeckleWhispSource.EvtTranscribeHallucinationFilteredMetrics, e.EventId));
+    }
+
+    [Fact]
     public void FileBatchMilestonesRemainWhenDetailsAreDisabled()
     {
         using var listener = new TestEventListener("Deckle-Whisp");

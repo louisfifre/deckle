@@ -217,6 +217,8 @@ public sealed partial class DeckleWhispSource : DeckleEventSource
     public const int EvtModelOnCpu                       = 190;
     public const int EvtModelGpuUnavailable              = 191;
     public const int EvtModelGpuUnavailableDetail        = 192;
+    public const int EvtTranscribeHallucinationFilteredMetrics = 193;
+    public const int EvtWarmupClipMissingDetail          = 194;
 
     // ── Per-provider keywords ───────────────────────────────────────────
     // Bits 0x400+ are provider-local (Deckle.Diagnostics.Keywords). No live
