@@ -75,6 +75,11 @@ public sealed partial class SettingsWindow : Window
         Nav.SelectedItem = Nav.MenuItems[0];
 
         Title = Loc.Get("Settings_WindowTitle");
+        // The TitleBar's Subtitle is the slot WinUI reserves for versioning
+        // information such as "Preview" or "Beta", drawn to the right of the
+        // title in its own text style. Not localized: the stage word is the
+        // same in every language Deckle ships. An empty stage shows nothing.
+        AppTitleBar.Subtitle = SettingsHost.GetAppStage?.Invoke() ?? "";
         // Window sizes are PHYSICAL pixels — scale the intended DIPs (or a
         // 200 % display opens a half-size window), clamped to the display's
         // work area so the scaled height never overflows the screen.

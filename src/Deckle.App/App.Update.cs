@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.Reflection;
 
 using Deckle.Core;
 using Deckle.Install;
@@ -20,6 +21,7 @@ public partial class App
     private void WireUpdater()
     {
         Settings.SettingsHost.GetAppVersion = CurrentDisplayVersion;
+        Settings.SettingsHost.GetAppStage = CurrentStage;
         Settings.SettingsHost.GetAvailableUpdateVersion = () => UpdateService.Available?.Version;
         Settings.SettingsHost.StartUpdate = StartUpdateFlow;
 
@@ -106,6 +108,17 @@ public partial class App
         if (string.IsNullOrWhiteSpace(version)) return "";
         int plus = version.IndexOf('+');
         return plus > 0 ? version[..plus] : version;
+    }
+
+    // The release stage baked in by the csproj's DeckleStage property, through
+    // an AssemblyMetadata item. Read from the attribute rather than parsed out
+    // of the version string, so the version stays the bare number everywhere
+    // (tag, update check, Installed-apps entry) and the stage is one word.
+    private static string CurrentStage()
+    {
+        return typeof(App).Assembly
+            .GetCustomAttributes<AssemblyMetadataAttribute>()
+            .FirstOrDefault(static a => a.Key == "Stage")?.Value ?? "";
     }
 
     // Runs in the new payload, from its temp extraction.
