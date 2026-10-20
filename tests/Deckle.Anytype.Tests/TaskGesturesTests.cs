@@ -94,6 +94,24 @@ public class TaskGesturesTests
         Assert.Equal($"## {ReadGestures.ChecklistHeading}\n---\n- [ ] première\n## {ReadGestures.NotesHeading}\n---", next);
     }
 
+    // Anytype escapes markdown in the body it serves (`get\_task` for
+    // get_task). Matching the raw label never found an item with an
+    // underscore and added a ticked duplicate instead.
+    [Fact]
+    [Trait("Category", "regression")]
+    public async Task SubtaskMatchesAnEscapedLabelTypedNaturally()
+    {
+        using var server = new FakeAnytypeServer();
+        string body = $"## {ReadGestures.ChecklistHeading}\n- [ ] dessiner get\\_task\\_properties\n## {ReadGestures.NotesHeading}\n";
+        server.OnGetObject(TaskId, TaskObject(body));
+        server.OnPatchObject(TaskId, TaskObject(body));
+
+        await NewGestures(server).SubtaskAsync(TaskId, "get_task_properties", done: true, ct: Ct);
+
+        string next = server.LastBodyFor("PATCH")["markdown"]!.GetValue<string>();
+        Assert.Equal($"## {ReadGestures.ChecklistHeading}\n- [x] dessiner get\\_task\\_properties\n## {ReadGestures.NotesHeading}\n", next);
+    }
+
     // A new item joins the checklist after its last item, never the end of the
     // body, where it would sit under the notes section.
     [Fact]

@@ -151,7 +151,12 @@ public sealed class TaskGestures(AnytypeApiClient api, NameResolver resolver)
 
             if (itemLabel.Length == 0) { if (emptySlot < 0) emptySlot = i; continue; }
             lastItem = i;
-            if (itemLabel.Contains(label, StringComparison.OrdinalIgnoreCase))
+            // Anytype escapes markdown in the body (`get\_task` for get_task);
+            // the caller types the label naturally, so both sides compare
+            // unescaped. Comparing raw never matched a label with an
+            // underscore and added a ticked duplicate instead.
+            if (MarkdownBody.Unescape(itemLabel).Contains(
+                    MarkdownBody.Unescape(label), StringComparison.OrdinalIgnoreCase))
                 matches.Add((i, boxIndex));
         }
 
