@@ -145,6 +145,19 @@ public sealed partial class DeckleWhispSource
         if (IsEnabled()) WriteEvent(EvtTranscribeHallucinationFiltered);
     }
 
+    // One per segment left out. `entry` is the catalogue line as written in the
+    // code, never the decoded text, so the payload carries nothing the person
+    // said. Not behind the Transcription detail control: it explains why text
+    // went missing from a take, which a reader needs whatever the verbosity.
+    [Event(EvtTranscribeHallucinationFilteredMetrics,
+           Level = EventLevel.Verbose,
+           Keywords = (EventKeywords)Keywords.Pipeline,
+           Message = "hallucination filtered | segment={0} | segments={1} | chars={2} | entry={3}")]
+    public void TranscribeHallucinationFilteredMetrics(int segment, int segments, int chars, string entry)
+    {
+        if (IsEnabled()) WriteEvent(EvtTranscribeHallucinationFilteredMetrics, segment, segments, chars, entry);
+    }
+
     [Event(EvtTranscribeSkipped,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Pipeline,

@@ -191,6 +191,11 @@ public sealed partial class WhisperBackend
         if (filtered.Count > 0)
         {
             DeckleWhispSource.Log.TranscribeHallucinationFiltered();
+            foreach (FilteredHallucination hit in filtered)
+            {
+                DeckleWhispSource.Log.TranscribeHallucinationFilteredMetrics(
+                    hit.SegmentIndex + 1, segments.Length, hit.Characters, hit.Entry);
+            }
         }
 
         return new TranscriptionResult(segments, fullText, totalMs, whisperInitMs, aborted, result);
