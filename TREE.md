@@ -427,6 +427,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   ├── DeckleAppSource.Lifecycle.cs
 │   │   │   ├── DeckleAppSource.Shutdown.cs
 │   │   │   ├── DeckleAppSource.Surfaces.cs
+│   │   │   ├── LaunchContextProbe.cs
 │   │   │   ├── LogEntry.cs
 │   │   │   ├── LogEntryRow.xaml
 │   │   │   ├── LogEntryRow.xaml.cs
