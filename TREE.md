@@ -360,6 +360,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   ├── ObjectListing.cs
 │   │   │   ├── ProjectGestures.cs
 │   │   │   ├── QueryGestures.cs
+│   │   │   ├── ReadGestures.cs
 │   │   │   ├── Resolution.cs
 │   │   │   ├── SchemaAdminGestures.cs
 │   │   │   ├── SchemaApiJson.cs
@@ -1778,6 +1779,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── ProjectGesturesBugNotes.md
 │   │   ├── ProjectGesturesTests.cs
 │   │   ├── QueryGesturesTests.cs
+│   │   ├── ReadGesturesTests.cs
 │   │   ├── SchemaAdminGesturesTests.cs
 │   │   ├── SessionGesturesBugNotes.md
 │   │   ├── SessionGesturesTests.cs

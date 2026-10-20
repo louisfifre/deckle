@@ -150,4 +150,145 @@ public class MarkdownBodyTests
             new[] { "Titre", "Groupe_un", "sous" },
             MarkdownBody.HeadingTexts(body));
     }
+
+    // ── TryReadSection: the raw content under a heading ─────────────────────────
+
+    [Fact]
+    public void TryReadSectionReturnsTheRawContentUpToTheNextHeadingOfTheSameLevel()
+    {
+        const string body = "## Un\nalpha\\_x   \n### sous\nbeta\n## Deux\nomega";
+
+        Assert.True(MarkdownBody.TryReadSection(body, "un", out string content));
+        // Raw: sub-headings stay, escapes and trailing spaces are not touched.
+        Assert.Equal("alpha\\_x   \n### sous\nbeta", content);
+    }
+
+    [Fact]
+    public void TryReadSectionIsFalseWhenNoHeadingMatches()
+    {
+        Assert.False(MarkdownBody.TryReadSection("## Un\nalpha", "Absent", out string content));
+        Assert.Equal("", content);
+    }
+
+    // ── Preamble: what comes before the first heading ──────────────────────────
+
+    [Fact]
+    public void PreambleIsTheLinesBeforeTheFirstHeading()
+    {
+        Assert.Equal("Intro\n", MarkdownBody.Preamble("Intro\n\n## A\nx"));
+    }
+
+    [Fact]
+    public void PreambleIsTheWholeBodyWhenItHasNoHeading()
+    {
+        // « #tag » without a space is text, not a heading.
+        const string body = "Texte\n#tag ici";
+
+        Assert.Equal(body, MarkdownBody.Preamble(body));
+    }
+
+    [Fact]
+    public void PreambleIsEmptyWhenTheBodyOpensOnAHeading()
+    {
+        Assert.Equal("", MarkdownBody.Preamble("## A\nx"));
+    }
+
+    // ── Outline: headings with the size of their cleaned content ───────────────
+
+    [Fact]
+    public void OutlineListsEveryHeadingWithItsLevelAndCleanedContentSizeSubSectionsIncluded()
+    {
+        // « Titre » holds everything below it: intro, ## A, abc, ### A1, xy, ## B
+        // once cleaned (5 + 4 + 3 + 6 + 2 + 4 chars, 5 line breaks, the divider
+        // and the blank line dropped). « A » stops at « B » and keeps « A1 ».
+        const string body = "# Titre\nintro\n## A\nabc\n### A1\nxy\n## B\n---\n";
+
+        Assert.Equal(
+            new[]
+            {
+                new MarkdownBody.Section(1, "Titre", 29),
+                new MarkdownBody.Section(2, "A", 13),
+                new MarkdownBody.Section(3, "A1", 2),
+                new MarkdownBody.Section(2, "B", 0),
+            },
+            MarkdownBody.Outline(body));
+    }
+
+    [Fact]
+    public void OutlineNormalizesHeadingsAndMeasuresUnescapedContent()
+    {
+        // The preamble « #tag line » is not a heading; the escaped underscore
+        // counts as one character once cleaned (« corps_x » is 7).
+        const string body = "#tag line\n## Entropy\\_thold   \ncorps\\_x";
+
+        Assert.Equal(
+            new[] { new MarkdownBody.Section(2, "Entropy_thold", 7) },
+            MarkdownBody.Outline(body));
+    }
+
+    [Fact]
+    public void OutlineOfABodyWithoutHeadingsIsEmpty()
+    {
+        Assert.Empty(MarkdownBody.Outline("Texte seul.\n- [ ] une case"));
+    }
+
+    // ── ChecklistItems: the subtasks of a body ─────────────────────────────────
+
+    [Fact]
+    public void ChecklistItemsReturnsTheItemsInOrderUnescapedAndSkipsEmptySlots()
+    {
+        // Markers - * + and an indent are accepted, [x] and [X] are both done;
+        // « - [ ] » and « - [ ]» are the template's empty slot, « - pas… » and
+        // plain text are not items.
+        const string body =
+            "- [x] fait\n  * [ ] module\\_X   \n+ [X] Majuscule\n- [ ] \n- [ ]\nTexte\n- pas une case";
+
+        Assert.Equal(
+            new[]
+            {
+                new MarkdownBody.ChecklistItem(true, "fait"),
+                new MarkdownBody.ChecklistItem(false, "module_X"),
+                new MarkdownBody.ChecklistItem(true, "Majuscule"),
+            },
+            MarkdownBody.ChecklistItems(body));
+    }
+
+    [Fact]
+    public void ChecklistItemsOfABodyWithoutACheckboxIsEmpty()
+    {
+        Assert.Empty(MarkdownBody.ChecklistItems("- une puce\nTexte\n## Titre"));
+    }
+
+    [Fact]
+    public void TryChecklistLineLocatesTheBoxCharacterAndTrimsTheLabel()
+    {
+        Assert.True(MarkdownBody.TryChecklistLine("  - [x]  libellé  ", out int box, out string label));
+        Assert.Equal(5, box);
+        Assert.Equal("libellé", label);
+
+        Assert.False(MarkdownBody.TryChecklistLine("- [?] inconnu", out _, out _));
+    }
+
+    // ── Clean: body text as a reader wants it ──────────────────────────────────
+
+    [Fact]
+    public void CleanUnescapesDropsTrailingSpacesBlankLinesAndDividers()
+    {
+        // The escaped set is _ * ` | and the backslash itself; indentation is kept.
+        const string raw = "a\\_b   \n\n---\n  \n---   \n  - c\\*d\\|e\\`f\\\\g  \nh";
+
+        Assert.Equal("a_b\n  - c*d|e`f\\g\nh", MarkdownBody.Clean(raw));
+    }
+
+    [Fact]
+    public void CleanOfOnlyLayoutIsEmpty()
+    {
+        Assert.Equal("", MarkdownBody.Clean("\n---\n   \n"));
+    }
+
+    [Fact]
+    public void UnescapeLeavesABackslashThatEscapesNothingAlone()
+    {
+        Assert.Equal("module_X * \\q", MarkdownBody.Unescape("module\\_X \\* \\q"));
+    }
 }
