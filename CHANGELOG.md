@@ -14,6 +14,16 @@ doctrine). This file is generated from the Conventional-Commit history by
 ### Added
 
 - **settings:** Show the release stage as the title bar subtitle
+- **transcription:** Log the compute device the whisper model runs on
+- **transcription:** Name each filtered hallucination in the log
+
+### Fixed
+
+- **transcription:** Read the GPU setting at whisper context creation
+- **whisper:** Strip credit-line hallucinations per segment
+- **transcription:** Start every take clean of the previous decode
+- **transcription:** Warn when the warm-up falls back to silence
+- **transcription:** Move the hallucination and warm-up detail events to 193 and 194
 
 ## [0.58.5](https://github.com/louisfifre/deckle/compare/v0.57.0...v0.58.5) — 2026-10-20
 
