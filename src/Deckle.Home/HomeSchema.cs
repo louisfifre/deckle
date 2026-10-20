@@ -271,6 +271,8 @@ public static class HomeSchema
         return new JsonObject { ["types"] = types, ["properties"] = properties };
     }
 
+    private const int MaxReportedSchemaFailures = 6;
+
     // Tolerates surplus but fails on any compiled required property or closed
     // option the owner deleted in the app, which locks the whole surface.
     // Compile as required only what the surface cannot work without. HomeTerms
@@ -319,10 +321,19 @@ public static class HomeSchema
             }
         }
 
+        // The message travels to a model as a tool error, and a fresh or empty
+        // space can fail thousands of checks. The first failures tell the model
+        // what to repair; the remaining count tells it the size of the gap.
         if (failures.Count > 0)
+        {
+            string listed = string.Join(" ; ", failures.Take(MaxReportedSchemaFailures));
+            int remaining = failures.Count - MaxReportedSchemaFailures;
+            if (remaining > 0)
+                listed += $" ; … et {remaining} autres";
             throw new HomeSchemaException(
-                "Le schéma Home n’est pas conforme : " + string.Join(" ; ", failures)
+                "Le schéma Home n’est pas conforme : " + listed
                 + ". Compare le snapshot au manifeste canonique, préserve les anciennes coordonnées et migre explicitement les formats et valeurs avant de réessayer.");
+        }
 
         return new HomeSchemaRuntime(snapshot, FloorTypeKey(snapshot));
     }
