@@ -182,17 +182,15 @@ public sealed partial class WhisperBackend
         {
             segments = _segmentsLocal.ToArray();
         }
-        var sb = new System.Text.StringBuilder();
-        foreach (var seg in segments) sb.Append(seg.Text);
-        string fullText = sb.ToString().Trim();
-
-        // A hit blanks the text; the segments stay for telemetry, and an empty
-        // FullText already reads as "no text" to both the streaming consumer and
-        // the monolithic finalize.
-        if (KnownHallucinations.Matches(fullText))
+        // FullText is the only text every pipeline delivers, so the filter sits
+        // here once. A hit leaves its segment out of FullText; the segments stay
+        // whole for telemetry, and an empty FullText already reads as "no text"
+        // to both the streaming consumer and the monolithic finalize.
+        string fullText = KnownHallucinations.StripFrom(
+            segments, out IReadOnlyList<FilteredHallucination> filtered);
+        if (filtered.Count > 0)
         {
             DeckleWhispSource.Log.TranscribeHallucinationFiltered();
-            fullText = "";
         }
 
         return new TranscriptionResult(segments, fullText, totalMs, whisperInitMs, aborted, result);
