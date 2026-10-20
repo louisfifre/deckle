@@ -142,12 +142,26 @@ internal static class McpSurfaceProtocolAdapter
         return result;
     }
 
+    // Safety net on the text a model receives, never the normal path. Measured
+    // over 45 days of transcripts, successful reads were the context cost (get
+    // p90 5 664 chars, max 43 737; eight results over 50 KB) while errors stayed
+    // under 3 206 chars. The typed reads are designed to stay far under this
+    // limit; the cap also covers ex.Message errors.
+    private const int MaxResultChars = 8000;
+
     private static CallToolResult ToolResult(ToolOutput output, bool isError) => new()
     {
-        Content = [new TextContentBlock { Text = output.Text }],
+        // Only the text fallback is cut: StructuredContent was already
+        // validated against the output schema and is left untouched.
+        Content = [new TextContentBlock { Text = CapText(output.Text) }],
         StructuredContent = output.StructuredContent is null
             ? null
             : JsonSerializer.SerializeToElement(output.StructuredContent),
         IsError = isError ? true : null,
     };
+
+    private static string CapText(string text) =>
+        text.Length <= MaxResultChars
+            ? text
+            : $"{text[..MaxResultChars]}\n[coupé : {MaxResultChars} / {text.Length} caractères]";
 }
