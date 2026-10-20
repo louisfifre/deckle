@@ -1688,6 +1688,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   └── WhisperSettingsModule.cs
 │   ├── Deckle.Transcription.Whisper/
 │   │   ├── Engine/
+│   │   │   ├── WhisperContextParamsMapper.cs
 │   │   │   └── WhisperParamsMapper.cs
 │   │   ├── Pinvoke/
 │   │   │   ├── WhisperPInvoke.cs
@@ -1703,6 +1704,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── WhisperBackend.Model.cs
 │   │   ├── WhisperBackend.NativeLogging.cs
 │   │   ├── WhisperBackend.Transcribe.cs
+│   │   ├── WhisperComputeDeviceObserver.cs
 │   │   └── WhisperNativeLogCompactor.cs
 │   ├── Deckle.Vad/
 │   │   ├── Deckle.Vad.csproj
@@ -2151,9 +2153,13 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── Deckle.Transcription.Whisper.Tests.csproj
 │   │   ├── KnownHallucinationsTests.cs
 │   │   ├── NativeRuntimeTests.cs
+│   │   ├── OperationalObservabilityCollection.cs
 │   │   ├── RepetitionDetectorTests.cs
 │   │   ├── SpeechModelFilesTests.cs
 │   │   ├── SpeechModelResolverTests.cs
+│   │   ├── WhisperComputeDeviceObserverTests.cs
+│   │   ├── WhisperContextBugNotes.md
+│   │   ├── WhisperContextParamsMapperTests.cs
 │   │   ├── WhisperParamsMapperTests.cs
 │   │   └── WhisperReferenceAudioSystemTests.cs
 │   ├── Deckle.Vad.Tests/

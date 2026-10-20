@@ -42,6 +42,17 @@ public sealed partial class WhisperBackend
                 return new ModelLoadResult(false, 0, null, "file_not_found");
             }
 
+            var sw = Stopwatch.StartNew();
+            IntPtr ctxParamsPtr = WhisperPInvoke.whisper_context_default_params_by_ref();
+            WhisperContextParams ctxParams = Marshal.PtrToStructure<WhisperContextParams>(ctxParamsPtr);
+            WhisperPInvoke.whisper_free_context_params(ctxParamsPtr);
+            // Read from the live settings at each load, like the model choice:
+            // a toggle on the page reaches whisper at the next load, after the
+            // idle unload or the restart the page offers. A change does not
+            // force an unload: the resident context may be serving a take, and
+            // the restart already gives the user an immediate path.
+            WhisperContextParamsMapper.Apply(ref ctxParams, _host.Transcription);
+
             if (OperationalLogAdmission.IsDetailEnabled(
                     OperationalLogActivity.Transcription,
                     DeckleWhispSource.Log,
@@ -50,19 +61,13 @@ public sealed partial class WhisperBackend
             {
                 double fileMb = new FileInfo(modelPath).Length / 1024.0 / 1024.0;
                 string basename = Path.GetFileName(modelPath);
-                DeckleWhispSource.Log.ModelLoadStart(basename, fileMb);
+                DeckleWhispSource.Log.ModelLoadStart(basename, fileMb, ctxParams.use_gpu);
             }
 
-            // Reset before init: the log hook overwrites this field
-            // synchronously during init when it sees a GPU backend prefix, and
-            // a re-load must not keep the previous load's backend.
-            _detectedBackend = "CPU";
-
-            var sw = Stopwatch.StartNew();
-            IntPtr ctxParamsPtr = WhisperPInvoke.whisper_context_default_params_by_ref();
-            WhisperContextParams ctxParams = Marshal.PtrToStructure<WhisperContextParams>(ctxParamsPtr);
-            WhisperPInvoke.whisper_free_context_params(ctxParamsPtr);
-            ctxParams.use_gpu = 1;
+            // Reset before init: the log hook feeds the observer synchronously
+            // during init, and a re-load must not keep the previous load's
+            // device.
+            s_computeDevice.BeginLoad();
 
             _ctx = WhisperPInvoke.whisper_init_from_file_with_params(modelPath, ctxParams);
             sw.Stop();
@@ -73,7 +78,7 @@ public sealed partial class WhisperBackend
                 return new ModelLoadResult(false, sw.ElapsedMilliseconds, null, "init_failed");
             }
 
-            DeckleWhispSource.Log.ModelLoadComplete(sw.ElapsedMilliseconds, _detectedBackend);
+            _detectedBackend = s_computeDevice.ReportLoad(ctxParams.use_gpu != 0, sw.ElapsedMilliseconds);
 
             return new ModelLoadResult(true, sw.ElapsedMilliseconds, _detectedBackend, null);
         }

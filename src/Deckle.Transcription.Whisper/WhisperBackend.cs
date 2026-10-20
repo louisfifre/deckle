@@ -49,6 +49,10 @@ public sealed partial class WhisperBackend : IAsrBackend
 
     private readonly WhisperNativeLogCompactor _logCompactor = new();
 
+    // Static like the log hook that feeds it: ggml prints its device table
+    // once per process, and every later load needs it to name the GPU.
+    private static readonly WhisperComputeDeviceObserver s_computeDevice = new();
+
     public bool IsModelLoaded => _ctx != IntPtr.Zero;
     public string? DetectedAccelerator => _ctx == IntPtr.Zero ? null : _detectedBackend;
 

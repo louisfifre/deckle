@@ -67,8 +67,9 @@ public sealed class SpeechTrimSettings
 }
 
 // Bootstrap parameters for the active ASR engine. Model and UseGpu are
-// load-time settings (the page asks for a restart when they change); Language
-// and the prompt apply on every call.
+// load-time settings, read at each model load: a change applies at the next
+// load, after the idle unload or the restart the page offers. Language and the
+// prompt apply on every call.
 public sealed class EngineSettings
 {
     public string Model { get; set; } = "ggml-base.bin";

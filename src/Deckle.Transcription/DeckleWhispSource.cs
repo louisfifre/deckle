@@ -213,6 +213,10 @@ public sealed partial class DeckleWhispSource : DeckleEventSource
     public const int EvtDictationRecoveryWriteFailedDetail = 186;
     public const int EvtDictationRecoveryDeleteFailed    = 187;
     public const int EvtDictationRecoveryDeleteFailedDetail = 188;
+    public const int EvtModelOnGpu                       = 189;
+    public const int EvtModelOnCpu                       = 190;
+    public const int EvtModelGpuUnavailable              = 191;
+    public const int EvtModelGpuUnavailableDetail        = 192;
 
     // ── Per-provider keywords ───────────────────────────────────────────
     // Bits 0x400+ are provider-local (Deckle.Diagnostics.Keywords). No live
