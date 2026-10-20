@@ -38,6 +38,9 @@ public static class SettingsHost
     // module must not reference. GetAvailableUpdateVersion is the newer release
     // the silent check parked (null = none known).
     public static Func<string>? GetAppVersion;
+    // The release stage ("Alpha", "Beta") the build carries, for the title bar
+    // subtitle. Unwired or empty leaves the subtitle off.
+    public static Func<string>? GetAppStage;
     public static Func<string?>? GetAvailableUpdateVersion;
     public static Action? StartUpdate;
 

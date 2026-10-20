@@ -18,6 +18,12 @@
          initialization must not compete with the host's runtime. -->
     <DisableWindowsAppSDKMLAutoInitialize>true</DisableWindowsAppSDKMLAutoInitialize>
     <Version>0.58.5</Version>
+    <!-- The release stage the running build belongs to (Alpha, then Beta),
+         shown as the Settings title bar subtitle. Deliberately apart from
+         <Version>: the tag, the changelog and the update check all read the
+         bare number, so the stage never enters them. Maintained here and
+         nowhere else; the ItemGroup below bakes it into the assembly. -->
+    <DeckleStage>Alpha</DeckleStage>
     <!-- Forces the Publish pipeline to generate/copy Deckle.pri into PublishDir.
          Without this, in unpackaged + WindowsAppSDK 1.8, the .pri doesn't land in
          publish\ and all compiled XAML resources (.xbf embedded in .pri since 1.8)
@@ -27,6 +33,10 @@
          hosts anything. -->
     <DefineConstants>$(DefineConstants);DISABLE_XAML_GENERATED_MAIN</DefineConstants>
   </PropertyGroup>
+
+  <ItemGroup>
+    <AssemblyMetadata Include="Stage" Value="$(DeckleStage)" />
+  </ItemGroup>
 
   <!-- Publish-only options, gated on _IsPublishing (set only by the Publish
        target) so a plain Release build does not pay self-contained costs.
