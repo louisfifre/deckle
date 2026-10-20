@@ -2153,9 +2153,12 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── Deckle.Transcription.Whisper.Tests.csproj
 │   │   ├── KnownHallucinationsTests.cs
 │   │   ├── NativeRuntimeTests.cs
+│   │   ├── OperationalObservabilityCollection.cs
 │   │   ├── RepetitionDetectorTests.cs
 │   │   ├── SpeechModelFilesTests.cs
 │   │   ├── SpeechModelResolverTests.cs
+│   │   ├── WhisperComputeDeviceObserverTests.cs
+│   │   ├── WhisperContextParamsMapperTests.cs
 │   │   ├── WhisperParamsMapperTests.cs
 │   │   └── WhisperReferenceAudioSystemTests.cs
 │   ├── Deckle.Vad.Tests/
