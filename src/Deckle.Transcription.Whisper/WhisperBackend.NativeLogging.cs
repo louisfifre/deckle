@@ -59,17 +59,7 @@ public sealed partial class WhisperBackend
         string msg = Marshal.PtrToStringUTF8(textPtr)?.TrimEnd('\r', '\n', ' ') ?? "";
         if (string.IsNullOrEmpty(msg)) return;
 
-        if (_detectedBackend == "CPU")
-        {
-            if (msg.StartsWith("ggml_vulkan:", StringComparison.Ordinal))
-                _detectedBackend = "Vulkan";
-            else if (msg.StartsWith("ggml_cuda_init:", StringComparison.Ordinal) ||
-                     msg.StartsWith("ggml_cuda:", StringComparison.Ordinal))
-                _detectedBackend = "CUDA";
-            else if (msg.StartsWith("ggml_metal_init:", StringComparison.Ordinal) ||
-                     msg.StartsWith("ggml_metal:", StringComparison.Ordinal))
-                _detectedBackend = "Metal";
-        }
+        s_computeDevice.Observe(msg);
 
         if (_logCompactor.TryAccumulatePhaseLine(msg)) return;
 

@@ -219,10 +219,54 @@ public sealed partial class DeckleWhispSource
     [Event(EvtModelLoadComplete,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "load complete | load_ms={0} | backend={1}")]
-    public void ModelLoadComplete(long load_ms, string backend)
+           Message = "load complete | load_ms={0} | backend={1} | device={2} | device_name={3}")]
+    public void ModelLoadComplete(long load_ms, string backend, string device, string device_name)
     {
-        if (IsEnabled()) WriteEvent(EvtModelLoadComplete, load_ms, backend);
+        if (IsEnabled()) WriteEvent(EvtModelLoadComplete, load_ms, backend, device, device_name);
+    }
+
+    // The compute device of a freshly loaded context. Ungated on purpose: a
+    // log read from another machine must say whether transcription runs on
+    // the GPU, without the Transcription detail switched on. The device name
+    // tells a discrete GPU from an integrated one.
+    [Event(EvtModelOnGpu,
+           Level = EventLevel.Informational,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Message = "The model runs on the GPU: {0}")]
+    public void ModelOnGpu(string device_name)
+    {
+        if (IsEnabled()) WriteEvent(EvtModelOnGpu, device_name);
+    }
+
+    [Event(EvtModelOnCpu,
+           Level = EventLevel.Informational,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Message = "The model runs on the CPU, as the settings ask")]
+    public void ModelOnCpu()
+    {
+        if (IsEnabled()) WriteEvent(EvtModelOnCpu);
+    }
+
+    // whisper.cpp falls back to the CPU on its own when no GPU device answers
+    // or the GPU backend fails to initialize; the load still succeeds.
+    [Event(EvtModelGpuUnavailable,
+           Level = EventLevel.Warning,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Message = "The GPU could not be used, the model runs on the CPU")]
+    public void ModelGpuUnavailable()
+    {
+        if (IsEnabled()) WriteEvent(EvtModelGpuUnavailable);
+    }
+
+    // reason (closed vocabulary): no_gpu_found | gpu_init_failed. device is
+    // the one whisper gave up on, empty for no_gpu_found.
+    [Event(EvtModelGpuUnavailableDetail,
+           Level = EventLevel.Verbose,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Message = "gpu unavailable | reason={0} | device={1}")]
+    public void ModelGpuUnavailableDetail(string reason, string device)
+    {
+        if (IsEnabled()) WriteEvent(EvtModelGpuUnavailableDetail, reason, device);
     }
 
     [Event(EvtModelOnDemandLoad,

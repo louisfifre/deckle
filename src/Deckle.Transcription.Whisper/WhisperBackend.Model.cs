@@ -64,10 +64,10 @@ public sealed partial class WhisperBackend
                 DeckleWhispSource.Log.ModelLoadStart(basename, fileMb, ctxParams.use_gpu);
             }
 
-            // Reset before init: the log hook overwrites this field
-            // synchronously during init when it sees a GPU backend prefix, and
-            // a re-load must not keep the previous load's backend.
-            _detectedBackend = "CPU";
+            // Reset before init: the log hook feeds the observer synchronously
+            // during init, and a re-load must not keep the previous load's
+            // device.
+            s_computeDevice.BeginLoad();
 
             _ctx = WhisperPInvoke.whisper_init_from_file_with_params(modelPath, ctxParams);
             sw.Stop();
@@ -78,7 +78,7 @@ public sealed partial class WhisperBackend
                 return new ModelLoadResult(false, sw.ElapsedMilliseconds, null, "init_failed");
             }
 
-            DeckleWhispSource.Log.ModelLoadComplete(sw.ElapsedMilliseconds, _detectedBackend);
+            _detectedBackend = s_computeDevice.ReportLoad(ctxParams.use_gpu != 0, sw.ElapsedMilliseconds);
 
             return new ModelLoadResult(true, sw.ElapsedMilliseconds, _detectedBackend, null);
         }

@@ -1704,6 +1704,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── WhisperBackend.Model.cs
 │   │   ├── WhisperBackend.NativeLogging.cs
 │   │   ├── WhisperBackend.Transcribe.cs
+│   │   ├── WhisperComputeDeviceObserver.cs
 │   │   └── WhisperNativeLogCompactor.cs
 │   ├── Deckle.Vad/
 │   │   ├── Deckle.Vad.csproj
