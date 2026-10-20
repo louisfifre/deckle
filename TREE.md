@@ -2149,6 +2149,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   └── UtteranceProgressTests.cs
 │   ├── Deckle.Transcription.Whisper.Tests/
 │   │   ├── Deckle.Transcription.Whisper.Tests.csproj
+│   │   ├── HallucinationBugNotes.md
 │   │   ├── KnownHallucinationsTests.cs
 │   │   ├── NativeRuntimeTests.cs
 │   │   ├── RepetitionDetectorTests.cs
