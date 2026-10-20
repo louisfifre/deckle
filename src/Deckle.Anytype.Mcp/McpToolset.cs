@@ -18,16 +18,17 @@ public static class McpToolset
         var tasks = new TaskGestures(api, resolver);
         var projects = new ProjectGestures(api, resolver);
         var query = new QueryGestures(api, resolver);
+        var reads = new ReadGestures(api, resolver);
         var documents = new DocumentGestures(api);
         var dialogues = new DialogueGestures(api, resolver);
         var managementGestures = new ManagementGestures(api, resolver);
 
         IReadOnlyList<ToolDescriptor> tools = profile switch
         {
-            ToolProfile.ProjectManagement => ToolCatalog.Build(session, tasks, projects, query, documents),
+            ToolProfile.ProjectManagement => ToolCatalog.Build(session, tasks, projects, query, reads, documents),
             ToolProfile.Dialogues => DialogueToolCatalog.Build(dialogues),
             ToolProfile.SchemaAdmin => BuildSchemaAdmin(api, resolver, aliases),
-            ToolProfile.All => ToolCatalog.Build(session, tasks, projects, query, documents)
+            ToolProfile.All => ToolCatalog.Build(session, tasks, projects, query, reads, documents)
                 .Concat(DialogueToolCatalog.Build(dialogues))
                 .ToArray(),
             _ => throw new InvalidOperationException($"Profil MCP inconnu : {profile}."),
