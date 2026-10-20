@@ -49,7 +49,7 @@ public sealed class LiveTranscriptionPipelineTests
         Assert.Equal(
             ToggleResult.Started,
             engine.RequestToggle(shouldPaste: false));
-        await backend.TwoCallsCompleted.Task.WaitAsync(
+        await backend.AllCallsCompleted.Task.WaitAsync(
             TimeSpan.FromSeconds(5), testCancellation);
 
         Assert.True(engine.IsRecording);
@@ -81,6 +81,42 @@ public sealed class LiveTranscriptionPipelineTests
         Assert.False(engine.IsBusy);
     }
 
+    // 2026-10-21: the warm-up decoded a subtitle credit on silence, and the
+    // backend primed the first utterance of the take with it.
+    [Fact]
+    [Trait("Category", "regression")]
+    public async Task TheFirstUtteranceAfterTheWarmUpDoesNotContinueTheWarmUpCall()
+    {
+        CancellationToken testCancellation = TestContext.Current.CancellationToken;
+        var capture = new ScriptedMicrophoneCapture(utteranceCount: 2);
+        var backend = new SequencedBackend(
+            ["Sous-titrage Société Radio-Canada", "bonjour", "Deckle"],
+            modelLoaded: false);
+        using var engine = new TranscriptionEngine(
+            new StreamingHost(),
+            backend,
+            capture,
+            new RecordingClipboardWriter());
+        var finished = new TaskCompletionSource<TranscriptionOutcome>(
+            TaskCreationOptions.RunContinuationsAsynchronously);
+        engine.TranscriptionFinished += outcome => finished.TrySetResult(outcome);
+
+        Assert.Equal(
+            ToggleResult.Started,
+            engine.RequestToggle(shouldPaste: false));
+        await backend.AllCallsCompleted.Task.WaitAsync(
+            TimeSpan.FromSeconds(5), testCancellation);
+        engine.RequestToggle(shouldPaste: false);
+        await finished.Task.WaitAsync(TimeSpan.FromSeconds(5), testCancellation);
+
+        IReadOnlyList<TranscriptionContext> contexts = backend.Contexts;
+        Assert.Equal(3, contexts.Count);
+        Assert.False(contexts[0].EmitPreamble);           // the warm-up call
+        Assert.False(contexts[0].ContinuesPreviousCall);
+        Assert.False(contexts[1].ContinuesPreviousCall);  // first utterance
+        Assert.True(contexts[2].ContinuesPreviousCall);   // second utterance
+    }
+
     [Fact]
     public async Task EachTranscribedUtteranceIsPublishedInOrderWithItsText()
     {
@@ -110,7 +146,7 @@ public sealed class LiveTranscriptionPipelineTests
         Assert.Equal(
             ToggleResult.Started,
             engine.RequestToggle(shouldPaste: false));
-        await backend.TwoCallsCompleted.Task.WaitAsync(
+        await backend.AllCallsCompleted.Task.WaitAsync(
             TimeSpan.FromSeconds(5), testCancellation);
         Assert.Equal(
             ToggleResult.Stopped,
@@ -154,7 +190,7 @@ public sealed class LiveTranscriptionPipelineTests
             engine.TranscriptionFinished += outcome => finished.TrySetResult(outcome);
 
             Assert.Equal(ToggleResult.Started, engine.RequestToggle(shouldPaste: false));
-            await backend.TwoCallsCompleted.Task.WaitAsync(
+            await backend.AllCallsCompleted.Task.WaitAsync(
                 TimeSpan.FromSeconds(5), testCancellation);
 
             // The write follows the backend call on the consumer task, so poll.
@@ -358,7 +394,7 @@ public sealed class LiveTranscriptionPipelineTests
         Assert.Equal(
             ToggleResult.Started,
             engine.RequestToggle(shouldPaste: false));
-        await backend.TwoCallsCompleted.Task.WaitAsync(
+        await backend.AllCallsCompleted.Task.WaitAsync(
             TimeSpan.FromSeconds(5), testCancellation);
         Assert.Equal(
             ToggleResult.Stopped,
@@ -496,21 +532,31 @@ public sealed class LiveTranscriptionPipelineTests
         private int _activeCalls;
         private int _callCount;
         private int _maxConcurrentCalls;
+        private volatile bool _modelLoaded;
 
-        public SequencedBackend(IReadOnlyList<string> texts) => _texts = texts;
+        // A backend created without a loaded model makes the engine prime it,
+        // and the prime's dummy call takes the first text.
+        public SequencedBackend(IReadOnlyList<string> texts, bool modelLoaded = true)
+        {
+            _texts = texts;
+            _modelLoaded = modelLoaded;
+        }
 
         public string Name => "test";
-        public bool IsModelLoaded => true;
+        public bool IsModelLoaded => _modelLoaded;
         public string? DetectedAccelerator => "test";
         public int CallCount => Volatile.Read(ref _callCount);
         public int MaxConcurrentCalls => Volatile.Read(ref _maxConcurrentCalls);
         public IReadOnlyList<int> SampleCounts { get { lock (_gate) return _sampleCounts.ToArray(); } }
         public IReadOnlyList<TranscriptionContext> Contexts { get { lock (_gate) return _contexts.ToArray(); } }
-        public TaskCompletionSource TwoCallsCompleted { get; } = new(
+        public TaskCompletionSource AllCallsCompleted { get; } = new(
             TaskCreationOptions.RunContinuationsAsynchronously);
 
-        public Task<ModelLoadResult> LoadModelAsync(CancellationToken ct) =>
-            Task.FromResult(new ModelLoadResult(true, 0, "test", null));
+        public Task<ModelLoadResult> LoadModelAsync(CancellationToken ct)
+        {
+            _modelLoaded = true;
+            return Task.FromResult(new ModelLoadResult(true, 0, "test", null));
+        }
 
         public void UnloadModel() { }
 
@@ -536,8 +582,8 @@ public sealed class LiveTranscriptionPipelineTests
                 await Task.Yield();
                 var segment = new TranscriptionSegment(text, 0, 10, 1f, 0f);
                 segmentSink?.Invoke(segment);
-                if (callIndex == 1)
-                    TwoCallsCompleted.TrySetResult();
+                if (callIndex == _texts.Count - 1)
+                    AllCallsCompleted.TrySetResult();
                 return new TranscriptionResult([segment], text, 1, 0, false, 0);
             }
             finally

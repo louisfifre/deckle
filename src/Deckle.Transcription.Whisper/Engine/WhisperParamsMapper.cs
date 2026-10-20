@@ -46,11 +46,15 @@ public static class WhisperParamsMapper
     // `promptOverride` replaces the configured initial_prompt for this call: the
     // streaming path injects its inter-utterance context through it. Null keeps
     // the stylistic prompt from settings.
+    //
+    // `continuesPreviousCall` says whether this call may build on the text the
+    // previous whisper_full call decoded; see the no_context line below.
     public static NativeAllocations Apply(
         ref WhisperFullParams wparams,
         TranscriptionSettings whisp,
         string modelsDirectory,
-        string? promptOverride = null)
+        string? promptOverride = null,
+        bool continuesPreviousCall = false)
     {
         string prompt = promptOverride ?? whisp.Engine.InitialPrompt;
         IntPtr langPtr = Marshal.StringToCoTaskMemUTF8(whisp.Engine.Language);
@@ -86,7 +90,18 @@ public static class WhisperParamsMapper
             wparams.suppress_regex = regexPtr;
         }
 
-        wparams.no_context = (byte)(whisp.Context.UseContext ? 0 : 1);
+        // whisper_full always decodes on ctx->state, which lives as long as the
+        // model. The state keeps the tokens a call decoded (prompt_past1) and,
+        // unless no_context is set, the next call's decoder is primed with them;
+        // no_context clears them at the start of a call only, and the call then
+        // writes its own decoded tokens back. Checked in whisper.cpp v1.9.1
+        // (f049fff), the source of the shipped native bundle: src/whisper.cpp
+        // l. 890-892, 6921-6924, 7111-7129, 7611-7622, 7792.
+        // So no_context is set on every call that does not continue the previous
+        // one, whatever UseContext says: a take never starts primed with the
+        // warm-up's output or with the end of another take. UseContext governs
+        // only the carry between the calls of one take.
+        wparams.no_context = (byte)(whisp.Context.UseContext && continuesPreviousCall ? 0 : 1);
         // MaxTokens <= 0 means "auto" — leave whisper.cpp's default (16384).
         // Writing -1 here makes whisper.cpp compute
         // max_prompt_ctx = min(-1, n_text_ctx/2) = -1 then clamp the initial

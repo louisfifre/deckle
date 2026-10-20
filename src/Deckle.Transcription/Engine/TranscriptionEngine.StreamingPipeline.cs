@@ -349,14 +349,20 @@ public sealed partial class TranscriptionEngine
             // as dequeued whether or not the backend call succeeds.
             int backlogAfter = onDequeue();
 
-            // Whisper has no cross-call context, so continuity is rebuilt by hand:
-            // the fixed stylistic prompt plus the previous utterance's tail. A
-            // looped previous utterance contributes no tail, so a loop cannot
-            // contaminate the next.
+            // Continuity is given by hand: the fixed stylistic prompt plus the
+            // previous utterance's tail. A looped previous utterance contributes
+            // no tail, so a loop cannot contaminate the next.
+            // The backend may also keep what it decoded last (Whisper does, in its
+            // decoder state). That carry follows the tail: the call continues the
+            // previous one only when the tail of a call of this take is carried.
+            // So the first call of the take starts clean of the warm-up's output
+            // and of the previous take, and a call after a loop, a failure or an
+            // empty utterance starts clean of what it decoded.
             var ctx = new TranscriptionContext(
                 BuildPriming(fixedPrompt, previousTail),
-                EmitPreamble:      nUtt == 1,
-                TimelineOffsetSec: u.StartSec);
+                EmitPreamble:          nUtt == 1,
+                TimelineOffsetSec:     u.StartSec,
+                ContinuesPreviousCall: !string.IsNullOrEmpty(previousTail));
 
             float[] samples = u.Samples;
             if (applyPreprocessing)
