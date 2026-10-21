@@ -72,6 +72,9 @@ public sealed partial class TranscriptionEngine
         clipboardStopwatch.Stop();
         if (!rawCopySucceeded)
         {
+            // The clipboard event says why the copy failed; this says the take
+            // was lost to the user and whether the recovery file still holds it.
+            DeckleWhispSource.Log.DictationNotDelivered("raw_copy_failed", _recovery?.Exists ?? false);
             if (announceCompletion)
                 RaiseStatus(Loc.Get("Status_Ready"));
             if (announceCompletion)
@@ -147,8 +150,7 @@ public sealed partial class TranscriptionEngine
             ex is IOException or UnauthorizedAccessException
                or ArgumentException or NotSupportedException)
         {
-            DeckleWhispSource.Log.FileTranscriptionWriteFailed();
-            DeckleWhispSource.Log.FileTranscriptionWriteFailedDetail(ex.GetType().Name, ex.Message);
+            DeckleWhispSource.Log.FileTranscriptionWriteFailed(ex.GetType().Name, ex.Message);
             EmitUserFeedback(FB_WARN,
                 Loc.Get("FileTranscription_WriteFailed_Title"),
                 Loc.Get("FileTranscription_WriteFailed_Body"),

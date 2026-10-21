@@ -39,6 +39,7 @@ internal sealed class FileTranscriptionQueue
                 return 0;
 
             _fileCount += accepted.Length;
+            DeckleWhispSource.Log.FileQueueChanged("enqueued", accepted.Length, _fileCount);
         }
         return accepted.Length;
     }
@@ -55,7 +56,11 @@ internal sealed class FileTranscriptionQueue
                 return false;
 
             if (start(batch) != ToggleResult.Started)
+            {
+                // Answers "my files are waiting": a dictation holds the consumer.
+                DeckleWhispSource.Log.FileQueueChanged("deferred", batch.AudioFilePaths.Count, _fileCount);
                 return false;
+            }
 
             if (!_batches.Reader.TryRead(out FileTranscriptionBatch? startedBatch)
                 || !ReferenceEquals(startedBatch, batch))
@@ -65,6 +70,7 @@ internal sealed class FileTranscriptionQueue
             }
 
             _fileCount -= batch.AudioFilePaths.Count;
+            DeckleWhispSource.Log.FileQueueChanged("started", batch.AudioFilePaths.Count, _fileCount);
             return true;
         }
     }

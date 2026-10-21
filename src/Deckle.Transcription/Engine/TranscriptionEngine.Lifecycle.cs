@@ -39,7 +39,7 @@ public sealed partial class TranscriptionEngine
         }
         catch (Exception ex)
         {
-            OpenModelIncident(ex.GetType().Name);
+            OpenModelIncident("load_exception", ex.GetType().Name, ex.Message);
             EmitUserFeedback(FB_ERROR,
                 Loc.Get("Engine_ModelLoadFailed_Title"),
                 Loc.Get("Engine_ModelLoadFailed_Body"),
@@ -50,7 +50,7 @@ public sealed partial class TranscriptionEngine
 
         if (!result.Success)
         {
-            OpenModelIncident(result.ErrorReason ?? "load_failed");
+            OpenModelIncident(result.ErrorReason ?? "load_failed", "", "");
             if (result.ErrorReason == "file_not_found")
             {
                 EmitUserFeedback(FB_ERROR,
@@ -118,7 +118,16 @@ public sealed partial class TranscriptionEngine
     private void ResetIdleTimer()
     {
         if (_idleTimer is null)
-            _idleTimer = new System.Threading.Timer(_ => UnloadModel(), null, MODEL_IDLE_TIMEOUT_MS, Timeout.Infinite);
+            // A timer callback runs on the thread pool, where an escaping
+            // exception ends the process; a failed unload must only be logged.
+            _idleTimer = new System.Threading.Timer(_ =>
+            {
+                try { UnloadModel(); }
+                catch (Exception ex)
+                {
+                    DeckleWhispSource.Log.ModelIdleUnloadFailed(ex.GetType().Name, ex.Message);
+                }
+            }, null, MODEL_IDLE_TIMEOUT_MS, Timeout.Infinite);
         else
             _idleTimer.Change(MODEL_IDLE_TIMEOUT_MS, Timeout.Infinite);
         DeckleWhispSource.Log.ModelIdleTimerSet(MODEL_IDLE_TIMEOUT_MS / 1000);
@@ -181,8 +190,7 @@ public sealed partial class TranscriptionEngine
         }
         catch (Exception ex)
         {
-            DeckleWhispSource.Log.WarmupClipLoadFailed();
-            DeckleWhispSource.Log.WarmupClipLoadFailedDetail(ex.GetType().Name, ex.Message);
+            DeckleWhispSource.Log.WarmupClipLoadFailed(ex.GetType().Name, ex.Message);
             return null;
         }
     }
@@ -257,8 +265,36 @@ public sealed partial class TranscriptionEngine
         var sw = System.Diagnostics.Stopwatch.StartNew();
         DeckleWhispSource.Log.WarmupStart();
 
-        if (!EnsureModelLoaded(silentStatus: true)) return false;
-        if (ct.IsCancellationRequested) return false;
+        // Every exit after WarmupStart closes it: completed, cancelled or failed.
+        try
+        {
+            return RunPrime(ct, sw);
+        }
+        catch (OperationCanceledException)
+        {
+            DeckleWhispSource.Log.WarmupCancelled(sw.ElapsedMilliseconds);
+            throw;
+        }
+        catch (Exception ex)
+        {
+            DeckleWhispSource.Log.WarmupFailed("prime_exception", ex.GetType().Name, ex.Message, sw.ElapsedMilliseconds);
+            throw;
+        }
+    }
+
+    private bool RunPrime(CancellationToken ct, System.Diagnostics.Stopwatch sw)
+    {
+        if (!EnsureModelLoaded(silentStatus: true))
+        {
+            // LoadModel already carries the cause on ModelUnavailable.
+            DeckleWhispSource.Log.WarmupFailed("model_load_failed", "", "", sw.ElapsedMilliseconds);
+            return false;
+        }
+        if (ct.IsCancellationRequested)
+        {
+            DeckleWhispSource.Log.WarmupCancelled(sw.ElapsedMilliseconds);
+            return false;
+        }
 
         float[] warmupBuffer = TryLoadWarmupClip() ?? new float[25_600];
 
@@ -286,10 +322,15 @@ public sealed partial class TranscriptionEngine
             // Dispose fired the drain token during the prime: abandon quietly.
             // Any other exception is a genuine prime failure and propagates
             // through the gate to the pipeline that awaits it.
+            DeckleWhispSource.Log.WarmupCancelled(sw.ElapsedMilliseconds);
             return false;
         }
 
-        if (ct.IsCancellationRequested) return false;
+        if (ct.IsCancellationRequested)
+        {
+            DeckleWhispSource.Log.WarmupCancelled(sw.ElapsedMilliseconds);
+            return false;
+        }
 
         _primeMs = sw.ElapsedMilliseconds;
         DeckleWhispSource.Log.WarmupComplete();

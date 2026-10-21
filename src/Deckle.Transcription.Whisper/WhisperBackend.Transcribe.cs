@@ -62,6 +62,9 @@ public sealed partial class WhisperBackend
         IntPtr ctx = _ctx;
         if (ctx == IntPtr.Zero)
         {
+            // The same -1 a native failure can return: the reason tells the
+            // two apart in the log.
+            DeckleWhisperSource.Log.TranscribeFailed("no_context", -1);
             return new TranscriptionResult(
                 Array.Empty<TranscriptionSegment>(), "", 0, 0, false, -1);
         }
@@ -76,6 +79,7 @@ public sealed partial class WhisperBackend
         lock (_segmentsLock) _segmentsLocal.Clear();
         _segmentSink = segmentSink;
         _abortRequested = false;
+        _segmentCallbackFailures = 0;
         _repetitionDetector.Reset();
 
         IntPtr fullParamsPtr = WhisperPInvoke.whisper_full_default_params_by_ref(0);
@@ -112,6 +116,10 @@ public sealed partial class WhisperBackend
         _abortCallback = _ => _abortRequested || ct.IsCancellationRequested;
         wparams.abort_callback = Marshal.GetFunctionPointerForDelegate(_abortCallback);
         wparams.abort_callback_user_data = IntPtr.Zero;
+
+        _encoderBeginCallback = OnEncoderBegin;
+        wparams.encoder_begin_callback = Marshal.GetFunctionPointerForDelegate(_encoderBeginCallback);
+        wparams.encoder_begin_callback_user_data = IntPtr.Zero;
 
         _timelineOffsetSec = context?.TimelineOffsetSec ?? 0;
 
@@ -183,8 +191,7 @@ public sealed partial class WhisperBackend
 
         if (result != 0 && !_abortRequested)
         {
-            DeckleWhispSource.Log.TranscribeFailed();
-            DeckleWhispSource.Log.TranscribeFailedDetail(result);
+            DeckleWhisperSource.Log.TranscribeFailed("native_error", result);
             return new TranscriptionResult(
                 Array.Empty<TranscriptionSegment>(), "", totalMs, whisperInitMs, aborted, result);
         }
@@ -193,6 +200,12 @@ public sealed partial class WhisperBackend
         lock (_segmentsLock)
         {
             segments = _segmentsLocal.ToArray();
+        }
+
+        if (_segmentCallbackIncidentOpen && _segmentCallbackFailures == 0 && segments.Length > 0)
+        {
+            _segmentCallbackIncidentOpen = false;
+            DeckleWhisperSource.Log.SegmentCallbackRecovered();
         }
         // FullText is the only text every pipeline delivers, so the filter sits
         // here once. A hit leaves its segment out of FullText; the segments stay
@@ -288,14 +301,45 @@ public sealed partial class WhisperBackend
         }
         catch (Exception ex)
         {
-            DeckleWhispSource.Log.SegmentCallbackThrew();
-            DeckleWhispSource.Log.SegmentCallbackThrewDetail(ex.GetType().Name, ex.Message);
+            // A sink that throws once usually throws at every take: one Error
+            // per incident, the raw failures in the gated detail.
+            int failures = ++_segmentCallbackFailures;
+            if (!_segmentCallbackIncidentOpen)
+            {
+                _segmentCallbackIncidentOpen = true;
+                DeckleWhisperSource.Log.SegmentCallbackFailed(ex.GetType().Name, ex.Message);
+            }
+            DeckleWhisperSource.Log.SegmentCallbackFailedDetail(failures, ex.GetType().Name, ex.Message);
         }
     }
 
-    // Meant to time whisper.cpp's pre-decode setup, but it starts just before
-    // whisper_full and stops only when it returns, so it spans the whole call:
-    // whisper_init_ms is about the total and whisper_ms (total minus init) about
-    // 0. Neither is a phase breakdown.
+    // whisper.cpp encoder_begin_callback signature:
+    //   bool fn(whisper_context* ctx, whisper_state* state, void* user_data)
+    // Returning false aborts whisper_full, so this one always returns true.
+    [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+    [return: MarshalAs(UnmanagedType.I1)]
+    private delegate bool WhisperEncoderBeginCallback(IntPtr ctx, IntPtr state, IntPtr user_data);
+
+    private WhisperEncoderBeginCallback? _encoderBeginCallback;
+
+    // The first encoder pass ends whisper.cpp's pre-decode setup (mel
+    // spectrogram, VAD when enabled, state reset); later passes, one per 30 s
+    // window, must not move the mark.
+    private bool OnEncoderBegin(IntPtr ctx, IntPtr state, IntPtr user_data)
+    {
+        if (_whisperInitSw is { IsRunning: true }) _whisperInitSw.Stop();
+        return true;
+    }
+
+    // Times whisper.cpp's pre-decode setup: started just before whisper_full,
+    // stopped by the first encoder_begin_callback. whisper_init_ms is that
+    // setup and whisper_ms (total minus init) the encode and decode. A call
+    // that never reaches the encoder stops it when whisper_full returns.
     private Stopwatch? _whisperInitSw;
+
+    // Per call: reset at the top of TranscribeSync.
+    private int _segmentCallbackFailures;
+
+    // Across calls: closed by the first call whose segments all land.
+    private bool _segmentCallbackIncidentOpen;
 }

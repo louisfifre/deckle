@@ -1700,6 +1700,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   ├── SpeechModelResolver.cs
 │   │   │   └── SpeechModels.cs
 │   │   ├── Deckle.Transcription.Whisper.csproj
+│   │   ├── DeckleWhisperSource.cs
 │   │   ├── KnownHallucinations.cs
 │   │   ├── RepetitionDetector.cs
 │   │   ├── WhisperBackend.cs

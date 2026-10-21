@@ -53,6 +53,10 @@ public sealed partial class WhisperBackend : IAsrBackend
     // once per process, and every later load needs it to name the GPU.
     private static readonly WhisperComputeDeviceObserver s_computeDevice = new();
 
+    // Open while consecutive loads fail: the engine retries at every take, and
+    // the Warning fires once per incident.
+    private bool _loadFailureOpen;
+
     public bool IsModelLoaded => _ctx != IntPtr.Zero;
     public string? DetectedAccelerator => _ctx == IntPtr.Zero ? null : _detectedBackend;
 
@@ -60,5 +64,6 @@ public sealed partial class WhisperBackend : IAsrBackend
     {
         _host = host;
         InstallWhisperLogHook();
+        LogNativeRuntimeIdentity();
     }
 }

@@ -335,6 +335,8 @@ public sealed partial class TranscriptionEngine
     private void WorkerRun()
     {
         using var activity = TranscriptionActivityScope.Open();
+        // Paired with WorkerStopped in SettleWorkerToIdle, which every exit reaches.
+        DeckleWhispSource.Log.WorkerStarted("dictation");
         CancellationTokenSource recordCts = _recordCts
             ?? throw new InvalidOperationException("Recording cancellation was not published before worker start.");
         CancellationTokenSource drainCts = _drainCts
@@ -377,8 +379,7 @@ public sealed partial class TranscriptionEngine
         }
         catch (Exception ex)
         {
-            DeckleWhispSource.Log.PipelineCrashed();
-            DeckleWhispSource.Log.PipelineCrashedDetail(ex.GetType().Name, ex.Message);
+            DeckleWhispSource.Log.PipelineCrashed(ex.GetType().Name, ex.Message);
             EmitUserFeedback(FB_ERROR,
                 Loc.Get("Engine_PipelineCrashed_Title"),
                 Loc.Get("Engine_PipelineCrashed_Body"),
@@ -387,7 +388,7 @@ public sealed partial class TranscriptionEngine
         }
         finally
         {
-            SettleWorkerToIdle(primeTask, recordCts, drainCts);
+            SettleWorkerToIdle("dictation", primeTask, recordCts, drainCts);
         }
     }
 
@@ -397,6 +398,7 @@ public sealed partial class TranscriptionEngine
     // when the model is still resident, dispose the run's cancellation tokens,
     // then emit "Ready", in that order.
     private void SettleWorkerToIdle(
+        string worker,
         Task<bool> primeTask,
         CancellationTokenSource recordCts,
         CancellationTokenSource drainCts)
@@ -410,7 +412,12 @@ public sealed partial class TranscriptionEngine
         // inference aborts; a model load in flight is not cancellable and runs
         // to completion. A load failure already surfaced its UserFeedback.
         try { primeTask.GetAwaiter().GetResult(); }
-        catch { /* prime failure already surfaced; nothing user-facing here */ }
+        catch (Exception ex)
+        {
+            // The prime failure already surfaced (WarmupFailed, UserFeedback);
+            // this records that the teardown observed it.
+            DeckleWhispSource.Log.TeardownExceptionIgnored("prime_settle", ex.GetType().Name, ex.Message);
+        }
 
         // The lifecycle lock keeps a new start out until the old worker
         // reference and its exact cancellation channels are cleared. Status
@@ -458,6 +465,7 @@ public sealed partial class TranscriptionEngine
                 ResetIdleTimer();
 
             _idleEvent.Set();
+            DeckleWhispSource.Log.WorkerStopped(worker, reachedIdle);
             if (reachedIdle)
                 RaiseStatus(Loc.Get("Status_Ready"));
         }

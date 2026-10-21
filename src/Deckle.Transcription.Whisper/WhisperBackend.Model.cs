@@ -36,9 +36,12 @@ public sealed partial class WhisperBackend
             }
 
             string modelPath = ResolveModelPath();
+            string modelName = Path.GetFileName(modelPath);
 
             if (!File.Exists(modelPath))
             {
+                ReportLoadFailure(
+                    "file_not_found", modelName, modelPath, 0, gpuRequested: false, device: "", failedDevice: "");
                 return new ModelLoadResult(false, 0, null, "file_not_found");
             }
 
@@ -53,16 +56,18 @@ public sealed partial class WhisperBackend
             // the restart already gives the user an immediate path.
             WhisperContextParamsMapper.Apply(ref ctxParams, _host.Transcription);
 
-            if (OperationalLogAdmission.IsDetailEnabled(
-                    OperationalLogActivity.Transcription,
-                    DeckleWhispSource.Log,
-                    EventLevel.Verbose,
-                    (EventKeywords)Keywords.Lifecycle))
-            {
-                double fileMb = new FileInfo(modelPath).Length / 1024.0 / 1024.0;
-                string basename = Path.GetFileName(modelPath);
-                DeckleWhispSource.Log.ModelLoadStart(basename, fileMb, ctxParams.use_gpu);
-            }
+            bool gpuRequested = ctxParams.use_gpu != 0;
+            bool logHookInstalled = Volatile.Read(ref s_logHookInstalled) != 0;
+
+            // Ungated: what was asked and which runtime answers are the first
+            // two questions of a log read on another machine.
+            DeckleWhisperSource.Log.ModelLoadStarting(modelName, gpuRequested, s_runtimeVersion);
+            DeckleWhisperSource.Log.ModelLoadStartingDetail(
+                modelPath,
+                FileSizeMb(modelPath),
+                ctxParams.gpu_device,
+                ctxParams.flash_attn != 0,
+                logHookInstalled);
 
             // Reset before init: the log hook feeds the observer synchronously
             // during init, and a re-load must not keep the previous load's
@@ -71,16 +76,61 @@ public sealed partial class WhisperBackend
 
             _ctx = WhisperPInvoke.whisper_init_from_file_with_params(modelPath, ctxParams);
             sw.Stop();
+            // The last init phase has no following line to flush it until the
+            // first take; flushing here keeps the phase summary with its load.
+            _logCompactor.FlushPendingPhase();
             DeckleWhispSource.Log.ModelInitFromFile((long)_ctx);
 
             if (_ctx == IntPtr.Zero)
             {
+                ReportLoadFailure(
+                    "init_failed",
+                    modelName,
+                    modelPath,
+                    sw.ElapsedMilliseconds,
+                    gpuRequested,
+                    s_computeDevice.DeviceOfCurrentLoad(gpuRequested),
+                    s_computeDevice.FailedGpuDevice);
                 return new ModelLoadResult(false, sw.ElapsedMilliseconds, null, "init_failed");
             }
 
-            _detectedBackend = s_computeDevice.ReportLoad(ctxParams.use_gpu != 0, sw.ElapsedMilliseconds);
+            _loadFailureOpen = false;
+            _detectedBackend = s_computeDevice.ReportLoad(gpuRequested, logHookInstalled, sw.ElapsedMilliseconds);
+            LogNativeSystemInfoOnce();
 
             return new ModelLoadResult(true, sw.ElapsedMilliseconds, _detectedBackend, null);
+        }
+    }
+
+    // Runs under _modelLock. The engine frames the incident for the user with
+    // ModelUnavailable/ModelRecovered; this Warning carries the native facts
+    // (which file, which device) once per incident.
+    private void ReportLoadFailure(
+        string reason,
+        string modelName,
+        string modelPath,
+        long elapsedMs,
+        bool gpuRequested,
+        string device,
+        string failedDevice)
+    {
+        if (!_loadFailureOpen)
+        {
+            _loadFailureOpen = true;
+            DeckleWhisperSource.Log.ModelLoadFailed(reason, modelName, device);
+        }
+        DeckleWhisperSource.Log.ModelLoadFailedDetail(reason, modelPath, elapsedMs, gpuRequested, failedDevice);
+    }
+
+    // -1 when the size cannot be read: a log field must never fail the load
+    // it describes.
+    private static double FileSizeMb(string path)
+    {
+        try { return new FileInfo(path).Length / 1024.0 / 1024.0; }
+        catch (Exception ex)
+        {
+            DeckleWhisperSource.Log.ModelFileProbeFailed(path, ex.GetType().Name, ex.Message);
+            return -1;
         }
     }
 
@@ -137,5 +187,6 @@ public sealed partial class WhisperBackend
         // disappears once this backend is no longer referenced.
         _segmentCallback = null;
         _abortCallback = null;
+        _encoderBeginCallback = null;
     }
 }

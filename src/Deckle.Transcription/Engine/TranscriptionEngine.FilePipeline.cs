@@ -28,6 +28,14 @@ public sealed partial class TranscriptionEngine
         Task<bool> primeTask = Task.FromResult(true);
         Task decodeProducer = Task.CompletedTask;
         TranscriptionOutcome batchOutcome = TranscriptionOutcome.None;
+        int files = batch.AudioFilePaths.Count;
+        // BatchStarted is closed by BatchCompleted on success and by
+        // BatchAborted (cancelled or failed) on every other exit.
+        bool batchCompleted = false;
+        string abortOutcome = "failed";
+        string abortExType = "";
+        string abortExMessage = "";
+        DeckleWhispSource.Log.WorkerStarted("file");
 
         try
         {
@@ -53,6 +61,7 @@ public sealed partial class TranscriptionEngine
             bool transcribingStarted = false;
             ConsumePreparedFilesAsync(
                 preparedFiles.Reader,
+                files,
                 primeTask,
                 () => transcribingStarted,
                 () => transcribingStarted = true,
@@ -60,22 +69,25 @@ public sealed partial class TranscriptionEngine
                 drainCts.Token).GetAwaiter().GetResult();
 
             decodeProducer.GetAwaiter().GetResult();
+            batchCompleted = true;
             DeckleWhispSource.Log.FileTranscriptionBatchCompleted();
             DeckleWhispSource.Log.FileTranscriptionBatchCompletedDetail(
-                batch.AudioFilePaths.Count,
+                files,
                 batchOutcome.ToString());
             RaiseFinished(batchOutcome);
         }
         catch (OperationCanceledException)
         {
+            abortOutcome = "cancelled";
             DeckleCancellationSource.Log.OperationCancelled(
                 "file-transcription-batch", "upstream", -1);
             RaiseFinished(TranscriptionOutcome.None);
         }
         catch (Exception ex)
         {
-            DeckleWhispSource.Log.PipelineCrashed();
-            DeckleWhispSource.Log.PipelineCrashedDetail(ex.GetType().Name, ex.Message);
+            abortExType = ex.GetType().Name;
+            abortExMessage = ex.Message;
+            DeckleWhispSource.Log.PipelineCrashed(abortExType, abortExMessage);
             EmitUserFeedback(FB_ERROR,
                 Loc.Get("Engine_PipelineCrashed_Title"),
                 Loc.Get("Engine_PipelineCrashed_Body"),
@@ -84,33 +96,43 @@ public sealed partial class TranscriptionEngine
         }
         finally
         {
+            if (!batchCompleted)
+                DeckleWhispSource.Log.FileTranscriptionBatchAborted(abortOutcome, files, abortExType, abortExMessage);
+
             // Observe the producer before disposing the token it reads. A failed
             // or cancelled producer may already have been observed above; the
-            // second await is intentionally swallowed during teardown.
-            try { decodeProducer.GetAwaiter().GetResult(); } catch { /* reported above */ }
-            SettleWorkerToIdle(primeTask, recordCts, drainCts);
+            // second await is only recorded during teardown.
+            try { decodeProducer.GetAwaiter().GetResult(); }
+            catch (Exception ex)
+            {
+                DeckleWhispSource.Log.TeardownExceptionIgnored("file_decode_producer", ex.GetType().Name, ex.Message);
+            }
+            SettleWorkerToIdle("file", primeTask, recordCts, drainCts);
         }
     }
 
-    private static void HandleDecodeFailure(AudioFileDecodeResult decoded)
+    private static void HandleDecodeFailure(string path, AudioFileDecodeResult decoded)
     {
         var (title, body) = LocalizeDecodeFailure(decoded.Status);
-        DeckleWhispSource.Log.FileDecodeFailed();
-        DeckleWhispSource.Log.FileDecodeFailedDetail(decoded.Status.ToString());
+        // The status is the cause here; no exception was thrown.
+        DeckleWhispSource.Log.FileDecodeFailed(Path.GetFileName(path), decoded.Status.ToString(), "", "");
         EmitUserFeedback(FB_ERROR, title, body, FB_OVERLAY);
     }
 
     private static void HandleDecodeException(string path, Exception exception)
     {
         var (title, body) = LocalizeDecodeFailure(AudioFileDecodeStatus.ReadError);
-        DeckleWhispSource.Log.FileDecodeFailed();
-        DeckleWhispSource.Log.FileDecodeFailedDetail(
-            $"{AudioFileDecodeStatus.ReadError}:{exception.GetType().Name}");
+        DeckleWhispSource.Log.FileDecodeFailed(
+            Path.GetFileName(path),
+            AudioFileDecodeStatus.ReadError.ToString(),
+            exception.GetType().Name,
+            exception.Message);
         EmitUserFeedback(FB_ERROR, title, body, FB_OVERLAY);
     }
 
     private async Task ConsumePreparedFilesAsync(
         ChannelReader<PreparedFileTranscription> reader,
+        int files,
         Task<bool> primeTask,
         Func<bool> hasStarted,
         Action markStarted,
@@ -124,9 +146,10 @@ public sealed partial class TranscriptionEngine
             // batch's Starting → Transcribing edge yet: a later valid file still
             // needs to publish the one Transcribing status that moves the HUD out
             // of Charging.
+            string file = Path.GetFileName(prepared.SourcePath);
             if (prepared.Audio.Length == 0)
             {
-                DeckleWhispSource.Log.TranscribeEmpty();
+                DeckleWhispSource.Log.FileTranscriptionEmpty(prepared.Index, files, file);
                 continue;
             }
 
@@ -157,6 +180,8 @@ public sealed partial class TranscriptionEngine
                     (EventKeywords)Keywords.Pipeline))
             {
                 DeckleWhispSource.Log.FileTranscriptionStartedDetail(
+                    prepared.Index,
+                    files,
                     prepared.SourcePath,
                     SafeFileLength(prepared.SourcePath));
             }
@@ -165,6 +190,8 @@ public sealed partial class TranscriptionEngine
             {
                 PipelineProduction? production = await TranscribePreparedFileAsync(
                     prepared,
+                    files,
+                    file,
                     primeTask,
                     first,
                     cancellationToken).ConfigureAwait(false);
@@ -186,11 +213,8 @@ public sealed partial class TranscriptionEngine
                 // One bad item must not discard the rest of an immutable batch.
                 // The batch worker remains alive and the next prepared file uses
                 // a fresh segmented session.
-                DeckleWhispSource.Log.TranscribeFailed();
-                DeckleWhispSource.Log.TranscribeFailedDetail(-1);
-                DeckleWhispSource.Log.PipelineCrashedDetail(
-                    ex.GetType().Name,
-                    ex.Message);
+                DeckleWhispSource.Log.FileTranscriptionFailed(
+                    prepared.Index, files, file, "exception", ex.GetType().Name, ex.Message);
                 EmitUserFeedback(FB_ERROR,
                     Loc.Get("Engine_TranscriptionFailed_Title"),
                     Loc.Get("Engine_TranscriptionFailed_Body"),
@@ -201,6 +225,8 @@ public sealed partial class TranscriptionEngine
 
     private async Task<PipelineProduction?> TranscribePreparedFileAsync(
         PreparedFileTranscription prepared,
+        int files,
+        string file,
         Task<bool> primeTask,
         bool announceTranscribing,
         CancellationToken cancellationToken)
@@ -208,6 +234,8 @@ public sealed partial class TranscriptionEngine
         if (!await AwaitPrime(primeTask, "during_file_decode").ConfigureAwait(false)
             || !_backend.IsModelLoaded)
         {
+            // The load cause sits on ModelUnavailable; this names the file it cost.
+            DeckleWhispSource.Log.FileTranscriptionFailed(prepared.Index, files, file, "model_not_ready", "", "");
             RaiseStatus(Loc.Get("Status_ModelNotReady"));
             return null;
         }
@@ -242,8 +270,8 @@ public sealed partial class TranscriptionEngine
             throw pushError;
         if (consumed.Incomplete)
         {
-            DeckleWhispSource.Log.TranscribeFailed();
-            DeckleWhispSource.Log.TranscribeFailedDetail(-1);
+            // The per-utterance cause is on UtteranceSkipped or ConsumerUtterance.
+            DeckleWhispSource.Log.FileTranscriptionFailed(prepared.Index, files, file, "incomplete", "", "");
             EmitUserFeedback(FB_ERROR,
                 Loc.Get("Engine_TranscriptionFailed_Title"),
                 Loc.Get("Engine_TranscriptionFailed_Body"),
@@ -324,7 +352,12 @@ public sealed partial class TranscriptionEngine
     private static long SafeFileLength(string path)
     {
         try { return new FileInfo(path).Length; }
-        catch { return 0; }
+        catch (Exception ex)
+        {
+            // The size only enriches a Verbose detail; 0 means unknown.
+            DeckleWhispSource.Log.TeardownExceptionIgnored("file_length", ex.GetType().Name, ex.Message);
+            return 0;
+        }
     }
 
 }

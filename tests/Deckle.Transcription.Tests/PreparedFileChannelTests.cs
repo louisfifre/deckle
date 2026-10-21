@@ -24,7 +24,7 @@ public sealed class PreparedFileChannelTests
                     new float[16_000],
                     1);
             },
-            _ => throw new InvalidOperationException("No fake decode should fail."),
+            (_, _) => throw new InvalidOperationException("No fake decode should fail."),
             (_, exception) => throw exception,
             cancellationToken);
 
@@ -63,19 +63,24 @@ public sealed class PreparedFileChannelTests
                     AudioFileDecodeStatus.Decoded,
                     new float[800],
                     0.05),
-            _ => throw new InvalidOperationException("No categorical failure expected."),
+            (_, _) => throw new InvalidOperationException("No categorical failure expected."),
             (path, _) => failures.Add(path),
             cancellationToken);
 
         var prepared = new List<string>();
+        var indexes = new List<int>();
         await foreach (PreparedFileTranscription file in
             channel.Reader.ReadAllAsync(cancellationToken))
         {
             prepared.Add(file.SourcePath);
+            indexes.Add(file.Index);
         }
         await producer;
 
         Assert.Equal(["first.wav", "third.wav"], prepared);
+        // The index is the position in the selection, so a skipped file does
+        // not renumber the ones after it ("3 of 3", not "2 of 3").
+        Assert.Equal([1, 3], indexes);
         Assert.Equal(["broken.wav"], failures);
     }
 }

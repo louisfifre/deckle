@@ -45,14 +45,16 @@ public static class SpeechModels
 
     public static bool IsInstalled(ModelEntry entry)
     {
+        string path = entry.FileName;
         try
         {
-            string path = Path.Combine(AppPaths.ModelsDirectory, entry.FileName);
+            path = Path.Combine(AppPaths.ModelsDirectory, entry.FileName);
             if (!File.Exists(path)) return false;
             return new FileInfo(path).Length > 0;
         }
-        catch
+        catch (Exception ex)
         {
+            DeckleWhisperSource.Log.ModelFileProbeFailed(path, ex.GetType().Name, ex.Message);
             return false;
         }
     }
@@ -84,8 +86,9 @@ public static class SpeechModels
         {
             return BestInstalledFileName(modelsDirectory, IsUsableModelFile);
         }
-        catch
+        catch (Exception ex)
         {
+            DeckleWhisperSource.Log.ModelFileProbeFailed(modelsDirectory, ex.GetType().Name, ex.Message);
             return null;
         }
     }
@@ -101,6 +104,10 @@ public static class SpeechModels
     internal static bool IsUsableModelFile(string path)
     {
         try { return File.Exists(path) && new FileInfo(path).Length > 0; }
-        catch { return false; }
+        catch (Exception ex)
+        {
+            DeckleWhisperSource.Log.ModelFileProbeFailed(path, ex.GetType().Name, ex.Message);
+            return false;
+        }
     }
 }

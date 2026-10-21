@@ -45,14 +45,25 @@ public static class WavCorpusWriter
             string path = Path.Combine(audioDir, fileName);
             WritePcm16(path, audio);
 
+            int failures = Interlocked.Exchange(ref s_failures, 0);
+            if (failures > 0)
+                DeckleWhispSource.Log.CorpusAudioWriteRecovered(failures);
             return fileName;
         }
-        catch
+        catch (Exception ex)
         {
-            // Writing must never break transcription.
+            // Writing must never break transcription. Every take retries the
+            // write, so a full disk is one incident, not one Warning per take.
+            if (Interlocked.Increment(ref s_failures) == 1)
+                DeckleWhispSource.Log.CorpusAudioWriteFailed(ex.GetType().Name, ex.Message);
+            else
+                DeckleWhispSource.Log.CorpusAudioWriteRetryFailed(ex.GetType().Name, ex.Message);
             return null;
         }
     }
+
+    // Consecutive failed writes since the last success, process-wide like the class.
+    private static int s_failures;
 
     private static void WritePcm16(string path, float[] audio)
     {

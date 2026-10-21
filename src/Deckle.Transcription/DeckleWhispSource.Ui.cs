@@ -78,66 +78,6 @@ public sealed partial class DeckleWhispSource
         if (IsEnabled()) WriteEvent(EvtDisposeWorkerJoined, join_ms);
     }
 
-    // ── Settings persistence (transitional: see DeckleAudioSource) ──────
-
-    [Event(EvtSettingsLoaded,
-           Level = EventLevel.Informational,
-           Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "{0}")]
-    public void SettingsLoaded(string message)
-    {
-        if (IsEnabled()) WriteEvent(EvtSettingsLoaded, message);
-    }
-
-    [Event(EvtSettingsLoadComplete,
-           Level = EventLevel.Verbose,
-           Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "{0}")]
-    public void SettingsLoadComplete(string message)
-    {
-        if (IsEnabled()) WriteEvent(EvtSettingsLoadComplete, message);
-    }
-
-    [Event(EvtSettingsLoadWarning,
-           Level = EventLevel.Warning,
-           Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "{0}")]
-    public void SettingsLoadWarning(string message)
-    {
-        if (IsEnabled()) WriteEvent(EvtSettingsLoadWarning, message);
-    }
-
-    [Event(EvtSettingsLoadError,
-           Level = EventLevel.Error,
-           Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "{0}")]
-    public void SettingsLoadError(string message)
-    {
-        if (IsEnabled()) WriteEvent(EvtSettingsLoadError, message);
-    }
-
-    // ── TranscriptionSettings persistence ─────────────────────────────────
-
-    [Event(EvtWhispSettingsPrefixed,
-           Level = EventLevel.Informational,
-           Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "{0}")]
-    public void WhispSettingsPrefixed(string message)
-    {
-        if (IsEnabled()) WriteEvent(EvtWhispSettingsPrefixed, message);
-    }
-
-    // ── ViewModel + WhisperPage UI side ─────────────────────────────────
-
-    [Event(EvtSettingChanged,
-           Level = EventLevel.Verbose,
-           Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "{0} ← {1}")]
-    public void SettingChanged(string property, string value)
-    {
-        if (IsEnabled()) WriteEvent(EvtSettingChanged, property, value);
-    }
-
     [Event(EvtPageInitStart,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Lifecycle,
@@ -156,31 +96,13 @@ public sealed partial class DeckleWhispSource
         if (IsEnabled()) WriteEvent(EvtPageInitComplete);
     }
 
-    [Event(EvtPageBuggedSliderSet,
-           Level = EventLevel.Verbose,
-           Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "bugged slider min/max set in code-behind")]
-    public void PageBuggedSliderSet()
-    {
-        if (IsEnabled()) WriteEvent(EvtPageBuggedSliderSet);
-    }
-
     [Event(EvtPageInitFailed,
            Level = EventLevel.Error,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "The Whisper page failed to initialize")]
-    public void PageInitFailed()
+           Message = "The Whisper page failed to initialize | ex_type={0} | ex_message={1}")]
+    public void PageInitFailed(string ex_type, string ex_message)
     {
-        if (IsEnabled()) WriteEvent(EvtPageInitFailed);
-    }
-
-    [Event(EvtPageInitFailedDetail,
-           Level = EventLevel.Verbose,
-           Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "init component threw | ex_type={0} | ex_message={1}")]
-    public void PageInitFailedDetail(string ex_type, string ex_message)
-    {
-        if (IsEnabled()) WriteEvent(EvtPageInitFailedDetail, ex_type, ex_message);
+        if (IsEnabled()) WriteEvent(EvtPageInitFailed, ex_type, ex_message);
     }
 
     [Event(EvtPageLoadedStart,
@@ -213,37 +135,19 @@ public sealed partial class DeckleWhispSource
     [Event(EvtPageLoadedFailed,
            Level = EventLevel.Error,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "The Whisper page failed to load")]
-    public void PageLoadedFailed()
+           Message = "The Whisper page failed to load | ex_type={0} | ex_message={1}")]
+    public void PageLoadedFailed(string ex_type, string ex_message)
     {
-        if (IsEnabled()) WriteEvent(EvtPageLoadedFailed);
-    }
-
-    [Event(EvtPageLoadedFailedDetail,
-           Level = EventLevel.Verbose,
-           Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "loaded threw | ex_type={0} | ex_message={1}")]
-    public void PageLoadedFailedDetail(string ex_type, string ex_message)
-    {
-        if (IsEnabled()) WriteEvent(EvtPageLoadedFailedDetail, ex_type, ex_message);
+        if (IsEnabled()) WriteEvent(EvtPageLoadedFailed, ex_type, ex_message);
     }
 
     [Event(EvtPageModelScanFailed,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "Scanning for models failed")]
-    public void PageModelScanFailed()
+           Message = "Scanning for models failed | ex_type={0} | ex_message={1}")]
+    public void PageModelScanFailed(string ex_type, string ex_message)
     {
-        if (IsEnabled()) WriteEvent(EvtPageModelScanFailed);
-    }
-
-    [Event(EvtPageModelScanFailedDetail,
-           Level = EventLevel.Verbose,
-           Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "model scan failed | ex_message={0}")]
-    public void PageModelScanFailedDetail(string ex_message)
-    {
-        if (IsEnabled()) WriteEvent(EvtPageModelScanFailedDetail, ex_message);
+        if (IsEnabled()) WriteEvent(EvtPageModelScanFailed, ex_type, ex_message);
     }
 
     [Event(EvtPageDiscardRestartChanges,
@@ -264,12 +168,33 @@ public sealed partial class DeckleWhispSource
         if (IsEnabled()) WriteEvent(EvtPageResetAll);
     }
 
+    // The settings store's anomaly callbacks (TranscriptionSettingsService):
+    // every module provider carries this pair, same shape, so the store stays
+    // provider-agnostic.
+    [Event(EvtSettingsLoadWarning,
+           Level = EventLevel.Warning,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Message = "{0}")]
+    public void SettingsLoadWarning(string message)
+    {
+        if (IsEnabled()) WriteEvent(EvtSettingsLoadWarning, message);
+    }
+
+    [Event(EvtSettingsLoadError,
+           Level = EventLevel.Error,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Message = "{0}")]
+    public void SettingsLoadError(string message)
+    {
+        if (IsEnabled()) WriteEvent(EvtSettingsLoadError, message);
+    }
+
     // Verbose detail behind PageInitFailed / PageLoadedFailed: a stack trace is
     // multi-line, which a milestone message must not be.
     [Event(EvtPageStackTrace,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "{0}")]
+           Message = "page stack trace | stack_trace={0}")]
     public void PageStackTrace(string stack_trace)
     {
         if (IsEnabled()) WriteEvent(EvtPageStackTrace, stack_trace);

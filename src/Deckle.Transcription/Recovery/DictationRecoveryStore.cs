@@ -41,6 +41,10 @@ public sealed class DictationRecoveryStore(string filePath)
 {
     private readonly object _gate = new();
 
+    // Consecutive failed writes; read and written under _gate. The write runs
+    // at every utterance, so only the first failure of a run warns.
+    private int _writeFailures;
+
     public string FilePath { get; } = filePath;
 
     public bool Exists => File.Exists(FilePath);
@@ -65,12 +69,19 @@ public sealed class DictationRecoveryStore(string filePath)
                 byte[] sealedBytes = ProtectedData.Protect(plain, optionalEntropy: null, DataProtectionScope.CurrentUser);
                 File.WriteAllBytes(tmp, sealedBytes);
                 File.Move(tmp, FilePath, overwrite: true);
+                if (_writeFailures > 0)
+                {
+                    DeckleWhispSource.Log.DictationRecoveryWriteRecovered(_writeFailures);
+                    _writeFailures = 0;
+                }
                 return true;
             }
             catch (Exception ex)
             {
-                DeckleWhispSource.Log.DictationRecoveryWriteFailed();
-                DeckleWhispSource.Log.DictationRecoveryWriteFailedDetail(ex.GetType().Name);
+                if (_writeFailures++ == 0)
+                    DeckleWhispSource.Log.DictationRecoveryWriteFailed(ex.GetType().Name, ex.Message);
+                else
+                    DeckleWhispSource.Log.DictationRecoveryWriteRetryFailed(ex.GetType().Name, ex.Message);
                 TryDeleteQuietly(tmp);
                 return false;
             }
@@ -98,6 +109,7 @@ public sealed class DictationRecoveryStore(string filePath)
             }
             catch (Exception ex) when (ex is CryptographicException or IOException or UnauthorizedAccessException)
             {
+                DeckleWhispSource.Log.DictationRecoveryReadFailed(ex.GetType().Name, ex.Message);
                 return DictationRecoveryReadStatus.Unreadable;
             }
         }
@@ -115,8 +127,7 @@ public sealed class DictationRecoveryStore(string filePath)
             }
             catch (Exception ex)
             {
-                DeckleWhispSource.Log.DictationRecoveryDeleteFailed();
-                DeckleWhispSource.Log.DictationRecoveryDeleteFailedDetail(ex.GetType().Name);
+                DeckleWhispSource.Log.DictationRecoveryDeleteFailed(ex.GetType().Name, ex.Message);
                 return false;
             }
         }
@@ -124,6 +135,11 @@ public sealed class DictationRecoveryStore(string filePath)
 
     private static void TryDeleteQuietly(string path)
     {
-        try { File.Delete(path); } catch { /* the temp file is only a leftover */ }
+        // The temp file is only a leftover; the write failure is already logged.
+        try { File.Delete(path); }
+        catch (Exception ex)
+        {
+            DeckleWhispSource.Log.TeardownExceptionIgnored("recovery_temp_delete", ex.GetType().Name, ex.Message);
+        }
     }
 }

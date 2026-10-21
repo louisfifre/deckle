@@ -38,12 +38,19 @@ public sealed partial class TranscriptionEngine
         stopwatch.Stop();
 
         string finalText = rawText;
-        if (!string.IsNullOrWhiteSpace(result.Text))
+        if (string.IsNullOrWhiteSpace(result.Text))
+        {
+            // The rewriter's own provider logs why it returned nothing; this
+            // records that the take went out unrewritten.
+            DeckleWhispSource.Log.RewriteFellBackToRaw("empty_result", stopwatch.ElapsedMilliseconds);
+        }
+        else
         {
             finalText = result.Text;
             // The raw transcript is already on the clipboard, so a failed
             // replacement leaves that raw copy in place.
-            CopyToClipboard(finalText);
+            if (!CopyToClipboard(finalText))
+                DeckleWhispSource.Log.RewriteFellBackToRaw("copy_failed", stopwatch.ElapsedMilliseconds);
         }
 
         return new FinalizeRewrite(
