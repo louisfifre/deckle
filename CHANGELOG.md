@@ -45,6 +45,8 @@ doctrine). This file is generated from the Conventional-Commit history by
 - **app:** Journal each module's start and move the app's failure lines onto the module providers
 - **transcription:** Log trim bounds and the level sent to Whisper
 - **whisper:** Log what each decode call used
+- **anytype:** Open a task session with its project and related tasks
+- **anytype:** State the opening placement rule by its intention
 
 ### Changed
 
