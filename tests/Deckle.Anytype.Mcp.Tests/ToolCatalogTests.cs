@@ -69,6 +69,17 @@ public class ToolCatalogTests
     }
 
     [Fact]
+    public void ProjectManagementInstructionsAskForAnOpeningStatusOnlyWhenATaskIsInvolved()
+    {
+        const string rule = "Working on a task? Your first answer names its project and related tasks";
+
+        Assert.Contains(rule, McpSurfaceDescriptor.ProjectManagement.Instructions);
+        Assert.Contains("no task, no status", McpSurfaceDescriptor.ProjectManagement.Instructions);
+        Assert.DoesNotContain(rule, McpSurfaceDescriptor.SchemaAdmin.Instructions);
+        Assert.DoesNotContain(rule, McpSurfaceDescriptor.Dialogues.Instructions);
+    }
+
+    [Fact]
     public void BuildDoesNotExposeAnyDestructiveTool()
     {
         // delete lives only in the supervised ManagementToolCatalog; the base
