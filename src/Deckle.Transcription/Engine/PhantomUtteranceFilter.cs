@@ -15,8 +15,8 @@ internal static class PhantomUtteranceFilter
 {
     // Only audio shorter than this can be rejected. A phantom is a blip; a
     // longer span that decodes badly is a hard sentence, and dropping it would
-    // lose real speech. 1 s keeps every clearly spoken one-word answer
-    // ("oui", "ok", "non merci") well above the line on duration alone.
+    // lose real speech. A clearly spoken one-word answer ("oui", "ok") falls
+    // under 1 s too; it is kept by the two tests below, not by its duration.
     internal const double MaxPhantomAudioSeconds = 1.0;
 
     // Text tokens per second of audio above which no speaker produced the
