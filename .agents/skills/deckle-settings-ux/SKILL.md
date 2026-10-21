@@ -1,6 +1,8 @@
 ---
 name: deckle-settings-ux
 description: Use when you add a setting, place one on a page or rework a settings surface, so that each setting earns its place, sits at the right depth and gets the control its value calls for.
+metadata:
+  version: "1.0"
 ---
 
 ## Why

@@ -1,6 +1,8 @@
 ---
 name: deckle-logging
 description: Use when you add or change an observation point in Deckle code, or write code that starts, skips or abandons work, to write what a person can read and act on later, from a machine they cannot reach.
+metadata:
+  version: "1.0"
 ---
 
 ## Why

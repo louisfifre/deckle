@@ -1,6 +1,8 @@
 ---
 name: deckle-nomenclature
 description: Use when you give a name to anything in the Deckle repository or change one, a file, a folder, a symbol, a resource or a provider, to choose a name that says its responsibility and follows the conventions the .NET world already uses.
+metadata:
+  version: "1.0"
 ---
 
 ## Why

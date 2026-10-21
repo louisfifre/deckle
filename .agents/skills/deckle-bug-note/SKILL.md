@@ -1,6 +1,8 @@
 ---
 name: deckle-bug-note
 description: Use when a confirmed bug has its cause established and its workstream is still open, to record what the bug teaches beside the tests that own the behavior.
+metadata:
+  version: "1.0"
 ---
 
 ## Why
