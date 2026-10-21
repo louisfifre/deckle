@@ -87,6 +87,18 @@ public sealed partial class DeckleWhispSource
             WriteEvent(EvtUtterancePhantomRejected, index, reason, audio_ms, text_tokens, tokens_per_s, avg_p, min_p);
     }
 
+    // The level of the audio handed to the backend, after preprocessing and the
+    // VAD trim, so it reads against the pre-processing input level.
+    [Event(EvtUtteranceSentToBackend,
+           Level = EventLevel.Verbose,
+           Keywords = (EventKeywords)Keywords.Pipeline,
+           Message = "utterance sent to backend | index={0} | audio_ms={1} | rms_dbfs={2:F1} | peak_dbfs={3:F1}")]
+    public void UtteranceSentToBackend(int index, int audio_ms, double rms_dbfs, double peak_dbfs)
+    {
+        if (IsTakeDetailEnabled((EventKeywords)Keywords.Pipeline))
+            WriteEvent(EvtUtteranceSentToBackend, index, audio_ms, rms_dbfs, peak_dbfs);
+    }
+
     // hangover_used_ms is the silence the segmenter actually waited before
     // closing the utterance; below the configured max, the dynamic ramp is acting.
     [Event(EvtSegmenterUtteranceEmitted,

@@ -1635,6 +1635,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   ├── PipelineProduction.cs
 │   │   │   ├── PreparedFileProducer.cs
 │   │   │   ├── RewriteProfileSelection.cs
+│   │   │   ├── SampleLevels.cs
 │   │   │   ├── TextMetrics.cs
 │   │   │   ├── TranscriptFileWriter.cs
 │   │   │   ├── TranscriptionDelivery.cs

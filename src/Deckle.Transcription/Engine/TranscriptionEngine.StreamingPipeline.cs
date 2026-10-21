@@ -394,6 +394,16 @@ public sealed partial class TranscriptionEngine
                     long trimMs = (long)Stopwatch.GetElapsedTime(trimStart).TotalMilliseconds;
                     DeckleVadSource.Log.SpeechTrimmed(
                         u.Index, samples.Length, trim.Samples.Length, trim.SpeechSegments, trimMs);
+                    if (trim.SpeechSegments > 0)
+                    {
+                        int inMs = samples.Length / 16;
+                        int keptMs = trim.Samples.Length / 16;
+                        int leadingMs = trim.FirstSpeechSample / 16;
+                        int trailingMs = (samples.Length - trim.LastSpeechSample) / 16;
+                        DeckleVadSource.Log.SpeechTrimBounds(
+                            u.Index, inMs, keptMs, leadingMs, trailingMs,
+                            Math.Max(0, inMs - keptMs - leadingMs - trailingMs));
+                    }
                     // A trim that ran, with or without speech found, closes an
                     // earlier take's trim-failure incident.
                     _vadService.ReportTrimSucceeded();
@@ -424,6 +434,18 @@ public sealed partial class TranscriptionEngine
                 }
             }
             backendChunks?.Add(samples);
+
+            // What the backend actually receives: after the DSP and the trim.
+            if (OperationalLogAdmission.IsDetailEnabled(
+                    OperationalLogActivity.Transcription,
+                    DeckleWhispSource.Log,
+                    EventLevel.Verbose,
+                    (EventKeywords)Keywords.Pipeline))
+            {
+                var (rmsDbfs, peakDbfs) = SampleLevels.Measure(samples);
+                DeckleWhispSource.Log.UtteranceSentToBackend(
+                    u.Index, samples.Length / 16, rmsDbfs, peakDbfs);
+            }
 
             TranscriptionResult result;
             try

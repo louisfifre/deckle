@@ -94,7 +94,8 @@ public sealed class SileroVad : IDisposable
             Array.Copy(samples, s.StartSample, trimmed, o, s.LengthSamples);
             o += s.LengthSamples;
         }
-        return new SpeechTrimResult(trimmed, segments.Count);
+        return new SpeechTrimResult(
+            trimmed, segments.Count, segments[0].StartSample, segments[^1].EndSample);
     }
 
     private float RunWindow()
