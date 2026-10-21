@@ -378,6 +378,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── Dialogues/
 │   │   │   └── DialogueGestures.cs
 │   │   ├── Gestures/
+│   │   │   ├── BlockSections.cs
 │   │   │   ├── CollectionMembershipGestures.cs
 │   │   │   ├── DocumentGestures.cs
 │   │   │   ├── LiveTagResolver.cs
