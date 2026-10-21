@@ -17,16 +17,28 @@ public static class RegistryScan
     {
         ArgumentNullException.ThrowIfNull(service);
 
-        string? steamRoot = SteamLibrary.LocateSteamRoot();
-        if (steamRoot is null) DeckleOrchestrationSource.Log.SteamNotFound();
+        IReadOnlyList<string> scanFolders = service.Current.ScanFolders;
+        DeckleOrchestrationSource.Log.ScanStarted(scanFolders.Count);
+        try
+        {
+            string? steamRoot = SteamLibrary.LocateSteamRoot();
+            if (steamRoot is null) DeckleOrchestrationSource.Log.SteamNotFound();
 
-        IReadOnlyList<AppEntry> steam = CollectSteam(steamRoot);
-        IReadOnlyList<AppEntry> folders = CollectFolders(service.Current.ScanFolders);
-        int added = service.AddEntriesIfNew([.. steam, .. folders]);
+            IReadOnlyList<AppEntry> steam = CollectSteam(steamRoot);
+            IReadOnlyList<AppEntry> folders = CollectFolders(scanFolders);
+            int added = service.AddEntriesIfNew([.. steam, .. folders]);
 
-        DeckleOrchestrationSource.Log.ScanCompleted();
-        DeckleOrchestrationSource.Log.ScanCompletedDetail(steam.Count, folders.Count, added);
-        return new ScanResult(steam.Count, folders.Count, added);
+            DeckleOrchestrationSource.Log.ScanCompleted();
+            DeckleOrchestrationSource.Log.ScanCompletedDetail(steam.Count, folders.Count, added);
+            return new ScanResult(steam.Count, folders.Count, added);
+        }
+        catch (Exception ex)
+        {
+            // Rethrown: the page owns what the user sees. Logged here so the
+            // started scan has its end, whatever the caller does with it.
+            DeckleOrchestrationSource.Log.ScanFailed(ex.GetType().Name, ex.Message);
+            throw;
+        }
     }
 
     // One Game entry per installed Steam game. The exe is a guess and may be

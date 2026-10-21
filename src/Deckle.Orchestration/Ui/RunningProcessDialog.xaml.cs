@@ -28,8 +28,7 @@ public sealed partial class RunningProcessDialog : ContentDialog
         }
         catch (Exception ex)
         {
-            DeckleOrchestrationSource.Log.PageActionFailed();
-            DeckleOrchestrationSource.Log.PageActionFailedDetail(
+            DeckleOrchestrationSource.Log.PageActionFailed(
                 "list_running_apps", ex.GetType().Name, ex.Message);
             apps = [];
         }

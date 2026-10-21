@@ -26,8 +26,7 @@ public static class ProfileTransaction
             catch (Exception ex)
             {
                 AppliedProfile.RunInReverse(entry.Id, restores);
-                DeckleOrchestrationSource.Log.RuleApplyFailed();
-                DeckleOrchestrationSource.Log.RuleApplyFailedDetail(
+                DeckleOrchestrationSource.Log.RuleApplyFailed(
                     entry.Id, effect.Name, ex.GetType().Name, ex.Message);
                 return AppliedProfile.Empty(entry.Id);
             }
@@ -36,7 +35,9 @@ public static class ProfileTransaction
         // An entry with no rule at all is the common case: nothing to say.
         if (applied.Count == 0) return AppliedProfile.Empty(entry.Id);
 
-        DeckleOrchestrationSource.Log.ProfileApplied();
+        // Rules that found the system already as wanted changed nothing: the
+        // milestone would claim a change that a restore will never undo.
+        if (restores.Count > 0) DeckleOrchestrationSource.Log.ProfileApplied();
         DeckleOrchestrationSource.Log.ProfileAppliedDetail(entry.Id, string.Join(",", applied), restores.Count);
         return new AppliedProfile(entry.Id, applied, restores);
     }

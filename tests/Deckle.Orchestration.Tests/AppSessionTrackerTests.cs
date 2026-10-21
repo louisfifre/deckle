@@ -11,13 +11,18 @@ public sealed class AppSessionTrackerTests
     private readonly List<AppEntry> _entries = [];
     private readonly List<(AppEntry Entry, int Pid)> _started = [];
     private readonly List<AppEntry> _ended = [];
+    private readonly List<SessionEndReason> _endReasons = [];
     private readonly AppSessionTracker _tracker;
 
     public AppSessionTrackerTests()
     {
         _tracker = new AppSessionTracker(() => _entries);
         _tracker.SessionStarted += (entry, pid) => _started.Add((entry, pid));
-        _tracker.SessionEnded += _ended.Add;
+        _tracker.SessionEnded += (entry, reason) =>
+        {
+            _ended.Add(entry);
+            _endReasons.Add(reason);
+        };
     }
 
     [Fact]
@@ -60,6 +65,7 @@ public sealed class AppSessionTrackerTests
 
         _tracker.OnProcessExited(101);
         Assert.Same(game, Assert.Single(_ended));
+        Assert.Equal(SessionEndReason.Exited, Assert.Single(_endReasons));
         Assert.Empty(_tracker.Sessions);
     }
 
@@ -97,6 +103,7 @@ public sealed class AppSessionTrackerTests
         _tracker.DropSessionsNotIn(_entries);
 
         Assert.Same(game, Assert.Single(_ended));
+        Assert.Equal(SessionEndReason.EntryDisabled, Assert.Single(_endReasons));
         Assert.Empty(_tracker.Sessions);
     }
 
@@ -111,6 +118,21 @@ public sealed class AppSessionTrackerTests
         _tracker.OnProcessExited(100);
 
         Assert.Same(game, Assert.Single(_ended));
+        Assert.Equal(SessionEndReason.EntryRemoved, Assert.Single(_endReasons));
+    }
+
+    [Fact]
+    public void EndingEverySessionReportsAShutdownAndLaterExitsAreIgnored()
+    {
+        AppEntry game = Add(Game());
+        _tracker.OnProcessSeen(100, "Hollow", GameExe);
+
+        _tracker.EndAll();
+        _tracker.OnProcessExited(100);
+
+        Assert.Same(game, Assert.Single(_ended));
+        Assert.Equal(SessionEndReason.Shutdown, Assert.Single(_endReasons));
+        Assert.Empty(_tracker.Sessions);
     }
 
     [Fact]
@@ -153,11 +175,30 @@ public sealed class AppSessionTrackerTests
             tracker.OnProcessExited(pid);
             order.Add("start-end");
         };
-        tracker.SessionEnded += _ => order.Add("end");
+        tracker.SessionEnded += (_, _) => order.Add("end");
 
         tracker.OnProcessSeen(100, "Hollow", GameExe);
 
         Assert.Equal(["start-begin", "start-end", "end"], order);
+    }
+
+    // Delivery used to rethrow a handler's exception: the session start queued
+    // behind the failing ProcessTracked waited for an unrelated later caller,
+    // and the exception escaped onto the WMI or thread-pool thread that
+    // reported the process, which ends the resident app.
+    [Fact]
+    [Trait("Category", "regression")]
+    public void AThrowingHandlerDoesNotHoldBackTheEventsQueuedBehindIt()
+    {
+        AppEntry game = Add(Game());
+        _tracker.ProcessTracked += (_, _) => throw new InvalidOperationException("handler failed");
+
+        Exception? escaped = Record.Exception(() => _tracker.OnProcessSeen(100, "Hollow", GameExe));
+        _tracker.OnProcessExited(100);
+
+        Assert.Null(escaped);
+        Assert.Same(game, Assert.Single(_started).Entry);
+        Assert.Same(game, Assert.Single(_ended));
     }
 
     private AppEntry Add(AppEntry entry)

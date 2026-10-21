@@ -58,7 +58,7 @@ public static class FolderScanner
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
         {
-            DeckleOrchestrationSource.Log.ScanFileUnreadable(folder, ex.GetType().Name, ex.Message);
+            DeckleOrchestrationSource.Log.ScanPathSkipped(folder, ex.GetType().Name, ex.Message);
             return [];
         }
     }
