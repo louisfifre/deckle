@@ -125,6 +125,12 @@ public static class DispatcherQueueExtensions
                     int run_ms = (int)sw.ElapsedMilliseconds;
                     DeckleThreadingSource.Log.MarshalCompleted(
                         operation, caller, wait_ms, run_ms);
+                    // Low is deferred on purpose until the layout batch is
+                    // done, so its wait says nothing about a blocked UI thread.
+                    if (priority != DispatcherQueuePriority.Low)
+                    {
+                        MarshalStallWatch.Shared.Observe(operation, caller, wait_ms);
+                    }
                 }
             });
 
