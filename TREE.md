@@ -332,6 +332,12 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 ├── src/
 │   ├── Deckle.Anytype/
 │   │   ├── Api/
+│   │   │   ├── V2/
+│   │   │   │   ├── AnytypeV2Client.cs
+│   │   │   │   ├── AnytypeV2Exception.cs
+│   │   │   │   ├── AnytypeV2Issue.cs
+│   │   │   │   ├── AnytypeV2Request.cs
+│   │   │   │   └── AnytypeV2Response.cs
 │   │   │   ├── AnytypeApiClient.Chats.cs
 │   │   │   ├── AnytypeApiClient.cs
 │   │   │   ├── AnytypeApiClient.Files.cs
