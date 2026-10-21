@@ -974,6 +974,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   ├── HudWindow.xaml.cs
 │   │   │   ├── ProximityFade.cs
 │   │   │   ├── SystemAnimationPreference.cs
+│   │   │   ├── WindowShowIncident.cs
 │   │   │   └── WindowSlideAnimator.cs
 │   │   ├── AnimationGate.cs
 │   │   ├── Deckle.Hud.csproj

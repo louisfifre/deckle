@@ -19,9 +19,14 @@ public sealed partial class HudWindow : Window
     // Proximity is suspended for the duration so a cursor move mid-fade cannot
     // snap alpha to a smoothstep value while the fade-in is still ramping up.
 
+    // True between FadeInStarted and its FadeInEnded, so every exit path
+    // closes the fade it interrupts exactly once.
+    private bool _fadeInPending;
+
     private void StartFadeIn(byte target, bool activateProximityOnComplete)
     {
         _fadeInTimer?.Stop();
+        EndFadeIn("cancelled");
         DisableProximity();
         byte fromAlpha = _currentAlpha;
         SetAlphaImmediate(0);
@@ -38,6 +43,15 @@ public sealed partial class HudWindow : Window
         // fromAlpha is captured before the reset to 0 to trace a fade that
         // starts from an in-progress proximity alpha.
         DeckleHudSource.Log.FadeInStarted("hud", FADE_IN_MS, fromAlpha, target);
+        _fadeInPending = true;
+    }
+
+    private void EndFadeIn(string outcome)
+    {
+        if (!_fadeInPending) return;
+        _fadeInPending = false;
+        int elapsedMs = (int)(DateTime.UtcNow - _fadeInStartUtc).TotalMilliseconds;
+        DeckleHudSource.Log.FadeInEnded("hud", outcome, elapsedMs, _currentAlpha);
     }
 
     private void OnFadeInTick(Microsoft.UI.Dispatching.DispatcherQueueTimer sender, object args)
@@ -55,6 +69,7 @@ public sealed partial class HudWindow : Window
         {
             sender.Stop();
             SetAlphaImmediate(_fadeInTarget);
+            EndFadeIn("completed");
             if (_fadeInActivateProximityOnComplete &&
                 Settings.SettingsService.Instance.Current.Overlay.FadeOnProximity)
             {
@@ -66,6 +81,7 @@ public sealed partial class HudWindow : Window
     private void CancelFadeIn()
     {
         _fadeInTimer?.Stop();
+        EndFadeIn("cancelled");
     }
 
     private void CompleteFadeInImmediately()
@@ -74,6 +90,7 @@ public sealed partial class HudWindow : Window
 
         _fadeInTimer.Stop();
         SetAlphaImmediate(_fadeInTarget);
+        EndFadeIn("completed");
         if (_fadeInActivateProximityOnComplete &&
             Settings.SettingsService.Instance.Current.Overlay.FadeOnProximity)
         {

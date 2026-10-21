@@ -33,6 +33,7 @@ public sealed partial class HudChrono
             _revealsActive = true;
             _revealsFailed = false;
             _revealBuildAttempts = 0;
+            _revealBuildEnded = false;
             EnsureReveals();
         }
 
@@ -42,6 +43,14 @@ public sealed partial class HudChrono
     private void StopReveal()
     {
         if (!_revealsActive) return;
+
+        // A take that leaves the reveal before any outcome (a short state, a
+        // stroke that never built) still closes its build loop in the log.
+        if (!_revealBuildEnded)
+        {
+            _revealBuildEnded = true;
+            DeckleHudSource.Log.RevealBuildEnded("abandoned", _revealBuildAttempts);
+        }
 
         _revealsActive = false;
         TearDownReveals();

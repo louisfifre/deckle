@@ -15,6 +15,8 @@ namespace Deckle.Hud;
 // delayed z-order diagnostic emit.
 public sealed partial class HudWindow : Window
 {
+    private readonly WindowShowIncident _showIncident = new("hud");
+
     // Pixel rect the HUD would occupy at the current DPI + work area +
     // Overlay.Position setting, regardless of visibility. HudOverlayManager
     // reads this to lay out the stack even when the HUD itself is hidden.
@@ -60,6 +62,9 @@ public sealed partial class HudWindow : Window
             | NativeMethods.SWP_NOACTIVATE
             | NativeMethods.SWP_SHOWWINDOW);
         int setposError = setposOk ? 0 : Marshal.GetLastWin32Error();
+        // The probe below is governed detail, off by default; the incident is
+        // what leaves a trace when the HUD fails to come on top.
+        _showIncident.Observe(setposOk, setposError, "setwindowpos_topmost");
         WindowingProbe.EmitWindowZOrderState(
             _hwnd, "hud", "after_setwindowpos_topmost",
             setposOk, setposError);

@@ -1,3 +1,4 @@
+using System.Runtime.InteropServices;
 using Microsoft.UI.Windowing;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
@@ -52,6 +53,7 @@ public sealed partial class TranscriptPanelWindow : Window
     private readonly CursorMovementSignal _cursorSignal;
     private readonly LayeredAlphaAnimator _fade;
     private readonly TranscriptHistory _history = new(HISTORY_BUDGET_CHARS);
+    private readonly WindowShowIncident _showIncident = new("transcript-panel");
 
     // Cached window scale (DPI/96): seeded in the ctor, refreshed on show and
     // from WM_DPICHANGED. Read by the proximity handler on every mouse move.
@@ -153,7 +155,12 @@ public sealed partial class TranscriptPanelWindow : Window
     {
         // Same gate as HudWindow.SetState: with the overlay off, no take opens
         // and every Append is ignored.
-        if (!Settings.SettingsService.Instance.Current.Overlay.Enabled) return;
+        if (!Settings.SettingsService.Instance.Current.Overlay.Enabled)
+        {
+            DeckleHudSource.Log.HudDisplaySuppressed(
+                "transcript-panel", "BeginTake", -1, "overlay_disabled");
+            return;
+        }
 
         // A take can start while the previous one is still on screen (the HUD
         // goes from "Copied" straight back to Recording without hiding): the
@@ -196,13 +203,15 @@ public sealed partial class TranscriptPanelWindow : Window
         Render();
 
         NativeMethods.ShowWindow(_hwnd, NativeMethods.SW_SHOWNOACTIVATE);
-        NativeMethods.SetWindowPos(
+        bool setposOk = NativeMethods.SetWindowPos(
             _hwnd, NativeMethods.HWND_TOPMOST,
             0, 0, 0, 0,
             NativeMethods.SWP_NOSIZE
             | NativeMethods.SWP_NOMOVE
             | NativeMethods.SWP_NOACTIVATE
             | NativeMethods.SWP_SHOWWINDOW);
+        _showIncident.Observe(
+            setposOk, setposOk ? 0 : Marshal.GetLastWin32Error(), "setwindowpos_topmost");
         _shown = true;
 
         // Fade in to wherever the cursor puts the panel right now, then follow

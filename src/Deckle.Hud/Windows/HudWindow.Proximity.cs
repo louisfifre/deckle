@@ -56,8 +56,8 @@ public sealed partial class HudWindow : Window
         byte alpha = ProximityFade.Alpha(distancePx, scale, NEAR_RADIUS_DIP, FAR_RADIUS_DIP, MIN_ALPHA, MAX_ALPHA);
         if (alpha != _currentAlpha) SetAlphaImmediate(alpha);
 
-        // Collected only when a Verbose+Heartbeat listener was attached at
-        // session start: this runs on every cursor move.
+        // Collected only when the rollup was admitted at session start: this
+        // runs on every cursor move.
         if (_proximityRollupEnabled)
         {
             int distDip = (int)Math.Round(distancePx / scale);
@@ -74,8 +74,11 @@ public sealed partial class HudWindow : Window
     private void BeginProximitySession()
     {
         // A listener that attaches mid-session is picked up at the next show.
-        _proximityRollupEnabled = DeckleHudSource.Log.IsEnabled(
-            EventLevel.Verbose, (EventKeywords)Keywords.Heartbeat);
+        // Asked through the Windowing admission, not the bare listener level:
+        // the always-on journal listener enables every level, which would
+        // otherwise arm this per-move collection on every show.
+        _proximityRollupEnabled = DeckleHudSource.Log.IsHudDetailEnabled(
+            (EventKeywords)Keywords.Heartbeat);
         if (!_proximityRollupEnabled) return;
 
         _proximityRollup.Reset();
@@ -99,9 +102,8 @@ public sealed partial class HudWindow : Window
         // The cursor never entered the proximity radius: nothing to diagnose.
         if (minAlpha == maxAlpha) return;
 
-        // A listener may have detached during the session.
-        if (!DeckleHudSource.Log.IsEnabled(
-                EventLevel.Verbose, (EventKeywords)Keywords.Heartbeat)) return;
+        // A listener may have detached, or admission closed, during the session.
+        if (!DeckleHudSource.Log.IsHudDetailEnabled((EventKeywords)Keywords.Heartbeat)) return;
 
         int durationMs = sw is null ? 0 : (int)sw.ElapsedMilliseconds;
         var (p50, p95) = _proximityRollup.ComputePercentiles();

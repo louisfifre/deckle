@@ -6,9 +6,23 @@ using Xunit;
 
 namespace Deckle.Hud.Tests;
 
+// The admission reader is process-wide static state: the collection keeps
+// these tests from racing on it.
+[Collection("Hud operational observability")]
 [Trait("Category", "observability")]
-public class DeckleHudSourceTests
+public sealed class DeckleHudSourceTests : IDisposable
 {
+    public DeckleHudSourceTests()
+    {
+        OperationalLogAdmission.Configure(
+            static activity => activity == OperationalLogActivity.Windowing);
+    }
+
+    public void Dispose()
+    {
+        OperationalLogAdmission.Configure(static _ => false);
+    }
+
     [Fact]
     public void ProximityRollupEmitsVerboseOnHeartbeatKeyword()
     {
@@ -48,29 +62,72 @@ public class DeckleHudSourceTests
         Assert.Equal(3, ev.Payload?[2]);
     }
 
+    // Regression: HUD detail used the bare listener level, which the
+    // always-on journal listener satisfies, so per-show and per-frame detail
+    // reached the journal whatever the Windowing verbosity said.
     [Fact]
-    public void RevealMaskFailureSeparatesWarningFromVerboseDetail()
+    public void HudDetailIsRejectedWhileWindowingDetailIsOff()
+    {
+        OperationalLogAdmission.Configure(static _ => false);
+        using var listener = new TestEventListener("Deckle-Hud");
+
+        DeckleHudSource.Log.StateChanged("Hidden", "Recording", "show_recording", 0, 96);
+        DeckleHudSource.Log.FadeInStarted("hud", 150, 0, 255);
+        DeckleHudSource.Log.ProximityRollup(4200, 525, 100, 240, 64, 12);
+        DeckleHudSource.Log.HideSyncTimedOut("ui_thread_unresponsive", 5000);
+
+        var ev = Assert.Single(listener.Events);
+        Assert.Equal(DeckleHudSource.EvtHideSyncTimedOut, ev.EventId);
+        Assert.Equal(EventLevel.Warning, ev.Level);
+    }
+
+    [Fact]
+    public void RevealMaskDegradedCarriesItsCauseInTheWarning()
     {
         using var listener = new TestEventListener("Deckle-Hud");
 
-        DeckleHudSource.Log.RevealMaskFailed();
-        DeckleHudSource.Log.RevealMaskFailedDetail("COMException", "The parameter is incorrect.");
+        DeckleHudSource.Log.RevealMaskDegraded(10, "COMException", "The parameter is incorrect.");
+
+        var ev = Assert.Single(listener.Events);
+        Assert.Equal(DeckleHudSource.EvtRevealMaskDegraded, ev.EventId);
+        Assert.Equal(EventLevel.Warning, ev.Level);
+        Assert.True(ev.HasKeyword(Keywords.Lifecycle));
+        Assert.Equal(10, ev.Payload?[0]);
+        Assert.Equal("COMException", ev.Payload?[1]);
+        Assert.Equal("The parameter is incorrect.", ev.Payload?[2]);
+    }
+
+    // A refusal that persists across shows is one incident: one Warning with
+    // the first cause, one recovery counting the refusals, nothing per show.
+    [Fact]
+    public void RepeatedShowFailuresReportOneIncident()
+    {
+        OperationalLogAdmission.Configure(static _ => false);
+        using var listener = new TestEventListener("Deckle-Hud");
+        var incident = new WindowShowIncident("hud");
+
+        incident.Observe(ok: true,  win32Error: 0, "setwindowpos_topmost");
+        incident.Observe(ok: false, win32Error: 5, "setwindowpos_topmost");
+        incident.Observe(ok: false, win32Error: 5, "setwindowpos_topmost");
+        incident.Observe(ok: false, win32Error: 1400, "setwindowpos_topmost");
+        incident.Observe(ok: true,  win32Error: 0, "setwindowpos_topmost");
+        incident.Observe(ok: true,  win32Error: 0, "setwindowpos_topmost");
 
         Assert.Collection(listener.Events,
-            warning =>
+            failed =>
             {
-                Assert.Equal(DeckleHudSource.EvtRevealMaskFailed, warning.EventId);
-                Assert.Equal(EventLevel.Warning, warning.Level);
-                Assert.True(warning.HasKeyword(Keywords.Lifecycle));
-                Assert.Equal(0, warning.Payload?.Count ?? 0);
+                Assert.Equal(DeckleHudSource.EvtHudShowFailed, failed.EventId);
+                Assert.Equal(EventLevel.Warning, failed.Level);
+                Assert.Equal("hud", failed.Payload?[0]);
+                Assert.Equal("setwindowpos_topmost", failed.Payload?[1]);
+                Assert.Equal(5, failed.Payload?[2]);
             },
-            detail =>
+            recovered =>
             {
-                Assert.Equal(DeckleHudSource.EvtRevealMaskFailedDetail, detail.EventId);
-                Assert.Equal(EventLevel.Verbose, detail.Level);
-                Assert.True(detail.HasKeyword(Keywords.Lifecycle));
-                Assert.Equal("COMException", detail.Payload?[0]);
-                Assert.Equal("The parameter is incorrect.", detail.Payload?[1]);
+                Assert.Equal(DeckleHudSource.EvtHudShowRecovered, recovered.EventId);
+                Assert.Equal(EventLevel.Informational, recovered.Level);
+                Assert.Equal("hud", recovered.Payload?[0]);
+                Assert.Equal(3, recovered.Payload?[1]);
             });
     }
 }
