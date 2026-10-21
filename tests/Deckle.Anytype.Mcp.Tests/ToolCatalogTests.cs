@@ -38,7 +38,7 @@ public class ToolCatalogTests
             new SessionGestures(client, resolver, client.V2),
             new TaskGestures(client, resolver, client.V2),
             new ProjectGestures(client, resolver),
-            new QueryGestures(client, resolver),
+            new QueryGestures(client, resolver, client.V2),
             new ReadGestures(client, resolver),
             new DocumentGestures(client));
     }

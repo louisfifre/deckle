@@ -17,7 +17,7 @@ public static class McpToolset
         var session = new SessionGestures(api, resolver, api.V2);
         var tasks = new TaskGestures(api, resolver, api.V2);
         var projects = new ProjectGestures(api, resolver);
-        var query = new QueryGestures(api, resolver);
+        var query = new QueryGestures(api, resolver, api.V2);
         var reads = new ReadGestures(api, resolver);
         var documents = new DocumentGestures(api);
         var dialogues = new DialogueGestures(api, resolver);
