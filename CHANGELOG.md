@@ -52,6 +52,7 @@ doctrine). This file is generated from the Conventional-Commit history by
 - **anytype:** Open a task session with its project and related tasks
 - **anytype:** State the opening placement rule by its intention
 - **scripts:** Survey the Anytype API v2 read-only
+- **transcription:** Add a deterministic trailing noise pad
 
 ### Changed
 
@@ -78,6 +79,7 @@ doctrine). This file is generated from the Conventional-Commit history by
 - **scripts:** Make every Anytype v2 survey measure conclude
 - **anytype:** Name the live serve a timed-out reconciliation waited on
 - **anytype:** Label recovery after a failed start as start-failed
+- **transcription:** Pad every utterance with low-level noise before decoding
 
 ## [0.59.0](https://github.com/louisfifre/deckle/compare/v0.58.5...v0.59.0) — 2026-10-21
 
