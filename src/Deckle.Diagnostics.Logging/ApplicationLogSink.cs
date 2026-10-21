@@ -27,7 +27,9 @@ public sealed class ApplicationLogSink : IFlushableLogSink
             kindLabel: "log",
             predicate: static _ => true,
             schema: JsonlSchema.SelfDescribing,
-            rotation: new JsonlRotationPolicy(maxLines: 8000));
+            // Ten generations: a week of use with every activity on stays
+            // readable, and the folder no longer grows without end.
+            rotation: new JsonlRotationPolicy(maxLines: 8000, maxArchives: 10));
     }
 
     public bool Wants(EventEntry entry)

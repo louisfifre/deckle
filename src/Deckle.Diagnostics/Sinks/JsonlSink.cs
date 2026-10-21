@@ -50,7 +50,12 @@ public sealed class JsonlSink : IFlushableLogSink
             Directory.CreateDirectory(parent);
 
         if (_rotation is not null)
+        {
+            // An archive left oversized by an earlier run (or by a cap lowered
+            // since) is trimmed at start, not only at the next roll.
+            PruneArchives(onWorker: false);
             _linesWritten = CountLines(_filePath);
+        }
 
         _queue = new BoundedWriteQueue<EventEntry>(
             queueCapacity,
@@ -117,8 +122,7 @@ public sealed class JsonlSink : IFlushableLogSink
         CloseOnWorker();
         try
         {
-            string directory = Path.GetDirectoryName(_filePath) ?? string.Empty;
-            string archiveDirectory = Path.Combine(directory, "archive");
+            string archiveDirectory = ArchiveDirectory();
             Directory.CreateDirectory(archiveDirectory);
 
             string fileName = Path.GetFileName(_filePath);
@@ -133,32 +137,112 @@ public sealed class JsonlSink : IFlushableLogSink
         catch
         {
             _linesWritten = CountLines(_filePath);
+            return;
         }
+
+        // Only after a roll that worked: a failed move must not delete history.
+        PruneArchives(onWorker: true);
+    }
+
+    private string ArchiveDirectory() =>
+        Path.Combine(Path.GetDirectoryName(_filePath) ?? string.Empty, "archive");
+
+    // Deletes the oldest generations beyond MaxArchives. Never throws: a journal
+    // that cannot trim itself must still keep writing, so a failure leaves the
+    // remaining files alone.
+    private void PruneArchives(bool onWorker)
+    {
+        int? cap = _rotation?.MaxArchives;
+        if (cap is null) return;
+
+        try
+        {
+            string archiveDirectory = ArchiveDirectory();
+            if (!Directory.Exists(archiveDirectory)) return;
+
+            string fileName = Path.GetFileName(_filePath);
+            List<(int Number, string Path)> generations =
+                [.. EnumerateGenerations(archiveDirectory, fileName)];
+
+            // The numeric suffix is the age: lowest is oldest. File dates move
+            // when a file is copied or restored, so they are never consulted.
+            generations.Sort(static (a, b) => a.Number.CompareTo(b.Number));
+
+            int excess = generations.Count - cap.Value;
+            if (excess <= 0) return;
+
+            int pruned = 0;
+            for (int i = 0; i < excess; i++)
+            {
+                try
+                {
+                    File.Delete(generations[i].Path);
+                    pruned++;
+                }
+                catch
+                {
+                    // Stop at the first failure so the survivors stay the
+                    // newest contiguous run; the next roll tries again.
+                    break;
+                }
+            }
+
+            if (pruned == 0) return;
+
+            int kept = generations.Count - pruned;
+            if (onWorker)
+            {
+                // Emitting on the worker would dispatch back into this sink's
+                // own bounded queue; with the queue full the worker would wait
+                // on itself. A pool thread breaks that cycle.
+                _ = Task.Run(() =>
+                {
+                    try { DeckleDiagnosticsSource.Log.ArchivesPruned(pruned, fileName, kept); }
+                    catch { }
+                });
+            }
+            else
+            {
+                DeckleDiagnosticsSource.Log.ArchivesPruned(pruned, fileName, kept);
+            }
+        }
+        catch { }
     }
 
     private static int NextGeneration(string archiveDirectory, string fileName)
     {
         int max = 0;
-        string prefix = fileName + ".";
         try
         {
-            foreach (string path in Directory.EnumerateFiles(archiveDirectory, prefix + "*"))
+            foreach ((int number, _) in EnumerateGenerations(archiveDirectory, fileName))
             {
-                string suffix = Path.GetFileName(path)[prefix.Length..];
-                if (int.TryParse(
-                        suffix,
-                        NumberStyles.None,
-                        CultureInfo.InvariantCulture,
-                        out int generation)
-                    && generation > max)
-                {
-                    max = generation;
-                }
+                if (number > max) max = number;
             }
         }
         catch { }
 
         return max + 1;
+    }
+
+    // Archive files named `<fileName>.<digits>`; anything else in the folder is
+    // not ours and is neither counted nor deleted.
+    private static IEnumerable<(int Number, string Path)> EnumerateGenerations(
+        string archiveDirectory,
+        string fileName)
+    {
+        string prefix = fileName + ".";
+        foreach (string path in Directory.EnumerateFiles(archiveDirectory, prefix + "*"))
+        {
+            string suffix = System.IO.Path.GetFileName(path)[prefix.Length..];
+            if (int.TryParse(
+                    suffix,
+                    NumberStyles.None,
+                    CultureInfo.InvariantCulture,
+                    out int generation))
+            {
+                yield return (generation, path);
+            }
+        }
     }
 
     private static long CountLines(string path)

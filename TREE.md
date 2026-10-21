@@ -854,6 +854,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── CrashRelaunchPolicy.cs
 │   │   ├── Deckle.Diagnostics.csproj
 │   │   ├── DeckleCancellationSource.cs
+│   │   ├── DeckleDiagnosticsSource.cs
 │   │   ├── DeckleEventSource.cs
 │   │   ├── DeckleNetworkSource.cs
 │   │   ├── DeckleResourceSource.cs

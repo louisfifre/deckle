@@ -58,7 +58,9 @@ internal static class AppDiagnosticsBootstrap
             predicate: static e => e.Kind == ObservationKind.Operational
                                 && e.Provider == "Deckle-Setup",
             schema:    JsonlSchema.SelfDescribing,
-            rotation:  new JsonlRotationPolicy(maxLines: 5000)));
+            // Three generations: the updater's history matters for one or two
+            // runs back, never for months.
+            rotation:  new JsonlRotationPolicy(maxLines: 5000, maxArchives: 3)));
 
         // Warning and above always pass the producer-side admission, so this
         // file needs no setting. A milestone's cause travels in its own payload
@@ -71,7 +73,9 @@ internal static class AppDiagnosticsBootstrap
                 || e.Journal
                 || _crashCompanions.Contains(e.EventName)),
             schema:    JsonlSchema.SelfDescribing,
-            rotation:  new JsonlRotationPolicy(maxLines: 4000)));
+            // Five generations: the journal is sparse, so this spans weeks of
+            // runs, and an incident older than that has lost its context anyway.
+            rotation:  new JsonlRotationPolicy(maxLines: 4000, maxArchives: 5)));
     }
 
     public static void InitializeOperationalSinks(string diagnosticsDirectory)
