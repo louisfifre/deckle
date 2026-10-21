@@ -46,27 +46,20 @@ public class DeckleVisionSourceTests
     }
 
     [Fact]
-    public void TerminalCaptureCauseStaysTechnicalForWorkflowOwner()
+    public void FrameOwnershipAbandonmentCarriesItsCause()
     {
         using var listener = new TestEventListener("Deckle-Vision");
 
-        DeckleVisionSource.Log.FrameOwnershipRecoveryAbandoned();
-        DeckleVisionSource.Log.FrameOwnershipRecoveryAbandonedDetail(10, 10);
+        // DXGI_ERROR_INVALID_CALL
+        const int invalidCall = unchecked((int)0x887A0001);
+        DeckleVisionSource.Log.FrameOwnershipRecoveryAbandoned(10, 10, invalidCall);
 
-        Assert.Collection(
-            listener.Events,
-            milestone =>
-            {
-                Assert.Equal(DeckleVisionSource.EvtFrameOwnershipRecoveryAbandoned, milestone.EventId);
-                Assert.Equal(EventLevel.Verbose, milestone.Level);
-            },
-            detail =>
-            {
-                Assert.Equal(DeckleVisionSource.EvtFrameOwnershipRecoveryAbandonedDetail, detail.EventId);
-                Assert.Equal(EventLevel.Verbose, detail.Level);
-                Assert.Equal(10, detail.Payload?[0]);
-                Assert.Equal(10, detail.Payload?[1]);
-            });
+        var ev = Assert.Single(listener.Events);
+        Assert.Equal(DeckleVisionSource.EvtFrameOwnershipRecoveryAbandoned, ev.EventId);
+        Assert.Equal(EventLevel.Error, ev.Level);
+        Assert.Equal(10, ev.Payload?[0]);
+        Assert.Equal(10, ev.Payload?[1]);
+        Assert.Equal(invalidCall, ev.Payload?[2]);
     }
 
     [Fact]
@@ -74,7 +67,8 @@ public class DeckleVisionSourceTests
     {
         using var listener = new TestEventListener("Deckle-Vision");
 
-        DeckleVisionSource.Log.DuplicationRecreateAttemptFailed();
+        DeckleVisionSource.Log.DuplicationRecreateAttemptFailed(
+            2, unchecked((int)0x887A0026), "COMException", "msg");
         DeckleVisionSource.Log.DuplicationRecreateRecovered();
         DeckleVisionSource.Log.DuplicationRecreateEpisodeDetail(
             "recovered", failures: 2, duration_ms: 4100);

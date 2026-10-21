@@ -44,6 +44,16 @@ public sealed partial class ScreenCaptureService : IDisposable
     // branch of the capture loop.
     private const int ErrorBackoffMs = 500;
 
+    // About two seconds of consecutive generic AcquireNextFrame failures at
+    // ErrorBackoffMs: past a transient glitch, short enough that a frozen
+    // lamp has a visible cause.
+    private const int AcquireFailureIncidentThreshold = 4;
+
+    // Admission gates are re-read once per second instead of per frame: the
+    // reader behind them consults persisted settings, and a verbosity toggle
+    // needs no faster response.
+    private const int AdmissionRefreshMs = 1_000;
+
     // Persistent INVALID_CALL means DXGI still thinks Deckle owns a frame
     // despite the recovery path closing ownership and/or recreating the
     // duplication. Bound the loop so Ambient stops instead of emitting a
@@ -101,6 +111,17 @@ public sealed partial class ScreenCaptureService : IDisposable
     private long _frameCount;
     private long _startTimestamp;
 
+    // True from a successful Start until Stop has released the session. A
+    // loop that ended on its own leaves IsRunning false while the device is
+    // still held, so Stop keys its release and its stopped line on this.
+    private bool _sessionStarted;
+
+    // Written by the capture loop on exit, read by Stop for the stopped
+    // line; null until the loop ends.
+    private volatile string? _loopExitReason;
+
+    private FrameFailure? _lastFrameFailure;
+
     // Stamped only when the Resource acquire event was emitted; 0 skips the
     // matching release event.
     private long _duplicationAcquiredTicks;
@@ -126,6 +147,10 @@ public sealed partial class ScreenCaptureService : IDisposable
 
     /// <summary>Frames delivered since the last Start().</summary>
     public long FrameCount => Interlocked.Read(ref _frameCount);
+
+    // Last cause behind FrameProcessingFailed, for the consumer's incident
+    // milestone; null until a frame is dropped.
+    public FrameFailure? LastFrameFailure => Volatile.Read(ref _lastFrameFailure);
 
     /// <summary>Null when the service isn't running. Borrowed by
     /// FrameSampler: never dispose it from outside.</summary>
@@ -161,8 +186,8 @@ public sealed partial class ScreenCaptureService : IDisposable
     public event Action? FrameProcessingFailed;
 
     /// <summary>Raised on the worker thread when capture ends on its own: a
-    /// lost device, or a frame-ownership or duplication recovery
-    /// abandoned. <see cref="IsRunning"/> is already false when it
+    /// lost device, a frame-ownership or duplication recovery abandoned,
+    /// or a crashed loop. <see cref="IsRunning"/> is already false when it
     /// fires.</summary>
     public event Action? Stopped;
 

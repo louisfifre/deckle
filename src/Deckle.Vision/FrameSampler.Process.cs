@@ -1,6 +1,4 @@
 using System.Diagnostics;
-using System.Diagnostics.Tracing;
-using Deckle.Diagnostics;
 
 namespace Deckle.Vision;
 
@@ -43,6 +41,7 @@ public sealed partial class FrameSampler
                     int hr = map(_d3dContext, _stagingTex, 0, ScreenCaptureInterop.D3D11_MAP_READ, 0, &mapped);
                     if (hr != 0)
                     {
+                        Volatile.Write(ref _lastFailure, new FrameFailure("sampler_map", hr, "", ""));
                         DeckleVisionSource.Log.SamplerMapFailedDetail(hr);
                         return false;
                     }
@@ -70,15 +69,11 @@ public sealed partial class FrameSampler
         }
         catch (Exception ex)
         {
-            if (OperationalLogAdmission.IsScopedDetailEnabled(
-                    OperationalLogActivity.Ambient,
-                    DeckleVisionSource.Log,
-                    EventLevel.Verbose,
-                    (EventKeywords)Keywords.Pipeline))
-            {
-                DeckleVisionSource.Log.SamplerProcessFailedDetail(
-                    ex.GetType().Name, ex.Message);
-            }
+            Volatile.Write(ref _lastFailure, new FrameFailure(
+                "sampler_process", ex.HResult, ex.GetType().Name, ex.Message));
+            // The event gates itself on the Ambient scope.
+            DeckleVisionSource.Log.SamplerProcessFailedDetail(
+                ex.GetType().Name, ex.Message);
             return false;
         }
     }

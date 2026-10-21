@@ -16,15 +16,21 @@ public sealed partial class ScreenCaptureService
 
     // Expected Windows unavailability retries without limit; unexpected
     // failures stop after MaxUnexpectedRecreateAttempts and a dead device
-    // stops at once, so the workflow owner surfaces one terminal error.
-    private bool TryRecreateDuplication(CancellationToken ct)
+    // stops at once. A false return without cancellation has already
+    // reported its terminal milestone; abandonReason names it for the
+    // loop's exit line and the stopped milestone.
+    private bool TryRecreateDuplication(CancellationToken ct, out string abandonReason)
     {
+        abandonReason = "requested";
         int attempt = 0;
         long incidentStartedTicks = 0;
         bool incidentOpen = false;
         while (!ct.IsCancellationRequested && _duplicationPtr == 0)
         {
             attempt++;
+            bool formatChanged;
+            bool sizeChanged;
+            uint oldDxgiFormat;
             try
             {
                 // Re-detect HDR on every attempt: the interruption is often an
@@ -51,11 +57,11 @@ public sealed partial class ScreenCaptureService
                 // textures. Without FormatChanged the sampler keeps reading
                 // the new surface with the old layout and an HDR↔SDR toggle
                 // freezes the output silently.
-                uint oldDxgiFormat = _activeDxgiFormat;
+                oldDxgiFormat = _activeDxgiFormat;
                 uint newDxgiFormat = desc.ModeDesc.Format;
-                bool formatChanged = newDxgiFormat != oldDxgiFormat;
-                bool sizeChanged = newSize.Width != _lastSize.Width
-                                || newSize.Height != _lastSize.Height;
+                formatChanged = newDxgiFormat != oldDxgiFormat;
+                sizeChanged = newSize.Width != _lastSize.Width
+                           || newSize.Height != _lastSize.Height;
 
                 _activeDxgiFormat = newDxgiFormat;
                 _activeFormat = MapDxgiFormat(newDxgiFormat);
@@ -85,12 +91,7 @@ public sealed partial class ScreenCaptureService
                 if (incidentOpen)
                 {
                     DeckleVisionSource.Log.DuplicationRecreateRecovered();
-                    if (incidentStartedTicks != 0
-                        && OperationalLogAdmission.IsScopedDetailEnabled(
-                            OperationalLogActivity.Ambient,
-                            DeckleVisionSource.Log,
-                            EventLevel.Verbose,
-                            (EventKeywords)Keywords.Capture))
+                    if (incidentStartedTicks != 0)
                     {
                         long durationMs = (Stopwatch.GetTimestamp() - incidentStartedTicks)
                             * 1000L / Stopwatch.Frequency;
@@ -98,32 +99,6 @@ public sealed partial class ScreenCaptureService
                             "recovered", attempt - 1, durationMs);
                     }
                 }
-
-                if (formatChanged)
-                {
-                    if (OperationalLogAdmission.IsScopedDetailEnabled(
-                            OperationalLogActivity.Ambient,
-                            DeckleVisionSource.Log,
-                            EventLevel.Verbose,
-                            (EventKeywords)(Keywords.Capture | Keywords.Lifecycle)))
-                    {
-                        DeckleVisionSource.Log.CaptureFormatRenegotiatedDetail(
-                            MapDxgiFormat(oldDxgiFormat).ToString(),
-                            _activeFormat.ToString(),
-                            _isHdrSession ? "on" : "off",
-                            _peakLuminance,
-                            _lastSize.Width, _lastSize.Height, attempt);
-                    }
-                }
-
-                // Raise after the duplication is fully live and the active
-                // format/size fields are committed, so the consumer's rebuild
-                // reads consistent ActiveFormat / ContentSize / PeakLuminance.
-                if (formatChanged || sizeChanged)
-                {
-                    FormatChanged?.Invoke();
-                }
-                return true;
             }
             catch (Exception ex) when (ex is not OperationCanceledException)
             {
@@ -147,7 +122,8 @@ public sealed partial class ScreenCaptureService
 
                 if (!fatalDevice && attempt == 2)
                 {
-                    DeckleVisionSource.Log.DuplicationRecreateAttemptFailed();
+                    DeckleVisionSource.Log.DuplicationRecreateAttemptFailed(
+                        attempt, ex.HResult, ex.GetType().Name, ex.Message);
                     incidentOpen = true;
                 }
 
@@ -159,8 +135,25 @@ public sealed partial class ScreenCaptureService
 
                 if (fatalDevice || (!expected && attempt >= MaxUnexpectedRecreateAttempts))
                 {
-                    DeckleVisionSource.Log.DuplicationRecreateAbandonedDetail(
-                        attempt, ex.HResult, ex.GetType().Name, ex.Message);
+                    if (fatalDevice)
+                    {
+                        DeckleVisionSource.Log.DeviceLost(ex.HResult);
+                        abandonReason = "device_lost";
+                    }
+                    else
+                    {
+                        DeckleVisionSource.Log.DuplicationRecreateAbandoned(
+                            attempt, ex.HResult, ex.GetType().Name, ex.Message);
+                        abandonReason = "recreate_abandoned";
+                    }
+
+                    if (incidentOpen && incidentStartedTicks != 0)
+                    {
+                        long durationMs = (Stopwatch.GetTimestamp() - incidentStartedTicks)
+                            * 1000L / Stopwatch.Frequency;
+                        DeckleVisionSource.Log.DuplicationRecreateEpisodeDetail(
+                            "abandoned", attempt, durationMs);
+                    }
                     return false;
                 }
 
@@ -179,7 +172,41 @@ public sealed partial class ScreenCaptureService
                         "vision-capture", "upstream", (int)ageMs);
                     return false;
                 }
+                continue;
             }
+
+            if (formatChanged)
+            {
+                // A display mode change the user caused (HDR toggle): one
+                // milestone, its before/after behind the detail gate.
+                DeckleVisionSource.Log.CaptureFormatRenegotiated();
+                DeckleVisionSource.Log.CaptureFormatRenegotiatedDetail(
+                    MapDxgiFormat(oldDxgiFormat).ToString(),
+                    _activeFormat.ToString(),
+                    _isHdrSession ? "on" : "off",
+                    _peakLuminance,
+                    _lastSize.Width, _lastSize.Height, attempt);
+            }
+
+            // Raised outside the recreate try: a throwing handler used to
+            // land in the failure branch, release a healthy duplication and
+            // count as a failed attempt. Raised after the duplication is
+            // live and the format/size fields are committed, so the
+            // consumer's rebuild reads consistent ActiveFormat / ContentSize
+            // / PeakLuminance.
+            if (formatChanged || sizeChanged)
+            {
+                try
+                {
+                    FormatChanged?.Invoke();
+                }
+                catch (Exception ex)
+                {
+                    DeckleVisionSource.Log.SubscriberThrew(
+                        "format_changed", ex.GetType().Name, ex.Message);
+                }
+            }
+            return true;
         }
 
         return _duplicationPtr != 0;

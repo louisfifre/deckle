@@ -37,6 +37,11 @@ internal static partial class ScreenCaptureInterop
     private static readonly Guid IID_IDXGIDevice = new("54ec77fa-1377-44e6-8c32-88fd5f44c84c");
 
     public static IDirect3DDevice CreateDirect3DDevice(nint pAdapter = 0)
+        => CreateDirect3DDevice(pAdapter, out _);
+
+    // featureLevel is the raw D3D_FEATURE_LEVEL; FormatFeatureLevel turns
+    // it into the "11_1" spelling of the documentation.
+    public static IDirect3DDevice CreateDirect3DDevice(nint pAdapter, out int featureLevel)
     {
         // BGRA_SUPPORT is required to share the frames with the DirectX
         // composition stack (Win2D, CanvasBitmap).
@@ -50,7 +55,7 @@ internal static partial class ScreenCaptureInterop
             featureLevels:   0,
             sdkVersion:      D3D11_SDK_VERSION,
             ppDevice:        out nint d3dDevicePtr,
-            pFeatureLevel:   out _,
+            pFeatureLevel:   out featureLevel,
             ppImmediateContext: out nint d3dContextPtr);
 
         // Not needed here: FrameSampler fetches its own immediate context
@@ -87,6 +92,13 @@ internal static partial class ScreenCaptureInterop
             if (d3dDevicePtr != 0) Marshal.Release(d3dDevicePtr);
         }
     }
+
+    // D3D_FEATURE_LEVEL packs major and minor in the high nibbles:
+    // 0xb100 is 11_1.
+    public static string FormatFeatureLevel(int featureLevel)
+        => featureLevel == 0
+            ? "unknown"
+            : $"{(featureLevel >> 12) & 0xF}_{(featureLevel >> 8) & 0xF}";
 
     // ── Native interfaces behind the WinRT wrappers ──────────────────────────
     //

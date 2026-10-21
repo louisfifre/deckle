@@ -1729,6 +1729,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │       ├── Deckle.Vision.csproj
 │       ├── DeckleVisionSource.cs
 │       ├── FrameAnalysisHint.cs
+│       ├── FrameFailure.cs
 │       ├── FrameSampler.cs
 │       ├── FrameSampler.Process.cs
 │       ├── FrameSampler.Readback.cs
