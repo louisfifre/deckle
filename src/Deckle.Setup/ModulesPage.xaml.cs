@@ -49,8 +49,12 @@ public sealed partial class ModulesPage : Page
         setup.NextRequested += OnNextRequested;
 
         var catalog = ModuleRegistry.Modules;
+        // Seeded from the context, not from the saved presence: in install mode
+        // nothing is saved until Deploy, so re-reading presence on a Back from
+        // Folders or Choices would discard the selection made a page ago. The
+        // hosts already seed the context from presence.
         _selection = new HashSet<string>(
-            ModulePresence.Choice ?? catalog.Select(m => m.Id),
+            _setup.Context.SelectedModules,
             StringComparer.Ordinal);
 
         BuildModuleCards(catalog);
