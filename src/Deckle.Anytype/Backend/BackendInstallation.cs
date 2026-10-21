@@ -53,8 +53,8 @@ public static class BackendInstallation
     public static BackendBundle CurrentBundle { get; } = new(
         Version:     "0.5.0",
         Url:         "https://github.com/louisfifre/deckle/releases/download/anytype-backend-v0.5.0/anytype-cli-v0.5.0-windows-amd64.zip",
-        Sha256:      "1c62f6d957089c305c2ee1329ef2ba745d200b79f54a014498c29305853a9ed1",
-        SizeBytes:   51_347_401L,
+        Sha256:      "988760efb3fa29d378534baee71b3433fdceca72dac96362ce65d076029ceb2e",
+        SizeBytes:   51_350_092L,
         DisplayName: "Anytype backend (anytype-cli)");
 
     // False means the module stays dormant — never a boot failure — and the
