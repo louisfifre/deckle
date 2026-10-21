@@ -108,6 +108,7 @@ public partial class App
 
         AppDiagnosticsBootstrap.InitializeOperationalSinks(AppPaths.DiagnosticsDirectory);
         AppDiagnosticsBootstrap.InitializeTelemetry(AppPaths.TelemetryDirectory);
+        AppDiagnosticsBootstrap.CompleteBoot();
         context.Milestone("diagnostics");
 
         Deckle.Diagnostics.Telemetry.TelemetryListenerBootstrap.ConfigureGates(name => name switch

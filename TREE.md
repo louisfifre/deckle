@@ -1936,6 +1936,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── DeckleThemeSourceTests.cs
 │   │   ├── DeckleThreadingSourceTests.cs
 │   │   ├── DeckleWindowingSourceTests.cs
+│   │   ├── DispatchEventListenerIncidentTests.cs
 │   │   ├── DispatchEventListenerTests.cs
 │   │   ├── JsonlLineSerializerTests.cs
 │   │   ├── JsonlSinkLifecycleTests.cs

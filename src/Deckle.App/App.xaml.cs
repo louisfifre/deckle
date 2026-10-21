@@ -45,6 +45,11 @@ public partial class App : Microsoft.UI.Xaml.Application
     // status transition.
     private bool _lastRecordingState;
 
+    // Long enough for a healthy disk to drain a full queue, short enough that
+    // a crash never looks like a hang.
+    private static readonly TimeSpan CrashFlushDeadline = TimeSpan.FromSeconds(2);
+    private static readonly TimeSpan ExitFlushDeadline = TimeSpan.FromSeconds(5);
+
     public App()
     {
         InitializeComponent();
@@ -52,12 +57,18 @@ public partial class App : Microsoft.UI.Xaml.Application
         // Without these nets, an exception in a background TranscriptionEngine
         // handler vanishes silently. Events raised before OnLaunched registers
         // the sinks are dropped.
+        //
+        // Each net drains the JSONL writers with a deadline: the process may
+        // die right after the handler returns, and a crash line that stays in
+        // a queue is the line a reader needed most. The deadline keeps a stuck
+        // disk from turning a crash into a hang.
         this.UnhandledException += (_, e) =>
         {
             DeckleAppSource.Log.CrashUnhandled();
             DeckleAppSource.Log.CrashUnhandledDetail(e.Exception.GetType().Name, e.Exception.Message);
             DeckleAppSource.Log.CrashStackTrace(e.Exception.StackTrace ?? "(no stack)");
             e.Handled = true;
+            AppDiagnosticsBootstrap.Flush(CrashFlushDeadline);
         };
         AppDomain.CurrentDomain.UnhandledException += (_, e) =>
         {
@@ -65,6 +76,7 @@ public partial class App : Microsoft.UI.Xaml.Application
             DeckleAppSource.Log.CrashAppDomain();
             DeckleAppSource.Log.CrashAppDomainDetail(ex?.GetType().Name ?? "(unknown)", ex?.Message ?? "(no message)");
             DeckleAppSource.Log.CrashStackTrace(ex?.StackTrace ?? "(no stack)");
+            AppDiagnosticsBootstrap.Flush(CrashFlushDeadline);
         };
         TaskScheduler.UnobservedTaskException += (_, e) =>
         {
@@ -75,10 +87,11 @@ public partial class App : Microsoft.UI.Xaml.Application
 
         // JSONL writers run off the emitting thread, so the final marker is
         // followed by one drain; it covers install, update and relocation exits.
+        // A drain that fails leaves its own marker file (see the bootstrap).
         AppDomain.CurrentDomain.ProcessExit += (_, _) =>
         {
             DeckleAppSource.Log.ProcessExit();
-            _ = AppDiagnosticsBootstrap.Flush();
+            AppDiagnosticsBootstrap.Flush(ExitFlushDeadline);
         };
     }
 

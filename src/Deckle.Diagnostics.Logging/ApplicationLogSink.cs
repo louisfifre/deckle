@@ -51,5 +51,7 @@ public sealed class ApplicationLogSink : IFlushableLogSink
 
     public void Flush() => _sink.Flush();
 
+    public bool TryFlush(TimeSpan timeout) => _sink.TryFlush(timeout);
+
     public void Dispose() => _sink.Dispose();
 }

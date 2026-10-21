@@ -11,6 +11,11 @@ namespace Deckle.Diagnostics;
 // The worker keeps the active stream open. Each line is flushed to the OS
 // before the next item, so a process crash keeps every written line, and the
 // EventSource emitter never performs disk I/O.
+//
+// A destination that stops accepting writes (disk full, file locked, folder
+// gone) is reported once as a sink incident on Deckle-Diagnostics, named by
+// its file, and closed by the next line that lands; the other sinks carry the
+// report. The queue's own comment says why those reports leave the worker.
 public sealed class JsonlSink : IFlushableLogSink
 {
     private const int DefaultQueueCapacity = 1024;
@@ -57,11 +62,16 @@ public sealed class JsonlSink : IFlushableLogSink
             _linesWritten = CountLines(_filePath);
         }
 
+        string sinkName = Path.GetFileName(_filePath);
         _queue = new BoundedWriteQueue<EventEntry>(
             queueCapacity,
             write: WriteOnWorker,
             flush: FlushOnWorker,
-            close: CloseOnWorker);
+            close: CloseOnWorker,
+            onFault: ex => DeckleDiagnosticsSource.Log.SinkFaulted(
+                sinkName, ex.GetType().Name, ex.Message),
+            onRecovered: failures => DeckleDiagnosticsSource.Log.SinkRecovered(
+                sinkName, failures));
     }
 
     public bool Wants(EventEntry entry) => _predicate(entry);
@@ -69,6 +79,8 @@ public sealed class JsonlSink : IFlushableLogSink
     public void Write(EventEntry entry) => _queue.Enqueue(entry);
 
     public void Flush() => _queue.Flush();
+
+    public bool TryFlush(TimeSpan timeout) => _queue.TryFlush(timeout);
 
     public void Dispose() => _queue.Dispose();
 

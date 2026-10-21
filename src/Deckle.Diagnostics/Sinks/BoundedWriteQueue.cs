@@ -11,12 +11,23 @@ namespace Deckle.Diagnostics;
 // Each sink owns a lightweight pending Task, not a dedicated OS thread. Actual
 // file writes use asynchronous I/O, so several dormant JSONL destinations do
 // not reserve a thread apiece.
+//
+// Write failures. A write that throws on the worker is remembered as the last
+// error, which Flush and Dispose rethrow, and the item is lost. That alone
+// hides a dead destination until exit, so the queue also keeps one incident:
+// the first failed write after successes calls onFault, the first successful
+// write after failures calls onRecovered with the count. Both callbacks run
+// on a thread-pool thread, never on the worker: a callback that emits an
+// event dispatches back into this very sink, and a worker that enqueues into
+// its own full channel waits on itself forever.
 internal sealed class BoundedWriteQueue<T> : IDisposable where T : class
 {
     private readonly Channel<WorkItem> _items;
     private readonly Func<T, ValueTask> _write;
     private readonly Func<ValueTask> _flush;
     private readonly Action _close;
+    private readonly Action<Exception>? _onFault;
+    private readonly Action<int>? _onRecovered;
     private readonly Task _worker;
     private readonly object _lifetimeLock = new();
 
@@ -24,11 +35,16 @@ internal sealed class BoundedWriteQueue<T> : IDisposable where T : class
     private bool _accepting = true;
     private bool _disposed;
 
+    // Worker-owned incident state.
+    private int _consecutiveFailures;
+
     public BoundedWriteQueue(
         int capacity,
         Func<T, ValueTask> write,
         Func<ValueTask> flush,
-        Action close)
+        Action close,
+        Action<Exception>? onFault = null,
+        Action<int>? onRecovered = null)
     {
         if (capacity <= 0) throw new ArgumentOutOfRangeException(nameof(capacity));
 
@@ -42,6 +58,8 @@ internal sealed class BoundedWriteQueue<T> : IDisposable where T : class
         _write = write ?? throw new ArgumentNullException(nameof(write));
         _flush = flush ?? throw new ArgumentNullException(nameof(flush));
         _close = close ?? throw new ArgumentNullException(nameof(close));
+        _onFault = onFault;
+        _onRecovered = onRecovered;
         _worker = Task.Run(ConsumeAsync);
     }
 
@@ -62,6 +80,15 @@ internal sealed class BoundedWriteQueue<T> : IDisposable where T : class
 
     public void Flush()
     {
+        TryFlush(Timeout.InfiniteTimeSpan);
+    }
+
+    // False when the deadline passed before the marker was reached: the
+    // entries stay queued and the worker keeps draining them. A deadline is
+    // also applied to the enqueue of the marker itself, since a full channel
+    // behind a stuck disk would otherwise block the caller before any wait.
+    public bool TryFlush(TimeSpan timeout)
+    {
         var completed = new TaskCompletionSource<bool>(
             TaskCreationOptions.RunContinuationsAsynchronously);
         bool markerQueued;
@@ -71,17 +98,21 @@ internal sealed class BoundedWriteQueue<T> : IDisposable where T : class
             markerQueued = _accepting;
             if (markerQueued)
             {
-                _items.Writer.WriteAsync(WorkItem.ForFlush(completed))
-                    .AsTask().GetAwaiter().GetResult();
+                ValueTask enqueue = _items.Writer.WriteAsync(WorkItem.ForFlush(completed));
+                if (!enqueue.IsCompleted
+                    && !enqueue.AsTask().Wait(timeout))
+                {
+                    return false;
+                }
             }
         }
 
-        if (markerQueued)
-            completed.Task.GetAwaiter().GetResult();
-        else
-            _worker.GetAwaiter().GetResult();
+        bool drained = markerQueued
+            ? completed.Task.Wait(timeout)
+            : _worker.Wait(timeout);
 
         ThrowLastError();
+        return drained;
     }
 
     public void Dispose()
@@ -113,7 +144,7 @@ internal sealed class BoundedWriteQueue<T> : IDisposable where T : class
                     continue;
                 }
 
-                await TryRunAsync(() => _write(item.Value!)).ConfigureAwait(false);
+                await WriteTrackedAsync(item.Value!).ConfigureAwait(false);
             }
 
             await TryRunAsync(_flush).ConfigureAwait(false);
@@ -122,6 +153,35 @@ internal sealed class BoundedWriteQueue<T> : IDisposable where T : class
         {
             try { _close(); }
             catch (Exception ex) { Interlocked.Exchange(ref _lastError, ex); }
+        }
+    }
+
+    private async ValueTask WriteTrackedAsync(T value)
+    {
+        try
+        {
+            await _write(value).ConfigureAwait(false);
+        }
+        catch (Exception ex)
+        {
+            Interlocked.Exchange(ref _lastError, ex);
+            if (_consecutiveFailures++ == 0 && _onFault is not null)
+            {
+                Action<Exception> onFault = _onFault;
+                _ = Task.Run(() => onFault(ex));
+            }
+            return;
+        }
+
+        if (_consecutiveFailures > 0)
+        {
+            int failures = _consecutiveFailures;
+            _consecutiveFailures = 0;
+            if (_onRecovered is not null)
+            {
+                Action<int> onRecovered = _onRecovered;
+                _ = Task.Run(() => onRecovered(failures));
+            }
         }
     }
 
