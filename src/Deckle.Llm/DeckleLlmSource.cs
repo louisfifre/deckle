@@ -63,12 +63,9 @@ public sealed partial class DeckleLlmSource : DeckleEventSource
     public const int EvtRewriteSkippedNoModelDetail = 28;
     // 29 retired.
     // 30 retired.
-    // Kept until the call sites outside this module move to PsProbeRejectedDetail.
-    public const int EvtPsProbeUnreachableDetail    = 31;
-    // Kept until the call sites outside this module move to PsProbeBusyDetail.
-    public const int EvtOllamaBusyDetail            = 32;
-    // Kept until the call sites outside this module move to PsProbeErrorDetail.
-    public const int EvtPsProbeFailedDetail         = 33;
+    // 31 retired.
+    // 32 retired.
+    // 33 retired.
     // 34 retired.
     // 35 retired.
     // 36 retired.

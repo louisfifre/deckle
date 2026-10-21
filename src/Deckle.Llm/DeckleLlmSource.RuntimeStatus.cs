@@ -75,43 +75,4 @@ public sealed partial class DeckleLlmSource
         if (IsEnabled()) WriteEvent(EvtPsProbeFaulted, ex_type, ex_message);
     }
 
-    // Kept until the call sites outside this module move to PsProbeRejectedDetail.
-    [Event(EvtPsProbeUnreachableDetail,
-           Level = EventLevel.Verbose,
-           Keywords = (EventKeywords)Keywords.Heartbeat,
-           Message = "ps probe unreachable | http={0}")]
-    public void PsProbeUnreachableDetail(int http_status)
-    {
-        if (OperationalLogAdmission.IsDetailEnabled(
-                OperationalLogActivity.Transcription, this,
-                EventLevel.Verbose, (EventKeywords)Keywords.Heartbeat))
-            WriteEvent(EvtPsProbeUnreachableDetail, http_status);
-    }
-
-    // Kept until the call sites outside this module move to PsProbeBusyDetail.
-    [Event(EvtOllamaBusyDetail,
-           Level = EventLevel.Verbose,
-           Keywords = (EventKeywords)Keywords.Heartbeat,
-           Message = "ollama busy | name={0} | vram_gb={1:F1} | unload={2} | waited_sec={3:F0} | cap_min={4:F0}")]
-    public void OllamaBusyDetail(string name, double vram_gb, string unload_suffix, double waited_seconds, double cap_minutes)
-    {
-        if (OperationalLogAdmission.IsDetailEnabled(
-                OperationalLogActivity.Transcription, this,
-                EventLevel.Verbose, (EventKeywords)Keywords.Heartbeat))
-            WriteEvent(EvtOllamaBusyDetail, name, vram_gb, unload_suffix, waited_seconds, cap_minutes);
-    }
-
-    // Kept until the call sites outside this module move to PsProbeErrorDetail.
-    [Event(EvtPsProbeFailedDetail,
-           Level = EventLevel.Verbose,
-           Keywords = (EventKeywords)Keywords.Heartbeat,
-           Message = "ps probe failed | error={0} | message={1}")]
-    public void PsProbeFailedDetail(string ex_type, string message)
-    {
-        if (OperationalLogAdmission.IsDetailEnabled(
-                OperationalLogActivity.Transcription, this,
-                EventLevel.Verbose, (EventKeywords)Keywords.Heartbeat))
-            WriteEvent(EvtPsProbeFailedDetail, ex_type, message);
-    }
-
 }

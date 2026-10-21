@@ -161,7 +161,7 @@ public class RewriteService : IRewriteService
         {
             sw.Stop();
             DeckleCancellationSource.Log.OperationCancelled(
-                "llm-rewrite", "timeout", (int)sw.ElapsedMilliseconds);
+                CancelledOperations.LlmRewrite, CancellationReasons.Timeout, (int)sw.ElapsedMilliseconds);
             DeckleLlmSource.Log.RewriteTimeout(
                 TranscriptCaller, profile.ProviderId, profile.Model,
                 sw.ElapsedMilliseconds, GenerationDeadline.HardCap.TotalSeconds);
