@@ -152,7 +152,8 @@ public sealed class DispatchEventListener : EventListener
             keywords: e.Keywords,
             kind: ObservationTags.GetKind(e.Tags),
             formattedMessage: formatted,
-            payload: payload);
+            payload: payload,
+            journal: ObservationTags.IsJournal(e.Tags));
     }
 
     // Clean-shutdown barrier for sinks that hand work to a background writer.

@@ -62,7 +62,7 @@ public partial class App
     {
         // First, before settings migration: a listener only sees events emitted
         // after it subscribes, so these ungated local sinks must exist for a
-        // failure in the very first boot step to land in errors.jsonl.
+        // failure in the very first boot step to land in journal.jsonl.
         AppDiagnosticsBootstrap.InitializeLocalSinks(AppPaths.DiagnosticsDirectory);
         DeckleAppSource.Log.AppStarting();
         context.Milestone("diagnostics-local");

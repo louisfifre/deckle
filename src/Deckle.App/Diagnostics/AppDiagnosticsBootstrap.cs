@@ -15,12 +15,17 @@ namespace Deckle.App;
 // bounded queues, so ProcessExit crosses the Flush barrier before termination.
 internal static class AppDiagnosticsBootstrap
 {
+    // The journal file is the one that travels: a reader on another machine
+    // opens it first, so it holds every Warning and Error plus the tagged run
+    // milestones, whatever the verbosity controls say. It is small by design.
+    private const string JournalFileName = "journal.jsonl";
+
     private static DispatchEventListener? _dispatch;
     private static LogWindowSink? _logWindowSink;
     private static bool _hudAttached;
 
     // The crash detail and stack events are Verbose, so a level predicate alone
-    // would split a crash across files; errors.jsonl allowlists them by name.
+    // would split a crash across files; the journal allowlists them by name.
     // The bare name holds while no other Deckle-* provider declares these names;
     // scope the check by provider if one ever does.
     private static readonly HashSet<string> _crashCompanions = new()
@@ -55,17 +60,18 @@ internal static class AppDiagnosticsBootstrap
             schema:    JsonlSchema.SelfDescribing,
             rotation:  new JsonlRotationPolicy(maxLines: 5000)));
 
-        // An Error-level setup failure lands here without its Verbose detail
-        // mirror; the cause string lives in setup.jsonl.
+        // Warning and above always pass the producer-side admission, so this
+        // file needs no setting. A milestone's cause travels in its own payload
+        // (deckle-logging): a Verbose mirror gated off never reaches here.
         dispatch.AddSink(new JsonlSink(
-            filePath:  Path.Combine(diagnosticsDirectory, "errors.jsonl"),
-            kindLabel: "error",
+            filePath:  Path.Combine(diagnosticsDirectory, JournalFileName),
+            kindLabel: "journal",
             predicate: static e => e.Kind == ObservationKind.Operational
-                && (e.Level == EventLevel.Error
-                || e.Level == EventLevel.Critical
+                && (e.Level <= EventLevel.Warning
+                || e.Journal
                 || _crashCompanions.Contains(e.EventName)),
             schema:    JsonlSchema.SelfDescribing,
-            rotation:  new JsonlRotationPolicy(maxLines: 2000)));
+            rotation:  new JsonlRotationPolicy(maxLines: 4000)));
     }
 
     public static void InitializeOperationalSinks(string diagnosticsDirectory)
