@@ -65,6 +65,7 @@ public partial class App
         // failure in the very first boot step to land in journal.jsonl.
         AppDiagnosticsBootstrap.InitializeLocalSinks(AppPaths.DiagnosticsDirectory);
         DeckleAppSource.Log.AppStarting();
+        EmitRunIdentity();
         context.Milestone("diagnostics-local");
 
         // Before any module SettingsService is touched: each singleton loads its
@@ -85,6 +86,7 @@ public partial class App
                 LoggingSettingsService.Instance.Current.LogWindowingActivity,
             _ => false,
         });
+        EmitLoggingPolicy();
         context.Milestone("settings-bootstrap");
 
         // Before any module is composed or registered: every gate below reads
@@ -150,6 +152,45 @@ public partial class App
         if (context.AutocorrectPresent)
             dispatcher.Catalog.Register(AutocorrectNotifications.All);
         context.Milestone("notifications");
+    }
+
+    private const string BuildConfiguration =
+#if DEBUG
+        "Debug";
+#else
+        "Release";
+#endif
+
+    // Right after AppStarting, while only the local sinks exist: the boot
+    // replay carries it to the later ones, and the journal has it even if the
+    // next boot step is the one that fails.
+    private static void EmitRunIdentity()
+    {
+        string[] cliArgs = Environment.GetCommandLineArgs();
+        DeckleAppSource.Log.RunIdentity(
+            version:       CurrentDisplayVersion(),
+            stage:         CurrentStage(),
+            build:         BuildConfiguration,
+            session:       DeckleEventSource.SessionId,
+            pid:           Environment.ProcessId,
+            os:            $"{Environment.OSVersion.VersionString} {System.Runtime.InteropServices.RuntimeInformation.OSArchitecture}",
+            supervised:    CrashSupervisor.Supervised,
+            follows_crash: CrashSupervisor.FollowsCrash is not null,
+            args:          string.Join(' ', cliArgs.Skip(1)));
+    }
+
+    // Once the settings are readable: the line says what the journals of this
+    // run can contain, and a flag flipped later is logged by the settings page.
+    private static void EmitLoggingPolicy()
+    {
+        var logging = LoggingSettingsService.Instance.Current;
+        DeckleAppSource.Log.LoggingPolicy(
+            ambient:         logging.LogAmbientCaptureActivity,
+            transcription:   logging.LogTranscriptionActivity,
+            autocorrect:     logging.LogAutocorrectActivity,
+            input:           logging.LogInputActivity,
+            windowing:       logging.LogWindowingActivity,
+            app_log_to_disk: logging.ApplicationLogToDisk);
     }
 }
 

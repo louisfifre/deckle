@@ -25,6 +25,11 @@ internal static class CrashSupervisor
     // this process was not started after a crash.
     internal static (uint ExitCode, int Relaunch)? FollowsCrash { get; private set; }
 
+    // True in a child a launcher watches. False for the launcher that had to
+    // run Deckle itself, a debugger session and the transactional modes: a
+    // crash there ends the app, and the run identity line says so up front.
+    internal static bool Supervised { get; private set; }
+
     // True when this process finished its work as a launcher and Main must
     // return. False when it is the Deckle that should run: a supervised child,
     // a transactional mode, a debugger session, or a launcher that could not
@@ -62,6 +67,7 @@ internal static class CrashSupervisor
         string? afterCrash = Environment.GetEnvironmentVariable(CrashRelaunchPolicy.AfterCrashVariable);
         Environment.SetEnvironmentVariable(CrashRelaunchPolicy.SupervisedVariable, null);
         Environment.SetEnvironmentVariable(CrashRelaunchPolicy.AfterCrashVariable, null);
+        Supervised = true;
 
         if (CrashRelaunchPolicy.TryParseAfterCrash(afterCrash, out uint code, out int relaunch))
             FollowsCrash = (code, relaunch);
