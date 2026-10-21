@@ -24,6 +24,8 @@ doctrine). This file is generated from the Conventional-Commit history by
 - **transcription:** Start every take clean of the previous decode
 - **transcription:** Warn when the warm-up falls back to silence
 - **transcription:** Move the hallucination and warm-up detail events to 193 and 194
+- **transcription:** Keep capturing for a short tail after the stop press
+- **audio:** Handle waveIn buffers in the order the driver filled them
 
 ## [0.58.5](https://github.com/louisfifre/deckle/compare/v0.57.0...v0.58.5) — 2026-10-20
 
