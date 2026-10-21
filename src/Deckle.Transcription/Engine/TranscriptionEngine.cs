@@ -225,7 +225,9 @@ public sealed partial class TranscriptionEngine : IDisposable
     //                           CaptureResult.DrainDuration.
     //   _stopToPipelineSw     — RequestToggle's Stop branch → the backend
     //                           handoff (monolithic) or the end of the
-    //                           consumer drain (streaming).
+    //                           consumer drain (streaming). It includes the
+    //                           capture tail kept after the press
+    //                           (CAPTURE_TAIL_AFTER_STOP_MS).
     private System.Diagnostics.Stopwatch? _hotkeySw;
     private System.TimeSpan _recordDrainDuration;
     private System.Diagnostics.Stopwatch? _stopToPipelineSw;

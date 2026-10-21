@@ -153,6 +153,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   ├── sweep-exposables.ps1  — Sweep exposable source values Text sweep of the exposables carried by the source tree. An exposable is a code…
 │   │   │   └── validate-resources.ps1  — Validate WinUI resources Read-only audit of the WinUI resource inventories. Reports missing resource key…
 │   │   ├── release/
+│   │   │   ├── build-anytype-backend.ps1  — Build the Anytype backend Rebuilds one anytype-cli release tag from source for Windows with the tantivy-g…
 │   │   │   ├── publish-app.ps1  — Prepare or publish the app release Builds the two artifacts a Deckle GitHub Release carries: the installer stub an…
 │   │   │   ├── publish-native-runtime.ps1  — Prepare or publish the native runtime Packages a versioned zip of the native DLLs that Deckle's first-run wizard down…
 │   │   │   └── README.md  — Release Prepare and publish the app and the native runtime.
@@ -498,6 +499,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   ├── PcmBuffer.cs
 │   │   │   ├── PcmConversion.cs
 │   │   │   ├── WaveDeviceInterop.cs
+│   │   │   ├── WaveInBufferRing.cs
 │   │   │   └── WaveInLoop.cs
 │   │   ├── Preprocessing/
 │   │   │   ├── Compressor.cs
@@ -1815,7 +1817,9 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── Pcm16BufferTests.cs
 │   │   ├── PcmBufferTests.cs
 │   │   ├── PcmConversionTests.cs
-│   │   └── TranscriptionPreprocessorTests.cs
+│   │   ├── TranscriptionPreprocessorTests.cs
+│   │   ├── WaveInBufferRingBugNotes.md
+│   │   └── WaveInBufferRingTests.cs
 │   ├── Deckle.Autocorrect.Tests/
 │   │   ├── AccentFoldingTests.cs
 │   │   ├── AccentIndexTests.cs
@@ -2150,6 +2154,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── Deckle.Transcription.Tests.csproj
 │   │   ├── DeckleLlmSourceTests.cs
 │   │   ├── DeckleWhispSourceTests.cs
+│   │   ├── DictationEndCaptureBugNotes.md
 │   │   ├── DictationRecoveryBugNotes.md
 │   │   ├── DictationRecoveryStoreTests.cs
 │   │   ├── EnergySegmenterTests.cs

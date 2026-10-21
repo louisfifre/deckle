@@ -15,6 +15,17 @@ public sealed partial class TranscriptionEngine
 {
     // ── StateMachine partial — RequestToggle + WorkerRun + state transitions ────────────────────────────────────────
 
+    // How long capture keeps running after the Stop press. The press lands
+    // while the user is still finishing the last word, and the waveIn loop
+    // would otherwise stop within one 50 ms buffer, cutting that word. The tail
+    // catches its end plus a little real trailing silence, which Whisper also
+    // ends on better than on a clipped word. The HUD has already switched to
+    // "transcribing" on the press, so the tail is hidden behind that transition.
+    // 400 ms: long enough to cover the end of a word and a breath, short enough
+    // that the added wait stays under the threshold where a stop feels laggy.
+    // Not a setting: nobody should tune it per take.
+    private const int CAPTURE_TAIL_AFTER_STOP_MS = 400;
+
     // ── Hotkey toggle entry point ───────────────────────────────────────────
     //
     // All hotkey Start/Stop traffic flows through here. The engine
@@ -51,13 +62,22 @@ public sealed partial class TranscriptionEngine
 
             // Stopped by the strategy at the backend handoff (monolithic) or
             // after the consumer drain (streaming). The CAS above makes this
-            // run at most once per recording.
+            // run at most once per recording. It starts at the press, so the
+            // capture tail below is part of the stop-to-pipeline time the log
+            // reports.
             _stopToPipelineSw = System.Diagnostics.Stopwatch.StartNew();
 
-            // Signal the capture loop to drain and return. Cancel() is safe
-            // even if Record() has already returned (the token is then
-            // unobserved).
-            try { _recordCts?.Cancel(); }
+            // Signal the capture loop to drain and return, after a short tail
+            // (see CAPTURE_TAIL_AFTER_STOP_MS). Only this user Stop press gets
+            // the tail: Dispose cancels _recordCts at once so shutdown is never
+            // delayed, and the file pipeline's token is cancelled by Dispose
+            // only. A press landing inside the tail finds the state already
+            // Stopping and is refused as IgnoredBusy above. A cap hit inside
+            // the tail is harmless: its Recording → Stopping CAS simply fails.
+            // CancelAfter is safe even if Record() has already returned or the
+            // worker has disposed the source (ObjectDisposedException caught;
+            // disposing the source also disposes its pending timer).
+            try { _recordCts?.CancelAfter(CAPTURE_TAIL_AFTER_STOP_MS); }
             catch (ObjectDisposedException) { /* worker raced our cancel */ }
             return ToggleResult.Stopped;
         }

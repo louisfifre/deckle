@@ -114,6 +114,13 @@ internal static class WaveInLoop
         Stopwatch? diagWaitWatch = null;
         Stopwatch? diagIterWatch = null;
 
+        // Buffers come back in the order they were queued, so they are handled
+        // in that order too, from the oldest outstanding one, never by index.
+        // See WaveInBufferRing for why index order swaps chunks after a wrap.
+        var ring = new WaveInBufferRing(nBuffers);
+        Func<int, bool> isDone = i =>
+            (Marshal.PtrToStructure<WAVEHDR>(hdrPtrs[i]).dwFlags & WHDR_DONE) != 0;
+
         while (!ct.IsCancellationRequested)
         {
             bool captureDetailEnabled = OperationalLogAdmission.IsScopedDetailEnabled(
@@ -139,68 +146,70 @@ internal static class WaveInLoop
             int diagIterGc1 = captureDetailEnabled ? System.GC.CollectionCount(1) : 0;
             int diagIterGc2 = captureDetailEnabled ? System.GC.CollectionCount(2) : 0;
 
+            // At most one lap per wake, as the old index scan was: a driver that
+            // refills a requeued buffer at once must not hold the loop here, away
+            // from the cap check and the wait.
             int bufferDoneCount = 0;
             bool gotData = false;
-            for (int i = 0; i < nBuffers; i++)
+            while (bufferDoneCount < nBuffers && ring.TakeNext(isDone, out int i))
             {
                 WAVEHDR hdr = Marshal.PtrToStructure<WAVEHDR>(hdrPtrs[i]);
-                if ((hdr.dwFlags & WHDR_DONE) != 0)
+                bufferDoneCount++;
+                if (hdr.dwBytesRecorded == 0)
                 {
-                    bufferDoneCount++;
-                    if (hdr.dwBytesRecorded == 0)
+                    emptyDoneSinceData = true;
+                    if (emptyBufferEpisode.ObserveFailure() == CaptureAnomalyTransition.Opened)
                     {
-                        emptyDoneSinceData = true;
-                        if (emptyBufferEpisode.ObserveFailure() == CaptureAnomalyTransition.Opened)
-                        {
-                            DeckleAudioSource.Log.EmptyBufferReceived();
-                            if (captureDetailEnabled)
-                                DeckleAudioSource.Log.EmptyBufferReceivedDetail(i);
-                        }
+                        DeckleAudioSource.Log.EmptyBufferReceived();
+                        if (captureDetailEnabled)
+                            DeckleAudioSource.Log.EmptyBufferReceivedDetail(i);
                     }
-                    else
-                    {
-                        if (emptyBufferEpisode.ObserveSuccess() == CaptureAnomalyTransition.Recovered)
-                            DeckleAudioSource.Log.EmptyBufferRecovered();
-
-                        ReadOnlySpan<byte> data = allBytes.Append(hdr.lpData, (int)hdr.dwBytesRecorded);
-                        double bufferDbfs = EmitSubWindows(data, rmsLog, audioLevelCallback, frameCallback);
-                        buffersReceived++;
-                        gotData = true;
-
-                        // 16 kHz mono PCM16 = 32 bytes per ms.
-                        int bufferMs = data.Length / 32;
-                        recordingMs += bufferMs;
-
-                        if (!userVoiceConfirmed)
-                        {
-                            if (bufferDbfs >= NormalVoiceDbfsThreshold)
-                            {
-                                healthyVoiceConsecutiveMs += bufferMs;
-                                if (healthyVoiceConsecutiveMs >= NormalVoiceSustainedMs)
-                                {
-                                    userVoiceConfirmed = true;
-                                }
-                            }
-                            else
-                            {
-                                healthyVoiceConsecutiveMs = 0;
-                            }
-                        }
-
-                        if (!lowAudioWarned && !userVoiceConfirmed && recordingMs >= WarnAfterSilenceMs)
-                        {
-                            lowAudioWarned = true;
-                            DeckleAudioSource.Log.LowAudioDetected();
-                            DeckleAudioSource.Log.LowAudioDetectedDetail(
-                                recordingMs, NormalVoiceSustainedMs, NormalVoiceDbfsThreshold);
-                            onLowAudioDetected?.Invoke();
-                        }
-                    }
-
-                    hdr.dwFlags &= ~WHDR_DONE;
-                    Marshal.StructureToPtr(hdr, hdrPtrs[i], fDeleteOld: false);
-                    NativeMethods.waveInAddBuffer(hWaveIn, hdrPtrs[i], hdrSize);
                 }
+                else
+                {
+                    if (emptyBufferEpisode.ObserveSuccess() == CaptureAnomalyTransition.Recovered)
+                        DeckleAudioSource.Log.EmptyBufferRecovered();
+
+                    ReadOnlySpan<byte> data = allBytes.Append(hdr.lpData, (int)hdr.dwBytesRecorded);
+                    double bufferDbfs = EmitSubWindows(data, rmsLog, audioLevelCallback, frameCallback);
+                    buffersReceived++;
+                    gotData = true;
+
+                    // 16 kHz mono PCM16 = 32 bytes per ms.
+                    int bufferMs = data.Length / 32;
+                    recordingMs += bufferMs;
+
+                    if (!userVoiceConfirmed)
+                    {
+                        if (bufferDbfs >= NormalVoiceDbfsThreshold)
+                        {
+                            healthyVoiceConsecutiveMs += bufferMs;
+                            if (healthyVoiceConsecutiveMs >= NormalVoiceSustainedMs)
+                            {
+                                userVoiceConfirmed = true;
+                            }
+                        }
+                        else
+                        {
+                            healthyVoiceConsecutiveMs = 0;
+                        }
+                    }
+
+                    if (!lowAudioWarned && !userVoiceConfirmed && recordingMs >= WarnAfterSilenceMs)
+                    {
+                        lowAudioWarned = true;
+                        DeckleAudioSource.Log.LowAudioDetected();
+                        DeckleAudioSource.Log.LowAudioDetectedDetail(
+                            recordingMs, NormalVoiceSustainedMs, NormalVoiceDbfsThreshold);
+                        onLowAudioDetected?.Invoke();
+                    }
+                }
+
+                // Requeued right after being taken, so the queue order stays the
+                // ring order the cursor assumes.
+                hdr.dwFlags &= ~WHDR_DONE;
+                Marshal.StructureToPtr(hdr, hdrPtrs[i], fDeleteOld: false);
+                NativeMethods.waveInAddBuffer(hWaveIn, hdrPtrs[i], hdrSize);
             }
 
             // Capture lag — one incident per recording when the ring buffer is
@@ -335,13 +344,16 @@ internal static class WaveInLoop
         }
         Thread.Sleep(100);
 
+        // Continue from the same cursor, in queue order: the partial buffer
+        // waveInStop returns can sit at a lower index than the last completed
+        // one, and it is the end of the take. Nothing is requeued here, so one
+        // lap at most bounds the walk.
         int tailBytes = 0;
-        int pendingBuffers = 0;
-        for (int i = 0; i < nBuffers; i++)
+        int taken = 0;
+        for (; taken < nBuffers && ring.TakeNext(isDone, out int i); taken++)
         {
             WAVEHDR hdr = Marshal.PtrToStructure<WAVEHDR>(hdrPtrs[i]);
-            if ((hdr.dwFlags & WHDR_DONE) == 0) pendingBuffers++;
-            if ((hdr.dwFlags & WHDR_DONE) != 0 && hdr.dwBytesRecorded > 0)
+            if (hdr.dwBytesRecorded > 0)
             {
                 tailBytes += (int)hdr.dwBytesRecorded;
                 ReadOnlySpan<byte> data = allBytes.Append(hdr.lpData, (int)hdr.dwBytesRecorded);
@@ -352,6 +364,17 @@ internal static class WaveInLoop
                 // intentionally discarded here.
                 _ = EmitSubWindows(data, rmsLog, audioLevelCallback, frameCallback);
             }
+        }
+
+        // The cursor stops at the first buffer the driver still holds, and
+        // FIFO means every later one is still held too: what the walk did not
+        // take is what the stop left pending.
+        int pendingBuffers = nBuffers - taken;
+
+        // Every header is unprepared, done or not: the caller frees the
+        // buffers right after.
+        for (int i = 0; i < nBuffers; i++)
+        {
             uint unprepareErr = NativeMethods.waveInUnprepareHeader(hWaveIn, hdrPtrs[i], hdrSize);
             if (unprepareErr != 0 && releaseStage is null)
             {
