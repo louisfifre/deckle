@@ -34,35 +34,23 @@ public sealed record UtteranceCountdownConfig
     // The gauge's motions. Following a capture sample, and reaching full at a
     // cut, take FollowSeconds, linearly: the next sample restarts the move
     // from the point reached, so the gauge glides that long behind the
-    // capture with a continuous velocity. Speech resuming is one move back
-    // to rest over RetreatSeconds, on its own curve; the defaults are the
-    // Windows "fast" duration and the "fast out, slow in" curve Windows
-    // documents for an object quickly returning to rest.
+    // capture with a continuous velocity.
+    //
+    // Going back to rest is one move, whatever sends the gauge there: speech
+    // resuming during the pause, or a cut whose completion hold has shown the
+    // full gauge. It takes RetreatSeconds on the Retreat ease, which starts
+    // fast and arrives slowly: the "fast out, slow in" curve Windows documents
+    // for an object returning to rest. Louis asked for one return, not two
+    // (2026-10-22); the cut once had its own, shorter and accelerating.
+    //
+    // The names stay Retreat*: the stored overrides are keyed by property
+    // name (ConfigOverrides), so values already tuned under them keep
+    // applying. A leftover Cut* key in an older file is ignored on load and
+    // dropped at the next save.
     public double FollowSeconds { get; init; } = 0.167;
     public double RetreatSeconds { get; init; } = 0.167;
     public float RetreatEaseP1X { get; init; } = 0f;
     public float RetreatEaseP1Y { get; init; } = 0f;
     public float RetreatEaseP2X { get; init; } = 0f;
     public float RetreatEaseP2Y { get; init; } = 1f;
-
-    // The cut's release: the move back to rest once the completion hold has
-    // shown the full gauge. The retreat's opposite, short and accelerating,
-    // the gesture of coming back to talking (Louis, 2026-10-15: "le geste
-    // arrière en accélérant, mais très très vite cette fois"). An ease-in
-    // where the retreat is an ease-out, over a little more than half the
-    // retreat's time.
-    public double CutSeconds { get; init; } = 0.1;
-    public float CutEaseP1X { get; init; } = 0.7f;
-    public float CutEaseP1Y { get; init; } = 0f;
-    public float CutEaseP2X { get; init; } = 1f;
-    public float CutEaseP2Y { get; init; } = 1f;
-}
-
-// Which of the two moves back to rest a SetProgress(0) plays: speech
-// resuming retreats, a cut's hold ending releases. The renderer tells them
-// apart from the capture's completed count, never from the value alone.
-public enum UtteranceCountdownRelease
-{
-    Retreat,
-    Cut,
 }
