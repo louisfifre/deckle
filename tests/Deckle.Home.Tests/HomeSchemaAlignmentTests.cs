@@ -1,4 +1,5 @@
 using System.Text.Json.Nodes;
+using Deckle.Anytype;
 using Deckle.Home;
 using Xunit;
 
@@ -64,5 +65,31 @@ public sealed class HomeSchemaAlignmentTests
         Assert.False(HomeSchema.IsAllowedProperty(HomeSchema.Types.Point, HomeSchema.Properties.PowerWatts));
         Assert.True(HomeSchema.IsAllowedProperty(HomeSchema.Types.Point, HomeSchema.Properties.Dcl));
         Assert.True(HomeSchema.IsAllowedProperty(HomeSchema.Types.Device, HomeSchema.Properties.ConnectedTo));
+    }
+
+    [Fact]
+    public void NonConformingSchemaErrorListsSixFailuresAndCountsTheRest()
+    {
+        // An empty space fails every compiled check, which is the worst case
+        // for the size of the message a model receives.
+        var empty = new SchemaSnapshot(
+            new Dictionary<string, SchemaTypeInfo>(),
+            new Dictionary<string, SchemaPropertyInfo>(),
+            new Dictionary<string, IReadOnlyDictionary<string, SchemaTagInfo>>());
+        int totalFailures = HomeSchema.RequiredProperties.Count
+            + HomeSchema.RequiredByType.Count
+            + HomeSchema.ClosedVocabularies.Sum(vocabulary => vocabulary.Value.Count);
+        Assert.True(totalFailures > 6);
+
+        HomeSchemaException error = Assert.Throws<HomeSchemaException>(() => HomeSchema.Validate(empty));
+
+        const string Prefix = "Le schéma Home n’est pas conforme : ";
+        Assert.StartsWith(Prefix, error.Message);
+        string marker = $" ; … et {totalFailures - 6} autres";
+        int markerIndex = error.Message.IndexOf(marker, StringComparison.Ordinal);
+        Assert.True(markerIndex > 0, error.Message);
+        string[] listed = error.Message[Prefix.Length..markerIndex].Split(" ; ");
+        Assert.Equal(6, listed.Length);
+        Assert.StartsWith(". Compare", error.Message[(markerIndex + marker.Length)..]);
     }
 }

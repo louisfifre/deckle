@@ -101,6 +101,12 @@ public class McpHttpHostTests
                         new JsonObject { ["type"] = "object", ["additionalProperties"] = false },
                         (_, _) => Task.FromException<string>(new McpException("tool exploded")),
                         ToolExecutionContract.ReadOnly),
+                    new ToolDescriptor(
+                        "flood",
+                        "Returns a text far above the adapter's size cap.",
+                        new JsonObject { ["type"] = "object", ["additionalProperties"] = false },
+                        (_, _) => Task.FromResult(new string('x', 20_000)),
+                        ToolExecutionContract.ReadOnly),
                 ],
                 new McpSurfaceDescriptor("structured", "Structured", "Test surface."))),
         "mcp-token-structured",
@@ -356,7 +362,7 @@ public class McpHttpHostTests
             harness, McpClients.Claude.Id, ModernProtocol);
         IList<McpClientTool> tools = await client.ListToolsAsync(cancellationToken: Ct);
 
-        Tool read = tools.Single(tool => tool.Name == "get").ProtocolTool;
+        Tool read = tools.Single(tool => tool.Name == "task_properties").ProtocolTool;
         Assert.True(read.Annotations!.ReadOnlyHint);
         Assert.False(read.Annotations.DestructiveHint);
         Assert.True(read.Annotations.IdempotentHint);
@@ -455,6 +461,24 @@ public class McpHttpHostTests
         Assert.True(result.IsError);
         TextContentBlock text = Assert.IsType<TextContentBlock>(Assert.Single(result.Content));
         Assert.Equal("tool exploded", text.Text);
+    }
+
+    [Fact]
+    public async Task OversizedToolTextIsCutAtTheAdapterWithATotalMarker()
+    {
+        await using var harness = Harness.Start(StructuredClient);
+        await using McpClient client = await ConnectAsync(
+            harness, StructuredClient.Id, ModernProtocol);
+
+        CallToolResult result = await client.CallToolAsync(
+            "flood", new Dictionary<string, object?>(), cancellationToken: Ct);
+
+        Assert.NotEqual(true, result.IsError);
+        TextContentBlock text = Assert.IsType<TextContentBlock>(Assert.Single(result.Content));
+        const string Marker = "\n[coupé : 8000 / 20000 caractères]";
+        Assert.Equal(8000 + Marker.Length, text.Text.Length);
+        Assert.EndsWith(Marker, text.Text, StringComparison.Ordinal);
+        Assert.Equal(new string('x', 8000), text.Text[..8000]);
     }
 
     [Fact]

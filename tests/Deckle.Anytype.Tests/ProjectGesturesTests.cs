@@ -169,7 +169,7 @@ public class ProjectGesturesTests
 
         string digest = await NewGestures(server).OverviewAsync(ProjectId, Ct);
 
-        Assert.StartsWith("[x] Refonte Anytype", digest);
+        Assert.StartsWith($"id : {ProjectId}\n[x] Refonte Anytype", digest);
     }
 
     [Fact]

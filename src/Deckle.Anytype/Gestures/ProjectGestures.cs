@@ -20,6 +20,7 @@ public sealed class ProjectGestures(AnytypeApiClient api, NameResolver resolver)
         JsonObject obj = await api.GetObjectAsync(projectId, ct);
 
         var sb = new StringBuilder();
+        sb.Append("id : ").Append(projectId).Append('\n');
         sb.Append(PropReader.Done(obj) ? "[x] " : "[ ] ");
         sb.Append(PropReader.Name(obj));
 
@@ -153,6 +154,7 @@ public sealed class ProjectGestures(AnytypeApiClient api, NameResolver resolver)
 
     static void AppendHeaderFacts(StringBuilder sb, JsonObject project)
     {
+        AppendFact(sb, "Description", PropReader.Text(project, DevSpace.Props.Description));
         AppendFact(sb, "État", DevSpace.Etat.NameFor(PropReader.Select(project, DevSpace.Props.Etat)));
         AppendFact(sb, "Phase", DevSpace.PhaseProjet.NameFor(PropReader.Select(project, DevSpace.Props.PhaseProjet)));
 
@@ -161,6 +163,7 @@ public sealed class ProjectGestures(AnytypeApiClient api, NameResolver resolver)
 
         AppendFact(sb, "Version", PropReader.Text(project, DevSpace.Props.Version));
         AppendFact(sb, "Définition de fini", PropReader.Text(project, DevSpace.Props.DefinitionDeFini));
+        AppendFact(sb, "Date cible", PropReader.Day(project, DevSpace.Props.DueDate));
     }
 
     // Returns every related task id for the report join, archived tasks
@@ -206,12 +209,13 @@ public sealed class ProjectGestures(AnytypeApiClient api, NameResolver resolver)
 
         if (reports.Count == 0) return;
 
+        // Each line carries the report id: report_journal reads the rest on demand.
         sb.Append("Derniers rapports :\n");
         foreach (JsonObject r in reports.Take(reportCount))
         {
-            string date = PropReader.Date(r, DevSpace.Props.DateDuJournal) ?? "?";
+            string date = PropReader.Day(r, DevSpace.Props.DateDuJournal) ?? "?";
             string body = fullBody ? PropReader.Markdown(r) : PropReader.FirstBodyLine(r);
-            sb.Append(date).Append(" — ").Append(body).Append('\n');
+            sb.Append(date).Append(" · ").Append(PropReader.Id(r)).Append(" — ").Append(body).Append('\n');
         }
     }
 
@@ -291,6 +295,13 @@ file static class PropReader
     }
 
     public static string? Date(JsonObject obj, string key) => Prop(obj, key)?["date"]?.GetValue<string>();
+
+    // The API returns a date with a midnight time suffix; the day is the fact.
+    public static string? Day(JsonObject obj, string key)
+    {
+        string? iso = Date(obj, key);
+        return iso is { Length: >= 10 } ? iso[..10] : iso;
+    }
 
     public static bool Checkbox(JsonObject obj, string key) => Prop(obj, key)?["checkbox"]?.GetValue<bool>() ?? false;
 

@@ -5,46 +5,16 @@ using Deckle.Diagnostics;
 
 namespace Deckle.Anytype;
 
-// Generic read/link/update/idea gestures spanning every type. Like the other
-// gesture families, each returns a terse French plain-string digest.
+// Search, link, update, archive, section edit and idea capture spanning every
+// type. Like the other gesture families, each returns a terse French
+// plain-string digest. Whole-object reads live on ReadGestures, one per need.
 public sealed class QueryGestures(AnytypeApiClient api, NameResolver resolver)
 {
     readonly LiveTagResolver _liveTags = new(api);
 
-    public async Task<string> GetAsync(string selector, string? typeKey = null, CancellationToken ct = default)
-    {
-        var started = DateTime.UtcNow;
-
-        IReadOnlyList<string>? types = typeKey is null ? null : [typeKey];
-        string id = await resolver.ResolveAsync(selector, types, ct);
-        JsonObject obj = await api.GetObjectAsync(id, ct);
-
-        string objType = QueryProp.TypeKey(obj) ?? "";
-        var sb = new StringBuilder();
-        sb.Append(QueryProp.Name(obj));
-        if (objType.Length > 0) sb.Append(" (").Append(objType).Append(')');
-
-        // Surface every mapped property the object carries a value for, in the
-        // type's digest order. A checkbox the API leaves out is an unticked one —
-        // absence is a value for a binary — so « Terminé » and « Archivé » always
-        // read, and an archived object never passes for a live one.
-        foreach (PropertyDef def in DevSpace.PropertiesFor(objType))
-        {
-            string? value = QueryProp.Render(obj, def.Key)
-                ?? (def.Format == "checkbox" ? "non" : null);
-            if (value is not null) sb.Append('\n').Append(def.Label).Append(" : ").Append(value);
-        }
-
-        // Anytype's own bin (the delete gesture), distinct from the space's
-        // « Archivé » checkbox: a binned object still answers a GET by id.
-        if (obj["archived"]?.GetValue<bool>() == true) sb.Append("\nCorbeille : oui");
-
-        string md = QueryProp.Markdown(obj);
-        if (md.Length > 0) sb.Append("\n\n").Append(md);
-
-        DeckleAnytypeSource.Log.GestureCompleted("get", Elapsed(started));
-        return sb.ToString().TrimEnd();
-    }
+    // A search preview carries this many meaningful lines: enough to tell two
+    // candidates apart, not enough to stand in for a typed read.
+    public const int PreviewLines = 3;
 
     public async Task<string> SearchAsync(
         string text,
@@ -485,8 +455,19 @@ file static class QueryProp
 
     public static string Markdown(JsonObject obj) => obj["markdown"]?.GetValue<string>() ?? "";
 
-    public static string Snippet(JsonObject obj) =>
-        FirstLines(obj["snippet"]?.GetValue<string>(), 5);
+    // The preview keeps lines that say something: blank lines, `---` dividers
+    // and the template's empty checklist slot are layout, not content.
+    public static string Snippet(JsonObject obj)
+    {
+        string? snippet = obj["snippet"]?.GetValue<string>();
+        if (string.IsNullOrEmpty(snippet)) return "";
+
+        var meaningful = MarkdownBody.Clean(snippet).Split('\n')
+            .Where(l => !(MarkdownBody.TryChecklistLine(l, out _, out string label) && label.Length == 0))
+            .ToList();
+        if (meaningful.Count <= QueryGestures.PreviewLines) return string.Join('\n', meaningful);
+        return string.Join('\n', meaningful.Take(QueryGestures.PreviewLines)) + " …";
+    }
 
     public static string? TypeKey(JsonObject obj) => obj["type"]?["key"]?.GetValue<string>();
 
@@ -549,27 +530,5 @@ file static class QueryProp
         if (string.IsNullOrEmpty(s)) return "";
         int nl = s.IndexOf('\n');
         return nl < 0 ? s : s[..nl];
-    }
-
-    static string FirstLines(string? value, int count)
-    {
-        if (string.IsNullOrEmpty(value)) return "";
-
-        int start = 0;
-        for (int line = 0; line < count; line++)
-        {
-            int newline = value.IndexOf('\n', start);
-            if (newline < 0) return value.TrimEnd();
-            if (line == count - 1)
-            {
-                string preview = value[..newline].TrimEnd();
-                return string.IsNullOrWhiteSpace(value[(newline + 1)..])
-                    ? preview
-                    : preview + " …";
-            }
-            start = newline + 1;
-        }
-
-        return value.TrimEnd();
     }
 }

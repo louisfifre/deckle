@@ -10,9 +10,19 @@ public class ToolCatalogTests
 {
     static readonly string[] ExpectedToolNames =
     {
-        "session_start", "log", "get", "project_overview", "create_task",
-        "complete", "archive", "link", "list_projects", "search", "subtask",
+        "session_start", "log",
+        "task_properties", "task_checklist", "task_notes", "project_overview",
+        "report_journal", "idea_text", "document_outline", "document_section",
+        "create_task", "complete", "archive", "link", "list_projects", "search", "subtask",
         "create_epic", "create_project", "create_idea", "create_document", "update", "replace_section",
+    };
+
+    // Every read is typed and named by what it returns; a whole-object read
+    // would bring the measured context cost back.
+    static readonly string[] TypedReadNames =
+    {
+        "task_properties", "task_checklist", "task_notes", "project_overview",
+        "report_journal", "idea_text", "document_outline", "document_section",
     };
 
     static IReadOnlyList<ToolDescriptor> BuildCatalog()
@@ -29,18 +39,44 @@ public class ToolCatalogTests
             new TaskGestures(client, resolver),
             new ProjectGestures(client, resolver),
             new QueryGestures(client, resolver),
+            new ReadGestures(client, resolver),
             new DocumentGestures(client));
     }
 
     [Fact]
-    public void BuildExposesExactlyTheSeventeenNamedTools()
+    public void BuildExposesExactlyTheNamedTools()
     {
         var names = BuildCatalog().Select(t => t.Name).ToArray();
 
-        Assert.Equal(17, names.Length);
+        Assert.Equal(ExpectedToolNames.Length, names.Length);
         Assert.Equal(
             ExpectedToolNames.OrderBy(n => n),
             names.OrderBy(n => n));
+    }
+
+    [Fact]
+    [Trait("Category", "regression")]
+    public void EveryReadIsTypedAndNoWholeObjectReadRemains()
+    {
+        IReadOnlyList<ToolDescriptor> tools = BuildCatalog();
+
+        Assert.DoesNotContain("get", tools.Select(t => t.Name));
+        // The only non-typed reads are the two finders: a list and a search.
+        Assert.Equal(
+            TypedReadNames.Concat(["list_projects", "search"]).OrderBy(n => n),
+            tools.Where(t => t.Execution.Change == ToolChangeKind.None)
+                .Select(t => t.Name).OrderBy(n => n));
+    }
+
+    [Fact]
+    public void CreateTaskFillsTheTemplateSectionsInsteadOfTakingARawBody()
+    {
+        ToolDescriptor createTask = BuildCatalog().Single(t => t.Name == "create_task");
+        var properties = Assert.IsType<JsonObject>(createTask.InputSchema["properties"]);
+
+        Assert.False(properties.ContainsKey("body"));
+        Assert.True(properties.ContainsKey("checklist"));
+        Assert.True(properties.ContainsKey("notes"));
     }
 
     [Fact]
@@ -121,7 +157,13 @@ public class ToolCatalogTests
         {
             ["session_start"] = AmbiguousOutcomePolicy.RequiresDeduplication,
             ["log"] = AmbiguousOutcomePolicy.RequiresDeduplication,
-            ["get"] = AmbiguousOutcomePolicy.SafeToRetry,
+            ["task_properties"] = AmbiguousOutcomePolicy.SafeToRetry,
+            ["task_checklist"] = AmbiguousOutcomePolicy.SafeToRetry,
+            ["task_notes"] = AmbiguousOutcomePolicy.SafeToRetry,
+            ["report_journal"] = AmbiguousOutcomePolicy.SafeToRetry,
+            ["idea_text"] = AmbiguousOutcomePolicy.SafeToRetry,
+            ["document_outline"] = AmbiguousOutcomePolicy.SafeToRetry,
+            ["document_section"] = AmbiguousOutcomePolicy.SafeToRetry,
             ["project_overview"] = AmbiguousOutcomePolicy.SafeToRetry,
             ["create_task"] = AmbiguousOutcomePolicy.RequiresDeduplication,
             ["complete"] = AmbiguousOutcomePolicy.SafeToRetry,
@@ -148,7 +190,13 @@ public class ToolCatalogTests
         {
             ["session_start"] = ToolChangeKind.Additive,
             ["log"] = ToolChangeKind.Additive,
-            ["get"] = ToolChangeKind.None,
+            ["task_properties"] = ToolChangeKind.None,
+            ["task_checklist"] = ToolChangeKind.None,
+            ["task_notes"] = ToolChangeKind.None,
+            ["report_journal"] = ToolChangeKind.None,
+            ["idea_text"] = ToolChangeKind.None,
+            ["document_outline"] = ToolChangeKind.None,
+            ["document_section"] = ToolChangeKind.None,
             ["project_overview"] = ToolChangeKind.None,
             ["create_task"] = ToolChangeKind.Additive,
             ["complete"] = ToolChangeKind.Overwriting,

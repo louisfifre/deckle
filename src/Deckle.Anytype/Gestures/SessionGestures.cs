@@ -78,7 +78,9 @@ public sealed class SessionGestures(AnytypeApiClient api, NameResolver resolver)
         await _api.UpdateObjectAsync(reportId, MarkdownPayload(updated), ct);
 
         DeckleAnytypeSource.Log.GestureCompleted("session_log", Elapsed(t0));
-        return $"Noté dans {ReportTitle(report)} : {line.Trim()}";
+        // The caller just wrote the line: echoing it back cost 570 000 chars
+        // over 45 days of transcripts and told it nothing.
+        return "Noté.";
     }
 
     // ── session_touch ────────────────────────────────────────────────────────
@@ -138,27 +140,36 @@ public sealed class SessionGestures(AnytypeApiClient api, NameResolver resolver)
         header.Add($"projet {project}");
         sb.Append(string.Join(" · ", header));
 
-        string checklist = Checklist(taskObj["markdown"]?.GetValue<string>());
-        if (checklist.Length > 0)
-        {
-            sb.Append('\n');
-            sb.Append(checklist);
-        }
+        foreach (MarkdownBody.ChecklistItem item in MarkdownBody.ChecklistItems(taskObj["markdown"]?.GetValue<string>() ?? ""))
+            sb.Append('\n').Append(item.Done ? "- [x] " : "- [ ] ").Append(item.Label);
 
         // Search hits carry no markdown, so each report is fetched for its body.
+        // Only the tail of each is shown: the digest places the session, it does
+        // not replay it (report_journal does, on demand, by the id given here).
         string taskId = taskObj["id"]?.GetValue<string>() ?? "";
-        foreach (JsonObject hit in (await ReportsForTaskAsync(taskId, ct)).Take(3))
+        foreach (JsonObject hit in (await ReportsForTaskAsync(taskId, ct)).Take(RecentReports))
         {
             string rid = hit["id"]?.GetValue<string>() ?? "";
             JsonObject report = rid.Length > 0 ? await _api.GetObjectAsync(rid, ct) : hit;
-            string date = ReadDate(report, DevSpace.Props.DateDuJournal) ?? "?";
-            string rbody = (report["markdown"]?.GetValue<string>() ?? "").Trim();
-            sb.Append($"\n— {date}");
-            if (rbody.Length > 0) sb.Append('\n').Append(rbody);
+            string date = JournalDate(report);
+            sb.Append($"\n— {date} · {rid}");
+
+            string[] lines = MarkdownBody.Clean(report["markdown"]?.GetValue<string>() ?? "").Split('\n')
+                .Where(l => l.Length > 0 && !l.StartsWith("# ", StringComparison.Ordinal))
+                .ToArray();
+            int skipped = Math.Max(0, lines.Length - ReportTailLines);
+            if (skipped > 0) sb.Append($"\n… {skipped} ligne(s) avant");
+            foreach (string line in lines.Skip(skipped)) sb.Append('\n').Append(line);
         }
 
         return sb.ToString();
     }
+
+    // Measured: three full reports copied into the digest put session_start at
+    // 12 958 chars at p90. Three tails of five lines keep the thread of the
+    // last sessions within a few hundred.
+    public const int RecentReports = 3;
+    public const int ReportTailLines = 5;
 
     async Task<List<JsonObject>> ReportsForTaskAsync(string taskId, CancellationToken ct)
     {
@@ -186,23 +197,6 @@ public sealed class SessionGestures(AnytypeApiClient api, NameResolver resolver)
             names.Add(DisplayName(obj));
         }
         return names;
-    }
-
-    // Keep only the markdown checklist lines from the task body — the rest is
-    // free notes, noise for the digest.
-    static string Checklist(string? markdown)
-    {
-        if (string.IsNullOrEmpty(markdown)) return "";
-        var lines = markdown.Split('\n')
-            .Select(l => l.TrimEnd())
-            .Where(l =>
-            {
-                string t = l.TrimStart();
-                return t.StartsWith("- [ ]", StringComparison.Ordinal)
-                    || t.StartsWith("- [x]", StringComparison.Ordinal)
-                    || t.StartsWith("- [X]", StringComparison.Ordinal);
-            });
-        return string.Join("\n", lines);
     }
 
     // ── property read helpers (raw API property-array shape) ──────────────────
@@ -292,12 +286,6 @@ public sealed class SessionGestures(AnytypeApiClient api, NameResolver resolver)
             return nl >= 0 ? snippet[..nl] : snippet;
         }
         return "(sans titre)";
-    }
-
-    static string ReportTitle(JsonObject report)
-    {
-        string name = DisplayName(report);
-        return name == "(sans titre)" ? "le rapport" : $"« {name} »";
     }
 
     static double Elapsed(long t0) =>

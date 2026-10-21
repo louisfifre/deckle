@@ -67,15 +67,33 @@ public class SessionGesturesTests
         return array;
     }
 
-    // The anchor task has no past reports, so the report search answers empty
-    // and the digest skips that block.
-    static void WireStartRoutes(FakeAnytypeServer server)
+    // By default the anchor task has no past reports, so the report search
+    // answers empty and the digest skips that block. A test that wants past
+    // reports passes the search hits (and registers each report's own GET).
+    static void WireStartRoutes(FakeAnytypeServer server, JsonArray? reportHits = null)
     {
         server.OnGetObject(TaskId, TaskObject(TaskId, "Tâche d'ancrage"));
         server.OnPostObject(new JsonObject { ["object"] = new JsonObject { ["id"] = NewReport } });
         server.OnGetObject(ProjectId, ProjectObject());
-        server.OnSearch(new JsonObject { ["data"] = new JsonArray() });
+        server.OnSearch(new JsonObject { ["data"] = reportHits ?? new JsonArray() });
     }
+
+    // A past report: its body, its journal date (the digest sorts on it) and the
+    // one task it is linked to.
+    static JsonObject DatedReport(string id, string date, string markdown, string taskId) => new()
+    {
+        ["object"] = new JsonObject
+        {
+            ["id"] = id,
+            ["markdown"] = markdown,
+            ["properties"] = new JsonArray(
+                new JsonObject { ["key"] = DevSpace.Props.DateDuJournal, ["date"] = date },
+                new JsonObject { ["key"] = DevSpace.Props.TachesLiees, ["objects"] = Refs([taskId]) }),
+        },
+    };
+
+    // A search hit carries the report without the "object" wrapper.
+    static JsonObject AsHit(JsonObject report) => (JsonObject)report["object"]!.DeepClone();
 
     [Fact]
     public async Task StartCreatesAReportCarryingTodayAndTheAnchorTask()
@@ -103,6 +121,65 @@ public class SessionGesturesTests
         // linked task(s).
         Assert.DoesNotContain(props,
             n => n is JsonObject p && p["key"]?.GetValue<string>() == DevSpace.Props.RelationProjet);
+    }
+
+    // The digest places the session, it does not replay it: only the most recent
+    // reports of the task appear, newest first, each as its date and id (the
+    // handle report_journal takes) followed by the tail of its journal. A report
+    // longer than the tail says how many lines it leaves out.
+    [Fact]
+    public async Task StartShowsOnlyTheRecentReportsOfTheTaskEachWithItsTail()
+    {
+        using var server = new FakeAnytypeServer();
+
+        // One report more than the digest shows; the oldest must drop out. Hits
+        // go in oldest first, so the newest-first order comes from the sort.
+        int reportCount = SessionGestures.RecentReports + 1;
+        string IdOf(int i) => $"bafyreiReport{i}" + new string('e', 40);
+        string DateOf(int i) => $"2026-06-{i + 1:00}";
+
+        var hits = new JsonArray();
+        for (int i = 0; i < reportCount; i++)
+        {
+            bool newest = i == reportCount - 1;
+            string[] entries = newest
+                ? Enumerable.Range(1, SessionGestures.ReportTailLines + 2).Select(n => $"- ligne {n}").ToArray()
+                : [$"- a{i}", $"- b{i}"];
+            JsonObject report = DatedReport(IdOf(i), DateOf(i), $"# Journal {DateOf(i)}\n" + string.Join("\n", entries), TaskId);
+            server.OnGetObject(IdOf(i), report);
+            hits.Add(AsHit(report));
+        }
+
+        // A later report of ANOTHER task is never part of this task's digest.
+        const string StrangerId = "bafyreiStrangerffffffffffffffffffffffffffffffffffffff";
+        hits.Add(AsHit(DatedReport(StrangerId, "2026-07-01", "# Journal 2026-07-01\n- étranger", OtherTaskId)));
+        WireStartRoutes(server, hits);
+
+        string digest = await NewGestures(server).StartAsync(TaskId, Ct);
+
+        var expected = new List<string>
+        {
+            $"report_id : {NewReport}",
+            "[ ] Tâche d'ancrage · projet Mon projet",
+        };
+        for (int i = reportCount - 1; i >= reportCount - SessionGestures.RecentReports; i--)
+        {
+            expected.Add($"— {DateOf(i)} · {IdOf(i)}");
+            if (i == reportCount - 1)
+            {
+                // ReportTailLines + 2 entries: the first two are left out.
+                expected.Add("… 2 ligne(s) avant");
+                expected.AddRange(Enumerable.Range(3, SessionGestures.ReportTailLines).Select(n => $"- ligne {n}"));
+            }
+            else
+            {
+                expected.AddRange([$"- a{i}", $"- b{i}"]);
+            }
+        }
+
+        Assert.Equal(string.Join("\n", expected), digest);
+        Assert.DoesNotContain(IdOf(0), digest);
+        Assert.DoesNotContain(StrangerId, digest);
     }
 
     [Fact]
@@ -138,6 +215,23 @@ public class SessionGesturesTests
 
         JsonObject patch = server.LastBodyFor("PATCH");
         Assert.Equal(existingBody + "\n- écrit les tests", patch["markdown"]!.GetValue<string>());
+    }
+
+    // The caller just wrote the line: echoing it back only costs context.
+    [Fact]
+    public async Task LogAcknowledgesWithoutEchoingTheLineItAppended()
+    {
+        using var server = new FakeAnytypeServer();
+        string existingBody = "# Journal " + Today();
+        server.OnGetObject(NewReport, ReportObject(NewReport, existingBody, TaskId));
+        server.OnPatchObject(NewReport, ReportObject(NewReport, existingBody, TaskId));
+
+        string response = await NewGestures(server).LogAsync("ligne unique à ne pas renvoyer", NewReport, Ct);
+
+        Assert.Equal("Noté.", response);
+        Assert.DoesNotContain("ligne unique", response);
+        // The line itself did reach the report.
+        Assert.Contains("- ligne unique à ne pas renvoyer", server.LastBodyFor("PATCH")["markdown"]!.GetValue<string>());
     }
 
     [Fact]

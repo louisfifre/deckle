@@ -89,9 +89,16 @@ public static class MarkdownBody
         return list;
     }
 
-    // ── internals ─────────────────────────────────────────────────────────────
+    // ── reads ─────────────────────────────────────────────────────────────────
+    //
+    // The typed reads project a body instead of returning it whole: a section
+    // under a known heading, the checklist items, the outline. They share the
+    // heading grammar above so a section a read finds is the one replace_section
+    // will edit.
 
-    static bool TryReadSection(string body, string heading, out string content)
+    // Content under the first heading whose text equals `heading` (normalized,
+    // case-insensitive), raw as Anytype returned it. False when absent.
+    public static bool TryReadSection(string body, string heading, out string content)
     {
         content = "";
         string target = NormalizeHeading(heading);
@@ -112,6 +119,96 @@ public static class MarkdownBody
         content = string.Join('\n', lines[(start + 1)..end]);
         return true;
     }
+
+    // The lines before the first heading (the whole body when it has none).
+    public static string Preamble(string body)
+    {
+        string[] lines = body.Split('\n');
+        for (int i = 0; i < lines.Length; i++)
+            if (TryHeading(lines[i], out _, out _))
+                return string.Join('\n', lines[..i]);
+        return body;
+    }
+
+    public readonly record struct Section(int Level, string Heading, int ContentChars);
+
+    // Every heading in document order with the size of the content under it, so
+    // a reader can pick a section before paying for its text.
+    public static IReadOnlyList<Section> Outline(string body)
+    {
+        var list = new List<Section>();
+        string[] lines = body.Split('\n');
+        for (int i = 0; i < lines.Length; i++)
+        {
+            if (!TryHeading(lines[i], out int level, out string text)) continue;
+            int end = SectionEnd(lines, i, level);
+            int chars = Clean(string.Join('\n', lines[(i + 1)..end])).Length;
+            list.Add(new Section(level, NormalizeHeading(text), chars));
+        }
+        return list;
+    }
+
+    public readonly record struct ChecklistItem(bool Done, string Label);
+
+    // GFM checklist items in document order, labels unescaped. An item with an
+    // empty label (the task template ships one) is skipped: it is a slot, not a
+    // subtask.
+    public static IReadOnlyList<ChecklistItem> ChecklistItems(string body)
+    {
+        var items = new List<ChecklistItem>();
+        foreach (string line in body.Split('\n'))
+        {
+            if (!TryChecklistLine(line, out int box, out string label) || label.Length == 0) continue;
+            items.Add(new ChecklistItem(line[box] != ' ', Unescape(label)));
+        }
+        return items;
+    }
+
+    // A GFM checklist line: optional indent, a list marker, `[ ]`/`[x]`/`[X]`,
+    // then the label. `boxIndex` is the position of the box character so a
+    // caller can rewrite it in place.
+    public static bool TryChecklistLine(string line, out int boxIndex, out string label)
+    {
+        boxIndex = -1;
+        label = "";
+
+        int p = 0;
+        while (p < line.Length && (line[p] == ' ' || line[p] == '\t')) p++;
+
+        if (p >= line.Length || (line[p] != '-' && line[p] != '*' && line[p] != '+'))
+            return false;
+        p++;
+
+        if (p >= line.Length || line[p] != ' ') return false;
+        p++;
+
+        if (p + 2 >= line.Length || line[p] != '[' || line[p + 2] != ']')
+            return false;
+
+        char box = line[p + 1];
+        if (box != ' ' && box != 'x' && box != 'X') return false;
+
+        boxIndex = p + 1;
+        label = line[(p + 3)..].Trim();
+        return true;
+    }
+
+    // Body text as a reader wants it: Anytype's escapes undone, trailing
+    // hard-break spaces dropped, `---` dividers and blank runs removed. The
+    // dividers are layout the template ships, not content.
+    public static string Clean(string text)
+    {
+        var kept = new List<string>();
+        foreach (string raw in text.Split('\n'))
+        {
+            string line = Unescape(raw).TrimEnd();
+            if (line.Length == 0 || line == "---") continue;
+            kept.Add(line);
+        }
+        return string.Join('\n', kept);
+    }
+
+    // ── internals ─────────────────────────────────────────────────────────────
 
     static int SectionEnd(string[] lines, int headingLine, int level)
     {
@@ -151,7 +248,7 @@ public static class MarkdownBody
         return string.Join('\n', kept);
     }
 
-    static string Unescape(string s)
+    public static string Unescape(string s)
     {
         if (s.IndexOf('\\') < 0) return s;
 

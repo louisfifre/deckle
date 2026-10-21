@@ -20,9 +20,12 @@ public sealed class TaskGestures(AnytypeApiClient api, NameResolver resolver)
 {
     /// <param name="type">type_de_tache tag KEY or display name (both accepted).</param>
     /// <param name="priority">0-5; null leaves it unset.</param>
+    /// <param name="checklist">Subtask labels, one checklist item each.</param>
+    /// <param name="notes">Text for the template's notes section.</param>
     public async Task<string> CreateAsync(
         string project, string name, string type,
-        int? priority = null, string? body = null, CancellationToken ct = default)
+        int? priority = null, IReadOnlyList<string>? checklist = null, string? notes = null,
+        CancellationToken ct = default)
     {
         var sw = Stopwatch.StartNew();
 
@@ -52,19 +55,40 @@ public sealed class TaskGestures(AnytypeApiClient api, NameResolver resolver)
             ["properties"] = props,
         };
 
-        // POST body content lives under "body", not "markdown" (PATCH side uses
-        // "markdown") — a wire asymmetry inherited from the Anytype API.
-        if (!string.IsNullOrEmpty(body))
-            payload["body"] = body;
-
         JsonObject created = await api.CreateObjectAsync(payload, ct);
+        string id = created["id"]?.GetValue<string>() ?? "";
+
+        // A `body` on the POST lands under the template's last section instead
+        // of filling its sections, so the body is written in a second step, in
+        // the template's shape, once the template has shaped the object. A
+        // task born empty keeps the template body untouched.
+        string body = TemplateBody(checklist, notes);
+        if (body.Length > 0 && id.Length > 0)
+            await api.UpdateObjectAsync(id, new JsonObject { ["markdown"] = body }, ct);
 
         sw.Stop();
         DeckleAnytypeSource.Log.GestureCompleted("task_create", sw.Elapsed.TotalMilliseconds);
 
-        string objName = NameOf(created, name);
-        string prioritySuffix = priority is int p ? $", priorité {p}" : "";
-        return $"Tâche créée : {objName} ({DisplayType(typeKey)}{prioritySuffix})";
+        var facts = new List<string> { $"Tâche créée : {NameOf(created, name)}", $"id : {id}", $"Type : {DisplayType(typeKey)}" };
+        if (priority is int p) facts.Add($"Priorité : {p}");
+        if (checklist is { Count: > 0 }) facts.Add($"Sous-tâches : {checklist.Count}");
+        return string.Join('\n', facts);
+    }
+
+    // The task template's two sections, filled. Headings are the template's,
+    // so task_checklist and task_notes read back what was written here.
+    static string TemplateBody(IReadOnlyList<string>? checklist, string? notes)
+    {
+        var items = (checklist ?? []).Select(l => l.Trim()).Where(l => l.Length > 0).ToList();
+        string text = (notes ?? "").Trim();
+        if (items.Count == 0 && text.Length == 0) return "";
+
+        var sb = new StringBuilder();
+        sb.Append("## ").Append(ReadGestures.ChecklistHeading);
+        foreach (string item in items) sb.Append("\n- [ ] ").Append(item);
+        sb.Append("\n\n## ").Append(ReadGestures.NotesHeading);
+        if (text.Length > 0) sb.Append('\n').Append(text);
+        return sb.ToString();
     }
 
     public async Task<string> SubtaskAsync(
@@ -105,20 +129,34 @@ public sealed class TaskGestures(AnytypeApiClient api, NameResolver resolver)
 
     // Finds the unique GFM checklist line whose label contains `label`
     // (case-insensitive) and rewrites its checkbox. Multiple matches are
-    // refused; no match appends an item in the requested state. The operation
+    // refused; no match adds an item in the requested state. The operation
     // is a set, never a toggle, so replay cannot change the requested state.
+    //
+    // A new item joins the checklist, not the end of the body: it fills the
+    // template's empty slot when one is left, else follows the last item, else
+    // follows the checklist heading, and only a body with none of those gets it
+    // appended. Appending at the end put subtasks under the notes section.
     static (string Markdown, ChecklistOutcome Outcome) ApplyChecklist(
         string markdown, string label, bool done)
     {
-        string[] lines = markdown.Split('\n');
+        var lines = markdown.Split('\n').ToList();
 
         var matches = new List<(int Line, int Box)>();
-        for (int i = 0; i < lines.Length; i++)
+        int lastItem = -1, emptySlot = -1, heading = -1;
+        for (int i = 0; i < lines.Count; i++)
         {
-            if (!TryParseChecklistLine(lines[i], out int boxIndex, out string itemLabel))
+            if (heading < 0 && IsChecklistHeading(lines[i])) heading = i;
+            if (!MarkdownBody.TryChecklistLine(lines[i], out int boxIndex, out string itemLabel))
                 continue;
 
-            if (itemLabel.Contains(label, StringComparison.OrdinalIgnoreCase))
+            if (itemLabel.Length == 0) { if (emptySlot < 0) emptySlot = i; continue; }
+            lastItem = i;
+            // Anytype escapes markdown in the body (`get\_task` for get_task);
+            // the caller types the label naturally, so both sides compare
+            // unescaped. Comparing raw never matched a label with an
+            // underscore and added a ticked duplicate instead.
+            if (MarkdownBody.Unescape(itemLabel).Contains(
+                    MarkdownBody.Unescape(label), StringComparison.OrdinalIgnoreCase))
                 matches.Add((i, boxIndex));
         }
 
@@ -137,12 +175,21 @@ public sealed class TaskGestures(AnytypeApiClient api, NameResolver resolver)
                     done ? ChecklistOutcome.Checked : ChecklistOutcome.Unchecked);
         }
 
-        string box = done ? "x" : " ";
-        string newItem = $"- [{box}] {label}";
-        string appended = markdown.Length == 0
-            ? newItem
-            : markdown.TrimEnd('\n') + "\n" + newItem;
-        return (appended, ChecklistOutcome.Added);
+        string newItem = $"- [{(done ? 'x' : ' ')}] {label}";
+        if (emptySlot >= 0) lines[emptySlot] = newItem;
+        else if (lastItem >= 0) lines.Insert(lastItem + 1, newItem);
+        else if (heading >= 0) lines.Insert(heading + 1, newItem);
+        else if (markdown.Length == 0) return (newItem, ChecklistOutcome.Added);
+        else lines.Add(newItem);
+        return (string.Join('\n', lines), ChecklistOutcome.Added);
+    }
+
+    static bool IsChecklistHeading(string line)
+    {
+        string t = line.TrimStart();
+        return t.StartsWith("#", StringComparison.Ordinal)
+            && MarkdownBody.Unescape(t.TrimStart('#').Trim())
+                .Equals(ReadGestures.ChecklistHeading, StringComparison.OrdinalIgnoreCase);
     }
 
     static string RequireChecklistLabel(string label)
@@ -150,32 +197,6 @@ public sealed class TaskGestures(AnytypeApiClient api, NameResolver resolver)
         if (string.IsNullOrWhiteSpace(label))
             throw new ArgumentException("Le libellé de sous-tâche ne peut pas être vide.", nameof(label));
         return label.Trim();
-    }
-
-    static bool TryParseChecklistLine(string line, out int boxIndex, out string label)
-    {
-        boxIndex = -1;
-        label = "";
-
-        int p = 0;
-        while (p < line.Length && (line[p] == ' ' || line[p] == '\t')) p++;
-
-        if (p >= line.Length || (line[p] != '-' && line[p] != '*' && line[p] != '+'))
-            return false;
-        p++;
-
-        if (p >= line.Length || line[p] != ' ') return false;
-        p++;
-
-        if (p + 2 >= line.Length || line[p] != '[' || line[p + 2] != ']')
-            return false;
-
-        char box = line[p + 1];
-        if (box != ' ' && box != 'x' && box != 'X') return false;
-
-        boxIndex = p + 1;
-        label = line[(p + 3)..].Trim();
-        return true;
     }
 
     // ── Wire-shape property builders ─────────────────────────────────────────
