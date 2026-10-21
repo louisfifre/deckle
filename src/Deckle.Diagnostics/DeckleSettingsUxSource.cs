@@ -24,8 +24,8 @@ public sealed class DeckleSettingsUxSource : DeckleEventSource
     public const int EvtSettingChanged         = 1;
     public const int EvtSectionReset           = 2;
     public const int EvtSectionResetDetail     = 3;
-    public const int EvtFolderPickerFailed     = 4;
-    public const int EvtFolderPickerFailedDetail = 5;
+    // 4 retired.
+    // 5 retired.
     public const int EvtFolderActionFailed     = 6;
 
     // ── Setting change ──────────────────────────────────────────────────
@@ -68,29 +68,6 @@ public sealed class DeckleSettingsUxSource : DeckleEventSource
 
     // ── Folder actions ──────────────────────────────────────────────────
     //
-    // Kept until the call sites outside this module move to FolderActionFailed.
-    // The pair says neither which folder action failed nor why in the
-    // milestone itself, and its detail carries the raw exception message,
-    // which can hold the person's profile path.
-    [Event(EvtFolderPickerFailed,
-           Level = EventLevel.Error,
-           Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "The folder picker failed")]
-    public void FolderPickerFailed()
-    {
-        if (IsEnabled()) WriteEvent(EvtFolderPickerFailed);
-    }
-
-    // Kept until the call sites outside this module move to FolderActionFailed.
-    [Event(EvtFolderPickerFailedDetail,
-           Level = EventLevel.Verbose,
-           Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "folder picker failed | error={0} | message={1}")]
-    public void FolderPickerFailedDetail(string ex_type, string message)
-    {
-        if (IsEnabled()) WriteEvent(EvtFolderPickerFailedDetail, ex_type, message);
-    }
-
     // A folder action the person started from a settings page failed; the
     // page stays usable, the action did not happen. Reported by the shared
     // folder location cards and by any page that opens or moves a folder.

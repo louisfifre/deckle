@@ -249,8 +249,7 @@ public sealed partial class GeneralPage : Page
         }
         catch (Exception ex)
         {
-            DeckleSettingsUxSource.Log.FolderPickerFailed();
-            DeckleSettingsUxSource.Log.FolderPickerFailedDetail(ex.GetType().Name, ex.Message);
+            DeckleSettingsUxSource.Log.FolderActionFailed("relocate", ex.GetType().Name, ex.HResult, ex.Message);
         }
         finally
         {

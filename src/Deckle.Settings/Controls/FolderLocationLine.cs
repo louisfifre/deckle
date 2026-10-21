@@ -177,8 +177,7 @@ public sealed class FolderLocationLine : IPathControl
         }
         catch (Exception ex)
         {
-            DeckleSettingsUxSource.Log.FolderPickerFailed();
-            DeckleSettingsUxSource.Log.FolderPickerFailedDetail(ex.GetType().Name, ex.Message);
+            DeckleSettingsUxSource.Log.FolderActionFailed("pick", ex.GetType().Name, ex.HResult, ex.Message);
         }
     }
 
@@ -219,8 +218,7 @@ public sealed class FolderLocationLine : IPathControl
         }
         catch (Exception ex)
         {
-            DeckleSettingsUxSource.Log.FolderPickerFailed();
-            DeckleSettingsUxSource.Log.FolderPickerFailedDetail(ex.GetType().Name, ex.Message);
+            DeckleSettingsUxSource.Log.FolderActionFailed("open", ex.GetType().Name, ex.HResult, ex.Message);
         }
     }
 }
