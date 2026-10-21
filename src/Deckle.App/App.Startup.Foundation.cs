@@ -46,6 +46,31 @@ public partial class App
                 _milestones!.Add($"{name} +{_stopwatch!.ElapsedMilliseconds}ms");
         }
 
+        // Every piece of the resident app composes through here, so the
+        // journal names what started, what was skipped and why, and what
+        // failed. The exception goes on as before: App.xaml.cs's net handles
+        // it, and this line is what says which module it came from.
+        internal void Compose(string module, Action compose)
+        {
+            try
+            {
+                compose();
+            }
+            catch (Exception ex)
+            {
+                DeckleAppSource.Log.ModuleFailed(module, ex.GetType().Name, ex.Message);
+                throw;
+            }
+            DeckleAppSource.Log.ModuleStarted(module);
+            Milestone(module);
+        }
+
+        internal void Skip(string module, string reason)
+        {
+            DeckleAppSource.Log.ModuleSkipped(module, reason);
+            Milestone($"{module}_skipped");
+        }
+
         internal void Complete()
         {
             if (TraceEnabled)

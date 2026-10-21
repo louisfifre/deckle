@@ -425,6 +425,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   ├── DeckleAppSource.DictationRecovery.cs
 │   │   │   ├── DeckleAppSource.Hotkeys.cs
 │   │   │   ├── DeckleAppSource.Lifecycle.cs
+│   │   │   ├── DeckleAppSource.Modules.cs
 │   │   │   ├── DeckleAppSource.Shutdown.cs
 │   │   │   ├── DeckleAppSource.Surfaces.cs
 │   │   │   ├── LogEntry.cs

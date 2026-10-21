@@ -77,5 +77,10 @@ public sealed partial class DeckleAppSource : DeckleEventSource
     public const int EvtCrashRelaunchedDetail          = 62;
     public const int EvtRunIdentity                    = 63;
     public const int EvtLoggingPolicy                  = 64;
+    public const int EvtModuleStarted                  = 65;
+    public const int EvtModuleSkipped                  = 66;
+    public const int EvtModuleFailed                   = 67;
+    public const int EvtShutdownStepFailed             = 68;
+    public const int EvtShutdownStepsDetail            = 69;
 
 }
