@@ -150,6 +150,21 @@ public class ReadGesturesTests
         Assert.Equal(2, server.Requests.Count(r => r.Method == "GET"));
     }
 
+    // The key is written out because it is the promise: the server serves
+    // Priorité under "priorite", and reading it under the space's opaque
+    // relation id dropped every priority from the digests.
+    [Fact]
+    [Trait("Category", "regression")]
+    public async Task TaskPropertiesReadsThePriorityUnderTheKeyTheServerServes()
+    {
+        using var server = new FakeAnytypeServer();
+        server.OnGetObject(TaskId, TaskOf("", SelectProp("priorite", DevSpace.Priority.KeyFor(4))));
+
+        string digest = await NewGestures(server).TaskPropertiesAsync(TaskId, Ct);
+
+        Assert.Contains("Priorité : 4", digest.Split('\n'));
+    }
+
     // Silence reads as « non »: an unticked checkbox adds no line, and a task
     // with nothing set is just its identity and its open box.
     [Fact]

@@ -1821,6 +1821,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── BackendSupervisorTests.cs
 │   │   ├── BackendTestFakes.cs
 │   │   ├── Deckle.Anytype.Tests.csproj
+│   │   ├── DevSpaceBugNotes.md
 │   │   ├── DevSpaceTests.cs
 │   │   ├── DialogueGesturesTests.cs
 │   │   ├── DocumentGesturesTests.cs
