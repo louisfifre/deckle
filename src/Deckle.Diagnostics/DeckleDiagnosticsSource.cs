@@ -30,7 +30,8 @@ public sealed class DeckleDiagnosticsSource : DeckleEventSource
 
     // One incident per sink: opened by the first failure, closed by the next
     // successful write (SinkRecovered). The attempts in between are counted,
-    // never emitted.
+    // never emitted. SinkRecovered is Journal-tagged: the journal keeps the
+    // failure, so it keeps its end too.
     [Event(EvtSinkFaulted,
            Level = EventLevel.Error,
            Keywords = (EventKeywords)Keywords.Lifecycle,
@@ -43,6 +44,7 @@ public sealed class DeckleDiagnosticsSource : DeckleEventSource
     [Event(EvtSinkRecovered,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Lifecycle,
+           Tags = ObservationTags.Journal,
            Message = "Log sink {0} writes again after {1} failed writes")]
     public void SinkRecovered(string sink, int failed_writes)
     {
