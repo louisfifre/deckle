@@ -97,7 +97,7 @@ public sealed class SessionGestures(
 
         // Two paragraphs: when the entry happened (the part that matters in a
         // journal read days later), then what was said.
-        string stamp = _time.GetLocalNow().ToString("yyyy-MM-dd HH:mm", CultureInfo.InvariantCulture);
+        string stamp = _time.GetLocalNow().ToString(MarkdownBody.JournalStampFormat, CultureInfo.InvariantCulture);
         string entry = $"{stamp}\n\n{line.Trim()}";
         string markdown = hasBody
             ? entry
@@ -185,22 +185,20 @@ public sealed class SessionGestures(
             string date = JournalDate(report);
             sb.Append($"\n— {date} · {rid}");
 
-            string[] lines = MarkdownBody.Clean(report["markdown"]?.GetValue<string>() ?? "").Split('\n')
-                .Where(l => l.Length > 0 && !l.StartsWith("# ", StringComparison.Ordinal))
-                .ToArray();
-            int skipped = Math.Max(0, lines.Length - ReportTailLines);
-            if (skipped > 0) sb.Append($"\n… {skipped} ligne(s) avant");
-            foreach (string line in lines.Skip(skipped)) sb.Append('\n').Append(line);
+            IReadOnlyList<string> entries = MarkdownBody.JournalEntries(report["markdown"]?.GetValue<string>() ?? "");
+            int skipped = Math.Max(0, entries.Count - ReportTailEntries);
+            if (skipped > 0) sb.Append($"\n… {skipped} entrée(s) avant");
+            foreach (string entry in entries.Skip(skipped)) sb.Append('\n').Append(entry);
         }
 
         return sb.ToString();
     }
 
     // Measured: three full reports copied into the digest put session_start at
-    // 12 958 chars at p90. Three tails of five lines keep the thread of the
-    // last sessions within a few hundred.
+    // 12 958 chars at p90. Three tails of five entries (one line each when this
+    // was measured) keep the thread of the last sessions within a few hundred.
     public const int RecentReports = 3;
-    public const int ReportTailLines = 5;
+    public const int ReportTailEntries = 5;
 
     async Task<List<JsonObject>> ReportsForTaskAsync(string taskId, CancellationToken ct)
     {

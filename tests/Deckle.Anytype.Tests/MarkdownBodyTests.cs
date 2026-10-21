@@ -286,6 +286,32 @@ public class MarkdownBodyTests
         Assert.Equal("", MarkdownBody.Clean("\n---\n   \n"));
     }
 
+    // ── JournalEntries: the unit a report tail counts ─────────────────────────
+
+    [Fact]
+    public void JournalEntriesGroupAStampWithTheTextAfterIt()
+    {
+        string body =
+            "# Journal 2026-07-21\n- ancienne\n" +
+            "2026-07-21 10:00   \n\npremière   \n\n---\n" +
+            "2026-07-21 11:30\n\nseconde\n\nsuite\n" +
+            "2026-07-21 12:00";
+
+        Assert.Equal(
+            ["- ancienne", "2026-07-21 10:00 · première", "2026-07-21 11:30 · seconde\nsuite", "2026-07-21 12:00"],
+            MarkdownBody.JournalEntries(body));
+    }
+
+    // Only a line that is exactly a stamp opens an entry: a text that starts
+    // with a date stays text.
+    [Fact]
+    public void JournalEntriesTakeOnlyAWholeStampLineAsAStamp()
+    {
+        Assert.Equal(
+            ["- 2026-07-21 10:00 fait", "2026-07-21 10:00 fait"],
+            MarkdownBody.JournalEntries("- 2026-07-21 10:00 fait\n2026-07-21 10:00 fait"));
+    }
+
     [Fact]
     public void UnescapeLeavesABackslashThatEscapesNothingAlone()
     {

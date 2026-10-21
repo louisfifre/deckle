@@ -91,7 +91,7 @@ public sealed class ReadGestures(AnytypeApiClient api, NameResolver resolver)
     // ── rapport ──────────────────────────────────────────────────────────────
 
     // A report is read to look back, so its tail is what matters: the last
-    // `last` journal lines, the count of older ones stated.
+    // `last` journal entries, the count of older ones stated.
     public async Task<string> ReportJournalAsync(string report, int last = 20, CancellationToken ct = default)
     {
         var started = DateTime.UtcNow;
@@ -103,13 +103,11 @@ public sealed class ReadGestures(AnytypeApiClient api, NameResolver resolver)
         AppendFact(sb, "Date du journal", ReadProp.Day(obj, DevSpace.Props.DateDuJournal));
         AppendFact(sb, "Tâches liées", await NamesAsync(ReadProp.ObjectRefs(obj, DevSpace.Props.TachesLiees), ct));
 
-        string[] lines = MarkdownBody.Clean(ReadProp.Markdown(obj)).Split('\n')
-            .Where(l => l.Length > 0 && !l.StartsWith("# ", StringComparison.Ordinal))
-            .ToArray();
-        int skipped = Math.Max(0, lines.Length - last);
-        if (skipped > 0) sb.Append($"\n… {skipped} ligne(s) avant");
-        foreach (string line in lines.Skip(skipped)) sb.Append('\n').Append(line);
-        if (lines.Length == 0) sb.Append("\nJournal vide.");
+        IReadOnlyList<string> entries = MarkdownBody.JournalEntries(ReadProp.Markdown(obj));
+        int skipped = Math.Max(0, entries.Count - last);
+        if (skipped > 0) sb.Append($"\n… {skipped} entrée(s) avant");
+        foreach (string entry in entries.Skip(skipped)) sb.Append('\n').Append(entry);
+        if (entries.Count == 0) sb.Append("\nJournal vide.");
 
         DeckleAnytypeSource.Log.GestureCompleted("report_journal", Elapsed(started));
         return sb.ToString();

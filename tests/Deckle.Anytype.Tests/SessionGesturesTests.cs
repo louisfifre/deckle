@@ -178,7 +178,7 @@ public class SessionGesturesTests
         {
             bool newest = i == reportCount - 1;
             string[] entries = newest
-                ? Enumerable.Range(1, SessionGestures.ReportTailLines + 2).Select(n => $"- ligne {n}").ToArray()
+                ? Enumerable.Range(1, SessionGestures.ReportTailEntries + 2).Select(n => $"- ligne {n}").ToArray()
                 : [$"- a{i}", $"- b{i}"];
             JsonObject report = DatedReport(IdOf(i), DateOf(i), $"# Journal {DateOf(i)}\n" + string.Join("\n", entries), TaskId);
             server.OnGetObject(IdOf(i), report);
@@ -202,9 +202,9 @@ public class SessionGesturesTests
             expected.Add($"— {DateOf(i)} · {IdOf(i)}");
             if (i == reportCount - 1)
             {
-                // ReportTailLines + 2 entries: the first two are left out.
-                expected.Add("… 2 ligne(s) avant");
-                expected.AddRange(Enumerable.Range(3, SessionGestures.ReportTailLines).Select(n => $"- ligne {n}"));
+                // ReportTailEntries + 2 entries: the first two are left out.
+                expected.Add("… 2 entrée(s) avant");
+                expected.AddRange(Enumerable.Range(3, SessionGestures.ReportTailEntries).Select(n => $"- ligne {n}"));
             }
             else
             {

@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Text;
 
 namespace Deckle.Anytype;
@@ -208,7 +209,50 @@ public static class MarkdownBody
         return string.Join('\n', kept);
     }
 
+    // session_log writes each journal entry as two paragraphs: this stamp, then
+    // the text. JournalEntries finds the entries by it.
+    public const string JournalStampFormat = "yyyy-MM-dd HH:mm";
+
+    // The journal entries of a report body, oldest first, so a reader keeps the
+    // last N entries rather than the last N lines. An entry is a stamp and the
+    // lines after it up to the next stamp, read back as "stamp · first line"
+    // with any further lines below. Before the first stamp, each line is an
+    // entry of its own: reports written before the stamped form carry one
+    // bullet per entry. The « # Journal » title is not an entry.
+    public static IReadOnlyList<string> JournalEntries(string body)
+    {
+        var entries = new List<string>();
+        StringBuilder? stamped = null;
+        bool hasText = false;
+        foreach (string line in Clean(body).Split('\n'))
+        {
+            if (line.Length == 0 || line.StartsWith("# ", StringComparison.Ordinal)) continue;
+            if (IsJournalStamp(line))
+            {
+                if (stamped is not null) entries.Add(stamped.ToString());
+                stamped = new StringBuilder(line);
+                hasText = false;
+            }
+            else if (stamped is null)
+            {
+                entries.Add(line);
+            }
+            else
+            {
+                stamped.Append(hasText ? "\n" : " · ").Append(line);
+                hasText = true;
+            }
+        }
+        if (stamped is not null) entries.Add(stamped.ToString());
+        return entries;
+    }
+
     // ── internals ─────────────────────────────────────────────────────────────
+
+    static bool IsJournalStamp(string line) =>
+        line.Length == JournalStampFormat.Length
+        && DateTime.TryParseExact(
+            line, JournalStampFormat, CultureInfo.InvariantCulture, DateTimeStyles.None, out _);
 
     static int SectionEnd(string[] lines, int headingLine, int level)
     {
