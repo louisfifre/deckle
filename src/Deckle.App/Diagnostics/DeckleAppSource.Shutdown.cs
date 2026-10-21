@@ -8,6 +8,7 @@ public sealed partial class DeckleAppSource
     [Event(EvtShutdownRequested,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Lifecycle,
+           Tags = ObservationTags.Journal,
            Message = "Shutdown requested")]
     public void ShutdownRequested()
     {
@@ -35,6 +36,7 @@ public sealed partial class DeckleAppSource
     [Event(EvtRestartRequested,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Lifecycle,
+           Tags = ObservationTags.Journal,
            Message = "Restart requested")]
     public void RestartRequested()
     {
@@ -44,6 +46,7 @@ public sealed partial class DeckleAppSource
     [Event(EvtRestartFromTrayRequested,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Lifecycle,
+           Tags = ObservationTags.Journal,
            Message = "Restart from tray requested")]
     public void RestartFromTrayRequested()
     {
@@ -62,6 +65,7 @@ public sealed partial class DeckleAppSource
     [Event(EvtPostBuildRestartRequested,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Lifecycle,
+           Tags = ObservationTags.Journal,
            Message = "Post-build self-restart requested")]
     public void PostBuildRestartRequested()
     {

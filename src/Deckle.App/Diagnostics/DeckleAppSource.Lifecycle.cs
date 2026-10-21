@@ -3,11 +3,15 @@ using Deckle.Diagnostics;
 
 namespace Deckle.App;
 
+// The run's story, tagged Journal so the always-on journal file keeps it
+// whatever the verbosity controls say: a reader on another machine opens that
+// file first and must see a run start, be identified and end.
 public sealed partial class DeckleAppSource
 {
     [Event(EvtAppStarting,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Lifecycle,
+           Tags = ObservationTags.Journal,
            Message = "Deckle starting")]
     public void AppStarting()
     {
@@ -17,6 +21,7 @@ public sealed partial class DeckleAppSource
     [Event(EvtAppReady,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Lifecycle,
+           Tags = ObservationTags.Journal,
            Message = "Deckle ready")]
     public void AppReady()
     {
@@ -26,6 +31,7 @@ public sealed partial class DeckleAppSource
     [Event(EvtShutdownCompleted,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Lifecycle,
+           Tags = ObservationTags.Journal,
            Message = "Shutdown completed")]
     public void ShutdownCompleted()
     {

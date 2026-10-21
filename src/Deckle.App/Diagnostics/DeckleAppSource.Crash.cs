@@ -71,6 +71,7 @@ public sealed partial class DeckleAppSource
     [Event(EvtProcessExit,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Lifecycle,
+           Tags = ObservationTags.Journal,
            Message = "ProcessExit triggered")]
     public void ProcessExit()
     {

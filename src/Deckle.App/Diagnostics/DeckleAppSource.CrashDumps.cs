@@ -8,6 +8,7 @@ public sealed partial class DeckleAppSource
     [Event(EvtCrashDumpCaptureArmed,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Lifecycle,
+           Tags = ObservationTags.Journal,
            Message = "Crash dump capture is armed")]
     public void CrashDumpCaptureArmed()
     {
@@ -44,6 +45,7 @@ public sealed partial class DeckleAppSource
     [Event(EvtCrashDumpFound,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Lifecycle,
+           Tags = ObservationTags.Journal,
            Message = "A crash dump from an earlier run is waiting")]
     public void CrashDumpFound()
     {
