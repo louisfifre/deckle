@@ -489,6 +489,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   ├── Pcm16Buffer.cs
 │   │   │   ├── PcmBuffer.cs
 │   │   │   ├── PcmConversion.cs
+│   │   │   ├── WaveInBufferRing.cs
 │   │   │   └── WaveInLoop.cs
 │   │   ├── Preprocessing/
 │   │   │   ├── Compressor.cs
@@ -1798,7 +1799,9 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── Pcm16BufferTests.cs
 │   │   ├── PcmBufferTests.cs
 │   │   ├── PcmConversionTests.cs
-│   │   └── TranscriptionPreprocessorTests.cs
+│   │   ├── TranscriptionPreprocessorTests.cs
+│   │   ├── WaveInBufferRingBugNotes.md
+│   │   └── WaveInBufferRingTests.cs
 │   ├── Deckle.Autocorrect.Tests/
 │   │   ├── AccentFoldingTests.cs
 │   │   ├── AccentIndexTests.cs
@@ -2129,6 +2132,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── Deckle.Transcription.Tests.csproj
 │   │   ├── DeckleLlmSourceTests.cs
 │   │   ├── DeckleWhispSourceTests.cs
+│   │   ├── DictationEndCaptureBugNotes.md
 │   │   ├── DictationRecoveryBugNotes.md
 │   │   ├── DictationRecoveryStoreTests.cs
 │   │   ├── EnergySegmenterTests.cs

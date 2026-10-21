@@ -117,6 +117,47 @@ public sealed class LiveTranscriptionPipelineTests
         Assert.True(contexts[2].ContinuesPreviousCall);   // second utterance
     }
 
+    // 2026-10-21: the Stop press cancelled the capture token at once, so the
+    // last word the user was still finishing as they pressed was never recorded.
+    [Fact]
+    [Trait("Category", "regression")]
+    public async Task CaptureKeepsRunningForAShortTailAfterTheStopPress()
+    {
+        CancellationToken testCancellation = TestContext.Current.CancellationToken;
+        var capture = new ScriptedMicrophoneCapture(utteranceCount: 2);
+        var backend = new SequencedBackend(["bonjour", "Deckle"]);
+        using var engine = new TranscriptionEngine(
+            new StreamingHost(),
+            backend,
+            capture,
+            new RecordingClipboardWriter());
+        var finished = new TaskCompletionSource<TranscriptionOutcome>(
+            TaskCreationOptions.RunContinuationsAsynchronously);
+        engine.TranscriptionFinished += outcome => finished.TrySetResult(outcome);
+
+        Assert.Equal(ToggleResult.Started, engine.RequestToggle(shouldPaste: false));
+        await backend.AllCallsCompleted.Task.WaitAsync(
+            TimeSpan.FromSeconds(5), testCancellation);
+
+        long pressTimestamp = System.Diagnostics.Stopwatch.GetTimestamp();
+        Assert.Equal(ToggleResult.Stopped, engine.RequestToggle(shouldPaste: false));
+
+        // The press returned, the HUD would already read "transcribing", and
+        // the microphone is still listening.
+        Assert.False(capture.RecordToken.IsCancellationRequested);
+
+        // A second press inside the tail finds the engine already stopping.
+        Assert.Equal(ToggleResult.IgnoredBusy, engine.RequestToggle(shouldPaste: false));
+
+        await finished.Task.WaitAsync(TimeSpan.FromSeconds(5), testCancellation);
+
+        // The bounds are loose on purpose: the tail is 400 ms, and a timer may
+        // fire a little early or a loaded machine a lot late.
+        TimeSpan tail = System.Diagnostics.Stopwatch.GetElapsedTime(
+            pressTimestamp, capture.StopObservedTimestamp);
+        Assert.InRange(tail, TimeSpan.FromMilliseconds(300), TimeSpan.FromSeconds(4));
+    }
+
     [Fact]
     public async Task EachTranscribedUtteranceIsPublishedInOrderWithItsText()
     {
@@ -485,6 +526,11 @@ public sealed class LiveTranscriptionPipelineTests
         public event Action? CaptureStarted;
         public event Action? LowAudioDetected { add { } remove { } }
 
+        // The token the engine handed to Record, and the moment the fake saw it
+        // fire (Stopwatch timestamp), so a test can tell when capture stopped.
+        public CancellationToken RecordToken { get; private set; }
+        public long StopObservedTimestamp { get; private set; }
+
         public ProbeResult Probe(int deviceId) =>
             new(true, MicErrorKind.None, 0);
 
@@ -492,6 +538,7 @@ public sealed class LiveTranscriptionPipelineTests
             IAudioRecordingHost host,
             CancellationToken cancellationToken)
         {
+            RecordToken = cancellationToken;
             CaptureStarted?.Invoke();
             var captured = new List<float>();
             for (int utterance = 0; utterance < _utteranceCount; utterance++)
@@ -511,6 +558,7 @@ public sealed class LiveTranscriptionPipelineTests
 
             if (!cancellationToken.WaitHandle.WaitOne(TimeSpan.FromSeconds(5)))
                 throw new TimeoutException("The scripted live capture was not stopped.");
+            StopObservedTimestamp = System.Diagnostics.Stopwatch.GetTimestamp();
 
             return new CaptureResult(
                 captured.ToArray(),
