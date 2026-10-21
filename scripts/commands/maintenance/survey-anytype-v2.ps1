@@ -401,12 +401,12 @@ function Measure-Outline {
     $m = New-Measure 'outline' 'get_task / get_report / replace_section read structure through ?outline=true; its fields decide what the MCP can address without a full read.'
     $task = Get-Json "/v2/spaces/{s}/objects/$($script:Ctx.SurveyTaskId)?outline=true"
     Add-Evidence $m 'task outline summary' (Get-OutlineSummary $task)
-    Add-Evidence $m 'task outline, first 12 entries' (@($task['outline'])[0..11]) 1800
+    Add-Evidence $m 'task outline, first 12 entries' @(@($task['outline']) | Select-Object -First 12) 1800
     $rapports = Find-Objects @{ type = 'rapport'; sorts = @(@{ property = 'created_date'; direction = 'desc' }) } 1
     $rid = $rapports['data'][0]['id']
     $rapport = Get-Json "/v2/spaces/{s}/objects/$($rid)?outline=true&include=properties"
     Add-Evidence $m "rapport outline summary (latest rapport $rid)" (Get-OutlineSummary $rapport)
-    Add-Evidence $m 'rapport outline, first 6 entries' (@($rapport['outline'])[0..5]) 1500
+    Add-Evidence $m 'rapport outline, first 6 entries' @(@($rapport['outline']) | Select-Object -First 6) 1500
     $both = Invoke-SurveyRequest -Method GET -Path "/v2/spaces/{s}/objects/$($script:Ctx.SurveyTaskId)?outline=true&block=c80d1"
     Add-Call $m 'outline together with block (documented as illegal)' $both 500
     $ts = Get-OutlineSummary $task
@@ -448,6 +448,13 @@ function Measure-AnytypeVersionHeader {
 # editable from Deckle. The shape and the default decide the "specify views in
 # space plans" task.
 
+function Get-Items {
+    # Piping $null into ForEach-Object runs the block once with $_ = $null; an
+    # absent list (a view without filters) must instead yield nothing.
+    param([AllowNull()]$Value)
+    if ($null -ne $Value) { $Value }
+}
+
 function Get-ViewSummary {
     param($TypeDoc)
     $dv = @($TypeDoc['blocks'] | Where-Object { $_['type'] -eq 'dataview' })[0]
@@ -456,9 +463,9 @@ function Get-ViewSummary {
     return @($dv['views'] | ForEach-Object {
         [ordered]@{
             position = $i++; id = $_['id']; name = $_['name']; type = if ($_.ContainsKey('type')) { $_['type'] } else { '(absent = table)' }
-            group_by = $_['group_by']; filters = @($_['filters'] | ForEach-Object { "$($_['property']) $($_['condition']) $(ConvertTo-CompactJson $_['value'])" })
-            sorts = @($_['sorts'] | ForEach-Object { "$($_['property']) $($_['direction'])" })
-            visible_columns = @($_['columns'] | Where-Object { -not $_['hidden'] } | ForEach-Object { $_['property'] })
+            group_by = $_['group_by']; filters = @(Get-Items $_['filters'] | ForEach-Object { "$($_['property']) $($_['condition']) $(ConvertTo-CompactJson $_['value'])" })
+            sorts = @(Get-Items $_['sorts'] | ForEach-Object { "$($_['property']) $($_['direction'])" })
+            visible_columns = @(Get-Items $_['columns'] | Where-Object { -not $_['hidden'] } | ForEach-Object { $_['property'] })
             view_keys = @($_.Keys)
         }
     })
@@ -490,22 +497,26 @@ function Measure-TypeViews {
         if (-not $leaked -and $singleView) {
             # On a one-view type every remaining op is harmless even if dry_run
             # were ignored: renaming to the same name, moving to where it is, and
-            # deleting the last view, which the docs say is refused.
+            # deleting a view id that does not exist. The first run deleted the
+            # real last view in dry run and got 200 where the docs promise a
+            # refusal, so the delete probe no longer names a real view.
             $t = $singleView.Type; $v = $singleView.View
             $ops = [ordered]@{
                 update_view = @{ op = 'update_view'; view = $v.id; set = @{ name = $v.name } }
                 move_view = @{ op = 'move_view'; view = $v.id; position = 'first' }
-                delete_view = @{ op = 'delete_view'; view = $v.id }
+                delete_view = @{ op = 'delete_view'; view = 'zzsvy' }
             }
             foreach ($op in $ops.Keys) {
                 $r = Invoke-SurveyRequest -Method PATCH -Path "/v2/spaces/{s}/types/$($t)?dry_run=true" -Body @{ ops = @($ops[$op]) }
-                Add-Call $m "dry-run $op on the single view of type $t (no-op by construction)" $r 800
+                Add-Call $m "dry-run $op on type $t (no-op by construction)" $r 800
             }
+            $m.Notes.Add('Measured on the first run (2026-10-21), not replayed: dry-run delete_view of the only view of type rapport answered 200 {dry_run:true}; APIV2 documents deleting the last view as refused. Either the refusal is not checked in dry run or it does not exist.')
+            $script:Ctx | Add-Member -NotePropertyName ViewOps -NotePropertyValue (@($script:CallLog | Where-Object { $_.Method -eq 'PATCH' -and $_.Path -match '/types/' } | Select-Object -Last 3 | ForEach-Object { $_.Status }) -join '/') -Force
         } elseif (-not $singleView) {
             $m.Notes.Add('No surveyed type has a single view: move/update/delete_view probes skipped to stay harmless.')
         }
     }
-    $m.Verdict = "GET /types/{key} serves an AnyBlock object_type document whose dataview block holds the views (counts: $($counts -join ', ')); default = first view; view ops answered as shown."
+    $m.Verdict = "GET /types/{key} serves an AnyBlock object_type document whose dataview block holds the views (counts: $($counts -join ', ')); default = first view. Dry-run insert_view left the type untouched (etag equal); update/move/delete_view dry runs -> $(if ($script:Ctx.PSObject.Properties['ViewOps']) { $script:Ctx.ViewOps } else { 'not probed' }), the delete naming a view id that does not exist: a dry run does not resolve view ids, so its 200 proves little."
     return $m
 }
 
@@ -532,7 +543,9 @@ function Measure-Templates {
     Add-Evidence $m 'template routes in the served openapi' $routes
     if (Test-DryRunAllowed $m) {
         $name = "$ProbePrefix-template-$RunStamp"
-        $post = Invoke-SurveyRequest -Method POST -Path '/v2/spaces/{s}/templates?dry_run=true' -Body @{ template_for = 'task'; name = $name }
+        # The body is an AnyBlock object document (the served example), not a
+        # flat {name}: a first run's flat body was refused with "name is not allowed".
+        $post = Invoke-SurveyRequest -Method POST -Path '/v2/spaces/{s}/templates?dry_run=true' -Body @{ kind = 'template'; type = 'template'; template_for = 'task'; properties = @{ name = $name }; blocks = @(@{ type = 'heading_2'; text = 'Sous-tâches' }, @{ type = 'checkbox'; text = 'probe' }) }
         Add-Call $m 'dry-run POST /templates' $post 800
         $after = Get-Json '/v2/spaces/{s}/templates?type=task&limit=1000'
         Add-Evidence $m 'task templates after the dry run' ([ordered]@{ total = $after['total']; probe_present = ($after['data'] | Where-Object { $_['name'] -eq $name }) -ne $null })
@@ -587,6 +600,11 @@ function Measure-Widgets {
     Add-Evidence $m 'counts by scope and layout' ([ordered]@{ total = $w['total']; scope = @($w['data'] | Group-Object { $_['scope'] } | ForEach-Object { "$($_.Name)=$($_.Count)" }); layout = @($w['data'] | Group-Object { $_['layout'] } | ForEach-Object { "$($_.Name)=$($_.Count)" }) })
     $schema = Invoke-SurveyRequest -Method GET -Path '/v2/schemas/widget'
     Add-Call $m 'GET /v2/schemas/widget' $schema 1500
+    # The space sidebar is owner/admin only, so the backend account's role
+    # decides whether Deckle can touch it at all. Identities are left out.
+    $members = Get-Json '/v2/spaces/{s}/members'
+    $script:Ctx | Add-Member -NotePropertyName Roles -NotePropertyValue @($members['data'] | ForEach-Object { "$($_['name'])=$($_['role'])" }) -Force
+    Add-Evidence $m 'space members: name=role' $script:Ctx.Roles
     if (Test-DryRunAllowed $m) {
         $post = Invoke-SurveyRequest -Method POST -Path '/v2/spaces/{s}/widgets?dry_run=true' -Body @{ target = $script:Ctx.SurveyTaskId; scope = 'personal'; layout = 'link' }
         Add-Call $m 'dry-run POST widget (personal, link to the survey task)' $post 800
@@ -599,7 +617,9 @@ function Measure-Widgets {
             Add-Call $m "dry-run PATCH widget $($first['id']) with its own limit (no-op)" $patch 800
         }
     }
-    $m.Verdict = "$($w['total']) widgets, all scope=$(@($w['data'] | ForEach-Object { $_['scope'] } | Sort-Object -Unique) -join '/'); dry-run POST/PATCH answered as shown. A sidebar of active projects is feasible: one link/tree widget per open project, or one view widget on a query of open projects."
+    $postStatus = @($script:CallLog | Where-Object { $_.Method -eq 'POST' -and $_.Path -match '/widgets\?' })[-1].Status
+    $patchStatus = @($script:CallLog | Where-Object { $_.Method -eq 'PATCH' -and $_.Path -match '/widgets/' } | Select-Object -Last 1 | ForEach-Object { $_.Status })
+    $m.Verdict = "$($w['total']) widgets, all scope=$(@($w['data'] | ForEach-Object { $_['scope'] } | Sort-Object -Unique) -join '/'); members $($script:Ctx.Roles -join ', '). Dry-run POST of a personal widget -> $postStatus; dry-run PATCH of a space widget -> $patchStatus (space sidebar is owner/admin only). A synced sidebar of active projects is feasible only in the backend account's personal scope."
     return $m
 }
 
@@ -622,10 +642,14 @@ function Measure-MarkdownUnescape {
         Add-Evidence $m 'same text through ?format=md' $line 600
     }
     if (-not (Test-DryRunAllowed $m)) { $m.Verdict = 'stored drift measured; parse not probed'; return $m }
+    # `match` is a substring test on the block's markup source ("no block
+    # contains ..."), so each candidate is a full line and a match pins how the
+    # backend re-serialises what it parsed.
     $probes = [ordered]@{
-        "zzmd1 a\_b" = @("zzmd1 a\_b", 'zzmd1 a_b', 'zzmd1 a\\_b', 'zzmd1 a\\\_b')
-        'zzmd2 c_d e*f' = @('zzmd2 c_d e*f', 'zzmd2 c\_d e\*f', 'zzmd2 c\_d e*f')
+        'zzmd1 a\_b' = @('zzmd1 a\_b', 'zzmd1 a_b', 'zzmd1 a\\_b')
+        'zzmd2 c_d e*f' = @('zzmd2 c_d e*f', 'zzmd2 c_d e\*f', 'zzmd2 c\_d e\*f')
         'zzmd3 _g_ *h* **i**' = @('zzmd3 _g_ *h* **i**', 'zzmd3 *g* *h* **i**', 'zzmd3 _g_ _h_ **i**')
+        'zzmd4 \_lead x & y' = @('zzmd4 \_lead x & y', 'zzmd4 _lead x & y', 'zzmd4 \_lead x \& y', 'zzmd4 _lead x \& y')
     }
     $found = [ordered]@{}
     foreach ($source in $probes.Keys) {
@@ -635,12 +659,25 @@ function Measure-MarkdownUnescape {
                 @{ op = 'insert_blocks'; position = 'last'; markdown = $source },
                 @{ op = 'delete_block'; match = $candidate })
             if ($r.Status -eq 200) { $matched.Add($candidate) }
-            Add-Call $m "insert markdown [$source] then delete_block match [$candidate]" $r 500
+            Add-Call $m "insert markdown [$source] then delete_block match [$candidate]" $r 300
         }
         $found[$source] = $matched
     }
     Add-Evidence $m 'markdown sent -> block texts that matched (the stored markup source)' $found
-    $m.Verdict = 'Stored: ' + (($found.Keys | ForEach-Object { "[$_] -> [$($found[$_] -join ' | ')]" }) -join '; ') + '. Untouched blocks are never re-serialised by ops (design), so the v1 multiplication path is gone; existing drift stays in stored text.'
+    # The GO-7522 question proper: a client reads the served markup and writes
+    # it back. Stable means the served form, re-sent, is served unchanged.
+    $stable = [ordered]@{}
+    foreach ($source in $found.Keys) {
+        $served = @($found[$source] | Sort-Object Length -Descending)[0]
+        if (-not $served -or $served -notmatch '\\') { continue }
+        $grown = $served -replace '\\', '\\\'
+        $same = Invoke-DryPatch $script:Ctx.SurveyTaskId @(@{ op = 'insert_blocks'; position = 'last'; markdown = $served }, @{ op = 'delete_block'; match = $served })
+        $grow = Invoke-DryPatch $script:Ctx.SurveyTaskId @(@{ op = 'insert_blocks'; position = 'last'; markdown = $served }, @{ op = 'delete_block'; match = $grown })
+        $stable[$served] = [ordered]@{ resent_matches_itself = $same.Status -eq 200; resent_matches_grown_form = $grow.Status -eq 200 }
+    }
+    Add-Evidence $m 'round trip: served markup re-sent as markdown' $stable
+    $unstable = @($stable.Keys | Where-Object { -not $stable[$_].resent_matches_itself -or $stable[$_].resent_matches_grown_form })
+    $m.Verdict = 'Stored: ' + (($found.Keys | ForEach-Object { "[$_] -> [$($found[$_] -join ' | ')]" }) -join '; ') + ". Round trip of the served markup: $(if ($stable.Count -eq 0) { 'not probed' } elseif ($unstable.Count) { 'GROWS for ' + ($unstable -join ', ') } else { 'stable (' + $stable.Count + ' escaped forms)' }). Pre-existing drift stays in stored text."
     return $m
 }
 
@@ -821,11 +858,13 @@ function Measure-Trash {
     $openapi = Get-Json '/docs/openapi.json'
     $routes = @($openapi['paths'].Keys | Where-Object { $_ -match 'bin|trash|archive|restore' })
     Add-Evidence $m 'routes named bin/trash/archive/restore in the served openapi' $routes
+    $restore = 'not probed'
     if (Test-DryRunAllowed $m) {
         $r = Invoke-DryPatch $script:Ctx.SurveyTaskId @(@{ op = 'set_properties'; set = @{ is_archived = $false } })
         Add-Call $m 'dry-run set_properties is_archived:false (the would-be restore path)' $r 700
+        $restore = "$($r.Status)$(if ($r.Json -and $r.Json.ContainsKey('message')) { ' ' + $r.Json['issues'][0]['message'] })"
     }
-    $m.Verdict = "Bin = is_archived (system); default search excludes archived ($(if ($arch['total'] -gt 0) { 'exact-name search total ' + $plain['total'] } else { 'no archived sample' })); filter is_archived = true lists them ($($arch['total'])); no restore route; widget target _bin exists. Deckle's own 'archive' checkbox is a separate user property ($($custom['total'])+ objects)."
+    $m.Verdict = "Restore through set_properties is_archived:false -> $restore. Bin = is_archived (system); default search excludes archived ($(if ($arch['total'] -gt 0) { 'exact-name search total ' + $plain['total'] } else { 'no archived sample' })); filter is_archived = true lists them ($($arch['total'])); no restore route; widget target _bin exists. Deckle's own 'archive' checkbox is a separate user property ($($custom['total']) objects with archive = true)."
     return $m
 }
 
@@ -835,7 +874,11 @@ function Measure-EtagIdempotency {
     $m = New-Measure 'etag-idempotency' 'If-Match guards concurrent edits; Idempotency-Key makes a retried create safe. The MCP decides whether to send either.'
     $a = Invoke-SurveyRequest -Method GET -Path "/v2/spaces/{s}/objects/$($script:Ctx.SurveyTaskId)?include=properties"
     $b = Invoke-SurveyRequest -Method GET -Path "/v2/spaces/{s}/objects/$($script:Ctx.SurveyTaskId)?outline=true"
-    Add-Evidence $m 'ETag header vs body etag, two reads' ([ordered]@{ header_1 = $a.Headers['ETag']; body_1 = $a.Json['etag']; header_2_outline = $b.Headers['ETag'] })
+    # Only the ?format=md envelope carries the etag in its body; the JSON
+    # document carries it in the header alone.
+    $c = Invoke-SurveyRequest -Method GET -Path "/v2/spaces/{s}/objects/$($script:Ctx.SurveyTaskId)?format=md"
+    $mdEtag = if ($c.Json) { $c.Json['etag'] } else { $null }
+    Add-Evidence $m 'ETag header across reads, and the body etag of ?format=md' ([ordered]@{ header_properties = $a.Headers['ETag']; body_properties_has_etag = [bool]($a.Json -and $a.Json.ContainsKey('etag')); header_outline = $b.Headers['ETag']; header_md = $c.Headers['ETag']; body_md_etag = $mdEtag })
     if (-not (Test-DryRunAllowed $m)) { $m.Verdict = 'reads only'; return $m }
     $ok = Invoke-DryPatch $script:Ctx.SurveyTaskId @(@{ op = 'set_properties'; set = @{ priorite = @('4') } }) @{ 'If-Match' = $a.Headers['ETag'] }
     Add-Call $m 'dry-run PATCH with the current etag' $ok 500
@@ -849,7 +892,7 @@ function Measure-EtagIdempotency {
     Add-Call $m 'dry-run POST, Idempotency-Key K, first' $i1 400
     Add-Call $m 'dry-run POST, same key, same body' $i2 400
     Add-Call $m 'dry-run POST, same key, different body' $i3 600
-    $m.Verdict = "ETag header = body etag: $($a.Headers['ETag'] -eq ('"' + $a.Json['etag'] + '"') -or $a.Headers['ETag'] -eq $a.Json['etag']); If-Match current -> $($ok.Status), stale -> $($bad.Status); Idempotency-Key replay -> $($i2.Status) (Idempotency-Replayed: $($i2.Headers['Idempotency-Replayed'])), conflicting body -> $($i3.Status)."
+    $m.Verdict = "ETag header is the same quoted value on every read shape ($($a.Headers['ETag'] -eq $b.Headers['ETag'])); the JSON document has no body etag, ?format=md does (unquoted, equal: $($a.Headers['ETag'] -eq ('"' + $mdEtag + '"'))); If-Match current -> $($ok.Status), stale -> $($bad.Status); Idempotency-Key replay -> $($i2.Status) (Idempotency-Replayed: $($i2.Headers['Idempotency-Replayed'])), conflicting body -> $($i3.Status)."
     return $m
 }
 
@@ -909,6 +952,8 @@ function Measure-OpenapiServed {
 
 function Measure-TypePropertyDrift {
     $m = New-Measure 'type-property-drift' 'v2 scopes search and queries to the keys a type lists; DevSpace.cs maps keys onto types by hand. Mismatches become refusals.'
+    # Hand list of the keys Deckle writes per type (read off DevSpace.cs and the
+    # catalogue's create/update gestures); DevSpace.cs has no per-type table to parse.
     $frozen = [ordered]@{
         task = @('description', 'etat', 'priorite', 'type_de_tache', 'done', 'due_date', 'relation_projet', 'contact_lie', 'fichier(s)_lie(s)', 'livrable(s)', 'definition_de_fini', 'charge_estimee', 'charge_estimee_(jours)', 'archive')
         project = @('description', 'etat', 'phase_projet', 'priorite', 'done', 'version', 'definition_de_fini', 'due_date', 'budget_estime', 'budget_reel_(', 'charge_estimee', 'charge_estimee_(jours)', 'depend_de', 'archive')
@@ -931,9 +976,11 @@ function Measure-TypePropertyDrift {
     Add-Call $m 'type-scoped search (body type=task) asking for etat' $scoped 700
     $filtered = Invoke-SurveyRequest -Method POST -Path '/v2/spaces/{s}/search?limit=1' -Body @{ filter = 'type = "task" AND etat IS NOT EMPTY'; fields = @('etat') }
     Add-Call $m 'same need through the filter pseudo-key type' $filtered 500
-    $corpse = Find-Objects @{ filter = 'type = "task" AND 6989a972341c161938d64dab IS NOT EMPTY' } 1
-    Add-Evidence $m 'tasks still holding the uninstalled État (6989a972…)' ([ordered]@{ total = $corpse['total'] })
-    $m.Verdict = ($lines -join '; ') + ". Body type=task + field etat -> $($scoped.Status); filter 'type = ""task""' + etat -> $($filtered.Status)."
+    # The compact grammar cannot even name an opaque key (a key must start with a
+    # letter), so the corpse property is reached through the structured array.
+    $corpse = Invoke-SurveyRequest -Method POST -Path '/v2/spaces/{s}/search?limit=1' -Body @{ filters = @(@{ property = '6989a972341c161938d64dab'; condition = 'not_empty' }) }
+    Add-Call $m 'tasks still holding the uninstalled État 6989a972… (structured filter)' $corpse 600
+    $m.Verdict = ($lines -join '; ') + ". Body type=task + field etat -> $($scoped.Status); filter 'type = ""task""' + etat -> $($filtered.Status). The uninstalled État 6989a972… (featured on task, held by objects) is not filterable: $($corpse.Status)."
     return $m
 }
 
@@ -947,9 +994,13 @@ function Measure-MarkdownObjectLink {
     $target = $script:Ctx.SurveyTaskId
     $short = (Get-Json '/v2/spaces/{s}')['id']
     $source = "zzlink [cible](anytype://object?objectId=$target&spaceId=$short)"
+    # A first run showed the destination re-serialised with an escaped ampersand
+    # (`\&`); the candidates keep both spellings so a backend change shows.
     $candidates = [ordered]@{
-        'kept with the short space ref' = $source
-        'space ref expanded to the full id' = "zzlink [cible](anytype://object?objectId=$target&spaceId=$SpaceId)"
+        'verbatim, short space ref' = $source
+        'ampersand escaped, short space ref' = "zzlink [cible](anytype://object?objectId=$target\&spaceId=$short)"
+        'ampersand escaped, full space id' = "zzlink [cible](anytype://object?objectId=$target\&spaceId=$SpaceId)"
+        'space ref dropped' = "zzlink [cible](anytype://object?objectId=$target)"
         'bare object id as the destination' = "zzlink [cible]($target)"
     }
     $hits = [System.Collections.Generic.List[string]]::new()
@@ -959,8 +1010,11 @@ function Measure-MarkdownObjectLink {
         Add-Call $m "insert [$source] then match: $label" $r 600
     }
     $bare = Invoke-DryPatch $script:Ctx.SurveyTaskId @(@{ op = 'insert_blocks'; position = 'last'; markdown = "zzlink2 [cible]($target)" }, @{ op = 'delete_block'; match = "zzlink2 [cible]($target)" })
-    Add-Call $m 'markdown link whose destination is a bare object id' $bare 600
-    $m.Verdict = "anytype:// deep link stored as: $(if ($hits.Count) { $hits -join ' / ' } else { 'no candidate matched' }); a bare-id destination answered $($bare.Status)."
+    Add-Call $m 'markdown link whose destination is a bare object id, matched verbatim' $bare 600
+    # Whether the link became a link to an object (the mirror's need) is not
+    # visible through a dry run: the parsed mark type is never echoed.
+    $m.Notes.Add('A dry run echoes no block, so whether these links became object links (mention/link marks) or plain URL links is NOT measured; only their markup source is.')
+    $m.Verdict = "anytype:// deep link re-served as: $(if ($hits.Count) { $hits -join ' / ' } else { 'no candidate matched' }); a bare-id destination is kept verbatim ($($bare.Status))."
     return $m
 }
 
@@ -1045,6 +1099,9 @@ function Write-SurveyReport {
     }
     # Belt and braces: whatever a response echoed, the key never reaches disk.
     $text = $sb.ToString().Replace($script:ApiKey, "<api-key:$($script:ApiKey.Length) chars>")
+    # Participant ids embed account identities (creator, last_modified_by); the
+    # report needs neither, so they are masked like the key.
+    $text = [regex]::Replace($text, '_?participant[-_][A-Za-z0-9_]+', '<participant>')
     $dir = Split-Path -Parent $OutputPath
     if (-not (Test-Path -LiteralPath $dir)) { New-Item -ItemType Directory -Path $dir -Force | Out-Null }
     [IO.File]::WriteAllText($OutputPath, $text, [Text.UTF8Encoding]::new($false))
