@@ -16,6 +16,8 @@ doctrine). This file is generated from the Conventional-Commit history by
 - **settings:** Show the release stage as the title bar subtitle
 - **transcription:** Log the compute device the whisper model runs on
 - **transcription:** Name each filtered hallucination in the log
+- **scripts:** Build a patched anytype-cli backend from a release tag
+- **scripts:** Ship the license texts inside the rebuilt backend asset
 
 ### Fixed
 
@@ -26,6 +28,8 @@ doctrine). This file is generated from the Conventional-Commit history by
 - **transcription:** Move the hallucination and warm-up detail events to 193 and 194
 - **transcription:** Keep capturing for a short tail after the stop press
 - **audio:** Handle waveIn buffers in the order the driver filled them
+- **anytype:** Pin the patched anytype-cli 0.5.0 rebuild as the backend
+- **anytype:** Pin the backend asset that carries the license texts
 
 ## [0.58.5](https://github.com/louisfifre/deckle/compare/v0.57.0...v0.58.5) — 2026-10-20
 
