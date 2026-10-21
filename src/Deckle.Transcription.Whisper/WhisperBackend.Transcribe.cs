@@ -258,13 +258,13 @@ public sealed partial class WhisperBackend
                     if (id >= tokenBeg) continue;
                     float p = WhisperPInvoke.whisper_full_get_token_p(ctx, i, k);
                     sumP += p;
-                    if (detailEnabled && p < minP) minP = p;
+                    if (p < minP) minP = p;
                     textTok++;
                 }
                 float avgP = textTok > 0 ? sumP / textTok : 0f;
                 if (textTok == 0) minP = 0f;
 
-                var segment = new TranscriptionSegment(segText, t0, t1, avgP, nsp);
+                var segment = new TranscriptionSegment(segText, t0, t1, avgP, nsp, textTok, minP);
                 lock (_segmentsLock) _segmentsLocal.Add(segment);
 
                 // abort_callback is probed between decoder steps, so one more
