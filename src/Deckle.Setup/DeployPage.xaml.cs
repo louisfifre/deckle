@@ -206,9 +206,7 @@ public sealed partial class DeployPage : Page
 
         // The presence choice goes into the CHOSEN data root — not through
         // ModulePresence.Save, whose path rides this temp process's AppPaths.
-        PresenceFile.SaveTo(
-            ModulePresence.FilePathUnder(context.DataDirectory),
-            [.. context.SelectedModules]);
+        ModulePresence.SaveUnder(context.DataDirectory, [.. context.SelectedModules]);
     }
 
     private void LaunchInstalled(SetupContext context)

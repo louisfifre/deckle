@@ -46,10 +46,10 @@ public sealed class DeckleModulesSource : DeckleEventSource
     [Event(EvtPresenceLoadedDetail,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "module presence loaded | mode={0} | present={1}")]
-    public void PresenceLoadedDetail(string mode, string present)
+           Message = "module presence loaded | mode={0} | present={1} | known={2}")]
+    public void PresenceLoadedDetail(string mode, string present, string known)
     {
-        if (IsEnabled()) WriteEvent(EvtPresenceLoadedDetail, mode, present);
+        if (IsEnabled()) WriteEvent(EvtPresenceLoadedDetail, mode, present, known);
     }
 
     [Event(EvtPresenceSaved,
@@ -64,10 +64,10 @@ public sealed class DeckleModulesSource : DeckleEventSource
     [Event(EvtPresenceSavedDetail,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "module selection saved | present={0} | path={1}")]
-    public void PresenceSavedDetail(string present, string path)
+           Message = "module selection saved | present={0} | known={1} | path={2}")]
+    public void PresenceSavedDetail(string present, string known, string path)
     {
-        if (IsEnabled()) WriteEvent(EvtPresenceSavedDetail, present, path);
+        if (IsEnabled()) WriteEvent(EvtPresenceSavedDetail, present, known, path);
     }
 
     [Event(EvtPresenceLoadFailed,
