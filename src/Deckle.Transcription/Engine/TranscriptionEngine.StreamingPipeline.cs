@@ -489,6 +489,30 @@ public sealed partial class TranscriptionEngine
             }
 
             string text = result.FullText?.Trim() ?? "";
+
+            // A short blip decoded into confident-looking words. The backend has
+            // already decoded it, so its native context holds the phantom text:
+            // the tail is dropped like after an empty utterance, so the next call
+            // starts clean of it. (Segments already streamed to NewSegment stay
+            // shown live; the delivered text is what this removes.)
+            if (text.Length > 0)
+            {
+                PhantomUtteranceFilter.Verdict verdict = PhantomUtteranceFilter.Evaluate(
+                    result.Segments, samples.Length / 16_000.0);
+                if (verdict.Rejected)
+                {
+                    DeckleWhispSource.Log.UtterancePhantomRejected(
+                        u.Index, verdict.Reason, (int)(samples.Length * 1000L / 16_000),
+                        verdict.TextTokens, verdict.TokensPerSecond,
+                        verdict.AverageProbability, verdict.MinimumProbability);
+                    DeckleWhispSource.Log.ConsumerUtterance(
+                        u.Index, result.TotalDurationMs, 0,
+                        result.Segments.Count, backlogAfter, result.Aborted);
+                    previousTail = null;
+                    continue;
+                }
+            }
+
             if (text.Length > 0)
             {
                 if (sb.Length > 0) sb.Append(pendingParagraphBreak ? "\n\n" : " ");

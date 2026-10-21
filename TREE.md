@@ -1631,6 +1631,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── Engine/
 │   │   │   ├── FileTranscriptionQueue.cs
 │   │   │   ├── IAsrBackend.cs
+│   │   │   ├── PhantomUtteranceFilter.cs
 │   │   │   ├── PipelineProduction.cs
 │   │   │   ├── PreparedFileProducer.cs
 │   │   │   ├── RewriteProfileSelection.cs
@@ -2163,6 +2164,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── FileTranscriptionResultTests.cs
 │   │   ├── LiveTranscriptionPipelineTests.cs
 │   │   ├── OperationalObservabilityCollection.cs
+│   │   ├── PhantomUtteranceFilterTests.cs
 │   │   ├── PreparedFileChannelTests.cs
 │   │   ├── RewriteAvailabilityTests.cs
 │   │   ├── RewriteProfileSelectionTests.cs
