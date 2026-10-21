@@ -75,7 +75,11 @@ internal sealed class BackendProviderStore(
 
     // "Installed" means this exact version is both present and activated. An older
     // active version, or a legacy executable alone, does not satisfy a newer pin:
-    // the install wizard must still download it.
+    // the install wizard must still download it. When the pin changes (0.3.6 to
+    // 0.5.0), the new version is extracted to versions/<version> beside the old
+    // one and active.json is repointed in one atomic replace; the old directory
+    // stays, and its executable stays trusted so a backend still running from it
+    // is recognized rather than treated as foreign.
     internal bool IsInstalled(string version) =>
         string.Equals(ActiveVersion(), version, StringComparison.OrdinalIgnoreCase);
 

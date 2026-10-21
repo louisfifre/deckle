@@ -55,6 +55,10 @@ public partial class App
             }
             ct.ThrowIfCancellationRequested();
 
+            // The key (vault entry `anytype-api-key`, in %LOCALAPPDATA%\Deckle\
+            // secrets.dat) is written by a script outside the repository and read
+            // here once, when the runtime starts. A newly minted key therefore
+            // needs a real Deckle restart; the running process keeps the old one.
             phase = "credentials";
             AnytypeCredentials credentials;
             try

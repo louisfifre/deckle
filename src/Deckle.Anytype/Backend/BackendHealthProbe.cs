@@ -10,7 +10,10 @@ namespace Deckle.Anytype;
 // account login propagates the listen address, so a 200 here proves the REST
 // surface is actually serving. Since anytype-heart 0.51 this root route serves
 // the v2 OpenAPI document and v1 lives under `/v1/docs/openapi.json`; the probe
-// only needs the unauthenticated 200, so it stays valid on either. The PID is
+// only needs the unauthenticated 200, so it stays valid on either. On 0.5.0 that
+// document lists 41 `/v2` paths and no `/v1` one, yet the `/v1/*` routes still
+// answer (401 without a key, so alive): the root document does not tell which
+// API versions are served. The PID is
 // never the signal: the task process can be alive while REST is not yet bound.
 //
 // Separate from AnytypeApiClient on purpose — that client is bound to a space and

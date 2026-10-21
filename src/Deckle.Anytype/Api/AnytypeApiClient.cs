@@ -74,6 +74,9 @@ public sealed partial class AnytypeApiClient : IDisposable
         ArgumentNullException.ThrowIfNull(credentials);
 
         SpaceId = credentials.SpaceId;
+        // Still /v1 on purpose: the 0.5.0 backend's root document only lists v2,
+        // but /v1/* keeps answering, and only an --all-spaces --read-write key
+        // is accepted there (see AnytypeCredentials.Resolve).
         _spacePath = $"/v1/spaces/{credentials.SpaceId}";
 
         _http = new HttpClient { BaseAddress = new Uri(credentials.ApiUrl) };

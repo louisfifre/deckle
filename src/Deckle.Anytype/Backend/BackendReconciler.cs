@@ -16,6 +16,10 @@ internal interface IBackendReconciler
 // serve. Readiness is accepted only after two TCP-owner snapshots around health.
 internal sealed class BackendReconciler : IBackendReconciler
 {
+    // On 0.5.0 the serve auto-logs-in with its stored account key about 2.6 s
+    // after it starts, and the REST listener answers 200 only after that login,
+    // so a probe before then is refused by design. 20 s is several times that
+    // delay, yet short enough to surface a backend that never binds.
     private static readonly TimeSpan ReadinessTimeout = TimeSpan.FromSeconds(20);
     private static readonly TimeSpan ProbeInterval = TimeSpan.FromMilliseconds(500);
 
