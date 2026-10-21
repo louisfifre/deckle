@@ -356,10 +356,30 @@ if ($ObjDump) {
 Write-DeckleWorkflowStep -Output $Output -Message "Package"
 
 # Same layout as the official asset: anytype.exe at the archive root, which
-# is where BackendInstallation.InstallFromZipAsync looks for it.
+# is where BackendInstallation.InstallFromZipAsync looks for it. The license
+# texts ride beside it because this asset is redistributed: the MIT notices
+# of anytype-cli and tantivy-go must travel with every copy, and heart's
+# Any Source Available License requires its text to reach any third party
+# who receives the software. They come from the exact module versions the
+# binary links, never from a copy kept in this repository.
+$HeartDir = (Invoke-Native go @('list', '-m', '-f', '{{.Dir}}', 'github.com/anyproto/anytype-heart') -WorkingDirectory $Clone)[0]
+$Licenses = @(
+    @{ Name = 'LICENSE.anytype-cli.md';   Source = Join-Path $Clone 'LICENSE.md' }
+    @{ Name = 'LICENSE.anytype-heart.md'; Source = Join-Path $HeartDir 'LICENSE.md' }
+    @{ Name = 'LICENSE.tantivy-go.txt';   Source = Join-Path $TantivyCacheDir 'LICENSE' }
+)
+$Staging = Join-Path $Work 'package'
+if (Test-Path -LiteralPath $Staging) { Remove-Item -LiteralPath $Staging -Recurse -Force }
+New-Item -ItemType Directory -Force -Path $Staging | Out-Null
+Copy-Item -LiteralPath $Exe -Destination (Join-Path $Staging 'anytype.exe')
+foreach ($license in $Licenses) {
+    if (-not (Test-Path -LiteralPath $license.Source)) { throw "license text missing: $($license.Source)" }
+    Copy-Item -LiteralPath $license.Source -Destination (Join-Path $Staging $license.Name)
+    Add-Report "license: $($license.Name) <- $($license.Source)"
+}
 $ZipPath = Join-Path $OutDir $AssetName
 if (Test-Path -LiteralPath $ZipPath) { Remove-Item -LiteralPath $ZipPath -Force }
-Compress-Archive -LiteralPath $Exe -DestinationPath $ZipPath -CompressionLevel Optimal
+Compress-Archive -Path (Join-Path $Staging '*') -DestinationPath $ZipPath -CompressionLevel Optimal
 $ZipHash = (Get-FileHash -LiteralPath $ZipPath -Algorithm SHA256).Hash.ToLowerInvariant()
 $ZipSize = (Get-Item -LiteralPath $ZipPath).Length
 "$ZipHash  $AssetName" | Out-File -LiteralPath "$ZipPath.sha256" -Encoding ascii -NoNewline
