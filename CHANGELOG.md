@@ -80,6 +80,7 @@ doctrine). This file is generated from the Conventional-Commit history by
 - **anytype:** Name the live serve a timed-out reconciliation waited on
 - **anytype:** Label recovery after a failed start as start-failed
 - **transcription:** Pad every utterance with low-level noise before decoding
+- **anytype:** Drop version and due date from the Epic property table
 
 ## [0.59.0](https://github.com/louisfifre/deckle/compare/v0.58.5...v0.59.0) — 2026-10-21
 
