@@ -179,6 +179,17 @@ public static class SettingsSearch
             Keywords = ["silence", "threshold", "dbfs", "level", "sensitivity", "cut"],
         },
 
+        new SettingSearchEntry
+        {
+            LabelKey = "WhisperSegMarginCard",
+            Keywords = ["pause", "silence", "end", "clip", "cut", "trailing"],
+        },
+        new SettingSearchEntry
+        {
+            LabelKey = "WhisperSegMinUtteranceCard",
+            Keywords = ["blip", "noise", "short", "word", "drop", "cough"],
+        },
+
         // "Cut curve" — the curve block with the four hangover anchors in its legend.
         new SettingSearchEntry
         {

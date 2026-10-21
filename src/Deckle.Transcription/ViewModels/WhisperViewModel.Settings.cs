@@ -177,8 +177,10 @@ public partial class WhisperViewModel
     ];
 
     // The segmentation cards of the Streaming page, under the switch and the
-    // speech-filtering fold: the silence threshold, the one value that depends
-    // on the microphone, as a card; then the cut curve, the segmentation's
+    // speech-filtering fold: the speech level, the one value that depends
+    // on the microphone, then the cut margin and the minimum utterance (the two
+    // blip rules, moved here from the Playground's segmentation page), as cards;
+    // then the cut curve, the segmentation's
     // instrument, last and at full width, with no fold around it (2026-10-14).
     // The four hangover anchors (max, min, ramp start, ramp end) are the curve's
     // frame and live in its legend, beside the plot, as fields: the doctrine's
@@ -189,9 +191,7 @@ public partial class WhisperViewModel
     // The preset selector (Patient / Balanced / Quick / Custom) is set aside
     // with every preset: the family still runs underneath
     // (CutPreset, CutPresetStore), so a hand edit still records Custom, but
-    // nothing on the page selects a preset. The cut margin and the minimum
-    // utterance, two blip rules nobody tunes, keep their EnergySegmenterSettings
-    // defaults and stay in the Playground only.
+    // nothing on the page selects a preset.
     public IReadOnlyList<SettingDescriptor> SegmentationSettings =>
     [
         Setting.Magnitude("WhisperSegThresholdCard",
@@ -200,6 +200,19 @@ public partial class WhisperViewModel
             new MagnitudeArgs(-90, 0, Unit: "dBFS", Slider: false),
             visibleWhen: () => StreamingEnabled,
             defaultValue: () => new EnergySegmenterSettings().ThresholdDbfs),
+        // 0..1 s: the grain is 0.05 s, which writes both defaults (0.15, 0.25) exactly.
+        Setting.Magnitude("WhisperSegMarginCard",
+            () => Seconds(SegMarginMs),
+            value => SegMarginMs = Milliseconds(value),
+            new MagnitudeArgs(0, 1, Unit: "s"),
+            visibleWhen: () => StreamingEnabled,
+            defaultValue: () => Seconds(new EnergySegmenterSettings().MarginMs)),
+        Setting.Magnitude("WhisperSegMinUtteranceCard",
+            () => Seconds(SegMinUtteranceMs),
+            value => SegMinUtteranceMs = Milliseconds(value),
+            new MagnitudeArgs(0, 1, Unit: "s"),
+            visibleWhen: () => StreamingEnabled,
+            defaultValue: () => Seconds(new EnergySegmenterSettings().MinUtteranceMs)),
         Setting.Curve("WhisperCutCurveCard",
             () => new CurvePoints(SegCurveX1, SegCurveY1, SegCurveX2, SegCurveY2),
             p => { SegCurveX1 = p.X1; SegCurveY1 = p.Y1; SegCurveX2 = p.X2; SegCurveY2 = p.Y2; },

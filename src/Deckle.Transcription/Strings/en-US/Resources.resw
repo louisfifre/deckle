@@ -667,6 +667,18 @@
   <data name="WhisperSegThresholdCard.Description" xml:space="preserve">
     <value>How loud a 50 ms slice of the microphone must be to count as speech when the recording is cut into utterances. Raise it if background noise keeps an utterance open.</value>
   </data>
+  <data name="WhisperSegMarginCard.Header" xml:space="preserve">
+    <value>Cut margin</value>
+  </data>
+  <data name="WhisperSegMarginCard.Description" xml:space="preserve">
+    <value>How much of the pause after your last word stays at the end of an utterance when it is cut. The rest of the pause is dropped. Too short can clip a soft ending.</value>
+  </data>
+  <data name="WhisperSegMinUtteranceCard.Header" xml:space="preserve">
+    <value>Minimum utterance</value>
+  </data>
+  <data name="WhisperSegMinUtteranceCard.Description" xml:space="preserve">
+    <value>Speech shorter than this is dropped as a noise blip (a click, a cough) instead of being transcribed. Too long can drop a short word said alone.</value>
+  </data>
   <data name="WhisperCutPresetPatient.Content" xml:space="preserve">
     <value>Patient</value>
   </data>
