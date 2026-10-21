@@ -50,5 +50,6 @@ public sealed class MicLevelTester
         public int AudioInputDeviceId => deviceId;
         public int MaxRecordingDurationSeconds => seconds;
         public bool MicrophoneTelemetryEnabled => false;
+        public string RecordingPurpose => "level_test";
     }
 }

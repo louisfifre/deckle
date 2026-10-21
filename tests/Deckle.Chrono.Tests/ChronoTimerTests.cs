@@ -10,6 +10,7 @@ namespace Deckle.Chrono.Tests;
 //
 // Time-dependent cases sleep briefly and assert relative to an earlier reading,
 // not against an absolute threshold, so scheduler jitter cannot fail them.
+[Collection("chrono provider singleton")]
 [Trait("Category", "unit")]
 public class ChronoTimerTests
 {

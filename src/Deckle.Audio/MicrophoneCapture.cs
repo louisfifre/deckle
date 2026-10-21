@@ -3,6 +3,7 @@ using System.Diagnostics.Tracing;
 using System.Runtime.InteropServices;
 using System.Threading;
 using Deckle.Audio;
+using Deckle.Audio.Internal;
 using Deckle.Core;
 using Deckle.Diagnostics;
 
@@ -119,8 +120,25 @@ public sealed class MicrophoneCapture : IMicrophoneCapture
     // here: a consumer that needs utterances cuts them from the Frame stream.
     public CaptureResult Record(IAudioRecordingHost host, CancellationToken ct)
     {
-        System.IntPtr hEvent = NativeMethods.CreateEvent(
+        string purpose = host.RecordingPurpose;
+        int configuredDevice = host.AudioInputDeviceId;
+        var startClock = System.Diagnostics.Stopwatch.StartNew();
+
+        // The module-local declaration keeps the last error. A failed creation
+        // used to reach waveInOpen with a null event handle; the loop's wait on
+        // that handle would then return at once on every iteration, unlogged.
+        System.IntPtr hEvent = WaveDeviceInterop.CreateEvent(
             System.IntPtr.Zero, bManualReset: false, bInitialState: false, null);
+        if (hEvent == System.IntPtr.Zero)
+        {
+            int win32Error = Marshal.GetLastWin32Error();
+            WaveDeviceIdentity requested = ResolveDevice(System.IntPtr.Zero, configuredDevice);
+            DeckleAudioSource.Log.MicrophoneStartFailed(
+                purpose, "create_event", 0, "none", win32Error, requested.DeviceId, requested.Name);
+            // MMSYSERR_ERROR so the orchestrator maps it to "unavailable", as
+            // any other device failure it cannot name.
+            return MicError(1);
+        }
 
         // 16 kHz mono PCM16 is fixed, not a setting: Whisper expects it, and
         // WaveInLoop, TranscriptionPreprocessor and AudioFileDecoder assume it.
@@ -135,7 +153,6 @@ public sealed class MicrophoneCapture : IMicrophoneCapture
             cbSize          = 0,
         };
 
-        int configuredDevice = host.AudioInputDeviceId;
         uint deviceId = configuredDevice < 0 ? WAVE_MAPPER : (uint)configuredDevice;
 
         uint err = NativeMethods.waveInOpen(
@@ -143,16 +160,19 @@ public sealed class MicrophoneCapture : IMicrophoneCapture
             System.IntPtr.Zero, CALLBACK_EVENT);
         if (err != 0)
         {
-            DeckleAudioSource.Log.MicrophoneOpenFailed();
-            DeckleAudioSource.Log.MicrophoneOpenFailedDetail(err);
+            WaveDeviceIdentity requested = ResolveDevice(System.IntPtr.Zero, configuredDevice);
+            DeckleAudioSource.Log.MicrophoneOpenFailed(
+                purpose, err, WaveDeviceInterop.MmsysName(err), requested.DeviceId, requested.Name);
             NativeMethods.CloseHandle(hEvent);
-            return new CaptureResult(
-                Pcm:            System.Array.Empty<float>(),
-                Telemetry:      null,
-                Outcome:        CaptureOutcome.MicError,
-                DrainDuration:  System.TimeSpan.Zero,
-                MmsysErr:       err);
+            return MicError(err);
         }
+
+        // Resolved once per take, from the opened handle: the device the
+        // driver actually gave, which with the wave mapper is whatever Windows
+        // holds as default at this instant, not what Settings shows.
+        WaveDeviceIdentity device = ResolveDevice(hWaveIn, configuredDevice);
+        DeckleAudioSource.Log.CaptureStarted(
+            configuredDevice, N_BUFFERS, BYTES_PER_BUF, host.MaxRecordingDurationSeconds);
 
         uint hdrSize = (uint)Marshal.SizeOf<WAVEHDR>();
         var hdrPtrs = new System.IntPtr[N_BUFFERS];
@@ -163,11 +183,18 @@ public sealed class MicrophoneCapture : IMicrophoneCapture
         // driver, or waveInStart throws, the main try/finally below has not been
         // entered yet — so we'd leak the open device (keeping the mic 'in use'
         // until process exit) plus every buffer allocated so far. We unwind
-        // exactly the state acquired and rethrow. `prepared` counts headers that
-        // cleared waveInPrepareHeader, so we never unprepare a header that was
-        // only allocated by a partial last iteration; FreeHGlobal(IntPtr.Zero)
-        // is a documented no-op, so freeing the whole array stays safe.
+        // exactly the state acquired. `prepared` counts headers that cleared
+        // waveInPrepareHeader, so we never unprepare a header that was only
+        // allocated by a partial last iteration; FreeHGlobal(IntPtr.Zero) is a
+        // documented no-op, so freeing the whole array stays safe.
+        //
+        // A refused call is a returned code, not a throw: the codes used to be
+        // ignored and the take then ran on a device that never delivered. The
+        // first refusal stops the start and the take ends as a MicError, the
+        // outcome the pipelines already surface for a refused open.
         int prepared = 0;
+        string? startStage = null;
+        uint startErr = 0;
         try
         {
             for (int i = 0; i < N_BUFFERS; i++)
@@ -179,41 +206,71 @@ public sealed class MicrophoneCapture : IMicrophoneCapture
                     lpData         = bufPtrs[i],
                     dwBufferLength = BYTES_PER_BUF,
                 }, hdrPtrs[i], fDeleteOld: false);
-                NativeMethods.waveInPrepareHeader(hWaveIn, hdrPtrs[i], hdrSize);
+                uint prepareErr = NativeMethods.waveInPrepareHeader(hWaveIn, hdrPtrs[i], hdrSize);
+                if (prepareErr != 0)
+                {
+                    startStage = "prepare_header";
+                    startErr = prepareErr;
+                    break;
+                }
                 prepared = i + 1;
-                NativeMethods.waveInAddBuffer(hWaveIn, hdrPtrs[i], hdrSize);
+                uint addErr = NativeMethods.waveInAddBuffer(hWaveIn, hdrPtrs[i], hdrSize);
+                if (addErr != 0)
+                {
+                    startStage = "add_buffer";
+                    startErr = addErr;
+                    break;
+                }
             }
 
-            NativeMethods.waveInStart(hWaveIn);
+            if (startStage is null)
+            {
+                uint runErr = NativeMethods.waveInStart(hWaveIn);
+                if (runErr != 0)
+                {
+                    startStage = "start";
+                    startErr = runErr;
+                }
+            }
         }
-        catch
+        catch (System.Exception ex)
         {
-            // Unprepare only headers that cleared waveInPrepareHeader.
-            // waveInReset is unnecessary: on this path the device was never
-            // successfully started — waveInStart is the last guarded
-            // statement, and if it threw no buffer ran.
-            for (int i = 0; i < prepared; i++)
-            {
-                NativeMethods.waveInUnprepareHeader(hWaveIn, hdrPtrs[i], hdrSize);
-            }
-            for (int i = 0; i < N_BUFFERS; i++)
-            {
-                Marshal.FreeHGlobal(bufPtrs[i]);
-                Marshal.FreeHGlobal(hdrPtrs[i]);
-            }
-            NativeMethods.waveInClose(hWaveIn);
-            NativeMethods.CloseHandle(hEvent);
+            // No RecordingStarted was emitted, so this is the take's only
+            // trace; the caller still receives the exception.
+            DeckleAudioSource.Log.RecordingFailed(
+                purpose, ex.GetType().Name, ex.Message, startClock.ElapsedMilliseconds);
+            ReleaseAfterFailedStart(hWaveIn, hEvent, hdrPtrs, bufPtrs, prepared, hdrSize);
             throw;
         }
-        CaptureStarted?.Invoke();
 
-        // Reset the per-recording RMS series — the previous session's tail
-        // must not leak into this run's telemetry summary.
-        _rmsLog.Clear();
+        if (startStage is not null)
+        {
+            DeckleAudioSource.Log.MicrophoneStartFailed(
+                purpose, startStage, startErr, WaveDeviceInterop.MmsysName(startErr), 0,
+                device.DeviceId, device.Name);
+            ReleaseAfterFailedStart(hWaveIn, hEvent, hdrPtrs, bufPtrs, prepared, hdrSize);
+            return MicError(startErr);
+        }
 
+        DeckleAudioSource.Log.RecordingStarted(
+            purpose, device.Name, device.DeviceId, device.IsDefault,
+            (int)wfx.nSamplesPerSec, wfx.nChannels, wfx.wBitsPerSample);
+
+        // From here every exit releases the device in the finally and closes
+        // the take with exactly one end: RecordingFailed on a throw (rethrown),
+        // RecordingCompleted after the release otherwise. The CaptureStarted
+        // subscribers run inside the try so a throwing one no longer leaks the
+        // open device.
+        var takeClock = System.Diagnostics.Stopwatch.StartNew();
         PumpResult pump = default;
         try
         {
+            CaptureStarted?.Invoke();
+
+            // Reset the per-recording RMS series — the previous session's tail
+            // must not leak into this run's telemetry summary.
+            _rmsLog.Clear();
+
             pump = WaveInLoop.Pump(
                 hWaveIn:             hWaveIn,
                 hEvent:              hEvent,
@@ -227,7 +284,14 @@ public sealed class MicrophoneCapture : IMicrophoneCapture
                 // null here means EmitSubWindows never materialises a float[].
                 frameCallback:       Frame is null ? null : frame => Frame?.Invoke(frame),
                 onLowAudioDetected:  () => LowAudioDetected?.Invoke(),
+                device:              device,
                 ct:                  ct);
+        }
+        catch (System.Exception ex)
+        {
+            DeckleAudioSource.Log.RecordingFailed(
+                purpose, ex.GetType().Name, ex.Message, takeClock.ElapsedMilliseconds);
+            throw;
         }
         finally
         {
@@ -239,15 +303,22 @@ public sealed class MicrophoneCapture : IMicrophoneCapture
                 Marshal.FreeHGlobal(bufPtrs[i]);
                 Marshal.FreeHGlobal(hdrPtrs[i]);
             }
-            NativeMethods.waveInClose(hWaveIn);
+            uint closeErr = NativeMethods.waveInClose(hWaveIn);
             NativeMethods.CloseHandle(hEvent);
+
+            // After a throw pump is default and the drain never ran, so a
+            // refused close is then the expected trace of buffers still queued.
+            if (pump.ReleaseStage is not null)
+                ObserveRelease(pump.ReleaseStage, pump.ReleaseErr);
+            else
+                ObserveRelease(closeErr != 0 ? "close" : null, closeErr);
         }
 
         byte[] allBytes = pump.Pcm ?? System.Array.Empty<byte>();
         double totalSec = allBytes.Length / 32000.0;
 
-        DeckleAudioSource.Log.RecordingCompleted();
-        DeckleAudioSource.Log.RecordingCompletedDetail(totalSec);
+        DeckleAudioSource.Log.RecordingCompleted(
+            purpose, pump.Exit == LoopExit.CapHit ? "cap_hit" : "stop_requested", totalSec);
 
         if (OperationalLogAdmission.IsScopedDetailEnabled(
                 OperationalLogActivity.Transcription,
@@ -338,6 +409,80 @@ public sealed class MicrophoneCapture : IMicrophoneCapture
             Outcome:       outcome,
             DrainDuration: pump.DrainDuration,
             MmsysErr:      0);
+    }
+
+    private static CaptureResult MicError(uint err) => new(
+        Pcm:           System.Array.Empty<float>(),
+        Telemetry:     null,
+        Outcome:       CaptureOutcome.MicError,
+        DrainDuration: System.TimeSpan.Zero,
+        MmsysErr:      err);
+
+    // The name costs driver calls only the log reads, so it is skipped when no
+    // listener is attached.
+    private static WaveDeviceIdentity ResolveDevice(System.IntPtr hWaveIn, int configuredDevice)
+        => DeckleAudioSource.Log.IsEnabled()
+            ? WaveDeviceInterop.ResolveCapture(hWaveIn, configuredDevice)
+            : WaveDeviceIdentity.Unresolved(configuredDevice);
+
+    // Unwinds a device that opened but did not start. waveInReset first: the
+    // buffers already handed to waveInAddBuffer stay queued until it returns
+    // them, and unpreparing a queued header is refused (WAVERR_STILLPLAYING).
+    private static void ReleaseAfterFailedStart(
+        System.IntPtr hWaveIn, System.IntPtr hEvent,
+        System.IntPtr[] hdrPtrs, System.IntPtr[] bufPtrs, int prepared, uint hdrSize)
+    {
+        string? stage = null;
+        uint stageErr = 0;
+        void Note(string name, uint code)
+        {
+            if (code != 0 && stage is null)
+            {
+                stage = name;
+                stageErr = code;
+            }
+        }
+
+        Note("reset", WaveDeviceInterop.waveInReset(hWaveIn));
+        // Unprepare only headers that cleared waveInPrepareHeader.
+        for (int i = 0; i < prepared; i++)
+        {
+            Note("unprepare_header", NativeMethods.waveInUnprepareHeader(hWaveIn, hdrPtrs[i], hdrSize));
+        }
+        for (int i = 0; i < hdrPtrs.Length; i++)
+        {
+            Marshal.FreeHGlobal(bufPtrs[i]);
+            Marshal.FreeHGlobal(hdrPtrs[i]);
+        }
+        Note("close", NativeMethods.waveInClose(hWaveIn));
+        NativeMethods.CloseHandle(hEvent);
+        ObserveRelease(stage, stageErr);
+    }
+
+    // Release incident across takes, process-wide: a held device outlives the
+    // MicrophoneCapture instance that failed to close it (the Settings testers
+    // use a fresh one per take), so the state is static. Locked because the
+    // Settings testers and a dictation can each run a take on their own thread.
+    private static readonly object s_releaseLock = new();
+    private static int s_releaseFailures;
+
+    private static void ObserveRelease(string? stage, uint err)
+    {
+        lock (s_releaseLock)
+        {
+            if (stage is null)
+            {
+                if (s_releaseFailures == 0) return;
+                DeckleAudioSource.Log.CaptureReleaseRecovered(s_releaseFailures);
+                s_releaseFailures = 0;
+                return;
+            }
+
+            s_releaseFailures++;
+            if (s_releaseFailures == 1)
+                DeckleAudioSource.Log.CaptureReleaseFailed(stage, err, WaveDeviceInterop.MmsysName(err));
+            DeckleAudioSource.Log.CaptureReleaseDetail(stage, err, s_releaseFailures);
+        }
     }
 
     public void Dispose()

@@ -486,10 +486,12 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   ├── Deckle.Audio/
 │   │   ├── Internal/
 │   │   │   ├── CaptureAnomalyEpisode.cs
+│   │   │   ├── CaptureDataWatchdog.cs
 │   │   │   ├── MediaFoundationInterop.cs
 │   │   │   ├── Pcm16Buffer.cs
 │   │   │   ├── PcmBuffer.cs
 │   │   │   ├── PcmConversion.cs
+│   │   │   ├── WaveDeviceInterop.cs
 │   │   │   └── WaveInLoop.cs
 │   │   ├── Preprocessing/
 │   │   │   ├── Compressor.cs
@@ -1791,6 +1793,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   └── TaskGesturesTests.cs
 │   ├── Deckle.Audio.Tests/
 │   │   ├── CaptureAnomalyEpisodeTests.cs
+│   │   ├── CaptureDataWatchdogTests.cs
 │   │   ├── CaptureSettingsMigrationTests.cs
 │   │   ├── Deckle.Audio.Tests.csproj
 │   │   ├── DeckleAudioSourceTests.cs

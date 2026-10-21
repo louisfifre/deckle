@@ -17,7 +17,14 @@ public sealed class ChronoTimer
     // never inherits the previous one's time.
     public void Start()  => _sw.Restart();
 
-    public void Stop()   => _sw.Stop();
+    // Logs only a running timer: a second Stop on an idle clock is not a new
+    // reading.
+    public void Stop()
+    {
+        if (!_sw.IsRunning) return;
+        _sw.Stop();
+        DeckleChronoSource.Log.ClockStopped(_sw.ElapsedMilliseconds);
+    }
 
     // Continues from the current Elapsed without zeroing.
     public void Resume() => _sw.Start();

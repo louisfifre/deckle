@@ -26,11 +26,16 @@ internal enum LoopExit
 // Result of Pump — separated from CaptureResult because MicrophoneCapture
 // still builds the telemetry payload and the float buffer from it. The drain
 // duration is captured here (the loop owns the post-Stop drain phase).
+// ReleaseStage names the first drain call the driver refused (stop or
+// unprepare_header), null when both went through; MicrophoneCapture adds the
+// close and owns the release incident.
 internal readonly record struct PumpResult(
     byte[]      Pcm,
     LoopExit    Exit,
     int         BuffersReceived,
-    System.TimeSpan DrainDuration);
+    System.TimeSpan DrainDuration,
+    string?     ReleaseStage,
+    uint        ReleaseErr);
 
 internal static class WaveInLoop
 {
@@ -53,12 +58,16 @@ internal static class WaveInLoop
         System.Action<float>? audioLevelCallback,
         System.Action<CaptureFrame>? frameCallback, // null = no subscriber → no float conversion
         System.Action?    onLowAudioDetected, // fires once when first 5 s lacked sustained voice
+        WaveDeviceIdentity device,            // named by the no-data warning
         CancellationToken ct)
     {
         var allBytes = new Pcm16Buffer(initialCapacity: 16000 * 2);
 
-        DeckleAudioSource.Log.RecordingStarted();
-        DeckleAudioSource.Log.CaptureStarted();
+        // The no-data watchdog reads its own clock, independent of the detail
+        // gate, because its warning must reach a default log.
+        var dataClock = Stopwatch.StartNew();
+        CaptureDataWatchdog dataWatchdog = default;
+        bool emptyDoneSinceData = false;
 
         // Snapshot the cap at recording start so a mid-recording Settings
         // change doesn't shorten or extend a session already in progress.
@@ -131,6 +140,7 @@ internal static class WaveInLoop
             int diagIterGc2 = captureDetailEnabled ? System.GC.CollectionCount(2) : 0;
 
             int bufferDoneCount = 0;
+            bool gotData = false;
             for (int i = 0; i < nBuffers; i++)
             {
                 WAVEHDR hdr = Marshal.PtrToStructure<WAVEHDR>(hdrPtrs[i]);
@@ -139,6 +149,7 @@ internal static class WaveInLoop
                     bufferDoneCount++;
                     if (hdr.dwBytesRecorded == 0)
                     {
+                        emptyDoneSinceData = true;
                         if (emptyBufferEpisode.ObserveFailure() == CaptureAnomalyTransition.Opened)
                         {
                             DeckleAudioSource.Log.EmptyBufferReceived();
@@ -154,6 +165,7 @@ internal static class WaveInLoop
                         ReadOnlySpan<byte> data = allBytes.Append(hdr.lpData, (int)hdr.dwBytesRecorded);
                         double bufferDbfs = EmitSubWindows(data, rmsLog, audioLevelCallback, frameCallback);
                         buffersReceived++;
+                        gotData = true;
 
                         // 16 kHz mono PCM16 = 32 bytes per ms.
                         int bufferMs = data.Length / 32;
@@ -220,6 +232,27 @@ internal static class WaveInLoop
                 DeckleAudioSource.Log.CaptureLagRecovered();
             }
 
+            // No-data watchdog — the one failure where every waveIn call
+            // succeeds: a driver that never completes a buffer (no_buffer), or
+            // completes them empty (empty_buffers), leaves the take silent with
+            // nothing else noticing. A dead device stops signalling the event,
+            // so the 100 ms wait above times out and the loop still lands here.
+            long dataElapsedMs = dataClock.ElapsedMilliseconds;
+            if (gotData)
+            {
+                long gapMs = dataWatchdog.MsSinceData(dataElapsedMs);
+                if (dataWatchdog.ObserveData(dataElapsedMs) == CaptureAnomalyTransition.Recovered)
+                    DeckleAudioSource.Log.AudioDataRecovered(gapMs);
+                emptyDoneSinceData = false;
+            }
+            else if (dataWatchdog.ObserveIdle(dataElapsedMs) == CaptureAnomalyTransition.Opened)
+            {
+                DeckleAudioSource.Log.NoAudioDataDetected(
+                    emptyDoneSinceData ? "empty_buffers" : "no_buffer",
+                    dataWatchdog.MsSinceData(dataElapsedMs),
+                    device.DeviceId, device.Name);
+            }
+
             // Duration cap — forces a stop as if the user had pressed the
             // hotkey. Audio captured so far still flows through the full
             // pipeline.
@@ -258,12 +291,19 @@ internal static class WaveInLoop
             }
         }
 
+        dataWatchdog.Close(dataClock.ElapsedMilliseconds);
+
         if (OperationalLogAdmission.IsScopedDetailEnabled(
                 OperationalLogActivity.Transcription,
                 DeckleAudioSource.Log,
                 EventLevel.Verbose,
                 (EventKeywords)Keywords.Capture))
         {
+            if (dataWatchdog.Stalls > 0)
+            {
+                DeckleAudioSource.Log.NoAudioDataEpisodeDetail(
+                    dataWatchdog.Stalls, dataWatchdog.LongestGapMs, dataWatchdog.Recovered);
+            }
             if (emptyBufferEpisode.Occurrences > 0)
             {
                 DeckleAudioSource.Log.EmptyBufferEpisodeDetail(
@@ -282,14 +322,28 @@ internal static class WaveInLoop
         // guard sleep below is the obvious lower bound).
         var drainSw = System.Diagnostics.Stopwatch.StartNew();
 
-        NativeMethods.waveInStop(hWaveIn);
+        // The release codes were ignored before: a refused stop or unprepare
+        // is the first sign of a device this process will not let go of. Only
+        // the first refusal is kept; the later ones usually share its cause.
+        string? releaseStage = null;
+        uint releaseErr = 0;
+        uint stopErr = NativeMethods.waveInStop(hWaveIn);
+        if (stopErr != 0)
+        {
+            releaseStage = "stop";
+            releaseErr = stopErr;
+        }
         Thread.Sleep(100);
 
+        int tailBytes = 0;
+        int pendingBuffers = 0;
         for (int i = 0; i < nBuffers; i++)
         {
             WAVEHDR hdr = Marshal.PtrToStructure<WAVEHDR>(hdrPtrs[i]);
+            if ((hdr.dwFlags & WHDR_DONE) == 0) pendingBuffers++;
             if ((hdr.dwFlags & WHDR_DONE) != 0 && hdr.dwBytesRecorded > 0)
             {
+                tailBytes += (int)hdr.dwBytesRecorded;
                 ReadOnlySpan<byte> data = allBytes.Append(hdr.lpData, (int)hdr.dwBytesRecorded);
                 // Push the drained tail through the same sub-window mill so
                 // _rmsLog covers the full session (the in-loop path stops as
@@ -298,16 +352,24 @@ internal static class WaveInLoop
                 // intentionally discarded here.
                 _ = EmitSubWindows(data, rmsLog, audioLevelCallback, frameCallback);
             }
-            NativeMethods.waveInUnprepareHeader(hWaveIn, hdrPtrs[i], hdrSize);
+            uint unprepareErr = NativeMethods.waveInUnprepareHeader(hWaveIn, hdrPtrs[i], hdrSize);
+            if (unprepareErr != 0 && releaseStage is null)
+            {
+                releaseStage = "unprepare_header";
+                releaseErr = unprepareErr;
+            }
         }
 
         drainSw.Stop();
+        DeckleAudioSource.Log.CaptureDrainDetail(drainSw.ElapsedMilliseconds, tailBytes, pendingBuffers);
 
         return new PumpResult(
             Pcm:             allBytes.ToArray(),
             Exit:            capHit ? LoopExit.CapHit : LoopExit.StopRequested,
             BuffersReceived: buffersReceived,
-            DrainDuration:   drainSw.Elapsed);
+            DrainDuration:   drainSw.Elapsed,
+            ReleaseStage:    releaseStage,
+            ReleaseErr:      releaseErr);
     }
 
     // waveIn delivers 50ms PCM16 buffers (1600 bytes); the sub-window walker

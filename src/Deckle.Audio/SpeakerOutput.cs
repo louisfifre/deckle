@@ -1,5 +1,6 @@
 using System.Runtime.InteropServices;
 using System.Threading;
+using Deckle.Audio.Internal;
 using Deckle.Core;
 
 namespace Deckle.Audio;
@@ -15,9 +16,9 @@ namespace Deckle.Audio;
 // background thread and cancels the previous play before starting a new one.
 //
 // Returns true when a clip was handed to the driver (played to completion or
-// cancelled mid-flight), false when the render device could not be opened —
-// the caller cannot otherwise tell a silent device-open failure from success,
-// since both leave no sound.
+// cancelled mid-flight), false when it never was: an empty clip, or a device
+// that refused to open, prepare or accept the buffer. The caller cannot
+// otherwise tell a silent failure from success, since both leave no sound.
 //
 // Format is carried per call: TTS output is 24 kHz, NOT the 16 kHz the capture
 // stack is fixed to.
@@ -27,10 +28,20 @@ public static class SpeakerOutput
     private const uint CALLBACK_EVENT = 0x00050000;
     private const uint WHDR_DONE      = 0x00000001;
 
+    // How long past the clip's own length the wait goes before the log says
+    // the driver never flagged it done. Generous on purpose: a Bluetooth sink
+    // can add a second or more of latency before the first sample sounds.
+    private const long StallGraceMs = 5000;
+
     public static bool Play(float[] samples, int sampleRate, CancellationToken ct)
     {
-        if (samples is null || samples.Length == 0) return false;
+        if (samples is null || samples.Length == 0)
+        {
+            DeckleAudioSource.Log.PlaybackSkipped("empty_clip");
+            return false;
+        }
 
+        long durationMs = sampleRate > 0 ? samples.Length * 1000L / sampleRate : 0;
         byte[] pcm = PcmConversion.FloatToPcm16(samples);
 
         var wfx = new WAVEFORMATEX
@@ -44,16 +55,23 @@ public static class SpeakerOutput
             cbSize          = 0,
         };
 
-        System.IntPtr hEvent = NativeMethods.CreateEvent(
+        // The module-local declaration keeps the last error for the log.
+        System.IntPtr hEvent = WaveDeviceInterop.CreateEvent(
             System.IntPtr.Zero, bManualReset: false, bInitialState: false, null);
+        if (hEvent == System.IntPtr.Zero)
+        {
+            DeckleAudioSource.Log.PlaybackFailed(
+                "create_event", 0, "none", Marshal.GetLastWin32Error(), ResolveDevice().Name, sampleRate);
+            return false;
+        }
 
         uint err = NativeMethods.waveOutOpen(
             out System.IntPtr hWaveOut, WAVE_MAPPER, ref wfx, hEvent,
             System.IntPtr.Zero, CALLBACK_EVENT);
         if (err != 0)
         {
-            DeckleAudioSource.Log.SpeakerOpenFailed();
-            DeckleAudioSource.Log.SpeakerOpenFailedDetail(err);
+            DeckleAudioSource.Log.PlaybackFailed(
+                "open", err, WaveDeviceInterop.MmsysName(err), 0, ResolveDevice().Name, sampleRate);
             NativeMethods.CloseHandle(hEvent);
             return false;
         }
@@ -62,6 +80,12 @@ public static class SpeakerOutput
         System.IntPtr buf    = Marshal.AllocHGlobal(pcm.Length);
         System.IntPtr hdrPtr = Marshal.AllocHGlobal((int)hdrSize);
         bool prepared = false;
+
+        // started pairs PlaybackStarted with exactly one PlaybackCompleted in
+        // the finally; outcome stays failed unless the wait loop ends normally.
+        var clock = System.Diagnostics.Stopwatch.StartNew();
+        bool started = false;
+        string outcome = "failed";
         try
         {
             Marshal.Copy(pcm, 0, buf, pcm.Length);
@@ -71,19 +95,54 @@ public static class SpeakerOutput
                 dwBufferLength = (uint)pcm.Length,
             }, hdrPtr, fDeleteOld: false);
 
-            NativeMethods.waveOutPrepareHeader(hWaveOut, hdrPtr, hdrSize);
+            // A refused prepare or write used to fall into the wait loop below
+            // and wait for a WHDR_DONE that never comes, until the caller
+            // cancelled; the play now fails at once with its code.
+            uint prepareErr = NativeMethods.waveOutPrepareHeader(hWaveOut, hdrPtr, hdrSize);
+            if (prepareErr != 0)
+            {
+                DeckleAudioSource.Log.PlaybackFailed(
+                    "prepare_header", prepareErr, WaveDeviceInterop.MmsysName(prepareErr), 0,
+                    ResolveDevice().Name, sampleRate);
+                return false;
+            }
             prepared = true;
-            NativeMethods.waveOutWrite(hWaveOut, hdrPtr, hdrSize);
+
+            uint writeErr = NativeMethods.waveOutWrite(hWaveOut, hdrPtr, hdrSize);
+            if (writeErr != 0)
+            {
+                DeckleAudioSource.Log.PlaybackFailed(
+                    "write", writeErr, WaveDeviceInterop.MmsysName(writeErr), 0,
+                    ResolveDevice().Name, sampleRate);
+                return false;
+            }
+
+            WaveDeviceIdentity device = ResolveDevice();
+            DeckleAudioSource.Log.PlaybackStarted(device.Name, device.DeviceId, sampleRate, durationMs);
+            started = true;
 
             // Block until the driver flips WHDR_DONE or the token fires. The
             // event pulses on completion; the 100 ms poll lets cancellation
             // break out promptly without busy-waiting.
+            bool done = false;
+            bool stallReported = false;
             while (!ct.IsCancellationRequested)
             {
                 WAVEHDR hdr = Marshal.PtrToStructure<WAVEHDR>(hdrPtr);
-                if ((hdr.dwFlags & WHDR_DONE) != 0) break;
+                if ((hdr.dwFlags & WHDR_DONE) != 0)
+                {
+                    done = true;
+                    break;
+                }
+                if (!stallReported && clock.ElapsedMilliseconds > durationMs + StallGraceMs)
+                {
+                    stallReported = true;
+                    DeckleAudioSource.Log.PlaybackStalled(
+                        "done_flag_timeout", clock.ElapsedMilliseconds, durationMs);
+                }
                 NativeMethods.WaitForSingleObject(hEvent, 100);
             }
+            outcome = done ? "completed" : "cancelled";
         }
         finally
         {
@@ -96,8 +155,18 @@ public static class SpeakerOutput
             Marshal.FreeHGlobal(buf);
             Marshal.FreeHGlobal(hdrPtr);
             NativeMethods.CloseHandle(hEvent);
+
+            if (started)
+                DeckleAudioSource.Log.PlaybackCompleted(outcome, clock.ElapsedMilliseconds);
         }
 
         return true;
     }
+
+    // The name costs driver calls only the log reads, so it is skipped when no
+    // listener is attached.
+    private static WaveDeviceIdentity ResolveDevice()
+        => DeckleAudioSource.Log.IsEnabled()
+            ? WaveDeviceInterop.ResolvePlayback()
+            : WaveDeviceIdentity.Unresolved(-1);
 }
