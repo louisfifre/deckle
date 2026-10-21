@@ -117,12 +117,14 @@ internal sealed class SequenceBackendReconciler(params BackendReconciliationResu
 {
     private readonly Queue<BackendReconciliationResult> _results = new(results);
     public int Calls { get; private set; }
+    public List<string> Triggers { get; } = [];
     public TaskCompletionSource SecondCallEntered { get; } =
         new(TaskCreationOptions.RunContinuationsAsynchronously);
 
     public Task<BackendReconciliationResult> ReconcileAsync(string trigger, CancellationToken ct)
     {
         ct.ThrowIfCancellationRequested();
+        Triggers.Add(trigger);
         Calls++;
         if (Calls == 2) SecondCallEntered.TrySetResult();
         return Task.FromResult(_results.Dequeue());

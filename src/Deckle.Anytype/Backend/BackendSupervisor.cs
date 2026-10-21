@@ -155,7 +155,8 @@ public sealed class BackendSupervisor : IDisposable, IAsyncDisposable
 
     private async Task RecoverAsync(CancellationToken ct)
     {
-        (IBackendProcess? process, _) = await RestartAsync(attempt: 0, ct).ConfigureAwait(false);
+        (IBackendProcess? process, _) = await RestartAsync(
+            "start-failed", attempt: 0, ct).ConfigureAwait(false);
         if (process is not null)
             await WatchAsync(process, ct).ConfigureAwait(false);
     }
@@ -174,7 +175,8 @@ public sealed class BackendSupervisor : IDisposable, IAsyncDisposable
                 current = null;
 
                 attempt = uptimeSeconds >= StableUptime.TotalSeconds ? 0 : attempt;
-                (current, attempt) = await RestartAsync(attempt, ct).ConfigureAwait(false);
+                (current, attempt) = await RestartAsync(
+                    "process-exit", attempt, ct).ConfigureAwait(false);
             }
         }
         finally
@@ -186,9 +188,11 @@ public sealed class BackendSupervisor : IDisposable, IAsyncDisposable
     // Reconciles on the backoff ladder until a serve runs again. Returns no
     // process when restarting is pointless (not provisioned, endpoint conflict).
     // A reconciliation that throws counts as one failed attempt: before, it
-    // ended supervision for the rest of the session without a word.
+    // ended supervision for the rest of the session without a word. The
+    // trigger names what opened the incident, an exit or a start that never
+    // served: labelling both "process-exit" hid a live serve stuck in login.
     private async Task<(IBackendProcess? Process, int Attempt)> RestartAsync(
-        int attempt, CancellationToken ct)
+        string trigger, int attempt, CancellationToken ct)
     {
         long downSince = _time.GetTimestamp();
         int failures = 0;
@@ -205,7 +209,7 @@ public sealed class BackendSupervisor : IDisposable, IAsyncDisposable
             try
             {
                 result = await _reconciler
-                    .ReconcileAsync("process-exit", ct)
+                    .ReconcileAsync(trigger, ct)
                     .ConfigureAwait(false);
                 outcome = result.Decision;
             }
