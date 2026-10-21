@@ -959,7 +959,7 @@ function Measure-TypePropertyDrift {
         project = @('description', 'etat', 'phase_projet', 'priorite', 'done', 'version', 'definition_de_fini', 'due_date', 'budget_estime', 'budget_reel_(', 'charge_estimee', 'charge_estimee_(jours)', 'depend_de', 'archive')
         rapport = @('date_du_journal', 'tache(s)_liee(s)', 'contact_lie', 'fichier(s)_lie(s)')
         document = @('type_de_document', 'document_systeme', 'version')
-        epic = @('etat', 'priorite', 'version', 'definition_de_fini', 'due_date', 'budget_estime', 'budget_reel_(', 'charge_estimee', 'charge_estimee_(jours)', 'archive')
+        epic = @('etat', 'priorite', 'definition_de_fini', 'budget_estime', 'budget_reel_(', 'charge_estimee', 'charge_estimee_(jours)', 'archive')
         idee = @('archive')
     }
     $lines = [System.Collections.Generic.List[string]]::new()

@@ -46,10 +46,14 @@ public static class DevSpace
 
     // ── Default templates ─────────────────────────────────────────────────────
     //
-    // The REST API does NOT apply a type's default template on creation: POST
-    // /objects builds a bare object unless the body carries `template_id`, which
-    // copies the template's block/view structure. Epic, project and task carry a
-    // template (idee and rapport have none), so their creations pass its id.
+    // On the v1 REST API an Epic created without `template_id` came out bare
+    // (no properties, no views; see ProjectGesturesBugNotes). Whether v1 ever
+    // applies a type's default template on its own is not established: the
+    // openapi only documents `template_id` as an optional "template to use", and
+    // Deckle always sends it. On v2 it is measured: POST /objects applies the
+    // type default when no `template_id` is sent (receipt `source: type_default`).
+    // Epic, project and task carry a template (idee and rapport have none), so
+    // their creations pass its id explicitly, which holds on both versions.
     public static class Templates
     {
         public const string Epic    = "bafyreiebxtbakbgodx2demmj4ukohifxxguowaiiofrn7uvibxy24tx76m";
@@ -250,9 +254,7 @@ public static class DevSpace
     [
         new(Props.Etat, "État", "select", Etat.All),
         new(Props.Priorite, "Priorité", "select", Priority.All),
-        new(Props.Version, "Version", "text"),
         new(Props.DefinitionDeFini, "Définition de fini", "text"),
-        new(Props.DueDate, "Date cible", "date"),
         new(Props.BudgetEstime, "Budget estimé", "number"),
         new(Props.BudgetReel, "Budget réel", "number"),
         new(Props.ChargeEstimee, "Charge estimée", "number"),
