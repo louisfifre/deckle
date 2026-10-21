@@ -65,10 +65,7 @@ public static class WindowsGestureNeutralizer
             using var key = Registry.CurrentUser.CreateSubKey(KeyPath, writable: true);
             if (key is null)
             {
-                DeckleTrackpadSource.Log.GestureWriteFailed();
-                DeckleTrackpadSource.Log.GestureWriteFailedDetail(
-                    nameof(InvalidOperationException),
-                    $"cannot open HKCU\\{KeyPath}");
+                DeckleTrackpadSource.Log.GestureWriteFailed("neutralize", "key_unavailable", "", "");
                 return false;
             }
 
@@ -80,8 +77,8 @@ public static class WindowsGestureNeutralizer
         }
         catch (Exception ex)
         {
-            DeckleTrackpadSource.Log.GestureWriteFailed();
-            DeckleTrackpadSource.Log.GestureWriteFailedDetail(ex.GetType().Name, ex.Message);
+            DeckleTrackpadSource.Log.GestureWriteFailed(
+                "neutralize", "write_threw", ex.GetType().Name, ex.Message);
             return false;
         }
     }
@@ -99,20 +96,14 @@ public static class WindowsGestureNeutralizer
             var backup = JsonSerializer.Deserialize<GestureBackup>(json);
             if (backup?.Values is null)
             {
-                DeckleTrackpadSource.Log.GestureWriteFailed();
-                DeckleTrackpadSource.Log.GestureWriteFailedDetail(
-                    nameof(InvalidDataException),
-                    "gesture backup file is empty or malformed");
+                DeckleTrackpadSource.Log.GestureWriteFailed("restore", "backup_malformed", "", "");
                 return false;
             }
 
             using var key = Registry.CurrentUser.CreateSubKey(KeyPath, writable: true);
             if (key is null)
             {
-                DeckleTrackpadSource.Log.GestureWriteFailed();
-                DeckleTrackpadSource.Log.GestureWriteFailedDetail(
-                    nameof(InvalidOperationException),
-                    $"cannot open HKCU\\{KeyPath}");
+                DeckleTrackpadSource.Log.GestureWriteFailed("restore", "key_unavailable", "", "");
                 return false;
             }
 
@@ -135,8 +126,8 @@ public static class WindowsGestureNeutralizer
         }
         catch (Exception ex)
         {
-            DeckleTrackpadSource.Log.GestureWriteFailed();
-            DeckleTrackpadSource.Log.GestureWriteFailedDetail(ex.GetType().Name, ex.Message);
+            DeckleTrackpadSource.Log.GestureWriteFailed(
+                "restore", "write_threw", ex.GetType().Name, ex.Message);
             return false;
         }
     }
@@ -155,8 +146,12 @@ public static class WindowsGestureNeutralizer
             }
             return true;
         }
-        catch
+        catch (Exception ex)
         {
+            // The safe "not neutralized" reading drives the page's button, so
+            // a wrong label is possible: worth a Warning, not silence.
+            DeckleTrackpadSource.Log.GestureStateUnreadable(
+                "are_neutralized", ex.GetType().Name, ex.Message);
             return false;
         }
     }
@@ -167,8 +162,11 @@ public static class WindowsGestureNeutralizer
         {
             return File.Exists(BackupPath);
         }
-        catch
+        catch (Exception ex)
         {
+            // BackupPath creates the module directory, which can throw.
+            DeckleTrackpadSource.Log.GestureStateUnreadable(
+                "has_backup", ex.GetType().Name, ex.Message);
             return false;
         }
     }

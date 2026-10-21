@@ -92,6 +92,10 @@ public sealed partial class KeyboardInputHost : IDisposable, IKeyboardInputHost
     // _stateLock, like the thread handle.
     private int _refCount;
 
+    // Why the pump ended on its own (get_message_failed, exception), empty for
+    // a requested quit. Written on the input thread, read by Stop after Join.
+    private string _pumpFailure = "";
+
     public KeyboardInputHost()
     {
         _mouseInteractions = new MouseInteractionRouter(
@@ -112,5 +116,9 @@ public sealed partial class KeyboardInputHost : IDisposable, IKeyboardInputHost
 
     public void SetWheelInterceptor(IWheelInterceptor? interceptor) =>
         Volatile.Write(ref _wheelInterceptor, interceptor);
+
+    // Read from consumer threads after Start returned; the hook handle is set
+    // on the input thread before Start's ready signal.
+    public bool IsWheelInterceptionAvailable => Volatile.Read(ref _mouseHook) != IntPtr.Zero;
 
 }

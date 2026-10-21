@@ -22,42 +22,57 @@ public sealed class DeckleTrackpadSource : DeckleEventSource
         => OperationalLogAdmission.IsDetailEnabled(
             OperationalLogActivity.Input, Log, level, keywords);
 
-    public const int EvtEngineStarted            = 1;
-    public const int EvtEngineStopped            = 2;
-    // Id 3 is retired.
+    // 1 retired.
+    // 2 retired.
+    // 3 retired.
     public const int EvtDragStarted              = 4;
     public const int EvtDragEnded                = 5;
     public const int EvtTapIgnored               = 6;
-    public const int EvtInjectionFailed          = 7;
+    // 7 retired.
     public const int EvtGesturesNeutralized      = 8;
     public const int EvtGesturesNeutralizedDetail = 9;
     public const int EvtGesturesRestored         = 10;
-    public const int EvtGestureWriteFailed       = 11;
+    // 11 retired.
     public const int EvtRepairLaunched           = 12;
-    public const int EvtRepairLaunchFailed       = 13;
-    public const int EvtInjectionFailedDetail    = 14;
-    public const int EvtGestureWriteFailedDetail = 15;
-    public const int EvtRepairLaunchFailedDetail = 16;
-    public const int EvtInjectionRecovered       = 17;
+    // 13 retired.
+    // 14 retired.
+    // 15 retired.
+    // 16 retired.
+    // 17 retired.
+    public const int EvtEngineStarted            = 18;
+    public const int EvtEngineStopped            = 19;
+    public const int EvtInjectionFailed          = 20;
+    public const int EvtInjectionIncidentEnded   = 21;
+    public const int EvtGestureWriteFailed       = 22;
+    public const int EvtGestureStateUnreadable   = 23;
+    public const int EvtRepairLaunchFailed       = 24;
+    public const int EvtRepairCompleted          = 25;
+    public const int EvtRepairFailed             = 26;
+    public const int EvtActFailed                = 27;
+    public const int EvtRepairExitUnobserved     = 28;
 
     // ── Engine lifecycle ─────────────────────────────────────────────────
 
+    // touchpad=false means the engine is armed but no Precision Touchpad was
+    // known at start: drags will only begin once one connects.
     [Event(EvtEngineStarted,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "Three-finger drag enabled")]
-    public void EngineStarted()
+           Tags = ObservationTags.Journal,
+           Message = "Three-finger drag enabled | drag_speed={0} | touchpad={1}")]
+    public void EngineStarted(double drag_speed, bool touchpad)
     {
-        if (IsEnabled()) WriteEvent(EvtEngineStarted);
+        if (IsEnabled()) WriteEvent(EvtEngineStarted, drag_speed, touchpad);
     }
 
     [Event(EvtEngineStopped,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "Three-finger drag disabled")]
-    public void EngineStopped()
+           Tags = ObservationTags.Journal,
+           Message = "Three-finger drag disabled | outcome={0} | drags={1}")]
+    public void EngineStopped(string outcome, long drags)
     {
-        if (IsEnabled()) WriteEvent(EvtEngineStopped);
+        if (IsEnabled()) WriteEvent(EvtEngineStopped, outcome, drags);
     }
 
     // ── Gestures ─────────────────────────────────────────────────────────
@@ -95,31 +110,29 @@ public sealed class DeckleTrackpadSource : DeckleEventSource
             WriteEvent(EvtTapIgnored);
     }
 
+    // Opens the injection incident; later failures stay quiet until
+    // InjectionIncidentEnded. win32_error 5 against an elevated foreground
+    // window is UIPI refusing SendInput.
     [Event(EvtInjectionFailed,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Push,
-           Message = "Mouse injection failed")]
-    public void InjectionFailed()
+           Message = "Mouse injection failed | action={0} | win32_error={1}")]
+    public void InjectionFailed(string action, int win32_error)
     {
-        if (IsEnabled()) WriteEvent(EvtInjectionFailed);
+        if (IsEnabled()) WriteEvent(EvtInjectionFailed, action, win32_error);
     }
 
-    [Event(EvtInjectionFailedDetail,
-           Level = EventLevel.Verbose,
-           Keywords = (EventKeywords)Keywords.Push,
-           Message = "injection failed | action={0} | win32_error={1}")]
-    public void InjectionFailedDetail(string action, int win32_error)
-    {
-        if (IsEnabled()) WriteEvent(EvtInjectionFailedDetail, action, win32_error);
-    }
-
-    [Event(EvtInjectionRecovered,
+    // reason: injection_succeeded (the path recovered) or engine_stopped (the
+    // engine ended the incident, not a recovery). The journal keeps the
+    // Warning, so it keeps its end too.
+    [Event(EvtInjectionIncidentEnded,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Push,
-           Message = "Mouse injection recovered")]
-    public void InjectionRecovered()
+           Tags = ObservationTags.Journal,
+           Message = "Mouse injection incident ended | reason={0}")]
+    public void InjectionIncidentEnded(string reason)
     {
-        if (IsEnabled()) WriteEvent(EvtInjectionRecovered);
+        if (IsEnabled()) WriteEvent(EvtInjectionIncidentEnded, reason);
     }
 
     // ── Acts ─────────────────────────────────────────────────────────────
@@ -136,7 +149,7 @@ public sealed class DeckleTrackpadSource : DeckleEventSource
     [Event(EvtGesturesNeutralizedDetail,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Push,
-           Message = "gesture backup | {0}")]
+           Message = "gesture backup saved | backup_values={0}")]
     public void GesturesNeutralizedDetail(string backup_values)
     {
         if (IsEnabled()) WriteEvent(EvtGesturesNeutralizedDetail, backup_values);
@@ -151,22 +164,26 @@ public sealed class DeckleTrackpadSource : DeckleEventSource
         if (IsEnabled()) WriteEvent(EvtGesturesRestored);
     }
 
+    // operation: neutralize | restore. reason: key_unavailable,
+    // backup_malformed, or write_threw (ex_type/ex_message then say why).
     [Event(EvtGestureWriteFailed,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Push,
-           Message = "Gesture registry write failed")]
-    public void GestureWriteFailed()
+           Message = "Gesture registry write failed | operation={0} | reason={1} | ex_type={2} | ex_message={3}")]
+    public void GestureWriteFailed(string operation, string reason, string ex_type, string ex_message)
     {
-        if (IsEnabled()) WriteEvent(EvtGestureWriteFailed);
+        if (IsEnabled()) WriteEvent(EvtGestureWriteFailed, operation, reason, ex_type, ex_message);
     }
 
-    [Event(EvtGestureWriteFailedDetail,
-           Level = EventLevel.Verbose,
+    // query: are_neutralized | has_backup. The page then shows the safe "off"
+    // reading, which may not match what Windows actually has.
+    [Event(EvtGestureStateUnreadable,
+           Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Push,
-           Message = "gesture registry write failed | ex_type={0} | message={1}")]
-    public void GestureWriteFailedDetail(string ex_type, string message)
+           Message = "Gesture state unreadable | query={0} | ex_type={1} | ex_message={2}")]
+    public void GestureStateUnreadable(string query, string ex_type, string ex_message)
     {
-        if (IsEnabled()) WriteEvent(EvtGestureWriteFailedDetail, ex_type, message);
+        if (IsEnabled()) WriteEvent(EvtGestureStateUnreadable, query, ex_type, ex_message);
     }
 
     [Event(EvtRepairLaunched,
@@ -178,21 +195,54 @@ public sealed class DeckleTrackpadSource : DeckleEventSource
         if (IsEnabled()) WriteEvent(EvtRepairLaunched);
     }
 
+    // reason: uac_declined (win32_error 1223) or launch_failed.
     [Event(EvtRepairLaunchFailed,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "Connection repair script failed to launch")]
-    public void RepairLaunchFailed()
+           Message = "Connection repair script failed to launch | reason={0} | win32_error={1} | ex_type={2} | ex_message={3}")]
+    public void RepairLaunchFailed(string reason, int win32_error, string ex_type, string ex_message)
     {
-        if (IsEnabled()) WriteEvent(EvtRepairLaunchFailed);
+        if (IsEnabled()) WriteEvent(EvtRepairLaunchFailed, reason, win32_error, ex_type, ex_message);
     }
 
-    [Event(EvtRepairLaunchFailedDetail,
+    [Event(EvtRepairCompleted,
+           Level = EventLevel.Informational,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Message = "Connection repair script completed | exit_code={0}")]
+    public void RepairCompleted(int exit_code)
+    {
+        if (IsEnabled()) WriteEvent(EvtRepairCompleted, exit_code);
+    }
+
+    // reason: script_failed (the script's own exit 1 after a failed step) or
+    // script_interrupted (any other code, typically the console closed).
+    [Event(EvtRepairFailed,
+           Level = EventLevel.Warning,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Message = "Connection repair script failed | reason={0} | exit_code={1}")]
+    public void RepairFailed(string reason, int exit_code)
+    {
+        if (IsEnabled()) WriteEvent(EvtRepairFailed, reason, exit_code);
+    }
+
+    // The repair runs regardless; only its outcome line is lost.
+    [Event(EvtRepairExitUnobserved,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "connection repair launch failed | ex_type={0} | message={1}")]
-    public void RepairLaunchFailedDetail(string ex_type, string message)
+           Message = "repair exit unobserved | ex_type={0} | ex_message={1}")]
+    public void RepairExitUnobserved(string ex_type, string ex_message)
     {
-        if (IsEnabled()) WriteEvent(EvtRepairLaunchFailedDetail, ex_type, message);
+        if (IsEnabled()) WriteEvent(EvtRepairExitUnobserved, ex_type, ex_message);
+    }
+
+    // act: gestures | repair. The page swallowed the exception; the act did
+    // not run, so what the user sees did not change.
+    [Event(EvtActFailed,
+           Level = EventLevel.Warning,
+           Keywords = (EventKeywords)Keywords.Push,
+           Message = "Trackpad act failed | act={0} | ex_type={1} | ex_message={2}")]
+    public void ActFailed(string act, string ex_type, string ex_message)
+    {
+        if (IsEnabled()) WriteEvent(EvtActFailed, act, ex_type, ex_message);
     }
 }

@@ -1,3 +1,4 @@
+using System.ComponentModel;
 using System.Runtime.InteropServices;
 using System.Diagnostics.Tracing;
 using Deckle.Core;
@@ -8,6 +9,8 @@ namespace Deckle.Input;
 
 public sealed partial class KeyboardInputHost
 {
+    private const int StopTimeoutMs = 3000;
+
     public bool IsRunning { get { lock (_stateLock) return _refCount > 0; } }
 
     /// <summary>
@@ -31,6 +34,7 @@ public sealed partial class KeyboardInputHost
             using var ready = new ManualResetEventSlim(false);
             Exception? startError = null;
             bool started = false;
+            _pumpFailure = "";
 
             _thread = new Thread(() =>
             {
@@ -60,9 +64,10 @@ public sealed partial class KeyboardInputHost
 
             if (!started)
             {
-                DeckleInputSource.Log.KeyboardHostStartFailed();
-                DeckleInputSource.Log.KeyboardHostStartFailedDetail(
-                    startError?.GetType().Name ?? "(unknown)", startError?.Message ?? "(no message)");
+                DeckleInputSource.Log.KeyboardHostStartFailed(
+                    startError?.GetType().Name ?? "(unknown)",
+                    startError?.Message ?? "(no message)",
+                    startError is Win32Exception win32 ? win32.NativeErrorCode : 0);
                 _thread = null;
                 return false;
             }
@@ -90,8 +95,19 @@ public sealed partial class KeyboardInputHost
         }
 
         RawInputInterop.PostThreadMessage(_threadId, RawInputInterop.WM_QUIT, IntPtr.Zero, IntPtr.Zero);
-        thread.Join(TimeSpan.FromSeconds(3));
-        DeckleInputSource.Log.KeyboardHostStopped();
+        if (!thread.Join(StopTimeoutMs))
+        {
+            // The thread still owns the window, the registration and the
+            // hooks; the host is reported stopped because no consumer holds it.
+            DeckleInputSource.Log.HostStopTimedOut(DeckleInputSource.KeyboardHost, StopTimeoutMs);
+            DeckleInputSource.Log.KeyboardHostStopped("failed", "stop_timed_out");
+            return;
+        }
+
+        // Join orders the input thread's last write of _pumpFailure before this read.
+        string failure = _pumpFailure;
+        _pumpFailure = "";
+        DeckleInputSource.Log.KeyboardHostStopped(failure.Length == 0 ? "completed" : "failed", failure);
     }
 
     public void Dispose() => Stop();
@@ -99,8 +115,9 @@ public sealed partial class KeyboardInputHost
     public void RequestDrain()
     {
         uint threadId = _threadId;
-        if (threadId != 0)
-            RawInputInterop.PostThreadMessage(threadId, WM_APP_DRAIN, IntPtr.Zero, IntPtr.Zero);
+        if (threadId != 0
+            && !RawInputInterop.PostThreadMessage(threadId, WM_APP_DRAIN, IntPtr.Zero, IntPtr.Zero))
+            NotePostFailure();
     }
 
     // ── Input thread ─────────────────────────────────────────────────────
@@ -109,10 +126,15 @@ public sealed partial class KeyboardInputHost
     {
         _threadId = RawInputInterop.GetCurrentThreadId();
 
+        // A drain posted to the previous run's dying thread must not open an
+        // incident on this one.
+        Interlocked.Exchange(ref _postFailures, 0);
+
+        // Setup failures throw Win32Exception so Start can log the native code
+        // as its own field instead of burying it in the message.
         _hInstance = NativeMethods.GetModuleHandle(null);
         if (_hInstance == IntPtr.Zero)
-            throw new InvalidOperationException(
-                $"GetModuleHandle failed (Win32 err {Marshal.GetLastWin32Error()})");
+            throw new Win32Exception(Marshal.GetLastWin32Error(), "GetModuleHandle failed");
 
         _wndProcDelegate = WndProc;
 
@@ -126,8 +148,7 @@ public sealed partial class KeyboardInputHost
 
         _classAtom = NativeMethods.RegisterClassEx(ref wc);
         if (_classAtom == 0)
-            throw new InvalidOperationException(
-                $"RegisterClassEx('{ClassName}') failed (Win32 err {Marshal.GetLastWin32Error()})");
+            throw new Win32Exception(Marshal.GetLastWin32Error(), $"RegisterClassEx('{ClassName}') failed");
 
         _hwnd = NativeMethods.CreateWindowEx(
             dwExStyle:    0,
@@ -142,9 +163,7 @@ public sealed partial class KeyboardInputHost
 
         if (_hwnd == IntPtr.Zero)
         {
-            int err = Marshal.GetLastWin32Error();
-            throw new InvalidOperationException(
-                $"CreateWindowEx(HWND_MESSAGE) failed (Win32 err {err})");
+            throw new Win32Exception(Marshal.GetLastWin32Error(), "CreateWindowEx(HWND_MESSAGE) failed");
         }
 
         var registration = new[]
@@ -167,10 +186,7 @@ public sealed partial class KeyboardInputHost
         if (!NativeMethods.RegisterRawInputDevices(
                 registration, 2, (uint)Marshal.SizeOf<RAWINPUTDEVICE>()))
         {
-            int err = Marshal.GetLastWin32Error();
-            DeckleInputSource.Log.RegistrationFailed();
-            DeckleInputSource.Log.RegistrationFailedDetail(err);
-            throw new InvalidOperationException($"RegisterRawInputDevices failed (Win32 err {err})");
+            throw new Win32Exception(Marshal.GetLastWin32Error(), "RegisterRawInputDevices failed");
         }
         _rawInputRegistered = true;
 
@@ -188,7 +204,10 @@ public sealed partial class KeyboardInputHost
         int focusError = _focusHook == IntPtr.Zero ? Marshal.GetLastWin32Error() : 0;
         if (_foregroundHook == IntPtr.Zero || _focusHook == IntPtr.Zero)
         {
-            throw new InvalidOperationException(
+            // Two hooks, two codes: the first non-zero one becomes the
+            // exception's native code, both stay in the message.
+            throw new Win32Exception(
+                foregroundError != 0 ? foregroundError : focusError,
                 $"SetWinEventHook failed (foreground_error={foregroundError}, "
                 + $"focus_error={focusError})");
         }
@@ -201,44 +220,79 @@ public sealed partial class KeyboardInputHost
             0);
         if (_mouseHook == IntPtr.Zero)
         {
-            DeckleInputSource.Log.MouseWheelHookFailed();
-            DeckleInputSource.Log.MouseWheelHookFailedDetail(Marshal.GetLastWin32Error());
+            // Read before any other call: an EventSource write can itself
+            // overwrite the thread's last error.
+            int hookError = Marshal.GetLastWin32Error();
+            DeckleInputSource.Log.MouseHookFailed(hookError);
         }
 
-        DeckleInputSource.Log.KeyboardHostStarted(_hwnd.ToInt64(), (int)_threadId);
+        StartHeartbeat();
+        DeckleInputSource.Log.KeyboardHostStarted(_mouseHook != IntPtr.Zero);
+        DeckleInputSource.Log.KeyboardHostStartedDetail(_hwnd.ToInt64(), (int)_threadId);
     }
 
     private void RunPump()
     {
-        while (RawInputInterop.GetMessage(out var msg, IntPtr.Zero, 0, 0) > 0)
+        try
         {
-            // A bare thread message (hwnd == 0) never reaches WndProc via DispatchMessage —
-            // WndProc only handles WM_INPUT — so the drain must be relayed here, in the loop body.
-            if (msg.message == WM_APP_DRAIN)
+            int result;
+            while ((result = RawInputInterop.GetMessage(out var msg, IntPtr.Zero, 0, 0)) > 0)
             {
-                DrainRequested?.Invoke();
-                continue;
+                // A bare thread message (hwnd == 0) never reaches WndProc via DispatchMessage —
+                // WndProc only handles WM_INPUT — so the drain must be relayed here, in the loop body.
+                if (msg.message == WM_APP_DRAIN)
+                {
+                    DrainRequested?.Invoke();
+                    continue;
+                }
+                if (msg.message == WM_APP_POINTER_DOWN)
+                {
+                    _mouseInteractions.PublishQueuedButtonDown();
+                    continue;
+                }
+                if (msg.message == WM_APP_WHEEL_OBSERVATION)
+                {
+                    PublishQueuedHookWheels();
+                    continue;
+                }
+                RawInputInterop.TranslateMessage(ref msg);
+                RawInputInterop.DispatchMessage(ref msg);
             }
-            if (msg.message == WM_APP_POINTER_DOWN)
+
+            // -1 is GetMessage's error return; 0 is the WM_QUIT Stop posted.
+            if (result < 0)
             {
-                _mouseInteractions.PublishQueuedButtonDown();
-                continue;
+                int err = Marshal.GetLastWin32Error();
+                _pumpFailure = "get_message_failed";
+                DeckleInputSource.Log.InputPumpFailed(
+                    DeckleInputSource.KeyboardHost, _pumpFailure, err, "", "");
             }
-            if (msg.message == WM_APP_WHEEL_OBSERVATION)
-            {
-                PublishQueuedHookWheels();
-                continue;
-            }
-            RawInputInterop.TranslateMessage(ref msg);
-            RawInputInterop.DispatchMessage(ref msg);
+        }
+        catch (Exception ex)
+        {
+            LogPumpException(ex);
+            throw;
         }
 
         TearDownInputThread();
     }
 
+    // A fault inside the pump is still fatal, as before; logging it here first
+    // names the host that died, which the process-wide crash handler cannot.
+    // The flag keeps a fault seen in a callback from being logged again when
+    // it unwinds through RunPump.
+    private void LogPumpException(Exception ex)
+    {
+        if (_pumpFailure.Length != 0) return;
+        _pumpFailure = "exception";
+        DeckleInputSource.Log.InputPumpFailed(
+            DeckleInputSource.KeyboardHost, _pumpFailure, 0, ex.GetType().Name, ex.Message);
+    }
+
     private void TearDownInputThread()
     {
         FlushAllWheelObservations();
+        CloseHealthIncidents();
 
         if (_rawInputRegistered)
         {

@@ -22,29 +22,62 @@ public class DeckleInputSourceTests : IDisposable
     }
 
     [Fact]
-    public void KeyboardHostStartFailureSeparatesWarningFromVerboseDetail()
+    public void KeyboardHostStartFailureCarriesItsCauseInOneJournalWarning()
     {
         using var listener = new TestEventListener("Deckle-Input");
 
-        DeckleInputSource.Log.KeyboardHostStartFailed();
-        DeckleInputSource.Log.KeyboardHostStartFailedDetail("Win32Exception", "Access is denied.");
+        DeckleInputSource.Log.KeyboardHostStartFailed("Win32Exception", "Access is denied.", 5);
+
+        var warning = Assert.Single(listener.Events);
+        Assert.Equal(DeckleInputSource.EvtKeyboardHostStartFailed, warning.EventId);
+        Assert.Equal(EventLevel.Warning, warning.Level);
+        Assert.True(warning.HasKeyword(Keywords.Lifecycle));
+        Assert.Equal(ObservationTags.Journal, warning.Tags & ObservationTags.Journal);
+        Assert.Equal("Win32Exception", warning.Payload?[0]);
+        Assert.Equal("Access is denied.", warning.Payload?[1]);
+        Assert.Equal(5, warning.Payload?[2]);
+    }
+
+    [Fact]
+    public void HostLifecycleMilestonesReachTheJournalWithAnOutcome()
+    {
+        using var listener = new TestEventListener("Deckle-Input");
+
+        DeckleInputSource.Log.HostStarted(1);
+        DeckleInputSource.Log.HostStopped("failed", "get_message_failed");
 
         Assert.Collection(listener.Events,
-            warning =>
+            started =>
             {
-                Assert.Equal(DeckleInputSource.EvtKeyboardHostStartFailed, warning.EventId);
-                Assert.Equal(EventLevel.Warning, warning.Level);
-                Assert.True(warning.HasKeyword(Keywords.Lifecycle));
-                Assert.Equal(0, warning.Payload?.Count ?? 0);
+                Assert.Equal(DeckleInputSource.EvtHostStarted, started.EventId);
+                Assert.Equal(EventLevel.Informational, started.Level);
+                Assert.True(started.HasKeyword(Keywords.Lifecycle));
+                Assert.Equal(ObservationTags.Journal, started.Tags & ObservationTags.Journal);
             },
-            detail =>
+            stopped =>
             {
-                Assert.Equal(DeckleInputSource.EvtKeyboardHostStartFailedDetail, detail.EventId);
-                Assert.Equal(EventLevel.Verbose, detail.Level);
-                Assert.True(detail.HasKeyword(Keywords.Lifecycle));
-                Assert.Equal("Win32Exception", detail.Payload?[0]);
-                Assert.Equal("Access is denied.", detail.Payload?[1]);
+                Assert.Equal(DeckleInputSource.EvtHostStopped, stopped.EventId);
+                Assert.Equal(EventLevel.Informational, stopped.Level);
+                Assert.Equal(ObservationTags.Journal, stopped.Tags & ObservationTags.Journal);
+                Assert.Equal("failed", stopped.Payload?[0]);
+                Assert.Equal("get_message_failed", stopped.Payload?[1]);
             });
+    }
+
+    [Fact]
+    public void PumpFailureIsAnErrorCarryingItsCause()
+    {
+        using var listener = new TestEventListener("Deckle-Input");
+
+        DeckleInputSource.Log.InputPumpFailed(
+            DeckleInputSource.KeyboardHost, "get_message_failed", 1400, "", "");
+
+        var error = Assert.Single(listener.Events);
+        Assert.Equal(DeckleInputSource.EvtInputPumpFailed, error.EventId);
+        Assert.Equal(EventLevel.Error, error.Level);
+        Assert.Equal("keyboard", error.Payload?[0]);
+        Assert.Equal("get_message_failed", error.Payload?[1]);
+        Assert.Equal(1400, error.Payload?[2]);
     }
 
     [Fact]

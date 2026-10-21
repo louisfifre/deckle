@@ -113,13 +113,20 @@ public sealed class WheelEventRecorder : IDisposable
         {
             if (!_armed) return;
             _armed = false;
-            if (_writer is null) return;
+            if (_writer is null)
+            {
+                // Armed but no wheel event ever arrived, so no file was
+                // opened: the session still ends in the log, with nothing recorded.
+                DeckleInputSource.Log.WheelRecordingStopped("completed", 0);
+                return;
+            }
 
             string path = _path!;
             long events = _events;
-            double durationSec = _firstEventMs >= 0
+            double durationS = _firstEventMs >= 0
                 ? Math.Round((RawInputHost.NowMs - _firstEventMs) / 1000.0, 1)
                 : 0;
+            string outcome = "completed";
 
             try
             {
@@ -127,8 +134,8 @@ public sealed class WheelEventRecorder : IDisposable
             }
             catch (Exception ex)
             {
-                DeckleInputSource.Log.WheelRecordingFailed();
-                DeckleInputSource.Log.WheelRecordingFailedDetail(ex.GetType().Name, ex.Message);
+                outcome = "failed";
+                DeckleInputSource.Log.WheelRecordingFailed(ex.GetType().Name, ex.Message);
             }
             finally
             {
@@ -138,10 +145,17 @@ public sealed class WheelEventRecorder : IDisposable
             }
 
             long bytes = 0;
-            try { bytes = new FileInfo(path).Length; } catch { /* size is informative only */ }
+            try
+            {
+                bytes = new FileInfo(path).Length;
+            }
+            catch (Exception ex)
+            {
+                DeckleInputSource.Log.RecordingSizeUnavailable("wheel", ex.GetType().Name, ex.Message);
+            }
 
-            DeckleInputSource.Log.WheelRecordingStopped();
-            DeckleInputSource.Log.WheelRecordingStoppedDetail(path, events, durationSec, bytes);
+            DeckleInputSource.Log.WheelRecordingStopped(outcome, events);
+            DeckleInputSource.Log.WheelRecordingStoppedDetail(path, durationS, bytes);
         }
     }
 
@@ -170,12 +184,12 @@ public sealed class WheelEventRecorder : IDisposable
         }
         catch (Exception ex)
         {
-            DeckleInputSource.Log.WheelRecordingFailed();
-            DeckleInputSource.Log.WheelRecordingFailedDetail(ex.GetType().Name, ex.Message);
+            DeckleInputSource.Log.WheelRecordingFailed(ex.GetType().Name, ex.Message);
             _writer?.Dispose();
             _writer = null;
             _path = null;
             _armed = false;
+            DeckleInputSource.Log.WheelRecordingStopped("failed", 0);
             return false;
         }
     }
@@ -199,14 +213,16 @@ public sealed class WheelEventRecorder : IDisposable
         return slot;
     }
 
+    // The session ends here, not in Stop (which now finds it disarmed), so the
+    // closing line is written here too.
     private void FailAndClose(Exception ex)
     {
-        DeckleInputSource.Log.WheelRecordingFailed();
-        DeckleInputSource.Log.WheelRecordingFailedDetail(ex.GetType().Name, ex.Message);
+        DeckleInputSource.Log.WheelRecordingFailed(ex.GetType().Name, ex.Message);
         _writer?.Dispose();
         _writer = null;
         _path = null;
         _armed = false;
+        DeckleInputSource.Log.WheelRecordingStopped("failed", _events);
     }
 
     private static string? TryGetDeviceName(IntPtr handle)

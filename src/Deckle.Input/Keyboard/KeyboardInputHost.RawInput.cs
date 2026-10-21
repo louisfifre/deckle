@@ -10,11 +10,27 @@ public sealed partial class KeyboardInputHost
 {
     private IntPtr WndProc(IntPtr hWnd, uint msg, IntPtr wParam, IntPtr lParam)
     {
-        if (msg == NativeMethods.WM_INPUT)
-            HandleInput(lParam);
-        else if (msg == RawInputInterop.WM_TIMER
-            && unchecked((uint)wParam.ToInt64()) == WheelObservationTimerId)
-            FlushExpiredWheelObservations();
+        try
+        {
+            if (msg == NativeMethods.WM_INPUT)
+                HandleInput(lParam);
+            else if (msg == RawInputInterop.WM_TIMER)
+            {
+                uint timerId = unchecked((uint)wParam.ToInt64());
+                if (timerId == WheelObservationTimerId)
+                    FlushExpiredWheelObservations();
+                else if (timerId == HeartbeatTimerId)
+                    OnHeartbeat();
+            }
+        }
+        catch (Exception ex)
+        {
+            // Whether an exception survives the native DispatchMessage frame
+            // back to RunPump depends on the runtime (it can fail fast), so the
+            // host context is captured before it leaves managed code.
+            LogPumpException(ex);
+            throw;
+        }
         return NativeMethods.DefWindowProc(hWnd, msg, wParam, lParam);
     }
 

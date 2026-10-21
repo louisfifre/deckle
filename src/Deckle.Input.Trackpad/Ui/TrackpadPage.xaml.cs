@@ -121,10 +121,11 @@ public sealed partial class TrackpadPage : Page
                 WindowsGestureNeutralizer.TryRestore();
             }
         }
-        catch
+        catch (Exception ex)
         {
             // An act failure must never crash the page — the label refresh
             // below reflects whatever state actually took effect.
+            DeckleTrackpadSource.Log.ActFailed("gestures", ex.GetType().Name, ex.Message);
         }
         finally
         {
@@ -143,10 +144,11 @@ public sealed partial class TrackpadPage : Page
             // console the user drives.
             ConnectionRepair.TryLaunch();
         }
-        catch
+        catch (Exception ex)
         {
             // Swallow : a launch failure (UAC declined, script missing)
             // leaves the page untouched.
+            DeckleTrackpadSource.Log.ActFailed("repair", ex.GetType().Name, ex.Message);
         }
         finally
         {
@@ -161,12 +163,22 @@ public sealed partial class TrackpadPage : Page
     private static bool SafeAreNeutralized()
     {
         try { return WindowsGestureNeutralizer.AreNeutralized(); }
-        catch { return false; }
+        catch (Exception ex)
+        {
+            DeckleTrackpadSource.Log.GestureStateUnreadable(
+                "are_neutralized", ex.GetType().Name, ex.Message);
+            return false;
+        }
     }
 
     private static bool SafeHasBackup()
     {
         try { return WindowsGestureNeutralizer.HasBackup(); }
-        catch { return false; }
+        catch (Exception ex)
+        {
+            DeckleTrackpadSource.Log.GestureStateUnreadable(
+                "has_backup", ex.GetType().Name, ex.Message);
+            return false;
+        }
     }
 }

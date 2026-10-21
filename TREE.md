@@ -1003,6 +1003,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   ├── IWheelInterceptor.cs
 │   │   │   ├── KeyboardInputHost.cs
 │   │   │   ├── KeyboardInputHost.FocusHooks.cs
+│   │   │   ├── KeyboardInputHost.Health.cs
 │   │   │   ├── KeyboardInputHost.LifecycleAndWindow.cs
 │   │   │   ├── KeyboardInputHost.MouseHook.cs
 │   │   │   ├── KeyboardInputHost.RawInput.cs
@@ -1011,6 +1012,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   ├── KeyboardKeyEvent.cs
 │   │   │   ├── MouseInteractionRouter.cs
 │   │   │   ├── MouseWheelEvent.cs
+│   │   │   ├── RepeatingIncident.cs
 │   │   │   ├── WheelEventQueue.cs
 │   │   │   └── WheelObservationBuffer.cs
 │   │   ├── Telemetry/
@@ -1998,6 +2000,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── LowLevelMouseHookInteropTests.cs
 │   │   ├── MouseInteractionRouterTests.cs
 │   │   ├── MouseWheelTimestampTests.cs
+│   │   ├── RepeatingIncidentTests.cs
 │   │   ├── SyntheticTouchpadFrameBuilderTests.cs
 │   │   └── WheelObservationBufferTests.cs
 │   ├── Deckle.Input.Trackpad.Tests/

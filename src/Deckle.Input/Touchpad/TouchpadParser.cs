@@ -23,6 +23,12 @@ namespace Deckle.Input;
 // without locking.
 public sealed class TouchpadParser : IDisposable
 {
+    // Failure reasons are snake_case words because they land verbatim in the
+    // ParserCreateFailed payload. This one is the expected outcome for every
+    // non-touchpad HID collection the host enumerates, so the host tests it
+    // by equality to stay silent.
+    internal const string NotTouchpadCollection = "not_touchpad_collection";
+
     private IntPtr _preparsed;
     private readonly ushort[] _contactCollections;
     private readonly bool _hasButton;
@@ -59,7 +65,7 @@ public sealed class TouchpadParser : IDisposable
                 hDevice, RawInputInterop.RIDI_PREPARSEDDATA, IntPtr.Zero, ref preparsedSize) != 0
             || preparsedSize == 0)
         {
-            failure = "preparsed data size query failed";
+            failure = "preparsed_size_query_failed";
             return null;
         }
 
@@ -69,20 +75,20 @@ public sealed class TouchpadParser : IDisposable
             if (RawInputInterop.GetRawInputDeviceInfo(
                     hDevice, RawInputInterop.RIDI_PREPARSEDDATA, preparsed, ref preparsedSize) != preparsedSize)
             {
-                failure = "preparsed data read failed";
+                failure = "preparsed_read_failed";
                 return Fail(ref preparsed);
             }
 
             if (HidInterop.HidP_GetCaps(preparsed, out var caps) != HidInterop.HIDP_STATUS_SUCCESS)
             {
-                failure = "HidP_GetCaps failed";
+                failure = "hidp_get_caps_failed";
                 return Fail(ref preparsed);
             }
 
             if (caps.UsagePage != RawInputInterop.UsagePageDigitizer ||
                 caps.Usage != RawInputInterop.UsageTouchpad)
             {
-                failure = $"not a touchpad collection (page=0x{caps.UsagePage:X2} usage=0x{caps.Usage:X2})";
+                failure = NotTouchpadCollection;
                 return Fail(ref preparsed);
             }
 
@@ -95,7 +101,7 @@ public sealed class TouchpadParser : IDisposable
                     HidInterop.HIDP_REPORT_TYPE.HidP_Input, valueCaps, ref valueCapsLength, preparsed)
                 != HidInterop.HIDP_STATUS_SUCCESS)
             {
-                failure = "HidP_GetValueCaps failed";
+                failure = "hidp_get_value_caps_failed";
                 return Fail(ref preparsed);
             }
 
@@ -124,7 +130,7 @@ public sealed class TouchpadParser : IDisposable
 
             if (contactCollections.Count == 0)
             {
-                failure = "no contact link collection in the report layout";
+                failure = "no_contact_link_collection";
                 return Fail(ref preparsed);
             }
 
