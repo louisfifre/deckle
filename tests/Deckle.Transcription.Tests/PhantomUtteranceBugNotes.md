@@ -1,5 +1,36 @@
 # Phantom utterance bug notes
 
+## The last words of an utterance were dropped (ending noise pad)
+
+Seen on 2026-10-21 in replays of one captured utterance, Whisper large-v3,
+French, VAD trim on (30 ms speech pad).
+
+- **Trigger.** The backend receives audio that ends 30 ms after the last
+  speech, i.e. near-digital silence right behind the final word.
+- **Symptom.** The text stops mid-sentence ("... me dire ce que" instead of
+  "... me dire ce que tu en penses."). Not deterministic: the same audio
+  replayed 8 times gave the full ending 3 times out of 8.
+- **Cause (inferred, not proven inside Whisper).** The near-digital-silence
+  tail lets the decoder emit end-of-text early. Replay evidence: appending
+  500 ms of exact digital silence fixed 0/8; appending 500 ms of noise at
+  about -60 dBFS RMS fixed 8/8.
+- **False lead.** The single 30.0 s segment seen in the logs for these
+  utterances is a cosmetic timestamp artefact, not the cause of the
+  truncation.
+- **Violated invariant.** Every utterance reaches the backend followed by a
+  low-level noise tail, never by digital silence or by a bare trim edge.
+- **Recurrence cue.** A delivered take ending mid-sentence while the log shows
+  `UtteranceSentToBackend` with `pad_ms=0` or no `pad_ms`, or with the pad
+  present and the text still cut (then the level or the length of
+  `TrailingNoisePad` needs re-tuning against a replay).
+- **Guarded by.** `TrailingNoisePadTests` (length, level, determinism, input
+  untouched) and
+  `LiveTranscriptionPipelineTests.EveryUtteranceReachesTheBackendWithANoiseTailAfterItsSpeech`.
+  Not guarded: the end-of-text behaviour itself needs the real model, so no
+  automated test reproduces the truncation; the fix rests on the 8-run
+  replay. The pad is not applied to `BackendAudio` (corpus record) and the
+  phantom filter judges the unpadded duration.
+
 ## A noise blip before Stop was pasted as words
 
 Seen on 2026-10-21 in a streaming take (session of 13:08:50 in the
