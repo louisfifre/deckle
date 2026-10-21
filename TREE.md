@@ -1639,6 +1639,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   ├── RewriteProfileSelection.cs
 │   │   │   ├── SampleLevels.cs
 │   │   │   ├── TextMetrics.cs
+│   │   │   ├── TrailingNoisePad.cs
 │   │   │   ├── TranscriptFileWriter.cs
 │   │   │   ├── TranscriptionDelivery.cs
 │   │   │   ├── TranscriptionEngine.BatchRewrite.cs
@@ -2175,6 +2176,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── RewriteProfileSelectionTests.cs
 │   │   ├── SegmentedTranscriptionSessionTests.cs
 │   │   ├── StreamingBackendAudioTests.cs
+│   │   ├── TrailingNoisePadTests.cs
 │   │   ├── TranscriptFileWriterDiskTests.cs
 │   │   ├── TranscriptFileWriterTests.cs
 │   │   ├── TranscriptionDeliveryTests.cs
