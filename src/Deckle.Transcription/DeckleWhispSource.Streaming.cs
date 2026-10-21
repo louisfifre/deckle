@@ -88,15 +88,17 @@ public sealed partial class DeckleWhispSource
     }
 
     // The level of the audio handed to the backend, after preprocessing and the
-    // VAD trim, so it reads against the pre-processing input level.
+    // VAD trim, so it reads against the pre-processing input level. audio_ms and
+    // the levels describe the utterance alone; pad_ms is the noise tail appended
+    // after it, so the backend receives audio_ms + pad_ms.
     [Event(EvtUtteranceSentToBackend,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Pipeline,
-           Message = "utterance sent to backend | index={0} | audio_ms={1} | rms_dbfs={2:F1} | peak_dbfs={3:F1}")]
-    public void UtteranceSentToBackend(int index, int audio_ms, double rms_dbfs, double peak_dbfs)
+           Message = "utterance sent to backend | index={0} | audio_ms={1} | rms_dbfs={2:F1} | peak_dbfs={3:F1} | pad_ms={4}")]
+    public void UtteranceSentToBackend(int index, int audio_ms, double rms_dbfs, double peak_dbfs, int pad_ms)
     {
         if (IsTakeDetailEnabled((EventKeywords)Keywords.Pipeline))
-            WriteEvent(EvtUtteranceSentToBackend, index, audio_ms, rms_dbfs, peak_dbfs);
+            WriteEvent(EvtUtteranceSentToBackend, index, audio_ms, rms_dbfs, peak_dbfs, pad_ms);
     }
 
     // hangover_used_ms is the silence the segmenter actually waited before

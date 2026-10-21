@@ -435,7 +435,20 @@ public sealed partial class TranscriptionEngine
             }
             backendChunks?.Add(samples);
 
+            // The audio length of the utterance itself, before the pad: what the
+            // phantom filter and the logs judge, so a 0.6 s blip stays a 0.6 s
+            // blip and the pad cannot buy it a longer duration budget.
+            int speechSamples = samples.Length;
+
+            // Whisper sometimes ended the text early when the audio stopped on
+            // near-digital silence after the trim; a noise tail fixed it on
+            // replay, digital silence did not (see TrailingNoisePad). The pad
+            // goes only to the backend: BackendAudio keeps the unpadded corpus.
+            float[] backendSamples = TrailingNoisePad.Append(samples);
+
             // What the backend actually receives: after the DSP and the trim.
+            // The level is measured on the utterance without the pad, which
+            // would otherwise pull the RMS down; pad_ms reports it apart.
             if (OperationalLogAdmission.IsDetailEnabled(
                     OperationalLogActivity.Transcription,
                     DeckleWhispSource.Log,
@@ -444,14 +457,14 @@ public sealed partial class TranscriptionEngine
             {
                 var (rmsDbfs, peakDbfs) = SampleLevels.Measure(samples);
                 DeckleWhispSource.Log.UtteranceSentToBackend(
-                    u.Index, samples.Length / 16, rmsDbfs, peakDbfs);
+                    u.Index, speechSamples / 16, rmsDbfs, peakDbfs, TrailingNoisePad.PadMs);
             }
 
             TranscriptionResult result;
             try
             {
                 result = await _backend.TranscribeAsync(
-                    samples,
+                    backendSamples,
                     seg => NewSegment?.Invoke(seg),
                     drainCt,
                     ctx).ConfigureAwait(false);
@@ -520,11 +533,11 @@ public sealed partial class TranscriptionEngine
             if (text.Length > 0)
             {
                 PhantomUtteranceFilter.Verdict verdict = PhantomUtteranceFilter.Evaluate(
-                    result.Segments, samples.Length / 16_000.0);
+                    result.Segments, speechSamples / 16_000.0);
                 if (verdict.Rejected)
                 {
                     DeckleWhispSource.Log.UtterancePhantomRejected(
-                        u.Index, verdict.Reason, (int)(samples.Length * 1000L / 16_000),
+                        u.Index, verdict.Reason, (int)(speechSamples * 1000L / 16_000),
                         verdict.TextTokens, verdict.TokensPerSecond,
                         verdict.AverageProbability, verdict.MinimumProbability);
                     DeckleWhispSource.Log.ConsumerUtterance(
