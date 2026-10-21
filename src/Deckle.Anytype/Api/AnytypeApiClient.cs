@@ -35,6 +35,7 @@ public sealed partial class AnytypeApiClient : IDisposable
     private readonly string _spacePath;
     private readonly SpaceWriteLock _writeLock;
     private readonly IBackendEndpointTrust? _endpointTrust;
+    private readonly Lazy<AnytypeV2Client> _v2;
 
     // One transport incident across calls: the first unanswered request logs
     // the Error, the next ones stay Verbose, the first answer closes it. Only
@@ -88,7 +89,19 @@ public sealed partial class AnytypeApiClient : IDisposable
         // The cross-process write lock lives beside the credentials, in the
         // anytype module directory (same id as AnytypeCredentials.ModuleId).
         _writeLock = new SpaceWriteLock(AppPaths.GetModuleDirectory("anytype"));
+
+        // Built on first use, from the same credentials and the same endpoint
+        // proof, so a gesture that has moved to v2 never carries its own copy.
+        _v2 = new Lazy<AnytypeV2Client>(
+            () => new AnytypeV2Client(credentials, endpointTrust, handler: null));
     }
+
+    // The v2 transport that rides beside this client. The MCP surfaces hand
+    // their gestures this one object, so moving a gesture to v2 needs no new
+    // plumbing through the host; this client's Dispose releases it. Both
+    // transports share the backend's 1 rps limiter, and the write scope above
+    // still orders Deckle's own writes whichever version performs them.
+    public AnytypeV2Client V2 => _v2.Value;
 
     // Exclusive write access to the space across every host process. A mutating
     // gesture wraps its whole read-modify-write in this scope so a concurrent
@@ -468,6 +481,7 @@ public sealed partial class AnytypeApiClient : IDisposable
 
     public void Dispose()
     {
+        if (_v2.IsValueCreated) _v2.Value.Dispose();
         _http.Dispose();
         _gate.Dispose();
     }
