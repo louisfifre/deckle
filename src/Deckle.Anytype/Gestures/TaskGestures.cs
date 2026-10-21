@@ -1,5 +1,4 @@
 using System.Diagnostics;
-using System.Text;
 using System.Text.Json.Nodes;
 using Deckle.Anytype;
 
@@ -15,12 +14,18 @@ namespace Deckle.Anytype;
 // parser again, so backslash escapes multiplied on each round, and it
 // overwrote whatever another writer had added since the read. Labels still
 // come back escaped (Anytype escapes _, *, backtick and | in the text it
-// serves), which is why the match compares both sides unescaped. task_create
-// still goes through v1.
+// serves), which is why the match compares both sides unescaped.
+//
+// task_create is on v2 too: the task is born from its template, and the
+// checklist and the notes are then blocks added to the template's own
+// sections.
 public sealed class TaskGestures(AnytypeApiClient api, NameResolver resolver, AnytypeV2Client v2)
 {
     readonly AnytypeV2ObjectReader _reader = new(v2);
     readonly AnytypeV2Writer _writer = new(v2);
+
+    // One insert_blocks run holds 1 to 256 blocks.
+    const int MaxBlockRun = 256;
 
     /// <param name="type">type_de_tache tag KEY or display name (both accepted).</param>
     /// <param name="priority">0-5; null leaves it unset.</param>
@@ -40,59 +45,157 @@ public sealed class TaskGestures(AnytypeApiClient api, NameResolver resolver, An
             ?? throw new ArgumentException(
                 $"Type de tâche inconnu « {type} ».", nameof(type));
 
-        // properties is an ARRAY of per-format objects ({key, <format>: value}),
-        // not a {key: value} map; the client does no normalization.
-        var props = new JsonArray
+        var items = (checklist ?? []).Select(l => l.Trim()).Where(l => l.Length > 0).ToList();
+        string text = (notes ?? "").Trim();
+
+        // One insert_blocks takes 256 blocks at most. Said before the create,
+        // so a list too long does not leave a half-made task behind.
+        if (items.Count > MaxBlockRun)
+            throw new ArgumentException(
+                $"Trop de sous-tâches à la création : {items.Count} (maximum {MaxBlockRun}). "
+                + "Crée la tâche avec les premières, puis ajoute le reste avec task_subtask.",
+                nameof(checklist));
+
+        // Properties are a {key: value} map. A select or a relation takes a
+        // LIST (schema of POST /objects), and a select option is addressed by
+        // its NAME, not by the v1 tag key: a v1 key answers 400 "option does
+        // not exist" (measured on PATCH, not on a create). `template` replaces
+        // the v1 `template_id`; naming it is reported as source "request"
+        // (measured on a dry run).
+        var props = new JsonObject
         {
-            ObjectsProp(DevSpace.Props.RelationProjet, projectId),
-            SelectProp(DevSpace.Props.TypeDeTache, typeKey),
+            [DevSpace.Props.RelationProjet] = new JsonArray(projectId),
+            [DevSpace.Props.TypeDeTache] = new JsonArray(DisplayType(typeKey)),
         };
 
         if (priority is int level)
-            props.Add(SelectProp(DevSpace.Props.Priorite, DevSpace.Priority.KeyFor(level)));
+        {
+            DevSpace.Priority.KeyFor(level); // refuses a level outside 0-5
+            // The options of priorite are named "0" to "5" (measured).
+            props[DevSpace.Props.Priorite] = new JsonArray(
+                level.ToString(System.Globalization.CultureInfo.InvariantCulture));
+        }
 
         var payload = new JsonObject
         {
-            ["type_key"] = DevSpace.Types.Task,
+            ["type"] = DevSpace.Types.Task,
             ["name"] = name,
-            ["template_id"] = DevSpace.Templates.Task,
+            ["template"] = DevSpace.Templates.Task,
             ["properties"] = props,
         };
 
-        JsonObject created = await api.CreateObjectAsync(payload, ct);
-        string id = created["id"]?.GetValue<string>() ?? "";
+        // The writer sends an Idempotency-Key, so a resend after a 5xx cannot
+        // make a second task. The id is read from the receipt's "id" (the
+        // schema's CreateResult): the survey only dry-ran creations, so the
+        // body of a real create is NOT measured.
+        AnytypeV2WriteReceipt receipt = await _writer.CreateObjectAsync(payload, ct: ct);
+        string id = receipt.Body?["id"] is JsonValue idValue && idValue.TryGetValue(out string? created)
+            ? created ?? ""
+            : "";
 
-        // A `body` on the POST lands under the template's last section instead
-        // of filling its sections, so the body is written in a second step, in
-        // the template's shape, once the template has shaped the object. A
-        // task born empty keeps the template body untouched.
-        string body = TemplateBody(checklist, notes);
-        if (body.Length > 0 && id.Length > 0)
-            await api.UpdateObjectAsync(id, new JsonObject { ["markdown"] = body }, ct);
+        // The template put its body there (dividers, the inline dataview, the
+        // property blocks, columns), so the two sections are filled by block
+        // ops and never by sending the body back: a whole-body write wiped all
+        // of it. A task born with neither checklist nor notes is left as the
+        // template made it. NOT measured: the body of a task born from the
+        // template (the survey read the template object itself) and a typed
+        // checkbox given to insert_blocks.
+        if (items.Count > 0 || text.Length > 0)
+            await FillSectionsAsync(id, items, text, ct);
 
         sw.Stop();
         DeckleAnytypeSource.Log.GestureCompleted("task_create", sw.Elapsed.TotalMilliseconds);
 
-        var facts = new List<string> { $"Tâche créée : {NameOf(created, name)}", $"id : {id}", $"Type : {DisplayType(typeKey)}" };
+        var facts = new List<string> { $"Tâche créée : {name}", $"id : {id}", $"Type : {DisplayType(typeKey)}" };
         if (priority is int p) facts.Add($"Priorité : {p}");
-        if (checklist is { Count: > 0 }) facts.Add($"Sous-tâches : {checklist.Count}");
+        if (items.Count > 0) facts.Add($"Sous-tâches : {items.Count}");
         return string.Join('\n', facts);
     }
 
-    // The task template's two sections, filled. Headings are the template's,
-    // so task_checklist and task_notes read back what was written here.
-    static string TemplateBody(IReadOnlyList<string>? checklist, string? notes)
+    // One read of the new task (block ids and ETag), one atomic batch. If it
+    // fails the task already exists and the caller must not create it again:
+    // the error says so, with the id.
+    async Task FillSectionsAsync(
+        string id, IReadOnlyList<string> items, string notes, CancellationToken ct)
     {
-        var items = (checklist ?? []).Select(l => l.Trim()).Where(l => l.Length > 0).ToList();
-        string text = (notes ?? "").Trim();
-        if (items.Count == 0 && text.Length == 0) return "";
+        try
+        {
+            if (id.Length == 0)
+                throw new InvalidOperationException("l'identifiant de la tâche n'a pas été renvoyé");
 
-        var sb = new StringBuilder();
-        sb.Append("## ").Append(ReadGestures.ChecklistHeading);
-        foreach (string item in items) sb.Append("\n- [ ] ").Append(item);
-        sb.Append("\n\n## ").Append(ReadGestures.NotesHeading);
-        if (text.Length > 0) sb.Append('\n').Append(text);
-        return sb.ToString();
+            AnytypeV2ObjectDocument doc = await _reader.ReadAsync(id, ct: ct);
+            IReadOnlyList<AnytypeV2Op> ops = PlanFill(doc.Blocks, items, notes);
+
+            // The placements come from what the read saw (where the slot and
+            // the headings are), so the write carries its ETag: a change in
+            // between is a 409 and nothing is written.
+            AnytypeV2WriteOptions? options = doc.ETag is not null
+                ? new AnytypeV2WriteOptions { IfMatch = doc.ETag }
+                : null;
+            await _writer.ApplyObjectOpsAsync(id, ops, options, ct);
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException)
+        {
+            throw new InvalidOperationException(
+                $"Tâche créée (id : {id}) mais ses sections n'ont pas été remplies ({ex.Message}). "
+                + "Ne la recrée pas : complète-la avec task_subtask et replace_section.",
+                ex);
+        }
+    }
+
+    // The batch that fills the template's two sections, from the blocks of the
+    // new task. Nothing is deleted.
+    //
+    // Checklist: the first item takes the template's empty checkbox when one is
+    // left (an update_block), the rest follow it in ONE insert_blocks so their
+    // order is kept. Without a slot they follow the last checkbox, else the
+    // checklist heading, else the end (the rule of task_subtask).
+    //
+    // Notes: markdown inserted right after the notes heading. What the template
+    // put in that section stays (it may hold inline queries). The heading is
+    // matched as BlockSections does (trimmed, unescaped, case-insensitive: the
+    // template's carries a trailing space). Without one, the heading and the
+    // notes are appended. The empty slot is left as is when no checklist is
+    // given.
+    static List<AnytypeV2Op> PlanFill(JsonArray? blocks, IReadOnlyList<string> items, string notes)
+    {
+        var ops = new List<AnytypeV2Op>();
+
+        if (items.Count > 0)
+        {
+            ChecklistLayout layout = ScanChecklist(blocks);
+            int next = 0;
+            AnytypeV2Placement where = layout.AfterChecklist;
+            if (layout.EmptySlot is { } slot)
+            {
+                ops.Add(AnytypeV2BlockOps.UpdateBlock(
+                    AnytypeV2BlockRef.ById(slot),
+                    new JsonObject { ["text"] = items[0], ["checked"] = false }));
+                next = 1;
+                where = AnytypeV2Placement.After(slot);
+            }
+
+            if (next < items.Count)
+                ops.Add(AnytypeV2BlockOps.InsertBlocks(
+                    where,
+                    items.Skip(next).Select(item => AnytypeV2Block.Create("checkbox", item, false))));
+        }
+
+        if (notes.Length > 0)
+        {
+            BlockSections.Located section = BlockSections.Locate(blocks, ReadGestures.NotesHeading);
+            ops.Add(section.Outcome switch
+            {
+                BlockSections.Outcome.Found => AnytypeV2BlockOps.InsertMarkdown(
+                    AnytypeV2Placement.After(section.HeadingId), notes),
+                BlockSections.Outcome.NotFound => AnytypeV2BlockOps.InsertMarkdown(
+                    AnytypeV2Placement.End, $"## {ReadGestures.NotesHeading}\n{notes}"),
+                _ => throw new InvalidOperationException(
+                    $"{section.MatchCount} titres « {ReadGestures.NotesHeading} » : la section des notes est ambiguë"),
+            });
+        }
+
+        return ops;
     }
 
     public async Task<string> SubtaskAsync(
@@ -185,29 +288,17 @@ public sealed class TaskGestures(AnytypeApiClient api, NameResolver resolver, An
     // schema.
     static ChecklistPlan PlanChecklist(JsonArray? blocks, string label, bool done)
     {
-        var matches = new List<string>();
-        string? lastItem = null, emptySlot = null, heading = null;
-        foreach (JsonNode? node in blocks ?? [])
-        {
-            if (node is not JsonObject block || TextOf(block, "id") is not { Length: > 0 } id)
-                continue;
+        ChecklistLayout layout = ScanChecklist(blocks);
 
-            string type = TextOf(block, "type") ?? "";
-            string text = (TextOf(block, "text") ?? "").Trim();
-
-            if (heading is null && IsChecklistHeading(type, text)) heading = id;
-            if (type != "checkbox") continue;
-
-            if (text.Length == 0) { emptySlot ??= id; continue; }
-            lastItem = id;
-            // Anytype escapes markdown in the text it serves (`get\_task` for
-            // get_task); the caller types the label naturally, so both sides
-            // compare unescaped. Comparing raw never matched a label with an
-            // underscore and added a ticked duplicate instead.
-            if (MarkdownBody.Unescape(text).Contains(
-                    MarkdownBody.Unescape(label), StringComparison.OrdinalIgnoreCase))
-                matches.Add(id);
-        }
+        // Anytype escapes markdown in the text it serves (`get\_task` for
+        // get_task); the caller types the label naturally, so both sides
+        // compare unescaped. Comparing raw never matched a label with an
+        // underscore and added a ticked duplicate instead.
+        List<string> matches = layout.Items
+            .Where(item => MarkdownBody.Unescape(item.Text).Contains(
+                MarkdownBody.Unescape(label), StringComparison.OrdinalIgnoreCase))
+            .Select(item => item.Id)
+            .ToList();
 
         if (matches.Count > 1)
             throw new InvalidOperationException(
@@ -220,22 +311,55 @@ public sealed class TaskGestures(AnytypeApiClient api, NameResolver resolver, An
                 DependsOnRead: false,
                 done ? ChecklistOutcome.Checked : ChecklistOutcome.Unchecked);
 
-        if (emptySlot is not null)
+        if (layout.EmptySlot is not null)
             return new(
                 AnytypeV2BlockOps.UpdateBlock(
-                    AnytypeV2BlockRef.ById(emptySlot),
+                    AnytypeV2BlockRef.ById(layout.EmptySlot),
                     new JsonObject { ["text"] = label, ["checked"] = done }),
                 DependsOnRead: true,
                 ChecklistOutcome.Added);
 
-        AnytypeV2Placement where =
-            lastItem is not null ? AnytypeV2Placement.After(lastItem)
-            : heading is not null ? AnytypeV2Placement.After(heading)
-            : AnytypeV2Placement.End;
         return new(
-            AnytypeV2BlockOps.InsertBlocks(where, [AnytypeV2Block.Create("checkbox", label, done)]),
+            AnytypeV2BlockOps.InsertBlocks(
+                layout.AfterChecklist, [AnytypeV2Block.Create("checkbox", label, done)]),
             DependsOnRead: true,
             ChecklistOutcome.Added);
+    }
+
+    // What the flat document says about its checklist: the filled checkboxes in
+    // reading order, the first empty one (the template's slot) and the first
+    // checklist heading. Shared by task_subtask and task_create.
+    sealed record ChecklistLayout(
+        IReadOnlyList<(string Id, string Text)> Items, string? EmptySlot, string? Heading)
+    {
+        // A new item joins the checklist, not the end of the body: after the
+        // last item, else after the heading, and only a body with neither gets
+        // it appended. Appending at the end put subtasks under the notes.
+        public AnytypeV2Placement AfterChecklist =>
+            Items.Count > 0 ? AnytypeV2Placement.After(Items[^1].Id)
+            : Heading is not null ? AnytypeV2Placement.After(Heading)
+            : AnytypeV2Placement.End;
+    }
+
+    static ChecklistLayout ScanChecklist(JsonArray? blocks)
+    {
+        var items = new List<(string Id, string Text)>();
+        string? emptySlot = null, heading = null;
+        foreach (JsonNode? node in blocks ?? [])
+        {
+            if (node is not JsonObject block || TextOf(block, "id") is not { Length: > 0 } id)
+                continue;
+
+            string type = TextOf(block, "type") ?? "";
+            string text = (TextOf(block, "text") ?? "").Trim();
+
+            if (heading is null && IsChecklistHeading(type, text)) heading = id;
+            if (type != "checkbox") continue;
+
+            if (text.Length == 0) emptySlot ??= id;
+            else items.Add((id, text));
+        }
+        return new(items, emptySlot, heading);
     }
 
     // Any heading level counts, as the markdown "#" did. Toggle headings are
@@ -255,21 +379,7 @@ public sealed class TaskGestures(AnytypeApiClient api, NameResolver resolver, An
         return label.Trim();
     }
 
-    // ── Wire-shape property builders ─────────────────────────────────────────
-
-    static JsonObject ObjectsProp(string key, string id)
-        => new() { ["key"] = key, ["objects"] = new JsonArray(id) };
-
-    static JsonObject SelectProp(string key, string tagKey)
-        => new() { ["key"] = key, ["select"] = tagKey };
-
     // ── Digest helpers ───────────────────────────────────────────────────────
-
-    static string NameOf(JsonObject obj, string fallback)
-    {
-        string? name = obj["name"]?.GetValue<string>();
-        return string.IsNullOrEmpty(name) ? fallback : name;
-    }
 
     // v2 serves the title as the "name" property of the read.
     static string NameOf(AnytypeV2ObjectDocument doc, string fallback)

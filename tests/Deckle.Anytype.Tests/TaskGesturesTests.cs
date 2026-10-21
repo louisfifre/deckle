@@ -28,55 +28,329 @@ public class TaskGesturesTests
         return new TaskGestures(client, new NameResolver(client), v2Client);
     }
 
-    static JsonObject TaskObject(string markdown) => new()
-    {
-        ["object"] = new JsonObject
-        {
-            ["id"] = TaskId,
-            ["name"] = "Ma tâche",
-            ["markdown"] = markdown,
-            ["properties"] = new JsonArray(),
-        },
-    };
-
     // ── CreateAsync ─────────────────────────────────────────────────────────────
+    //
+    // task_create goes through the v2 client: one POST of the object, then,
+    // only when a checklist or notes were given, one read of the new task and
+    // one batch of block ops. The v1 server is only there for the name
+    // resolver, which a bafy* id short-circuits.
 
     const string ProjectId = "bafyreiprojectaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
+    const string ObjectsPath = "/v2/spaces/space-1/objects";
 
-    [Fact]
-    public async Task CreatePassesTheTaskTemplateIdSoTheTaskIsBornFromItsTemplate()
+    static string TypeName(string type) => DevSpace.TypeDeTache.NameFor(DevSpace.TypeDeTache.Resolve(type)!)!;
+
+    // The reply of a create: the new object's id (the schema's CreateResult).
+    static FakeV2Handler CreateReply(FakeV2Handler? handler = null)
+        => (handler ?? new FakeV2Handler()).Reply(HttpStatusCode.Created, $"{{\"id\":\"{TaskId}\"}}");
+
+    // A create, then the read of the new task, then the batch that fills it.
+    static FakeV2Handler CreateReadThenAccept(string readJson, string? etag = ETag)
     {
-        using var server = new FakeAnytypeServer();
-        server.OnPostObject(TaskObject(""));
-
-        await NewGestures(server).CreateAsync(ProjectId, "Ma tâche", type: "production", ct: Ct);
-
-        JsonObject created = server.LastBodyFor("POST");
-        Assert.Equal(DevSpace.Templates.Task, created["template_id"]!.GetValue<string>());
-        // No body on the POST: it would land under the template's last section.
-        Assert.False(created.ContainsKey("body"));
-        Assert.DoesNotContain(server.Requests, r => r.Method == "PATCH");
+        var handler = CreateReply();
+        if (etag is null) handler.Reply(HttpStatusCode.OK, readJson);
+        else handler.Reply(HttpStatusCode.OK, readJson, ("ETag", etag));
+        return handler.Reply(HttpStatusCode.OK, "{}");
     }
 
-    // A checklist or notes passed at creation fill the template's own sections,
-    // written as a second step once the template has shaped the object.
+    // The task template as the survey measured it, with what a flat read of a
+    // task born from it carries and the fixture above leaves out: property
+    // blocks, a divider, a row of two columns (indent 2 for their children), an
+    // inline dataview, and a notes heading with a trailing space. The notes
+    // section holds a dataview of its own.
+    static JsonObject[] BornFromTemplateBlocks() =>
+    [
+        Block("pb1", "relation"),
+        Block("pb2", "relation"),
+        Block("d0", "divider"),
+        Block("r1", "row"),
+        Block("c1", "column", indent: 1),
+        Block("h1", "heading_2", ReadGestures.ChecklistHeading, indent: 2),
+        Block("slot", "checkbox", indent: 2),
+        Block("c2", "column", indent: 1),
+        Block("dv1", "dataview", indent: 2),
+        Block("d1", "divider"),
+        Block("h2", "heading_2", ReadGestures.NotesHeading + " "),
+        Block("dv2", "dataview"),
+    ];
+
     [Fact]
-    [Trait("Category", "regression")]
-    public async Task CreateWritesChecklistAndNotesIntoTheTemplateSections()
+    public async Task CreatePostsTheTaskFromItsTemplateWithTheV2Properties()
     {
         using var server = new FakeAnytypeServer();
-        server.OnPostObject(TaskObject(""));
-        server.OnPatchObject(TaskId, TaskObject(""));
+        FakeV2Handler v2 = CreateReply();
 
-        string digest = await NewGestures(server).CreateAsync(
-            ProjectId, "Ma tâche", type: "production",
-            checklist: ["relire", "livrer"], notes: "Attention au cache.", ct: Ct);
+        string digest = await NewGestures(server, v2).CreateAsync(
+            ProjectId, "Ma tâche", type: "production", priority: 3, ct: Ct);
 
-        JsonObject patched = server.LastBodyFor("PATCH");
-        Assert.Equal(
-            $"## {ReadGestures.ChecklistHeading}\n- [ ] relire\n- [ ] livrer\n\n## {ReadGestures.NotesHeading}\nAttention au cache.",
-            patched["markdown"]!.GetValue<string>());
+        FakeV2Handler.Seen post = Assert.Single(v2.Requests);
+        Assert.Equal("POST", post.Method);
+        Assert.Equal(ObjectsPath, post.PathAndQuery);
+        Assert.False(string.IsNullOrWhiteSpace(post.Header("Idempotency-Key")));
+        Assert.False(post.HasHeader("If-Match"));
+
+        JsonObject body = (JsonObject)JsonNode.Parse(post.Body!)!;
+        Assert.Equal(DevSpace.Types.Task, body["type"]!.GetValue<string>());
+        Assert.Equal("Ma tâche", body["name"]!.GetValue<string>());
+        Assert.Equal(DevSpace.Templates.Task, body["template"]!.GetValue<string>());
+        // No body on the POST: the template shapes the document, and a markdown
+        // here would land under its last section.
+        Assert.False(body.ContainsKey("markdown"));
+        Assert.False(body.ContainsKey("template_id"));
+
+        JsonObject props = body["properties"]!.AsObject();
+        Assert.Equal(ProjectId, props[DevSpace.Props.RelationProjet]!.AsArray().Single()!.GetValue<string>());
+        Assert.Equal(TypeName("production"), props[DevSpace.Props.TypeDeTache]!.AsArray().Single()!.GetValue<string>());
+        Assert.Equal("3", props[DevSpace.Props.Priorite]!.AsArray().Single()!.GetValue<string>());
+
+        Assert.Contains("Tâche créée : Ma tâche", digest);
         Assert.Contains($"id : {TaskId}", digest);
+        Assert.Contains("Priorité : 3", digest);
+        Assert.Empty(server.Requests);
+    }
+
+    [Fact]
+    public async Task CreateLeavesTheTemplateBodyUntouchedWhenThereIsNoChecklistNorNotes()
+    {
+        using var server = new FakeAnytypeServer();
+        FakeV2Handler v2 = CreateReply();
+
+        string digest = await NewGestures(server, v2).CreateAsync(
+            ProjectId, "Ma tâche", type: "production", checklist: ["  ", ""], notes: "   ", ct: Ct);
+
+        // Only the POST: no read, no batch. Blank entries count as nothing.
+        Assert.Equal("POST", Assert.Single(v2.Requests).Method);
+        Assert.DoesNotContain("Priorité", digest);
+        Assert.DoesNotContain("Sous-tâches", digest);
+    }
+
+    // The v1 gesture created the task, then PATCHed the whole body, which wiped
+    // the template's dividers, dataviews, property blocks and columns. The fill
+    // is now a batch that deletes nothing: the first item takes the template's
+    // empty checkbox, the rest follow it in one insert, in the order given.
+    [Fact]
+    [Trait("Category", "regression")]
+    public async Task CreateFillsTheEmptySlotThenInsertsTheRestWithoutDeletingAnything()
+    {
+        using var server = new FakeAnytypeServer();
+        FakeV2Handler v2 = CreateReadThenAccept(V2Task(BornFromTemplateBlocks()));
+
+        string digest = await NewGestures(server, v2).CreateAsync(
+            ProjectId, "Ma tâche", type: "production",
+            checklist: ["  relire ", "", "livrer", "tester"], ct: Ct);
+
+        Assert.Equal(new[] { "POST", "GET", "PATCH" }, v2.Requests.Select(r => r.Method));
+        Assert.Equal(TaskPath, v2.Requests[1].PathAndQuery.Split('?')[0]);
+
+        JsonArray ops = SentOps(v2);
+        Assert.DoesNotContain(ops, op => op!["op"]!.GetValue<string>() is "delete_block" or "replace_subtree");
+        Assert.Equal(2, ops.Count);
+
+        JsonObject fill = ops[0]!.AsObject();
+        Assert.Equal("update_block", fill["op"]!.GetValue<string>());
+        Assert.Equal("slot", fill["id"]!.GetValue<string>());
+        Assert.Equal("relire", fill["set"]!["text"]!.GetValue<string>());
+        Assert.False(fill["set"]!["checked"]!.GetValue<bool>());
+
+        JsonObject insert = ops[1]!.AsObject();
+        Assert.Equal("insert_blocks", insert["op"]!.GetValue<string>());
+        Assert.Equal("slot", insert["after"]!.GetValue<string>());
+        Assert.Equal(new[] { "livrer", "tester" }, insert["blocks"]!.AsArray().Select(b => b!["text"]!.GetValue<string>()));
+        Assert.All(insert["blocks"]!.AsArray(), b =>
+        {
+            Assert.Equal("checkbox", b!["type"]!.GetValue<string>());
+            Assert.False(b["checked"]!.GetValue<bool>());
+        });
+
+        // The placements come from what the read saw, so the write is
+        // conditioned on its ETag.
+        Assert.Equal(ETag, SentPatch(v2).Header("If-Match"));
+        // Blank entries are not subtasks: the digest counts what was written.
+        Assert.Contains("Sous-tâches : 3", digest);
+    }
+
+    [Fact]
+    public async Task CreateWithOneItemFillsTheSlotAndInsertsNothingElse()
+    {
+        using var server = new FakeAnytypeServer();
+        FakeV2Handler v2 = CreateReadThenAccept(V2Task(BornFromTemplateBlocks()));
+
+        await NewGestures(server, v2).CreateAsync(
+            ProjectId, "Ma tâche", type: "production", checklist: ["seule"], ct: Ct);
+
+        JsonObject op = OnlyOp(v2);
+        Assert.Equal("update_block", op["op"]!.GetValue<string>());
+        Assert.Equal("slot", op["id"]!.GetValue<string>());
+    }
+
+    [Fact]
+    public async Task CreateInsertsTheNotesRightAfterTheNotesHeadingAndKeepsWhatIsThere()
+    {
+        using var server = new FakeAnytypeServer();
+        FakeV2Handler v2 = CreateReadThenAccept(V2Task(BornFromTemplateBlocks()));
+
+        await NewGestures(server, v2).CreateAsync(
+            ProjectId, "Ma tâche", type: "production", notes: "  Attention au cache.  ", ct: Ct);
+
+        // The slot is left as the template made it: no checklist, no op on it.
+        JsonObject op = OnlyOp(v2);
+        Assert.Equal("insert_blocks", op["op"]!.GetValue<string>());
+        // The heading is the template's, with its trailing space; the dataview
+        // that follows it is not deleted nor replaced.
+        Assert.Equal("h2", op["after"]!.GetValue<string>());
+        Assert.Equal("Attention au cache.", op["markdown"]!.GetValue<string>());
+        Assert.Equal(ETag, SentPatch(v2).Header("If-Match"));
+    }
+
+    [Fact]
+    public async Task CreateSendsChecklistAndNotesInOneBatch()
+    {
+        using var server = new FakeAnytypeServer();
+        FakeV2Handler v2 = CreateReadThenAccept(V2Task(BornFromTemplateBlocks()));
+
+        await NewGestures(server, v2).CreateAsync(
+            ProjectId, "Ma tâche", type: "production",
+            checklist: ["relire", "livrer"], notes: "Un mot.", ct: Ct);
+
+        JsonArray ops = SentOps(v2);
+        Assert.Equal(
+            new[] { "update_block", "insert_blocks", "insert_blocks" },
+            ops.Select(op => op!["op"]!.GetValue<string>()));
+        Assert.Equal("h2", ops[2]!["after"]!.GetValue<string>());
+    }
+
+    // Without a slot the items follow the last checkbox (the rule of
+    // task_subtask), never the end of the body, where they would sit under the
+    // notes.
+    [Fact]
+    public async Task CreateWithoutASlotInsertsTheItemsAfterTheLastCheckbox()
+    {
+        using var server = new FakeAnytypeServer();
+        FakeV2Handler v2 = CreateReadThenAccept(V2Task(
+            Block("h1", "heading_2", ReadGestures.ChecklistHeading),
+            Block("a1", "checkbox", "déjà là"),
+            Block("a2", "checkbox", "aussi"),
+            Block("h2", "heading_2", ReadGestures.NotesHeading)));
+
+        await NewGestures(server, v2).CreateAsync(
+            ProjectId, "Ma tâche", type: "production", checklist: ["relire", "livrer"], ct: Ct);
+
+        JsonObject op = OnlyOp(v2);
+        Assert.Equal("insert_blocks", op["op"]!.GetValue<string>());
+        Assert.Equal("a2", op["after"]!.GetValue<string>());
+        Assert.Equal(new[] { "relire", "livrer" }, op["blocks"]!.AsArray().Select(b => b!["text"]!.GetValue<string>()));
+    }
+
+    [Fact]
+    public async Task CreateWithoutASlotNorACheckboxInsertsTheItemsAfterTheChecklistHeading()
+    {
+        using var server = new FakeAnytypeServer();
+        FakeV2Handler v2 = CreateReadThenAccept(V2Task(
+            Block("h1", "heading_2", ReadGestures.ChecklistHeading + " "),
+            Block("h2", "heading_2", ReadGestures.NotesHeading)));
+
+        await NewGestures(server, v2).CreateAsync(
+            ProjectId, "Ma tâche", type: "production", checklist: ["relire"], ct: Ct);
+
+        JsonObject op = OnlyOp(v2);
+        Assert.Equal("insert_blocks", op["op"]!.GetValue<string>());
+        Assert.Equal("h1", op["after"]!.GetValue<string>());
+    }
+
+    [Fact]
+    public async Task CreateAppendsTheNotesWithTheirHeadingWhenTheTemplateHasNone()
+    {
+        using var server = new FakeAnytypeServer();
+        FakeV2Handler v2 = CreateReadThenAccept(V2Task(Block("p0", "paragraph", "Du texte.")));
+
+        await NewGestures(server, v2).CreateAsync(
+            ProjectId, "Ma tâche", type: "production", notes: "Attention au cache.", ct: Ct);
+
+        JsonObject op = OnlyOp(v2);
+        Assert.Equal("insert_blocks", op["op"]!.GetValue<string>());
+        Assert.Equal("last", op["position"]!.GetValue<string>());
+        Assert.Equal($"## {ReadGestures.NotesHeading}\nAttention au cache.", op["markdown"]!.GetValue<string>());
+    }
+
+    [Fact]
+    public async Task CreateSendsNoIfMatchWhenTheReadOfTheNewTaskGaveNoETag()
+    {
+        using var server = new FakeAnytypeServer();
+        FakeV2Handler v2 = CreateReadThenAccept(V2Task(BornFromTemplateBlocks()), etag: null);
+
+        await NewGestures(server, v2).CreateAsync(
+            ProjectId, "Ma tâche", type: "production", checklist: ["relire"], ct: Ct);
+
+        Assert.False(SentPatch(v2).HasHeader("If-Match"));
+    }
+
+    // The task exists once the POST is answered. If its sections cannot be
+    // filled, the error says so with the id, so the caller completes it rather
+    // than creating a second one.
+    [Fact]
+    [Trait("Category", "regression")]
+    public async Task CreateNamesTheCreatedTaskWhenTheFillFails()
+    {
+        using var server = new FakeAnytypeServer();
+        FakeV2Handler v2 = CreateReply()
+            .Reply(HttpStatusCode.OK, V2Task(BornFromTemplateBlocks()), ("ETag", ETag))
+            .Reply(HttpStatusCode.Conflict, "{\"status\":409,\"code\":\"etag_mismatch\",\"message\":\"stale\"}");
+
+        InvalidOperationException error = await Assert.ThrowsAsync<InvalidOperationException>(
+            () => NewGestures(server, v2).CreateAsync(
+                ProjectId, "Ma tâche", type: "production", checklist: ["relire"], ct: Ct));
+
+        Assert.Contains(TaskId, error.Message);
+        Assert.Contains("créée", error.Message);
+        Assert.Contains("pas été remplies", error.Message);
+        Assert.IsType<AnytypeV2Exception>(error.InnerException);
+    }
+
+    [Fact]
+    [Trait("Category", "regression")]
+    public async Task CreateNamesTheCreatedTaskWhenItsReadFails()
+    {
+        using var server = new FakeAnytypeServer();
+        FakeV2Handler v2 = CreateReply()
+            .Reply(HttpStatusCode.NotFound, "{\"status\":404,\"code\":\"object_not_found\",\"message\":\"gone\"}");
+
+        InvalidOperationException error = await Assert.ThrowsAsync<InvalidOperationException>(
+            () => NewGestures(server, v2).CreateAsync(
+                ProjectId, "Ma tâche", type: "production", notes: "Un mot.", ct: Ct));
+
+        Assert.Contains(TaskId, error.Message);
+        Assert.DoesNotContain(v2.Requests, r => r.Method == "PATCH");
+    }
+
+    [Fact]
+    [Trait("Category", "regression")]
+    public async Task CreateRefusesAnUnknownTypeBeforeAnyRequest()
+    {
+        using var server = new FakeAnytypeServer();
+        var v2 = new FakeV2Handler();
+
+        ArgumentException error = await Assert.ThrowsAsync<ArgumentException>(
+            () => NewGestures(server, v2).CreateAsync(
+                ProjectId, "Ma tâche", type: "n'importe quoi", ct: Ct));
+
+        Assert.Contains("Type de tâche inconnu", error.Message);
+        Assert.Empty(v2.Requests);
+        Assert.Empty(server.Requests);
+    }
+
+    [Fact]
+    [Trait("Category", "regression")]
+    public async Task CreateRefusesMoreItemsThanOneInsertTakesBeforeCreatingAnything()
+    {
+        using var server = new FakeAnytypeServer();
+        var v2 = new FakeV2Handler();
+        string[] tooMany = Enumerable.Range(0, 257).Select(i => $"étape {i}").ToArray();
+
+        await Assert.ThrowsAsync<ArgumentException>(
+            () => NewGestures(server, v2).CreateAsync(
+                ProjectId, "Ma tâche", type: "production", checklist: tooMany, ct: Ct));
+
+        Assert.Empty(v2.Requests);
     }
 
     // ── SubtaskAsync ──────────────────────────────────────────────────────────
