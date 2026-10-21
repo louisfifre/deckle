@@ -1806,6 +1806,10 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── AnytypeCredentialsTests.cs
 │   │   ├── AnytypeSpaceAliasesTests.cs
 │   │   ├── AnytypeUtilityGesturesTests.cs
+│   │   ├── AnytypeV2ClientTests.cs
+│   │   ├── AnytypeV2ExceptionTests.cs
+│   │   ├── AnytypeV2OpsTests.cs
+│   │   ├── AnytypeV2ReadWriteTests.cs
 │   │   ├── BackendEndpointTrustTests.cs
 │   │   ├── BackendListenerOwnerTests.cs
 │   │   ├── BackendProviderStoreBugNotes.md
@@ -1819,6 +1823,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── DevSpaceTests.cs
 │   │   ├── DialogueGesturesTests.cs
 │   │   ├── DocumentGesturesTests.cs
+│   │   ├── FakeV2Handler.cs
 │   │   ├── LiveTagResolverTests.cs
 │   │   ├── ManagementGesturesTests.cs
 │   │   ├── MarkdownBodyTests.cs
