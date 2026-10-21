@@ -25,15 +25,13 @@ public sealed class DeckleVadSource : DeckleEventSource
     public const int EvtSpeechTrimmed                       = 1;
     public const int EvtUtteranceDroppedNoSpeech            = 2;
     public const int EvtSpeechTrimVadLoaded                 = 3;
-    // 4 retires once SpeechTrimVadUnavailable loses its last caller outside this module.
-    public const int EvtSpeechTrimVadUnavailable            = 4;
+    // 4 retired.
     public const int EvtSpeechTrimVadDownloadStart          = 5;
     public const int EvtSpeechTrimVadDownloadComplete       = 6;
     public const int EvtSpeechTrimNotReady                  = 7;
     public const int EvtSpeechTrimSettingsSnapshot          = 8;
     public const int EvtSpeechTrimVadLoadedDetail           = 9;
-    // 10 retires once SpeechTrimVadUnavailableDetail loses its last caller outside this module.
-    public const int EvtSpeechTrimVadUnavailableDetail      = 10;
+    // 10 retired.
     public const int EvtSpeechTrimVadDownloadStartDetail    = 11;
     public const int EvtSpeechTrimVadDownloadCompleteDetail = 12;
     public const int EvtSpeechTrimVadLoadComplete           = 13;
@@ -100,26 +98,6 @@ public sealed class DeckleVadSource : DeckleEventSource
     public void SpeechTrimVadLoadComplete(long load_ms)
     {
         if (IsEnabled()) WriteEvent(EvtSpeechTrimVadLoadComplete, load_ms);
-    }
-
-    // Kept until the call sites outside this module move to SpeechTrimUnavailable.
-    [Event(EvtSpeechTrimVadUnavailable,
-           Level = EventLevel.Warning,
-           Keywords = (EventKeywords)Keywords.Pipeline,
-           Message = "Silero VAD unavailable")]
-    public void SpeechTrimVadUnavailable()
-    {
-        if (IsEnabled()) WriteEvent(EvtSpeechTrimVadUnavailable);
-    }
-
-    // Kept until the call sites outside this module move to SpeechTrimUnavailable.
-    [Event(EvtSpeechTrimVadUnavailableDetail,
-           Level = EventLevel.Verbose,
-           Keywords = (EventKeywords)Keywords.Pipeline,
-           Message = "model unavailable | reason={0}")]
-    public void SpeechTrimVadUnavailableDetail(string reason)
-    {
-        if (IsEnabled()) WriteEvent(EvtSpeechTrimVadUnavailableDetail, reason);
     }
 
     // Opens the "takes run untrimmed" incident, once per cause: a later take that

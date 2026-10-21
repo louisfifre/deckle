@@ -414,8 +414,7 @@ public sealed partial class TranscriptionEngine
                     // A VAD runtime failure must not lose the dictation: log it once,
                     // stop trimming for the rest of this take, and let this utterance
                     // through untrimmed rather than dropping it or crashing the consumer.
-                    DeckleVadSource.Log.SpeechTrimVadUnavailable();
-                    DeckleVadSource.Log.SpeechTrimVadUnavailableDetail($"trim failed: {ex.GetType().Name}: {ex.Message}");
+                    DeckleVadSource.Log.SpeechTrimUnavailable("trim_failed", ex.GetType().Name, ex.Message);
                     vad = null;
                 }
             }
@@ -442,6 +441,22 @@ public sealed partial class TranscriptionEngine
                     DeckleWhispSource.Log.UtteranceSkipped(u.Index, ex.GetType().Name, ex.Message);
                 else
                     DeckleWhispSource.Log.UtteranceSkippedRepeat(u.Index, ex.GetType().Name, ex.Message);
+                if (policy.RejectIncompleteResults)
+                    incomplete = true;
+                previousTail = null;
+                continue;
+            }
+
+            // The backend reports a native failure as a result code, not an
+            // exception, and logs it as Verbose detail only: the utterance joins
+            // the same skipped-utterance incident, with the backend's reason.
+            if (result.ResultCode != 0 && !result.Aborted)
+            {
+                string cause = $"{result.ErrorReason ?? "native_error"} result_code={result.ResultCode}";
+                if (skipped++ == 0)
+                    DeckleWhispSource.Log.UtteranceSkipped(u.Index, "", cause);
+                else
+                    DeckleWhispSource.Log.UtteranceSkippedRepeat(u.Index, "", cause);
                 if (policy.RejectIncompleteResults)
                     incomplete = true;
                 previousTail = null;

@@ -78,9 +78,12 @@ public sealed partial class DeckleWhispSource
     }
 
     // reason (closed vocabulary): exception (the backend call threw),
-    // native_error (the backend returned result_code != 0), incomplete (the
-    // consumer could not deliver every utterance). result_code is -1 when no
-    // native code applies; ex_type and ex_message are empty unless it threw.
+    // native_error (the backend returned result_code != 0), no_context (the
+    // backend had no model loaded when the call came, result_code -1),
+    // incomplete (the consumer could not deliver every utterance). The two
+    // backend reasons come from TranscriptionResult.ErrorReason. result_code
+    // is -1 when no native code applies; ex_type and ex_message are empty
+    // unless it threw.
     [Event(EvtTranscriptionFailed,
            Level = EventLevel.Error,
            Keywords = (EventKeywords)Keywords.Pipeline,

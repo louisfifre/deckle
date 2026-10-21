@@ -80,7 +80,7 @@ public sealed partial class TranscriptionEngine
         {
             abortOutcome = "cancelled";
             DeckleCancellationSource.Log.OperationCancelled(
-                "file-transcription-batch", "upstream", -1);
+                CancelledOperations.FileTranscriptionBatch, CancellationReasons.Upstream, -1);
             RaiseFinished(TranscriptionOutcome.None);
         }
         catch (Exception ex)

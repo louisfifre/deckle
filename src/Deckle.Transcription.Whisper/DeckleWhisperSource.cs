@@ -204,14 +204,15 @@ public sealed class DeckleWhisperSource : DeckleEventSource
     }
 
     // Once per incident: the engine retries the load at every take, and its
-    // own ModelUnavailable/ModelRecovered pair frames the incident. reason
-    // (closed vocabulary): file_not_found | init_failed. device is the one the
-    // native init was building on, "unknown" when no log line could say.
+    // own ModelUnavailable/ModelRecovered pair is the visible incident, with
+    // the same reason through ModelLoadResult.ErrorReason. This mirror keeps
+    // the native facts behind it. reason (closed vocabulary): file_not_found |
+    // init_failed. device is the one the native init was building on,
+    // "unknown" when no log line could say.
     [Event(EvtModelLoadFailed,
-           Level = EventLevel.Warning,
+           Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Tags = ObservationTags.Journal,
-           Message = "Whisper could not load the model | reason={0} | model={1} | device={2}")]
+           Message = "model load incident | reason={0} | model={1} | device={2}")]
     public void ModelLoadFailed(string reason, string model, string device)
     {
         if (IsEnabled()) WriteEvent(EvtModelLoadFailed, reason, model, device);
@@ -301,11 +302,13 @@ public sealed class DeckleWhisperSource : DeckleEventSource
     // ── Decode ──────────────────────────────────────────────────────────
 
     // reason (closed vocabulary): no_context (no model loaded when the call
-    // came, status -1) | native_error (whisper_full returned status).
+    // came, status -1) | native_error (whisper_full returned status). The
+    // same reason travels up in TranscriptionResult.ErrorReason, and the
+    // engine's failure event is the visible incident.
     [Event(EvtTranscribeFailed,
-           Level = EventLevel.Error,
+           Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Pipeline,
-           Message = "Whisper could not transcribe | reason={0} | status={1}")]
+           Message = "transcribe failed | reason={0} | status={1}")]
     public void TranscribeFailed(string reason, int status)
     {
         if (IsEnabled()) WriteEvent(EvtTranscribeFailed, reason, status);

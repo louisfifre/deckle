@@ -103,8 +103,9 @@ public sealed partial class WhisperBackend
     }
 
     // Runs under _modelLock. The engine frames the incident for the user with
-    // ModelUnavailable/ModelRecovered; this Warning carries the native facts
-    // (which file, which device) once per incident.
+    // ModelUnavailable/ModelRecovered from the returned ErrorReason; this
+    // Verbose mirror carries the native facts (which file, which device) once
+    // per incident.
     private void ReportLoadFailure(
         string reason,
         string modelName,

@@ -66,7 +66,7 @@ public sealed partial class WhisperBackend
             // two apart in the log.
             DeckleWhisperSource.Log.TranscribeFailed("no_context", -1);
             return new TranscriptionResult(
-                Array.Empty<TranscriptionSegment>(), "", 0, 0, false, -1);
+                Array.Empty<TranscriptionSegment>(), "", 0, 0, false, -1, "no_context");
         }
         if (pcmSamples.Length == 0)
         {
@@ -193,7 +193,7 @@ public sealed partial class WhisperBackend
         {
             DeckleWhisperSource.Log.TranscribeFailed("native_error", result);
             return new TranscriptionResult(
-                Array.Empty<TranscriptionSegment>(), "", totalMs, whisperInitMs, aborted, result);
+                Array.Empty<TranscriptionSegment>(), "", totalMs, whisperInitMs, aborted, result, "native_error");
         }
 
         TranscriptionSegment[] segments;

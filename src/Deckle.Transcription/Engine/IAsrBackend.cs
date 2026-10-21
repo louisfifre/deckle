@@ -104,13 +104,18 @@ public sealed record ModelLoadResult(
 //     repetition guard) fired; the segments already produced are still
 //     usable, the consumer decides whether to keep them.
 //   • ResultCode is a backend-specific status; 0 means success.
+//   • ErrorReason is a stable reason for a non-zero ResultCode
+//     ("no_context", "native_error", ...), null on success. The backend logs
+//     the failure only as Verbose detail, so the engine's own failure event
+//     carries this reason as the visible cause.
 public sealed record TranscriptionResult(
     IReadOnlyList<TranscriptionSegment> Segments,
     string FullText,
     long TotalDurationMs,
     long InitDurationMs,
     bool Aborted,
-    int ResultCode);
+    int ResultCode,
+    string? ErrorReason = null);
 
 // ── TranscriptionSegment ─────────────────────────────────────────────────────
 //
