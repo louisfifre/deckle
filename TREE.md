@@ -336,6 +336,9 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   │   ├── AnytypeV2Client.cs
 │   │   │   │   ├── AnytypeV2Exception.cs
 │   │   │   │   ├── AnytypeV2Issue.cs
+│   │   │   │   ├── AnytypeV2ObjectDocument.cs
+│   │   │   │   ├── AnytypeV2ObjectReader.cs
+│   │   │   │   ├── AnytypeV2ObjectReadOptions.cs
 │   │   │   │   ├── AnytypeV2Request.cs
 │   │   │   │   └── AnytypeV2Response.cs
 │   │   │   ├── AnytypeApiClient.Chats.cs
