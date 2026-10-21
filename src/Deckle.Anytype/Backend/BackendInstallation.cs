@@ -38,18 +38,23 @@ public static class BackendInstallation
     // migration must label it with this constant and never with the pin.
     internal const string LegacyBundleVersion = "0.3.6";
 
-    // The version pin (known-good, never auto-update). The release publishes no
-    // checksum manifest, so the SHA-256 is the GitHub per-asset digest pinned by
-    // ourselves. Installing the binary is only half the first run: the bot
-    // account and API key are a separate, interactive provisioning act.
+    // The version pin (known-good, never auto-update). Installing the binary is
+    // only half the first run: the bot account and API key are a separate,
+    // interactive provisioning act.
     //
-    // 0.4.0's official Windows asset links msvcrt and dies with 0xC0000374 at
-    // account open, so a fresh provisioning installs a binary known to die.
+    // The official Windows assets since 0.3.7 die with 0xC0000374 at account
+    // open (msvcrt-linked exe plus a cross-allocator free in tantivy-go, see
+    // anyproto/tantivy-go#25). Until upstream ships the fix, the pin is our own
+    // rebuild of the official tag, produced by
+    // scripts/commands/release/build-anytype-backend.ps1 and hosted as a
+    // release asset of this repository; the SHA-256 is the one that script
+    // prints. Once a release carries the fix, point this back at
+    // github.com/anyproto/anytype-cli and pin GitHub's per-asset digest.
     public static BackendBundle CurrentBundle { get; } = new(
-        Version:     "0.4.0",
-        Url:         "https://github.com/anyproto/anytype-cli/releases/download/v0.4.0/anytype-cli-v0.4.0-windows-amd64.zip",
-        Sha256:      "23a8dacda0095c80770c398f16dfde5c4b75b31cbfbaf9dc7728d12201797a14",
-        SizeBytes:   49_686_030L,
+        Version:     "0.5.0",
+        Url:         "https://github.com/louisfifre/deckle/releases/download/anytype-backend-v0.5.0/anytype-cli-v0.5.0-windows-amd64.zip",
+        Sha256:      "1c62f6d957089c305c2ee1329ef2ba745d200b79f54a014498c29305853a9ed1",
+        SizeBytes:   51_347_401L,
         DisplayName: "Anytype backend (anytype-cli)");
 
     // False means the module stays dormant — never a boot failure — and the
