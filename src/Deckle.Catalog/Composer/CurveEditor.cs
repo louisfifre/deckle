@@ -36,20 +36,28 @@ namespace Deckle.Catalog;
 // and writes the points at its release; a field writes at its commit; an arrow
 // key on a focused handle nudges by a hundredth (a tenth with Shift) and writes
 // at once. X stays in [0,1] so the curve remains a function; Y may overshoot by a
-// quarter when AllowOutside is set. The drawing is a tree of XAML shapes updated
+// quarter when AllowOutside is set. The plot has no fill or frame of its own: it
+// floats on its host's surface, its y labels flush with the host's text edge. The drawing is a tree of XAML shapes updated
 // in place on every change, with no Win2D.
 public sealed partial class CurveEditor : UserControl
 {
     private const int SampleCount = 96;
     private const double HandleSize = 24.0;
     private const double HandleRadius = HandleSize / 2.0;
-    private const double GutterLeft = 46.0;
+    // The plot floats on its host's surface: no fill, no frame, and no margin
+    // beyond what its own labels need. The gutter is the y labels' column (they
+    // start flush at the control's left edge, the edge of the card's text); the
+    // top pad is half a label's height so the top label starts at the edge, the
+    // bottom gutter is the x tick plus its label, and the right pad is half the
+    // last x label's width, so the labels' ink is what fills the box.
+    private const double GutterLeft = 36.0;
     private const double GutterBottom = 24.0;
-    private const double PadTop = 12.0;
+    private const double PadTop = 8.0;
     private const double PadRight = 14.0;
-    private const double Pad = 6.0;
+    private const double Pad = 0.0;
     private const double SquareSide = 220.0;
     private const double StackBelowWidth = 560.0;
+    private const double AxisLegendWidth = 120.0;
     private const double Outside = 0.25;
 
     private readonly Grid _root = new();
@@ -68,6 +76,12 @@ public sealed partial class CurveEditor : UserControl
     private readonly Thumb _handle1;
     private readonly Thumb _handle2;
     private readonly Grid _fields = new();
+    private readonly Grid _pointsRow = new();
+    private readonly StackPanel _axisLegend = new() { Spacing = 8, VerticalAlignment = VerticalAlignment.Top };
+    private readonly List<TextBlock> _legendLetters = new();
+    private readonly TextBlock _xLegendName = new();
+    private readonly TextBlock _yLegendName = new();
+    private readonly FrameworkElement _xLegendItem, _yLegendItem;
     private readonly NumberBox _x1Box, _y1Box, _x2Box, _y2Box;
     private readonly TextBlock _readout;
 
@@ -109,13 +123,10 @@ public sealed partial class CurveEditor : UserControl
         _plot.Children.Add(_handle2);
         _plot.SizeChanged += (_, _) => Redraw();
 
-        // The plot's frame: the layer fill with a card stroke, the same box the
-        // Playground gives its curve.
+        // The plot's host: a bare sizing box, with no brush, so the drawing floats
+        // on whatever surface (a settings card, a page) carries the editor.
         _plotFrame = new Border
         {
-            Padding = new Thickness(Pad),
-            BorderThickness = new Thickness(1),
-            CornerRadius = new CornerRadius(4),
             Height = WideHeight,
             Child = _plot,
         };
@@ -135,9 +146,25 @@ public sealed partial class CurveEditor : UserControl
         };
         BuildFieldGrid();
 
-        // The side column: the owner's legend first, the control points under it.
+        // The axis legend: what x and y mean, in a small column to the right of
+        // the control points. Empty until the owner names an axis.
+        _axisLegend.Width = AxisLegendWidth;
+        _axisLegend.Visibility = Visibility.Collapsed;
+        _xLegendItem = BuildLegendItem("x", _xLegendName);
+        _yLegendItem = BuildLegendItem("y", _yLegendName);
+        _axisLegend.Children.Add(_xLegendItem);
+        _axisLegend.Children.Add(_yLegendItem);
+        _pointsRow.ColumnSpacing = 24;
+        _pointsRow.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+        _pointsRow.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+        Grid.SetColumn(_axisLegend, 1);
+        _pointsRow.Children.Add(_fields);
+        _pointsRow.Children.Add(_axisLegend);
+
+        // The side column: the owner's legend first, the control points (and the
+        // axis legend beside them) under it.
         _side.Children.Add(_legend);
-        _side.Children.Add(_fields);
+        _side.Children.Add(_pointsRow);
 
         _root.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
         _root.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
@@ -220,6 +247,28 @@ public sealed partial class CurveEditor : UserControl
         set => SetValue(AllowOutsideProperty, value);
     }
 
+    public static readonly DependencyProperty XAxisLegendProperty = DependencyProperty.Register(
+        nameof(XAxisLegend), typeof(string), typeof(CurveEditor),
+        new PropertyMetadata(null, (d, _) => ((CurveEditor)d).ApplyAxisLegend()));
+    public static readonly DependencyProperty YAxisLegendProperty = DependencyProperty.Register(
+        nameof(YAxisLegend), typeof(string), typeof(CurveEditor),
+        new PropertyMetadata(null, (d, _) => ((CurveEditor)d).ApplyAxisLegend()));
+
+    // What each axis stands for, in a few words ("Utterance length"). Shown as a
+    // small legend beside the control points, never on the plot; an unset one
+    // draws nothing, and with both unset the legend takes no room.
+    public string? XAxisLegend
+    {
+        get => (string?)GetValue(XAxisLegendProperty);
+        set => SetValue(XAxisLegendProperty, value);
+    }
+
+    public string? YAxisLegend
+    {
+        get => (string?)GetValue(YAxisLegendProperty);
+        set => SetValue(YAxisLegendProperty, value);
+    }
+
     private double _wideHeight = 280.0;
 
     // The plot's height when the frame carries axes. 280 is the Playground's;
@@ -275,9 +324,38 @@ public sealed partial class CurveEditor : UserControl
 
     // ── Layout ───────────────────────────────────────────────────────────────
 
+    private void ApplyAxisLegend()
+    {
+        bool hasX = !string.IsNullOrWhiteSpace(XAxisLegend);
+        bool hasY = !string.IsNullOrWhiteSpace(YAxisLegend);
+        _xLegendName.Text = XAxisLegend ?? string.Empty;
+        _yLegendName.Text = YAxisLegend ?? string.Empty;
+        _xLegendItem.Visibility = hasX ? Visibility.Visible : Visibility.Collapsed;
+        _yLegendItem.Visibility = hasY ? Visibility.Visible : Visibility.Collapsed;
+        _axisLegend.Visibility = hasX || hasY ? Visibility.Visible : Visibility.Collapsed;
+        // The legend widens the side column, so the stacking threshold follows.
+        Reflow(ActualWidth);
+    }
+
+    // One legend entry: the axis letter as a quiet caption over its name.
+    // The brushes are set by ApplyBrushes, so they follow the theme.
+    private FrameworkElement BuildLegendItem(string axis, TextBlock name)
+    {
+        Style? caption = Application.Current.Resources["CaptionTextBlockStyle"] as Style;
+        name.Style = caption;
+        name.TextWrapping = TextWrapping.WrapWholeWords;
+        var letter = new TextBlock { Text = axis, Style = caption };
+        _legendLetters.Add(letter);
+        var stack = new StackPanel { Spacing = 2 };
+        stack.Children.Add(letter);
+        stack.Children.Add(name);
+        return stack;
+    }
+
     private void Reflow(double width)
     {
-        bool stack = width > 0 && width < StackBelowWidth;
+        double threshold = StackBelowWidth + (_axisLegend.Visibility == Visibility.Visible ? AxisLegendWidth + 24 : 0);
+        bool stack = width > 0 && width < threshold;
         Grid.SetRow(_plotFrame, 0);
         Grid.SetColumn(_plotFrame, 0);
         Grid.SetColumnSpan(_plotFrame, stack ? 2 : 1);
@@ -586,8 +664,8 @@ public sealed partial class CurveEditor : UserControl
                 Style = caption,
                 Foreground = text,
                 FontSize = 11,
-                TextAlignment = TextAlignment.Right,
-                Width = GutterLeft - 8,
+                TextAlignment = TextAlignment.Left,
+                Width = GutterLeft - 4,
             };
             Canvas.SetLeft(label, 0);
             Canvas.SetTop(label, y - 8);
@@ -640,8 +718,6 @@ public sealed partial class CurveEditor : UserControl
 
     private void ApplyBrushes()
     {
-        _plotFrame.Background = Brush("LayerFillColorDefaultBrush");
-        _plotFrame.BorderBrush = Brush("CardStrokeColorDefaultBrush");
         _curve.Stroke = Brush("AccentFillColorDefaultBrush");
         _stem1.Stroke = Brush("AccentFillColorDefaultBrush");
         _stem2.Stroke = Brush("AccentFillColorDefaultBrush");
@@ -650,6 +726,9 @@ public sealed partial class CurveEditor : UserControl
         _guideEnd.Stroke = Brush("DividerStrokeColorDefaultBrush");
         _floor.Stroke = Brush("SystemFillColorCautionBrush");
         _readout.Foreground = Brush("TextFillColorSecondaryBrush");
+        _xLegendName.Foreground = Brush("TextFillColorSecondaryBrush");
+        _yLegendName.Foreground = Brush("TextFillColorSecondaryBrush");
+        foreach (TextBlock letter in _legendLetters) letter.Foreground = Brush("TextFillColorTertiaryBrush");
         Redraw();
     }
 
