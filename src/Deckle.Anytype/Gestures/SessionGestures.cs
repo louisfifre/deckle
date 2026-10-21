@@ -10,10 +10,19 @@ namespace Deckle.Anytype;
 // to it, and link further tasks to the open report. Anchoring is done from the
 // report side — the rapport carries journal date + the linked task(s) in its
 // « Tâche(s) liée(s) » property; its project is derived through those tasks.
-public sealed class SessionGestures(AnytypeApiClient api, NameResolver resolver)
+// session_log is the first gesture on API v2 (an append at the end of the body);
+// the others still go through v1.
+public sealed class SessionGestures(
+    AnytypeApiClient api,
+    NameResolver resolver,
+    AnytypeV2Client v2,
+    TimeProvider? time = null)
 {
     readonly AnytypeApiClient _api = api;
     readonly NameResolver _resolver = resolver;
+    readonly AnytypeV2ObjectReader _reader = new(v2);
+    readonly AnytypeV2Writer _writer = new(v2);
+    readonly TimeProvider _time = time ?? TimeProvider.System;
 
     // ── session_start ────────────────────────────────────────────────────────
 
@@ -61,21 +70,43 @@ public sealed class SessionGestures(AnytypeApiClient api, NameResolver resolver)
         string reportId = AnytypeObjectId.Require(reportSelector, "report");
 
         using var _ = await _api.AcquireWriteScopeAsync("session_log", reportId, ct);
-        JsonObject report = await _api.GetObjectAsync(reportId, ct);
-        string current = report["markdown"]?.GetValue<string>() ?? "";
 
-        // Anytype consumes the creation body's first line as the note's title:
-        // right after session_start the report's markdown reads back EMPTY (the
-        // « # Journal … » heading is not in it). A first entry written alone
-        // would become the note's first line, hence its display name. Re-seed
-        // the heading so the title survives the first append and later entries
-        // stay sibling bullets under it.
-        string entry = $"- {line.Trim()}";
-        string updated = current.Length == 0
-            ? $"# Journal {JournalDate(report)}\n{entry}"
-            : current + "\n" + entry;
+        // The entry is appended as new blocks at the end, never as a rewrite of
+        // the body: a whole-body PATCH sent every untouched line back through
+        // the markdown parser (backslash escapes multiplied on each round) and
+        // overwrote whatever another writer had added since the read. An append
+        // depends on nothing the read saw, so it carries no If-Match.
+        //
+        // The read only tells whether the body has any block, and gives the
+        // journal date for the empty case; the outline is its cheapest shape.
+        AnytypeV2ObjectDocument report = await _reader.ReadAsync(
+            reportId,
+            new AnytypeV2ObjectReadOptions { Outline = true, Parts = AnytypeV2ObjectParts.Properties },
+            ct);
 
-        await _api.UpdateObjectAsync(reportId, MarkdownPayload(updated), ct);
+        // Established (v1): right after session_start the report body reads
+        // back empty, because Anytype took the creation body's first line
+        // « # Journal … » as the note's title; an entry written alone would
+        // become the note's first line, hence its display name. NOT measured:
+        // whether v2 serves that title as a block. If it does, the outline is
+        // not empty and nothing is added; if it does not, the outline is empty
+        // and the heading is written first, as in v1. « Has no block » is
+        // right either way. Also unmeasured: whether the server omits the
+        // outline of an empty body, so a missing one counts as empty.
+        bool hasBody = report.Outline is { Count: > 0 };
+
+        // Two paragraphs: when the entry happened (the part that matters in a
+        // journal read days later), then what was said.
+        string stamp = _time.GetLocalNow().ToString("yyyy-MM-dd HH:mm", CultureInfo.InvariantCulture);
+        string entry = $"{stamp}\n\n{line.Trim()}";
+        string markdown = hasBody
+            ? entry
+            : $"# Journal {await JournalDateAsync(report, reportId, ct)}\n\n{entry}";
+
+        await _writer.ApplyObjectOpsAsync(
+            reportId,
+            [AnytypeV2BlockOps.InsertMarkdown(AnytypeV2Placement.End, markdown)],
+            ct: ct);
 
         DeckleAnytypeSource.Log.GestureCompleted("session_log", Elapsed(t0));
         // The caller just wrote the line: echoing it back cost 570 000 chars
@@ -258,22 +289,31 @@ public sealed class SessionGestures(AnytypeApiClient api, NameResolver resolver)
         ["date"] = isoDate,
     };
 
-    static JsonObject MarkdownPayload(string markdown) => new()
-    {
-        ["markdown"] = markdown,
-    };
-
     // ── misc ─────────────────────────────────────────────────────────────────
 
     // The API may return « Date du journal » with a time suffix.
-    static string JournalDate(JsonObject report)
+    string JournalDate(JsonObject report)
     {
         string? iso = ReadDate(report, DevSpace.Props.DateDuJournal);
         return iso is { Length: >= 10 } ? iso[..10] : Today();
     }
 
-    static string Today() =>
-        DateTime.Now.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
+    // v2 serves properties as a map keyed by property key. How a date comes
+    // back there is not measured, so a string is read when it is one, and
+    // otherwise the date is read the way v1 does, from the v1 object.
+    async Task<string> JournalDateAsync(
+        AnytypeV2ObjectDocument report, string reportId, CancellationToken ct)
+    {
+        if (report.Properties?[DevSpace.Props.DateDuJournal] is JsonValue value
+            && value.TryGetValue(out string? iso)
+            && iso is { Length: >= 10 })
+            return iso[..10];
+
+        return JournalDate(await _api.GetObjectAsync(reportId, ct));
+    }
+
+    string Today() =>
+        _time.GetLocalNow().ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
 
     static string DisplayName(JsonObject obj)
     {

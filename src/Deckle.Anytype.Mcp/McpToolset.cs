@@ -14,7 +14,7 @@ public static class McpToolset
         AnytypeSpaceAliases? aliases = null)
     {
         var resolver = new NameResolver(api);
-        var session = new SessionGestures(api, resolver);
+        var session = new SessionGestures(api, resolver, api.V2);
         var tasks = new TaskGestures(api, resolver);
         var projects = new ProjectGestures(api, resolver);
         var query = new QueryGestures(api, resolver);
