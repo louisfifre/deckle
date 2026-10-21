@@ -231,11 +231,11 @@ public partial class WhisperViewModel
                         Default: () => Seconds(new EnergySegmenterSettings().HangoverMinMs)),
                     new CurveAnchor("WhisperSegHangoverRampStartCard",
                         () => Seconds(SegHangoverRampStartMs), value => SegHangoverRampStartMs = Milliseconds(value),
-                        0, 600, Integer: true,
+                        0, 200, Integer: true, // a 200 s span gives the 5 s grain
                         Default: () => Seconds(new EnergySegmenterSettings().HangoverRampStartMs)),
                     new CurveAnchor("WhisperSegHangoverRampEndCard",
                         () => Seconds(SegHangoverRampEndMs), value => SegHangoverRampEndMs = Milliseconds(value),
-                        30, 900, Integer: true,
+                        30, 230, Integer: true, // same 200 s span, same 5 s grain
                         Default: () => Seconds(new EnergySegmenterSettings().HangoverRampEndMs)),
                 ]),
             visibleWhen: () => StreamingEnabled,
