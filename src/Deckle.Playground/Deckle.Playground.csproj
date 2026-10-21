@@ -14,7 +14,7 @@
     <PackageReference Include="CommunityToolkit.Mvvm" />
     <!-- SettingsCard for the HomePage routing cards. -->
     <PackageReference Include="CommunityToolkit.WinUI.Controls.SettingsControls" />
-    <!-- Win2D: the HUD and Segmentation previews draw through it. -->
+    <!-- Win2D: the HUD preview draws through it. -->
     <PackageReference Include="Microsoft.Graphics.Win2D" />
   </ItemGroup>
 
@@ -30,7 +30,7 @@
     <ProjectReference Include="..\Deckle.Settings\Deckle.Settings.csproj" />
     <ProjectReference Include="..\Deckle.Shell\Deckle.Shell.csproj" />
     <ProjectReference Include="..\Deckle.Shell.WindowChrome\Deckle.Shell.WindowChrome.csproj" />
-    <!-- Energy segmenter settings consumed by the Segmentation tuning page. -->
+    <!-- Transcription types the HUD page consumes. -->
     <ProjectReference Include="..\Deckle.Transcription\Deckle.Transcription.csproj" />
     <ProjectReference Include="..\Deckle.Vision\Deckle.Vision.csproj" />
   </ItemGroup>

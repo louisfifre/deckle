@@ -1398,8 +1398,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   └── en-US/
 │   │   │       └── Resources.resw
 │   │   ├── ViewModels/
-│   │   │   ├── HudViewModel.cs
-│   │   │   └── SegmentationViewModel.cs
+│   │   │   └── HudViewModel.cs
 │   │   ├── Views/
 │   │   │   ├── Ambient/
 │   │   │   │   ├── AmbientPage.HdrTuning.cs
@@ -1421,9 +1420,6 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   │   ├── HudPage.Simulation.cs
 │   │   │   │   ├── HudPage.xaml
 │   │   │   │   └── HudPage.xaml.cs
-│   │   │   ├── Segmentation/
-│   │   │   │   ├── SegmentationPage.xaml
-│   │   │   │   └── SegmentationPage.xaml.cs
 │   │   │   ├── HomePage.xaml
 │   │   │   ├── HomePage.xaml.cs
 │   │   │   ├── PlaygroundWindow.xaml
