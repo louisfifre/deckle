@@ -109,6 +109,31 @@ public class HudSettingsOverridesTests
         Assert.Equal(new ConicArcStrokeConfig { InsetDip = -5f }, effective);
     }
 
+    // The gauge's cut once had its own move (cutSeconds, cutEase*) beside the
+    // retreat's. The Retreat* keys became the one return, so a file written
+    // before still applies them, ignores the Cut* keys it carries, and loses
+    // them at the next save: Diff reads only the fields the config has.
+    [Fact]
+    public void ACountdownFileFromBeforeTheSharedReturnKeepsItsRetreatAndLosesItsCut()
+    {
+        double retreat = new UtteranceCountdownConfig().RetreatSeconds + 0.1;
+        var stored = new JsonObject
+        {
+            ["retreatSeconds"] = retreat,
+            ["cutSeconds"] = 0.2,
+            ["cutEaseP1X"] = 0.7,
+        };
+
+        var effective = ConfigOverrides.Apply(new UtteranceCountdownConfig(), stored, Options);
+
+        Assert.Equal(new UtteranceCountdownConfig { RetreatSeconds = retreat }, effective);
+
+        var rewritten = ConfigOverrides.Diff(new UtteranceCountdownConfig(), effective, Options);
+
+        Assert.NotNull(rewritten);
+        Assert.Equal("retreatSeconds", Assert.Single(rewritten).Key);
+    }
+
     // Every property nudged off its default, through the init accessors the
     // serializer itself uses.
     private static ConicArcStrokeConfig EveryFieldMoved()
