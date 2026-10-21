@@ -198,8 +198,13 @@ internal static class McpSurfaceProtocolAdapter
         IsError = isError ? true : null,
     };
 
-    private static string CapText(string text) =>
-        text.Length <= MaxResultChars
-            ? text
-            : $"{text[..MaxResultChars]}\n[coupé : {MaxResultChars} / {text.Length} caractères]";
+    // A cut between the two halves of a surrogate pair (an emoji, say) would
+    // leave a lone high surrogate, which is not valid UTF-16 and serializes to
+    // U+FFFD or fails; the cut steps back one char to keep the pair whole.
+    private static string CapText(string text)
+    {
+        if (text.Length <= MaxResultChars) return text;
+        int cut = char.IsHighSurrogate(text[MaxResultChars - 1]) ? MaxResultChars - 1 : MaxResultChars;
+        return $"{text[..cut]}\n[coupé : {cut} / {text.Length} caractères]";
+    }
 }
