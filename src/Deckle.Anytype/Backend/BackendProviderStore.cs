@@ -67,6 +67,8 @@ internal sealed class BackendProviderStore(
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or JsonException)
         {
+            DeckleAnytypeSource.Log.BackendProviderFileOperationFailed(
+                "read_activation", ex.GetType().Name, ex.Message);
             return null;
         }
     }
@@ -167,7 +169,12 @@ internal sealed class BackendProviderStore(
         }
         finally
         {
-            try { if (File.Exists(temporary)) File.Delete(temporary); } catch { }
+            try { if (File.Exists(temporary)) File.Delete(temporary); }
+            catch (Exception ex)
+            {
+                DeckleAnytypeSource.Log.BackendProviderFileOperationFailed(
+                    "delete_activation_temp", ex.GetType().Name, ex.Message);
+            }
         }
     }
 
@@ -190,6 +197,9 @@ internal sealed class BackendProviderStore(
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or JsonException)
         {
+            // An unreadable manifest reads as "not provisioned"; this keeps why.
+            DeckleAnytypeSource.Log.BackendProviderFileOperationFailed(
+                "read_activation", ex.GetType().Name, ex.Message);
             return null;
         }
     }
@@ -243,7 +253,13 @@ internal sealed class BackendProviderStore(
 
     private static void TryDelete(string path)
     {
-        try { if (Directory.Exists(path)) Directory.Delete(path, recursive: true); } catch { }
+        // Leftover staging is harmless: activation never points into it.
+        try { if (Directory.Exists(path)) Directory.Delete(path, recursive: true); }
+        catch (Exception ex)
+        {
+            DeckleAnytypeSource.Log.BackendProviderFileOperationFailed(
+                "delete_staging", ex.GetType().Name, ex.Message);
+        }
     }
 
     private static void ValidateVersion(string version)

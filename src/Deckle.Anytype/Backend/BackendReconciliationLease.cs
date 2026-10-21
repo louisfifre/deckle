@@ -21,6 +21,9 @@ internal sealed class BackendReconciliationLease : IBackendReconciliationCoordin
         CurrentUserOnly = true,
         CurrentSessionOnly = false,
     };
+    // Longer than the 20 s readiness window a healthy holder may legitimately
+    // keep the lease for, so the warning means a stuck holder, not a busy one.
+    private static readonly TimeSpan LeaseWaitWarning = TimeSpan.FromSeconds(30);
     private readonly string _mutexName;
     private readonly Action? _waitStarted;
 
@@ -53,13 +56,24 @@ internal sealed class BackendReconciliationLease : IBackendReconciliationCoordin
         using var mutex = new Mutex(false, mutexName, Options);
         bool acquired = false;
         bool abandoned = false;
+        bool warned = false;
         long started = Stopwatch.GetTimestamp();
         try
         {
             try
             {
                 waitStarted?.Invoke();
-                int signaled = WaitHandle.WaitAny([mutex, ct.WaitHandle]);
+                WaitHandle[] handles = [mutex, ct.WaitHandle];
+                int signaled = WaitHandle.WaitAny(handles, LeaseWaitWarning);
+                if (signaled == WaitHandle.WaitTimeout)
+                {
+                    // The wait stays unbounded (a second serve is worse than a
+                    // late one); only the silence ends here.
+                    warned = true;
+                    DeckleAnytypeSource.Log.BackendReconciliationLeaseWaiting(
+                        reconciliationId, Stopwatch.GetElapsedTime(started).TotalMilliseconds);
+                    signaled = WaitHandle.WaitAny(handles);
+                }
                 if (signaled != 0) throw new OperationCanceledException(ct);
                 acquired = true;
             }
@@ -71,10 +85,12 @@ internal sealed class BackendReconciliationLease : IBackendReconciliationCoordin
                 abandoned = true;
             }
 
+            double waitedMs = Stopwatch.GetElapsedTime(started).TotalMilliseconds;
             DeckleAnytypeSource.Log.BackendReconciliationLeaseAcquired(
-                reconciliationId,
-                Stopwatch.GetElapsedTime(started).TotalMilliseconds,
-                abandoned);
+                reconciliationId, waitedMs, abandoned);
+            if (warned)
+                DeckleAnytypeSource.Log.BackendReconciliationLeaseWaitEnded(
+                    reconciliationId, waitedMs, abandoned);
             return action(abandoned);
         }
         finally

@@ -334,7 +334,8 @@ public static class HomeSchema
         if (snapshot.Types.TryGetValue(Types.Floor, out SchemaTypeInfo? nominal))
         {
             if (nominal.Layout != "collection")
-                throw new HomeSchemaException("Le type Zone attendu doit avoir un layout collection.");
+                throw new HomeSchemaException(
+                    "Le type Zone attendu doit avoir un layout collection.", "zone_layout_invalid");
             return Types.Floor;
         }
         SchemaTypeInfo[] matches = snapshot.Types.Values.Where(type =>
@@ -344,7 +345,8 @@ public static class HomeSchema
         {
             0 => null,
             1 => matches[0].Key,
-            _ => throw new HomeSchemaException("Plusieurs types Zone correspondent : précise le schéma avant d'écrire."),
+            _ => throw new HomeSchemaException(
+                "Plusieurs types Zone correspondent : précise le schéma avant d'écrire.", "zone_type_ambiguous"),
         };
     }
 
@@ -362,4 +364,10 @@ public static class HomeSchema
     };
 }
 
-public sealed class HomeSchemaException(string message) : InvalidOperationException(message);
+// Reason is one snake_case word for the trace; the message is the French
+// guidance shown to the person or the model and names canonical keys only.
+public sealed class HomeSchemaException(string message, string reason = "schema_nonconformant")
+    : InvalidOperationException(message)
+{
+    public string Reason { get; } = reason;
+}

@@ -19,14 +19,16 @@ internal sealed class HomeSchemaRuntime
     public SchemaPropertyInfo Property(string key) =>
         _snapshot.Properties.TryGetValue(HomeSchema.WirePropertyKey(key), out SchemaPropertyInfo? property)
             ? property
-            : throw new HomeSchemaException($"Propriété Home absente : {HomeSchema.WirePropertyKey(key)}.");
+            : throw new HomeSchemaException(
+                $"Propriété Home absente : {HomeSchema.WirePropertyKey(key)}.", "property_missing");
 
     public string TypeKey(string canonicalType)
     {
         canonicalType = HomeSchema.WireTypeKey(canonicalType);
         if (string.Equals(canonicalType, HomeSchema.Types.Floor, StringComparison.Ordinal))
             return FloorTypeKey
-                ?? throw new HomeSchemaException("Le type Zone n’existe pas encore dans l’espace Home.");
+                ?? throw new HomeSchemaException(
+                    "Le type Zone n’existe pas encore dans l’espace Home.", "zone_type_missing");
         return HomeSchema.WireTypeKey(canonicalType);
     }
 
@@ -35,13 +37,13 @@ internal sealed class HomeSchemaRuntime
     public string TypeId(string typeKey) =>
         _snapshot.Types.TryGetValue(TypeKey(typeKey), out SchemaTypeInfo? type)
             ? type.Id
-            : throw new HomeSchemaException($"Type Home absent : {TypeKey(typeKey)}.");
+            : throw new HomeSchemaException($"Type Home absent : {TypeKey(typeKey)}.", "type_missing");
 
     public IReadOnlyList<SchemaPropertyInfo> PropertiesFor(string typeKey)
     {
         string wireType = TypeKey(typeKey);
         if (!_snapshot.Types.TryGetValue(wireType, out SchemaTypeInfo? type))
-            throw new HomeSchemaException($"Type Home absent : {wireType}.");
+            throw new HomeSchemaException($"Type Home absent : {wireType}.", "type_missing");
 
         var result = new List<SchemaPropertyInfo>();
         foreach (SchemaPropertyLinkInfo link in type.PropertyLinks)

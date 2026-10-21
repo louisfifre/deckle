@@ -381,6 +381,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── Http/
 │   │   │   ├── McpClients.cs
 │   │   │   ├── McpClientTokens.cs
+│   │   │   ├── McpHostLogBridge.cs
 │   │   │   ├── McpHttpHost.cs
 │   │   │   ├── McpJsonSchemaContract.cs
 │   │   │   ├── McpRequestRateLimit.cs

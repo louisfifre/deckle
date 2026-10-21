@@ -47,13 +47,18 @@ public sealed class McpClientTokens
     // without escaping, and never logged on the way out.
     public void EnsureMinted()
     {
+        int minted = 0;
         foreach (var client in _clients)
         {
             if (!_vault.Contains(client.TokenSecretName))
+            {
                 _vault.Set(client.TokenSecretName, Mint());
+                minted++;
+            }
         }
 
         _snapshot = null;
+        DeckleAnytypeMcpSource.Log.TokensMinted(_clients.Count, minted);
     }
 
     // Publish each vault token to its User environment variable so the external
@@ -63,19 +68,29 @@ public sealed class McpClientTokens
     // should stay silent rather than nudge the whole desktop.
     public void MaterializeEnvironmentVariables()
     {
+        int published = 0, unchanged = 0, missing = 0;
         foreach (var client in _clients)
         {
             if (!_vault.TryGet(client.TokenSecretName, out string? token) || token is null)
+            {
+                missing++;
                 continue;
+            }
 
             string? current = Environment.GetEnvironmentVariable(
                 client.TokenEnvVar, EnvironmentVariableTarget.User);
             if (current == token)
+            {
+                unchanged++;
                 continue;
+            }
 
             Environment.SetEnvironmentVariable(
                 client.TokenEnvVar, token, EnvironmentVariableTarget.User);
+            published++;
         }
+
+        DeckleAnytypeMcpSource.Log.TokenVariablesPublished(_clients.Count, published, unchanged, missing);
     }
 
     // The length pre-check short-circuits an obvious mismatch, but two

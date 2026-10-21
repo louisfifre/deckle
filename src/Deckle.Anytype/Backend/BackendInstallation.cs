@@ -64,8 +64,30 @@ public static class BackendInstallation
 
     // Copies the already verified legacy payload into an immutable version and
     // activates that copy. The running legacy image is not moved or terminated.
-    public static Task<bool> PrepareAsync(CancellationToken ct = default) =>
-        Store.MigrateLegacyAsync(LegacyBundleVersion, ct);
+    public static async Task<bool> PrepareAsync(CancellationToken ct = default)
+    {
+        try
+        {
+            bool hadActive = Store.ResolveActiveSpec() is not null;
+            bool hasLegacy = File.Exists(Store.LegacyExecutablePath);
+            bool ready = await Store.MigrateLegacyAsync(LegacyBundleVersion, ct).ConfigureAwait(false);
+
+            string action = hadActive ? "none"
+                : !hasLegacy ? "absent"
+                : ready ? "migrated_legacy"
+                : "migration_incomplete";
+            DeckleAnytypeSource.Log.BackendInstallationChecked(
+                action, Store.ActiveVersion() ?? "", CurrentBundle.Version);
+            if (action == "migration_incomplete")
+                DeckleAnytypeSource.Log.BackendInstallationPrepareFailed("legacy_copy_incomplete", "", "");
+            return ready;
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException || !ct.IsCancellationRequested)
+        {
+            DeckleAnytypeSource.Log.BackendInstallationPrepareFailed("exception", ex.GetType().Name, ex.Message);
+            throw;
+        }
+    }
 
     public static async Task<ProvisioningResult> ProvisionAsync(
         IProgress<Downloader.DownloadProgress> progress,
@@ -87,8 +109,13 @@ public static class BackendInstallation
         }
         finally
         {
+            // Best-effort cleanup: a leftover zip wastes disk, never correctness.
             try { if (File.Exists(zipPath)) File.Delete(zipPath); }
-            catch { /* best-effort cleanup */ }
+            catch (Exception ex)
+            {
+                DeckleAnytypeSource.Log.BackendProviderFileOperationFailed(
+                    "delete_bundle_zip", ex.GetType().Name, ex.Message);
+            }
         }
     }
 

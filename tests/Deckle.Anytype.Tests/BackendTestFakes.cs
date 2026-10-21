@@ -15,9 +15,9 @@ internal sealed class FakeBackendProcess(int id, string executablePath) : IBacke
     private readonly TaskCompletionSource _exited = new(TaskCreationOptions.RunContinuationsAsynchronously);
     public int Id { get; } = id;
     public string ExecutablePath { get; } = executablePath;
-    public DateTimeOffset StartedAt { get; set; } = DateTimeOffset.UtcNow;
+    public DateTimeOffset? StartedAt { get; set; } = DateTimeOffset.UtcNow;
     public bool HasExited { get; set; }
-    public int ExitCode { get; set; }
+    public int? ExitCode { get; set; }
     public bool Disposed { get; private set; }
 
     public Task WaitForExitAsync(CancellationToken ct) => _exited.Task.WaitAsync(ct);
@@ -69,11 +69,11 @@ internal sealed class FakeBackendHealth(bool healthy = true) : IBackendHealthPro
     public bool Healthy { get; set; } = healthy;
     public int Calls { get; private set; }
     public bool Disposed { get; private set; }
-    public Task<bool> IsHealthyAsync(CancellationToken ct = default)
+    public Task<BackendHealth> ProbeAsync(CancellationToken ct = default)
     {
         ct.ThrowIfCancellationRequested();
         Calls++;
-        return Task.FromResult(Healthy);
+        return Task.FromResult(new BackendHealth(Healthy, Healthy ? "ok" : "refused"));
     }
     public void Dispose() => Disposed = true;
 }

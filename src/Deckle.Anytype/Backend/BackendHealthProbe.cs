@@ -1,5 +1,6 @@
 using System.Diagnostics;
 using System.Net.Http;
+using System.Net.Sockets;
 
 namespace Deckle.Anytype;
 
@@ -17,8 +18,12 @@ namespace Deckle.Anytype;
 // docs endpoint, a different responsibility with no credentials.
 internal interface IBackendHealthProbe : IDisposable
 {
-    Task<bool> IsHealthyAsync(CancellationToken ct = default);
+    Task<BackendHealth> ProbeAsync(CancellationToken ct = default);
 }
+
+// Reason is one snake_case word (ok, http_status, timeout, refused,
+// unreachable) so the supervisor's unresponsive warning can carry the cause.
+internal readonly record struct BackendHealth(bool Healthy, string Reason);
 
 public sealed class BackendHealthProbe : IBackendHealthProbe
 {
@@ -43,9 +48,9 @@ public sealed class BackendHealthProbe : IBackendHealthProbe
         };
     }
 
-    // Any failure — connection refused, timeout, non-200 — means "not (yet) up"
-    // and returns false; only the caller's cancellation propagates.
-    public async Task<bool> IsHealthyAsync(CancellationToken ct = default)
+    // Any failure — connection refused, timeout, non-200 — means "not (yet) up";
+    // only the caller's cancellation propagates.
+    async Task<BackendHealth> IBackendHealthProbe.ProbeAsync(CancellationToken ct)
     {
         long startTicks = Stopwatch.GetTimestamp();
         try
@@ -55,15 +60,23 @@ public sealed class BackendHealthProbe : IBackendHealthProbe
 
             double elapsedMs = Stopwatch.GetElapsedTime(startTicks).TotalMilliseconds;
             bool healthy = response.IsSuccessStatusCode;
-            DeckleAnytypeSource.Log.BackendHealthProbed(healthy, (int)response.StatusCode, elapsedMs);
-            return healthy;
+            string reason = healthy ? "ok" : "http_status";
+            DeckleAnytypeSource.Log.BackendHealthProbed(healthy, (int)response.StatusCode, reason, elapsedMs);
+            return new BackendHealth(healthy, reason);
         }
         catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException && !ct.IsCancellationRequested)
         {
-            // Status 0 marks "no HTTP response".
+            // Status 0 marks "no HTTP response". A refused connection is the
+            // normal answer of a stopped backend; anything else is worth telling apart.
             double elapsedMs = Stopwatch.GetElapsedTime(startTicks).TotalMilliseconds;
-            DeckleAnytypeSource.Log.BackendHealthProbed(false, 0, elapsedMs);
-            return false;
+            string reason = ex switch
+            {
+                TaskCanceledException => "timeout",
+                HttpRequestException { InnerException: SocketException { SocketErrorCode: SocketError.ConnectionRefused } } => "refused",
+                _ => "unreachable",
+            };
+            DeckleAnytypeSource.Log.BackendHealthProbed(false, 0, reason, elapsedMs);
+            return new BackendHealth(false, reason);
         }
     }
 

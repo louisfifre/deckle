@@ -36,6 +36,12 @@ public sealed partial class AnytypeApiClient : IDisposable
     private readonly SpaceWriteLock _writeLock;
     private readonly IBackendEndpointTrust? _endpointTrust;
 
+    // One transport incident across calls: the first unanswered request logs
+    // the Error, the next ones stay Verbose, the first answer closes it. Only
+    // touched inside _gate, so no further synchronization.
+    private int _transportFailures;
+    private long _transportFailingSince;
+
     // DefaultBackoff applies when the response omits Retry-After; small because
     // the gate already paces traffic.
     private const int MaxRetries = 1;
@@ -325,7 +331,8 @@ public sealed partial class AnytypeApiClient : IDisposable
             {
                 if (_endpointTrust is not null && !_endpointTrust.IsTrusted())
                 {
-                    DeckleAnytypeSource.Log.ApiRequestFailed();
+                    DeckleAnytypeSource.Log.ApiRequestFailed(
+                        method.Method, 0, "untrusted_endpoint", "", "");
                     DeckleAnytypeSource.Log.ApiRequestFailedDetail(
                         method.Method, path, 0, "endpoint owner is not a trusted provider");
                     throw new InvalidOperationException(
@@ -342,8 +349,35 @@ public sealed partial class AnytypeApiClient : IDisposable
                 using var request = new HttpRequestMessage(method, path);
                 if (content is not null) request.Content = content();
 
-                using HttpResponseMessage response =
-                    await _http.SendAsync(request, ct).ConfigureAwait(false);
+                HttpResponseMessage sent;
+                try
+                {
+                    sent = await _http.SendAsync(request, ct).ConfigureAwait(false);
+                }
+                catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException && !ct.IsCancellationRequested)
+                {
+                    // A TaskCanceledException the caller did not ask for is
+                    // HttpClient's own timeout.
+                    string reason = ex is TaskCanceledException ? "timeout" : "transport";
+                    if (_transportFailures++ == 0)
+                    {
+                        _transportFailingSince = Stopwatch.GetTimestamp();
+                        DeckleAnytypeSource.Log.ApiRequestFailed(
+                            method.Method, 0, reason, ex.GetType().Name, ex.Message);
+                    }
+                    DeckleAnytypeSource.Log.ApiRequestFailedDetail(
+                        method.Method, path, 0, $"{ex.GetType().Name}: {ex.Message}");
+                    throw;
+                }
+                using HttpResponseMessage response = sent;
+
+                if (_transportFailures > 0)
+                {
+                    DeckleAnytypeSource.Log.ApiTransportRecovered(
+                        _transportFailures,
+                        Stopwatch.GetElapsedTime(_transportFailingSince).TotalSeconds);
+                    _transportFailures = 0;
+                }
 
                 double elapsedMs = traceRequest
                     ? Stopwatch.GetElapsedTime(startTicks).TotalMilliseconds
@@ -372,9 +406,10 @@ public sealed partial class AnytypeApiClient : IDisposable
                 }
 
                 // The server message is API error text, never key material, so
-                // it may be logged.
+                // it may be logged — in the Verbose detail only: it is free text
+                // the milestone cannot bound, and the status already says why.
                 string errorBody = await response.Content.ReadAsStringAsync(ct).ConfigureAwait(false);
-                DeckleAnytypeSource.Log.ApiRequestFailed();
+                DeckleAnytypeSource.Log.ApiRequestFailed(method.Method, status, "http_status", "", "");
                 DeckleAnytypeSource.Log.ApiRequestFailedDetail(method.Method, path, status, Excerpt(errorBody));
                 throw new HttpRequestException(
                     $"Anytype API {method.Method} {path} failed with {status}: {Excerpt(errorBody)}",

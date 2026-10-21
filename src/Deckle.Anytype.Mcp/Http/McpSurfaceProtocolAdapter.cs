@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using ModelContextProtocol;
@@ -50,7 +51,8 @@ internal static class McpSurfaceProtocolAdapter
             TimeToLive = TimeSpan.Zero,
             CacheScope = CacheScope.Private,
         });
-        options.Handlers.CallToolHandler = (request, ct) => CallToolAsync(tools, request, ct);
+        string surfaceName = surface.Descriptor.Name;
+        options.Handlers.CallToolHandler = (request, ct) => CallToolAsync(surfaceName, tools, request, ct);
     }
 
     private static Tool ToProtocolTool(ToolDescriptor descriptor)
@@ -88,46 +90,82 @@ internal static class McpSurfaceProtocolAdapter
     };
 
     private static async ValueTask<CallToolResult> CallToolAsync(
+        string surfaceName,
         IReadOnlyDictionary<string, PreparedTool> tools,
         RequestContext<CallToolRequestParams> request,
         CancellationToken ct)
     {
-        string? name = request.Params?.Name;
-        if (name is null)
-            throw new McpProtocolException("Missing tool name", McpErrorCode.InvalidParams);
-        if (!tools.TryGetValue(name, out PreparedTool? tool))
-            throw new McpProtocolException($"Unknown tool: {name}", McpErrorCode.InvalidParams);
-
-        JsonObject? arguments = ToJsonObject(request.Params?.Arguments);
-        if (!tool.Input.Accepts(arguments ?? new JsonObject()))
-        {
-            return ToolResult(
-                new ToolOutput("Tool input does not match the advertised JSON Schema."),
-                isError: true);
-        }
-
+        long started = Stopwatch.GetTimestamp();
+        // An unknown name is caller-supplied text, so it is logged as
+        // "unknown", never echoed; a known name is a catalog constant.
+        string toolName = "";
+        string outcome = "failed";
+        string exType = "";
         try
         {
-            ToolOutput output = await tool.Descriptor.Handler(arguments, ct).ConfigureAwait(false);
-            if (tool.Output is not null
-                && (output.StructuredContent is null || !tool.Output.Accepts(output.StructuredContent)))
+            string? name = request.Params?.Name;
+            if (name is null)
             {
+                outcome = "missing_tool_name";
+                throw new McpProtocolException("Missing tool name", McpErrorCode.InvalidParams);
+            }
+            if (!tools.TryGetValue(name, out PreparedTool? tool))
+            {
+                toolName = "unknown";
+                outcome = "unknown_tool";
+                throw new McpProtocolException($"Unknown tool: {name}", McpErrorCode.InvalidParams);
+            }
+            toolName = tool.Descriptor.Name;
+
+            JsonObject? arguments = ToJsonObject(request.Params?.Arguments);
+            if (!tool.Input.Accepts(arguments ?? new JsonObject()))
+            {
+                outcome = "input_rejected";
                 return ToolResult(
-                    new ToolOutput("Tool output does not match the advertised JSON Schema."),
+                    new ToolOutput("Tool input does not match the advertised JSON Schema."),
                     isError: true);
             }
-            return ToolResult(output, isError: false);
+
+            try
+            {
+                ToolOutput output = await tool.Descriptor.Handler(arguments, ct).ConfigureAwait(false);
+                if (tool.Output is not null
+                    && (output.StructuredContent is null || !tool.Output.Accepts(output.StructuredContent)))
+                {
+                    outcome = "output_rejected";
+                    return ToolResult(
+                        new ToolOutput("Tool output does not match the advertised JSON Schema."),
+                        isError: true);
+                }
+                outcome = "completed";
+                return ToolResult(output, isError: false);
+            }
+            catch (OperationCanceledException) when (ct.IsCancellationRequested)
+            {
+                outcome = "cancelled";
+                throw;
+            }
+            catch (Exception ex)
+            {
+                // Catalog validation and execution errors are model-correctable tool
+                // results. Only a missing or unknown tool name is a JSON-RPC
+                // InvalidParams error.
+                outcome = "failed";
+                exType = ex.GetType().Name;
+                return ToolResult(new ToolOutput(ex.Message), isError: true);
+            }
         }
-        catch (OperationCanceledException) when (ct.IsCancellationRequested)
+        catch (Exception ex) when (outcome == "failed")
         {
+            // Anything thrown before the handler ran (argument conversion).
+            exType = ex.GetType().Name;
             throw;
         }
-        catch (Exception ex)
+        finally
         {
-            // Catalog validation and execution errors are model-correctable tool
-            // results. Only a missing or unknown tool name is a JSON-RPC
-            // InvalidParams error.
-            return ToolResult(new ToolOutput(ex.Message), isError: true);
+            DeckleAnytypeMcpSource.Log.ToolCallCompleted(
+                surfaceName, toolName, outcome, exType,
+                Stopwatch.GetElapsedTime(started).TotalMilliseconds);
         }
     }
 
