@@ -104,6 +104,13 @@ public sealed partial class AmbientEngine : IAsyncDisposable
     private string? _startAbortReason;
     private int _stopRequested;
 
+    // Serialises an upstream abort against the Starting → Running switch:
+    // without it a push-loop crash could land after the last start check
+    // and leave a Running engine whose loop is already dead. The first
+    // abort of a run wins; later ones would only repeat its Error.
+    private readonly object _lifecycleLock = new();
+    private bool _abortRequested;
+
     // External-change detection state — populated at StartAsync from
     // the bridge's CLIP v2 resource list. Used by OnResourceUpdate to
     // translate event-side v2 UUIDs (what the EventStream carries)
@@ -161,6 +168,7 @@ public sealed partial class AmbientEngine : IAsyncDisposable
     private int  _hbDropped;
     private int  _hbUnmappedLights;
     private long _hbSkippedSlots;
+    private int  _hbPushFailures;
 
     // Wall-clock cost of each push await, for the heartbeat : REST includes
     // the bridge HTTP round-trip, Entertainment the DTLS/UDP send plus any
@@ -292,34 +300,46 @@ public sealed partial class AmbientEngine : IAsyncDisposable
         catch (Exception ex)
         {
             // A subscriber threw — don't let it kill the engine flow.
-            DeckleAmbientSource.Log.StateChangedSubscriberThrew();
-            DeckleAmbientSource.Log.StateChangedSubscriberThrewDetail(ex.GetType().Name, ex.Message);
+            DeckleAmbientSource.Log.StateChangedSubscriberThrew(ex.GetType().Name, ex.Message);
         }
     }
 
     private void AbortStartOrStop(string reason, Action log)
     {
-        var state = _state;
-        if (state == AmbientEngineState.Off || state == AmbientEngineState.Stopping)
-            return;
+        bool stopNow;
+        lock (_lifecycleLock)
+        {
+            var state = _state;
+            if (state == AmbientEngineState.Off || state == AmbientEngineState.Stopping)
+                return;
+            if (_abortRequested) return;
+            _abortRequested = true;
 
-        _stopReason = reason;
+            _stopReason = reason;
+            stopNow = IsRunning;
+            if (!stopNow) _startAbortReason = reason;
+        }
+
         log();
 
-        if (IsRunning)
-        {
-            Task.Run(Stop);
-        }
-        else
-        {
-            _startAbortReason = reason;
-        }
+        if (stopNow) Task.Run(Stop);
     }
 
     private void ThrowIfStartAbortRequested()
     {
         if (_startAbortReason is { } reason)
             throw new InvalidOperationException($"Ambient start aborted by upstream stop: {reason}");
+    }
+
+    // The final start check and the Running switch happen under the abort
+    // lock, so an abort is either seen here or sees IsRunning and stops.
+    private void CommitRunningOrThrow()
+    {
+        lock (_lifecycleLock)
+        {
+            ThrowIfStartAbortRequested();
+            IsRunning = true;
+        }
     }
 
 }

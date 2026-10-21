@@ -59,8 +59,7 @@ public sealed class HuePairingService : IDisposable
         }
         catch (Exception ex)
         {
-            DeckleAmbientSource.Log.BridgeAutoRestoreFailed();
-            DeckleAmbientSource.Log.BridgeAutoRestoreFailedDetail(ex.GetType().Name, ex.Message);
+            DeckleAmbientSource.Log.BridgeAutoRestoreFailed(ex.GetType().Name, ex.Message);
         }
     }
 
@@ -169,6 +168,7 @@ public sealed class HuePairingService : IDisposable
         HueBridge bridge;
         HueBridgeClient client;
         HueBridgeClient? previous;
+        bool clientKeyPresent;
         lock (_gate)
         {
             ObjectDisposedException.ThrowIf(_disposed, this);
@@ -185,9 +185,10 @@ public sealed class HuePairingService : IDisposable
             // Port 443 : Hue Bridge v2 (firmware 1948086000+) listens
             // there. v1 bridges on port 80 are out of scope.
             bridge = new HueBridge(settings.HueBridgeId!, settings.HueBridgeIp!, 443);
-            var clientKey = HueClientKeyStore.TryGetClientKey(
-                settings.HueBridgeId!, settings.HueUsername!) ?? "";
-            var creds = new HueCredentials(settings.HueUsername!, clientKey);
+            var storedClientKey = HueClientKeyStore.TryGetClientKey(
+                settings.HueBridgeId!, settings.HueUsername!);
+            clientKeyPresent = !string.IsNullOrEmpty(storedClientKey);
+            var creds = new HueCredentials(settings.HueUsername!, storedClientKey ?? "");
             client = new HueBridgeClient(bridge, creds);
 
             previous = _bridgeClient;
@@ -196,7 +197,7 @@ public sealed class HuePairingService : IDisposable
         }
         previous?.Dispose();
 
-        DeckleAmbientSource.Log.BridgeRestoredFromSettings();
+        DeckleAmbientSource.Log.BridgeRestoredFromSettings(clientKeyPresent);
         DeckleAmbientSource.Log.BridgeRestoredFromSettingsDetail(bridge.Id, bridge.InternalIpAddress);
 
         BridgeChanged?.Invoke();
@@ -236,7 +237,7 @@ public sealed class HuePairingService : IDisposable
             }
             catch (Exception ex)
             {
-                return await RecoverEndpointAsync(current, cachedBridge, credentials, ex, ct)
+                return await RecoverEndpointAsync(current, cachedBridge, credentials, "probe_failed", ex, ct)
                     .ConfigureAwait(false);
             }
 
@@ -249,6 +250,7 @@ public sealed class HuePairingService : IDisposable
                     current,
                     cachedBridge,
                     credentials,
+                    "identity_mismatch",
                     new InvalidDataException(
                         $"Cached Hue endpoint identifies as '{actualBridgeId}', expected '{cachedBridge.Id}'."),
                     ct).ConfigureAwait(false);
@@ -264,7 +266,7 @@ public sealed class HuePairingService : IDisposable
             }
             catch (Exception ex)
             {
-                return await RecoverEndpointAsync(current, cachedBridge, credentials, ex, ct)
+                return await RecoverEndpointAsync(current, cachedBridge, credentials, "probe_failed", ex, ct)
                     .ConfigureAwait(false);
             }
 
@@ -358,9 +360,12 @@ public sealed class HuePairingService : IDisposable
         HueBridgeClient expectedClient,
         HueBridge cachedBridge,
         HueCredentials credentials,
+        string reason,
         Exception cause,
         CancellationToken ct)
     {
+        DeckleAmbientSource.Log.BridgeEndpointRecoveryStarting(reason, cause.GetType().Name, cause.Message);
+
         var discovered = await HueDiscovery.DiscoverLocalAsync(ct).ConfigureAwait(false);
         var resolution = await HueEndpointResolver.FindAsync(
             cachedBridge.Id,
@@ -370,7 +375,11 @@ public sealed class HuePairingService : IDisposable
 
         if (resolution.Bridge is null)
         {
-            DeckleAmbientSource.Log.BridgeEndpointRecoveryFailed();
+            string failureReason = resolution.Candidates == 0
+                ? "not_found"
+                : resolution.Valid > 1 ? "ambiguous" : "no_valid_candidate";
+            DeckleAmbientSource.Log.BridgeEndpointRecoveryFailed(
+                failureReason, cause.GetType().Name, cause.Message);
             DeckleAmbientSource.Log.BridgeEndpointRecoveryFailedDetail(
                 cachedBridge.Id,
                 cachedBridge.InternalIpAddress,
@@ -399,7 +408,11 @@ public sealed class HuePairingService : IDisposable
             using var client = new HueBridgeClient(bridge, credentials);
             string actualBridgeId = await client.GetBridgeIdAsync(ct).ConfigureAwait(false);
             if (!string.Equals(actualBridgeId, bridge.Id, StringComparison.OrdinalIgnoreCase))
+            {
+                DeckleAmbientSource.Log.BridgeCandidateRejectedDetail(
+                    bridge.InternalIpAddress, "identity_mismatch", "none", "none");
                 return false;
+            }
 
             await client.ListGroupsAsync(ct).ConfigureAwait(false);
             return true;
@@ -408,8 +421,12 @@ public sealed class HuePairingService : IDisposable
         {
             throw;
         }
-        catch
+        catch (Exception ex)
         {
+            // A candidate that cannot authenticate is simply not our bridge;
+            // the recovery outcome is reported once by the caller.
+            DeckleAmbientSource.Log.BridgeCandidateRejectedDetail(
+                bridge.InternalIpAddress, "exception", ex.GetType().Name, ex.Message);
             return false;
         }
     }

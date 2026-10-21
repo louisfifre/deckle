@@ -27,35 +27,53 @@ public sealed partial class HueBridgeClient
         using var streamHttp = CreateBridgeHttpClient(
             _bridge.InternalIpAddress, _bridge.Port, Timeout.InfiniteTimeSpan);
         var episode = new HueEventStreamEpisode();
+        long startedAt = System.Diagnostics.Stopwatch.GetTimestamp();
+        Exception? failure = null;
 
         DeckleLightingSource.Log.EventStreamStarting();
 
-        while (!ct.IsCancellationRequested)
+        try
         {
-            try
+            while (!ct.IsCancellationRequested)
             {
-                await StreamOneConnectionAsync(
-                    streamHttp,
-                    onUpdate,
-                    () => ReportEventStreamRecovery(episode),
-                    ct).ConfigureAwait(false);
+                try
+                {
+                    await StreamOneConnectionAsync(
+                        streamHttp,
+                        onUpdate,
+                        () => ReportEventStreamRecovery(episode),
+                        ct).ConfigureAwait(false);
 
-                BeginEventStreamLoss(episode, exception: null, ct);
-            }
-            catch (OperationCanceledException)
-            {
-                break;
-            }
-            catch (Exception ex)
-            {
-                BeginEventStreamLoss(episode, ex, ct);
-            }
+                    BeginEventStreamLoss(episode, exception: null, ct);
+                    DeckleLightingSource.Log.EventStreamReconnecting("clean_close");
+                }
+                catch (OperationCanceledException)
+                {
+                    break;
+                }
+                catch (Exception ex)
+                {
+                    BeginEventStreamLoss(episode, ex, ct);
+                    DeckleLightingSource.Log.EventStreamReconnecting("exception");
+                }
 
-            try { await Task.Delay(TimeSpan.FromSeconds(2), ct).ConfigureAwait(false); }
-            catch (OperationCanceledException) { break; }
+                try { await Task.Delay(TimeSpan.FromSeconds(2), ct).ConfigureAwait(false); }
+                catch (OperationCanceledException) { break; }
+            }
         }
-
-        DeckleLightingSource.Log.EventStreamStopped();
+        catch (Exception ex)
+        {
+            failure = ex;
+            throw;
+        }
+        finally
+        {
+            DeckleLightingSource.Log.EventStreamStopped(
+                failure is null ? "cancelled" : "failed",
+                (long)System.Diagnostics.Stopwatch.GetElapsedTime(startedAt).TotalMilliseconds,
+                failure?.GetType().Name ?? "none",
+                failure?.Message ?? "none");
+        }
     }
 
     private async Task StreamOneConnectionAsync(
@@ -81,8 +99,10 @@ public sealed partial class HueBridgeClient
             {
                 return JsonSerializer.Deserialize<HueEventStreamContainer[]>(bytes, _jsonOptions);
             }
-            catch (JsonException)
+            catch (JsonException ex)
             {
+                // One malformed event must not drop the connection.
+                DeckleLightingSource.Log.HueStepFailedDetail("event_stream_parse", ex.GetType().Name, ex.Message);
                 return null;
             }
         });
@@ -140,8 +160,13 @@ public sealed partial class HueBridgeClient
             return;
         }
 
-        DeckleLightingSource.Log.EventStreamIncident();
-        ReportEventStreamIncidentDetail(observation);
+        Exception? exception = observation.LastException;
+        DeckleLightingSource.Log.EventStreamIncident(
+            (long)observation.Duration.TotalMilliseconds,
+            observation.FailureCount,
+            exception is null ? "clean_close" : "exception",
+            exception?.GetType().Name ?? "none",
+            exception?.Message ?? "none");
     }
 
     private static void ReportEventStreamRecovery(HueEventStreamEpisode episode)
@@ -149,23 +174,8 @@ public sealed partial class HueBridgeClient
         if (!episode.TryRecover(out HueEventStreamObservation observation)) return;
 
         DeckleLightingSource.Log.EventStreamRecovered();
-        if (!DeckleLightingSource.Log.IsEventStreamDetailEnabled()) return;
-
         DeckleLightingSource.Log.EventStreamRecoveryDetail(
             (long)observation.Duration.TotalMilliseconds,
             observation.FailureCount);
-    }
-
-    private static void ReportEventStreamIncidentDetail(HueEventStreamObservation observation)
-    {
-        if (!DeckleLightingSource.Log.IsEventStreamDetailEnabled()) return;
-
-        Exception? exception = observation.LastException;
-        DeckleLightingSource.Log.EventStreamIncidentDetail(
-            (long)observation.Duration.TotalMilliseconds,
-            observation.FailureCount,
-            exception is null ? "clean_close" : "exception",
-            exception?.GetType().Name ?? "none",
-            exception?.Message ?? "none");
     }
 }

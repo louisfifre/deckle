@@ -144,10 +144,12 @@ public sealed partial class AmbientEngine
             // from the Stopwatch armed at pipeline start.
             string reason = _stopReason switch
             {
-                "user"         => "user",
-                "capture_lost" => "upstream",
-                "external"     => "upstream",
-                _              => "user",
+                "user"                    => "user",
+                "capture_lost"            => "upstream",
+                "external"                => "upstream",
+                "push_rejected"           => "upstream",
+                "frame_processing_failed" => "upstream",
+                _                         => "user",
             };
             long ageMs = _startTimestamp != 0
                 ? (Stopwatch.GetTimestamp() - _startTimestamp) * 1000 / Stopwatch.Frequency
@@ -157,8 +159,13 @@ public sealed partial class AmbientEngine
         }
         catch (Exception ex)
         {
-            DeckleAmbientSource.Log.PushLoopCrashed();
-            DeckleAmbientSource.Log.PushLoopCrashedDetail(ex.GetType().Name, ex.Message);
+            // Logged before the abort so a crash during Stopping, which the
+            // abort ignores, still reaches the journal.
+            DeckleAmbientSource.Log.PushLoopCrashed(ex.GetType().Name, ex.Message);
+
+            // The loop is the only producer of pushes; a dead loop under a
+            // Running engine leaves the UI on with frozen lights.
+            AbortStartOrStop("push_loop_crashed", static () => { });
         }
     }
 

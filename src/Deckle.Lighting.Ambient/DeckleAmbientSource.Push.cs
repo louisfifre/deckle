@@ -19,25 +19,6 @@ public sealed partial class DeckleAmbientSource
         WriteEvent(EvtPushGroup, r, g, b, off, push_ms);
     }
 
-    [Event(EvtPushGroupFailed,
-           Level = EventLevel.Warning,
-           Keywords = (EventKeywords)Keywords.Push,
-           Message = "Group push failed")]
-    public void PushGroupFailed()
-    {
-        if (IsEnabled()) WriteEvent(EvtPushGroupFailed);
-    }
-
-    [Event(EvtPushGroupFailedDetail,
-           Level = EventLevel.Verbose,
-           Keywords = (EventKeywords)Keywords.Push,
-           Message = "group push failed | ex_type={0} | ex_message={1}")]
-    public void PushGroupFailedDetail(string ex_type, string ex_message)
-    {
-        if (!IsAmbientDetailEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Push)) return;
-        WriteEvent(EvtPushGroupFailedDetail, ex_type, ex_message);
-    }
-
     [Event(EvtPushMulti,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Push,
@@ -50,32 +31,25 @@ public sealed partial class DeckleAmbientSource
         WriteEvent(EvtPushMulti, pushed_lights, total_lights, colors, push_ms);
     }
 
-    [Event(EvtPushMultiFailed,
-           Level = EventLevel.Warning,
-           Keywords = (EventKeywords)Keywords.Push,
-           Message = "Multi-light push failed")]
-    public void PushMultiFailed()
-    {
-        if (IsEnabled()) WriteEvent(EvtPushMultiFailed);
-    }
-
-    [Event(EvtPushMultiFailedDetail,
+    // One raw attempt per failed push; the incident milestone opens past the
+    // threshold. retry_delay_ms is the back-off the loop applies next.
+    [Event(EvtPushAttemptFailedDetail,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Push,
-           Message = "multi-light push failed | ex_type={0} | ex_message={1}")]
-    public void PushMultiFailedDetail(string ex_type, string ex_message)
+           Message = "push attempt failed | failures={0} | retry_delay_ms={1} | ex_type={2} | ex_message={3}")]
+    public void PushAttemptFailedDetail(int failures, int retry_delay_ms, string ex_type, string ex_message)
     {
         if (!IsAmbientDetailEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Push)) return;
-        WriteEvent(EvtPushMultiFailedDetail, ex_type, ex_message);
+        WriteEvent(EvtPushAttemptFailedDetail, failures, retry_delay_ms, ex_type, ex_message);
     }
 
     [Event(EvtPushIncidentOpened,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Push,
-           Message = "Hue bridge pushes are failing — Ambient lighting is retrying")]
-    public void PushIncidentOpened()
+           Message = "Hue bridge pushes are failing, Ambient lighting is retrying | failures={0} | ex_type={1} | ex_message={2}")]
+    public void PushIncidentOpened(int failures, string ex_type, string ex_message)
     {
-        if (IsEnabled()) WriteEvent(EvtPushIncidentOpened);
+        if (IsEnabled()) WriteEvent(EvtPushIncidentOpened, failures, ex_type, ex_message);
     }
 
     [Event(EvtPushRecovered,
@@ -87,13 +61,15 @@ public sealed partial class DeckleAmbientSource
         if (IsEnabled()) WriteEvent(EvtPushRecovered);
     }
 
+    // status = the HTTP status of the rejection, 0 when the cause is not an
+    // HTTP response (a driver InvalidOperationException).
     [Event(EvtPushRejected,
            Level = EventLevel.Error,
            Keywords = (EventKeywords)Keywords.Push,
-           Message = "Hue rejected Ambient lighting — the pipeline is stopping")]
-    public void PushRejected()
+           Message = "Hue rejected Ambient lighting, the pipeline is stopping | status={0} | ex_type={1} | ex_message={2}")]
+    public void PushRejected(int status, string ex_type, string ex_message)
     {
-        if (IsEnabled()) WriteEvent(EvtPushRejected);
+        if (IsEnabled()) WriteEvent(EvtPushRejected, status, ex_type, ex_message);
     }
 
     [Event(EvtPushEpisodeDetail,
@@ -107,13 +83,14 @@ public sealed partial class DeckleAmbientSource
         WriteEvent(EvtPushEpisodeDetail, outcome, failures, duration_ms, ex_type, ex_message);
     }
 
+    // push_* stats cover the pushes of the period; they are 0 when no push ran.
     [Event(EvtHeartbeat,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Heartbeat,
-           Message = "heartbeat | mode={0} | period_sec={1:F1} | target_hz={2} | effective_hz={3:F1} | ticks={4} | pushed={5} | dropped={6} | skipped_slots={7} | unmapped_lights={8}{9}")]
+           Message = "heartbeat | mode={0} | period_s={1:F1} | target_hz={2} | effective_hz={3:F1} | ticks={4} | pushed={5} | dropped={6} | skipped_slots={7} | unmapped_lights={8} | push_failures={9} | push_avg_ms={10:F1} | push_p95_ms={11:F1} | push_max_ms={12:F1}")]
     public void Heartbeat(
         string mode,
-        double period_sec,
+        double period_s,
         int target_hz,
         double effective_hz,
         int ticks,
@@ -121,7 +98,10 @@ public sealed partial class DeckleAmbientSource
         int dropped,
         long skipped_slots,
         int unmapped_lights,
-        string push_stats_suffix)
+        int push_failures,
+        double push_avg_ms,
+        double push_p95_ms,
+        double push_max_ms)
     {
         if (!OperationalLogAdmission.IsDetailEnabled(
                 OperationalLogActivity.Ambient, this,
@@ -129,7 +109,7 @@ public sealed partial class DeckleAmbientSource
         WriteEvent(
             EvtHeartbeat,
             mode,
-            period_sec,
+            period_s,
             target_hz,
             effective_hz,
             ticks,
@@ -137,7 +117,9 @@ public sealed partial class DeckleAmbientSource
             dropped,
             skipped_slots,
             unmapped_lights,
-            push_stats_suffix);
+            push_failures,
+            push_avg_ms,
+            push_p95_ms,
+            push_max_ms);
     }
-
 }

@@ -24,23 +24,35 @@ public sealed partial class AmbientEngine
             _pushFailureStartTimestamp = Stopwatch.GetTimestamp();
         _pushFailureType = ex.GetType().Name;
         _pushFailureMessage = ex.Message;
+        _hbPushFailures++;
 
         if (IsTerminalPushFailure(ex))
         {
             long durationMs = PushFailureDurationMs();
-            DeckleAmbientSource.Log.PushRejected();
-            DeckleAmbientSource.Log.PushEpisodeDetail(
-                "terminal", _pushConsecutiveFailures, durationMs,
-                _pushFailureType, _pushFailureMessage);
-            _stopReason = "push_rejected";
-            _ = Task.Run(Stop);
+            int failures = _pushConsecutiveFailures;
+            string failureType = _pushFailureType;
+            string failureMessage = _pushFailureMessage;
+            int status = ex is HttpRequestException { StatusCode: { } code } ? (int)code : 0;
+
+            // AbortStartOrStop rather than a bare Stop: a rejection on the
+            // first ticks lands before IsRunning, where Stop is a no-op.
+            AbortStartOrStop("push_rejected", () =>
+            {
+                DeckleAmbientSource.Log.PushRejected(status, failureType, failureMessage);
+                DeckleAmbientSource.Log.PushEpisodeDetail(
+                    "terminal", failures, durationMs, failureType, failureMessage);
+            });
             return;
         }
+
+        DeckleAmbientSource.Log.PushAttemptFailedDetail(
+            _pushConsecutiveFailures, GetPushDelayMs(), _pushFailureType, _pushFailureMessage);
 
         if (_pushConsecutiveFailures == 3)
         {
             _pushIncidentOpen = true;
-            DeckleAmbientSource.Log.PushIncidentOpened();
+            DeckleAmbientSource.Log.PushIncidentOpened(
+                _pushConsecutiveFailures, _pushFailureType, _pushFailureMessage);
             DeckleAmbientSource.Log.PushEpisodeDetail(
                 "opened", _pushConsecutiveFailures, PushFailureDurationMs(),
                 _pushFailureType, _pushFailureMessage);
