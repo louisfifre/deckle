@@ -173,9 +173,11 @@ public sealed partial class AmbientEngine
     // Capture worker thread → marshal off it via Task.Run because Stop()
     // raises StateChanged whose subscribers (AmbientPage, tray) expect
     // to live on their own dispatchers, and Stop() is not designed to
-    // run synchronously on the capture's loop thread.
-    private void OnCaptureStopped()
+    // run synchronously on the capture's loop thread. reason is the Vision
+    // CaptureStopReasons value, relayed so the consequence line names the
+    // cause Vision already reported.
+    private void OnCaptureStopped(string reason)
     {
-        AbortStartOrStop("capture_lost", DeckleAmbientSource.Log.CaptureLost);
+        AbortStartOrStop("capture_lost", () => DeckleAmbientSource.Log.CaptureLost(reason));
     }
 }

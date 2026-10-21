@@ -2,6 +2,7 @@ using System.Diagnostics.Tracing;
 using Deckle.Diagnostics;
 using Deckle.Lighting.Ambient;
 using Deckle.TestSupport;
+using Deckle.Vision;
 using Xunit;
 
 namespace Deckle.Lighting.Ambient.Tests;
@@ -38,6 +39,24 @@ public class DeckleAmbientSourceTests
         Assert.Equal("4", listener.Events[1].Payload?[0]);
         Assert.Equal("light", listener.Events[1].Payload?[1]);
         Assert.Equal(1200, listener.Events[1].Payload?[2]);
+    }
+
+    // Vision's terminal Error is the one Error the journal shows for a lost
+    // capture; Ambient adds only its consequence, with the cause relayed.
+    [Fact]
+    public void CaptureLostIsAJournalConsequenceCarryingTheVisionReason()
+    {
+        using var listener = new TestEventListener("Deckle-Ambient");
+
+        DeckleAmbientSource.Log.CaptureLost(CaptureStopReasons.DeviceLost);
+
+        var ev = Assert.Single(listener.Events);
+        Assert.Equal(DeckleAmbientSource.EvtCaptureLost, ev.EventId);
+        Assert.Equal(EventLevel.Informational, ev.Level);
+        Assert.Equal(ObservationTags.Journal, ev.Tags & ObservationTags.Journal);
+        Assert.True(ev.HasKeyword(Keywords.Lifecycle));
+        Assert.Equal("reason", ev.PayloadNames?[0]);
+        Assert.Equal(CaptureStopReasons.DeviceLost, ev.Payload?[0]);
     }
 
     [Fact]

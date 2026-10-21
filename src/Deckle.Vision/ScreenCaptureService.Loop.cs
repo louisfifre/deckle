@@ -16,7 +16,7 @@ public sealed partial class ScreenCaptureService
         int invalidCallRecoveryAttempts = 0;
         long loopStartTicks = Stopwatch.GetTimestamp();
         bool failed = false;
-        string exitReason = "requested";
+        string exitReason = CaptureStopReasons.Requested;
 
         // Generic AcquireNextFrame failures form one incident: raw attempts
         // stay Verbose, the threshold opens one Warning with the last hr,
@@ -157,7 +157,7 @@ public sealed partial class ScreenCaptureService
                         DeckleVisionSource.Log.FrameOwnershipRecoveryAbandoned(
                             invalidCallRecoveryAttempts, MaxInvalidCallRecoveryAttempts, hr);
                         failed = true;
-                        exitReason = "frame_ownership_abandoned";
+                        exitReason = CaptureStopReasons.FrameOwnershipAbandoned;
                         break;
                     }
 
@@ -183,7 +183,7 @@ public sealed partial class ScreenCaptureService
                     // rebuilding the device is the consumer's call.
                     DeckleVisionSource.Log.DeviceLost(hr);
                     failed = true;
-                    exitReason = "device_lost";
+                    exitReason = CaptureStopReasons.DeviceLost;
                     break;
                 }
 
@@ -207,7 +207,7 @@ public sealed partial class ScreenCaptureService
                             ? (Stopwatch.GetTimestamp() - _startTimestamp) * 1000 / Stopwatch.Frequency
                             : -1;
                         DeckleCancellationSource.Log.OperationCancelled(
-                            "vision-capture", "upstream", (int)ageMs);
+                            CancelledOperations.VisionCapture, CancellationReasons.Upstream, (int)ageMs);
                         break;
                     }
                     continue;
@@ -344,12 +344,12 @@ public sealed partial class ScreenCaptureService
         catch (Exception ex)
         {
             failed = true;
-            exitReason = "loop_crashed";
+            exitReason = CaptureStopReasons.LoopCrashed;
             DeckleVisionSource.Log.CaptureLoopCrashed(ex.HResult, ex.GetType().Name, ex.Message);
         }
         finally
         {
-            if (!failed) exitReason = "requested";
+            if (!failed) exitReason = CaptureStopReasons.Requested;
             _loopExitReason = exitReason;
             DeckleVisionSource.Log.CaptureLoopEnded(
                 failed ? "failed" : "cancelled",
@@ -358,13 +358,14 @@ public sealed partial class ScreenCaptureService
                 (Stopwatch.GetTimestamp() - loopStartTicks) * 1000L / Stopwatch.Frequency);
 
             // Raise Stopped only when the loop ended on its own; Stop()
-            // cancels the token first.
+            // cancels the token first. It carries the reason logged above,
+            // so the consumer's own milestone names the same cause.
             if (!ct.IsCancellationRequested)
             {
                 IsRunning = false;
                 try
                 {
-                    Stopped?.Invoke();
+                    Stopped?.Invoke(exitReason);
                 }
                 catch (Exception ex)
                 {

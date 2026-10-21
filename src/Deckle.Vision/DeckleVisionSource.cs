@@ -175,8 +175,8 @@ public sealed class DeckleVisionSource : DeckleEventSource
         if (IsEnabled()) WriteEvent(EvtCaptureLoopStopTimedOut, elapsed_ms);
     }
 
-    // reason: requested, device_lost, frame_ownership_abandoned,
-    // recreate_abandoned or loop_crashed.
+    // reason: a CaptureStopReasons value (requested, device_lost,
+    // frame_ownership_abandoned, recreate_abandoned or loop_crashed).
     [Event(EvtScreenCaptureStopped,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)(Keywords.Capture | Keywords.Lifecycle),

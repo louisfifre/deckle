@@ -85,10 +85,11 @@ public sealed partial class AmbientPage
         EvaluatePreviewTimerState();
     }
 
-    private void OnScreenCaptureStopped()
+    private void OnScreenCaptureStopped(string reason)
     {
-        // Fires on the capture worker thread after a sustained failure to
-        // recreate the duplication.
+        // Fires on the capture worker thread when the loop ends on its own
+        // (a CaptureStopReasons value: device lost, recreate abandoned, loop
+        // crashed). Vision journals the reason; the page only tears down.
         DispatcherQueue.TryEnqueueObserved(
             operation: "engine-state-sync", caller: "playground-ambient-page-capture",
             callback: () => StopScreenCaptureIfRunning(),

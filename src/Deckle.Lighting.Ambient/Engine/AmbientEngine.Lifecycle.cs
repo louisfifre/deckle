@@ -137,11 +137,12 @@ public sealed partial class AmbientEngine
             _capture.FrameArrived += OnFrameArrived;
             _capture.FrameProcessingFailed += OnFrameProcessingFailed;
 
-            // Stopped fires only on fatal capture failure (DEVICE_REMOVED
-            // / DEVICE_HUNG) — transient interruptions (secure desktop,
-            // ACCESS_LOST, RDP disconnect) are absorbed by the capture
-            // service's retry loop. When we see this, the only sane move
-            // is to stop the engine cleanly so the UI toggles back to off.
+            // Stopped fires only when capture ends on its own (device lost,
+            // a recovery abandoned, a crashed loop) and carries that reason —
+            // transient interruptions (secure desktop, ACCESS_LOST, RDP
+            // disconnect) are absorbed by the capture service's retry loop.
+            // When we see this, the only sane move is to stop the engine
+            // cleanly so the UI toggles back to off.
             _capture.Stopped += OnCaptureStopped;
 
             // FormatChanged fires when a mid-session duplication recreate

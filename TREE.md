@@ -1736,6 +1736,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │       ├── CapturedFrame.cs
 │       ├── CaptureMonitor.cs
 │       ├── CapturePacer.cs
+│       ├── CaptureStopReasons.cs
 │       ├── Deckle.Vision.csproj
 │       ├── DeckleVisionSource.cs
 │       ├── FrameAnalysisHint.cs

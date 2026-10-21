@@ -5,15 +5,18 @@ namespace Deckle.Lighting.Ambient;
 
 public sealed partial class DeckleAmbientSource
 {
-    // The capture service's Stopped event carries no cause, so this milestone
-    // cannot name one; the Vision provider logs the capture-side failure.
+    // The consequence of a capture that ended on its own. Vision already
+    // logged the terminal Error with its cause; this Informational line only
+    // tells the reader what it means for ambient lighting. reason is the
+    // Vision CaptureStopReasons value the Stopped event carried.
     [Event(EvtCaptureLost,
-           Level = EventLevel.Error,
+           Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "Capture was lost — the engine is stopping")]
-    public void CaptureLost()
+           Tags = ObservationTags.Journal,
+           Message = "Screen capture stopped, Ambient lighting is stopping | reason={0}")]
+    public void CaptureLost(string reason)
     {
-        if (IsEnabled()) WriteEvent(EvtCaptureLost);
+        if (IsEnabled()) WriteEvent(EvtCaptureLost, reason);
     }
 
     // reason = sampler_failed (the sampler rejected a frame) | capture_failed

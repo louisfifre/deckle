@@ -21,7 +21,7 @@ public sealed partial class ScreenCaptureService
     // loop's exit line and the stopped milestone.
     private bool TryRecreateDuplication(CancellationToken ct, out string abandonReason)
     {
-        abandonReason = "requested";
+        abandonReason = CaptureStopReasons.Requested;
         int attempt = 0;
         long incidentStartedTicks = 0;
         bool incidentOpen = false;
@@ -138,13 +138,13 @@ public sealed partial class ScreenCaptureService
                     if (fatalDevice)
                     {
                         DeckleVisionSource.Log.DeviceLost(ex.HResult);
-                        abandonReason = "device_lost";
+                        abandonReason = CaptureStopReasons.DeviceLost;
                     }
                     else
                     {
                         DeckleVisionSource.Log.DuplicationRecreateAbandoned(
                             attempt, ex.HResult, ex.GetType().Name, ex.Message);
-                        abandonReason = "recreate_abandoned";
+                        abandonReason = CaptureStopReasons.RecreateAbandoned;
                     }
 
                     if (incidentOpen && incidentStartedTicks != 0)
@@ -169,7 +169,7 @@ public sealed partial class ScreenCaptureService
                         ? (Stopwatch.GetTimestamp() - _startTimestamp) * 1000 / Stopwatch.Frequency
                         : -1;
                     DeckleCancellationSource.Log.OperationCancelled(
-                        "vision-capture", "upstream", (int)ageMs);
+                        CancelledOperations.VisionCapture, CancellationReasons.Upstream, (int)ageMs);
                     return false;
                 }
                 continue;

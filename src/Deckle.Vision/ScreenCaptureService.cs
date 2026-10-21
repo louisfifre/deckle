@@ -116,8 +116,8 @@ public sealed partial class ScreenCaptureService : IDisposable
     // still held, so Stop keys its release and its stopped line on this.
     private bool _sessionStarted;
 
-    // Written by the capture loop on exit, read by Stop for the stopped
-    // line; null until the loop ends.
+    // A CaptureStopReasons value written by the capture loop on exit, read
+    // by Stop for the stopped line; null until the loop ends.
     private volatile string? _loopExitReason;
 
     private FrameFailure? _lastFrameFailure;
@@ -187,9 +187,10 @@ public sealed partial class ScreenCaptureService : IDisposable
 
     /// <summary>Raised on the worker thread when capture ends on its own: a
     /// lost device, a frame-ownership or duplication recovery abandoned,
-    /// or a crashed loop. <see cref="IsRunning"/> is already false when it
-    /// fires.</summary>
-    public event Action? Stopped;
+    /// or a crashed loop. The argument is the <see cref="CaptureStopReasons"/>
+    /// value Vision logged for that end. <see cref="IsRunning"/> is already
+    /// false when it fires.</summary>
+    public event Action<string>? Stopped;
 
     /// <summary>
     /// Raised on the capture worker thread after a recreate negotiated a

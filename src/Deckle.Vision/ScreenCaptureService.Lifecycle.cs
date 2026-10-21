@@ -185,7 +185,7 @@ public sealed partial class ScreenCaptureService
                     ? (Stopwatch.GetTimestamp() - _startTimestamp) * 1000 / Stopwatch.Frequency
                     : -1;
                 DeckleCancellationSource.Log.OperationCancelled(
-                    "vision-capture", "upstream", (int)ageMs);
+                    CancelledOperations.VisionCapture, CancellationReasons.Upstream, (int)ageMs);
             }
         }
         catch (Exception ex)
@@ -216,7 +216,7 @@ public sealed partial class ScreenCaptureService
                 // A loop that never ran (cancelled before its first
                 // iteration) wrote no reason: the stop was requested.
                 DeckleVisionSource.Log.ScreenCaptureStopped(
-                    _loopExitReason ?? "requested", durationMs);
+                    _loopExitReason ?? CaptureStopReasons.Requested, durationMs);
 
                 if (OperationalLogAdmission.IsScopedDetailEnabled(
                         OperationalLogActivity.Ambient,

@@ -3,9 +3,12 @@ using Deckle.Diagnostics;
 
 namespace Deckle.Lighting.Ambient;
 
-// Ambient module provider. Provider Name = "Deckle-Ambient": short choice to
-// keep the LogWindow [AMBIENT] tag. The low-level Hue driver keeps its
-// separate provider in Deckle.Lighting.
+// Ambient lighting provider, "Deckle-Ambient". One partial file per area:
+// pipeline lifecycle, push, capture and sampling consequences, bridge pairing
+// and endpoint recovery, light placement, UI and settings. Verbose detail
+// passes the Ambient activity admission. Screen capture reports its own
+// causes on Deckle-Vision and the low-level Hue driver on its provider in
+// Deckle.Lighting; this provider says what they mean for ambient lighting.
 [EventSource(Name = "Deckle-Ambient")]
 public sealed partial class DeckleAmbientSource : DeckleEventSource
 {
@@ -48,7 +51,7 @@ public sealed partial class DeckleAmbientSource : DeckleEventSource
     public const int EvtSettingsLoadWarning           = 24;
     public const int EvtSettingsLoadError             = 25;
     // 26 retired.
-    public const int EvtCaptureLost                   = 27;
+    // 27 retired.
     public const int EvtExternalChangeStopped         = 28;
     // 29 retired.
     public const int EvtPipelinePerLightConfig        = 30;
@@ -132,4 +135,5 @@ public sealed partial class DeckleAmbientSource : DeckleEventSource
     public const int EvtBridgeEndpointRecoveryStarting  = 100;
     public const int EvtBridgeCandidateRejectedDetail   = 101;
     public const int EvtBridgeRestoredFromSettings      = 102;
+    public const int EvtCaptureLost                     = 103;
 }
