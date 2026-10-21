@@ -352,7 +352,10 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   │   ├── AnytypeV2ObjectReader.cs
 │   │   │   │   ├── AnytypeV2ObjectReadOptions.cs
 │   │   │   │   ├── AnytypeV2Request.cs
-│   │   │   │   └── AnytypeV2Response.cs
+│   │   │   │   ├── AnytypeV2Response.cs
+│   │   │   │   ├── AnytypeV2WriteOptions.cs
+│   │   │   │   ├── AnytypeV2Writer.cs
+│   │   │   │   └── AnytypeV2WriteReceipt.cs
 │   │   │   ├── AnytypeApiClient.Chats.cs
 │   │   │   ├── AnytypeApiClient.cs
 │   │   │   ├── AnytypeApiClient.Files.cs
