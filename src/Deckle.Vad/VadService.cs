@@ -26,7 +26,8 @@ public sealed class VadService : IDisposable
     private bool _loadFailed;       // constructing the session threw — don't retry
 
     // The open "takes run untrimmed" incident, null when none. Guarded because the
-    // background download reports its failure from a pool thread.
+    // background download reports its failure from a pool thread, and trim
+    // outcomes arrive from the streaming consumer task.
     private readonly object _incidentLock = new();
     private string? _incidentReason;
 
@@ -42,7 +43,7 @@ public sealed class VadService : IDisposable
         if (_vad is not null) return _vad;
         if (_loadFailed) return null;
 
-        string modelPath = Path.Combine(_resolveModelsDirectory(), SileroVadModel.FileName);
+        string modelPath = ResolveModelPath();
         bool modelPresent = File.Exists(modelPath);
 
         if (modelPresent)
@@ -94,6 +95,23 @@ public sealed class VadService : IDisposable
         }
         return null;
     }
+
+    // The caller runs the loaded VAD itself, so it reports each trim's outcome
+    // here: the trim failures of successive takes are one incident, opened by
+    // the first and closed by the next trim that succeeds. Each failure stays
+    // a Verbose attempt; only the opening reaches the journal.
+    public void ReportTrimFailure(int utteranceIndex, Exception ex)
+    {
+        DeckleVadSource.Log.SpeechTrimFailed(utteranceIndex, ex.GetType().Name, ex.Message);
+        OpenIncident("trim_failed", ResolveModelPath(), ex.GetType().Name, ex.Message);
+    }
+
+    // Closes whatever incident is open: a trim that ran proves the VAD usable,
+    // whatever made it unusable before.
+    public void ReportTrimSucceeded() => CloseIncident();
+
+    private string ResolveModelPath()
+        => Path.Combine(_resolveModelsDirectory(), SileroVadModel.FileName);
 
     private async Task DownloadModelAsync(string modelPath)
     {

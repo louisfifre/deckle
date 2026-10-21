@@ -394,6 +394,9 @@ public sealed partial class TranscriptionEngine
                     long trimMs = (long)Stopwatch.GetElapsedTime(trimStart).TotalMilliseconds;
                     DeckleVadSource.Log.SpeechTrimmed(
                         u.Index, samples.Length, trim.Samples.Length, trim.SpeechSegments, trimMs);
+                    // A trim that ran, with or without speech found, closes an
+                    // earlier take's trim-failure incident.
+                    _vadService.ReportTrimSucceeded();
                     if (trim.Samples.Length == 0)
                     {
                         // No speech — an energy false positive on noise/silence. Drop it
@@ -411,10 +414,12 @@ public sealed partial class TranscriptionEngine
                 }
                 catch (Exception ex)
                 {
-                    // A VAD runtime failure must not lose the dictation: log it once,
-                    // stop trimming for the rest of this take, and let this utterance
-                    // through untrimmed rather than dropping it or crashing the consumer.
-                    DeckleVadSource.Log.SpeechTrimUnavailable("trim_failed", ex.GetType().Name, ex.Message);
+                    // A VAD runtime failure must not lose the dictation: stop trimming
+                    // for the rest of this take, and let this utterance through
+                    // untrimmed rather than dropping it or crashing the consumer. The
+                    // service keeps failures across takes as one incident, closed by
+                    // the next trim that succeeds.
+                    _vadService.ReportTrimFailure(u.Index, ex);
                     vad = null;
                 }
             }

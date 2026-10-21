@@ -39,6 +39,7 @@ public sealed class DeckleVadSource : DeckleEventSource
     public const int EvtSpeechTrimUnavailableDetail         = 15;
     public const int EvtSpeechTrimRecovered                 = 16;
     public const int EvtSpeechTrimVadFileDeleteFailed       = 17;
+    public const int EvtSpeechTrimFailed                    = 18;
 
     [Event(EvtSpeechTrimmed,
            Level = EventLevel.Verbose,
@@ -181,6 +182,18 @@ public sealed class DeckleVadSource : DeckleEventSource
     public void SpeechTrimVadDownloadCompleteDetail(string model_path)
     {
         if (IsEnabled()) WriteEvent(EvtSpeechTrimVadDownloadCompleteDetail, model_path);
+    }
+
+    // The raw per-utterance failure; the visible incident is SpeechTrimUnavailable
+    // with reason trim_failed, which VadService opens on the first failure and
+    // SpeechTrimRecovered closes on the next trim that succeeds.
+    [Event(EvtSpeechTrimFailed,
+           Level = EventLevel.Verbose,
+           Keywords = (EventKeywords)Keywords.Pipeline,
+           Message = "speech trim failed | utterance_index={0} | ex_type={1} | ex_message={2}")]
+    public void SpeechTrimFailed(int utterance_index, string ex_type, string ex_message)
+    {
+        if (IsTrimDetailEnabled()) WriteEvent(EvtSpeechTrimFailed, utterance_index, ex_type, ex_message);
     }
 
     // The raw per-take attempt; the visible incident is SpeechTrimUnavailable,
