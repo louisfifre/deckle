@@ -374,7 +374,10 @@ public sealed class QueryGestures(AnytypeApiClient api, NameResolver resolver, A
                 ? text ?? ""
                 : "";
         }
-        catch (HttpRequestException)
+        // HttpClient's own timeout is a TaskCanceledException nobody asked for:
+        // the batch is committed all the same, so it is a failed check too.
+        catch (Exception ex) when (ex is HttpRequestException
+            || ex is TaskCanceledException && !ct.IsCancellationRequested)
         {
             return "la relecture a échoué";
         }

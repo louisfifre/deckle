@@ -41,6 +41,14 @@ internal sealed class FakeV2Handler : HttpMessageHandler
         return this;
     }
 
+    // A transport failure in place of an answer, raised as HttpClient raises
+    // it: its own timeout is a TaskCanceledException the caller did not ask for.
+    public FakeV2Handler Fail(Exception error)
+    {
+        _responses.Enqueue(() => throw error);
+        return this;
+    }
+
     protected override async Task<HttpResponseMessage> SendAsync(
         HttpRequestMessage request, CancellationToken cancellationToken)
     {

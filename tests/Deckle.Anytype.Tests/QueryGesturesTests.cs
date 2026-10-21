@@ -956,5 +956,25 @@ public class QueryGesturesTests
             "une autre section a disparu.",
             digest);
     }
+
+    // The batch is committed when the read-back times out: the gesture says the
+    // check failed, never that the write did, so the caller does not redo it.
+    [Fact]
+    [Trait("Category", "regression")]
+    public async Task ReplaceSectionReportsAReadBackTimeoutAsAFailedCheck()
+    {
+        using var server = new FakeAnytypeServer();
+        var v2 = new FakeV2Handler()
+            .Reply(HttpStatusCode.OK, V2Doc(ThreeSections()), ("ETag", ETag))
+            .Reply(HttpStatusCode.OK, "{}")
+            .Fail(new TaskCanceledException("timeout"));
+
+        string digest = await NewGestures(server, v2).ReplaceSectionAsync(TaskId, "État", "neuf", Ct);
+
+        Assert.Equal(
+            "Section « État » écrite dans Ma tâche, mais vérification en échec : " +
+            "la relecture a échoué.",
+            digest);
+    }
 }
 
