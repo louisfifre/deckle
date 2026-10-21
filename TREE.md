@@ -1800,6 +1800,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── PcmBufferTests.cs
 │   │   ├── PcmConversionTests.cs
 │   │   ├── TranscriptionPreprocessorTests.cs
+│   │   ├── WaveInBufferRingBugNotes.md
 │   │   └── WaveInBufferRingTests.cs
 │   ├── Deckle.Autocorrect.Tests/
 │   │   ├── AccentFoldingTests.cs
