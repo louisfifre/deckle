@@ -27,7 +27,7 @@ public sealed partial class OnnxSentenceScorer
         {
             ogaHandle = new OgaHandle();
 
-            (config, model) = CreateModel(modelDir, _executionProvider);
+            (config, model) = CreateModel(modelDir, _executionProvider, out bool retried);
             tokenizer = new Tokenizer(model);
 
             _ogaHandle = ogaHandle;
@@ -35,6 +35,13 @@ public sealed partial class OnnxSentenceScorer
             _model = model;
             _tokenizer = tokenizer;
             _bosTokenId = TryGetBosTokenId(_tokenizer);
+
+            DeckleAutocorrectSource.Log.SentenceJudgeLoaded(
+                Path.GetFileName(Path.TrimEndingDirectorySeparator(modelDir)),
+                _executionProvider,
+                _margin,
+                _vocabSize,
+                retried);
         }
         catch
         {
@@ -57,8 +64,12 @@ public sealed partial class OnnxSentenceScorer
     // absorbs the flake for every consumer (live composition, probe, replay); a
     // second failure is a real one and propagates. The config is rebuilt per
     // attempt rather than reused across a failed native construction.
-    private static (Config Config, Model Model) CreateModel(string modelDir, string executionProvider)
+    private static (Config Config, Model Model) CreateModel(
+        string modelDir,
+        string executionProvider,
+        out bool retried)
     {
+        retried = false;
         for (int attempt = 0; ; attempt++)
         {
             Config? config = null;
@@ -71,9 +82,12 @@ public sealed partial class OnnxSentenceScorer
 
                 return (config, new Model(config));
             }
-            catch (OnnxRuntimeGenAIException) when (attempt == 0)
+            catch (OnnxRuntimeGenAIException ex) when (attempt == 0)
             {
                 config?.Dispose();
+                retried = true;
+                DeckleAutocorrectSource.Log.RerankerLoadRetried(
+                    executionProvider, ex.GetType().FullName ?? ex.GetType().Name, ex.Message);
                 Thread.Sleep(250);
             }
             catch
@@ -118,8 +132,14 @@ public sealed partial class OnnxSentenceScorer
             int id = tokenizer.GetBosTokenId();
             return id >= 0 ? id : null;
         }
-        catch
+        catch (Exception ex)
         {
+            // Scoring runs on without a BOS prefix, which shifts every score the
+            // calibrated margin was measured on.
+            DeckleAutocorrectSource.Log.SentenceJudgeFeatureUnavailable(
+                DeckleAutocorrectSource.SentenceJudgeFeatures.BosToken,
+                ex.GetType().FullName ?? ex.GetType().Name,
+                ex.Message);
             return null;
         }
     }

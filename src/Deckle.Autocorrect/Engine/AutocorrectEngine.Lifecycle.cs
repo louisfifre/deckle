@@ -25,6 +25,8 @@ public sealed partial class AutocorrectEngine
             if (!_host.Start())
             {
                 Unsubscribe();
+                DeckleAutocorrectSource.Log.EngineStartFailed(
+                    DeckleAutocorrectSource.EngineStartFailureReasons.HostStartFailed);
                 return false;
             }
 

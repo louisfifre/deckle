@@ -10,6 +10,8 @@ public sealed partial class AutocorrectEngine
     private int _caretRecoveryRevision;
     private int _pendingCaretRecoveryRevision = -1;
     private bool _sentenceContextDiscontinuous = true;
+    private int _caretRecoveryFailures;
+    private bool _caretRecoveryIncidentOpen;
 
     private void AdvanceCaretRecoveryRevision()
     {
@@ -28,12 +30,26 @@ public sealed partial class AutocorrectEngine
 
         _ = Task.Run(() =>
         {
-            bool succeeded = _caretTextReader.TryReadStable(
-                out FocusedCaretText text,
-                out string reason);
-            _caretSentenceRecoveries.Enqueue(
-                new CaretSentenceRecovery(revision, succeeded, text, reason));
-            _host.RequestDrain();
+            try
+            {
+                bool succeeded = _caretTextReader.TryReadStable(
+                    out FocusedCaretText text,
+                    out string reason);
+                _caretSentenceRecoveries.Enqueue(
+                    new CaretSentenceRecovery(revision, succeeded, text, reason));
+            }
+            catch (Exception ex)
+            {
+                // A UI Automation provider can throw from another process. Left
+                // unobserved, the fault vanished with the task and the pending
+                // revision was never released.
+                _caretSentenceRecoveries.Enqueue(new CaretSentenceRecovery(
+                    revision, false, default!, CaretReadFaulted) { Fault = ex });
+            }
+            finally
+            {
+                _host.RequestDrain();
+            }
         });
     }
 
@@ -43,6 +59,8 @@ public sealed partial class AutocorrectEngine
         {
             if (_pendingCaretRecoveryRevision == recovery.Revision)
                 _pendingCaretRecoveryRevision = -1;
+
+            TrackCaretRecoveryFault(recovery.Fault);
 
             if (recovery.Revision != _caretRecoveryRevision)
             {
@@ -85,6 +103,29 @@ public sealed partial class AutocorrectEngine
         }
     }
 
+    // A provider that throws keeps throwing for as long as the same control has
+    // focus, so the faults form one incident: one Warning carrying the first
+    // cause, one Informational once a read completes again, and each attempt
+    // as the Verbose recovery line. Input thread only.
+    private void TrackCaretRecoveryFault(Exception? fault)
+    {
+        if (fault is null)
+        {
+            if (_caretRecoveryIncidentOpen)
+                DeckleAutocorrectSource.Log.CaretRecoveryRecovered(_caretRecoveryFailures);
+            _caretRecoveryIncidentOpen = false;
+            _caretRecoveryFailures = 0;
+            return;
+        }
+
+        _caretRecoveryFailures++;
+        if (_caretRecoveryIncidentOpen)
+            return;
+        _caretRecoveryIncidentOpen = true;
+        DeckleAutocorrectSource.Log.CaretRecoveryFailing(
+            fault.GetType().FullName ?? fault.GetType().Name, fault.Message);
+    }
+
     private static void LogCaretRecovery(
         string outcome,
         CaretSentenceBoundary boundary,
@@ -94,9 +135,14 @@ public sealed partial class AutocorrectEngine
             boundary.ToString(),
             textLength);
 
+    private const string CaretReadFaulted = "read_faulted";
+
     private readonly record struct CaretSentenceRecovery(
         int Revision,
         bool Succeeded,
         FocusedCaretText Text,
-        string Reason);
+        string Reason)
+    {
+        public Exception? Fault { get; init; }
+    }
 }

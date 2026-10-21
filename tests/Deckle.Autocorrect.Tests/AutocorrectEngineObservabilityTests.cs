@@ -73,7 +73,7 @@ public sealed class AutocorrectEngineObservabilityTests
         h.Type("ca ");
 
         Assert.Single(listener.Events,
-            e => e.EventId == DeckleAutocorrectSource.EvtInjectionIncident);
+            e => e.EventId == DeckleAutocorrectSource.EvtInjectionFailing);
         Assert.Single(listener.Events,
             e => e.EventId == DeckleAutocorrectSource.EvtInjectionRecovered);
     }

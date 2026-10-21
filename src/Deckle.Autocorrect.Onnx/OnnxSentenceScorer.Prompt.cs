@@ -24,9 +24,16 @@ public sealed partial class OnnxSentenceScorer
                 });
                 return _tokenizer.ApplyChatTemplate(_chatTemplate, messages, "[]", add_generation_prompt: true);
             }
-            catch
+            catch (Exception ex)
             {
                 // Some exported tokenizers carry incomplete chat-template support.
+                // The failure is deterministic for a model, so it is reported once
+                // per load rather than on every sentence.
+                if (Interlocked.Exchange(ref _chatTemplateFallbackReported, 1) == 0)
+                    DeckleAutocorrectSource.Log.SentenceJudgeFeatureUnavailable(
+                        DeckleAutocorrectSource.SentenceJudgeFeatures.ChatTemplate,
+                        ex.GetType().FullName ?? ex.GetType().Name,
+                        ex.Message);
             }
         }
 

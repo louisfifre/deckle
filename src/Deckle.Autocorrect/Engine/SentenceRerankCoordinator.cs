@@ -82,7 +82,15 @@ public sealed class SentenceRerankCoordinator : IDisposable
     // grant the model permission to rewrite text that the user is still composing.
     private static readonly HashSet<char> SentenceEnders = new() { '.', '!', '?', '…' };
 
+    // A warm DirectML judgment returns well under a second. A request still out
+    // after this long means the lane is wedged (a hung native call, a dead
+    // worker, a lost drain post) and every later sentence silently queues behind
+    // it. Reported, not released: a late verdict delivered after a release would
+    // be taken for the next request's and resolve the wrong slots.
+    private static readonly TimeSpan StallThreshold = TimeSpan.FromSeconds(10);
+
     private readonly IRerankLane _lane;
+    private readonly TimeProvider _time;
     private readonly IAmbiguityProbe _probe;
     private readonly IAmbiguityProbe _wholeSentenceProbe;
     private readonly bool _wholeSentenceEnabled;
@@ -103,6 +111,8 @@ public sealed class SentenceRerankCoordinator : IDisposable
     private bool _inFlightWholeSentence;
     private int _inFlightContextStart = -1;
     private int _inFlightContextEnd = -1;
+    private long _inFlightSince;
+    private bool _stallReported;
     private bool _wholeSentenceAttempted;
     private bool _sentenceClosed;
     private int _sentenceStartIndex;
@@ -117,9 +127,11 @@ public sealed class SentenceRerankCoordinator : IDisposable
         Action<string>? realignLastCommitted = null,
         Action<CorrectionDecision, InjectionPlan>? onApplied = null,
         Func<bool>? decisionTelemetry = null,
-        IAmbiguityProbe? wholeSentenceProbe = null)
+        IAmbiguityProbe? wholeSentenceProbe = null,
+        TimeProvider? timeProvider = null)
     {
         _lane = lane;
+        _time = timeProvider ?? TimeProvider.System;
         _probe = probe;
         _wholeSentenceProbe = wholeSentenceProbe ?? probe;
         _wholeSentenceEnabled = wholeSentenceProbe is not null;
@@ -358,7 +370,12 @@ public sealed class SentenceRerankCoordinator : IDisposable
 
     private void TrySubmitNext()
     {
-        if (_inFlight || _disposed) return;
+        if (_disposed) return;
+        if (_inFlight)
+        {
+            CheckStall();
+            return;
+        }
 
         if (_wholeSentenceEnabled && !_wholeSentenceAttempted)
         {
@@ -375,10 +392,9 @@ public sealed class SentenceRerankCoordinator : IDisposable
             }
             if (wholeSentence is ClosedSentenceRerankRequest request)
             {
-                _inFlight = true;
+                MarkInFlight();
                 _inFlightWholeSentence = true;
                 _inFlightSlot = -1;
-                _inFlightEpoch = _epoch;
                 DeckleAutocorrectSource.Log.RerankSubmitted(
                     -1, request.Transaction.Words.Count);
                 _lane.Submit(request);
@@ -401,16 +417,38 @@ public sealed class SentenceRerankCoordinator : IDisposable
             SlotEntry s = _buffer[i];
             if (s.IsAmbiguous && !s.Resolved && s.Ready && s.Candidates.Count >= 2)
             {
-                _inFlight = true;
+                MarkInFlight();
                 _inFlightWholeSentence = false;
                 _inFlightSlot = i;
-                _inFlightEpoch = _epoch;
                 HistoricalSlotRerankRequest request = BuildRequest(i);
                 DeckleAutocorrectSource.Log.RerankSubmitted(i, request.Sentence.Count);
                 _lane.Submit(request);
                 return;
             }
         }
+    }
+
+    private void MarkInFlight()
+    {
+        _inFlight = true;
+        _inFlightEpoch = _epoch;
+        _inFlightSince = _time.GetTimestamp();
+        _stallReported = false;
+    }
+
+    // Checked whenever the coordinator wants to submit and cannot: that is the
+    // moment a wedged request starts costing a sentence.
+    private void CheckStall()
+    {
+        if (_stallReported)
+            return;
+        TimeSpan age = _time.GetElapsedTime(_inFlightSince);
+        if (age < StallThreshold)
+            return;
+        _stallReported = true;
+        DeckleAutocorrectSource.Log.RerankStalled(
+            (long)age.TotalMilliseconds,
+            DeckleAutocorrectSource.RerankStallReasons.InferenceStalled);
     }
 
     private ClosedSentenceRerankRequest? BuildWholeSentenceRequest(out bool overflow)
@@ -496,6 +534,10 @@ public sealed class SentenceRerankCoordinator : IDisposable
     private void ApplyResult(RerankResult result)
     {
         if (_disposed) return;
+        if (_inFlight && _stallReported)
+            DeckleAutocorrectSource.Log.RerankStallRecovered(
+                (long)_time.GetElapsedTime(_inFlightSince).TotalMilliseconds);
+        _stallReported = false;
         _inFlight = false;
         _inFlightEpoch = -1;
         bool wholeSentence = _inFlightWholeSentence;
@@ -535,13 +577,16 @@ public sealed class SentenceRerankCoordinator : IDisposable
         // boundary. A chosen form must belong to the exact closed set submitted
         // for this slot and must carry a finite margin that actually clears its
         // non-negative threshold. A malformed provider result becomes abstention.
-        if (outcome.Chosen is not null
-            && (!slot.Candidates.Any(candidate =>
-                    string.Equals(candidate.Form, outcome.Chosen, StringComparison.Ordinal))
-                || !double.IsFinite(outcome.Margin)
-                || !double.IsFinite(outcome.Threshold)
-                || outcome.Threshold < 0.0
-                || outcome.Margin < outcome.Threshold))
+        string? rejection = null;
+        if (outcome.Chosen is not null)
+        {
+            if (!slot.Candidates.Any(candidate =>
+                    string.Equals(candidate.Form, outcome.Chosen, StringComparison.Ordinal)))
+                rejection = VerdictReasons.ChosenOutsideCandidates;
+            else if (!ClearsThreshold(outcome))
+                rejection = VerdictReasons.InvalidMargin;
+        }
+        if (rejection is not null)
         {
             outcome = outcome with
             {
@@ -572,10 +617,12 @@ public sealed class SentenceRerankCoordinator : IDisposable
                 SlotRewriteResult.Expired => Outcome.Expired,
                 _ => Outcome.Blocked,
             };
+            if (rewrite == SlotRewriteResult.Blocked)
+                rejection = VerdictReasons.InjectionRefused;
         }
 
         DeckleAutocorrectSource.Log.RerankVerdict(
-            verdict, outcome.AbstainReason ?? string.Empty);
+            verdict, rejection ?? outcome.AbstainReason ?? string.Empty);
         EmitRerankDecision(slot.WordId, word, verdict, outcome);
 
         TrySubmitNext();
@@ -620,24 +667,25 @@ public sealed class SentenceRerankCoordinator : IDisposable
         if (chosenSlot < contextStart || chosenSlot > contextEnd)
         {
             DeckleAutocorrectSource.Log.RerankVerdict(
-                Outcome.Abstain, RerankOutcome.AbstainReasons.Error);
+                Outcome.Abstain, VerdictReasons.ChosenSlotOutOfRange);
             return;
         }
 
         SlotEntry slot = _buffer[chosenSlot];
-        bool valid = slot.WholeSentenceCandidates.Any(candidate =>
+        if (!slot.WholeSentenceCandidates.Any(candidate =>
                 string.Equals(
                     CasePattern.Apply(slot.Form, candidate.Form),
                     outcome.Chosen,
-                    StringComparison.Ordinal))
-            && double.IsFinite(outcome.Margin)
-            && double.IsFinite(outcome.Threshold)
-            && outcome.Threshold >= 0.0
-            && outcome.Margin >= outcome.Threshold;
-        if (!valid)
+                    StringComparison.Ordinal)))
         {
             DeckleAutocorrectSource.Log.RerankVerdict(
-                Outcome.Abstain, RerankOutcome.AbstainReasons.Error);
+                Outcome.Abstain, VerdictReasons.ChosenOutsideCandidates);
+            return;
+        }
+        if (!ClearsThreshold(outcome))
+        {
+            DeckleAutocorrectSource.Log.RerankVerdict(
+                Outcome.Abstain, VerdictReasons.InvalidMargin);
             return;
         }
 
@@ -653,9 +701,18 @@ public sealed class SentenceRerankCoordinator : IDisposable
             _ => Outcome.Blocked,
         };
         DeckleAutocorrectSource.Log.RerankVerdict(
-            appliedVerdict, outcome.AbstainReason ?? string.Empty);
+            appliedVerdict,
+            rewrite == SlotRewriteResult.Blocked
+                ? VerdictReasons.InjectionRefused
+                : outcome.AbstainReason ?? string.Empty);
         EmitRerankDecision(slot.WordId, word, appliedVerdict, outcome);
     }
+
+    private static bool ClearsThreshold(RerankOutcome outcome) =>
+        double.IsFinite(outcome.Margin)
+        && double.IsFinite(outcome.Threshold)
+        && outcome.Threshold >= 0.0
+        && outcome.Margin >= outcome.Threshold;
 
     private void EmitRerankDecision(long id, string word, string verdict, RerankOutcome outcome)
     {
@@ -822,6 +879,18 @@ public sealed class SentenceRerankCoordinator : IDisposable
 
     public void Dispose()
     {
+        if (_disposed) return;
+
+        // Without this a sentence waiting on the judge at shutdown or engine
+        // rebuild vanishes with no trace of the work it dropped.
+        int pendingSlots = 0;
+        foreach (SlotEntry slot in _buffer)
+            if (slot.IsAmbiguous && !slot.Resolved)
+                pendingSlots++;
+        if (pendingSlots > 0 || _inFlight)
+            DeckleAutocorrectSource.Log.SentenceStageAbandoned(
+                "Disposed", pendingSlots, _inFlight);
+
         _disposed = true;
         _lane.ResultSink = null;
     }
@@ -837,6 +906,16 @@ public sealed class SentenceRerankCoordinator : IDisposable
         public const string Resolved = "resolved";
         public const string Blocked  = "blocked";
         public const string Expired  = "expired";
+    }
+
+    // Why the coordinator itself refused a verdict. The provider's generic
+    // "error" abstain says only that something was wrong; these say what.
+    private static class VerdictReasons
+    {
+        public const string ChosenSlotOutOfRange    = "chosen_slot_out_of_range";
+        public const string ChosenOutsideCandidates = "chosen_outside_candidates";
+        public const string InvalidMargin           = "invalid_margin";
+        public const string InjectionRefused        = "injection_refused";
     }
 
     // One word in the rolling sentence model. Mutable: Form is rewritten in place

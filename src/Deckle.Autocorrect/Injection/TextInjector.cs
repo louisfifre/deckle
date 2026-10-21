@@ -27,6 +27,8 @@ public sealed class TextInjector : ITextInjector
 
     private static readonly int InputSize = Marshal.SizeOf<INPUT>();
 
+    public int LastWin32Error { get; private set; }
+
     public bool Replace(string current, string target)
     {
         var plan = InjectionPlan.Compute(current, target);
@@ -104,9 +106,12 @@ public sealed class TextInjector : ITextInjector
         ki_dwExtraInfo = SendInputInterop.InjectionTag,
     };
 
-    private static bool Send(INPUT[] inputs)
+    private bool Send(INPUT[] inputs)
     {
         uint sent = NativeMethods.SendInput((uint)inputs.Length, inputs, InputSize);
+        // A UIPI block returns 0 and does not always set an error code, so 0
+        // here means "blocked without a reason", not "no failure".
+        LastWin32Error = sent == inputs.Length ? 0 : Marshal.GetLastPInvokeError();
         return sent == inputs.Length;
     }
 }
