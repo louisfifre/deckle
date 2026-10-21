@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Threading;
 using System.Threading.Tasks;
 using Deckle.Audio;
@@ -26,6 +27,7 @@ public sealed class SpeechEngine : IDisposable
     public SpeechEngine(ISpeechBackend backend)
     {
         _backend = backend;
+        DeckleSpeechSource.Log.SpeechEngineStarted(backend.Name, backend.DetectedAccelerator ?? "none");
     }
 
     public void Speak(string? text)
@@ -45,63 +47,117 @@ public sealed class SpeechEngine : IDisposable
         SpeechVoice voice = settings.Voice;
         double temperature = settings.Temperature;
 
+        long requestedAt = Stopwatch.GetTimestamp();
         DeckleSpeechSource.Log.ReadAloudRequested();
         DeckleSpeechSource.Log.ReadAloudRequestedDetail(text!.Length, voice.ToString(), temperature);
 
-        _ = Task.Run(() => SpeakCoreAsync(text!, voice, temperature, ct), ct);
+        // Not handed ct: a request cancelled before the task starts must still
+        // run SpeakCoreAsync, whose finally closes the ReadAloudRequested bracket.
+        _ = Task.Run(() => SpeakCoreAsync(text!, voice, temperature, requestedAt, ct));
     }
 
-    private async Task SpeakCoreAsync(string text, SpeechVoice voice, double temperature, CancellationToken ct)
+    private async Task SpeakCoreAsync(
+        string text, SpeechVoice voice, double temperature, long requestedAt, CancellationToken ct)
     {
-        float[] samples;
+        // Every planned exit sets reason, and outcome when it is not a failure;
+        // "unexpected" stands only if something unforeseen escapes.
+        string outcome = "failed";
+        string reason = "unexpected";
+        int playedSamples = 0;
         try
         {
-            samples = await _backend.SynthesizeAsync(text, voice, temperature, ct).ConfigureAwait(false);
+            if (ct.IsCancellationRequested)
+            {
+                (outcome, reason) = Cancelled();
+                return;
+            }
+
+            float[] samples;
+            try
+            {
+                samples = await _backend.SynthesizeAsync(text, voice, temperature, ct).ConfigureAwait(false);
+            }
+            catch (OperationCanceledException) when (ct.IsCancellationRequested)
+            {
+                (outcome, reason) = Cancelled();
+                return;
+            }
+            catch (Exception ex)
+            {
+                DeckleSpeechSource.Log.SpeechSynthesisFailed(ex.GetType().Name, ex.Message);
+                reason = "synthesis_failed";
+                return;
+            }
+
+            if (ct.IsCancellationRequested)
+            {
+                (outcome, reason) = Cancelled();
+                return;
+            }
+            if (samples.Length == 0)
+            {
+                reason = "no_audio";
+                return;
+            }
+
+            bool played;
+            try
+            {
+                played = SpeakerOutput.Play(samples, OutputSampleRate, ct);
+            }
+            catch (OperationCanceledException) when (ct.IsCancellationRequested)
+            {
+                (outcome, reason) = Cancelled();
+                return;
+            }
+            catch (Exception ex)
+            {
+                DeckleSpeechSource.Log.SpeechPlaybackFailed("exception", ex.GetType().Name, ex.Message);
+                reason = "playback_failed";
+                return;
+            }
+
+            // Interrupted mid-clip by a fresh Speak or by Dispose.
+            if (ct.IsCancellationRequested)
+            {
+                (outcome, reason) = Cancelled();
+                return;
+            }
+
+            if (!played)
+            {
+                // The render device could not be opened (SpeakerOutput logged the
+                // mmsys error under [AUDIO]); surface it in the speech narrative too
+                // so a reader following [SPEECH] sees the read produced no sound.
+                DeckleSpeechSource.Log.SpeechPlaybackFailed("device_unavailable", "", "");
+                reason = "playback_failed";
+                return;
+            }
+
+            playedSamples = samples.Length;
+            (outcome, reason) = ("completed", "played");
         }
-        catch (OperationCanceledException) { return; }
-        catch (Exception ex)
+        finally
         {
-            DeckleSpeechSource.Log.SynthesisFailed();
-            DeckleSpeechSource.Log.SynthesisFailedDetail(ex.GetType().Name, ex.Message);
-            return;
+            long elapsedMs = (long)Stopwatch.GetElapsedTime(requestedAt).TotalMilliseconds;
+            DeckleSpeechSource.Log.ReadAloudEnded(outcome, reason, elapsedMs);
+            if (playedSamples > 0)
+            {
+                long durationMs = playedSamples * 1000L / OutputSampleRate;
+                DeckleSpeechSource.Log.ReadAloudCompleteDetail(playedSamples, durationMs, OutputSampleRate);
+            }
         }
-
-        if (ct.IsCancellationRequested || samples.Length == 0) return;
-
-        bool played;
-        try
-        {
-            played = SpeakerOutput.Play(samples, OutputSampleRate, ct);
-        }
-        catch (OperationCanceledException) { return; }
-        catch (Exception ex)
-        {
-            DeckleSpeechSource.Log.PlaybackFailed();
-            DeckleSpeechSource.Log.PlaybackFailedDetail(ex.GetType().Name, ex.Message);
-            return;
-        }
-
-        // Interrupted mid-clip by a fresh Speak — no terminal milestone.
-        if (ct.IsCancellationRequested) return;
-
-        if (!played)
-        {
-            // The render device could not be opened (SpeakerOutput logged the
-            // mmsys error under [AUDIO]); surface it in the speech narrative too
-            // so a reader following [SPEECH] sees the read produced no sound.
-            DeckleSpeechSource.Log.PlaybackFailed();
-            return;
-        }
-
-        long durationMs = samples.Length * 1000L / OutputSampleRate;
-        DeckleSpeechSource.Log.ReadAloudComplete();
-        DeckleSpeechSource.Log.ReadAloudCompleteDetail(samples.Length, durationMs, OutputSampleRate);
     }
+
+    // Dispose sets _disposed before it cancels, so a cancelled request reads
+    // which of the two ended it.
+    private (string Outcome, string Reason) Cancelled()
+        => ("cancelled", Volatile.Read(ref _disposed) ? "disposed" : "interrupted");
 
     public void Dispose()
     {
         if (_disposed) return;
-        _disposed = true;
+        Volatile.Write(ref _disposed, true);
         lock (_lock)
         {
             _cts?.Cancel();
@@ -109,5 +165,6 @@ public sealed class SpeechEngine : IDisposable
             _cts = null;
         }
         _backend.Dispose();
+        DeckleSpeechSource.Log.SpeechEngineStopped();
     }
 }
