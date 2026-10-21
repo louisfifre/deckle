@@ -315,12 +315,14 @@ public sealed class MicrophoneCapture : IMicrophoneCapture
         }
 
         byte[] allBytes = pump.Pcm ?? System.Array.Empty<byte>();
-        double totalSec = allBytes.Length / 32000.0;
+        // The pump's own total, not allBytes: a host that retains no audio
+        // returns an empty buffer for a take that still had a length.
+        double totalSec = pump.TotalBytes / 32000.0;
 
         DeckleAudioSource.Log.RecordingCompleted(
             purpose, pump.Exit == LoopExit.CapHit ? "cap_hit" : "stop_requested", totalSec);
 
-        if (OperationalLogAdmission.IsScopedDetailEnabled(
+        if (host.RetainsAudio && OperationalLogAdmission.IsScopedDetailEnabled(
                 OperationalLogActivity.Transcription,
                 DeckleAudioSource.Log,
                 EventLevel.Verbose,

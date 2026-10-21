@@ -1811,6 +1811,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── TaskGesturesBugNotes.md
 │   │   └── TaskGesturesTests.cs
 │   ├── Deckle.Audio.Tests/
+│   │   ├── AudioRecordingHostDefaultsTests.cs
 │   │   ├── CaptureAnomalyEpisodeTests.cs
 │   │   ├── CaptureDataWatchdogTests.cs
 │   │   ├── CaptureSettingsMigrationTests.cs
