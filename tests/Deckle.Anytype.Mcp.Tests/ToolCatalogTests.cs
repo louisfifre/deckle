@@ -69,6 +69,18 @@ public class ToolCatalogTests
     }
 
     [Fact]
+    public void ProjectManagementInstructionsAskTheFirstAnswerToPlaceTheTaskInItsProject()
+    {
+        const string rule = "When the work belongs to a task of this space, open the first answer "
+            + "by placing it in its project, so the person sees at once whether the session "
+            + "aims at the right one.";
+
+        Assert.Contains(rule, McpSurfaceDescriptor.ProjectManagement.Instructions);
+        Assert.DoesNotContain(rule, McpSurfaceDescriptor.SchemaAdmin.Instructions);
+        Assert.DoesNotContain(rule, McpSurfaceDescriptor.Dialogues.Instructions);
+    }
+
+    [Fact]
     public void BuildDoesNotExposeAnyDestructiveTool()
     {
         // delete lives only in the supervised ManagementToolCatalog; the base
