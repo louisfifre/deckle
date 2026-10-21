@@ -21,6 +21,13 @@ namespace Deckle.Diagnostics;
 // and its per-frame companion `WindowResizeFrame` stand alone: a resize
 // coalescer, not a positioning site, raises them.
 //
+// Two tiers. The measurements above are governed by the Windowing activity:
+// they cost P/Invokes and run per show or per resize frame. A failure is not a
+// measurement: `WindowShowFailed`, `WindowPlacementFailed`, `WindowOpenFailed`
+// and the incident recovery bypass the activity, so a HUD that never appeared
+// leaves a trace on a default install. `WindowingProbe.Report*` runs the
+// incident rule for the show and placement failures.
+//
 // Closed `window` vocabulary (short logical name for the common trunk):
 //   "hud"           — main HudWindow (bottom-center)
 //   "hud-overlay"   — stacked transient HudOverlayWindow card
@@ -64,6 +71,11 @@ public sealed class DeckleWindowingSource : DeckleEventSource
     public const int EvtWindowResizeSettled  = 5;
     public const int EvtWindowResizeFrame    = 6;
     public const int EvtWindowLoadComplete   = 7;
+    public const int EvtWindowShowFailed     = 8;
+    public const int EvtWindowPlacementFailed = 9;
+    public const int EvtWindowFailureRepeated = 10;
+    public const int EvtWindowFailureRecovered = 11;
+    public const int EvtWindowOpenFailed     = 12;
 
     // Common trunk. `hmon` comes from `MonitorFromWindow`, `dpi` from
     // `GetDpiForWindow`.
@@ -118,7 +130,8 @@ public sealed class DeckleWindowingSource : DeckleEventSource
     // `occluding_above_count` is the real occlusion signal: visible,
     // non-cloaked, non-empty rect, and geometric intersection with the target.
     // `setpos_ok/last_error` reflect the SetWindowPos call when the stage
-    // follows that call, otherwise true/0.
+    // follows that call, otherwise true/0. They describe the z-order context;
+    // the failure itself reaches the log through WindowShowFailed.
     [Event(EvtWindowZOrderState,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Windowing,
@@ -196,13 +209,85 @@ public sealed class DeckleWindowingSource : DeckleEventSource
     // wiring inside the lazy guard, NOT the per-open Show/Activate path. One
     // complete event with no paired start: the span is synchronous and has no
     // intermediate phase to bracket.
+    //
+    // Not governed: it fires at most once per window per process and costs
+    // one Stopwatch, so a slow first open stays readable in a field report.
     [Event(EvtWindowLoadComplete,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Windowing,
            Message = "window load complete | window={0} | load_ms={1}")]
     public void WindowLoadComplete(string window, long load_ms)
     {
-        if (!IsWindowingDetailEnabled()) return;
+        if (!IsEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Windowing)) return;
         WriteEvent(EvtWindowLoadComplete, window, load_ms);
+    }
+
+    // ── Failures (never governed) ───────────────────────────────────────
+    //
+    // `stage` names the call that failed, snake_case ("setwindowpos_topmost",
+    // "show_window", "move_and_resize"). A Win32 call carries `win32_error`
+    // (GetLastError right after the call) with hr=0 and empty ex_*; a WinRT or
+    // managed call carries the exception and its HResult with win32_error=0.
+    // Emitted through WindowingProbe.ReportShow*/ReportPlacement*, which opens
+    // one incident per (window, stage).
+    [Event(EvtWindowShowFailed,
+           Level = EventLevel.Warning,
+           Keywords = (EventKeywords)Keywords.Windowing,
+           Message = "A window failed to show | window={0} | stage={1} | hr=0x{2:X8} | win32_error={3} | ex_type={4} | ex_message={5}")]
+    public void WindowShowFailed(
+        string window, string stage, int hr, int win32_error, string ex_type, string ex_message)
+    {
+        if (!IsEnabled(EventLevel.Warning, (EventKeywords)Keywords.Windowing)) return;
+        WriteEvent(EvtWindowShowFailed, window, stage, hr, win32_error, ex_type, ex_message);
+    }
+
+    [Event(EvtWindowPlacementFailed,
+           Level = EventLevel.Warning,
+           Keywords = (EventKeywords)Keywords.Windowing,
+           Message = "A window could not be placed | window={0} | stage={1} | hr=0x{2:X8} | win32_error={3} | ex_type={4} | ex_message={5}")]
+    public void WindowPlacementFailed(
+        string window, string stage, int hr, int win32_error, string ex_type, string ex_message)
+    {
+        if (!IsEnabled(EventLevel.Warning, (EventKeywords)Keywords.Windowing)) return;
+        WriteEvent(EvtWindowPlacementFailed, window, stage, hr, win32_error, ex_type, ex_message);
+    }
+
+    // Raw attempt inside an open incident: the Warning already said the
+    // window is failing, so a repeat is detail and follows the activity gate.
+    // `failures` counts the incident's failures including this one.
+    [Event(EvtWindowFailureRepeated,
+           Level = EventLevel.Verbose,
+           Keywords = (EventKeywords)Keywords.Windowing,
+           Message = "window failure repeated | window={0} | stage={1} | failures={2} | hr=0x{3:X8} | win32_error={4}")]
+    public void WindowFailureRepeated(string window, string stage, int failures, int hr, int win32_error)
+    {
+        if (!IsWindowingDetailEnabled()) return;
+        WriteEvent(EvtWindowFailureRepeated, window, stage, failures, hr, win32_error);
+    }
+
+    // Closes the incident at the first success of the same (window, stage).
+    // Journal-tagged: the journal keeps the Warning, so it keeps its end too.
+    [Event(EvtWindowFailureRecovered,
+           Level = EventLevel.Informational,
+           Keywords = (EventKeywords)Keywords.Windowing,
+           Tags = ObservationTags.Journal,
+           Message = "A window shows and places again | window={0} | stage={1} | failures={2}")]
+    public void WindowFailureRecovered(string window, string stage, int failures)
+    {
+        if (!IsEnabled(EventLevel.Informational, (EventKeywords)Keywords.Windowing)) return;
+        WriteEvent(EvtWindowFailureRecovered, window, stage, failures);
+    }
+
+    // A lazy secondary window whose construction or first wiring threw: the
+    // person clicked a tray entry and nothing opened. Not an incident: each
+    // failure answers one click.
+    [Event(EvtWindowOpenFailed,
+           Level = EventLevel.Warning,
+           Keywords = (EventKeywords)Keywords.Windowing,
+           Message = "A window failed to open | window={0} | ex_type={1} | ex_message={2} | hr=0x{3:X8}")]
+    public void WindowOpenFailed(string window, string ex_type, string ex_message, int hr)
+    {
+        if (!IsEnabled(EventLevel.Warning, (EventKeywords)Keywords.Windowing)) return;
+        WriteEvent(EvtWindowOpenFailed, window, ex_type, ex_message, hr);
     }
 }

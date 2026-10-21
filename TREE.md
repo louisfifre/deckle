@@ -1934,6 +1934,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── DeckleCancellationSourceTests.cs
 │   │   ├── DeckleNetworkSourceTests.cs
 │   │   ├── DeckleResourceSourceTests.cs
+│   │   ├── DeckleSettingsUxSourceTests.cs
 │   │   ├── DeckleThemeSourceTests.cs
 │   │   ├── DeckleThreadingSourceTests.cs
 │   │   ├── DeckleWindowingSourceTests.cs

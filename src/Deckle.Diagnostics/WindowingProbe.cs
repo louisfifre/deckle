@@ -12,7 +12,8 @@ namespace Deckle.Diagnostics;
 // (private) instead of referencing `Deckle.Core.NativeMethods`.
 //
 // **Strict gate before any cost.** Each `Emit*` method checks the Windowing
-// admission and the listener before any P/Invoke.
+// admission and the listener before any P/Invoke. The `Report*` methods are
+// the exception: they carry failures, which no verbosity control silences.
 //
 // Reading `GetWindowRect` after positioning captures the effective DWM-side
 // state, not the requested one.
@@ -217,6 +218,83 @@ public static class WindowingProbe
             above.FirstOccludingClassName,
             above.FirstOccludingTopmost,
             setposOk, lastError);
+    }
+
+    // ── Failure incidents ───────────────────────────────────────────────
+    //
+    // A show or placement call can keep failing: the taskbar cover re-asserts
+    // topmost on every foreground change, the HUD shows on every dictation.
+    // One (window, stage) pair is one incident. Its first failure is the
+    // Warning, because a window that did not appear is already visible to the
+    // person; the repeats are governed Verbose; the first success closes it
+    // with one Informational line. Call sites report every outcome, success
+    // included, so the incident can close.
+    //
+    // Not gated on the Windowing activity: failures always reach the log.
+
+    private static readonly object _incidentGate = new();
+    private static readonly Dictionary<(string Window, string Stage), int> _openIncidents = new();
+
+    // Lets a success skip the lock while no incident is open, the common case
+    // on the per-show and per-foreground-change paths.
+    private static int _openIncidentCount;
+
+    // For a Win32 call: pass its BOOL result and, on failure,
+    // Marshal.GetLastWin32Error() read right after the call.
+    public static void ReportShow(string window, string stage, bool ok, int win32Error = 0)
+        => Report(show: true, window, stage, ok, hr: 0, win32Error, exType: "", exMessage: "");
+
+    public static void ReportShowFailure(string window, string stage, Exception exception)
+        => Report(show: true, window, stage, ok: false,
+            exception.HResult, win32Error: 0, exception.GetType().Name, exception.Message);
+
+    public static void ReportPlacement(string window, string stage, bool ok, int win32Error = 0)
+        => Report(show: false, window, stage, ok, hr: 0, win32Error, exType: "", exMessage: "");
+
+    public static void ReportPlacementFailure(string window, string stage, Exception exception)
+        => Report(show: false, window, stage, ok: false,
+            exception.HResult, win32Error: 0, exception.GetType().Name, exception.Message);
+
+    private static void Report(
+        bool show, string window, string stage, bool ok,
+        int hr, int win32Error, string exType, string exMessage)
+    {
+        var key = (window, stage);
+
+        if (ok)
+        {
+            if (Volatile.Read(ref _openIncidentCount) == 0) return;
+            int recoveredFailures;
+            lock (_incidentGate)
+            {
+                if (!_openIncidents.Remove(key, out recoveredFailures)) return;
+                Volatile.Write(ref _openIncidentCount, _openIncidents.Count);
+            }
+            DeckleWindowingSource.Log.WindowFailureRecovered(window, stage, recoveredFailures);
+            return;
+        }
+
+        int failures;
+        lock (_incidentGate)
+        {
+            _openIncidents.TryGetValue(key, out failures);
+            failures++;
+            _openIncidents[key] = failures;
+            Volatile.Write(ref _openIncidentCount, _openIncidents.Count);
+        }
+
+        if (failures > 1)
+        {
+            DeckleWindowingSource.Log.WindowFailureRepeated(window, stage, failures, hr, win32Error);
+        }
+        else if (show)
+        {
+            DeckleWindowingSource.Log.WindowShowFailed(window, stage, hr, win32Error, exType, exMessage);
+        }
+        else
+        {
+            DeckleWindowingSource.Log.WindowPlacementFailed(window, stage, hr, win32Error, exType, exMessage);
+        }
     }
 
     private static bool HasTopmostStyle(IntPtr hwnd)

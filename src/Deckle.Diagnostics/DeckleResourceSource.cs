@@ -4,10 +4,15 @@ namespace Deckle.Diagnostics;
 
 // Cross-cutting sub-provider: lifecycle of unmanaged native resources (D3D11
 // textures on the Vision side, Composition visuals on the HUD side). Capturing
-// acquire / release / leak in one schema allows correlating a GPU leak or OOM
-// crash with the last traced acquisition instead of blindly walking back
-// through a native stack. The primitive is strictly non-business and consumed
-// by several modules with the same parameter set.
+// acquire / release in one schema allows correlating a GPU leak or OOM crash
+// with the last traced acquisition instead of blindly walking back through a
+// native stack: an acquire without its release is the leak. The primitive is
+// strictly non-business and consumed by several modules with the same
+// parameter set.
+//
+// No leak-suspect event: every owner releases deterministically (no
+// finalizer, no watchdog), so nothing could ever detect a missed release
+// in-process. Ids 3 and 4 held that never-emitted pair.
 //
 // Closed `kind` vocabulary:
 //   "d3d11-texture"       — ID3D11Texture2D (capture frames, sampler)
@@ -45,8 +50,8 @@ public sealed class DeckleResourceSource : DeckleEventSource
     // IDs are public in the ETW manifest; never reuse an id after deleting an event.
     public const int EvtResourceAcquired        = 1;
     public const int EvtResourceReleased        = 2;
-    public const int EvtResourceLeakSuspect     = 3;
-    public const int EvtResourceLeakSuspectDetail = 4;
+    // 3 retired.
+    // 4 retired.
 
     // Acquire: emitted when taking a native handle or creating a managed
     // Composition object. Verbose because it carries an opaque identifier (hex
@@ -73,27 +78,4 @@ public sealed class DeckleResourceSource : DeckleEventSource
         WriteEvent(EvtResourceReleased, kind, handle, age_ms, owner);
     }
 
-    // Leak suspect: missed release detected at finalization or by a watchdog.
-    // Warning so it surfaces even when Verbose is not listened to. No emitter
-    // yet: declared to freeze the signature before detection is wired. The
-    // detail lives in the Verbose mirror that follows it.
-    [Event(EvtResourceLeakSuspect,
-           Level = EventLevel.Warning,
-           Keywords = (EventKeywords)Keywords.Resource,
-           Message = "A native resource may have leaked")]
-    public void ResourceLeakSuspect()
-    {
-        if (!IsEnabled(EventLevel.Warning, (EventKeywords)Keywords.Resource)) return;
-        WriteEvent(EvtResourceLeakSuspect);
-    }
-
-    [Event(EvtResourceLeakSuspectDetail,
-           Level = EventLevel.Verbose,
-           Keywords = (EventKeywords)Keywords.Resource,
-           Message = "resource leak suspect | kind={0} | handle=0x{1:X} | age_ms={2} | owner={3} | symptom={4}")]
-    public void ResourceLeakSuspectDetail(string kind, long handle, int age_ms, string owner, string symptom)
-    {
-        if (!IsEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Resource)) return;
-        WriteEvent(EvtResourceLeakSuspectDetail, kind, handle, age_ms, owner, symptom);
-    }
 }

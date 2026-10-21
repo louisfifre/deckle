@@ -40,26 +40,36 @@ public class DeckleThreadingSourceTests
         Assert.Equal(12, ev.Payload?[3]);
     }
 
+    // A blocked UI thread makes every queued callback late at once: the
+    // journal must show one stall, not one Warning per victim callback.
     [Fact]
-    public void MarshalTimeoutEmitsWarningOnThreadingKeyword()
+    public void MarshalStallWatchReportsOneIncidentPerStall()
     {
         using var listener = new TestEventListener("Deckle-Threading");
+        var watch = new MarshalStallWatch();
+        int late = MarshalStallWatch.StallThresholdMs;
 
-        DeckleThreadingSource.Log.MarshalTimeout();
-        DeckleThreadingSource.Log.MarshalTimeoutDetail(
-            operation: "feedback-display", caller: "hud-window", waited_ms: 5000);
+        watch.Observe("ui-update", "hud-window", wait_ms: 5, nowMs: 0);
+        watch.Observe("feedback-display", "hud-window", wait_ms: late + 400, nowMs: 1_000);
+        watch.Observe("log-append", "log-window", wait_ms: late + 900, nowMs: 1_010);
+        watch.Observe("ui-update", "hud-window", wait_ms: late, nowMs: 1_020);
+        watch.Observe("ui-update", "hud-window", wait_ms: 2, nowMs: 1_500);
+        watch.Observe("ui-update", "hud-window", wait_ms: 2, nowMs: 1_600);
 
-        Assert.Equal(2, listener.Events.Count);
-        var milestone = listener.Events[0];
-        Assert.Equal(DeckleThreadingSource.EvtMarshalTimeout, milestone.EventId);
-        Assert.Equal(EventLevel.Warning, milestone.Level);
-        Assert.True(milestone.HasKeyword(Keywords.Threading));
-        var detail = listener.Events[1];
-        Assert.Equal(DeckleThreadingSource.EvtMarshalTimeoutDetail, detail.EventId);
-        Assert.Equal(EventLevel.Verbose, detail.Level);
-        Assert.Equal("feedback-display", detail.Payload?[0]);
-        Assert.Equal("hud-window", detail.Payload?[1]);
-        Assert.Equal(5000, detail.Payload?[2]);
+        Assert.Equal(4, listener.Events.Count);
+        var opened = listener.Events[0];
+        Assert.Equal(DeckleThreadingSource.EvtMarshalStalled, opened.EventId);
+        Assert.Equal(EventLevel.Warning, opened.Level);
+        Assert.Equal("feedback-display", opened.Payload?[0]);
+        Assert.Equal(late + 400, opened.Payload?[2]);
+        Assert.Equal(DeckleThreadingSource.EvtMarshalStallRepeated, listener.Events[1].EventId);
+        Assert.Equal(DeckleThreadingSource.EvtMarshalStallRepeated, listener.Events[2].EventId);
+        var recovered = listener.Events[3];
+        Assert.Equal(DeckleThreadingSource.EvtMarshalStallRecovered, recovered.EventId);
+        Assert.Equal(EventLevel.Informational, recovered.Level);
+        Assert.Equal(3, recovered.Payload?[0]);
+        Assert.Equal(late + 900, recovered.Payload?[1]);
+        Assert.Equal(500L, recovered.Payload?[2]);
     }
 
     [Fact]
