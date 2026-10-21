@@ -2164,6 +2164,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── FileTranscriptionResultTests.cs
 │   │   ├── LiveTranscriptionPipelineTests.cs
 │   │   ├── OperationalObservabilityCollection.cs
+│   │   ├── PhantomUtteranceBugNotes.md
 │   │   ├── PhantomUtteranceFilterTests.cs
 │   │   ├── PreparedFileChannelTests.cs
 │   │   ├── RewriteAvailabilityTests.cs
