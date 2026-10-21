@@ -105,6 +105,22 @@ public sealed class BackendSupervisorTests
 
     [Fact]
     [Trait("Category", "regression")]
+    public async Task Recovery_after_a_start_that_never_served_is_not_reported_as_a_process_exit()
+    {
+        var reconciler = new SequenceBackendReconciler(
+            new(BackendStartOutcome.TimedOut, null, "first", "timed-out", PendingProcessId: 52),
+            new(BackendStartOutcome.EndpointConflict, null, "second", "endpoint-conflict"));
+        await using var supervisor = new BackendSupervisor(
+            reconciler, new FakeBackendHealth(), new ControlledBackendTime());
+
+        Assert.Equal(BackendStartOutcome.TimedOut, await supervisor.EnsureRunningAsync(Ct));
+        await reconciler.SecondCallEntered.Task.WaitAsync(Ct);
+
+        Assert.Equal(new[] { "startup", "start-failed" }, reconciler.Triggers);
+    }
+
+    [Fact]
+    [Trait("Category", "regression")]
     public async Task Restart_ladder_survives_a_faulted_reconciliation()
     {
         string executable = Path.GetFullPath("anytype.exe");

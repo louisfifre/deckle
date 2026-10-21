@@ -113,6 +113,25 @@ public sealed class BackendReconcilerTests
         Assert.Equal(40, time.DelayCalls);
     }
 
+    [Fact]
+    [Trait("Category", "regression")]
+    public async Task Timed_out_reconciliation_names_the_live_serve_it_waited_on()
+    {
+        string executable = Path.GetFullPath("anytype.exe");
+        var wedged = new FakeBackendProcess(52, executable);
+        var processes = new FakeBackendProcessHost();
+        processes.Running.Add(wedged);
+        var reconciler = Create(
+            executable, processes, new ScriptedBackendListener(),
+            new FakeBackendHealth(), new ControlledBackendTime());
+
+        BackendReconciliationResult result = await reconciler.ReconcileAsync("start-failed", Ct);
+
+        Assert.Equal(BackendStartOutcome.TimedOut, result.Outcome);
+        Assert.Equal(wedged.Id, result.PendingProcessId);
+        Assert.False(wedged.HasExited);
+    }
+
     private static BackendReconciler Create(
         string executable,
         IBackendProcessHost processes,
