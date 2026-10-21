@@ -46,39 +46,48 @@ public partial class App
     private void QuitApp(Action? restart = null)
     {
         DeckleAppSource.Log.ShutdownRequested();
-        var failures = new List<string>();
-        void TryShutdown(string operation, Action action)
+        var stopwatch = System.Diagnostics.Stopwatch.StartNew();
+        int steps = 0;
+        int failed = 0;
+        // One step failing never stops the next: each is logged where it
+        // breaks, with its cause, and the teardown goes on to the exit.
+        void TryShutdown(string step, Action action)
         {
+            steps++;
             try { action(); }
-            catch (Exception ex) { failures.Add($"{operation}: {ex.GetType().Name}: {ex.Message}"); }
+            catch (Exception ex)
+            {
+                failed++;
+                DeckleAppSource.Log.ShutdownStepFailed(step, ex.GetType().Name, ex.Message);
+            }
         }
 
-        TryShutdown("settings flush", () => Settings.SettingsService.Instance.Flush());
-        TryShutdown("hud settings flush", () => Hud.HudSettingsService.Instance.Flush());
-        TryShutdown("hotkeys dispose", () => _hotkeyManager?.Dispose());
-        TryShutdown("tray dispose", () => _tray?.Dispose());
-        TryShutdown("tray menu dispose", () => _trayMenu?.Dispose());
-        TryShutdown("tray actions dispose", () => _trayActions?.Dispose());
+        TryShutdown("settings_flush", () => Settings.SettingsService.Instance.Flush());
+        TryShutdown("hud_settings_flush", () => Hud.HudSettingsService.Instance.Flush());
+        TryShutdown("hotkeys_dispose", () => _hotkeyManager?.Dispose());
+        TryShutdown("tray_dispose", () => _tray?.Dispose());
+        TryShutdown("tray_menu_dispose", () => _trayMenu?.Dispose());
+        TryShutdown("tray_actions_dispose", () => _trayActions?.Dispose());
         // Before _messageHost: the signal's subclass + Raw Input sink sit on the
         // host's HWND, which _messageHost.Dispose destroys.
-        TryShutdown("cursor signal dispose", () => _cursorSignal?.Dispose());
-        TryShutdown("message host dispose", () => _messageHost?.Dispose());
-        TryShutdown("overlay manager dispose", () => _overlayManager?.Dispose());
-        TryShutdown("engine dispose", () => _engine?.Dispose());
-        TryShutdown("speech engine dispose", () => _speechEngine?.Dispose());
-        TryShutdown("trackpad shutdown", ShutdownTrackpad);
-        TryShutdown("taskbar cover shutdown", ShutdownTaskbarCover);
+        TryShutdown("cursor_signal_dispose", () => _cursorSignal?.Dispose());
+        TryShutdown("message_host_dispose", () => _messageHost?.Dispose());
+        TryShutdown("overlay_manager_dispose", () => _overlayManager?.Dispose());
+        TryShutdown("engine_dispose", () => _engine?.Dispose());
+        TryShutdown("speech_engine_dispose", () => _speechEngine?.Dispose());
+        TryShutdown("trackpad_shutdown", ShutdownTrackpad);
+        TryShutdown("taskbar_cover_shutdown", ShutdownTaskbarCover);
         // After the cover, which reads it. UnhookWinEvent only succeeds on the UI
         // thread that started the watcher; from any other caller the hooks still
         // die with the process at Environment.Exit.
-        TryShutdown("foreground watcher dispose", () => _foregroundWatcher?.Dispose());
-        TryShutdown("precision scroll shutdown", ShutdownPrecisionScroll);
-        TryShutdown("orchestration shutdown", ShutdownOrchestration);
-        TryShutdown("mouse wheel shutdown", ShutdownMouseWheel);
-        TryShutdown("paragraph rewrite shutdown", ShutdownParagraphRewrite);
-        TryShutdown("autocorrect shutdown", ShutdownAutocorrect);
-        TryShutdown("anytype mcp shutdown", ShutdownAnytypeMcp);
-        TryShutdown("ambient engine dispose", () =>
+        TryShutdown("foreground_watcher_dispose", () => _foregroundWatcher?.Dispose());
+        TryShutdown("precision_scroll_shutdown", ShutdownPrecisionScroll);
+        TryShutdown("orchestration_shutdown", ShutdownOrchestration);
+        TryShutdown("mouse_wheel_shutdown", ShutdownMouseWheel);
+        TryShutdown("paragraph_rewrite_shutdown", ShutdownParagraphRewrite);
+        TryShutdown("autocorrect_shutdown", ShutdownAutocorrect);
+        TryShutdown("anytype_mcp_shutdown", ShutdownAnytypeMcp);
+        TryShutdown("ambient_engine_dispose", () =>
         {
             if (_ambientEngine is not null
                 && !_ambientEngine.DisposeAsync().AsTask().Wait(TimeSpan.FromSeconds(5)))
@@ -92,13 +101,9 @@ public partial class App
         // against this still-running process, then leaves no Deckle behind.
         ReleaseResidentOwnership();
         if (restart is not null)
-            TryShutdown("restart spawn", restart);
+            TryShutdown("restart_spawn", restart);
 
-        if (failures.Count > 0)
-        {
-            DeckleAppSource.Log.ShutdownWarning();
-            DeckleAppSource.Log.ShutdownWarningDetail(string.Join(" | ", failures));
-        }
+        DeckleAppSource.Log.ShutdownStepsDetail(steps, failed, stopwatch.ElapsedMilliseconds);
         DeckleAppSource.Log.ShutdownCompleted();
         Environment.Exit(0);
     }

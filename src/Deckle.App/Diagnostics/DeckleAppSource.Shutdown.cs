@@ -33,6 +33,26 @@ public sealed partial class DeckleAppSource
         if (IsEnabled()) WriteEvent(EvtShutdownWarningDetail, message);
     }
 
+    // One line per failing step, cause included: the journal says which
+    // teardown broke, not only that one did.
+    [Event(EvtShutdownStepFailed,
+           Level = EventLevel.Warning,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Message = "Shutdown step {0} failed | {1}: {2}")]
+    public void ShutdownStepFailed(string step, string ex_type, string ex_message)
+    {
+        if (IsEnabled()) WriteEvent(EvtShutdownStepFailed, step, ex_type, ex_message);
+    }
+
+    [Event(EvtShutdownStepsDetail,
+           Level = EventLevel.Verbose,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Message = "shutdown steps | steps={0} | failed={1} | elapsed_ms={2}")]
+    public void ShutdownStepsDetail(int steps, int failed, long elapsed_ms)
+    {
+        if (IsEnabled()) WriteEvent(EvtShutdownStepsDetail, steps, failed, elapsed_ms);
+    }
+
     [Event(EvtRestartRequested,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Lifecycle,
