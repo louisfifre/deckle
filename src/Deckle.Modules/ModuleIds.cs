@@ -9,10 +9,11 @@ namespace Deckle.Modules;
 // vocabulary; a descriptor (glyph, dependency edges) is composition knowledge.
 public static class ModuleIds
 {
-    public const string Transcription = "transcription";
-    public const string Rewrite       = "rewrite";
-    public const string Autocorrect   = "autocorrect";
-    public const string Ambient       = "ambient";
-    public const string Trackpad      = "trackpad";
-    public const string Anytype       = "anytype";
+    public const string Transcription   = "transcription";
+    public const string Rewrite         = "rewrite";
+    public const string Autocorrect     = "autocorrect";
+    public const string Ambient         = "ambient";
+    public const string Trackpad        = "trackpad";
+    public const string PrecisionScroll = "precision-scroll";
+    public const string Anytype         = "anytype";
 }

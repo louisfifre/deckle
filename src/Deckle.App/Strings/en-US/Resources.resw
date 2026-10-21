@@ -1369,6 +1369,12 @@
   <data name="Setup_Module_trackpad_Description" xml:space="preserve">
     <value>Three-finger drag on the precision touchpad</value>
   </data>
+  <data name="Setup_Module_precision-scroll_Label" xml:space="preserve">
+    <value>Precision scrolling</value>
+  </data>
+  <data name="Setup_Module_precision-scroll_Description" xml:space="preserve">
+    <value>Smooth, touchpad-like scrolling from the mouse wheel</value>
+  </data>
   <data name="Setup_Module_anytype_Label" xml:space="preserve">
     <value>Anytype workspace</value>
   </data>

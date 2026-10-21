@@ -117,6 +117,20 @@ public class PresenceFileTests : IDisposable
         Assert.False(loaded.Includes(ModuleIds.Anytype));
     }
 
+    // The modules that became presence modules after version 1 were always on
+    // for every existing install; a version-1 file must not switch them off.
+    [Theory]
+    [InlineData(ModuleIds.PrecisionScroll)]
+    public void AVersion1FileKeepsAModuleThatBecameOptionalAfterItPresent(string id)
+    {
+        WriteVersion1("transcription", "ambient");
+
+        var loaded = PresenceFile.LoadFrom(FilePath);
+
+        Assert.NotNull(loaded);
+        Assert.True(loaded.Includes(id));
+    }
+
     [Fact]
     public void AVersion1FileKeepsAModuleAddedAfterItPresent()
     {
