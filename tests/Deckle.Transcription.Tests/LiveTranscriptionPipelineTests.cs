@@ -75,7 +75,8 @@ public sealed class LiveTranscriptionPipelineTests
         Assert.Equal(["bonjour", "Deckle"], segments.ToArray());
         Assert.Equal(2, backend.CallCount);
         Assert.Equal(1, backend.MaxConcurrentCalls);
-        Assert.All(backend.SampleCounts, count => Assert.Equal(6 * 800, count));
+        Assert.All(backend.SampleCounts, count =>
+            Assert.Equal(6 * 800 + TrailingNoisePad.PadSamples, count));
         Assert.Equal("test prompt", backend.Contexts[0].PrimingText);
         Assert.Equal("test prompt bonjour", backend.Contexts[1].PrimingText);
         Assert.False(engine.IsBusy);
@@ -182,6 +183,31 @@ public sealed class LiveTranscriptionPipelineTests
         await RunOneTakeAsync(engine, backend, testCancellation);
 
         Assert.Equal("bonjour", clipboard.Text);
+    }
+
+    // 2026-10-21: the last words were sometimes dropped when the audio ended on
+    // near-digital silence; the backend must receive a noise tail, never zeros.
+    [Fact]
+    [Trait("Category", "regression")]
+    public async Task EveryUtteranceReachesTheBackendWithANoiseTailAfterItsSpeech()
+    {
+        CancellationToken testCancellation = TestContext.Current.CancellationToken;
+        var backend = new SequencedBackend(["bonjour", "Deckle"]);
+        using var engine = new TranscriptionEngine(
+            new StreamingHost(),
+            backend,
+            new ScriptedMicrophoneCapture(utteranceCount: 2),
+            new RecordingClipboardWriter());
+
+        await RunOneTakeAsync(engine, backend, testCancellation);
+
+        Assert.All(backend.ReceivedSamples, received =>
+        {
+            float[] tail = received[^TrailingNoisePad.PadSamples..];
+            Assert.Contains(tail, sample => sample != 0f);
+            var (rmsDbfs, _) = SampleLevels.Measure(tail);
+            Assert.InRange(rmsDbfs, TrailingNoisePad.TargetRmsDbfs - 1, TrailingNoisePad.TargetRmsDbfs + 1);
+        });
     }
 
     [Fact]
@@ -602,6 +628,7 @@ public sealed class LiveTranscriptionPipelineTests
         private readonly IReadOnlyList<string> _texts;
         private readonly object _gate = new();
         private readonly List<int> _sampleCounts = new();
+        private readonly List<float[]> _lastSamples = new();
         private readonly List<TranscriptionContext> _contexts = new();
         private int _activeCalls;
         private int _callCount;
@@ -628,6 +655,7 @@ public sealed class LiveTranscriptionPipelineTests
         public string? DetectedAccelerator => "test";
         public int CallCount => Volatile.Read(ref _callCount);
         public int MaxConcurrentCalls => Volatile.Read(ref _maxConcurrentCalls);
+        public IReadOnlyList<float[]> ReceivedSamples { get { lock (_gate) return _lastSamples.ToArray(); } }
         public IReadOnlyList<int> SampleCounts { get { lock (_gate) return _sampleCounts.ToArray(); } }
         public IReadOnlyList<TranscriptionContext> Contexts { get { lock (_gate) return _contexts.ToArray(); } }
         public TaskCompletionSource AllCallsCompleted { get; } = new(
@@ -657,6 +685,7 @@ public sealed class LiveTranscriptionPipelineTests
                 lock (_gate)
                 {
                     _sampleCounts.Add(pcmSamples.Length);
+                    _lastSamples.Add(pcmSamples.ToArray());
                     _contexts.Add(context!);
                 }
 
