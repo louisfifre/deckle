@@ -43,6 +43,8 @@ doctrine). This file is generated from the Conventional-Commit history by
 - **transcription:** Report a failed backend result as a skipped utterance and keep one visible failure line
 - **vision:** Carry the stop reason to the subscribers of a capture loss
 - **app:** Journal each module's start and move the app's failure lines onto the module providers
+- **transcription:** Log trim bounds and the level sent to Whisper
+- **whisper:** Log what each decode call used
 
 ### Changed
 
@@ -53,6 +55,7 @@ doctrine). This file is generated from the Conventional-Commit history by
 - **shell:** Report the cover band and marshal stalls through the diagnostics probes
 - **llm:** Retire the kept probe events and spell the rewrite cancellation from the shared vocabulary
 - **hud:** Report the overlay and transcript panel through the windowing probe
+- **transcription:** Carry text-token count and minimum probability on segments
 
 ### Fixed
 
@@ -61,6 +64,7 @@ doctrine). This file is generated from the Conventional-Commit history by
 - **wording:** Name the log window modules in place of the retired tags
 - **wording:** Name the log window modules in the other modules' texts
 - **vad:** Open one incident per trim failure and close it on recovery
+- **transcription:** Reject short low-confidence utterances decoded from noise blips
 
 ## [0.59.0](https://github.com/louisfifre/deckle/compare/v0.58.5...v0.59.0) — 2026-10-21
 
