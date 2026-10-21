@@ -139,20 +139,22 @@ public partial class WhisperViewModel
                     new MagnitudeArgs(0.1, 0.9),
                     defaultValue: () => new SpeechTrimSettings().Threshold),
                 Setting.Magnitude("WhisperVadMinSpeechCard",
-                    () => VadMinSpeechDurationMs,
-                    value => VadMinSpeechDurationMs = value,
-                    new MagnitudeArgs(0, 1000, Unit: "ms", Integer: true),
-                    defaultValue: () => new SpeechTrimSettings().MinSpeechDurationMs),
+                    () => Seconds(VadMinSpeechDurationMs),
+                    value => VadMinSpeechDurationMs = Milliseconds(value),
+                    new MagnitudeArgs(0, 1, Unit: "s"),
+                    defaultValue: () => Seconds(new SpeechTrimSettings().MinSpeechDurationMs)),
                 Setting.Magnitude("WhisperVadMinSilenceCard",
-                    () => VadMinSilenceDurationMs,
-                    value => VadMinSilenceDurationMs = value,
-                    new MagnitudeArgs(0, 1000, Unit: "ms", Integer: true),
-                    defaultValue: () => new SpeechTrimSettings().MinSilenceDurationMs),
+                    () => Seconds(VadMinSilenceDurationMs),
+                    value => VadMinSilenceDurationMs = Milliseconds(value),
+                    new MagnitudeArgs(0, 1, Unit: "s"),
+                    defaultValue: () => Seconds(new SpeechTrimSettings().MinSilenceDurationMs)),
+                // 0..0.4 s, not 0..0.2: the grain follows the span, and 0.01 s
+                // is the one that writes the 0.03 s default exactly.
                 Setting.Magnitude("WhisperVadSpeechPadCard",
-                    () => VadSpeechPadMs,
-                    value => VadSpeechPadMs = value,
-                    new MagnitudeArgs(0, 200, Unit: "ms", Integer: true),
-                    defaultValue: () => new SpeechTrimSettings().SpeechPadMs),
+                    () => Seconds(VadSpeechPadMs),
+                    value => VadSpeechPadMs = Milliseconds(value),
+                    new MagnitudeArgs(0, 0.4, Unit: "s"),
+                    defaultValue: () => Seconds(new SpeechTrimSettings().SpeechPadMs)),
             ],
             visibleWhen: () => StreamingEnabled,
             defaultValue: () => new SpeechTrimSettings().Enabled),
@@ -207,21 +209,21 @@ public partial class WhisperViewModel
                 Anchors:
                 [
                     new CurveAnchor("WhisperSegHangoverMaxCard",
-                        () => SegHangoverMaxMs, value => SegHangoverMaxMs = value,
-                        500, 15000, Integer: true,
-                        Default: () => new EnergySegmenterSettings().HangoverMaxMs),
+                        () => Seconds(SegHangoverMaxMs), value => SegHangoverMaxMs = Milliseconds(value),
+                        0.5, 15,
+                        Default: () => Seconds(new EnergySegmenterSettings().HangoverMaxMs)),
                     new CurveAnchor("WhisperSegHangoverMinCard",
-                        () => SegHangoverMinMs, value => SegHangoverMinMs = value,
-                        100, 2000, Integer: true,
-                        Default: () => new EnergySegmenterSettings().HangoverMinMs),
+                        () => Seconds(SegHangoverMinMs), value => SegHangoverMinMs = Milliseconds(value),
+                        0.1, 2,
+                        Default: () => Seconds(new EnergySegmenterSettings().HangoverMinMs)),
                     new CurveAnchor("WhisperSegHangoverRampStartCard",
-                        () => SegHangoverRampStartMs, value => SegHangoverRampStartMs = value,
-                        0, 600000, Integer: true,
-                        Default: () => new EnergySegmenterSettings().HangoverRampStartMs),
+                        () => Seconds(SegHangoverRampStartMs), value => SegHangoverRampStartMs = Milliseconds(value),
+                        0, 600, Integer: true,
+                        Default: () => Seconds(new EnergySegmenterSettings().HangoverRampStartMs)),
                     new CurveAnchor("WhisperSegHangoverRampEndCard",
-                        () => SegHangoverRampEndMs, value => SegHangoverRampEndMs = value,
-                        30000, 900000, Integer: true,
-                        Default: () => new EnergySegmenterSettings().HangoverRampEndMs),
+                        () => Seconds(SegHangoverRampEndMs), value => SegHangoverRampEndMs = Milliseconds(value),
+                        30, 900, Integer: true,
+                        Default: () => Seconds(new EnergySegmenterSettings().HangoverRampEndMs)),
                 ]),
             visibleWhen: () => StreamingEnabled,
             defaultValue: () =>
@@ -230,6 +232,14 @@ public partial class WhisperViewModel
                 return new CurvePoints(d.HangoverCurveX1, d.HangoverCurveY1, d.HangoverCurveX2, d.HangoverCurveY2);
             }),
     ];
+
+    // The durations are stored and held in milliseconds (the settings file, the
+    // POCOs and the view model keep their unit, so a saved file loads unchanged)
+    // and shown in seconds: the manifest converts at the selector, the one place
+    // the unit changes. The milliseconds are rounded back to whole ones, so a
+    // field value of 0.03 s lands on 30, never 29.999.
+    private static double Seconds(double milliseconds) => milliseconds / 1000.0;
+    private static double Milliseconds(double seconds) => Math.Round(seconds * 1000.0);
 
     // The frame of the cut curve: X is the open-utterance length in seconds, from
     // 0 to a little past the ramp end; Y is the decision delay in seconds, from 0

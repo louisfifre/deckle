@@ -437,10 +437,10 @@
     <value>Silero keeps only the spoken part of each utterance before it reaches the model.</value>
   </data>
   <data name="WhisperVadThresholdCard.Header" xml:space="preserve">
-    <value>Speech threshold</value>
+    <value>Detector confidence</value>
   </data>
   <data name="WhisperVadThresholdCard.Description" xml:space="preserve">
-    <value>How sure the detector must be to keep a stretch as speech. Higher can clip soft speech.</value>
+    <value>How sure the voice detector must be, from 0 to 1 (a probability, not a loudness), to keep a stretch of a cut utterance as speech. Higher can clip soft speech.</value>
   </data>
   <data name="WhisperVadMinSpeechCard.Header" xml:space="preserve">
     <value>Minimum speech</value>
@@ -662,10 +662,10 @@
     <value>Off transcribes in one pass at Stop. Applies on your next recording.</value>
   </data>
   <data name="WhisperSegThresholdCard.Header" xml:space="preserve">
-    <value>Silence threshold</value>
+    <value>Speech level</value>
   </data>
   <data name="WhisperSegThresholdCard.Description" xml:space="preserve">
-    <value>Audio above this level counts as speech. Raise it if background noise keeps a segment open.</value>
+    <value>How loud a 50 ms slice of the microphone must be to count as speech when the recording is cut into utterances. Raise it if background noise keeps an utterance open.</value>
   </data>
   <data name="WhisperCutPresetPatient.Content" xml:space="preserve">
     <value>Patient</value>
@@ -690,25 +690,25 @@
     <value>How long a pause must last to cut, shrinking as the utterance grows.</value>
   </data>
   <data name="WhisperSegHangoverMaxCard.Header" xml:space="preserve">
-    <value>Max wait, ms</value>
+    <value>Max wait, s</value>
   </data>
   <data name="WhisperSegHangoverMaxCard.Description" xml:space="preserve">
     <value>The silence that ends a short utterance.</value>
   </data>
   <data name="WhisperSegHangoverMinCard.Header" xml:space="preserve">
-    <value>Min wait, ms</value>
+    <value>Min wait, s</value>
   </data>
   <data name="WhisperSegHangoverMinCard.Description" xml:space="preserve">
     <value>The silence that ends a long utterance.</value>
   </data>
   <data name="WhisperSegHangoverRampStartCard.Header" xml:space="preserve">
-    <value>Ramp start, ms</value>
+    <value>Ramp start, s</value>
   </data>
   <data name="WhisperSegHangoverRampStartCard.Description" xml:space="preserve">
     <value>Utterance length where the wait starts shrinking.</value>
   </data>
   <data name="WhisperSegHangoverRampEndCard.Header" xml:space="preserve">
-    <value>Ramp end, ms</value>
+    <value>Ramp end, s</value>
   </data>
   <data name="WhisperSegHangoverRampEndCard.Description" xml:space="preserve">
     <value>Utterance length where the wait reaches its minimum.</value>
