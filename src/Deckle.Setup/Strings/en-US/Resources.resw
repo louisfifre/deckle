@@ -206,10 +206,10 @@
        Step header text is set programmatically by ChoicesPage via
        SetStepHeader. Cards in XAML use x:Uid for header/description. -->
   <data name="Setup_StepTitle_Choices" xml:space="preserve">
-    <value>Setup</value>
+    <value>Dictation</value>
   </data>
   <data name="Setup_StepSubtitle_Choices" xml:space="preserve">
-    <value>Tell the app where to install everything, and pick the speech model you want.</value>
+    <value>Pick the speech model Dictation runs on, and check its runtime.</value>
   </data>
   <data name="Setup_NextLabel_Install" xml:space="preserve">
     <value>Install</value>
@@ -264,7 +264,7 @@
     <value>Installing</value>
   </data>
   <data name="Setup_StepSubtitle_Installing" xml:space="preserve">
-    <value>Downloading the speech runtime and model. This can take a while on a slow link.</value>
+    <value>Downloading the models and tools your modules need. This can take a while on a slow link.</value>
   </data>
   <data name="Setup_Install_Connecting" xml:space="preserve">
     <value>Connecting...</value>
