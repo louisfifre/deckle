@@ -250,9 +250,7 @@ public static class DevSpace
     [
         new(Props.Etat, "État", "select", Etat.All),
         new(Props.Priorite, "Priorité", "select", Priority.All),
-        new(Props.Version, "Version", "text"),
         new(Props.DefinitionDeFini, "Définition de fini", "text"),
-        new(Props.DueDate, "Date cible", "date"),
         new(Props.BudgetEstime, "Budget estimé", "number"),
         new(Props.BudgetReel, "Budget réel", "number"),
         new(Props.ChargeEstimee, "Charge estimée", "number"),
