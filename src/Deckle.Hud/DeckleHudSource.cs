@@ -11,8 +11,9 @@ namespace Deckle.Hud;
 // journals unless that verbosity control admits it. Warnings, Errors and
 // recoveries always pass.
 //
-// Closed `window` vocabulary of the show incident: "hud", "hud-overlay",
-// "transcript-panel".
+// The window show and placement incidents (a refused topmost raise, a refused
+// MoveAndResize) are not this provider's: the HUD surfaces report them through
+// `WindowingProbe`, into `DeckleWindowingSource`.
 [EventSource(Name = "Deckle-Hud")]
 public sealed class DeckleHudSource : DeckleEventSource
 {
@@ -39,8 +40,8 @@ public sealed class DeckleHudSource : DeckleEventSource
     public const int EvtStrokeCreationFailed      = 18;
     public const int EvtStrokeCreationRecovered   = 19;
     public const int EvtStrokeCreationAttemptFailed = 20;
-    public const int EvtHudShowFailed             = 21;
-    public const int EvtHudShowRecovered          = 22;
+    // 21 retired.
+    // 22 retired.
     public const int EvtHudDisplaySuppressed      = 23;
     public const int EvtOverlayCardChanged        = 24;
     public const int EvtCleanupFailed             = 25;
@@ -160,31 +161,6 @@ public sealed class DeckleHudSource : DeckleEventSource
     public void StrokeCreationRecovered(int failures)
     {
         if (IsEnabled()) WriteEvent(EvtStrokeCreationRecovered, failures);
-    }
-
-    // ─── Window show ────────────────────────────────────────────────────
-    //
-    // SetWindowPos refused the topmost raise, so the surface can sit under
-    // other windows. Outside the Windowing activity on purpose: the governed
-    // z-order detail is off by default and a HUD that does not appear must
-    // still leave a trace. One incident per window kind, closed by the next
-    // successful raise.
-    [Event(EvtHudShowFailed,
-           Level = EventLevel.Warning,
-           Keywords = (EventKeywords)Keywords.Windowing,
-           Message = "Cannot raise a HUD window to the top | window={0} | stage={1} | win32_error={2}")]
-    public void HudShowFailed(string window, string stage, int win32_error)
-    {
-        if (IsEnabled()) WriteEvent(EvtHudShowFailed, window, stage, win32_error);
-    }
-
-    [Event(EvtHudShowRecovered,
-           Level = EventLevel.Informational,
-           Keywords = (EventKeywords)Keywords.Windowing,
-           Message = "A HUD window is raised to the top again | window={0} | failures={1}")]
-    public void HudShowRecovered(string window, int failures)
-    {
-        if (IsEnabled()) WriteEvent(EvtHudShowRecovered, window, failures);
     }
 
     // A visible state or a feedback card the Overlay.Enabled setting turned

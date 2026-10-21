@@ -31,6 +31,7 @@ namespace Deckle.Diagnostics;
 // Closed `window` vocabulary (short logical name for the common trunk):
 //   "hud"           — main HudWindow (bottom-center)
 //   "hud-overlay"   — stacked transient HudOverlayWindow card
+//   "transcript-panel" — TranscriptPanelWindow, the live dictation transcript
 //   "settings"      — SettingsWindow
 //   "log"           — LogWindow
 //   "setup"         — SetupWindow first-run wizard

@@ -96,38 +96,4 @@ public sealed class DeckleHudSourceTests : IDisposable
         Assert.Equal("COMException", ev.Payload?[1]);
         Assert.Equal("The parameter is incorrect.", ev.Payload?[2]);
     }
-
-    // A refusal that persists across shows is one incident: one Warning with
-    // the first cause, one recovery counting the refusals, nothing per show.
-    [Fact]
-    public void RepeatedShowFailuresReportOneIncident()
-    {
-        OperationalLogAdmission.Configure(static _ => false);
-        using var listener = new TestEventListener("Deckle-Hud");
-        var incident = new WindowShowIncident("hud");
-
-        incident.Observe(ok: true,  win32Error: 0, "setwindowpos_topmost");
-        incident.Observe(ok: false, win32Error: 5, "setwindowpos_topmost");
-        incident.Observe(ok: false, win32Error: 5, "setwindowpos_topmost");
-        incident.Observe(ok: false, win32Error: 1400, "setwindowpos_topmost");
-        incident.Observe(ok: true,  win32Error: 0, "setwindowpos_topmost");
-        incident.Observe(ok: true,  win32Error: 0, "setwindowpos_topmost");
-
-        Assert.Collection(listener.Events,
-            failed =>
-            {
-                Assert.Equal(DeckleHudSource.EvtHudShowFailed, failed.EventId);
-                Assert.Equal(EventLevel.Warning, failed.Level);
-                Assert.Equal("hud", failed.Payload?[0]);
-                Assert.Equal("setwindowpos_topmost", failed.Payload?[1]);
-                Assert.Equal(5, failed.Payload?[2]);
-            },
-            recovered =>
-            {
-                Assert.Equal(DeckleHudSource.EvtHudShowRecovered, recovered.EventId);
-                Assert.Equal(EventLevel.Informational, recovered.Level);
-                Assert.Equal("hud", recovered.Payload?[0]);
-                Assert.Equal(3, recovered.Payload?[1]);
-            });
-    }
 }

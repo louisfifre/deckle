@@ -53,7 +53,6 @@ public sealed partial class TranscriptPanelWindow : Window
     private readonly CursorMovementSignal _cursorSignal;
     private readonly LayeredAlphaAnimator _fade;
     private readonly TranscriptHistory _history = new(HISTORY_BUDGET_CHARS);
-    private readonly WindowShowIncident _showIncident = new("transcript-panel");
 
     // Cached window scale (DPI/96): seeded in the ctor, refreshed on show and
     // from WM_DPICHANGED. Read by the proximity handler on every mouse move.
@@ -210,8 +209,9 @@ public sealed partial class TranscriptPanelWindow : Window
             | NativeMethods.SWP_NOMOVE
             | NativeMethods.SWP_NOACTIVATE
             | NativeMethods.SWP_SHOWWINDOW);
-        _showIncident.Observe(
-            setposOk, setposOk ? 0 : Marshal.GetLastWin32Error(), "setwindowpos_topmost");
+        WindowingProbe.ReportShow(
+            "transcript-panel", "setwindowpos_topmost",
+            setposOk, setposOk ? 0 : Marshal.GetLastWin32Error());
         _shown = true;
 
         // Fade in to wherever the cursor puts the panel right now, then follow
@@ -265,9 +265,20 @@ public sealed partial class TranscriptPanelWindow : Window
             workAreaHeightDip, EDGE_MARGIN_DIP, VERTICAL_PADDING_DIP, _lineHeightDip);
         int visibleLines = TranscriptPanelLayout.VisibleLines(contentLines, maxLines);
 
-        AppWindow.MoveAndResize(TranscriptPanelLayout.ComputeRectPx(
-            workArea, _dpiScale, _rightSide,
-            PANEL_WIDTH_DIP, EDGE_MARGIN_DIP, VERTICAL_PADDING_DIP, _lineHeightDip, visibleLines));
+        try
+        {
+            AppWindow.MoveAndResize(TranscriptPanelLayout.ComputeRectPx(
+                workArea, _dpiScale, _rightSide,
+                PANEL_WIDTH_DIP, EDGE_MARGIN_DIP, VERTICAL_PADDING_DIP, _lineHeightDip, visibleLines));
+            WindowingProbe.ReportPlacement("transcript-panel", "move_and_resize", ok: true);
+        }
+        catch (Exception ex)
+        {
+            // Render runs on every Append, inside the engine's UI marshalling:
+            // a refused placement must not abort the take. The panel keeps its
+            // previous rect and the incident carries the failure.
+            WindowingProbe.ReportPlacementFailure("transcript-panel", "move_and_resize", ex);
+        }
     }
 
     // Measured once from a one-line TextBlock of the same style, then pinned

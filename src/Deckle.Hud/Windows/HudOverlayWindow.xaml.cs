@@ -54,10 +54,6 @@ public sealed partial class HudOverlayWindow : Window
     private bool _proximityActive;
     private byte _proximityAlpha = MAX_ALPHA;
 
-    // Shared by every card: a refused topmost raise is a property of the
-    // overlay surface, not of one short-lived card.
-    private static readonly WindowShowIncident ShowIncident = new("hud-overlay");
-
     // True between FadeInStarted and its FadeInEnded. FadeTo replaces the
     // pending callback, so a fade-out or a close that overtakes the fade-in
     // would otherwise leave it without an end.
@@ -199,14 +195,28 @@ public sealed partial class HudOverlayWindow : Window
     public void ShowAt(int xPx, int yPx)
     {
         var (w, h) = GetSizePx();
-        AppWindow.MoveAndResize(new Windows.Graphics.RectInt32(xPx, yPx, w, h));
+        try
+        {
+            AppWindow.MoveAndResize(new Windows.Graphics.RectInt32(xPx, yPx, w, h));
+            WindowingProbe.ReportPlacement("hud-overlay", "move_and_resize", ok: true);
+        }
+        catch (Exception ex)
+        {
+            // A refused placement must not stop the show: the card still comes
+            // up, at its previous rect, and the incident carries the failure.
+            WindowingProbe.ReportPlacementFailure("hud-overlay", "move_and_resize", ex);
+        }
+
         NativeMethods.ShowWindow(_hwnd, NativeMethods.SW_SHOWNOACTIVATE);
         bool setposOk = NativeMethods.SetWindowPos(
             _hwnd, NativeMethods.HWND_TOPMOST,
             0, 0, 0, 0,
             NativeMethods.SWP_NOSIZE | NativeMethods.SWP_NOMOVE | NativeMethods.SWP_NOACTIVATE);
-        ShowIncident.Observe(
-            setposOk, setposOk ? 0 : Marshal.GetLastWin32Error(), "setwindowpos_topmost");
+        // One incident per window kind, shared by every card: the probe keys it
+        // on (window, stage), not on the short-lived card.
+        WindowingProbe.ReportShow(
+            "hud-overlay", "setwindowpos_topmost",
+            setposOk, setposOk ? 0 : Marshal.GetLastWin32Error());
 
         // Anchor "absolute": the slot geometry lives in HudOverlayManager,
         // which emits the OverlaySlotAssigned specialization.
