@@ -23,8 +23,8 @@ namespace Deckle.Diagnostics;
 //
 // Two tiers. The measurements above are governed by the Windowing activity:
 // they cost P/Invokes and run per show or per resize frame. A failure is not a
-// measurement: `WindowShowFailed`, `WindowPlacementFailed`, `WindowOpenFailed`
-// and the incident recovery bypass the activity, so a HUD that never appeared
+// measurement: `WindowShowFailed`, `WindowPlacementFailed` and the incident
+// recovery bypass the activity, so a HUD that never appeared
 // leaves a trace on a default install. `WindowingProbe.Report*` runs the
 // incident rule for the show and placement failures.
 //
@@ -75,7 +75,7 @@ public sealed class DeckleWindowingSource : DeckleEventSource
     public const int EvtWindowPlacementFailed = 9;
     public const int EvtWindowFailureRepeated = 10;
     public const int EvtWindowFailureRecovered = 11;
-    public const int EvtWindowOpenFailed     = 12;
+    // 12 retired.
 
     // Common trunk. `hmon` comes from `MonitorFromWindow`, `dpi` from
     // `GetDpiForWindow`.
@@ -276,18 +276,5 @@ public sealed class DeckleWindowingSource : DeckleEventSource
     {
         if (!IsEnabled(EventLevel.Informational, (EventKeywords)Keywords.Windowing)) return;
         WriteEvent(EvtWindowFailureRecovered, window, stage, failures);
-    }
-
-    // A lazy secondary window whose construction or first wiring threw: the
-    // person clicked a tray entry and nothing opened. Not an incident: each
-    // failure answers one click.
-    [Event(EvtWindowOpenFailed,
-           Level = EventLevel.Warning,
-           Keywords = (EventKeywords)Keywords.Windowing,
-           Message = "A window failed to open | window={0} | ex_type={1} | ex_message={2} | hr=0x{3:X8}")]
-    public void WindowOpenFailed(string window, string ex_type, string ex_message, int hr)
-    {
-        if (!IsEnabled(EventLevel.Warning, (EventKeywords)Keywords.Windowing)) return;
-        WriteEvent(EvtWindowOpenFailed, window, ex_type, ex_message, hr);
     }
 }
