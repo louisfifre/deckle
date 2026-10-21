@@ -141,7 +141,7 @@
   <!-- ─── Engine status ──────────────────────────────────────────────
        One-shot status strings raised by TranscriptionEngine.RaiseStatus(...).
        Surfaced in the tray tooltip (capped to 127 chars by Shell) and
-       echoed to LogWindow under [STATUS]. Status_Rewriting takes the
+       echoed to LogWindow under App (StatusChanged). Status_Rewriting takes the
        active rewrite profile name as {0}. -->
   <data name="Status_LoadingModel" xml:space="preserve">
     <value>Loading model…</value>
