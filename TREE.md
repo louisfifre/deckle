@@ -1668,7 +1668,8 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   ├── SegmentedTranscriptionSession.cs
 │   │   │   ├── TranscribedUtterance.cs
 │   │   │   ├── Utterance.cs
-│   │   │   └── UtteranceProgress.cs
+│   │   │   ├── UtteranceProgress.cs
+│   │   │   └── UtteranceProgressMeter.cs
 │   │   ├── Strings/
 │   │   │   └── en-US/
 │   │   │       └── Resources.resw
@@ -2184,6 +2185,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── TranscriptionObservabilityContractTests.cs
 │   │   ├── TranscriptionSettingsMigrationTests.cs
 │   │   ├── UnitBezierTests.cs
+│   │   ├── UtteranceProgressMeterTests.cs
 │   │   ├── UtteranceProgressTests.cs
 │   │   └── VadServiceIncidentTests.cs
 │   ├── Deckle.Transcription.Whisper.Tests/
