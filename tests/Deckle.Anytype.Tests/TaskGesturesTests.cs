@@ -303,6 +303,7 @@ public class TaskGesturesTests
         Assert.Contains(TaskId, error.Message);
         Assert.Contains("créée", error.Message);
         Assert.Contains("pas été remplies", error.Message);
+        Assert.Contains("a changé entre sa lecture et l'écriture", error.Message);
         Assert.IsType<AnytypeV2Exception>(error.InnerException);
     }
 
@@ -527,6 +528,27 @@ public class TaskGesturesTests
         Assert.False(op["set"]!["checked"]!.GetValue<bool>());
         Assert.Equal(ETag, SentPatch(v2).Header("If-Match"));
         Assert.Equal("Sous-tâche ajoutée à Ma tâche : première", response);
+    }
+
+    // The fill above depends on the read: if the task changed since, the server
+    // refuses it whole (409) and the caller is told, in French, that nothing
+    // was written and that a retry starts from the current version.
+    [Fact]
+    [Trait("Category", "regression")]
+    public async Task SubtaskTurnsAStaleETagOnANewItemIntoARetryRefusal()
+    {
+        using var server = new FakeAnytypeServer();
+        var v2 = new FakeV2Handler()
+            .Reply(HttpStatusCode.OK, V2Task(TemplateBlocks()), ("ETag", ETag))
+            .Reply(HttpStatusCode.Conflict, "{\"status\":409,\"code\":\"etag_mismatch\",\"message\":\"stale\"}");
+
+        InvalidOperationException error = await Assert.ThrowsAsync<InvalidOperationException>(
+            () => NewGestures(server, v2).SubtaskAsync(TaskId, "première", done: false, ct: Ct));
+
+        Assert.Contains("a changé depuis la lecture", error.Message);
+        Assert.Contains("rien n'a été écrit", error.Message);
+        Assert.Contains("Relance", error.Message);
+        Assert.Equal(["GET", "PATCH"], v2.Requests.Select(r => r.Method));
     }
 
     // A new item joins the checklist after its last item, never the end of the

@@ -136,8 +136,11 @@ public sealed class TaskGestures(AnytypeApiClient api, NameResolver resolver, An
         }
         catch (Exception ex) when (ex is not OperationCanceledException)
         {
+            string cause = ex is AnytypeV2Exception { IsStaleEtag: true }
+                ? "elle a changé entre sa lecture et l'écriture"
+                : ex.Message;
             throw new InvalidOperationException(
-                $"Tâche créée (id : {id}) mais ses sections n'ont pas été remplies ({ex.Message}). "
+                $"Tâche créée (id : {id}) mais ses sections n'ont pas été remplies ({cause}). "
                 + "Ne la recrée pas : complète-la avec task_subtask et replace_section.",
                 ex);
         }
@@ -242,7 +245,17 @@ public sealed class TaskGestures(AnytypeApiClient api, NameResolver resolver, An
         AnytypeV2WriteOptions? options = plan.DependsOnRead && doc.ETag is not null
             ? new AnytypeV2WriteOptions { IfMatch = doc.ETag }
             : null;
-        await _writer.ApplyObjectOpsAsync(taskId, [plan.Op], options, ct);
+        try
+        {
+            await _writer.ApplyObjectOpsAsync(taskId, [plan.Op], options, ct);
+        }
+        catch (AnytypeV2Exception ex) when (ex.IsStaleEtag)
+        {
+            // Only a new item carries the condition, so only an add lands here.
+            throw new InvalidOperationException(
+                $"{objName} a changé depuis la lecture : la sous-tâche « {label} » n'a pas été ajoutée " +
+                "(rien n'a été écrit). Relance task_subtask pour repartir de la version actuelle.");
+        }
 
         sw.Stop();
         DeckleAnytypeSource.Log.GestureCompleted("task_subtask", sw.Elapsed.TotalMilliseconds);
