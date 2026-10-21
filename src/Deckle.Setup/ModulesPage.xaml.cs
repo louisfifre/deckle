@@ -10,10 +10,11 @@ using Microsoft.UI.Xaml.Navigation;
 
 namespace Deckle.Setup;
 
-// The module selector, the wizard's first step. Checking a module pulls in its
-// dependencies and unchecking one expels its dependents; the cascade lives in
-// ModuleGraph, this page only renders the selection it returns. Presence acts
-// at the next boot, and the App restarts after a successful run.
+// The module selector, the wizard's first step. A module whose dependencies are
+// not all checked is greyed out until they are, and unchecking one expels its
+// dependents; the cascade lives in ModuleGraph, this page only renders the
+// selection it returns. Presence acts at the next boot, and the App restarts
+// after a successful run.
 //
 // Wording is keyed by module id from THIS module's resources (mirrored into
 // the root map for Loc), not from the described module's assembly: the
@@ -22,6 +23,7 @@ public sealed partial class ModulesPage : Page
 {
     private SetupWindow? _setup;
     private readonly Dictionary<string, CheckBox> _boxes = new(StringComparer.Ordinal);
+    private readonly Dictionary<string, SettingsCard> _cards = new(StringComparer.Ordinal);
     private HashSet<string> _selection = new(StringComparer.Ordinal);
 
     // True while the cascade re-syncs the boxes, so the Checked/Unchecked
@@ -56,10 +58,11 @@ public sealed partial class ModulesPage : Page
         // Folders or Choices would discard the selection made a page ago. The
         // hosts already seed the context from presence.
         _selection = new HashSet<string>(
-            _setup.Context.SelectedModules,
+            ModuleGraph.WithoutUnmetDependencies(catalog, _setup.Context.SelectedModules),
             StringComparer.Ordinal);
 
         BuildModuleCards(catalog, setup.Context);
+        RenderSelection();
         SyncSelectionToContext();
     }
 
@@ -74,14 +77,11 @@ public sealed partial class ModulesPage : Page
     {
         ModulesList.Children.Clear();
         _boxes.Clear();
+        _cards.Clear();
 
         foreach (var module in catalog)
         {
-            var box = new CheckBox
-            {
-                IsChecked = _selection.Contains(module.Id),
-                MinWidth = 0,
-            };
+            var box = new CheckBox { MinWidth = 0 };
             box.Checked   += (_, _) => OnBoxToggled(module.Id, isChecked: true);
             box.Unchecked += (_, _) => OnBoxToggled(module.Id, isChecked: false);
             _boxes[module.Id] = box;
@@ -95,7 +95,7 @@ public sealed partial class ModulesPage : Page
                 VerticalAlignment = VerticalAlignment.Center,
             };
 
-            ModulesList.Children.Add(new SettingsCard
+            var card = new SettingsCard
             {
                 Header      = Loc.Get($"Setup_Module_{module.Id}_Label"),
                 Description = DescribeModule(module),
@@ -107,7 +107,32 @@ public sealed partial class ModulesPage : Page
                     VerticalAlignment = VerticalAlignment.Center,
                     Children          = { cost, box },
                 },
-            });
+            };
+            _cards[module.Id] = card;
+            ModulesList.Children.Add(card);
+        }
+    }
+
+    // Boxes follow the selection, and a card whose dependencies are not all
+    // checked is disabled as a whole, the way Windows Settings greys a setting
+    // that hangs on another. Greyed rather than hidden, unlike a settings page:
+    // this page is the catalogue, and a hidden module could not show what to
+    // check to get it. Its description already names what it requires.
+    private void RenderSelection()
+    {
+        _syncing = true;
+        try
+        {
+            var catalog = ModuleRegistry.Modules;
+            foreach (var (moduleId, box) in _boxes)
+            {
+                box.IsChecked = _selection.Contains(moduleId);
+                _cards[moduleId].IsEnabled = ModuleGraph.DependenciesMet(catalog, _selection, moduleId);
+            }
+        }
+        finally
+        {
+            _syncing = false;
         }
     }
 
@@ -141,17 +166,7 @@ public sealed partial class ModulesPage : Page
                 : ModuleGraph.WithoutDependents(catalog, _selection, id),
             StringComparer.Ordinal);
 
-        _syncing = true;
-        try
-        {
-            foreach (var (moduleId, box) in _boxes)
-                box.IsChecked = _selection.Contains(moduleId);
-        }
-        finally
-        {
-            _syncing = false;
-        }
-
+        RenderSelection();
         SyncSelectionToContext();
     }
 
