@@ -39,6 +39,7 @@ public partial class App
         internal bool AmbientPresent { get; set; }
         internal bool TrackpadPresent { get; set; }
         internal bool PrecisionScrollPresent { get; set; }
+        internal bool OrchestrationPresent { get; set; }
         internal bool AnytypePresent { get; set; }
 
         internal void Milestone(string name)
@@ -152,6 +153,7 @@ public partial class App
         context.AmbientPresent = ModulePresence.IsPresent(ModuleIds.Ambient);
         context.TrackpadPresent = ModulePresence.IsPresent(ModuleIds.Trackpad);
         context.PrecisionScrollPresent = ModulePresence.IsPresent(ModuleIds.PrecisionScroll);
+        context.OrchestrationPresent = ModulePresence.IsPresent(ModuleIds.Orchestration);
         context.AnytypePresent = ModulePresence.IsPresent(ModuleIds.Anytype);
         context.Milestone("modules");
 

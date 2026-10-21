@@ -30,8 +30,15 @@ public partial class App
 
     // Disposing ends every session first, so whatever a session applied is
     // restored before Deckle exits.
+    //
+    // The runtime exists only when the module was composed. Without this guard
+    // the Flush below would reach OrchestrationSettingsService.Instance on a
+    // boot that left the module out, and its constructor creates the module's
+    // settings store.
     private void ShutdownOrchestration()
     {
+        if (_orchestration is null) return;
+
         OrchestrationRuntime.StatusProvider = null;
         _orchestration?.Dispose();
         _orchestration = null;

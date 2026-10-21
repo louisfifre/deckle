@@ -454,6 +454,12 @@
   <data name="Setup_Module_precision-scroll_Description" xml:space="preserve">
     <value>Smooth, touchpad-like scrolling from the mouse wheel</value>
   </data>
+  <data name="Setup_Module_orchestration_Label" xml:space="preserve">
+    <value>Apps and games</value>
+  </data>
+  <data name="Setup_Module_orchestration_Description" xml:space="preserve">
+    <value>Turns HDR on or off while the apps and games you list are running</value>
+  </data>
   <data name="Setup_Module_anytype_Label" xml:space="preserve">
     <value>Anytype workspace</value>
   </data>

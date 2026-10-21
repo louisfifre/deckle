@@ -121,6 +121,7 @@ public class PresenceFileTests : IDisposable
     // for every existing install; a version-1 file must not switch them off.
     [Theory]
     [InlineData(ModuleIds.PrecisionScroll)]
+    [InlineData(ModuleIds.Orchestration)]
     public void AVersion1FileKeepsAModuleThatBecameOptionalAfterItPresent(string id)
     {
         WriteVersion1("transcription", "ambient");

@@ -162,9 +162,8 @@ public partial class App
         }
         if (context.PrecisionScrollPresent)
             RegisterSettingsModule(Input.PrecisionScroll.PrecisionScrollSettingsModule.Describe(order: 550), Input.PrecisionScroll.SettingsSearch.Entries);
-        // Apps and games is not a presence module: nothing to provision, so it
-        // is always registered.
-        RegisterSettingsModule(Orchestration.OrchestrationSettingsModule.Describe(order: 560), Orchestration.SettingsSearch.Entries);
+        if (context.OrchestrationPresent)
+            RegisterSettingsModule(Orchestration.OrchestrationSettingsModule.Describe(order: 560), Orchestration.SettingsSearch.Entries);
         // Taskbar cover is always composed, so its page is always registered.
         RegisterSettingsModule(Shell.TaskbarCover.TaskbarCoverSettingsModule.Describe(order: 580), Shell.TaskbarCover.SettingsSearch.Entries);
         // Diagnostics is shell-level observability, not a presence module —

@@ -15,5 +15,6 @@ public static class ModuleIds
     public const string Ambient         = "ambient";
     public const string Trackpad        = "trackpad";
     public const string PrecisionScroll = "precision-scroll";
+    public const string Orchestration   = "orchestration";
     public const string Anytype         = "anytype";
 }

@@ -25,7 +25,6 @@ public partial class App
     private const string ForegroundWatcherModule = "foreground_watcher";
     private const string TaskbarCoverModule      = "taskbar_cover";
     private const string InputHostModule         = "input_host";
-    private const string OrchestrationModule     = "orchestration";
     private const string MouseWheelModule        = "mouse_wheel";
 
     private const string SkipNotPresent          = "not_present";
@@ -104,9 +103,11 @@ public partial class App
         else
             context.Skip(ModuleIds.PrecisionScroll, SkipNotPresent);
 
-        // Always composed; idle (no WMI subscription, no enumeration) while no
-        // entry is enabled.
-        context.Compose(OrchestrationModule, InitializeOrchestration);
+        // Idle (no WMI subscription, no enumeration) while no entry is enabled.
+        if (context.OrchestrationPresent)
+            context.Compose(ModuleIds.Orchestration, InitializeOrchestration);
+        else
+            context.Skip(ModuleIds.Orchestration, SkipNotPresent);
 
         if (context.RewritePresent)
             context.Compose(ModuleIds.Rewrite, InitializeParagraphRewrite);
