@@ -579,9 +579,12 @@ public sealed class DeckleAudioSource : DeckleEventSource
     // Exception to the "strict-typed per operation" doctrine: the
     // JsonSettingsStore<T> delegates in Deckle.Core are Action<string>, so the
     // call site cannot tell "Settings loaded" from "Settings initialized
-    // (defaults)" or "reloaded from disk". These 4 events are typed by level
-    // and keyword, not by operation; the store's sentence follows the module
-    // name so a reader knows which settings file spoke.
+    // (defaults)" or "reloaded from disk". These 4 events are typed by level,
+    // not by operation, and all carry the Lifecycle keyword: Informational
+    // relays the store's milestone sentence (loaded, initialized, reloaded),
+    // Verbose its structured detail, Warning and Error its problems. The
+    // message prefix names the module so a reader knows which settings file
+    // spoke.
 
     [Event(EvtSettingsLoaded,
            Level = EventLevel.Informational,
