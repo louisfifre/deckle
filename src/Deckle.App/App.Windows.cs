@@ -16,7 +16,7 @@ public partial class App
                 && DeckleWindowingSource.Log.IsEnabled(
                 EventLevel.Verbose, (EventKeywords)Keywords.Windowing);
             var sw = measure ? Stopwatch.StartNew() : null;
-            var window = new LogWindow();
+            var window = CreateWindowOrLog("log", () => new LogWindow());
             SecondaryWindowPlacement.Restore(window, SecondaryWindowPlacement.Log);
             window.AppWindow.Closing += (_, _) =>
                 SecondaryWindowPlacement.Save(window, SecondaryWindowPlacement.Log);
@@ -44,10 +44,10 @@ public partial class App
                 && DeckleWindowingSource.Log.IsEnabled(
                 EventLevel.Verbose, (EventKeywords)Keywords.Windowing);
             var sw = measure ? Stopwatch.StartNew() : null;
-            var window = new Settings.SettingsWindow
+            var window = CreateWindowOrLog("settings", () => new Settings.SettingsWindow
             {
                 OnShowLogsRequested = () => ShowLogWindowLazy(),
-            };
+            });
             SecondaryWindowPlacement.Restore(window, SecondaryWindowPlacement.Settings);
             window.AppWindow.Closing += (_, _) =>
                 SecondaryWindowPlacement.Save(window, SecondaryWindowPlacement.Settings);
@@ -73,7 +73,7 @@ public partial class App
                 && DeckleWindowingSource.Log.IsEnabled(
                 EventLevel.Verbose, (EventKeywords)Keywords.Windowing);
             var sw = measure ? Stopwatch.StartNew() : null;
-            var window = new PlaygroundWindow();
+            var window = CreateWindowOrLog("playground", () => new PlaygroundWindow());
             SecondaryWindowPlacement.Restore(window, SecondaryWindowPlacement.Playground);
             window.AppWindow.Closing += (_, _) =>
                 SecondaryWindowPlacement.Save(window, SecondaryWindowPlacement.Playground);
@@ -89,5 +89,25 @@ public partial class App
                 DeckleWindowingSource.Log.WindowLoadComplete("playground", sw.ElapsedMilliseconds);
         }
         _playgroundWindow.ShowAndActivate();
+    }
+
+    // The constructor is where XAML parsing and page composition fail. The
+    // exception is named here, then rethrown so the crash net and the caller
+    // keep their current behaviour.
+    private static T CreateWindowOrLog<T>(string name, Func<T> create)
+        where T : Microsoft.UI.Xaml.Window
+    {
+        T window;
+        try
+        {
+            window = create();
+        }
+        catch (Exception ex)
+        {
+            DeckleAppSource.Log.WindowOpenFailed(name, ex.GetType().Name, ex.Message);
+            throw;
+        }
+        DeckleAppSource.Log.WindowCreated(name);
+        return window;
     }
 }

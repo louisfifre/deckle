@@ -13,28 +13,28 @@ public sealed partial class DeckleAppSource : DeckleEventSource
     private DeckleAppSource() { }
 
     // IDs are public in the ETW manifest: never reuse one, retired ids included.
-    public const int EvtCrashUnhandled            = 1;
-    public const int EvtCrashAppDomain            = 2;
-    public const int EvtCrashTaskScheduler        = 3;
+    // 1 retired.
+    // 2 retired.
+    // 3 retired.
     public const int EvtCrashStackTrace           = 4;
     public const int EvtProcessExit               = 5;
-    public const int EvtPathsInitialized          = 6;
+    // 6 retired.
     public const int EvtPathsDetail               = 7;
-    public const int EvtStatusChanged             = 8;
+    // 8 retired.
     public const int EvtStartupMilestones         = 9;
     public const int EvtShutdownRequested         = 10;
-    public const int EvtShutdownWarning           = 11;
+    // 11 retired.
     public const int EvtRestartRequested          = 12;
     public const int EvtRestartFromTrayRequested  = 13;
     public const int EvtRestartSpawnNewProcess    = 14;
     public const int EvtPostBuildRestartRequested = 15;
     public const int EvtPostBuildShellExecute     = 16;
-    public const int EvtPostBuildRelaunchFailed   = 17;
+    // 17 retired.
     public const int EvtCmdLineSettingsFlag       = 18;
     public const int EvtCmdLinePostBuildFlag      = 19;
-    public const int EvtAmbientPipelineState      = 20;
+    // 20 retired.
     public const int EvtAmbientMasterForcedOff    = 21;
-    public const int EvtAmbientStartFailed        = 22;
+    // 22 retired.
     public const int EvtHotkeyStart               = 23;
     public const int EvtHotkeyStop                = 24;
     // 25 retired.
@@ -44,11 +44,11 @@ public sealed partial class DeckleAppSource : DeckleEventSource
     public const int EvtCrashUnhandledDetail        = 29;
     public const int EvtCrashAppDomainDetail        = 30;
     public const int EvtCrashTaskSchedulerDetail    = 31;
-    public const int EvtStatusChangedDetail         = 32;
-    public const int EvtShutdownWarningDetail       = 33;
-    public const int EvtPostBuildRelaunchFailedDetail = 34;
-    public const int EvtAmbientPipelineStateDetail  = 35;
-    public const int EvtAmbientStartFailedDetail    = 36;
+    // 32 retired.
+    // 33 retired.
+    // 34 retired.
+    // 35 retired.
+    // 36 retired.
     public const int EvtHotkeyStartDetail           = 37;
     // 38 retired.
     public const int EvtHudWarningDetail            = 39;
@@ -58,7 +58,7 @@ public sealed partial class DeckleAppSource : DeckleEventSource
     public const int EvtAppStarting                 = 43;
     public const int EvtAppReady                    = 44;
     public const int EvtShutdownCompleted           = 45;
-    public const int EvtHotkeyRegistrationFailed       = 46;
+    // 46 retired.
     public const int EvtHotkeyRegistrationFailedDetail = 47;
     public const int EvtHotkeyToggle                   = 48;
     public const int EvtHotkeyToggleDetail             = 49;
@@ -71,10 +71,10 @@ public sealed partial class DeckleAppSource : DeckleEventSource
     public const int EvtDictationRecoveryFound         = 56;
     public const int EvtDictationRecovered             = 57;
     public const int EvtDictationRecoveredDetail       = 58;
-    public const int EvtDictationRecoveryUnreadable    = 59;
-    public const int EvtDictationRecoveryClipboardFailed = 60;
-    public const int EvtCrashRelaunched                = 61;
-    public const int EvtCrashRelaunchedDetail          = 62;
+    // 59 retired.
+    // 60 retired.
+    // 61 retired.
+    // 62 retired.
     public const int EvtRunIdentity                    = 63;
     public const int EvtLoggingPolicy                  = 64;
     public const int EvtModuleStarted                  = 65;
@@ -82,5 +82,52 @@ public sealed partial class DeckleAppSource : DeckleEventSource
     public const int EvtModuleFailed                   = 67;
     public const int EvtShutdownStepFailed             = 68;
     public const int EvtShutdownStepsDetail            = 69;
-
+    public const int EvtCrashUnhandled                 = 70;
+    public const int EvtCrashAppDomain                 = 71;
+    public const int EvtCrashTaskScheduler             = 72;
+    public const int EvtStatusChanged                  = 73;
+    public const int EvtInstallTempCleanupFailed       = 74;
+    public const int EvtDataRootCleanupStarting        = 75;
+    public const int EvtDataRootCleanupFinished        = 76;
+    public const int EvtDataRootCleanupFailed          = 77;
+    public const int EvtPostBuildRelaunchFailed        = 78;
+    public const int EvtRestartSettingsFlushFailed     = 79;
+    public const int EvtRestartSpawnSkipped            = 80;
+    public const int EvtRestartSpawned                 = 81;
+    public const int EvtHotkeyRegistrationFailed       = 82;
+    public const int EvtHotkeySubclassFailed           = 83;
+    public const int EvtFileTranscriptionEntryFailed   = 84;
+    public const int EvtWindowOperationFailed          = 85;
+    public const int EvtCrashRelaunched                = 86;
+    public const int EvtDictationRecoveryUnreadable    = 87;
+    public const int EvtDictationRecoveryClipboardFailed = 88;
+    public const int EvtDictationRecoveryKept          = 89;
+    public const int EvtSecondInstanceRejected         = 90;
+    public const int EvtResidentMutexAbandoned         = 91;
+    public const int EvtResidentMutexReleaseFailed     = 92;
+    public const int EvtTransactionalModeExited        = 93;
+    public const int EvtTransactionalModeFailed        = 94;
+    public const int EvtUpdateChecksStarted            = 95;
+    public const int EvtUpdateCheckOutcome             = 96;
+    public const int EvtUpdateChecksStopped            = 97;
+    public const int EvtUpdateFlowStarted              = 98;
+    public const int EvtUpdateFlowRefused              = 99;
+    public const int EvtUpdateFlowFinished             = 100;
+    public const int EvtUpdateFlowFailed               = 101;
+    public const int EvtAutocorrectUnavailable         = 102;
+    public const int EvtAutocorrectFailed              = 103;
+    public const int EvtAutocorrectAssetSkipped        = 104;
+    public const int EvtAutocorrectEnrollmentPromptFailed = 105;
+    public const int EvtCleanupFailed                  = 106;
+    public const int EvtInputConsumerUnavailable       = 107;
+    public const int EvtWindowCreated                  = 108;
+    public const int EvtWindowOpenFailed               = 109;
+    public const int EvtTrayToggleChanged              = 110;
+    public const int EvtThemeApplied                   = 111;
+    public const int EvtThemeUnknown                   = 112;
+    public const int EvtAmbientStartFailed             = 113;
+    public const int EvtAnytypeRuntimeEnded            = 114;
+    public const int EvtAnytypeHostDrainIncomplete     = 115;
+    public const int EvtNetworkQueryFailed             = 116;
+    public const int EvtHotkeyPressIgnored             = 117;
 }

@@ -71,8 +71,7 @@ public partial class App
         }
         catch (Exception ex)
         {
-            DeckleAppSource.Log.HudWarning();
-            DeckleAppSource.Log.HudWarningDetail($"File transcription entry failed: {ex.Message}");
+            DeckleAppSource.Log.FileTranscriptionEntryFailed(ex.GetType().Name, ex.Message);
         }
     }
 }

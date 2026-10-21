@@ -39,7 +39,8 @@
         </Grid>
 
         <!-- Fixed width, not an ActualWidth binding (it never notifies, so MaxWidth stayed 0).
-             120 = 108 for 16 Consolas glyphs (longest source PRECISIONSCROLL, 15) + 12 gap. -->
+             120 = 108 for 16 Consolas glyphs (longest display name "Precision Scroll",
+             16, from LogLineFormatter.DisplayName) + 12 gap. -->
         <TextBlock Grid.Column="2"
                    Margin="0,0,12,0"
                    Text="{Binding SourceText}"

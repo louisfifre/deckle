@@ -28,6 +28,7 @@ public partial class App
                     var s = PrecisionScrollSettingsService.Instance.Current;
                     s.Enabled = !s.Enabled;
                     PrecisionScrollSettingsService.Instance.Save();
+                    DeckleAppSource.Log.TrayToggleChanged("precision-scroll", s.Enabled);
                 }),
         };
 
@@ -42,6 +43,7 @@ public partial class App
                     var s = TrackpadSettingsService.Instance.Current;
                     s.Enabled = !s.Enabled;
                     TrackpadSettingsService.Instance.Save();
+                    DeckleAppSource.Log.TrayToggleChanged("trackpad", s.Enabled);
                 }));
         }
 
@@ -54,6 +56,7 @@ public partial class App
                 var s = TaskbarCoverSettingsService.Instance.Current;
                 s.Enabled = !s.Enabled;
                 TaskbarCoverSettingsService.Instance.Save();
+                DeckleAppSource.Log.TrayToggleChanged("taskbar-cover", s.Enabled);
             }));
 
         if (context.AutocorrectPresent)
@@ -66,6 +69,7 @@ public partial class App
                 {
                     bool enabled = AutocorrectSettingsService.Instance.Current.Enabled;
                     AutocorrectSettingsService.Instance.SetEnabled(!enabled);
+                    DeckleAppSource.Log.TrayToggleChanged("autocorrect", !enabled);
                 }));
         }
 
@@ -81,6 +85,7 @@ public partial class App
                     var s = LlmSettingsService.Instance.Current;
                     s.Enabled = !s.Enabled;
                     LlmSettingsService.Instance.Save();
+                    DeckleAppSource.Log.TrayToggleChanged("rewrite", s.Enabled);
                 }));
         }
 
@@ -106,6 +111,7 @@ public partial class App
                     var s = AmbientSettingsService.Instance.Current;
                     s.Enabled = !s.Enabled;
                     AmbientSettingsService.Instance.Save();
+                    DeckleAppSource.Log.TrayToggleChanged("ambient", s.Enabled);
                 }),
         ];
     }

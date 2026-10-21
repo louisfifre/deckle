@@ -11,6 +11,10 @@ public partial class App
     private TrackpadEngine? _trackpadEngine;
     private ContactFrameRecorder? _frameRecorder;
 
+    // Reconcile runs on every trackpad settings change, tuning included: a
+    // host that keeps failing is reported once until it starts again.
+    private bool _trackpadHostFailureReported;
+
     private void InitializeTrackpad()
     {
         _inputHost = new RawInputHost();
@@ -36,6 +40,15 @@ public partial class App
         bool needsFrames = settings.Enabled || settings.RecordFrames;
 
         bool inputAvailable = !needsFrames || _inputHost.Start();
+        if (!inputAvailable && !_trackpadHostFailureReported)
+        {
+            DeckleAppSource.Log.InputConsumerUnavailable("trackpad", "host_start_failed");
+            _trackpadHostFailureReported = true;
+        }
+        else if (inputAvailable && needsFrames)
+        {
+            _trackpadHostFailureReported = false;
+        }
 
         if (settings.Enabled && inputAvailable) _trackpadEngine.Start();
         else                                    _trackpadEngine.Stop();

@@ -59,6 +59,7 @@ public partial class App
                 // The recording state comes from the engine, never from the
                 // localized status text.
                 bool isRecording = _engine.IsRecording;
+                DeckleAppSource.Log.StatusChanged(status, isRecording);
                 _tray.UpdateStatus(status, isRecording);
                 _lastRecordingState = isRecording;
                 _logWindow?.SetRecordingState(isRecording);
@@ -219,8 +220,7 @@ public partial class App
         }
         catch (Exception ex)
         {
-            DeckleAppSource.Log.HudWarning();
-            DeckleAppSource.Log.HudWarningDetail($"Hotkey registration failed: {ex.Message}");
+            DeckleAppSource.Log.HotkeySubclassFailed(ex.GetType().Name, ex.Message);
             DeckleAppSource.Log.UserFeedbackEmitted(
                 2, // Error
                 "Hotkeys unavailable",

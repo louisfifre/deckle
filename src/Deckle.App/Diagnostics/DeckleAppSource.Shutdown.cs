@@ -15,24 +15,6 @@ public sealed partial class DeckleAppSource
         if (IsEnabled()) WriteEvent(EvtShutdownRequested);
     }
 
-    [Event(EvtShutdownWarning,
-           Level = EventLevel.Warning,
-           Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "A shutdown step failed")]
-    public void ShutdownWarning()
-    {
-        if (IsEnabled()) WriteEvent(EvtShutdownWarning);
-    }
-
-    [Event(EvtShutdownWarningDetail,
-           Level = EventLevel.Verbose,
-           Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "shutdown step failed | message={0}")]
-    public void ShutdownWarningDetail(string message)
-    {
-        if (IsEnabled()) WriteEvent(EvtShutdownWarningDetail, message);
-    }
-
     // One line per failing step, cause included: the journal says which
     // teardown broke, not only that one did.
     [Event(EvtShutdownStepFailed,
@@ -101,22 +83,86 @@ public sealed partial class DeckleAppSource
         if (IsEnabled()) WriteEvent(EvtPostBuildShellExecute, exe_path);
     }
 
+    // The process exits right after this line, so the user is left with no
+    // Deckle: the journal must say why.
     [Event(EvtPostBuildRelaunchFailed,
            Level = EventLevel.Error,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "Could not relaunch after build")]
-    public void PostBuildRelaunchFailed()
+           Tags = ObservationTags.Journal,
+           Message = "Cannot relaunch Deckle | {0}: {1}")]
+    public void PostBuildRelaunchFailed(string ex_type, string ex_message)
     {
-        if (IsEnabled()) WriteEvent(EvtPostBuildRelaunchFailed);
+        if (IsEnabled()) WriteEvent(EvtPostBuildRelaunchFailed, ex_type, ex_message);
     }
 
-    [Event(EvtPostBuildRelaunchFailedDetail,
+    [Event(EvtRestartSpawnSkipped,
+           Level = EventLevel.Error,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Tags = ObservationTags.Journal,
+           Message = "Cannot relaunch Deckle | reason={0}")]
+    public void RestartSpawnSkipped(string reason)
+    {
+        if (IsEnabled()) WriteEvent(EvtRestartSpawnSkipped, reason);
+    }
+
+    // Ties the outgoing run to its successor, whose RunIdentity line carries
+    // the same pid. child_pid=0 when the shell started it without a handle.
+    [Event(EvtRestartSpawned,
+           Level = EventLevel.Informational,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Tags = ObservationTags.Journal,
+           Message = "Deckle started its successor | child_pid={0}")]
+    public void RestartSpawned(int child_pid)
+    {
+        if (IsEnabled()) WriteEvent(EvtRestartSpawned, child_pid);
+    }
+
+    [Event(EvtRestartSettingsFlushFailed,
+           Level = EventLevel.Warning,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Message = "Settings could not be saved before the restart | {0}: {1}")]
+    public void RestartSettingsFlushFailed(string ex_type, string ex_message)
+    {
+        if (IsEnabled()) WriteEvent(EvtRestartSettingsFlushFailed, ex_type, ex_message);
+    }
+
+    [Event(EvtSecondInstanceRejected,
+           Level = EventLevel.Informational,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Tags = ObservationTags.Journal,
+           Message = "Another Deckle is resident")]
+    public void SecondInstanceRejected()
+    {
+        if (IsEnabled()) WriteEvent(EvtSecondInstanceRejected);
+    }
+
+    [Event(EvtResidentMutexAbandoned,
+           Level = EventLevel.Informational,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Tags = ObservationTags.Journal,
+           Message = "The previous run ended uncleanly | reason=resident_mutex_abandoned")]
+    public void ResidentMutexAbandoned()
+    {
+        if (IsEnabled()) WriteEvent(EvtResidentMutexAbandoned);
+    }
+
+    [Event(EvtResidentMutexReleaseFailed,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "shell-execute relaunch failed | message={0}")]
-    public void PostBuildRelaunchFailedDetail(string ex_message)
+           Message = "resident mutex release failed | ex_type={0} | ex_message={1}")]
+    public void ResidentMutexReleaseFailed(string ex_type, string ex_message)
     {
-        if (IsEnabled()) WriteEvent(EvtPostBuildRelaunchFailedDetail, ex_message);
+        if (IsEnabled()) WriteEvent(EvtResidentMutexReleaseFailed, ex_type, ex_message);
     }
 
+    // One line per swallowed teardown failure that changes nothing for the
+    // user: a dispose that threw on the way out.
+    [Event(EvtCleanupFailed,
+           Level = EventLevel.Verbose,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Message = "cleanup failed | component={0} | ex_type={1} | ex_message={2}")]
+    public void CleanupFailed(string component, string ex_type, string ex_message)
+    {
+        if (IsEnabled()) WriteEvent(EvtCleanupFailed, component, ex_type, ex_message);
+    }
 }

@@ -35,7 +35,11 @@ internal static class NetworkStatusEmitter
 
         ConnectionProfile? profile = null;
         try { profile = NetworkInformation.GetInternetConnectionProfile(); }
-        catch { /* No internet adapter; profile stays null and is handled below. */ }
+        catch (Exception ex)
+        {
+            // No internet adapter; profile stays null and is handled below.
+            DeckleAppSource.Log.NetworkQueryFailed("connection_profile", ex.GetType().Name, ex.Message);
+        }
 
         bool connected = false;
         try
@@ -43,7 +47,11 @@ internal static class NetworkStatusEmitter
             connected = profile is not null
                 && profile.GetNetworkConnectivityLevel() >= NetworkConnectivityLevel.InternetAccess;
         }
-        catch { /* WinRT can throw if the profile is removed between Get and GetLevel. */ }
+        catch (Exception ex)
+        {
+            // WinRT can throw if the profile is removed between Get and GetLevel.
+            DeckleAppSource.Log.NetworkQueryFailed("connectivity_level", ex.GetType().Name, ex.Message);
+        }
 
         string profileName = profile?.ProfileName ?? "(none)";
 
@@ -59,7 +67,11 @@ internal static class NetworkStatusEmitter
                 }
             }
         }
-        catch { /* Best-effort; an enumeration failure leaves counters at 0. */ }
+        catch (Exception ex)
+        {
+            // Best-effort; an enumeration failure leaves counters at 0.
+            DeckleAppSource.Log.NetworkQueryFailed("host_names", ex.GetType().Name, ex.Message);
+        }
 
         DeckleNetworkSource.Log.NetworkStatusChanged(connected, profileName, ipv4, ipv6);
     }

@@ -25,21 +25,32 @@ public partial class App
         // done with it, and keeping it would repeat the warning at every launch.
         if (status == DictationRecoveryReadStatus.Unreadable || string.IsNullOrWhiteSpace(text))
         {
-            DeckleAppSource.Log.DictationRecoveryUnreadable();
-            store.Delete();
+            string reason = status == DictationRecoveryReadStatus.Unreadable ? "unreadable" : "empty";
+            bool deleted = store.Delete();
+            DeckleAppSource.Log.DictationRecoveryUnreadable(reason, deleted);
             return;
         }
 
         // The file is the only copy: it goes only once the clipboard has the text.
-        if (!Win32ClipboardWriter.Instance.TryWriteText(text).Landed)
+        ClipboardWriteResult write = Win32ClipboardWriter.Instance.TryWriteText(text);
+        if (!write.Landed)
         {
-            DeckleAppSource.Log.DictationRecoveryClipboardFailed();
+            DeckleAppSource.Log.DictationRecoveryClipboardFailed(ClipboardFailureReason(write.Status), text.Length);
             return;
         }
 
         _hudWindow?.ShowDictationRecovered();
         DeckleAppSource.Log.DictationRecovered();
         DeckleAppSource.Log.DictationRecoveredDetail(text.Length);
-        store.Delete();
+        if (!store.Delete())
+            DeckleAppSource.Log.DictationRecoveryKept("delete_failed");
     }
+
+    private static string ClipboardFailureReason(ClipboardWriteStatus status) => status switch
+    {
+        ClipboardWriteStatus.AllocFailed   => "alloc_failed",
+        ClipboardWriteStatus.OpenFailed    => "clipboard_busy",
+        ClipboardWriteStatus.SetDataFailed => "set_data_refused",
+        _                                  => "unknown",
+    };
 }

@@ -7,6 +7,10 @@ public partial class App
     private const string ResidentMutexName = @"Local\Deckle.Resident";
     private Mutex? _residentMutex;
 
+    // Read by ReportCrashDumpCapture: ownership is taken before any sink
+    // exists, so the line waits for the sinks.
+    private static bool _residentMutexAbandoned;
+
     private bool TryAcquireResidentOwnership()
     {
         var mutex = new Mutex(initiallyOwned: false, ResidentMutexName);
@@ -20,6 +24,7 @@ public partial class App
             // The previous process died without orderly teardown. Windows grants
             // this thread ownership; recovery is safe because no old hook remains.
             acquired = true;
+            _residentMutexAbandoned = true;
         }
 
         if (!acquired)
@@ -38,8 +43,13 @@ public partial class App
         _residentMutex = null;
         if (mutex is null) return;
 
+        // ApplicationException: this thread does not own the mutex (QuitApp
+        // reached from another thread). The handle closes either way.
         try { mutex.ReleaseMutex(); }
-        catch (ApplicationException) { }
+        catch (ApplicationException ex)
+        {
+            DeckleAppSource.Log.ResidentMutexReleaseFailed(ex.GetType().Name, ex.Message);
+        }
         finally { mutex.Dispose(); }
     }
 
@@ -64,6 +74,7 @@ public partial class App
 
         TryShutdown("settings_flush", () => Settings.SettingsService.Instance.Flush());
         TryShutdown("hud_settings_flush", () => Hud.HudSettingsService.Instance.Flush());
+        TryShutdown("update_checks_stop", StopUpdateChecks);
         TryShutdown("hotkeys_dispose", () => _hotkeyManager?.Dispose());
         TryShutdown("tray_dispose", () => _tray?.Dispose());
         TryShutdown("tray_menu_dispose", () => _trayMenu?.Dispose());
@@ -111,19 +122,24 @@ public partial class App
     public static void RestartApp(string? pageTag = null)
     {
         DeckleAppSource.Log.RestartRequested();
-        try { Settings.SettingsService.Instance.Flush(); } catch { }
+        FlushSettingsBeforeRestart();
 
         if (Current is App app)
         {
             app.QuitApp(() =>
             {
                 string? exePath = Environment.ProcessPath;
-                if (exePath is null) return;
+                if (exePath is null)
+                {
+                    DeckleAppSource.Log.RestartSpawnSkipped("process_path_unknown");
+                    return;
+                }
                 string args = pageTag is not null
                     ? $"--settings \"{pageTag}\""
                     : "--settings";
                 DeckleAppSource.Log.RestartSpawnNewProcess(exePath, args);
-                System.Diagnostics.Process.Start(exePath, args);
+                var child = System.Diagnostics.Process.Start(exePath, args);
+                DeckleAppSource.Log.RestartSpawned(child?.Id ?? 0);
             });
         }
     }
@@ -131,14 +147,18 @@ public partial class App
     public static void RestartViaShellExecute(string args = "")
     {
         DeckleAppSource.Log.PostBuildRestartRequested();
-        try { Settings.SettingsService.Instance.Flush(); } catch { }
+        FlushSettingsBeforeRestart();
 
         if (Current is App app)
         {
             app.QuitApp(() =>
             {
                 string? exePath = Environment.ProcessPath;
-                if (exePath is null) return;
+                if (exePath is null)
+                {
+                    DeckleAppSource.Log.RestartSpawnSkipped("process_path_unknown");
+                    return;
+                }
                 var psi = new System.Diagnostics.ProcessStartInfo
                 {
                     FileName = exePath,
@@ -147,11 +167,14 @@ public partial class App
                     WorkingDirectory = Path.GetDirectoryName(exePath) ?? "",
                 };
                 DeckleAppSource.Log.PostBuildShellExecute(exePath);
-                try { System.Diagnostics.Process.Start(psi); }
+                try
+                {
+                    var child = System.Diagnostics.Process.Start(psi);
+                    DeckleAppSource.Log.RestartSpawned(child?.Id ?? 0);
+                }
                 catch (Exception ex)
                 {
-                    DeckleAppSource.Log.PostBuildRelaunchFailed();
-                    DeckleAppSource.Log.PostBuildRelaunchFailedDetail(ex.Message);
+                    DeckleAppSource.Log.PostBuildRelaunchFailed(ex.GetType().Name, ex.Message);
                 }
             });
         }
@@ -160,13 +183,29 @@ public partial class App
     private void RestartAppFromTray()
     {
         DeckleAppSource.Log.RestartFromTrayRequested();
-        try { Settings.SettingsService.Instance.Flush(); } catch { }
+        FlushSettingsBeforeRestart();
         QuitApp(() =>
         {
             string? exePath = Environment.ProcessPath;
-            if (exePath is null) return;
+            if (exePath is null)
+            {
+                DeckleAppSource.Log.RestartSpawnSkipped("process_path_unknown");
+                return;
+            }
             DeckleAppSource.Log.RestartSpawnNewProcess(exePath, "");
-            System.Diagnostics.Process.Start(exePath);
+            var child = System.Diagnostics.Process.Start(exePath);
+            DeckleAppSource.Log.RestartSpawned(child?.Id ?? 0);
         });
+    }
+
+    // The restart goes on regardless; a failed flush only means the last
+    // settings change may not survive it, which the Warning says.
+    private static void FlushSettingsBeforeRestart()
+    {
+        try { Settings.SettingsService.Instance.Flush(); }
+        catch (Exception ex)
+        {
+            DeckleAppSource.Log.RestartSettingsFlushFailed(ex.GetType().Name, ex.Message);
+        }
     }
 }

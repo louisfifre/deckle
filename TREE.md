@@ -418,6 +418,8 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   ├── AppDiagnosticsBootstrap.cs
 │   │   │   ├── AppHudFeedbackSink.cs
 │   │   │   ├── DeckleAppSource.Ambient.cs
+│   │   │   ├── DeckleAppSource.Anytype.cs
+│   │   │   ├── DeckleAppSource.Autocorrect.cs
 │   │   │   ├── DeckleAppSource.BootAndStatus.cs
 │   │   │   ├── DeckleAppSource.CommandLine.cs
 │   │   │   ├── DeckleAppSource.Crash.cs
@@ -425,8 +427,11 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   ├── DeckleAppSource.cs
 │   │   │   ├── DeckleAppSource.DictationRecovery.cs
 │   │   │   ├── DeckleAppSource.Hotkeys.cs
+│   │   │   ├── DeckleAppSource.Input.cs
 │   │   │   ├── DeckleAppSource.Lifecycle.cs
 │   │   │   ├── DeckleAppSource.Modules.cs
+│   │   │   ├── DeckleAppSource.Network.cs
+│   │   │   ├── DeckleAppSource.Setup.cs
 │   │   │   ├── DeckleAppSource.Shutdown.cs
 │   │   │   ├── DeckleAppSource.Surfaces.cs
 │   │   │   ├── LogEntry.cs
@@ -480,6 +485,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── LogWindow.Chrome.cs
 │   │   ├── LogWindow.Interaction.cs
 │   │   ├── LogWindow.Model.cs
+│   │   ├── LogWindow.Notices.cs
 │   │   ├── LogWindow.xaml
 │   │   ├── LogWindow.xaml.cs
 │   │   ├── Program.cs

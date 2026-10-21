@@ -35,13 +35,37 @@ public sealed partial class DeckleAppSource
         if (IsEnabled()) WriteEvent(EvtHotkeyStop);
     }
 
+    // reason: chord_taken (win32_error 1409, another app owns the chord),
+    // key_not_on_layout (0, the key is absent from the active layout) or
+    // register_failed (any other code). chord=unbound when none is set.
     [Event(EvtHotkeyRegistrationFailed,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Capture,
-           Message = "A hotkey could not be registered")]
-    public void HotkeyRegistrationFailed()
+           Message = "Cannot register the hotkey | action={0} | chord={1} | reason={2} | win32_error={3}")]
+    public void HotkeyRegistrationFailed(string action, string chord, string reason, int win32_error)
     {
-        if (IsEnabled()) WriteEvent(EvtHotkeyRegistrationFailed);
+        if (IsEnabled()) WriteEvent(EvtHotkeyRegistrationFailed, action, chord, reason, win32_error);
+    }
+
+    // The WM_HOTKEY subclass could not be installed: no chord works this run.
+    [Event(EvtHotkeySubclassFailed,
+           Level = EventLevel.Error,
+           Keywords = (EventKeywords)Keywords.Capture,
+           Message = "Cannot listen for hotkeys | {0}: {1}")]
+    public void HotkeySubclassFailed(string ex_type, string ex_message)
+    {
+        if (IsEnabled()) WriteEvent(EvtHotkeySubclassFailed, ex_type, ex_message);
+    }
+
+    // One per press the app cannot act on. reason: engine_not_composed
+    // (speech not provisioned; the HUD tells the person how to set it up).
+    [Event(EvtHotkeyPressIgnored,
+           Level = EventLevel.Informational,
+           Keywords = (EventKeywords)Keywords.Capture,
+           Message = "Dictation hotkey ignored | reason={0}")]
+    public void HotkeyPressIgnored(string reason)
+    {
+        if (IsEnabled()) WriteEvent(EvtHotkeyPressIgnored, reason);
     }
 
     // win32_error 1409 = chord owned elsewhere; 0 = key absent from the

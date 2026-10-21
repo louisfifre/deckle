@@ -5,13 +5,15 @@ namespace Deckle.App;
 
 public sealed partial class DeckleAppSource
 {
+    // Each crash milestone carries its cause; the Detail companions stay
+    // because the journal predicate keeps them by name for older readers.
     [Event(EvtCrashUnhandled,
            Level = EventLevel.Error,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "Unhandled exception caught")]
-    public void CrashUnhandled()
+           Message = "Unhandled exception caught | {0}: {1}")]
+    public void CrashUnhandled(string ex_type, string ex_message)
     {
-        if (IsEnabled()) WriteEvent(EvtCrashUnhandled);
+        if (IsEnabled()) WriteEvent(EvtCrashUnhandled, ex_type, ex_message);
     }
 
     [Event(EvtCrashUnhandledDetail,
@@ -26,10 +28,10 @@ public sealed partial class DeckleAppSource
     [Event(EvtCrashAppDomain,
            Level = EventLevel.Error,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "Unhandled exception caught on the AppDomain")]
-    public void CrashAppDomain()
+           Message = "Unhandled exception caught on the AppDomain | {0}: {1}")]
+    public void CrashAppDomain(string ex_type, string ex_message)
     {
-        if (IsEnabled()) WriteEvent(EvtCrashAppDomain);
+        if (IsEnabled()) WriteEvent(EvtCrashAppDomain, ex_type, ex_message);
     }
 
     [Event(EvtCrashAppDomainDetail,
@@ -44,10 +46,10 @@ public sealed partial class DeckleAppSource
     [Event(EvtCrashTaskScheduler,
            Level = EventLevel.Error,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "An unobserved task exception was caught")]
-    public void CrashTaskScheduler()
+           Message = "An unobserved task exception was caught | {0}: {1} | inner_count={2}")]
+    public void CrashTaskScheduler(string ex_type, string ex_message, int inner_count)
     {
-        if (IsEnabled()) WriteEvent(EvtCrashTaskScheduler);
+        if (IsEnabled()) WriteEvent(EvtCrashTaskScheduler, ex_type, ex_message, inner_count);
     }
 
     [Event(EvtCrashTaskSchedulerDetail,

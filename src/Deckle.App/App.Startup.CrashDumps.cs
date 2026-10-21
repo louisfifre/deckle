@@ -29,9 +29,13 @@ public partial class App
         // Told by the launcher that supervised the process which died.
         if (CrashSupervisor.FollowsCrash is { } crash)
         {
-            DeckleAppSource.Log.CrashRelaunched();
-            DeckleAppSource.Log.CrashRelaunchedDetail($"{crash.ExitCode:X8}", crash.Relaunch, CrashRelaunchPolicy.MaxRelaunches);
+            DeckleAppSource.Log.CrashRelaunched($"0x{crash.ExitCode:X8}", crash.Relaunch, CrashRelaunchPolicy.MaxRelaunches);
         }
+
+        // Also true after a crash the launcher did not see (no supervision,
+        // or a kill from Task Manager): the resident mutex is the only witness.
+        if (_residentMutexAbandoned)
+            DeckleAppSource.Log.ResidentMutexAbandoned();
 
         var kept = CrashDumpCapture.Prune(AppPaths.CrashDumpsDirectory);
         if (kept.Count == 0) return;

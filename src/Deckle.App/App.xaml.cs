@@ -64,7 +64,7 @@ public partial class App : Microsoft.UI.Xaml.Application
         // disk from turning a crash into a hang.
         this.UnhandledException += (_, e) =>
         {
-            DeckleAppSource.Log.CrashUnhandled();
+            DeckleAppSource.Log.CrashUnhandled(e.Exception.GetType().Name, e.Exception.Message);
             DeckleAppSource.Log.CrashUnhandledDetail(e.Exception.GetType().Name, e.Exception.Message);
             DeckleAppSource.Log.CrashStackTrace(e.Exception.StackTrace ?? "(no stack)");
             e.Handled = true;
@@ -73,15 +73,23 @@ public partial class App : Microsoft.UI.Xaml.Application
         AppDomain.CurrentDomain.UnhandledException += (_, e) =>
         {
             var ex = e.ExceptionObject as Exception;
-            DeckleAppSource.Log.CrashAppDomain();
-            DeckleAppSource.Log.CrashAppDomainDetail(ex?.GetType().Name ?? "(unknown)", ex?.Message ?? "(no message)");
+            string exType = ex?.GetType().Name ?? "(unknown)";
+            string exMessage = ex?.Message ?? "(no message)";
+            DeckleAppSource.Log.CrashAppDomain(exType, exMessage);
+            DeckleAppSource.Log.CrashAppDomainDetail(exType, exMessage);
             DeckleAppSource.Log.CrashStackTrace(ex?.StackTrace ?? "(no stack)");
             AppDiagnosticsBootstrap.Flush(CrashFlushDeadline);
         };
         TaskScheduler.UnobservedTaskException += (_, e) =>
         {
-            DeckleAppSource.Log.CrashTaskScheduler();
+            // The AggregateException's own type and message say nothing: the
+            // milestone names the first inner exception, and the full text
+            // (every inner exception with its stack) goes to the stack line.
+            var inner = e.Exception.Flatten().InnerExceptions;
+            Exception first = inner.Count > 0 ? inner[0] : e.Exception;
+            DeckleAppSource.Log.CrashTaskScheduler(first.GetType().Name, first.Message, inner.Count);
             DeckleAppSource.Log.CrashTaskSchedulerDetail(e.Exception.GetType().Name, e.Exception.Message);
+            DeckleAppSource.Log.CrashStackTrace(e.Exception.ToString());
             e.SetObserved();
         };
 
@@ -107,6 +115,7 @@ public partial class App : Microsoft.UI.Xaml.Application
         // exempt because they coordinate overlapping processes by design.
         if (!TryAcquireResidentOwnership())
         {
+            DeckleAppSource.Log.SecondInstanceRejected();
             Exit();
             return;
         }

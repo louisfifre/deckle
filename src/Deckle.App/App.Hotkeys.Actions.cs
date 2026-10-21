@@ -83,6 +83,12 @@ public partial class App
         return bindings;
     }
 
+    // The chord as Settings shows it ("Ctrl + Shift + `"), so a log line
+    // matches what the person sees on the page.
+    private string HotkeyChordLabel(int hotkeyId)
+        => HotkeyChordText.Format(_hotkeyActions.FirstOrDefault(a => a.Id == hotkeyId)?.Chord())
+           ?? "unbound";
+
     private void ReportHotkeyFailures(IReadOnlyList<HotkeyRegistrationFailure> failures)
     {
         foreach (HotkeyRegistrationFailure failure in failures)
@@ -91,7 +97,14 @@ public partial class App
             string label = action?.Label ?? $"id={failure.Id}";
             GlobalHotkeyBinding binding = _hotkeyManager?.Bindings.FirstOrDefault(b => b.Id == failure.Id) ?? default;
 
-            DeckleAppSource.Log.HotkeyRegistrationFailed();
+            string reason = failure.Win32Error switch
+            {
+                0    => "key_not_on_layout",
+                1409 => "chord_taken",
+                _    => "register_failed",
+            };
+            DeckleAppSource.Log.HotkeyRegistrationFailed(
+                action?.ToggleId ?? "unknown", HotkeyChordLabel(failure.Id), reason, failure.Win32Error);
             DeckleAppSource.Log.HotkeyRegistrationFailedDetail(
                 action?.ToggleId ?? "unknown", failure.Id, binding.Modifiers, binding.ScanCode, failure.Win32Error);
 

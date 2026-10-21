@@ -35,6 +35,10 @@ public partial class App
                 _wheelRecorder.Start();
                 _wheelRecording = true;
             }
+            else
+            {
+                DeckleAppSource.Log.InputConsumerUnavailable("mouse-wheel-recorder", "host_start_failed");
+            }
         }
         else if (!record && _wheelRecording)
         {

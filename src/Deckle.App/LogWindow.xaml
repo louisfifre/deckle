@@ -5,6 +5,7 @@
     xmlns:local="using:Deckle.App"
     xmlns:diag="using:Deckle.App"
     xmlns:loggingControls="using:Deckle.Diagnostics.Logging.Ui.Controls"
+    xmlns:catalog="using:Deckle.Catalog"
     Title="Deckle Logs">
 
     <Grid x:Name="RootGrid">
@@ -54,34 +55,14 @@
                         MessageWrapping="Wrap" />
                 </DataTemplate>
 
-                <!-- Telemetry rows use secondary text, one notch above Verbose,
-                     so they stand out from the Verbose stream. -->
-                <DataTemplate x:Key="NoWrap_Latency">
+                <!-- Dataset rows carry measurements, not a severity: one neutral
+                     secondary text, one notch above Verbose, whatever their level. -->
+                <DataTemplate x:Key="NoWrap_Dataset">
                     <local:LogEntryRow
                         Foreground="{ThemeResource TextFillColorSecondaryBrush}"
                         MessageWrapping="NoWrap" />
                 </DataTemplate>
-                <DataTemplate x:Key="NoWrap_Corpus">
-                    <local:LogEntryRow
-                        Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                        MessageWrapping="NoWrap" />
-                </DataTemplate>
-                <DataTemplate x:Key="NoWrap_Microphone">
-                    <local:LogEntryRow
-                        Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                        MessageWrapping="NoWrap" />
-                </DataTemplate>
-                <DataTemplate x:Key="Wrap_Latency">
-                    <local:LogEntryRow
-                        Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                        MessageWrapping="Wrap" />
-                </DataTemplate>
-                <DataTemplate x:Key="Wrap_Corpus">
-                    <local:LogEntryRow
-                        Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                        MessageWrapping="Wrap" />
-                </DataTemplate>
-                <DataTemplate x:Key="Wrap_Microphone">
+                <DataTemplate x:Key="Wrap_Dataset">
                     <local:LogEntryRow
                         Foreground="{ThemeResource TextFillColorSecondaryBrush}"
                         MessageWrapping="Wrap" />
@@ -92,17 +73,13 @@
                     Info="{StaticResource NoWrap_Info}"
                     Warning="{StaticResource NoWrap_Warning}"
                     Error="{StaticResource NoWrap_Error}"
-                    Latency="{StaticResource NoWrap_Latency}"
-                    Corpus="{StaticResource NoWrap_Corpus}"
-                    Microphone="{StaticResource NoWrap_Microphone}" />
+                    Dataset="{StaticResource NoWrap_Dataset}" />
                 <diag:LogEntryTemplateSelector x:Key="WrapSelector"
                     Verbose="{StaticResource Wrap_Verbose}"
                     Info="{StaticResource Wrap_Info}"
                     Warning="{StaticResource Wrap_Warning}"
                     Error="{StaticResource Wrap_Error}"
-                    Latency="{StaticResource Wrap_Latency}"
-                    Corpus="{StaticResource Wrap_Corpus}"
-                    Microphone="{StaticResource Wrap_Microphone}" />
+                    Dataset="{StaticResource Wrap_Dataset}" />
 
                 <MenuFlyout x:Key="LogContextFlyout"
                             Opening="OnLogContextFlyoutOpening">
@@ -256,7 +233,36 @@
                                       FilterChanged="OnFilterChanged" />
 
         <Grid Grid.Row="3" x:Name="LogSurface">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="*" />
+            </Grid.RowDefinitions>
+
+            <!-- Pinned above the list rather than in ListView.Header, which
+                 scrolls away under auto-scroll. Each bar collapses while closed,
+                 so its margin only counts while it shows. Messages are set in
+                 LogWindow.Notices.cs, where they are formatted. -->
+            <StackPanel Grid.Row="0">
+                <!-- Explains an absence the view filter cannot: the verbosity
+                     controls refuse detail before any journal. Their only editor
+                     is the Diagnostics page, so the bar names it, never a toggle. -->
+                <InfoBar x:Name="GatesInfoBar"
+                         Severity="Informational"
+                         IsClosable="True"
+                         IsOpen="False"
+                         catalog:InfoBarLayout.CollapseWhenClosed="True"
+                         Margin="12,0,12,8"
+                         CloseButtonClick="OnGatesInfoBarCloseButtonClick" />
+                <InfoBar x:Name="DroppedEntriesInfoBar"
+                         Severity="Informational"
+                         IsClosable="True"
+                         IsOpen="False"
+                         catalog:InfoBarLayout.CollapseWhenClosed="True"
+                         Margin="12,0,12,8" />
+            </StackPanel>
+
             <ListView x:Name="LogItems"
+                      Grid.Row="1"
                       Background="{ThemeResource LayerFillColorDefaultBrush}"
                       BorderBrush="{ThemeResource DividerStrokeColorDefaultBrush}"
                       BorderThickness="0,1,0,0"

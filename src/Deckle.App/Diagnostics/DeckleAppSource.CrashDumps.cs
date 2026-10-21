@@ -61,21 +61,15 @@ public sealed partial class DeckleAppSource
         if (IsEnabled()) WriteEvent(EvtCrashDumpFoundDetail, path, size_bytes, written_at);
     }
 
+    // A process relaunch: journal readers look for it to split one session
+    // into the run that crashed and the run that followed.
     [Event(EvtCrashRelaunched,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "Deckle was relaunched after it crashed")]
-    public void CrashRelaunched()
+           Tags = ObservationTags.Journal,
+           Message = "Deckle was relaunched after it crashed | previous_exit_code={0} | relaunch={1} | max_relaunches={2}")]
+    public void CrashRelaunched(string previous_exit_code, int relaunch, int max_relaunches)
     {
-        if (IsEnabled()) WriteEvent(EvtCrashRelaunched);
-    }
-
-    [Event(EvtCrashRelaunchedDetail,
-           Level = EventLevel.Verbose,
-           Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "crash relaunch | previous_exit_code={0} | relaunch={1} | max_relaunches={2}")]
-    public void CrashRelaunchedDetail(string previous_exit_code, int relaunch, int max_relaunches)
-    {
-        if (IsEnabled()) WriteEvent(EvtCrashRelaunchedDetail, previous_exit_code, relaunch, max_relaunches);
+        if (IsEnabled()) WriteEvent(EvtCrashRelaunched, previous_exit_code, relaunch, max_relaunches);
     }
 }
