@@ -4,6 +4,7 @@ using System.Linq;
 using CommunityToolkit.WinUI.Controls;
 using Deckle.Catalog;
 using Deckle.Modules;
+using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Navigation;
 
@@ -58,7 +59,7 @@ public sealed partial class ModulesPage : Page
             _setup.Context.SelectedModules,
             StringComparer.Ordinal);
 
-        BuildModuleCards(catalog);
+        BuildModuleCards(catalog, setup.Context);
         SyncSelectionToContext();
     }
 
@@ -69,7 +70,7 @@ public sealed partial class ModulesPage : Page
 
     // ── Cards ─────────────────────────────────────────────────────────────────
 
-    private void BuildModuleCards(IReadOnlyList<ModuleDescriptor> catalog)
+    private void BuildModuleCards(IReadOnlyList<ModuleDescriptor> catalog, SetupContext context)
     {
         ModulesList.Children.Clear();
         _boxes.Clear();
@@ -85,15 +86,49 @@ public sealed partial class ModulesPage : Page
             box.Unchecked += (_, _) => OnBoxToggled(module.Id, isChecked: false);
             _boxes[module.Id] = box;
 
+            // The cost sits beside the checkbox, as Windows shows a size beside
+            // an optional feature, so the person weighs it where they decide.
+            var cost = new TextBlock
+            {
+                Text              = DescribeCost(context, module.Id),
+                Style             = (Style)Resources["ModuleCostTextStyle"],
+                VerticalAlignment = VerticalAlignment.Center,
+            };
+
             ModulesList.Children.Add(new SettingsCard
             {
                 Header      = Loc.Get($"Setup_Module_{module.Id}_Label"),
-                Description = Loc.Get($"Setup_Module_{module.Id}_Description"),
+                Description = DescribeModule(module),
                 HeaderIcon  = new FontIcon { Glyph = module.Glyph },
-                Content     = box,
+                Content     = new StackPanel
+                {
+                    Orientation       = Orientation.Horizontal,
+                    Spacing           = 16,
+                    VerticalAlignment = VerticalAlignment.Center,
+                    Children          = { cost, box },
+                },
             });
         }
     }
+
+    // The module's own line, then what it needs: the dependency is named from the
+    // same labels the cards use, so the card and the cascade say the same thing.
+    private static string DescribeModule(ModuleDescriptor module)
+    {
+        string description = Loc.Get($"Setup_Module_{module.Id}_Description");
+        if (module.DependsOn.Count == 0) return description;
+
+        string needs = string.Join(", ", module.DependsOn.Select(id => Loc.Get($"Setup_Module_{id}_Label")));
+        return Loc.Format("Setup_Module_Requires_Format", description, needs);
+    }
+
+    private static string DescribeCost(SetupContext context, string moduleId) =>
+        InstallPlan.PendingBytesFor(context, moduleId) switch
+        {
+            null => Loc.Get("Setup_Module_NoDownload"),
+            0    => Loc.Get("Setup_Module_Installed"),
+            long bytes => Loc.Format("Setup_Module_Download_Format", ByteSizeFormatter.Format(bytes)),
+        };
 
     private void OnBoxToggled(string id, bool isChecked)
     {
