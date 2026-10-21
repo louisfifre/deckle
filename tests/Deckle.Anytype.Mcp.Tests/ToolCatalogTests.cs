@@ -36,7 +36,7 @@ public class ToolCatalogTests
 
         return ToolCatalog.Build(
             new SessionGestures(client, resolver, client.V2),
-            new TaskGestures(client, resolver),
+            new TaskGestures(client, resolver, client.V2),
             new ProjectGestures(client, resolver),
             new QueryGestures(client, resolver),
             new ReadGestures(client, resolver),

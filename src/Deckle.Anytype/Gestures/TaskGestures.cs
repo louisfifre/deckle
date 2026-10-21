@@ -5,19 +5,23 @@ using Deckle.Anytype;
 
 namespace Deckle.Anytype;
 
-// Task gestures: create an action-layout task under a project and toggle/append
-// inline checklist items in its markdown body. Cross-type lifecycle operations
-// (complete and archive) live on QueryGestures.
+// Task gestures: create an action-layout task under a project and set/append
+// checklist items in its body. Cross-type lifecycle operations (complete and
+// archive) live on QueryGestures.
 //
-// Subtask round-trip: the body markdown returned by the API is Anytype's raw
-// export form. The checklist markers (`- [ ]` / `- [x]`) are not escaped, so a
-// full-replacement PATCH preserves the rest verbatim. Labels are not safe:
-// Anytype re-escapes _, *, backtick and | on each write, so a label holding
-// one drifts after repeated writes, the literal contains-match misses it, and
-// the verb then appends a duplicate.
-
-public sealed class TaskGestures(AnytypeApiClient api, NameResolver resolver)
+// task_subtask is on API v2: a checklist item is a checkbox block, edited by
+// block ops (an update_block or an insert_blocks), never by sending the body
+// back. A whole-body PATCH sent every untouched line through the markdown
+// parser again, so backslash escapes multiplied on each round, and it
+// overwrote whatever another writer had added since the read. Labels still
+// come back escaped (Anytype escapes _, *, backtick and | in the text it
+// serves), which is why the match compares both sides unescaped. task_create
+// still goes through v1.
+public sealed class TaskGestures(AnytypeApiClient api, NameResolver resolver, AnytypeV2Client v2)
 {
+    readonly AnytypeV2ObjectReader _reader = new(v2);
+    readonly AnytypeV2Writer _writer = new(v2);
+
     /// <param name="type">type_de_tache tag KEY or display name (both accepted).</param>
     /// <param name="priority">0-5; null leaves it unset.</param>
     /// <param name="checklist">Subtask labels, one checklist item each.</param>
@@ -100,22 +104,47 @@ public sealed class TaskGestures(AnytypeApiClient api, NameResolver resolver)
         string taskId = await resolver.ResolveAsync(task, new[] { DevSpace.Types.Task }, ct);
 
         using var _ = await api.AcquireWriteScopeAsync("task_subtask", taskId, ct);
-        JsonObject obj = await api.GetObjectAsync(taskId, ct);
-        string objName = NameOf(obj, task);
-        string markdown = obj["markdown"]?.GetValue<string>() ?? "";
 
-        var (next, outcome) = ApplyChecklist(markdown, label, done);
+        // The whole document is read, not the outline and not one subtree:
+        //   • the outline cuts every text to 80 runes and does not say whether
+        //     a checkbox is ticked, so a label longer than that could never be
+        //     matched on it;
+        //   • a ?block= subtree needs the checklist's root, and the checklist
+        //     has none: the heading and its items are siblings in the flat
+        //     document, so the subtree of the heading is the heading alone. It
+        //     would also take a first outline read to find the heading's id,
+        //     and the checkboxes the template leaves outside it (in a column,
+        //     say) would be missed.
+        // The name of the task rides in the properties of the same read. The
+        // ETag of this read is the one the write may be conditioned on.
+        AnytypeV2ObjectDocument doc = await _reader.ReadAsync(taskId, ct: ct);
+        string objName = NameOf(doc, task);
 
-        var payload = new JsonObject
-        {
-            ["markdown"] = next,
-        };
-        await api.UpdateObjectAsync(taskId, payload, ct);
+        ChecklistPlan plan = PlanChecklist(doc.Blocks, label, done);
+
+        // One batch, so the edit is atomic. If-Match decides who loses a race:
+        //   • a NEW item (add, or fill of the empty slot) is placed from what
+        //     the read saw — "after the last item", "this slot is still empty".
+        //     If another writer changed the checklist since, the anchor is
+        //     stale and the fill would overwrite the text they put in the slot,
+        //     so the write carries the ETag and fails with a 409 instead.
+        //   • a MATCH sets one field of one block named by its id, to an
+        //     absolute state: it clobbers nothing another writer did elsewhere
+        //     in the body, and repeating it changes nothing. A condition would
+        //     only make it fail when a parallel session ticks ANOTHER subtask
+        //     of the same task, which is the common case worth surviving. What
+        //     it accepts: if the label was edited between the read and the
+        //     write, the edited item is the one ticked.
+        // A read that gave no ETag sends no condition at all.
+        AnytypeV2WriteOptions? options = plan.DependsOnRead && doc.ETag is not null
+            ? new AnytypeV2WriteOptions { IfMatch = doc.ETag }
+            : null;
+        await _writer.ApplyObjectOpsAsync(taskId, [plan.Op], options, ct);
 
         sw.Stop();
         DeckleAnytypeSource.Log.GestureCompleted("task_subtask", sw.Elapsed.TotalMilliseconds);
 
-        return outcome switch
+        return plan.Outcome switch
         {
             ChecklistOutcome.Added    => $"Sous-tâche ajoutée à {objName} : {label}",
             ChecklistOutcome.Checked  => $"Sous-tâche cochée dans {objName} : {label}",
@@ -127,37 +156,57 @@ public sealed class TaskGestures(AnytypeApiClient api, NameResolver resolver)
 
     enum ChecklistOutcome { Added, Checked, Unchecked }
 
-    // Finds the unique GFM checklist line whose label contains `label`
-    // (case-insensitive) and rewrites its checkbox. Multiple matches are
-    // refused; no match adds an item in the requested state. The operation
-    // is a set, never a toggle, so replay cannot change the requested state.
+    // The one op to send, whether it was computed from what the read saw (a new
+    // item) or only names a block by id (a match), and what to answer.
+    readonly record struct ChecklistPlan(AnytypeV2Op Op, bool DependsOnRead, ChecklistOutcome Outcome);
+
+    // Finds the unique checkbox block whose label contains `label`
+    // (case-insensitive) and sets its state. Multiple matches are refused; no
+    // match adds an item in the requested state. The operation is a set, never
+    // a toggle, so replay cannot change the requested state.
     //
     // A new item joins the checklist, not the end of the body: it fills the
     // template's empty slot when one is left, else follows the last item, else
     // follows the checklist heading, and only a body with none of those gets it
     // appended. Appending at the end put subtasks under the notes section.
-    static (string Markdown, ChecklistOutcome Outcome) ApplyChecklist(
-        string markdown, string label, bool done)
+    //
+    // The document is flat, in reading order, with an indent per block, so
+    // walking the array visits every checkbox wherever it sits: a column or a
+    // row nests them (indent 2 is measured on the task template). "After the
+    // last item" is after that block's subtree and at its own level, so a
+    // nested checklist stays in its column.
+    //
+    // Measured: a checkbox is a block of type "checkbox" whose text is the
+    // label as markup source, with checked:true only when ticked; an empty
+    // slot has no text; update_block {id, set:{checked}} ticks it in one call.
+    // NOT measured: setting checked to false (a tick is, on a dry run), and an
+    // insert_blocks given a typed checkbox block (the dry run measured the
+    // markdown form "- [ ] todo"); both are the documented shapes of the
+    // schema.
+    static ChecklistPlan PlanChecklist(JsonArray? blocks, string label, bool done)
     {
-        var lines = markdown.Split('\n').ToList();
-
-        var matches = new List<(int Line, int Box)>();
-        int lastItem = -1, emptySlot = -1, heading = -1;
-        for (int i = 0; i < lines.Count; i++)
+        var matches = new List<string>();
+        string? lastItem = null, emptySlot = null, heading = null;
+        foreach (JsonNode? node in blocks ?? [])
         {
-            if (heading < 0 && IsChecklistHeading(lines[i])) heading = i;
-            if (!MarkdownBody.TryChecklistLine(lines[i], out int boxIndex, out string itemLabel))
+            if (node is not JsonObject block || TextOf(block, "id") is not { Length: > 0 } id)
                 continue;
 
-            if (itemLabel.Length == 0) { if (emptySlot < 0) emptySlot = i; continue; }
-            lastItem = i;
-            // Anytype escapes markdown in the body (`get\_task` for get_task);
-            // the caller types the label naturally, so both sides compare
-            // unescaped. Comparing raw never matched a label with an
+            string type = TextOf(block, "type") ?? "";
+            string text = (TextOf(block, "text") ?? "").Trim();
+
+            if (heading is null && IsChecklistHeading(type, text)) heading = id;
+            if (type != "checkbox") continue;
+
+            if (text.Length == 0) { emptySlot ??= id; continue; }
+            lastItem = id;
+            // Anytype escapes markdown in the text it serves (`get\_task` for
+            // get_task); the caller types the label naturally, so both sides
+            // compare unescaped. Comparing raw never matched a label with an
             // underscore and added a ticked duplicate instead.
-            if (MarkdownBody.Unescape(itemLabel).Contains(
+            if (MarkdownBody.Unescape(text).Contains(
                     MarkdownBody.Unescape(label), StringComparison.OrdinalIgnoreCase))
-                matches.Add((i, boxIndex));
+                matches.Add(id);
         }
 
         if (matches.Count > 1)
@@ -166,31 +215,38 @@ public sealed class TaskGestures(AnytypeApiClient api, NameResolver resolver)
                 + "Utilise un libellé plus précis.");
 
         if (matches.Count == 1)
-        {
-            (int line, int boxIndex) = matches[0];
-            var sb = new StringBuilder(lines[line]);
-            sb[boxIndex] = done ? 'x' : ' ';
-            lines[line] = sb.ToString();
-            return (string.Join('\n', lines),
-                    done ? ChecklistOutcome.Checked : ChecklistOutcome.Unchecked);
-        }
+            return new(
+                AnytypeV2BlockOps.SetChecked(AnytypeV2BlockRef.ById(matches[0]), done),
+                DependsOnRead: false,
+                done ? ChecklistOutcome.Checked : ChecklistOutcome.Unchecked);
 
-        string newItem = $"- [{(done ? 'x' : ' ')}] {label}";
-        if (emptySlot >= 0) lines[emptySlot] = newItem;
-        else if (lastItem >= 0) lines.Insert(lastItem + 1, newItem);
-        else if (heading >= 0) lines.Insert(heading + 1, newItem);
-        else if (markdown.Length == 0) return (newItem, ChecklistOutcome.Added);
-        else lines.Add(newItem);
-        return (string.Join('\n', lines), ChecklistOutcome.Added);
+        if (emptySlot is not null)
+            return new(
+                AnytypeV2BlockOps.UpdateBlock(
+                    AnytypeV2BlockRef.ById(emptySlot),
+                    new JsonObject { ["text"] = label, ["checked"] = done }),
+                DependsOnRead: true,
+                ChecklistOutcome.Added);
+
+        AnytypeV2Placement where =
+            lastItem is not null ? AnytypeV2Placement.After(lastItem)
+            : heading is not null ? AnytypeV2Placement.After(heading)
+            : AnytypeV2Placement.End;
+        return new(
+            AnytypeV2BlockOps.InsertBlocks(where, [AnytypeV2Block.Create("checkbox", label, done)]),
+            DependsOnRead: true,
+            ChecklistOutcome.Added);
     }
 
-    static bool IsChecklistHeading(string line)
-    {
-        string t = line.TrimStart();
-        return t.StartsWith("#", StringComparison.Ordinal)
-            && MarkdownBody.Unescape(t.TrimStart('#').Trim())
+    // Any heading level counts, as the markdown "#" did. Toggle headings are
+    // not looked at: whether Anytype serves them as headings is not measured.
+    static bool IsChecklistHeading(string blockType, string text)
+        => (blockType.StartsWith("heading_", StringComparison.Ordinal) || blockType == "header_4")
+            && MarkdownBody.Unescape(text)
                 .Equals(ReadGestures.ChecklistHeading, StringComparison.OrdinalIgnoreCase);
-    }
+
+    static string? TextOf(JsonObject block, string name)
+        => block[name] is JsonValue value && value.TryGetValue(out string? text) ? text : null;
 
     static string RequireChecklistLabel(string label)
     {
@@ -214,6 +270,14 @@ public sealed class TaskGestures(AnytypeApiClient api, NameResolver resolver)
         string? name = obj["name"]?.GetValue<string>();
         return string.IsNullOrEmpty(name) ? fallback : name;
     }
+
+    // v2 serves the title as the "name" property of the read.
+    static string NameOf(AnytypeV2ObjectDocument doc, string fallback)
+        => doc.Properties?["name"] is JsonValue value
+            && value.TryGetValue(out string? name)
+            && !string.IsNullOrEmpty(name)
+                ? name
+                : fallback;
 
     static string DisplayType(string typeKey)
         => DevSpace.TypeDeTache.NameFor(typeKey) ?? typeKey;
