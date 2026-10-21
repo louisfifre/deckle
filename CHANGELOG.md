@@ -13,6 +13,10 @@ doctrine). This file is generated from the Conventional-Commit history by
 
 ### Added
 
+- **anytype:** Typed read gestures named by what they return
+- **mcp:** Expose the typed reads and drop the whole-object get
+- **anytype:** Bound session_start, log and search
+- **mcp:** Cap tool text at 8 000 characters
 - **diagnostics:** Tag the run journal milestones
 - **diagnostics:** Name the transverse keywords in the JSONL envelope
 - **diagnostics:** Cap archived journal generations
@@ -47,6 +51,7 @@ doctrine). This file is generated from the Conventional-Commit history by
 - **whisper:** Log what each decode call used
 - **anytype:** Open a task session with its project and related tasks
 - **anytype:** State the opening placement rule by its intention
+- **scripts:** Survey the Anytype API v2 read-only
 
 ### Changed
 
@@ -61,12 +66,18 @@ doctrine). This file is generated from the Conventional-Commit history by
 
 ### Fixed
 
+- **anytype:** Create_task fills the template sections
+- **home:** Summarize a non-conforming schema error
+- **anytype:** Match a subtask label against the unescaped body
 - **logwindow:** Size the module column from the longest source name
 - **diagnostics:** Journal a sink's recovery
 - **wording:** Name the log window modules in place of the retired tags
 - **wording:** Name the log window modules in the other modules' texts
 - **vad:** Open one incident per trim failure and close it on recovery
 - **transcription:** Reject short low-confidence utterances decoded from noise blips
+- **scripts:** Make every Anytype v2 survey measure conclude
+- **anytype:** Name the live serve a timed-out reconciliation waited on
+- **anytype:** Label recovery after a failed start as start-failed
 
 ## [0.59.0](https://github.com/louisfifre/deckle/compare/v0.58.5...v0.59.0) — 2026-10-21
 
