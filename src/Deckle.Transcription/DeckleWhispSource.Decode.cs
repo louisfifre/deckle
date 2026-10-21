@@ -54,6 +54,29 @@ public sealed partial class DeckleWhispSource
             WriteEvent(EvtTranscribeParams, params_text);
     }
 
+    // Per call, unlike TranscribeParams (first call only): what this call
+    // really ran with. Whisper does not report which temperature of the
+    // fallback ladder produced the result, nor a compression ratio, so the
+    // ladder is logged as configured (temp_start, temp_inc). last_end_s against
+    // audio_s shows whether decoding stopped short of the end of the audio.
+    [Event(EvtTranscribeDecodeUsed,
+           Level = EventLevel.Verbose,
+           Keywords = (EventKeywords)Keywords.Pipeline,
+           Message = "decode used | offset_s={0:F2} | prompt_chars={1} | continues_previous={2} | no_context={3} | temp_start={4:F2} | temp_inc={5:F2} | segments={6} | last_end_s={7:F2} | audio_s={8:F2} | aborted={9}")]
+    public void TranscribeDecodeUsed(
+        double offset_s, int prompt_chars, bool continues_previous, bool no_context,
+        double temp_start, double temp_inc, int segments, double last_end_s,
+        double audio_s, bool aborted)
+    {
+        if (!OperationalLogAdmission.IsDetailEnabled(
+                OperationalLogActivity.Transcription,
+                this,
+                EventLevel.Verbose,
+                (EventKeywords)Keywords.Pipeline)) return;
+        WriteEvent(EvtTranscribeDecodeUsed, offset_s, prompt_chars, continues_previous, no_context,
+            temp_start, temp_inc, segments, last_end_s, audio_s, aborted);
+    }
+
     [Event(EvtTranscribePromptConfigured,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Pipeline,

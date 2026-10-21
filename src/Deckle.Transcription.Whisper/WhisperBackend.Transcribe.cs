@@ -202,6 +202,20 @@ public sealed partial class WhisperBackend
             segments = _segmentsLocal.ToArray();
         }
 
+        // Every call, not only the first: what this call decoded with, and where
+        // its last segment ended against the audio it was given.
+        DeckleWhispSource.Log.TranscribeDecodeUsed(
+            _timelineOffsetSec,
+            (context?.PrimingText ?? TranscriptionSettings.Engine.InitialPrompt)?.Length ?? 0,
+            continuesPreviousCall,
+            wparams.no_context != 0,
+            wparams.temperature,
+            wparams.temperature_inc,
+            segments.Length,
+            segments.Length > 0 ? segments[^1].T1Cs / 100.0 : 0.0,
+            sampleCount / 16000.0,
+            aborted);
+
         if (_segmentCallbackIncidentOpen && _segmentCallbackFailures == 0 && segments.Length > 0)
         {
             _segmentCallbackIncidentOpen = false;
