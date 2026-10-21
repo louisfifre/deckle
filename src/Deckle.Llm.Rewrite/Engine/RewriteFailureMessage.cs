@@ -1,6 +1,7 @@
 using System.Net;
 using System.Net.Http;
 using System.Net.Sockets;
+using System.Text.Json;
 using Deckle.Llm;
 
 namespace Deckle.Llm.Rewrite;
@@ -97,6 +98,51 @@ public readonly record struct RewriteFailureMessage(string Title, string Body)
 
         return $"{subject} failed: {Detail(exception)}";
     }
+
+    // The failure class the log records, read from the same seam shape as
+    // the card above so the journal and the overlay agree on why. A short
+    // fixed word a filter can match, never free text.
+    public static string ReasonOf(Exception exception)
+    {
+        if (exception is InvalidOperationException && exception.Message == ClaudeEngine.MissingApiKeyMessage)
+            return "missing_api_key";
+
+        if (Find<HttpRequestException>(exception)?.StatusCode is HttpStatusCode code)
+        {
+            return (int)code switch
+            {
+                401 or 403 => "auth_rejected",
+                404        => "unknown_model",
+                429        => "rate_limited",
+                >= 500     => "server_error",
+                _          => "http_status",
+            };
+        }
+
+        switch (ConnectionFailureOf(exception))
+        {
+            case ConnectionFailure.NotAnswering: return "not_answering";
+            case ConnectionFailure.Unreachable:  return "unreachable";
+        }
+
+        if (exception is InvalidOperationException && exception.Message == ClaudeEngine.RefusalMessage)
+            return "refused";
+
+        // A server that answered 200 with a body the engine could not read
+        // (an HTML error page from a proxy, a missing "response" field).
+        if (Find<JsonException>(exception) is not null || Find<KeyNotFoundException>(exception) is not null)
+            return "invalid_response";
+
+        if (Find<OperationCanceledException>(exception) is not null)
+            return "cancelled";
+
+        return "error";
+    }
+
+    // The HTTP status when the server answered, 0 when it never did: an
+    // EventSource payload takes no nullable.
+    public static int StatusOf(Exception exception) =>
+        Find<HttpRequestException>(exception)?.StatusCode is HttpStatusCode code ? (int)code : 0;
 
     enum ConnectionFailure { None, NotAnswering, Unreachable }
 

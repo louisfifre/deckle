@@ -46,7 +46,8 @@ public sealed class OpenAiCompatibleEngine : IGenerationEngine
         var sw = System.Diagnostics.Stopwatch.StartNew();
         string url = NormalizeChatUrl(_endpoint);
 
-        DeckleLlmSource.Log.RewriteStarted();
+        // RewriteService opens and closes the rewrite milestone; the engine
+        // adds only what its transport sees.
         DeckleLlmSource.Log.RewriteStartedDetail(
             request.UserText.Length, request.Model, request.Label, "chat-completions", FormatOptions(request));
 
@@ -99,6 +100,16 @@ public sealed class OpenAiCompatibleEngine : IGenerationEngine
             ? content.GetString() ?? ""
             : "";
 
+        // finish_reason is "stop" or "length" (cut by the token budget),
+        // sometimes "content_filter": the one field that says a short answer
+        // was truncated rather than finished.
+        string finishReason = choices.ValueKind == JsonValueKind.Array
+                              && choices.GetArrayLength() > 0
+                              && choices[0].TryGetProperty("finish_reason", out var finish)
+                              && finish.ValueKind == JsonValueKind.String
+            ? finish.GetString() ?? ""
+            : "";
+
         int promptTokens = 0, evalTokens = 0;
         if (root.TryGetProperty("usage", out var usage))
         {
@@ -108,10 +119,11 @@ public sealed class OpenAiCompatibleEngine : IGenerationEngine
 
         sw.Stop();
         string trimmed = text.Trim();
-        DeckleLlmSource.Log.RewriteCompleted();
-        DeckleLlmSource.Log.RewriteCompletedDetail(sw.ElapsedMilliseconds, request.UserText.Length, trimmed.Length, request.Label);
-        DeckleLlmSource.Log.RewriteMetrics(
-            $"metrics: total={sw.ElapsedMilliseconds}ms | prompt {promptTokens}tok | output {evalTokens}tok");
+        // The protocol reports no load or prompt-evaluation timing: those stay
+        // 0, as in the GenerationResult below.
+        DeckleLlmSource.Log.RewriteResponseDetail(
+            sw.ElapsedMilliseconds, request.UserText.Length, trimmed.Length, request.Label,
+            0, 0, sw.ElapsedMilliseconds, promptTokens, evalTokens, finishReason);
 
         return new GenerationResult(
             Text:         trimmed,

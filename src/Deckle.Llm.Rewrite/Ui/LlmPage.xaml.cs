@@ -72,8 +72,7 @@ public sealed partial class LlmPage : Page
         }
         catch (Exception ex)
         {
-            DeckleLlmSource.Log.PageNavigatedToFailed();
-            DeckleLlmSource.Log.PageNavigatedToFailedDetail(ex.GetType().Name, ex.Message);
+            DeckleLlmSource.Log.PageNavigatedToFailed(ex.GetType().Name, ex.Message);
         }
     }
 
@@ -101,8 +100,7 @@ public sealed partial class LlmPage : Page
         }
         catch (Exception ex)
         {
-            DeckleLlmSource.Log.EndpointRefreshFailed();
-            DeckleLlmSource.Log.EndpointRefreshFailedDetail(ex.GetType().Name, ex.Message);
+            DeckleLlmSource.Log.EndpointRefreshFailed(ex.GetType().Name, ex.Message);
         }
     }
 
@@ -111,8 +109,7 @@ public sealed partial class LlmPage : Page
         try { await RefreshProvidersAsync(); }
         catch (Exception ex)
         {
-            DeckleLlmSource.Log.ManualRefreshFailed();
-            DeckleLlmSource.Log.ManualRefreshFailedDetail(ex.GetType().Name, ex.Message);
+            DeckleLlmSource.Log.ManualRefreshFailed(ex.GetType().Name, ex.Message);
         }
     }
 
@@ -150,7 +147,12 @@ public sealed partial class LlmPage : Page
 
             string? apiKey = null;
             try { vault.TryGet(LlmProviderSecrets.ApiKeyName(provider.Id), out apiKey); }
-            catch (SecretVaultException) { /* no key: the catalog answers what it can */ }
+            catch (SecretVaultException ex)
+            {
+                // No key: the catalog answers what it can, and the listing's
+                // own Warning says so if the provider then refuses.
+                DeckleLlmSource.Log.ProviderKeyReadFailedDetail(provider.Name, ex.GetType().Name, ex.Message);
+            }
 
             using var cts = new CancellationTokenSource(ProviderAdminTimeout);
             IReadOnlyList<string> names = await ProviderModelCatalog.ListAsync(provider, apiKey, cts.Token);
@@ -183,8 +185,7 @@ public sealed partial class LlmPage : Page
             }
             catch (Exception ex)
             {
-                DeckleLlmSource.Log.OllamaRefreshSkipped();
-                DeckleLlmSource.Log.OllamaRefreshSkippedDetail(ex.GetType().Name, ex.Message);
+                DeckleLlmSource.Log.OllamaRefreshSkipped(ex.GetType().Name, ex.Message);
                 available = false;
                 models = Array.Empty<OllamaModel>();
             }
@@ -255,8 +256,7 @@ public sealed partial class LlmPage : Page
         }
         catch (Exception ex)
         {
-            DeckleLlmSource.Log.ResetAllFailed();
-            DeckleLlmSource.Log.ResetAllFailedDetail(ex.GetType().Name, ex.Message);
+            DeckleLlmSource.Log.ResetAllFailed(ex.GetType().Name, ex.Message);
         }
     }
 }

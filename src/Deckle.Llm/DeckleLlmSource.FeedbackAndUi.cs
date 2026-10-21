@@ -20,95 +20,53 @@ public sealed partial class DeckleLlmSource
     }
 
     // ── LlmPage UI failures ─────────────────────────────────────────────
+    //
+    // Each line carries its exception in its own payload: these fire rarely
+    // and a journal that keeps only Warnings and Errors must still say why.
 
     [Event(EvtPageNavigatedToFailed,
            Level = EventLevel.Error,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "The LLM settings page failed to open")]
-    public void PageNavigatedToFailed()
+           Message = "The LLM settings page failed to open | ex_type={0} | ex_message={1}")]
+    public void PageNavigatedToFailed(string ex_type, string ex_message)
     {
-        if (IsEnabled()) WriteEvent(EvtPageNavigatedToFailed);
-    }
-
-    [Event(EvtPageNavigatedToFailedDetail,
-           Level = EventLevel.Verbose,
-           Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "page navigated-to failed | error={0} | message={1}")]
-    public void PageNavigatedToFailedDetail(string ex_type, string message)
-    {
-        if (IsEnabled()) WriteEvent(EvtPageNavigatedToFailedDetail, ex_type, message);
+        if (IsEnabled()) WriteEvent(EvtPageNavigatedToFailed, ex_type, ex_message);
     }
 
     [Event(EvtEndpointRefreshFailed,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "Endpoint refresh failed")]
-    public void EndpointRefreshFailed()
+           Message = "Endpoint refresh failed | ex_type={0} | ex_message={1}")]
+    public void EndpointRefreshFailed(string ex_type, string ex_message)
     {
-        if (IsEnabled()) WriteEvent(EvtEndpointRefreshFailed);
-    }
-
-    [Event(EvtEndpointRefreshFailedDetail,
-           Level = EventLevel.Verbose,
-           Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "endpoint refresh failed | error={0} | message={1}")]
-    public void EndpointRefreshFailedDetail(string ex_type, string message)
-    {
-        if (IsEnabled()) WriteEvent(EvtEndpointRefreshFailedDetail, ex_type, message);
+        if (IsEnabled()) WriteEvent(EvtEndpointRefreshFailed, ex_type, ex_message);
     }
 
     [Event(EvtManualRefreshFailed,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "Manual refresh failed")]
-    public void ManualRefreshFailed()
+           Message = "Manual refresh failed | ex_type={0} | ex_message={1}")]
+    public void ManualRefreshFailed(string ex_type, string ex_message)
     {
-        if (IsEnabled()) WriteEvent(EvtManualRefreshFailed);
-    }
-
-    [Event(EvtManualRefreshFailedDetail,
-           Level = EventLevel.Verbose,
-           Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "manual refresh failed | error={0} | message={1}")]
-    public void ManualRefreshFailedDetail(string ex_type, string message)
-    {
-        if (IsEnabled()) WriteEvent(EvtManualRefreshFailedDetail, ex_type, message);
+        if (IsEnabled()) WriteEvent(EvtManualRefreshFailed, ex_type, ex_message);
     }
 
     [Event(EvtOllamaRefreshSkipped,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "Ollama refresh was skipped")]
-    public void OllamaRefreshSkipped()
+           Message = "Ollama refresh was skipped | ex_type={0} | ex_message={1}")]
+    public void OllamaRefreshSkipped(string ex_type, string ex_message)
     {
-        if (IsEnabled()) WriteEvent(EvtOllamaRefreshSkipped);
-    }
-
-    [Event(EvtOllamaRefreshSkippedDetail,
-           Level = EventLevel.Verbose,
-           Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "ollama refresh skipped | error={0} | message={1}")]
-    public void OllamaRefreshSkippedDetail(string ex_type, string message)
-    {
-        if (IsEnabled()) WriteEvent(EvtOllamaRefreshSkippedDetail, ex_type, message);
+        if (IsEnabled()) WriteEvent(EvtOllamaRefreshSkipped, ex_type, ex_message);
     }
 
     [Event(EvtResetAllFailed,
            Level = EventLevel.Error,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "Resetting the LLM settings failed")]
-    public void ResetAllFailed()
+           Message = "Resetting the LLM settings failed | ex_type={0} | ex_message={1}")]
+    public void ResetAllFailed(string ex_type, string ex_message)
     {
-        if (IsEnabled()) WriteEvent(EvtResetAllFailed);
-    }
-
-    [Event(EvtResetAllFailedDetail,
-           Level = EventLevel.Verbose,
-           Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "reset all failed | error={0} | message={1}")]
-    public void ResetAllFailedDetail(string ex_type, string message)
-    {
-        if (IsEnabled()) WriteEvent(EvtResetAllFailedDetail, ex_type, message);
+        if (IsEnabled()) WriteEvent(EvtResetAllFailed, ex_type, ex_message);
     }
 
 }

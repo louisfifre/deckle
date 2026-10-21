@@ -30,6 +30,10 @@ public sealed class ClaudeEngine : IGenerationEngine
     // missing key from any other InvalidOperationException by exact match.
     public const string MissingApiKeyMessage = "No API key is stored for this Claude provider.";
 
+    // Public for the same reason: the failure class logged above the seam
+    // (reason=refused) is read by exact match, not by parsing the message.
+    public const string RefusalMessage = "Claude declined the request (refusal).";
+
     private readonly Func<string?> _apiKey;
     private readonly object _lock = new();
     private AnthropicClient? _client;
@@ -47,7 +51,9 @@ public sealed class ClaudeEngine : IGenerationEngine
 
         AnthropicClient client = ClientFor(key);
 
-        DeckleLlmSource.Log.RewriteStarted();
+        // RewriteService opens and closes the rewrite milestone (before the
+        // key check above, so a missing key still has its start); the engine
+        // adds only what its transport sees.
         DeckleLlmSource.Log.RewriteStartedDetail(
             request.UserText.Length, request.Model, request.Label, "claude", "effort=low");
 
@@ -77,7 +83,7 @@ public sealed class ClaudeEngine : IGenerationEngine
         }
 
         if (response.StopReason == "refusal")
-            throw new InvalidOperationException("Claude declined the request (refusal).");
+            throw new InvalidOperationException(RefusalMessage);
 
         var text = new System.Text.StringBuilder();
         foreach (var block in response.Content)
@@ -91,10 +97,12 @@ public sealed class ClaudeEngine : IGenerationEngine
 
         sw.Stop();
         string trimmed = text.ToString().Trim();
-        DeckleLlmSource.Log.RewriteCompleted();
-        DeckleLlmSource.Log.RewriteCompletedDetail(sw.ElapsedMilliseconds, request.UserText.Length, trimmed.Length, request.Label);
-        DeckleLlmSource.Log.RewriteMetrics(
-            $"metrics: total={sw.ElapsedMilliseconds}ms | prompt {promptTokens}tok | output {evalTokens}tok | stop={response.StopReason}");
+        // stop_reason (end_turn, max_tokens, ...) is formatted the way the
+        // former metrics line did, through the SDK type's own ToString. The
+        // Messages API reports no load or prompt-evaluation timing.
+        DeckleLlmSource.Log.RewriteResponseDetail(
+            sw.ElapsedMilliseconds, request.UserText.Length, trimmed.Length, request.Label,
+            0, 0, sw.ElapsedMilliseconds, promptTokens, evalTokens, $"{response.StopReason}");
 
         return new GenerationResult(
             Text:         trimmed,

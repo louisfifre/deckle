@@ -34,8 +34,7 @@ public static class ProviderModelCatalog
         {
             // A cancelled listing (the page's own timeout) is a failure like
             // any other here: the box stays free text either way.
-            DeckleLlmSource.Log.ProviderListModelsFailed();
-            DeckleLlmSource.Log.ProviderListModelsFailedDetail(provider.Name, ex.GetType().Name, ex.Message);
+            DeckleLlmSource.Log.ProviderListModelsFailed(provider.Name, ex.GetType().Name, ex.Message);
             return Array.Empty<string>();
         }
     }
