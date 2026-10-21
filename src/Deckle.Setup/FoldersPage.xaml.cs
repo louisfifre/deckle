@@ -36,6 +36,7 @@ public sealed partial class FoldersPage : Page
         setup.SetStepHeader(
             Loc.Get("Setup_StepTitle_Folders"),
             Loc.Get("Setup_StepSubtitle_Folders"));
+        setup.SetCurrentStep(SetupStep.Location);
         setup.SetBackEnabled(true);
         setup.SetNextLabel(Loc.Get("Setup_NextLabel_Continue"));
         setup.SetNextVisible(true);

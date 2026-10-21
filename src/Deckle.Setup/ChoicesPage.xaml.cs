@@ -32,6 +32,7 @@ public sealed partial class ChoicesPage : Page
         setup.SetStepHeader(
             Loc.Get("Setup_StepTitle_Choices"),
             Loc.Get("Setup_StepSubtitle_Choices"));
+        setup.SetCurrentStep(SetupStep.Dictation);
         setup.SetBackEnabled(true);
         setup.SetNextLabel(Loc.Get("Setup_NextLabel_Install"));
         setup.SetNextVisible(true);

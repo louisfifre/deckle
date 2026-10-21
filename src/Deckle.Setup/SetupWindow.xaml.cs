@@ -5,11 +5,14 @@ using Microsoft.UI.Windowing;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Media;
+using Microsoft.UI.Xaml.Navigation;
 using Windows.Graphics;
 using WinRT.Interop;
 using Deckle.Core;
 using Deckle.Catalog;
 using Deckle.Diagnostics;
+using Deckle.Modules;
+using Deckle.Shell.WindowChrome;
 using Deckle.Transcription.Whisper;
 
 namespace Deckle.Setup;
@@ -56,6 +59,10 @@ public sealed partial class SetupWindow : Window
 
         SystemBackdrop = new MicaBackdrop();
 
+        // Update and relocate are single-page flows, not wizards: nothing to
+        // navigate between, so no rail.
+        Nav.IsPaneVisible = IsWizard;
+
         ConfigureWindow();
 
         Closed += OnWindowClosed;
@@ -91,7 +98,14 @@ public sealed partial class SetupWindow : Window
         StepSubtitle.Text = subtitle;
     }
 
-    public void SetBackEnabled(bool enabled)  => BackButton.IsEnabled = enabled;
+    // Back also decides whether completed rail steps can be clicked, so the
+    // rail follows it.
+    public void SetBackEnabled(bool enabled)
+    {
+        BackButton.IsEnabled = enabled;
+        ApplyStepStates();
+    }
+
     public void SetNextEnabled(bool enabled)  => NextButton.IsEnabled = enabled;
     public void SetNextLabel(string label)    => NextButton.Content   = label;
     public void SetNextVisible(bool visible)  => NextButton.Visibility   = ToVisibility(visible);
@@ -105,6 +119,155 @@ public sealed partial class SetupWindow : Window
         Close();
     }
 
+    // ── Step rail ──────────────────────────────────────────────────────────
+    //
+    // Each page announces its step from OnNavigatedTo (SetCurrentStep); the window
+    // derives everything else. Steps after the current one are disabled, the
+    // current one is selected, completed ones swap their icon for a check mark and
+    // stay clickable only while Back is allowed (the same rule as the footer's Back
+    // button, so the rail never offers a way back the footer would refuse).
+
+    private SetupStep _currentStep = SetupStep.Modules;
+    private readonly List<(SetupStep Step, NavigationViewItem Item)> _rail = new();
+
+    // True while the window itself changes the rail's selection, so
+    // SelectionChanged does not read it as a click.
+    private bool _railSyncing;
+
+    // Wizard flows (install and in-app re-run) get the rail and the large window;
+    // update and relocate keep the narrow card.
+    private bool IsWizard => !Context.UpdateMode && !Context.RelocateMode;
+
+    public void SetCurrentStep(SetupStep step)
+    {
+        _currentStep = step;
+        RefreshStepRail();
+    }
+
+    // Also called by the Modules page on every selection change, so ticking
+    // Dictation adds or removes its step live.
+    public void RefreshStepRail()
+    {
+        if (!IsWizard) return;
+
+        var visible = VisibleSteps();
+        if (!visible.SequenceEqual(_rail.Select(r => r.Step)))
+        {
+            _railSyncing = true;
+            try
+            {
+                Nav.MenuItems.Clear();
+                _rail.Clear();
+                foreach (SetupStep step in visible)
+                {
+                    var item = new NavigationViewItem
+                    {
+                        Content = Loc.Get($"Setup_Step_{step}_Label"),
+                        Tag     = step,
+                    };
+                    _rail.Add((step, item));
+                    Nav.MenuItems.Add(item);
+                }
+            }
+            finally
+            {
+                _railSyncing = false;
+            }
+        }
+
+        ApplyStepStates();
+    }
+
+    // Location exists only where the person picks folders: the install wizard,
+    // and the process that resumes it (which shows the step as already done).
+    private List<SetupStep> VisibleSteps()
+    {
+        var steps = new List<SetupStep> { SetupStep.Modules };
+        if (Context.InstallMode || Context.ResumesInstall) steps.Add(SetupStep.Location);
+        if (Context.SelectedModules.Contains(ModuleIds.Transcription)) steps.Add(SetupStep.Dictation);
+        steps.Add(SetupStep.Install);
+        steps.Add(SetupStep.Finish);
+        return steps;
+    }
+
+    private void ApplyStepStates()
+    {
+        if (_rail.Count == 0) return;
+
+        bool canGoBack = BackButton.IsEnabled;
+        _railSyncing = true;
+        try
+        {
+            foreach (var (step, item) in _rail)
+            {
+                bool done = step < _currentStep;
+                item.Icon      = new FontIcon { Glyph = done ? Glyphs.Badge.Success : StepGlyph(step) };
+                item.IsEnabled = done ? canGoBack : step == _currentStep;
+                if (step == _currentStep) Nav.SelectedItem = item;
+            }
+        }
+        finally
+        {
+            _railSyncing = false;
+        }
+    }
+
+    private static string StepGlyph(SetupStep step) => step switch
+    {
+        SetupStep.Modules   => Glyphs.Setup,
+        SetupStep.Location  => Glyphs.Folder,
+        SetupStep.Dictation => Glyphs.Microphone,
+        SetupStep.Install   => Glyphs.Download,
+        _                   => Glyphs.Launch,
+    };
+
+    private static Type? PageOf(SetupStep step) => step switch
+    {
+        SetupStep.Modules   => typeof(ModulesPage),
+        SetupStep.Location  => typeof(FoldersPage),
+        SetupStep.Dictation => typeof(ChoicesPage),
+        _                   => null,
+    };
+
+    private void OnStepSelectionChanged(NavigationView sender, NavigationViewSelectionChangedEventArgs args)
+    {
+        if (_railSyncing) return;
+
+        // Only a completed step reached while Back is allowed goes anywhere; any
+        // other click leaves the selection on the current step.
+        if (args.SelectedItem is NavigationViewItem { Tag: SetupStep target }
+            && target < _currentStep
+            && BackButton.IsEnabled
+            && TryGoBackTo(target))
+        {
+            return;
+        }
+
+        ApplyStepStates();
+    }
+
+    // Drops the pages between here and the target from the back stack, then
+    // goes back once: the intermediate pages are never re-entered, so none of
+    // their load work runs for nothing. The page reached announces its step,
+    // which moves the rail.
+    private bool TryGoBackTo(SetupStep target)
+    {
+        Type? pageType = PageOf(target);
+        if (pageType is null) return false;
+
+        IList<PageStackEntry> stack = Body.BackStack;
+        int index = -1;
+        for (int i = stack.Count - 1; i >= 0; i--)
+        {
+            if (stack[i].SourcePageType == pageType) { index = i; break; }
+        }
+        if (index < 0) return false;
+
+        while (stack.Count - 1 > index) stack.RemoveAt(stack.Count - 1);
+        Body.GoBack();
+        return true;
+    }
+
     // ── Plumbing ───────────────────────────────────────────────────────────
 
     private static Visibility ToVisibility(bool visible) =>
@@ -112,10 +275,14 @@ public sealed partial class SetupWindow : Window
 
     private void ConfigureWindow()
     {
-        // 560×720 DIPs, a narrow card shape tuned by hand, centred on the
-        // window's display work area. AppWindow.MoveAndResize takes raw
-        // pixels, so DIPs are scaled by GetDpiForWindow / 96.
+        // Wizard flows: 960×680 DIPs, room for the step rail beside a page.
+        // Update and relocate keep the 560×720 narrow card they were tuned in,
+        // with the rail hidden. Either is centred on the window's display work
+        // area and capped at 90 % of it, so a small display never gets a window
+        // larger than its screen. AppWindow.MoveAndResize takes raw pixels, so
+        // DIPs are scaled by GetDpiForWindow / 96.
         ExtendsContentIntoTitleBar = true;
+        SetTitleBar(AppTitleBar);
         if (AppWindow is { } appWindow)
         {
             appWindow.Title = Loc.Get("Setup_WindowTitle");
@@ -125,8 +292,9 @@ public sealed partial class SetupWindow : Window
             {
                 IntPtr hwnd  = WindowNative.GetWindowHandle(this);
                 double scale = Dpi.ScaleOf(NativeMethods.GetDpiForWindow(hwnd));
-                int w = (int)Math.Round(560 * scale);
-                int h = (int)Math.Round(720 * scale);
+                (double dipWidth, double dipHeight) = IsWizard ? (960, 680) : (560, 720);
+                int w = Math.Min((int)Math.Round(dipWidth  * scale), (int)(area.WorkArea.Width  * 0.9));
+                int h = Math.Min((int)Math.Round(dipHeight * scale), (int)(area.WorkArea.Height * 0.9));
                 int x = area.WorkArea.X + (area.WorkArea.Width  - w) / 2;
                 int y = area.WorkArea.Y + (area.WorkArea.Height - h) / 2;
                 appWindow.MoveAndResize(new RectInt32(x, y, w, h));
@@ -139,9 +307,11 @@ public sealed partial class SetupWindow : Window
             if (appWindow.TitleBar is { } titleBar)
             {
                 titleBar.PreferredHeightOption = TitleBarHeightOption.Tall;
-                titleBar.ButtonBackgroundColor         = Colors.Transparent;
-                titleBar.ButtonInactiveBackgroundColor = Colors.Transparent;
             }
+
+            // The control stamps its caption padding in raw physical pixels, as
+            // in the Settings window; same shared correction.
+            CaptionInsetCorrection.Attach(AppTitleBar, appWindow);
         }
     }
 

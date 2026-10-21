@@ -148,6 +148,7 @@ public partial class App
 
         var context = new SetupContext
         {
+            ResumesInstall = true,
             // Without --model (an update's continuation), the configured model
             // from settings wins over the catalog default: the plan must ask
             // for what this install actually uses, not schedule the default's

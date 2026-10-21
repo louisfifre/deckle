@@ -43,6 +43,13 @@ public sealed class SetupContext
     // extracted the new payload into rides the same forwarding chain.
     public string? CleanupDirectory { get; set; }
 
+    // True in the installed process that carries on after Deploy
+    // (`--install-continue`). It has no InstallMode flag of its own, since it
+    // runs as a regular install, yet the person went through the Location step
+    // in the previous process: the step rail needs this to keep showing it as
+    // completed. Display only, no install behaviour reads it.
+    public bool ResumesInstall { get; init; }
+
     // ── Update mode (the wizard as updater) ─────────────────────────────────
     //
     // True on the two legs of an in-app update: the running app's download

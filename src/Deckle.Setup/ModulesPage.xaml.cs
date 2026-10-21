@@ -41,6 +41,7 @@ public sealed partial class ModulesPage : Page
         setup.SetStepHeader(
             Loc.Get("Setup_StepTitle_Modules"),
             Loc.Get("Setup_StepSubtitle_Modules"));
+        setup.SetCurrentStep(SetupStep.Modules);
         setup.SetBackEnabled(false);
         setup.SetNextLabel(Loc.Get("Setup_NextLabel_Continue"));
         setup.SetNextEnabled(true);
@@ -125,6 +126,9 @@ public sealed partial class ModulesPage : Page
     {
         if (_setup is null) return;
         _setup.Context.SelectedModules = new HashSet<string>(_selection, StringComparer.Ordinal);
+
+        // The Dictation step exists only while transcription is selected.
+        _setup.RefreshStepRail();
 
         long pendingBytes = InstallPlan.PendingBytes(_setup.Context);
         TotalEstimateBar.Message = pendingBytes > 0

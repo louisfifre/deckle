@@ -1533,6 +1533,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── RelocatePage.xaml.cs
 │   │   ├── SetupContext.cs
 │   │   ├── SetupNotifications.cs
+│   │   ├── SetupStep.cs
 │   │   ├── SetupWindow.xaml
 │   │   ├── SetupWindow.xaml.cs
 │   │   ├── SummaryPage.xaml

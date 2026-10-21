@@ -9,54 +9,79 @@
          transparent so DWM applies Mica through the window. -->
     <Grid>
         <Grid.RowDefinitions>
-            <RowDefinition Height="Auto" />  <!-- TitleBar drag region -->
-            <RowDefinition Height="Auto" />  <!-- Step header -->
-            <RowDefinition Height="*" />     <!-- Page Frame -->
-            <RowDefinition Height="Auto" />  <!-- Footer -->
+            <RowDefinition Height="Auto" />  <!-- TitleBar -->
+            <RowDefinition Height="*" />     <!-- Step rail + right-hand panel -->
         </Grid.RowDefinitions>
 
-        <!-- Empty pad under the caption buttons; ExtendsContentIntoTitleBar
-             and the Tall title bar are set in code-behind. -->
-        <Grid Grid.Row="0" Height="32" />
+        <!-- Same TitleBar as the Settings window, minus its commands: the wizard
+             has no search and no pane toggle. ExtendsContentIntoTitleBar, SetTitleBar
+             and the Tall height are set in code-behind. -->
+        <TitleBar Grid.Row="0"
+                  x:Name="AppTitleBar"
+                  x:Uid="SetupTitleBar" />
 
-        <StackPanel Grid.Row="1" Padding="40,12,40,16" Spacing="6">
-            <TextBlock x:Name="StepTitle"
-                       Text="Setup"
-                       Style="{ThemeResource TitleTextBlockStyle}" />
-            <TextBlock x:Name="StepSubtitle"
-                       Text=""
-                       Style="{ThemeResource BodyTextBlockStyle}"
-                       Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                       TextWrapping="Wrap" />
-        </StackPanel>
+        <!-- The step rail. The pane is always open and carries no toggle, back
+             button, settings entry or search: its items are filled in code from the
+             steps the flow actually goes through (RefreshStepRail), and the
+             window, not the user, decides which of them can be invoked. -->
+        <NavigationView Grid.Row="1"
+                        x:Name="Nav"
+                        PaneDisplayMode="Left"
+                        IsPaneOpen="True"
+                        OpenPaneLength="220"
+                        IsPaneToggleButtonVisible="False"
+                        IsBackButtonVisible="Collapsed"
+                        IsSettingsVisible="False"
+                        SelectionChanged="OnStepSelectionChanged">
 
-        <Frame x:Name="ContentFrame"
-               Grid.Row="2"
-               Padding="40,8,40,16" />
+            <!-- The right-hand panel: step header, page Frame, footer. -->
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />  <!-- Step header -->
+                    <RowDefinition Height="*" />     <!-- Page Frame -->
+                    <RowDefinition Height="Auto" />  <!-- Footer -->
+                </Grid.RowDefinitions>
 
-        <Grid Grid.Row="3" Padding="40,16,40,24">
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="*" />
-                <ColumnDefinition Width="Auto" />
-            </Grid.ColumnDefinitions>
+                <StackPanel Grid.Row="0" Padding="40,16,40,16" Spacing="6">
+                    <TextBlock x:Name="StepTitle"
+                               Text="Setup"
+                               Style="{ThemeResource TitleTextBlockStyle}" />
+                    <TextBlock x:Name="StepSubtitle"
+                               Text=""
+                               Style="{ThemeResource BodyTextBlockStyle}"
+                               Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                               TextWrapping="Wrap" />
+                </StackPanel>
 
-            <Button x:Name="CancelButton"
-                    x:Uid="SetupCancelButton"
-                    Grid.Column="0"
-                    Click="OnCancelClick" />
+                <Frame x:Name="ContentFrame"
+                       Grid.Row="1"
+                       Padding="40,8,40,16" />
 
-            <StackPanel Grid.Column="1"
-                        Orientation="Horizontal"
-                        Spacing="8">
-                <Button x:Name="BackButton"
-                        x:Uid="SetupBackButton"
-                        Click="OnBackClick"
-                        IsEnabled="False" />
-                <Button x:Name="NextButton"
-                        x:Uid="SetupNextButton"
-                        Style="{ThemeResource AccentButtonStyle}"
-                        Click="OnNextClick" />
-            </StackPanel>
-        </Grid>
+                <Grid Grid.Row="2" Padding="40,16,40,24">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+
+                    <Button x:Name="CancelButton"
+                            x:Uid="SetupCancelButton"
+                            Grid.Column="0"
+                            Click="OnCancelClick" />
+
+                    <StackPanel Grid.Column="1"
+                                Orientation="Horizontal"
+                                Spacing="8">
+                        <Button x:Name="BackButton"
+                                x:Uid="SetupBackButton"
+                                Click="OnBackClick"
+                                IsEnabled="False" />
+                        <Button x:Name="NextButton"
+                                x:Uid="SetupNextButton"
+                                Style="{ThemeResource AccentButtonStyle}"
+                                Click="OnNextClick" />
+                    </StackPanel>
+                </Grid>
+            </Grid>
+        </NavigationView>
     </Grid>
 </Window>
