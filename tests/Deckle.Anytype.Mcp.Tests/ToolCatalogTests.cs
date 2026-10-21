@@ -69,12 +69,13 @@ public class ToolCatalogTests
     }
 
     [Fact]
-    public void ProjectManagementInstructionsAskForAnOpeningStatusOnlyWhenATaskIsInvolved()
+    public void ProjectManagementInstructionsAskTheFirstAnswerToPlaceTheTaskInItsProject()
     {
-        const string rule = "Working on a task? Your first answer names its project and related tasks";
+        const string rule = "When the work belongs to a task of this space, open the first answer "
+            + "by placing it in its project, so the person sees at once whether the session "
+            + "aims at the right one.";
 
         Assert.Contains(rule, McpSurfaceDescriptor.ProjectManagement.Instructions);
-        Assert.Contains("no task, no status", McpSurfaceDescriptor.ProjectManagement.Instructions);
         Assert.DoesNotContain(rule, McpSurfaceDescriptor.SchemaAdmin.Instructions);
         Assert.DoesNotContain(rule, McpSurfaceDescriptor.Dialogues.Instructions);
     }
