@@ -7,39 +7,12 @@ public sealed partial class DeckleSetupSource
 {
     // ── Wizard lifecycle ──────────────────────────────────────────────────────
 
-    [Event(EvtWizardOpening,
-           Level = EventLevel.Informational,
-           Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "Opening the first-run setup wizard")]
-    public void WizardOpening()
-    {
-        if (IsEnabled(EventLevel.Informational, (EventKeywords)Keywords.Lifecycle))
-            WriteEvent(EvtWizardOpening);
-    }
-
-    [Event(EvtWizardOpeningDetail,
-           Level = EventLevel.Verbose,
-           Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "first run gate | natives_installed={0} | default_model_installed={1}")]
-    public void WizardOpeningDetail(bool natives_installed, bool default_model_installed)
-    {
-        if (IsEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Lifecycle))
-            WriteEvent(EvtWizardOpeningDetail, natives_installed, default_model_installed);
-    }
-
-    [Event(EvtWizardCancelled,
-           Level = EventLevel.Informational,
-           Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "The setup wizard was cancelled")]
-    public void WizardCancelled()
-    {
-        if (IsEnabled(EventLevel.Informational, (EventKeywords)Keywords.Lifecycle))
-            WriteEvent(EvtWizardCancelled);
-    }
-
+    // The setup window is the host of the install, update and relocate modes:
+    // its open and close frame the whole run, so both go to the journal.
     [Event(EvtWindowOpened,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Lifecycle,
+           Tags = ObservationTags.Journal,
            Message = "The setup window opened")]
     public void WindowOpened()
     {
@@ -50,6 +23,7 @@ public sealed partial class DeckleSetupSource
     [Event(EvtWindowClosing,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Lifecycle,
+           Tags = ObservationTags.Journal,
            Message = "The setup window is closing")]
     public void WindowClosing()
     {
@@ -65,6 +39,46 @@ public sealed partial class DeckleSetupSource
     {
         if (IsEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Lifecycle))
             WriteEvent(EvtWindowClosingDetail, success);
+    }
+
+    // ── Wizard-wide best-effort operations ────────────────────────────────────
+
+    // Temp-folder cleanup, size and free-space probes, a copy attempt that has
+    // a retry, opening Explorer: each failure leaves the user's result as it
+    // was, so it stays Verbose, but a reader chasing a leftover folder or a
+    // missing hint needs the operation, the path and the cause.
+    [Event(EvtBestEffortFailedDetail,
+           Level = EventLevel.Verbose,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Message = "best effort failed | operation={0} | path={1} | ex_type={2} | ex_message={3}")]
+    public void BestEffortFailedDetail(string operation, string path, string ex_type, string ex_message)
+    {
+        if (IsEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Lifecycle))
+            WriteEvent(EvtBestEffortFailedDetail, operation, path, ex_type, ex_message);
+    }
+
+    // The bounded wait for the app that started an update ran out; the
+    // running-process gate that follows decides, so this is only context.
+    [Event(EvtPredecessorWaitTimedOutDetail,
+           Level = EventLevel.Verbose,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Message = "predecessor wait timed out | pid={0} | timeout_ms={1}")]
+    public void PredecessorWaitTimedOutDetail(int pid, long timeout_ms)
+    {
+        if (IsEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Lifecycle))
+            WriteEvent(EvtPredecessorWaitTimedOutDetail, pid, timeout_ms);
+    }
+
+    // The pid ties this process's journal to the child's: install-continue and
+    // update-apply each start a new Deckle that writes its own run.
+    [Event(EvtChildProcessLaunchedDetail,
+           Level = EventLevel.Verbose,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Message = "child process launched | role={0} | pid={1} | exe={2}")]
+    public void ChildProcessLaunchedDetail(string role, int pid, string exe)
+    {
+        if (IsEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Lifecycle))
+            WriteEvent(EvtChildProcessLaunchedDetail, role, pid, exe);
     }
 
 }

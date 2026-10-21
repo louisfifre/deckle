@@ -90,6 +90,7 @@ public sealed partial class InstallingPage : Page
 
             if (item.IsInstalled())
             {
+                DeckleSetupSource.Log.ItemSkippedDetail(item.Id, "already_installed");
                 _context.Results.Add(new InstallResult(item.Id, item.DisplayName, true, null, null));
                 SetItemDone(row, Loc.Get("Setup_Install_AlreadyInstalled"));
                 continue;
@@ -98,8 +99,10 @@ public sealed partial class InstallingPage : Page
             SetItemRunning(row, Loc.Get("Setup_Install_Connecting"));
             var progress = new Progress<Downloader.DownloadProgress>(p => OnDownloadProgress(p, row));
 
+            DeckleSetupSource.Log.ItemStarted(item.Id, item.SizeBytes);
             long startTicks = Environment.TickCount64;
             ProvisioningResult outcome;
+            Exception? thrown = null;
             try
             {
                 outcome = await item.RunAsync(progress, ct);
@@ -112,6 +115,7 @@ public sealed partial class InstallingPage : Page
             {
                 // An item must never take the run down — the failure lands in
                 // its row and the next item still gets its chance.
+                thrown = ex;
                 outcome = ProvisioningResult.Fail($"{ex.GetType().Name}: {ex.Message}");
             }
 
@@ -135,8 +139,13 @@ public sealed partial class InstallingPage : Page
             }
             else
             {
-                DeckleSetupSource.Log.ItemDownloadFailed();
-                DeckleSetupSource.Log.ItemDownloadFailedDetail(item.Id, outcome.ErrorMessage ?? "");
+                long elapsed = Environment.TickCount64 - startTicks;
+                if (thrown is not null)
+                    DeckleSetupSource.Log.ItemDownloadFailed(
+                        item.Id, "threw", thrown.GetType().Name, thrown.Message, elapsed);
+                else
+                    DeckleSetupSource.Log.ItemDownloadFailed(
+                        item.Id, "provisioning_failed", "", outcome.ErrorMessage ?? "", elapsed);
                 SetItemFailed(row, outcome.ErrorMessage ?? Loc.Get("Setup_Install_UnknownError"));
             }
         }

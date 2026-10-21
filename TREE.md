@@ -1101,6 +1101,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   └── ProgressWindow.cs
 │   │   ├── app.manifest
 │   │   ├── Deckle.Installer.csproj
+│   │   ├── InstallLog.cs
 │   │   └── Program.cs
 │   ├── Deckle.Lighting/
 │   │   ├── Hue/

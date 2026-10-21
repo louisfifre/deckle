@@ -85,8 +85,7 @@ public sealed partial class ChoicesPage : Page
         }
         catch (Exception ex)
         {
-            DeckleSetupSource.Log.NativeImportFailed();
-            DeckleSetupSource.Log.NativeImportFailedDetail($"{ex.GetType().Name}: {ex.Message}");
+            DeckleSetupSource.Log.NativeImportFailed(ex.GetType().Name, ex.Message);
             NativeStatusText.Text = Loc.Format("Setup_Native_ImportFailed_Format", ex.Message);
         }
     }

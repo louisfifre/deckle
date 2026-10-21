@@ -46,6 +46,7 @@ internal static class InstallFlow
     {
         if (!Environment.Is64BitOperatingSystem)
         {
+            InstallLog.Error("Install refused | reason=os_not_64bit");
             MessageDialog.Error(window.Handle, "Deckle requires 64-bit Windows.");
             return 1;
         }
@@ -53,28 +54,41 @@ internal static class InstallFlow
         // Tracked so every failure path can remove it; left in place only on success,
         // where the wizard takes ownership.
         string? tempDir = null;
+        string step = "resolve_release";
         try
         {
             window.ReportMarquee("Finding the latest Deckle release…");
             ReleaseResolver.ResolvedRelease release = await ReleaseResolver.ResolveLatestAsync(ct).ConfigureAwait(false);
             string version = ReleaseResolver.BareVersion(release.Tag);
+            InstallLog.Info($"Release resolved | tag={release.Tag} | zip_bytes={release.ZipSize}");
 
+            step = "create_temp";
             tempDir = Path.Combine(Path.GetTempPath(), "Deckle-Setup-" + Guid.NewGuid().ToString("N")[..8]);
             Directory.CreateDirectory(tempDir);
             string zipPath = Path.Combine(tempDir, $"Deckle-{release.Tag}.zip");
 
+            step = "fetch_sha256";
             string expectedSha = await ReleaseResolver.GetSha256Async(release, ct).ConfigureAwait(false);
 
+            step = "download";
             window.ReportMarquee($"Downloading Deckle {version}…");
+            InstallLog.Info($"Download starting | tag={release.Tag} | path={zipPath}");
+            long downloadedBytes = 0;
+            var downloadClock = Stopwatch.StartNew();
             string actualSha = await Downloader.DownloadAsync(release.ZipUrl, zipPath, (done, total) =>
             {
+                downloadedBytes = done;
                 string status = DownloadStatus(version, done, total);
                 if (total is > 0) window.ReportProgress(status, done, total.Value);
                 else window.ReportMarquee(status); // no Content-Length: keep the bar alive
             }, ct).ConfigureAwait(false);
+            InstallLog.Info(
+                $"Download completed | tag={release.Tag} | size_bytes={downloadedBytes} | duration_ms={downloadClock.ElapsedMilliseconds}");
 
             if (!string.Equals(actualSha, expectedSha, StringComparison.OrdinalIgnoreCase))
             {
+                InstallLog.Error(
+                    $"Install failed | reason=sha256_mismatch | expected={expectedSha} | actual={actualSha}");
                 TryDeleteTree(tempDir);
                 MessageDialog.Error(window.Handle,
                     "The downloaded file failed its integrity check and was discarded.\n\n" +
@@ -82,6 +96,7 @@ internal static class InstallFlow
                 return 1;
             }
 
+            step = "extract";
             window.ReportMarquee($"Extracting Deckle {version}…");
             string payloadDir = Path.Combine(tempDir, "app");
             Directory.CreateDirectory(payloadDir);
@@ -94,12 +109,14 @@ internal static class InstallFlow
             string? appExe = FindDeckleExe(payloadDir);
             if (appExe is null)
             {
+                InstallLog.Error($"Install failed | reason=exe_missing | payload={payloadDir}");
                 TryDeleteTree(tempDir);
                 MessageDialog.Error(window.Handle, "The downloaded package did not contain Deckle.exe.");
                 return 1;
             }
 
             ct.ThrowIfCancellationRequested();
+            step = "launch_wizard";
 
             var psi = new ProcessStartInfo(appExe)
             {
@@ -111,16 +128,23 @@ internal static class InstallFlow
             psi.ArgumentList.Add(Environment.ProcessPath ?? string.Empty);
             psi.ArgumentList.Add("--cleanup");
             psi.ArgumentList.Add(tempDir);
-            Process.Start(psi);
+            // With UseShellExecute=false Start either returns the new process or
+            // throws, so the pid is always there to record the hand-off.
+            using (Process wizard = Process.Start(psi)!)
+                InstallLog.Info($"Wizard launched | tag={release.Tag} | pid={wizard.Id} | exe={appExe}");
             return 0; // temp left in place on purpose — the wizard owns it now
         }
         catch (OperationCanceledException)
         {
+            InstallLog.MarkCancelled();
+            InstallLog.Info($"Install cancelled | reason=user_closed | step={step}");
             if (tempDir is not null) TryDeleteTree(tempDir);
             return 1; // user closed the window; no error dialog
         }
         catch (Exception ex)
         {
+            string status = ex is HttpRequestException { StatusCode: { } code } ? $" | status={(int)code}" : string.Empty;
+            InstallLog.Error($"Install failed | reason={step}_failed | step={step}{status} | {InstallLog.Cause(ex)}");
             if (tempDir is not null) TryDeleteTree(tempDir);
             MessageDialog.Error(window.Handle, FriendlyError(ex));
             return 1;
@@ -139,6 +163,8 @@ internal static class InstallFlow
     {
         HttpRequestException =>
             "Could not reach GitHub to download Deckle.\n\nCheck your internet connection and try again.",
+        TimeoutException =>
+            "The download stopped receiving data.\n\nCheck your internet connection and try again.",
         _ => "Deckle Setup could not complete:\n\n" + ex.Message,
     };
 
@@ -154,15 +180,17 @@ internal static class InstallFlow
             .FirstOrDefault();
     }
 
+    // Best-effort: a leftover file in %TEMP% does not change what the user gets,
+    // so a failure is recorded and the flow goes on.
     private static void TryDelete(string path)
     {
         try { if (File.Exists(path)) File.Delete(path); }
-        catch { /* best-effort */ }
+        catch (Exception ex) { InstallLog.Verbose($"temp file delete failed | path={path} | {InstallLog.Cause(ex)}"); }
     }
 
     private static void TryDeleteTree(string dir)
     {
         try { if (Directory.Exists(dir)) Directory.Delete(dir, recursive: true); }
-        catch { /* best-effort */ }
+        catch (Exception ex) { InstallLog.Verbose($"temp folder delete failed | path={dir} | {InstallLog.Cause(ex)}"); }
     }
 }
