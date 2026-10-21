@@ -261,14 +261,17 @@ public sealed class DeckleAnytypeSource : DeckleEventSource
 
     // Warning: the start was requested but the backend never answered in time —
     // a degradation a human would want to notice (the backend will be absent).
+    // pid is the live serve the window waited on, 0 when none was seen: a
+    // wedged serve outlives every retry, and without its pid the journal read
+    // as if nothing were running.
     [Event(EvtBackendStartTimedOut,
            Level = EventLevel.Warning,
            Keywords = JournalLifecycle,
            Tags = ObservationTags.Journal,
-           Message = "The Anytype backend did not become ready")]
-    public void BackendStartTimedOut()
+           Message = "The Anytype backend did not become ready | pid={0}")]
+    public void BackendStartTimedOut(int pid)
     {
-        if (IsEnabled()) WriteEvent(EvtBackendStartTimedOut);
+        if (IsEnabled()) WriteEvent(EvtBackendStartTimedOut, pid);
     }
 
     // Warning: the backend binary is not on disk — provisioning has not run,
