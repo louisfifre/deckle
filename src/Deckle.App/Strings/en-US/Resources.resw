@@ -1349,7 +1349,7 @@
     <value>Rewrite</value>
   </data>
   <data name="Setup_Module_rewrite_Description" xml:space="preserve">
-    <value>Cleans up dictated text with a local language model</value>
+    <value>Rewrites your text with a language model</value>
   </data>
   <data name="Setup_Module_autocorrect_Label" xml:space="preserve">
     <value>Autocorrect</value>
