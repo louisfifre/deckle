@@ -70,6 +70,35 @@ public sealed partial class DeckleWhispSource
         if (IsEnabled()) WriteEvent(EvtUtterancesDiscarded, reason, discarded);
     }
 
+    // An utterance Whisper decoded but whose result no speaker could have
+    // produced from that audio, left out of the text. Journal: it is work
+    // declared as not done, with the numbers that justified it.
+    // reason (closed vocabulary): token_rate, low_confidence.
+    [Event(EvtUtterancePhantomRejected,
+           Level = EventLevel.Informational,
+           Keywords = (EventKeywords)Keywords.Pipeline,
+           Tags = ObservationTags.Journal,
+           Message = "Utterance rejected as a phantom | index={0} | reason={1} | audio_ms={2} | text_tokens={3} | tokens_per_s={4:F1} | avg_p={5:F3} | min_p={6:F3}")]
+    public void UtterancePhantomRejected(
+        int index, string reason, int audio_ms, int text_tokens,
+        double tokens_per_s, double avg_p, double min_p)
+    {
+        if (IsEnabled())
+            WriteEvent(EvtUtterancePhantomRejected, index, reason, audio_ms, text_tokens, tokens_per_s, avg_p, min_p);
+    }
+
+    // The level of the audio handed to the backend, after preprocessing and the
+    // VAD trim, so it reads against the pre-processing input level.
+    [Event(EvtUtteranceSentToBackend,
+           Level = EventLevel.Verbose,
+           Keywords = (EventKeywords)Keywords.Pipeline,
+           Message = "utterance sent to backend | index={0} | audio_ms={1} | rms_dbfs={2:F1} | peak_dbfs={3:F1}")]
+    public void UtteranceSentToBackend(int index, int audio_ms, double rms_dbfs, double peak_dbfs)
+    {
+        if (IsTakeDetailEnabled((EventKeywords)Keywords.Pipeline))
+            WriteEvent(EvtUtteranceSentToBackend, index, audio_ms, rms_dbfs, peak_dbfs);
+    }
+
     // hangover_used_ms is the silence the segmenter actually waited before
     // closing the utterance; below the configured max, the dynamic ramp is acting.
     [Event(EvtSegmenterUtteranceEmitted,

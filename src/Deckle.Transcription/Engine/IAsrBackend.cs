@@ -124,9 +124,14 @@ public sealed record TranscriptionResult(
 // native unit, kept as-is to avoid rounding noise. Confidence is the linear
 // average token probability over text tokens (excludes timestamp tokens);
 // NoSpeechProb is the per-segment probability that the audio is silence.
+// TextTokens counts the text tokens Confidence averages over, and
+// MinTokenProbability is the lowest of them; a backend that cannot report them
+// leaves the defaults (0 tokens, probability 1), which read as "unknown".
 public readonly record struct TranscriptionSegment(
     string Text,
     long T0Cs,
     long T1Cs,
     float Confidence,
-    float NoSpeechProb);
+    float NoSpeechProb,
+    int TextTokens = 0,
+    float MinTokenProbability = 1f);

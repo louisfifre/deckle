@@ -257,6 +257,9 @@ public sealed partial class DeckleWhispSource : DeckleEventSource
     public const int EvtPipelineTimings                  = 235;
     public const int EvtSettingsLoadWarning              = 236;
     public const int EvtSettingsLoadError                = 237;
+    public const int EvtUtterancePhantomRejected         = 238;
+    public const int EvtUtteranceSentToBackend           = 239;
+    public const int EvtTranscribeDecodeUsed             = 240;
 
     // ── Per-provider keywords ───────────────────────────────────────────
     // Bits 0x400+ are provider-local (Deckle.Diagnostics.Keywords). No live

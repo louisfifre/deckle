@@ -158,6 +158,32 @@ public sealed class LiveTranscriptionPipelineTests
         Assert.InRange(tail, TimeSpan.FromMilliseconds(300), TimeSpan.FromSeconds(4));
     }
 
+    // 2026-10-21: a short noise blip decoded into twelve doubtful tokens was
+    // pasted after the real sentence.
+    [Fact]
+    [Trait("Category", "regression")]
+    public async Task APhantomUtteranceIsLeftOutOfTheDeliveredText()
+    {
+        CancellationToken testCancellation = TestContext.Current.CancellationToken;
+        var backend = new SequencedBackend(
+            ["bonjour", "phantom"],
+            segments:
+            [
+                new TranscriptionSegment("bonjour", 0, 30, 0.9f, 0f, 2, 0.8f),
+                new TranscriptionSegment("phantom", 0, 30, 0.601f, 0f, 12, 0.079f),
+            ]);
+        var clipboard = new RecordingClipboardWriter();
+        using var engine = new TranscriptionEngine(
+            new StreamingHost(),
+            backend,
+            new ScriptedMicrophoneCapture(utteranceCount: 2),
+            clipboard);
+
+        await RunOneTakeAsync(engine, backend, testCancellation);
+
+        Assert.Equal("bonjour", clipboard.Text);
+    }
+
     [Fact]
     public async Task EachTranscribedUtteranceIsPublishedInOrderWithItsText()
     {
@@ -584,11 +610,18 @@ public sealed class LiveTranscriptionPipelineTests
 
         // A backend created without a loaded model makes the engine prime it,
         // and the prime's dummy call takes the first text.
-        public SequencedBackend(IReadOnlyList<string> texts, bool modelLoaded = true)
+        public SequencedBackend(
+            IReadOnlyList<string> texts,
+            bool modelLoaded = true,
+            IReadOnlyList<TranscriptionSegment>? segments = null)
         {
             _texts = texts;
             _modelLoaded = modelLoaded;
+            _scriptedSegments = segments;
         }
+
+        // When set, call i reports this segment instead of a perfect one.
+        private readonly IReadOnlyList<TranscriptionSegment>? _scriptedSegments;
 
         public string Name => "test";
         public bool IsModelLoaded => _modelLoaded;
@@ -628,7 +661,9 @@ public sealed class LiveTranscriptionPipelineTests
                 }
 
                 await Task.Yield();
-                var segment = new TranscriptionSegment(text, 0, 10, 1f, 0f);
+                var segment = _scriptedSegments is null
+                    ? new TranscriptionSegment(text, 0, 10, 1f, 0f)
+                    : _scriptedSegments[callIndex];
                 segmentSink?.Invoke(segment);
                 if (callIndex == _texts.Count - 1)
                     AllCallsCompleted.TrySetResult();

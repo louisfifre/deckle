@@ -202,6 +202,20 @@ public sealed partial class WhisperBackend
             segments = _segmentsLocal.ToArray();
         }
 
+        // Every call, not only the first: what this call decoded with, and where
+        // its last segment ended against the audio it was given.
+        DeckleWhispSource.Log.TranscribeDecodeUsed(
+            _timelineOffsetSec,
+            (context?.PrimingText ?? TranscriptionSettings.Engine.InitialPrompt)?.Length ?? 0,
+            continuesPreviousCall,
+            wparams.no_context != 0,
+            wparams.temperature,
+            wparams.temperature_inc,
+            segments.Length,
+            segments.Length > 0 ? segments[^1].T1Cs / 100.0 : 0.0,
+            sampleCount / 16000.0,
+            aborted);
+
         if (_segmentCallbackIncidentOpen && _segmentCallbackFailures == 0 && segments.Length > 0)
         {
             _segmentCallbackIncidentOpen = false;
@@ -258,13 +272,13 @@ public sealed partial class WhisperBackend
                     if (id >= tokenBeg) continue;
                     float p = WhisperPInvoke.whisper_full_get_token_p(ctx, i, k);
                     sumP += p;
-                    if (detailEnabled && p < minP) minP = p;
+                    if (p < minP) minP = p;
                     textTok++;
                 }
                 float avgP = textTok > 0 ? sumP / textTok : 0f;
                 if (textTok == 0) minP = 0f;
 
-                var segment = new TranscriptionSegment(segText, t0, t1, avgP, nsp);
+                var segment = new TranscriptionSegment(segText, t0, t1, avgP, nsp, textTok, minP);
                 lock (_segmentsLock) _segmentsLocal.Add(segment);
 
                 // abort_callback is probed between decoder steps, so one more

@@ -40,6 +40,23 @@ public sealed class DeckleVadSource : DeckleEventSource
     public const int EvtSpeechTrimRecovered                 = 16;
     public const int EvtSpeechTrimVadFileDeleteFailed       = 17;
     public const int EvtSpeechTrimFailed                    = 18;
+    public const int EvtSpeechTrimBounds                    = 19;
+
+    // Where the trim cut, in ms of the buffer it received. trailing_removed_ms
+    // is the audio after the last detected speech sample that never reached
+    // the backend; internal_removed_ms the pauses cut between spans.
+    [Event(EvtSpeechTrimBounds,
+           Level = EventLevel.Verbose,
+           Keywords = (EventKeywords)Keywords.Pipeline,
+           Message = "speech trim bounds | utterance_index={0} | in_ms={1} | kept_ms={2} | leading_removed_ms={3} | trailing_removed_ms={4} | internal_removed_ms={5}")]
+    public void SpeechTrimBounds(
+        int utterance_index, int in_ms, int kept_ms,
+        int leading_removed_ms, int trailing_removed_ms, int internal_removed_ms)
+    {
+        if (IsTrimDetailEnabled())
+            WriteEvent(EvtSpeechTrimBounds, utterance_index, in_ms, kept_ms,
+                leading_removed_ms, trailing_removed_ms, internal_removed_ms);
+    }
 
     [Event(EvtSpeechTrimmed,
            Level = EventLevel.Verbose,

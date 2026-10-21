@@ -394,6 +394,16 @@ public sealed partial class TranscriptionEngine
                     long trimMs = (long)Stopwatch.GetElapsedTime(trimStart).TotalMilliseconds;
                     DeckleVadSource.Log.SpeechTrimmed(
                         u.Index, samples.Length, trim.Samples.Length, trim.SpeechSegments, trimMs);
+                    if (trim.SpeechSegments > 0)
+                    {
+                        int inMs = samples.Length / 16;
+                        int keptMs = trim.Samples.Length / 16;
+                        int leadingMs = trim.FirstSpeechSample / 16;
+                        int trailingMs = (samples.Length - trim.LastSpeechSample) / 16;
+                        DeckleVadSource.Log.SpeechTrimBounds(
+                            u.Index, inMs, keptMs, leadingMs, trailingMs,
+                            Math.Max(0, inMs - keptMs - leadingMs - trailingMs));
+                    }
                     // A trim that ran, with or without speech found, closes an
                     // earlier take's trim-failure incident.
                     _vadService.ReportTrimSucceeded();
@@ -424,6 +434,18 @@ public sealed partial class TranscriptionEngine
                 }
             }
             backendChunks?.Add(samples);
+
+            // What the backend actually receives: after the DSP and the trim.
+            if (OperationalLogAdmission.IsDetailEnabled(
+                    OperationalLogActivity.Transcription,
+                    DeckleWhispSource.Log,
+                    EventLevel.Verbose,
+                    (EventKeywords)Keywords.Pipeline))
+            {
+                var (rmsDbfs, peakDbfs) = SampleLevels.Measure(samples);
+                DeckleWhispSource.Log.UtteranceSentToBackend(
+                    u.Index, samples.Length / 16, rmsDbfs, peakDbfs);
+            }
 
             TranscriptionResult result;
             try
@@ -489,6 +511,30 @@ public sealed partial class TranscriptionEngine
             }
 
             string text = result.FullText?.Trim() ?? "";
+
+            // A short blip decoded into confident-looking words. The backend has
+            // already decoded it, so its native context holds the phantom text:
+            // the tail is dropped like after an empty utterance, so the next call
+            // starts clean of it. (Segments already streamed to NewSegment stay
+            // shown live; the delivered text is what this removes.)
+            if (text.Length > 0)
+            {
+                PhantomUtteranceFilter.Verdict verdict = PhantomUtteranceFilter.Evaluate(
+                    result.Segments, samples.Length / 16_000.0);
+                if (verdict.Rejected)
+                {
+                    DeckleWhispSource.Log.UtterancePhantomRejected(
+                        u.Index, verdict.Reason, (int)(samples.Length * 1000L / 16_000),
+                        verdict.TextTokens, verdict.TokensPerSecond,
+                        verdict.AverageProbability, verdict.MinimumProbability);
+                    DeckleWhispSource.Log.ConsumerUtterance(
+                        u.Index, result.TotalDurationMs, 0,
+                        result.Segments.Count, backlogAfter, result.Aborted);
+                    previousTail = null;
+                    continue;
+                }
+            }
+
             if (text.Length > 0)
             {
                 if (sb.Length > 0) sb.Append(pendingParagraphBreak ? "\n\n" : " ");
