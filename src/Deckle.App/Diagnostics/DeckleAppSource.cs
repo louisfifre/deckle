@@ -38,8 +38,8 @@ public sealed partial class DeckleAppSource : DeckleEventSource
     public const int EvtHotkeyStart               = 23;
     public const int EvtHotkeyStop                = 24;
     // 25 retired.
-    public const int EvtHudWarning                = 26;
-    public const int EvtLogWindowWarning          = 27;
+    // 26 retired.
+    // 27 retired.
     public const int EvtUserFeedbackEmitted       = 28;
     public const int EvtCrashUnhandledDetail        = 29;
     public const int EvtCrashAppDomainDetail        = 30;
@@ -51,8 +51,8 @@ public sealed partial class DeckleAppSource : DeckleEventSource
     // 36 retired.
     public const int EvtHotkeyStartDetail           = 37;
     // 38 retired.
-    public const int EvtHudWarningDetail            = 39;
-    public const int EvtLogWindowWarningDetail      = 40;
+    // 39 retired.
+    // 40 retired.
     public const int EvtInstallModeEntered          = 41;
     public const int EvtInstallModeEnteredDetail    = 42;
     public const int EvtAppStarting                 = 43;
@@ -95,7 +95,7 @@ public sealed partial class DeckleAppSource : DeckleEventSource
     public const int EvtRestartSpawnSkipped            = 80;
     public const int EvtRestartSpawned                 = 81;
     public const int EvtHotkeyRegistrationFailed       = 82;
-    public const int EvtHotkeySubclassFailed           = 83;
+    // 83 retired.
     public const int EvtFileTranscriptionEntryFailed   = 84;
     public const int EvtWindowOperationFailed          = 85;
     public const int EvtCrashRelaunched                = 86;
@@ -128,6 +128,8 @@ public sealed partial class DeckleAppSource : DeckleEventSource
     public const int EvtAmbientStartFailed             = 113;
     public const int EvtAnytypeRuntimeEnded            = 114;
     public const int EvtAnytypeHostDrainIncomplete     = 115;
-    public const int EvtNetworkQueryFailed             = 116;
+    // 116 retired.
     public const int EvtHotkeyPressIgnored             = 117;
+    public const int EvtModuleStarting                 = 118;
+    public const int EvtModuleRefused                  = 119;
 }

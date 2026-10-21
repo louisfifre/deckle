@@ -46,11 +46,15 @@ public partial class App
             DeckleAppSource.Log.DictationRecoveryKept("delete_failed");
     }
 
-    private static string ClipboardFailureReason(ClipboardWriteStatus status) => status switch
+    // Shared with LogWindow's copy, so a clipboard status reads the same
+    // whichever surface reports it.
+    internal static string ClipboardFailureReason(ClipboardWriteStatus status) => status switch
     {
-        ClipboardWriteStatus.AllocFailed   => "alloc_failed",
-        ClipboardWriteStatus.OpenFailed    => "clipboard_busy",
-        ClipboardWriteStatus.SetDataFailed => "set_data_refused",
-        _                                  => "unknown",
+        ClipboardWriteStatus.AllocFailed          => "alloc_failed",
+        ClipboardWriteStatus.OpenFailed           => "clipboard_busy",
+        ClipboardWriteStatus.SetDataFailed        => "set_data_refused",
+        ClipboardWriteStatus.VerifyMissing        => "verify_missing",
+        ClipboardWriteStatus.VerifyLengthMismatch => "verify_length_mismatch",
+        _                                         => "unknown",
     };
 }

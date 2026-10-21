@@ -33,6 +33,10 @@ public partial class App
     private const string SkipNativeRuntimeMissing = "native_runtime_missing";
     private const string SkipSpeechModelMissing  = "speech_model_missing";
 
+    // ForegroundWatcher.Start returns false only when its foreground hook
+    // could not be set; same spelling as the watcher's own reason.
+    private const string RefuseForegroundHookFailed = "foreground_hook_failed";
+
     private void InitializeStartupModules(StartupContext context)
     {
         // Without the native runtime and a speech model the engine is not
@@ -82,11 +86,12 @@ public partial class App
         // Read by the taskbar cover and the apps and games runtime, so it must
         // exist before them. Its WinEvent hooks deliver on the thread that starts
         // it: the UI thread, which pumps once OnLaunched returns. A failed start
-        // is logged by the watcher; the app runs on without foreground changes.
-        context.Compose(ForegroundWatcherModule, () =>
+        // is logged by the watcher with its Win32 error and journaled here as a
+        // refusal; the app runs on without foreground changes.
+        context.ComposeOrRefuse(ForegroundWatcherModule, RefuseForegroundHookFailed, () =>
         {
             _foregroundWatcher = new ForegroundWatcher();
-            _foregroundWatcher.Start();
+            return _foregroundWatcher.Start();
         });
 
         context.Compose(TaskbarCoverModule, InitializeTaskbarCover);

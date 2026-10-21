@@ -49,9 +49,11 @@ public partial class App
         // Every piece of the resident app composes through here, so the
         // journal names what started, what was skipped and why, and what
         // failed. The exception goes on as before: App.xaml.cs's net handles
-        // it, and this line is what says which module it came from.
+        // it, and this line is what says which module it came from. Starting
+        // goes out first so a module that hangs is still named.
         internal void Compose(string module, Action compose)
         {
+            DeckleAppSource.Log.ModuleStarting(module);
             try
             {
                 compose();
@@ -60,6 +62,32 @@ public partial class App
             {
                 DeckleAppSource.Log.ModuleFailed(module, ex.GetType().Name, ex.Message);
                 throw;
+            }
+            DeckleAppSource.Log.ModuleStarted(module);
+            Milestone(module);
+        }
+
+        // For a module whose start reports failure by returning false: the
+        // boot goes on without it, so no exception, and the journal says the
+        // module refused rather than leaving a ModuleStarted that is not true.
+        internal void ComposeOrRefuse(string module, string refusalReason, Func<bool> compose)
+        {
+            DeckleAppSource.Log.ModuleStarting(module);
+            bool started;
+            try
+            {
+                started = compose();
+            }
+            catch (Exception ex)
+            {
+                DeckleAppSource.Log.ModuleFailed(module, ex.GetType().Name, ex.Message);
+                throw;
+            }
+            if (!started)
+            {
+                DeckleAppSource.Log.ModuleRefused(module, refusalReason);
+                Milestone($"{module}_refused");
+                return;
             }
             DeckleAppSource.Log.ModuleStarted(module);
             Milestone(module);

@@ -212,15 +212,16 @@ public partial class App
         _hotkeyActions = BuildHotkeyActions(context, [.. trayToggles, .. trayFooterToggles]);
         _hotkeyManager = new HotkeyManager(_messageHost.Hwnd, OnHotkey, BuildHotkeyBindings());
         // Register throws only when the WM_HOTKEY subclass cannot be installed;
-        // uncaught, that throw would stop the app from starting.
+        // uncaught, that throw would stop the app from starting. Deckle-Shell
+        // journals that failure with its Win32 error before throwing, so only
+        // the person's feedback is left to give here.
         try
         {
             ReportHotkeyFailures(_hotkeyManager.Register());
             _hotkeysInstalled = true;
         }
-        catch (Exception ex)
+        catch (Exception)
         {
-            DeckleAppSource.Log.HotkeySubclassFailed(ex.GetType().Name, ex.Message);
             DeckleAppSource.Log.UserFeedbackEmitted(
                 2, // Error
                 "Hotkeys unavailable",

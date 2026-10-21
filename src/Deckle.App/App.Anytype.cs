@@ -35,10 +35,15 @@ public partial class App
         string endExType = "";
         string endExMessage = "";
 
+        // Which composition step is running, so an unexpected exception names
+        // the phase AnytypeRuntimeFaulted's vocabulary documents.
+        string phase = "prepare";
+
         try
         {
             await BackendInstallation.PrepareAsync(ct).ConfigureAwait(false);
 
+            phase = "supervise";
             supervisor = new BackendSupervisor(new BackendHealthProbe());
             BackendStartOutcome outcome = await supervisor
                 .EnsureRunningAsync(ct)
@@ -50,6 +55,7 @@ public partial class App
             }
             ct.ThrowIfCancellationRequested();
 
+            phase = "credentials";
             AnytypeCredentials credentials;
             try
             {
@@ -58,12 +64,22 @@ public partial class App
             }
             catch (Exception ex) when (ex is InvalidOperationException or SecretVaultException or UriFormatException)
             {
-                DeckleAnytypeMcpSource.Log.HostNotProvisioned();
+                // InvalidOperationException is AnytypeCredentials.Load's refusal:
+                // the credentials file is absent, unreadable or incomplete.
+                string provisioningReason = ex switch
+                {
+                    SecretVaultException => "vault_error",
+                    UriFormatException   => "bad_endpoint",
+                    _                    => "credentials_missing",
+                };
+                DeckleAnytypeMcpSource.Log.HostProvisioningFailed(
+                    provisioningReason, ex.GetType().Name, ex.Message);
                 (endOutcome, endReason) = ("skipped", "not_provisioned");
                 (endExType, endExMessage) = (ex.GetType().Name, ex.Message);
                 return;
             }
 
+            phase = "tokens";
             IReadOnlyList<McpClientProfile> clients =
                 [.. McpClients.All, HomeMcp.Client];
             var tokens = new McpClientTokens(SecretVault.CreateDefault(), clients);
@@ -74,13 +90,15 @@ public partial class App
             }
             catch (SecretVaultException ex)
             {
-                DeckleAnytypeMcpSource.Log.HostNotProvisioned();
+                DeckleAnytypeMcpSource.Log.HostProvisioningFailed(
+                    "token_mint_failed", ex.GetType().Name, ex.Message);
                 (endOutcome, endReason) = ("skipped", "not_provisioned");
                 (endExType, endExMessage) = (ex.GetType().Name, ex.Message);
                 return;
             }
 
             ct.ThrowIfCancellationRequested();
+            phase = "host";
             host = new McpHttpHost(api, tokens);
             hostStarted = host.Start();
             if (!hostStarted)
@@ -100,9 +118,7 @@ public partial class App
             // This task is resident and intentionally not awaited during boot.
             // Observe unexpected composition failures here, when they happen,
             // rather than leaving them latent until application shutdown.
-            DeckleAnytypeSource.Log.AnytypeRuntimeFailed();
-            DeckleAnytypeSource.Log.AnytypeRuntimeFailedDetail(
-                $"{ex.GetType().Name}: {ex.Message}");
+            DeckleAnytypeSource.Log.AnytypeRuntimeFaulted(phase, ex.GetType().Name, ex.Message);
             (endOutcome, endReason) = ("failed", "exception");
             (endExType, endExMessage) = (ex.GetType().Name, ex.Message);
         }
@@ -120,9 +136,8 @@ public partial class App
                     {
                         hostDrained = false;
                         drainFailure = "exception";
-                        DeckleAnytypeSource.Log.AnytypeRuntimeFailed();
-                        DeckleAnytypeSource.Log.AnytypeRuntimeFailedDetail(
-                            $"MCP drain failed: {ex.GetType().Name}: {ex.Message}");
+                        DeckleAnytypeSource.Log.AnytypeRuntimeFaulted(
+                            "mcp_drain", ex.GetType().Name, ex.Message);
                     }
                     // A false return was silent: in-flight MCP requests outlived
                     // the 5 s budget, so the host and the API stay alive to exit.

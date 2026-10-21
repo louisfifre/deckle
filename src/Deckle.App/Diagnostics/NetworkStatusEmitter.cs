@@ -24,36 +24,48 @@ internal static class NetworkStatusEmitter
 
     private static void EmitCurrent()
     {
-        // Checked before the WinRT queries: they cost COM round trips that the
-        // provider-side gate would not save.
+        // The profile and its level are read on every broadcast, whatever the
+        // Network detail: the tracker writes the journal's connectivity line,
+        // which must exist even when nobody asked for the Verbose snapshot.
+        ConnectionProfile? profile = null;
+        try { profile = NetworkInformation.GetInternetConnectionProfile(); }
+        catch (Exception ex)
+        {
+            // No internet adapter; profile stays null and is handled below.
+            DeckleNetworkSource.Log.NetworkQueryFailed(
+                "connection_profile", ex.GetType().Name, ex.HResult, ex.Message);
+        }
+
+        string state = NetworkConnectivityTracker.StateNone;
+        string? profileName = null;
+        if (profile is not null)
+        {
+            try
+            {
+                state = NetworkConnectivityTracker.StateFromLevel((int)profile.GetNetworkConnectivityLevel());
+                profileName = profile.ProfileName;
+            }
+            catch (Exception ex)
+            {
+                // WinRT can throw if the profile is removed between Get and
+                // GetLevel: the profile is gone, so it reads as none.
+                state = NetworkConnectivityTracker.StateNone;
+                profileName = null;
+                DeckleNetworkSource.Log.NetworkQueryFailed(
+                    "connectivity_level", ex.GetType().Name, ex.HResult, ex.Message);
+            }
+        }
+
+        NetworkConnectivityTracker.Shared.Observe(state, profileName);
+
+        // Checked before the host-name enumeration: it costs COM round trips
+        // that the provider-side gate would not save.
         if (!DeckleNetworkSource.Log.IsEnabled(
                 System.Diagnostics.Tracing.EventLevel.Verbose,
                 (System.Diagnostics.Tracing.EventKeywords)Keywords.Network))
         {
             return;
         }
-
-        ConnectionProfile? profile = null;
-        try { profile = NetworkInformation.GetInternetConnectionProfile(); }
-        catch (Exception ex)
-        {
-            // No internet adapter; profile stays null and is handled below.
-            DeckleAppSource.Log.NetworkQueryFailed("connection_profile", ex.GetType().Name, ex.Message);
-        }
-
-        bool connected = false;
-        try
-        {
-            connected = profile is not null
-                && profile.GetNetworkConnectivityLevel() >= NetworkConnectivityLevel.InternetAccess;
-        }
-        catch (Exception ex)
-        {
-            // WinRT can throw if the profile is removed between Get and GetLevel.
-            DeckleAppSource.Log.NetworkQueryFailed("connectivity_level", ex.GetType().Name, ex.Message);
-        }
-
-        string profileName = profile?.ProfileName ?? "(none)";
 
         int ipv4 = 0, ipv6 = 0;
         try
@@ -70,9 +82,11 @@ internal static class NetworkStatusEmitter
         catch (Exception ex)
         {
             // Best-effort; an enumeration failure leaves counters at 0.
-            DeckleAppSource.Log.NetworkQueryFailed("host_names", ex.GetType().Name, ex.Message);
+            DeckleNetworkSource.Log.NetworkQueryFailed(
+                "host_names", ex.GetType().Name, ex.HResult, ex.Message);
         }
 
-        DeckleNetworkSource.Log.NetworkStatusChanged(connected, profileName, ipv4, ipv6);
+        bool connected = state == NetworkConnectivityTracker.StateInternetAccess;
+        DeckleNetworkSource.Log.NetworkStatusChanged(connected, profileName ?? "(none)", ipv4, ipv6);
     }
 }

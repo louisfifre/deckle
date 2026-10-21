@@ -58,8 +58,8 @@ public sealed class DeckleAnytypeSource : DeckleEventSource
     // 30 retired.
     public const int EvtBackendEndpointConflictDetail = 31;
     public const int EvtBackendRestartScheduled       = 32;
-    public const int EvtAnytypeRuntimeFailed          = 33;
-    public const int EvtAnytypeRuntimeFailedDetail    = 34;
+    // 33 retired.
+    // 34 retired.
     public const int EvtApiRequestFailed              = 35;
     public const int EvtBackendHealthProbed           = 36;
     public const int EvtBackendStopped                = 37;
@@ -578,26 +578,6 @@ public sealed class DeckleAnytypeSource : DeckleEventSource
     }
 
     // ── Anytype runtime ───────────────────────────────────────────────────
-
-    // Kept until the call sites outside this module move to AnytypeRuntimeFaulted.
-    [Event(EvtAnytypeRuntimeFailed,
-           Level = EventLevel.Error,
-           Keywords = Lifecycle,
-           Message = "The Anytype runtime could not start")]
-    public void AnytypeRuntimeFailed()
-    {
-        if (IsEnabled()) WriteEvent(EvtAnytypeRuntimeFailed);
-    }
-
-    // Kept until the call sites outside this module move to AnytypeRuntimeFaulted.
-    [Event(EvtAnytypeRuntimeFailedDetail,
-           Level = EventLevel.Verbose,
-           Keywords = Lifecycle,
-           Message = "anytype runtime failed | error={0}")]
-    public void AnytypeRuntimeFailedDetail(string error)
-    {
-        if (IsEnabled()) WriteEvent(EvtAnytypeRuntimeFailedDetail, error);
-    }
 
     // phase names where the composition broke (prepare, supervise, credentials,
     // tokens, host, mcp_drain, mcp_dispose, api_dispose, supervisor_dispose),

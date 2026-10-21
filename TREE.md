@@ -430,7 +430,6 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   ├── DeckleAppSource.Input.cs
 │   │   │   ├── DeckleAppSource.Lifecycle.cs
 │   │   │   ├── DeckleAppSource.Modules.cs
-│   │   │   ├── DeckleAppSource.Network.cs
 │   │   │   ├── DeckleAppSource.Setup.cs
 │   │   │   ├── DeckleAppSource.Shutdown.cs
 │   │   │   ├── DeckleAppSource.Surfaces.cs

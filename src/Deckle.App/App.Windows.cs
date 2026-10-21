@@ -1,5 +1,4 @@
 using System.Diagnostics;
-using System.Diagnostics.Tracing;
 using Deckle.App;
 using Deckle.Diagnostics;
 using Deckle.Playground;
@@ -12,10 +11,9 @@ public partial class App
     {
         if (_logWindow is null)
         {
-            bool measure = OperationalLogAdmission.IsEnabled(OperationalLogActivity.Windowing)
-                && DeckleWindowingSource.Log.IsEnabled(
-                EventLevel.Verbose, (EventKeywords)Keywords.Windowing);
-            var sw = measure ? Stopwatch.StartNew() : null;
+            // Not gated: one Stopwatch per window per process, and the provider
+            // declares this milestone ungoverned.
+            var sw = Stopwatch.StartNew();
             var window = CreateWindowOrLog("log", () => new LogWindow());
             SecondaryWindowPlacement.Restore(window, SecondaryWindowPlacement.Log);
             window.AppWindow.Closing += (_, _) =>
@@ -30,8 +28,7 @@ public partial class App
             AppDiagnosticsBootstrap.AttachLogWindowSink(window);
             window.SetRecordingState(_lastRecordingState);
             ApplyThemeToSingle(window);
-            if (sw is not null)
-                DeckleWindowingSource.Log.WindowLoadComplete("log", sw.ElapsedMilliseconds);
+            DeckleWindowingSource.Log.WindowLoadComplete("log", sw.ElapsedMilliseconds);
         }
         _logWindow.ShowAndActivate();
     }
@@ -40,10 +37,9 @@ public partial class App
     {
         if (_settingsWindow is null)
         {
-            bool measure = OperationalLogAdmission.IsEnabled(OperationalLogActivity.Windowing)
-                && DeckleWindowingSource.Log.IsEnabled(
-                EventLevel.Verbose, (EventKeywords)Keywords.Windowing);
-            var sw = measure ? Stopwatch.StartNew() : null;
+            // Not gated: one Stopwatch per window per process, and the provider
+            // declares this milestone ungoverned.
+            var sw = Stopwatch.StartNew();
             var window = CreateWindowOrLog("settings", () => new Settings.SettingsWindow
             {
                 OnShowLogsRequested = () => ShowLogWindowLazy(),
@@ -59,8 +55,7 @@ public partial class App
             _settingsWindow = window;
             window.SetRecordingState(_lastRecordingState);
             ApplyThemeToSingle(window);
-            if (sw is not null)
-                DeckleWindowingSource.Log.WindowLoadComplete("settings", sw.ElapsedMilliseconds);
+            DeckleWindowingSource.Log.WindowLoadComplete("settings", sw.ElapsedMilliseconds);
         }
         _settingsWindow.ShowAndActivate(pageTag);
     }
@@ -69,10 +64,9 @@ public partial class App
     {
         if (_playgroundWindow is null)
         {
-            bool measure = OperationalLogAdmission.IsEnabled(OperationalLogActivity.Windowing)
-                && DeckleWindowingSource.Log.IsEnabled(
-                EventLevel.Verbose, (EventKeywords)Keywords.Windowing);
-            var sw = measure ? Stopwatch.StartNew() : null;
+            // Not gated: one Stopwatch per window per process, and the provider
+            // declares this milestone ungoverned.
+            var sw = Stopwatch.StartNew();
             var window = CreateWindowOrLog("playground", () => new PlaygroundWindow());
             SecondaryWindowPlacement.Restore(window, SecondaryWindowPlacement.Playground);
             window.AppWindow.Closing += (_, _) =>
@@ -85,8 +79,7 @@ public partial class App
             _playgroundWindow = window;
             window.SetRecordingState(_lastRecordingState);
             ApplyThemeToSingle(window);
-            if (sw is not null)
-                DeckleWindowingSource.Log.WindowLoadComplete("playground", sw.ElapsedMilliseconds);
+            DeckleWindowingSource.Log.WindowLoadComplete("playground", sw.ElapsedMilliseconds);
         }
         _playgroundWindow.ShowAndActivate();
     }

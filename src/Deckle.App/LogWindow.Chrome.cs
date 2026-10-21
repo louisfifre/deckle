@@ -61,16 +61,16 @@ public sealed partial class LogWindow : Window, ILogWindowSink
             _iconIdle = new BitmapImage(new Uri(_iconIdlePath));
         else
         {
-            DeckleAppSource.Log.LogWindowWarning();
-            DeckleAppSource.Log.LogWindowWarningDetail("idle icon not found");
+            DeckleAppSource.Log.WindowOperationFailed(
+                "log", "icon_load", "idle_icon_not_found", "", "");
         }
 
         if (_iconRecordingPath is not null)
             _iconRecording = new BitmapImage(new Uri(_iconRecordingPath));
         else
         {
-            DeckleAppSource.Log.LogWindowWarning();
-            DeckleAppSource.Log.LogWindowWarningDetail("recording icon not found");
+            DeckleAppSource.Log.WindowOperationFailed(
+                "log", "icon_load", "recording_icon_not_found", "", "");
         }
     }
 

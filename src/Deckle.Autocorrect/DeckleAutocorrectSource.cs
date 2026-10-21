@@ -42,7 +42,7 @@ public sealed class DeckleAutocorrectSource : DeckleEventSource
     // 23 retired.
     public const int EvtInjectionRecovered  = 24;
     public const int EvtInjectionEpisodeDetail = 25;
-    public const int EvtRerankerLoadFailed  = 26;
+    // 26 retired.
     public const int EvtSentenceStageAbandoned = 27;
     public const int EvtPersonalDictionarySanitized = 28;
     public const int EvtExternalMutationBurst = 29;
@@ -168,16 +168,6 @@ public sealed class DeckleAutocorrectSource : DeckleEventSource
     public void RerankerStatus(string engine, long load_ms)
     {
         if (IsEnabled()) WriteEvent(EvtRerankerStatus, engine, load_ms);
-    }
-
-    // Kept until the call sites outside this module move to RerankerLoadFailure.
-    [Event(EvtRerankerLoadFailed,
-           Level = EventLevel.Error,
-           Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "Contextual correction model failed to load | engine={0} | exception={1}")]
-    public void RerankerLoadFailed(string engine, string exception)
-    {
-        if (IsEnabled()) WriteEvent(EvtRerankerLoadFailed, engine, exception);
     }
 
     // A present contextual model that could not initialize is a durable incident,

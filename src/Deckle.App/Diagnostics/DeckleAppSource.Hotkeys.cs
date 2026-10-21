@@ -47,16 +47,6 @@ public sealed partial class DeckleAppSource
         if (IsEnabled()) WriteEvent(EvtHotkeyRegistrationFailed, action, chord, reason, win32_error);
     }
 
-    // The WM_HOTKEY subclass could not be installed: no chord works this run.
-    [Event(EvtHotkeySubclassFailed,
-           Level = EventLevel.Error,
-           Keywords = (EventKeywords)Keywords.Capture,
-           Message = "Cannot listen for hotkeys | {0}: {1}")]
-    public void HotkeySubclassFailed(string ex_type, string ex_message)
-    {
-        if (IsEnabled()) WriteEvent(EvtHotkeySubclassFailed, ex_type, ex_message);
-    }
-
     // One per press the app cannot act on. reason: engine_not_composed
     // (speech not provisioned; the HUD tells the person how to set it up).
     [Event(EvtHotkeyPressIgnored,

@@ -33,7 +33,7 @@ public sealed class DeckleAnytypeMcpSource : DeckleEventSource
     public const int EvtHostStarted          = 1;
     public const int EvtHostStartedDetail     = 2;
     public const int EvtHostStopped           = 3;
-    public const int EvtHostNotProvisioned    = 4;
+    // 4 retired.
     // Event ids 5 and 6 are retired and stay reserved so an old trace can never
     // be misread as a new event.
     // 7 retired.
@@ -104,16 +104,6 @@ public sealed class DeckleAnytypeMcpSource : DeckleEventSource
     public void HostStopFailed(string reason, string ex_type, string ex_message)
     {
         if (IsEnabled()) WriteEvent(EvtHostStopFailed, reason, ex_type, ex_message);
-    }
-
-    // Kept until the call sites outside this module move to HostProvisioningFailed.
-    [Event(EvtHostNotProvisioned,
-           Level = EventLevel.Warning,
-           Keywords = Lifecycle,
-           Message = "The MCP host is not provisioned")]
-    public void HostNotProvisioned()
-    {
-        if (IsEnabled()) WriteEvent(EvtHostNotProvisioned);
     }
 
     // The host cannot listen because the Anytype credentials or the token vault

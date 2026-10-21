@@ -84,17 +84,21 @@ public partial class App
                 // directory is present; otherwise deterministic rules only.
                 var rerankerStopwatch = Stopwatch.StartNew();
                 string judgeDir = Path.Combine(AppPaths.ModelsDirectory, "sentence-judge");
+                // Named once: the load asks for it and a failure reports it.
+                const string judgeProvider = "dml";
                 ISentenceReranker? rr = OnnxSlotReranker.TryLoad(
                     judgeDir,
                     margin: SentenceJudgeMargin,
-                    executionProvider: "dml",
+                    executionProvider: judgeProvider,
                     out Exception? judgeLoadError);
                 string engine = DeckleAutocorrectSource.RerankerEngines.SentenceJudge;
                 if (rr is null && judgeLoadError is not null)
                 {
-                    DeckleAutocorrectSource.Log.RerankerLoadFailed(
+                    DeckleAutocorrectSource.Log.RerankerLoadFailure(
                         DeckleAutocorrectSource.RerankerEngines.SentenceJudge,
-                        judgeLoadError.ToString());
+                        judgeProvider,
+                        judgeLoadError.GetType().Name,
+                        judgeLoadError.Message);
                 }
                 // An absent directory is the normal state (the model is staged
                 // by hand) and RerankerStatus already says engine=none. A present
