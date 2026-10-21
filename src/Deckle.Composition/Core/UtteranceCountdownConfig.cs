@@ -41,14 +41,16 @@ public sealed record UtteranceCountdownConfig
     // full gauge. It takes RetreatSeconds on the Retreat ease, which starts
     // fast and arrives slowly: the "fast out, slow in" curve Windows documents
     // for an object returning to rest. Louis asked for one return, not two
-    // (2026-10-22); the cut once had its own, shorter and accelerating.
+    // (2026-10-22); the cut once had its own, shorter and accelerating. The
+    // defaults are the 0.33 s he settled on in the Playground and that
+    // curve, (0, 0, 0, 1).
     //
     // The names stay Retreat*: the stored overrides are keyed by property
     // name (ConfigOverrides), so values already tuned under them keep
     // applying. A leftover Cut* key in an older file is ignored on load and
     // dropped at the next save.
     public double FollowSeconds { get; init; } = 0.167;
-    public double RetreatSeconds { get; init; } = 0.167;
+    public double RetreatSeconds { get; init; } = 0.33;
     public float RetreatEaseP1X { get; init; } = 0f;
     public float RetreatEaseP1Y { get; init; } = 0f;
     public float RetreatEaseP2X { get; init; } = 0f;
