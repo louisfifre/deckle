@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
 using System.Linq;
+using System.Text.Json;
 using Deckle.Core;
 
 namespace Deckle.Settings;
@@ -62,8 +63,7 @@ public static class SettingsBackupService
         }
         catch (Exception ex)
         {
-            DeckleSettingsSource.Log.BackupFailed();
-            DeckleSettingsSource.Log.BackupFailedDetail(ex.GetType().Name, ex.Message);
+            DeckleSettingsSource.Log.BackupFailed(ex.GetType().Name, ex.Message);
             return null;
         }
     }
@@ -93,8 +93,7 @@ public static class SettingsBackupService
         }
         catch (Exception ex)
         {
-            DeckleSettingsSource.Log.BackupListFailed();
-            DeckleSettingsSource.Log.BackupListFailedDetail(ex.GetType().Name, ex.Message);
+            DeckleSettingsSource.Log.BackupListFailed(ex.GetType().Name, ex.Message);
             return Array.Empty<BackupInfo>();
         }
     }
@@ -102,12 +101,27 @@ public static class SettingsBackupService
     // The caller shows the confirmation dialog beforehand.
     public static bool RestoreFromBackup(string backupPath)
     {
+        string? tmp = null;
+        bool replaced = false;
         try
         {
             if (string.IsNullOrWhiteSpace(backupPath) || !File.Exists(backupPath))
             {
                 DeckleSettingsSource.Log.RestoreSkippedSnapshotMissing();
                 DeckleSettingsSource.Log.RestoreSkippedSnapshotMissingDetail(backupPath ?? "(null)");
+                return false;
+            }
+
+            // A snapshot hand-edited into invalid JSON would otherwise replace
+            // the live file, and the store would then silently fall back to
+            // defaults: the restore would wipe the settings it meant to bring back.
+            try
+            {
+                JsonDocument.Parse(File.ReadAllBytes(backupPath)).Dispose();
+            }
+            catch (JsonException ex)
+            {
+                DeckleSettingsSource.Log.RestoreFailed("snapshot_invalid", ex.GetType().Name, ex.Message);
                 return false;
             }
 
@@ -118,9 +132,10 @@ public static class SettingsBackupService
             // Copy to a sibling temp file then move it over the live file,
             // so an interrupted restore never leaves a half-written
             // settings.json on disk.
-            string tmp = destination + ".restore.tmp";
+            tmp = destination + ".restore.tmp";
             File.Copy(backupPath, tmp, overwrite: true);
             File.Move(tmp, destination, overwrite: true);
+            replaced = true;
 
             SettingsService.Instance.Reload();
 
@@ -130,9 +145,22 @@ public static class SettingsBackupService
         }
         catch (Exception ex)
         {
-            DeckleSettingsSource.Log.RestoreFailed();
-            DeckleSettingsSource.Log.RestoreFailedDetail(ex.GetType().Name, ex.Message);
+            DeckleSettingsSource.Log.RestoreFailed(
+                replaced ? "reload_failed" : "copy_failed", ex.GetType().Name, ex.Message);
             return false;
+        }
+        finally
+        {
+            // A copy that failed after creating the temp file would leave it
+            // beside settings.json; after a successful Move it no longer exists.
+            if (tmp is not null && !replaced)
+            {
+                try { File.Delete(tmp); }
+                catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+                {
+                    DeckleSettingsSource.Log.CleanupFailedDetail("delete_restore_tmp", ex.GetType().Name, ex.Message);
+                }
+            }
         }
     }
 
