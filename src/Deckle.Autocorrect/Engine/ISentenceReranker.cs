@@ -43,6 +43,12 @@ public readonly record struct RerankOutcome(
     // this identifies the one slot whose one-edit sentence won globally.
     public int? ChosenSlotIndex { get; init; }
 
+    // Set only on an Error abstention that came from an exception. The cause
+    // rides to the rerank lane, the one place that can count consecutive
+    // failures and report them; an abstention alone cannot tell a crash from a
+    // declined verdict.
+    public System.Exception? Failure { get; init; }
+
     public static RerankOutcome Abstained(string reason) =>
         new(null, System.Array.Empty<RerankCandidateScore>(), 0.0, 0.0, reason);
 

@@ -12,6 +12,10 @@ internal static class HdrStateSwitch
 {
     private static bool UseHdrPair => OperatingSystem.IsWindowsVersionAtLeast(10, 0, 26100);
 
+    // Which pair TryRead and TrySet use, for the logs: the two behave
+    // differently on WCG-only monitors, so a report must say which ran.
+    public static string ApiName => UseHdrPair ? "hdr_state" : "advanced_color";
+
     public static bool TryRead(LUID adapter, uint target, out bool supported, out bool enabled)
     {
         if (UseHdrPair)

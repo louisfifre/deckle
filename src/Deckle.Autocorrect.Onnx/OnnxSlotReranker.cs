@@ -99,7 +99,10 @@ public sealed class OnnxSlotReranker : ISentenceReranker, IWholeSentenceReranker
             // the reranker vocabulary when the verdict landed but did not map back.
             chosenForm is not null
                 ? null
-                : outcome.AbstainReason ?? RerankOutcome.AbstainReasons.NoRule);
+                : outcome.AbstainReason ?? RerankOutcome.AbstainReasons.NoRule)
+        {
+            Failure = outcome.Failure,
+        };
     }
 
     public RerankOutcome RerankSentence(ClosedSentenceTransaction transaction)
@@ -156,7 +159,10 @@ public sealed class OnnxSlotReranker : ISentenceReranker, IWholeSentenceReranker
 
         if (outcome.Chosen is null)
             return new RerankOutcome(
-                null, scores, outcome.Margin, outcome.Threshold, outcome.AbstainReason);
+                null, scores, outcome.Margin, outcome.Threshold, outcome.AbstainReason)
+            {
+                Failure = outcome.Failure,
+            };
 
         int chosenIndex = variants.IndexOf(outcome.Chosen);
         if (chosenIndex == 0)

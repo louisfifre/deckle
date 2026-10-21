@@ -2,6 +2,7 @@ using System.Diagnostics.Tracing;
 using Deckle.Diagnostics;
 using Deckle.Lighting.Ambient;
 using Deckle.TestSupport;
+using Deckle.Vision;
 using Xunit;
 
 namespace Deckle.Lighting.Ambient.Tests;
@@ -38,6 +39,24 @@ public class DeckleAmbientSourceTests
         Assert.Equal("4", listener.Events[1].Payload?[0]);
         Assert.Equal("light", listener.Events[1].Payload?[1]);
         Assert.Equal(1200, listener.Events[1].Payload?[2]);
+    }
+
+    // Vision's terminal Error is the one Error the journal shows for a lost
+    // capture; Ambient adds only its consequence, with the cause relayed.
+    [Fact]
+    public void CaptureLostIsAJournalConsequenceCarryingTheVisionReason()
+    {
+        using var listener = new TestEventListener("Deckle-Ambient");
+
+        DeckleAmbientSource.Log.CaptureLost(CaptureStopReasons.DeviceLost);
+
+        var ev = Assert.Single(listener.Events);
+        Assert.Equal(DeckleAmbientSource.EvtCaptureLost, ev.EventId);
+        Assert.Equal(EventLevel.Informational, ev.Level);
+        Assert.Equal(ObservationTags.Journal, ev.Tags & ObservationTags.Journal);
+        Assert.True(ev.HasKeyword(Keywords.Lifecycle));
+        Assert.Equal("reason", ev.PayloadNames?[0]);
+        Assert.Equal(CaptureStopReasons.DeviceLost, ev.Payload?[0]);
     }
 
     [Fact]
@@ -95,7 +114,7 @@ public class DeckleAmbientSourceTests
 
         DeckleAmbientSource.Log.Heartbeat(
             mode: "multi",
-            period_sec: 5.0,
+            period_s: 5.0,
             target_hz: 50,
             effective_hz: 49.8,
             ticks: 46,
@@ -103,17 +122,19 @@ public class DeckleAmbientSourceTests
             dropped: 34,
             skipped_slots: 1,
             unmapped_lights: 0,
-            push_stats_suffix: " | push_avg_ms=0.1 | push_p95_ms=0.2 | push_max_ms=0.3");
+            push_failures: 0,
+            push_avg_ms: 0.1,
+            push_p95_ms: 0.2,
+            push_max_ms: 0.3);
 
         var ev = Assert.Single(listener.Events);
         Assert.Equal(DeckleAmbientSource.EvtHeartbeat, ev.EventId);
         Assert.Equal(50, ev.Payload?[2]);
         Assert.Equal(49.8, ev.Payload?[3]);
         Assert.Equal(1L, ev.Payload?[7]);
-        Assert.Equal("push_stats_suffix", ev.PayloadNames?[9]);
-        var suffix = Assert.IsType<string>(ev.Payload?[9]);
-        Assert.Contains("push_avg_ms", suffix);
-        Assert.DoesNotContain("http_avg_ms", suffix);
+        Assert.Equal("push_avg_ms", ev.PayloadNames?[10]);
+        Assert.Equal(0.1, ev.Payload?[10]);
+        Assert.DoesNotContain("http_avg_ms", ev.PayloadNames!);
     }
 
     [Fact]
@@ -122,7 +143,7 @@ public class DeckleAmbientSourceTests
         OperationalLogAdmission.Configure(_ => false);
         using var listener = new TestEventListener("Deckle-Ambient");
 
-        DeckleAmbientSource.Log.Heartbeat("group", 5, 15, 15, 75, 2, 73, 0, 0, "");
+        DeckleAmbientSource.Log.Heartbeat("group", 5, 15, 15, 75, 2, 73, 0, 0, 0, 0, 0, 0);
 
         Assert.Empty(listener.Events);
     }
@@ -132,9 +153,9 @@ public class DeckleAmbientSourceTests
     {
         using var listener = new TestEventListener("Deckle-Ambient");
 
-        DeckleAmbientSource.Log.FrameProcessingIncidentOpened();
+        DeckleAmbientSource.Log.FrameProcessingIncidentOpened("sampler_failed", 12);
         DeckleAmbientSource.Log.FrameProcessingRecovered();
-        DeckleAmbientSource.Log.FrameProcessingFailed();
+        DeckleAmbientSource.Log.FrameProcessingFailed("capture_failed", 40);
 
         Assert.Collection(
             listener.Events,
@@ -163,7 +184,8 @@ public class DeckleAmbientSourceTests
         DeckleAmbientSource.Log.BridgeEndpointRecovered();
         DeckleAmbientSource.Log.BridgeEndpointRecoveredDetail(
             "001788FFFE00B1D6", "192.168.1.14", "192.168.1.10", true);
-        DeckleAmbientSource.Log.BridgeEndpointRecoveryFailed();
+        DeckleAmbientSource.Log.BridgeEndpointRecoveryFailed(
+            "no_valid_candidate", "HttpRequestException", "connection refused");
         DeckleAmbientSource.Log.BridgeEndpointRecoveryFailedDetail(
             "001788FFFE00B1D6", "192.168.1.14", 1, 0, "connection refused");
 

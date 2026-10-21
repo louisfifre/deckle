@@ -10,13 +10,13 @@ namespace Deckle.Diagnostics.Tests;
 [Trait("Category", "integration")]
 public sealed class JsonlSinkRotationTests
 {
-    private static JsonlSink NewSink(string active, int maxLines) =>
+    private static JsonlSink NewSink(string active, int maxLines, int? maxArchives = null) =>
         new(
             filePath:  active,
             kindLabel: "log",
             predicate: _ => true,
             schema:    JsonlSchema.SelfDescribing,
-            rotation:  new JsonlRotationPolicy(maxLines));
+            rotation:  new JsonlRotationPolicy(maxLines, maxArchives));
 
     private static EventEntry Line(int n) =>
         new(
@@ -93,6 +93,79 @@ public sealed class JsonlSinkRotationTests
             sink.Dispose();
             Directory.Delete(dir, recursive: true);
         }
+    }
+
+    [Fact]
+    public void PrunesOldestGenerationsBeyondTheCapAndKeepsNumberingMonotonic()
+    {
+        string dir = NewTempDir("prune");
+        string active = Path.Combine(dir, "app.jsonl");
+
+        // maxLines=1: five lines roll into .0001..0004. With a cap of 2 the
+        // oldest go first, so only the two newest generations survive.
+        var first = NewSink(active, maxLines: 1, maxArchives: 2);
+        JsonlSink? second = null;
+        try
+        {
+            for (int i = 0; i < 5; i++) first.Write(Line(i));
+            first.Flush();
+            first.Dispose();
+
+            Assert.False(File.Exists(Generation(dir, 1)));
+            Assert.False(File.Exists(Generation(dir, 2)));
+            Assert.True(File.Exists(Generation(dir, 3)));
+            Assert.True(File.Exists(Generation(dir, 4)));
+            Assert.Contains("n=2", File.ReadAllText(Generation(dir, 3)));
+            Assert.Contains("n=3", File.ReadAllText(Generation(dir, 4)));
+
+            // Numbering scans what remains, so it continues after the pruned
+            // gap instead of reusing .0001.
+            second = NewSink(active, maxLines: 1, maxArchives: 2);
+            second.Write(Line(5));
+            second.Flush();
+
+            Assert.True(File.Exists(Generation(dir, 5)));
+            Assert.Contains("n=4", File.ReadAllText(Generation(dir, 5)));
+            Assert.False(File.Exists(Generation(dir, 3))); // pruned by the new roll
+            Assert.True(File.Exists(Generation(dir, 4)));
+        }
+        finally
+        {
+            first.Dispose();
+            second?.Dispose();
+            Directory.Delete(dir, recursive: true);
+        }
+    }
+
+    [Fact]
+    public void PrunesAnOversizedArchiveAtConstruction()
+    {
+        string dir = NewTempDir("prune-start");
+        string active = Path.Combine(dir, "app.jsonl");
+        Directory.CreateDirectory(Path.Combine(dir, "archive"));
+        for (int n = 1; n <= 5; n++)
+            File.WriteAllText(Generation(dir, n), "{}\n");
+
+        // No line is written: the trim must not wait for the next roll.
+        var sink = NewSink(active, maxLines: 100, maxArchives: 2);
+        try
+        {
+            for (int n = 1; n <= 3; n++)
+                Assert.False(File.Exists(Generation(dir, n)));
+            Assert.True(File.Exists(Generation(dir, 4)));
+            Assert.True(File.Exists(Generation(dir, 5)));
+        }
+        finally
+        {
+            sink.Dispose();
+            Directory.Delete(dir, recursive: true);
+        }
+    }
+
+    [Fact]
+    public void RejectsAZeroArchiveCap()
+    {
+        Assert.Throws<ArgumentOutOfRangeException>(() => new JsonlRotationPolicy(10, maxArchives: 0));
     }
 
     [Fact]

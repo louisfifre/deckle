@@ -68,9 +68,13 @@ public sealed record DomainPackManifest
             return JsonSerializer.Deserialize<DomainPackManifest>(
                 File.ReadAllText(path), _jsonOptions);
         }
-        catch (JsonException)
+        catch (JsonException ex)
         {
-            // A corrupt manifest costs the figures, never the pack.
+            // A corrupt manifest costs the figures, never the pack. The manifest
+            // is shipped build output, not user data, so its parser message is
+            // safe to log.
+            DeckleAutocorrectSource.Log.DomainPackManifestUnreadable(
+                pack.Id, ex.GetType().FullName ?? ex.GetType().Name, ex.Message);
             return null;
         }
     }

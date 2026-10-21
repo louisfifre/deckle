@@ -24,7 +24,8 @@ internal static class PreparedFileProducer
         IReadOnlyList<string> paths,
         ChannelWriter<PreparedFileTranscription> writer,
         Func<string, AudioFileDecodeResult> decode,
-        Action<AudioFileDecodeResult> reject,
+        // The path travels with the rejection so its log can name the file.
+        Action<string, AudioFileDecodeResult> reject,
         Action<string, Exception> decodeException,
         CancellationToken cancellationToken)
     {
@@ -35,10 +36,13 @@ internal static class PreparedFileProducer
         ArgumentNullException.ThrowIfNull(decodeException);
 
         Exception? completionError = null;
+        int index = 0;
         try
         {
             foreach (string path in paths)
             {
+                // 1-based position in the selection, so a file's events read "2 of 5".
+                index++;
                 cancellationToken.ThrowIfCancellationRequested();
 
                 if (!await writer.WaitToWriteAsync(cancellationToken)
@@ -61,12 +65,12 @@ internal static class PreparedFileProducer
                 }
                 if (decoded.Status != AudioFileDecodeStatus.Decoded)
                 {
-                    reject(decoded);
+                    reject(path, decoded);
                     continue;
                 }
 
                 if (!writer.TryWrite(
-                        new PreparedFileTranscription(path, decoded.Pcm)))
+                        new PreparedFileTranscription(path, decoded.Pcm, index)))
                 {
                     throw new InvalidOperationException(
                         "The single prepared-file producer lost its reserved slot.");
@@ -87,4 +91,5 @@ internal static class PreparedFileProducer
 
 internal sealed record PreparedFileTranscription(
     string SourcePath,
-    ReadOnlyMemory<float> Audio);
+    ReadOnlyMemory<float> Audio,
+    int Index);

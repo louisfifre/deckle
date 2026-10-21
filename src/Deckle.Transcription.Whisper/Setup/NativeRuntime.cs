@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.IO.Compression;
 using System.Threading;
@@ -87,6 +88,10 @@ public static class NativeRuntime
             File.Copy(from, to, overwrite: true);
             copied++;
         }
+
+        IReadOnlyList<string> missing = GetMissing();
+        DeckleWhisperSource.Log.NativeRuntimeCopied(copied, missing.Count);
+        DeckleWhisperSource.Log.NativeRuntimeCopiedDetail(sourcePath, string.Join(",", missing));
         return copied;
     }
 
@@ -136,8 +141,7 @@ public static class NativeRuntime
             }
             catch
             {
-                try { if (File.Exists(partialPath)) File.Delete(partialPath); }
-                catch { /* best-effort */ }
+                DeletePartial(partialPath);
                 throw;
             }
         }
@@ -145,13 +149,41 @@ public static class NativeRuntime
         return extracted;
     }
 
+    private static void DeletePartial(string path)
+    {
+        try { if (File.Exists(path)) File.Delete(path); }
+        catch (Exception ex)
+        {
+            // The next attempt overwrites the leftover, so the user gets the
+            // same result either way.
+            DeckleWhisperSource.Log.NativeRuntimeCleanupFailed(path, ex.GetType().Name, ex.Message);
+        }
+    }
+
     public static async Task<ProvisioningResult> ProvisionAsync(
         IProgress<Downloader.DownloadProgress> progress,
         CancellationToken ct)
     {
+        string version = CurrentBundle.Version;
+        DeckleWhisperSource.Log.NativeRuntimeProvisionStarted(version);
+
         if (BundleUrlIsPlaceholder)
+        {
+            DeckleWhisperSource.Log.NativeRuntimeProvisionFailed("placeholder_url", version, "", "");
+            DeckleWhisperSource.Log.NativeRuntimeProvisionFailedDetail(CurrentBundle.Url, 0, "", 0);
             return ProvisioningResult.Fail(
                 "auto-download URL is a placeholder; use Browse... on the previous step");
+        }
+
+        var sw = Stopwatch.StartNew();
+        // The single end event is written in the finally below, from these, so
+        // every exit path (failed result, cancellation, exception) closes the
+        // start above exactly once.
+        string outcome = "failed";
+        string reason = "exception";
+        string exType = "";
+        string exMessage = "";
+        int extracted = 0;
 
         Directory.CreateDirectory(AppPaths.NativeDirectory);
         string zipPath = Path.Combine(AppPaths.NativeDirectory, "_bundle.zip");
@@ -160,19 +192,49 @@ public static class NativeRuntime
             Downloader.DownloadResult download = await Downloader.DownloadAsync(
                 CurrentBundle.Url, zipPath, CurrentBundle.Sha256, progress, ct);
             if (!download.Success)
+            {
+                reason = "download_failed";
+                exMessage = download.ErrorMessage ?? "download failed";
                 return ProvisioningResult.Fail(download.ErrorMessage ?? "download failed");
+            }
 
-            int extracted = await InstallFromZipAsync(zipPath, ct);
+            extracted = await InstallFromZipAsync(zipPath, ct);
             if (extracted < RequiredDllNames.Count)
+            {
+                reason = "bundle_incomplete";
                 return ProvisioningResult.Fail(
                     $"bundle is incomplete (extracted {extracted}/{RequiredDllNames.Count} DLLs)");
+            }
 
+            outcome = "completed";
             return ProvisioningResult.Ok(CurrentBundle.SizeBytes, download.ActualSha256);
+        }
+        catch (OperationCanceledException)
+        {
+            outcome = "cancelled";
+            throw;
+        }
+        catch (Exception ex)
+        {
+            exType = ex.GetType().Name;
+            exMessage = ex.Message;
+            throw;
         }
         finally
         {
-            try { if (File.Exists(zipPath)) File.Delete(zipPath); }
-            catch { /* best-effort cleanup */ }
+            DeletePartial(zipPath);
+
+            sw.Stop();
+            if (outcome == "failed")
+            {
+                DeckleWhisperSource.Log.NativeRuntimeProvisionFailed(reason, version, exType, exMessage);
+                DeckleWhisperSource.Log.NativeRuntimeProvisionFailedDetail(
+                    CurrentBundle.Url, extracted, string.Join(",", GetMissing()), sw.ElapsedMilliseconds);
+            }
+            else
+            {
+                DeckleWhisperSource.Log.NativeRuntimeProvisionEnded(version, outcome, extracted, sw.ElapsedMilliseconds);
+            }
         }
     }
 

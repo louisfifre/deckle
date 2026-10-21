@@ -174,8 +174,7 @@ public sealed partial class HueBridgeClient : IDisposable, IHueEntertainmentBrid
 
         if (!response.IsSuccessStatusCode)
         {
-            DeckleLightingSource.Log.SetColorFailed();
-            DeckleLightingSource.Log.SetColorFailedDetail(target, (int)response.StatusCode);
+            DeckleLightingSource.Log.SetColorFailed(target, (int)response.StatusCode);
             response.EnsureSuccessStatusCode();
         }
 
@@ -220,8 +219,7 @@ public sealed partial class HueBridgeClient : IDisposable, IHueEntertainmentBrid
 
         if (!response.IsSuccessStatusCode)
         {
-            DeckleLightingSource.Log.IdentifyFailed();
-            DeckleLightingSource.Log.IdentifyFailedDetail(phase, lightId, (int)response.StatusCode);
+            DeckleLightingSource.Log.IdentifyFailed(phase, lightId, (int)response.StatusCode);
             response.EnsureSuccessStatusCode();
         }
 

@@ -11,7 +11,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │       ├── deckle-interface/
 │       │   └── SKILL.md  — deckle-interface Use when you build or change anything a person sees in a Deckle window, from a…
 │       ├── deckle-logging/
-│       │   └── SKILL.md  — deckle-logging Use when you add or change an observation point in Deckle code, an event on a p…
+│       │   └── SKILL.md  — deckle-logging Use when you add or change an observation point in Deckle code, or write code t…
 │       ├── deckle-modularite/
 │       │   └── SKILL.md  — deckle-modularite Use when code is about to grow a module, add a new one, or split a file or a su…
 │       ├── deckle-nomenclature/
@@ -382,6 +382,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── Http/
 │   │   │   ├── McpClients.cs
 │   │   │   ├── McpClientTokens.cs
+│   │   │   ├── McpHostLogBridge.cs
 │   │   │   ├── McpHttpHost.cs
 │   │   │   ├── McpJsonSchemaContract.cs
 │   │   │   ├── McpRequestRateLimit.cs
@@ -418,6 +419,8 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   ├── AppDiagnosticsBootstrap.cs
 │   │   │   ├── AppHudFeedbackSink.cs
 │   │   │   ├── DeckleAppSource.Ambient.cs
+│   │   │   ├── DeckleAppSource.Anytype.cs
+│   │   │   ├── DeckleAppSource.Autocorrect.cs
 │   │   │   ├── DeckleAppSource.BootAndStatus.cs
 │   │   │   ├── DeckleAppSource.CommandLine.cs
 │   │   │   ├── DeckleAppSource.Crash.cs
@@ -425,7 +428,10 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   ├── DeckleAppSource.cs
 │   │   │   ├── DeckleAppSource.DictationRecovery.cs
 │   │   │   ├── DeckleAppSource.Hotkeys.cs
+│   │   │   ├── DeckleAppSource.Input.cs
 │   │   │   ├── DeckleAppSource.Lifecycle.cs
+│   │   │   ├── DeckleAppSource.Modules.cs
+│   │   │   ├── DeckleAppSource.Setup.cs
 │   │   │   ├── DeckleAppSource.Shutdown.cs
 │   │   │   ├── DeckleAppSource.Surfaces.cs
 │   │   │   ├── LogEntry.cs
@@ -479,6 +485,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── LogWindow.Chrome.cs
 │   │   ├── LogWindow.Interaction.cs
 │   │   ├── LogWindow.Model.cs
+│   │   ├── LogWindow.Notices.cs
 │   │   ├── LogWindow.xaml
 │   │   ├── LogWindow.xaml.cs
 │   │   ├── Program.cs
@@ -486,10 +493,12 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   ├── Deckle.Audio/
 │   │   ├── Internal/
 │   │   │   ├── CaptureAnomalyEpisode.cs
+│   │   │   ├── CaptureDataWatchdog.cs
 │   │   │   ├── MediaFoundationInterop.cs
 │   │   │   ├── Pcm16Buffer.cs
 │   │   │   ├── PcmBuffer.cs
 │   │   │   ├── PcmConversion.cs
+│   │   │   ├── WaveDeviceInterop.cs
 │   │   │   ├── WaveInBufferRing.cs
 │   │   │   └── WaveInLoop.cs
 │   │   ├── Preprocessing/
@@ -856,6 +865,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── CrashRelaunchPolicy.cs
 │   │   ├── Deckle.Diagnostics.csproj
 │   │   ├── DeckleCancellationSource.cs
+│   │   ├── DeckleDiagnosticsSource.cs
 │   │   ├── DeckleEventSource.cs
 │   │   ├── DeckleNetworkSource.cs
 │   │   ├── DeckleResourceSource.cs
@@ -1000,6 +1010,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   ├── IWheelInterceptor.cs
 │   │   │   ├── KeyboardInputHost.cs
 │   │   │   ├── KeyboardInputHost.FocusHooks.cs
+│   │   │   ├── KeyboardInputHost.Health.cs
 │   │   │   ├── KeyboardInputHost.LifecycleAndWindow.cs
 │   │   │   ├── KeyboardInputHost.MouseHook.cs
 │   │   │   ├── KeyboardInputHost.RawInput.cs
@@ -1008,6 +1019,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   ├── KeyboardKeyEvent.cs
 │   │   │   ├── MouseInteractionRouter.cs
 │   │   │   ├── MouseWheelEvent.cs
+│   │   │   ├── RepeatingIncident.cs
 │   │   │   ├── WheelEventQueue.cs
 │   │   │   └── WheelObservationBuffer.cs
 │   │   ├── Telemetry/
@@ -1095,6 +1107,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   └── ProgressWindow.cs
 │   │   ├── app.manifest
 │   │   ├── Deckle.Installer.csproj
+│   │   ├── InstallLog.cs
 │   │   └── Program.cs
 │   ├── Deckle.Lighting/
 │   │   ├── Hue/
@@ -1700,6 +1713,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   ├── SpeechModelResolver.cs
 │   │   │   └── SpeechModels.cs
 │   │   ├── Deckle.Transcription.Whisper.csproj
+│   │   ├── DeckleWhisperSource.cs
 │   │   ├── KnownHallucinations.cs
 │   │   ├── RepetitionDetector.cs
 │   │   ├── WhisperBackend.cs
@@ -1722,9 +1736,11 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │       ├── CapturedFrame.cs
 │       ├── CaptureMonitor.cs
 │       ├── CapturePacer.cs
+│       ├── CaptureStopReasons.cs
 │       ├── Deckle.Vision.csproj
 │       ├── DeckleVisionSource.cs
 │       ├── FrameAnalysisHint.cs
+│       ├── FrameFailure.cs
 │       ├── FrameSampler.cs
 │       ├── FrameSampler.Process.cs
 │       ├── FrameSampler.Readback.cs
@@ -1790,6 +1806,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   └── TaskGesturesTests.cs
 │   ├── Deckle.Audio.Tests/
 │   │   ├── CaptureAnomalyEpisodeTests.cs
+│   │   ├── CaptureDataWatchdogTests.cs
 │   │   ├── CaptureSettingsMigrationTests.cs
 │   │   ├── Deckle.Audio.Tests.csproj
 │   │   ├── DeckleAudioSourceTests.cs
@@ -1936,10 +1953,13 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── DeckleCancellationSourceTests.cs
 │   │   ├── DeckleNetworkSourceTests.cs
 │   │   ├── DeckleResourceSourceTests.cs
+│   │   ├── DeckleSettingsUxSourceTests.cs
 │   │   ├── DeckleThemeSourceTests.cs
 │   │   ├── DeckleThreadingSourceTests.cs
 │   │   ├── DeckleWindowingSourceTests.cs
+│   │   ├── DispatchEventListenerIncidentTests.cs
 │   │   ├── DispatchEventListenerTests.cs
+│   │   ├── JsonlLineSerializerTests.cs
 │   │   ├── JsonlSinkLifecycleTests.cs
 │   │   ├── JsonlSinkRotationTests.cs
 │   │   ├── LogLineFormatterTests.cs
@@ -1991,6 +2011,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── LowLevelMouseHookInteropTests.cs
 │   │   ├── MouseInteractionRouterTests.cs
 │   │   ├── MouseWheelTimestampTests.cs
+│   │   ├── RepeatingIncidentTests.cs
 │   │   ├── SyntheticTouchpadFrameBuilderTests.cs
 │   │   └── WheelObservationBufferTests.cs
 │   ├── Deckle.Input.Trackpad.Tests/
@@ -2153,7 +2174,8 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── TranscriptionObservabilityContractTests.cs
 │   │   ├── TranscriptionSettingsMigrationTests.cs
 │   │   ├── UnitBezierTests.cs
-│   │   └── UtteranceProgressTests.cs
+│   │   ├── UtteranceProgressTests.cs
+│   │   └── VadServiceIncidentTests.cs
 │   ├── Deckle.Transcription.Whisper.Tests/
 │   │   ├── Deckle.Transcription.Whisper.Tests.csproj
 │   │   ├── HallucinationBugNotes.md

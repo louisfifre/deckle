@@ -1,3 +1,4 @@
+using System.Runtime.InteropServices;
 using Deckle.Core;
 
 namespace Deckle.Shell;
@@ -30,7 +31,15 @@ public sealed class HotkeyManager : IDisposable
         _hwnd = hwnd;
         _onHotkey = onHotkey;
         _requested = bindings;
-        _bindings = new GlobalHotkeyBindings(hwnd, new Win32GlobalHotkeyApi());
+        _bindings = new GlobalHotkeyBindings(hwnd, new Win32GlobalHotkeyApi(), OnRelease);
+    }
+
+    private static void OnRelease(int id, bool released, int win32Error)
+    {
+        if (released)
+            DeckleShellSource.Log.HotkeyUnregistered(id);
+        else
+            DeckleShellSource.Log.HotkeyReleaseFailed(id, win32Error);
     }
 
     // The set currently requested (acquired or not).
@@ -46,7 +55,9 @@ public sealed class HotkeyManager : IDisposable
         _subclassDelegate = SubclassCallback;
         if (!NativeMethods.SetWindowSubclass(_hwnd, _subclassDelegate, SubclassId, IntPtr.Zero))
         {
+            int error = Marshal.GetLastWin32Error();
             _subclassDelegate = null;
+            DeckleShellSource.Log.HotkeySubclassFailed(error);
             throw new InvalidOperationException("The hotkey window subclass could not be installed.");
         }
 
@@ -74,8 +85,7 @@ public sealed class HotkeyManager : IDisposable
             uint vk = NativeMethods.MapVirtualKeyExW(scanCode, NativeMethods.MAPVK_VSC_TO_VK_EX, hkl);
             if (vk == 0)
             {
-                DeckleShellSource.Log.HotkeyVkResolveFailed();
-                DeckleShellSource.Log.HotkeyVkResolveFailedDetail(scanCode, hkl.ToInt64());
+                DeckleShellSource.Log.HotkeyVkResolveFailed(scanCode, hkl.ToInt64());
             }
             resolved[scanCode] = vk;
             return vk;
@@ -114,7 +124,7 @@ public sealed class HotkeyManager : IDisposable
             IReadOnlyList<HotkeyRegistrationFailure> failures = RegisterAll();
             if (failures.Count > 0)
             {
-                DeckleShellSource.Log.HotkeyReregisterFailed();
+                DeckleShellSource.Log.HotkeyReregisterFailed(failures.Count, failures[0].Win32Error);
                 DeckleShellSource.Log.HotkeyReregisterFailedDetail(string.Join(
                     ", ", failures.Select(failure => $"id={failure.Id} err={failure.Win32Error}")));
             }

@@ -63,8 +63,9 @@ public partial class App
         {
             await _ambientEngine!.StartAsync().ConfigureAwait(false);
         }
-        catch
+        catch (Exception ex)
         {
+            DeckleAppSource.Log.AmbientStartFailed(ex.GetType().Name, ex.Message);
             _ambientStartedWith = null;
             var s = AmbientSettingsService.Instance.Current;
             s.Enabled = false;

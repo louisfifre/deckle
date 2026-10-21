@@ -43,10 +43,27 @@ public sealed class CaptureSettingsService
             path:        path,
             mutexName:   $"{AppPaths.AppFolderName}-Settings-Audio-Save",
             jsonOptions: _jsonOptions,
+            // Info and verbose were not wired, so a load, a reload or a save of
+            // the audio settings left no trace and the two events stayed dead.
+            logInfo:     msg => DeckleAudioSource.Log.SettingsLoaded(msg),
+            logVerbose:  msg => DeckleAudioSource.Log.SettingsLoadComplete(msg),
             logWarning:  msg => DeckleAudioSource.Log.SettingsLoadWarning(msg),
             logError:    msg => DeckleAudioSource.Log.SettingsLoadError(msg),
             postLoadMigration: ApplyPostLoadMigrations);
+
+        // The values every recording reads, once at load and again after each
+        // save, reload or external edit, so a take's device and cap can be
+        // traced to the settings in force.
+        LogResolved(_store.Current);
+        _store.Changed += () => LogResolved(_store.Current);
     }
+
+    private static void LogResolved(CaptureSettings settings)
+        => DeckleAudioSource.Log.CaptureSettingsResolved(
+            settings.AudioInputDeviceId,
+            settings.MaxRecordingDurationSeconds,
+            settings.Preprocessing?.Enabled ?? false,
+            settings.LevelWindow?.AutoCalibrationEnabled ?? false);
 
     // The recording limit's former default. In a file older than schema
     // version 1, a stored value equal to it means the user never chose a limit.

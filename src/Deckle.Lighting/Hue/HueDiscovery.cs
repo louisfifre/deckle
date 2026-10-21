@@ -51,8 +51,7 @@ public static class HueDiscovery
         }
         catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException)
         {
-            DeckleLightingSource.Log.DiscoveryFailed();
-            DeckleLightingSource.Log.DiscoveryFailedDetail(ex.GetType().Name, ex.Message);
+            DeckleLightingSource.Log.DiscoveryFailed(ex.GetType().Name, ex.Message);
             return [];
         }
     }

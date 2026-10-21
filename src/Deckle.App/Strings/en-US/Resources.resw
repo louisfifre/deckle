@@ -316,13 +316,13 @@
     <value>Only level statistics in dBFS, namely minimum, percentiles (p10, p25, p50, p75, p90), maximum, and mean RMS. No audio. No transcription. No words. Nothing is sent over the network.</value>
   </data>
   <data name="MicrophoneTelemetryConsent_Body_Remind" xml:space="preserve">
-    <value>One short JSON line per recording. Small file. Useful when calibrating, then turn it off. The same data also appears in the LogWindow under [CAPTURE] for live inspection.</value>
+    <value>One short JSON line per recording. Small file. Useful when calibrating, then turn it off. The same data also appears in the log window under Audio for live inspection.</value>
   </data>
 
   <!-- ─── Engine status ──────────────────────────────────────────────
        One-shot status strings raised by TranscriptionEngine.RaiseStatus(...).
        Surfaced in the tray tooltip (capped to 127 chars by Shell) and
-       echoed to LogWindow under [STATUS]. Status_Rewriting takes the
+       echoed to LogWindow under App (StatusChanged). Status_Rewriting takes the
        active rewrite profile name as {0}. -->
   <data name="Status_LoadingModel" xml:space="preserve">
     <value>Loading model…</value>
@@ -931,6 +931,32 @@
   </data>
   <data name="LogWindow_ContextCopy_All" xml:space="preserve">
     <value>Copy all</value>
+  </data>
+  <!-- Notices above the log list (code-behind, Loc.Get / Loc.Format).
+       The activity names follow OperationalLogActivity; the path names the
+       Diagnostics page and its Logging details section, their only editor. -->
+  <data name="LogWindow_GatesNotice_Format" xml:space="preserve">
+    <value>Verbose detail is off for: {0}. Turn it on in Settings &gt; Diagnostics &gt; Logging details.</value>
+    <comment>{0} is a comma-separated list of activity names.</comment>
+  </data>
+  <data name="LogWindow_Activity_Ambient" xml:space="preserve">
+    <value>Ambient</value>
+  </data>
+  <data name="LogWindow_Activity_Transcription" xml:space="preserve">
+    <value>Transcription</value>
+  </data>
+  <data name="LogWindow_Activity_Autocorrect" xml:space="preserve">
+    <value>Autocorrect</value>
+  </data>
+  <data name="LogWindow_Activity_Input" xml:space="preserve">
+    <value>Input</value>
+  </data>
+  <data name="LogWindow_Activity_Windowing" xml:space="preserve">
+    <value>Windowing</value>
+  </data>
+  <data name="LogWindow_DroppedNotice_Format" xml:space="preserve">
+    <value>Entries skipped because they arrived faster than this window could show them: {0:N0}</value>
+    <comment>{0} is the number of skipped entries since the window was last cleared.</comment>
   </data>
 
   <!-- ─── Window titles (set via AppWindow.Title in code) ────────────

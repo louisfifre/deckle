@@ -134,12 +134,22 @@ public sealed partial class HudWindow : Window
         // external deadlock), release the caller instead of hanging the
         // pipeline. Paste will be emitted without the Hide rendezvous, creating
         // a race risk, accepted in pathological cases.
-        if (!done.Wait(TimeSpan.FromSeconds(5)))
-        {
-            DeckleHudSource.Log.HudWarning();
-            DeckleHudSource.Log.HudWarningDetail("HideSync timeout — UI thread didn't process within 5s, paste proceeding without Hide rendezvous");
-        }
+        if (!done.Wait(HideSyncTimeout))
+            DeckleHudSource.Log.HideSyncTimedOut(
+                "ui_thread_unresponsive", (int)HideSyncTimeout.TotalMilliseconds);
     }
+
+    private static readonly TimeSpan HideSyncTimeout = TimeSpan.FromSeconds(5);
+
+    // The MessageKind mapped back onto the feedback contract's severity
+    // (0=Info, 1=Warning, 2+=Error), so a suppressed display reads on the same
+    // scale as the UserFeedbackEmitted event that asked for it.
+    internal static int SeverityOf(MessageKind kind) => kind switch
+    {
+        MessageKind.Warning  => 1,
+        MessageKind.Critical => 2,
+        _                    => 0,
+    };
 
     // ── State dispatcher ──────────────────────────────────────────────────────
     //
@@ -153,6 +163,10 @@ public sealed partial class HudWindow : Window
         // still runs so an in-flight HUD gets cleared if the user toggles.
         if (next != HudState.Hidden && !Settings.SettingsService.Instance.Current.Overlay.Enabled)
         {
+            // Traced so a feedback emitted upstream and never seen is told
+            // apart from one the HUD lost.
+            DeckleHudSource.Log.HudDisplaySuppressed(
+                "hud", next.ToString(), msg is null ? -1 : SeverityOf(msg.Kind), "overlay_disabled");
             return;
         }
 
@@ -165,8 +179,12 @@ public sealed partial class HudWindow : Window
 
         // Emitted before the dispatch, with the pre-transition alpha, so the
         // trace reads each transition first.
-        int dpiNow = (int)NativeMethods.GetDpiForWindow(_hwnd);
-        DeckleHudSource.Log.StateChanged(from.ToString(), next.ToString(), reason, _currentAlpha, dpiNow);
+        // The DPI query is made only for the log, so it waits for admission.
+        if (DeckleHudSource.Log.IsHudDetailEnabled((EventKeywords)Keywords.Lifecycle))
+        {
+            int dpiNow = (int)NativeMethods.GetDpiForWindow(_hwnd);
+            DeckleHudSource.Log.StateChanged(from.ToString(), next.ToString(), reason, _currentAlpha, dpiNow);
+        }
 
         if (wasShown != isShown)
             MainHudVisibilityChanged?.Invoke(this, isShown);

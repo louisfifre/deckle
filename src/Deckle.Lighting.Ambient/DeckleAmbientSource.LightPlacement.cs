@@ -10,21 +10,11 @@ public sealed partial class DeckleAmbientSource
     [Event(EvtLightCallFailed,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Push,
-           Message = "A call to the Hue bridge for the light list failed")]
-    public void LightCallFailed()
+           Message = "A call to the Hue bridge for the light list failed | op={0} | ex_type={1} | ex_message={2}")]
+    public void LightCallFailed(string op, string ex_type, string ex_message)
     {
         if (IsEnabled(EventLevel.Warning, (EventKeywords)Keywords.Push))
-            WriteEvent(EvtLightCallFailed);
-    }
-
-    [Event(EvtLightCallFailedDetail,
-           Level = EventLevel.Verbose,
-           Keywords = (EventKeywords)Keywords.Push,
-           Message = "light call failed | op={0} | ex_type={1} | ex_message={2}")]
-    public void LightCallFailedDetail(string op, string ex_type, string ex_message)
-    {
-        if (!IsAmbientDetailEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Push)) return;
-        WriteEvent(EvtLightCallFailedDetail, op, ex_type, ex_message);
+            WriteEvent(EvtLightCallFailed, op, ex_type, ex_message);
     }
 
     [Event(EvtLightsResolved,

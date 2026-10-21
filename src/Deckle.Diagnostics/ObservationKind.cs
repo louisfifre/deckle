@@ -13,15 +13,25 @@ public enum ObservationKind
 }
 
 // EventSource tags are user-defined metadata carried through
-// EventWrittenEventArgs. Keeping the marker here gives every provider one
-// dependency-neutral way to declare a dataset event without spending a shared
-// keyword bit or relying on an event-name blacklist in consumers.
+// EventWrittenEventArgs. Keeping the markers here gives every provider one
+// dependency-neutral way to declare them without spending a shared keyword
+// bit or relying on an event-name blacklist in consumers.
 public static class ObservationTags
 {
     public const EventTags Dataset = (EventTags)0x1;
+
+    // The run journal: the few Informational milestones that tell a run's
+    // story (starting, ready, module up or skipped, shutdown, exit) and that
+    // the always-on journal file keeps beside every Warning and Error. A
+    // reader on another machine must find them without any verbosity control
+    // turned on, so a provider tags them rather than hoping a level predicate
+    // catches them.
+    public const EventTags Journal = (EventTags)0x2;
 
     public static ObservationKind GetKind(EventTags tags)
         => (tags & Dataset) != 0
             ? ObservationKind.Dataset
             : ObservationKind.Operational;
+
+    public static bool IsJournal(EventTags tags) => (tags & Journal) != 0;
 }

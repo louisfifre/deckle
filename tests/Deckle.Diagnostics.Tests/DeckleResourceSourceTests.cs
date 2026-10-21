@@ -39,27 +39,4 @@ public class DeckleResourceSourceTests
         Assert.Equal(EventLevel.Verbose, ev.Level);
         Assert.True(ev.HasKeyword(Keywords.Resource));
     }
-
-    [Fact]
-    public void ResourceLeakSuspectEmitsWarningOnResourceKeyword()
-    {
-        using var listener = new TestEventListener("Deckle-Resource");
-
-        DeckleResourceSource.Log.ResourceLeakSuspect();
-        DeckleResourceSource.Log.ResourceLeakSuspectDetail(
-            kind: "dxgi-resource", handle: 0x1234L, age_ms: 60000,
-            owner: "capture-loop", symptom: "finalizer-called");
-
-        Assert.Equal(2, listener.Events.Count);
-
-        var milestone = listener.Events[0];
-        Assert.Equal(DeckleResourceSource.EvtResourceLeakSuspect, milestone.EventId);
-        Assert.Equal(EventLevel.Warning, milestone.Level);
-        Assert.True(milestone.HasKeyword(Keywords.Resource));
-
-        var detail = listener.Events[1];
-        Assert.Equal(DeckleResourceSource.EvtResourceLeakSuspectDetail, detail.EventId);
-        Assert.Equal(EventLevel.Verbose, detail.Level);
-        Assert.True(detail.HasKeyword(Keywords.Resource));
-    }
 }

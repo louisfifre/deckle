@@ -8,10 +8,11 @@ namespace Deckle.Settings;
 // the SettingsWindow shell and General page, the backup service and the shell
 // settings persistence (SettingsService).
 //
-// An Info / Warning / Error is a short Capital sentence with no IDs, paths, or
-// k=v; the technical detail (ids, paths, exception type+message, page/tag
-// names) lives in a Verbose mirror that FOLLOWS it. Event ids are public in the
-// ETW manifest and are never reused.
+// An Info milestone is a short Capital sentence; ids and paths live in a
+// Verbose mirror that follows it. A Warning or Error carries its own cause in
+// its payload (ex_type and ex_message for an exception, a snake_case reason for
+// a decision), so a trace filtered to Warning still says why. Event ids are
+// public in the ETW manifest and are never reused.
 [EventSource(Name = "Deckle-Settings")]
 public sealed partial class DeckleSettingsSource : DeckleEventSource
 {
@@ -30,12 +31,12 @@ public sealed partial class DeckleSettingsSource : DeckleEventSource
     public const int EvtMigrationDispatchSkipped          = 2;
     public const int EvtMigrationModelsDirectoryDispatched = 3;
     public const int EvtSettingsSplitIntoPerModuleFiles   = 4;
-    public const int EvtPerModuleMigrationFailed          = 5;
-    public const int EvtInjectFailed                      = 6;
+    // 5 retired.
+    // 6 retired.
     public const int EvtModuleFolderMigrated              = 7;
     public const int EvtModuleRenameDetail                = 8;
-    public const int EvtModuleFolderRenameFailed          = 9;
-    public const int EvtModuleFolderRenameFailedDetail    = 10;
+    // 9 retired.
+    // 10 retired.
     public const int EvtRenamedRootKey                    = 11;
     public const int EvtMigratedCorpusToTelemetry         = 12;
     public const int EvtMigratedLlmManualToSlotA          = 13;
@@ -45,11 +46,11 @@ public sealed partial class DeckleSettingsSource : DeckleEventSource
     // ── Backup ──
     public const int EvtBackupSkippedSourceMissing        = 16;
     public const int EvtBackupCreated                     = 17;
-    public const int EvtBackupFailed                      = 18;
-    public const int EvtBackupListFailed                  = 19;
+    // 18 retired.
+    // 19 retired.
     public const int EvtRestoreSkippedSnapshotMissing     = 20;
     public const int EvtRestoredFromBackup                = 21;
-    public const int EvtRestoreFailed                     = 22;
+    // 22 retired.
 
     // ── Folder picker ──
     // 23 is burned: the folder-picker events live in DeckleSettingsUxSource.
@@ -58,8 +59,8 @@ public sealed partial class DeckleSettingsSource : DeckleEventSource
     // ── General page (setup wizard) ──
     public const int EvtSetupWizardHookNotWired           = 24;
     public const int EvtSetupWindowOpenedFromSettings     = 25;
-    public const int EvtSetupWindowOpenFailed             = 26;
-    public const int EvtWarmupRestartFailed               = 27;
+    // 26 retired.
+    // 27 retired.
 
     // ── SettingsWindow navigation ──
     public const int EvtNavSelectionChanged               = 28;
@@ -70,9 +71,9 @@ public sealed partial class DeckleSettingsSource : DeckleEventSource
     public const int EvtNavStarted                        = 33;
     public const int EvtNavFailedFrameRejected            = 34;
     public const int EvtNavCompleted                      = 35;
-    public const int EvtNavFailedThrew                    = 36;
+    // 36 retired.
     public const int EvtNavStackTrace                     = 37;
-    public const int EvtItemInvoked                       = 38;
+    // 38 retired.
     public const int EvtOpenLogsFromFooter                = 39;
 
     // ── ViewModels (generic) ──
@@ -81,6 +82,9 @@ public sealed partial class DeckleSettingsSource : DeckleEventSource
     // reference to the shell. Never reuse.
 
     // ── Settings persistence (transitional) ──
+    // Free-text "{0}" events: JsonSettingsStore lives in Deckle.Core, which has
+    // no EventSource, and hands its lines over as strings. Each line already
+    // follows "Short sentence | reason=x" or "lowercase words | field=value".
     public const int EvtSettingsLoaded                    = 43;
     public const int EvtSettingsLoadComplete              = 44;
     public const int EvtSettingsLoadWarning               = 45;
@@ -88,27 +92,27 @@ public sealed partial class DeckleSettingsSource : DeckleEventSource
 
     // ── Verbose mirrors ──
     public const int EvtMigrationDispatchedDetail         = 47;
-    public const int EvtPerModuleMigrationFailedDetail    = 48;
-    public const int EvtInjectFailedDetail                = 49;
+    // 48 retired.
+    // 49 retired.
     public const int EvtModuleFolderMigratedDetail        = 50;
-    public const int EvtModuleFolderRenameFailedDetail2   = 51;
+    // 51 retired.
     public const int EvtRenamedRootKeyDetail              = 52;
     public const int EvtBackupSkippedSourceMissingDetail  = 53;
     public const int EvtBackupCreatedDetail               = 54;
-    public const int EvtBackupFailedDetail                = 55;
-    public const int EvtBackupListFailedDetail            = 56;
+    // 55 retired.
+    // 56 retired.
     public const int EvtRestoreSkippedSnapshotMissingDetail = 57;
     public const int EvtRestoredFromBackupDetail          = 58;
-    public const int EvtRestoreFailedDetail               = 59;
+    // 59 retired.
     // 60 is burned (folder picker, DeckleSettingsUxSource). Never reuse.
-    public const int EvtSetupWindowOpenFailedDetail       = 61;
-    public const int EvtWarmupRestartFailedDetail         = 62;
+    // 61 retired.
+    // 62 retired.
     public const int EvtNavImpossibleNoTagDetail          = 63;
     public const int EvtNavFailedTypeNotFoundDetail       = 64;
     public const int EvtNavStartedDetail                  = 65;
     public const int EvtNavFailedFrameRejectedDetail      = 66;
     public const int EvtNavCompletedDetail                = 67;
-    public const int EvtNavFailedThrewDetail              = 68;
+    // 68 retired.
     // 69 is burned (section reset, DeckleSettingsUxSource). Never reuse.
 
     // ── Page navigation timing (ms) ──
@@ -146,5 +150,21 @@ public sealed partial class DeckleSettingsSource : DeckleEventSource
     // A child whose ParentId names no registered module gets no rail item; the
     // rest of the band still builds. Verbose.
     public const int EvtSettingsModuleParentMissing       = 81;
+
+    // ── Failure milestones carrying their cause ──
+    // They replace the cause-less milestone + Verbose mirror pairs retired above.
+    public const int EvtPerModuleMigrationFailed          = 82;
+    public const int EvtInjectFailed                      = 83;
+    public const int EvtModuleFolderRenameFailed          = 84;
+    public const int EvtBackupFailed                      = 85;
+    public const int EvtBackupListFailed                  = 86;
+    public const int EvtRestoreFailed                     = 87;
+    public const int EvtSetupWindowOpenFailed             = 88;
+    public const int EvtNavFailedThrew                    = 89;
+
+    // ── User declines and best-effort measures ──
+    public const int EvtRestoreDeclined                   = 90;
+    public const int EvtDataSizeFilesSkippedDetail        = 91;
+    public const int EvtCleanupFailedDetail               = 92;
 
 }

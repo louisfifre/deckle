@@ -1,3 +1,4 @@
+using System.Runtime.InteropServices;
 using Deckle.Core;
 using Deckle.Diagnostics;
 
@@ -58,9 +59,14 @@ internal sealed class CoverBand
         Approach = approach;
         Zone     = CoverGeometry.ApproachZone(Rect, Edge, approach, DpiScale);
 
-        NativeMethods.SetWindowPos(Hwnd, NativeMethods.HWND_TOPMOST,
+        bool ok = NativeMethods.SetWindowPos(Hwnd, NativeMethods.HWND_TOPMOST,
             Rect.left, Rect.top, Rect.right - Rect.left, Rect.bottom - Rect.top,
             NativeMethods.SWP_NOACTIVATE);
+        // Read right after the call, before any other API overwrites it. Every
+        // outcome is reported, success included, so a refusal that stops
+        // closes its incident.
+        WindowingProbe.ReportPlacement(
+            "taskbar-cover", "setwindowpos_place", ok, ok ? 0 : Marshal.GetLastWin32Error());
     }
 
     // ── Opacity ───────────────────────────────────────────────────────────
@@ -112,7 +118,15 @@ internal sealed class CoverBand
     // visible, on every foreground change, every layout message (even with an
     // unchanged rect), every return to full opacity, and whenever the desktop
     // reorders its taskbar above it.
-    public void ReassertTopmost() =>
-        NativeMethods.SetWindowPos(Hwnd, NativeMethods.HWND_TOPMOST, 0, 0, 0, 0,
+    //
+    // It runs on every one of those triggers, so the outcome goes through the
+    // probe's incident: one Warning when the assert starts failing, one line
+    // when it recovers, not one per foreground change.
+    public void ReassertTopmost()
+    {
+        bool ok = NativeMethods.SetWindowPos(Hwnd, NativeMethods.HWND_TOPMOST, 0, 0, 0, 0,
             NativeMethods.SWP_NOMOVE | NativeMethods.SWP_NOSIZE | NativeMethods.SWP_NOACTIVATE);
+        WindowingProbe.ReportShow(
+            "taskbar-cover", "setwindowpos_topmost", ok, ok ? 0 : Marshal.GetLastWin32Error());
+    }
 }

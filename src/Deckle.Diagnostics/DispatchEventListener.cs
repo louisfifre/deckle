@@ -17,16 +17,43 @@ namespace Deckle.Diagnostics;
 // producers before log-only work; the dispatcher is only the shared fan-out
 // boundary. Stream routing remains per-sink through EventEntry.Kind.
 //
+// Boot replay. Sinks register in phases (local files first, the operational
+// sinks after settings migration, telemetry last), so the first events of a
+// run would reach only the sinks that existed when they fired. Until
+// CompleteBoot, every built entry is also kept in a bounded ring; a sink
+// registered with replayBoot receives that history before its first live
+// entry. The ring keeps the oldest entries, because the start of a run is
+// what a late sink has missed, and reports what it dropped past capacity.
+//
+// Sink faults. A sink that throws is contained, its failure never reaches the
+// emitter, but it is not silent either: the first failure opens one incident
+// on Deckle-Diagnostics, the attempts in between are only counted, and the
+// next successful write closes it. Those reports are emitted from inside the
+// fan-out, so they dispatch back through this listener; a thread-static depth
+// stops a nested dispatch from reporting in turn.
+//
 // Threading. OnEventWritten fires on the emitting thread. Sink mutations build
-// and publish an immutable array under a short lock; event dispatch only reads
-// that snapshot, with no lock or per-event array allocation. A sink marshals to
-// its own thread if it needs to. A sink that throws is contained — its failure
-// never reaches the emitter.
+// and publish an immutable array under a short lock; live dispatch only reads
+// that snapshot. While boot replay is active the snapshot is read under the
+// same lock as the ring append, so an entry is either replayed to a new sink
+// or delivered live to it, never both and never neither.
 public sealed class DispatchEventListener : EventListener
 {
-    private readonly List<ILogSink> _sinks = new();
+    public const int BootBufferCapacity = 2048;
+
+    private readonly List<SinkSlot> _slots = new();
     private readonly object _sinksLock = new();
-    private ILogSink[] _sinkSnapshot = Array.Empty<ILogSink>();
+    private SinkSlot[] _snapshot = Array.Empty<SinkSlot>();
+
+    private List<EventEntry>? _bootBuffer = new(256);
+    private int _bootDropped;
+
+    // Set when a nested dispatch changed a sink's incident state and could not
+    // report it; the next top-level dispatch does.
+    private int _reportsPending;
+
+    [ThreadStatic]
+    private static int _dispatchDepth;
 
     private static readonly IReadOnlyDictionary<string, object?> EmptyPayload =
         new ReadOnlyDictionary<string, object?>(new Dictionary<string, object?>());
@@ -49,16 +76,23 @@ public sealed class DispatchEventListener : EventListener
         }
     }
 
-    // No dedupe: registering a sink twice is the caller's bug. A sink receives
-    // only events emitted after registration; one that needs boot history (the
-    // live window) owns its own buffer and replays on attach.
-    public void AddSink(ILogSink sink)
+    // No dedupe: registering a sink twice is the caller's bug. With replayBoot
+    // the sink first receives the boot history still held in the ring (nothing
+    // once CompleteBoot ran); the live window keeps its own longer buffer for
+    // the history after boot.
+    public void AddSink(ILogSink sink, bool replayBoot = false)
     {
         if (sink is null) throw new ArgumentNullException(nameof(sink));
+        var slot = new SinkSlot(sink);
         lock (_sinksLock)
         {
-            _sinks.Add(sink);
-            Volatile.Write(ref _sinkSnapshot, _sinks.ToArray());
+            if (replayBoot && _bootBuffer is not null)
+            {
+                foreach (EventEntry entry in _bootBuffer)
+                    Offer(slot, entry);
+            }
+            _slots.Add(slot);
+            Volatile.Write(ref _snapshot, _slots.ToArray());
         }
     }
 
@@ -66,9 +100,26 @@ public sealed class DispatchEventListener : EventListener
     {
         lock (_sinksLock)
         {
-            if (_sinks.Remove(sink))
-                Volatile.Write(ref _sinkSnapshot, _sinks.ToArray());
+            int index = _slots.FindIndex(s => ReferenceEquals(s.Sink, sink));
+            if (index < 0) return;
+            _slots.RemoveAt(index);
+            Volatile.Write(ref _snapshot, _slots.ToArray());
         }
+    }
+
+    // Ends boot replay: the ring is released and later sinks start from their
+    // registration. Called once every phase-registered sink is in place.
+    public void CompleteBoot()
+    {
+        int dropped;
+        lock (_sinksLock)
+        {
+            if (_bootBuffer is null) return;
+            _bootBuffer = null;
+            dropped = _bootDropped;
+        }
+        if (dropped > 0)
+            DeckleDiagnosticsSource.Log.BootReplayOverflow(dropped, BootBufferCapacity);
     }
 
     // Providers are discovered by the `Deckle-` name prefix, never listed, so
@@ -93,17 +144,118 @@ public sealed class DispatchEventListener : EventListener
     {
         if (eventData.EventSource.Name is null) return;
 
-        // No sink means no observable consumer: avoid materialising the
-        // payload dictionary and formatted message while the listener is
-        // subscribed early during boot.
-        ILogSink[] snapshot = Volatile.Read(ref _sinkSnapshot);
-        if (snapshot.Length == 0) return;
+        // No sink and no boot ring means no observable consumer: avoid
+        // materialising the payload dictionary and the formatted message.
+        SinkSlot[] snapshot = Volatile.Read(ref _snapshot);
+        bool booting = Volatile.Read(ref _bootBuffer) is not null;
+        if (snapshot.Length == 0 && !booting) return;
 
         var entry = BuildEntry(eventData);
-        foreach (var sink in snapshot)
+
+        if (booting)
         {
-            try { if (sink.Wants(entry)) sink.Write(entry); }
-            catch { /* A sink must never crash the dispatcher. */ }
+            lock (_sinksLock)
+            {
+                if (_bootBuffer is not null)
+                {
+                    if (_bootBuffer.Count < BootBufferCapacity) _bootBuffer.Add(entry);
+                    else _bootDropped++;
+                }
+                // Read under the lock: a sink replaying the ring right now
+                // either saw this entry in the ring or is in this snapshot.
+                snapshot = _snapshot;
+            }
+        }
+
+        Dispatch(entry, snapshot);
+    }
+
+    private void Dispatch(EventEntry entry, SinkSlot[] snapshot)
+    {
+        _dispatchDepth++;
+        try
+        {
+            bool stateChanged = false;
+            foreach (SinkSlot slot in snapshot)
+                stateChanged |= Offer(slot, entry);
+
+            if (_dispatchDepth > 1)
+            {
+                if (stateChanged) Volatile.Write(ref _reportsPending, 1);
+                return;
+            }
+
+            if (stateChanged || Volatile.Read(ref _reportsPending) != 0)
+                ReportIncidents(snapshot);
+        }
+        finally
+        {
+            _dispatchDepth--;
+        }
+    }
+
+    // Delivers one entry to one sink and keeps the sink's incident state.
+    // Returns true when that state changed (an incident opened or closed), so
+    // the caller knows a report is due; the report itself is emitted later,
+    // outside any per-slot lock.
+    private static bool Offer(SinkSlot slot, EventEntry entry)
+    {
+        try
+        {
+            if (slot.Sink.Wants(entry)) slot.Sink.Write(entry);
+        }
+        catch (Exception ex)
+        {
+            lock (slot)
+            {
+                slot.Failures++;
+                if (slot.Faulted) return false;
+                slot.Faulted = true;
+                slot.FaultError = ex;
+                slot.FaultReported = false;
+                return true;
+            }
+        }
+
+        // The happy path reads one volatile flag; the lock is taken only to
+        // close an incident.
+        if (!Volatile.Read(ref slot.Faulted)) return false;
+        lock (slot)
+        {
+            if (!slot.Faulted) return false;
+            slot.Faulted = false;
+            slot.RecoveredAfter = slot.Failures;
+            slot.Failures = 0;
+            slot.RecoveryPending = true;
+            return true;
+        }
+    }
+
+    private void ReportIncidents(SinkSlot[] snapshot)
+    {
+        Volatile.Write(ref _reportsPending, 0);
+        foreach (SinkSlot slot in snapshot)
+        {
+            string? faultType = null, faultMessage = null;
+            int recoveredAfter = -1;
+            lock (slot)
+            {
+                if (slot.Faulted && !slot.FaultReported)
+                {
+                    slot.FaultReported = true;
+                    faultType = slot.FaultError?.GetType().Name ?? "(unknown)";
+                    faultMessage = slot.FaultError?.Message ?? string.Empty;
+                }
+                if (slot.RecoveryPending)
+                {
+                    slot.RecoveryPending = false;
+                    recoveredAfter = slot.RecoveredAfter;
+                }
+            }
+            if (faultType is not null)
+                DeckleDiagnosticsSource.Log.SinkFaulted(slot.Name, faultType, faultMessage!);
+            if (recoveredAfter >= 0)
+                DeckleDiagnosticsSource.Log.SinkRecovered(slot.Name, recoveredAfter);
         }
     }
 
@@ -152,24 +304,69 @@ public sealed class DispatchEventListener : EventListener
             keywords: e.Keywords,
             kind: ObservationTags.GetKind(e.Tags),
             formattedMessage: formatted,
-            payload: payload);
+            payload: payload,
+            journal: ObservationTags.IsJournal(e.Tags));
     }
 
     // Clean-shutdown barrier for sinks that hand work to a background writer.
     // Call only after runtime producers have stopped and after the final event
-    // worth retaining. Each sink drains entries accepted before this snapshot;
-    // ordinary passive sinks require no action. False reports that at least one
-    // destination could not persist its accepted tail.
-    public bool FlushSinks()
+    // worth retaining. Each sink drains entries accepted before this call, or
+    // gives up at the timeout: a crash handler cannot wait on a stuck disk.
+    // Every failure is named in the result and emitted on Deckle-Diagnostics,
+    // which reaches the sinks still able to write.
+    public IReadOnlyList<SinkFlushFailure> FlushSinks() => FlushSinks(Timeout.InfiniteTimeSpan);
+
+    public IReadOnlyList<SinkFlushFailure> FlushSinks(TimeSpan timeout)
     {
-        bool succeeded = true;
-        ILogSink[] snapshot = Volatile.Read(ref _sinkSnapshot);
-        foreach (ILogSink sink in snapshot)
+        var failures = new List<SinkFlushFailure>();
+        SinkSlot[] snapshot = Volatile.Read(ref _snapshot);
+        foreach (SinkSlot slot in snapshot)
         {
-            if (sink is not IFlushableLogSink flushable) continue;
-            try { flushable.Flush(); }
-            catch { succeeded = false; }
+            if (slot.Sink is not IFlushableLogSink flushable) continue;
+            try
+            {
+                if (!flushable.TryFlush(timeout))
+                    failures.Add(new SinkFlushFailure(slot.Name, null));
+            }
+            catch (Exception ex)
+            {
+                failures.Add(new SinkFlushFailure(slot.Name, ex));
+            }
         }
-        return succeeded;
+
+        foreach (SinkFlushFailure failure in failures)
+        {
+            if (failure.Error is null)
+                DeckleDiagnosticsSource.Log.FlushTimedOut(failure.Sink, (int)timeout.TotalMilliseconds);
+            else
+                DeckleDiagnosticsSource.Log.FlushFailed(
+                    failure.Sink, failure.Error.GetType().Name, failure.Error.Message);
+        }
+        return failures;
+    }
+
+    private sealed class SinkSlot
+    {
+        public SinkSlot(ILogSink sink)
+        {
+            Sink = sink;
+            Name = sink.GetType().Name;
+        }
+
+        public ILogSink Sink { get; }
+        public string Name { get; }
+
+        // Guarded by `lock (this)`, except Faulted which is also read volatile
+        // on the happy path.
+        public bool Faulted;
+        public bool FaultReported;
+        public Exception? FaultError;
+        public int Failures;
+        public bool RecoveryPending;
+        public int RecoveredAfter;
     }
 }
+
+// One sink that could not drain at FlushSinks: Error is null when it ran out
+// of time, the exception otherwise.
+public sealed record SinkFlushFailure(string Sink, Exception? Error);

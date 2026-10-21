@@ -41,6 +41,10 @@ public sealed class McpHttpHost : IAsyncDisposable
     private Task? _disposeTask;
     private bool _started;
 
+    // Rejections since the last admitted request; requests run concurrently,
+    // hence Interlocked.
+    private int _rejectedInIncident;
+
     public McpHttpHost(AnytypeApiClient api, McpClientTokens tokens, int port = DefaultPort)
         : this(api, tokens, port, McpRequestRateLimit.Default)
     {
@@ -82,8 +86,7 @@ public sealed class McpHttpHost : IAsyncDisposable
             catch (Exception ex)
             {
                 application.DisposeAsync().AsTask().GetAwaiter().GetResult();
-                DeckleAnytypeMcpSource.Log.RequestRejected();
-                DeckleAnytypeMcpSource.Log.RequestRejectedDetail($"bind-failed: {ex.Message}", 0);
+                DeckleAnytypeMcpSource.Log.HostStartFailed(_port, ex.GetType().Name, ex.Message);
                 return false;
             }
 
@@ -100,6 +103,7 @@ public sealed class McpHttpHost : IAsyncDisposable
     {
         WebApplicationBuilder builder = WebApplication.CreateSlimBuilder();
         builder.Logging.ClearProviders();
+        builder.Logging.AddProvider(new McpHostLogBridge());
         builder.WebHost.ConfigureKestrel(options =>
         {
             options.AddServerHeader = false;
@@ -161,8 +165,22 @@ public sealed class McpHttpHost : IAsyncDisposable
         WebApplication application = builder.Build();
         application.Use(ProtectEndpointAsync);
         application.UseRateLimiter();
+        application.Use(CloseRejectionIncidentAsync);
         application.MapMcp(EndpointPath).RequireRateLimiting(RateLimitPolicy);
         return application;
+    }
+
+    // Placed after the rate limiter: a request that reaches it passed every
+    // gate, so it closes the rejection incident Reject opened.
+    private Task CloseRejectionIncidentAsync(HttpContext context, RequestDelegate next)
+    {
+        if (context.Items.ContainsKey(ClientProfileKey))
+        {
+            int rejected = Interlocked.Exchange(ref _rejectedInIncident, 0);
+            if (rejected > 0)
+                DeckleAnytypeMcpSource.Log.RequestRejectionsEnded(rejected);
+        }
+        return next(context);
     }
 
     private async Task ProtectEndpointAsync(HttpContext context, RequestDelegate next)
@@ -177,6 +195,7 @@ public sealed class McpHttpHost : IAsyncDisposable
         // session DELETE were removed by the 2026-07-28 protocol revision.
         if (!HttpMethods.IsPost(context.Request.Method))
         {
+            Reject("method-not-allowed", StatusCodes.Status405MethodNotAllowed);
             context.Response.Headers.Allow = "POST";
             context.Response.StatusCode = StatusCodes.Status405MethodNotAllowed;
             return;
@@ -232,10 +251,12 @@ public sealed class McpHttpHost : IAsyncDisposable
             || uri.Host == "127.0.0.1";
     }
 
-    private static void Reject(string reason, int statusCode)
+    private void Reject(string reason, int statusCode)
     {
-        DeckleAnytypeMcpSource.Log.RequestRejected();
-        DeckleAnytypeMcpSource.Log.RequestRejectedDetail(reason, statusCode);
+        if (Interlocked.Increment(ref _rejectedInIncident) == 1)
+            DeckleAnytypeMcpSource.Log.RequestRejected(reason, statusCode);
+        else
+            DeckleAnytypeMcpSource.Log.RequestRejectedDetail(reason, statusCode);
     }
 
     public ValueTask DisposeAsync()
@@ -265,11 +286,20 @@ public sealed class McpHttpHost : IAsyncDisposable
             await application.StopAsync(ct).ConfigureAwait(false);
             // Kestrel may consume shutdown cancellation and complete normally;
             // an expired caller budget still cannot certify a complete drain.
-            return !ct.IsCancellationRequested;
+            if (!ct.IsCancellationRequested)
+                return true;
+            DeckleAnytypeMcpSource.Log.HostStopFailed("drain_timeout", "", "");
+            return false;
         }
         catch (OperationCanceledException) when (ct.IsCancellationRequested)
         {
+            DeckleAnytypeMcpSource.Log.HostStopFailed("drain_timeout", "", "");
             return false;
+        }
+        catch (Exception ex)
+        {
+            DeckleAnytypeMcpSource.Log.HostStopFailed("stop_failed", ex.GetType().Name, ex.Message);
+            throw;
         }
     }
 
@@ -279,17 +309,28 @@ public sealed class McpHttpHost : IAsyncDisposable
         if (application is null)
             return;
 
+        bool drained = false;
         try
         {
             // StopAsync first closes the listener, then waits for active requests.
             // The caller owns any outer shutdown budget; the host itself never
             // abandons a tool call and disposes its dependencies underneath it.
-            await StopAsync(CancellationToken.None).ConfigureAwait(false);
+            drained = await StopAsync(CancellationToken.None).ConfigureAwait(false);
         }
         finally
         {
-            await application.DisposeAsync().ConfigureAwait(false);
-            DeckleAnytypeMcpSource.Log.HostStopped();
+            try
+            {
+                await application.DisposeAsync().ConfigureAwait(false);
+            }
+            catch (Exception ex)
+            {
+                DeckleAnytypeMcpSource.Log.HostStopFailed("dispose_failed", ex.GetType().Name, ex.Message);
+                throw;
+            }
+            // A failed stop already reported itself; "stopped" would contradict it.
+            if (drained)
+                DeckleAnytypeMcpSource.Log.HostStopped();
         }
     }
 }

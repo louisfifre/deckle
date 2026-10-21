@@ -14,6 +14,10 @@ public readonly record struct SentenceScoringOutcome(
     double Threshold,
     string? AbstainReason)
 {
+    // Set only on an Error abstention caused by an exception, so the caller that
+    // reports failures still has the cause.
+    public Exception? Failure { get; init; }
+
     public static SentenceScoringOutcome Abstained(string reason) =>
         new(null, Array.Empty<SentenceCandidateScore>(), 0.0, 0.0, reason);
 

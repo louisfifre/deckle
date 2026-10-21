@@ -42,6 +42,8 @@ internal static class RunningApps
                 {
                     // The process exited or refused a query between listing and
                     // reading: it is simply not offered.
+                    DeckleOrchestrationSource.Log.ProcessQuerySkipped(
+                        "running_apps", process.Id, ex.GetType().Name, ex.Message);
                 }
             }
         }

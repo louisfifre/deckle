@@ -54,7 +54,11 @@ internal sealed class HueEntertainmentTransport : IHueEntertainmentTransport
             var connectTask = Task.Run(() => new DtlsClientProtocol().Connect(client, _udp));
             using var abortRegistration = timeout.Token.Register(static state =>
             {
-                try { ((HueDatagramTransport)state!).Dispose(); } catch { }
+                try { ((HueDatagramTransport)state!).Dispose(); }
+                catch (Exception ex)
+                {
+                    DeckleLightingSource.Log.HueStepFailedDetail("dtls_handshake_abort", ex.GetType().Name, ex.Message);
+                }
             }, _udp);
 
             try
@@ -64,7 +68,10 @@ internal sealed class HueEntertainmentTransport : IHueEntertainmentTransport
             catch (OperationCanceledException) when (!ct.IsCancellationRequested)
             {
                 _ = connectTask.ContinueWith(
-                    static t => _ = t.Exception,
+                    static t => DeckleLightingSource.Log.HueStepFailedDetail(
+                        "dtls_abandoned_handshake",
+                        t.Exception?.InnerException?.GetType().Name ?? "none",
+                        t.Exception?.InnerException?.Message ?? "none"),
                     CancellationToken.None,
                     TaskContinuationOptions.OnlyOnFaulted,
                     TaskScheduler.Default);
@@ -95,14 +102,17 @@ internal sealed class HueEntertainmentTransport : IHueEntertainmentTransport
         if (_disposed) return;
         _disposed = true;
 
-        try { _dtls?.Close(); } catch { }
-        try { _udp?.Dispose(); } catch { }
-        try { _socket?.Dispose(); } catch { }
+        try { _dtls?.Close(); } catch (Exception ex) { ReportCleanupFailure("dtls_close", ex); }
+        try { _udp?.Dispose(); } catch (Exception ex) { ReportCleanupFailure("udp_dispose", ex); }
+        try { _socket?.Dispose(); } catch (Exception ex) { ReportCleanupFailure("socket_dispose", ex); }
 
         _dtls = null;
         _udp = null;
         _socket = null;
     }
+
+    private static void ReportCleanupFailure(string step, Exception ex)
+        => DeckleLightingSource.Log.HueStepFailedDetail(step, ex.GetType().Name, ex.Message);
 
     private static byte[] HexToBytes(string hex)
     {
@@ -206,7 +216,8 @@ internal sealed class HueEntertainmentTransport : IHueEntertainmentTransport
         {
             if (_disposed) return;
             _disposed = true;
-            try { _socket.Shutdown(SocketShutdown.Both); } catch { }
+            try { _socket.Shutdown(SocketShutdown.Both); }
+            catch (Exception ex) { ReportCleanupFailure("socket_shutdown", ex); }
             _socket.Dispose();
         }
     }

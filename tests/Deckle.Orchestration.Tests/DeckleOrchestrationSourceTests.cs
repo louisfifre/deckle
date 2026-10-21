@@ -68,7 +68,7 @@ public sealed class DeckleOrchestrationSourceTests
         using var listener = new TestEventListener("Deckle-Orchestration");
         var entry = new AppEntry { DisplayName = "Hollow", ProcessName = "Hollow" };
 
-        OrchestrationRuntime.LogSessionEnded(entry);
+        OrchestrationRuntime.LogSessionEnded(entry, SessionEndReason.EntryDisabled);
 
         Assert.Collection(
             Only(listener, DeckleOrchestrationSource.EvtSessionEnded, DeckleOrchestrationSource.EvtSessionEndedDetail),
@@ -76,6 +76,7 @@ public sealed class DeckleOrchestrationSourceTests
             {
                 Assert.Equal(DeckleOrchestrationSource.EvtSessionEnded, e.EventId);
                 Assert.Equal(EventLevel.Informational, e.Level);
+                Assert.Equal("entry_disabled", e.Payload![0]);
             },
             e =>
             {
@@ -100,24 +101,28 @@ public sealed class DeckleOrchestrationSourceTests
             Only(listener, DeckleOrchestrationSource.EvtProcessTraceUnavailable, DeckleOrchestrationSource.EvtProcessTraceUnavailableDetail),
             e =>
             {
+                // The Warning carries its own cause: a journal without Verbose
+                // must still say why start events are missing.
                 Assert.Equal(DeckleOrchestrationSource.EvtProcessTraceUnavailable, e.EventId);
                 Assert.Equal(EventLevel.Warning, e.Level);
+                Assert.Equal(nameof(UnauthorizedAccessException), e.Payload![1]);
+                Assert.Equal(refusal.HResult, e.Payload[3]);
             },
             e =>
             {
                 Assert.Equal(DeckleOrchestrationSource.EvtProcessTraceUnavailableDetail, e.EventId);
                 Assert.Equal(EventLevel.Verbose, e.Level);
                 Assert.Equal(nameof(UnauthorizedAccessException), e.Payload![0]);
-            },
-            e => Assert.Equal(DeckleOrchestrationSource.EvtProcessTraceUnavailableDetail, e.EventId));
+            });
     }
 
     [Fact]
-    public void ExitWatchRefusalIsAWarningThenItsVerboseDetail()
+    public void ExitWatchRefusalIsOneWarningThenDetailsOnly()
     {
         using var listener = new TestEventListener("Deckle-Orchestration");
 
         ProcessExitWatch.LogUnavailable(pid: 4242, win32Error: 5, firstTime: true);
+        ProcessExitWatch.LogUnavailable(pid: 4243, win32Error: 5, firstTime: false);
 
         Assert.Collection(
             Only(listener, DeckleOrchestrationSource.EvtExitWatchUnavailable, DeckleOrchestrationSource.EvtExitWatchUnavailableDetail),
@@ -125,15 +130,17 @@ public sealed class DeckleOrchestrationSourceTests
             {
                 Assert.Equal(DeckleOrchestrationSource.EvtExitWatchUnavailable, e.EventId);
                 Assert.Equal(EventLevel.Warning, e.Level);
+                Assert.Equal(4242, e.Payload![0]);
+                Assert.Equal(5, e.Payload[1]);
             },
             e =>
             {
                 Assert.Equal(DeckleOrchestrationSource.EvtExitWatchUnavailableDetail, e.EventId);
                 Assert.Equal(EventLevel.Verbose, e.Level);
-                Assert.Equal(4242, e.Payload![0]);
-                Assert.Equal(5, e.Payload[1]);
+                Assert.Equal(4243, e.Payload![0]);
             });
     }
+
     [Fact]
     public void AppliedRulesEmitTheMilestoneThenItsVerboseDetail()
     {
@@ -160,7 +167,7 @@ public sealed class DeckleOrchestrationSourceTests
     }
 
     [Fact]
-    public void AFailedRuleIsAWarningThenItsVerboseDetail()
+    public void AFailedRuleIsOneWarningCarryingItsCause()
     {
         using var listener = new TestEventListener("Deckle-Orchestration");
         var entry = new AppEntry { DisplayName = "Hollow", ProcessName = "Hollow" };
@@ -168,25 +175,40 @@ public sealed class DeckleOrchestrationSourceTests
 
         ProfileTransaction.Apply(entry, [effect]);
 
-        Assert.Collection(
-            ForEntry(listener, entry, DeckleOrchestrationSource.EvtRuleApplyFailed, DeckleOrchestrationSource.EvtRuleApplyFailedDetail),
-            e =>
-            {
-                Assert.Equal(DeckleOrchestrationSource.EvtRuleApplyFailed, e.EventId);
-                Assert.Equal(EventLevel.Warning, e.Level);
-            },
-            e =>
-            {
-                Assert.Equal(DeckleOrchestrationSource.EvtRuleApplyFailedDetail, e.EventId);
-                Assert.Equal(EventLevel.Verbose, e.Level);
-                Assert.Equal("hdr", e.Payload![1]);
-                Assert.Equal(nameof(InvalidOperationException), e.Payload[2]);
-            });
+        EventWrittenEventArgs failed = Assert.Single(
+            Only(listener, DeckleOrchestrationSource.EvtRuleApplyFailed),
+            e => Equals(e.Payload?[0], entry.Id));
+        Assert.Equal(EventLevel.Warning, failed.Level);
+        Assert.Equal("hdr", failed.Payload![1]);
+        Assert.Equal(nameof(InvalidOperationException), failed.Payload[2]);
+    }
+
+    [Fact]
+    public void APartialRestoreReportsHowManyOfTheTotalCameBack()
+    {
+        using var listener = new TestEventListener("Deckle-Orchestration");
+        var entry = new AppEntry { DisplayName = "Hollow", ProcessName = "Hollow" };
+        var effects = new[]
+        {
+            new ProfileTransactionTests.FakeEffect("a", []),
+            new ProfileTransactionTests.FakeEffect("b", []) { RestoreThrows = true },
+        };
+
+        ProfileTransaction.Apply(entry, effects).Restore();
+
+        EventWrittenEventArgs detail = Assert.Single(
+            Only(listener, DeckleOrchestrationSource.EvtProfileRestoredDetail),
+            e => Equals(e.Payload?[0], entry.Id));
+        Assert.Equal(1, detail.Payload![1]);
+        Assert.Equal(2, detail.Payload[2]);
+        Assert.Single(
+            Only(listener, DeckleOrchestrationSource.EvtRuleRestoreFailed),
+            e => Equals(e.Payload?[0], entry.Id));
     }
 
     // Rule events from other tests share the provider and the event ids. The
-    // milestone has no payload, so it is kept when the detail right after it
-    // names this entry.
+    // ProfileApplied milestone has no payload, so it is kept when the detail
+    // right after it names this entry.
     private static IReadOnlyList<EventWrittenEventArgs> ForEntry(
         TestEventListener listener, AppEntry entry, int milestoneId, int detailId)
     {

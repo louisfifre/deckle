@@ -61,9 +61,9 @@ public sealed partial class ForegroundWatcher : IDisposable
             IntPtr.Zero, _foregroundProc, 0, 0, WINEVENT_OUTOFCONTEXT);
         if (_foregroundHook == IntPtr.Zero)
         {
+            int error = System.Runtime.InteropServices.Marshal.GetLastWin32Error();
             _foregroundProc = null;
-            DeckleShellForegroundSource.Log.HookFailed();
-            DeckleShellForegroundSource.Log.HookFailedDetail("foreground", 0);
+            DeckleShellForegroundSource.Log.WatcherStartFailed("foreground_hook_failed", error);
             return false;
         }
 
@@ -145,16 +145,21 @@ public sealed partial class ForegroundWatcher : IDisposable
         if (_locationHook != IntPtr.Zero)
         {
             _locationHookProcessId = processId;
-            _locationFailureReported = false;
+            if (_locationFailureReported)
+            {
+                _locationFailureReported = false;
+                DeckleShellForegroundSource.Log.HookRecovered("location");
+            }
             return;
         }
 
+        int error = System.Runtime.InteropServices.Marshal.GetLastWin32Error();
         if (!_locationFailureReported)
         {
-            DeckleShellForegroundSource.Log.HookFailed();
+            DeckleShellForegroundSource.Log.HookFailed("location", error);
             _locationFailureReported = true;
         }
-        DeckleShellForegroundSource.Log.HookFailedDetail("location", processId);
+        DeckleShellForegroundSource.Log.HookFailedDetail("location", processId, error);
     }
 
     private void DisarmLocationHook()

@@ -35,6 +35,7 @@ internal sealed class JsonlLineSerializer
             writer.WriteString("provider", entry.Provider);
             writer.WriteString("event", entry.EventName);
             writer.WriteString("level", entry.Level.ToString());
+            writer.WriteString("keywords", TransverseKeywordNames(entry));
             writer.WriteString("source", LogLineFormatter.MapSource(entry.Provider));
             if (entry.FormattedMessage is null) writer.WriteNull("message");
             else writer.WriteString("message", entry.FormattedMessage);
@@ -49,6 +50,17 @@ internal sealed class JsonlLineSerializer
         writer.Flush();
 
         return _buffer.WrittenMemory;
+    }
+
+    // Names of the transverse flags (bits 0..9) in enum declaration order, e.g.
+    // "Lifecycle, Capture". Provider-local bits (10..63) mean nothing outside
+    // their provider, so the mask drops them rather than printing raw numbers.
+    private static string TransverseKeywordNames(EventEntry entry)
+    {
+        const long TransverseMask = 0x3FF;
+        var transverse = (Keywords)((long)entry.Keywords & TransverseMask);
+        // [Flags] ToString() renders a zero value as "None"; the field is empty instead.
+        return transverse == Keywords.None ? string.Empty : transverse.ToString();
     }
 
     private static void WriteValue(Utf8JsonWriter writer, string name, object? value)

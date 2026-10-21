@@ -63,6 +63,7 @@ public sealed partial class LogWindow : Window, ILogWindowSink
         LogItems.ItemsSource = _visible;
         FilterBar.Selection = _filterSelection;
         UpdateFiltersToggleLabel();
+        AttachNotices();
 
         LoadAppIcons();
         AppTitleBarIcon.ImageSource = _iconIdle;
@@ -104,6 +105,7 @@ public sealed partial class LogWindow : Window, ILogWindowSink
         {
             _isVisible = false;
             FilterBar.Detach();
+            DetachNotices();
         };
 
         SizeChanged += OnWindowSizeChanged;

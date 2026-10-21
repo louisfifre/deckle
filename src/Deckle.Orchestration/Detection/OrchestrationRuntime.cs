@@ -53,6 +53,11 @@ public sealed class OrchestrationRuntime : IDisposable
     // burst cost one pass, not one each.
     private int _reconcilePending;
 
+    // 1 between a failed reconcile pass and the next one that succeeds, so a
+    // failure that repeats on every settings change opens one Warning, not one
+    // per pass.
+    private int _reconcileFailing;
+
     private DetectionStatus _status;
 
     /// <summary>Read by the settings page through the App, which sets it. Null when no runtime is composed.</summary>
@@ -110,7 +115,10 @@ public sealed class OrchestrationRuntime : IDisposable
             _foreground.ForegroundChanged += OnForegroundChanged;
             _settings.Changed += RequestReconcile;
         }
-        DeckleOrchestrationSource.Log.RuntimeStarted();
+        DeckleOrchestrationSource.Log.RuntimeStarted(
+            _settings.Current.Entries.Count(e => e.Enabled),
+            Environment.IsPrivilegedProcess,
+            Status.ForegroundMonitorPresent);
         RequestReconcile();
     }
 
@@ -172,7 +180,7 @@ public sealed class OrchestrationRuntime : IDisposable
                 _processStartsRunning = false;
 
                 // Every session ends; their profiles are already restored.
-                _tracker.DropSessionsNotIn([]);
+                _tracker.EndAll();
                 _exitWatch.UnwatchAll();
             }
         }
@@ -195,13 +203,41 @@ public sealed class OrchestrationRuntime : IDisposable
     private void RequestReconcile()
     {
         if (Interlocked.Exchange(ref _reconcilePending, 1) == 1) return;
-        ThreadPool.QueueUserWorkItem(_ =>
+        ThreadPool.QueueUserWorkItem(_ => RunReconcilePass());
+    }
+
+    // The thread-pool body of a requested reconcile. An exception escaping a
+    // thread-pool item terminates the process, and this one carries the
+    // whole resident app, so it is contained here: detection keeps its last
+    // state and the next settings change tries again.
+    private void RunReconcilePass()
+    {
+        // Cleared before the pass reads the registry, so a change made
+        // during the pass queues another one.
+        Volatile.Write(ref _reconcilePending, 0);
+        try
         {
-            // Cleared before the pass reads the registry, so a change made
-            // during the pass queues another one.
-            Volatile.Write(ref _reconcilePending, 0);
             Reconcile();
-        });
+        }
+        catch (Exception ex)
+        {
+            string site = ex.TargetSite is { } method
+                ? $"{method.DeclaringType?.Name}.{method.Name}"
+                : "unknown";
+            if (Interlocked.Exchange(ref _reconcileFailing, 1) == 0)
+            {
+                DeckleOrchestrationSource.Log.ReconcileFailed(ex.GetType().Name, ex.Message, site);
+            }
+            else
+            {
+                DeckleOrchestrationSource.Log.ReconcileFailedDetail(ex.GetType().Name, ex.Message, site);
+            }
+            return;
+        }
+        if (Interlocked.Exchange(ref _reconcileFailing, 0) == 1)
+        {
+            DeckleOrchestrationSource.Log.ReconcileRecovered();
+        }
     }
 
     // One-shot enumeration; see the header. Processes that exit or refuse a
@@ -220,8 +256,11 @@ public sealed class OrchestrationRuntime : IDisposable
                 {
                     name = process.ProcessName;
                 }
-                catch (InvalidOperationException)
+                catch (InvalidOperationException ex)
                 {
+                    // The process exited between the listing and the read.
+                    DeckleOrchestrationSource.Log.ProcessQuerySkipped(
+                        "reconcile", process.Id, ex.GetType().Name, ex.Message);
                     continue;
                 }
                 _tracker.OnProcessSeen(process.Id, name, ProcessNativeMethods.TryGetImagePath(process.Id));
@@ -260,9 +299,9 @@ public sealed class OrchestrationRuntime : IDisposable
         SessionStarted?.Invoke(entry, pid);
     }
 
-    private void OnSessionEnded(AppEntry entry)
+    private void OnSessionEnded(AppEntry entry, SessionEndReason reason)
     {
-        LogSessionEnded(entry);
+        LogSessionEnded(entry, reason);
         RestoreProfile(entry.Id);
         SessionEnded?.Invoke(entry);
     }
@@ -304,7 +343,9 @@ public sealed class OrchestrationRuntime : IDisposable
     {
         DetectionStatus current = Status;
         if (current.ProcessTraceAvailable == available) return;
-        Volatile.Write(ref _status, current with { ProcessTraceAvailable = available });
+        DetectionStatus next = current with { ProcessTraceAvailable = available };
+        Volatile.Write(ref _status, next);
+        DeckleOrchestrationSource.Log.DetectionStatusChanged(next.ProcessTraceAvailable, next.ForegroundMonitorPresent);
         StatusChanged?.Invoke();
     }
 
@@ -315,9 +356,19 @@ public sealed class OrchestrationRuntime : IDisposable
         DeckleOrchestrationSource.Log.SessionStartedDetail(entry.Id, entry.DisplayName, entry.ProcessName, pid);
     }
 
-    internal static void LogSessionEnded(AppEntry entry)
+    internal static void LogSessionEnded(AppEntry entry, SessionEndReason reason)
     {
-        DeckleOrchestrationSource.Log.SessionEnded();
+        DeckleOrchestrationSource.Log.SessionEnded(ReasonName(reason));
         DeckleOrchestrationSource.Log.SessionEndedDetail(entry.Id, entry.DisplayName);
     }
+
+    // EventSource payloads take no enums; the journal reads snake_case words.
+    private static string ReasonName(SessionEndReason reason) => reason switch
+    {
+        SessionEndReason.Exited => "exited",
+        SessionEndReason.EntryRemoved => "entry_removed",
+        SessionEndReason.EntryDisabled => "entry_disabled",
+        SessionEndReason.Shutdown => "shutdown",
+        _ => "unknown",
+    };
 }

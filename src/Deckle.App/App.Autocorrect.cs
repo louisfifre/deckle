@@ -33,7 +33,11 @@ public partial class App
         {
             // The process-shared Raw Input host, which InitializeInputHost creates first.
             var host = _keyboardMouseHost;
-            if (host is null) return null;
+            if (host is null)
+            {
+                DeckleAppSource.Log.AutocorrectUnavailable("input_host_missing");
+                return null;
+            }
 
             string dataDir = AutocorrectLexiconArtifacts.DataDirectory;
             string frenchPath = Path.Combine(dataDir, AutocorrectLexiconArtifacts.FrenchFileName);
@@ -41,7 +45,10 @@ public partial class App
             string verbsPath = Path.Combine(dataDir, AutocorrectLexiconArtifacts.VerbMorphologyFrenchFileName);
 
             if (!File.Exists(frenchPath))
+            {
+                DeckleAppSource.Log.AutocorrectUnavailable("lexicon_missing");
                 return null;
+            }
 
             var autocorrectSettings = AutocorrectSettingsService.Instance.Current;
             var systemLanguages = SystemLanguages.Current;
@@ -66,25 +73,38 @@ public partial class App
                 var ctx = File.Exists(pairPath)
                     ? BigramPairDisambiguator.LoadTsvGz(pairPath, null)
                     : null;
+                if (ctx is null)
+                    DeckleAppSource.Log.AutocorrectAssetSkipped("pair_bigrams", "file_missing");
                 // Without verb morphology the engine runs without subject-verb
                 // agreement correction.
                 var vb = File.Exists(verbsPath) ? VerbMorphology.LoadTsvGz(verbsPath) : null;
+                if (vb is null)
+                    DeckleAppSource.Log.AutocorrectAssetSkipped("verb_morphology", "file_missing");
                 // The whole-sentence judge, resident on the GPU, when its model
                 // directory is present; otherwise deterministic rules only.
                 var rerankerStopwatch = Stopwatch.StartNew();
                 string judgeDir = Path.Combine(AppPaths.ModelsDirectory, "sentence-judge");
+                // Named once: the load asks for it and a failure reports it.
+                const string judgeProvider = "dml";
                 ISentenceReranker? rr = OnnxSlotReranker.TryLoad(
                     judgeDir,
                     margin: SentenceJudgeMargin,
-                    executionProvider: "dml",
+                    executionProvider: judgeProvider,
                     out Exception? judgeLoadError);
                 string engine = DeckleAutocorrectSource.RerankerEngines.SentenceJudge;
                 if (rr is null && judgeLoadError is not null)
                 {
-                    DeckleAutocorrectSource.Log.RerankerLoadFailed(
+                    DeckleAutocorrectSource.Log.RerankerLoadFailure(
                         DeckleAutocorrectSource.RerankerEngines.SentenceJudge,
-                        judgeLoadError.ToString());
+                        judgeProvider,
+                        judgeLoadError.GetType().Name,
+                        judgeLoadError.Message);
                 }
+                // An absent directory is the normal state (the model is staged
+                // by hand) and RerankerStatus already says engine=none. A present
+                // directory that loads nothing without an exception is not.
+                if (rr is null && judgeLoadError is null && Directory.Exists(judgeDir))
+                    DeckleAppSource.Log.AutocorrectAssetSkipped("sentence_judge", "load_returned_null");
                 if (rr is null)
                     engine = DeckleAutocorrectSource.RerankerEngines.None;
                 rerankerStopwatch.Stop();
@@ -160,10 +180,11 @@ public partial class App
             dictionary = null;
             return runtime;
         }
-        catch
+        catch (Exception ex)
         {
             // Data missing or malformed: the app continues without autocorrect
             // rather than failing. Nothing else in the app depends on it.
+            DeckleAppSource.Log.AutocorrectFailed("build", ex.GetType().Name, ex.Message);
             try
             {
                 engine?.Dispose();
@@ -191,10 +212,11 @@ public partial class App
             response = await dispatcher.PromptAsync(
                 AutocorrectNotifications.Enroll, bodyArgs: new object?[] { process });
         }
-        catch
+        catch (Exception ex)
         {
             // Channel failure (e.g. an elevated process drops toasts): best-effort,
             // leave the app undecided so a later run can offer it again.
+            DeckleAppSource.Log.AutocorrectEnrollmentPromptFailed(ex.GetType().Name, ex.Message);
             return;
         }
 
@@ -223,7 +245,13 @@ public partial class App
         foreach (DomainPack pack in activePacks)
         {
             FrequencyLexicon? forms = pack.TryLoad(dataDir);
-            if (forms is null) continue;
+            if (forms is null)
+            {
+                // The person switched this pack on; without its file the
+                // corrections fall back to the base lexicon for its domain.
+                DeckleAppSource.Log.AutocorrectAssetSkipped($"pack:{pack.Id}", "file_missing");
+                continue;
+            }
             DeckleAutocorrectSource.Log.DomainPackMerged(pack.Id, forms.Count);
             packLexicons.Add(forms);
         }

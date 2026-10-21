@@ -30,14 +30,16 @@ public sealed partial class TranscriptionEngine
         }
         catch (Exception ex)
         {
+            // A cancellation is not a failure: OperationCancelled is its whole record.
             if (ex is OperationCanceledException)
             {
                 DeckleCancellationSource.Log.OperationCancelled(
-                    "whisp-transcribe", "upstream", -1);
+                    CancelledOperations.WhispTranscribe, CancellationReasons.Upstream, -1);
             }
-
-            DeckleWhispSource.Log.TranscribeFailed();
-            DeckleWhispSource.Log.TranscribeFailedDetail(-1);
+            else
+            {
+                DeckleWhispSource.Log.TranscriptionFailed("exception", -1, ex.GetType().Name, ex.Message);
+            }
             EmitUserFeedback(FB_ERROR,
                 Loc.Get("Engine_TranscriptionFailed_Title"),
                 Loc.Get("Engine_TranscriptionFailed_Body"),
@@ -48,11 +50,12 @@ public sealed partial class TranscriptionEngine
         }
 
         // An aborted result can still carry usable segments, so only a failure
-        // code without an abort drops the take.
+        // code without an abort drops the take. The backend logs it as Verbose
+        // detail only; its reason makes this the visible incident.
         if (result.ResultCode != 0 && !result.Aborted)
         {
-            DeckleWhispSource.Log.TranscribeFailed();
-            DeckleWhispSource.Log.TranscribeFailedDetail(result.ResultCode);
+            DeckleWhispSource.Log.TranscriptionFailed(
+                result.ErrorReason ?? "native_error", result.ResultCode, "", "");
             EmitUserFeedback(FB_ERROR,
                 Loc.Get("Engine_TranscriptionFailed_Title"),
                 Loc.Get("Engine_TranscriptionFailed_Body"),

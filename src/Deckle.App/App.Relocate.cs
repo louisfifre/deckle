@@ -34,13 +34,14 @@ public partial class App
 
         string? target = ArgumentValue(args, "--to");
         DeckleAppSource.Log.InstallModeEntered();
-        DeckleAppSource.Log.InstallModeEnteredDetail("relocate", "", "", "");
+        DeckleAppSource.Log.InstallModeEnteredDetail(RelocationMode, "", "", "");
 
         // The caller (Settings pre-flight) already validated; re-refusing here
         // is the guard against a hand-typed command line. An invalid target
         // must not leave the user app-less — relaunch plain and bow out.
         if (!IsValidRelocationTarget(target))
         {
+            ReportTransactionalModeExit(RelocationMode, "refused", "invalid_target");
             RestartViaShellExecute();
             return;
         }
@@ -58,6 +59,7 @@ public partial class App
         // or a closed window: the old root never stopped being live — relaunch
         // plain so the move degrades into a no-op, not a vanished app.
         bool ok = await setup.Completion;
+        ReportTransactionalModeExit(RelocationMode, ok ? "completed" : "cancelled", "none");
         if (!ok) RestartViaShellExecute();
         Environment.Exit(0);
     }
@@ -89,21 +91,30 @@ public partial class App
 
         _ = Task.Run(() =>
         {
+            var stopwatch = Stopwatch.StartNew();
             try
             {
                 string old     = Path.GetFullPath(oldRoot).TrimEnd('\\');
                 string current = Path.GetFullPath(AppPaths.UserDataRoot).TrimEnd('\\');
-                if (string.Equals(old, current, StringComparison.OrdinalIgnoreCase)) return;
-                if (!Directory.Exists(old)) return;
-                if (!File.Exists(Path.Combine(old, "settings.json"))
-                    && !Directory.Exists(Path.Combine(old, "modules"))) return;
+                string? skip =
+                    string.Equals(old, current, StringComparison.OrdinalIgnoreCase) ? "is_live_root"
+                    : !Directory.Exists(old) ? "not_found"
+                    : !File.Exists(Path.Combine(old, "settings.json"))
+                      && !Directory.Exists(Path.Combine(old, "modules")) ? "not_a_data_root"
+                    : null;
+                if (skip is not null)
+                {
+                    DeckleAppSource.Log.DataRootCleanupFinished("skipped", skip, stopwatch.ElapsedMilliseconds);
+                    return;
+                }
 
+                DeckleAppSource.Log.DataRootCleanupStarting(old);
                 Directory.Delete(old, recursive: true);
+                DeckleAppSource.Log.DataRootCleanupFinished("completed", "none", stopwatch.ElapsedMilliseconds);
             }
             catch (Exception ex)
             {
-                DeckleAppSource.Log.ShutdownWarning();
-                DeckleAppSource.Log.ShutdownWarningDetail("relocated data root cleanup: " + ex.Message);
+                DeckleAppSource.Log.DataRootCleanupFailed(ex.GetType().Name, ex.Message, stopwatch.ElapsedMilliseconds);
             }
         });
     }

@@ -106,4 +106,34 @@ public sealed class JsonSettingsStoreTests
             "Changed was not raised once the file became valid");
         Assert.Equal(9, temp.Store.Current.Value);
     }
+
+    // Changed is raised from the follow timer's thread, where a subscriber's
+    // exception used to escape and end the process; the store must survive it
+    // and keep following.
+    [Fact]
+    [Trait("Category", "integration")]
+    public void AThrowingChangedHandlerDoesNotStopTheStoreFollowing()
+    {
+        using var temp = new TempStore();
+        int calls = 0;
+        temp.Store.Changed += () =>
+        {
+            if (Interlocked.Increment(ref calls) == 1)
+                throw new InvalidOperationException("subscriber failure");
+        };
+
+        File.WriteAllText(temp.FilePath, "{ \"value\": 4 }");
+        Assert.True(
+            temp.Changed.Wait(FollowTimeout, TestContext.Current.CancellationToken),
+            "Changed was not raised after the first external write");
+        Assert.Equal(4, temp.Store.Current.Value);
+
+        temp.Changed.Reset();
+        File.WriteAllText(temp.FilePath, "{ \"value\": 5 }");
+
+        Assert.True(
+            temp.Changed.Wait(FollowTimeout, TestContext.Current.CancellationToken),
+            "Changed was not raised after a subscriber threw");
+        Assert.Equal(5, temp.Store.Current.Value);
+    }
 }

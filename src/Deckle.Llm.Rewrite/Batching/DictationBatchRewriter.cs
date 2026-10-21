@@ -83,10 +83,13 @@ public sealed class DictationBatchRewriter
             {
                 outcome = rewrite.GetAwaiter().GetResult();
             }
-            catch (Exception)
+            catch (Exception ex)
             {
                 // RewriteOne catches everything itself; this guards the task
-                // machinery, not the service.
+                // machinery, not the service. RewriteOne never logged this
+                // batch's end, so the fallback is logged here.
+                DeckleLlmSource.Log.BatchRewriteFellBack(
+                    batch.Index, "task_faulted", ex.GetType().Name, ex.Message);
                 outcome = new BatchOutcome(null, 0, default);
             }
 
@@ -127,22 +130,28 @@ public sealed class DictationBatchRewriter
     {
         var sw = Stopwatch.StartNew();
         GenerationResult result = default;
+        Exception? thrown = null;
         try
         {
             result = _service.Rewrite(batch.Text, _profile);
         }
-        catch (Exception)
+        catch (Exception ex)
         {
             // RewriteService catches and reports its own failures; another
             // implementation may not, and a throw must still end as a fallback.
+            // The fallback line below carries its cause.
+            thrown = ex;
         }
         sw.Stop();
 
         string? rewritten = string.IsNullOrWhiteSpace(result.Text) ? null : result.Text.Trim();
         if (rewritten is null)
         {
-            DeckleLlmSource.Log.BatchRewriteFellBack();
-            DeckleLlmSource.Log.BatchRewriteFellBackDetail(batch.Index);
+            string reason = thrown is not null ? "exception"
+                          : result.Text is null ? "no_result"
+                          : "blank";
+            DeckleLlmSource.Log.BatchRewriteFellBack(
+                batch.Index, reason, thrown?.GetType().Name ?? "", thrown?.Message ?? "");
         }
         else
         {

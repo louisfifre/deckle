@@ -41,22 +41,4 @@ public sealed partial class DeckleWhispSource
              tokens,
              characters);
     }
-
-    [Event(EvtSegmentCallbackThrew,
-           Level = EventLevel.Error,
-           Keywords = (EventKeywords)Keywords.Pipeline,
-           Message = "The segment callback threw")]
-    public void SegmentCallbackThrew()
-    {
-        if (IsEnabled()) WriteEvent(EvtSegmentCallbackThrew);
-    }
-
-    [Event(EvtSegmentCallbackThrewDetail,
-           Level = EventLevel.Verbose,
-           Keywords = (EventKeywords)Keywords.Pipeline,
-           Message = "segment callback threw | ex_type={0} | ex_message={1}")]
-    public void SegmentCallbackThrewDetail(string ex_type, string ex_message)
-    {
-        if (IsEnabled()) WriteEvent(EvtSegmentCallbackThrewDetail, ex_type, ex_message);
-    }
 }

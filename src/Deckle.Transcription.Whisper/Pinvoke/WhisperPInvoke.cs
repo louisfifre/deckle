@@ -114,4 +114,15 @@ public static class WhisperPInvoke
 
     [DllImport("libwhisper", CallingConvention = CallingConvention.Cdecl)]
     public static extern void whisper_log_set(WhisperLogCallback log_callback, IntPtr user_data);
+
+    // Static strings owned by libwhisper: read with PtrToStringUTF8, never
+    // freed. whisper_version is absent from older builds, so a hand-imported
+    // runtime can throw EntryPointNotFoundException here.
+    [DllImport("libwhisper", CallingConvention = CallingConvention.Cdecl)]
+    public static extern IntPtr whisper_version();
+
+    // Registers ggml's backends on its first call: calling it before the first
+    // context creation would start the GPU device enumeration early.
+    [DllImport("libwhisper", CallingConvention = CallingConvention.Cdecl)]
+    public static extern IntPtr whisper_print_system_info();
 }

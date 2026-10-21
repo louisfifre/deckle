@@ -70,6 +70,8 @@ public sealed partial class DeployPage : Page
 
         long startTicks = Environment.TickCount64;
         string step = "gate";
+        DeckleSetupSource.Log.DeployStarted(
+            context.UpdateMode, context.InstallDirectory, context.DataDirectory);
         try
         {
             // Running-process gate first: Windows locks a running image, so a
@@ -86,7 +88,7 @@ public sealed partial class DeployPage : Page
             string[] running = await Task.Run(() => FindRunning(context));
             if (running.Length > 0)
             {
-                DeckleSetupSource.Log.DeployBlockedByRunningApp();
+                DeckleSetupSource.Log.DeployBlockedByRunningApp(running.Length, string.Join(",", running));
                 ShowBlocked(Loc.Get("Setup_Deploy_AppRunning"));
                 return;
             }
@@ -113,8 +115,8 @@ public sealed partial class DeployPage : Page
         }
         catch (Exception ex)
         {
-            DeckleSetupSource.Log.DeployFailed();
-            DeckleSetupSource.Log.DeployFailedDetail(step, $"{ex.GetType().Name}: {ex.Message}");
+            DeckleSetupSource.Log.DeployFailed(
+                step, ex.GetType().Name, ex.Message, Environment.TickCount64 - startTicks);
             ShowBlocked(Loc.Format("Setup_Deploy_Failed_Format", ex.Message));
         }
     }
@@ -236,7 +238,9 @@ public sealed partial class DeployPage : Page
         if (!PathsEqual(context.DataDirectory, InstallPaths.DefaultDataDir))
             psi.Environment[UserEnvironment.DataRootVariable] = context.DataDirectory;
 
-        Process.Start(psi);
+        // UseShellExecute=false: Start returns the child or throws, never null.
+        using Process child = Process.Start(psi)!;
+        DeckleSetupSource.Log.ChildProcessLaunchedDetail("install_continue", child.Id, appExe);
     }
 
     // ── Helpers ───────────────────────────────────────────────────────────────

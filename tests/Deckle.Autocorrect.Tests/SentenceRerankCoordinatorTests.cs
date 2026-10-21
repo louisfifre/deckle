@@ -1,6 +1,8 @@
 using System.Collections.Generic;
+using System.Diagnostics.Tracing;
 using Deckle.Autocorrect;
 using Deckle.Core;
+using Deckle.TestSupport;
 using Xunit;
 
 namespace Deckle.Autocorrect.Tests;
@@ -427,6 +429,54 @@ public class SentenceRerankCoordinatorTests
         RerankRequest request = Assert.Single(lane.Submitted);
         Assert.NotNull(request.VerifiedSentence);
         Assert.Equal(("la.", "là."), Assert.Single(injector.Calls));
+    }
+
+    // Regression: a request that never came back kept _inFlight set forever, and
+    // every later sentence queued behind it without a trace.
+    [Fact]
+    public void WedgedRequestIsReportedOnceAndItsRecoveryClosesTheIncident()
+    {
+        using var listener = new TestEventListener("Deckle-Autocorrect");
+        var time = new ManualTimeProvider();
+        var lane = new TestRerankLane { Manual = true, Reranker = _ => "là" };
+        var coord = new SentenceRerankCoordinator(
+            lane, ProbeForLa(), new RecordingInjector(), () => "",
+            timeProvider: time);
+
+        coord.OnWordCommitted("la", '.', true);
+        time.Advance(TimeSpan.FromSeconds(11));
+        coord.OnWordCommitted("la", '.', true);
+        coord.OnWordCommitted("la", '.', true);
+        lane.DeliverLast();
+
+        Assert.Equal(2, lane.Submitted.Count);
+        Assert.Single(listener.Events, e =>
+            e.EventId == DeckleAutocorrectSource.EvtRerankStalled
+            && PayloadValue(e, "age_ms") is 11_000L);
+        Assert.Single(listener.Events, e =>
+            e.EventId == DeckleAutocorrectSource.EvtRerankStallRecovered
+            && PayloadValue(e, "elapsed_ms") is 11_000L);
+    }
+
+    private static object? PayloadValue(EventWrittenEventArgs ev, string name)
+    {
+        var names = ev.PayloadNames;
+        var payload = ev.Payload;
+        if (names is null || payload is null) return null;
+        for (int i = 0; i < names.Count; i++)
+            if (names[i] == name) return payload[i];
+        return null;
+    }
+
+    private sealed class ManualTimeProvider : TimeProvider
+    {
+        private long _timestamp;
+
+        public override long TimestampFrequency => TimeSpan.TicksPerSecond;
+
+        public override long GetTimestamp() => _timestamp;
+
+        public void Advance(TimeSpan by) => _timestamp += by.Ticks;
     }
 
     private sealed class FakeProbe : IAmbiguityProbe

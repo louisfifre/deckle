@@ -19,4 +19,10 @@ public interface IAudioRecordingHost
     // The payload is always *computed* (auto-calibration depends on it);
     // this flag only decides whether it's broadcast.
     bool MicrophoneTelemetryEnabled { get; }
+
+    // What the take is for, as the recording milestones name it: dictation,
+    // level_test or listening_test. Without it a Settings test reads in the
+    // log exactly like a dictation. Defaulted so a dictation host needs no
+    // change.
+    string RecordingPurpose => "dictation";
 }

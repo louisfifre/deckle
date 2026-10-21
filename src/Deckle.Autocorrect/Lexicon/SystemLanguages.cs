@@ -30,18 +30,20 @@ public static class SystemLanguages
     private static IReadOnlySet<string> Detect()
     {
         var languages = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        Exception? failure = null;
         try
         {
             foreach (string tag in Windows.System.UserProfile.GlobalizationPreferences.Languages)
                 Add(languages, tag);
         }
-        catch (Exception)
+        catch (Exception ex)
         {
             // The WinRT projection is unavailable (a test host, a service
             // context). The culture of the running user is the honest fallback:
             // narrower than the real list, never wider, so the worst case is a
             // pack the user turns on by hand.
             languages.Clear();
+            failure = ex;
         }
 
         if (languages.Count == 0)
@@ -49,6 +51,14 @@ public static class SystemLanguages
             Add(languages, CultureInfo.CurrentUICulture.Name);
             Add(languages, CultureInfo.InstalledUICulture.Name);
         }
+
+        // Once per process (the Lazy): a narrowed list explains a lexical
+        // domain that stays off by default.
+        if (failure is not null)
+            DeckleAutocorrectSource.Log.SystemLanguagesFallback(
+                string.Join(',', languages.Order(StringComparer.OrdinalIgnoreCase)),
+                failure.GetType().FullName ?? failure.GetType().Name,
+                failure.Message);
         return languages;
     }
 

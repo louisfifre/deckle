@@ -77,22 +77,20 @@ public sealed partial class DeckleWhispSource
         if (IsEnabled()) WriteEvent(EvtTranscribeEmpty);
     }
 
-    [Event(EvtTranscribeFailed,
+    // reason (closed vocabulary): exception (the backend call threw),
+    // native_error (the backend returned result_code != 0), no_context (the
+    // backend had no model loaded when the call came, result_code -1),
+    // incomplete (the consumer could not deliver every utterance). The two
+    // backend reasons come from TranscriptionResult.ErrorReason. result_code
+    // is -1 when no native code applies; ex_type and ex_message are empty
+    // unless it threw.
+    [Event(EvtTranscriptionFailed,
            Level = EventLevel.Error,
            Keywords = (EventKeywords)Keywords.Pipeline,
-           Message = "Transcription failed")]
-    public void TranscribeFailed()
+           Message = "Transcription failed | reason={0} | result_code={1} | ex_type={2} | ex_message={3}")]
+    public void TranscriptionFailed(string reason, int result_code, string ex_type, string ex_message)
     {
-        if (IsEnabled()) WriteEvent(EvtTranscribeFailed);
-    }
-
-    [Event(EvtTranscribeFailedDetail,
-           Level = EventLevel.Verbose,
-           Keywords = (EventKeywords)Keywords.Pipeline,
-           Message = "whisper_full failed | result={0}")]
-    public void TranscribeFailedDetail(int result)
-    {
-        if (IsEnabled()) WriteEvent(EvtTranscribeFailedDetail, result);
+        if (IsEnabled()) WriteEvent(EvtTranscriptionFailed, reason, result_code, ex_type, ex_message);
     }
 
     [Event(EvtTranscribeCompleted,

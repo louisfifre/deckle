@@ -170,6 +170,40 @@ internal static partial class ScreenCaptureInterop
             $"No DXGI output found for HMONITOR 0x{hmon:X}. The monitor may have been disconnected, or its adapter doesn't expose a duplication-capable output.");
     }
 
+    [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
+    private unsafe struct DXGI_ADAPTER_DESC
+    {
+        public fixed char Description[128];
+        public uint  VendorId;
+        public uint  DeviceId;
+        public uint  SubSysId;
+        public uint  Revision;
+        public nuint DedicatedVideoMemory;
+        public nuint DedicatedSystemMemory;
+        public nuint SharedSystemMemory;
+        public uint  AdapterLuidLowPart;
+        public int   AdapterLuidHighPart;
+    }
+
+    // For the log only: a failure reads "unknown" and never fails the
+    // capture start.
+    public static string GetAdapterDescription(nint adapterPtr)
+    {
+        if (adapterPtr == 0) return "unknown";
+        unsafe
+        {
+            // IDXGIAdapter::GetDesc is at vtable slot 8 (3 IUnknown + 4
+            // IDXGIObject + EnumOutputs at 7).
+            var vtbl = *(nint**)adapterPtr;
+            var getDesc = (delegate* unmanaged<nint, DXGI_ADAPTER_DESC*, int>)vtbl[8];
+            DXGI_ADAPTER_DESC desc;
+            int hr = getDesc(adapterPtr, &desc);
+            if (hr != 0) return "unknown";
+            string name = new string(desc.Description);
+            return name.Length == 0 ? "unknown" : name;
+        }
+    }
+
     /// <summary>
     /// DXGI delivers the desktop in one of <paramref name="supportedFormats"/>,
     /// converting when the current format is not listed; read the result

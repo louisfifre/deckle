@@ -67,22 +67,16 @@ public sealed partial class DeckleWhispSource
     [Event(EvtWarmupClipLoadFailed,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "The warmup clip could not be loaded")]
-    public void WarmupClipLoadFailed()
+           Message = "The warmup clip could not be loaded, the model warms up on silence | ex_type={0} | ex_message={1}")]
+    public void WarmupClipLoadFailed(string ex_type, string ex_message)
     {
-        if (IsEnabled()) WriteEvent(EvtWarmupClipLoadFailed);
-    }
-
-    [Event(EvtWarmupClipLoadFailedDetail,
-           Level = EventLevel.Verbose,
-           Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "warmup clip load failed | ex_type={0} | ex_message={1}")]
-    public void WarmupClipLoadFailedDetail(string ex_type, string ex_message)
-    {
-        if (IsEnabled()) WriteEvent(EvtWarmupClipLoadFailedDetail, ex_type, ex_message);
+        if (IsEnabled()) WriteEvent(EvtWarmupClipLoadFailed, ex_type, ex_message);
     }
 
     // ── Warmup pipeline ──────────────────────────────────────────────────
+    //
+    // WarmupStart always ends with WarmupComplete, WarmupCancelled or
+    // WarmupFailed: EnsurePrimed emits one on every exit, thrown ones included.
 
     [Event(EvtWarmupStart,
            Level = EventLevel.Informational,
@@ -100,6 +94,28 @@ public sealed partial class DeckleWhispSource
     public void WarmupComplete()
     {
         if (IsEnabled()) WriteEvent(EvtWarmupComplete);
+    }
+
+    // A Stop or Dispose that lands during the prime; the next take primes again.
+    [Event(EvtWarmupCancelled,
+           Level = EventLevel.Informational,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Message = "Warmup cancelled | elapsed_ms={0}")]
+    public void WarmupCancelled(long elapsed_ms)
+    {
+        if (IsEnabled()) WriteEvent(EvtWarmupCancelled, elapsed_ms);
+    }
+
+    // reason (closed vocabulary): model_load_failed, whose cause the
+    // ModelUnavailable incident already carries (ex_type empty), or
+    // prime_exception, whose exception propagates to the worker afterwards.
+    [Event(EvtWarmupFailed,
+           Level = EventLevel.Warning,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Message = "Warmup failed | reason={0} | ex_type={1} | ex_message={2} | elapsed_ms={3}")]
+    public void WarmupFailed(string reason, string ex_type, string ex_message, long elapsed_ms)
+    {
+        if (IsEnabled()) WriteEvent(EvtWarmupFailed, reason, ex_type, ex_message, elapsed_ms);
     }
 
     // Cold prime only: prime_ms is the model load plus dummy inference,
@@ -129,33 +145,6 @@ public sealed partial class DeckleWhispSource
         if (IsEnabled()) WriteEvent(EvtModelLoading);
     }
 
-    [Event(EvtModelLoadStart,
-           Level = EventLevel.Verbose,
-           Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "load start | file={0} | file_mb={1:F1} | use_gpu={2}")]
-    public void ModelLoadStart(string file, double file_mb, int use_gpu)
-    {
-        if (IsEnabled()) WriteEvent(EvtModelLoadStart, file, file_mb, use_gpu);
-    }
-
-    [Event(EvtModelLoadAborted,
-           Level = EventLevel.Warning,
-           Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "Model load was aborted")]
-    public void ModelLoadAborted()
-    {
-        if (IsEnabled()) WriteEvent(EvtModelLoadAborted);
-    }
-
-    [Event(EvtModelLoadAbortedDetail,
-           Level = EventLevel.Verbose,
-           Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "load aborted | reason={0} | path={1}")]
-    public void ModelLoadAbortedDetail(string reason, string path)
-    {
-        if (IsEnabled()) WriteEvent(EvtModelLoadAbortedDetail, reason, path);
-    }
-
     [Event(EvtModelInitFromFile,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Lifecycle,
@@ -165,45 +154,34 @@ public sealed partial class DeckleWhispSource
         if (IsEnabled()) WriteEvent(EvtModelInitFromFile, ctx);
     }
 
-    [Event(EvtModelLoadFailed,
-           Level = EventLevel.Error,
-           Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "The model could not be loaded")]
-    public void ModelLoadFailed()
-    {
-        if (IsEnabled()) WriteEvent(EvtModelLoadFailed);
-    }
-
-    [Event(EvtModelLoadFailedDetail,
-           Level = EventLevel.Verbose,
-           Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "load failed | path={0}")]
-    public void ModelLoadFailedDetail(string path)
-    {
-        if (IsEnabled()) WriteEvent(EvtModelLoadFailedDetail, path);
-    }
-
+    // Opens the "no transcription" incident, once until a load succeeds.
+    // reason is the backend's ErrorReason, load_failed when it gave none, or
+    // load_exception when the load threw; ex_type and ex_message are empty
+    // unless it threw. The backend's own ModelLoadFailed carries the device.
     [Event(EvtModelUnavailable,
            Level = EventLevel.Error,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "The transcription model is unavailable")]
-    public void ModelUnavailable()
+           Tags = ObservationTags.Journal,
+           Message = "The transcription model is unavailable | reason={0} | ex_type={1} | ex_message={2}")]
+    public void ModelUnavailable(string reason, string ex_type, string ex_message)
     {
-        if (IsEnabled()) WriteEvent(EvtModelUnavailable);
+        if (IsEnabled()) WriteEvent(EvtModelUnavailable, reason, ex_type, ex_message);
     }
 
-    [Event(EvtModelUnavailableDetail,
+    // A later attempt that fails while the incident is open.
+    [Event(EvtModelLoadRetryFailed,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "model unavailable | reason={0}")]
-    public void ModelUnavailableDetail(string reason)
+           Message = "model load retry failed | reason={0} | ex_type={1} | ex_message={2}")]
+    public void ModelLoadRetryFailed(string reason, string ex_type, string ex_message)
     {
-        if (IsEnabled()) WriteEvent(EvtModelUnavailableDetail, reason);
+        if (IsEnabled()) WriteEvent(EvtModelLoadRetryFailed, reason, ex_type, ex_message);
     }
 
     [Event(EvtModelRecovered,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Lifecycle,
+           Tags = ObservationTags.Journal,
            Message = "Transcription model availability recovered")]
     public void ModelRecovered()
     {
@@ -213,72 +191,11 @@ public sealed partial class DeckleWhispSource
     [Event(EvtModelLoaded,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Lifecycle,
+           Tags = ObservationTags.Journal,
            Message = "Model loaded")]
     public void ModelLoaded()
     {
         if (IsEnabled()) WriteEvent(EvtModelLoaded);
-    }
-
-    [Event(EvtModelLoadedDetail,
-           Level = EventLevel.Verbose,
-           Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "model loaded | backend={0}")]
-    public void ModelLoadedDetail(string backend)
-    {
-        if (IsEnabled()) WriteEvent(EvtModelLoadedDetail, backend);
-    }
-
-    [Event(EvtModelLoadComplete,
-           Level = EventLevel.Verbose,
-           Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "load complete | load_ms={0} | backend={1} | device={2} | device_name={3}")]
-    public void ModelLoadComplete(long load_ms, string backend, string device, string device_name)
-    {
-        if (IsEnabled()) WriteEvent(EvtModelLoadComplete, load_ms, backend, device, device_name);
-    }
-
-    // The compute device of a freshly loaded context. Ungated on purpose: a
-    // log read from another machine must say whether transcription runs on
-    // the GPU, without the Transcription detail switched on. The device name
-    // tells a discrete GPU from an integrated one.
-    [Event(EvtModelOnGpu,
-           Level = EventLevel.Informational,
-           Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "The model runs on the GPU: {0}")]
-    public void ModelOnGpu(string device_name)
-    {
-        if (IsEnabled()) WriteEvent(EvtModelOnGpu, device_name);
-    }
-
-    [Event(EvtModelOnCpu,
-           Level = EventLevel.Informational,
-           Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "The model runs on the CPU, as the settings ask")]
-    public void ModelOnCpu()
-    {
-        if (IsEnabled()) WriteEvent(EvtModelOnCpu);
-    }
-
-    // whisper.cpp falls back to the CPU on its own when no GPU device answers
-    // or the GPU backend fails to initialize; the load still succeeds.
-    [Event(EvtModelGpuUnavailable,
-           Level = EventLevel.Warning,
-           Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "The GPU could not be used, the model runs on the CPU")]
-    public void ModelGpuUnavailable()
-    {
-        if (IsEnabled()) WriteEvent(EvtModelGpuUnavailable);
-    }
-
-    // reason (closed vocabulary): no_gpu_found | gpu_init_failed. device is
-    // the one whisper gave up on, empty for no_gpu_found.
-    [Event(EvtModelGpuUnavailableDetail,
-           Level = EventLevel.Verbose,
-           Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "gpu unavailable | reason={0} | device={1}")]
-    public void ModelGpuUnavailableDetail(string reason, string device)
-    {
-        if (IsEnabled()) WriteEvent(EvtModelGpuUnavailableDetail, reason, device);
     }
 
     [Event(EvtModelOnDemandLoad,
@@ -297,6 +214,18 @@ public sealed partial class DeckleWhispSource
     public void ModelIdleUnloadSkipped(string state)
     {
         if (IsEnabled()) WriteEvent(EvtModelIdleUnloadSkipped, state);
+    }
+
+    // The idle-unload timer runs on the thread pool, where an escaping
+    // exception ends the process; the model then stays loaded until the next
+    // take re-arms the timer.
+    [Event(EvtModelIdleUnloadFailed,
+           Level = EventLevel.Error,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Message = "The idle model unload failed, the model stays loaded | ex_type={0} | ex_message={1}")]
+    public void ModelIdleUnloadFailed(string ex_type, string ex_message)
+    {
+        if (IsEnabled()) WriteEvent(EvtModelIdleUnloadFailed, ex_type, ex_message);
     }
 
     [Event(EvtModelUnloadedJalon,
@@ -320,7 +249,7 @@ public sealed partial class DeckleWhispSource
     [Event(EvtModelIdleTimerSet,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "idle timer set ({0}s)")]
+           Message = "idle timer set | idle_s={0}")]
     public void ModelIdleTimerSet(int idle_s)
     {
         if (IsEnabled()) WriteEvent(EvtModelIdleTimerSet, idle_s);
@@ -360,71 +289,6 @@ public sealed partial class DeckleWhispSource
     public void ModelFallbackDetail(string configured, string installed)
     {
         if (IsEnabled()) WriteEvent(EvtModelFallbackDetail, configured, installed);
-    }
-
-    // ── Whisper.cpp log redirect ────────────────────────────────────────
-
-    [Event(EvtWhisperLogVerbose,
-           Level = EventLevel.Verbose,
-           Keywords = (EventKeywords)Keywords.Pipeline,
-           Message = "{0}")]
-    public void WhisperLogVerbose(string message)
-    {
-        if (IsEnabled()) WriteEvent(EvtWhisperLogVerbose, message);
-    }
-
-    [Event(EvtWhisperLogWarning,
-           Level = EventLevel.Warning,
-           Keywords = (EventKeywords)Keywords.Pipeline,
-           Message = "Whisper reported a warning")]
-    public void WhisperLogWarning()
-    {
-        if (IsEnabled()) WriteEvent(EvtWhisperLogWarning);
-    }
-
-    [Event(EvtWhisperLogWarningDetail,
-           Level = EventLevel.Verbose,
-           Keywords = (EventKeywords)Keywords.Pipeline,
-           Message = "{0}")]
-    public void WhisperLogWarningDetail(string message)
-    {
-        if (IsEnabled()) WriteEvent(EvtWhisperLogWarningDetail, message);
-    }
-
-    [Event(EvtWhisperLogError,
-           Level = EventLevel.Error,
-           Keywords = (EventKeywords)Keywords.Pipeline,
-           Message = "Whisper reported an error")]
-    public void WhisperLogError()
-    {
-        if (IsEnabled()) WriteEvent(EvtWhisperLogError);
-    }
-
-    [Event(EvtWhisperLogErrorDetail,
-           Level = EventLevel.Verbose,
-           Keywords = (EventKeywords)Keywords.Pipeline,
-           Message = "{0}")]
-    public void WhisperLogErrorDetail(string message)
-    {
-        if (IsEnabled()) WriteEvent(EvtWhisperLogErrorDetail, message);
-    }
-
-    [Event(EvtWhisperLogSetUnavailable,
-           Level = EventLevel.Warning,
-           Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "The Whisper log hook could not be installed")]
-    public void WhisperLogSetUnavailable()
-    {
-        if (IsEnabled()) WriteEvent(EvtWhisperLogSetUnavailable);
-    }
-
-    [Event(EvtWhisperLogSetUnavailableDetail,
-           Level = EventLevel.Verbose,
-           Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "whisper_log_set unavailable | ex_message={0}")]
-    public void WhisperLogSetUnavailableDetail(string ex_message)
-    {
-        if (IsEnabled()) WriteEvent(EvtWhisperLogSetUnavailableDetail, ex_message);
     }
 
     // ── Whisper init-phase compaction ────────────────────────────────────

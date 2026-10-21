@@ -41,6 +41,8 @@ public sealed class LlmSettingsService
             path:        path,
             mutexName:   $"{AppPaths.AppFolderName}-Settings-Llm-Save",
             jsonOptions: _jsonOptions,
+            logInfo:     msg => DeckleLlmSource.Log.SettingsLoaded(msg),
+            logVerbose:  msg => DeckleLlmSource.Log.SettingsLoadComplete(msg),
             logWarning:  msg => DeckleLlmSource.Log.SettingsLoadWarning(msg),
             logError:    msg => DeckleLlmSource.Log.SettingsLoadError(msg),
             postLoadMigration: LlmSettingsMigrations.Apply);

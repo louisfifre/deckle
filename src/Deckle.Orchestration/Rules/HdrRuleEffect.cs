@@ -14,7 +14,7 @@ public sealed class HdrRuleEffect : IRuleEffect
 
     public Action? Apply(AppEntry entry)
     {
-        IReadOnlyList<DisplayTarget> targets = DisplayTargets.Enumerate();
+        bool listed = DisplayTargets.TryEnumerate(out IReadOnlyList<DisplayTarget> targets);
         var undo = new List<(string Device, bool Prior)>();
 
         foreach ((string device, HdrRule rule) in entry.Rules.HdrByMonitor)
@@ -25,7 +25,9 @@ public sealed class HdrRuleEffect : IRuleEffect
             var matches = targets.Where(t => SameDevice(t, device)).ToList();
             if (matches.Count == 0)
             {
-                DeckleOrchestrationSource.Log.HdrRuleSkipped(device, "absent");
+                // An unreadable monitor list is not an unplugged monitor: the
+                // reason keeps the two apart in a report.
+                DeckleOrchestrationSource.Log.HdrRuleSkipped(device, listed ? "absent" : "display_query_failed");
                 continue;
             }
 
@@ -67,7 +69,7 @@ public sealed class HdrRuleEffect : IRuleEffect
     // devices that could not be restored, or null when all were.
     private static string? Undo(List<(string Device, bool Prior)> changes)
     {
-        IReadOnlyList<DisplayTarget> targets = DisplayTargets.Enumerate();
+        bool listed = DisplayTargets.TryEnumerate(out IReadOnlyList<DisplayTarget> targets);
         var failed = new List<string>();
 
         for (int i = changes.Count - 1; i >= 0; i--)
@@ -76,7 +78,12 @@ public sealed class HdrRuleEffect : IRuleEffect
             var matches = targets.Where(t => SameDevice(t, device) && t.HdrSupported).ToList();
             if (matches.Count == 0)
             {
-                DeckleOrchestrationSource.Log.HdrRuleSkipped(device, "absent");
+                DeckleOrchestrationSource.Log.HdrRuleSkipped(device, listed ? "absent" : "display_query_failed");
+
+                // The monitor may still be there with HDR as the app left it,
+                // so the restore reports a failure rather than claiming all is
+                // back. The thrown restore is only logged by its caller.
+                if (!listed) failed.Add(device);
                 continue;
             }
             foreach (DisplayTarget target in matches)
@@ -97,11 +104,10 @@ public sealed class HdrRuleEffect : IRuleEffect
     {
         if (HdrStateSwitch.TrySet(target.AdapterId, target.TargetId, to, out int error))
         {
-            DeckleOrchestrationSource.Log.HdrStateChanged(target.GdiDeviceName, from, to);
+            DeckleOrchestrationSource.Log.HdrStateChanged(target.GdiDeviceName, from, to, HdrStateSwitch.ApiName);
             return true;
         }
-        DeckleOrchestrationSource.Log.HdrSetFailed();
-        DeckleOrchestrationSource.Log.HdrSetFailedDetail(target.GdiDeviceName, error);
+        DeckleOrchestrationSource.Log.HdrSetFailed(target.GdiDeviceName, error, HdrStateSwitch.ApiName);
         return false;
     }
 

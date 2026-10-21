@@ -93,8 +93,9 @@ public sealed partial class RelocatePage : Page
             var drive = new DriveInfo(Path.GetPathRoot(target)!);
             if (drive.AvailableFreeSpace < required)
             {
-                Fail(step,
-                    $"insufficient_space drive={drive.Name} required={required} free={drive.AvailableFreeSpace}",
+                DeckleSetupSource.Log.RelocateInsufficientSpaceDetail(
+                    drive.Name, required, drive.AvailableFreeSpace);
+                Fail(step, "insufficient_space", null,
                     Loc.Format("Setup_Relocate_InsufficientSpace_Format",
                         drive.Name, FormatBytes(required), FormatBytes(drive.AvailableFreeSpace)));
                 return;
@@ -114,7 +115,7 @@ public sealed partial class RelocatePage : Page
             }
             if (running.Length > 0)
             {
-                Fail(step, "app_still_running", Loc.Get("Setup_Deploy_AppRunning"));
+                Fail(step, "app_still_running", null, Loc.Get("Setup_Deploy_AppRunning"));
                 return;
             }
 
@@ -142,23 +143,24 @@ public sealed partial class RelocatePage : Page
         catch (OperationCanceledException)
         {
             // DataRootRelocator already rolled back every pre-handoff change.
+            DeckleSetupSource.Log.RelocateCancelled(step);
         }
         catch (Exception ex)
         {
             // The child owns the target after a successful handoff. A local UI
             // or logging failure must not report the committed move as failed.
             if (committed) return;
-            Fail(step, $"{ex.GetType().Name}: {ex.Message}", ex.Message);
+            Fail(step, "threw", ex, ex.Message);
         }
     }
 
-    private void Fail(string step, string reason, string? display = null)
+    private void Fail(string step, string reason, Exception? ex, string display)
     {
-        DeckleSetupSource.Log.RelocateFailed();
-        DeckleSetupSource.Log.RelocateFailedDetail(step, reason);
+        DeckleSetupSource.Log.RelocateFailed(
+            reason, step, ex?.GetType().Name ?? "", ex?.Message ?? "");
         RelocateProgress.Visibility = Visibility.Collapsed;
         StatusText.Text = "";
-        ErrorBar.Message = Loc.Format("Setup_Relocate_Failed_Format", display ?? reason);
+        ErrorBar.Message = Loc.Format("Setup_Relocate_Failed_Format", display);
         ErrorBar.IsOpen = true;
     }
 

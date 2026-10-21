@@ -25,6 +25,12 @@ public sealed class VadService : IDisposable
     private bool _downloadKicked;   // a background download is in flight or done
     private bool _loadFailed;       // constructing the session threw — don't retry
 
+    // The open "takes run untrimmed" incident, null when none. Guarded because the
+    // background download reports its failure from a pool thread, and trim
+    // outcomes arrive from the streaming consumer task.
+    private readonly object _incidentLock = new();
+    private string? _incidentReason;
+
     public VadService(Func<string> resolveModelsDirectory)
     {
         _resolveModelsDirectory = resolveModelsDirectory;
@@ -37,14 +43,15 @@ public sealed class VadService : IDisposable
         if (_vad is not null) return _vad;
         if (_loadFailed) return null;
 
-        string modelPath = Path.Combine(_resolveModelsDirectory(), SileroVadModel.FileName);
+        string modelPath = ResolveModelPath();
+        bool modelPresent = File.Exists(modelPath);
 
-        if (File.Exists(modelPath))
+        if (modelPresent)
         {
             // Hash verify and session construction run at most once per service,
             // on the first streaming take's critical path; timed together.
             var sw = Stopwatch.StartNew();
-            if (FileMatchesExpectedSha(modelPath))
+            if (FileMatchesExpectedSha(modelPath, out Exception? readError))
             {
                 try
                 {
@@ -53,16 +60,16 @@ public sealed class VadService : IDisposable
                     DeckleVadSource.Log.SpeechTrimVadLoaded();
                     DeckleVadSource.Log.SpeechTrimVadLoadedDetail(modelPath);
                     DeckleVadSource.Log.SpeechTrimVadLoadComplete(sw.ElapsedMilliseconds);
+                    CloseIncident();
                     return _vad;
                 }
                 catch (Exception ex)
                 {
                     _loadFailed = true;
-                    DeckleVadSource.Log.SpeechTrimVadUnavailable();
-                    DeckleVadSource.Log.SpeechTrimVadUnavailableDetail($"load failed: {ex.GetType().Name}: {ex.Message}");
+                    OpenIncident("load_failed", modelPath, ex.GetType().Name, ex.Message);
                     // Bytes match the pinned build yet it won't construct — should not
                     // happen, but delete defensively so a later launch retries clean.
-                    try { File.Delete(modelPath); } catch { /* best effort */ }
+                    TryDeleteModel(modelPath);
                     return null;
                 }
             }
@@ -71,20 +78,42 @@ public sealed class VadService : IDisposable
             // bump actually takes effect instead of silently keeping the old file) or
             // a corrupt copy. File.Exists alone can't tell the difference; drop it and
             // fall through to the verified download.
-            DeckleVadSource.Log.SpeechTrimVadUnavailable();
-            DeckleVadSource.Log.SpeechTrimVadUnavailableDetail("on-disk model checksum mismatch — re-fetching");
-            try { File.Delete(modelPath); } catch { /* best effort */ }
+            if (readError is null)
+                OpenIncident("checksum_mismatch", modelPath, "", "");
+            else
+                OpenIncident("checksum_read_failed", modelPath, readError.GetType().Name, readError.Message);
+            TryDeleteModel(modelPath);
         }
 
         if (!_downloadKicked)
         {
+            // A present model already opened the incident with its own cause.
+            if (!modelPresent)
+                OpenIncident("model_missing", modelPath, "", "");
             _downloadKicked = true;
             _ = DownloadModelAsync(modelPath);
         }
         return null;
     }
 
-    private static async Task DownloadModelAsync(string modelPath)
+    // The caller runs the loaded VAD itself, so it reports each trim's outcome
+    // here: the trim failures of successive takes are one incident, opened by
+    // the first and closed by the next trim that succeeds. Each failure stays
+    // a Verbose attempt; only the opening reaches the journal.
+    public void ReportTrimFailure(int utteranceIndex, Exception ex)
+    {
+        DeckleVadSource.Log.SpeechTrimFailed(utteranceIndex, ex.GetType().Name, ex.Message);
+        OpenIncident("trim_failed", ResolveModelPath(), ex.GetType().Name, ex.Message);
+    }
+
+    // Closes whatever incident is open: a trim that ran proves the VAD usable,
+    // whatever made it unusable before.
+    public void ReportTrimSucceeded() => CloseIncident();
+
+    private string ResolveModelPath()
+        => Path.Combine(_resolveModelsDirectory(), SileroVadModel.FileName);
+
+    private async Task DownloadModelAsync(string modelPath)
     {
         DeckleVadSource.Log.SpeechTrimVadDownloadStart();
         DeckleVadSource.Log.SpeechTrimVadDownloadStartDetail(SileroVadModel.Url);
@@ -106,22 +135,59 @@ public sealed class VadService : IDisposable
             }
             else
             {
-                DeckleVadSource.Log.SpeechTrimVadUnavailable();
-                DeckleVadSource.Log.SpeechTrimVadUnavailableDetail($"download failed: {result.ErrorMessage}");
+                // The downloader reports a failure as text, not as an exception.
+                OpenIncident("download_failed", modelPath, "", result.ErrorMessage ?? "");
             }
         }
         catch (Exception ex)
         {
-            DeckleVadSource.Log.SpeechTrimVadUnavailable();
-            DeckleVadSource.Log.SpeechTrimVadUnavailableDetail($"download failed: {ex.GetType().Name}: {ex.Message}");
+            OpenIncident("download_failed", modelPath, ex.GetType().Name, ex.Message);
+        }
+    }
+
+    // One incident per cause: a later take that finds the VAD unusable for the
+    // same reason adds nothing, a new cause is news and is reported.
+    private void OpenIncident(string reason, string modelPath, string exType, string exMessage)
+    {
+        lock (_incidentLock)
+        {
+            if (_incidentReason == reason) return;
+            _incidentReason = reason;
+        }
+        DeckleVadSource.Log.SpeechTrimUnavailable(reason, exType, exMessage);
+        DeckleVadSource.Log.SpeechTrimUnavailableDetail(reason, modelPath);
+    }
+
+    private void CloseIncident()
+    {
+        string? previous;
+        lock (_incidentLock)
+        {
+            previous = _incidentReason;
+            _incidentReason = null;
+        }
+        if (previous is not null) DeckleVadSource.Log.SpeechTrimRecovered(previous);
+    }
+
+    private static void TryDeleteModel(string modelPath)
+    {
+        try { File.Delete(modelPath); }
+        catch (Exception ex)
+        {
+            // Best effort: a file that stays blocks the verified download from
+            // publishing, and that failure carries the visible cause.
+            DeckleVadSource.Log.SpeechTrimVadFileDeleteFailed(modelPath, ex.GetType().Name, ex.Message);
         }
     }
 
     // Runs at most once per service (the loaded session is cached), so hashing a
     // file of a couple of MB is cheap insurance that the file on disk is exactly
-    // the build we expect — not an older version or a corrupt copy.
-    private static bool FileMatchesExpectedSha(string modelPath)
+    // the build we expect — not an older version or a corrupt copy. A file that
+    // cannot be read or hashed counts as a mismatch so it gets replaced; the
+    // caller reports readError as the cause.
+    private static bool FileMatchesExpectedSha(string modelPath, out Exception? readError)
     {
+        readError = null;
         try
         {
             using FileStream stream = File.OpenRead(modelPath);
@@ -131,9 +197,7 @@ public sealed class VadService : IDisposable
         }
         catch (Exception ex)
         {
-            // Can't read or hash it — treat as a mismatch so it gets replaced.
-            DeckleVadSource.Log.SpeechTrimVadUnavailable();
-            DeckleVadSource.Log.SpeechTrimVadUnavailableDetail($"checksum read failed: {ex.GetType().Name}: {ex.Message}");
+            readError = ex;
             return false;
         }
     }

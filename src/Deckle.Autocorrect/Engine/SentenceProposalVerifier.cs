@@ -29,12 +29,14 @@ public sealed class SentenceProposalVerifier
         {
             outcome = _scorer.Score([original, proposed]);
         }
-        catch
+        catch (Exception ex)
         {
             // Model/provider failure is an ordinary abstention at this boundary.
             // No exception may turn an optional sentence check into lost typing.
+            // The cause travels on the result: this class has no live caller, so
+            // the replay that drives it is the one place to surface it.
             return SentenceProposalVerification.Abstained(
-                SentenceScoringOutcome.AbstainReasons.Error);
+                SentenceScoringOutcome.AbstainReasons.Error) with { Failure = ex };
         }
 
         if (outcome.Chosen is not null
@@ -76,7 +78,10 @@ public sealed class SentenceProposalVerifier
             outcome.Scores,
             outcome.Margin,
             outcome.Threshold,
-            reason);
+            reason)
+        {
+            Failure = outcome.Failure,
+        };
     }
 
     private static bool CarriesClosedScores(
@@ -105,6 +110,10 @@ public readonly record struct SentenceProposalVerification(
     double Threshold,
     string? Reason)
 {
+    // The exception behind an Error abstention, so a caller can report why
+    // the scorer failed instead of only that it did.
+    public Exception? Failure { get; init; }
+
     public static SentenceProposalVerification Abstained(
         string reason,
         IReadOnlyList<SentenceCandidateScore>? scores = null,

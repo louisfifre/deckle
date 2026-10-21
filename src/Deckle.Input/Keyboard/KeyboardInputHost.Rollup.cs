@@ -13,6 +13,12 @@ public sealed partial class KeyboardInputHost
             EventLevel.Verbose,
             (EventKeywords)Keywords.Heartbeat);
 
+    private bool HasRollupActivity =>
+        _rollupKeys != 0 || _rollupPointerDowns != 0 || _rollupWheel != 0 || _rollupFocusChanges != 0;
+
+    // Called after each counted event and on the pump heartbeat: without the
+    // heartbeat, the window holding a burst's last events would wait for the
+    // next keystroke to be reported.
     private void TrackRollup(double nowMs)
     {
         // This supporting provider belongs to Autocorrect while that activity

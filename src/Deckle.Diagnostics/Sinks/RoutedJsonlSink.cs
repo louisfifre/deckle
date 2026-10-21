@@ -40,11 +40,16 @@ public sealed class RoutedJsonlSink : IFlushableLogSink
         _predicate = predicate ?? throw new ArgumentNullException(nameof(predicate));
         _maxOpenFiles = maxOpenFiles;
 
+        // Named by its kind: the routed files are many, the stream is one.
         _queue = new BoundedWriteQueue<EventEntry>(
             queueCapacity,
             write: WriteOnWorker,
             flush: FlushOnWorker,
-            close: CloseOnWorker);
+            close: CloseOnWorker,
+            onFault: ex => DeckleDiagnosticsSource.Log.SinkFaulted(
+                kindLabel, ex.GetType().Name, ex.Message),
+            onRecovered: failures => DeckleDiagnosticsSource.Log.SinkRecovered(
+                kindLabel, failures));
     }
 
     internal int OpenFileCount => _openFiles.Count;
@@ -54,6 +59,8 @@ public sealed class RoutedJsonlSink : IFlushableLogSink
     public void Write(EventEntry entry) => _queue.Enqueue(entry);
 
     public void Flush() => _queue.Flush();
+
+    public bool TryFlush(TimeSpan timeout) => _queue.TryFlush(timeout);
 
     public void Dispose() => _queue.Dispose();
 

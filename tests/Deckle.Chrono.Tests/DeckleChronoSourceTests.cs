@@ -7,7 +7,10 @@ namespace Deckle.Chrono.Tests;
 
 // DeckleChronoSource is a process-wide singleton. Each test subscribes its own
 // TestEventListener by the ETW name "Deckle-Chrono" and disposes it, so tests
-// do not share captured events.
+// do not share captured events. ChronoTimer.Stop emits on the same provider,
+// so ChronoTimerTests shares this collection: run in parallel, its stops would
+// land in these listeners.
+[Collection("chrono provider singleton")]
 [Trait("Category", "observability")]
 public class DeckleChronoSourceTests
 {

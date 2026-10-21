@@ -128,7 +128,13 @@ public sealed partial class TranscriptionEngine
             // consumer drains and finishes on its own — observe it here so its
             // exception is never left unobserved, then let the original throw
             // propagate to WorkerRun's crash handler.
-            try { await session.Completion.ConfigureAwait(false); } catch { /* teardown */ }
+            try { await session.Completion.ConfigureAwait(false); }
+            catch (Exception teardownEx)
+            {
+                // The Record exception is the one that propagates; this one is secondary.
+                DeckleWhispSource.Log.TeardownExceptionIgnored(
+                    "streaming_capture_teardown", teardownEx.GetType().Name, teardownEx.Message);
+            }
             throw;
         }
 
@@ -306,11 +312,15 @@ public sealed partial class TranscriptionEngine
             // discard so those buffers are released as they arrive instead of
             // piling up until Stop; the empty result takes the caller's
             // empty-text exit. Dispose (drainCt) ends the drain early.
+            int discarded = 0;
             try
             {
-                await foreach (var _ in reader.ReadAllAsync(drainCt).ConfigureAwait(false)) { }
+                await foreach (var _ in reader.ReadAllAsync(drainCt).ConfigureAwait(false)) discarded++;
             }
             catch (OperationCanceledException) { /* Dispose — abandon the discard loop */ }
+            // Speech was captured and thrown away; the count says how much.
+            if (discarded > 0)
+                DeckleWhispSource.Log.UtterancesDiscarded("prime_failed", discarded);
             return new StreamingConsumeResult("", 0, 0, 0, 0, null, Incomplete: true);
         }
 
@@ -327,6 +337,9 @@ public sealed partial class TranscriptionEngine
         string fixedPrompt = policy.FixedPrompt;
         string? previousTail = null;
         bool incomplete = false;
+        // Consecutive failed utterances: one Warning opens the incident, repeats
+        // stay Verbose, and the next success closes it.
+        int skipped = 0;
 
         // The opt-in DSP runs per utterance here, not once over the whole take:
         // each utterance is decoded in its own backend call, so landing each on
@@ -381,6 +394,9 @@ public sealed partial class TranscriptionEngine
                     long trimMs = (long)Stopwatch.GetElapsedTime(trimStart).TotalMilliseconds;
                     DeckleVadSource.Log.SpeechTrimmed(
                         u.Index, samples.Length, trim.Samples.Length, trim.SpeechSegments, trimMs);
+                    // A trim that ran, with or without speech found, closes an
+                    // earlier take's trim-failure incident.
+                    _vadService.ReportTrimSucceeded();
                     if (trim.Samples.Length == 0)
                     {
                         // No speech — an energy false positive on noise/silence. Drop it
@@ -398,11 +414,12 @@ public sealed partial class TranscriptionEngine
                 }
                 catch (Exception ex)
                 {
-                    // A VAD runtime failure must not lose the dictation: log it once,
-                    // stop trimming for the rest of this take, and let this utterance
-                    // through untrimmed rather than dropping it or crashing the consumer.
-                    DeckleVadSource.Log.SpeechTrimVadUnavailable();
-                    DeckleVadSource.Log.SpeechTrimVadUnavailableDetail($"trim failed: {ex.GetType().Name}: {ex.Message}");
+                    // A VAD runtime failure must not lose the dictation: stop trimming
+                    // for the rest of this take, and let this utterance through
+                    // untrimmed rather than dropping it or crashing the consumer. The
+                    // service keeps failures across takes as one incident, closed by
+                    // the next trim that succeeds.
+                    _vadService.ReportTrimFailure(u.Index, ex);
                     vad = null;
                 }
             }
@@ -425,12 +442,36 @@ public sealed partial class TranscriptionEngine
             {
                 // One utterance failing must not lose the whole dictation: log,
                 // drop its context, keep going.
-                DeckleWhispSource.Log.UtteranceSkipped();
-                DeckleWhispSource.Log.UtteranceSkippedDetail(u.Index, ex.GetType().Name, ex.Message);
+                if (skipped++ == 0)
+                    DeckleWhispSource.Log.UtteranceSkipped(u.Index, ex.GetType().Name, ex.Message);
+                else
+                    DeckleWhispSource.Log.UtteranceSkippedRepeat(u.Index, ex.GetType().Name, ex.Message);
                 if (policy.RejectIncompleteResults)
                     incomplete = true;
                 previousTail = null;
                 continue;
+            }
+
+            // The backend reports a native failure as a result code, not an
+            // exception, and logs it as Verbose detail only: the utterance joins
+            // the same skipped-utterance incident, with the backend's reason.
+            if (result.ResultCode != 0 && !result.Aborted)
+            {
+                string cause = $"{result.ErrorReason ?? "native_error"} result_code={result.ResultCode}";
+                if (skipped++ == 0)
+                    DeckleWhispSource.Log.UtteranceSkipped(u.Index, "", cause);
+                else
+                    DeckleWhispSource.Log.UtteranceSkippedRepeat(u.Index, "", cause);
+                if (policy.RejectIncompleteResults)
+                    incomplete = true;
+                previousTail = null;
+                continue;
+            }
+
+            if (skipped > 0)
+            {
+                DeckleWhispSource.Log.UtterancesRecovered(skipped);
+                skipped = 0;
             }
 
             totalMs += result.TotalDurationMs;

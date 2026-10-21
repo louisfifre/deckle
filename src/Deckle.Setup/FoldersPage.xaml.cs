@@ -138,7 +138,12 @@ public sealed partial class FoldersPage : Page
         {
             long free;
             try { free = new DriveInfo(root).AvailableFreeSpace; }
-            catch (Exception) { free = -1; } // unreadable drive — flag, don't crash
+            catch (Exception ex)
+            {
+                // Unreadable drive: flag it on the page, don't crash.
+                free = -1;
+                DeckleSetupSource.Log.BestEffortFailedDetail("free_space", root, ex.GetType().Name, ex.Message);
+            }
             bool fits = free >= bytes;
             allFit &= fits;
             lines.Add(Loc.Format("Setup_Folders_DriveLine_Format",
@@ -159,7 +164,11 @@ public sealed partial class FoldersPage : Page
             foreach (string file in Directory.EnumerateFiles(dir, "*", SearchOption.AllDirectories))
                 total += new FileInfo(file).Length;
         }
-        catch (Exception) { /* a partial walk still beats no estimate */ }
+        catch (Exception ex)
+        {
+            // A partial walk still beats no estimate.
+            DeckleSetupSource.Log.BestEffortFailedDetail("measure_folder", dir, ex.GetType().Name, ex.Message);
+        }
         return total;
     }
 

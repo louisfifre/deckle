@@ -26,26 +26,35 @@ public class DeckleThemeSourceTests
         Assert.Equal("user", ev.Payload?[3]);
     }
 
+    // One theme request re-themes every open window; when their handlers ran
+    // after the loop of writes, the read-once probe labelled the first window
+    // and left the others as "system".
     [Fact]
-    public void ThemeRequestSourceProbeRoundtripsPushAndConsume()
+    [Trait("Category", "regression")]
+    public void ThemeRequestSourceProbeLabelsEveryWindowOfOneRequest()
     {
-        // Reset in case another test left a pending value.
-        ThemeRequestSourceProbe.Consume();
+        ThemeRequestSourceProbe.Push("user", nowMs: 10_000);
 
-        ThemeRequestSourceProbe.Push("user");
+        Assert.Equal("user", ThemeRequestSourceProbe.Consume(nowMs: 10_050));
+        Assert.Equal("user", ThemeRequestSourceProbe.Consume(nowMs: 10_060));
+        Assert.Equal("user", ThemeRequestSourceProbe.Consume(nowMs: 10_070));
+    }
 
-        Assert.Equal("user", ThemeRequestSourceProbe.Consume());
-        Assert.Null(ThemeRequestSourceProbe.Consume());
+    [Fact]
+    public void ThemeRequestSourceProbeForgetsARequestPastItsSpan()
+    {
+        ThemeRequestSourceProbe.Push("user", nowMs: 10_000);
+
+        long later = 10_000 + ThemeRequestSourceProbe.RequestWindowMs + 1;
+        Assert.Null(ThemeRequestSourceProbe.Consume(later));
     }
 
     [Fact]
     public void ThemeRequestSourceProbeLatestPushOverwritesPrevious()
     {
-        ThemeRequestSourceProbe.Consume();
+        ThemeRequestSourceProbe.Push("app-init", nowMs: 10_000);
+        ThemeRequestSourceProbe.Push("user", nowMs: 10_010);
 
-        ThemeRequestSourceProbe.Push("app-init");
-        ThemeRequestSourceProbe.Push("user");
-
-        Assert.Equal("user", ThemeRequestSourceProbe.Consume());
+        Assert.Equal("user", ThemeRequestSourceProbe.Consume(nowMs: 10_020));
     }
 }

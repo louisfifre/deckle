@@ -10,25 +10,16 @@ public sealed partial class DeckleAmbientSource
     [Event(EvtBridgeAutoRestoreFailed,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "Bridge auto-restore at boot failed — the user will need to re-pair")]
-    public void BridgeAutoRestoreFailed()
+           Message = "Bridge auto-restore at boot failed, the user will need to re-pair | ex_type={0} | ex_message={1}")]
+    public void BridgeAutoRestoreFailed(string ex_type, string ex_message)
     {
-        if (IsEnabled()) WriteEvent(EvtBridgeAutoRestoreFailed);
-    }
-
-    [Event(EvtBridgeAutoRestoreFailedDetail,
-           Level = EventLevel.Verbose,
-           Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "bridge auto-restore failed | ex_type={0} | ex_message={1}")]
-    public void BridgeAutoRestoreFailedDetail(string ex_type, string ex_message)
-    {
-        if (!IsAmbientDetailEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Lifecycle)) return;
-        WriteEvent(EvtBridgeAutoRestoreFailedDetail, ex_type, ex_message);
+        if (IsEnabled()) WriteEvent(EvtBridgeAutoRestoreFailed, ex_type, ex_message);
     }
 
     [Event(EvtBridgePairingStored,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Lifecycle,
+           Tags = ObservationTags.Journal,
            Message = "Bridge pairing stored")]
     public void BridgePairingStored()
     {
@@ -48,19 +39,23 @@ public sealed partial class DeckleAmbientSource
     [Event(EvtBridgeRestoreSkipped,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "restore | skipped — no persisted bridge identity")]
+           Message = "restore skipped | reason=no_persisted_identity")]
     public void BridgeRestoreSkipped()
     {
-        if (IsEnabled()) WriteEvent(EvtBridgeRestoreSkipped);
+        if (!IsAmbientDetailEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Lifecycle)) return;
+        WriteEvent(EvtBridgeRestoreSkipped);
     }
 
+    // client_key_present = false means the Entertainment streaming key is
+    // missing from the vault, so Ambient lighting falls back to REST pushes.
     [Event(EvtBridgeRestoredFromSettings,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "Bridge restored from settings")]
-    public void BridgeRestoredFromSettings()
+           Tags = ObservationTags.Journal,
+           Message = "Bridge restored from settings | client_key_present={0}")]
+    public void BridgeRestoredFromSettings(bool client_key_present)
     {
-        if (IsEnabled()) WriteEvent(EvtBridgeRestoredFromSettings);
+        if (IsEnabled()) WriteEvent(EvtBridgeRestoredFromSettings, client_key_present);
     }
 
     [Event(EvtBridgeRestoredFromSettingsDetail,
@@ -80,6 +75,29 @@ public sealed partial class DeckleAmbientSource
     public void BridgeForgotten()
     {
         if (IsEnabled()) WriteEvent(EvtBridgeForgotten);
+    }
+
+    // reason = probe_failed | identity_mismatch: why the cached endpoint was
+    // distrusted and a local discovery pass started.
+    [Event(EvtBridgeEndpointRecoveryStarting,
+           Level = EventLevel.Verbose,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Message = "bridge endpoint recovery starting | reason={0} | ex_type={1} | ex_message={2}")]
+    public void BridgeEndpointRecoveryStarting(string reason, string ex_type, string ex_message)
+    {
+        if (!IsAmbientDetailEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Lifecycle)) return;
+        WriteEvent(EvtBridgeEndpointRecoveryStarting, reason, ex_type, ex_message);
+    }
+
+    // reason = identity_mismatch | exception.
+    [Event(EvtBridgeCandidateRejectedDetail,
+           Level = EventLevel.Verbose,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Message = "bridge candidate rejected | candidate_ip={0} | reason={1} | ex_type={2} | ex_message={3}")]
+    public void BridgeCandidateRejectedDetail(string candidate_ip, string reason, string ex_type, string ex_message)
+    {
+        if (!IsAmbientDetailEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Lifecycle)) return;
+        WriteEvent(EvtBridgeCandidateRejectedDetail, candidate_ip, reason, ex_type, ex_message);
     }
 
     [Event(EvtBridgeEndpointRecovered,
@@ -105,13 +123,16 @@ public sealed partial class DeckleAmbientSource
         WriteEvent(EvtBridgeEndpointRecoveredDetail, bridge_id, old_ip, new_ip, identity_migrated);
     }
 
+    // reason = not_found (no bridge advertised) | no_valid_candidate (none
+    // accepted the stored credentials) | ambiguous (several did). ex_type /
+    // ex_message name the probe failure that started the recovery.
     [Event(EvtBridgeEndpointRecoveryFailed,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "Bridge endpoint recovery failed")]
-    public void BridgeEndpointRecoveryFailed()
+           Message = "Bridge endpoint recovery failed | reason={0} | ex_type={1} | ex_message={2}")]
+    public void BridgeEndpointRecoveryFailed(string reason, string ex_type, string ex_message)
     {
-        if (IsEnabled()) WriteEvent(EvtBridgeEndpointRecoveryFailed);
+        if (IsEnabled()) WriteEvent(EvtBridgeEndpointRecoveryFailed, reason, ex_type, ex_message);
     }
 
     [Event(EvtBridgeEndpointRecoveryFailedDetail,
@@ -128,5 +149,4 @@ public sealed partial class DeckleAmbientSource
         if (!IsAmbientDetailEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Lifecycle)) return;
         WriteEvent(EvtBridgeEndpointRecoveryFailedDetail, bridge_id, bridge_ip, candidates, valid, cause);
     }
-
 }

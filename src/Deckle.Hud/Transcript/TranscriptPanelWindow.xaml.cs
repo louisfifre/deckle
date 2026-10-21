@@ -1,3 +1,4 @@
+using System.Runtime.InteropServices;
 using Microsoft.UI.Windowing;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
@@ -153,7 +154,12 @@ public sealed partial class TranscriptPanelWindow : Window
     {
         // Same gate as HudWindow.SetState: with the overlay off, no take opens
         // and every Append is ignored.
-        if (!Settings.SettingsService.Instance.Current.Overlay.Enabled) return;
+        if (!Settings.SettingsService.Instance.Current.Overlay.Enabled)
+        {
+            DeckleHudSource.Log.HudDisplaySuppressed(
+                "transcript-panel", "BeginTake", -1, "overlay_disabled");
+            return;
+        }
 
         // A take can start while the previous one is still on screen (the HUD
         // goes from "Copied" straight back to Recording without hiding): the
@@ -196,13 +202,16 @@ public sealed partial class TranscriptPanelWindow : Window
         Render();
 
         NativeMethods.ShowWindow(_hwnd, NativeMethods.SW_SHOWNOACTIVATE);
-        NativeMethods.SetWindowPos(
+        bool setposOk = NativeMethods.SetWindowPos(
             _hwnd, NativeMethods.HWND_TOPMOST,
             0, 0, 0, 0,
             NativeMethods.SWP_NOSIZE
             | NativeMethods.SWP_NOMOVE
             | NativeMethods.SWP_NOACTIVATE
             | NativeMethods.SWP_SHOWWINDOW);
+        WindowingProbe.ReportShow(
+            "transcript-panel", "setwindowpos_topmost",
+            setposOk, setposOk ? 0 : Marshal.GetLastWin32Error());
         _shown = true;
 
         // Fade in to wherever the cursor puts the panel right now, then follow
@@ -256,9 +265,20 @@ public sealed partial class TranscriptPanelWindow : Window
             workAreaHeightDip, EDGE_MARGIN_DIP, VERTICAL_PADDING_DIP, _lineHeightDip);
         int visibleLines = TranscriptPanelLayout.VisibleLines(contentLines, maxLines);
 
-        AppWindow.MoveAndResize(TranscriptPanelLayout.ComputeRectPx(
-            workArea, _dpiScale, _rightSide,
-            PANEL_WIDTH_DIP, EDGE_MARGIN_DIP, VERTICAL_PADDING_DIP, _lineHeightDip, visibleLines));
+        try
+        {
+            AppWindow.MoveAndResize(TranscriptPanelLayout.ComputeRectPx(
+                workArea, _dpiScale, _rightSide,
+                PANEL_WIDTH_DIP, EDGE_MARGIN_DIP, VERTICAL_PADDING_DIP, _lineHeightDip, visibleLines));
+            WindowingProbe.ReportPlacement("transcript-panel", "move_and_resize", ok: true);
+        }
+        catch (Exception ex)
+        {
+            // Render runs on every Append, inside the engine's UI marshalling:
+            // a refused placement must not abort the take. The panel keeps its
+            // previous rect and the incident carries the failure.
+            WindowingProbe.ReportPlacementFailure("transcript-panel", "move_and_resize", ex);
+        }
     }
 
     // Measured once from a one-line TextBlock of the same style, then pinned

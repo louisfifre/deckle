@@ -42,16 +42,30 @@ public sealed class AudioFileDecoder
     /// </remarks>
     public static AudioFileDecodeResult Decode(string path)
     {
+        // Every decode opens with Started and closes with Decoded, Failed or
+        // Crashed. A throw (the STA precondition below, or a fault inside Media
+        // Foundation interop) is logged with its cause, then still reaches the
+        // caller unchanged.
+        var sw = Stopwatch.StartNew();
+        DeckleAudioSource.Log.AudioFileDecodeStarted(ExtensionOf(path));
+        try
+        {
+            return DecodeChecked(path, sw);
+        }
+        catch (System.Exception ex)
+        {
+            DeckleAudioSource.Log.AudioFileDecodeCrashed(ex.GetType().Name, ex.Message, sw.ElapsedMilliseconds);
+            throw;
+        }
+    }
+
+    private static AudioFileDecodeResult DecodeChecked(string path, Stopwatch sw)
+    {
         // A missing path is a status, decided before any Media Foundation work —
         // MFCreateSourceReaderFromURL would otherwise turn it into an opaque
         // resolver error.
         if (!File.Exists(path))
-        {
-            LogFailure(AudioFileDecodeStatus.FileNotFound, MediaFoundationInterop.S_OK);
-            return new AudioFileDecodeResult(AudioFileDecodeStatus.FileNotFound, ReadOnlyMemory<float>.Empty, 0);
-        }
-
-        var sw = Stopwatch.StartNew();
+            return Fail(AudioFileDecodeStatus.FileNotFound, MediaFoundationInterop.S_OK, sw, path);
 
         // COM apartment. The contract guarantees Decode runs off the UI thread,
         // so RPC_E_CHANGED_MODE (the thread is already STA) is a caller mistake,
@@ -73,7 +87,7 @@ public sealed class AudioFileDecoder
             int mfHr = MediaFoundationInterop.MFStartup(
                 MediaFoundationInterop.MF_VERSION, MediaFoundationInterop.MFSTARTUP_FULL);
             if (mfHr < 0)
-                return Fail(AudioFileDecodeStatus.ReadError, mfHr, sw);
+                return Fail(AudioFileDecodeStatus.ReadError, mfHr, sw, path);
 
             try
             {
@@ -100,7 +114,7 @@ public sealed class AudioFileDecoder
         {
             int hr = MediaFoundationInterop.MFCreateSourceReaderFromURL(path, 0, out reader);
             if (hr < 0)
-                return Fail(MapReaderCreationError(hr), hr, sw);
+                return Fail(MapReaderCreationError(hr), hr, sw, path);
 
             // Deselect everything, then select only the first audio stream — the
             // source reader then never holds onto video frames we would drop.
@@ -113,16 +127,16 @@ public sealed class AudioFileDecoder
                 var status = hr == MediaFoundationInterop.MF_E_INVALIDSTREAMNUMBER
                     ? AudioFileDecodeStatus.NoAudioTrack
                     : MapGenericError(hr);
-                return Fail(status, hr, sw);
+                return Fail(status, hr, sw, path);
             }
 
             hr = ConfigureOutputType(reader);
             if (hr < 0)
-                return Fail(MapSetTypeError(hr), hr, sw);
+                return Fail(MapSetTypeError(hr), hr, sw, path);
 
             (int readHr, ReadOnlyMemory<float> pcm) = ReadAllSamples(reader);
             if (readHr < 0)
-                return Fail(MapGenericError(readHr), readHr, sw);
+                return Fail(MapGenericError(readHr), readHr, sw, path);
 
             sw.Stop();
             double durationSeconds = pcm.Length / (double)TargetSampleRate;
@@ -301,16 +315,33 @@ public sealed class AudioFileDecoder
             || (code >= 0xC00D2700u && code <= 0xC00D28FFu);  // NS_E_DRM_* band
     }
 
-    private static AudioFileDecodeResult Fail(AudioFileDecodeStatus status, int hr, Stopwatch sw)
+    private static AudioFileDecodeResult Fail(AudioFileDecodeStatus status, int hr, Stopwatch sw, string path)
     {
         sw.Stop();
-        LogFailure(status, hr);
+        // The reason and the HRESULT reach a default log; the path stays in the
+        // governed detail beside the other per-file facts.
+        DeckleAudioSource.Log.AudioFileDecodeFailed(ReasonOf(status), hr, sw.ElapsedMilliseconds);
+        DeckleAudioSource.Log.AudioFileDecodeFailedDetail(path);
         return new AudioFileDecodeResult(status, ReadOnlyMemory<float>.Empty, 0);
     }
 
-    private static void LogFailure(AudioFileDecodeStatus status, int hr)
+    // EventSource takes no enum parameter, and the log spells reasons in
+    // snake_case.
+    private static string ReasonOf(AudioFileDecodeStatus status) => status switch
     {
-        DeckleAudioSource.Log.AudioFileDecodeFailed();
-        DeckleAudioSource.Log.AudioFileDecodeFailedDetail(status.ToString(), hr);
+        AudioFileDecodeStatus.FileNotFound      => "file_not_found",
+        AudioFileDecodeStatus.UnsupportedFormat => "unsupported_format",
+        AudioFileDecodeStatus.NoAudioTrack      => "no_audio_track",
+        AudioFileDecodeStatus.ProtectedContent  => "protected_content",
+        AudioFileDecodeStatus.ReadError         => "read_error",
+        _                                       => "decoded",
+    };
+
+    // The extension alone says which codec path Media Foundation will take
+    // without putting the file name in a default log.
+    private static string ExtensionOf(string path)
+    {
+        string? extension = string.IsNullOrEmpty(path) ? null : Path.GetExtension(path);
+        return string.IsNullOrEmpty(extension) ? "none" : extension.ToLowerInvariant();
     }
 }

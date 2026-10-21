@@ -1,4 +1,5 @@
-// LogWindow — ring-buffer/filter engine and ILogWindowSink marshalling.
+// LogWindow — bounded inbound queue, ring-buffer/filter engine and
+// ILogWindowSink marshalling.
 
 using System.Collections.Concurrent;
 using Deckle.Diagnostics;
@@ -12,8 +13,17 @@ namespace Deckle.App;
 
 public sealed partial class LogWindow : Window, ILogWindowSink
 {
+    // The display ring keeps LogWindowSink's replay depth. The inbound queue
+    // adds one drain batch of headroom: the replay on first open fits whole
+    // with the live entries that land before the first drain, so a notice
+    // means the window really fell behind. An entry dropped beyond this depth
+    // would have left the display ring anyway.
+    private const int MaxEntries = 5000;
     private const int EntryDrainBatchSize = 256;
+    private const int PendingCapacity = MaxEntries + EntryDrainBatchSize;
     private readonly ConcurrentQueue<LogEntry> _pendingEntries = new();
+    private int _pendingCount;
+    private int _droppedPendingCount;
     private int _entryDrainScheduled;
 
     public void Write(EventEntry entry)
@@ -21,6 +31,18 @@ public sealed partial class LogWindow : Window, ILogWindowSink
         // Called on the EventSource origin thread, so the formatting happens
         // here rather than on the UI thread.
         _pendingEntries.Enqueue(new LogEntry(entry));
+
+        // Drop the oldest instead of BoundedWriteQueue's wait: an emitter on
+        // the UI thread would block on a queue only the UI thread drains. The
+        // count and the queue move apart for an instant under contention, so
+        // the bound is approximate by a few entries, never open-ended.
+        if (Interlocked.Increment(ref _pendingCount) > PendingCapacity
+            && _pendingEntries.TryDequeue(out _))
+        {
+            Interlocked.Decrement(ref _pendingCount);
+            Interlocked.Increment(ref _droppedPendingCount);
+        }
+
         ScheduleEntryDrain();
     }
 
@@ -41,9 +63,13 @@ public sealed partial class LogWindow : Window, ILogWindowSink
         int drained = 0;
         while (drained < EntryDrainBatchSize && _pendingEntries.TryDequeue(out LogEntry? entry))
         {
+            Interlocked.Decrement(ref _pendingCount);
             AddEntrySafe(entry);
             drained++;
         }
+
+        int dropped = Interlocked.Exchange(ref _droppedPendingCount, 0);
+        if (dropped > 0) ReportDroppedEntries(dropped);
 
         Volatile.Write(ref _entryDrainScheduled, 0);
         if (!_pendingEntries.IsEmpty)
@@ -72,7 +98,10 @@ public sealed partial class LogWindow : Window, ILogWindowSink
     private void ClearAll()
     {
         AppDiagnosticsBootstrap.ClearLogWindowHistory();
-        while (_pendingEntries.TryDequeue(out _)) { }
+        while (_pendingEntries.TryDequeue(out _))
+            Interlocked.Decrement(ref _pendingCount);
+        Interlocked.Exchange(ref _droppedPendingCount, 0);
+        ResetDroppedEntries();
         _entries.Clear();
         _visible.Clear();
     }
@@ -82,7 +111,6 @@ public sealed partial class LogWindow : Window, ILogWindowSink
         FilterBar.Observe(entry.Entry);
         _entries.Enqueue(entry);
 
-        const int MaxEntries = 5000;
         while (_entries.Count > MaxEntries)
         {
             var removed = _entries.Dequeue();
@@ -153,8 +181,8 @@ public sealed partial class LogWindow : Window, ILogWindowSink
         }
         catch (Exception ex)
         {
-            DeckleAppSource.Log.LogWindowWarning();
-            DeckleAppSource.Log.LogWindowWarningDetail($"scroll err: {ex.Message}");
+            DeckleAppSource.Log.WindowOperationFailed(
+                "log", "scroll_to_bottom", "exception", ex.GetType().Name, ex.Message);
         }
     }
 }

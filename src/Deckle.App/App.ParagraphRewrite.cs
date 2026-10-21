@@ -2,6 +2,7 @@ using Deckle.Autocorrect;
 using Deckle.Core;
 using Deckle.Input;
 using Deckle.Llm.Rewrite;
+using Deckle.Shell;
 using System.Collections.Concurrent;
 
 namespace Deckle.App;
@@ -49,6 +50,8 @@ public partial class App
         _keyboardMouseHost.DrainRequested += OnParagraphDrainRequested;
         if (!_keyboardMouseHost.Start())
         {
+            // Init runs once per process: the module stays dead until restart.
+            DeckleAppSource.Log.InputConsumerUnavailable("paragraph-rewrite", "host_start_failed");
             ShutdownParagraphRewrite();
             return;
         }
@@ -156,7 +159,7 @@ public partial class App
         RewriteOfferWindow? window = _paragraphRewriteWindow;
         if (window is null) return;
 
-        window.DispatcherQueue.TryEnqueue(() =>
+        window.DispatcherQueue.TryEnqueueOrLog(() =>
         {
             if (_paragraphRewriteCoordinator?.IsCurrent(offer.Revision) != true
                 || _paragraphTargetHwnd == IntPtr.Zero
@@ -174,7 +177,7 @@ public partial class App
 
             _paragraphOfferVisible = true;
             window.ShowOffer(offer, _paragraphTargetHwnd, anchor);
-        });
+        }, "REWRITE", "rewrite offer show");
     }
 
     private void ApplyParagraphOffer(ParagraphRewriteOffer offer)
@@ -214,7 +217,7 @@ public partial class App
         RewriteOfferWindow? window = _paragraphRewriteWindow;
         if (!_paragraphOfferVisible || window is null) return;
         _paragraphOfferVisible = false;
-        window.DispatcherQueue.TryEnqueue(window.Hide);
+        window.DispatcherQueue.TryEnqueueOrLog(window.Hide, "REWRITE", "rewrite offer hide");
     }
 
     private void OnParagraphCorrectionApplied(CorrectionDecision decision)

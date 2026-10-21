@@ -37,8 +37,11 @@ public sealed class AppliedProfile
         if (_restores.Count == 0) return;
 
         int restored = RunInReverse(EntryId, _restores);
-        DeckleOrchestrationSource.Log.ProfileRestored();
-        DeckleOrchestrationSource.Log.ProfileRestoredDetail(EntryId, restored);
+
+        // A partial restore already raised RuleRestoreFailed for each undo
+        // that threw; the milestone would tell the journal all is back.
+        if (restored == _restores.Count) DeckleOrchestrationSource.Log.ProfileRestored();
+        DeckleOrchestrationSource.Log.ProfileRestoredDetail(EntryId, restored, _restores.Count);
     }
 
     // Shared with ProfileTransaction's rollback. Returns how many succeeded.
@@ -55,8 +58,7 @@ public sealed class AppliedProfile
             }
             catch (Exception ex)
             {
-                DeckleOrchestrationSource.Log.RuleRestoreFailed();
-                DeckleOrchestrationSource.Log.RuleRestoreFailedDetail(
+                DeckleOrchestrationSource.Log.RuleRestoreFailed(
                     entryId, restore.Effect, ex.GetType().Name, ex.Message);
             }
         }

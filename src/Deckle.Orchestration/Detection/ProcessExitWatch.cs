@@ -14,7 +14,7 @@ public sealed class ProcessExitWatch : IDisposable
     private const int ERROR_INVALID_PARAMETER = 87;
 
     // The refusal is logged as a Warning once per process lifetime; every
-    // refusal still gets its Verbose detail.
+    // later refusal gets the Verbose detail.
     private static int _unavailableReported;
 
     private readonly object _gate = new();
@@ -60,7 +60,7 @@ public sealed class ProcessExitWatch : IDisposable
         // ERROR_INVALID_PARAMETER: no process has this id any more. It exited
         // between being seen and being watched; report the exit now, outside
         // the lock, so the callback may call back into this watch.
-        onExited(pid);
+        NotifyExited(pid, onExited);
         return true;
     }
 
@@ -103,14 +103,31 @@ public sealed class ProcessExitWatch : IDisposable
             if (!_watches.Remove(pid, out removed)) return;
         }
         removed.Release();
-        onExited(pid);
+        NotifyExited(pid, onExited);
     }
 
-    // Internal so the observability test checks the exact pair a refusal emits.
+    // On the thread-pool path an exception escaping the callback terminates
+    // the resident process; on the inline path it would surface in the
+    // caller of Watch for an exit nobody asked it to handle. Contained on
+    // both, so one faulty handler costs one session end, not the app.
+    private static void NotifyExited(int pid, Action<int> onExited)
+    {
+        try
+        {
+            onExited(pid);
+        }
+        catch (Exception ex)
+        {
+            DeckleOrchestrationSource.Log.ExitWatchCallbackFailed(pid, ex.GetType().Name, ex.Message);
+        }
+    }
+
+    // Internal so the observability test checks what a refusal emits: the
+    // Warning the first time, the Verbose detail on every later one.
     internal static void LogUnavailable(int pid, int win32Error, bool firstTime)
     {
-        if (firstTime) DeckleOrchestrationSource.Log.ExitWatchUnavailable();
-        DeckleOrchestrationSource.Log.ExitWatchUnavailableDetail(pid, win32Error);
+        if (firstTime) DeckleOrchestrationSource.Log.ExitWatchUnavailable(pid, win32Error);
+        else DeckleOrchestrationSource.Log.ExitWatchUnavailableDetail(pid, win32Error);
     }
 
     private sealed class Registration(ProcessWaitHandle handle, RegisteredWaitHandle wait)

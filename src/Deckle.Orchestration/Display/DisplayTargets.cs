@@ -4,8 +4,9 @@ namespace Deckle.Orchestration;
 
 // The monitors in use right now, one per active display path. A monitor whose
 // names or HDR state cannot be read is still listed, as not HDR-capable. Never
-// throws: an empty list means the configuration could not be read, which the
-// callers treat the same as "no HDR monitor".
+// throws: from Enumerate, an empty list means the configuration could not be
+// read, which the page treats the same as "no HDR monitor"; TryEnumerate tells
+// the two apart.
 internal static class DisplayTargets
 {
     // The configuration can change between sizing the buffers and filling
@@ -13,10 +14,27 @@ internal static class DisplayTargets
     // and the query is sized again.
     private const int QueryAttempts = 3;
 
+    // 1 between a failed query and the next one that succeeds: the page and
+    // every HDR rule query the list, so a lasting failure would otherwise
+    // raise one Warning per launch and per page visit.
+    private static int _queryFailing;
+
     public static IReadOnlyList<DisplayTarget> Enumerate()
     {
+        TryEnumerate(out IReadOnlyList<DisplayTarget> targets);
+        return targets;
+    }
+
+    // False when the configuration itself could not be read, so a rule can
+    // tell "monitor not connected" from "monitor list unknown".
+    public static bool TryEnumerate(out IReadOnlyList<DisplayTarget> result)
+    {
         DISPLAYCONFIG_PATH_INFO[]? paths = QueryActivePaths();
-        if (paths is null) return [];
+        if (paths is null)
+        {
+            result = [];
+            return false;
+        }
 
         var targets = new List<DisplayTarget>(paths.Length);
         foreach (DISPLAYCONFIG_PATH_INFO path in paths)
@@ -31,7 +49,8 @@ internal static class DisplayTargets
 
             targets.Add(new DisplayTarget(gdiName, friendly, supported, enabled, adapter, target));
         }
-        return targets;
+        result = targets;
+        return true;
     }
 
     private static DISPLAYCONFIG_PATH_INFO[]? QueryActivePaths()
@@ -45,11 +64,19 @@ internal static class DisplayTargets
             var paths = new DISPLAYCONFIG_PATH_INFO[pathCount];
             var modes = new DISPLAYCONFIG_MODE_INFO[modeCount];
             result = QueryDisplayConfig(QDC_ONLY_ACTIVE_PATHS, ref pathCount, paths, ref modeCount, modes, 0);
-            if (result == ERROR_SUCCESS) return paths[..(int)pathCount];
+            if (result == ERROR_SUCCESS)
+            {
+                if (Interlocked.Exchange(ref _queryFailing, 0) == 1)
+                    DeckleOrchestrationSource.Log.DisplayQueryRecovered();
+                return paths[..(int)pathCount];
+            }
             if (result != ERROR_INSUFFICIENT_BUFFER) break;
         }
 
-        DeckleOrchestrationSource.Log.DisplayQueryFailed(result);
+        if (Interlocked.Exchange(ref _queryFailing, 1) == 0)
+            DeckleOrchestrationSource.Log.DisplayQueryFailed(result);
+        else
+            DeckleOrchestrationSource.Log.DisplayQueryFailedDetail(result);
         return null;
     }
 

@@ -7,6 +7,10 @@ public partial class App
     private PrecisionScrollEngine? _precisionScrollEngine;
     private bool _precisionScrollRunning;
 
+    // While the switch is on but nothing runs, every settings change retries
+    // the start: the failure is reported once until a start succeeds.
+    private bool _precisionScrollFailureReported;
+
     private void InitializePrecisionScroll()
     {
         if (_keyboardMouseHost is null) return;
@@ -30,8 +34,13 @@ public partial class App
             if (_keyboardMouseHost.Start())
             {
                 _precisionScrollRunning = _precisionScrollEngine.Start();
-                if (!_precisionScrollRunning)
+                if (_precisionScrollRunning)
                 {
+                    _precisionScrollFailureReported = false;
+                }
+                else
+                {
+                    ReportPrecisionScrollUnavailable("engine_start_failed");
                     _keyboardMouseHost.Stop();
                     _precisionScrollEngine.Dispose();
                     _precisionScrollEngine = null;
@@ -39,6 +48,9 @@ public partial class App
             }
             else
             {
+                // RawInputHost logged the cause; this line names the switch
+                // that stays on in Settings while nothing runs.
+                ReportPrecisionScrollUnavailable("host_start_failed");
                 _precisionScrollEngine.Dispose();
                 _precisionScrollEngine = null;
             }
@@ -54,6 +66,13 @@ public partial class App
             _keyboardMouseHost.Stop();
             _precisionScrollRunning = false;
         }
+    }
+
+    private void ReportPrecisionScrollUnavailable(string reason)
+    {
+        if (_precisionScrollFailureReported) return;
+        _precisionScrollFailureReported = true;
+        DeckleAppSource.Log.InputConsumerUnavailable("precision-scroll", reason);
     }
 
     private void ShutdownPrecisionScroll()

@@ -50,6 +50,14 @@ public sealed class PersonalDictionary : IPersonalLexicon, IDisposable
         bool mutated = false;
         if (data.SchemaVersion < PersonalDictionaryData.CurrentSchemaVersion)
         {
+            // Learned words vanish here by design; without the event the user's
+            // "it forgot my words" has no trace. Counts only, never the words.
+            if (data.Words.Count > 0 || data.Suppressions.Count > 0)
+                DeckleAutocorrectSource.Log.PersonalDictionaryReset(
+                    data.SchemaVersion,
+                    PersonalDictionaryData.CurrentSchemaVersion,
+                    data.Words.Count,
+                    data.Suppressions.Count);
             data.Words.Clear();
             data.Suppressions.Clear();
             data.SchemaVersion = PersonalDictionaryData.CurrentSchemaVersion;

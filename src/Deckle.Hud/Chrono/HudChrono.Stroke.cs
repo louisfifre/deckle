@@ -62,6 +62,12 @@ public sealed partial class HudChrono
     // smoother state is per-consumer, so it stays here.
     private float _smoothedLevel;
 
+    // A composition that refuses the stroke usually refuses it on every state
+    // change until the device comes back: one Warning opens the incident, the
+    // next stroke built closes it. UI thread only.
+    private bool _strokeIncidentOpen;
+    private int  _strokeFailures;
+
     // Called from the recording audio thread. Gated on _currentVariant ==
     // Recording so the engine event can stay subscribed permanently:
     // Transcribing / Rewriting strokes have ApplyVariant-driven opacity and
@@ -95,65 +101,84 @@ public sealed partial class HudChrono
         // destroyed stroke.
         lock (_strokeSync)
         {
-            // The variant the new stroke replaces, read before the flip:
-            // after Recording the processing stroke blends in from it.
-            var previous = _currentVariant;
-            bool crossingBoundary =
-                _processingStroke != null &&
-                IsRecording(variant) != IsRecording(previous);
-
-            if (crossingBoundary)
+            try
             {
-                ElementCompositionPreview.SetElementChildVisual(ProcessingSurfaceHost, null);
-                int ageMsBoundary = (int)((Stopwatch.GetTimestamp() - _processingStrokeAcquiredTicks)
-                                           * 1000L / Stopwatch.Frequency);
-                DeckleResourceSource.Log.ResourceReleased(
-                    "composition-visual", _processingStrokeHandle, ageMsBoundary, "hud-chrono-stroke");
-                _processingStroke!.Dispose();
-                _processingStroke = null;
+                AttachProcessingVisualLocked(variant, isDark);
+                NoteStrokeBuilt();
             }
-
-            if (_processingStroke == null)
+            catch (System.Exception ex)
             {
-                var compositor = ElementCompositionPreview
-                    .GetElementVisual(ProcessingSurfaceHost).Compositor;
-
-                float w = (float)ProcessingSurfaceHost.ActualWidth;
-                float h = (float)ProcessingSurfaceHost.ActualHeight;
-                if (w == 0f || h == 0f) { w = 272f; h = 78f; }
-                var size = new Vector2(w, h);
-
-                var cfg = _nextStrokeConfig ?? HudSettingsService.Instance.EffectiveStroke();
-                _nextStrokeConfig = null;
-                _strokeConfig = cfg;
-
-                _processingStroke = variant == ProcessingVariant.Recording
-                    ? HudComposition.CreateRecordingStroke(compositor, size, isDark, cfg, _animationsEnabled)
-                    : HudComposition.CreateProcessingStroke(compositor, size, isDark, cfg, _animationsEnabled,
-                                                            from: crossingBoundary ? previous : null);
-                ElementCompositionPreview.SetElementChildVisual(
-                    ProcessingSurfaceHost, _processingStroke.Visual);
-
-                // size_bytes is 0: a Composition Visual's memory size is not
-                // measurable from managed code without costly introspection.
-                _processingStrokeHandle = RuntimeHelpers.GetHashCode(_processingStroke.Visual);
-                _processingStrokeAcquiredTicks = Stopwatch.GetTimestamp();
-                DeckleResourceSource.Log.ResourceAcquired(
-                    "composition-visual", _processingStrokeHandle, 0, "hud-chrono-stroke");
+                // Composition can throw here like in RebuildStroke (device
+                // lost, surface creation, expression parse). Recorded before
+                // the rethrow, which keeps the caller's existing handling: a
+                // failure that only surfaced as a missing stroke left no trace.
+                NoteStrokeFailure("attach", variant, ex);
+                throw;
             }
-
-            // Reset the EMA accumulator on every Recording entry so leftover
-            // energy from a previous recording doesn't seed the new outline
-            // with a non-zero opacity floor.
-            if (variant == ProcessingVariant.Recording)
-                _smoothedLevel = 0f;
-
-            _currentVariant = variant;
-
-            // ApplyVariant skips Opacity for Recording: UpdateLevel owns that
-            // channel.
-            _processingStroke.ApplyVariant(variant, isDark);
         }
+    }
+
+    // Caller holds _strokeSync.
+    private void AttachProcessingVisualLocked(ProcessingVariant variant, bool isDark)
+    {
+        // The variant the new stroke replaces, read before the flip:
+        // after Recording the processing stroke blends in from it.
+        var previous = _currentVariant;
+        bool crossingBoundary =
+            _processingStroke != null &&
+            IsRecording(variant) != IsRecording(previous);
+
+        if (crossingBoundary)
+        {
+            ElementCompositionPreview.SetElementChildVisual(ProcessingSurfaceHost, null);
+            int ageMsBoundary = (int)((Stopwatch.GetTimestamp() - _processingStrokeAcquiredTicks)
+                                       * 1000L / Stopwatch.Frequency);
+            DeckleResourceSource.Log.ResourceReleased(
+                "composition-visual", _processingStrokeHandle, ageMsBoundary, "hud-chrono-stroke");
+            _processingStroke!.Dispose();
+            _processingStroke = null;
+        }
+
+        if (_processingStroke == null)
+        {
+            var compositor = ElementCompositionPreview
+                .GetElementVisual(ProcessingSurfaceHost).Compositor;
+
+            float w = (float)ProcessingSurfaceHost.ActualWidth;
+            float h = (float)ProcessingSurfaceHost.ActualHeight;
+            if (w == 0f || h == 0f) { w = 272f; h = 78f; }
+            var size = new Vector2(w, h);
+
+            var cfg = _nextStrokeConfig ?? HudSettingsService.Instance.EffectiveStroke();
+            _nextStrokeConfig = null;
+            _strokeConfig = cfg;
+
+            _processingStroke = variant == ProcessingVariant.Recording
+                ? HudComposition.CreateRecordingStroke(compositor, size, isDark, cfg, _animationsEnabled)
+                : HudComposition.CreateProcessingStroke(compositor, size, isDark, cfg, _animationsEnabled,
+                                                        from: crossingBoundary ? previous : null);
+            ElementCompositionPreview.SetElementChildVisual(
+                ProcessingSurfaceHost, _processingStroke.Visual);
+
+            // size_bytes is 0: a Composition Visual's memory size is not
+            // measurable from managed code without costly introspection.
+            _processingStrokeHandle = RuntimeHelpers.GetHashCode(_processingStroke.Visual);
+            _processingStrokeAcquiredTicks = Stopwatch.GetTimestamp();
+            DeckleResourceSource.Log.ResourceAcquired(
+                "composition-visual", _processingStrokeHandle, 0, "hud-chrono-stroke");
+        }
+
+        // Reset the EMA accumulator on every Recording entry so leftover
+        // energy from a previous recording doesn't seed the new outline
+        // with a non-zero opacity floor.
+        if (variant == ProcessingVariant.Recording)
+            _smoothedLevel = 0f;
+
+        _currentVariant = variant;
+
+        // ApplyVariant skips Opacity for Recording: UpdateLevel owns that
+        // channel.
+        _processingStroke.ApplyVariant(variant, isDark);
     }
 
     private void DetachProcessingVisual()
@@ -178,6 +203,26 @@ public sealed partial class HudChrono
 
     private static bool IsRecording(ProcessingVariant? v)
         => v == ProcessingVariant.Recording;
+
+    private void NoteStrokeFailure(string phase, ProcessingVariant variant, System.Exception ex)
+    {
+        _strokeFailures++;
+        string variantName = variant.ToString();
+        string exType = ex.GetType().Name;
+        DeckleHudSource.Log.StrokeCreationAttemptFailed(phase, variantName, exType, ex.Message);
+
+        if (_strokeIncidentOpen) return;
+        _strokeIncidentOpen = true;
+        DeckleHudSource.Log.StrokeCreationFailed(phase, variantName, exType, ex.Message);
+    }
+
+    private void NoteStrokeBuilt()
+    {
+        if (!_strokeIncidentOpen) return;
+        _strokeIncidentOpen = false;
+        DeckleHudSource.Log.StrokeCreationRecovered(_strokeFailures);
+        _strokeFailures = 0;
+    }
 
     // One-shot: must be armed before the ApplyState that creates the stroke,
     // and is cleared as soon as it is used.
@@ -248,12 +293,16 @@ public sealed partial class HudChrono
 
             _processingStroke.ApplyVariant(variant, isDark);
             log?.Invoke("REBUILD", $"ApplyVariant {variant} isDark={isDark} — done");
+            NoteStrokeBuilt();
         }
         catch (System.Exception ex)
         {
             // Composition can throw here (device lost, surface creation,
             // expression parse in StartRotation). Log it before rethrowing:
-            // otherwise the failure can show only as frozen animations.
+            // otherwise the failure can show only as frozen animations. The
+            // callback serves the playground's own console; the provider is
+            // what reaches the journal in shipping Deckle.
+            NoteStrokeFailure("rebuild", variant, ex);
             log?.Invoke("ERROR", $"RebuildStroke threw {ex.GetType().Name}: {ex.Message}");
             throw;
         }

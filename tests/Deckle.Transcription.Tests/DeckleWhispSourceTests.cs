@@ -55,20 +55,16 @@ public sealed class DeckleWhispSourceTests : IDisposable
     {
         using var listener = new TestEventListener("Deckle-Whisp");
 
-        DeckleWhispSource.Log.MicrophoneUnavailable();
-        DeckleWhispSource.Log.MicrophoneUnavailableDetail("probe", 2);
+        DeckleWhispSource.Log.MicrophoneUnavailable("probe", 2);
         DeckleWhispSource.Log.MicrophoneRecovered();
-        DeckleWhispSource.Log.ModelUnavailable();
-        DeckleWhispSource.Log.ModelUnavailableDetail("file_not_found");
+        DeckleWhispSource.Log.ModelUnavailable("file_not_found", "", "");
         DeckleWhispSource.Log.ModelRecovered();
 
         Assert.Collection(
             listener.Events,
             e => Assert.Equal(DeckleWhispSource.EvtMicrophoneUnavailable, e.EventId),
-            e => Assert.Equal(DeckleWhispSource.EvtMicrophoneUnavailableDetail, e.EventId),
             e => Assert.Equal(DeckleWhispSource.EvtMicrophoneRecovered, e.EventId),
             e => Assert.Equal(DeckleWhispSource.EvtModelUnavailable, e.EventId),
-            e => Assert.Equal(DeckleWhispSource.EvtModelUnavailableDetail, e.EventId),
             e => Assert.Equal(DeckleWhispSource.EvtModelRecovered, e.EventId));
     }
 

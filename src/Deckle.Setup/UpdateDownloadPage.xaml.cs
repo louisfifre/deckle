@@ -78,6 +78,7 @@ public sealed partial class UpdateDownloadPage : Page
         {
             // A download page without a resolved release is a wiring bug —
             // surfaced as a terminal error rather than a silent no-op window.
+            DeckleSetupSource.Log.UpdateDownloadFailed("no_pending_update", "resolve", "", "");
             ShowFailed(Loc.Format("Setup_Update_Failed_Format", "no pending update"));
             return;
         }
@@ -88,6 +89,7 @@ public sealed partial class UpdateDownloadPage : Page
 
         string? tempDir = null;
         string step = "resolve";
+        long startTicks = Environment.TickCount64;
         try
         {
             StatusText.Text = Loc.Get("Setup_Update_Resolving");
@@ -103,10 +105,15 @@ public sealed partial class UpdateDownloadPage : Page
             var dl = await Downloader.DownloadAsync(update.ZipUrl, zipPath, expectedSha, progress, ct);
             if (!dl.Success)
             {
+                DeckleSetupSource.Log.UpdateDownloadFailed(
+                    "download_failed", step, "", dl.ErrorMessage ?? "");
                 TryDeleteTree(tempDir);
                 ShowFailed(Loc.Format("Setup_Update_Failed_Format", dl.ErrorMessage ?? "download failed"));
                 return;
             }
+
+            DeckleSetupSource.Log.UpdateDownloadCompleted(
+                update.Version, new FileInfo(zipPath).Length, Environment.TickCount64 - startTicks);
 
             step = "extract";
             SetMarquee(Loc.Get("Setup_Update_Extracting"));
@@ -121,6 +128,7 @@ public sealed partial class UpdateDownloadPage : Page
             string? newExe = FindDeckleExe(payloadDir);
             if (newExe is null)
             {
+                DeckleSetupSource.Log.UpdateDownloadFailed("exe_missing", step, "", payloadDir);
                 TryDeleteTree(tempDir);
                 ShowFailed(Loc.Format("Setup_Update_Failed_Format", Loc.Get("Setup_Update_PayloadMissingExe")));
                 return;
@@ -140,14 +148,14 @@ public sealed partial class UpdateDownloadPage : Page
         }
         catch (OperationCanceledException)
         {
+            DeckleSetupSource.Log.UpdateDownloadCancelled(step);
             if (tempDir is not null) TryDeleteTree(tempDir);
             // Cancelled through the window teardown — nothing left to show.
         }
         catch (Exception ex)
         {
             if (tempDir is not null) TryDeleteTree(tempDir);
-            DeckleSetupSource.Log.UpdateDownloadFailed();
-            DeckleSetupSource.Log.UpdateDownloadFailedDetail(step, $"{ex.GetType().Name}: {ex.Message}");
+            DeckleSetupSource.Log.UpdateDownloadFailed("threw", step, ex.GetType().Name, ex.Message);
             ShowFailed(Loc.Format("Setup_Update_Failed_Format", ex.Message));
         }
     }
@@ -166,7 +174,9 @@ public sealed partial class UpdateDownloadPage : Page
         psi.ArgumentList.Add(tempDir);
         psi.ArgumentList.Add("--wait-pid");
         psi.ArgumentList.Add(Environment.ProcessId.ToString(System.Globalization.CultureInfo.InvariantCulture));
-        Process.Start(psi);
+        // UseShellExecute=false: Start returns the child or throws, never null.
+        using Process child = Process.Start(psi)!;
+        DeckleSetupSource.Log.ChildProcessLaunchedDetail("update_apply", child.Id, newExe);
     }
 
     // The release zip is flat; the shallowest match also tolerates a wrapping
@@ -226,7 +236,11 @@ public sealed partial class UpdateDownloadPage : Page
     private static void TryDeleteTree(string dir)
     {
         try { if (Directory.Exists(dir)) Directory.Delete(dir, recursive: true); }
-        catch { /* best-effort */ }
+        catch (Exception ex)
+        {
+            // Best-effort: a leftover temp folder changes nothing for the user.
+            DeckleSetupSource.Log.BestEffortFailedDetail("delete_temp", dir, ex.GetType().Name, ex.Message);
+        }
     }
 
     private static string FormatBytes(long bytes)

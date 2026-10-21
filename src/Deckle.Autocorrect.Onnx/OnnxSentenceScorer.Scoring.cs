@@ -107,14 +107,17 @@ public sealed partial class OnnxSentenceScorer
                     score.ScoredTokenCount);
             }
         }
-        catch
+        catch (Exception ex)
         {
             return new SentenceScoringOutcome(
                 null,
                 scores,
                 0.0,
                 _margin,
-                SentenceScoringOutcome.AbstainReasons.Error);
+                SentenceScoringOutcome.AbstainReasons.Error)
+            {
+                Failure = ex,
+            };
         }
 
         long decisionStarted = profile is null ? 0 : Stopwatch.GetTimestamp();

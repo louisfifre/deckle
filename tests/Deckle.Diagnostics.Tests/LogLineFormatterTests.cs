@@ -14,7 +14,7 @@ public sealed class LogLineFormatterTests
         LogLineParts parts = LogLineFormatter.GetParts(entry);
 
         Assert.Equal("12:34:56.789", parts.Timestamp);
-        Assert.Equal("VISION", parts.Source);
+        Assert.Equal("Vision", parts.Source);
         Assert.Equal("Capture started", parts.Message);
         Assert.Equal(LogLineFormatter.Format(entry), parts.Text);
     }
@@ -44,9 +44,34 @@ public sealed class LogLineFormatterTests
 
         LogLineParts parts = LogLineFormatter.GetParts(entry);
 
-        Assert.Equal("NOTIFICATIONS-PROVIDER-WITH-A-LONG-NAME", parts.Source);
+        Assert.Equal("Notifications Provider With A Long Name", parts.Source);
         Assert.Contains(parts.Source, parts.Text);
         Assert.EndsWith(message, parts.Text);
+    }
+
+    [Theory]
+    [InlineData("Deckle", "App")]
+    [InlineData("Deckle-App", "App")]
+    [InlineData("Deckle-Whisp", "Dictation")]
+    [InlineData("Deckle-Llm", "LLM")]
+    [InlineData("Deckle-AnytypeMcp", "Anytype MCP")]
+    [InlineData("Deckle-PrecisionScroll", "Precision Scroll")]
+    [InlineData("Deckle-Lighting.Ambient", "Lighting Ambient")]
+    [InlineData("Deckle-Audio", "Audio")]
+    [InlineData("Microsoft-Windows-DotNETRuntime", "Microsoft-Windows-DotNETRuntime")]
+    public void Display_name_reads_as_a_module_name(string provider, string expected)
+    {
+        Assert.Equal(expected, LogLineFormatter.DisplayName(provider));
+    }
+
+    [Theory]
+    [InlineData("Deckle", "APP")]
+    [InlineData("Deckle-App", "APP")]
+    [InlineData("Deckle-Whisp", "WHISP")]
+    [InlineData("Deckle-PrecisionScroll", "PRECISIONSCROLL")]
+    public void Jsonl_source_token_keeps_its_machine_vocabulary(string provider, string expected)
+    {
+        Assert.Equal(expected, LogLineFormatter.MapSource(provider));
     }
 
     private static EventEntry Entry(string? formattedMessage) =>

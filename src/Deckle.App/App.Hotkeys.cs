@@ -18,6 +18,7 @@ public partial class App
         if (_engine is null)
         {
             // No engine means speech is not provisioned.
+            DeckleAppSource.Log.HotkeyPressIgnored("engine_not_composed");
             DeckleAppSource.Log.UserFeedbackEmitted(
                 0, // Info
                 "Dictation isn't set up yet",
@@ -25,8 +26,6 @@ public partial class App
                 1); // Overlay
             return;
         }
-
-        const string hotkeyName = "transcribe";
 
         // The press carries no profile: the engine applies the persisted
         // active rewrite profile at finalize.
@@ -43,7 +42,9 @@ public partial class App
                         System.Diagnostics.Tracing.EventLevel.Verbose,
                         (System.Diagnostics.Tracing.EventKeywords)Keywords.Capture))
                 {
-                    DeckleAppSource.Log.HotkeyStartDetail(hotkeyName);
+                    // The tray's Record item runs this same path: the label
+                    // is the bound chord, not proof it was pressed.
+                    DeckleAppSource.Log.HotkeyStartDetail(HotkeyChordLabel(RecordHotkeyId));
                 }
                 _hudWindow?.ShowPreparing();
                 break;

@@ -59,9 +59,8 @@ internal static class SecondaryWindowPlacement
         }
         catch (Exception ex)
         {
-            DeckleAppSource.Log.LogWindowWarning();
-            DeckleAppSource.Log.LogWindowWarningDetail(
-                $"window placement restore failed | window={key} | error={ex.Message}");
+            DeckleAppSource.Log.WindowOperationFailed(
+                key, "placement_restore", "exception", ex.GetType().Name, ex.Message);
         }
     }
 
@@ -80,9 +79,8 @@ internal static class SecondaryWindowPlacement
         }
         catch (Exception ex)
         {
-            DeckleAppSource.Log.LogWindowWarning();
-            DeckleAppSource.Log.LogWindowWarningDetail(
-                $"window placement save failed | window={key} | error={ex.Message}");
+            DeckleAppSource.Log.WindowOperationFailed(
+                key, "placement_save", "exception", ex.GetType().Name, ex.Message);
         }
     }
 
@@ -121,9 +119,10 @@ internal static class SecondaryWindowPlacement
         }
         catch (Exception ex)
         {
-            DeckleAppSource.Log.LogWindowWarning();
-            DeckleAppSource.Log.LogWindowWarningDetail(
-                $"window placement load failed | error={ex.Message}");
+            // The store holds every window's placement, so no single window
+            // is named; each opens at its default position this run.
+            DeckleAppSource.Log.WindowOperationFailed(
+                "all", "placement_load", "exception", ex.GetType().Name, ex.Message);
             return new Dictionary<string, PlacementDto>(StringComparer.Ordinal);
         }
     }

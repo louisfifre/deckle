@@ -47,7 +47,15 @@ public static class ReleaseResolver
     public static async Task<string> GetSha256Async(ResolvedRelease release, CancellationToken ct)
     {
         string content = await s_http.GetStringAsync(release.Sha256Url, ct).ConfigureAwait(false);
-        return content.Trim().Split(' ', '\t', '\n', '\r')[0].ToLowerInvariant();
+        string hex = content.Trim().Split(' ', '\t', '\n', '\r')[0].ToLowerInvariant();
+
+        // An empty or truncated sidecar used to come back as the "expected" hash,
+        // so the failure surfaced later as a checksum mismatch that blamed the
+        // download. Rejecting it here names the sidecar as the cause.
+        if (hex.Length != 64 || !hex.All(Uri.IsHexDigit))
+            throw new InvalidOperationException(
+                $"Release {release.Tag} has a malformed SHA-256 sidecar ({hex.Length} characters).");
+        return hex;
     }
 
     // "v0.7.1" → "0.7.1" — the tag with its leading v dropped, the form the

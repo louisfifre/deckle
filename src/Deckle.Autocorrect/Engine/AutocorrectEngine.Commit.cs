@@ -213,7 +213,8 @@ public sealed partial class AutocorrectEngine
         if (_injectionIncidentOpen) return;
 
         _injectionIncidentOpen = true;
-        DeckleAutocorrectSource.Log.InjectionIncident();
+        DeckleAutocorrectSource.Log.InjectionFailing(
+            _surface.ProcessName, _injector.LastWin32Error);
         DeckleAutocorrectSource.Log.InjectionEpisodeDetail(
             "opened", _injectionFailures, backspaces, textLength);
     }

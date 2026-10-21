@@ -25,14 +25,21 @@ public static class HueLightOutputFactory
         ArgumentException.ThrowIfNullOrWhiteSpace(groupId);
         ct.ThrowIfCancellationRequested();
 
-        var area = await TryResolveEntertainmentAreaAsync(bridge, groupId, ct).ConfigureAwait(false);
+        var (area, areaReason) = await TryResolveEntertainmentAreaAsync(bridge, groupId, ct).ConfigureAwait(false);
         if (area is { Channels.Count: > 0 } && !string.IsNullOrWhiteSpace(bridge.Credentials?.ClientKey))
         {
+            DeckleLightingSource.Log.LightOutputSelected(EntertainmentOutputName, areaReason);
             return bridge.CreateEntertainmentOutput(area, bridge.Credentials.ClientKey);
         }
 
+        DeckleLightingSource.Log.LightOutputSelected(
+            RestOutputName,
+            string.IsNullOrWhiteSpace(bridge.Credentials?.ClientKey) ? "no_client_key" : areaReason);
         return bridge.CreateRestOutput(groupId);
     }
+
+    private const string EntertainmentOutputName = "hue_entertainment";
+    private const string RestOutputName = "hue_rest";
 
     public static Task<ILightOutput> ConnectPreparedPreferredAsync(
         HueBridgeClient client,
@@ -54,15 +61,18 @@ public static class HueLightOutputFactory
         ArgumentException.ThrowIfNullOrWhiteSpace(groupId);
         ct.ThrowIfCancellationRequested();
 
+        string restReason = "no_client_key";
         if (!string.IsNullOrWhiteSpace(bridge.Credentials?.ClientKey))
         {
-            var area = await TryResolveEntertainmentAreaAsync(bridge, groupId, ct).ConfigureAwait(false);
+            var (area, areaReason) = await TryResolveEntertainmentAreaAsync(bridge, groupId, ct).ConfigureAwait(false);
+            restReason = areaReason;
             if (area is { Channels.Count: > 0 })
             {
                 var entertainment = bridge.CreateEntertainmentOutput(area, bridge.Credentials.ClientKey);
                 try
                 {
                     await entertainment.ConnectAsync(ct).ConfigureAwait(false);
+                    DeckleLightingSource.Log.LightOutputSelected(EntertainmentOutputName, areaReason);
                     return entertainment;
                 }
                 catch (OperationCanceledException)
@@ -74,6 +84,7 @@ public static class HueLightOutputFactory
                 {
                     await DisposeOutputBestEffortAsync(entertainment).ConfigureAwait(false);
                     LogEntertainmentFallback("connect_failed", ex);
+                    restReason = "connect_failed";
                     // The bridge may expose Entertainment but reject the
                     // session at runtime (UDP/DTLS/firmware/firewall).
                     // Keep Ambient usable through the established REST path.
@@ -83,6 +94,7 @@ public static class HueLightOutputFactory
 
         var rest = bridge.CreateRestOutput(groupId);
         await rest.ConnectAsync(ct).ConfigureAwait(false);
+        DeckleLightingSource.Log.LightOutputSelected(RestOutputName, restReason);
         return rest;
     }
 
@@ -114,18 +126,22 @@ public static class HueLightOutputFactory
 
             var rest = bridge.CreateRestOutput(groupId);
             await rest.ConnectAsync(ct).ConfigureAwait(false);
+            DeckleLightingSource.Log.LightOutputSelected(RestOutputName, "connect_failed");
             return rest;
         }
     }
 
-    private static async Task<HueEntertainmentArea?> TryResolveEntertainmentAreaAsync(
+    private static async Task<(HueEntertainmentArea? Area, string Reason)> TryResolveEntertainmentAreaAsync(
         IHueOutputFactoryBridge bridge,
         string groupId,
         CancellationToken ct)
     {
         try
         {
-            return await ResolveEntertainmentAreaAsync(bridge, groupId, ct).ConfigureAwait(false);
+            var area = await ResolveEntertainmentAreaAsync(bridge, groupId, ct).ConfigureAwait(false);
+            return area is { Channels.Count: > 0 }
+                ? (area, "entertainment_area_found")
+                : (area, "no_entertainment_area");
         }
         catch (OperationCanceledException)
         {
@@ -140,7 +156,7 @@ public static class HueLightOutputFactory
             // Entertainment is unavailable while REST can still work. A
             // transport failure has no viable REST fallback because both
             // paths share the same endpoint, so it must remain fatal.
-            return null;
+            return (null, "catalog_failed");
         }
     }
 
@@ -181,11 +197,12 @@ public static class HueLightOutputFactory
         {
             throw;
         }
-        catch
+        catch (Exception ex)
         {
             // Some Hue Entertainment groups do not expose useful CLIP v1
             // light membership. Name matching above is the primary path
             // for those; overlap is best-effort only.
+            DeckleLightingSource.Log.HueStepFailedDetail("group_lights_lookup", ex.GetType().Name, ex.Message);
         }
 
         if (groupLights.Count == 0) return null;
@@ -215,14 +232,14 @@ public static class HueLightOutputFactory
     private static async Task DisposeOutputBestEffortAsync(ILightOutput output)
     {
         try { await output.DisposeAsync().ConfigureAwait(false); }
-        catch { }
+        catch (Exception ex)
+        {
+            DeckleLightingSource.Log.HueStepFailedDetail("output_dispose", ex.GetType().Name, ex.Message);
+        }
     }
 
     private static void LogEntertainmentFallback(string reason, Exception ex)
-    {
-        DeckleLightingSource.Log.EntertainmentRestFallback();
-        DeckleLightingSource.Log.EntertainmentRestFallbackDetail(reason, ex.GetType().Name, ex.Message);
-    }
+        => DeckleLightingSource.Log.EntertainmentRestFallback(reason, ex.GetType().Name, ex.Message);
 
     private sealed class HueBridgeOutputFactoryBridge : IHueOutputFactoryBridge
     {

@@ -79,7 +79,13 @@ public sealed partial class FrameSampler : IAsyncDisposable
     private long _intermediateTexAcquiredTicks;
     private long _stagingTexAcquiredTicks;
 
+    private FrameFailure? _lastFailure;
+
     public SampledFrame? LatestSample => Volatile.Read(ref _latestSample);
+
+    // Last cause behind a false Process(), for the consumer's incident
+    // milestone; the per-frame failure itself stays a governed Verbose.
+    public FrameFailure? LastFailure => Volatile.Read(ref _lastFailure);
 
     public int GridCols => _gridCols;
     public int GridRows => _gridRows;

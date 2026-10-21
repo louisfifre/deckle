@@ -143,13 +143,20 @@ public sealed class ContactFrameRecorder : IDisposable
             if (!_armed) return;
             _armed = false;
             _devices.EndSession();
-            if (_writer is null) return;
+            if (_writer is null)
+            {
+                // Armed but no frame ever arrived, so no file was opened: the
+                // session still ends in the log, with nothing recorded.
+                DeckleInputSource.Log.RecordingStopped("completed", 0);
+                return;
+            }
 
             string path = _path!;
             long frames = _frames;
-            double durationSec = _firstFrameMs >= 0
+            double durationS = _firstFrameMs >= 0
                 ? Math.Round((RawInputHost.NowMs - _firstFrameMs) / 1000.0, 1)
                 : 0;
+            string outcome = "completed";
 
             try
             {
@@ -157,8 +164,8 @@ public sealed class ContactFrameRecorder : IDisposable
             }
             catch (Exception ex)
             {
-                DeckleInputSource.Log.RecordingFailed();
-                DeckleInputSource.Log.RecordingFailedDetail(ex.GetType().Name, ex.Message);
+                outcome = "failed";
+                DeckleInputSource.Log.RecordingFailed(ex.GetType().Name, ex.Message);
             }
             finally
             {
@@ -168,10 +175,17 @@ public sealed class ContactFrameRecorder : IDisposable
             }
 
             long bytes = 0;
-            try { bytes = new FileInfo(path).Length; } catch { /* size is informative only */ }
+            try
+            {
+                bytes = new FileInfo(path).Length;
+            }
+            catch (Exception ex)
+            {
+                DeckleInputSource.Log.RecordingSizeUnavailable("frames", ex.GetType().Name, ex.Message);
+            }
 
-            DeckleInputSource.Log.RecordingStopped();
-            DeckleInputSource.Log.RecordingStoppedDetail(path, frames, durationSec, bytes);
+            DeckleInputSource.Log.RecordingStopped(outcome, frames);
+            DeckleInputSource.Log.RecordingStoppedDetail(path, durationS, bytes);
         }
     }
 
@@ -202,13 +216,13 @@ public sealed class ContactFrameRecorder : IDisposable
         }
         catch (Exception ex)
         {
-            DeckleInputSource.Log.RecordingFailed();
-            DeckleInputSource.Log.RecordingFailedDetail(ex.GetType().Name, ex.Message);
+            DeckleInputSource.Log.RecordingFailed(ex.GetType().Name, ex.Message);
             _writer?.Dispose();
             _writer = null;
             _path = null;
             _armed = false;
             _devices.EndSession();
+            DeckleInputSource.Log.RecordingStopped("failed", 0);
             return false;
         }
     }
@@ -223,14 +237,16 @@ public sealed class ContactFrameRecorder : IDisposable
             $"\"slots\":{c.ContactSlots},\"reportBytes\":{c.ReportByteLength}}}");
     }
 
+    // The session ends here, not in Stop (which now finds it disarmed), so the
+    // closing line is written here too.
     private void FailAndClose(Exception ex)
     {
-        DeckleInputSource.Log.RecordingFailed();
-        DeckleInputSource.Log.RecordingFailedDetail(ex.GetType().Name, ex.Message);
+        DeckleInputSource.Log.RecordingFailed(ex.GetType().Name, ex.Message);
         _writer?.Dispose();
         _writer = null;
         _path = null;
         _armed = false;
         _devices.EndSession();
+        DeckleInputSource.Log.RecordingStopped("failed", _frames);
     }
 }

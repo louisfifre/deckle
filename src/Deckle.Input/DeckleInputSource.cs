@@ -26,77 +26,112 @@ public sealed class DeckleInputSource : DeckleEventSource
         => OperationalLogAdmission.IsDetailEnabled(
             OperationalLogActivity.Input, Log, level, keywords);
 
-    public const int EvtHostStarted              = 1;
-    public const int EvtHostStopped              = 2;
-    public const int EvtHostStartFailed          = 3;
+    // Host names carried by the events both input hosts share.
+    internal const string TouchpadHost = "touchpad";
+    internal const string KeyboardHost = "keyboard";
+
+    // 1 retired.
+    // 2 retired.
+    // 3 retired.
     public const int EvtTouchpadDetected         = 4;
     public const int EvtTouchpadDetectedDetail   = 5;
     public const int EvtTouchpadAbsent           = 6;
     public const int EvtTouchpadArrived          = 7;
     public const int EvtTouchpadRemoved          = 8;
-    public const int EvtRegistrationFailed       = 9;
-    public const int EvtParserCreateFailed       = 10;
+    // 9 retired.
+    // 10 retired.
     public const int EvtFrameRollup              = 11;
     public const int EvtRecordingStarted         = 12;
     public const int EvtRecordingStartedDetail   = 13;
-    public const int EvtRecordingStopped         = 14;
-    public const int EvtRecordingStoppedDetail   = 15;
-    public const int EvtRecordingFailed          = 16;
-    public const int EvtHostStartFailedDetail    = 17;
-    public const int EvtRegistrationFailedDetail = 18;
-    public const int EvtParserCreateFailedDetail = 19;
-    public const int EvtRecordingFailedDetail    = 20;
-    public const int EvtKeyboardHostStarted      = 21;
-    public const int EvtKeyboardHostStopped      = 22;
-    public const int EvtKeyboardHostStartFailed  = 23;
+    // 14 retired.
+    // 15 retired.
+    // 16 retired.
+    // 17 retired.
+    // 18 retired.
+    // 19 retired.
+    // 20 retired.
+    // 21 retired.
+    // 22 retired.
+    // 23 retired.
     public const int EvtKeyboardRollup           = 24;
     public const int EvtWheelRecordingStarted      = 25;
     public const int EvtWheelRecordingStartedDetail = 26;
-    public const int EvtWheelRecordingStopped      = 27;
-    public const int EvtWheelRecordingStoppedDetail = 28;
-    public const int EvtWheelRecordingFailed       = 29;
-    public const int EvtWheelRecordingFailedDetail = 30;
+    // 27 retired.
+    // 28 retired.
+    // 29 retired.
+    // 30 retired.
     public const int EvtWheelDeviceObserved        = 31;
-    public const int EvtMouseWheelHookFailed       = 32;
-    public const int EvtMouseWheelHookFailedDetail = 33;
-    public const int EvtKeyboardHostStartFailedDetail = 34;
+    // 32 retired.
+    // 33 retired.
+    // 34 retired.
+    public const int EvtHostStarted                = 35;
+    public const int EvtHostStartedDetail          = 36;
+    public const int EvtHostStopped                = 37;
+    public const int EvtHostStartFailed            = 38;
+    public const int EvtKeyboardHostStarted        = 39;
+    public const int EvtKeyboardHostStartedDetail  = 40;
+    public const int EvtKeyboardHostStopped        = 41;
+    public const int EvtKeyboardHostStartFailed    = 42;
+    public const int EvtInputPumpFailed            = 43;
+    public const int EvtHostStopTimedOut           = 44;
+    public const int EvtParserCreateFailed         = 45;
+    public const int EvtMouseHookFailed            = 46;
+    public const int EvtMouseHookSilenceStarted    = 47;
+    public const int EvtMouseHookSilenceEnded      = 48;
+    public const int EvtInputRelayDegraded         = 49;
+    public const int EvtInputRelayRecovered        = 50;
+    public const int EvtRecordingStopped           = 51;
+    public const int EvtRecordingStoppedDetail     = 52;
+    public const int EvtRecordingFailed            = 53;
+    public const int EvtWheelRecordingStopped      = 54;
+    public const int EvtWheelRecordingStoppedDetail = 55;
+    public const int EvtWheelRecordingFailed       = 56;
+    public const int EvtRecordingSizeUnavailable   = 57;
 
     // ── Raw input host lifecycle ─────────────────────────────────────────
 
+    // Emitted once the boot probe has run, so the run journal states how
+    // many touchpads the host found without any verbosity turned on.
     [Event(EvtHostStarted,
-           Level = EventLevel.Verbose,
+           Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "raw input host started | hwnd={0} | thread={1}")]
-    public void HostStarted(long hwnd, int thread_id)
+           Tags = ObservationTags.Journal,
+           Message = "Raw input host started | touchpads={0}")]
+    public void HostStarted(int touchpads)
     {
-        if (IsEnabled()) WriteEvent(EvtHostStarted, hwnd, thread_id);
+        if (IsEnabled()) WriteEvent(EvtHostStarted, touchpads);
     }
 
-    [Event(EvtHostStopped,
+    [Event(EvtHostStartedDetail,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "raw input host stopped")]
-    public void HostStopped()
+           Message = "raw input host window | hwnd={0} | thread_id={1}")]
+    public void HostStartedDetail(long hwnd, int thread_id)
     {
-        if (IsEnabled()) WriteEvent(EvtHostStopped);
+        if (IsEnabled()) WriteEvent(EvtHostStartedDetail, hwnd, thread_id);
+    }
+
+    // outcome is completed for a clean quit; failed when the pump died on its
+    // own or did not quit in time, with reason get_message_failed, exception
+    // or stop_timed_out.
+    [Event(EvtHostStopped,
+           Level = EventLevel.Informational,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Tags = ObservationTags.Journal,
+           Message = "Raw input host stopped | outcome={0} | reason={1}")]
+    public void HostStopped(string outcome, string reason)
+    {
+        if (IsEnabled()) WriteEvent(EvtHostStopped, outcome, reason);
     }
 
     [Event(EvtHostStartFailed,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "Raw input host failed to start")]
-    public void HostStartFailed()
+           Tags = ObservationTags.Journal,
+           Message = "Raw input host failed to start | ex_type={0} | ex_message={1} | win32_error={2}")]
+    public void HostStartFailed(string ex_type, string ex_message, int win32_error)
     {
-        if (IsEnabled()) WriteEvent(EvtHostStartFailed);
-    }
-
-    [Event(EvtHostStartFailedDetail,
-           Level = EventLevel.Verbose,
-           Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "host start failed | error={0}: {1}")]
-    public void HostStartFailedDetail(string ex_type, string message)
-    {
-        if (IsEnabled()) WriteEvent(EvtHostStartFailedDetail, ex_type, message);
+        if (IsEnabled()) WriteEvent(EvtHostStartFailed, ex_type, ex_message, win32_error);
     }
 
     // ── Touchpad presence ────────────────────────────────────────────────
@@ -150,40 +185,14 @@ public sealed class DeckleInputSource : DeckleEventSource
         if (IsEnabled()) WriteEvent(EvtTouchpadRemoved);
     }
 
-    [Event(EvtRegistrationFailed,
-           Level = EventLevel.Warning,
-           Keywords = (EventKeywords)Keywords.Capture,
-           Message = "Raw input device registration failed")]
-    public void RegistrationFailed()
-    {
-        if (IsEnabled()) WriteEvent(EvtRegistrationFailed);
-    }
-
-    [Event(EvtRegistrationFailedDetail,
-           Level = EventLevel.Verbose,
-           Keywords = (EventKeywords)Keywords.Capture,
-           Message = "registration failed | win32_error={0}")]
-    public void RegistrationFailedDetail(int win32_error)
-    {
-        if (IsEnabled()) WriteEvent(EvtRegistrationFailedDetail, win32_error);
-    }
-
+    // reason is one of TouchpadParser's snake_case failure words.
     [Event(EvtParserCreateFailed,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Capture,
-           Message = "Touchpad parser could not be created")]
-    public void ParserCreateFailed()
+           Message = "Touchpad parser could not be created | reason={0}")]
+    public void ParserCreateFailed(string reason)
     {
-        if (IsEnabled()) WriteEvent(EvtParserCreateFailed);
-    }
-
-    [Event(EvtParserCreateFailedDetail,
-           Level = EventLevel.Verbose,
-           Keywords = (EventKeywords)Keywords.Capture,
-           Message = "parser creation failed | reason={0}")]
-    public void ParserCreateFailedDetail(string reason)
-    {
-        if (IsEnabled()) WriteEvent(EvtParserCreateFailedDetail, reason);
+        if (IsEnabled()) WriteEvent(EvtParserCreateFailed, reason);
     }
 
     // ── Frame rollup (5 s aggregate while frames flow) ───────────────────
@@ -222,79 +231,110 @@ public sealed class DeckleInputSource : DeckleEventSource
         if (IsEnabled()) WriteEvent(EvtRecordingStartedDetail, path);
     }
 
+    // Closes every armed session, including one that never saw a frame
+    // (frames=0) and one an I/O error ended (outcome=failed).
     [Event(EvtRecordingStopped,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Capture,
-           Message = "Frame recording stopped")]
-    public void RecordingStopped()
+           Message = "Frame recording stopped | outcome={0} | frames={1}")]
+    public void RecordingStopped(string outcome, long frames)
     {
-        if (IsEnabled()) WriteEvent(EvtRecordingStopped);
+        if (IsEnabled()) WriteEvent(EvtRecordingStopped, outcome, frames);
     }
 
     [Event(EvtRecordingStoppedDetail,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Capture,
-           Message = "frame recording closed | path={0} | frames={1} | duration_sec={2} | bytes={3}")]
-    public void RecordingStoppedDetail(string path, long frames, double duration_sec, long bytes)
+           Message = "frame recording closed | path={0} | duration_s={1} | bytes={2}")]
+    public void RecordingStoppedDetail(string path, double duration_s, long bytes)
     {
-        if (IsEnabled()) WriteEvent(EvtRecordingStoppedDetail, path, frames, duration_sec, bytes);
+        if (IsEnabled()) WriteEvent(EvtRecordingStoppedDetail, path, duration_s, bytes);
     }
 
     [Event(EvtRecordingFailed,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Capture,
-           Message = "Frame recording encountered an error")]
-    public void RecordingFailed()
+           Message = "Frame recording encountered an error | ex_type={0} | ex_message={1}")]
+    public void RecordingFailed(string ex_type, string ex_message)
     {
-        if (IsEnabled()) WriteEvent(EvtRecordingFailed);
+        if (IsEnabled()) WriteEvent(EvtRecordingFailed, ex_type, ex_message);
     }
 
-    [Event(EvtRecordingFailedDetail,
+    // The file size only decorates the closing line; a failed stat must not
+    // fail the stop, but its cause is still kept.
+    [Event(EvtRecordingSizeUnavailable,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Capture,
-           Message = "recording failed | error={0}: {1}")]
-    public void RecordingFailedDetail(string ex_type, string message)
+           Message = "recording size unavailable | recording={0} | ex_type={1} | ex_message={2}")]
+    public void RecordingSizeUnavailable(string recording, string ex_type, string ex_message)
     {
-        if (IsEnabled()) WriteEvent(EvtRecordingFailedDetail, ex_type, message);
+        if (IsEnabled()) WriteEvent(EvtRecordingSizeUnavailable, recording, ex_type, ex_message);
     }
 
     // ── Keyboard host lifecycle ──────────────────────────────────────────
 
+    // mouse_hook=false means the host runs on Raw Input alone: precision
+    // scrolling cannot intercept and synthesized touchpad clicks are unseen.
     [Event(EvtKeyboardHostStarted,
+           Level = EventLevel.Informational,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Tags = ObservationTags.Journal,
+           Message = "Keyboard input host started | mouse_hook={0}")]
+    public void KeyboardHostStarted(bool mouse_hook)
+    {
+        if (IsEnabled()) WriteEvent(EvtKeyboardHostStarted, mouse_hook);
+    }
+
+    [Event(EvtKeyboardHostStartedDetail,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "keyboard input host started | hwnd={0} | thread={1}")]
-    public void KeyboardHostStarted(long hwnd, int thread_id)
+           Message = "keyboard input host window | hwnd={0} | thread_id={1}")]
+    public void KeyboardHostStartedDetail(long hwnd, int thread_id)
     {
-        if (IsEnabled()) WriteEvent(EvtKeyboardHostStarted, hwnd, thread_id);
+        if (IsEnabled()) WriteEvent(EvtKeyboardHostStartedDetail, hwnd, thread_id);
     }
 
     [Event(EvtKeyboardHostStopped,
-           Level = EventLevel.Verbose,
+           Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "keyboard input host stopped")]
-    public void KeyboardHostStopped()
+           Tags = ObservationTags.Journal,
+           Message = "Keyboard input host stopped | outcome={0} | reason={1}")]
+    public void KeyboardHostStopped(string outcome, string reason)
     {
-        if (IsEnabled()) WriteEvent(EvtKeyboardHostStopped);
+        if (IsEnabled()) WriteEvent(EvtKeyboardHostStopped, outcome, reason);
     }
 
     [Event(EvtKeyboardHostStartFailed,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "Keyboard input host failed to start")]
-    public void KeyboardHostStartFailed()
+           Tags = ObservationTags.Journal,
+           Message = "Keyboard input host failed to start | ex_type={0} | ex_message={1} | win32_error={2}")]
+    public void KeyboardHostStartFailed(string ex_type, string ex_message, int win32_error)
     {
-        if (IsEnabled()) WriteEvent(EvtKeyboardHostStartFailed);
+        if (IsEnabled()) WriteEvent(EvtKeyboardHostStartFailed, ex_type, ex_message, win32_error);
     }
 
-    [Event(EvtKeyboardHostStartFailedDetail,
-           Level = EventLevel.Verbose,
+    // ── Shared host failures ─────────────────────────────────────────────
+
+    // host is touchpad or keyboard. reason is get_message_failed (win32_error
+    // set) or exception (ex_type/ex_message set). The pump is gone: the host
+    // observes nothing more until it is restarted.
+    [Event(EvtInputPumpFailed,
+           Level = EventLevel.Error,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "keyboard input host start failed | error={0}: {1}")]
-    public void KeyboardHostStartFailedDetail(string ex_type, string message)
+           Message = "Input host message pump stopped unexpectedly | host={0} | reason={1} | win32_error={2} | ex_type={3} | ex_message={4}")]
+    public void InputPumpFailed(string host, string reason, int win32_error, string ex_type, string ex_message)
     {
-        if (!IsEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Lifecycle)) return;
-        WriteEvent(EvtKeyboardHostStartFailedDetail, ex_type, message);
+        if (IsEnabled()) WriteEvent(EvtInputPumpFailed, host, reason, win32_error, ex_type, ex_message);
+    }
+
+    [Event(EvtHostStopTimedOut,
+           Level = EventLevel.Warning,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Message = "Input host thread did not stop in time | host={0} | timeout_ms={1}")]
+    public void HostStopTimedOut(string host, int timeout_ms)
+    {
+        if (IsEnabled()) WriteEvent(EvtHostStopTimedOut, host, timeout_ms);
     }
 
     // ── Keyboard activity rollup (30 s aggregate while input flows) ──────
@@ -310,22 +350,62 @@ public sealed class DeckleInputSource : DeckleEventSource
         WriteEvent(EvtKeyboardRollup, keys, injected_filtered, pointer_downs, wheel, focus_changes);
     }
 
-    [Event(EvtMouseWheelHookFailed,
+    // ── Mouse hook health ────────────────────────────────────────────────
+
+    [Event(EvtMouseHookFailed,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "Mouse wheel hook failed to start")]
-    public void MouseWheelHookFailed()
+           Message = "Mouse wheel hook failed to start | win32_error={0}")]
+    public void MouseHookFailed(int win32_error)
     {
-        if (IsEnabled()) WriteEvent(EvtMouseWheelHookFailed);
+        if (IsEnabled()) WriteEvent(EvtMouseHookFailed, win32_error);
     }
 
-    [Event(EvtMouseWheelHookFailedDetail,
-           Level = EventLevel.Verbose,
-           Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "mouse wheel hook failed | win32_error={0}")]
-    public void MouseWheelHookFailedDetail(int win32_error)
+    // Windows removes a low-level hook without notice when it times out. The
+    // only witness is Raw Input still reporting physical wheel detents that
+    // the hook never pairs; unpaired counts them.
+    [Event(EvtMouseHookSilenceStarted,
+           Level = EventLevel.Warning,
+           Keywords = (EventKeywords)Keywords.Capture,
+           Message = "Mouse wheel hook stopped receiving input | reason={0} | unpaired={1}")]
+    public void MouseHookSilenceStarted(string reason, int unpaired)
     {
-        if (IsEnabled()) WriteEvent(EvtMouseWheelHookFailedDetail, win32_error);
+        if (IsEnabled()) WriteEvent(EvtMouseHookSilenceStarted, reason, unpaired);
+    }
+
+    // reason is hook_wheel_seen or host_stopped.
+    [Event(EvtMouseHookSilenceEnded,
+           Level = EventLevel.Informational,
+           Keywords = (EventKeywords)Keywords.Capture,
+           Tags = ObservationTags.Journal,
+           Message = "Mouse wheel hook receives input again | reason={0} | unpaired={1}")]
+    public void MouseHookSilenceEnded(string reason, int unpaired)
+    {
+        if (IsEnabled()) WriteEvent(EvtMouseHookSilenceEnded, reason, unpaired);
+    }
+
+    // The relay from hook and timers to the pump lost work. reason is the last
+    // cause seen: queue_full (a hook wheel was dropped), post_failed (a thread
+    // message was refused) or timer_failed (wheel correlation fell back to an
+    // immediate flush). occurrences counts every loss of the incident so far.
+    [Event(EvtInputRelayDegraded,
+           Level = EventLevel.Warning,
+           Keywords = (EventKeywords)Keywords.Pipeline,
+           Message = "Keyboard input host is losing input relays | reason={0} | win32_error={1} | occurrences={2}")]
+    public void InputRelayDegraded(string reason, int win32_error, int occurrences)
+    {
+        if (IsEnabled()) WriteEvent(EvtInputRelayDegraded, reason, win32_error, occurrences);
+    }
+
+    // reason is relay_quiet or host_stopped.
+    [Event(EvtInputRelayRecovered,
+           Level = EventLevel.Informational,
+           Keywords = (EventKeywords)Keywords.Pipeline,
+           Tags = ObservationTags.Journal,
+           Message = "Keyboard input host relays input again | reason={0} | occurrences={1}")]
+    public void InputRelayRecovered(string reason, int occurrences)
+    {
+        if (IsEnabled()) WriteEvent(EvtInputRelayRecovered, reason, occurrences);
     }
 
     // ── Wheel recording sessions ─────────────────────────────────────────
@@ -353,37 +433,28 @@ public sealed class DeckleInputSource : DeckleEventSource
     [Event(EvtWheelRecordingStopped,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Capture,
-           Message = "Wheel recording stopped")]
-    public void WheelRecordingStopped()
+           Message = "Wheel recording stopped | outcome={0} | events={1}")]
+    public void WheelRecordingStopped(string outcome, long events)
     {
-        if (IsEnabled()) WriteEvent(EvtWheelRecordingStopped);
+        if (IsEnabled()) WriteEvent(EvtWheelRecordingStopped, outcome, events);
     }
 
     [Event(EvtWheelRecordingStoppedDetail,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Capture,
-           Message = "wheel recording closed | path={0} | events={1} | duration_sec={2} | bytes={3}")]
-    public void WheelRecordingStoppedDetail(string path, long events, double duration_sec, long bytes)
+           Message = "wheel recording closed | path={0} | duration_s={1} | bytes={2}")]
+    public void WheelRecordingStoppedDetail(string path, double duration_s, long bytes)
     {
-        if (IsEnabled()) WriteEvent(EvtWheelRecordingStoppedDetail, path, events, duration_sec, bytes);
+        if (IsEnabled()) WriteEvent(EvtWheelRecordingStoppedDetail, path, duration_s, bytes);
     }
 
     [Event(EvtWheelRecordingFailed,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Capture,
-           Message = "Wheel recording encountered an error")]
-    public void WheelRecordingFailed()
+           Message = "Wheel recording encountered an error | ex_type={0} | ex_message={1}")]
+    public void WheelRecordingFailed(string ex_type, string ex_message)
     {
-        if (IsEnabled()) WriteEvent(EvtWheelRecordingFailed);
-    }
-
-    [Event(EvtWheelRecordingFailedDetail,
-           Level = EventLevel.Verbose,
-           Keywords = (EventKeywords)Keywords.Capture,
-           Message = "wheel recording failed | error={0}: {1}")]
-    public void WheelRecordingFailedDetail(string ex_type, string message)
-    {
-        if (IsEnabled()) WriteEvent(EvtWheelRecordingFailedDetail, ex_type, message);
+        if (IsEnabled()) WriteEvent(EvtWheelRecordingFailed, ex_type, ex_message);
     }
 
     [Event(EvtWheelDeviceObserved,

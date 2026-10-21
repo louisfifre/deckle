@@ -106,8 +106,7 @@ public static class SettingsBootstrap
         }
         catch (Exception ex)
         {
-            DeckleSettingsSource.Log.PerModuleMigrationFailed();
-            DeckleSettingsSource.Log.PerModuleMigrationFailedDetail(ex.GetType().Name, ex.Message);
+            DeckleSettingsSource.Log.PerModuleMigrationFailed(ex.GetType().Name, ex.Message);
         }
     }
 
@@ -160,8 +159,7 @@ public static class SettingsBootstrap
         }
         catch (Exception ex)
         {
-            DeckleSettingsSource.Log.InjectFailed();
-            DeckleSettingsSource.Log.InjectFailedDetail(key, moduleId, ex.GetType().Name, ex.Message);
+            DeckleSettingsSource.Log.InjectFailed(key, moduleId, ex.GetType().Name, ex.Message);
         }
     }
 
@@ -198,8 +196,7 @@ public static class SettingsBootstrap
         }
         catch (Exception ex)
         {
-            DeckleSettingsSource.Log.InjectFailed();
-            DeckleSettingsSource.Log.InjectFailedDetail(
+            DeckleSettingsSource.Log.InjectFailed(
                 key, targetModuleId, ex.GetType().Name, ex.Message);
         }
     }
@@ -227,8 +224,7 @@ public static class SettingsBootstrap
         }
         catch (Exception ex)
         {
-            DeckleSettingsSource.Log.InjectFailed();
-            DeckleSettingsSource.Log.InjectFailedDetail(
+            DeckleSettingsSource.Log.InjectFailed(
                 newKey, moduleId, ex.GetType().Name, ex.Message);
         }
     }
@@ -250,9 +246,7 @@ public static class SettingsBootstrap
         }
         catch (Exception ex)
         {
-            DeckleSettingsSource.Log.ModuleFolderRenameFailed();
-            DeckleSettingsSource.Log.ModuleFolderRenameFailedDetail2(oldId, newId);
-            DeckleSettingsSource.Log.ModuleFolderRenameFailedDetail(oldId, newId, ex.GetType().Name, ex.Message);
+            DeckleSettingsSource.Log.ModuleFolderRenameFailed(oldId, newId, ex.GetType().Name, ex.Message);
         }
     }
 

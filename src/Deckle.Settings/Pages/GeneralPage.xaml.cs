@@ -249,8 +249,7 @@ public sealed partial class GeneralPage : Page
         }
         catch (Exception ex)
         {
-            DeckleSettingsUxSource.Log.FolderPickerFailed();
-            DeckleSettingsUxSource.Log.FolderPickerFailedDetail(ex.GetType().Name, ex.Message);
+            DeckleSettingsUxSource.Log.FolderActionFailed("relocate", ex.GetType().Name, ex.HResult, ex.Message);
         }
         finally
         {
@@ -289,10 +288,18 @@ public sealed partial class GeneralPage : Page
         long required = await Task.Run(() =>
         {
             long total = 0;
+            int skipped = 0;
+            Exception? lastSkip = null;
             foreach (string file in Directory.EnumerateFiles(current, "*", System.IO.SearchOption.AllDirectories))
             {
-                try { total += new FileInfo(file).Length; } catch { }
+                // A file that vanished or is locked mid-walk only lowers the
+                // estimate; the move itself copies what is really there.
+                try { total += new FileInfo(file).Length; }
+                catch (Exception ex) { skipped++; lastSkip = ex; }
             }
+            if (lastSkip is not null)
+                DeckleSettingsSource.Log.DataSizeFilesSkippedDetail(
+                    skipped, lastSkip.GetType().Name, lastSkip.Message);
             return total;
         });
         var drive = new DriveInfo(System.IO.Path.GetPathRoot(target)!);
@@ -357,8 +364,7 @@ public sealed partial class GeneralPage : Page
         }
         catch (Exception ex)
         {
-            DeckleSettingsSource.Log.SetupWindowOpenFailed();
-            DeckleSettingsSource.Log.SetupWindowOpenFailedDetail(ex.GetType().Name, ex.Message);
+            DeckleSettingsSource.Log.SetupWindowOpenFailed(ex.GetType().Name, ex.Message);
         }
     }
 
@@ -393,7 +399,11 @@ public sealed partial class GeneralPage : Page
                 Loc.Format("Settings_RestoreDialog_Content_Format", latest.DisplayName),
                 Loc.Get("Settings_RestoreDialog_PrimaryButton"),
                 IsDestructive: true));
-        if (!confirmed) return;
+        if (!confirmed)
+        {
+            DeckleSettingsSource.Log.RestoreDeclined();
+            return;
+        }
 
         bool ok = SettingsBackupService.RestoreFromBackup(latest.Path);
         if (!ok) return;

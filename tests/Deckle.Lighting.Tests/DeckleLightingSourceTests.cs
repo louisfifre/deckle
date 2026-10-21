@@ -22,8 +22,8 @@ public sealed class DeckleLightingSourceTests : IDisposable
         OperationalLogAdmission.SetActive(OperationalLogActivity.Ambient, true);
         using var listener = new TestEventListener("Deckle-Lighting");
 
-        DeckleLightingSource.Log.EventStreamIncident();
-        DeckleLightingSource.Log.EventStreamIncidentDetail(5000, 3, "exception", "IOException", "offline");
+        DeckleLightingSource.Log.EventStreamIncident(5000, 3, "exception", "IOException", "offline");
+        DeckleLightingSource.Log.EventStreamReconnecting("exception");
         DeckleLightingSource.Log.EventStreamRecovered();
         DeckleLightingSource.Log.EventStreamRecoveryDetail(7000, 4);
 
@@ -49,12 +49,12 @@ public sealed class DeckleLightingSourceTests : IDisposable
         OperationalLogAdmission.SetActive(OperationalLogActivity.Ambient, true);
         using var listener = new TestEventListener("Deckle-Lighting");
 
-        DeckleLightingSource.Log.EventStreamIncidentDetail(5000, 3, "exception", "IOException", "offline");
+        DeckleLightingSource.Log.EventStreamReconnecting("exception");
         DeckleLightingSource.Log.EventStreamRecoveryDetail(7000, 4);
 
         Assert.Equal(
             [
-                DeckleLightingSource.EvtEventStreamIncidentDetail,
+                DeckleLightingSource.EvtEventStreamReconnecting,
                 DeckleLightingSource.EvtEventStreamRecoveryDetail,
             ],
             listener.Events.Select(static observation => observation.EventId));
