@@ -11,8 +11,9 @@ namespace Deckle.Shell;
 // the UI event silently; both wrappers log it on `DeckleThreadingSource`.
 //
 // `TryEnqueueObserved` also emits `MarshalQueued` and `MarshalCompleted` with
-// `wait_ms` and `run_ms`. With no Verbose Threading listener it falls back to
-// `TryEnqueueOrLog`, so the instrumentation costs one ETW check.
+// `wait_ms` and `run_ms`. Unless the Windowing policy and a Verbose Threading
+// listener both admit them it falls back to `TryEnqueueOrLog`, so the
+// instrumentation costs one admission check.
 //
 // Two thread-static guards break feedback loops through an event listener that
 // marshals what it receives, as the LogWindow sink does:
@@ -67,9 +68,9 @@ public static class DispatcherQueueExtensions
     /// the cross-cutting Threading sub-provider. Emits `MarshalQueued` before
     /// enqueue, measures `wait_ms` (latency) and `run_ms` (execution) around
     /// the callback, and emits `MarshalCompleted` at the end. If enqueue fails,
-    /// emits `DispatcherEnqueueRejected` exactly like `TryEnqueueOrLog`. Strict
-    /// `IsEnabled(Verbose, Threading)` gate: when no listener is attached,
-    /// falls back to `TryEnqueueOrLog` (zero extra allocation for instrumentation).
+    /// emits `DispatcherEnqueueRejected` exactly like `TryEnqueueOrLog`. Gated by
+    /// `OperationalLogAdmission.IsDetailEnabled(Windowing, Verbose, Threading)`:
+    /// when it refuses, falls back to `TryEnqueueOrLog` (zero extra allocation for instrumentation).
     /// </summary>
     /// <param name="queue">Target dispatcher queue.</param>
     /// <param name="operation">Short name of the marshalled operation (closed vocabulary documented on DeckleThreadingSource).</param>
@@ -87,8 +88,15 @@ public static class DispatcherQueueExtensions
         string rejectWhat,
         DispatcherQueuePriority priority = DispatcherQueuePriority.Normal)
     {
-        bool verboseEnabled = DeckleThreadingSource.Log.IsEnabled(
-            EventLevel.Verbose, (EventKeywords)Keywords.Threading);
+        // A marshal runs per log entry and per UI status change, so its detail
+        // answers to the persisted Windowing policy as well as the listener:
+        // the UI-thread hand-off is window plumbing, and the closed activity
+        // vocabulary has no threading entry of its own.
+        bool verboseEnabled = OperationalLogAdmission.IsDetailEnabled(
+            OperationalLogActivity.Windowing,
+            DeckleThreadingSource.Log,
+            EventLevel.Verbose,
+            (EventKeywords)Keywords.Threading);
 
         // Cold path, also taken on re-entry (see `_emittingMarshal` above):
         // enqueue without emitting. The rejection Warning still fires,

@@ -32,7 +32,11 @@ internal interface IGlobalHotkeyApi
 // HKL: the host resolves it with MapVirtualKeyExW under the active layout,
 // and a test passes a plain mapping, so the class stays free of Win32 calls
 // beyond IGlobalHotkeyApi.
-internal sealed class GlobalHotkeyBindings(IntPtr window, IGlobalHotkeyApi api)
+//
+// onRelease (id, released, win32Error) reports each release attempt so the
+// owner can log it; this class stays free of any provider.
+internal sealed class GlobalHotkeyBindings(
+    IntPtr window, IGlobalHotkeyApi api, Action<int, bool, int>? onRelease = null)
 {
     private readonly List<int> _acquired = [];
     private readonly Dictionary<int, int> _releaseErrors = [];
@@ -76,10 +80,14 @@ internal sealed class GlobalHotkeyBindings(IntPtr window, IGlobalHotkeyApi api)
             {
                 _acquired.RemoveAt(index);
                 _releaseErrors.Remove(id);
+                onRelease?.Invoke(id, true, 0);
             }
             else
             {
-                _releaseErrors[id] = api.LastError;
+                // Read before the callback: its logging can overwrite the last error.
+                int error = api.LastError;
+                _releaseErrors[id] = error;
+                onRelease?.Invoke(id, false, error);
             }
         }
         return _acquired.Count == 0;

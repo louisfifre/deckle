@@ -11,43 +11,62 @@ public sealed class DeckleShellSource : DeckleEventSource
     private DeckleShellSource() { }
 
     public const int EvtMessageOnlyHostCreated      = 1;
-    public const int EvtAutostartProbeFailed        = 2;
+    // 2 retired.
     public const int EvtAutostartEnableSkipped      = 3;
     public const int EvtAutostartEnableFailedAcl    = 4;
     public const int EvtAutostartEnabled            = 5;
     public const int EvtAutostartEnabledDetail      = 6;
-    public const int EvtAutostartEnableFailed       = 7;
+    // 7 retired.
     public const int EvtAutostartDisableSkipped     = 8;
     public const int EvtAutostartDisabled           = 9;
-    public const int EvtAutostartDisableFailed      = 10;
-    public const int EvtHotkeyVkResolveFailed       = 11;
+    // 10 retired.
+    // 11 retired.
     public const int EvtHotkeyRegistered            = 12;
     public const int EvtHotkeyLayoutChange          = 13;
-    public const int EvtHotkeyReregisterFailed      = 14;
+    // 14 retired.
     // Id 15 is retired; never reuse it.
     public const int EvtElevatedStartupEnabled      = 16;
-    public const int EvtElevatedStartupEnableFailed  = 17;
+    // 17 retired.
     public const int EvtElevatedStartupDisabled     = 18;
-    public const int EvtElevatedStartupDisableFailed = 19;
-    public const int EvtElevatedStartupProbeFailed   = 20;
+    // 19 retired.
+    // 20 retired.
     // IDs are public in the ETW manifest; never reuse an id.
-    public const int EvtAutostartProbeFailedDetail        = 21;
+    // 21 retired.
     public const int EvtAutostartEnableFailedAclDetail    = 22;
-    public const int EvtAutostartEnableFailedDetail       = 23;
-    public const int EvtAutostartDisableFailedDetail      = 24;
-    public const int EvtHotkeyVkResolveFailedDetail       = 25;
-    public const int EvtElevatedStartupEnableFailedDetail  = 26;
-    public const int EvtElevatedStartupDisableFailedDetail = 27;
-    public const int EvtElevatedStartupProbeFailedDetail   = 28;
+    // 23 retired.
+    // 24 retired.
+    // 25 retired.
+    // 26 retired.
+    // 27 retired.
+    // 28 retired.
     public const int EvtHotkeyReregisterFailedDetail      = 29;
     public const int EvtCursorSignalArmed                  = 30;
-    public const int EvtCursorSignalRegistrationFailed     = 31;
-    public const int EvtCursorSignalRegistrationFailedDetail = 32;
+    // 31 retired.
+    // 32 retired.
     public const int EvtTrayIconHostCreated                = 33;
     public const int EvtTaskbarRecreated                   = 34;
     public const int EvtTrayIconReaddAttempt               = 35;
     public const int EvtTrayIconRestored                   = 36;
-    public const int EvtTrayIconRestoreFailed              = 37;
+    // 37 retired.
+    public const int EvtAutostartProbeFailed               = 38;
+    public const int EvtAutostartEnableFailed              = 39;
+    public const int EvtAutostartDisableFailed             = 40;
+    public const int EvtElevatedStartupEnableFailed        = 41;
+    public const int EvtElevatedStartupDisableFailed       = 42;
+    public const int EvtElevatedStartupProbeFailed         = 43;
+    public const int EvtElevatedStartupTaskUnreadable      = 44;
+    public const int EvtElevatedStartupTempNotDeleted      = 45;
+    public const int EvtCursorSignalRegistrationFailed     = 46;
+    public const int EvtHotkeyVkResolveFailed              = 47;
+    public const int EvtHotkeyReregisterFailed             = 48;
+    public const int EvtTrayIconRestoreFailed              = 49;
+    public const int EvtHotkeyUnregistered                 = 50;
+    public const int EvtHotkeyReleaseFailed                = 51;
+    public const int EvtHotkeySubclassFailed               = 52;
+    public const int EvtMessageOnlyHostDestroyed           = 53;
+    public const int EvtCursorSignalDisarmed               = 54;
+    public const int EvtTrayIconHostDestroyed              = 55;
+    public const int EvtWindowSubclassFailed               = 56;
 
     // ── Tray icon ───────────────────────────────────────────────────────
 
@@ -60,6 +79,15 @@ public sealed class DeckleShellSource : DeckleEventSource
     public void TrayIconHostCreated(long hwnd, long taskbar_created_msg)
     {
         if (IsEnabled()) WriteEvent(EvtTrayIconHostCreated, hwnd, taskbar_created_msg);
+    }
+
+    [Event(EvtTrayIconHostDestroyed,
+           Level = EventLevel.Verbose,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Message = "tray icon owner window destroyed | hwnd={0}")]
+    public void TrayIconHostDestroyed(long hwnd)
+    {
+        if (IsEnabled()) WriteEvent(EvtTrayIconHostDestroyed, hwnd);
     }
 
     [Event(EvtTaskbarRecreated,
@@ -90,13 +118,14 @@ public sealed class DeckleShellSource : DeckleEventSource
         if (IsEnabled()) WriteEvent(EvtTrayIconRestored);
     }
 
+    // win32_error is the shell's refusal on the last attempt of the sequence.
     [Event(EvtTrayIconRestoreFailed,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "Taskbar recreated, but the tray icon could not be added again — restart Deckle to get it back")]
-    public void TrayIconRestoreFailed()
+           Message = "Taskbar recreated, but the tray icon could not be added again — restart Deckle to get it back | attempts={0} | win32_error={1}")]
+    public void TrayIconRestoreFailed(int attempts, int win32_error)
     {
-        if (IsEnabled()) WriteEvent(EvtTrayIconRestoreFailed);
+        if (IsEnabled()) WriteEvent(EvtTrayIconRestoreFailed, attempts, win32_error);
     }
 
     // ── Message-only host ───────────────────────────────────────────────
@@ -110,6 +139,29 @@ public sealed class DeckleShellSource : DeckleEventSource
         if (IsEnabled()) WriteEvent(EvtMessageOnlyHostCreated, hwnd);
     }
 
+    [Event(EvtMessageOnlyHostDestroyed,
+           Level = EventLevel.Verbose,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Message = "message-only window destroyed | hwnd={0}")]
+    public void MessageOnlyHostDestroyed(long hwnd)
+    {
+        if (IsEnabled()) WriteEvent(EvtMessageOnlyHostDestroyed, hwnd);
+    }
+
+    // ── Resize coalescing ───────────────────────────────────────────────
+
+    // window: the DeckleWindowingSource vocabulary. Register throws right
+    // after; this line keeps the window and the code whatever the caller does
+    // with the exception.
+    [Event(EvtWindowSubclassFailed,
+           Level = EventLevel.Warning,
+           Keywords = (EventKeywords)Keywords.Windowing,
+           Message = "Could not watch window resizing | window={0} | win32_error={1}")]
+    public void WindowSubclassFailed(string window, int win32_error)
+    {
+        if (IsEnabled()) WriteEvent(EvtWindowSubclassFailed, window, win32_error);
+    }
+
     // ── Cursor movement signal ──────────────────────────────────────────
 
     [Event(EvtCursorSignalArmed,
@@ -121,22 +173,24 @@ public sealed class DeckleShellSource : DeckleEventSource
         if (IsEnabled()) WriteEvent(EvtCursorSignalArmed, hwnd);
     }
 
+    [Event(EvtCursorSignalDisarmed,
+           Level = EventLevel.Verbose,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Message = "cursor movement signal disarmed | hwnd={0}")]
+    public void CursorSignalDisarmed(long hwnd)
+    {
+        if (IsEnabled()) WriteEvent(EvtCursorSignalDisarmed, hwnd);
+    }
+
+    // stage: "subclass" (SetWindowSubclass) or "raw_input"
+    // (RegisterRawInputDevices), the call that refused.
     [Event(EvtCursorSignalRegistrationFailed,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "Could not arm the cursor proximity signal — proximity fade is off")]
-    public void CursorSignalRegistrationFailed()
+           Message = "Could not arm the cursor proximity signal — proximity fade is off | stage={0} | win32_error={1}")]
+    public void CursorSignalRegistrationFailed(string stage, int win32_error)
     {
-        if (IsEnabled()) WriteEvent(EvtCursorSignalRegistrationFailed);
-    }
-
-    [Event(EvtCursorSignalRegistrationFailedDetail,
-           Level = EventLevel.Verbose,
-           Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "cursor signal registration failed | error={0}")]
-    public void CursorSignalRegistrationFailedDetail(int error)
-    {
-        if (IsEnabled()) WriteEvent(EvtCursorSignalRegistrationFailedDetail, error);
+        if (IsEnabled()) WriteEvent(EvtCursorSignalRegistrationFailed, stage, win32_error);
     }
 
     // ── Autostart (HKCU\Run) ────────────────────────────────────────────
@@ -144,19 +198,10 @@ public sealed class DeckleShellSource : DeckleEventSource
     [Event(EvtAutostartProbeFailed,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "Could not read the autostart setting")]
-    public void AutostartProbeFailed()
+           Message = "Could not read the autostart setting | ex_type={0} | ex_message={1}")]
+    public void AutostartProbeFailed(string ex_type, string ex_message)
     {
-        if (IsEnabled()) WriteEvent(EvtAutostartProbeFailed);
-    }
-
-    [Event(EvtAutostartProbeFailedDetail,
-           Level = EventLevel.Verbose,
-           Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "autostart probe failed | error={0} | message={1}")]
-    public void AutostartProbeFailedDetail(string ex_type, string message)
-    {
-        if (IsEnabled()) WriteEvent(EvtAutostartProbeFailedDetail, ex_type, message);
+        if (IsEnabled()) WriteEvent(EvtAutostartProbeFailed, ex_type, ex_message);
     }
 
     // No Verbose mirror: the only cause is an empty Environment.ProcessPath.
@@ -208,19 +253,10 @@ public sealed class DeckleShellSource : DeckleEventSource
     [Event(EvtAutostartEnableFailed,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "Could not enable autostart")]
-    public void AutostartEnableFailed()
+           Message = "Could not enable autostart | ex_type={0} | ex_message={1}")]
+    public void AutostartEnableFailed(string ex_type, string ex_message)
     {
-        if (IsEnabled()) WriteEvent(EvtAutostartEnableFailed);
-    }
-
-    [Event(EvtAutostartEnableFailedDetail,
-           Level = EventLevel.Verbose,
-           Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "autostart enable failed | error={0} | message={1}")]
-    public void AutostartEnableFailedDetail(string ex_type, string message)
-    {
-        if (IsEnabled()) WriteEvent(EvtAutostartEnableFailedDetail, ex_type, message);
+        if (IsEnabled()) WriteEvent(EvtAutostartEnableFailed, ex_type, ex_message);
     }
 
     [Event(EvtAutostartDisableSkipped,
@@ -244,19 +280,10 @@ public sealed class DeckleShellSource : DeckleEventSource
     [Event(EvtAutostartDisableFailed,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "Could not disable autostart")]
-    public void AutostartDisableFailed()
+           Message = "Could not disable autostart | ex_type={0} | ex_message={1}")]
+    public void AutostartDisableFailed(string ex_type, string ex_message)
     {
-        if (IsEnabled()) WriteEvent(EvtAutostartDisableFailed);
-    }
-
-    [Event(EvtAutostartDisableFailedDetail,
-           Level = EventLevel.Verbose,
-           Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "autostart disable failed | error={0} | message={1}")]
-    public void AutostartDisableFailedDetail(string ex_type, string message)
-    {
-        if (IsEnabled()) WriteEvent(EvtAutostartDisableFailedDetail, ex_type, message);
+        if (IsEnabled()) WriteEvent(EvtAutostartDisableFailed, ex_type, ex_message);
     }
 
     // ── Elevated startup (Task Scheduler) ───────────────────────────────
@@ -270,22 +297,15 @@ public sealed class DeckleShellSource : DeckleEventSource
         if (IsEnabled()) WriteEvent(EvtElevatedStartupEnabled);
     }
 
+    // reason: program_path_unknown, schtasks_failed (exit_code set),
+    // uac_declined, exception. The fields a reason does not use stay 0 or "".
     [Event(EvtElevatedStartupEnableFailed,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "Could not enable elevated startup")]
-    public void ElevatedStartupEnableFailed()
+           Message = "Could not enable elevated startup | reason={0} | exit_code={1} | ex_type={2} | ex_message={3}")]
+    public void ElevatedStartupEnableFailed(string reason, int exit_code, string ex_type, string ex_message)
     {
-        if (IsEnabled()) WriteEvent(EvtElevatedStartupEnableFailed);
-    }
-
-    [Event(EvtElevatedStartupEnableFailedDetail,
-           Level = EventLevel.Verbose,
-           Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "elevated startup enable failed | error={0} | message={1}")]
-    public void ElevatedStartupEnableFailedDetail(string ex_type, string message)
-    {
-        if (IsEnabled()) WriteEvent(EvtElevatedStartupEnableFailedDetail, ex_type, message);
+        if (IsEnabled()) WriteEvent(EvtElevatedStartupEnableFailed, reason, exit_code, ex_type, ex_message);
     }
 
     [Event(EvtElevatedStartupDisabled,
@@ -297,61 +317,69 @@ public sealed class DeckleShellSource : DeckleEventSource
         if (IsEnabled()) WriteEvent(EvtElevatedStartupDisabled);
     }
 
+    // Same reason vocabulary as ElevatedStartupEnableFailed, without
+    // program_path_unknown.
     [Event(EvtElevatedStartupDisableFailed,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "Could not disable elevated startup")]
-    public void ElevatedStartupDisableFailed()
+           Message = "Could not disable elevated startup | reason={0} | exit_code={1} | ex_type={2} | ex_message={3}")]
+    public void ElevatedStartupDisableFailed(string reason, int exit_code, string ex_type, string ex_message)
     {
-        if (IsEnabled()) WriteEvent(EvtElevatedStartupDisableFailed);
-    }
-
-    [Event(EvtElevatedStartupDisableFailedDetail,
-           Level = EventLevel.Verbose,
-           Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "elevated startup disable failed | error={0} | message={1}")]
-    public void ElevatedStartupDisableFailedDetail(string ex_type, string message)
-    {
-        if (IsEnabled()) WriteEvent(EvtElevatedStartupDisableFailedDetail, ex_type, message);
+        if (IsEnabled()) WriteEvent(EvtElevatedStartupDisableFailed, reason, exit_code, ex_type, ex_message);
     }
 
     [Event(EvtElevatedStartupProbeFailed,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "Could not read the elevated startup setting")]
-    public void ElevatedStartupProbeFailed()
+           Message = "Could not read the elevated startup setting | ex_type={0} | ex_message={1}")]
+    public void ElevatedStartupProbeFailed(string ex_type, string ex_message)
     {
-        if (IsEnabled()) WriteEvent(EvtElevatedStartupProbeFailed);
+        if (IsEnabled()) WriteEvent(EvtElevatedStartupProbeFailed, ex_type, ex_message);
     }
 
-    [Event(EvtElevatedStartupProbeFailedDetail,
+    // The task exists but its XML did not parse, so the toggle reads off even
+    // though a task named Deckle may still start the app at logon.
+    [Event(EvtElevatedStartupTaskUnreadable,
+           Level = EventLevel.Warning,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Message = "Could not read the elevated startup task, the setting shows off | ex_type={0} | ex_message={1}")]
+    public void ElevatedStartupTaskUnreadable(string ex_type, string ex_message)
+    {
+        if (IsEnabled()) WriteEvent(EvtElevatedStartupTaskUnreadable, ex_type, ex_message);
+    }
+
+    [Event(EvtElevatedStartupTempNotDeleted,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "elevated startup probe failed | error={0} | message={1}")]
-    public void ElevatedStartupProbeFailedDetail(string ex_type, string message)
+           Message = "elevated startup temp file not deleted | path={0} | ex_type={1} | ex_message={2}")]
+    public void ElevatedStartupTempNotDeleted(string path, string ex_type, string ex_message)
     {
-        if (IsEnabled()) WriteEvent(EvtElevatedStartupProbeFailedDetail, ex_type, message);
+        if (IsEnabled()) WriteEvent(EvtElevatedStartupTempNotDeleted, path, ex_type, ex_message);
     }
 
     // ── Hotkeys ─────────────────────────────────────────────────────────
 
+    // Without the WM_HOTKEY subclass no chord reaches the app, whatever the
+    // registrations say. SetWindowSubclass documents no GetLastError, so
+    // win32_error may read 0.
+    [Event(EvtHotkeySubclassFailed,
+           Level = EventLevel.Error,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Tags = ObservationTags.Journal,
+           Message = "Could not install the hotkey window hook — no global hotkey will work | win32_error={0}")]
+    public void HotkeySubclassFailed(int win32_error)
+    {
+        if (IsEnabled()) WriteEvent(EvtHotkeySubclassFailed, win32_error);
+    }
+
+    // Both long for the reason given on TrayIconHostCreated.
     [Event(EvtHotkeyVkResolveFailed,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Capture,
-           Message = "Could not resolve the hotkey for the current keyboard layout")]
-    public void HotkeyVkResolveFailed()
+           Message = "Could not resolve the hotkey for the current keyboard layout | scancode=0x{0:X} | hkl=0x{1:X}")]
+    public void HotkeyVkResolveFailed(long scancode, long hkl)
     {
-        if (IsEnabled()) WriteEvent(EvtHotkeyVkResolveFailed);
-    }
-
-    [Event(EvtHotkeyVkResolveFailedDetail,
-           Level = EventLevel.Verbose,
-           Keywords = (EventKeywords)Keywords.Capture,
-           Version = 1,
-           Message = "hotkey vk resolve failed | scancode=0x{0:X} | hkl=0x{1:X}")]
-    public void HotkeyVkResolveFailedDetail(uint scancode, long hkl)
-    {
-        if (IsEnabled()) WriteEvent(EvtHotkeyVkResolveFailedDetail, scancode, hkl);
+        if (IsEnabled()) WriteEvent(EvtHotkeyVkResolveFailed, scancode, hkl);
     }
 
     [Event(EvtHotkeyRegistered,
@@ -364,6 +392,28 @@ public sealed class DeckleShellSource : DeckleEventSource
         if (IsEnabled()) WriteEvent(EvtHotkeyRegistered, id, scancode, vk, hkl);
     }
 
+    // The counterpart of HotkeyRegistered, on a rebind, a layout change and
+    // Dispose, so the set held at any moment reads off the log.
+    [Event(EvtHotkeyUnregistered,
+           Level = EventLevel.Verbose,
+           Keywords = (EventKeywords)Keywords.Capture,
+           Message = "hotkey unregistered | id={0}")]
+    public void HotkeyUnregistered(int id)
+    {
+        if (IsEnabled()) WriteEvent(EvtHotkeyUnregistered, id);
+    }
+
+    // The chord stays held; the next registration pass reports it as a
+    // failure with this same error.
+    [Event(EvtHotkeyReleaseFailed,
+           Level = EventLevel.Verbose,
+           Keywords = (EventKeywords)Keywords.Capture,
+           Message = "hotkey release failed | id={0} | win32_error={1}")]
+    public void HotkeyReleaseFailed(int id, int win32_error)
+    {
+        if (IsEnabled()) WriteEvent(EvtHotkeyReleaseFailed, id, win32_error);
+    }
+
     [Event(EvtHotkeyLayoutChange,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Capture,
@@ -373,13 +423,14 @@ public sealed class DeckleShellSource : DeckleEventSource
         if (IsEnabled()) WriteEvent(EvtHotkeyLayoutChange);
     }
 
+    // win32_error is the first failure's; the Verbose detail lists them all.
     [Event(EvtHotkeyReregisterFailed,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Capture,
-           Message = "Some hotkeys could not be re-registered after a keyboard layout change")]
-    public void HotkeyReregisterFailed()
+           Message = "Some hotkeys could not be re-registered after a keyboard layout change | failed={0} | win32_error={1}")]
+    public void HotkeyReregisterFailed(int failed, int win32_error)
     {
-        if (IsEnabled()) WriteEvent(EvtHotkeyReregisterFailed);
+        if (IsEnabled()) WriteEvent(EvtHotkeyReregisterFailed, failed, win32_error);
     }
 
     [Event(EvtHotkeyReregisterFailedDetail,

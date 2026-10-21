@@ -56,8 +56,7 @@ public static class ElevatedStartupService
         }
         catch (Exception ex)
         {
-            DeckleShellSource.Log.ElevatedStartupProbeFailed();
-            DeckleShellSource.Log.ElevatedStartupProbeFailedDetail(ex.GetType().Name, ex.Message);
+            DeckleShellSource.Log.ElevatedStartupProbeFailed(ex.GetType().Name, ex.Message);
             return false;
         }
     }
@@ -67,9 +66,7 @@ public static class ElevatedStartupService
         string? exePath = Environment.ProcessPath;
         if (string.IsNullOrWhiteSpace(exePath))
         {
-            DeckleShellSource.Log.ElevatedStartupEnableFailed();
-            DeckleShellSource.Log.ElevatedStartupEnableFailedDetail(
-                nameof(InvalidOperationException), "Environment.ProcessPath empty");
+            DeckleShellSource.Log.ElevatedStartupEnableFailed("program_path_unknown", 0, "", "");
             return false;
         }
 
@@ -97,9 +94,7 @@ public static class ElevatedStartupService
 
             if (proc.ExitCode != 0)
             {
-                DeckleShellSource.Log.ElevatedStartupEnableFailed();
-                DeckleShellSource.Log.ElevatedStartupEnableFailedDetail(
-                    "schtasks", $"exit code {proc.ExitCode}");
+                DeckleShellSource.Log.ElevatedStartupEnableFailed("schtasks_failed", proc.ExitCode, "", "");
                 return false;
             }
 
@@ -112,10 +107,8 @@ public static class ElevatedStartupService
         }
         catch (Exception ex)
         {
-            // Win32Exception 1223 == user declined UAC. Same handling as any
-            // other failure: log + false.
-            DeckleShellSource.Log.ElevatedStartupEnableFailed();
-            DeckleShellSource.Log.ElevatedStartupEnableFailedDetail(ex.GetType().Name, ex.Message);
+            // A declined UAC prompt ends here like any other failure: log + false.
+            DeckleShellSource.Log.ElevatedStartupEnableFailed(FailureReason(ex), 0, ex.GetType().Name, ex.Message);
             return false;
         }
         finally
@@ -157,9 +150,7 @@ public static class ElevatedStartupService
 
             if (proc.ExitCode != 0)
             {
-                DeckleShellSource.Log.ElevatedStartupDisableFailed();
-                DeckleShellSource.Log.ElevatedStartupDisableFailedDetail(
-                    "schtasks", $"exit code {proc.ExitCode}");
+                DeckleShellSource.Log.ElevatedStartupDisableFailed("schtasks_failed", proc.ExitCode, "", "");
                 return false;
             }
 
@@ -168,11 +159,15 @@ public static class ElevatedStartupService
         }
         catch (Exception ex)
         {
-            DeckleShellSource.Log.ElevatedStartupDisableFailed();
-            DeckleShellSource.Log.ElevatedStartupDisableFailedDetail(ex.GetType().Name, ex.Message);
+            DeckleShellSource.Log.ElevatedStartupDisableFailed(FailureReason(ex), 0, ex.GetType().Name, ex.Message);
             return false;
         }
     }
+
+    // ERROR_CANCELLED (1223) from a runas start is the person declining the
+    // UAC prompt, a choice rather than a fault, so the journal names it apart.
+    private static string FailureReason(Exception ex) =>
+        ex is Win32Exception { NativeErrorCode: 1223 } ? "uac_declined" : "exception";
 
     private static bool TaskTargetsCurrentExe(string taskXml)
     {
@@ -197,8 +192,9 @@ public static class ElevatedStartupService
             string stored = command.Trim().Trim('"');
             return string.Equals(stored, current, StringComparison.OrdinalIgnoreCase);
         }
-        catch
+        catch (Exception ex)
         {
+            DeckleShellSource.Log.ElevatedStartupTaskUnreadable(ex.GetType().Name, ex.Message);
             return false;
         }
     }
@@ -269,9 +265,10 @@ public static class ElevatedStartupService
         {
             if (File.Exists(path)) File.Delete(path);
         }
-        catch
+        catch (Exception ex)
         {
             // Temp file leak is harmless; never let cleanup throw.
+            DeckleShellSource.Log.ElevatedStartupTempNotDeleted(path, ex.GetType().Name, ex.Message);
         }
     }
 }

@@ -126,7 +126,9 @@ internal static class TaskbarCoverNativeMethods
         IntPtr hWinEventHook, uint evt, IntPtr hwnd,
         int idObject, int idChild, uint idEventThread, uint dwmsEventTime);
 
-    [DllImport("user32.dll")]
+    // SetLastError so a failure can carry a code into the log. The API page
+    // documents no GetLastError, so a 0 there means the OS gave none.
+    [DllImport("user32.dll", SetLastError = true)]
     public static extern IntPtr SetWinEventHook(
         uint eventMin, uint eventMax, IntPtr hmodWinEventProc, WinEventProc pfnWinEventProc,
         uint idProcess, uint idThread, uint dwFlags);
@@ -194,7 +196,8 @@ internal static class TaskbarCoverNativeMethods
     public const uint WTS_SESSION_UNLOCK    = 0x0008;
     public const uint NOTIFY_FOR_THIS_SESSION = 0;
 
-    [DllImport("wtsapi32.dll")]
+    // SetLastError: a failure reports its cause through GetLastError.
+    [DllImport("wtsapi32.dll", SetLastError = true)]
     public static extern bool WTSRegisterSessionNotification(IntPtr hWnd, uint dwFlags);
 
     [DllImport("wtsapi32.dll")]

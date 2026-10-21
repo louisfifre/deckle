@@ -25,8 +25,8 @@ public sealed class DeckleShellTaskbarCoverSource : DeckleEventSource
     // ID after deleting an event.
     public const int EvtHostStarted             = 1;
     public const int EvtHostStartedDetail       = 2;
-    public const int EvtHostStartFailed         = 3;
-    public const int EvtHostStartFailedDetail   = 4;
+    // 3 retired.
+    // 4 retired.
     public const int EvtHostStopped             = 5;
     public const int EvtHostStopTimedOut        = 6;
     public const int EvtLayoutRebuilt           = 7;
@@ -41,21 +41,27 @@ public sealed class DeckleShellTaskbarCoverSource : DeckleEventSource
     public const int EvtSystemSuspendedDetail   = 16;
     public const int EvtSystemResumed           = 17;
     public const int EvtSystemResumedDetail     = 18;
-    public const int EvtCursorHookFailed        = 19;
-    public const int EvtSessionNotifyFailed     = 20;
+    // 19 retired.
+    // 20 retired.
     // 21, 22, 23 and 25 belong to retired events: reserved, never reuse.
     public const int EvtLayoutQueryRecovered    = 24;
     public const int EvtCoverUnsuppressedDetail = 26;
-    public const int EvtBandCreateFailed        = 27;
+    // 27 retired.
     public const int EvtBandCreateFailedDetail  = 28;
     public const int EvtCoverRestacked          = 29;
-    public const int EvtReorderHookFailed       = 30;
+    // 30 retired.
+    public const int EvtHostStartFailed         = 31;
+    public const int EvtReorderHookFailed       = 32;
+    public const int EvtSessionNotifyFailed     = 33;
+    public const int EvtBandCreateFailed        = 34;
+    public const int EvtBandCreateRecovered     = 35;
 
     // ── Host lifecycle ────────────────────────────────────────────────────────
 
     [Event(EvtHostStarted,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Lifecycle,
+           Tags = ObservationTags.Journal,
            Message = "Host started")]
     public void HostStarted()
     {
@@ -72,28 +78,23 @@ public sealed class DeckleShellTaskbarCoverSource : DeckleEventSource
         WriteEvent(EvtHostStartedDetail, hwnd, thread_id);
     }
 
+    // reason: previous_worker_alive (a stuck cover thread still owns the
+    // native state; ex_type and ex_message stay empty) or setup_failed (the
+    // native setup threw; the Win32 code, when there is one, is in ex_message).
     [Event(EvtHostStartFailed,
            Level = EventLevel.Error,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "The host failed to start — the taskbar stays uncovered")]
-    public void HostStartFailed()
+           Tags = ObservationTags.Journal,
+           Message = "The host failed to start — the taskbar stays uncovered | reason={0} | ex_type={1} | ex_message={2}")]
+    public void HostStartFailed(string reason, string ex_type, string ex_message)
     {
-        if (IsEnabled()) WriteEvent(EvtHostStartFailed);
-    }
-
-    [Event(EvtHostStartFailedDetail,
-           Level = EventLevel.Verbose,
-           Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "start failed | error_type={0} | message={1}")]
-    public void HostStartFailedDetail(string error_type, string message)
-    {
-        if (!IsEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Lifecycle)) return;
-        WriteEvent(EvtHostStartFailedDetail, error_type, message);
+        if (IsEnabled()) WriteEvent(EvtHostStartFailed, reason, ex_type, ex_message);
     }
 
     [Event(EvtHostStopped,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Lifecycle,
+           Tags = ObservationTags.Journal,
            Message = "Host stopped")]
     public void HostStopped()
     {
@@ -103,6 +104,7 @@ public sealed class DeckleShellTaskbarCoverSource : DeckleEventSource
     [Event(EvtHostStopTimedOut,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Lifecycle,
+           Tags = ObservationTags.Journal,
            Message = "The cover thread did not exit in time — restart refused until it does")]
     public void HostStopTimedOut()
     {
@@ -154,13 +156,25 @@ public sealed class DeckleShellTaskbarCoverSource : DeckleEventSource
         if (IsEnabled()) WriteEvent(EvtLayoutQueryRecovered);
     }
 
+    // One Warning per incident: every rebuild retries the missing band, and
+    // each raw attempt lands in BandCreateFailedDetail. band and win32_error
+    // are the attempt that opened the incident.
     [Event(EvtBandCreateFailed,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Windowing,
-           Message = "A band window could not be created — that taskbar stays uncovered")]
-    public void BandCreateFailed()
+           Message = "A band window could not be created — that taskbar stays uncovered | band={0} | win32_error={1}")]
+    public void BandCreateFailed(int band, int win32_error)
     {
-        if (IsEnabled()) WriteEvent(EvtBandCreateFailed);
+        if (IsEnabled()) WriteEvent(EvtBandCreateFailed, band, win32_error);
+    }
+
+    [Event(EvtBandCreateRecovered,
+           Level = EventLevel.Informational,
+           Keywords = (EventKeywords)Keywords.Windowing,
+           Message = "Every taskbar has its band again")]
+    public void BandCreateRecovered()
+    {
+        if (IsEnabled()) WriteEvent(EvtBandCreateRecovered);
     }
 
     [Event(EvtBandCreateFailedDetail,
@@ -295,30 +309,25 @@ public sealed class DeckleShellTaskbarCoverSource : DeckleEventSource
 
     // ── Setup and runtime failures ────────────────────────────────────────────
 
-    [Event(EvtCursorHookFailed,
-           Level = EventLevel.Error,
-           Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "The cursor hook failed — the cover cannot react to the mouse")]
-    public void CursorHookFailed()
-    {
-        if (IsEnabled()) WriteEvent(EvtCursorHookFailed);
-    }
+    // A cursor hook failure is not an event of its own: it fails the setup
+    // and surfaces as HostStartFailed with reason=setup_failed.
 
+    // SetWinEventHook documents no GetLastError, so win32_error may read 0.
     [Event(EvtReorderHookFailed,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "The desktop reorder hook failed — a taskbar restacked above the cover is only caught later")]
-    public void ReorderHookFailed()
+           Message = "The desktop reorder hook failed — a taskbar restacked above the cover is only caught later | win32_error={0}")]
+    public void ReorderHookFailed(int win32_error)
     {
-        if (IsEnabled()) WriteEvent(EvtReorderHookFailed);
+        if (IsEnabled()) WriteEvent(EvtReorderHookFailed, win32_error);
     }
 
     [Event(EvtSessionNotifyFailed,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "Session change notifications unavailable — the cover will not pause on lock")]
-    public void SessionNotifyFailed()
+           Message = "Session change notifications unavailable — the cover will not pause on lock | win32_error={0}")]
+    public void SessionNotifyFailed(int win32_error)
     {
-        if (IsEnabled()) WriteEvent(EvtSessionNotifyFailed);
+        if (IsEnabled()) WriteEvent(EvtSessionNotifyFailed, win32_error);
     }
 }

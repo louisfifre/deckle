@@ -66,8 +66,11 @@ public sealed class ResizeCoalescer : IDisposable
         if (!NativeMethods.SetWindowSubclass(
                 _hwnd, _subclassDelegate, SubclassId, IntPtr.Zero))
         {
+            // Read before the log call, which can overwrite the last error.
+            int error = System.Runtime.InteropServices.Marshal.GetLastWin32Error();
+            DeckleShellSource.Log.WindowSubclassFailed(_window, error);
             throw new InvalidOperationException(
-                $"SetWindowSubclass failed for '{_window}' (Win32 err {System.Runtime.InteropServices.Marshal.GetLastWin32Error()}).");
+                $"SetWindowSubclass failed for '{_window}' (Win32 err {error}).");
         }
         _registered = true;
     }

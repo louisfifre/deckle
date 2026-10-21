@@ -74,6 +74,7 @@ public sealed partial class TaskbarCoverHost : IDisposable
 
     private bool _layoutKnown;
     private bool _layoutFailureLogged;
+    private bool _bandCreateFailureLogged;
     // Level the bands were last placed at; differs from _requestedApproach
     // until the cover thread rebuilds the layout.
     private ApproachDistance _approach = ApproachDistance.Standard;
