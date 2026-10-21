@@ -940,8 +940,9 @@ public class QueryGesturesTests
             digest);
     }
 
-    // The content is right but a heading outside the replaced section is gone
-    // from the read-back.
+    // The heading after the replaced section is gone from the read-back, so its
+    // content now reads as part of the section: the lost heading is what the
+    // gesture reports, not the content mismatch it causes.
     [Fact]
     public async Task ReplaceSectionReportsALostHeadingOutsideTheSection()
     {

@@ -388,8 +388,11 @@ public sealed class QueryGestures(AnytypeApiClient api, NameResolver resolver, A
         var after = new HashSet<string>(MarkdownBody.HeadingTexts(seen), StringComparer.OrdinalIgnoreCase);
         bool guard = keptHeadings.Concat(MarkdownBody.HeadingTexts(content)).All(after.Contains);
 
+        // A lost heading is named first: the content under it then merges into
+        // the replaced section, so the intent check fails too, but the heading
+        // is the cause and the damage outside what was asked.
         if (intent && guard) return null;
-        return !intent ? "le contenu relu ne correspond pas à l'intention" : "une autre section a disparu";
+        return !guard ? "une autre section a disparu" : "le contenu relu ne correspond pas à l'intention";
     }
 
     static string WithoutDividers(string markdown)
