@@ -17,6 +17,7 @@ doctrine). This file is generated from the Conventional-Commit history by
 - **mcp:** Expose the typed reads and drop the whole-object get
 - **anytype:** Bound session_start, log and search
 - **mcp:** Cap tool text at 8 000 characters
+- **app:** Log the launch context at startup
 - **diagnostics:** Tag the run journal milestones
 - **diagnostics:** Name the transverse keywords in the JSONL envelope
 - **diagnostics:** Cap archived journal generations
