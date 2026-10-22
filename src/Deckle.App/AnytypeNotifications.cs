@@ -16,7 +16,8 @@ public static class AnytypeNotifications
     public const string BinAction = "bin";
     public const string KeepAction = "keep";
 
-    // The body's {0} is the object's name, {1} its type key.
+    // The body's {0} is the object's name, {1} its type key. For an object that
+    // nothing links to; see DeleteApprovalLinked for the one that has links.
     public static readonly NotificationDescriptor DeleteApproval = new(
         Id: "anytype.delete_approval",
         Category: "anytype",
@@ -30,7 +31,20 @@ public static class AnytypeNotifications
             new NotificationAction(KeepAction, "AnytypeNotifications_DeleteApproval_Keep"),
         });
 
-    public static IReadOnlyList<NotificationDescriptor> All { get; } = new[] { DeleteApproval };
+    // The same ask for an object other objects link to: the body adds {2}, how
+    // many, so the person sees on the toast that the bin empties those links. A
+    // second descriptor rather than a pre-built sentence, so the wording stays a
+    // .resw string.
+    public static readonly NotificationDescriptor DeleteApprovalLinked = new(
+        Id: "anytype.delete_approval_linked",
+        Category: "anytype",
+        TitleKey: "AnytypeNotifications_DeleteApproval_Title",
+        BodyKey: "AnytypeNotifications_DeleteApprovalLinked_Body",
+        Severity: NotificationSeverity.Warning,
+        Channel: NotificationChannel.Toast,
+        Actions: DeleteApproval.Actions);
+
+    public static IReadOnlyList<NotificationDescriptor> All { get; } = new[] { DeleteApproval, DeleteApprovalLinked };
 }
 
 // The resident app's second validation for a move to the bin: a toast the
@@ -41,15 +55,23 @@ public sealed class ToastDeletionApproval : IDeletionApproval
 {
     public async Task<DeletionApprovalOutcome> RequestAsync(DeletionCandidate candidate, CancellationToken ct)
     {
+        bool linked = candidate.LinkCount > 0;
+        NotificationDescriptor descriptor = linked
+            ? AnytypeNotifications.DeleteApprovalLinked
+            : AnytypeNotifications.DeleteApproval;
+
         // Asked first because PromptAsync answers null both when nothing could
         // be shown (toasts off, elevated Deckle) and when nobody answered, and
         // the agent tells the person something different in each case.
         if (NotificationDispatcher.Instance is not { } dispatcher
-            || !dispatcher.CanPrompt(AnytypeNotifications.DeleteApproval))
+            || !dispatcher.CanPrompt(descriptor))
             return DeletionApprovalOutcome.Unavailable;
 
-        NotificationResponse? response = await dispatcher.PromptAsync(
-            AnytypeNotifications.DeleteApproval, new object?[] { candidate.Name, candidate.TypeKey }, ct)
+        object?[] bodyArgs = linked
+            ? new object?[] { candidate.Name, candidate.TypeKey, candidate.LinkCount }
+            : new object?[] { candidate.Name, candidate.TypeKey };
+
+        NotificationResponse? response = await dispatcher.PromptAsync(descriptor, bodyArgs, ct)
             .ConfigureAwait(false);
 
         return response?.ActionId switch
