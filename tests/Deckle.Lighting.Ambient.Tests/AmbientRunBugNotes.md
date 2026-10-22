@@ -17,3 +17,12 @@
 - **Violated invariant:** A cause that is set aside is still findable.
 - **Recurrence cue:** An early return in an abort or cancel path that skips the caller's log action without leaving any line.
 - **Regression coverage:** none yet. The new `PipelineAbortIgnoredDetail` (Verbose) names the reason and why it was ignored; it is reached only through a live capture, which the suite cannot start.
+
+## A frame-processing incident did not say why frames failed
+
+- **Trigger:** Captured frames kept failing for a second (`FrameProcessingIncidentOpened`) or the run was stopped on a frame-processing failure (`FrameProcessingFailed`).
+- **Observed symptom:** The line named a coarse reason (`capture_failed`, `sampler_failed`) and never the HRESULT, the stage or the exception. `ScreenCaptureService.LastFrameFailure` and `FrameSampler.LastFailure` recorded them, but nothing read either property.
+- **Cause:** The engine counted failures without asking the capture or the sampler for the cause of the last one.
+- **Violated invariant:** A failure carries its cause, the step and the error, on one line.
+- **Recurrence cue:** A "last failure" property written by a component and read by no log call.
+- **Regression coverage:** `FrameProcessingCauseTests.TheIncidentCarriesTheCauseOfTheFailingFrames` and `AFailureThatKeptNoCauseSaysSo`, driven through `AmbientEngine.RecordFrameProcessingFailure` with synthetic ticks; `TheEventThatStopsTheRunCarriesTheCauseToo` checks the payload names of the stopping event. Which component's property is read for each reason is covered by reading only. The exception message is an OS or library string and is logged as such; it is not expected to carry user content.

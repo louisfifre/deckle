@@ -153,9 +153,9 @@ public class DeckleAmbientSourceTests
     {
         using var listener = new TestEventListener("Deckle-Ambient");
 
-        DeckleAmbientSource.Log.FrameProcessingIncidentOpened("sampler_failed", 12);
+        DeckleAmbientSource.Log.FrameProcessingIncidentOpened("sampler_failed", 12, "sampler_map", 0, "", "");
         DeckleAmbientSource.Log.FrameProcessingRecovered();
-        DeckleAmbientSource.Log.FrameProcessingFailed("capture_failed", 40);
+        DeckleAmbientSource.Log.FrameProcessingFailed("capture_failed", 40, "texture_query", 0, "", "");
 
         Assert.Collection(
             listener.Events,

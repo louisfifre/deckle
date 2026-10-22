@@ -2110,6 +2110,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── CredentialPayloadTests.cs
 │   │   ├── Deckle.Lighting.Ambient.Tests.csproj
 │   │   ├── DeckleAmbientSourceTests.cs
+│   │   ├── FrameProcessingCauseTests.cs
 │   │   ├── HueCredentialPayloadBugNotes.md
 │   │   ├── HueEndpointResolverTests.cs
 │   │   ├── JournalClosersTests.cs
