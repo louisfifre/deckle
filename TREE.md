@@ -2261,6 +2261,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── ForegroundChangeMappingTests.cs
 │   │   ├── JournalClosersTests.cs
 │   │   ├── KeyValuesReaderTests.cs
+│   │   ├── OrchestrationAppNameTests.cs
 │   │   ├── OrchestrationBugNotes.md
 │   │   ├── OrchestrationIncidentTests.cs
 │   │   ├── OrchestrationObservabilityCollection.cs
@@ -2374,6 +2375,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── TrailingNoisePadTests.cs
 │   │   ├── TranscriptFileWriterDiskTests.cs
 │   │   ├── TranscriptFileWriterTests.cs
+│   │   ├── TranscriptionAppNameTests.cs
 │   │   ├── TranscriptionDeliveryTests.cs
 │   │   ├── TranscriptionObservabilityContractTests.cs
 │   │   ├── TranscriptionSettingsMigrationTests.cs
