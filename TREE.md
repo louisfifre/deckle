@@ -2113,6 +2113,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── HudTuningSectionsBugNotes.md
 │   │   ├── HudViewModelTests.cs
 │   │   ├── IlReferences.cs
+│   │   ├── MicrophonePreviewFailureTests.cs
 │   │   ├── MicrophonePreviewFeedTests.cs
 │   │   ├── TuningModelTests.cs
 │   │   └── UtteranceCycleTests.cs

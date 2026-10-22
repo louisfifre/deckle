@@ -29,4 +29,16 @@ internal readonly record struct MicrophonePreviewFailure(
         MicrophoneProblem.Ended       => "ended",
         _                             => "exception",
     };
+
+    // What the tab tells the person, one sentence about the microphone. The
+    // error code shows only where the problem has nothing plainer to say; the
+    // exception's type and message stay out of the window.
+    public string Reason => Problem switch
+    {
+        MicrophoneProblem.NotDetected => "No microphone found.",
+        MicrophoneProblem.InUse       => "The microphone is in use by another app.",
+        MicrophoneProblem.Unavailable => $"The microphone can't be opened (error {MmsysErr}).",
+        MicrophoneProblem.Ended       => "The microphone stopped sending sound.",
+        _                             => "The microphone failed unexpectedly.",
+    };
 }
