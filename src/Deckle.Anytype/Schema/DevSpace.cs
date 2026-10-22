@@ -27,8 +27,10 @@ public sealed record PropertyDef(string Key, string Label, string Format, TagOpt
 //   • Props.ChargeReelle  = "charge_estimee_(jours)"  — MISLEADING key (named
 //     like an estimate, but it is the *real* charge field).
 //
-// Priorité is a select whose own key is an OPAQUE id, and whose tag options are
-// a mix of opaque ids and bare integer strings — both forms are below.
+// Priorité is a select whose tag options are a mix of opaque ids and bare
+// integer strings — both forms are below. Its own key is served as "priorite"
+// by v1 and v2 alike (measured 2026-10-22); the space's opaque relation id
+// 67c6d714… is still accepted on writes but never served on reads.
 //
 // Properties are space-global in Anytype, so the keys live FLAT under Props.
 // PropertiesFor() maps each type to the properties it carries, in digest order;
@@ -83,7 +85,7 @@ public static class DevSpace
     public static class Props
     {
         public const string Etat              = "etat";                     // select
-        public const string Priorite          = "67c6d714341c1628147d7b1d"; // select — OPAQUE id
+        public const string Priorite          = "priorite";                 // select
         // « tag » is Anytype's auto-transversal multi_select: it re-attaches itself
         // to every object and resists deletion. It is deliberately NOT mapped onto
         // any type table below, so it stays out of every digest.

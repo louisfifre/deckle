@@ -78,10 +78,10 @@ public static class ToolCatalog
 
             new(
                 "report_journal",
-                "A session report's id, journal date, linked tasks by name, and its last journal lines (20 by default), with the count of earlier lines.",
+                "A session report's id, journal date, linked tasks by name, and its last journal entries (20 by default), with the count of earlier entries.",
                 Schema(
                     required: [Prop("report", "string", "Report, id (from session_start, project_overview or search) or name.")],
-                    optional: [Prop("last", "integer", "How many trailing lines to return. Default 20.", minimum: 1, maximum: 200)]),
+                    optional: [Prop("last", "integer", "How many trailing entries to return. Default 20.", minimum: 1, maximum: 200)]),
                 async (args, ct) =>
                     await reads.ReportJournalAsync(Str(args, "report"), IntOpt(args, "last") ?? 20, ct),
                 ToolExecutionContract.ReadOnly),

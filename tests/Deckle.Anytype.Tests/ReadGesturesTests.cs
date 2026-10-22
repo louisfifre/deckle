@@ -150,6 +150,21 @@ public class ReadGesturesTests
         Assert.Equal(2, server.Requests.Count(r => r.Method == "GET"));
     }
 
+    // The key is written out because it is the promise: the server serves
+    // Priorité under "priorite", and reading it under the space's opaque
+    // relation id dropped every priority from the digests.
+    [Fact]
+    [Trait("Category", "regression")]
+    public async Task TaskPropertiesReadsThePriorityUnderTheKeyTheServerServes()
+    {
+        using var server = new FakeAnytypeServer();
+        server.OnGetObject(TaskId, TaskOf("", SelectProp("priorite", DevSpace.Priority.KeyFor(4))));
+
+        string digest = await NewGestures(server).TaskPropertiesAsync(TaskId, Ct);
+
+        Assert.Contains("Priorité : 4", digest.Split('\n'));
+    }
+
     // Silence reads as « non »: an unticked checkbox adds no line, and a task
     // with nothing set is just its identity and its open box.
     [Fact]
@@ -352,7 +367,7 @@ public class ReadGesturesTests
         Enumerable.Range(1, count).Select(i => $"- entrée {i}").ToArray();
 
     [Fact]
-    public async Task ReportJournalShowsTheLastTwentyLinesByDefaultAndCountsTheOlderOnes()
+    public async Task ReportJournalShowsTheLastTwentyEntriesByDefaultAndCountsTheOlderOnes()
     {
         using var server = new FakeAnytypeServer();
         server.OnGetObject(ReportId, ReportOf("# Journal 2026-07-21\n" + Lines(Entries(25)), TaskId, OtherTaskId));
@@ -368,7 +383,7 @@ public class ReadGesturesTests
                     $"id : {ReportId}",
                     "Date du journal : 2026-07-21",
                     "Tâches liées : Tâche A, Tâche B",
-                    "… 5 ligne(s) avant",
+                    "… 5 entrée(s) avant",
                 }
                 .Concat(Entries(25).Skip(5)).ToArray()),
             digest);
@@ -386,9 +401,33 @@ public class ReadGesturesTests
             Lines(
                 $"id : {ReportId}",
                 "Date du journal : 2026-07-21",
-                "… 2 ligne(s) avant",
+                "… 2 entrée(s) avant",
                 "- entrée 3",
                 "- entrée 4"),
+            digest);
+    }
+
+    // session_log writes a stamp then the text as two paragraphs: the tail
+    // counts and shows whole entries, after the one-bullet entries of a report
+    // started before the stamped form.
+    [Fact]
+    public async Task ReportJournalCountsAStampedEntryAsOneEntryWithItsText()
+    {
+        using var server = new FakeAnytypeServer();
+        server.OnGetObject(ReportId, ReportOf(
+            "# Journal 2026-07-21\n- ancienne\n2026-07-21 10:00   \n\npremière   \n\n" +
+            "2026-07-21 11:30\n\nseconde\n\nsuite"));
+
+        string digest = await NewGestures(server).ReportJournalAsync(ReportId, last: 2, ct: Ct);
+
+        Assert.Equal(
+            Lines(
+                $"id : {ReportId}",
+                "Date du journal : 2026-07-21",
+                "… 1 entrée(s) avant",
+                "2026-07-21 10:00 · première",
+                "2026-07-21 11:30 · seconde",
+                "suite"),
             digest);
     }
 
