@@ -19,13 +19,18 @@ public sealed partial class HomeGestures
     private readonly AnytypeApiClient _api;
     private readonly string _spaceId;
     private readonly HomeRuntimeProvider _runtime;
+    private readonly IDeletionApproval _approval;
 
-    public HomeGestures(AnytypeApiClient api, string spaceId)
+    // The approval defaults to the one the host installed (a Windows toast in the
+    // resident app). A host that installs none answers Unavailable, so a delete
+    // fails closed.
+    public HomeGestures(AnytypeApiClient api, string spaceId, IDeletionApproval? approval = null)
     {
         ArgumentNullException.ThrowIfNull(api);
         ArgumentException.ThrowIfNullOrWhiteSpace(spaceId);
         _api = api;
         _spaceId = spaceId;
+        _approval = approval ?? DeletionApproval.Current;
         _runtime = new HomeRuntimeProvider(api, spaceId);
     }
 
@@ -245,7 +250,7 @@ public sealed partial class HomeGestures
 
         foreach (HomeUpdateItem item in items)
         {
-            JsonObject target = index.Resolve(item.Object,
+            JsonObject target = index.Resolve(item.Object, NameMatch.Exact,
                 expectedType is null ? null : [schema.TypeKey(expectedType)]);
             string id = HomeObjectJson.Id(target);
             if (!targets.Add(id))
@@ -387,7 +392,7 @@ public sealed partial class HomeGestures
         DateTime started = DateTime.UtcNow;
         await _runtime.GetAsync(ct).ConfigureAwait(false);
         HomeObjectIndex index = await HomeObjectIndex.LoadAsync(_api, _spaceId, ct).ConfigureAwait(false);
-        JsonObject summary = index.Resolve(selector);
+        JsonObject summary = index.Resolve(selector, NameMatch.Tolerant);
         JsonObject value = await _api.GetObjectAsync(
             _spaceId, HomeObjectJson.Id(summary), ct).ConfigureAwait(false);
         DeckleHomeSource.Log.GestureCompleted("get", Elapsed(started));
@@ -405,33 +410,103 @@ public sealed partial class HomeGestures
         if (!confirm)
         {
             HomeObjectIndex previewIndex = await HomeObjectIndex.LoadAsync(_api, _spaceId, ct).ConfigureAwait(false);
-            JsonObject preview = previewIndex.Resolve(selector);
+            JsonObject preview = previewIndex.Resolve(selector, NameMatch.Exact);
             RefusePointDelete(preview, previewIndex);
             DeckleHomeSource.Log.GestureCompleted("delete_preview", Elapsed(started));
-            return $"Suppression à confirmer : {HomeObjectIndex.Display(preview)} ({HomeObjectJson.TypeKey(preview)}) · id {HomeObjectJson.Id(preview)}. Relance delete avec cet id exact et confirm:true.";
+            return $"Suppression à confirmer : {HomeObjectIndex.Display(preview)} ({HomeObjectJson.TypeKey(preview)}) · id {HomeObjectJson.Id(preview)}. "
+                + "Montre cette cible à la personne et attends son accord dans la conversation, puis relance delete avec cet id exact et confirm:true : "
+                + "Deckle lui redemandera par une notification Windows et attendra "
+                + ManagementGestures.ApprovalWindow.TotalSeconds.ToString("F0", CultureInfo.InvariantCulture) + " s.";
         }
 
-        using var writeScope = await _api.AcquireWriteScopeAsync("home_delete", "object", ct).ConfigureAwait(false);
+        // Nothing is held while the person reads the notification: the fence is
+        // checked before asking, and again under the write scope after the answer.
         HomeObjectIndex index = await HomeObjectIndex.LoadAsync(_api, _spaceId, ct).ConfigureAwait(false);
-        JsonObject target = index.Resolve(selector);
-        RefusePointDelete(target, index);
+        JsonObject target = index.Resolve(selector, NameMatch.Exact);
         string id = HomeObjectJson.Id(target);
         if (!string.Equals(selector.Trim(), id, StringComparison.Ordinal))
             throw new InvalidOperationException(
                 "La confirmation doit reprendre l’id exact fourni par la prévisualisation.");
+        RefuseIfReferenced(target, index);
 
-        JsonObject[] references = index.Objects.Where(value =>
-                HomeObjectJson.Id(value) != id
-                && HomeObjectJson.ObjectReferences(value).Contains(id))
-            .ToArray();
-        if (references.Length > 0)
-            throw new InvalidOperationException(
-                $"Suppression refusée : {HomeObjectIndex.Display(target)} est encore référencé par "
-                + string.Join(", ", references.Select(HomeObjectIndex.Display)) + ".");
+        string type = HomeObjectJson.TypeKey(target);
+        DeletionApprovalOutcome outcome = await AskDeletionAsync(
+            new DeletionCandidate(id, HomeObjectIndex.Display(target), type), ct).ConfigureAwait(false);
+        if (outcome != DeletionApprovalOutcome.Approved)
+            throw DeletionRefusal(outcome, type);
+
+        // The person answered on what was true before the notification; what
+        // references the object may have changed while it waited.
+        using var writeScope = await _api.AcquireWriteScopeAsync("home_delete", "object", ct).ConfigureAwait(false);
+        index = await HomeObjectIndex.LoadAsync(_api, _spaceId, ct).ConfigureAwait(false);
+        target = index.Resolve(id, NameMatch.Exact);
+        RefuseIfReferenced(target, index);
 
         await _api.DeleteObjectAsync(_spaceId, id, ct).ConfigureAwait(false);
+        DeckleHomeSource.Log.ObjectBinned(type);
         DeckleHomeSource.Log.GestureCompleted("delete", Elapsed(started));
         return $"Mis à la corbeille : {HomeObjectIndex.Display(target)}.";
+    }
+
+    // The window is the gesture's own policy, so an approval that never answers
+    // reads as Unanswered here rather than as a cancelled call. It is the one
+    // window the Anytype delete uses.
+    private async Task<DeletionApprovalOutcome> AskDeletionAsync(DeletionCandidate candidate, CancellationToken ct)
+    {
+        using var window = CancellationTokenSource.CreateLinkedTokenSource(ct);
+        window.CancelAfter(ManagementGestures.ApprovalWindow);
+        try
+        {
+            return await _approval.RequestAsync(candidate, window.Token).ConfigureAwait(false);
+        }
+        catch (OperationCanceledException) when (!ct.IsCancellationRequested)
+        {
+            return DeletionApprovalOutcome.Unanswered;
+        }
+    }
+
+    private static InvalidOperationException DeletionRefusal(DeletionApprovalOutcome outcome, string type)
+    {
+        (string reason, string message) = outcome switch
+        {
+            DeletionApprovalOutcome.Declined => (HomeDeleteRefusalReasons.Declined,
+                "Refusé : la personne a répondu non à la notification Windows. Rien n'a bougé."),
+            DeletionApprovalOutcome.Unanswered => (HomeDeleteRefusalReasons.Unanswered,
+                $"Refusé : pas de réponse à la notification Windows en {ManagementGestures.ApprovalWindow.TotalSeconds:F0} s (elle a pu "
+                + "arriver dans le centre de notifications sans s'afficher). Rien n'a bougé ; redemande à la personne "
+                + "avant de réessayer."),
+            _ => (HomeDeleteRefusalReasons.ApprovalUnavailable,
+                "Refusé : Deckle ne peut pas demander la seconde validation (notifications Windows désactivées, "
+                + "Deckle lancé en administrateur, ou hôte sans notification). Rien n'a bougé ; la personne peut "
+                + "mettre l'objet à la corbeille elle-même dans Anytype."),
+        };
+        DeckleHomeSource.Log.DeleteRefused(reason, type);
+        return new InvalidOperationException(message);
+    }
+
+    // The reference fence of a delete: a point says what to clear, any other
+    // object lists who still references it. Every refusal here is a reference.
+    private static void RefuseIfReferenced(JsonObject target, HomeObjectIndex index)
+    {
+        try
+        {
+            RefusePointDelete(target, index);
+
+            string id = HomeObjectJson.Id(target);
+            JsonObject[] references = index.Objects.Where(value =>
+                    HomeObjectJson.Id(value) != id
+                    && HomeObjectJson.ObjectReferences(value).Contains(id))
+                .ToArray();
+            if (references.Length > 0)
+                throw new InvalidOperationException(
+                    $"Suppression refusée : {HomeObjectIndex.Display(target)} est encore référencé par "
+                    + string.Join(", ", references.Select(HomeObjectIndex.Display)) + ".");
+        }
+        catch (InvalidOperationException)
+        {
+            DeckleHomeSource.Log.DeleteRefused(HomeDeleteRefusalReasons.Referenced, HomeObjectJson.TypeKey(target));
+            throw;
+        }
     }
 
     public Task<string> CreateComponentAsync(
@@ -505,7 +580,7 @@ public sealed partial class HomeGestures
 
         using var writeScope = await _api.AcquireWriteScopeAsync("home_complete", "object", ct).ConfigureAwait(false);
         HomeObjectIndex index = await HomeObjectIndex.LoadAsync(_api, _spaceId, ct).ConfigureAwait(false);
-        JsonObject target = index.Resolve(selector);
+        JsonObject target = index.Resolve(selector, NameMatch.Exact);
         string type = HomeObjectJson.TypeKey(target);
         string id = HomeObjectJson.Id(target);
 
@@ -546,7 +621,7 @@ public sealed partial class HomeGestures
         DateTime started = DateTime.UtcNow;
         await _runtime.GetAsync(ct).ConfigureAwait(false);
         HomeObjectIndex index = await HomeObjectIndex.LoadAsync(_api, _spaceId, ct).ConfigureAwait(false);
-        JsonObject worksite = index.Resolve(selector, [HomeSchema.Types.Worksite]);
+        JsonObject worksite = index.Resolve(selector, NameMatch.Tolerant, [HomeSchema.Types.Worksite]);
         string id = HomeObjectJson.Id(worksite);
 
         JsonObject[] todos = TodosOf(index, id).ToArray();

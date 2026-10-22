@@ -28,7 +28,8 @@ public sealed class ProjectGestures(AnytypeApiClient api, NameResolver resolver,
     {
         var started = DateTime.UtcNow;
 
-        string projectId = await resolver.ResolveAsync(project, [DevSpace.Types.Project], ct);
+        string projectId = await resolver.ResolveAsync(
+            project, [DevSpace.Types.Project], NameMatch.Tolerant, ct);
         AnytypeV2ObjectDocument doc = await _reader.ReadAsync(
             projectId, new AnytypeV2ObjectReadOptions { Parts = AnytypeV2ObjectParts.Properties }, ct);
         var props = AnytypeV2PropertyMap.Of(doc);
@@ -173,7 +174,8 @@ public sealed class ProjectGestures(AnytypeApiClient api, NameResolver resolver,
 
         if (epic is not null)
         {
-            string epicId = await resolver.ResolveAsync(epic, [DevSpace.Types.Epic], ct);
+            string epicId = await resolver.ResolveAsync(
+                epic, [DevSpace.Types.Epic], NameMatch.Exact, ct);
             await api.AddToCollectionAsync(epicId, [projectId], ct);
             sb.Append("\nAjouté à l'epic ").Append(StringOf(await api.GetObjectAsync(epicId, ct), "name"));
         }

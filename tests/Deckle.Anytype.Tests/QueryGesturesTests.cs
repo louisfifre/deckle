@@ -441,6 +441,79 @@ public class QueryGesturesTests
         Assert.DoesNotContain(server.Requests, r => r.Method == "PATCH");
     }
 
+    // A write never settles for the object a name merely resembles: a lone hit
+    // that is not named exactly is refused with its id, and nothing is patched.
+    [Fact]
+    [Trait("Category", "regression")]
+    public async Task ArchiveByANameThatOnlyResemblesAnObjectIsRefusedAndSendsNoPatch()
+    {
+        using var server = new FakeAnytypeServer();
+        server.OnSearch(new JsonObject
+        {
+            ["data"] = new JsonArray(new JsonObject
+            {
+                ["id"] = TaskId,
+                ["name"] = "Ma tâche de test",
+                ["type"] = new JsonObject { ["key"] = DevSpace.Types.Task },
+            }),
+        });
+
+        InexactNameException ex = await Assert.ThrowsAsync<InexactNameException>(
+            () => NewGestures(server).ArchiveAsync("Ma tâche", ct: Ct));
+
+        Assert.Contains(TaskId, ex.Message);
+        Assert.DoesNotContain(server.Requests, r => r.Method == "PATCH");
+    }
+
+    [Fact]
+    [Trait("Category", "regression")]
+    public async Task CompleteByANameThatOnlyResemblesAnObjectIsRefusedAndSendsNoPatch()
+    {
+        using var server = new FakeAnytypeServer();
+        server.OnSearch(new JsonObject
+        {
+            ["data"] = new JsonArray(new JsonObject
+            {
+                ["id"] = TaskId,
+                ["name"] = "Ma tâche de test",
+                ["type"] = new JsonObject { ["key"] = DevSpace.Types.Task },
+            }),
+        });
+
+        await Assert.ThrowsAsync<InexactNameException>(
+            () => NewGestures(server).CompleteAsync("Ma tâche", ct: Ct));
+
+        Assert.DoesNotContain(server.Requests, r => r.Method == "PATCH");
+    }
+
+    [Fact]
+    public async Task ArchiveByTheExactNameStillWorks()
+    {
+        using var server = new FakeAnytypeServer();
+        server.OnSearch(new JsonObject
+        {
+            ["data"] = new JsonArray(
+                new JsonObject
+                {
+                    ["id"] = ProjectId,
+                    ["name"] = "Ma tâche de test",
+                    ["type"] = new JsonObject { ["key"] = DevSpace.Types.Task },
+                },
+                new JsonObject
+                {
+                    ["id"] = TaskId,
+                    ["name"] = "Ma tâche",
+                    ["type"] = new JsonObject { ["key"] = DevSpace.Types.Task },
+                }),
+        });
+        server.OnGetObject(TaskId, TaskObject());
+        server.OnPatchObject(TaskId, TaskObject());
+
+        await NewGestures(server).ArchiveAsync("Ma tâche", ct: Ct);
+
+        Assert.Contains(server.Requests, r => r.Method == "PATCH" && r.Path.EndsWith(TaskId));
+    }
+
     // ── LinkAsync ─────────────────────────────────────────────────────────────
 
     [Fact]

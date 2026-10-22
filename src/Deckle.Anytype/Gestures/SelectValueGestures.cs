@@ -29,7 +29,7 @@ public sealed class SelectValueGestures(
         propertyKey = propertyKey.Trim();
         string[] requestedKeys = tagKeys.Select(RequiredTagKey).Distinct(StringComparer.Ordinal).ToArray();
         string spaceId = aliases.Resolve(space);
-        string objectId = await resolver.ResolveAsync(spaceId, target, typeKeys: null, ct)
+        string objectId = await resolver.ResolveAsync(spaceId, target, typeKeys: null, NameMatch.Exact, ct)
             .ConfigureAwait(false);
 
         using var _ = await api.AcquireWriteScopeAsync("select_set", spaceId, ct)

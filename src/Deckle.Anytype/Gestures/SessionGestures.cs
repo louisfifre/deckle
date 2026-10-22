@@ -31,7 +31,9 @@ public sealed class SessionGestures(
     {
         long t0 = Stopwatch.GetTimestamp();
 
-        string taskId = await _resolver.ResolveAsync(task, new[] { DevSpace.Types.Task }, ct);
+        // The start creates a report on this task, so the name must be exact.
+        string taskId = await _resolver.ResolveAsync(
+            task, new[] { DevSpace.Types.Task }, NameMatch.Exact, ct);
         TaskView taskView = await ReadTaskAsync(taskId, ct);
 
         // Every read the digest needs comes BEFORE the create. The create is the
@@ -147,8 +149,9 @@ public sealed class SessionGestures(
         long t0 = Stopwatch.GetTimestamp();
 
         string reportId = await _resolver.ResolveAsync(
-            report, new[] { DevSpace.Types.Rapport }, ct);
-        string taskId = await _resolver.ResolveAsync(task, new[] { DevSpace.Types.Task }, ct);
+            report, new[] { DevSpace.Types.Rapport }, NameMatch.Exact, ct);
+        string taskId = await _resolver.ResolveAsync(
+            task, new[] { DevSpace.Types.Task }, NameMatch.Exact, ct);
         JsonObject taskObj = await _api.GetObjectAsync(taskId, ct);
 
         await AppendTaskToReportAsync(reportId, taskId, ct);

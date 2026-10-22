@@ -23,7 +23,7 @@ public sealed class CollectionMembershipGestures(
                 "Au moins un objet est requis pour une appartenance à une collection.", nameof(objects));
 
         string spaceId = aliases.Resolve(space);
-        string collectionId = await resolver.ResolveAsync(spaceId, collection, typeKeys: null, ct)
+        string collectionId = await resolver.ResolveAsync(spaceId, collection, typeKeys: null, NameMatch.Exact, ct)
             .ConfigureAwait(false);
 
         using var _ = await api.AcquireWriteScopeAsync("collection_add", spaceId, ct)
@@ -40,7 +40,7 @@ public sealed class CollectionMembershipGestures(
         var seen = new HashSet<string>(StringComparer.Ordinal);
         foreach (string selector in objects)
         {
-            string objectId = await resolver.ResolveAsync(spaceId, selector, typeKeys: null, ct)
+            string objectId = await resolver.ResolveAsync(spaceId, selector, typeKeys: null, NameMatch.Exact, ct)
                 .ConfigureAwait(false);
             if (!seen.Add(objectId)) continue;
 
