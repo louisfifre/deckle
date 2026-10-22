@@ -44,6 +44,13 @@ internal static class UpdatePredecessor
             // bounded handoff wait; timeout never authorizes payload replacement.
             DeckleSetupSource.Log.PredecessorWaitTimedOut(id, (long)timeout.TotalMilliseconds);
         }
+        catch (Exception ex) when (ex is System.ComponentModel.Win32Exception or InvalidOperationException)
+        {
+            // The handle could not be waited on, so the hand-off was not
+            // observed. Same stance as the timeout: the gate decides, and the
+            // update must not die on a wait that is only a courtesy.
+            DeckleSetupSource.Log.PredecessorWaitFailed(id, ex.GetType().Name, ex.HResult);
+        }
     }
 
     private static bool PathsEqual(string a, string b) =>

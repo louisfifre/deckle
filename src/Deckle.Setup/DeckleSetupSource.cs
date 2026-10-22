@@ -90,5 +90,6 @@ public sealed partial class DeckleSetupSource : DeckleEventSource
     public const int EvtItemImportFailed           = 75;
     public const int EvtItemImported               = 76;
     public const int EvtRelocateFilesSkipped       = 77;
+    public const int EvtPredecessorWaitFailed      = 78;
 
 }
