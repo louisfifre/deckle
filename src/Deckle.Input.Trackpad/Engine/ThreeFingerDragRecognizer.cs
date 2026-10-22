@@ -130,7 +130,14 @@ internal sealed class ThreeFingerDragRecognizer
                     break;
                 }
 
-                if (tips >= 3)
+                if (tips > 3)
+                {
+                    // Same rule as while dragging: four fingers is Windows'.
+                    EndDrag("fourth-finger");
+                    break;
+                }
+
+                if (tips == 3)
                 {
                     // Same drag resumes — the button never lifted.
                     Phase = DragPhase.Dragging;
