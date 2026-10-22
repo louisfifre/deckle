@@ -2289,6 +2289,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── DeckleSetupSourceTests.cs
 │   │   ├── LocMirrorBugNotes.md
 │   │   ├── PayloadDeploymentTests.cs
+│   │   ├── SetupPathRedactionTests.cs
 │   │   ├── SetupStringMirrorTests.cs
 │   │   ├── UpdateHandoffBugNotes.md
 │   │   └── UpdatePredecessorTests.cs
