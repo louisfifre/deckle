@@ -10,8 +10,8 @@ namespace Deckle.Anytype.Tests;
 // (defined in TaskGesturesTests.cs). A session report carries the journal date
 // and the anchor task in « Tâche(s) liée(s) » (the report has no project
 // property); session_touch appends a further task to an explicit report; a
-// follow-up log appends blocks to the report body through the v2 client (over
-// FakeV2Handler), the rest of the gestures still talk v1.
+// follow-up log appends blocks to the report body. session_start and
+// session_log talk v2 (over FakeV2Handler); session_touch still talks v1.
 [Trait("Category", "integration")]
 public class SessionGesturesTests
 {
@@ -44,12 +44,16 @@ public class SessionGesturesTests
     const string LogPath = "/v2/spaces/space-1/objects/" + NewReport;
 
     // What a v2 object read answers for the log's read: the journal date as a
-    // property and, unless the body is empty, an outline with one block.
-    static string V2Report(bool withBlock)
+    // property and, unless the body is empty, an outline holding the « # Journal »
+    // heading block a fresh v2 report opens on, then one block per type given.
+    static string V2Report(bool withBlock, params string[] moreBlockTypes)
     {
-        string outline = withBlock ? "[{\"id\":\"b1\"}]" : "[]";
+        var blocks = new JsonArray();
+        if (withBlock) blocks.Add(new JsonObject { ["id"] = "h1", ["type"] = "heading_1" });
+        for (int i = 0; i < moreBlockTypes.Length; i++)
+            blocks.Add(new JsonObject { ["id"] = $"b{i}", ["type"] = moreBlockTypes[i] });
         return "{\"properties\":{\"" + DevSpace.Props.DateDuJournal
-            + "\":\"2026-06-11T00:00:00Z\"},\"outline\":" + outline + "}";
+            + "\":\"2026-06-11T00:00:00Z\"},\"outline\":" + blocks.ToJsonString() + "}";
     }
 
     // The single PATCH the log sends, as its parsed ops array.
@@ -102,9 +106,10 @@ public class SessionGesturesTests
         return array;
     }
 
-    // The v2 answers session_start's digest reads, in the order they are sent:
-    // the task's properties, the task's markdown, one properties read per linked
-    // project, the report search, then one markdown read per shown report.
+    // The v2 answers session_start's requests, in the order they are sent: the
+    // task's properties, the task's markdown, the report create, one properties
+    // read per linked project, the report search, then one markdown read per
+    // shown report.
     static string V2Named(string id, string type, string name, string extraProperties = "") =>
         "{\"id\":\"" + id + "\",\"type\":\"" + type + "\",\"properties\":{\"name\":\"" + name + "\""
         + extraProperties + "}}";
@@ -127,58 +132,76 @@ public class SessionGesturesTests
 
     // By default the anchor task has no past reports, so the report search
     // answers empty and the digest skips that block.
-    static FakeV2Handler WireStartReads(FakeAnytypeServer server, string searchAnswer)
-    {
-        server.OnPostObject(new JsonObject { ["object"] = new JsonObject { ["id"] = NewReport } });
-        return new FakeV2Handler()
+    static FakeV2Handler WireStartReads(string searchAnswer, string? createAnswer = null) =>
+        new FakeV2Handler()
             .Reply(HttpStatusCode.OK, V2Named(TaskId, "task", "Tâche d'ancrage",
                 ",\"" + DevSpace.Props.RelationProjet + "\":[\"" + ProjectId + "\"]"))
             .Reply(HttpStatusCode.OK, V2Markdown(TaskId, "# Tâche d'ancrage\n- [x] fait\n- [ ] à faire"))
+            // The shape of a real create's answer (measured): id and etag at the root.
+            .Reply(HttpStatusCode.Created,
+                createAnswer ?? "{\"id\":\"" + NewReport + "\",\"type\":\"rapport\",\"etag\":\"1ea04e49\"}")
             .Reply(HttpStatusCode.OK, V2Named(ProjectId, "project", "Mon projet"))
             .Reply(HttpStatusCode.OK, searchAnswer);
-    }
 
     [Fact]
     public async Task StartCreatesAReportCarryingTodayAndTheAnchorTask()
     {
         using var server = new FakeAnytypeServer();
-        FakeV2Handler v2 = WireStartReads(server, V2Rows());
+        FakeV2Handler v2 = WireStartReads(V2Rows());
 
         string digest = await NewGestures(server, v2).StartAsync(TaskId, Ct);
 
         Assert.StartsWith($"report_id : {NewReport}\n", digest, StringComparison.Ordinal);
 
-        JsonObject create = CreateBody(server);
-        Assert.Equal(DevSpace.Types.Rapport, create["type_key"]!.GetValue<string>());
+        JsonObject create = CreateBody(v2);
+        Assert.Equal(DevSpace.Types.Rapport, create["type"]!.GetValue<string>());
+        // The heading opens the body; a report is a note and is sent no name,
+        // which would land as a paragraph ahead of it.
+        Assert.Equal($"# Journal {Today()}", create["markdown"]!.GetValue<string>());
+        Assert.False(create.ContainsKey("name"));
 
-        var props = (JsonArray)create["properties"]!;
-        JsonObject dateProp = FindProp(props, DevSpace.Props.DateDuJournal);
-        Assert.Equal(Today(), dateProp["date"]!.GetValue<string>());
+        var props = (JsonObject)create["properties"]!;
+        string date = props[DevSpace.Props.DateDuJournal]!.GetValue<string>();
+        Assert.Equal(Today(), date);
         // Independent of the Today() mirror: the wire date stays ISO yyyy-MM-dd.
-        Assert.Matches(@"^\d{4}-\d{2}-\d{2}$", dateProp["date"]!.GetValue<string>());
+        Assert.Matches(@"^\d{4}-\d{2}-\d{2}$", date);
 
-        JsonObject taskProp = FindProp(props, DevSpace.Props.TachesLiees);
-        Assert.Equal(TaskId, ((JsonArray)taskProp["objects"]!).Single()!.GetValue<string>());
+        Assert.Equal(TaskId, ((JsonArray)props[DevSpace.Props.TachesLiees]!).Single()!.GetValue<string>());
 
         // The report has NO project property: its project is derived through the
         // linked task(s).
-        Assert.DoesNotContain(props,
-            n => n is JsonObject p && p["key"]?.GetValue<string>() == DevSpace.Props.RelationProjet);
+        Assert.False(props.ContainsKey(DevSpace.Props.RelationProjet));
+
+        // A resend after a 5xx must not open a second report.
+        FakeV2Handler.Seen post = CreateRequest(v2);
+        Assert.False(string.IsNullOrWhiteSpace(post.Header("Idempotency-Key")));
+    }
+
+    // Every later session_log is addressed by this id: a create answer without
+    // one is a failure, not an empty report_id handed to the caller.
+    [Fact]
+    public async Task StartFailsWhenTheCreateAnswerCarriesNoId()
+    {
+        using var server = new FakeAnytypeServer();
+        FakeV2Handler v2 = WireStartReads(V2Rows(), createAnswer: "{\"type\":\"rapport\"}");
+
+        await Assert.ThrowsAsync<InvalidOperationException>(
+            () => NewGestures(server, v2).StartAsync(TaskId, Ct));
     }
 
     [Fact]
     public async Task StartDigestHeadsWithTheTaskItsProjectAndItsChecklist()
     {
         using var server = new FakeAnytypeServer();
-        FakeV2Handler v2 = WireStartReads(server, V2Rows());
+        FakeV2Handler v2 = WireStartReads(V2Rows());
 
         string digest = await NewGestures(server, v2).StartAsync(TaskId, Ct);
 
         Assert.Equal(
             $"report_id : {NewReport}\n[ ] Tâche d'ancrage · projet Mon projet\n- [x] fait\n- [ ] à faire",
             digest);
-        // Nothing of the digest goes through v1: only the report creation does.
-        Assert.Single(server.Requests);
+        // Nothing of session_start goes through v1 any more.
+        Assert.Empty(server.Requests);
     }
 
     // The digest places the session, it does not replay it: only the most recent
@@ -208,7 +231,7 @@ public class SessionGesturesTests
             markdowns.Add($"# Journal {DateOf(i)}\n" + string.Join("\n", entries));
         }
 
-        FakeV2Handler v2 = WireStartReads(server, V2Rows(rows.ToArray()));
+        FakeV2Handler v2 = WireStartReads(V2Rows(rows.ToArray()));
         // Only the shown reports are read for their body.
         for (int k = 0; k < SessionGestures.RecentReports; k++)
             v2.Reply(HttpStatusCode.OK, V2Markdown(rows[k].Item1, markdowns[k]));
@@ -262,7 +285,7 @@ public class SessionGesturesTests
     {
         using var server = new FakeAnytypeServer();
         string[] previous = ["bafyreiPrevaaa", "bafyreiPrevbbb", "bafyreiPrevccc"];
-        FakeV2Handler v2 = WireStartReads(server, V2Rows(
+        FakeV2Handler v2 = WireStartReads(V2Rows(
             (NewReport, "2026-06-12"),
             (previous[0], "2026-06-11"),
             (previous[1], "2026-06-10"),
@@ -322,6 +345,26 @@ public class SessionGesturesTests
         Assert.Empty(server.Requests);
     }
 
+    // Anytype puts no space between paragraphs: without a divider, an entry's
+    // text runs straight into the next entry's stamp. Between two entries
+    // only — the first entry sits right under the heading.
+    [Theory]
+    [InlineData("paragraph")]
+    [InlineData("bulleted")]
+    public async Task LogSeparatesAnEntryFromThePreviousOneWithADivider(string earlierBlockType)
+    {
+        using var server = new FakeAnytypeServer();
+        var v2 = new FakeV2Handler()
+            .Reply(HttpStatusCode.OK, V2Report(withBlock: true, "paragraph", earlierBlockType))
+            .Reply(HttpStatusCode.OK, "{}");
+
+        await NewGestures(server, v2, new StoppedClock()).LogAsync("writes the tests", NewReport, Ct);
+
+        Assert.Equal(
+            "---\n\n2026-06-12 14:05\n\nwrites the tests",
+            LoggedOps(v2).Single()!["markdown"]!.GetValue<string>());
+    }
+
     // The caller just wrote the line: echoing it back only costs context.
     [Fact]
     public async Task LogAcknowledgesWithoutEchoingTheLineItAppended()
@@ -347,10 +390,10 @@ public class SessionGesturesTests
     public async Task LogOnAFreshReportWritesTheJournalHeadingFirst(bool outlineKeyPresent)
     {
         using var server = new FakeAnytypeServer();
-        // A report fresh out of session_start: Anytype consumed the creation
-        // body's « # Journal … » heading as the note title, so its body has no
-        // block. An entry written alone would become the note's first line —
-        // and therefore its title. An empty outline and no outline at all both
+        // A report created on v1: Anytype consumed the creation body's
+        // « # Journal … » heading as the note title, so its body has no block.
+        // An entry written alone would become the note's first line — and
+        // therefore its title. An empty outline and no outline at all both
         // mean « no block ».
         string read = outlineKeyPresent
             ? V2Report(withBlock: false)
@@ -368,13 +411,12 @@ public class SessionGesturesTests
             LoggedOps(v2).Single()!["markdown"]!.GetValue<string>());
     }
 
-    // The v2 read shape of a date is not measured: when the property is not
-    // a string, the journal date is read the way v1 does.
+    // A report that lost its journal date still gets a dated heading: today's,
+    // from the gesture's own clock, without a second read.
     [Fact]
-    public async Task LogReadsTheJournalDateThroughV1WhenV2GivesNone()
+    public async Task LogDatesTheHeadingTodayWhenTheReportHasNoJournalDate()
     {
         using var server = new FakeAnytypeServer();
-        server.OnGetObject(NewReport, ReportObject(NewReport, "", TaskId));
         var v2 = new FakeV2Handler()
             .Reply(HttpStatusCode.OK, "{\"properties\":{},\"outline\":[]}")
             .Reply(HttpStatusCode.OK, "{}");
@@ -382,9 +424,10 @@ public class SessionGesturesTests
         await NewGestures(server, v2, new StoppedClock()).LogAsync("writes the tests", NewReport, Ct);
 
         Assert.StartsWith(
-            "# Journal 2026-06-11\n\n",
+            "# Journal 2026-06-12\n\n",
             LoggedOps(v2).Single()!["markdown"]!.GetValue<string>(),
             StringComparison.Ordinal);
+        Assert.Empty(server.Requests);
     }
 
     [Fact]
@@ -402,14 +445,14 @@ public class SessionGesturesTests
         Assert.Empty(v2.Requests);
     }
 
-    // The create POST body (path .../objects) — session_start also POSTs a /search
-    // for the digest, so LastBodyFor("POST") would return that search body instead.
-    static JsonObject CreateBody(FakeAnytypeServer server)
-    {
-        var req = server.Requests.Last(
-            r => r.Method == "POST" && r.Path.EndsWith("/objects", StringComparison.Ordinal));
-        return (JsonObject)JsonNode.Parse(req.Body)!;
-    }
+    // The create POST (path .../objects) — session_start also POSTs a /search
+    // for the digest.
+    static FakeV2Handler.Seen CreateRequest(FakeV2Handler v2) =>
+        Assert.Single(v2.Requests,
+            r => r.Method == "POST" && r.PathAndQuery == "/v2/spaces/space-1/objects");
+
+    static JsonObject CreateBody(FakeV2Handler v2) =>
+        (JsonObject)JsonNode.Parse(CreateRequest(v2).Body!)!;
 
     static JsonObject FindProp(JsonArray props, string key)
     {

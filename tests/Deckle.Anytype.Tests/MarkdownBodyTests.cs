@@ -342,6 +342,20 @@ public class MarkdownBodyTests
             MarkdownBody.JournalEntries("- 2026-07-21 10:00 fait\n2026-07-21 10:00 fait"));
     }
 
+    // session_log puts a divider between two entries; it is layout, not the
+    // text of the entry before it. The body is the v2 render as served
+    // (measured 2026-10-23): hard-break spaces, the divider as « --- ».
+    [Fact]
+    public void JournalEntriesLeaveTheDividerBetweenEntriesOut()
+    {
+        string body =
+            "# Journal 2026-10-22   \n2026-10-22 23:01   \nPremière.   \n --- \n2026-10-23 00:36   \nDeuxième.   \n";
+
+        Assert.Equal(
+            ["2026-10-22 23:01 · Première.", "2026-10-23 00:36 · Deuxième."],
+            MarkdownBody.JournalEntries(body));
+    }
+
     [Fact]
     public void UnescapeLeavesABackslashThatEscapesNothingAlone()
     {
