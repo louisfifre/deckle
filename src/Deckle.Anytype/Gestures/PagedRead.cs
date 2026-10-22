@@ -12,10 +12,15 @@ namespace Deckle.Anytype;
 // row between the two, and the read looks complete.
 //
 // An empty page ends the read even if has_more still claims more, so a server
-// that never stops claiming it cannot keep the loop alive.
+// that never stops claiming it cannot keep the loop alive. The read survives but
+// may be short, so it says so: a Warning naming the read and the offset, never
+// the rows (their names are the person's content).
 internal static class PagedRead
 {
+    // read is a closed identifier of the list being read (object_listing,
+    // schema_types, ...), the one a person greps in the journal.
     public static async IAsyncEnumerable<JsonObject> PagesAsync(
+        string read,
         Func<int, CancellationToken, Task<JsonObject>> readPage,
         [EnumeratorCancellation] CancellationToken ct)
     {
@@ -26,7 +31,13 @@ internal static class PagedRead
             yield return root;
 
             int returned = root["data"] is JsonArray data ? data.Count : 0;
-            if (returned == 0 || root["pagination"]?["has_more"]?.GetValue<bool>() != true) yield break;
+            bool hasMore = root["pagination"]?["has_more"]?.GetValue<bool>() == true;
+            if (returned == 0)
+            {
+                if (hasMore) DeckleAnytypeSource.Log.PagedReadEndedOnEmptyPage(read, offset);
+                yield break;
+            }
+            if (!hasMore) yield break;
             offset += returned;
         }
     }

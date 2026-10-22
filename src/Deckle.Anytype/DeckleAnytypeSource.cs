@@ -89,6 +89,7 @@ public sealed class DeckleAnytypeSource : DeckleEventSource
     public const int EvtBackendRestartAttemptSpawnFailed = 64;
     public const int EvtApiRefusalsEnded              = 65;
     public const int EvtApiRequestSuperseded          = 66;
+    public const int EvtPagedReadEndedOnEmptyPage     = 67;
 
     // ── HTTP transport ──────────────────────────────────────────────────
 
@@ -238,6 +239,20 @@ public sealed class DeckleAnytypeSource : DeckleEventSource
     public void ObjectBinned(string type_key, string object_id)
     {
         if (IsEnabled()) WriteEvent(EvtObjectBinned, type_key, object_id);
+    }
+
+    // An exhaustive list read met an empty page while the server still claimed
+    // more rows, and stopped there: the read goes on with what it has, which may be
+    // short. read is the closed name of the list (PagedRead callers), offset the
+    // row index the empty page was asked at. No row, name or content travels.
+    [Event(EvtPagedReadEndedOnEmptyPage,
+           Level = EventLevel.Warning,
+           Keywords = Gesture,
+           Tags = ObservationTags.Journal,
+           Message = "An Anytype list read stopped on an empty page although the server claims more rows | read={0} | offset={1}")]
+    public void PagedReadEndedOnEmptyPage(string read, int offset)
+    {
+        if (IsEnabled()) WriteEvent(EvtPagedReadEndedOnEmptyPage, read, offset);
     }
 
     // Two waiters naming the same target are a real concurrent edit, visible by

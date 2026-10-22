@@ -65,7 +65,7 @@ public sealed class LiveTagResolver(AnytypeApiClient api)
     {
         var map = new Dictionary<string, string>(StringComparer.Ordinal);
         await foreach (JsonObject root in PagedRead.PagesAsync(
-            (offset, token) => _api.ListPropertiesAsync(offset, PageLimit, token), ct).ConfigureAwait(false))
+            "property_ids", (offset, token) => _api.ListPropertiesAsync(offset, PageLimit, token), ct).ConfigureAwait(false))
         {
             foreach (JsonNode? node in root["data"]?.AsArray() ?? [])
             {
@@ -84,7 +84,7 @@ public sealed class LiveTagResolver(AnytypeApiClient api)
     {
         var options = new List<(string, string)>();
         await foreach (JsonObject root in PagedRead.PagesAsync(
-            (offset, token) => _api.ListPropertyTagsAsync(propertyId, offset, PageLimit, token), ct)
+            "property_options", (offset, token) => _api.ListPropertyTagsAsync(propertyId, offset, PageLimit, token), ct)
             .ConfigureAwait(false))
         {
             foreach (JsonNode? node in root["data"]?.AsArray() ?? [])

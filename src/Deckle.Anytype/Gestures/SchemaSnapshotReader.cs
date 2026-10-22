@@ -73,7 +73,7 @@ public sealed class SchemaSnapshotReader(AnytypeApiClient api)
     {
         var result = new Dictionary<string, SchemaTypeInfo>(StringComparer.Ordinal);
         await foreach (JsonObject root in PagedRead.PagesAsync(
-            (offset, token) => _api.ListTypesAsync(spaceId, offset, PageLimit, token), ct).ConfigureAwait(false))
+            "schema_types", (offset, token) => _api.ListTypesAsync(spaceId, offset, PageLimit, token), ct).ConfigureAwait(false))
         {
             foreach (var (key, type) in ReadTypes(root)) result[key] = type;
         }
@@ -85,7 +85,7 @@ public sealed class SchemaSnapshotReader(AnytypeApiClient api)
     {
         var result = new Dictionary<string, SchemaPropertyInfo>(StringComparer.Ordinal);
         await foreach (JsonObject root in PagedRead.PagesAsync(
-            (offset, token) => _api.ListPropertiesForSpaceAsync(spaceId, offset, PageLimit, token), ct)
+            "schema_properties", (offset, token) => _api.ListPropertiesForSpaceAsync(spaceId, offset, PageLimit, token), ct)
             .ConfigureAwait(false))
         {
             foreach (var (key, prop) in ReadProperties(root)) result[key] = prop;
@@ -98,7 +98,7 @@ public sealed class SchemaSnapshotReader(AnytypeApiClient api)
     {
         var result = new Dictionary<string, SchemaTagInfo>(StringComparer.Ordinal);
         await foreach (JsonObject root in PagedRead.PagesAsync(
-            (offset, token) => _api.ListPropertyTagsForSpaceAsync(spaceId, propertyId, offset, PageLimit, token), ct)
+            "schema_tags", (offset, token) => _api.ListPropertyTagsForSpaceAsync(spaceId, propertyId, offset, PageLimit, token), ct)
             .ConfigureAwait(false))
         {
             foreach (var (key, tag) in ReadTags(root)) result[key] = tag;

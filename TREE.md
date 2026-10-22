@@ -1888,6 +1888,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── MarkdownBodyTests.cs
 │   │   ├── NameResolverTests.cs
 │   │   ├── OperationRecoveryBugNotes.md
+│   │   ├── PagedReadJournalTests.cs
 │   │   ├── ProjectGesturesBugNotes.md
 │   │   ├── ProjectGesturesTests.cs
 │   │   ├── ProviderKeywordsBugNotes.md

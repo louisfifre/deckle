@@ -17,7 +17,7 @@ internal static class ObjectListing
     {
         var objects = new List<JsonObject>();
         await foreach (JsonObject root in PagedRead.PagesAsync(
-            (offset, token) => api.SearchAsync(
+            "object_listing", (offset, token) => api.SearchAsync(
                 spaceId, string.Empty, typeKeys, offset, AnytypeApiClient.SearchPageMax, token), ct)
             .ConfigureAwait(false))
         {
