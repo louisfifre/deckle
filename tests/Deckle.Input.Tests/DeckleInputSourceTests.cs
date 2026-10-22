@@ -39,6 +39,21 @@ public class DeckleInputSourceTests : IDisposable
     }
 
     [Fact]
+    [Trait("Category", "regression")]
+    public void AFailedDeviceListingIsAWarningNotANoTouchpadLine()
+    {
+        using var listener = new TestEventListener("Deckle-Input");
+
+        DeckleInputSource.Log.TouchpadEnumerationFailed("list", 5);
+
+        var warning = Assert.Single(listener.Events);
+        Assert.Equal(DeckleInputSource.EvtTouchpadEnumerationFailed, warning.EventId);
+        Assert.Equal(EventLevel.Warning, warning.Level);
+        Assert.Equal("list", warning.Payload?[0]);
+        Assert.Equal(5, warning.Payload?[1]);
+    }
+
+    [Fact]
     public void HostLifecycleMilestonesReachTheJournalWithAnOutcome()
     {
         using var listener = new TestEventListener("Deckle-Input");

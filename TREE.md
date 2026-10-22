@@ -2101,6 +2101,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── LowLevelMouseHookInteropTests.cs
 │   │   ├── MouseInteractionRouterTests.cs
 │   │   ├── MouseWheelTimestampTests.cs
+│   │   ├── RawInputProbeBugNotes.md
 │   │   ├── RepeatingIncidentTests.cs
 │   │   ├── SyntheticTouchpadFrameBuilderTests.cs
 │   │   └── WheelObservationBufferTests.cs
