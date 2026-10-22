@@ -69,6 +69,26 @@ public sealed class JsonlLineSerializerTests
     }
 
     [Fact]
+    public void ALoneSurrogateIsReplacedRatherThanLosingTheRow()
+    {
+        var entry = new EventEntry(
+            timestamp:        DateTimeOffset.UtcNow,
+            provider:         "Deckle-SerializerTest",
+            eventName:        "Sample",
+            level:            EventLevel.Informational,
+            keywords:         EventKeywords.None,
+            kind:             ObservationKind.Operational,
+            formattedMessage: "msg\uDC00end",
+            payload:          new Dictionary<string, object?> { ["value"] = "before\uD800after" });
+
+        ReadOnlyMemory<byte> line = new JsonlLineSerializer().Serialize(entry, "log", JsonlSchema.SelfDescribing);
+        JsonElement root = JsonDocument.Parse(Encoding.UTF8.GetString(line.Span)).RootElement;
+
+        Assert.Equal("before�after", root.GetProperty("payload").GetProperty("value").GetString());
+        Assert.Equal("msg�end", root.GetProperty("message").GetString());
+    }
+
+    [Fact]
     public void PayloadOnlyHasNoKeywordsField()
     {
         JsonElement root = Serialize(

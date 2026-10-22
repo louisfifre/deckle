@@ -63,6 +63,23 @@ internal sealed class JsonlLineSerializer
         return transverse == Keywords.None ? string.Empty : transverse.ToString();
     }
 
+    // JSON has no literal for NaN or the infinities, and Utf8JsonWriter throws
+    // on them. A throw here would cost the whole row and, through the sink's
+    // fault path, close the stream and open a sink incident, so a measurement
+    // that went off the scale (a division by zero in a ratio, say) travels as
+    // its invariant text instead: "NaN", "Infinity", "-Infinity".
+    private static void WriteFloatingPoint(Utf8JsonWriter writer, string name, double value)
+    {
+        if (double.IsFinite(value)) writer.WriteNumber(name, value);
+        else writer.WriteString(name, value.ToString(CultureInfo.InvariantCulture));
+    }
+
+    private static void WriteFloatingPoint(Utf8JsonWriter writer, string name, float value)
+    {
+        if (float.IsFinite(value)) writer.WriteNumber(name, value);
+        else writer.WriteString(name, value.ToString(CultureInfo.InvariantCulture));
+    }
+
     private static void WriteValue(Utf8JsonWriter writer, string name, object? value)
     {
         switch (value)
@@ -78,8 +95,8 @@ internal sealed class JsonlLineSerializer
             case ulong ul:           writer.WriteNumber(name, ul); break;
             case ushort us:          writer.WriteNumber(name, us); break;
             case sbyte sb:           writer.WriteNumber(name, sb); break;
-            case float f:            writer.WriteNumber(name, f); break;
-            case double d:           writer.WriteNumber(name, d); break;
+            case float f:            WriteFloatingPoint(writer, name, f); break;
+            case double d:           WriteFloatingPoint(writer, name, d); break;
             case Guid g:             writer.WriteString(name, g.ToString()); break;
             case DateTime dt:        writer.WriteString(name, dt.ToString("o", CultureInfo.InvariantCulture)); break;
             case DateTimeOffset dto: writer.WriteString(name, dto.ToString("o", CultureInfo.InvariantCulture)); break;

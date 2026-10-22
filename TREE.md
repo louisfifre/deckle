@@ -2019,7 +2019,9 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── DispatchEventListenerBugNotes.md
 │   │   ├── DispatchEventListenerIncidentTests.cs
 │   │   ├── DispatchEventListenerTests.cs
+│   │   ├── JsonlLineSerializerRegressionTests.cs
 │   │   ├── JsonlLineSerializerTests.cs
+│   │   ├── JsonlSinkBugNotes.md
 │   │   ├── JsonlSinkLifecycleTests.cs
 │   │   ├── JsonlSinkRotationTests.cs
 │   │   ├── LogLineFormatterTests.cs
