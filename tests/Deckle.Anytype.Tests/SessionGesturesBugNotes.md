@@ -13,3 +13,15 @@ Not tied to the stateless-mode rebuild: reports corrupted this way exist from
 report hit it; intact « Journal <date> » reports are the ones never logged into.
 
 Regression coverage: `SessionGesturesTests.LogOnAFreshReportKeepsTheJournalHeadingAsTheFirstLine`.
+
+## A failed digest read left an orphan report that a retry duplicated
+
+- **Trigger:** `session_start` created the report, then a read of the digest (the task's project, the search of its past reports, a past report's body) failed.
+- **Observed symptom:** the caller got an error and never received the report id, yet the report existed on the task. Retrying the gesture created a second one. Established by reproduction with a refused search; a failing digest read on the live backend was not observed.
+- **Cause:** the report was created before the digest was built, so every digest read was a way to fail after the write. The id the caller needs travels in the digest's first line, so it was lost with the failure.
+- **Violated invariant:** a gesture that can be retried makes its write its last remote call, so a failure leaves nothing to duplicate.
+- **Recurrence cue:** a create followed by reads whose failure the caller sees as "nothing happened".
+
+The digest is now built first, so it cannot contain the new report; the filter that skipped it, and the extra search slot it needed, are gone. Reports another session opened on the same task in between are history and are shown.
+
+Regression: `SessionGesturesTests.StartCreatesNoReportWhenTheDigestCannotBeRead`.
