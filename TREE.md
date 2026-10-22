@@ -2105,9 +2105,11 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── FakeHomeAnytypeServer.cs
 │   │   ├── HomeBodyTests.cs
 │   │   ├── HomeCodeTests.cs
+│   │   ├── HomeDeleteApprovalTests.cs
 │   │   ├── HomeGesturesBugNotes.md
 │   │   ├── HomeGesturesTests.cs
 │   │   ├── HomeMcpTests.cs
+│   │   ├── HomeNameMatchTests.cs
 │   │   ├── HomePagingTests.cs
 │   │   ├── HomePartialWriteTests.cs
 │   │   ├── HomeRelationTests.cs
