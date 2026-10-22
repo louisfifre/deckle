@@ -96,6 +96,7 @@ doctrine). This file is generated from the Conventional-Commit history by
 - **anytype:** Tell agents when to archive and when to bin
 - **anytype:** Create the session report through v2
 - **anytype:** Separate journal entries with a divider
+- **anytype:** Let delete bin a report that nothing links to
 
 ### Changed
 
