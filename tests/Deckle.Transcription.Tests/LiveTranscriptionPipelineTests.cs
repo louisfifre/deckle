@@ -152,11 +152,16 @@ public sealed class LiveTranscriptionPipelineTests
 
         await finished.Task.WaitAsync(TimeSpan.FromSeconds(5), testCancellation);
 
-        // The bounds are loose on purpose: the tail is 400 ms, and a timer may
-        // fire a little early or a loaded machine a lot late.
+        // Only the floor is asserted: the tail is 400 ms (a private constant of
+        // the engine), and a timer may fire a little early, so 300 ms still
+        // tells "kept listening" from "cancelled at once". A ceiling would only
+        // measure how loaded the machine is; "the capture does stop" is already
+        // what the bounded wait on `finished` above proves.
         TimeSpan tail = System.Diagnostics.Stopwatch.GetElapsedTime(
             pressTimestamp, capture.StopObservedTimestamp);
-        Assert.InRange(tail, TimeSpan.FromMilliseconds(300), TimeSpan.FromSeconds(4));
+        Assert.True(
+            tail >= TimeSpan.FromMilliseconds(300),
+            $"The capture stopped {tail.TotalMilliseconds:F0} ms after the press.");
     }
 
     // 2026-10-21: a short noise blip decoded into twelve doubtful tokens was
