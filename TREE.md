@@ -1835,6 +1835,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── AssemblyInfo.cs
 │   │   ├── BackendEndpointTrustTests.cs
 │   │   ├── BackendListenerOwnerTests.cs
+│   │   ├── BackendOwnerPathTests.cs
 │   │   ├── BackendProviderStoreBugNotes.md
 │   │   ├── BackendProviderStoreTests.cs
 │   │   ├── BackendReconcilerTests.cs

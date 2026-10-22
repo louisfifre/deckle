@@ -212,15 +212,17 @@ internal sealed class BackendReconciler : IBackendReconciler
         bool transferOwner = !ReferenceEquals(owner, spawned);
         try
         {
+            // The detail names the foreign program, not where it lives: its path
+            // embeds the Windows user name.
             if (!IsTrusted(owner.ExecutablePath))
-                return Conflict(id, first, "owner_untrusted", owner.ExecutablePath);
+                return Conflict(id, first, "owner_untrusted", Path.GetFileName(owner.ExecutablePath));
             if (owner.HasExited) return null;
 
             bool healthy = _health.ProbeAsync(ct).GetAwaiter().GetResult().Healthy;
             BackendListenerSnapshot second = _listener.Inspect();
             DeckleAnytypeSource.Log.BackendListenerObserved(
                 id, first.ProcessId, second.ProcessId, healthy,
-                owner.ExecutablePath);
+                Path.GetFileName(owner.ExecutablePath));
 
             if (!healthy || second.State != BackendListenerState.Owned ||
                 second.ProcessId != first.ProcessId || owner.HasExited)
