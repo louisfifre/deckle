@@ -95,14 +95,17 @@ public sealed class MicrophoneCapture : IMicrophoneCapture
             0u);
         if (err != 0)
         {
-            return new ProbeResult(false, MapMmsysErr(err), err);
+            return new ProbeResult(false, ClassifyError(err), err);
         }
 
         NativeMethods.waveInClose(hWaveIn);
         return new ProbeResult(true, MicErrorKind.None, 0);
     }
 
-    private static MicErrorKind MapMmsysErr(uint err) => err switch
+    // The kind a waveIn error code stands for. Public because Record() returns
+    // the raw code (CaptureResult.MmsysErr) and a caller that reacts to a failed
+    // capture, not only to a failed probe, needs the same reading of it.
+    public static MicErrorKind ClassifyError(uint err) => err switch
     {
         0 => MicErrorKind.None,
         2 => MicErrorKind.NotDetected, // MMSYSERR_BADDEVICEID

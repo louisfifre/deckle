@@ -1820,6 +1820,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── DeckleAudioSourceTests.cs
 │   │   ├── ListeningTakeTests.cs
 │   │   ├── MicLevelCheckTests.cs
+│   │   ├── MicrophoneErrorClassificationTests.cs
 │   │   ├── MicrophoneTelemetryCalculatorTests.cs
 │   │   ├── OperationalObservabilityCollection.cs
 │   │   ├── Pcm16BufferTests.cs
