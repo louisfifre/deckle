@@ -47,7 +47,7 @@ public sealed record AnytypeCredentials(string ApiUrl, string ApiVersion, string
 
         if (!File.Exists(path))
             throw new InvalidOperationException(
-                $"Anytype credentials not found at {path}. Expected api_version and space_id (plus api_url and api_key for the legacy Desktop pairing).");
+                $"Anytype credentials not found at {UserProfilePath.Mask(path)}. Expected api_version and space_id (plus api_url and api_key for the legacy Desktop pairing).");
 
         Dto? dto;
         try
@@ -57,7 +57,7 @@ public sealed record AnytypeCredentials(string ApiUrl, string ApiVersion, string
         catch (JsonException ex)
         {
             throw new InvalidOperationException(
-                $"Anytype credentials at {path} are not valid JSON: {ex.Message}");
+                $"Anytype credentials at {UserProfilePath.Mask(path)} are not valid JSON: {ex.Message}");
         }
 
         vault.TryGet(ApiKeySecretName, out string? vaultApiKey);
@@ -71,7 +71,7 @@ public sealed record AnytypeCredentials(string ApiUrl, string ApiVersion, string
             string.IsNullOrWhiteSpace(dto.space_id))
         {
             throw new InvalidOperationException(
-                $"Anytype credentials at {path} are incomplete. Expected non-empty api_version and space_id.");
+                $"Anytype credentials at {UserProfilePath.Mask(path)} are incomplete. Expected non-empty api_version and space_id.");
         }
 
         if (!string.IsNullOrWhiteSpace(vaultApiKey))
@@ -92,6 +92,6 @@ public sealed record AnytypeCredentials(string ApiUrl, string ApiVersion, string
         }
 
         throw new InvalidOperationException(
-            $"No Anytype API key found: the vault holds no '{ApiKeySecretName}' secret and {path} carries no api_key/api_url pair. Provision the headless backend (mint an API key into the vault) or the legacy Desktop pairing.");
+            $"No Anytype API key found: the vault holds no '{ApiKeySecretName}' secret and {UserProfilePath.Mask(path)} carries no api_key/api_url pair. Provision the headless backend (mint an API key into the vault) or the legacy Desktop pairing.");
     }
 }

@@ -1480,7 +1480,8 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── GLOSSARY.md  — glossary-deckle-security Security vocabulary. It defines the trusted-session boundary, captured content,…
 │   │   ├── ISecretVault.cs
 │   │   ├── SecretVault.cs
-│   │   └── SecretVaultException.cs
+│   │   ├── SecretVaultException.cs
+│   │   └── UserProfilePath.cs
 │   ├── Deckle.Settings/
 │   │   ├── Controls/
 │   │   │   ├── FolderLocationLine.cs
@@ -2205,7 +2206,9 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   └── PresetFamilyTests.cs
 │   ├── Deckle.Security.Tests/
 │   │   ├── Deckle.Security.Tests.csproj
-│   │   └── SecretVaultTests.cs
+│   │   ├── SecretVaultTests.cs
+│   │   ├── UserProfilePathBugNotes.md
+│   │   └── UserProfilePathTests.cs
 │   ├── Deckle.Setup.Tests/
 │   │   ├── DataRootRelocatorTests.cs
 │   │   ├── DataRootTreeTests.cs
