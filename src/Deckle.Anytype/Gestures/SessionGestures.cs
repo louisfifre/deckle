@@ -47,6 +47,23 @@ public sealed class SessionGestures(
                 ObjectsProp(DevSpace.Props.TachesLiees, new[] { taskId })),
         };
 
+        // Stays on the v1 create ON PURPOSE: the real v2 create body of a report
+        // has never been measured, and every later session_log leans on its
+        // result. To port this to AnytypeV2Writer.CreateObjectAsync (type
+        // `rapport`, `date_du_journal`, `tache(s)_liee(s)` = [taskId]), check
+        // live, on a throwaway task:
+        //   1. Title block: does a first « # Journal <date> » heading in the v2
+        //      body become the note's title (as in v1, where the body then reads
+        //      back empty), stay a visible heading block, or get duplicated next
+        //      to a name the server derives? Test with name omitted and with "".
+        //   2. Empty-body guard: LogAsync writes the « # Journal <date> » heading
+        //      itself when the outline has no block. After the v2 create, read the
+        //      outline back: if the heading survived as a block the guard skips it
+        //      (fine); if it vanished the guard rewrites it (fine); if it is
+        //      doubled or the note is named by the first log line, the guard and
+        //      the create body must change together.
+        //   3. That the v2 create response carries the new object's id, and that
+        //      date and link properties are accepted in the create body.
         JsonObject report = await _api.CreateObjectAsync(reportPayload, ct);
         string reportId = report["id"]?.GetValue<string>()
             ?? throw new InvalidOperationException("Le rapport créé n'a pas d'id.");
